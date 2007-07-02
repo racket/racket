@@ -282,7 +282,7 @@ module browser threading seems wrong.
       
       (define make-execute-bitmap 
         (bitmap-label-maker (string-constant execute-button-label) 
-                            (build-path (collection-path "icons") "run.png")))
+                            (get-running-bitmap)))
       (define make-save-bitmap 
         (bitmap-label-maker (string-constant save-button-label) 
                             (build-path (collection-path "icons") "save.png")))
@@ -1464,7 +1464,7 @@ module browser threading seems wrong.
                                   (if (equal? f1 f2)
                                       (loop (cdr p1) (cdr p2) (+ i 1))
                                       i))])))]
-                   [exp (reverse (explode-path (normalize-path fn)))]
+                   [exp (reverse (explode-path (normalize-path/exists fn)))]
                    [other-exps
                     (filter
                      (λ (x) (and x 
@@ -1472,7 +1472,7 @@ module browser threading seems wrong.
                      (map (λ (other-tab) 
                             (let ([fn (send (send other-tab get-defs) get-filename)])
                               (and fn 
-                                   (reverse (explode-path (normalize-path fn))))))
+                                   (reverse (explode-path (normalize-path/exists fn))))))
                           tabs))]
                    [size
                     (let loop ([other-exps other-exps]
@@ -1483,6 +1483,11 @@ module browser threading seems wrong.
                                 (loop (cdr other-exps)
                                       (max new-size size)))]))])
               (path->string (apply build-path (reverse (take-n size exp))))))
+          
+          (define/private (normalize-path/exists fn)
+            (if (file-exists? fn)
+                (normalize-path fn)
+                fn))
           
           (define/private (add-modified-flag text string)
             (if (send text is-modified?)

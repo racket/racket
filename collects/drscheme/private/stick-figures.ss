@@ -3,10 +3,14 @@
            (lib "pretty.ss")
            (lib "mred.ss" "mred"))
   
-  (provide running-canvas%)
+  (provide running-canvas%
+           get-running-bitmap)
   
   (define head-size 40)
+  (define running-bitmap-factor 1/11)
   (define small-factor 1/5)
+  (define line-size 2)
+  
   (define waiting-points
     '((head 47 -4)
       (neck 40 14)
@@ -49,33 +53,65 @@
       (define is-running? #f)
       
       (define-values (w h running-dx running-dy waiting-dx waiting-dy)
-        (let-values ([(min-rx min-ry) (get-max/min-x/y min running-points)]
-                     [(max-rx max-ry) (get-max/min-x/y max running-points)]
-                     [(min-wx min-wy) (get-max/min-x/y min waiting-points)]
-                     [(max-wx max-wy) (get-max/min-x/y max waiting-points)])
-          (let* ([running-w (* small-factor (- max-rx min-rx))]
-                 [waiting-w (* small-factor (- max-wx min-wx))]
-                 [running-h (* small-factor (- max-ry min-ry))]
-                 [waiting-h (* small-factor (- max-wy min-wy))]
-                 [w (+ 3 (ceiling (max running-w waiting-w)))]
-                 [h (+ 3 (ceiling (max running-h waiting-h)))]
-                 [running-dx (- (/ w 2) (/ running-w 2))]
-                 [running-dy (- (/ h 2) (/ running-h 2))]
-                 [waiting-dx (- (/ w 2) (/ waiting-w 2))]
-                 [waiting-dy (- (/ h 2) (/ waiting-h 2))])
-            (values w h running-dx running-dy waiting-dx waiting-dy))))
+        (get-size-parameters))
 
       (define/override (on-paint)
         (let ([dc (get-dc)])
           (if is-running?
-              (draw-callback dc small-factor #f running-points running-dx running-dy)
-              (draw-callback dc small-factor #f waiting-points waiting-dx waiting-dy))))
+              (draw-callback dc small-factor #f running-points running-dx running-dy line-size)
+              (draw-callback dc small-factor #f waiting-points waiting-dx waiting-dy line-size))))
       (super-new [stretchable-width #f]
                  [stretchable-height #f]
                  [style '(transparent)])
       (inherit min-width min-height)
       (min-width w)
       (min-height h)))
+  
+  (define (get-size-parameters)
+    (let-values ([(min-rx min-ry) (get-max/min-x/y min running-points)]
+                 [(max-rx max-ry) (get-max/min-x/y max running-points)]
+                 [(min-wx min-wy) (get-max/min-x/y min waiting-points)]
+                 [(max-wx max-wy) (get-max/min-x/y max waiting-points)])
+      (let* ([running-w (* small-factor (- max-rx min-rx))]
+             [waiting-w (* small-factor (- max-wx min-wx))]
+             [running-h (* small-factor (- max-ry min-ry))]
+             [waiting-h (* small-factor (- max-wy min-wy))]
+             [w (+ 2 (ceiling (max running-w waiting-w)))]
+             [h (+ 2 (ceiling (max running-h waiting-h)))]
+             [running-dx (+ 1 (- (/ w 2) (/ running-w 2)))]
+             [running-dy (+ 1 (- (/ h 2) (/ running-h 2)))]
+             [waiting-dx (+ 1 (- (/ w 2) (/ waiting-w 2)))]
+             [waiting-dy (+ 1 (- (/ h 2) (/ waiting-h 2)))])
+        (values w h running-dx running-dy waiting-dx waiting-dy))))
+  
+  (define running-bitmap #f)
+  (define (get-running-bitmap)
+    (unless running-bitmap
+      (let-values ([(min-rx min-ry) (get-max/min-x/y min running-points)]
+                   [(max-rx max-ry) (get-max/min-x/y max running-points)])
+        (let* ([margin 1]
+               [w (+ margin margin (ceiling (* running-bitmap-factor (- max-rx min-rx))))]
+               [h (+ margin margin (ceiling (* running-bitmap-factor (- max-ry min-ry))))]
+               [bm-mask (make-object bitmap% w h)]
+               [bm (make-object bitmap% w h)]
+               [bdc (make-object bitmap-dc% bm-mask)]
+               [green (make-object color% 30 132 30)])
+          (send bdc clear)
+          (draw-callback bdc running-bitmap-factor #f running-points
+                         (+ margin (- (* running-bitmap-factor min-rx)))
+                         (+ margin (- (* running-bitmap-factor min-ry)))
+                         2)
+          (send bdc set-bitmap bm)
+          (send bdc set-brush green 'solid)
+          (send bdc set-pen green 1 'solid)
+          (send bdc draw-rectangle 
+                0 0 
+                (+ margin margin w)
+                (+ margin margin h))
+          (send bdc set-bitmap #f)
+          (send bm set-loaded-mask bm-mask)
+          (set! running-bitmap bm))))
+    running-bitmap)
   
   (define (test-running-canvas)
     (let* ([f (new frame% [label ""])]
@@ -107,7 +143,7 @@
                     (apply choose (map (λ (x) (list-ref x 2)) points)))))
   
   (define show-dots? #t)
-  (define (draw-callback dc factor dots? points dx dy)
+  (define (draw-callback dc factor dots? points dx dy line-size)
     (send dc set-smoothing 'aligned)
     (let ([points (normalize points)])
       (send dc set-pen "orange" 1 'solid)
@@ -119,7 +155,7 @@
                       (+ dy (- (list-ref x 2) 4))
                       9 9))
          points))
-      (send dc set-pen "black" 2 'solid)
+      (send dc set-pen "black" line-size 'solid)
       (send dc set-brush "black" 'transparent)
       (draw-points points dc factor dx dy)
       
