@@ -107,7 +107,7 @@
                [my-error (sequence-error-gen name sequence-length)]
                [my-walker (seq-walker id-position name my-error)])
           (opt-lambda (input [last-src (list 0 0 0 0)] [alts 1])
-            #;(printf "seq ~a~n" name)
+            #;(!!! (printf "seq ~a~n" name))
             (cond
               [(eq? input return-name) name]
               [(hash-table-get memo-table input #f) (hash-table-get memo-table input)]
@@ -121,7 +121,7 @@
                          [(pair? pre-build-ans) (map builder pre-build-ans)]
                          [else pre-build-ans])])
                  (hash-table-put! memo-table input ans)
-                 #;(printf "sequence ~a returning ~n" name)
+                 #;(!!! (printf "sequence ~a returning ~n" name))
                  ans)])))))
     
     ;seq-walker: int string error-gen -> [(list parser) (list alpha) parser result (U bool string) (list string) int int -> result
@@ -171,21 +171,22 @@
                                     (previous? input) (previous? return-name) #f
                                     look-back used curr-id seen alts last-src)]
                       [else
-                       #;(printf "seq-walker called: else case, ~a case of ~a~n" 
-                               seq-name (curr-pred return-name))
-                         (let ([fst (curr-pred input last-src)])
-                           #;(printf "seq-walker predicate returned~n")
-                           (cond
+                       #;(printf "seq-walker called: else case, ~a case of ~a ~ath case ~n" 
+                               seq-name (curr-pred return-name) (length seen))
+                       (let ([fst (curr-pred input last-src)])
+                         #;(printf "seq-walker predicate returned~n")
+                         (cond
                              [(res? fst)
                               (cond
                                 [(res-a fst) (next-call fst fst (res-msg fst) (and id-spot? (res-id fst))
                                                         (res-first-tok fst) alts)]
                                 [else
+                                 #;(printf "error situation~n")
                                  (build-error fst (previous? input) (previous? return-name) 
                                               (car next-preds) look-back used curr-id 
                                               seen alts last-src)])]
                              [(repeat-res? fst)
-                              #;(printf "repeat-res: ~a~n" fst)
+                             #;(printf "repeat-res: ~a~n" fst)
                               (next-call (repeat-res-a fst) fst 
                                          (res-msg (repeat-res-a fst)) #f 
                                          (res-first-tok (repeat-res-a fst)) alts)]
@@ -402,7 +403,7 @@
                                        this-res))]
                              [else (error 'here5)]))]))])
                (hash-table-put! memo-table input ans)
-               #;(printf "repeat of ~a ended with ans ~a~n" repeat-name ans)
+               #;(!!! (printf "repeat of ~a ended with ans ~a~n" repeat-name ans))
                ans)]))))
     
     ;choice: [list [[list 'a ] -> result]] name -> result
@@ -411,7 +412,7 @@
             [num-choices (length opt-list)]
             [choice-names (map (lambda (o) (o return-name)) opt-list)])
         (opt-lambda (input [last-src (list 0 0 0 0)] [alts 1])
-          #;(printf "choice ~a~n" name)
+          #;(!!! (printf "choice ~a~n" name))
           (let ([sub-opts (sub1 (+ alts num-choices))])
             (cond
               [(hash-table-get memo-table input #f) (hash-table-get memo-table input)]
@@ -431,7 +432,7 @@
                                                       num-choices choice-names fails))]
                          [(null? (cdr corrects)) (car corrects)]
                          [else (make-choice-res name corrects)])])
-                 #;(printf "choice ~a is returning ~a options were ~a ~n" name ans choice-names)
+                 #;(!!! (printf "choice ~a is returning ~a options were ~a ~n" name ans choice-names))
                  (hash-table-put! memo-table input ans) ans)])))))
     
     ;correct-list: (list result) -> (list result)

@@ -344,6 +344,14 @@
   (define-values/invoke-unit intermediate-interactions-parsers@
     (import)
     (export (prefix intermediate-int: parsers^) (prefix intermediate-int: err^)))
+  
+  (define-values/invoke-unit intermediate+access-definitions-parser@
+    (import)
+    (export (prefix intermediate+acc-def: parsers^) (prefix intermediate+acc-def: err^)))
+  (define-values/invoke-unit intermediate+access-interactions-parsers@
+    (import)
+    (export (prefix intermediate+acc-int: parsers^) (prefix intermediate+acc-int: err^)))
+
 
   (define-values/invoke-unit advanced-definitions-parser@
     (import)
@@ -367,7 +375,8 @@
                                 beginner-def:err? beginner-def:err-msg beginner-def:err-src))
   (define parse-intermediate (parse intermediate-def:parse-program
                                     intermediate-def:err? intermediate-def:err-msg intermediate-def:err-src))
-  (define parse-intermediate+access null #;(parse def:parse-intermediate+access def:err? def:err-msg def:err-src))
+  (define parse-intermediate+access (parse intermediate+acc-def:parse-program 
+                                           intermediate+acc-def:err? intermediate+acc-def:err-msg intermediate+acc-def:err-src))
   (define parse-advanced (parse advanced-def:parse-program
                                 advanced-def:err? advanced-def:err-msg advanced-def:err-src))
   (define parse-beginner-interact (parse beginner-int:parse-program

@@ -126,7 +126,8 @@
                            [pos 0]
                            [id-pos 0]
                            [terms null])
-                  (syntax-case term (sequence choose ^)
+                  (syntax-case* term (sequence choose ^) 
+                    (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
                     [((sequence a b) . rest)
                      (loop (syntax rest) (add1 pos) id-pos
                            (cons (quasisyntax (sequence a b #,name)) terms))]
