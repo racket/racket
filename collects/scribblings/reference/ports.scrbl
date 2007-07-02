@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:ports"]{Ports}
+@title[#:tag "mz:ports" #:style 'toc]{Ports}
 
 @deftech{Ports} produce and consume bytes. When a port is provided to
 a character-based operation, such as @scheme[read], the port's bytes
@@ -42,40 +42,10 @@ Unix terminal returns an end-of-file when the user types control-D; if
 the user provides more input, the port returns additional bytes after
 the end-of-file.
 
-@defproc[(input-port? [v any/c]) boolean?]{
-Returns @scheme[#t] if @scheme[v] is an input port, @scheme[#f] otherwise.}
+@;------------------------------------------------------------------------
 
-@defproc[(output-port? [v any/c]) boolean?]{
-Returns @scheme[#t] if @scheme[v] is an output port, @scheme[#f] otherwise.}
+@local-table-of-contents[]
 
-@defproc[(port? [v any/c]) boolean?]{
-Returns @scheme[#t] if either @scheme[(input-port? v)] or
-@scheme[(output-port? v)] is @scheme[#t], @scheme[#f] otherwise.}
-
-@defproc[(close-input-port [in input-port?]) void?]{
-Closes the input port @scheme[in]. For some kinds of ports, closing
-the port releases lower-level resources, such as a file handle. If
-the port is already closed, @scheme[close-input-port] has no effect.}
-
-@defproc[(close-output-port [out output-port?]) void?]{
-Closes the output port @scheme[out]. For some kinds of ports, closing
-the port releases lower-level resources, such as a file handle. Also,
-if the port is buffered, closing may first flush the port before
-closing it, and this flushing process can block. If the port is
-already closed, @scheme[close-output-port] has no effect.}
-
-@defproc[(port-closed? [port port?]) boolean?]{
-Returns @scheme[#t] if the input or output port @scheme[port] is
-closed, @scheme[#f] otherwise.}
-
-@defparam[current-output-port output-port]{A parameter.}
-
-@defproc[(file-stream-port? [port port?]) boolean?]{
-Returns @scheme[#t] if the given port is a file-stream port (see
-@secref["mz:file-ports"], @scheme[#f] otherwise.}
-
-@defproc[(terminal-port? [port port?]) boolean?]{
-Returns @scheme[#t] if the given port is attached to an interactive
-terminal, @scheme[#f] otherwise.}
-
-
+@include-section["port-procs.scrbl"]
+@include-section["file-ports.scrbl"]
+@include-section["pipes.scrbl"]

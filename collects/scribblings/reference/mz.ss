@@ -9,6 +9,9 @@
   (provide (all-from (lib "manual.ss" "scribble"))
            (all-from (lib "eval.ss" "scribble")))
 
+  (define AllUnix "Unix and Mac OS X")
+  (provide AllUnix)
+
   (define (*exnraise s)
     (make-element #f (list s " exception is raised")))
   (define-syntax exnraise
