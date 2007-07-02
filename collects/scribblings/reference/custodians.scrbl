@@ -47,7 +47,7 @@ which is the main variant of PLT Scheme, and not normally available in
 PLT Scheme CGC.}}
 
 @defproc[(custodian-require-memory [limit-cust custodian?]
-                                   [need-amt non-negative-exact-integer?]
+                                   [need-amt nonnegative-exact-integer?]
                                    [stop-cust custodian?]) void?]{
 
 Registers a require check if PLT Scheme is compiled with support for
@@ -60,7 +60,7 @@ garbage collection (see @secref["mz:gc-model"]) where allocating
 tigger some shutdown, then @scheme[stop-cust] is shut down.}
 
 @defproc[(custodian-limit-memory [limit-cust custodian?]
-                                 [limit-amt non-negative-exact-integer?]
+                                 [limit-amt nonnegative-exact-integer?]
                                  [stop-cust custodian? limit-cust]) void?]{
 
 Registers a limit check if PLT Scheme is compiled with support for

@@ -8,8 +8,8 @@ OS-level pipes (which are @tech{file-stream ports}) for communicating
 between different processes.
 
 @defproc[(make-pipe [limit positive-exact-integer? #f]
-                    [input-name-v any/c #f]
-                    [output-name-v any/c #f])
+                    [input-name any/c 'pipe]
+                    [output-name any/c 'pipe])
          any]{
 
 Returns two port values: the first port is an input port and the
@@ -25,10 +25,8 @@ pipe's output port thereafter will block until a read or peek from the
 input port makes more space available. (Peeks effectively extend the
 port's capacity until the peeked bytes are read.)
 
-The optional @scheme[input-name-v] and @scheme[output-name-v] are used
-as the names for the returned input and out ports, respectively, if
-they are supplied. (See also @scheme[object-name].) Otherwise, the
-name of each port is @scheme['pipe].}
+The optional @scheme[input-name] and @scheme[output-name] are used
+as the names for the returned input and out ports, respectively.}
 
 @defproc[(pipe-content-length [pipe-port port?]) any]{
 

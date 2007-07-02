@@ -241,10 +241,12 @@
                  (lambda () (list desc ...)))]))
   (define-syntax defstruct
     (syntax-rules ()
+      [(_ name fields #:immutable #:inspector #f desc ...)
+       (*defstruct (quote-syntax name) 'name 'fields #t #t (lambda () (list desc ...)))]
       [(_ name fields #:immutable desc ...)
-       (*defstruct (quote-syntax name) 'name 'fields #t (lambda () (list desc ...)))]
+       (*defstruct (quote-syntax name) 'name 'fields #t #f (lambda () (list desc ...)))]
       [(_ name fields desc ...)
-       (*defstruct (quote-syntax name) 'name 'fields #f (lambda () (list desc ...)))]))
+       (*defstruct (quote-syntax name) 'name 'fields #f #f (lambda () (list desc ...)))]))
   (define-syntax (defform*/subs stx)
     (syntax-case stx ()
       [(_ #:literals (lit ...) [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
@@ -638,7 +640,7 @@
                                          (map symbol->string (car wrappers)))))))
          (cdr wrappers))))
 
-  (define (*defstruct stx-id name fields immutable? content-thunk)
+  (define (*defstruct stx-id name fields immutable? transparent? content-thunk)
     (define spacer (hspace 1))
     (make-splice
      (cons
@@ -670,7 +672,8 @@
                                             (list 'set- name '- (car f) '!))
                                           fields))))))
                      ,(map car fields)
-                     ,@(if immutable? '(#:immutable) null))))))))
+                     ,@(if immutable? '(#:immutable) null)
+                     ,@(if transparent? '(#:inspector #f) null))))))))
         (map (lambda (v)
                (cond
                 [(pair? v)
@@ -904,7 +907,7 @@
                                        (cond
                                         [(string? i)
                                          (cond
-                                          [(regexp-match #rx"^(.*)([()])(.*)$" i)
+                                          [(regexp-match #rx"^(.*)([()0-9])(.*)$" i)
                                            => (lambda (m)
                                                 (append (loop (cadr m))
                                                         (list (caddr m))

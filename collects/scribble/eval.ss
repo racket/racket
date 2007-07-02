@@ -115,6 +115,8 @@
     (syntax-case s (code:comment eval:alts)
      [(code:line v (code:comment . rest))
       (do-eval #'v)]
+     [(code:comment . rest)
+      (list (list (void)) "" "")]
      [(eval:alts p e)
       (do-eval #'e)]
      [else
@@ -214,13 +216,14 @@
     (eval `(define eval-example-string ,eval-example-string)))
 
   (define-syntax schemeinput*
-    (syntax-rules (eval-example-string eval:alts)
+    (syntax-rules (eval-example-string eval:alts code:comment)
       [(_ (eval-example-string s))
        (make-paragraph
         (list
          (hspace 2)
          (tt "> ")
          (span-class "schemevalue" (schemefont s))))]
+      [(_ (code:comment . rest)) (schemeblock (code:comment . rest))]
       [(_ (eval:alts a b)) (schemeinput* a)]
       [(_ e) (schemeinput e)]))
 

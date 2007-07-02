@@ -49,3 +49,9 @@ Returns @scheme[#t] if the given port is a file-stream port (see
 @defproc[(terminal-port? [port port?]) boolean?]{
 Returns @scheme[#t] if the given port is attached to an interactive
 terminal, @scheme[#f] otherwise.}
+
+@defthing[eof eof-object?]{A value (distinct from all other values)
+that represents an end-of-file.}
+
+@defproc[(eof-object [a any/c]) boolean?]{Returns @scheme[#t] is
+@scheme[v] is @scheme[eof], @scheme[#f] otherwise.}

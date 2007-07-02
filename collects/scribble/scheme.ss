@@ -183,6 +183,10 @@
                            (- (cdar m) (caar m))
                            (literalize-spaces (substring i (cdar m))))
               i)))
+      (define (no-fancy-chars s)
+        (cond
+         [(eq? s 'rsquo) "'"]
+         [else s]))
       (define (loop init-line! quote-depth)
         (lambda (c)
           (cond
@@ -194,11 +198,13 @@
             (out "; " comment-color)
             (let ([v (syntax-object->datum (cadr (syntax->list c)))])
               (if (paragraph? v)
-                  (map (lambda (v) (if (string? v)
-                                       (out v comment-color)
-                                       (out v #f)))
+                  (map (lambda (v) 
+                         (let ([v (no-fancy-chars v)])
+                           (if (string? v)
+                               (out v comment-color)
+                               (out v #f))))
                        (paragraph-content v))
-                  (out v comment-color)))]
+                  (out (no-fancy-chars v) comment-color)))]
            [(and (pair? (syntax-e c))
                  (eq? (syntax-e (car (syntax-e c))) 'code:contract))
             (advance c init-line!)
