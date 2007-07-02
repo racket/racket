@@ -146,3 +146,98 @@ obtains its result frmo @scheme[plain-proc].
 
 @defstruct[arity-at-least ([value nonnegative-exact-integer?])]{
 This structure type is used for the result of @scheme[procedure-arity].}
+
+@defthing[prop:procedure struct-type-property?]{
+
+A @tech{structure type property} to indentify structure types whose
+instances can be applied as procedures. In particular, when
+@scheme[procedure?] is applied to the instance, the result will be
+@scheme[#t], and when an instance is used in the function position of
+an application expression, a procedure is extracted from the instance
+and used to complete the procedure call.
+
+If the @scheme[prop:procedure] property value is an integer, it
+designates a field within the structure that should contain a
+procedure. The integer must be between @scheme[0] (inclusive) and the
+number of non-automatic fields in the structure type (exclusive, not
+counting supertype fields). The designated field must also be
+specified as immutable, so that after an instance of the structure is
+created, its procedure cannot be changed. (Otherwise, the arity and
+name of the instance could change, and such mutations are generally
+not allowed for procedures.) When the instance is used as the
+procedure in an application expression, the value of the designated
+field in the instance is used to complete the procedure call. (This
+procedure can be another structure that acts as a procedure; the
+immutability of procedure fields disallows cycles in the procedure
+graph, so that the procedure call will eventually continue with a
+non-structure procedure.) That procedure receives all of the arguments
+from the application expression. The procedure's name (see
+@secref["mz:infernames"]) and arity (see @secref["mz:arity"]) are also
+used for the name and arity of the structure. If the value in the
+designated field is not a procedure, then the instance behaves like
+@scheme[(case-lambda)] (i.e., a procedure which does not accept any
+number of arguments).
+
+Providing an integer @scheme[proc-spec] argument to
+@scheme[make-struct-type] is the same as both supplying the value with
+the @scheme[prop:procedure] property and designating the field as
+immutable (so that a property binding or immutable designation is
+redundant and disallowed).
+
+@examples[
+(define-struct annotated-proc ([base #:immutable] note)
+               #:property prop:procedure (struct-field-index base))
+(define plus1 (make-annotated-proc
+                (lambda (x) (+ x 1))
+                "adds 1 to its argument"))
+(procedure? plus1)
+(annotated-proc? plus1)
+(plus1 10)
+(annotated-proc-note plus1)
+]
+
+When the @scheme[prop:procedure] value is a procedure, it should
+accept at least one argument. When an instance of the structure is
+used in an application expression, the property-value procedure is
+called with the instance as the first argument. The remaining
+arguments to the property-value procedure are the arguments from the
+application expression. Thus, if the application expression contained
+five arguments, the property-value procedure is called with six
+arguments. The name of the instance (see @secref["mz:infernames"]) is
+unaffected by the property-value procedure, but the instance's arity
+is determined by subtracting one from every possible argument count of
+the property-value procedure. If the property-value procedure cannot
+accept at least one argument, then the instance behaves like
+@scheme[(case-lambda)].
+
+Providing a procedure @scheme[proc-spec] argument to
+@scheme[make-struct-type] is the same as supplying the value with the
+@scheme[prop:procedure] property (so that a specific property binding
+is disallowed).
+
+@examples[
+(define-struct fish (weight color)
+               #:property 
+               prop:procedure  
+               (lambda (f n) (set-fish-weight! f (+ n (fish-weight f)))))
+(define wanda (make-fish 12 'red))
+(fish? wanda)
+(procedure? wanda)
+(fish-weight wanda)
+(for-each wanda '(1 2 3))
+(fish-weight wanda)
+]
+
+If a structure type generates procedure instances, then subtypes of
+the type also generate procedure instances. The instances behave the
+same as instances of the original type. When a @scheme[prop:procedure]
+property or non-@scheme[#f] @scheme[proc-spec] is supplied to
+@scheme[make-struct-type] with a supertype that already behaves as a
+procedure, the @exnraise[exn:fail:contract].}
+
+@defproc[(procedure-struct-type? [type struct-type?]) boolean?]{
+
+Returns @scheme[#t] if instances of the structure type represented by
+@scheme[type] are procedures (according to @scheme[procedure?]),
+@scheme[#f] otherwise.}
+

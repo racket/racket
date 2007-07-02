@@ -643,11 +643,21 @@ corresponding value from @scheme[expr] in the same way as for
 @section[#:tag "mz:wcm"]{Continuation Marks: @scheme[with-continuation-mark]}
 
 @defform[(with-continuation-mark key-expr val-expr result-expr)]{
-Evaluates @scheme[key-expr] and @scheme[val-expr] in order to obtain a key and
-value, respectively. The key and value are attached as a mark to the
-current continuation frame (see @secref["mz:contmarks"]), and then
-@scheme[result-expr] is evaluated in tail position.
-}
+
+The @scheme[key-expr], @scheme[mark-expr], and @scheme[result-expr]
+expressions are evaluated in order. After @scheme[key-expr] is
+evaluated to obtain a key and @scheme[mark-expr] is evaluated to
+obtain a mark, the key is mapped to the mark in the current
+continuation's initial frame. If the frame already has a mark for the
+key, it is replaced. Finally, the @scheme[result-expr] is evaluated;
+the continuation for evaluating @scheme[result-expr] is the
+continuation of the @scheme[with-continuation-mark] expression (so the
+result of the @scheme[resultbody-expr] is the result of the
+@scheme[with-continuation-mark] expression, and @scheme[result-expr]
+is in tail position for the @scheme[with-continuation-mark]
+expression).
+
+@moreref["mz:contmarks"]{continuation marks}}
 
 @;------------------------------------------------------------------------
 @section{Syntax Quoting: @scheme[quote-syntax]}

@@ -190,12 +190,12 @@ The result of @scheme[make-struct-type] is five values:
 ]}
 
 @defproc[(make-struct-field-accessor [accessor-proc struct-accessot-procedure?]
-                                     [field-pos-k exact-nonnegative-integer?]
+                                     [field-pos exact-nonnegative-integer?]
                                      [field-name symbol?])
          procedure?]{
 
 Returns a field accessor that is equivalent to @scheme[(lambda (s)
-(accessor-proc s field-pos-k))].  The @scheme[accessor-proc] must be
+(accessor-proc s field-pos))].  The @scheme[accessor-proc] must be
 an @tech{accessor} returned by @scheme[make-struct-type]. The name of the
 resulting procedure for debugging purposes is derived from
 @scheme[field-name] and the name of @scheme[accessor-proc]'s
@@ -204,12 +204,12 @@ structure type.
 For examples, see @scheme[make-struct-type].}
 
 @defproc[(make-struct-field-mutator [mutator-proc struct-mutator-procedure?]
-                                    [field-pos-k exact-nonnegative-integer?]
+                                    [field-pos exact-nonnegative-integer?]
                                     [field-name symbol?])
          procedure?]{
 
 Returns a field mutator that is equivalent to @scheme[(lambda (s v)
-(mutator-proc s field-pos-k v))].  The @scheme[mutator-proc] must be
+(mutator-proc s field-pos v))].  The @scheme[mutator-proc] must be
 a @tech{mutator} returned by @scheme[make-struct-type]. The name of the
 resulting procedure for debugging purposes is derived from
 @scheme[field-name] and the name of @scheme[mutator-proc]'s
@@ -221,7 +221,7 @@ For examples, see @scheme[make-struct-type].}
 @;------------------------------------------------------------------------
 @section[#:tag "mz:structprops"]{Structure Type Properties}
 
-A @index['("structure type properties")]{@defterm{structure type
+A @index['("structure type properties")]{@deftech{structure type
  property}} allows per-type information to be associated with a
  structure type (as opposed to per-instance information associated
  with a structure value). A property value is associated with a

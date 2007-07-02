@@ -378,6 +378,8 @@
               (list (make-table style content))))
         (list (make-table style content))))
 
+  (define max-proto-width 65)
+
   (define (*defproc stx-ids prototypes arg-contractss result-contracts content-thunk)
     (let ([spacer (hspace 1)]
           [has-optional? (lambda (arg)
@@ -437,7 +439,12 @@
                                     (let ([req (reverse r-accum)])
                                       (let loop ([a a][o-accum null])
                                         (if (or (null? a)
-                                                (not (has-optional? (car a))))
+                                                (and (not (has-optional? (car a)))
+                                                     ;; A repeat after an optional argument is
+                                                     ;; effectively optional:
+                                                     (not (memq (car a) '(...)))
+                                                     (or (null? (cdr a))
+                                                         (not (memq (cadr a) '(...))))))
                                             (values req (reverse o-accum) a)
                                             (loop (cdr a) (cons (car a) o-accum)))))
                                     (loop (cdr a) (cons (car a) r-accum))))]
@@ -457,11 +464,12 @@
                                                           flat-size
                                                           (prototype-size prototype + max))
                                                       (flow-element-width res))
-                                                   . >= . 50)]
+                                                   . >= . (- max-proto-width 7))]
                              [(end) (list (to-flow spacer)
                                           (to-flow 'rarr)
                                           (to-flow spacer)
-                                          (make-flow (list res)))])
+                                          (make-flow (list res)))]
+                             [(opt-cnt) (length optional)])
                  (append
                   (list
                    (list (make-flow
@@ -512,31 +520,44 @@
                                                (arg->elem (car optional))
                                                (arg->elem (car required))))
                                           not-end)
-                                   (let loop ([args (cdr (append required optional))]
+                                   (let loop ([args (cdr (append required optional more-required))]
                                               [req (sub1 (length required))])
                                      (if (null? args)
                                          null
-                                         (cons (list* (to-flow spacer)
-                                                      (if (zero? req)
-                                                          (to-flow (make-element #f (list spacer "[")))
-                                                          (to-flow spacer))
-                                                      (let ([a (arg->elem (car args))])
-                                                        (to-flow 
-                                                         (cond
-                                                          [(null? (cdr args))
-                                                           (if (null? optional)
-                                                               (make-element 
-                                                                #f 
-                                                                (list a (schemeparenfont ")")))
-                                                               (make-element 
-                                                                #f 
-                                                                (list a "]" (schemeparenfont ")"))))]
-                                                          [else a])))
-                                                      (if (and (null? (cdr args))
-                                                               (not result-next-line?))
-                                                          end
-                                                          not-end))
-                                               (loop (cdr args) (sub1 req)))))))))))))
+                                         (let ([dots-next? (or (and (pair? (cdr args))
+                                                                    (or (eq? (cadr args) '...)
+                                                                        (eq? (cadr args) '...+))))])
+                                           (cons (list* (to-flow spacer)
+                                                        (if (zero? req)
+                                                            (to-flow (make-element #f (list spacer "[")))
+                                                            (to-flow spacer))
+                                                        (let ([a (arg->elem (car args))]
+                                                              [next (if dots-next?
+                                                                        (make-element #f (list (hspace 1)
+                                                                                               (arg->elem (cadr args))))
+                                                                        "")])
+                                                          (to-flow 
+                                                           (cond
+                                                            [(null? ((if dots-next? cddr cdr) args))
+                                                             (if (or (null? optional)
+                                                                     (not (null? more-required)))
+                                                                 (make-element 
+                                                                  #f 
+                                                                  (list a next (schemeparenfont ")")))
+                                                                 (make-element 
+                                                                  #f 
+                                                                  (list a next "]" (schemeparenfont ")"))))]
+                                                            [(and (pair? more-required)
+                                                                  (= (- 1 req) (length optional)))
+                                                             (make-element #f (list a next "]"))]
+                                                            [(equal? next "") a]
+                                                            [else
+                                                             (make-element #f (list a next))])))
+                                                        (if (and (null? ((if dots-next? cddr cdr) args))
+                                                                 (not result-next-line?))
+                                                            end
+                                                            not-end))
+                                               (loop ((if dots-next? cddr cdr) args) (sub1 req))))))))))))))
                   (if result-next-line?
                       (list (list (make-flow (make-table-if-necessary
                                               "prototype" 
@@ -546,29 +567,52 @@
                          (map (lambda (v arg-contract)
                                 (cond
                                  [(pair? v)
-                                  (list
-                                   (list
-                                    (make-flow
-                                     (make-table-if-necessary
-                                      "argcontract"
-                                      (list
-                                       (let ([v (if (keyword? (car v)) 
-                                                    (cdr v)
-                                                    v)])
-                                         (append
+                                  (let* ([v (if (keyword? (car v)) 
+                                                (cdr v)
+                                                v)]
+                                         [arg-cont (arg-contract)]
+                                         [base-len (+ 5 (string-length (symbol->string (car v)))
+                                                      (flow-element-width arg-cont))]
+                                         [def-len (if (has-optional? v)
+                                                      (string-length (format "~a" (caddr v)))
+                                                      0)]
+                                         [base-list
                                           (list
                                            (to-flow (hspace 2))
                                            (to-flow (arg->elem v))
                                            (to-flow spacer)
                                            (to-flow ":")
                                            (to-flow spacer)
-                                           (make-flow (list (arg-contract))))
-                                          (if (has-optional? v)
-                                              (list (to-flow spacer)
-                                                    (to-flow "=")
-                                                    (to-flow spacer)
-                                                    (to-flow (to-element (caddr v))))
-                                              null))))))))]
+                                           (make-flow (list arg-cont)))])
+                                    (list
+                                     (list
+                                      (make-flow
+                                       (if (and (has-optional? v)
+                                                ((+ base-len 3 def-len) . >= . max-proto-width))
+                                           (list
+                                            (make-table
+                                             "argcontract"
+                                             (list
+                                              base-list
+                                              (list
+                                               (to-flow spacer)
+                                               (to-flow spacer)
+                                               (to-flow spacer)
+                                               (to-flow "=")
+                                               (to-flow spacer)
+                                               (to-flow (to-element (caddr v)))))))
+                                           (make-table-if-necessary
+                                            "argcontract"
+                                            (list
+                                             (append
+                                              base-list
+                                              (if (and (has-optional? v)
+                                                       ((+ base-len 3 def-len) . < . max-proto-width))
+                                                  (list (to-flow spacer)
+                                                        (to-flow "=")
+                                                        (to-flow spacer)
+                                                        (to-flow (to-element (caddr v))))
+                                                  null)))))))))]
                                  [else null]))
                               (cdr prototype)
                               arg-contracts)))))
@@ -815,6 +859,11 @@
   (define (commandline . s)
     (make-paragraph (list (hspace 2) (apply tt s))))
            
+  (define (elemtag t . body)
+    (make-target-element #f (decode-content body) t))
+  (define (elemref t . body)
+    (make-link-element #f (decode-content body) t))
+  (provide elemtag elemref)
 
   (define (secref s)
     (make-link-element #f null `(part ,s)))

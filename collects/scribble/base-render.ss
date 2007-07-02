@@ -274,17 +274,20 @@
       ;; ----------------------------------------
 
       (define/public (table-of-contents part ht)
-        (make-table #f (render-toc part #t)))
+        (make-table #f (render-toc part
+                                   (sub1 (length (collected-info-number
+                                                  (part-collected-info part))))
+                                   #t)))
 
       (define/public (local-table-of-contents part ht)
         (table-of-contents part ht))
 
-      (define/private (render-toc part skip?)
+      (define/private (render-toc part base-len skip?)
         (let ([number (collected-info-number (part-collected-info part))])
           (let ([subs 
                  (apply
                   append
-                  (map (lambda (p) (render-toc p #f)) (part-parts part)))])
+                  (map (lambda (p) (render-toc p base-len #f)) (part-parts part)))])
             (if skip?
                 subs
                 (let ([l (cons
@@ -292,7 +295,7 @@
                                  (list
                                   (make-paragraph
                                    (list
-                                    (make-element 'hspace (list (make-string (* 2 (length number)) #\space)))
+                                    (make-element 'hspace (list (make-string (* 2 (- (length number) base-len)) #\space)))
                                     (make-link-element (if (= 1 (length number))
                                                            "toptoclink"
                                                            "toclink")

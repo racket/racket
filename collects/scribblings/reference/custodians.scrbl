@@ -5,7 +5,7 @@
 @title[#:tag "mz:custodians"]{Custodians}
 
 See @secref["mz:custodian-model"] for basic information on the PLT
-Scheme custodian parameter model.
+Scheme custodian model.
 
 @defproc[(make-custodian [cust custodian? (current-custodian)]) custodian?]{
 

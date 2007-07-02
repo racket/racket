@@ -48,7 +48,7 @@ expression that evaluation simplifies no further, such as the number
 @scheme[2].
 
 @;------------------------------------------------------------------------
-@section{Sub-expression Evaluation and Continuations}
+@section[#:tag "mz:cont-model"]{Sub-expression Evaluation and Continuations}
 
 Some simplifications require more than one step. For example:
 
@@ -581,7 +581,7 @@ re-declared, each re-declaration of the module is immediately
 @tech{instantiate}d in the same @tech{phase}s.
 
 @;------------------------------------------------------------------------
-@section{Continuation Frames and Marks}
+@section[#:tag "mz:mark-model"]{Continuation Frames and Marks}
 
 Every continuation @scheme[_C] can be partitioned into
 @deftech{continuation frames} @frame[1], @frame[2], ..., @frame["n"]
@@ -600,7 +600,7 @@ for a ``stack trace'' to be used when an exception is raised, or
 to implement dynamic scope.
 
 @;------------------------------------------------------------------------
-@section{Prompts and Delimited Continuations}
+@section[#:tag "mz:prompt-model"]{Prompts, Delimited Continuations, and Barriers}
 
 A @deftech{prompt} is a special kind of continuation frame that is
 annotated with a specific @deftech{prompt-tag} (essentially a
@@ -614,6 +614,22 @@ operations abort the computation to the nearest enclosing prompt with
 a particular tag, or replace the continuation to the nearest enclosing
 prompt with another one. When a delimited continuation is captured,
 the marks associated with the relevant frames are also captured.
+
+A @deftech{continuation barrier} is another kind of continuation frame
+that prohibits certain replacements of the current continuation with
+another. Specifically, while an abort is allowed to remove a portion
+of the continuation containing a prompt, the continuation can be
+replaced by another only when the replacement also includes the
+continuation barrier. Certain operations install barriers
+automatically; in particular, when an exception handler is called, a
+continuation barrier prohibits the continuation of the handler from
+capturing the continuation past the exception point.
+
+A @deftech{escape continuation} is essentially a derived concept. It
+combines a prompt for escape purposes with a continuation for
+mark-gathering purposes. as the name implies, escape continuations are
+used only to abort to the point of capture, which means that
+escape-continuation aborts can cross continuation barriers.
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:thread-model"]{Threads}
