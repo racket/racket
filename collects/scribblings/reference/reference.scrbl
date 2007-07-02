@@ -21,13 +21,7 @@ language.
 @include-section["derived.scrbl"]
 @include-section["data.scrbl"]
 @include-section["struct.scrbl"]
-
-@;------------------------------------------------------------------------
-@section["Input and Output"]
-
-@subsection[#:tag "mz:char-input"]{From Bytes to Characters}
-
-@;------------------------------------------------------------------------
+@include-section["io.scrbl"]
 @include-section["regexps.scrbl"]
 @include-section["control.scrbl"]
 @include-section["concurrency.scrbl"]
