@@ -401,9 +401,9 @@
                 [(*peek #rx#"^$")
                  (if end-token
                    (read-error 'eof "missing closing `~a'~a" end-token
-                               (if (and start-line start-col)
+                               (if (and line-num col-num)
                                  (format " for command at ~a:~a"
-                                         start-line start-col)
+                                         line-num col-num)
                                  ""))
                    (done-lines r))]
                 [else (read-error "internal error [get-lines*]")]))))

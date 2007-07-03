@@ -15,6 +15,15 @@ exec mzscheme -r "$0" "$@"
     [@foo{}
      (foo)]
 
+    [@foo[]
+     (foo)]
+
+    [@foo[]{}
+     (foo)]
+
+    [fo@o
+     ,(string->symbol "fo@o")]
+
     [@foo{bar}
      (foo "bar")]
 

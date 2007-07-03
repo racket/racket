@@ -1,11 +1,11 @@
 The _Scribble_ Collection
 =========================
 
-The Scribble collection is a few libraries that can be used to create
-documents from Scheme.  It is made of independently usable parts.  For
-example, the reader can be used in any situation that requires lots of
-free-form text, or you can use the rendering portion directly to
-generate documents.
+The Scribble collection contains a few libraries that can be used to
+create documents from Scheme.  It is made of independently usable
+parts.  For example, the reader can be used in any situation that
+requires lots of free-form text, or you can use the rendering portion
+directly to generate documents.
 
 
 Running Scribble
@@ -33,78 +33,123 @@ The Scribble Reader
 
 *** Introduction
 
-The @-reader is designed to be a convenient facility for using free-form
-text in Scheme code.  "@" is chosen as one of the least-used characters
-in Scheme code (reasonable options are: "&" (969 uses in the collects
-hierarchy), "|" (1676), "@" (2105) "^" (2257) "$" (2259)).
+The Scribble @-reader is designed to be a convenient facility for
+using free-form text in Scheme code, where "@" is chosen as one of
+the least-used characters in Scheme code.
 
-To use this file, you can use MzScheme's #reader form:
+You can use the reader via MzScheme's `#reader' form:
 
-  #reader(lib "reader.ss" "scribble")
+  #reader(lib "reader.ss" "scribble")@{This is free-form text!}
 
-but note that this will only do the concrete-level translation, and not
-give you any useful bindings.  Alternatively, you can start MzScheme and
-use the `use-at-readtable' function to switch the current readtable to
-the at-readtable.  You can do this in a single command line:
+Note that the reader will only read @-forms as S-expressions.  The
+meaning of these S-expressions depends on the rest of your own code.
+
+A PLT Scheme manual more likely starts with
+
+  #reader(lib "docreader.ss" "scribble")
+
+which installs a reader, wraps the file content afterward into a
+MzScheme module, and parses the body into a document using
+"decode.ss".
+
+Another way to use the reader is to use the `use-at-readtable'
+function to switch the current readtable to a readtable that parses
+@-forms.  You can do this in a single command line:
 
   mzscheme -Le reader.ss scribble "(use-at-readtable)"
 
-In addition to `read' and `read-syntax', which are used by #reader,
+In addition to `read' and `read-syntax', which are used by `#reader',
 the "reader.ss" library provides the procedures `read-inside' and
-`read-inside-syntax'; these `-inner' variants parse as if inside a
-"@{}", and they return a (syntactic) list.
+`read-inside-syntax'; these `-inner' variants parse as if starting
+inside a "@{...}", and they return a (syntactic) list.
 
 *** Concrete Syntax
 
-The *concrete* syntax of @-commands is (informally, more details below):
+Informally, the concrete syntax of @-forms is:
 
-  "@" <cmd> "[" <key-val> ... "]" "{" <body> ... "}"
+  "@" <cmd> "[" <datum> ... "]" "{" <text-body> ... "}"
 
-where all parts are optional, but at least one should be present.
-(Note: since the reader will try to see if there is a "{...body...}" in
-the input, it can be awkward to use body-less constructs on an
-interactive REPL since reading an expression succeeds only when there is
-a new expression available.)  "@" is set as a terminating reader macro,
-so if you want to use it in Scheme code, you need to quote it with `\@'
-or the whole identifier with `|ba@rs|'.  All of this has no effect
-on occurrences of "@" in Scheme strings, character constants etc.
+where all three parts after "@" are optional, but at least one should
+be present.  (Note that spaces are not allowed between the three
+parts.)  @litchar["@"] is set as a non-terminating reader macro, so it
+can be used as usual in Scheme identifiers unless you want to use it
+as a first character of an identifier; in this case you need to quote
+with a backslash (`\@foo@') or quote the whole identifier with bars
+(`|@foo|').  Of course, "@" is not treated specially in Scheme
+strings, character constants, etc.
 
-Roughly speaking, such a construct is read as:
+Roughly, a form matching the above grammar is read as
 
-  (<cmd> <key-val> ... <body> ...)
+  (<cmd> <datum> ... <parsed-body> ...)
 
-so the <cmd> part determines what Scheme code the whole construct is
-translated into.  The common case is when <cmd> is a Scheme identifier,
-which generates a plain Scheme form with keyword-values and the body
-text.  The body is given as a sequence of strings, with a separate "\n"
-string for each end of line.  For example:
+where <parsed-body> is the translation of each <text-body> in the
+input.  Thus, the initial <cmd> determines the Scheme code that the
+input is translated into.  The common case is when <cmd> is a Scheme
+identifier, which generates a plain Scheme form.
 
-  @foo{bar baz    --is-read-as-->    (foo "bar baz" "\n" "blah")
+A <text-body> is made of character sequences, newlines, and nested
+@-forms.  Note that the syntax for @-forms is the same in a
+<text-body> context as in a Scheme context.  A <text-body> that isn't
+an @-form is converted to a string expression for its <parsed-body>,
+and newlines are converted to "\n" expressions:
+
+  @foo{bar baz
        blah}
+  --is-read-as-->
+  (foo "bar baz" "\n" "blah")
 
-It is your responsibility to make sure that `foo' is bound (in any way:
-it can be either a function or a macro, or in quoted forms).  To see the
-forms, you can use quote as usual, for example:
+  @foo{bar @baz[3]
+       blah}
+  --is-read-as-->
+  (foo (baz 3) "\n" "blah")
+
+  @foo{bar @baz{3}
+       blah}
+  --is-read-as-->
+  (foo "bar " (baz "3") "\n" "blah")
+
+  @foo{bar @baz[2 3]{4 5}
+       blah}
+  --is-read-as-->
+  (foo "bar " (baz 2 3 "4 5") "\n" "blah")
+
+When the above @-forms appear in a Scheme expression context, the
+context must provide bindings for `foo' (as a procedure or macro).  To
+just see the read result for an @-form, you can always a Scheme
+`quote':
 
   '@foo{bar}
 
-** Concrete Syntax: the command part
+** Concrete Syntax: The Command Part
 
-The command can have Scheme punctuation prefixes, which will end up
-wrapping the *whole* expression.  For example:
+Besides being a Scheme identifier, the <cmd> part of an @-form can be
+any Scheme expression.  The expression can have Scheme punctuation
+prefixes, which will end up wrapping the *whole* expression.
 
-  @`',@foo{blah}    --is-read-as-->    `',@(foo "blah")
+  @`',@foo{blah}
 
-When writing Scheme code, this means that @`',@foo{blah} is exactly the
-same as `@',@foo{blah} and `',@@foo{blah}, but unlike the latter two,
-the first construct can appear in @-body texts with the same meaning,
-whereas the other two would not work (the punctuations will be taken as
-part of the text).
+  --is-read-as-->
 
-The command itself is not limited to a Scheme identifier -- it can be
-any Scheme expression:
+  `',@(foo "blah")
 
-  @(lambda (x) x){blah}    --is-read-as-->    ((lambda (x) x) "blah")
+When writing Scheme code, this means that @`',@foo{blah} is exactly
+the same as `@',@foo{blah} and `',@@foo{blah}, but unlike the latter
+two, the first construct can appear in body texts with the same
+meaning, whereas the other two would not work (see below).
+
+As mentioned above, the command itself is not limited to a Scheme
+identifier; it can be any Scheme expression.
+
+  @(lambda (x) x){blah}
+
+  --is-read-as-->
+
+  ((lambda (x) x) "blah")
+
+
+
+
+
 
 In addition, the command can be omitted altogether, which will omit it
 from the translation, resulting in an s-expression that usually contains
