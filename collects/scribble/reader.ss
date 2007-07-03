@@ -171,9 +171,14 @@
     (define (read-error* line col pos span msg . xs)
       (let* ([eof? (and (eq? 'eof msg) (pair? xs))]
              [msg  (apply format (if eof? xs (cons msg xs)))]
-             [msg  (if source-name
-                     (format "~a (when reading ~a)" msg source-name)
-                     msg)])
+             [loc  (cond [(and line col) (format "at ~a:~a" line col)]
+                         [pos (format "at #~a" pos)]
+                         [else #f])]
+             [loc  (cond [(and source-name loc)
+                          (format "when reading ~a ~a" source-name loc)]
+                         [source-name (format "when reading ~a" source-name)]
+                         [else loc])]
+             [msg  (if loc (format "~a (~a)" msg loc) msg)])
         ((if eof? raise-read-error raise-read-eof-error)
          msg source-name line col pos span)))
     (define (read-error msg . xs)
@@ -331,7 +336,6 @@
 
     (define (get-lines* re:begin re:end re:item end-token)
       ;; re:begin, re:end, end-token can be false if start-inside? is #t
-      (let-values ([(start-line start-col start-pos) (port-next-location inp)])
       (let loop ([lvl 0] [r '()])
         (let-values ([(line col pos) (port-next-location inp)])
           (define (make-stx sexpr)
@@ -396,11 +400,13 @@
                                          r)))]
                 [(*peek #rx#"^$")
                  (if end-token
-                   (read-error* start-line start-col start-pos 
-                                (and pos start-pos (- pos start-pos))
-                                'eof "missing closing `~a'" end-token)
+                   (read-error 'eof "missing closing `~a'~a" end-token
+                               (if (and start-line start-col)
+                                 (format " for command at ~a:~a"
+                                         start-line start-col)
+                                 ""))
                    (done-lines r))]
-                [else (read-error "internal error [get-lines*]")])))))
+                [else (read-error "internal error [get-lines*]")]))))
 
     (define (get-lines)
       (cond [(*skip re:lines-begin)
