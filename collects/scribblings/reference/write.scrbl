@@ -15,7 +15,7 @@ handler associated to it via @scheme[port-write-handler], then the
 handler is called. Otherwise, the default printer is used (in
 @scheme[write] mode), as configured by various parameters.
 
-See @secref["mz:printer"] for more information about the default
+See @secref["mz:printing"] for more information about the default
 printer. In particular, note that @scheme[write] may require memory
 proportional to the depth of the value being printed, due to the
 initial cycle check.}
@@ -30,7 +30,7 @@ associated to it via @scheme[port-display-handler], then the handler
 is called. Otherwise, the default printer is used (in @scheme[display]
 mode), as configured by various parameters.
 
-See @secref["mz:printer"] for more information about the default
+See @secref["mz:printing"] for more information about the default
 printer. In particular, note that @scheme[display] may require memory
 proportional to the depth of the value being printed, due to the
 initial cycle check.}
@@ -137,7 +137,7 @@ Formats to a string. The result is the same as
 A parameter that controls printing values that have no
 @scheme[read]able form (using the default reader), including
 structures that have a custom-write procedure (see
-@secref["mz:custom-write"]); defaults to @scheme[#t]. See
+@scheme[prop:custom-write]); defaults to @scheme[#t]. See
 @secref["mz:printing"] for more information.}
 
 @defboolparam[print-graph on?]{
@@ -151,7 +151,7 @@ A parameter that controls printing structure values in vector form;
 defaults to @scheme[#t]. See @secref["mz:printing"] for more
 information. This parameter has no effect on the printing of
 structures that have a custom-write procedure (see
-@secref["mz:custom-write"]).}
+@scheme[prop:custom-write]).}
 
 @defboolparam[print-box on?]{
 

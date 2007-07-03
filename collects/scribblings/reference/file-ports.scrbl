@@ -4,7 +4,7 @@
 @title{File Ports}
 
 A port created by @scheme[open-input-file], @scheme[open-output-file],
-@scheme[subprocess], and related functions is a @defterm{file-stream
+@scheme[subprocess], and related functions is a @deftech{file-stream
 port}.  The initial input, output, and error ports in stand-alone
 MzScheme are also file-stream ports. The @scheme[file-stream-port?]
 predicate recognizes file-stream ports.

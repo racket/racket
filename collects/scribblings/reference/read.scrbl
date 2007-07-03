@@ -231,7 +231,7 @@ arguments:
 The default port read handler reads standard Scheme expressions with
 Scheme's built-in parser (see @secref["mz:reader"]). It handles a
 special result from a custom input port (see
-@secref["mz:custominput"]) by treating it as a single expression,
+@scheme[make-custom-input-port]) by treating it as a single expression,
 except that special-comment values (see
 @secref["mz:special-comments"]) are treated as whitespace.
 
