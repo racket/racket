@@ -5,4 +5,6 @@
 
 @local-table-of-contents[]
 
-@include-section["platform-paths.scrbl"]
+@include-section["paths.scrbl"]
+@include-section["filesystem.scrbl"]
+@include-section["networking.scrbl"]

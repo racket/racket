@@ -727,8 +727,7 @@ the result is a syntax object in @scheme[read] mode, then it is
 converted to a datum using @scheme[syntax-object->datum]; if the
 result is not a syntax object in @scheme[read-syntax] mode, then it is
 converted to one using @scheme[datum->syntax-object]. See also
-@secref["special-comments"] and @secref["recursive-reads"] for
-information on special-comment results and recursive reads.
+@secref["mz:reader-procs"] for information on the procedure's results.
 
 If the @scheme[read-accept-reader] @tech{parameter} is set to
 @scheme[#f], then if the reader encounters @litchar{#reader}, the

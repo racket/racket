@@ -396,10 +396,9 @@
                                          r)))]
                 [(*peek #rx#"^$")
                  (if end-token
-                   (read-error 'eof "missing closing `~a'~a" end-token
-                               (if start-line
-                                   (format " (started at ~a:~a)" start-line start-col)
-                                   ""))
+                   (read-error* start-line start-col start-pos 
+                                (and pos start-pos (- pos start-pos))
+                                'eof "missing closing `~a'" end-token)
                    (done-lines r))]
                 [else (read-error "internal error [get-lines*]")])))))
 

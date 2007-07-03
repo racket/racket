@@ -14,6 +14,9 @@
   (provide PLaneT)
   (define PLaneT "PLaneT")
 
+  (provide etc)
+  (define etc "etc.") ; so we can fix the latex space, one day
+
   (define-code schemeblock0 to-paragraph)
   (define-code schemeblock (to-paragraph/prefix (hspace 2) 
                                                 (hspace 2)
@@ -95,7 +98,7 @@
   (provide onscreen menuitem defterm
            schemefont schemevalfont schemeresultfont schemeidfont 
            schemeparenfont schemekeywordfont schememetafont schememodfont
-           file exec
+           file exec envvar Flag DFlag
            link procedure
            idefterm)
 
@@ -127,6 +130,12 @@
   (define (file . str)
     (make-element 'tt (append (list "\"") (decode-content str) (list "\""))))
   (define (exec . str)
+    (make-element 'tt (decode-content str)))
+  (define (Flag . str)
+    (make-element 'tt (cons "-" (decode-content str))))
+  (define (DFlag . str)
+    (make-element 'tt (cons "--" (decode-content str))))
+  (define (envvar . str)
     (make-element 'tt (decode-content str)))
   (define (procedure . str)
     (make-element "schemeresult" (append (list "#<procedure:") (decode-content str) (list ">"))))

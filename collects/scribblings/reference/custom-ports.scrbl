@@ -313,21 +313,34 @@ The arguments implement the port as follows:
 
  }
 
- When @scheme[read-in] or @scheme[peek] (or an event produced by one of
- these) returns a procedure, and the procedure is used to obtain a
+ When @scheme[read-in] or @scheme[peek] (or an event produced by one
+ of these) returns a procedure, and the procedure is used to obtain a
  non-byte result. (This non-byte result is @italic{not} intended to
  return a character or @scheme[eof]; in particular, @scheme[read-char]
- raises an exception if it encounters a non-byte from a port.) The
- procedure is called by @scheme[read], @scheme[read-syntax],
- @scheme[read-honu], @scheme[read-honu-syntax],
- @scheme[read-byte-or-special], @scheme[read-char-or-special],
- @scheme[peek-byte-or-special], or @scheme[peek-char-or-special]---or,
- more precisely, by the default port read handler (see
- @secref["mz:portreadhandler"]). The special-value procedure can return
- an arbitrary value, and it will be called zero or one times (not
- necessarily before further reads or peeks from the port). See
- @secref["mz:reader-procs"] for more details on the procedure's
- arguments and result.
+ raises an exception if it encounters a special-result procedure, even
+ if the procedure produces a byte.) A special-result procedure must
+ accept four arguments, and it can optionally accept zero arguments:
+
+ @itemize{
+
+  @item{When the special read is triggered by @scheme[read-syntax],
+  @scheme[read-honu-syntax], or @scheme[read-syntax/recursive], the
+  procedure is passed four arguments that represent a source
+  location.}
+
+  @item{When the special read is triggered by @scheme[read],
+  @scheme[read-honu], @scheme[read-byte-or-special],
+  @scheme[read-char-or-special], @scheme[peek-byte-or-special], or
+  @scheme[peek-char-or-special], the procedure is passed no arguments
+  if it accepts zero arguments, otherwise it is passed four arguments
+  that are all @scheme[#f].}
+
+ }
+
+ The special-value procedure can return an arbitrary value, and it
+ will be called zero or one times (not necessarily before further
+ reads or peeks from the port). See @secref["mz:reader-procs"] for
+ more details on the procedure's result.
 
  If @scheme[read-in] or @scheme[peek] returns a special
  procedure when called by any reading procedure other than
