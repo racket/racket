@@ -365,7 +365,7 @@
                                  [(caddr m)
                                   ;; it's an expression escape, get multiple
                                   ;; expressions and put them all here
-                                  (read-bytes (caaddr m))
+                                  (read-bytes (caaddr m) inp)
                                   (let ([escapes (get-escape-expr
                                                   #f line col pos)])
                                     ;; make @|| a comment that can be used to
