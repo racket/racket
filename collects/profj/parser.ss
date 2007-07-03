@@ -2,6 +2,7 @@
 (module parser mzscheme
   (require "parsers/full-parser.ss"
            "parsers/advanced-parser.ss"
+           "parsers/intermediate-access-parser.ss"
            "parsers/intermediate-parser.ss"
            "parsers/beginner-parser.ss"
            "parsers/general-parsing.ss"
@@ -66,7 +67,7 @@
          (parse-intermediate my-get))
         ((intermediate+access)
          (determine-error (error-builder err:parse-intermediate+access (lambda () #t) lexed filename))
-         (error))
+         (parse-intermediate+access my-get))
         ((advanced) 
          (determine-error (error-builder err:parse-advanced find-advanced-error lexed filename))
          (parse-advanced my-get))

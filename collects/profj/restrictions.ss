@@ -61,7 +61,7 @@
       (case level
         ((beginner) (append beginner&intermediate
                             teaching-levels))
-        ((intermediate) (append beginner&intermediate
+        ((intermediate intermediate+access) (append beginner&intermediate
                                 teaching-levels))
         ((advanced) (append null
                             teaching-levels))

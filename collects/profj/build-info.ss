@@ -251,6 +251,7 @@
            (suffix (case (unbox new-level)
                      ((beginner) ".bjava")
                      ((intermediate) ".ijava")
+                     ((intermediate+access) ".iajava")
                      ((advanced) ".ajava")
                      ((full) ".java")
                      ((dynamic-full) ".djava")))
@@ -334,6 +335,7 @@
           (exists? ".djava" 'dynamic-full)
           (exists? ".bjava" 'beginner)
           (exists? ".ijava" 'intermediate)
+          (exists? ".iajava" 'intermediate+access)
           (exists? ".ajava" 'advanced))))
     
   ;check-scheme-file-exists? string path -> bool
@@ -370,7 +372,7 @@
     (lambda ()
       (let ((original-loc (send type-recs get-location))
             (dir (find-directory (cdr name) (lambda () (file-error 'dir (cdr name) call-src level)))))
-        (when (memq level '(beginner intermediate))
+        (when (memq level '(beginner intermediate intermediate+access))
           (file-error 'file name call-src level))
         (import-class (car name) (cdr name) dir original-loc type-recs level call-src #f)
         (begin0 (get-record (send type-recs get-class-record name) type-recs)
@@ -608,7 +610,7 @@
                    #;(when (and ctor? (eq? level 'beginner) (memq 'abstract test-mods))
                      (beginner-ctor-error 'abstract (header-id info) (id-src (header-id info))))
 
-                   (valid-field-names? (if (memq level '(beginner intermediate advanced)) 
+                   (valid-field-names? (if (memq level '(beginner intermediate intermediate+access advanced)) 
                                            (append f (class-record-fields super-record)) f)
                                        members m level type-recs)
                    (valid-method-sigs? m members level type-recs)
@@ -896,7 +898,7 @@
                        (add-ctor test 
                                  (lambda (rec) (set! m (cons rec m))) old-methods (header-id info) level))
                    
-                   (valid-field-names? (if (memq level '(beginner intermediate advanced)) 
+                   (valid-field-names? (if (memq level '(beginner intermediate intermediate+access advanced)) 
                                            (append f (class-record-fields super-record)) f)
                                        members m level type-recs)
                    
@@ -1044,7 +1046,7 @@
                         (type-spec-to-type (method-type (car members)) (method-record-class member-record) level type-recs)))
            (car members)
            (find-member member-record (cdr members) level type-recs)))
-      ((memq level '(beginner intermediate advanced))
+      ((memq level '(beginner intermediate intermediate+access advanced))
        (let ((given-name ((if (field-record? member-record) field-record-name method-record-name) member-record))
              (looking-at (id-string ((if (field? (car members)) field-name method-name) (car members)))))
          (if (equal? given-name looking-at)
@@ -1080,7 +1082,7 @@
               (m (and (not (eq? 'ctor (method-record-rtype (car methods))))
                       (find-member (car methods) members level type-recs)))
               (class (method-record-class (car methods))))
-          (and res m (memq level '(beginner intermediate))
+          (and res m (memq level '(beginner intermediate intermediate+access))
                (not (type=? (method-record-rtype (car methods))
                             (method-record-rtype res)))
                (method-error 'bad-ret
@@ -1650,6 +1652,7 @@
        (case level
          ((beginner) '(public final))
          ((intermediate) '(public))
+         ((intermediate+access) '(public protected private))
          ((advanced) '(public protected private static))
          ((full) `(public protected private static final transient volatile))))
      (lambda (x) 'invalid-field)))  
@@ -1659,6 +1662,7 @@
        (case level
          ((beginner) '(public))
          ((intermediate) '(public abstract))
+         ((intermediate+access) '(public protected private abstract))
          ((advanced) `(public protected private abstract static final))
          ((full) '(public protected private abstract static final synchronized native strictfp))
          ((abstract) '(public protected abstract))

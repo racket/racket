@@ -1240,6 +1240,8 @@ please adhere to these guidelines:
   (profj-advanced-lang-one-line-summary "Java-like Advanced teaching language")
   (profj-intermediate-lang "Intermediate")
   (profj-intermediate-lang-one-line-summary "Java-like Intermediate teaching language")
+  (profj-intermediate-access-lang "Intermediate + access")
+  (profj-intermediate-access-lang-one-line-summary "Java-like Intermediate teaching language, with access modifiers")
   (profj-dynamic-lang "Java+dynamic")
   (profj-dynamic-lang-one-summary "Java with dynamic typing capabilities")
 

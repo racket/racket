@@ -137,6 +137,8 @@
          (make-object ((drscheme:language:get-default-mixin) full-lang%)))
         (drscheme:language-configuration:add-language
          (make-object ((drscheme:language:get-default-mixin) advanced-lang%)))
+        (drscheme:language-configuration:add-language 
+         (make-object ((drscheme:language:get-default-mixin) intermediate+access-lang%)))
         (drscheme:language-configuration:add-language
          (make-object ((drscheme:language:get-default-mixin) intermediate-lang%)))
         (drscheme:language-configuration:add-language
@@ -178,13 +180,13 @@
                    (int-list (cons #"profj-intermediate" beg-list)))
               (values (case level
                         ((beginner) beg-list)
-                        ((intermediate) int-list)
+                        ((intermediate intermediate+access) int-list)
                         ((advanced full) (cons #"profj-advanced" int-list)))
                       #f)))
           
           ;default-settings: -> profj-settings
           (define/public (default-settings) 
-            (if (memq level `(beginner intermediate advanced))
+            (if (memq level `(beginner intermediate intermediate+access advanced))
                 (make-profj-settings 'field #f #t #f #t #t null)
                 (make-profj-settings 'type #f #t #t #f #f null)))
           ;default-settings? any -> bool
@@ -755,12 +757,15 @@
           (super-instantiate ())))
       
       ;Create the ProfessorJ languages
-      (define full-lang% (java-lang-mixin 'full (string-constant profj-full-lang) 4 (string-constant profj-full-lang-one-line-summary) #f))
-      (define advanced-lang% (java-lang-mixin 'advanced (string-constant profj-advanced-lang) 3 (string-constant profj-advanced-lang-one-line-summary) #f))
+      (define dynamic-lang% (java-lang-mixin 'full (string-constant profj-dynamic-lang) 6 (string-constant profj-dynamic-lang-one-summary) #t))
+      (define full-lang% (java-lang-mixin 'full (string-constant profj-full-lang) 5 (string-constant profj-full-lang-one-line-summary) #f))
+      (define advanced-lang% (java-lang-mixin 'advanced (string-constant profj-advanced-lang) 4 (string-constant profj-advanced-lang-one-line-summary) #f))
+      (define intermediate+access-lang% 
+        (java-lang-mixin 'intermediate+access 
+                         (string-constant profj-intermediate-access-lang) 3 (string-constant profj-intermediate-access-lang-one-line-summary) #f))
       (define intermediate-lang% 
         (java-lang-mixin 'intermediate (string-constant profj-intermediate-lang) 2 (string-constant profj-intermediate-lang-one-line-summary) #f))
       (define beginner-lang% (java-lang-mixin 'beginner (string-constant profj-beginner-lang) 1 (string-constant profj-beginner-lang-one-line-summary) #f))
-      (define dynamic-lang% (java-lang-mixin 'full (string-constant profj-dynamic-lang) 5 (string-constant profj-dynamic-lang-one-summary) #t))
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;

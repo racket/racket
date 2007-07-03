@@ -1722,7 +1722,7 @@
                       (and (null? (cdr field-class))
                            (lookup-local-inner (car field-class) env))))
                 
-                (when (and (memq level '(beginner intermediate))
+                (when (and (memq level '(beginner intermediate intermediate+access))
                            (special-name? obj)
                            (not (lookup-var-in-env fname env)))
                   (access-before-define (string->symbol fname) src))
@@ -1819,7 +1819,7 @@
                                                                 (cons "scheme"
                                                                       (scheme-record-path (car static-class))))))))
                        (cdr accs))))
-                   ((and (memq level '(beginner intermediate advanced)) (not first-binding) (> (length acc) 1)
+                   ((and (memq level '(beginner intermediate intermediate+access advanced)) (not first-binding) (> (length acc) 1)
                          (with-handlers ((exn:fail:syntax? (lambda (e) #f)))
                            (type-exists? first-acc null c-class (id-src (car acc)) level type-recs)))
                     (build-field-accesses
@@ -2627,7 +2627,7 @@
           (instanceof-error 'not-class type exp-type src))
          (else
           (cond
-            ((memq level '(beginner intermediate)) (instanceof-error 'not-ref type exp-type src))
+            ((memq level '(beginner intermediate intermediate+access)) (instanceof-error 'not-ref type exp-type src))
             ((and (array-type? exp-type) (array-type? type)
                   (= (array-type-dim exp-type) (array-type-dim type))
                   (or (assignment-conversion exp-type type type-recs))) 'boolean)
@@ -3012,7 +3012,7 @@
     (raise-error 
      name
      (case level
-       ((beginner intermediate) 
+       ((beginner intermediate intermediate+access) 
         (format "Field ~a cannot be retrieved from a class, ~a can only be accessed from an instance of the class."
                 name name))
        ((advanced full)
@@ -3074,7 +3074,7 @@
            (format "Attempted to call method ~a on ~a which does not have methods. ~nOnly values with ~a types have methods"
                    n t
                    (case level 
-                     ((beginner intermediate) "class or interface")
+                     ((beginner intermediate intermediate+access) "class or interface")
                      (else "class, interface, or array"))))
        n src)))
   
@@ -3125,7 +3125,7 @@
           (c (string->symbol class)))
       (raise-error n
                    (case level
-                     ((beginner intermediate) (format "Attempt to use class or interface ~a as an object to call method ~a" c n))
+                     ((beginner intermediate intermediate+access) (format "Attempt to use class or interface ~a as an object to call method ~a" c n))
                      ((advanced) (format "Attempt to use method ~a from class ~a as though it were static" n c)))
                    c src)))
   
@@ -3168,7 +3168,7 @@
       (raise-error n
                    (string-append (format "Method ~a cannot be called in the interactions window.~n" n)
                                   (format "Only ~a methods or methods on objects may be called here." 
-                                          (if (memq level '(beginner intermediate)) "certain library" "static")))
+                                          (if (memq level '(beginner intermediate intermediate+access)) "certain library" "static")))
                    n src)))
 
   

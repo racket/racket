@@ -20,7 +20,7 @@
       t))
   
   ;kind = 'file | 'port
-  ;level = 'beginner | 'intermediate | 'advanced | 'full
+  ;level = 'beginner | 'intermediate | 'intermediate+access | 'advanced | 'full
   
   ;compile: kind kind level (U #f string) (U #f port) (U #f location) -> (U (list compilation-unit) void)
   (define (compile-java src dest level name port loc . type-recs)
