@@ -23,16 +23,7 @@ language.
 @include-section["concurrency.scrbl"]
 @include-section["security.scrbl"]
 @include-section["io.scrbl"]
-
-@;------------------------------------------------------------------------
-
-@section{Operating System}
-
-@subsection{Platform-Specific Path Conventions}
-
-@subsubsection[#:tag "mz:unix-path"]{Unix and Mac OS X Paths}
-
-@subsubsection[#:tag "mz:windows-path"]{Windows Paths}
+@include-section["os.scrbl"]
 
 @;------------------------------------------------------------------------
 

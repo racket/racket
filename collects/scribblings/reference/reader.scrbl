@@ -15,7 +15,7 @@
 @define[(graph-defn) @elem{@litchar{#}@graph-tag[]@litchar{=}}]
 @define[(graph-ref) @elem{@litchar{#}@graph-tag[]@litchar{#}}]
 
-@title[#:tag "mz:reader"]{The Reader}
+@title[#:tag "mz:reader" #:style 'quiet]{The Reader}
 
 Scheme's reader is a recursive-descent parser that can be configured
 through a @seclink["mz:readtables"]{readtable} and various other
@@ -40,6 +40,8 @@ result.
 Reading is defined in terms of Unicode characters; see
 @secref["mz:ports"] for information on how a byte stream is converted
 to a character stream.
+
+@local-table-of-contents[]
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:default-readtable-dispatch"]{Delimiters and Dispatch}
@@ -680,12 +682,15 @@ A @graph-defn[] tags the following datum for reference via
 @graph-ref[], which allows the reader to produce a datum that
 have graph structure.
 
-For a specific @graph-tag in a single read result, each @graph-ref[]
+For a specific @graph-tag[] in a single read result, each @graph-ref[]
 reference is replaced by the datum read for the corresponding
 @graph-defn[]; the definition @graph-defn[] also produces just the
-datum after it. A @graph-defn[] definition can appear at most
-once, and a @graph-defn[] definition must appear before a @graph-ref[]
-reference appears.
+datum after it. A @graph-defn[] definition can appear at most once,
+and a @graph-defn[] definition must appear before a @graph-ref[]
+reference appears, otherwise the @exnraise[exn:fail:read]. If the
+@scheme[read-accept-graph] parameter is set to @scheme[#f], then
+@graph-defn[] or @graph-ref[] triggers a @scheme[exn:fail:read]
+exception.
 
 Although a comment parsed via @litchar{#;} discards the datum
 afterward, @graph-defn[] definitions in the discarded datum
@@ -698,6 +703,8 @@ neither defines nor uses graph tags for other top-level forms.
 "(#1=100 #1# #1#)"
 "#0=(1 . #0#)"
 ]
+
+@local-table-of-contents[]
 
 @section[#:tag "mz:parse-reader"]{Reading via an External Reader}
 
@@ -713,7 +720,7 @@ whether the reader is in @scheme[read] or @scheme[read-syntax]
 mode).
 
 The resulting procedure should accept the same arguments as
-@scheme[read] or @scheme[read-syntax] in the case thar all optional
+@scheme[read] or @scheme[read-syntax] in the case that all optional
 arguments are provided. The procedure is given the port whose stream
 contained @litchar{#reader}, and it should produce a datum result. If
 the result is a syntax object in @scheme[read] mode, then it is
@@ -726,10 +733,5 @@ information on special-comment results and recursive reads.
 If the @scheme[read-accept-reader] @tech{parameter} is set to
 @scheme[#f], then if the reader encounters @litchar{#reader}, the
 @exnraise[exn:fail:read].
-
-@section[#:tag "mz:readtables"]{Readtables}
-
-The dispatch table in @secref["mz:default-readtable-dispatch"]
-corresponds to the default @idefterm{readtable}.
 
 @section[#:tag "mz:parse-honu"]{Honu Parsing}

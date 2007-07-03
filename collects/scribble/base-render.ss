@@ -285,9 +285,13 @@
       (define/private (render-toc part base-len skip?)
         (let ([number (collected-info-number (part-collected-info part))])
           (let ([subs 
-                 (apply
-                  append
-                  (map (lambda (p) (render-toc p base-len #f)) (part-parts part)))])
+                 (if (not (and (styled-part? part)
+                               (eq? 'quiet (styled-part-style part))
+                               (not (= base-len (sub1 (length number))))))
+                     (apply
+                      append
+                      (map (lambda (p) (render-toc p base-len #f)) (part-parts part)))
+                     null)])
             (if skip?
                 subs
                 (let ([l (cons

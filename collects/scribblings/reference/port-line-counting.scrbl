@@ -61,3 +61,10 @@ read from or written to the port, but if line/character counting is
 enabled for @scheme[port], the column and position results can
 decrease after reading or writing a byte that ends a UTF-8 encoding
 sequence.}
+
+@defboolparam[port-count-lines-enabled on?]{
+
+A parameter that determines whether line counting is enabled
+automatically for newly created ports. The default value is
+@scheme[#f].}
+

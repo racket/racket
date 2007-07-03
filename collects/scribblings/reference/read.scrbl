@@ -196,3 +196,44 @@ a module-path datum following @litchar{#reader}. See
 A parameter whose value determines a readtable that
 adjusts the parsing of S-expression input, where @scheme[#f] implies the
 default behavior. See @secref["mz:readtables"] for more information.}
+
+@defproc*[([(port-read-handler [in input-port?]) (case->
+                                                  (input-port? . -> . any)
+                                                  (input-port?  any/c . -> . any))]
+           [(port-read-handler [in input-port?]
+                               [proc (case->
+                                      (input-port? . -> . any)
+                                      (input-port? any/c . -> . any))]) 
+            void?])]{
+
+Gets or sets the @deftech{port read handler} for @scheme[in]. The
+handler called to read from the port when the built-in @scheme[read]
+or @scheme[read-syntax] procedure is applied to the port. (The
+port read handler is not used for @scheme[read/recursive] or
+@scheme[read-syntax/recursive].)
+
+A port read handler is applied to either one argument or two
+arguments:
+
+@itemize{
+
+ @item{A single argument is supplied when the port is used
+ with @scheme[read]; the argument is the port being read. The return
+ value is the value that was read from the port (or end-of-file).}
+
+ @item{Two arguments are supplied when the port is used with
+ @scheme[read-syntax]; the first argument is the port being read, and
+ the second argument is a value indicating the source. The return
+ value is a syntax object that was read from the port (or end-of-file).}
+
+}
+
+The default port read handler reads standard Scheme expressions with
+Scheme's built-in parser (see @secref["mz:reader"]). It handles a
+special result from a custom input port (see
+@secref["mz:custominput"]) by treating it as a single expression,
+except that special-comment values (see
+@secref["mz:special-comments"]) are treated as whitespace.
+
+The default port read handler itself can be customized through a
+readtable; see @secref["mz:readtables"] for more information.}

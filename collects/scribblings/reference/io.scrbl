@@ -1,5 +1,4 @@
 #reader(lib "docreader.ss" "scribble")
-@require[(lib "bnf.ss" "scribble")]
 @require["mz.ss"]
 
 @title[#:tag "mz:input-and-output" #:style 'toc]{Input and Output}
@@ -12,3 +11,5 @@
 @include-section["read.scrbl"]
 @include-section["write.scrbl"]
 @include-section["reader.scrbl"]
+@include-section["printer.scrbl"]
+@include-section["readtables.scrbl"]

@@ -375,3 +375,18 @@ is committed as read.
  
 If @scheme[progress] is not a result of @scheme[port-progress-evt]
 applied to @scheme[in], then @exnraise[exn:fail:contract].}
+
+@defproc[(byte-ready? [in input-port? (current-input-port)])
+         boolean?]{
+
+Returns @scheme[#t] if @scheme[(read-byte in)] would not block (at the
+time that @scheme[byte-ready?] was called, at least).  Equivalent to
+@scheme[(and (sync/timeout 0 in) #t)].}
+
+@defproc[(char-ready? [in input-port? (current-input-port)])
+         boolean?]{
+
+Returns @scheme[#t] if @scheme[(read-char in)] would not block (at the
+time that @scheme[char-ready?] was called, at least). Depending on the
+initial bytes of the stream, multiple bytes may be needed to form a
+UTF-8 encoding.}

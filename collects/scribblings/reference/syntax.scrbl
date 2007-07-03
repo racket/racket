@@ -3,7 +3,7 @@
 
 @define[cvt (schemefont "CVT")]
 
-@title[#:tag "mz:syntax" #:style 'toc]{Syntactic Forms}
+@title[#:tag "mz:syntax" #:style 'toc]{Core Syntactic Forms}
 
 This section describes the core syntax forms that apear in a fully
 expanded expression, plus a many closely-related non-core forms.

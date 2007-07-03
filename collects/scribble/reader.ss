@@ -331,6 +331,7 @@
 
     (define (get-lines* re:begin re:end re:item end-token)
       ;; re:begin, re:end, end-token can be false if start-inside? is #t
+      (let-values ([(start-line start-col start-pos) (port-next-location inp)])
       (let loop ([lvl 0] [r '()])
         (let-values ([(line col pos) (port-next-location inp)])
           (define (make-stx sexpr)
@@ -395,9 +396,12 @@
                                          r)))]
                 [(*peek #rx#"^$")
                  (if end-token
-                   (read-error 'eof "missing closing `~a'" end-token)
+                   (read-error 'eof "missing closing `~a'~a" end-token
+                               (if start-line
+                                   (format " (started at ~a:~a)" start-line start-col)
+                                   ""))
                    (done-lines r))]
-                [else (read-error "internal error [get-lines*]")]))))
+                [else (read-error "internal error [get-lines*]")])))))
 
     (define (get-lines)
       (cond [(*skip re:lines-begin)
