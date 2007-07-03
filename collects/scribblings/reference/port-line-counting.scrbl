@@ -37,9 +37,6 @@ the port becomes unknown, and line and column tacking is disabled.
 Return-linefeed combinations are treated as a single character
 position only when line and column counting is enabled.
 
-Certain kinds of exceptions (see @secref["mz:exns"]) encapsulate
- source-location information using a @scheme[srcloc] structure.
-
 @;------------------------------------------------------------------------
 
 @defproc[(port-count-lines! [port port?]) void?]{
@@ -64,32 +61,3 @@ read from or written to the port, but if line/character counting is
 enabled for @scheme[port], the column and position results can
 decrease after reading or writing a byte that ends a UTF-8 encoding
 sequence.}
-
-@defstruct[srcloc ([source any/c]
-                   [line (or/c positive-exact-integer? false/c)]
-                   [column (or/c nonnegative-exact-integer? false/c)]
-                   [position (or/c positive-exact-integer? false/c)]
-                   [span (or/c nonnegative-exact-integer? false/c)])
-                  #:immutable
-                  #:inspector #f]{
-
-The fields of an @scheme[srcloc] instance are as follows:
-
-@itemize{
-
- @item{@scheme[source] --- An arbitrary value identifying the source,
- often a path (see @secref["mz:pathutils"]).}
-
- @item{@scheme[line] --- The line number (counts from 1) or
- @scheme[#f] (unknown).}
-
- @item{@scheme[column] --- The column number (counts from 0) or
- @scheme[#f] (unknown).}
-
- @item{@scheme[position] --- The starting position (counts from 1) or
- @scheme[#f] (unknown).}
-
- @item{@scheme[span] --- The number of covered positions (counts from
- 0) or @scheme[#f] (unknown).}
-
-}}

@@ -53,7 +53,7 @@ side-effects based on a @scheme[_test-expr], use @scheme[when] or
 @;------------------------------------------------------------------------
 @section[#:tag "guide:and+or"]{Combining Tests: @scheme[and] and @scheme[or]}
 
-@refalso["mz:and+or"]{@scheme[and] and @scheme[or]}
+@refalso["mz:if"]{@scheme[and] and @scheme[or]}
 
 Scheme's @scheme[and] and @scheme[or] are syntactic forms, rather than
 functions. Unlike a function, the @scheme[and] and @scheme[or] forms
@@ -99,7 +99,7 @@ The @scheme[cond] form chains a series of tests to select a result
 expression. To a first approximation, the syntax of @scheme[cond] is
 as follows:
 
-@refalso["mz:cond"]{@scheme[cond]}
+@refalso["mz:if"]{@scheme[cond]}
 
 @specform[(cond [test-expr expr ...+]
                 ...)]

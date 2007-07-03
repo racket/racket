@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:style 'toc]{Core Datatypes and Procedures}
+@title[#:style 'toc]{Core Datatypes}
 
 Each of the built-in datatypes comes with a set of procedures for
 manipulating members of the datatype.
@@ -89,6 +89,9 @@ ephemeron key (see @secref["mz:ephemerons"]).
  optional @scheme[base] argument is a prefix symbol or string.}
 
 @examples[(gensym "apple")]
+
+@; ------------------------------------------------------------
+@include-section["regexps.scrbl"]
 
 @; ------------------------------------------------------------
 @section[#:tag "keywords"]{Keywords}

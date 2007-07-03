@@ -19,7 +19,7 @@
     (italic (link "../quick/index.html" "An Introduction to PLT Scheme with Pictures")))
 
   (define MzScheme
-    (italic (link "../reference/index.html" "PLT Scheme Reference Manual")))
+    (italic (link "../reference/index.html" "PLT Scheme Reference")))
 
   (define HtDP
     (italic (link "http://www.htdp.org" "How to Design Programs")))

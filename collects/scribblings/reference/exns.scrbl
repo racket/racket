@@ -281,45 +281,53 @@ position with respect to the @scheme[with-handlers*] form.}
 
 @defstruct[exn ([message string?]
                 [continuation-marks continuation-mark-set?])
-           #:immutable]{
+           #:immutable
+           #:inspector #f]{
 
 The base @tech{structure type} for exceptions. The @scheme[message]
 field contains an error message, and the @scheme[continuation-marks]
 field contains the value produced by @scheme[(current-continuation-marks)]
 immediately before the exception was raised.}
 
-@defstruct[(exn:fail exn) ()]{
+@defstruct[(exn:fail exn) ()
+           #:inspector #f]{
 
 Raised for exceptions that represent errors, as opposed to
 @scheme[exn:break].}
 
 
-@defstruct[(exn:fail:contract exn:fail) ()]{
+@defstruct[(exn:fail:contract exn:fail) ()
+           #:inspector #f]{
 
 Raised for errors from the inappropriate run-time use of a function or
 syntactic form.}
 
-@defstruct[(exn:fail:contract:arity exn:fail:contract) ()]{
+@defstruct[(exn:fail:contract:arity exn:fail:contract) ()
+           #:inspector #f]{
 
 Raised when a procedure is applied to the wrong number of arguments.}
 
-@defstruct[(exn:fail:contract:divide-by-zero exn:fail:contract) ()]{
+@defstruct[(exn:fail:contract:divide-by-zero exn:fail:contract) ()
+           #:inspector #f]{
 
 Raised for division by exact zero.}
 
-@defstruct[(exn:fail:contract:continuation exn:fail:contract) ()]{
+@defstruct[(exn:fail:contract:continuation exn:fail:contract) ()
+           #:inspector #f]{
 
 Raised when a continuation is applied where the jump would cross a
 continuation barrier.}
 
 @defstruct[(exn:fail:contract:variable exn:fail:contract) ([id symbol?])
-           #:immutable]{
+           #:immutable
+           #:inspector #f]{
 
 Raised for a reference to a not-yet-defined @tech{top-level variable}
 or @tech{module-level variable}.}
 
 @defstruct[(exn:fail:syntax exn:fail) ([exprs (listof syntax?)])
-           #:immutable]{
+           #:immutable
+           #:inspector #f]{
 
 Raised for a syntax error that is not a @scheme[read] error. The
 @scheme[exprs] indicate the relevant source expressions,
@@ -327,61 +335,103 @@ least-specific to most-specific.}
 
 
 @defstruct[(exn:fail:read exn:fail) ([srclocs (listof srcloc?)])
-           #:immutable]{
+           #:immutable
+           #:inspector #f]{
 
 Raised for a @scheme[read] error. The @scheme[srclocs] indicate the
 relevant source expressions.}
 
-@defstruct[(exn:fail:read:eof exn:fail:read) ()]{
+@defstruct[(exn:fail:read:eof exn:fail:read) ()
+           #:inspector #f]{
 
 Raised for a @scheme[read] error, specifically when the error is due
 to an unexpected end-of-file.}
 
-@defstruct[(exn:fail:read:non-char exn:fail:read) ()]{
+@defstruct[(exn:fail:read:non-char exn:fail:read) ()
+           #:inspector #f]{
 
 Raised for a @scheme[read] error, specifically when the error is due
 to an unexpected non-character (i.e., ``special'') element in the
 input stream.}
 
-@defstruct[(exn:fail:filesystem exn:fail) ()]{
+@defstruct[(exn:fail:filesystem exn:fail) ()
+           #:inspector #f]{
 
 Raised for an error related to the filesystem (such as a file not
 found).}
 
-@defstruct[(exn:fail:filesystem:exists exn:fail:filesystem) ()]{
+@defstruct[(exn:fail:filesystem:exists exn:fail:filesystem) ()
+           #:inspector #f]{
 
 Raised for an error when attempting to create a file that exists
 already.}
 
-@defstruct[(exn:fail:filesystem:version exn:fail:filesystem) ()]{
+@defstruct[(exn:fail:filesystem:version exn:fail:filesystem) ()
+           #:inspector #f]{
 
 Raised for a version-mismatch error when loading an extension.}
 
 
-@defstruct[(exn:fail:network exn:fail) ()]{
+@defstruct[(exn:fail:network exn:fail) ()
+           #:inspector #f]{
 
 Raised for TCP and UDP errors.}
 
 
-@defstruct[(exn:fail:out-of-memory exn:fail) ()]{
+@defstruct[(exn:fail:out-of-memory exn:fail) ()
+           #:inspector #f]{
 
 Raised for an error due to insufficient memory, in cases where sufficient
 memory is at least available for raising the exception.}
 
-@defstruct[(exn:fail:unsupported exn:fail) ()]{
+@defstruct[(exn:fail:unsupported exn:fail) ()
+           #:inspector #f]{
 
 Raised for an error due to an unsupported feature on the current
 platform or configuration.}
 
-@defstruct[(exn:fail:user exn:fail) ()]{
+@defstruct[(exn:fail:user exn:fail) ()
+           #:inspector #f]{
 
 Raised for errors that are intended to be seen by end-users. In
 particular, the default error printer does not show the program
 context when printing the error message.}
 
 @defstruct[(exn:break exn) ([continuation continuation?])
-           #:immutable]{
+           #:immutable
+           #:inspector #f]{
 
 Raised asynchronously (when enabled) in response to a break request.
 The @scheme[continuation] field can be used by a handler to resume the
 interrupted computation.}
+
+
+
+@defstruct[srcloc ([source any/c]
+                   [line (or/c positive-exact-integer? false/c)]
+                   [column (or/c nonnegative-exact-integer? false/c)]
+                   [position (or/c positive-exact-integer? false/c)]
+                   [span (or/c nonnegative-exact-integer? false/c)])
+                  #:immutable
+                  #:inspector #f]{
+
+The fields of an @scheme[srcloc] instance are as follows:
+
+@itemize{
+
+ @item{@scheme[source] --- An arbitrary value identifying the source,
+ often a path (see @secref["mz:pathutils"]).}
+
+ @item{@scheme[line] --- The line number (counts from 1) or
+ @scheme[#f] (unknown).}
+
+ @item{@scheme[column] --- The column number (counts from 0) or
+ @scheme[#f] (unknown).}
+
+ @item{@scheme[position] --- The starting position (counts from 1) or
+ @scheme[#f] (unknown).}
+
+ @item{@scheme[span] --- The number of covered positions (counts from
+ 0) or @scheme[#f] (unknown).}
+
+}}

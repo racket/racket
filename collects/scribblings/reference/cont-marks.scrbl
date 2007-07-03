@@ -12,7 +12,7 @@ general information about continuation marks.
 
 The list of continuation marks for a key @scheme[_k] and a continuation
 @scheme[_C] that extends @cont[0] is defined as follows:
-%
+
 @itemize{
 
  @item{If @scheme[_C] is an empty continuation, then the mark list is

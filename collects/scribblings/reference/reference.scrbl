@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title{PLT Scheme Reference Manual}
+@title{PLT Scheme Reference}
 
 This manual defines the core PLT Scheme language and describes its
 most prominent libraries. The companion manual
@@ -16,24 +16,23 @@ language.
 
 @include-section["model.scrbl"]
 @include-section["syntax-model.scrbl"]
-@include-section["read.scrbl"]
 @include-section["syntax.scrbl"]
-@include-section["derived.scrbl"]
 @include-section["data.scrbl"]
 @include-section["struct.scrbl"]
-@include-section["io.scrbl"]
-@include-section["regexps.scrbl"]
 @include-section["control.scrbl"]
 @include-section["concurrency.scrbl"]
-@include-section["custodians.scrbl"]
+@include-section["security.scrbl"]
+@include-section["io.scrbl"]
 
 @;------------------------------------------------------------------------
 
-@section{Platform-Specific Path Conventions}
+@section{Operating System}
 
-@subsection[#:tag "mz:unix-path"]{Unix and Mac OS X Paths}
+@subsection{Platform-Specific Path Conventions}
 
-@subsection[#:tag "mz:windows-path"]{Windows Paths}
+@subsubsection[#:tag "mz:unix-path"]{Unix and Mac OS X Paths}
+
+@subsubsection[#:tag "mz:windows-path"]{Windows Paths}
 
 @;------------------------------------------------------------------------
 

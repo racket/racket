@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:define-struct"]{Structure Types: @scheme[define-struct]}
+@title[#:tag "mz:define-struct"]{Defining Structure Types: @scheme[define-struct]}
 
 @guideintro["guide:define-struct"]{@scheme[define-struct]}
 
@@ -21,8 +21,6 @@
                               #:omit-define-values]
                [field-option #:immutable
                              #:auto])]{
-
-@moreref["mz:structures"]{structures}
 
 Creates a new @techlink{structure type}, and binds transformers and
 variables related to the new @tech{structure type}. A

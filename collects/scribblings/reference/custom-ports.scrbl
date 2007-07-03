@@ -951,7 +951,7 @@ procedures.
 (write-special 'hello /dev/null-out)
 (sync (write-bytes-avail-evt #"hello" /dev/null-out))
 
-;; A part that accumulates bytes as characters in a list,
+;; A port that accumulates bytes as characters in a list,
 ;;  but not in a thread-safe way:
 (define accum-list null)
 (define accumulator/not-thread-safe

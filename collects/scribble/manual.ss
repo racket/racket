@@ -180,7 +180,7 @@
 
   ;; ----------------------------------------
 
-  (provide defproc defproc* defstruct defthing defparam
+  (provide defproc defproc* defstruct defthing defparam defboolparam
            defform defform* defform/subs defform*/subs defform/none
            specform specform/subs 
            specsubform specsubform/subs specspecsubform specspecsubform/subs specsubform/inline
@@ -242,11 +242,19 @@
   (define-syntax defstruct
     (syntax-rules ()
       [(_ name fields #:immutable #:inspector #f desc ...)
-       (*defstruct (quote-syntax name) 'name 'fields #t #t (lambda () (list desc ...)))]
+       (**defstruct name fields #t #t desc ...)]
       [(_ name fields #:immutable desc ...)
-       (*defstruct (quote-syntax name) 'name 'fields #t #f (lambda () (list desc ...)))]
+       (**defstruct name fields #t #f desc ...)]
+      [(_ name fields #:inspector #f desc ...)
+       (**defstruct name fields #f #t desc ...)]
       [(_ name fields desc ...)
-       (*defstruct (quote-syntax name) 'name 'fields #f #f (lambda () (list desc ...)))]))
+       (**defstruct name fields #f #f desc ...)]))
+  (define-syntax **defstruct
+    (syntax-rules ()
+      [(_ name ([field field-contract] ...) immutable? transparent? desc ...)
+       (*defstruct (quote-syntax name) 'name 
+                   '([field field-contract] ...) (list (lambda () (schemeblock0 field-contract)) ...)
+                   #t #t (lambda () (list desc ...)))]))
   (define-syntax (defform*/subs stx)
     (syntax-case stx ()
       [(_ #:literals (lit ...) [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
@@ -351,6 +359,10 @@
     (syntax-rules ()
       [(_ id arg contract desc ...)
        (defproc* ([(id) contract] [(id [arg contract]) void?]) desc ...)]))
+  (define-syntax defboolparam
+    (syntax-rules ()
+      [(_ id arg desc ...)
+       (defproc* ([(id) boolean?] [(id [arg any/c]) void?]) desc ...)]))
   (define-syntax schemegrammar
     (syntax-rules ()
       [(_ #:literals (lit ...) id clause ...) (*schemegrammar '(lit ...) 
@@ -640,8 +652,9 @@
                                          (map symbol->string (car wrappers)))))))
          (cdr wrappers))))
 
-  (define (*defstruct stx-id name fields immutable? transparent? content-thunk)
+  (define (*defstruct stx-id name fields field-contracts immutable? transparent? content-thunk)
     (define spacer (hspace 1))
+    (define to-flow (lambda (e) (make-flow (list (make-paragraph (list e))))))
     (make-splice
      (cons
       (make-table
@@ -649,48 +662,144 @@
        (cons
         (list (make-flow 
                (list
-                (make-paragraph
-                 (list
-                  (to-element
-                   `(,(schemeparenfont "struct")
-                     ,(make-target-element*
-                       stx-id
-                       (to-element name)
-                       (let ([name (if (pair? name)
-                                       (car name)
-                                       name)])
-                         (list* (list name)
-                                (list name '?)
-                                (list 'make- name)
-                                (append
-                                 (map (lambda (f)
-                                        (list name '- (car f)))
-                                      fields)
-                                 (if immutable?
-                                     null
-                                     (map (lambda (f)
-                                            (list 'set- name '- (car f) '!))
-                                          fields))))))
-                     ,(map car fields)
-                     ,@(if immutable? '(#:immutable) null)
-                     ,@(if transparent? '(#:inspector #f) null))))))))
-        (map (lambda (v)
+                (let* ([the-name 
+                       (make-target-element*
+                        stx-id
+                        (to-element (if (pair? name)
+                                        (map (lambda (x)
+                                               (make-just-context x stx-id))
+                                             name)
+                                        stx-id))
+                        (let ([name (if (pair? name)
+                                        (car name)
+                                        name)])
+                          (list* (list name)
+                                 (list name '?)
+                                 (list 'make- name)
+                                 (append
+                                  (map (lambda (f)
+                                         (list name '- (car f)))
+                                       fields)
+                                  (if immutable?
+                                      null
+                                      (map (lambda (f)
+                                             (list 'set- name '- (car f) '!))
+                                           fields))))))]
+                      [short-width (apply +
+                                          (length fields)
+                                          8
+                                          (map (lambda (s)
+                                                 (string-length (symbol->string s)))
+                                               (append (if (pair? name)
+                                                           name
+                                                           (list name))
+                                                     (map car fields))))])
+                  (if (and (short-width . < . max-proto-width)
+                           (not immutable?)
+                           (not transparent?))
+                      (make-paragraph
+                       (list
+                        (to-element
+                         `(,(schemeparenfont "struct")
+                           ,the-name
+                           ,(map car fields)))))
+                      (make-table
+                       #f
+                       (append
+                        (list
+                         (list (to-flow (schemeparenfont "(struct"))
+                               (to-flow spacer)
+                               (to-flow the-name)
+                               (if (or (null? fields)
+                                       (short-width . < . max-proto-width))
+                                   (to-flow spacer)
+                                   (to-flow (make-element #f
+                                                          (list spacer
+                                                                (schemeparenfont "(")))))
+                               (to-flow (if (or (null? fields)
+                                                (short-width . < . max-proto-width))
+                                            (to-element (map car fields))
+                                            (to-element (caar fields))))))
+                        (if (short-width . < . max-proto-width)
+                            null
+                            (let loop ([fields fields])
+                              (if (null? fields)
+                                  null
+                                  (cons (let ([fld (car fields)])
+                                          (list (to-flow spacer)
+                                                (to-flow spacer)
+                                                (to-flow spacer)
+                                                (to-flow spacer)
+                                                (to-flow
+                                                 (let ([e (to-element (car fld))])
+                                                   (if (null? (cdr fields))
+                                                       (make-element 
+                                                        #f 
+                                                        (list e 
+                                                              (schemeparenfont 
+                                                               (if (and (not immutable?)
+                                                                        (not transparent?))
+                                                                   "))"
+                                                                   ")"))))
+                                                       e)))))
+                                        (loop (cdr fields))))))
+                        (cond
+                         [(and immutable? transparent?)
+                          (list
+                           (list (to-flow spacer)
+                                 (to-flow spacer)
+                                 (to-flow (to-element '#:immutable))
+                                 'cont
+                                 'cont)
+                           (list (to-flow spacer)
+                                 (to-flow spacer)
+                                 (to-flow (make-element
+                                           #f
+                                           (list (to-element '#:inspector)
+                                                 spacer
+                                                 (to-element #f)
+                                                 (schemeparenfont ")"))))
+                                 'cont
+                                 'cont))]
+                         [immutable?
+                          (list
+                           (list (to-flow spacer)
+                                 (to-flow spacer)
+                                 (to-flow (make-element
+                                           #f
+                                           (list (to-element '#:immutable)
+                                                 (schemeparenfont ")"))))
+                                 'cont
+                                 'cont))]
+                         [transparent?
+                          (list
+                           (list (to-flow spacer)
+                                 (to-flow spacer)
+                                 (to-flow (make-element
+                                           #f
+                                           (list (to-element '#:inspector)
+                                                 spacer
+                                                 (to-element #f)
+                                                 (schemeparenfont ")"))))
+                                 'cont
+                                 'cont))]
+                         [else null]))))))))
+        (map (lambda (v field-contract)
                (cond
                 [(pair? v)
                  (list
                   (make-flow
-                   (list
-                    (make-paragraph (append
-                                     (list
-                                      (hspace 2)
-                                      (to-element (car v)))
-                                     (list
-                                      spacer
-                                      ":"
-                                      spacer
-                                      (to-element (cadr v))))))))]
+                   (make-table-if-necessary
+                    #f
+                    (list
+                     (list (to-flow (hspace 2))
+                           (to-flow (to-element (car v)))
+                           (to-flow spacer)
+                           (to-flow ":")
+                           (to-flow spacer)
+                           (make-flow (list (field-contract))))))))]
                 [else null]))
-             fields)))
+             fields field-contracts)))
       (content-thunk))))
 
   (define (*defthing stx-id name result-contract content-thunk)

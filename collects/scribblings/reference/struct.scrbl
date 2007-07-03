@@ -15,8 +15,6 @@ accessed and changed with type-specific @tech{accessor} and
 @tech{predicate} procedure that answers @scheme[#t] for instances of
 the structure type and @scheme[#f] for any other value.
 
-@refalso["mz:define-struct"]{structure types via @scheme[define-struct]}
-
 A structure type's fields are essentially unnamed, though names are
 supported for error-reporting purposes. The constructor procedure
 takes one value for each field of the structure type, except that some
@@ -55,6 +53,9 @@ instances of the same structure type, no fields are opaque, and the
 results of applying @scheme[struct->vector] to the structs are
 @scheme[equal?]. (Consequently, @scheme[equal?] testing for structures
 depends on the current inspector.)
+
+@;------------------------------------------------------------------------
+@include-section["define-struct.scrbl"]
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:creatingmorestructs"]{Creating Structure Types}
