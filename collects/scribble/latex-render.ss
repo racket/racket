@@ -4,7 +4,7 @@
            (lib "class.ss"))
   (provide render-mixin)
 
-  (define current-table-depth (make-parameter 0))
+  (define current-table-mode (make-parameter #f))
   (define rendering-tt (make-parameter #f))
 
   (define-struct (toc-paragraph paragraph) ())
@@ -21,7 +21,7 @@
                lookup)
 
       (define (define-color s s2)
-        (printf "\\newcommand{\\~a}[1]{{\\texttt{\\color{~a}{#1}}}}\n" s s2))
+        (printf "\\newcommand{\\~a}[1]{{\\mytexttt{\\color{~a}{#1}}}}\n" s s2))
 
       (define/override (render-one d ht fn)
         (printf "\\documentclass{article}\n")
@@ -34,8 +34,9 @@
         (printf "\\usepackage{longtable}\n")
         (printf "\\usepackage[usenames,dvipsnames]{color}\n")
         (printf "\\hypersetup{bookmarks=true,bookmarksopen=true,bookmarksnumbered=true}\n")
+        (printf "\\newcommand{\\mytexttt}[1]{{\\small \\texttt{#1}}}\n")
         (define-color "schemeplain" "black")
-        (printf "\\newcommand{\\schemekeyword}[1]{{\\color{black}{\\texttt{\\textbf{#1}}}}}\n")
+        (printf "\\newcommand{\\schemekeyword}[1]{{\\color{black}{\\mytexttt{\\textbf{#1}}}}}\n")
         (printf "\\newcommand{\\schemesyntaxlink}[1]{\\schemekeyword{#1}}\n")
         (printf "\\definecolor{CommentColor}{rgb}{0.76,0.45,0.12}\n")
         (printf "\\definecolor{ParenColor}{rgb}{0.52,0.24,0.14}\n")
@@ -141,7 +142,7 @@
               (case style
                 [(italic) (wrap e "textit" #f)]
                 [(bold) (wrap e "textbf" #f)]
-                [(tt) (wrap e "texttt" #t)]
+                [(tt) (wrap e "mytexttt" #t)]
                 [(sf) (wrap e "textsf" #f)]
                 [(subscript) (wrap e "textsub" #f)]
                 [(superscript) (wrap e "textsuper" #f)]
@@ -149,7 +150,7 @@
                             (case (string-length s)
                               [(0) (void)]
                               [else
-                               (printf "{\\texttt{~a}}"
+                               (printf "{\\mytexttt{~a}}"
                                        (regexp-replace* #rx"." s "~"))]))]
                 [else (error 'latex-render "unrecognzied style symbol: ~s" style)])]
              [(string? style)
@@ -165,70 +166,90 @@
       (define/override (render-table t part ht)
         (let* ([boxed? (eq? 'boxed (table-style t))]
                [index? (eq? 'index (table-style t))]
+               [inline? (and (not boxed?)
+                             (not index?)
+                             (or (null? (table-flowss t))
+                                 (= 1 (length (car (table-flowss t)))))
+                             (let ([m (current-table-mode)])
+                               (and m
+                                    (equal? "longtable" (car m))
+                                    (= 1 (length (car (table-flowss (cadr m))))))))]
                [tableform (cond
                            [index? "theindex"]
-                           [(zero? (current-table-depth))
+                           [(not (current-table-mode))
                             "longtable"]
                            [else "tabular"])]
-               [opt (if (zero? (current-table-depth))
-                        "[l]"
-                        "")])
+               [opt (cond
+                     [(equal? tableform "longtable") "[l]"]
+                     [(equal? tableform "tabular") "[t]"]
+                     [else ""])])
           (unless (or (null? (table-flowss t))
                       (null? (car (table-flowss t))))
-            (parameterize ([current-table-depth (add1 (current-table-depth))])
-              (if index?
-                  (printf "\n\n\\begin{theindex}\n")
-                  (printf "\n\n~a\\begin{~a}~a{@{}~a}\n"
-                          (if boxed? 
-                              (format "{~a\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}~a\n\\nopagebreak\n" 
-                                      "\\setlength{\\unitlength}{\\linewidth}"
-                                      (if (equal? tableform "longtable")
-                                          "\\vspace{-5ex}"
-                                          "\n\n"))
-                              "")
-                          tableform
-                          opt
-                          (apply string-append
-                                 (map (lambda (i align) "~a@{}"
+            (parameterize ([current-table-mode (if inline?
+                                                   (current-table-mode)
+                                                   (list tableform t))])
+              (cond
+               [index?
+                (printf "\n\n\\begin{theindex}\n")]
+               [inline? (void)]
+               [else
+                (printf "\n\n~a\\begin{~a}~a{@{}~a}\n"
+                        (if boxed? 
+                            (format "{~a\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}~a\n\\nopagebreak\n" 
+                                    "\\setlength{\\unitlength}{\\linewidth}"
+                                    (if (equal? tableform "longtable")
+                                        "\\vspace{-5ex}"
+                                        "\n\n"))
+                            "")
+                        tableform
+                        opt
+                        (apply string-append
+                               (map (lambda (i align) 
+                                      (format "~a@{}"
                                               (case align
-                                               [(center) "c"]
-                                               [(right) "r"]
-                                               [else "l"]))
-                                      (car (table-flowss t))
-                                      (cdr (or (and (list? (table-style t))
-                                                    (assoc 'alignment (or (table-style t) null)))
-                                               (cons #f (map (lambda (x) #f) (car (table-flowss t))))))))))
-              (for-each (lambda (flows row-style)
-                          (let loop ([flows flows])
-                            (unless (null? flows)
-                              (unless (eq? 'cont (car flows))
-                                (let ([cnt (let loop ([flows (cdr flows)][n 1])
-                                             (cond
-                                              [(null? flows) n]
-                                              [(eq? (car flows) 'cont) (loop (cdr flows) (add1 n))]
-                                              [else n]))])
-                                  (unless (= cnt 1)
-                                    (printf "\\multicolumn{~a}{l}{" cnt))
-                                  (render-flow (car flows) part ht)
-                                  (unless (= cnt 1)
-                                    (printf "}"))
-                                  (unless (null? (list-tail flows cnt))
-                                    (printf " &\n"))))
-                              (unless (null? (cdr flows))
-                                (loop (cdr flows)))))
-                          (unless index?
-                            (printf " \\\\\n")
-                            (when (equal? row-style "inferencetop")
-                              (printf "\\hline\n"))))
-                        (table-flowss t)
-                        (cdr (or (and (list? (table-style t))
-                                      (assoc 'row-styles (table-style t)))
-                                 (cons #f (map (lambda (x) #f) (table-flowss t))))))
-              (printf "\n\n\\end{~a}~a\n" 
-                      tableform
-                      (if (equal? tableform "longtable")
-                          "\\vspace{-3ex}" ;; counteracts mysterious space added after longtable
-                          "")))))
+                                                [(center) "c"]
+                                                [(right) "r"]
+                                                [else "l"])))
+                                    (car (table-flowss t))
+                                    (cdr (or (and (list? (table-style t))
+                                                  (assoc 'alignment (or (table-style t) null)))
+                                             (cons #f (map (lambda (x) #f) (car (table-flowss t)))))))))])
+              (let loop ([flowss (table-flowss t)]
+                         [row-styles (cdr (or (and (list? (table-style t))
+                                                   (assoc 'row-styles (table-style t)))
+                                              (cons #f (map (lambda (x) #f) (table-flowss t)))))])
+                (let ([flows (car flowss)]
+                      [row-style (car row-styles)])
+                  (let loop ([flows flows])
+                    (unless (null? flows)
+                      (unless (eq? 'cont (car flows))
+                        (let ([cnt (let loop ([flows (cdr flows)][n 1])
+                                     (cond
+                                      [(null? flows) n]
+                                      [(eq? (car flows) 'cont) (loop (cdr flows) (add1 n))]
+                                      [else n]))])
+                          (unless (= cnt 1)
+                            (printf "\\multicolumn{~a}{l}{" cnt))
+                          (render-flow (car flows) part ht)
+                          (unless (= cnt 1)
+                            (printf "}"))
+                          (unless (null? (list-tail flows cnt))
+                            (printf " &\n"))))
+                      (unless (null? (cdr flows))
+                        (loop (cdr flows)))))
+                  (unless (or index?
+                              (null? (cdr flowss)))
+                    (printf " \\\\\n")
+                    (when (equal? row-style "inferencetop")
+                      (printf "\\hline\n")))
+                  (unless (null? (cdr flowss))
+                    (loop (cdr flowss) (cdr row-styles)))))
+              (unless inline?
+                (printf "\n\n\\end{~a}~a\n" 
+                        tableform
+                        (if (equal? tableform "longtable")
+                            "\\vspace{-3ex}" ;; counteracts mysterious space added after longtable
+                            ""))))))
         null)
 
       (define/override (render-itemization t part ht)
@@ -242,7 +263,7 @@
 
       (define/override (render-blockquote t part ht)
         (printf "\n\n\\begin{quote}\n")
-        (parameterize ([current-table-depth (add1 (current-table-depth))])
+        (parameterize ([current-table-mode (list "blockquote" t)])
           (for-each (lambda (e)
                       (render-flow-element e part ht))
                     (blockquote-paragraphs t)))
