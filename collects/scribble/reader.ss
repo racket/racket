@@ -62,9 +62,10 @@
   (define str:end-of-line  "[ \t]*\r?\n[ \t]*") ; eat spaces on the next line
   (define re:end-of-line   (^px str:end-of-line))
   (define (re:line-item* bgn end)
-    (^px "(.+?)(?:"bgn"|"end"|"ch:command"|"str:end-of-line")"))
+    (^px "(.+?)(?:" (if bgn `(,bgn"|") "") (if end `(,end"|") "")
+         ch:command"|"str:end-of-line"|$)"))
   (define re:line-item (re:line-item* ch:lines-begin ch:lines-end))
-  (define re:line-item-no-nests (^px "(.+?)(?:"ch:command"|"str:end-of-line")"))
+  (define re:line-item-no-nests (re:line-item* #f #f))
 
   ;; --------------------------------------------------------------------------
   ;; utilities
