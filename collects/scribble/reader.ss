@@ -38,7 +38,7 @@
   ;; basic customization
   (define ch:command     #\@)
   (define ch:comment     #\;)
-  (define ch:bar-quote   #\|)
+  (define ch:expr-escape #\|)
   (define ch:attrs-begin #\[)
   (define ch:attrs-end   #\])
   (define ch:lines-begin #\{)
@@ -47,13 +47,13 @@
   (define str:lines-begin* #"\\|[^a-zA-Z0-9 \t\r\n\f@\\\177-\377{]*\\{")
 
   (define re:command       (^px ch:command
-                                ;; the following identifies string escapes, see
-                                ;; hoe it is used below
-                                "("ch:bar-quote"?\")?"))
+                                ;; the following identifies string and
+                                ;; expression escapes, see how it is used below
+                                "(?:(\")|("ch:expr-escape"))?"))
   (define re:whitespaces   (^px "\\s+"))
   (define re:comment-start (^px ch:comment))
   (define re:comment-line  (^px "[^\n]*\n[ \t]*")) ; like tex's `%'
-  (define re:expr-escape   (^px ch:bar-quote))
+  (define re:expr-escape   (^px ch:expr-escape))
   (define re:attrs-begin   (^px ch:attrs-begin))
   (define re:attrs-end     (^px ch:attrs-end))
   (define re:lines-begin   (^px ch:lines-begin))
@@ -131,6 +131,7 @@
   ;; provides nothing for them -- there's not even a predicate.  Hopefully, if
   ;; something is added it will use the same name, so there's a compiler error
   ;; here and this code is adapted.)
+  ;; (Note: used to wrap special comment values too.)
   (define-struct placeholder (p loc))
   (define (syntax/placeholder-line sp)
     (if (placeholder? sp) (cadr (placeholder-loc sp)) (syntax-line sp)))
@@ -192,15 +193,53 @@
     (define (span-from start)
       (and start (- (cur-pos) start)))
 
-    (define (read-delimited-list end-re end-ch)
-      (let loop ([r '()])
-        (skip-whitespace inp)
-        (if (*skip end-re)
-          (reverse! r)
-          (let ([x (read-syntax/recursive source-name inp)])
-            (if (eof-object? x)
-              (read-error 'eof "expected a '~a'" end-ch)
-              (loop (if (special-comment? x) r (cons x r))))))))
+    (define (read-delimited-list begin-re end-re end-ch tweak-locations)
+      ;; when `tweak-locations' is not #f, it should be (src line col pos) for
+      ;; the whole thing -- and we need to adjust the first item so it appears
+      ;; from its beginning, and the last so it appears to go to its end (used
+      ;; to make escape sequences not have bogus indentation added)
+      (and (*skip begin-re)
+           (let ([reader (if tweak-locations
+                           ;; should always be `read-syntax/recursive', but
+                           ;; then we don't get location information (in also
+                           ;; means that we never get a special-comment)
+                           read-syntax
+                           read-syntax/recursive)])
+             (let loop ([r '()])
+               (skip-whitespace inp)
+               (if (*skip end-re)
+                 (cond [(null? r) r]
+                       [(not tweak-locations) (reverse! r)]
+                       [(null? (cdr r))
+                        ;; make the single syntax span the whole thing
+                        (list (datum->syntax-object (car r) (syntax-e (car r))
+                                `(,@tweak-locations
+                                  ,(span-from (cadddr tweak-locations)))))]
+                       [else
+                        (let* (;; make the last one span to the end
+                               [last (car r)]
+                               [last (datum->syntax-object last (syntax-e last)
+                                       (list (syntax-source last)
+                                             (syntax-line last)
+                                             (syntax-column last)
+                                             (syntax-position last)
+                                             (span-from
+                                              (syntax-position last))))]
+                               [r (reverse! (cons last (cdr r)))]
+                               ;; make the first go from the beginning
+                               [fst (car r)]
+                               [fst (datum->syntax-object fst (syntax-e fst)
+                                      `(,@tweak-locations
+                                        ,(let ([tw-pos (cadddr tweak-locations)]
+                                               [1pos   (syntax-position fst)]
+                                               [1span  (syntax-span fst)])
+                                           (and tw-pos 1pos 1span
+                                                (+ (- 1pos tw-pos) 1span)))))])
+                          (cons fst (cdr r)))])
+                 (let ([x (reader source-name inp)])
+                   (if (eof-object? x)
+                     (read-error 'eof "expected a '~a'" end-ch)
+                     (loop (if (special-comment? x) r (cons x r))))))))))
 
     ;; adds indentation (as new syntaxes, not merged); if the first line was
     ;; not empty, then it is treated specially.  called with at least two items
@@ -232,16 +271,21 @@
             (let* ([stx  (car stxs)]
                    [line (syntax/placeholder-line stx)])
               (loop (eol-syntax? stx) line (cdr stxs)
-                    (let ([stxcol (syntax/placeholder-column stx)]
-                          [stx*   (syntax/placeholder-strip stx)])
-                      (if (and newline? (< curline line) (< mincol stxcol))
-                        (list* stx*
-                               (syntax-property
-                                (datum->syntax-object/placeholder stx
-                                  (make-spaces (- stxcol mincol)))
-                                'scribble 'indentation)
-                               r)
-                        (cons stx* r)))))))))
+                    (let* ([stxcol (syntax/placeholder-column stx)]
+                           [stx*   (syntax/placeholder-strip stx)]
+                           ;; add spaces
+                           [r (if (and newline?
+                                       (< curline line)
+                                       (< mincol stxcol))
+                                (cons (syntax-property
+                                       (datum->syntax-object/placeholder stx
+                                         (make-spaces (- stxcol mincol)))
+                                       'scribble 'indentation)
+                                      r)
+                                r)]
+                           ;; remove special-comments
+                           [r (if (special-comment? stx*) r (cons stx* r))])
+                      r)))))))
 
     ;; gets an accumulated (reversed) list of syntaxes, sorts things out
     ;; (remove prefix and suffix newlines, adds indentation if needed)
@@ -254,13 +298,16 @@
          ;; no newlines removed
          (add-indents (reverse! rlines) #t)] ; don't ignore the 1st line
         [else
-         ;; strip off leading and trailing newlines
+         ;; strip off leading and trailing newlines (must have at least one
+         ;; non-newline item)
          (let* ([rlines   (if (eol-syntax? (car rlines)) (cdr rlines) rlines)]
                 [lines    (reverse! rlines)]
                 [1st-eol? (eol-syntax? (car lines))]
                 [lines    (if 1st-eol? (cdr lines) lines)])
            (if (null? (cdr lines)) ; common case: one string
-             (list (syntax/placeholder-strip (car lines)))
+             (let ([line (syntax/placeholder-strip (car lines))])
+               ;; note: we can get comment values
+               (if (special-comment? line) '() (list line)))
              (add-indents lines 1st-eol?)))]))
 
     ;; cons stx (new syntax) to the list of stxs, merging it if both are
@@ -307,18 +354,35 @@
                  ;; read the next value, include comment objs, keep source
                  ;; location manually (see above)
                  => (lambda (m)
-                      ;; if the command is a string escape, use `read-syntax',
-                      ;; so that we don't get a placeholder, and we can merge
-                      ;; the string to others
-                      (let* ([reader (if (cadr m)
-                                       read-syntax read-syntax/recursive)]
-                             [x (reader source-name inp)])
+                      (let ([x (cond
+                                 [(cadr m)
+                                  ;; the command is a string escape, use
+                                  ;; `read-syntax', to not get a placeholder,
+                                  ;; so we can merge the string to others
+                                  (let ([x (read-syntax source-name inp)])
+                                    ;; adjust to not get bogus indentation
+                                    (make-stx (syntax-e x)))]
+                                 [(caddr m)
+                                  ;; it's an expression escape, get multiple
+                                  ;; expressions and put them all here
+                                  (read-bytes (caaddr m))
+                                  (let ([escapes (get-escape-expr
+                                                  #f line col pos)])
+                                    ;; make @|| a comment that can be used to
+                                    ;; make spaces meaningful
+                                    (if (null? escapes)
+                                      (make-special-comment #f)
+                                      escapes))]
+                                 [else
+                                  ;; otherwise it's a plain read
+                                  (read-syntax/recursive source-name inp)])])
                         (loop lvl
-                              (cond [(special-comment? x) r]
-                                    [(eof-object? x)
+                              (cond [(eof-object? x)
                                      (read-error 'eof "missing command")]
                                     [(syntax? x) (maybe-merge x r)]
-                                    ;; otherwise it's a placeholder to wrap
+                                    [(list? x) (append! (reverse x) r)]
+                                    ;; otherwise it's a either a comment or a
+                                    ;; placeholder: wrap to get source infor
                                     [else (cons (make-placeholder x ; no merge
                                                   (list source-name line col pos
                                                         (span-from pos)))
@@ -349,37 +413,22 @@
             [else #f]))
 
     (define (get-attrs)
-      (and (*skip re:attrs-begin)
-           (read-delimited-list re:attrs-end ch:attrs-end)))
+      (read-delimited-list re:attrs-begin re:attrs-end ch:attrs-end #f))
 
-    (define (get-escape-expr)
-      (define-values (line col pos) (port-next-location inp))
-      (and (*skip re:expr-escape)
-           (begin
-             (skip-whitespace inp)
-             (begin0 (parameterize ([current-readtable command-readtable])
-                       (let loop ()
-                         (let ([expr
-                                ;; should be `read-syntax/recursive', but see
-                                ;; the next comment (this also means that we
-                                ;; never get a special-comment)
-                                (read-syntax source-name inp)])
-                           (cond
-                             [(special-comment? expr) (loop)]
-                             [(eof-object? expr)
-                              (read-error 'eof "missing escape expression")]
-                             [else
-                              ;; we need to use the proper source location,
-                              ;; including the initial "@|" so if an escape is
-                              ;; at the beginning of a line no bogus
-                              ;; indentation is added later
-                              (datum->syntax-object expr (syntax-e expr)
-                                (list source-name line-num col-num position
-                                      (span-from position)))]))))
-               (skip-whitespace inp)
-               (unless (*skip re:expr-escape)
-                 (read-error* line col pos #f
-                              "expecting a terminating '~a'" ch:bar-quote))))))
+    (define (get-escape-expr single? line col pos)
+      ;; single? means expect just one expression (or none, which is returned
+      ;; as a special-comment)
+      (let ([xs (parameterize ([current-readtable command-readtable])
+                  ;; tweak source information to avoid bad indentation
+                  (read-delimited-list
+                   re:expr-escape re:expr-escape ch:expr-escape
+                   (list source-name line col pos)))])
+        (cond [(not xs) xs]
+              [(not single?) xs]
+              [(null? xs) (make-special-comment #f)]
+              [(null? (cdr xs)) (car xs)]
+              [else (read-error* line col pos (span-from pos)
+                                 "too many escape expressions")])))
 
     ;; called only when we must see a command in the input
     (define (get-command)
@@ -431,7 +480,8 @@
                ;; simple expression escape, same for get-attrs
                [(get-lines) => (lambda (lines) (values #f #f lines))]
                [(get-attrs) => (lambda (attrs) (values #f attrs (get-lines)))]
-               [(get-escape-expr) => (lambda (expr) (values expr #f #f))]
+               [(get-escape-expr #t line-num col-num position)
+                => (lambda (expr) (values expr #f #f))]
                [else (values (get-command) (get-attrs) (get-lines))])]
             [(stx) (and (or attrs lines)
                         (append (or attrs '()) (or lines '())))]
