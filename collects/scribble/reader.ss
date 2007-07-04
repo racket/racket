@@ -73,6 +73,7 @@
   ;; like `regexp-match/fail-without-reading', without extras; the regexp that
   ;; is used must be anchored -- nothing is dropped
   (define (*regexp-match-peek-positions pattern input-port)
+    #; ; sanity checks, not needed unless this file is edited
     (unless (and (byte-regexp? pattern)
                  (regexp-match? #rx#"^\\^" (object-name pattern)))
       (error 'reader "internal error [invalid bregexp] ~e" pattern))
@@ -250,12 +251,12 @@
     ;; not empty, then it is treated specially.  called with at least two items
     ;; (see below).
     (define (add-indents stxs 1st-eol?)
+      #; ; the reader always turns on line counting
       (unless (andmap (lambda (x)
                         (and (or (syntax? x) (placeholder? x))
                              (syntax/placeholder-column x)
                              (syntax/placeholder-line x)))
                       stxs)
-        ;; the reader always turns on line counting
         (read-error "internal error [add-indents] ~s" stxs))
       (let* ([mincol
               (let loop ([min #f] [stxs (if 1st-eol? stxs (cdr stxs))])
