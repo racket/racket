@@ -1,7 +1,7 @@
 ;; ============================================================================
 ;; Implements the @-reader macro for embedding text in Scheme code.
 
-(module reader mzscheme*
+(module reader mzscheme
 
   (require (lib "kw.ss") (lib "string.ss") (lib "readerr.ss" "syntax"))
 
