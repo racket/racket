@@ -1,7 +1,7 @@
 ;; ============================================================================
 ;; Implements the @-reader macro for embedding text in Scheme code.
 
-(module reader mzscheme
+(module reader mzscheme*
 
   (require (lib "kw.ss") (lib "string.ss") (lib "readerr.ss" "syntax"))
 
@@ -342,71 +342,77 @@
             (datum->syntax-object #f
               (if (bytes? sexpr) (bytes->string/utf-8 sexpr) sexpr)
               (list source-name line col pos (span-from pos))))
-          (cond [(and re:begin (*match1 re:begin))
-                 => (lambda (m) (loop (add1 lvl) (maybe-merge (make-stx m) r)))]
-                [(and re:end (*match1 re:end))
-                 => (lambda (m)
-                      (if (and (zero? lvl) (not start-inside?))
-                        (done-lines r)
-                        (loop (sub1 lvl) (maybe-merge (make-stx m) r))))]
-                [(*match1 re:end-of-line)
-                 => (lambda (m)
-                      (loop lvl (cons ; no merge needed
-                                 (syntax-property (make-stx eol-token)
-                                                  'scribble `(newline ,m))
-                                 r)))]
-                [(*peek re:command)
-                 ;; read the next value, include comment objs, keep source
-                 ;; location manually (see above)
-                 => (lambda (m)
-                      (let ([x (cond
-                                 [(cadr m)
-                                  ;; the command is a string escape, use
-                                  ;; `read-syntax', to not get a placeholder,
-                                  ;; so we can merge the string to others
-                                  (let ([x (read-syntax source-name inp)])
-                                    ;; adjust to not get bogus indentation
-                                    (make-stx (syntax-e x)))]
-                                 [(caddr m)
-                                  ;; it's an expression escape, get multiple
-                                  ;; expressions and put them all here
-                                  (read-bytes (caaddr m) inp)
-                                  (let ([escapes (get-escape-expr
-                                                  #f line col pos)])
-                                    ;; make @|| a comment that can be used to
-                                    ;; make spaces meaningful
-                                    (if (null? escapes)
-                                      (make-special-comment #f)
-                                      escapes))]
-                                 [else
-                                  ;; otherwise it's a plain read
-                                  (read-syntax/recursive source-name inp)])])
-                        (loop lvl
-                              (cond [(eof-object? x)
-                                     (read-error 'eof "missing command")]
-                                    [(syntax? x) (maybe-merge x r)]
-                                    [(list? x) (append! (reverse x) r)]
-                                    ;; otherwise it's a either a comment or a
-                                    ;; placeholder: wrap to get source infor
-                                    [else (cons (make-placeholder x ; no merge
-                                                  (list source-name line col pos
-                                                        (span-from pos)))
-                                                r)]))))]
-                ;; must be last, since it will always succeed with 1 char
-                [(*peek re:item) ; don't read: regexp grabs the following text
-                 => (lambda (m)
-                      (loop lvl
-                            (maybe-merge (make-stx (read-bytes (cdadr m) inp))
+          (cond
+            [(and re:begin (*match1 re:begin))
+             => (lambda (m) (loop (add1 lvl) (maybe-merge (make-stx m) r)))]
+            [(and re:end (*match1 re:end))
+             => (lambda (m)
+                  (if (and (zero? lvl) (not start-inside?))
+                    (done-lines r)
+                    (loop (sub1 lvl) (maybe-merge (make-stx m) r))))]
+            [(*match1 re:end-of-line)
+             => (lambda (m)
+                  (loop lvl (cons ; no merge needed
+                             (syntax-property (make-stx eol-token)
+                                              'scribble `(newline ,m))
+                             r)))]
+            [(*peek re:command)
+             ;; read the next value, include comment objs, keep source location
+             ;; manually (see above)
+             => (lambda (m)
+                  (let ([x (cond
+                             [(cadr m)
+                              ;; the command is a string escape, use
+                              ;; `read-syntax', to not get a placeholder, so we
+                              ;; can merge the string to others
+                              (let ([x (read-syntax source-name inp)])
+                                ;; adjust to not get bogus indentation
+                                (make-stx (syntax-e x)))]
+                             [(caddr m)
+                              ;; it's an expression escape, get multiple
+                              ;; expressions and put them all here
+                              (read-bytes (caaddr m) inp)
+                              (get-escape-expr #f line col pos)]
+                             [else
+                              ;; otherwise it's a plain read
+                              (read-syntax/recursive source-name inp)])])
+                    (loop
+                     lvl
+                     (cond
+                       [(eof-object? x) (read-error 'eof "missing command")]
+                       [(syntax? x) (maybe-merge x r)]
+                       ;; escaped expressions (not empty: @||)
+                       [(pair? x) (append! (reverse x) r)]
+                       ;; a comment in the middle of a line disappears so
+                       ;; strings next to it are merged
+                       [(and (special-comment? x)
+                             (not (and (pair? r) (eol-syntax? (car r)))))
+                        r]
+                       ;; otherwise it's a either null (@||) a comment (at the
+                       ;; beginning of a line) or a placeholder: wrap to get
+                       ;; source info for proper indentation; @|| is turned to
+                       ;; a comment, which can be used to separate strings, or
+                       ;; to make spaces meaningful
+                       [else (let ([x (if (null? x)
+                                        (make-special-comment #f)
+                                        x)])
+                               (cons (make-placeholder x ; no merge
+                                       (list source-name line col pos
+                                             (span-from pos)))
+                                     r))]))))]
+            ;; must be last, since it will always succeed with 1 char
+            [(*peek re:item) ; don't read: regexp grabs the following text
+             => (lambda (m)
+                  (loop lvl (maybe-merge (make-stx (read-bytes (cdadr m) inp))
                                          r)))]
-                [(*peek #rx#"^$")
-                 (if end-token
-                   (read-error 'eof "missing closing `~a'~a" end-token
-                               (if (and line-num col-num)
-                                 (format " for command at ~a:~a"
-                                         line-num col-num)
-                                 ""))
-                   (done-lines r))]
-                [else (read-error "internal error [get-lines*]")]))))
+            [(*peek #rx#"^$")
+             (if end-token
+               (read-error 'eof "missing closing `~a'~a" end-token
+                           (if (and line-num col-num)
+                             (format " for command at ~a:~a" line-num col-num)
+                             ""))
+               (done-lines r))]
+            [else (read-error "internal error [get-lines*]")]))))
 
     (define (get-lines)
       (cond [(*skip re:lines-begin)
