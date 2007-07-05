@@ -65,17 +65,39 @@
       (left-toe 14 146)
       (right-toe 109 132)))
   
-  (define running-points/2 running-points)
-  
   (define running-canvas%
     (class canvas%
-      (inherit get-dc refresh)
+      (inherit get-dc refresh get-client-size)
       (define/public (set-running r?) 
         (unless (eq? r? is-running?)
           (set! is-running? r?)
           (refresh)))
       (define is-running? #f)
       (define toggle? #t)
+      (define timer #f)
+      (define inside? #f)
+      
+      (define/override (on-event evt)
+        (let-values ([(w h) (get-client-size)])
+          (let ([new-inside?
+                 (and (<= 0 (send evt get-x) w)
+                      (<= 0 (send evt get-y) h))]
+                [old-inside? inside?])
+            (set! inside? new-inside?)
+            (cond
+              [(and new-inside? (not old-inside?))
+               (unless is-running?
+                 (set! timer
+                       (new timer%
+                            [notify-callback 
+                             (λ ()
+                               (printf ".") (flush-output)
+                               (set! toggle? (not toggle?))
+                               (refresh))]
+                            [interval 200])))]
+              [(and (not new-inside?) old-inside? timer)
+               (send timer stop)
+               (set! timer #f)]))))
       
       (define-values (w h running-dx running-dy waiting-dx waiting-dy)
         (get-size-parameters))
@@ -328,7 +350,6 @@
     (send (get-running-bitmap) save-file (build-path (collection-path "icons") "run.png") 'png)
     (send f show #t))
   
-  #;
   (let ()
     (define f (new frame% [label ""]))
     (define c (new running-canvas% [parent f]))
@@ -340,7 +361,8 @@
          [label "Wait"]
          [parent f]
          [callback (λ (x y) (send c set-running #f))])
+    (send c set-running #t)
     (send f show #t))
   
   #;(edit-points waiting-points)
-  #;(edit-points running-points))
+  #;(edit-points running-points/2))
