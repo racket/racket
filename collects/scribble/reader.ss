@@ -187,6 +187,14 @@
       (let-values ([(line col pos) (port-next-location inp)])
         (apply read-error* line col pos #f msg xs)))
 
+    (define (read-stx) (read-syntax/recursive source-name inp))
+    (define (read-stx/rt rt) (read-syntax/recursive source-name inp #f rt))
+    ;; use this to avoid placeholders so we have source location information
+    (define (read-stx*)
+      ;; the following should not return placeholders, but it does
+      ;; (read-syntax/recursive source-name inp #f (current-readtable) #f)
+      (read-syntax source-name inp))
+
     (define (*match  rx) (*regexp-match rx inp))
     (define (*match1 rx) (*regexp-match1 rx inp))
     ;; (define (*skip   rx) (*regexp-match-positions rx inp)) <- see above
@@ -208,10 +216,8 @@
       (and (*skip begin-re)
            (let ([reader (if tweak-locations
                            ;; should always be `read-syntax/recursive', but
-                           ;; then we don't get location information (in also
-                           ;; means that we never get a special-comment)
-                           read-syntax
-                           read-syntax/recursive)])
+                           ;; then we don't get location information
+                           read-stx* read-stx)])
              (let loop ([r '()])
                (skip-whitespace inp)
                (if (*skip end-re)
@@ -243,7 +249,7 @@
                                            (and tw-pos 1pos 1span
                                                 (+ (- 1pos tw-pos) 1span)))))])
                           (cons fst (cdr r)))])
-                 (let ([x (reader source-name inp)])
+                 (let ([x (reader)])
                    (if (eof-object? x)
                      (read-error 'eof "expected a '~a'" end-ch)
                      (loop (if (special-comment? x) r (cons x r))))))))))
@@ -367,19 +373,16 @@
                   (let ([x (cond
                              [(cadr m)
                               ;; the command is a string escape, use
-                              ;; `read-syntax', to not get a placeholder, so we
-                              ;; can merge the string to others
-                              (let ([x (read-syntax source-name inp)])
-                                ;; adjust to not get bogus indentation
-                                (make-stx (syntax-e x)))]
+                              ;; `read-stx*' to not get a placeholder, so we
+                              ;; can merge the string to others, and adjust
+                              ;; source location to avoid bogus indentation
+                              (make-stx (syntax-e (read-stx*)))]
                              [(caddr m)
                               ;; it's an expression escape, get multiple
                               ;; expressions and put them all here
                               (read-bytes (caaddr m) inp)
                               (get-escape-expr #f line col pos)]
-                             [else
-                              ;; otherwise it's a plain read
-                              (read-syntax/recursive source-name inp)])])
+                             [else (read-stx)])]) ; otherwise: a plain sub-read
                     (loop
                      lvl
                      (cond
@@ -455,8 +458,7 @@
     ;; called only when we must see a command in the input
     (define (get-command)
       (define-values (line col pos) (port-next-location inp))
-      (let ([cmd (parameterize ([current-readtable command-readtable])
-                   (read-syntax/recursive source-name inp))])
+      (let ([cmd (read-stx/rt command-readtable)])
         (cond [(special-comment? cmd)
                (read-error* line col pos (span-from pos)
                             "expecting a command expression, got a comment")]
