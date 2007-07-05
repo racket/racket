@@ -17,6 +17,7 @@
                           [(bytes? x) x]
                           [(string? x) (string->bytes/utf-8 x)]
                           [(char? x) (regexp-quote (bytes (char->integer x)))]
+                          [(not x) #""]
                           [else (error 'reader "internal error [px]")]))
                       args)])
       (byte-pregexp (apply bytes-append args))))
@@ -44,7 +45,7 @@
   (define ch:lines-begin #\{)
   (define ch:lines-end   #\})
 
-  (define str:lines-begin* #"\\|[^a-zA-Z0-9 \t\r\n\f@\\\177-\377{]*\\{")
+  (define str:lines-begin* #"(\\|[^a-zA-Z0-9 \t\r\n\f@\\\177-\377{]*)\\{")
 
   (define re:command       (^px ch:command
                                 ;; the following identifies string and
@@ -61,11 +62,11 @@
   (define re:lines-end     (^px ch:lines-end))
   (define str:end-of-line  "[ \t]*\r?\n[ \t]*") ; eat spaces on the next line
   (define re:end-of-line   (^px str:end-of-line))
-  (define (re:line-item* bgn end)
-    (^px "(.+?)(?:" (if bgn `(,bgn"|") "") (if end `(,end"|") "")
-         ch:command"|"str:end-of-line"|$)"))
-  (define re:line-item (re:line-item* ch:lines-begin ch:lines-end))
-  (define re:line-item-no-nests (re:line-item* #f #f))
+  (define (re:line-item* bgn end cmd-prefix)
+    (^px "(.+?)(?:" (and bgn `(,bgn"|")) (and end `(,end"|"))
+         cmd-prefix ch:command"|"str:end-of-line"|$)"))
+  (define re:line-item (re:line-item* ch:lines-begin ch:lines-end #f))
+  (define re:line-item-no-nests (re:line-item* #f #f #f))
 
   ;; --------------------------------------------------------------------------
   ;; utilities
@@ -335,7 +336,7 @@
                 (cdr stxs))
           (cons stx stxs))))
 
-    (define (get-lines* re:begin re:end re:item end-token)
+    (define (get-lines* re:begin re:end re:cmd-pfx re:item end-token)
       ;; re:begin, re:end, end-token can be false if start-inside? is #t
       (let loop ([lvl 0] [r '()])
         (let-values ([(line col pos) (port-next-location inp)])
@@ -357,7 +358,9 @@
                              (syntax-property (make-stx eol-token)
                                               'scribble `(newline ,m))
                              r)))]
-            [(*peek re:command)
+            [(if re:cmd-pfx
+               (and (*skip re:cmd-pfx) (*peek re:command))
+               (*peek re:command))
              ;; read the next value, include comment objs, keep source location
              ;; manually (see above)
              => (lambda (m)
@@ -416,15 +419,18 @@
             [else (read-error "internal error [get-lines*]")]))))
 
     (define (get-lines)
-      (cond [(*skip re:lines-begin)
-             (get-lines* re:lines-begin re:lines-end re:line-item ch:lines-end)]
-            [(*match1 re:lines-begin*)
-             => (lambda (bgn)
-                  (let* ([end  (reverse-bytes bgn)]
+      (cond [(*skip re:lines-begin) (get-lines* re:lines-begin re:lines-end #f
+                                                re:line-item ch:lines-end)]
+            [(*match re:lines-begin*)
+             => (lambda (m)
+                  (let* ([bgn (car m)]
+                         [end  (reverse-bytes bgn)]
                          [bgn* (regexp-quote bgn)]
-                         [end* (regexp-quote end)])
+                         [end* (regexp-quote end)]
+                         [cmd-pfx* (regexp-quote (cadr m))])
                     (get-lines* (^px bgn*) (^px end*)
-                                (re:line-item* bgn* end*)
+                                (^px cmd-pfx* "(?=" ch:command ")")
+                                (re:line-item* bgn* end* cmd-pfx*)
                                 end)))]
             [else #f]))
 
@@ -480,7 +486,7 @@
 
     (cond
       [start-inside?
-       (datum->syntax-object #f (get-lines* #f #f re:line-item-no-nests #f)
+       (datum->syntax-object #f (get-lines* #f #f #f re:line-item-no-nests #f)
          (list source-name line-num col-num position (span-from position)))]
       [(*peek re:whitespaces)
        (read-error "unexpected whitespace after ~a" ch:command)]
