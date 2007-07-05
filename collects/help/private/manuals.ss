@@ -118,49 +118,34 @@
                        compare-docs)]
            [names (map get-doc-name docs)]
            [names+paths (map cons names docs)])
-      (let-values ([(collections-doc-files collection-names) (colldocs)])
-        (apply
-         string-append
-         "<html>"
-         (xexpr->string `(HEAD ,hd-css ,@hd-links (TITLE "PLT Manuals")))
-         "<body>"
-
-         (append
-
-          (list "<H1>Installed Manuals</H1>")
-          (if (repos-or-nightly-build?)
-              (list
-               "<b>Subversion:</b> <a mzscheme=\""
-               (to-string/escape-quotes
-                `((dynamic-require '(lib "refresh-manuals.ss" "help") 'refresh-manuals)))
-               "\">"
-               (string-constant plt:hd:refresh-all-manuals)
-               "</a> &nbsp; &nbsp;"
-               (format "<a href=\"~a\">flush index and keyword cache</a><br>" flush-manuals-url))
-              '())
-          (build-known-manuals names+paths)
-
-          (list "<h3>Doc.txt</h3><ul>")
-          (map
-           (lambda (collection-doc-file name)
-             (let ([path (build-path (car collection-doc-file)
-                                     (cadr collection-doc-file))])
-               (format "<LI> ~a"
-                       (if (file-exists? path)
-                         (format "<A HREF=\"/servlets/doc-anchor.ss?file=~a&name=~a&caption=Documentation for the ~a collection\">~a collection</A>"
-                                 ;; escape colons and other junk
-                                 (uri-encode (path->string path))
-                                 (uri-encode name)
-                                 (uri-encode name)
-                                 name)
-                         (format "<FONT COLOR=\"RED\">~a collection: specified doc.txt file (~a) not found</FONT>"
-                                 name path)))))
-           collections-doc-files
-           collection-names)
-          (list "</UL>")
-
-          (let ([uninstalled (get-uninstalled docs)])
-            (if (null? uninstalled)
+      (apply
+       string-append
+       "<html>"
+       (xexpr->string `(HEAD ,hd-css ,@hd-links (TITLE "PLT Manuals")))
+       "<body>"
+       
+       (append
+        
+        (list "<H1>Installed Manuals</H1>")
+        (if (repos-or-nightly-build?)
+            (list
+             "<b>Subversion:</b> <a mzscheme=\""
+             (to-string/escape-quotes
+              `((dynamic-require '(lib "refresh-manuals.ss" "help") 'refresh-manuals)))
+             "\">"
+             (string-constant plt:hd:refresh-all-manuals)
+             "</a> &nbsp; &nbsp;"
+             (format "<a href=\"~a\">flush index and keyword cache</a><br>" flush-manuals-url))
+            '())
+        (build-known-manuals names+paths)
+        
+        (list "<h3>Doc.txt</h3><ul>")
+        (doc.txt-manuals)
+        
+        (list "</UL>")
+        
+        (let ([uninstalled (get-uninstalled docs)])
+          (if (null? uninstalled)
               `("")
               `("<H3>Uninstalled Manuals</H3>"
                 "<UL>"
@@ -180,11 +165,34 @@
                                 (if (and manual-path
                                          (or (file-exists? (build-path manual-path "hdindex"))
                                              (file-exists? (build-path manual-path "keywords"))))
-                                  " (index installed)"
-                                  "")))))
+                                    " (index installed)"
+                                    "")))))
                    uninstalled)
                 "</UL>")))
-          (list "</body></html>"))))))
+        (list "</body></html>")))))
+  
+  (define (doc.txt-manuals)
+    (let-values ([(collections-doc-files collection-names) (colldocs)])
+      (let ([name/html-pairs
+             (map
+              (lambda (collection-doc-file name)
+                (cons
+                 name
+                 (let ([path (build-path (car collection-doc-file)
+                                         (cadr collection-doc-file))])
+                   (format "<LI> ~a"
+                           (if (file-exists? path)
+                               (format "<A HREF=\"/servlets/doc-anchor.ss?file=~a&name=~a&caption=Documentation for the ~a collection\">~a collection</A>"
+                                       ;; escape colons and other junk
+                                       (uri-encode (path->string path))
+                                       (uri-encode name)
+                                       (uri-encode name)
+                                       name)
+                               (format "<FONT COLOR=\"RED\">~a collection: specified doc.txt file (~a) not found</FONT>"
+                                       name path))))))
+              collections-doc-files
+              collection-names)])
+        (map cdr (sort name/html-pairs (λ (x y) (string<=? (car x) (car y))))))))
   
   ;; break-between : regexp
   ;;                (listof (union string (cons string string))) 
