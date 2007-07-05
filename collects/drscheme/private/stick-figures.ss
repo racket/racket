@@ -29,6 +29,24 @@
       (left-toe 0 154)
       (right-toe 83 146)))
   
+  (define waiting-points/2
+    '((head 55 0)
+      (neck 43 18)
+      (shoulders 37 33)
+      (left-shoulder 23 34)
+      (right-shoulder 50 37)
+      (left-elbow 8 74)
+      (right-elbow 66 69)
+      (left-hand 60 78)
+      (right-hand 68 18)
+      (waist 37 87)
+      (left-knee 19 122)
+      (right-knee 57 117)
+      (left-ankle 19 154)
+      (left-toe 0 154)
+      (right-ankle 62 155)
+      (right-toe 83 154)))
+  
   (define running-points
     '((head 130 18)
       (neck 114 33)
@@ -47,6 +65,8 @@
       (left-toe 14 146)
       (right-toe 109 132)))
   
+  (define running-points/2 running-points)
+  
   (define running-canvas%
     (class canvas%
       (inherit get-dc refresh)
@@ -55,15 +75,20 @@
           (set! is-running? r?)
           (refresh)))
       (define is-running? #f)
+      (define toggle? #t)
       
       (define-values (w h running-dx running-dy waiting-dx waiting-dy)
         (get-size-parameters))
 
-      (define/override (on-paint)
-        (let ([dc (get-dc)])
-          (if is-running?
-              (draw-callback dc small-factor #f running-points running-dx running-dy line-size)
-              (draw-callback dc small-factor #f waiting-points waiting-dx waiting-dy line-size))))
+      (define/override (on-paint) 
+        (if is-running?
+            (draw-callback (get-dc) small-factor #f 
+                           running-points
+                           running-dx running-dy line-size)
+            (draw-callback (get-dc) small-factor #f
+                           (if toggle? waiting-points waiting-points/2)
+                           waiting-dx waiting-dy line-size)))
+      
       (super-new [stretchable-width #f]
                  [stretchable-height #f]
                  [style '(transparent)])
@@ -301,6 +326,20 @@
     (define m (new message% [label (get-running-bitmap)] [parent f]))
     (new grow-box-spacer-pane% [parent f])
     (send (get-running-bitmap) save-file (build-path (collection-path "icons") "run.png") 'png)
+    (send f show #t))
+  
+  #;
+  (let ()
+    (define f (new frame% [label ""]))
+    (define c (new running-canvas% [parent f]))
+    (new button%
+         [label "Run"]
+         [parent f]
+         [callback (λ (x y) (send c set-running #t))])
+    (new button%
+         [label "Wait"]
+         [parent f]
+         [callback (λ (x y) (send c set-running #f))])
     (send f show #t))
   
   #;(edit-points waiting-points)
