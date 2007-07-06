@@ -350,6 +350,7 @@
     (send (get-running-bitmap) save-file (build-path (collection-path "icons") "run.png") 'png)
     (send f show #t))
   
+  #;
   (let ()
     (define f (new frame% [label ""]))
     (define c (new running-canvas% [parent f]))
