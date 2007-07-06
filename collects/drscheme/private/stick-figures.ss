@@ -91,7 +91,6 @@
                        (new timer%
                             [notify-callback 
                              (λ ()
-                               (printf ".") (flush-output)
                                (set! toggle? (not toggle?))
                                (refresh))]
                             [interval 200])))]
