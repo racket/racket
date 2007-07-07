@@ -64,6 +64,7 @@ static Scheme_Object *string_to_symbol_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_uninterned_symbol_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *symbol_to_string_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *keyword_p_prim (int argc, Scheme_Object *argv[]);
+static Scheme_Object *keyword_lt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_keyword_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *keyword_to_string_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *gensym(int argc, Scheme_Object *argv[]);
@@ -319,6 +320,11 @@ scheme_init_symbol (Scheme_Env *env)
 			     scheme_make_folding_prim(keyword_p_prim,
 						      "keyword?",
 						      1, 1, 1),
+			     env);
+  scheme_add_global_constant("keyword<?",
+			     scheme_make_folding_prim(keyword_lt,
+						      "keyword<?",
+						      2, -1, 1),
 			     env);
   scheme_add_global_constant("string->keyword",
 			     scheme_make_noncm_prim(string_to_keyword_prim,
@@ -681,6 +687,55 @@ static Scheme_Object *
 keyword_p_prim (int argc, Scheme_Object *argv[])
 {
   return SCHEME_KEYWORDP(argv[0]) ? scheme_true : scheme_false;
+}
+
+static Scheme_Object *keyword_lt (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *prev = argv[0], *kw;
+  GC_CAN_IGNORE unsigned char *a, *b;
+  int i, al, bl, t;
+
+  if (!SCHEME_KEYWORDP(prev))
+    scheme_wrong_type("keyword<?", "keyword", 0, argc, argv);
+
+  for (i = 1; i < argc; i++) {
+    kw = argv[i];
+    if (!SCHEME_KEYWORDP(kw))
+      scheme_wrong_type("keyword<?", "keyword", i, argc, argv);
+
+    a = (unsigned char *)SCHEME_SYM_VAL(prev);
+    al = SCHEME_SYM_LEN(prev);
+    b = (unsigned char *)SCHEME_SYM_VAL(kw);
+    bl = SCHEME_SYM_LEN(kw);
+    t = ((al < bl) ? al : bl);
+    while (t--) {
+      if (*a < *b) {
+        al = 0;
+        bl = 1;
+        break;
+      } else if (*a > *b) {
+        al = bl = 0;
+        break;
+      } else {
+        a++;
+        b++;
+      }
+    }
+    a = b = NULL;
+
+    if (al >= bl) {
+      /* Check remaining types */
+      for (i++; i < argc; i++) {
+        if (!SCHEME_KEYWORDP(argv[i]))
+          scheme_wrong_type("keyword<?", "keyword", i, argc, argv);
+      }
+      return scheme_false;
+    }
+
+    prev = kw;
+  }
+
+  return scheme_true;
 }
 
 static Scheme_Object *

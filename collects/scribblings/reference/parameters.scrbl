@@ -5,9 +5,9 @@
 
 See @secref["mz:parameter-model"] for basic information on the
 parameter model. Parameters correspond to @defterm{preserved thread
-fluids} in \first{Scsh} @cite[#:key "cite:thread-fluids" #:title
-"Processes vs. User-Level Threads in Scsh" #:author "Martin Gasbichler
-and Michael Sperber" #:date 2002 #:location "Scheme Workshop"].
+fluids} in Scsh @cite[#:key "cite:thread-fluids" #:title "Processes
+vs. User-Level Threads in Scsh" #:author "Martin Gasbichler and
+Michael Sperber" #:date 2002 #:location "Scheme Workshop"].
 
 To parameterize code in a thread- and continuation-friendly manner,
 use @scheme[parameterize]. The @scheme[parameterize] form introduces a
@@ -123,12 +123,21 @@ forms.}
 
 
 @defproc[(make-derived-parameter [v any/c]
-                                 [guard (any/c . -> . any)])
+                                 [guard (any/c . -> . any)]
+                                 [wrap (any/c . -> . any)])
          parameter?]{
 
 Returns a parameter procedure that sets or retrieves the same value as
-@scheme[parameter], but with the additional guard @scheme[guard]
-applied (before any guard associated with @scheme[parameter]).}
+@scheme[parameter], but with:
+
+@itemize{
+
+ @item{@scheme[guard] applied when setting the parameter (before any
+       guard associated with @scheme[parameter]), and}
+
+ @item{@scheme[wrap] applied when obtaining the parameter's value.}
+
+}}
 
 @defproc[(parameter? [v any/c]) boolean?]{
 

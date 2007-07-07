@@ -103,7 +103,7 @@ information about the structure type and its instances; see
 @secref["mz:inspectors"] for more information.
 
 If @scheme[proc-spec] is an integer or procedure, instances of the
-structure type act as procedures. See @secref["mz:procstructs"] for
+structure type act as procedures. See @scheme[prop:procedure] for
 further information.  Providing a non-@scheme[#f] value for
 @scheme[proc-spec] is the same as pairing the value with
 @scheme[prop:procedure] in @scheme[props], plus including

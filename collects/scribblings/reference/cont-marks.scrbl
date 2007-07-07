@@ -132,7 +132,7 @@ The stack-trace list is the result of
 @scheme[continuation-mark-set->list] with @scheme[mark-set] and
 Scheme's private key for procedure-call marks. A stack trace is
 extracted from an exception and displayed by the default error display
-handler (see @secref["mz:exnsandflow"]) for exceptions other than
+handler (see @scheme[current-error-display-handler]) for exceptions other than
 @scheme[exn:fail:user] (see @scheme[raise-user-error] in
 @secref["mz:errorproc"]).}
 

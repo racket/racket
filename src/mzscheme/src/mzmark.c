@@ -3812,6 +3812,7 @@ static int mark_param_data_MARK(void *p) {
 
   gcMARK(d->key);
   gcMARK(d->guard);
+  gcMARK(d->extract_guard);
   gcMARK(d->defcell);
 
   return
@@ -3823,6 +3824,7 @@ static int mark_param_data_FIXUP(void *p) {
 
   gcFIXUP(d->key);
   gcFIXUP(d->guard);
+  gcFIXUP(d->extract_guard);
   gcFIXUP(d->defcell);
 
   return

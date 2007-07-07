@@ -59,7 +59,7 @@ default) or @scheme[make-continuation-prompt-tag]. The result of
 @scheme[call-with-continuation-prompt] call.
 
 The @scheme[handler] argument specifies a handler procedure to be
-called in tail position with repsect to the
+called in tail position with respect to the
 @scheme[call-with-continuation-prompt] call when the installed prompt
 is the target of a @scheme[abort-current-continuation] call with
 @scheme[prompt-tag]; the remaining arguments of
@@ -294,11 +294,11 @@ to disable breaks.
 
 In both cases, the target for a jump is recomputed after each
 @scheme[pre-thunk] or @scheme[post-thunk] completes. When a
-prompt-delimited continuation (see @secref["mz:prompts"]) is captured
-in a @scheme[post-thunk], it might be delimited and instantiated in
-such a way that the target of a jump turns out to be different when
-the continuation is applied than when the continuation was
-captured. There may even be no appropriate target, if a relevant
+prompt-delimited continuation (see @secref["mz:prompt-model"]) is
+captured in a @scheme[post-thunk], it might be delimited and
+instantiated in such a way that the target of a jump turns out to be
+different when the continuation is applied than when the continuation
+was captured. There may even be no appropriate target, if a relevant
 prompt or escape continuation is not in the continuation after the
 restore; in that case, the first step in a @scheme[pre-thunk] or
 @scheme[post-thunk]'s continuation can raise an exception.

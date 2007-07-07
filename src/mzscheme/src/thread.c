@@ -389,6 +389,7 @@ typedef struct {
   short is_derived;
   Scheme_Object *key;
   Scheme_Object *guard;
+  Scheme_Object *extract_guard;
   Scheme_Object *defcell;
 } ParamData;
 
@@ -649,7 +650,7 @@ void scheme_init_thread(Scheme_Env *env)
   scheme_add_global_constant("make-derived-parameter", 
 			     scheme_make_prim_w_arity(make_derived_parameter,
 						      "make-derived-parameter", 
-						      2, 2), 
+						      3, 3), 
 			     env);
   scheme_add_global_constant("parameter-procedure=?", 
 			     scheme_make_prim_w_arity(parameter_procedure_eq,
@@ -6113,7 +6114,14 @@ static Scheme_Object *do_param(void *_data, int argc, Scheme_Object *argv[])
     argv2 = argv;
 
   if (data->is_derived) {
-    return _scheme_tail_apply(data->key, argc, argv2);
+    if (!argc) {
+      Scheme_Object *v;
+      v = _scheme_apply(data->key, argc, argv2);
+      pos[0] = v;
+      return _scheme_tail_apply(data->extract_guard, 1, pos);
+    } else {
+      return _scheme_tail_apply(data->key, argc, argv2);
+    }
   }
 
   pos[0] = data->key;
@@ -6161,6 +6169,7 @@ static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
     scheme_wrong_type("make-derived-parameter", "parameter", 0, argc, argv);
 
   scheme_check_proc_arity("make-derived-parameter", 1, 1, argc, argv);
+  scheme_check_proc_arity("make-derived-parameter", 1, 2, argc, argv);
 
   data = MALLOC_ONE_RT(ParamData);
 #ifdef MZTAG_REQUIRED
@@ -6169,6 +6178,7 @@ static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
   data->is_derived = 1;
   data->key = argv[0];
   data->guard = argv[1];
+  data->extract_guard = argv[2];
 
   p = scheme_make_closed_prim_w_arity(do_param, (void *)data, 
 				      "parameter-procedure", 0, 1);

@@ -33,7 +33,7 @@ built-in datatypes, the sequence datatype includes the following:
 
  @item{byte strings (see @secref["mz:bytestrings"])}
 
- @item{input ports (see @secref["mz:input-ports"])}
+ @item{input ports (see @secref["mz:ports"])}
 
 }
 

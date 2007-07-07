@@ -1546,6 +1546,7 @@ mark_param_data {
 
   gcMARK(d->key);
   gcMARK(d->guard);
+  gcMARK(d->extract_guard);
   gcMARK(d->defcell);
 
  size:

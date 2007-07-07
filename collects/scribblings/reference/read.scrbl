@@ -36,7 +36,7 @@ Similar to calling @scheme[read], but normally used during the dynamic
 extent of @scheme[read] within a reader-extension procedure (see
 @secref["mz:reader-procs"]). The main effect of using
 @scheme[read/recursive] instead of @scheme[read] is that
-graph-structure annotations (see @secref["mz:sexpressions"]) in the
+graph-structure annotations (see @secref["mz:parse-graph"]) in the
 nested read are considered part of the overall read, at least when the
 @scheme[graph?] argument is true; since the result is wrapped in a
 placeholder, however, it is not directly inspectable.

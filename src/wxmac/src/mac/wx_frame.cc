@@ -134,7 +134,7 @@ wxFrame::wxFrame // Constructor (for frame window)
 	windowClass = kToolbarWindowClass;
 	windowAttributes = kWindowNoAttributes;
       } else {
-	windowClass = kUtilityWindowClass;
+	windowClass = kUtilityWindowClass; /* or kFloatingWindowClass? */
 	windowAttributes = kWindowCloseBoxAttribute;
 	if (!(cStyle & wxNO_RESIZE_BORDER)) {
 	  windowAttributes |= kWindowFullZoomAttribute | kWindowResizableAttribute;
@@ -1230,6 +1230,8 @@ wxFrame *wxFrame::GetSheetParent()
     return NULL; /* No nested sheets */
   else if (cStyle & wxNO_CAPTION)
     return NULL; /* Sheets need a title bar */
+  else if (cStyle & wxFLOAT_FRAME)
+    return NULL; /* Don't use sheets on floating windows */
   else
 #endif
     return this;

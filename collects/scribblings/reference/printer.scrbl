@@ -154,7 +154,7 @@ is written using @litchar{\a}, @litchar{\b}, @litchar{\t},
 @litchar{\e} if possible, otherwise using @litchar{\} followed by one
 to three octal digits (only as many as necessary).
 
-@section{Printing Vectors}
+@section[#:tag "mz:print-vectors"]{Printing Vectors}
 
 In @scheme[display] mode, the printed form of a vector is @litchar{#}
 followed by the printed form of @scheme[vector->list] applied to the
@@ -162,7 +162,7 @@ vector. In @scheme[write] mode, the printed form is the same, except
 that a decimal integer is printed after the @litchar{#} when the
 @scheme[print-vector-length] parameter is @scheme[#t].
 
-@section{Printing Hash Tables}
+@section[#:tag "mz:print-hashtable"]{Printing Hash Tables}
 
 When the @scheme[print-hash-table] parameter is set to @scheme[#t], a
 hash table prints starting with @litchar{#hash(} or @litchar{#hasheq(}
@@ -177,7 +177,7 @@ After all key-value pairs, the printed form completes with
 When the @scheme[print-hash-table] parameter is set to @scheme[#f], a
 hash table prints (un@scheme[read]ably) as @litchar{#<hash-table>}.
 
-@section{Printing Boxes}
+@section[#:tag "mz:print-box"]{Printing Boxes}
 
 When the @scheme[print-box] parameter is set to @scheme[#t], 
 a box prints as @litchar{#&} followed by the printed form of its content.

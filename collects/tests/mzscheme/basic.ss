@@ -400,6 +400,25 @@
 
 (arity-test symbol? 1 1)
 
+(test #t keyword? '#:a)
+(test #f keyword? 'a)
+(test '#:apple string->keyword "apple")
+(test "apple" keyword->string '#:apple)
+(test #t keyword<? '#:a '#:b)
+(test #f keyword<? '#:b '#:b)
+(test #t keyword<? '#:b '#:bb)
+(test #f keyword<? '#:b '#:)
+(test #t keyword<? (string->keyword "a") (string->keyword "\uA0"))
+(test #t keyword<? (string->keyword "a") (string->keyword "\uFF"))
+(test #f keyword<? (string->keyword "\uA0") (string->keyword "a"))
+(test #f keyword<? (string->keyword "\uFF") (string->keyword "a"))
+(test #t keyword<? (string->keyword "\uA0") (string->keyword "\uFF"))
+(test #f keyword<? (string->keyword "\uFF") (string->keyword "\uA0"))
+(test #f keyword<? (string->keyword "\uA0") (string->keyword "\uA0"))
+
+(arity-test keyword? 1 1)
+(arity-test keyword<? 2 -1)
+
 (define (char-tests)
   (test #t eqv? '#\  #\Space)
   (test #t eqv? #\space '#\Space)

@@ -190,7 +190,7 @@ exception is raised during the evaluation of @scheme[thunk] (in an
 extension of the current continuation that does not have its own
 exception handler), then @scheme[f] is applied to the @scheme[raise]d
 value in the continuation of the @scheme[raise] call (but extended
-with a continuation barrier; see @secref["mz:continuations"]).
+with a @tech{continuation barrier}; see @secref["mz:prompt-model"]).
 
 Any procedure that takes one argument can be an exception handler.  If
 the exception handler returns a value when invoked by @scheme[raise],
@@ -275,6 +275,104 @@ difficult.}
 Like @scheme[with-handlers], but if a @scheme[handler-expr] procedure
 is called, breaks are not explicitly disabled, and the call is in tail
 position with respect to the @scheme[with-handlers*] form.}
+
+@;------------------------------------------------------------------------
+@section{Configuring Default Handling}
+
+@defparam[error-escape-handler proc (-> any)]{
+
+A parameter for the @deftech{error escape handler}, which takes no
+arguments and escapes from the dynamic context of an exception.  The
+default error escape handler escapes using
+@scheme[(abort-current-continuation (default-continuation-prompt-tag)
+void)].
+
+The error escape handler is normally called directly by an exception
+handler, in a @tech{parameterization} that sets the @tech{error
+display handler} and @tech{error escape handler} to the default
+handlers, and it is normally @scheme[parameterize-break]ed to disable
+breaks. To escape from a run-time error in a different context, use
+@scheme[raise] or @scheme[error].
+
+Due to a @tech{continuation barrier} around exception-handling calls,
+an error escape handler cannot invoke a full continuation that was
+created prior to the exception, but it can abort to a prompt (see
+@scheme[call-with-continuation-prompt]) or invoke an escape
+continuation (see @scheme[call-with-escape-continuation]).}
+
+@defparam[error-display-handler proc (string? any/c . -> . any)]{
+
+A parameter for the @deftech{error display handler}, which is called
+by the default exception handler with an error message and the
+exception value. More generally, the handler's first argument is a
+string to print as an error message, and the second is a value
+representing a raised exception.
+
+The default error display handler @scheme[display]s its first argument
+to the current error port (determined by the
+@scheme[current-error-port] parameter) and extracts a stack trace (see
+@scheme[continuation-mark-set->context]) to display from the second
+argument if it is an @scheme[exn] value but not an
+@scheme[exn:fail:user] value.
+
+@margin-note{The default error display handler in DrScheme also uses
+the second argument to highlight source locations.}
+
+To report a run-time error, use @scheme[raise] or procedures like
+@scheme[error], instead of calling the error display procedure
+directly.}
+
+@defparam[error-print-width width (and exact-integer? (>=/c 3))]{
+
+A parameter whose value is used as the maximum number of characters
+used to print a Scheme value that is embedded in a primitive error
+message.}
+
+@defparam[error-print-context-length cnt nonnegative-exact-integer?]{
+
+A parameter whose value is used by the default error display handler
+as the maximum number of lines of context (or ``stack trace'') to
+print; a single ``...'' line is printed if more lines are available
+after the first @scheme[cnt] lines. A @scheme[0] value for
+@scheme[cnt] disables context printing entirely.}
+
+@defparam[error-value->string-handler proc (any/c nonnegative-exact-integer?
+                                                  . -> .
+                                                  string?)]{
+
+A parameter that determines the @deftech{error value conversion
+handler}, which is used to print a Scheme value that is embedded in a
+primitive error message.
+
+The integer argument to the handler specifies the maximum number of
+characters that should be used to represent the value in the resulting
+string.  The default error value conversion handler @scheme[print]s
+the value into a string (using the current @tech{global port print
+handler}; see @scheme[global-port-print-handler]). If the printed form
+is too long, the printed form is truncated and the last three
+characters of the return string are set to ``...''.
+
+If the string returned by an error value conversion handler is longer
+than requested, the string is destructively ``truncated'' by setting
+the first extra position in the string to the null character. If a
+non-string is returned, then the string @scheme["..."] is used. If a
+primitive error string needs to be generated before the handler has
+returned, the default error value conversion handler is used.
+
+Call to an error value conversion handler are @scheme[parameterized]
+to re-install the default error value conversion handler, and to
+enable printing of unreadable values (see @scheme[print-unreadable]).}
+
+@defboolparam[error-print-source-location include?]{
+
+A parameter that controls whether read and syntax error messages
+include source information, such as the source line and column or the
+expression.  This parameter also controls the error message when a
+module-defined variable is accessed before its definition is executed;
+the parameter determines whether the message includes a module
+name. Only the message field of an @scheme[exn:fail:read],
+@scheme[exn:fail:syntax], or @scheme[exn:fail:contract:variable]
+structure is affected by the parameter. The default is @scheme[#t].}
 
 @;------------------------------------------------------------------------
 @section{Built-in Exception Types}

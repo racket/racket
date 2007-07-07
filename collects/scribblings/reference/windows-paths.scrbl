@@ -8,11 +8,10 @@
 @title[#:tag "mz:windowspaths"]{Windows Path Conventions}
 
 In general, a Windows pathname consists of an optional drive specifier
-and a drive-specific path. As noted in @secref["mz:filesystem"], a
-Windows path can be @defterm{absolute} but still relative to the
-current drive; such paths start with a @litchar{/} or @litchar["\\"]
-separator and are not UNC paths or paths that start with
-@litchar["\\\\?\\"].
+and a drive-specific path. A Windows path can be @defterm{absolute}
+but still relative to the current drive; such paths start with a
+@litchar{/} or @litchar["\\"] separator and are not UNC paths or paths
+that start with @litchar["\\\\?\\"].
 
 A path that starts with a drive specification is @defterm{complete}.
 Roughly, a drive specification is either a Roman letter followed by a

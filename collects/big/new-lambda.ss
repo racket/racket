@@ -133,15 +133,6 @@
   ;; The sort in "list.ss" should be moved into it's own library, 
   ;; so we can use it here without requiring lots of other stuff.)
   
-  ;; Also, keyword<? should be made built in. (We need it in two phases.)
-  
-  (define (keyword<? a b)
-    (string<? (keyword->string a)
-              (keyword->string b)))
-  (define-for-syntax (keyword<? a b)
-    (string<? (keyword->string a)
-              (keyword->string b)))
-  
   (define-for-syntax (sort l <?)
     (cond
       [(null? l) null]
@@ -650,7 +641,8 @@
                             (check-kw-args p kws)
                             (values #f (car kws)))])
             (let ([args-str
-                   (if (null? args)
+                   (if (and (null? args)
+                            (null? kws))
                        "no arguments supplied"
                        ;; Hack to format arguments:
                        (with-handlers ([exn:fail?

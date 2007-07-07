@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title{File Ports}
+@title[#:tag "mz:file-ports"]{File Ports}
 
 A port created by @scheme[open-input-file], @scheme[open-output-file],
 @scheme[subprocess], and related functions is a @deftech{file-stream

@@ -69,8 +69,8 @@ the event does not decrement @scheme[sema]'s internal count.}
 
 Waits on @scheme[sema] using @scheme[semaphore-wait], calls
 @scheme[proc] with all @scheme[arg]s, and then posts to
-@scheme[sema]. A continuation barrier blocks full continuation jumps
-into or out of @scheme[proc] (see @secref["mz:continuations"]), but
+@scheme[sema]. A @tech{continuation barrier} blocks full continuation jumps
+into or out of @scheme[proc] (see @secref["mz:prompt-model"]), but
 escape jumps are allowed, and @scheme[sema] is posted on escape. If
 @scheme[try-fail-thunk] is provided and is not @scheme[#f], then
 @scheme[semaphore-try-wait?] is called on @scheme[sema] instead of

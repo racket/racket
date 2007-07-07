@@ -1994,8 +1994,8 @@ improve method arity mismatch contract violation error messages?
                             [(parameter? val)
                              (make-derived-parameter 
                               val 
-                              #;partial-pos-contract
-                              partial-neg-contract)]
+                              partial-neg-contract
+                              partial-pos-contract)]
                             [else
                              (raise-contract-error val src-info pos-blame orig-str 
                                                    "expected a parameter")])))))))

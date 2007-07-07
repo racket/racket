@@ -2,7 +2,7 @@
 @require["../web-server.ss"]
 
 @title[#:tag "web-server-ref"]{Web Server Reference Manual}
-@author{Jay McCarthy (jay\@plt-scheme.org)}
+@author{Jay McCarthy (jay@"@"plt-scheme.org)}
 
 The @web-server collection provides libraries that can be used to
 develop Web applications in Scheme.

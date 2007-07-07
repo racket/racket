@@ -32,34 +32,33 @@ event's state.
 The following act as events in stand-alone MzScheme.  An extension or
 embedding application can extend the set of primitive events --- in
 particular, an eventspace in MrEd is an event --- and new structure
-types can generate events (see @secref["mz:evt-structs"]).
+types can generate events (see @scheme[prop:evt]).
 
 @itemize{
 
  @item{@scheme[semaphore] --- a semaphore is ready when
- @scheme[semaphore-wait] (see @secref["mz:semaphore"]) would not
- block.  @ResultItself{semaphore}.}
+ @scheme[semaphore-wait] would not block.  @ResultItself{semaphore}.}
 
  @item{@scheme[semaphore-peek] --- a semaphore-peek event returned by
- @scheme[semaphore-peek-evt] applied to @scheme[semaphore] (see
- @secref["mz:semaphore"]) is ready exactly when @scheme[semaphore] is
+ @scheme[semaphore-peek-evt] applied to @scheme[semaphore] is ready
+ exactly when @scheme[semaphore] is
  ready. @ResultItself{semaphore-peek}.}
 
- @item{@scheme[channel] --- a channel returned by @scheme[make-channel]
- is ready when @scheme[channel-get] would not block (see
- @secref["mz:channel"]). The channel's result as an event is the same as
- the @scheme[channel-get] result.}
+ @item{@scheme[channel] --- a channel returned by
+ @scheme[make-channel] is ready when @scheme[channel-get] would not
+ block. The channel's result as an event is the same as the
+ @scheme[channel-get] result.}
 
  @item{@scheme[channel-put] --- an event returned by
  @scheme[channel-put-evt] applied to @scheme[channel] is ready when
- @scheme[channel-put] would not block on @scheme[channel] (see
- @secref["mz:channel"]). @ResultItself{channel-put}.}
+ @scheme[channel-put] would not block on
+ @scheme[channel]. @ResultItself{channel-put}.}
 
  @item{@scheme[input-port] --- an input port is ready as an event when
  @scheme[read-byte] would not block. @ResultItself{input-port}.}
 
  @item{@scheme[output-port] --- an output port is ready when
- @scheme[write-bytes-avail] would not block (see @secref["mz:write"]) or
+ @scheme[write-bytes-avail] would not block or
  when the port contains buffered characters and
  @scheme[write-bytes-avail*] can flush part of the buffer (although
  @scheme[write-bytes-avail] might block). @ResultItself{output-port}.}
@@ -69,49 +68,45 @@ types can generate events (see @secref["mz:evt-structs"]).
  any subsequent read from @scheme[input-port]. @ResultItself{progress}.}
 
  @item{@scheme[tcp-listener] --- a TCP listener is ready when
- @scheme[tcp-accept] (see @secref["mz:tcp"]) would not block.
- @ResultItself{listener}.}
+ @scheme[tcp-accept] would not block.  @ResultItself{listener}.}
 
  @item{@scheme[thd] --- a thread is ready when @scheme[thread-wait]
- (see @secref["mz:threadsync"]) would not block. @ResultItself{thread}.}
+ would not block. @ResultItself{thread}.}
 
  @item{@scheme[thread-dead] --- an event returned by
- @scheme[thread-dead-evt] (see @secref["mz:threadsync"]) applied to
- @scheme[thd] is ready when @scheme[thd] has terminated. 
- @ResultItself{thread-dead}.}
+ @scheme[thread-dead-evt] applied to @scheme[thd] is ready when
+ @scheme[thd] has terminated.  @ResultItself{thread-dead}.}
 
  @item{@scheme[thread-resume] --- an event returned by
- @scheme[thread-resume-evt] (see @secref["mz:threadsync"]) applied to
- @scheme[thd] is ready when @scheme[thd] subsequently resumes
- execution (if it was not already running). The event's result is
- @scheme[thd].}
+ @scheme[thread-resume-evt] applied to @scheme[thd] is ready when
+ @scheme[thd] subsequently resumes execution (if it was not already
+ running). The event's result is @scheme[thd].}
 
  @item{@scheme[thread-suspend] --- an event returned by
- @scheme[thread-suspend-evt] (see @secref["mz:threadsync"]) applied to
- @scheme[thd] is ready when @scheme[thd] subsequently suspends
- execution (if it was not already suspended).  The event's result is
- @scheme[thd].}
+ @scheme[thread-suspend-evt] applied to @scheme[thd] is ready when
+ @scheme[thd] subsequently suspends execution (if it was not already
+ suspended).  The event's result is @scheme[thd].}
 
  @item{@scheme[alarm] --- an event returned by @scheme[alarm-evt] is
  ready after a particular date and time.  @ResultItself{alarm}.}
 
  @item{@scheme[subprocess] --- a subprocess is ready when
- @scheme[subprocess-wait] (see @secref["mz:subprocess"]) would not block.
+ @scheme[subprocess-wait] would not block.
  @ResultItself{subprocess}.}
 
  @item{@scheme[will-executor] --- a will executor is ready when
- @scheme[will-execute] (see @secref["mz:willexecutor"]) would not block.
+ @scheme[will-execute] would not block.
  @ResultItself{will-executor}.}
 
  @item{@scheme[udp] --- an event returned by @scheme[udp-send-evt] or
- @scheme[udp-receive!-evt] (see @secref["mz:udp"]) is ready when a send or
- receive on the original socket would block, respectively. @ResultItself{udp}.}
+ @scheme[udp-receive!-evt] is ready when a send or receive on the
+ original socket would block, respectively. @ResultItself{udp}.}
 
- @item{@scheme[choice] --- an event returned by @scheme[choice-evt] (see
- below) is ready when one or more of the @scheme[evt]s supplied to
+ @item{@scheme[choice] --- an event returned by @scheme[choice-evt] is
+ ready when one or more of the @scheme[evt]s supplied to
  @scheme[chocie-evt] are ready. If the choice event is chosen, one of
- its ready @scheme[evt]s is chosen pseudo-randomly, and the result is the
- chosen @scheme[evt]'s result.}
+ its ready @scheme[evt]s is chosen pseudo-randomly, and the result is
+ the chosen @scheme[evt]'s result.}
 
  @item{@scheme[wrap] --- an event returned by @scheme[wrap-evt]
  applied to @scheme[evt] and @scheme[proc] is ready when @scheme[evt] is
@@ -164,8 +159,8 @@ types can generate events (see @secref["mz:evt-structs"]).
  result.}
 
  @item{@scheme[struct] --- a structure whose type has the
- @scheme[prop:evt] property identifies/generates an event through
- the property; see @secref["mz:evt-structs"] for further information.}
+ @scheme[prop:evt] property identifies/generates an event through the
+ property.}
 
  @item{@scheme[always-evt] --- a constant event that is always
  ready. @ResultItself{@scheme[always-evt]}.}
@@ -342,9 +337,9 @@ A @tech{structure type property} that identifies structure types whose
 }
 
 Instances of a structure type with the @scheme[prop:input-port] or
-@scheme[prop:output-port] property (see @secref["mz:portstructs"]) are
-also synchronizable by virtue of being a port. If the structure type
-has more than one of @scheme[prop:evt], @scheme[prop:input-port], and
+@scheme[prop:output-port] property are also synchronizable by virtue
+of being a port. If the structure type has more than one of
+@scheme[prop:evt], @scheme[prop:input-port], and
 @scheme[prop:output-port], then the @scheme[prop:evt] value (if any)
 takes precedence for determing the instance's behavior as an event,
 and the @scheme[prop:input-port] property takes precedence over

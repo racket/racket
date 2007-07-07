@@ -317,7 +317,7 @@ match succeeds, @scheme[#f] otherwise.}
 Like @scheme[regexp-match] on input ports, but only peeks bytes from
 @scheme[input-port] instead of reading them. Furthermore, instead of
 an output port, the last optional argument is a progress event for
-@scheme[input-port] (see @secref["mz:read"]). If @scheme[progress]
+@scheme[input-port] (see @scheme[port-progress-evt]). If @scheme[progress]
 becomes ready, then the match stops peeking from @scheme[input-port]
 and returns @scheme[#f]. The @scheme[progress] argument can be
 @scheme[#f], in which case the peek may continue with inconsistent

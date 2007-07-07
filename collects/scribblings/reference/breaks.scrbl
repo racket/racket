@@ -88,9 +88,8 @@ a break exception is raised, the semaphore will not have been
 decremented.
 
 To allow similar implementation patterns over blocking port
-operations, MzScheme provides @scheme[read-bytes-avail!/enable-break]
-(see @secref["mz:read"]), @scheme[write-bytes-avail/enable-break] (see
-@secref["mz:write"]), and other procedures.
+operations, MzScheme provides @scheme[read-bytes-avail!/enable-break],
+@scheme[write-bytes-avail/enable-break], and other procedures.
 
 
 @;------------------------------------------------------------------------
