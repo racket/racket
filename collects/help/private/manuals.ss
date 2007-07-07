@@ -192,7 +192,7 @@
                                        name path))))))
               collections-doc-files
               collection-names)])
-        (map cdr (sort name/html-pairs (λ (x y) (string<=? (car x) (car y))))))))
+        (map cdr (sort name/html-pairs (λ (x y) (string-ci<=? (car x) (car y))))))))
   
   ;; break-between : regexp
   ;;                (listof (union string (cons string string))) 
