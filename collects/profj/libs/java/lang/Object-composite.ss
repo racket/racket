@@ -130,14 +130,12 @@
   (define convert-assert-Object
     (class* object% (wrapper)
       
-      (init w p n s c)
-      (define-values (wrapped pos-blame neg-blame src cc-marks) (values null null null null null))
+      (init w)
+      (init-field pos-blame neg-blame src cc-marks)
+      
+      (define wrapped null)
       (set! wrapped w)
-      (set! pos-blame p)
-      (set! neg-blame n)
-      (set! src s)
-      (set! cc-marks c)
-
+      
       (define/public (get-wrapped) wrapped)
       (define/public (compare obj1 obj2)
         (cond
@@ -197,7 +195,19 @@
       (define/public (field-names) (send wrapped field-names))
       (define/public (field-values) (send wrapped field-values))        
       (define/public (fields-for-display) (send wrapped fields-for-display))
+      
+      (public-final pos-blame* neg-blame* src* cc-marks*)
+      (define (pos-blame*) (ca-pos-blame* this))
+      (define (neg-blame*) (ca-neg-blame* this))
+      (define (src*) (ca-src* this))
+      (define (cc-marks*) (ca-cc-marks* this))
+      
       (super-instantiate ())))
+  
+  (define ca-pos-blame* (class-field-accessor convert-assert-Object pos-blame))
+  (define ca-neg-blame* (class-field-accessor convert-assert-Object neg-blame))
+  (define ca-src* (class-field-accessor convert-assert-Object src))
+  (define ca-cc-marks* (class-field-accessor convert-assert-Object cc-marks))
   
   (define dynamic-Object/c
     (c:flat-named-contract "Object" (lambda (v) (is-a? v convert-assert-Object))))
@@ -205,13 +215,11 @@
   (define guard-convert-Object
     (class* object% (wrapper)
       
-      (init w p n s c)
-      (define-values (wrapped pos-blame neg-blame src cc-marks) (values null null null null null))
+      (init w)
+      (init-field pos-blame neg-blame src cc-marks)
+      
+      (define wrapped null)
       (set! wrapped w)
-      (set! pos-blame p)
-      (set! neg-blame n)
-      (set! src s)
-      (set! cc-marks s)
       
       (define/public (get-wrapped) wrapped)
       
@@ -294,7 +302,20 @@
       (define/public (field-names) (send wrapped field-names))
       (define/public (field-values) (send wrapped field-values))
       (define/public (fields-for-display) (send wrapped fields-for-display))
+      (define/public (get-pos) (gc-pos-blame* this))
+      
+      (public-final pos-blame* neg-blame* src* cc-marks*)
+      (define (pos-blame*) (gc-pos-blame* this))
+      (define (neg-blame*) (gc-neg-blame* this))
+      (define (src*) (gc-src* this))
+      (define (cc-marks*) (gc-cc-marks* this))
+      
       (super-instantiate ())))
+  
+  (define gc-pos-blame* (class-field-accessor guard-convert-Object pos-blame))
+  (define gc-neg-blame* (class-field-accessor guard-convert-Object neg-blame))
+  (define gc-src* (class-field-accessor guard-convert-Object src))
+  (define gc-cc-marks* (class-field-accessor guard-convert-Object cc-marks))
   
   (define static-Object/c
     (c:flat-named-contract "Object" (lambda (v) (is-a? v guard-convert-Object))))  
@@ -1028,38 +1049,51 @@
       (init w p n s c)
       (super-instantiate (w p n s c))
       
-      (define-values  (wrapped pos-blame neg-blame src cc-marks) (values null null null null null))
+      (define wrapped null)
       (set! wrapped w)
-      (set! pos-blame p)
-      (set! neg-blame n)
-      (set! src s)
-      (set! cc-marks c)
-
+      
       (define/public (set-exception! exn) (send wrapped set-exception! exn))
       (define/public (get-mzscheme-exception) (send wrapped get-mzscheme-exception))
       (define/public (initCause-java.lang.Throwable cse)
-        (wrap-convert-assert-Throwable
-         (send wrapped initCause-java.lang.Throwable (make-object guard-convert-Throwable cse
-                                                       pos-blame neg-blame src cc-marks)
-               pos-blame neg-blame src cc-marks)))
+        (let ([pb (send this pos-blame*)]
+              [nb (send this neg-blame*)]
+              [sr (send this src*)]
+              [cc (send this cc-marks*)])
+          (wrap-convert-assert-Throwable
+           (send wrapped initCause-java.lang.Throwable 
+                 (make-object guard-convert-Throwable cse pb nb sr cc))
+           pb nb sr cc)))
       (define/public (getMessage) 
-        (let ((val (send wrapped getMessage)))
+        (let ([val (send wrapped getMessage)]
+              [pb (send this pos-blame*)]
+              [nb (send this neg-blame*)]
+              [sr (send this src*)]
+              [cc (send this cc-marks*)])
           (if (string? val)
               (make-java-string val)
-              (raise (make-exn:fail
-                      (format "~a broke ~a contract here; Throwable's getMessage expects string return, given ~a"
-                              pos-blame neg-blame val)
-                      cc-marks)))))
-      (define/public (getCause)
-        (wrap-convert-assert-Throwable (send wrapped getCause)))
+              (raise 
+               (make-exn:fail
+                (format "~a broke ~a contract here; Throwable's getMessage expects string return, given ~a"
+                        pb nb val)
+                cc)))))
+      (define/public (getCause)        
+        (let ([pb (send this pos-blame*)]
+              [nb (send this neg-blame*)]
+              [sr (send this src*)]
+              [cc (send this cc-marks*)])
+        (wrap-convert-assert-Throwable (send wrapped getCause) pb nb sr cc)))
       (define/public (getLocalizedMessage)
-        (let ((val (send wrapped getLocalizedMessage)))
+        (let ([val (send wrapped getLocalizedMessage)]
+              [pb (send this pos-blame*)]
+              [nb (send this neg-blame*)]
+              [sr (send this src*)]
+              [cc (send this cc-marks*)])
           (if (string? val)
               (make-java-string val)
               (raise (make-exn:fail
                       (format "~a broke ~a contract here; Throwable's getLocalizedMessage expects string return, given ~a"
-                              pos-blame neg-blame val)
-                      cc-marks)))))
+                              pb nb val)
+                      cc)))))
       (define/public (setStackTrace-java.lang.StackTraceElement1 elements)
         (send wrapped setStackTrace-java.lang.StackTraceElement1 elements))
       (define/public (getStackTrace) (send wrapped getStackTrace))
@@ -1077,37 +1111,53 @@
 
       (init w p n s c)
       (super-instantiate (w p n s c))
-      (define-values (wrapped pos-blame neg-blame src cc-marks) (values null null null null null))
+      
+      (define wrapped null)
       (set! wrapped w)
-      (set! pos-blame p)
-      (set! neg-blame n)
-      (set! src s)
-      (set! cc-marks s)
 
       (define/public (set-exception! exn) (send wrapped set-exception! exn))
       (define/public (get-mzscheme-exception) (send wrapped get-mzscheme-exception))
       (define/public (initCause-java.lang.Throwable . cse)
+        (let ([pb (send this pos-blame*)]
+              [nb (send this neg-blame*)]
+              [sr (send this src*)]
+              [cc (send this cc-marks*)])          
         (unless (= 1 (length cse))
           (raise (make-exn:fail:contract:arity
                   (format "~a broke ~a contract here: Throwable's initCause expects to be called with 1 argument, given ~n"
-                          pos-blame neg-blame (length cse))
-                  cc-marks)))
+                          pb nb (length cse))
+                  cc)))
         (make-object guard-convert-Throwable
-          (send wrapped initCause-java.lang.Throwable (wrap-convert-assert-Throwable (car cse)))))
+          (send wrapped initCause-java.lang.Throwable 
+                (wrap-convert-assert-Throwable (car cse) pb nb sr cc)))))
       (define/public (init-cause . cse)
-        (unless (= 1 (length cse))
-          (raise (make-exn:fail:contract:arity
-                  (format "~a broke ~a contract here: Throwable's initCause expects to be called with 1 argument, given ~n"
-                          pos-blame neg-blame (length cse))
-                  cc-marks)))
-        (make-object guard-convert-Throwable
-          (send wrapped initCause-java.lang.Throwable (wrap-convert-assert-Throwable (car cse) pos-blame neg-blame src cc-marks))
-          pos-blame neg-blame src cc-marks))
+        (let ([pb (send this pos-blame*)]
+              [nb (send this neg-blame*)]
+              [sr (send this src*)]
+              [cc (send this cc-marks*)])
+          (unless (= 1 (length cse))
+            (raise (make-exn:fail:contract:arity
+                    (format "~a broke ~a contract here: Throwable's initCause expects to be called with 1 argument, given ~n"
+                            pb nb (length cse))
+                  cc)))
+          (make-object guard-convert-Throwable
+            (send wrapped initCause-java.lang.Throwable 
+                  (wrap-convert-assert-Throwable (car cse) pb nb sr cc))
+            pb nb sr cc)))
       (define/public (getMessage) (send (send wrapped getMessage) get-mzscheme-string))
       (define/public (get-message) (send (send wrapped getMessage) get-mzscheme-string))
-      (define/public (getCause) (make-object guard-convert-Throwable (send wrapped getCause) pos-blame neg-blame src cc-marks))
-      (define/public (get-cause) (make-object guard-convert-Throwable
-                                   (send wrapped getCause) pos-blame neg-blame src cc-marks))
+      (define/public (getCause) 
+        (let ([pb (send this pos-blame*)]
+              [nb (send this neg-blame*)]
+              [sr (send this src*)]
+              [cc (send this cc-marks*)])
+          (make-object guard-convert-Throwable (send wrapped getCause) pb nb sr cc)))
+      (define/public (get-cause) 
+        (let ([pb (send this pos-blame*)]
+              [nb (send this neg-blame*)]
+              [sr (send this src*)]
+              [cc (send this cc-marks*)])
+          (make-object guard-convert-Throwable (send wrapped getCause) pb nb sr cc)))
       (define/public (getLocalizedMessage) (send (send wrapped getLocalizedMessage) get-mzscheme-string))
       (define/public (get-localized-message) (send (send wrapped getLocalizedMessage) get-mzscheme-string))
       (define/public (setStackTrace-java.lang.StackTraceElement1 elements)

@@ -311,12 +311,12 @@
        [(ReturnStatement) $1])
       
       (IfThenElseStatement
-       [(if O_PAREN Expression C_PAREN StatementNoShortIf else Statement)
-	(make-ifS $3 $5 $7 (build-src 1) (build-src 7))])
+       [(if O_PAREN Expression C_PAREN O_BRACE StatementNoShortIf C_BRACE else O_BRACE Statement C_BRACE)
+	(make-ifS $3 $6 $10 (build-src 1) (build-src 11))])
       
       (IfThenElseStatementNoShortIf
-       [(if O_PAREN Expression C_PAREN StatementNoShortIf else StatementNoShortIf)
-	(make-ifS $3 $5 $7 (build-src 1) (build-src 7))])
+       [(if O_PAREN Expression C_PAREN O_BRACE StatementNoShortIf C_BRACE else O_BRACE StatementNoShortIf C_BRACE)
+	(make-ifS $3 $6 $10 (build-src 1) (build-src 11))])
       
       (ReturnStatement
        [(return Expression SEMI_COLON) (make-return $2 #f #t (build-src 3))])

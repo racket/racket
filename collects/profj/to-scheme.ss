@@ -861,12 +861,8 @@
               `(define ,name
                  (class ,super-name
                    (init w* p* n* s* c*)
-                   (define-values (wrapped-obj pos-blame neg-blame src* cc-marks) (values null null null null null))
+                   (define wrapped-obj  null)
                    (set! wrapped-obj w*)
-                   (set! pos-blame p*)
-                   (set! neg-blame n*)
-                   (set! src* s*)
-                   (set! cc-marks c*)
                    (super-instantiate (w* p* n* s* c*))
                   
                    ,@(generate-wrapper-fields fields from-dynamic?)
@@ -901,34 +897,44 @@
                   (let* ((name (id-string (field-name field)))
                          (dynamic-access-body
                           (lambda (guard-body scheme-body)
-                            `(if (is-a? wrapped-obj guard-convert-Object)
+                            `(if (is-a? wr* guard-convert-Object)
                                  ,guard-body
                                  ,scheme-body)))
                          (get-name (create-get-name name))
                          (set-name (create-set-name name))
-                         (get-call `(,get-name wrapped-obj))
-                         (set-call `(lambda (new-val) (,set-name wrapped-obj new-val))))
+                         (get-call `(,get-name wr*))
+                         (set-call `(lambda (new-val) (,set-name wr* new-val))))
 
                     (list
                      `(define/public (,(build-identifier  (format "~a-wrapped" get-name)))
-                        ,(convert-value 
-                          (if from-dynamic? 
-                              (assert-value 
-                               (dynamic-access-body get-call `(get-field wrapped-obj (quote ,(build-identifier name))))
-                               (field-type field) #t 'field name)
-                              get-call) (field-type field) from-dynamic?))
+                        (let ([wr* wrapped-obj]
+                              [pb* (send this pos-blame*)]
+                              [nb* (send this neg-blame*)]
+                              [sr* (send this src*)]
+                              [cc* (send this cc-marks*)])
+                          ,(convert-value 
+                            (if from-dynamic? 
+                                (assert-value 
+                                 (dynamic-access-body get-call `(get-field wr* (quote ,(build-identifier name))))
+                                 (field-type field) #t 'field name)
+                                get-call) (field-type field) from-dynamic?)))
                      (if (memq 'final (field-modifiers field))
                          null
                          `(define/public (,(build-identifier (format "~a-wrapped" set-name)) new-val)
-                            (,(if from-dynamic?
-                                  (dynamic-access-body set-call 
-                                                       `(lambda (new-val) 
-                                                          (define set-field null)
-                                                          (set-field wrapped-obj (quote ,(build-identifier name)) new-val)))
-                                  set-call)
-                              ,(convert-value (if (not from-dynamic?)
-                                                  (assert-value 'new-val (field-type field) #t 'field name)
-                                                  'new-val) (field-type field) from-dynamic?)))))))
+                            (let ([wr* wrapped-obj]
+                                  [pb* (send this pos-blame*)]
+                                  [nb* (send this neg-blame*)]
+                                  [sr* (send this src*)]
+                                  [cc* (send this cc-marks*)])
+                              (,(if from-dynamic?
+                                    (dynamic-access-body set-call 
+                                                         `(lambda (new-val) 
+                                                            (define set-field null)
+                                                            (set-field wr* (quote ,(build-identifier name)) new-val)))
+                                    set-call)
+                               ,(convert-value (if (not from-dynamic?)
+                                                   (assert-value 'new-val (field-type field) #t 'field name)
+                                                   'new-val) (field-type field) from-dynamic?))))))))
                 fields)))
                 
   ;generate-wrapper-methods: (list method-record) boolean boolean -> (list sexp)
@@ -944,26 +950,40 @@
                 `(void))
                (from-dynamic?
                 `(define/public (,(build-identifier define-name) ,@list-of-args)
-                    ,(convert-value (assert-value `(send wrapped-obj ,(build-identifier call-name)
-                                                         ,@(map (lambda (arg type) 
-                                                                  (convert-value (assert-value arg type #f) type #f))
-                                                                list-of-args (method-record-atypes method)))
-                                                  (method-record-rtype method) from-dynamic? 'method-ret (method-record-name method))
-                                    (method-record-rtype method)
-                                    from-dynamic?)))
+                   (let ([wr* wrapped-obj]
+                         [pb* (send this pos-blame*)]
+                         [nb* (send this neg-blame*)]
+                         [sr* (send this src*)]
+                         [cc* (send this cc-marks*)])
+                     ,(convert-value 
+                       (assert-value 
+                        `(send wr* ,(build-identifier call-name)
+                               ,@(map (lambda (arg type) 
+                                        (convert-value (assert-value arg type #f) type #f))
+                                      list-of-args (method-record-atypes method)))
+                        (method-record-rtype method) from-dynamic? 
+                        'method-ret (method-record-name method))
+                       (method-record-rtype method)
+                       from-dynamic?))))
                (else
                 `(define/public (,(build-identifier define-name) . args)
-                   (unless (= (length args) ,(length list-of-args))
-                     (raise (make-exn:fail:contract:arity
-                             (format "~a broke the contract with ~a here, method ~a of ~a called with ~a args, instead of ~a"
-                                     neg-blame pos-blame ,(method-record-name method) ,(class-name) (length args) ,(length list-of-args))
-                             cc-marks)))
-                   (let (,@(map (lambda (arg type ref)
-                                  `(,arg ,(convert-value (assert-value `(list-ref args ,ref) type #t 'method-arg (method-record-name method)) type #t)))
-                                list-of-args (method-record-atypes method) (list-from 0 (length list-of-args))))
-                     ,(convert-value `(send wrapped-obj ,(build-identifier call-name)
-                                            ,@list-of-args) (method-record-rtype method) #f)))))))
-         methods))
+                   (let ([wr* wrapped-obj]
+                         [pb* (send this pos-blame*)]
+                         [nb* (send this neg-blame*)]
+                         [sr* (send this src*)]
+                         [cc* (send this cc-marks*)])
+                     (unless (= (length args) ,(length list-of-args))
+                       (raise 
+                        (make-exn:fail:contract:arity
+                         (format "~a broke the contract with ~a here, method ~a of ~a called with ~a args, instead of ~a"
+                                 nb* pb* ,(method-record-name method) ,(class-name) (length args) ,(length list-of-args))
+                         cc*)))
+                     (let (,@(map (lambda (arg type ref)
+                                    `(,arg ,(convert-value (assert-value `(list-ref args ,ref) type #t 'method-arg (method-record-name method)) type #t)))
+                                  list-of-args (method-record-atypes method) (list-from 0 (length list-of-args))))
+                       ,(convert-value `(send wr* ,(build-identifier call-name)
+                                              ,@list-of-args) (method-record-rtype method) #f))))))))
+           methods))
   
   (define (list-from from to)
     (cond
@@ -1000,8 +1020,8 @@
       ((dynamic-val? type) value)
       ((array-type? type) value
        #;(if from-dynamic?
-           `(wrap-convert-assert-array ,value pos-blame neg-blame src* cc-marks)
-           `(make-object guard-convert-array ,value pos-blame neg-blame src* cc-marks)))
+           `(wrap-convert-assert-array ,value pb* nb* sr* cc*)
+           `(make-object guard-convert-array ,value pb* nb* sr* cc*)))
       ((ref-type? type) 
        (cond 
          ((and (equal? string-type type) from-dynamic?) `(make-java-string ,value))
@@ -1011,9 +1031,9 @@
                         (make-ref-type "PrintStream" '("java" "io"))
                         (make-ref-type "PrintWriter" '("java" "io")))) value)
          (from-dynamic? `(,(build-identifier (string-append "wrap-convert-assert-" (ref-type-class/iface type)))
-                           ,value pos-blame neg-blame src* cc-marks))
+                           ,value pb* nb* sr* cc*))
          (else `(make-object ,(build-identifier (string-append "guard-convert-" (ref-type-class/iface type)))
-                  ,value pos-blame neg-blame src* cc-marks))))
+                  ,value pb* nb* sr* cc*))))
       (else value)))
   
   ;assert-value: sexp type boolean -> sexp
@@ -1025,21 +1045,22 @@
                 (lambda (ok?)
                   `(let ((v-1 ,value))
                      (if (,ok? v-1) v-1
-                         (raise (make-exn:fail
-                                 ,(case kind
-                                    ((unspecified)
-                                     `(format "~a broke the contract with ~a here, type-mismatch expected ~a given ~a"
-                                              neg-blame pos-blame (quote ,type) v-1))
-                                    ((field)
-                                     `(format "~a broke the contract with ~a here, type-mismatch for field ~a of class ~a: expected ~a given ~a"
-                                              neg-blame pos-blame ,name ,(class-name) (quote ,type) v-1))
-                                    ((method-arg)
-                                     `(format "~a broke the contract with ~a here, type-mismatch for method argument of ~a in class ~a: expected ~a given ~a"
-                                              neg-blame pos-blame ,name ,(class-name) (quote ,type) v-1))
-                                    ((method-ret)
-                                     `(format "~a broke the contract with ~a here, type-mismatch for method return of ~a in ~a: expected ~a given ~a"
-                                              neg-blame pos-blame ,name ,(class-name) (quote ,type) v-1)))
-                                 cc-marks)))))))
+                         (raise 
+                          (make-exn:fail
+                           ,(case kind
+                              ((unspecified)
+                               `(format "~a broke the contract with ~a here, type-mismatch expected ~a given ~a"
+                                        nb* pb* (quote ,type) v-1))
+                              ((field)
+                               `(format "~a broke the contract with ~a here, type-mismatch for field ~a of class ~a: expected ~a given ~a"
+                                        nb* pb* ,name ,(class-name) (quote ,type) v-1))
+                              ((method-arg)
+                               `(format "~a broke the contract with ~a here, type-mismatch for method argument of ~a in class ~a: expected ~a given ~a"
+                                        nb* pb* ,name ,(class-name) (quote ,type) v-1))
+                              ((method-ret)
+                               `(format "~a broke the contract with ~a here, type-mismatch for method return of ~a in ~a: expected ~a given ~a"
+                                        nb* pb* ,name ,(class-name) (quote ,type) v-1)))
+                           cc*)))))))
            (case type
              ((int byte short long) (check 'integer?))
              ((float double) (check 'real?))

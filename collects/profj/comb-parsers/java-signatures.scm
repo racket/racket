@@ -67,9 +67,7 @@
   (define-signature java-ops^ (math-ops shift-ops compare-ops bool-ops bit-ops assignment-ops
                                         bin-ops un-assignment un-op))
   
-  ;Expression signatures
-  (define-signature expression-maker^ (simple-expression))
-  
+  ;Expression signatures  
   (define-signature expr-lits^ (boolean-lits textual-lits prim-numeric-lits null-lit numeric-lits
                                              double-lits literals all-literals))
   

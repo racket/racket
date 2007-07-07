@@ -307,7 +307,7 @@
             java-literals^ java-expression-keywords^ java-vals^ java-ids^ 
             java-variables^ java-separators^
             java-operators^ java-extras^ language-forms^)
-    (export expression-maker^ expr-lits^ expr-terms+^ expr-tails^)
+    (export expr-lits^ expr-terms+^ expr-tails^)
             
     (define (simple-expression exprs)
       (choice exprs "expression"))
@@ -409,65 +409,65 @@
     )
     
   (define-unit statements@
-    (import combinator-parser^ general-productions^ id^
+    (import combinator-parser^ general-productions^ id^ language-forms^
             java-statement-keywords^ java-separators^ java-ids^ java-operators^)
     (export statements^)
 
-    (define (if-s expr statement else?)
+    (define (if-s stmt else?)
       (cond
         [else?
-         (choose ((sequence (ifT O_PAREN expr C_PAREN statement elseT statement) id)
-                  (sequence (ifT O_PAREN expr C_PAREN statement) id)) "if")]
-        [else (sequence (ifT O_PAREN expr C_PAREN statement elseT statement) id "if")]))
+         (choose ((sequence (ifT O_PAREN expression C_PAREN stmt elseT stmt) id)
+                  (sequence (ifT O_PAREN expression C_PAREN stmt) id)) "if")]
+        [else (sequence (ifT O_PAREN expression C_PAREN stmt elseT stmt) id "if")]))
     
-    (define (return-s expr opt?)
+    (define (return-s opt?)
       (cond
-        [opt? (choose ((sequence (return expr SEMI_COLON) id)
+        [opt? (choose ((sequence (return expression SEMI_COLON) id)
                        (sequence (return SEMI_COLON) id)) "return statement")]
-        [else (sequence (return expr SEMI_COLON) id "return statement")]))
+        [else (sequence (return expression SEMI_COLON) id "return statement")]))
     
-    (define (this-call expr)
+    (define this-call
       (choose ((sequence (this O_PAREN C_PAREN SEMI_COLON) id)
-               (sequence (this O_PAREN (comma-sep expr "arguments") C_PAREN SEMI_COLON) id)) "this constructor call"))
+               (sequence (this O_PAREN (comma-sep expression "arguments") C_PAREN SEMI_COLON) id)) "this constructor call"))
     
-    (define (super-ctor-call expr)
+    (define super-ctor-call
       (choose ((sequence (super O_PAREN C_PAREN SEMI_COLON) id)
-               (sequence (super O_PAREN (comma-sep expr "arguments") C_PAREN SEMI_COLON) id)) "super constructor call"))
+               (sequence (super O_PAREN (comma-sep expression "arguments") C_PAREN SEMI_COLON) id)) "super constructor call"))
     
-    (define (block statement)
-      (sequence (O_BRACE statement C_BRACE) id "block statement"))
+    (define (block repeat?)
+      (sequence (O_BRACE (if repeat? (repeat (eta statement)) (eta statement)) C_BRACE) 
+                id "block statement"))
     
-    (define (expression-stmt expr)
-      (sequence (expr SEMI_COLON) id "statement"))
+    (define expression-stmt
+      (sequence (expression SEMI_COLON) id "statement"))
     
+    (define (while-l stmt)
+      (sequence (while O_PAREN expression C_PAREN stmt) id "while loop"))
     
-    (define (while-l expr statement)
-      (sequence (while O_PAREN expr C_PAREN statement) id "while loop"))
+    (define (do-while stmt)
+      (sequence (doT stmt while O_PAREN expression C_PAREN SEMI_COLON) id "do loop"))
     
-    (define (do-while expr statement)
-      (sequence (doT statement while O_PAREN expr C_PAREN SEMI_COLON) id "do loop"))
-    
-    (define (for-l init i-op? expr t-op? update up-op? statement)
-      (let ([full (sequence (for O_PAREN init SEMI_COLON expr SEMI_COLON update C_PAREN statement) id "for loop")]
-            [no-init (sequence (for O_PAREN SEMI_COLON expr SEMI_COLON update C_PAREN statement) id "for loop")]
+    (define (for-l init i-op? t-op? update up-op? statement)
+      (let ([full (sequence (for O_PAREN init SEMI_COLON expression SEMI_COLON update C_PAREN statement) id "for loop")]
+            [no-init (sequence (for O_PAREN SEMI_COLON expression SEMI_COLON update C_PAREN statement) id "for loop")]
             [no-tst (sequence (for O_PAREN init SEMI_COLON SEMI_COLON update C_PAREN statement) id "for loop")]
-            [no-up (sequence (for O_PAREN init SEMI_COLON expr SEMI_COLON C_PAREN statement) id "for loop")]
+            [no-up (sequence (for O_PAREN init SEMI_COLON expression SEMI_COLON C_PAREN statement) id "for loop")]
             [no-it (sequence (for O_PAREN SEMI_COLON SEMI_COLON update C_PAREN statement) id "for loop")]
-            [no-iu (sequence (for O_PAREN SEMI_COLON expr SEMI_COLON C_PAREN statement) id "for loop")]
+            [no-iu (sequence (for O_PAREN SEMI_COLON expression SEMI_COLON C_PAREN statement) id "for loop")]
             [no-tu (sequence (for O_PAREN init SEMI_COLON SEMI_COLON C_PAREN statement) id "for loop")]
             [none (sequence (for O_PAREN SEMI_COLON SEMI_COLON C_PAREN statement) id "for loop")])
         (cond
           [(and i-op? t-op? up-op?)
-           (choice (list full no-init no-tst no-up no-it no-iu no-tu none) "for loop")]
+           (choose (full no-init no-tst no-up no-it no-iu no-tu none) "for loop")]
           [(and t-op? up-op?)
-           (choice (list full no-tst no-up no-tu) "for loop")]
+           (choose (full no-tst no-up no-tu) "for loop")]
           [(and i-op? t-op?)
-           (choice (list full no-init no-tst no-it) "for loop")]
+           (choose (full no-init no-tst no-it) "for loop")]
           [(and i-op? up-op?)
-           (choice (list full no-init no-up no-iu) "for loop")]
-          [i-op? (choice (list full no-init) "for loop")]
-          [t-op? (choice (list full no-tst) "for loop")]
-          [up-op? (choice (list full no-up) "for loop")]
+           (choose (full no-init no-up no-iu) "for loop")]
+          [i-op? (choose (full no-init) "for loop")]
+          [t-op? (choose (full no-tst) "for loop")]
+          [up-op? (choose (full no-up) "for loop")]
           [else full])))
     
     (define (break-s label)
@@ -629,7 +629,7 @@
     (import combinator-parser^ java-operators^ java-separators^ 
             java-statement-keywords^ java-type-keywords^ java-ids^
             java-types^ java-access^ java-ops^ general-productions^ java-variables^
-            expression-maker^ expr-lits^ expr-terms+^ expr-tails^ statements^
+            expr-lits^ expr-terms+^ expr-tails^ statements^
             fields^ methods^ ctors^ interfaces^ classes^ top-forms^ id^)
     (export language-forms^)
     
@@ -655,8 +655,7 @@
       (sequence (unique-base (repeat unique-end)) id "expression"))
     
     (define statement
-      (make-statement (list (if-s expression (eta statement) #f)
-                       (return-s expression #f))))
+      (choose ((if-s (block #f) #f) (return-s #f)) "statement"))
     
     (define field (make-field #f (value+name-type prim-type) expression #f))
     
@@ -682,7 +681,7 @@
     (import combinator-parser^ java-operators^ java-separators^ (prefix tok: java-definition-keywords^)
             java-statement-keywords^ java-type-keywords^ java-ids^
             java-types^ java-access^ java-ops^ general-productions^ java-variables^
-            expression-maker^ expr-lits^ expr-terms+^ expr-tails^ statements^
+            expr-lits^ expr-terms+^ expr-tails^ statements^
             fields^ methods^ ctors^ interfaces^ classes^ top-forms^ id^)
     (export language-forms^)
     
@@ -720,12 +719,11 @@
                 EQUAL)) "expression"))
     
     (define statement
-      (make-statement 
-       (list (if-s expression (eta statement)  #f)
-             (return-s expression #t)
-             (variable-declaration (value+name-type prim-type) expression #f "local variable")
-             (block (repeat (eta statement)))
-             (sequence (stmt-expr SEMI_COLON) id "statement"))))
+      (choose ((if-s (block #t) #f)
+               (return-s #t)
+               (variable-declaration (value+name-type prim-type) expression #f "local variable")
+               (block #t)
+               (sequence (stmt-expr SEMI_COLON) id)) "statement"))
     
     (define field (make-field #f (value+name-type prim-type) expression #t))
     
@@ -765,7 +763,7 @@
     (import combinator-parser^ java-operators^ java-separators^ (prefix tok: java-definition-keywords^)
             java-statement-keywords^ java-type-keywords^ java-ids^
             java-types^ java-access^ java-ops^ general-productions^ java-variables^
-            expression-maker^ expr-lits^ expr-terms+^ expr-tails^ statements^
+            expr-lits^ expr-terms+^ expr-tails^ statements^
             fields^ methods^ ctors^ interfaces^ classes^ top-forms^ id^)
     (export language-forms^)
     
@@ -803,12 +801,11 @@
                 EQUAL)) "expression"))
     
     (define statement
-      (make-statement 
-       (list (if-s expression (eta statement)  #f)
-             (return-s expression #t)
-             (variable-declaration (value+name-type prim-type) expression #f "local variable")
-             (block (repeat (eta statement)))
-             (sequence (stmt-expr SEMI_COLON) id "statement"))))
+      (choose ((if-s (block #t) #f)
+               (return-s #t)
+               (variable-declaration (value+name-type prim-type) expression #f "local variable")
+               (block #t)
+               (sequence (stmt-expr SEMI_COLON) id)) "statement"))
     
     (define field (make-field access-mods (value+name-type prim-type) expression #t))
         
@@ -848,70 +845,67 @@
     (import combinator-parser^ java-operators^ java-separators^ (prefix tok: java-definition-keywords^)
             java-statement-keywords^ java-type-keywords^ java-ids^
             java-types^ java-access^ java-ops^ general-productions^ java-variables^
-            expression-maker^ expr-lits^ expr-terms+^ expr-tails^ statements^
+            expr-lits^ expr-terms+^ expr-tails^ statements^
             fields^ methods^ ctors^ interfaces^ classes^ top-forms^ id^)
     (export language-forms^)
 
         
     (define unique-base
-      (simple-expression 
-       (list (literals (list null-lit boolean-lits textual-lits prim-numeric-lits double-lits))
-             this
-             IDENTIFIER
-             new-class
-             (simple-method-call (eta expression))
-             (new-array (value+name-type prim-type) (eta expression))
-             (sequence (O_PAREN (eta expression) C_PAREN) id "expression")
-             (sequence (! (eta expression)) id "conditional expression")
-             (sequence (MINUS (eta expression)) id "negation exxpression")
-             (cast (value+name-type prim-type) (eta expression))
-             (super-call (eta expression))
-             (checks (eta expression)))))
+      (choose 
+       ((literals (list null-lit boolean-lits textual-lits prim-numeric-lits double-lits))
+        this
+        IDENTIFIER
+        new-class
+        simple-method-call
+        (new-array (value+name-type prim-type))
+        (sequence (O_PAREN (eta expression) C_PAREN) id)
+        (sequence (! (eta expression)) id "conditional expression")
+        (sequence (MINUS (eta expression)) id "negation exxpression")
+        (cast (value+name-type prim-type))
+        super-call
+        checks) "expression"))
     
     (define unique-end
-      (simple-expression
-       (list field-access-end
-             (array-access-end (eta expression))
-             (method-call-end (eta expression))
-             (if-expr-end (eta expression))
-             (binary-expression-end (bin-ops (list math-ops compare-ops bool-ops bit-ops))
-                                    (eta expression))
-             instanceof-back)))
+      (choose (field-access-end
+               array-access-end
+               method-call-end
+               if-expr-end
+               (binary-expression-end (bin-ops (list math-ops compare-ops bool-ops bit-ops)))
+               instanceof-back)
+              "expression"))
     
     (define expression
-      (sequence (unique-base (repeat unique-end)) id "expression"))    
+      (sequence (unique-base (repeat unique-end)) id "expression"))
     
     (define stmt-expr
-      (simple-expression (list new-class
-                               (super-call expression)
-                               (sequence (expression
-                                          (method-call-end expression)) id "method call")
-                               (assignment 
-                                (choose (identifier
-                                         (sequence (expression field-access-end) id)
-                                         (sequence (expression (array-access-end expression)) id))
-                                        "asignee")
-                                assignment-ops expression)
-                               (sequence (expression ++) id "unary mutation")
-                               (sequence (expression --) id "unary mutation")
-                               (sequence (++ expression) id "unary mutation")
-                               (sequence (-- expression) id "unary mutation"))))
+      (choose (new-class
+               super-call
+               (sequence (expression method-call-end expression) id "method call")
+               (assignment 
+                (choose (identifier
+                         (sequence (expression field-access-end) id)
+                         (sequence (expression array-access-end) id))
+                        "asignee")
+                assignment-ops expression)
+               (sequence (expression ++) id "unary mutation")
+               (sequence (expression --) id "unary mutation")
+               (sequence (++ expression) id "unary mutation")
+               (sequence (-- expression) id "unary mutation")) "expression"))
     
     (define statement
-      (make-statement (list (if-s expression (eta statement) #t)
-                       (return-s expression #t)
-                       (variable-declaration (value+name-type prim-type) expression #t "local variable")
-                       (block (repeat (eta statement)))
-                       (sequence (stmt-expr SEMI_COLON) id "statement")
-                       (for-l (choose ((variable-declaration (value+name-type prim-type) expression #t "for loop variable")
-                                       (comma-sep stmt-expr "initializations")) "for loop initialization") 
-                              #t
-                              expression #t
-                              (comma-sep stmt-expr "for loop increments") #t (eta statement))
-                       (while-l expression (eta statement))
-                       (do-while expression (eta statement))
-                       (break-s #f)
-                       (cont-s #f))))
+      (choose ((if-s #t (eta statement))
+               (return-s #t)
+               (variable-declaration (value+name-type prim-type) expression #t "local variable")
+               (block #t)
+               (sequence (stmt-expr SEMI_COLON) id)
+               (for-l (choose ((variable-declaration (value+name-type prim-type) expression #t "for loop variable")
+                               (comma-sep stmt-expr "initializations")) "for loop initialization") 
+                      #t #t
+                      (comma-sep stmt-expr "for loop increments") #t (block #t))
+               (while-l (block #t))
+               (do-while (block #t))
+               (break-s #f)
+               (cont-s #f)) "statement"))
     
     (define field (make-field (global-mods access-mods) (value+name-type prim-type) expression #t))
     

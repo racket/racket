@@ -691,7 +691,8 @@
                                      (else 
                                       (let-values (((name syn) (get-module-name (expand (car mods)))))
                                         (set! name-to-require name)
-                                        (syntax-as-top (old-current-eval syn))
+                                        (syntax-as-top (eval (compile syn))
+                                         #;(old-current-eval (compile syn)))
                                         (loop (cdr mods) extras #t)))))))))
                           ((parse-java-interactions ex loc)
                            (let ((exp (syntax-object->datum (syntax ex))))
