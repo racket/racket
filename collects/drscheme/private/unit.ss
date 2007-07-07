@@ -458,10 +458,12 @@ module browser threading seems wrong.
                       (let-values ([(creator type) (file-creator-and-type filename)])
                         (file-creator-and-type filename #"DrSc" type))))))
               (when save-file-metadata
-                (delete 0 (string-length save-file-metadata))
-                (set! save-file-metadata #f)
-                (end-edit-sequence)
-                (set-modified #f))
+                (let ([modified? (is-modified?)])
+                  (delete 0 (string-length save-file-metadata))
+                  (set! save-file-metadata #f)
+                  (end-edit-sequence)
+                  ;; restore modification status to where it was before the metadata is removed
+                  (set-modified modified?)))
               (inner (void) after-save-file success?))
             
             (define/augment (on-load-file filename format)
@@ -3474,24 +3476,27 @@ module browser threading seems wrong.
                       [marshalled-settings (cdr name/settings)]
                       [lang (ormap
                              (λ (l) (and (equal? (send l get-language-name) name) l))
-                             (drscheme:language-configuration:get-languages))]
-                      [settings (send lang unmarshall-settings marshalled-settings)])
+                             (drscheme:language-configuration:get-languages))])
                  (when lang
-                   (set! added-one? #t)
-                   (new menu-item%
-                        [parent menu]
-                        [label (string-append "  "
-                                              (send lang get-language-name)
-                                              (if (send lang default-settings? settings)
-                                                  ""
-                                                  (string-append " " (string-constant custom))))]
-                        [callback
-                         (λ (x y)
-                           (send (send frame get-definitions-text)
-                                 set-next-settings
-                                 (drscheme:language-configuration:make-language-settings
-                                  lang
-                                  settings)))]))))
+                   ;; this test can fail when a language has been added wrongly via the tools interface
+                   ;; just ignore that menu item, in that case.
+                   (let ([settings (send lang unmarshall-settings marshalled-settings)])
+                     (when lang
+                       (set! added-one? #t)
+                       (new menu-item%
+                            [parent menu]
+                            [label (string-append "  "
+                                                  (send lang get-language-name)
+                                                  (if (send lang default-settings? settings)
+                                                      ""
+                                                      (string-append " " (string-constant custom))))]
+                            [callback
+                             (λ (x y)
+                               (send (send frame get-definitions-text)
+                                     set-next-settings
+                                     (drscheme:language-configuration:make-language-settings
+                                      lang
+                                      settings)))]))))))
              (preferences:get 'drscheme:recent-language-names))
             (unless added-one?
               (send (new menu-item% 
