@@ -7,4 +7,5 @@
   (read-case-sensitive #f)
   (read-square-bracket-as-paren #f)
   (read-curly-brace-as-paren #f)
+  (read-accept-infix-dot #f)
   (current-namespace (scheme-report-environment 5)))
