@@ -21,14 +21,15 @@
   
   (define named-dependents (make-hash-table))
   
-  (define frtime-version "0.3b -- Tue Nov 9 13:39:45 2004")
+  (define frtime-version "0.4b -- Tue Jun 26 17:39:45 2007")
   
   (define (compose-continuation-mark-sets2 s1 s2)
-    (append s1 s2))
+    s2)
   
   
   (define (my-ccm)
-    (continuation-mark-set->list (current-continuation-marks) 'drscheme-debug-continuation-mark-key))
+    (current-continuation-marks)
+    #;(continuation-mark-set->list (current-continuation-marks) 'drscheme-debug-continuation-mark-key))
   
   ;;;;;;;;;;;;;;;;
   ;; Structures ;;
@@ -152,8 +153,9 @@
           #;(thread (lambda () (raise (make-exn:fail
                                      "extra marks present!" (extra-cont-marks)))))
           (compose-continuation-mark-sets2
+           (my-ccm)
            (extra-cont-marks)
-           (my-ccm)))
+           ))
         (my-ccm)))
   
   ;; Simple Structure Combinators
@@ -483,8 +485,8 @@
   ; If there is a cycle, then 'inf' has (and retains) a lower depth than 'sup' (?), which
   ; indicates the cycle.  Importantly, 'propagate' uses the external message queue whenever
   ; a dependency crosses an inversion of depth.
-  (define (fix-depths inf sup)
-    (let help ([inf inf] [sup sup] [mem empty])
+  (define fix-depths
+    (opt-lambda (inf sup [mem empty])
       (if (memq sup mem)
           (send-event exceptions (list (make-exn:fail "tight cycle in dataflow graph" (signal-continuation-marks sup))
                                        sup))
@@ -492,7 +494,7 @@
                     (safe-signal-depth sup))
             (set-signal-depth! inf (add1 (safe-signal-depth sup)))
             (for-each
-             (lambda (dep) (help dep inf (cons sup mem)))
+             (lambda (dep) (fix-depths dep inf (cons sup mem)))
              (foldl (lambda (wb acc)
                       (match (weak-box-value wb)
                         [(and sig (? signal?)) (cons sig acc)]
@@ -623,7 +625,10 @@
                         (effective-continuation-marks)])
           (do-in-manager
            (let* ([cust (make-ft-cust (void) empty empty)]
-                  [_ (when (current-cust) (set-ft-cust-children! (current-cust) (cons cust (ft-cust-children (current-cust)))))]
+                  [_ (cond
+                       [(current-cust)
+                        => (lambda (c) (set-ft-cust-children! c (cons cust (ft-cust-children c))))]
+                       [else (void)])]
                   [pfun (lambda (b)
                           (parameterize ([current-cust cust])
                             (fun b)))]
@@ -770,7 +775,7 @@
                                 (undef cur-beh)
                                 #;(kill-signal cur-beh)))
                             (outer))])
-           ;; (set! exn-handler (current-exception-handler)) <-- FIXME!
+           (set! exn-handler (uncaught-exception-handler))
            (let inner ()
              
              ;; process external messages until there is an internal update

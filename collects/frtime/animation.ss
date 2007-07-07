@@ -7,7 +7,10 @@
            (lib "class.ss")
            (lib "list.ss" "frtime")
            (lib "etc.ss" "frtime")
-           (lib "math.ss" "frtime"))
+           (lib "math.ss" "frtime")
+           (rename mzscheme mz:define-struct define-struct))
+  
+  (require-for-syntax (lib "etc.ss"))
   
   (open-graphics)
   
@@ -66,6 +69,24 @@
   (define middle-releases ((viewport-mouse-events window) . =#> . (lambda (ev) (send ev button-up? 'middle))))
   (define right-releases ((viewport-mouse-events window) . =#> . (lambda (ev) (send ev button-up? 'right))))
   
+  (define-syntax (define-shape-struct stx)
+    (syntax-case stx ()
+      [(_ name (field ...))
+       (with-syntax
+           ([ctor-name (datum->syntax-object stx (string->symbol (format "make-~a" (syntax-e #'name))))]
+            [(accessor-name ...)
+             (map (lambda (fd)
+                    (string->symbol (format "~a-~a" (syntax-e #'name) (syntax-e fd))))
+                  (syntax-e #'(field ...)))]
+            [(index ...)
+             (build-list (length (syntax-e #'(field ...))) identity)])
+         #'(begin
+             (define (ctor-name field ...)
+               (vector 'name field ...))
+             (define (accessor-name obj)
+               (vector-ref obj index))
+             ...))]))
+  
   (define-struct ring (center radius color))
   (define-struct solid-ellipse (ul w h color))
   (define-struct graph-string (pos text color))
@@ -87,38 +108,72 @@
     (set-cell! l x))
   
   (define (top-level-draw-list a-los)
-    ((clear-viewport pixmap))
-    (draw-list a-los)
-    (copy-viewport pixmap window))
+    (compound-lift
+     (lambda (vn)
+       ((clear-viewport pixmap))
+       (draw-list a-los vn)
+       (copy-viewport pixmap window))))
   
-  (define (draw-list a-los)
-    (for-each
-     (match-lambda
-       [(? undefined?) (void)]
-       [($ ring center radius color)
-        ((draw-ellipse pixmap)
-         (make-posn (- (posn-x center) radius)
-                    (- (posn-y center) radius))
-         (max 2 (* 2 radius))
-         (max 2 (* 2 radius))
-         color)]
-       [($ solid-ellipse ul w h color)
-        ((draw-solid-ellipse pixmap) ul w h color)]
-       [($ graph-string pos text color) ((draw-string pixmap) pos text color)]
-       [($ line p1 p2 color) ((draw-line pixmap) p1 p2 color)]
-       [($ rect ul w h color)
-        (cond
-          [(and (>= w 0) (>= h 0)) ((draw-solid-rectangle pixmap) ul w h color)]
-          [(>= h 0) ((draw-solid-rectangle pixmap) (make-posn (+ (posn-x ul) w) (posn-y ul)) (- w) h color)]
-          [(>= w 0) ((draw-solid-rectangle pixmap) (make-posn (posn-x ul) (+ (posn-y ul) h)) w (- h) color)]
-          [else ((draw-solid-rectangle pixmap) (make-posn (+ (posn-x ul) w) (+ (posn-y ul) h)) (- w) (- h) color)])]
-       [($ polygon pts offset color) ((draw-polygon pixmap) pts offset color)]
-       [($ solid-polygon pts offset color) ((draw-solid-polygon pixmap) pts offset color)]
-       [(? list? x) (draw-list x)]
-       [(? void?) (void)])
-     a-los))
+  (define (my-for-each proc lst v-n)
+    (let ([lst (v-n lst)])
+      (if (empty? lst)
+          (void)
+          (begin
+            (proc (v-n (first lst)))
+            (my-for-each proc (rest lst) v-n)))))
   
-  (define d (lift #t top-level-draw-list l))
+  (define (draw-list a-los v-n)
+    (let loop ([a-los a-los])
+      (my-for-each
+       (lambda (v)
+         (match (v-n v)
+           [(? undefined?) (void)]
+           [($ ring center radius color)
+            (let ([center (v-n center)]
+                  [radius (v-n radius)]
+                  [color (v-n color)])
+              (unless (or (undefined? center)
+                          (undefined? radius))
+                ((draw-ellipse pixmap)
+                 (make-posn (- (v-n (posn-x center)) radius)
+                            (- (v-n (posn-y center)) radius))
+                 (* 2 radius)
+                 (* 2 radius)
+                 (if (undefined? color) "black" color))))]
+           [($ solid-ellipse ul w h color)
+            (let ([ul (v-n ul)]
+                  [w (v-n w)]
+                  [h (v-n h)]
+                  [color (v-n color)])
+              (unless (or (undefined? ul)
+                          (undefined? w)
+                          (undefined? h))
+                ((draw-solid-ellipse pixmap) ul w h (if (undefined? color) "black" color))))]
+           [($ graph-string pos text color) ((draw-string pixmap) (v-n pos) (v-n text) (v-n color))]
+           [($ line p1 p2 color)
+            (let ([p1 (v-n p1)]
+                  [p2 (v-n p2)]
+                  [color (v-n color)])
+              (unless (or (undefined? p1)
+                          (undefined? p2))
+                ((draw-line pixmap) p1 p2 (if (undefined? color) "black" color))))]
+           [($ rect ul w h color)
+            (let ([ul (v-n ul)]
+                  [w (v-n w)]
+                  [h (v-n h)]
+                  [color (v-n color)])
+            (cond
+              [(and (>= w 0) (>= h 0)) ((draw-solid-rectangle pixmap) ul w h color)]
+              [(>= h 0) ((draw-solid-rectangle pixmap) (make-posn (+ (posn-x ul) w) (posn-y ul)) (- w) h color)]
+              [(>= w 0) ((draw-solid-rectangle pixmap) (make-posn (posn-x ul) (+ (posn-y ul) h)) w (- h) color)]
+              [else ((draw-solid-rectangle pixmap) (make-posn (+ (posn-x ul) w) (+ (posn-y ul) h)) (- w) (- h) color)]))]
+           [($ polygon pts offset color) ((draw-polygon pixmap) pts offset color)]
+           [($ solid-polygon pts offset color) ((draw-solid-polygon pixmap) pts offset color)]
+           [(? list? x) (loop (v-n x))]
+           [(? void?) (void)]))
+       a-los v-n)))
+  
+  (define d (top-level-draw-list l))
   
   (define-struct graph-color (fn xmin xmax ymin ymax))
   

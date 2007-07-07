@@ -4,27 +4,22 @@
   (require-for-syntax (lib "struct.ss" "frtime") (lib "list.ss"))
   (require (lib "list.ss")
            (lib "frp-core.ss" "frtime")
-           (rename (lib "lang-ext.ss" "frtime") lift lift)
-           (rename (lib "lang-ext.ss" "frtime") new-cell new-cell))
-
-
-  
-  
-  
+           (only (lib "vector-lib.ss" "srfi" "43") vector-any)
+           (only (lib "lang-ext.ss" "frtime") lift new-cell switch ==> changes)
+           (only (lib "etc.ss") build-vector rec build-list opt-lambda identity))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Fundamental Macros ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;
-  
-  
+    
   (define-syntax frp:letrec
     (syntax-rules ()
       [(_ ([id val] ...) expr ...)
        (let ([id (new-cell)] ...)
          (let ([tmp val])
-           (if (signal? tmp)
-               (set-cell! id tmp)
-               (set! id tmp)))
+           (when (or (signal? tmp) (any-nested-reactivity? tmp))
+             (set-cell! id tmp))
+           (set! id tmp))
          ...
          expr ...)]))
   
@@ -32,8 +27,11 @@
   ;  (syntax-rules ()
   ;    [(_ expr clause ...) (lift #t (match-lambda clause ...) expr)]))
   
+  (define (->boolean x)
+    (if x #t #f))
+  
   (define (frp:->boolean x)
-    (lift #t (lambda (x) (if x #t #f)) x))
+    (lift #f ->boolean x))
   
   (define-syntax frp:if
     (syntax-rules ()
@@ -111,6 +109,124 @@
           (apply apply fn (append first-args rest-args)))))
   |#
   
+  (define any-nested-reactivity?
+    (opt-lambda (obj [mem empty])
+      (cond
+        [(memq obj mem) #f]
+        [(behavior? obj) #t]
+        [(cons? obj)
+         (let ([mem (cons obj mem)])
+           (or (any-nested-reactivity? (car obj) mem)
+               (any-nested-reactivity? (cdr obj) mem)))]
+        [(struct? obj)
+         (let*-values ([(info skipped) (struct-info obj)]
+                       [(name init-k auto-k acc mut immut sup skipped?) (struct-type-info info)]
+                       [(ctor) (struct-type-make-constructor info)])
+           (ormap (lambda (i) (any-nested-reactivity? (acc obj i) (cons obj mem)))
+                  (build-list (+ auto-k init-k) (lambda (x) x))))]
+        [(vector? obj) (vector-any (lambda (o) (any-nested-reactivity? o (cons obj mem))) obj)]
+        [else #f])))
+  
+  (define (deep-value-now/update-deps obj deps table)
+    (cond
+      [(assq obj table) => second]
+      [(behavior? obj)
+       (case (hash-table-get deps obj 'absent)
+         [(absent) (hash-table-put! deps obj 'new)]
+         [(old)    (hash-table-put! deps obj 'alive)]
+         [(new)    (void)])
+       (deep-value-now/update-deps (signal-value obj) deps table)]
+      [(cons? obj)
+       (let* ([result (cons #f #f)]
+              [new-table (cons (list obj result) table)]
+              [car-val (deep-value-now/update-deps (car obj) deps new-table)]
+              [cdr-val (deep-value-now/update-deps (cdr obj) deps new-table)])
+         (if (and (eq? car-val (car obj))
+                  (eq? cdr-val (cdr obj)))
+             obj
+             (begin
+               (set-car! result car-val)
+               (set-cdr! result cdr-val)
+               result)))]
+      ; won't work in the presence of super structs or immutable fields
+      [(struct? obj)
+       (let*-values ([(info skipped) (struct-info obj)]
+                     [(name init-k auto-k acc mut! immut sup skipped?) (struct-type-info info)]
+                     [(ctor) (struct-type-make-constructor info)]
+                     [(indices) (build-list init-k identity)]
+                     [(result) (apply ctor (build-list init-k (lambda (i) #f)))]
+                     [(new-table) (cons (list obj result) table)]
+                     [(elts) (build-list init-k (lambda (i) (deep-value-now/update-deps (acc obj i) deps new-table)))])
+         (if (andmap (lambda (i e) (eq? (acc obj i) e)) indices elts)
+             obj
+             (begin
+               (for-each (lambda (i e) (mut! result i e)) indices elts)
+               result)))]
+      [(vector? obj)
+       (let* ([len (vector-length obj)]
+              [indices (build-list len identity)]
+              [result (build-vector len (lambda (_) #f))]
+              [new-table (cons (list obj result) table)]
+              [elts (build-list len (lambda (i) (deep-value-now/update-deps (vector-ref obj i) deps new-table)))])
+         (if (andmap (lambda (i e) (eq? (vector-ref obj i) e)) indices elts)
+             obj
+             (begin
+               (for-each (lambda (i e) (vector-set! result i e)) indices elts)
+               result)))]
+      [else obj]))
+  
+  (define (raise-reactivity obj)
+    (let ([rtn (proc->signal void)])
+      (set-signal-thunk!
+       rtn
+       (let ([deps (make-hash-table)])
+         (lambda ()
+           (begin0
+             (deep-value-now/update-deps obj deps empty)
+             (hash-table-for-each
+              deps
+              (lambda (k v)
+                (case v
+                  [(new)   (hash-table-put! deps k 'old)
+                           (register rtn k)]
+                  [(alive) (hash-table-put! deps k 'old)]
+                  [(old)   (hash-table-remove! deps k)
+                           (unregister rtn k)])))
+             #;(printf "count = ~a~n" (hash-table-count deps))))))
+      (do-in-manager
+       (iq-enqueue rtn))
+      rtn))
+  
+  (define (compound-lift proc)
+    (let ([rtn (proc->signal void)])
+      (set-signal-thunk!
+       rtn
+       (let ([deps (make-hash-table)])
+         (lambda ()
+           (begin0
+             (proc (lambda (obj)
+                     (if (behavior? obj)
+                         (begin
+                           (case (hash-table-get deps obj 'absent)
+                             [(absent) (hash-table-put! deps obj 'new)]
+                             [(old)    (hash-table-put! deps obj 'alive)]
+                             [(new)    (void)])
+                           (value-now obj))
+                         obj)))
+             (hash-table-for-each
+              deps
+              (lambda (k v)
+                (case v
+                  [(new)   (hash-table-put! deps k 'old)
+                           #;(printf "reg~n")
+                           (register rtn k)]
+                  [(alive) (hash-table-put! deps k 'old)]
+                  [(old)   (hash-table-remove! deps k)
+                           #;(printf "unreg~n")
+                           (unregister rtn k)])))
+             #;(printf "count = ~a~n" (hash-table-count deps))))))
+      (iq-enqueue rtn)
+      rtn))
   
   ;;;;;;;;;;;;;;;;
   ;; Structures ;;
@@ -122,7 +238,9 @@
   
   
   (define (frp:cons f r)
-    (if (or (behavior? f) (behavior? r))
+    (cons f r)
+    #;(lift #f cons f r)
+    #;(if (or (behavior? f) (behavior? r))
         (procs->signal:compound
          cons
          (lambda (p i)
@@ -137,13 +255,15 @@
       (let loop ([v v])
         (cond
           [(signal:compound? v) (acc (signal:compound-content v))]
+          [(signal? v) #;(printf "access to ~a in ~a~n" acc
+                                 (value-now/no-copy v))
+                       #;(lift #t acc v)
+                       #;(switch ((changes v) . ==> . acc) (acc (value-now v)))
+                       (super-lift acc v)]
           [(signal:switching? v) (super-lift
                                   (lambda (_)
                                     (loop (unbox (signal:switching-current v))))
                                   (signal:switching-trigger v))]
-          [(signal? v) #;(printf "access to ~a in ~a~n" acc
-                                 (value-now/no-copy v))
-                       (lift #t acc v)]
 	  [(undefined? v) undefined]
           [else (acc v)]))))
     
@@ -164,12 +284,27 @@
   
   (define frp:empty? frp:null?)
   
+  (define (list-match lst cf ef)
+    (super-lift
+     (lambda (lst)
+       (cond
+         [(undefined? lst) undefined]
+         [(pair? lst) (cf (first lst) (rest lst))]
+         [(empty? lst) (ef)]))
+     lst))
+  
+  #;(define (frp:append . args)
+    (apply lift #t append args))
+  
   (define frp:append
     (case-lambda
       [() ()]
       [(lst) lst]
       [(lst1 lst2 . lsts)
-       (frp:if (frp:empty? lst1)
+       (list-match lst1
+                   (lambda (f r) (cons f (apply frp:append r lst2 lsts)))
+                   (lambda () (apply frp:append lst2 lsts)))                          
+       #;(frp:if (frp:empty? lst1)
                (apply frp:append lst2 lsts)
                (frp:cons (frp:car lst1)
                          (apply frp:append (frp:cdr lst1) lst2 lsts)))]))
@@ -208,7 +343,8 @@
   ;; Vector
   
   
-  (define (frp:vector . args)
+  (define frp:vector vector)
+  #;(define (frp:vector . args)
     (if (ormap behavior? args)
         (apply procs->signal:compound
                vector
@@ -220,9 +356,12 @@
   
   (define (frp:vector-ref v i)
     (cond
-      [(signal:compound? v) (vector-ref (signal:compound-content v) i)]
-      [(signal? v) (lift #t vector-ref v i)]
-      [else (vector-ref v i)]))
+      [(behavior? v) (super-lift (lambda (v) (frp:vector-ref v i)) v)
+       #;(switch ((changes v) . ==> . (lambda (vv) (vector-ref vv i)))
+                           (vector-ref (value-now v) i)) ;; rewrite as super-lift
+                           #;(lift #t vector-ref v i)]
+      #;[(signal:compound? v) (vector-ref (signal:compound-content v) i)]
+      [else (lift #t vector-ref v i)]))
   
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -235,7 +374,7 @@
                          args)])
       (values
        desc
-       (lambda fields
+       #;(lambda fields
          (if (ormap behavior? fields)
              (apply procs->signal:compound
                     ctor
@@ -244,6 +383,7 @@
                         (mut strct idx val)))
                     fields)
              (apply ctor fields)))
+         ctor
        (lambda (v) (if (signal:compound? v)
                        (pred (value-now/no-copy v))
                        (lift #t pred v)))
@@ -261,6 +401,7 @@
   (define-syntax (frp:define-struct stx)
     (syntax-case stx ()
       [(_ (s t) (field ...) insp)
+       #;(define-struct (s t) (field ...) (make-inspector insp))
        (let ([field-names (syntax->list #'(field ...))]
              [super-for-gen (if (syntax-e #'t)
                                 (string->symbol
@@ -271,7 +412,7 @@
                                 #t)])
          #`(begin
              (define-values #,(build-struct-names #'s field-names #f #f stx)
-               (parameterize ([current-inspector insp])
+               (parameterize ([current-inspector (make-inspector insp)])
                  #,(build-struct-generation #'s field-names #f #f super-for-gen)))
              (define-syntax s
                #,(build-struct-expand-info #'s field-names #f #f super-for-exp
@@ -405,6 +546,10 @@
            #%plain-module-begin
            #%module-begin
            #%top-interaction
+           raise-reactivity
+           any-nested-reactivity?
+           compound-lift
+           list-match
            (rename frp:if if)
            (rename frp:lambda lambda)
            (rename frp:case-lambda case-lambda)

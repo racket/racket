@@ -9,6 +9,35 @@
   
   (define (nothing? v) (eq? v nothing))
   
+  (define deep-value-now
+    (case-lambda
+      [(obj) (deep-value-now obj empty)]
+      [(obj table)
+       (cond
+         [(assq obj table) => second]
+         [(behavior? obj)
+          (deep-value-now (signal-value obj) (cons (list obj (signal-value obj)) table))]
+         [(cons? obj)
+          (let* ([result (cons #f #f)]
+                 [new-table (cons (list obj result) table)]
+                 [car-val (deep-value-now (car obj) new-table)]
+                 [cdr-val (deep-value-now (cdr obj) new-table)])
+            (set-car! result car-val)
+            (set-cdr! result cdr-val)
+            result)]
+         [(struct? obj)
+          (let*-values ([(info skipped) (struct-info obj)]
+                        [(name init-k auto-k acc mut immut sup skipped?) (struct-type-info info)]
+                        [(ctor) (struct-type-make-constructor info)])
+            (apply ctor (build-list (+ auto-k init-k)
+                                    (lambda (i) (deep-value-now (acc obj i) table)))))]
+         [(vector? obj)
+          (build-vector
+           (vector-length obj)
+           (lambda (i)
+             (deep-value-now (vector-ref obj i) table)))]
+         [else obj])]))
+      
   
   
   ; new-cell : behavior[a] -> behavior[a] (cell)
@@ -84,7 +113,7 @@
       (let* ([init (box init)]
              [e-b (hold e (unbox init))]
              [ret (proc->signal:switching
-                   (case-lambda [() undefined]
+                   (case-lambda [() (value-now (unbox init))]
                                 [(msg) e])
                    init e-b e-b (unbox init))])
         (set-signal-thunk!
@@ -127,7 +156,7 @@
     (event-producer2
      (lambda (emit)
        (lambda the-args
-         (emit (value-now b))))
+         (emit (deep-value-now b))))
      b))
   
   (define never-e
@@ -361,7 +390,7 @@
              [consumer (proc->signal
                         (lambda ()
                           (let* ([now (current-milliseconds)]
-                                 [new (value-now beh)]
+                                 [new (deep-value-now beh)]
                                  [ms (value-now ms-b)])
                             (when (not (equal? new (caar last)))
                               (set-rest! last (cons (cons new now)
@@ -485,7 +514,7 @@
             'frtime 'lift-active
           (if (ormap behavior? args)
               (begin
-                (when (ormap signal:compound? args)
+                #;(when (ormap signal:compound? args)
                   (printf "attempting to lift ~a over a signal:compound in ~a!~n" fn (map value-now args)))
                 (apply
                  proc->signal
