@@ -1988,7 +1988,7 @@ improve method arity mismatch contract violation error messages?
                   (let ([c-proc ((proj-get (parameter/c-ctc ctc)) (parameter/c-ctc ctc))])
                     (λ (pos-blame neg-blame src-info orig-str)
                       (let ([partial-neg-contract (c-proc neg-blame pos-blame src-info orig-str)]
-                            [partial-pos-contract (c-proc neg-blame pos-blame src-info orig-str)])
+                            [partial-pos-contract (c-proc pos-blame neg-blame src-info orig-str)])
                         (λ (val)
                           (cond
                             [(parameter? val)
