@@ -1,7 +1,7 @@
 
 _Framework Extras_
 
-_hierlist-editor-snip.ss_ defines two classes:
+_decorated-editor-snip.ss_ defines two classes:
 
 --------------------------------------------------
 
