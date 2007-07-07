@@ -285,7 +285,8 @@
     (cond [(eq? language 'r5rs)
            (read-case-sensitive #f)
            (read-square-bracket-as-paren #f)
-           (read-curly-brace-as-paren #f)]
+           (read-curly-brace-as-paren #f)
+           (read-accept-infix-dot #f)]
           [(memq language teaching-langs)
            (read-case-sensitive #t)
            (read-decimal-as-inexact #f)]))
