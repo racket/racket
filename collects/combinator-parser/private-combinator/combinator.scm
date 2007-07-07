@@ -426,7 +426,14 @@
                        (cond
                          [(null? corrects)
                           (fail-res input
-                                    (make-choice-fail (rank-choice (map fail-type-chance fails)) #f name
+                                    (make-choice-fail (rank-choice (map fail-type-chance fails)) 
+                                                      (if (or (null? input)
+                                                              (not (position-token? (car input))))
+                                                          last-src
+                                                          (update-src-end 
+                                                           last-src 
+                                                           (position-token-end-pos (car input))))
+                                                      name
                                                       (rank-choice (map fail-type-used fails))
                                                       (rank-choice (map fail-type-may-use fails))
                                                       num-choices choice-names fails))]

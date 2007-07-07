@@ -91,7 +91,7 @@
                               (instanceof "instancef" "instanceo" "intsanceof")
                               (if "fi")
                               (else "lse" "ese" "els" "eles")
-                              (return "eturn" "rturn" "reurn" "retrn" "retun" "retur" "reutrn" "retrun" "returns")
+                              (return "eturn" "rturn" "reurn" "retrn" "retun" "retur" "reutrn" "retrun" "returns" "raturn")
                               (true "rue" "tue" "tre" "tru" "ture" "treu")
                               (false "flse" "fase" "fale" "fals" "flase" "fasle")
                               (interface
