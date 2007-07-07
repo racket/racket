@@ -60,7 +60,8 @@
        stx
        (lambda (debug-info annotated raw is-tail?)
          (let* ([start (syntax-position raw)]
-                [end (+ start (syntax-span raw) -1)])
+                [end (+ start (syntax-span raw) -1)]
+                [break? (break? (syntax-source raw))])
            (if is-tail?
                #`(let-values ([(value-list) #f])
                    (if (#,break? #,start)
@@ -203,13 +204,13 @@
          [else
           (annotate stx '() #f module-name )]))
       
-      (define (annotate expr bound-vars is-tail? module-name )
+      (define (annotate expr bound-vars is-tail? module-name)
         
         (define annotate-break?
           (let ([pos (syntax-position expr)]
                 [src (syntax-source expr)])
             (and (or (not source)
-                     (eq? src source #;(syntax-source stx)))
+                     (eq? src #;source (syntax-source stx)))
                  ; (is-a? src object%) ; FIX THIS
                  pos
                  (hash-table-get breakpoints pos (lambda () #t))
