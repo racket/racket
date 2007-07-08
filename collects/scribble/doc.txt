@@ -3,8 +3,6 @@
 The Scribble Reader
 -------------------
 
-*** Introduction
-
 The Scribble @-reader is designed to be a convenient facility for
 using free-form text in Scheme code, where "@" is chosen as one of
 the least-used characters in Scheme code.
@@ -37,7 +35,7 @@ inside a "@{...}", and they return a (syntactic) list.
 
 *** Concrete Syntax
 
-Informally, the concrete syntax of @-forms is:
+Informally, the concrete syntax of @-forms is
 
   "@" <cmd> "[" <datum> ... "]" "{" <text-body> ... "}"
 
@@ -46,7 +44,7 @@ be present.  (Note that spaces are not allowed between the three
 parts.)  "@" is set as a non-terminating reader macro, so it can be
 used as usual in Scheme identifiers unless you want to use it as a
 first character of an identifier; in this case you need to quote with
-a backslash (`\@foo@') or quote the whole identifier with bars
+a backslash (`\@foo') or quote the whole identifier with bars
 (`|@foo|').
 
   (define |@foo| '\@bar@baz)
