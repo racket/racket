@@ -18,8 +18,36 @@ value typically treat anything other than @scheme[#f] as true.
 
 See also: @scheme[and], @scheme[or], @scheme[andmap], @scheme[ormap].
 
-@defproc[(boolean? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v]
-is @scheme[#t] or @scheme[#f], @scheme[#f] otherwise.}
+
+@defproc[(boolean? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is @scheme[#t] or @scheme[#f],
+@scheme[#f] otherwise.}
+
+
+@defproc[(equal? [v1 any/c] [v2 any/c]) boolean?]{
+
+Two values are @scheme[equal?] if and only if they are @scheme[eqv?],
+unless otherwise specified for a particular datatype.
+
+Datatypes with further specification of @scheme[equal?] include strings,
+byte strings, numbers, pairs, vectors, and hash tables.}
+
+
+@defproc[(eqv? [v1 any/c] [v2 any/c]) boolean?]{
+
+Two values are @scheme[eqv?] if and only if they are @scheme[eq?],
+unless otherwise specified for a particular datatype.
+
+The number and character datatypes are the only ones for which
+@scheme[eqv?] differs from @scheme[eq?].}
+
+
+@defproc[(eq? [v1 any/c] [v2 any/c]) boolean?]{
+
+Return @scheme[#t] if @scheme[v1] and @scheme[v2] refer to the same
+object, @scheme[#f] otherwise. See also @secref["mz:model-eq"].}
+
 
 @; ------------------------------------------------------------
 @include-section["numbers.scrbl"]
@@ -233,6 +261,11 @@ keys and values.  See also @scheme[in-hash-table],
 
 @; ----------------------------------------------------------------------
 @section[#:tag "void"]{Void and Undefined}
+
+The constant @|void-const| is returned by most forms and procedures
+that have a side-effect and no useful result. The constant
+@|undefined-const| is used as the initial value for @scheme[letrec]
+bindings.
 
 @defproc[(void [v any/c] ...) void?]{Returns the constant @|void-const|. Each
  @scheme[v] argument is ignored.}

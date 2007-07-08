@@ -321,6 +321,7 @@
                   [(#\u03B1) (display "$\\alpha$")]
                   [(#\u03BF) (display "o")] ; omicron
                   [(#\u03C3) (display "$\\sigma$")]
+                  [(#\u03C2) (display "$\\varsigma$")]
                   [(#\u03BB) (display "$\\lambda$")]
                   [(#\u03BC) (display "$\\mu$")]
                   [else (display c)]))

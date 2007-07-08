@@ -2,7 +2,7 @@
 @require[(lib "manual.ss" "scribble")]
 @require["utils.ss"]
 
-@title[#:tag "doclang"]{Document Module Languegs}
+@title[#:tag "doclang"]{Document Module Language}
 
 The @file{doclang.ss} module is suitable for use as a module
 language. It provides everything from @scheme[mzscheme], except that

@@ -15,9 +15,8 @@ procedure like @scheme[string-set!], the
 default reader (see @secref["mz:parse-string"]) are
 immutable.
 
-Two strings are @scheme[eq?] when mutating one would mutate the other.
-Two strings are @scheme[eqv?] and @scheme[equal?] when they have the
-same length and contain the same sequence of characters.
+Two strings are @scheme[equal?] when they have the same length and
+contain the same sequence of characters.
 
 A string can be used as a single-valued sequence (see
 @secref["mz:sequences"]). The characters of the string serve as elements
@@ -164,7 +163,7 @@ Returns an immutable string with the same content as
 
 
 @defproc[(string=? [str1 string?] [str2 string?] ...+) boolean?]{ Returns
- @scheme[#t] if all of the arguments are @scheme[eqv?].}
+ @scheme[#t] if all of the arguments are @scheme[equal?].}
 
 @examples[(string=? "Apple" "apple")
           (string=? "a" "as" "a")]

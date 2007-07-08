@@ -529,6 +529,75 @@ noted above). Two numbers are @scheme[equal?] when they are
 @examples[(integer-length 8) (integer-length -8)]}
 
 @; ------------------------------------------------------------------------
+@section{Random Numbers}
+
+@defproc*[([(random [k (and positive-exact-integer?
+                            (integer-in 1 (sub1 (expt 2 31))))])
+            nonnegative-exact-integer?]
+           [(random) (and real? inexact? (>/c 0) (</c 1))])]{  
+
+When called with one argument, returns a random exact integer in the
+range @scheme[0] to @math{@scheme[k]-1}. The number is provided by the
+current pseudo-random number generator (see
+@scheme[current-pseudo-random-generator]), which maintains an internal
+state for generating numbers. The random number generator uses a
+54-bit version of L'Ecuyer's MRG32k3a algorithm.
+
+When called with zero arguments, returns a random inexact number
+between @scheme[0] and @scheme[1], exclusive, using the current
+pseudo-random number generator.}
+
+
+@defproc[(random-seed [k (and nonnegative-exact-integer?
+                              (integer-in 1 (sub1 (expt 2 31))))])
+          void?]{
+
+Seeds the current pseudo-random number generator with
+@scheme[k]. Seeding a generator sets its internal state
+deterministically; that is, seeding a generator with a particular
+number forces it to produce a sequence of pseudo-random numbers that
+is the same across runs and across platforms.}
+
+
+@defproc[(make-pseudo-random-generator) pseudo-random-generator?]{
+
+Returns a new pseudo-random number generator. The new generator is
+seeded with a number derived from @scheme[(current-milliseconds)].}
+
+
+@defproc[(pseudo-random-generator? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a pseudo-random number generator,
+@scheme[#f] otherwise.}
+
+
+@defparam[current-pseudo-random-generator generator pseudo-random-generator?]{
+
+A parameter that determines the pseudo-random number generator
+used by @scheme[random].}
+
+
+@defproc[(pseudo-random-generator->vector [generator pseudo-random-generator?])
+         vector?]{
+
+Produces a vector that represents the complete internal state of
+@scheme[generator]. The vector is suitable as an argument to
+@scheme[vector->pseudo-random-generator] to recreate the generator in
+its current state (across runs and across platforms).}
+
+
+@defproc[(vector->pseudo-random-generator [vec vector?])
+         pseudo-random-generator?]{
+
+Produces a pseudo-random number generator whose internal state
+corresponds to @scheme[vec]. The vector @scheme[vec] must contain six
+exact integers; the first three integers must be in the range
+@scheme[0] to @scheme[4294967086], inclusive; the last three integers
+must be in the range @scheme[0] to @scheme[4294944442], inclusive; at
+least one of the first three integers must be non-zero; and at least
+one of the last three integers must be non-zero.}
+
+@; ------------------------------------------------------------------------
 @section{Number--String Conversions}
 
 @defproc[(number->string [z number?]
@@ -552,3 +621,87 @@ noted above). Two numbers are @scheme[equal?] when they are
 @examples[(string->number "3.0+2.5i") (string->number "hello")
           (string->number "111" 7)  (string->number "#b111" 7)]
 }
+
+
+@defproc[(integer-bytes->integer [bstr bytes?]
+                                 [signed? any/c]
+                                 [big-endian? any/c (system-big-endian?)])
+         exact-integer?]{
+
+Converts the machine-format number encoded in @scheme[bstr] to an
+exact integer. The @scheme[bstr] must contain either 2, 4, or 8
+bytes. If @scheme[signed?] is true, then the bytes are decoded as a
+two's-complement number, otherwise it is decoded as an unsigned
+integer. If @scheme[big-endian?] is true, then the first character's
+ASCII value provides the most significant eight bits of the number,
+otherwise the first character provides the least-significant eight
+bits, and so on..}
+
+
+@defproc[(integer->integer-bytes [n exact-integer?]
+                                 [size-n (one-of/c 2 4 8)]
+                                 [signed? any/c]
+                                 [big-endian? any/c (system-big-endian?)]
+                                 [dest-bstr (and bytes? 
+                                                 (not/c immutable?))
+                                            (make-bytes size-n)])
+          bytes?]{
+
+Converts the exact integer @scheme[n] to a machine-format number
+encoded in a byte string of length @scheme[size-n], which must be 2,
+4, or 8. If @scheme[signed?] is true, then the number is encoded as
+two's complement, otherwise it is encoded as an unsigned bit
+stream. If @scheme[big-endian?] is true, then the most significant
+eight bits of the number are encoded in the first character of the
+resulting byte string, otherwise the least-significant bits are
+encoded in the first byte, and so on.
+
+The @scheme[dest-bstr] argument must be a mutable byte string of
+length @scheme[size-n]. The encoding of @scheme[n] is written into
+@scheme[dest-bstr], and @scheme[dest-bstr] is returned as the result.
+
+If @scheme[n] cannot be encoded in a string of the requested size and
+format, the @exnraise[exn:fail:contract]. If @scheme[dest-bstr] is not
+of length @scheme[size-n], the @exnraise[exn:fail:contract].}
+
+
+@defproc[(floating-point-bytes->real [bstr bytes?]
+                                     [big-endian? any/c (system-big-endian?)])
+         (and real? inexact?)]{
+
+Converts the IEEE floating-point number encoded in @scheme[bstr] to an
+inexact real number. The @scheme[bstr] must contain either 4 or 8
+bytes. If @scheme[big-endian?] is true, then the first byte's ASCII
+value provides the most significant eight bits of the IEEE
+representation, otherwise the first byte provides the
+least-significant eight bits, and so on.}
+
+
+@defproc[(real->floating-point-bytes [x real?]
+                                     [size-n (one-of/c 4 8)]
+                                     [big-endian? any/c (system-big-endian?)]
+                                     [dest-bstr (and bytes? 
+                                                     (not/c immutable?))
+                                                 (make-bytes size-n)])
+          bytes?]{
+
+Converts the real number @scheme[x] to its IEEE representation in a
+byte string of length @scheme[size-n], which must be 4 or 8. If
+@scheme[big-endian?] is true, then the most significant eight bits of
+the number are encoded in the first byte of the resulting byte string,
+otherwise the least-significant bits are encoded in the first
+character, and so on.
+
+The @scheme[dest-bstr] argument must be a mutable byte string of
+length @scheme[size-n]. The encoding of @scheme[n] is written into
+@scheme[dest-bstr], and @scheme[dest-bstr] is returned as the result.
+
+If @scheme[dest-bstr] is provided and it is not of length
+@scheme[size-n], the @exnraise[exn:fail:contract].}
+
+
+@defproc[(system-big-endian?) boolean?]{
+
+Returns @scheme[#t] if the native encoding of numbers is big-endian
+for the machine running Scheme, @scheme[#f] if the native encoding
+is little-endian.}

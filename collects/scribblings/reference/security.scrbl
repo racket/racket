@@ -15,4 +15,4 @@ which relies on @tech{thread}- and @tech{continuation}-specific
 @include-section["thread-groups.scrbl"]
 @include-section["struct-inspectors.scrbl"]
 @include-section["code-inspectors.scrbl"]
-@; @include-section["namespaces.scrbl"]
+@include-section["namespaces.scrbl"]
