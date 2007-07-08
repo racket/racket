@@ -3,24 +3,21 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["utils.ss"]
 
-@title[#:tag "reader"]{Scribble Reader}
+@title[#:tag "reader"]{The Scribble Reader}
 
-The  Scribble @|at|-reader is designed to be a convenient facility for
-using free-form text in Scheme code, where ``@at'' is chosen as one of
+The Scribble @"@"-reader is designed to be a convenient facility for
+using free-form text in Scheme code, where ``@"@"'' is chosen as one of
 the least-used characters in Scheme code.
 
 You can use the reader via MzScheme's @schemefont{#reader} form:
 
 @schemeblock[
- #, @schemefont[#<<EOS
-#reader(lib "reader.ss" "scribble")@{This is free-form text!}
-EOS
-]
-]
+ #, @schemefont|{
+      #reader(lib "reader.ss" "scribble")@{This is free-form text!}
+}|]
 
-Note that the reader will only perform a translation from @at
-forms to S-expressions. It not give you any bindings to give meaning
-to the S-expression.
+Note that the reader will only read @"@"-forms as S-expressions.  The
+meaning of these S-expressions depends on the rest of your own code.
 
 A PLT Scheme manual more likely starts with
 
@@ -30,11 +27,11 @@ A PLT Scheme manual more likely starts with
 
 which installs a reader, wraps the file content afterward into a
 MzScheme module, and parses the body into a document using
-@file{decode.ss}. See @secref["docreader"] for more information.
+@file{decode.ss}.  See @secref["docreader"] for more information.
 
 Another way to use the reader is to use the @scheme[use-at-readtable]
 function to switch the current readtable to a readtable that parses
-@at forms.  You can do this in a single command line:
+@"@"-forms.  You can do this in a single command line:
 
 @commandline{mzscheme -Le reader.ss scribble "(use-at-readtable)"}
 
@@ -46,23 +43,30 @@ procedures @scheme[read-inside] and @scheme[read-inside-syntax]; these
 
 @section{Concrete Syntax}
 
-Informally, the concrete syntax of @|at|-commands is
+Informally, the concrete syntax of @"@"-forms is
 
 @schemeblock[
- #, @BNF-seq[@litchar["@"] @nonterm{cmd}
-                           @litchar{[} @kleenestar{@nonterm{datum}} @litchar{]}
-                           @litchar["{"] @kleenestar{@nonterm{text-body}} @litchar["}"]]
+ #, @BNF-seq[@litchar["@"]
+             @nonterm{cmd}
+             @litchar{[} @kleenestar{@nonterm{datum}} @litchar{]}
+             @litchar["{"] @kleenestar{@nonterm{text-body}} @litchar["}"]]
 ]
 
-where all three parts after @litchar["@"] are optional, but at least one
-should be present.  (Since the reader will try to see if there is a
-"{...body...}" in the input, it can be awkward to use body-less
-constructs on an interactive REPL since reading an expression succeeds
-only when there is a new expression available.)  In the readtable,
-@litchar["@"] is set as a terminating reader macro, so if you want to
-use it in Scheme code, you need to quote it as @scheme{\@"@"} or the whole
-identifier with @scheme[|ba@rs|]. Of course, @litchar["@"] is not treated
-specially in Scheme strings, character constants, etc.
+where all three parts after @litchar["@"] are optional, but at least
+one should be present.  (Note that spaces are not allowed between the
+three parts.)  @litchar["@"] is set as a non-terminating reader macro,
+so it can be used as usual in Scheme identifiers unless you want to
+use it as a first character of an identifier; in this case you need to
+quote with a backslash (@schemefont["\\@foo"]) or quote the whole
+identifier with bars (@schemefont["|@foo|"]).
+
+@schemeblock[
+  #, @schemefont|!{
+       (define |@foo| '\@bar@baz)
+}!|]
+
+Of course, @litchar["@"] is not treated specially in Scheme strings,
+character constants, etc.
 
 Roughly, a form matching the grammar above is read as
 
