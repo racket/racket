@@ -52,9 +52,9 @@
                            boolean?)
   (color-prefs:set-default/color-scheme 'framework:basic-canvas-background "white" "black")
   
-  (preferences:set-default 'framework:special-option-key #f boolean?)
-  (preferences:add-callback 'framework:special-option-key (λ (p v) (special-option-key v)))
-  (special-option-key (preferences:get 'framework:special-option-key))
+  (preferences:set-default 'framework:special-meta-key #f boolean?)
+  (preferences:add-callback 'framework:special-meta-key (λ (p v) (map-command-as-meta-key v)))
+  (map-command-as-meta-key (preferences:get 'framework:special-meta-key))
   
   (preferences:set-default 'framework:fraction-snip-style 'mixed (λ (x) (memq x '(mixed improper))))
   

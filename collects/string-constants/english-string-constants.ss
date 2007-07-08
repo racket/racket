@@ -408,7 +408,7 @@ please adhere to these guidelines:
  (show-character-offsets "Show character offsets") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "Enable keybindings in menus")
  (automatically-to-ps "Automatically print to PostScript file")
- (option-as-meta "Treat option key as meta") ;; macos/macos x only
+ (command-as-meta "Treat command key as meta") ;; macos/macos x only
  (separate-dialog-for-searching "Use separate dialog for searching")
  (reuse-existing-frames "Reuse existing frames when opening new files")
  (default-fonts "Default Fonts")

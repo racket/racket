@@ -383,19 +383,21 @@ the state transitions / contracts are:
                                'framework:open-here?
                                (string-constant reuse-existing-frames)
                                values values)
+                   
                    (make-check editor-panel 
                                'framework:menu-bindings
                                (string-constant enable-keybindings-in-menus)
                                values values)
+                   (when (memq (system-type) '(macosx))
+                     (make-check editor-panel 
+                                 'framework:special-meta-key
+                                 (string-constant command-as-meta)
+                                 values values))
+                   
                    (make-check editor-panel 
                                'framework:coloring-active
                                (string-constant online-coloring-active)
                                values values)
-                   (when (memq (system-type) '(macos macosx))
-                     (make-check editor-panel 
-                                 'framework:special-option-key
-                                 (string-constant option-as-meta)
-                                 values values))
                    (unless (eq? (system-type) 'unix) 
                      (make-check editor-panel 
                                  'framework:print-output-mode 
