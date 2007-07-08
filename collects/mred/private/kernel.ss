@@ -467,7 +467,9 @@
     set-direction
     get-position
     set-position)
-  (define-class key-event% event% ([key-code #\nul] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [x 0] [y 0] [time-stamp 0])
+  (define-class key-event% event% ([key-code #\nul] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [x 0] [y 0] [time-stamp 0] [caps-down #f])
+    set-other-caps-key-code
+    get-other-caps-key-code
     set-other-shift-altgr-key-code
     get-other-shift-altgr-key-code
     set-other-altgr-key-code
@@ -486,12 +488,14 @@
     set-meta-down
     get-alt-down
     set-alt-down
+    get-caps-down
+    set-caps-down
     get-x
     set-x
     get-y
     set-y)
   (define-function key-symbol-to-integer)
-  (define-class mouse-event% event% (event-type [left-down #f] [middle-down #f] [right-down #f] [x 0] [y 0] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [time-stamp 0])
+  (define-class mouse-event% event% (event-type [left-down #f] [middle-down #f] [right-down #f] [x 0] [y 0] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [time-stamp 0] [caps-down #f])
     moving?
     leaving?
     entering?
@@ -515,6 +519,8 @@
     set-meta-down
     get-alt-down
     set-alt-down
+    get-caps-down
+    set-caps-down
     get-x
     set-x
     get-y

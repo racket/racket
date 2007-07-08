@@ -58,6 +58,7 @@ class wxMouseEvent: public wxEvent
   Bool shiftDown;
   Bool altDown;
   Bool metaDown;
+  Bool capsDown;
   
   wxMouseEvent(WXTYPE mouseType = 0);
 
@@ -131,10 +132,12 @@ class wxKeyEvent: public wxEvent
   long otherKeyCode;
   long altKeyCode;
   long otherAltKeyCode;
+  long capsKeyCode;
   Bool controlDown;
   Bool shiftDown;
   Bool altDown;
   Bool metaDown;
+  Bool capsDown;
   
   wxKeyEvent(WXTYPE keyType = 0);
 

@@ -191,8 +191,11 @@ Category ::= Ll | Lu | Lt | Lm        Unicode general category                  
                 => (lambda (m)
                      (substring s 0 (caar m)))]
                [(regexp-match-positions #rx" *#[a-z]+$" s)
-                #f]))
-            (regexp-split "\n" (substring grammar 1 (sub1 (string-length grammar)))))))
+                #f]
+	       [(equal? s "") #f]
+	       [else
+		(error 'lines "no match!?: ~s" s)]))
+            (regexp-split "\r*\n" grammar))))
 
     (define table-lines
       (map
@@ -375,7 +378,7 @@ Class : <1,1>
      [else (list* (car l) i (insert i (cdr l)))]))
 
   (define type-table
-    (let* ([lines (regexp-split "\n" types)]
+    (let* ([lines (regexp-split "\r*\n" types)]
            [lines (let loop ([lines lines])
                    (if (null? lines)
                        null

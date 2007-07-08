@@ -43,7 +43,7 @@ logging. For example, the default error display handler writes to this
 port.}
 
 @defproc[(file-stream-port? [port port?]) boolean?]{
-Returns @scheme[#t] if the given port is a file-stream port (see
+Returns @scheme[#t] if the given port is a @tech{file-stream port} (see
 @secref["mz:file-ports"]), @scheme[#f] otherwise.}
 
 @defproc[(terminal-port? [port port?]) boolean?]{

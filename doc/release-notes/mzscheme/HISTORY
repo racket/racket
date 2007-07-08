@@ -1,3 +1,7 @@
+Version 370.6
+Added continuation?
+Added continuation-prompt-tag?
+
 Version 370.5
 Added keyword<?
 Changed make-derived-parameter to accept a wrap procedure

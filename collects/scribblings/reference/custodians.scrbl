@@ -27,7 +27,15 @@ thread.}
 @defproc[(custodian? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a @tech{custodian} value,
-@scheme[#f] otherwise.  }
+@scheme[#f] otherwise.}
+
+
+@defparam[current-custodian cust custodian?]{
+
+A parameter that determines a custodian that assumes responsibility
+for newly created threads, ports, TCP listeners, UDP sockets, and
+byte converters.}
+
 
 @defproc[(custodian-managed-list [cust custodian?][super custodian?]) list?]{
 

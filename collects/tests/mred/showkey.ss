@@ -9,7 +9,7 @@
 	 (override
 	   [on-event
 	    (lambda (ev)
-	      (printf "~a~a MOUSE ~a (~a,~a)\n  mods:~a~a~a~a\n  buttons:~a~a~a~a~a~a~a~n" 
+	      (printf "~a~a MOUSE ~a (~a,~a)\n  mods:~a~a~a~a~a\n  buttons:~a~a~a~a~a~a~a~n" 
 		      (es-check)
 		      iter
 		      (send ev get-event-type)
@@ -19,6 +19,7 @@
 		      (if (send ev get-control-down) " CTL" "")
 		      (if (send ev get-alt-down) " ALT" "")
 		      (if (send ev get-shift-down) " SHIFT" "")
+		      (if (send ev get-caps-down) " CAPS" "")
 		      (if (send ev get-left-down) " LEFT" "")
 		      (if (send ev get-middle-down) " MIDDLE" "")
 		      (if (send ev get-right-down) " RIGHT" "")
@@ -37,7 +38,7 @@
 	   [on-char
 	    (lambda (ev)
 	      (set! iter (add1 iter))
-	      (printf "~a~a KEY: ~a\n  rel-code: ~a\n  other-codes: ~a\n  mods:~a~a~a~a~n" 
+	      (printf "~a~a KEY: ~a\n  rel-code: ~a\n  other-codes: ~a\n  mods:~a~a~a~a~a~n" 
 		      (es-check)
 		      iter
 		      (let ([v (send ev get-key-code)])
@@ -50,7 +51,8 @@
 			    (format "~s = ASCII ~a" (string v) (char->integer v))))
 		      (let ([vs (list (send ev get-other-shift-key-code)
                                       (send ev get-other-altgr-key-code)
-                                      (send ev get-other-shift-altgr-key-code))])
+                                      (send ev get-other-shift-altgr-key-code)
+                                      (send ev get-other-caps-key-code))])
                         (map (lambda (v)
                                (and v
                                     (if (symbol? v)
@@ -60,7 +62,8 @@
 		      (if (send ev get-meta-down) " META" "")
 		      (if (send ev get-control-down) " CTL" "")
 		      (if (send ev get-alt-down) " ALT" "")
-		      (if (send ev get-shift-down) " SHIFT" "")))])))
+		      (if (send ev get-shift-down) " SHIFT" "")
+		      (if (send ev get-caps-down) " CAPS" "")))])))
   (define f (make-object (class100 frame% ()
                            (inherit accept-drop-files)
                            (override

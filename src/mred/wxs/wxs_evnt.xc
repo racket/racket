@@ -37,10 +37,10 @@ wxScrollEvent_ext::wxScrollEvent_ext(int et, int d, int p, long ts)
 }
 
 class wxKeyEvent_ext : public wxKeyEvent {
- public: wxKeyEvent_ext(int kc, int sd, int cd, int md, int ad, int xv, int yv, long ts);
+ public: wxKeyEvent_ext(int kc, int sd, int cd, int md, int ad, int xv, int yv, long ts, int caps);
 };
 
-wxKeyEvent_ext::wxKeyEvent_ext(int kc, int sd, int cd, int md, int ad, int xv, int yv, long ts) 
+wxKeyEvent_ext::wxKeyEvent_ext(int kc, int sd, int cd, int md, int ad, int xv, int yv, long ts, int caps) 
 : wxKeyEvent(wxEVENT_TYPE_CHAR) 
 {
   keyCode = kc;
@@ -48,16 +48,17 @@ wxKeyEvent_ext::wxKeyEvent_ext(int kc, int sd, int cd, int md, int ad, int xv, i
   controlDown = cd;
   metaDown = md;
   altDown = ad;
+  capsDown = caps;
   x = xv;
   y = yv;
   timeStamp = ts;
 }
 
 class wxMouseEvent_ext : public wxMouseEvent {
- public: wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int yv, int sd, int cd, int md, int ad, long ts);
+ public: wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int yv, int sd, int cd, int md, int ad, long ts, int caps);
 };
 
-wxMouseEvent_ext::wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int yv, int sd, int cd, int md, int ad, long ts) 
+wxMouseEvent_ext::wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int yv, int sd, int cd, int md, int ad, long ts, int caps) 
 : wxMouseEvent(et)
 {
   leftDown = ld;
@@ -69,6 +70,7 @@ wxMouseEvent_ext::wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int 
   controlDown = cd;
   metaDown = md;
   altDown = ad;
+  capsDown = caps;
   timeStamp = ts;
 }
 
@@ -228,11 +230,13 @@ static long GetAltKey(wxKeyEvent *k) { return k->altKeyCode; }
 static void SetAltKey(wxKeyEvent *k, long c) { k->altKeyCode = c; }
 static long GetOtherAltKey(wxKeyEvent *k) { return k->otherAltKeyCode; }
 static void SetOtherAltKey(wxKeyEvent *k, long c) { k->otherAltKeyCode = c; }
+static long GetCapsKey(wxKeyEvent *k) { return k->capsKeyCode; }
+static void SetCapsKey(wxKeyEvent *k, long c) { k->capsKeyCode = c; }
 
 @CLASSBASE wxKeyEvent=wxKeyEvent_ext "key-event":"event" / nofnl
 
-@CREATOR (SYM[keyCode]=0, bool=0, bool=0, bool=0, bool=0, int=0, int=0, ExactLong=0)
-@ARGNAMES [key-code #\nul] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [x 0] [y 0] [time-stamp 0]
+@CREATOR (SYM[keyCode]=0, bool=0, bool=0, bool=0, bool=0, int=0, int=0, ExactLong=0, bool=0)
+@ARGNAMES [key-code #\nul] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [x 0] [y 0] [time-stamp 0] [caps-down #f]
 
 @IVAR "key-code" : SYM[keyCode] keyCode
 @IVAR "key-release-code" : SYM[keyCode] keyUpCode
@@ -240,6 +244,7 @@ static void SetOtherAltKey(wxKeyEvent *k, long c) { k->otherAltKeyCode = c; }
 @IVAR "control-down" : bool controlDown
 @IVAR "meta-down" : bool metaDown
 @IVAR "alt-down" : bool altDown
+@IVAR "caps-down" : bool capsDown
 
 @IVAR "x" : int x
 @IVAR "y" : int y
@@ -250,6 +255,8 @@ static void SetOtherAltKey(wxKeyEvent *k, long c) { k->otherAltKeyCode = c; }
 @ m "set-other-altgr-key-code" : void SetAltKey(long//ubKeyOrFalse["set-other-altgr-key-code"]////push);
 @ m "get-other-shift-altgr-key-code" : long/bKeyOrFalse GetOtherAltKey();
 @ m "set-other-shift-altgr-key-code" : void SetOtherAltKey(long//ubKeyOrFalse["set-other-shift-altgr-key-code"]////push);
+@ m "get-other-caps-key-code" : long/bKeyOrFalse GetCapsKey();
+@ m "set-other-caps-key-code" : void SetCapsKey(long//ubKeyOrFalse["set-other-caps-key-code"]////push);
 
 @END
 
@@ -283,8 +290,8 @@ static int wxKeySymbolToInteger(int v) { return v; }
 
 @CLASSBASE wxMouseEvent=wxMouseEvent_ext "mouse-event":"event" / nofnl
 
-@CREATOR (SYM[mouseEventType], bool=0, bool=0, bool=0, int=0, int=0, bool=0, bool=0, bool=0, bool=0, ExactLong=0)
-@ARGNAMES event-type [left-down #f] [middle-down #f] [right-down #f] [x 0] [y 0] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [time-stamp 0]
+@CREATOR (SYM[mouseEventType], bool=0, bool=0, bool=0, int=0, int=0, bool=0, bool=0, bool=0, bool=0, ExactLong=0, bool=0)
+@ARGNAMES event-type [left-down #f] [middle-down #f] [right-down #f] [x 0] [y 0] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [time-stamp 0] [caps-down #f]
 
 @ "button-changed?" : bool Button(SYM[buttonId]=-1);
 @ "button-down?" : bool ButtonDown(SYM[buttonId]=-1);
@@ -302,6 +309,7 @@ static int wxKeySymbolToInteger(int v) { return v; }
 @IVAR "control-down" : bool controlDown
 @IVAR "meta-down" : bool metaDown
 @IVAR "alt-down" : bool altDown
+@IVAR "caps-down" : bool capsDown
 @IVAR "x" : int x
 @IVAR "y" : int y
 

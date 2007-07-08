@@ -100,6 +100,7 @@ static Scheme_Object *andmap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *ormap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_cc (int argc, Scheme_Object *argv[]);
 static Scheme_Object *internal_call_cc (int argc, Scheme_Object *argv[]);
+static Scheme_Object *continuation_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_continuation_barrier (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_prompt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_control (int argc, Scheme_Object *argv[]);
@@ -107,6 +108,7 @@ static Scheme_Object *make_prompt_tag (int argc, Scheme_Object *argv[]);
 static Scheme_Object *abort_continuation (int argc, Scheme_Object *argv[]);
 static Scheme_Object *continuation_prompt_available(int argc, Scheme_Object *argv[]);
 static Scheme_Object *get_default_prompt_tag (int argc, Scheme_Object *argv[]);
+static Scheme_Object *prompt_tag_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_sema (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_sema_enable_break (int argc, Scheme_Object *argv[]);
 static Scheme_Object *cc_marks (int argc, Scheme_Object *argv[]);
@@ -283,6 +285,12 @@ scheme_init_fun (Scheme_Env *env)
   scheme_add_global_constant("call-with-current-continuation", o, env);
   scheme_add_global_constant("call/cc", o, env);
 
+  scheme_add_global_constant("continuation?",
+                             scheme_make_folding_prim(continuation_p,
+						      "continuation?",
+						      1, 1, 1),
+                             env);
+
   scheme_add_global_constant("call-with-continuation-barrier",
 			     scheme_make_prim_w_arity2(call_with_continuation_barrier,
 						       "call-with-continuation-barrier",
@@ -331,6 +339,11 @@ scheme_init_fun (Scheme_Env *env)
                                                       "default-continuation-prompt-tag",
                                                       0, 0), 
 			     env);
+  scheme_add_global_constant("continuation-prompt-tag?",
+                             scheme_make_folding_prim(prompt_tag_p,
+						      "continuation-prompt-tag?",
+						      1, 1, 1),
+                             env);
 
   scheme_add_global_constant("call-with-semaphore",
 			     scheme_make_prim_w_arity2(call_with_sema,
@@ -4863,6 +4876,13 @@ internal_call_cc (int argc, Scheme_Object *argv[])
   }
 }
 
+static Scheme_Object *continuation_p (int argc, Scheme_Object *argv[])
+{
+  return ((SCHEME_CONTP(argv[0]) || SCHEME_ECONTP(argv[0]))
+          ? scheme_true
+          : scheme_false);
+}
+
 void scheme_takeover_stacks(Scheme_Thread *p)
      /* When a contination captured in on e thread is invoked in another,
 	the two threads can start using the same runstack, and possibly
@@ -4936,6 +4956,13 @@ static Scheme_Object *make_prompt_tag (int argc, Scheme_Object *argv[])
 static Scheme_Object *get_default_prompt_tag (int argc, Scheme_Object *argv[])
 {
   return scheme_default_prompt_tag;
+}
+
+static Scheme_Object *prompt_tag_p (int argc, Scheme_Object *argv[])
+{
+  return (SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[0]))
+          ? scheme_true
+          : scheme_false);
 }
 
 Scheme_Overflow *scheme_get_thread_end_overflow(void)

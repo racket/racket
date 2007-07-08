@@ -45,10 +45,10 @@ wxScrollEvent_ext::wxScrollEvent_ext(int et, int d, int p, long ts)
 }
 
 class wxKeyEvent_ext : public wxKeyEvent {
- public: wxKeyEvent_ext(int kc, int sd, int cd, int md, int ad, int xv, int yv, long ts);
+ public: wxKeyEvent_ext(int kc, int sd, int cd, int md, int ad, int xv, int yv, long ts, int caps);
 };
 
-wxKeyEvent_ext::wxKeyEvent_ext(int kc, int sd, int cd, int md, int ad, int xv, int yv, long ts) 
+wxKeyEvent_ext::wxKeyEvent_ext(int kc, int sd, int cd, int md, int ad, int xv, int yv, long ts, int caps) 
 : wxKeyEvent(wxEVENT_TYPE_CHAR) 
 {
   keyCode = kc;
@@ -56,16 +56,17 @@ wxKeyEvent_ext::wxKeyEvent_ext(int kc, int sd, int cd, int md, int ad, int xv, i
   controlDown = cd;
   metaDown = md;
   altDown = ad;
+  capsDown = caps;
   x = xv;
   y = yv;
   timeStamp = ts;
 }
 
 class wxMouseEvent_ext : public wxMouseEvent {
- public: wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int yv, int sd, int cd, int md, int ad, long ts);
+ public: wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int yv, int sd, int cd, int md, int ad, long ts, int caps);
 };
 
-wxMouseEvent_ext::wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int yv, int sd, int cd, int md, int ad, long ts) 
+wxMouseEvent_ext::wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int yv, int sd, int cd, int md, int ad, long ts, int caps) 
 : wxMouseEvent(et)
 {
   leftDown = ld;
@@ -77,6 +78,7 @@ wxMouseEvent_ext::wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int 
   controlDown = cd;
   metaDown = md;
   altDown = ad;
+  capsDown = caps;
   timeStamp = ts;
 }
 
@@ -1464,6 +1466,8 @@ static long GetAltKey(wxKeyEvent *k) { return k->altKeyCode; }
 static void SetAltKey(wxKeyEvent *k, long c) { k->altKeyCode = c; }
 static long GetOtherAltKey(wxKeyEvent *k) { return k->otherAltKeyCode; }
 static void SetOtherAltKey(wxKeyEvent *k, long c) { k->otherAltKeyCode = c; }
+static long GetCapsKey(wxKeyEvent *k) { return k->capsKeyCode; }
+static void SetCapsKey(wxKeyEvent *k, long c) { k->capsKeyCode = c; }
 
 
 
@@ -1473,7 +1477,7 @@ static void SetOtherAltKey(wxKeyEvent *k, long c) { k->otherAltKeyCode = c; }
 class os_wxKeyEvent : public wxKeyEvent_ext {
  public:
 
-  os_wxKeyEvent CONSTRUCTOR_ARGS((int x0 = 0, Bool x1 = 0, Bool x2 = 0, Bool x3 = 0, Bool x4 = 0, int x5 = 0, int x6 = 0, ExactLong x7 = 0));
+  os_wxKeyEvent CONSTRUCTOR_ARGS((int x0 = 0, Bool x1 = 0, Bool x2 = 0, Bool x3 = 0, Bool x4 = 0, int x5 = 0, int x6 = 0, ExactLong x7 = 0, Bool x8 = 0));
   ~os_wxKeyEvent();
 #ifdef MZ_PRECISE_GC
   void gcMark();
@@ -1492,14 +1496,58 @@ void os_wxKeyEvent::gcFixup() {
 
 static Scheme_Object *os_wxKeyEvent_class;
 
-os_wxKeyEvent::os_wxKeyEvent CONSTRUCTOR_ARGS((int x0, Bool x1, Bool x2, Bool x3, Bool x4, int x5, int x6, ExactLong x7))
-CONSTRUCTOR_INIT(: wxKeyEvent_ext(x0, x1, x2, x3, x4, x5, x6, x7))
+os_wxKeyEvent::os_wxKeyEvent CONSTRUCTOR_ARGS((int x0, Bool x1, Bool x2, Bool x3, Bool x4, int x5, int x6, ExactLong x7, Bool x8))
+CONSTRUCTOR_INIT(: wxKeyEvent_ext(x0, x1, x2, x3, x4, x5, x6, x7, x8))
 {
 }
 
 os_wxKeyEvent::~os_wxKeyEvent()
 {
     objscheme_destroy(this, (Scheme_Object *) __gc_external);
+}
+
+static Scheme_Object *os_wxKeyEventSetCapsKey(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  objscheme_check_valid(os_wxKeyEvent_class, "set-other-caps-key-code in key-event%", n, p);
+  long x0 INIT_NULLED_OUT;
+
+  SETUP_VAR_STACK_REMEMBERED(2);
+  VAR_STACK_PUSH(0, p);
+  VAR_STACK_PUSH(1, x0);
+
+  
+  x0 = (SCHEME_FALSEP(p[POFFSET+0]) ? 0 : unbundle_symset_keyCode(p[POFFSET+0], METHODNAME("key-event%","set-other-caps-key-code")));
+
+  
+  WITH_VAR_STACK(SetCapsKey(((wxKeyEvent *)((Scheme_Class_Object *)p[0])->primdata), x0));
+
+  
+  
+  READY_TO_RETURN;
+  return scheme_void;
+}
+
+static Scheme_Object *os_wxKeyEventGetCapsKey(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  long r;
+  objscheme_check_valid(os_wxKeyEvent_class, "get-other-caps-key-code in key-event%", n, p);
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+
+  
+  r = WITH_VAR_STACK(GetCapsKey(((wxKeyEvent *)((Scheme_Class_Object *)p[0])->primdata)));
+
+  
+  
+  READY_TO_RETURN;
+  return (r ? bundle_symset_keyCode(r) : scheme_false);
 }
 
 static Scheme_Object *os_wxKeyEventSetOtherAltKey(int n,  Scheme_Object *p[])
@@ -1838,6 +1886,40 @@ static Scheme_Object *objscheme_wxKeyEvent_SetaltDown(int n,  Scheme_Object *p[]
   return scheme_void;
 }
 
+static Scheme_Object *objscheme_wxKeyEvent_GetcapsDown(int n,  Scheme_Object *p[])
+{
+  Scheme_Class_Object *cobj INIT_NULLED_OUT;
+  Bool v;
+  REMEMBER_VAR_STACK();
+
+  objscheme_check_valid(os_wxKeyEvent_class, "get-caps-down in key-event%", n, p);
+  if (n > POFFSET) WITH_REMEMBERED_STACK(scheme_wrong_count_m("get-caps-down in key-event%", POFFSET, POFFSET, n, p, 1));
+  cobj = (Scheme_Class_Object *)p[0];
+  if (cobj->primflag)
+    v = ((os_wxKeyEvent *)cobj->primdata)->wxKeyEvent::capsDown;
+  else
+    v = ((wxKeyEvent *)cobj->primdata)->capsDown;
+
+  return (v ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *objscheme_wxKeyEvent_SetcapsDown(int n,  Scheme_Object *p[])
+{
+  Scheme_Class_Object *cobj = (Scheme_Class_Object *)p[0];
+  Bool v;
+  SETUP_VAR_STACK(1);
+  VAR_STACK_PUSH(0, cobj);
+
+  WITH_VAR_STACK(objscheme_check_valid(os_wxKeyEvent_class, "set-caps-down in key-event%", n, p));
+  if (n != (POFFSET+1)) WITH_VAR_STACK(scheme_wrong_count_m("set-caps-down in key-event%", POFFSET+1, POFFSET+1, n, p, 1));
+
+  v = WITH_VAR_STACK(objscheme_unbundle_bool(p[POFFSET], "set-caps-down in key-event%"));
+  ((wxKeyEvent *)cobj->primdata)->capsDown = v;
+
+  READY_TO_RETURN;
+  return scheme_void;
+}
+
 static Scheme_Object *objscheme_wxKeyEvent_Getx(int n,  Scheme_Object *p[])
 {
   Scheme_Class_Object *cobj INIT_NULLED_OUT;
@@ -1920,14 +2002,15 @@ static Scheme_Object *os_wxKeyEvent_ConstructScheme(int n,  Scheme_Object *p[])
   int x5;
   int x6;
   ExactLong x7;
+  Bool x8;
 
   SETUP_VAR_STACK_PRE_REMEMBERED(2);
   VAR_STACK_PUSH(0, p);
   VAR_STACK_PUSH(1, realobj);
 
   
-  if ((n > (POFFSET+8))) 
-    WITH_VAR_STACK(scheme_wrong_count_m("initialization in key-event%", POFFSET+POFFSET, POFFSET+8, n, p, 1));
+  if ((n > (POFFSET+9))) 
+    WITH_VAR_STACK(scheme_wrong_count_m("initialization in key-event%", POFFSET+POFFSET, POFFSET+9, n, p, 1));
   if (n > (POFFSET+0)) {
     x0 = WITH_VAR_STACK(unbundle_symset_keyCode(p[POFFSET+0], "initialization in key-event%"));
   } else
@@ -1960,11 +2043,15 @@ static Scheme_Object *os_wxKeyEvent_ConstructScheme(int n,  Scheme_Object *p[])
     x7 = WITH_VAR_STACK(objscheme_unbundle_ExactLong(p[POFFSET+7], "initialization in key-event%"));
   } else
     x7 = 0;
+  if (n > (POFFSET+8)) {
+    x8 = WITH_VAR_STACK(objscheme_unbundle_bool(p[POFFSET+8], "initialization in key-event%"));
+  } else
+    x8 = 0;
 
   
-  realobj = WITH_VAR_STACK(new os_wxKeyEvent CONSTRUCTOR_ARGS((x0, x1, x2, x3, x4, x5, x6, x7)));
+  realobj = WITH_VAR_STACK(new os_wxKeyEvent CONSTRUCTOR_ARGS((x0, x1, x2, x3, x4, x5, x6, x7, x8)));
 #ifdef MZ_PRECISE_GC
-  WITH_VAR_STACK(realobj->gcInit_wxKeyEvent_ext(x0, x1, x2, x3, x4, x5, x6, x7));
+  WITH_VAR_STACK(realobj->gcInit_wxKeyEvent_ext(x0, x1, x2, x3, x4, x5, x6, x7, x8));
 #endif
   realobj->__gc_external = (void *)p[0];
   
@@ -1982,8 +2069,10 @@ void objscheme_setup_wxKeyEvent(Scheme_Env *env)
 
   wxREGGLOB(os_wxKeyEvent_class);
 
-  os_wxKeyEvent_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "key-event%", "event%", (Scheme_Method_Prim *)os_wxKeyEvent_ConstructScheme, 22));
+  os_wxKeyEvent_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "key-event%", "event%", (Scheme_Method_Prim *)os_wxKeyEvent_ConstructScheme, 26));
 
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class, "set-other-caps-key-code" " method", (Scheme_Method_Prim *)os_wxKeyEventSetCapsKey, 1, 1));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class, "get-other-caps-key-code" " method", (Scheme_Method_Prim *)os_wxKeyEventGetCapsKey, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class, "set-other-shift-altgr-key-code" " method", (Scheme_Method_Prim *)os_wxKeyEventSetOtherAltKey, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class, "get-other-shift-altgr-key-code" " method", (Scheme_Method_Prim *)os_wxKeyEventGetOtherAltKey, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class, "set-other-altgr-key-code" " method", (Scheme_Method_Prim *)os_wxKeyEventSetAltKey, 1, 1));
@@ -2003,6 +2092,8 @@ void objscheme_setup_wxKeyEvent(Scheme_Env *env)
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class,"set-meta-down" " method", (Scheme_Method_Prim *)objscheme_wxKeyEvent_SetmetaDown, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class,"get-alt-down" " method", (Scheme_Method_Prim *)objscheme_wxKeyEvent_GetaltDown, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class,"set-alt-down" " method", (Scheme_Method_Prim *)objscheme_wxKeyEvent_SetaltDown, 1, 1));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class,"get-caps-down" " method", (Scheme_Method_Prim *)objscheme_wxKeyEvent_GetcapsDown, 0, 0));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class,"set-caps-down" " method", (Scheme_Method_Prim *)objscheme_wxKeyEvent_SetcapsDown, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class,"get-x" " method", (Scheme_Method_Prim *)objscheme_wxKeyEvent_Getx, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class,"set-x" " method", (Scheme_Method_Prim *)objscheme_wxKeyEvent_Setx, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class,"get-y" " method", (Scheme_Method_Prim *)objscheme_wxKeyEvent_Gety, 0, 0));
@@ -2215,7 +2306,7 @@ static int unbundle_symset_buttonId(Scheme_Object *v, const char *where) {
 class os_wxMouseEvent : public wxMouseEvent_ext {
  public:
 
-  os_wxMouseEvent CONSTRUCTOR_ARGS((int x0, Bool x1 = 0, Bool x2 = 0, Bool x3 = 0, int x4 = 0, int x5 = 0, Bool x6 = 0, Bool x7 = 0, Bool x8 = 0, Bool x9 = 0, ExactLong x10 = 0));
+  os_wxMouseEvent CONSTRUCTOR_ARGS((int x0, Bool x1 = 0, Bool x2 = 0, Bool x3 = 0, int x4 = 0, int x5 = 0, Bool x6 = 0, Bool x7 = 0, Bool x8 = 0, Bool x9 = 0, ExactLong x10 = 0, Bool x11 = 0));
   ~os_wxMouseEvent();
 #ifdef MZ_PRECISE_GC
   void gcMark();
@@ -2234,8 +2325,8 @@ void os_wxMouseEvent::gcFixup() {
 
 static Scheme_Object *os_wxMouseEvent_class;
 
-os_wxMouseEvent::os_wxMouseEvent CONSTRUCTOR_ARGS((int x0, Bool x1, Bool x2, Bool x3, int x4, int x5, Bool x6, Bool x7, Bool x8, Bool x9, ExactLong x10))
-CONSTRUCTOR_INIT(: wxMouseEvent_ext(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10))
+os_wxMouseEvent::os_wxMouseEvent CONSTRUCTOR_ARGS((int x0, Bool x1, Bool x2, Bool x3, int x4, int x5, Bool x6, Bool x7, Bool x8, Bool x9, ExactLong x10, Bool x11))
+CONSTRUCTOR_INIT(: wxMouseEvent_ext(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11))
 {
 }
 
@@ -2678,6 +2769,40 @@ static Scheme_Object *objscheme_wxMouseEvent_SetaltDown(int n,  Scheme_Object *p
   return scheme_void;
 }
 
+static Scheme_Object *objscheme_wxMouseEvent_GetcapsDown(int n,  Scheme_Object *p[])
+{
+  Scheme_Class_Object *cobj INIT_NULLED_OUT;
+  Bool v;
+  REMEMBER_VAR_STACK();
+
+  objscheme_check_valid(os_wxMouseEvent_class, "get-caps-down in mouse-event%", n, p);
+  if (n > POFFSET) WITH_REMEMBERED_STACK(scheme_wrong_count_m("get-caps-down in mouse-event%", POFFSET, POFFSET, n, p, 1));
+  cobj = (Scheme_Class_Object *)p[0];
+  if (cobj->primflag)
+    v = ((os_wxMouseEvent *)cobj->primdata)->wxMouseEvent::capsDown;
+  else
+    v = ((wxMouseEvent *)cobj->primdata)->capsDown;
+
+  return (v ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *objscheme_wxMouseEvent_SetcapsDown(int n,  Scheme_Object *p[])
+{
+  Scheme_Class_Object *cobj = (Scheme_Class_Object *)p[0];
+  Bool v;
+  SETUP_VAR_STACK(1);
+  VAR_STACK_PUSH(0, cobj);
+
+  WITH_VAR_STACK(objscheme_check_valid(os_wxMouseEvent_class, "set-caps-down in mouse-event%", n, p));
+  if (n != (POFFSET+1)) WITH_VAR_STACK(scheme_wrong_count_m("set-caps-down in mouse-event%", POFFSET+1, POFFSET+1, n, p, 1));
+
+  v = WITH_VAR_STACK(objscheme_unbundle_bool(p[POFFSET], "set-caps-down in mouse-event%"));
+  ((wxMouseEvent *)cobj->primdata)->capsDown = v;
+
+  READY_TO_RETURN;
+  return scheme_void;
+}
+
 static Scheme_Object *objscheme_wxMouseEvent_Getx(int n,  Scheme_Object *p[])
 {
   Scheme_Class_Object *cobj INIT_NULLED_OUT;
@@ -2763,14 +2888,15 @@ static Scheme_Object *os_wxMouseEvent_ConstructScheme(int n,  Scheme_Object *p[]
   Bool x8;
   Bool x9;
   ExactLong x10;
+  Bool x11;
 
   SETUP_VAR_STACK_PRE_REMEMBERED(2);
   VAR_STACK_PUSH(0, p);
   VAR_STACK_PUSH(1, realobj);
 
   
-  if ((n < (POFFSET+1)) || (n > (POFFSET+11))) 
-    WITH_VAR_STACK(scheme_wrong_count_m("initialization in mouse-event%", POFFSET+1, POFFSET+11, n, p, 1));
+  if ((n < (POFFSET+1)) || (n > (POFFSET+12))) 
+    WITH_VAR_STACK(scheme_wrong_count_m("initialization in mouse-event%", POFFSET+1, POFFSET+12, n, p, 1));
   x0 = WITH_VAR_STACK(unbundle_symset_mouseEventType(p[POFFSET+0], "initialization in mouse-event%"));
   if (n > (POFFSET+1)) {
     x1 = WITH_VAR_STACK(objscheme_unbundle_bool(p[POFFSET+1], "initialization in mouse-event%"));
@@ -2812,11 +2938,15 @@ static Scheme_Object *os_wxMouseEvent_ConstructScheme(int n,  Scheme_Object *p[]
     x10 = WITH_VAR_STACK(objscheme_unbundle_ExactLong(p[POFFSET+10], "initialization in mouse-event%"));
   } else
     x10 = 0;
+  if (n > (POFFSET+11)) {
+    x11 = WITH_VAR_STACK(objscheme_unbundle_bool(p[POFFSET+11], "initialization in mouse-event%"));
+  } else
+    x11 = 0;
 
   
-  realobj = WITH_VAR_STACK(new os_wxMouseEvent CONSTRUCTOR_ARGS((x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)));
+  realobj = WITH_VAR_STACK(new os_wxMouseEvent CONSTRUCTOR_ARGS((x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)));
 #ifdef MZ_PRECISE_GC
-  WITH_VAR_STACK(realobj->gcInit_wxMouseEvent_ext(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10));
+  WITH_VAR_STACK(realobj->gcInit_wxMouseEvent_ext(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11));
 #endif
   realobj->__gc_external = (void *)p[0];
   
@@ -2834,7 +2964,7 @@ void objscheme_setup_wxMouseEvent(Scheme_Env *env)
 
   wxREGGLOB(os_wxMouseEvent_class);
 
-  os_wxMouseEvent_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "mouse-event%", "event%", (Scheme_Method_Prim *)os_wxMouseEvent_ConstructScheme, 27));
+  os_wxMouseEvent_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "mouse-event%", "event%", (Scheme_Method_Prim *)os_wxMouseEvent_ConstructScheme, 29));
 
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMouseEvent_class, "moving?" " method", (Scheme_Method_Prim *)os_wxMouseEventMoving, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMouseEvent_class, "leaving?" " method", (Scheme_Method_Prim *)os_wxMouseEventLeaving, 0, 0));
@@ -2860,6 +2990,8 @@ void objscheme_setup_wxMouseEvent(Scheme_Env *env)
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMouseEvent_class,"set-meta-down" " method", (Scheme_Method_Prim *)objscheme_wxMouseEvent_SetmetaDown, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMouseEvent_class,"get-alt-down" " method", (Scheme_Method_Prim *)objscheme_wxMouseEvent_GetaltDown, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMouseEvent_class,"set-alt-down" " method", (Scheme_Method_Prim *)objscheme_wxMouseEvent_SetaltDown, 1, 1));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMouseEvent_class,"get-caps-down" " method", (Scheme_Method_Prim *)objscheme_wxMouseEvent_GetcapsDown, 0, 0));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMouseEvent_class,"set-caps-down" " method", (Scheme_Method_Prim *)objscheme_wxMouseEvent_SetcapsDown, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMouseEvent_class,"get-x" " method", (Scheme_Method_Prim *)objscheme_wxMouseEvent_Getx, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMouseEvent_class,"set-x" " method", (Scheme_Method_Prim *)objscheme_wxMouseEvent_Setx, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMouseEvent_class,"get-y" " method", (Scheme_Method_Prim *)objscheme_wxMouseEvent_Gety, 0, 0));

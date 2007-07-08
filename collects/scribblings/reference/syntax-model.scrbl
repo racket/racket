@@ -609,7 +609,7 @@ example, the @scheme[eval] procedure takes a syntax object and expands
 it, compiles it, and evaluates it.
 
 @;------------------------------------------------------------------------
-@section{Namespaces}
+@section[#:tag "mz:namespace-model"]{Namespaces}
 
 A @deftech{namespace} is a top-level mapping from symbols to binding
 information. It is the starting point for expanding an expression; a
@@ -620,8 +620,8 @@ namespace is also the starting point evaluating expanded code, where
 the first step in evaluation is linking the code to specific module
 instances and top-level variables.
 
-For expansion purposes, a namespace maps each symbol to one of three
-possible bindings:
+For expansion purposes, a namespace maps each symbol in each phase
+level to one of three possible bindings:
 
 @itemize{
 
@@ -640,15 +640,20 @@ for all of the imported named, and evaluating a top-level
 @scheme[define] form updates the namespace's mapping to refer to a
 variable (in addition to installing a value into the variable).
 
+A namespace also has a @deftech{module registry} that maps module
+names to module declarations (see @secref["mz:module-eval-model"]).
+This registry is shared by all phase levels, though instances of
+declared modules are not.
+
 For evaluation, each namespace encapsulates a distinct set of
 top-level variables, as well as a potentially distinct set of module
-instances. After a namespace is created, module instances from
-existing namespaces can be attached to the new namespace.  In terms of
-the evaluation model, top-level variables from different namespaces
-essentially correspond to definitions with different prefixes.
-Furthermore, the first step in evaluating any compiled expression is
-to link its top-level variable and module-level variable references to
-specific variables in the namespace.
+instances in each phase. After a namespace is created, module
+instances from existing namespaces can be attached to the new
+namespace.  In terms of the evaluation model, top-level variables from
+different namespaces essentially correspond to definitions with
+different prefixes.  Furthermore, the first step in evaluating any
+compiled expression is to link its top-level variable and module-level
+variable references to specific variables in the namespace.
 
 At all times during evaluation, some namespace is designated as the
 @deftech{current namespace}. The current namespace has no particular
@@ -660,6 +665,43 @@ variables to which executing expressions refer. The current namespace
 only determines the behavior of (essentially reflective) operations to
 expand code and to start evaluating expanded/compiled code.
 
+@examples[
+(code:line
+ (define x 'orig) (code:comment #, @t{define in the original namespace}))
+(code:comment #, @t{The following @scheme[let] expression is compiled in the original})
+(code:comment #, @t{namespace, so direct references to @scheme[x] see @scheme['orig].})
+(code:line
+ (let ([n (make-namespace)]) ; make new namespace 
+   (parameterize ([current-namespace n]) 
+     (eval '(define x 'new)) (code:comment #, @t{evals in the new namespace})
+     (display x) (code:comment #, @t{displays @scheme['orig]})
+     (display (eval 'x)))) (code:comment #, @t{displays @scheme['new]}))
+]
+
 A namespace is purely a top-level entity, not to be confused with an
 environment. In particular, a namespace does not encapsulate the full
 environment of an expression inside local-binding forms.
+
+If an identifier is bound to syntax or to an import, then defining the
+identifier as a variable shadows the syntax or import in future uses
+of the environment. Similarly, if an identifier is bound to a
+top-level variable, then binding the identifier to syntax or an import
+shadows the variable; the variable's value remains unchanged, however,
+and may be accessible through previously evaluated expressions.
+
+@examples[
+(define x 5)
+(define (f) x)
+x
+(f)
+(define-syntax x (syntax-id-rules () [_ 10]))
+x
+(f)
+(define x 7)
+x
+(f)
+(module m mzscheme (define x 8) (provide x))
+(require m)
+(eval:alts x (eval 'x))
+(f)
+]

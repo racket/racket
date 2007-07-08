@@ -442,6 +442,7 @@ void wxApp::doMacMouseUp(void)
       theMouseEvent->controlDown = FALSE;
       theMouseEvent->altDown = cCurrentEvent.modifiers & optionKey;
       theMouseEvent->metaDown = cCurrentEvent.modifiers & cmdKey;
+      theMouseEvent->capsDown = cCurrentEvent.modifiers & alphaLock;
       theMouseEvent->x = hitX;
       theMouseEvent->y = hitY;
       theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when);
@@ -485,6 +486,7 @@ void wxApp::doMacMouseUp(void)
 	  // altKey is optionKey on the mac platform:
 	  theMouseEvent->altDown = cCurrentEvent.modifiers & optionKey;
 	  theMouseEvent->metaDown = cCurrentEvent.modifiers & cmdKey;
+	  theMouseEvent->capsDown = cCurrentEvent.modifiers & alphaLock;
 	  theMouseEvent->x = hitX;
 	  theMouseEvent->y = hitY;
 	  theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when);
@@ -512,6 +514,7 @@ void wxApp::doMacMouseMotion(void)
   theMouseEvent->controlDown = FALSE;
   theMouseEvent->altDown = isAltKey;
   theMouseEvent->metaDown = cCurrentEvent.modifiers & cmdKey;
+  theMouseEvent->capsDown = cCurrentEvent.modifiers & alphaLock;
   theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when);
   
   if (wxWindow::gMouseWindow)
@@ -575,6 +578,7 @@ void wxApp::doMacMouseLeave(void)
   theMouseEvent->controlDown = FALSE;
   theMouseEvent->altDown = isAltKey;
   theMouseEvent->metaDown = cCurrentEvent.modifiers & cmdKey;
+  theMouseEvent->capsDown = cCurrentEvent.modifiers & alphaLock;
   theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when);
   
   rc = (void *)cCurrentEvent.message;
@@ -617,7 +621,7 @@ void wxApp::doMacKeyUpDown(Bool down)
 {
   wxFrame* theMacWxFrame;
   wxKeyEvent *theKeyEvent;
-  int key, otherKey = 0, optKey = 0, otherOptKey = 0;
+  int key, otherKey = 0, optKey = 0, otherOptKey = 0, capsKey = 0;
 
   theMacWxFrame = findMacWxFrame(MrEdKeyWindow());
   
@@ -653,6 +657,7 @@ void wxApp::doMacKeyUpDown(Bool down)
   // altKey is optionKey on the mac platform:
   theKeyEvent->altDown = Bool(cCurrentEvent.modifiers & optionKey);
   theKeyEvent->metaDown = Bool(cCurrentEvent.modifiers & cmdKey);
+  theKeyEvent->capsDown = Bool(cCurrentEvent.modifiers & alphaLock);
   theKeyEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when);
 
   if (cCurrentEvent.what == wheelEvt) {
@@ -674,7 +679,7 @@ void wxApp::doMacKeyUpDown(Bool down)
       int iter, akey, orig_key = key;
 
       key = 0; /* let compiler know that key is assigned */
-      for (iter = 0; iter < ((cCurrentEvent.modifiers & cmdKey) ? 4 : 1); iter++) {
+      for (iter = 0; iter < ((cCurrentEvent.modifiers & cmdKey) ? 5 : 1); iter++) {
         char cstr[3];
         int from_str = 0;
 
@@ -695,10 +700,18 @@ void wxApp::doMacKeyUpDown(Bool down)
           static UCKeyboardLayout *key_layout;
 
           mods = cCurrentEvent.modifiers;
+
+          /* Strip Caps Lock and Shift when Control is pressed. */
+          if (mods & (controlKey & wxMacDisableMods))
+            mods -= (mods & (alphaLock | shiftKey));
+
           if (mods & cmdKey) {
             int mask;
             /* Strip control modifier when command is pressed: */
             mods -= (mods & (controlKey | cmdKey));
+            if (iter && (iter != 4)) {
+              mods -= (mods & alphaLock);
+            }
             /* On all but first iteration, toggle shift and/or option: */
             switch (iter) {
             case 0:
@@ -710,9 +723,12 @@ void wxApp::doMacKeyUpDown(Bool down)
             case 2:
               mask = optionKey;
               break;
-            default:
             case 3:
               mask = optionKey | shiftKey;
+              break;
+            default:
+            case 4:
+              mask = alphaLock;
               break;
             }
             mods = (mods & (~mask)) | ((~mods) & mask);
@@ -815,6 +831,8 @@ void wxApp::doMacKeyUpDown(Bool down)
           optKey = akey;
         else if (iter == 3)
           otherOptKey = akey;
+        else if (iter == 4)
+          capsKey = akey;
       }
     }
   }
@@ -829,6 +847,7 @@ void wxApp::doMacKeyUpDown(Bool down)
   theKeyEvent->otherKeyCode = otherKey;
   theKeyEvent->altKeyCode = optKey;
   theKeyEvent->otherAltKeyCode = otherOptKey;
+  theKeyEvent->capsKeyCode = capsKey;
 
   {
     wxWindow *in_win;
@@ -1235,6 +1254,7 @@ void wxApp::doMacContentClick(wxFrame* frame)
   theMouseEvent->controlDown = FALSE;
   theMouseEvent->altDown = isAltKey;
   theMouseEvent->metaDown = cCurrentEvent.modifiers & cmdKey;
+  theMouseEvent->capsDown = cCurrentEvent.modifiers & alphaLock;
   theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when);
 
   hitX = cCurrentEvent.where.h; // screen window c.s.

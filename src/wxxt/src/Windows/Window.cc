@@ -1054,11 +1054,12 @@ void wxWindow::OnChar(wxKeyEvent* wxevent)
 	xev->xkey.keycode = kc;
 	xev->xkey.x	 = (int)wxevent->x;
 	xev->xkey.y	 = (int)wxevent->y;
-	xev->xkey.state &= ~(ShiftMask | ControlMask | Mod1Mask | Mod3Mask);
+	xev->xkey.state &= ~(ShiftMask | ControlMask | Mod1Mask | Mod3Mask | LockMask);
 	xev->xkey.state |= (wxevent->altDown     ? Mod3Mask    : 0) |
 			   (wxevent->controlDown ? ControlMask : 0) |
 			   (wxevent->metaDown    ? Mod1Mask    : 0) |
-			   (wxevent->shiftDown   ? ShiftMask   : 0);
+			   (wxevent->shiftDown   ? ShiftMask   : 0) |
+			   (wxevent->capsDown    ? LockMask    : 0);
 	// call Widget methods to handle this event
 	_XtTranslateEvent(X->handle, xev);
       }
@@ -1785,7 +1786,7 @@ static int extract_string_key(char *str, int slen)
 #endif
 }
 
-Status wxWindow::LookupKey(int unshifted, int unalted, 
+Status wxWindow::LookupKey(int unshifted, int unalted, int caps_mode,
                            Widget w, wxWindow *win, XEvent *xev, KeySym *_keysym, char *str, int *_len)
 {
   KeySym keysym;
@@ -1794,6 +1795,12 @@ Status wxWindow::LookupKey(int unshifted, int unalted,
   XKeyPressedEvent evt;
 
   memcpy(&evt, &(xev->xkey), sizeof(XKeyPressedEvent));
+
+  if ((evt.state & ControlMask) && !(evt.state & Mod1Mask)) {
+    /* Control (and not AltGr) => cancel Shift and Caps Lock */
+    evt.state -= (evt.state & (ShiftMask | LockMask));
+  }
+
   if (unshifted) {
     if (evt.state & ShiftMask)
       evt.state -= ShiftMask;
@@ -1810,6 +1817,13 @@ Status wxWindow::LookupKey(int unshifted, int unalted,
         evt.state -= ControlMask;
       else
         evt.state |= ControlMask;
+    }
+  }
+  if (caps_mode != 1) {
+    if (evt.state & LockMask)
+      evt.state -= LockMask;
+    else if (caps_mode == 2) {
+      evt.state |= LockMask;
     }
   }
     
@@ -1925,18 +1939,19 @@ void wxWindow::WindowEventHandler(Widget w,
       win->current_state = xev->xkey.state;
       { /* ^^^ fallthrough !!!! ^^^ */
 	wxKeyEvent *wxevent;
-	KeySym	   keysym, other_keysym, alt_keysym, other_alt_keysym;
-	long       kc, other_kc, alt_kc, other_alt_kc;
-	Status     status, other_status, alt_status, other_alt_status;
-	char       str[10], other_str[10], alt_str[10], other_alt_str[10];
-	int        slen, other_slen, alt_slen, other_alt_slen;
+	KeySym	   keysym, other_keysym, alt_keysym, other_alt_keysym, caps_keysym;
+	long       kc, other_kc, alt_kc, other_alt_kc, caps_kc;
+	Status     status, other_status, alt_status, other_alt_status, caps_status;
+	char       str[10], other_str[10], alt_str[10], other_alt_str[10], caps_str[10];
+	int        slen, other_slen, alt_slen, other_alt_slen, caps_slen;
 
 	wxevent = new wxKeyEvent(wxEVENT_TYPE_CHAR);
 
-	status = LookupKey(0, 0, w, win, xev, &keysym, str, &slen);
-	other_status = LookupKey(1, 0, w, win, xev, &other_keysym, other_str, &other_slen);
-	alt_status = LookupKey(0, 1, w, win, xev, &alt_keysym, alt_str, &alt_slen);
-	other_alt_status = LookupKey(1, 1, w, win, xev, &other_alt_keysym, other_alt_str, &other_alt_slen);
+	status = LookupKey(0, 0, 1, w, win, xev, &keysym, str, &slen);
+	other_status = LookupKey(1, 0, 0, w, win, xev, &other_keysym, other_str, &other_slen);
+	alt_status = LookupKey(0, 1, 0, w, win, xev, &alt_keysym, alt_str, &alt_slen);
+	other_alt_status = LookupKey(1, 1, 0, w, win, xev, &other_alt_keysym, other_alt_str, &other_alt_slen);
+	caps_status = LookupKey(0, 0, 2, w, win, xev, &caps_keysym, caps_str, &caps_slen);
 
 	if (xev->xany.type == KeyPress) {
 	  static int handle_alt = 0;
@@ -1959,6 +1974,7 @@ void wxWindow::WindowEventHandler(Widget w,
         other_kc = status_to_kc(other_status, xev, other_keysym, other_str, other_slen);
         alt_kc = status_to_kc(alt_status, xev, alt_keysym, alt_str, alt_slen);
         other_alt_kc = status_to_kc(other_alt_status, xev, other_alt_keysym, other_alt_str, other_alt_slen);
+        caps_kc = status_to_kc(caps_status, xev, caps_keysym, caps_str, caps_slen);
 
         /* Figure out key state *after* event: */
         {
@@ -1984,13 +2000,15 @@ void wxWindow::WindowEventHandler(Widget w,
 	wxevent->otherKeyCode	= other_kc;
 	wxevent->altKeyCode	= alt_kc;
 	wxevent->otherAltKeyCode = other_alt_kc;
+	wxevent->capsKeyCode    = caps_kc;
 	wxevent->x		= xev->xkey.x;
 	wxevent->y		= xev->xkey.y;
 	wxevent->altDown	= /* xev->xkey.state & Mod3Mask */ FALSE;
 	wxevent->controlDown	= xev->xkey.state & ControlMask;
 	wxevent->metaDown	= xev->xkey.state & Mod1Mask;
 	wxevent->shiftDown	= xev->xkey.state & ShiftMask;
-	wxevent->timeStamp      = xev->xkey.time; /* MATTHEW */
+	wxevent->capsDown	= xev->xkey.state & LockMask;
+	wxevent->timeStamp      = xev->xkey.time;
 
 	/* Reverse scroll effects: */
 	if (wxSubType(win->__type, wxTYPE_CANVAS)) {
@@ -2077,6 +2095,7 @@ void wxWindow::WindowEventHandler(Widget w,
 	  wxevent->controlDown	= xev->xbutton.state & ControlMask;
 	  wxevent->metaDown	= xev->xbutton.state & Mod1Mask;
 	  wxevent->shiftDown	= xev->xbutton.state & ShiftMask;
+	  wxevent->capsDown	= xev->xbutton.state & LockMask;
 	  wxevent->timeStamp    = xev->xbutton.time;
 
 	  *continue_to_dispatch_return = FALSE;
@@ -2161,6 +2180,7 @@ void wxWindow::WindowEventHandler(Widget w,
 	wxevent->controlDown	= xev->xbutton.state & ControlMask;
 	wxevent->metaDown	= xev->xbutton.state & Mod1Mask;
 	wxevent->shiftDown	= xev->xbutton.state & ShiftMask;
+	wxevent->capsDown	= xev->xbutton.state & LockMask;
 	wxevent->leftDown	= ((wxevent->eventType == wxEVENT_TYPE_LEFT_DOWN)
 				   || (xev->xbutton.state & Button1Mask));
 	wxevent->middleDown	= ((wxevent->eventType == wxEVENT_TYPE_MIDDLE_DOWN)
@@ -2234,6 +2254,7 @@ void wxWindow::WindowEventHandler(Widget w,
 	wxevent->controlDown	= xev->xcrossing.state & ControlMask;
 	wxevent->metaDown	= xev->xcrossing.state & Mod1Mask;
 	wxevent->shiftDown	= xev->xcrossing.state & ShiftMask;
+	wxevent->capsDown	= xev->xcrossing.state & LockMask;
 	wxevent->leftDown	= xev->xcrossing.state & Button1Mask;
 	wxevent->middleDown	= xev->xcrossing.state & Button2Mask;
 	wxevent->rightDown	= xev->xcrossing.state & Button3Mask;
@@ -2283,10 +2304,11 @@ void wxWindow::WindowEventHandler(Widget w,
 	  wxevent->controlDown	= xev->xmotion.state & ControlMask;
 	  wxevent->metaDown	= xev->xmotion.state & Mod1Mask;
 	  wxevent->shiftDown	= xev->xmotion.state & ShiftMask;
+	  wxevent->capsDown	= xev->xmotion.state & LockMask;
 	  wxevent->leftDown	= xev->xmotion.state & Button1Mask;
 	  wxevent->middleDown	= xev->xmotion.state & Button2Mask;
 	  wxevent->rightDown	= xev->xmotion.state & Button3Mask;
-	  wxevent->timeStamp       = xev->xbutton.time; /* MATTHEW */
+	  wxevent->timeStamp       = xev->xbutton.time;
 	  *continue_to_dispatch_return = FALSE; /* Event was handled by OnEvent */
 
 	  /* Reverse scroll effects: */
