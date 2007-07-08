@@ -3,6 +3,7 @@
   (define-functions
     special-control-key
     special-option-key
+    map-command-as-meta-key
     application-file-handler
     application-quit-handler
     application-about-handler

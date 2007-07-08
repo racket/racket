@@ -1833,6 +1833,29 @@ static Scheme_Object *SpecialOptionKey(int c, Scheme_Object *SCK_ARG[])
 #endif
 }
 
+#ifdef wx_mac
+extern int wxMapCommandAsMeta;
+#endif
+
+static Scheme_Object *MapCommandAsMetaKey(int c, Scheme_Object *SCK_ARG[])
+{
+#ifdef wx_mac
+  if (c) {
+    wxMapCommandAsMeta = SCHEME_TRUEP(p[0]);
+    return scheme_void;
+  } else {
+    return (wxMapCommandAsMeta
+            ? scheme_true
+            : scheme_false);
+  }
+#else
+  if (c)
+    return scheme_void;
+  else
+    return scheme_false;
+#endif
+}
+
 
 static Scheme_Object *DefaultAppFileProc(int n, Scheme_Object *p[])
 {
@@ -3019,6 +3042,11 @@ static void wxScheme_Install(Scheme_Env *global_env)
   scheme_install_xc_global("special-option-key", 
 			   scheme_make_prim_w_arity(CAST_SP SpecialOptionKey, 
 						    "special-option-key", 
+						    0, 1), 
+			   global_env);
+  scheme_install_xc_global("map-command-as-meta-key", 
+			   scheme_make_prim_w_arity(CAST_SP MapCommandAsMetaKey, 
+						    "map-command-as-meta-key", 
 						    0, 1), 
 			   global_env);
   

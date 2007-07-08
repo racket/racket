@@ -150,6 +150,7 @@
 	     snip-class-list<%>
 	     special-control-key
 	     special-option-key
+             map-command-as-meta-key
 	     label->plain-label
 	     string-snip%
 	     style<%>

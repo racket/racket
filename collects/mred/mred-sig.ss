@@ -118,6 +118,7 @@
      list-control<%>
      make-eventspace
      make-namespace-with-mred
+     map-command-as-meta-key
      menu%
      menu-bar%
      menu-control-font
