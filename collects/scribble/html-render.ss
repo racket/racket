@@ -82,7 +82,8 @@
                    (cellspacing "0"))
                   ,@(map (lambda (p)
                            `(tr
-                             (td
+                             (td 
+                              ((align "right"))
                               ,@(format-number (collected-info-number (part-collected-info p))
                                                '((tt nbsp))))
                              (td
