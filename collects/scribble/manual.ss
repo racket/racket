@@ -70,10 +70,11 @@
                          strs))])
       (let ([spaces (regexp-match-positions #rx"^ *" s)]
             [end-spaces (regexp-match-positions #rx" *$" s)])
-        (make-element "schemeinput" 
-                      (list (hspace (cdar spaces))
-                            (make-element #f (list (substring s (cdar spaces) (caar end-spaces))))
-                            (hspace (- (cdar end-spaces) (caar end-spaces))))))))
+        (make-element
+         "schemeinputbg"
+         (list (hspace (cdar spaces))
+               (make-element "schemeinput" (list (substring s (cdar spaces) (caar end-spaces))))
+               (hspace (- (cdar end-spaces) (caar end-spaces))))))))
 
   (define (verbatim s)
     (let ([strs (regexp-split #rx"\n" s)])

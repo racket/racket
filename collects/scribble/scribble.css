@@ -234,6 +234,10 @@
                font-family: Courier; font-size: 80%;
                }
 
+               .schemeinputbg {
+               background-color: #eeeeee;
+               }
+
                .schemeparen {
                color: #843c24;
                font-family: Courier; font-size: 80%;
