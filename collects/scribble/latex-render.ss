@@ -323,6 +323,7 @@
                   [(#\u03C3) (display "$\\sigma$")]
                   [(#\u03C2) (display "$\\varsigma$")]
                   [(#\u03BB) (display "$\\lambda$")]
+                  [(#\u039B) (display "$\\Lambda$")]
                   [(#\u03BC) (display "$\\mu$")]
                   [else (display c)]))
               (loop (add1 i))))))
