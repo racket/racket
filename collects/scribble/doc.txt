@@ -560,7 +560,11 @@ source accounting is not on, but
          x2
        x3}
 
-will (due to the last line).
+will (due to the last line).  Pay attention to this, as it can be a
+problem with Scheme code, for example:
+
+  @code{(define (foo x)
+          (+ x 1))}
 
 For rare situations where spaces at the beginning (or end) of lines
 matter, you can begin (or end) a line with a "@||".
