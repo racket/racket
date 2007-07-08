@@ -1797,8 +1797,8 @@ Status wxWindow::LookupKey(int unshifted, int unalted, int caps_mode,
   memcpy(&evt, &(xev->xkey), sizeof(XKeyPressedEvent));
 
   if ((evt.state & ControlMask) && !(evt.state & Mod1Mask)) {
-    /* Control (and not AltGr) => cancel Shift and Caps Lock */
-    evt.state -= (evt.state & (ShiftMask | LockMask));
+    /* Control (and not AltGr) => cancel Caps Lock */
+    evt.state -= (evt.state & LockMask);
   }
 
   if (unshifted) {

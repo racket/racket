@@ -701,9 +701,9 @@ void wxApp::doMacKeyUpDown(Bool down)
 
           mods = cCurrentEvent.modifiers;
 
-          /* Strip Caps Lock and Shift when Control is pressed. */
+          /* Strip Caps Lock when Control is pressed. */
           if (mods & (controlKey & wxMacDisableMods))
-            mods -= (mods & (alphaLock | shiftKey));
+            mods -= (mods & alphaLock);
 
           if (mods & cmdKey) {
             int mask;

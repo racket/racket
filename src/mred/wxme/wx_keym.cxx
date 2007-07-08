@@ -615,9 +615,9 @@ void wxKeymap::MapFunction(wxchar *keys, char *fname)
       if ((code > 0) && (code < 127) && isalpha(code)) {
 	if (shift > 0) {
 #ifdef wx_mac
-	  if ((meta < 1) && (ctrl < 1))
+	  if (meta < 1)
 #endif
-#if defined(wx_msw) || defined(wx_xt)
+#if defined(wx_msw)
 	    if ((ctrl < 1) || (meta > 0))
 #endif
 	      code = toupper(code);
