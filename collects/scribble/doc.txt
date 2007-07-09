@@ -65,7 +65,7 @@ A <text-body> is made of text, newlines, and nested @-forms.  Note
 that the syntax for @-forms is the same in a <text-body> context as in
 a Scheme context.  A <text-body> that isn't an @-form is converted to
 a string expression for its <parsed-body>, and newlines are converted
-to "\n" expressions:
+to "\n" expressions.
 
   @foo{bar baz
        blah}
@@ -127,7 +127,7 @@ two, the first construct can appear in body texts with the same
 meaning, whereas the other two would not work (see below).
 
 After the optional punctuation prefix, the <cmd> itself is not limited
-to identifiers -- it can be *any* Scheme expression.
+to identifiers; it can be *any* Scheme expression.
 
   @(lambda (x) x){blah}    --reads-as-->    ((lambda (x) x) "blah")
   @`(unquote foo){blah}    --reads-as-->    `(,foo "blah")
