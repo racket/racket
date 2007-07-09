@@ -368,7 +368,7 @@ Note that "@|{...}|" can be parsed as either an escape expression or
 as a no-command @-form.  The latter is used in this case (since there
 is little point in Scheme code that uses braces.
 
-  @|{blah}|    --is-read-as-->    ("blah")
+  @|{blah}|    --reads-as-->    ("blah")
 
 * Concrete Syntax: Comments
 
