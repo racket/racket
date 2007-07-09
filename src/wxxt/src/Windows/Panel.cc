@@ -100,6 +100,8 @@ Bool wxPanel::Create(wxPanel *panel, int x, int y, int width, int height,
 	 NULL);
     if (!(style & wxINVISIBLE))
       XtManageChild(wgt);
+    else
+      XtRealizeWidget(wgt);
     X->frame = wgt;
     // internal representation
     if (style & wxBORDER) {

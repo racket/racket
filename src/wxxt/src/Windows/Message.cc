@@ -295,6 +295,8 @@ Bool wxMessage::Create(wxPanel *panel,
 
     if (!(style & wxINVISIBLE))
       XtManageChild(X->frame);
+    else
+      XtRealizeWidget(wgt);
     // create widget
     if (bitmap) {
       lblT = XtNpixmap;

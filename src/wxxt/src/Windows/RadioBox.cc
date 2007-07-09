@@ -129,6 +129,8 @@ Bool wxRadioBox::Create(wxPanel *panel, wxFunction func, char *label,
 			   NULL);
     if (!(style & wxINVISIBLE))
       XtManageChild(wgt);
+    else
+      XtRealizeWidget(wgt);
     X->frame = wgt;
     // create group widget, which holds the the toggles
     wgt = XtVaCreateManagedWidget("radiobox", xfwfGroupWidgetClass, X->frame,
@@ -257,6 +259,8 @@ Bool wxRadioBox::Create(wxPanel *panel, wxFunction func, char *label,
 			   NULL);
     if (!(style & wxINVISIBLE))
       XtManageChild(wgt);
+    else
+      XtRealizeWidget(wgt);
     X->frame = wgt;
 
     // create group widget, which holds the the toggles

@@ -93,6 +93,8 @@ Bool wxGauge::Create(wxPanel *panel, char *label, int _range,
 	 NULL);
     if (!(style & wxINVISIBLE))
       XtManageChild(wgt);
+    else
+      XtRealizeWidget(wgt);
     X->frame = wgt;
     // create the slider widget
     wgt = XtVaCreateManagedWidget

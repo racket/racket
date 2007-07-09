@@ -94,6 +94,8 @@ Bool wxSlider::Create(wxPanel *panel, wxFunction func, char *label,
 	 NULL);
     if (!(style & wxINVISIBLE))
       XtManageChild(wgt);
+    else
+      XtRealizeWidget(wgt);
     X->frame = wgt;
     // compute sizes of the slider widget
     if (style & (wxHORIZONTAL << 2)) {

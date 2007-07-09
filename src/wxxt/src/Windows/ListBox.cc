@@ -112,6 +112,8 @@ Bool wxListBox::Create(wxPanel *panel, wxFunction func, char *title,
 	 NULL);
     if (!(style & wxINVISIBLE))
       XtManageChild(wgt);
+    else
+      XtRealizeWidget(wgt);
     X->frame = wgt;
     // create viewport
     wgt = XtVaCreateManagedWidget

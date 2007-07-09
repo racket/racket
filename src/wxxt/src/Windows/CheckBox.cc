@@ -85,6 +85,8 @@ Bool wxCheckBox::Create(wxPanel *panel, wxFunction function, char *label,
 	 NULL);
     if (!(style & wxINVISIBLE))
       XtManageChild(wgt);
+    else
+      XtRealizeWidget(wgt);
     X->frame = wgt;
     // create widget
     wgt = XtVaCreateManagedWidget
