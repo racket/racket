@@ -165,7 +165,8 @@
     (define (read-error* line col pos span msg . xs)
       (let* ([eof? (and (eq? 'eof msg) (pair? xs))]
              [msg  (apply format (if eof? xs (cons msg xs)))]
-             [loc  (cond [(and line col) (format "at ~a:~a" line col)]
+             [loc  (cond [eof? #f]
+                         [(and line col) (format "at ~a:~a" line col)]
                          [pos (format "at #~a" pos)]
                          [else #f])]
              [loc  (cond [(and source-name loc)
