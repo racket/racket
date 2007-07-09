@@ -164,12 +164,7 @@
 
     (define (read-error* line col pos span msg . xs)
       (let* ([eof? (and (eq? 'eof msg) (pair? xs))]
-             [msg  (apply format (if eof? xs (cons msg xs)))]
-             [loc  (cond [eof? #f]
-                         [(and line col) (format "at ~a:~a" line col)]
-                         [pos (format "at #~a" pos)]
-                         [else #f])]
-             [msg  (if loc (format "~a (~a)" msg loc) msg)])
+             [msg  (apply format (if eof? xs (cons msg xs)))])
         ((if eof? raise-read-error raise-read-eof-error)
          msg source-name line col pos span)))
     (define (read-error msg . xs)
@@ -349,10 +344,8 @@
                       (maybe-merge (make-stx (read-bytes (cdadr m) inp)) r)))]
           [(*peek #rx#"^$")
            (if end-token
-             (read-error 'eof "missing closing `~a'~a" end-token
-                         (if (and line-num col-num)
-                           (format " for command at ~a:~a" line-num col-num)
-                           ""))
+             (read-error* line-num col-num position (span-from position)
+                          'eof "missing closing `~a'" end-token)
              (done-items r))]
           [else (read-error "internal error [get-lines*]")])))
 
