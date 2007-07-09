@@ -18,7 +18,7 @@
                           [(string? x) (string->bytes/utf-8 x)]
                           [(char? x) (regexp-quote (bytes (char->integer x)))]
                           [(not x) #""]
-                          [else (error 'reader "internal error [px]")]))
+                          [else (internal-error 'px)]))
                       args)])
       (byte-pregexp (apply bytes-append args))))
   (define (^px . args) (px #"^" args))
@@ -71,19 +71,22 @@
   ;; --------------------------------------------------------------------------
   ;; utilities
 
+  (define (internal-error label)
+    (error 'scribble-reader "internal error [~a]" label))
+
   ;; like `regexp-match/fail-without-reading', without extras; the regexp that
   ;; is used must be anchored -- nothing is dropped
   (define (*regexp-match-peek-positions pattern input-port)
     #; ; sanity checks, not needed unless this file is edited
     (unless (and (byte-regexp? pattern)
                  (regexp-match? #rx#"^\\^" (object-name pattern)))
-      (error 'reader "internal error [invalid bregexp] ~e" pattern))
+      (internal-error 'invalid-bregexp))
     (regexp-match-peek-positions pattern input-port))
   ;; the following doesn't work -- must peek first
   ;; (define (*regexp-match-positions pattern input-port)
   ;;   (unless (and (byte-regexp? pattern)
   ;;                (regexp-match? #rx#"^\\^" (object-name pattern)))
-  ;;     (error 'reader "internal error [invalid bregexp] ~e" pattern))
+  ;;     (internal-error 'invalid-bregexp))
   ;;   (regexp-match-peek-positions pattern input-port))
   (define (*regexp-match pattern input-port)
     (let ([m (*regexp-match-peek-positions pattern input-port)])
@@ -154,7 +157,7 @@
   (define (eol-syntax? x) (and (syntax? x) (eq? eol-token (syntax-e x))))
   ;; sanity check, in case this property gets violated in the future
   (unless (eol-syntax? (datum->syntax-object #f eol-token))
-    (error 'reader "internal error [invalid assumption]"))
+    (internal-error 'invalid-assumption))
 
   ;; --------------------------------------------------------------------------
   ;; main reader function for @ constructs
@@ -241,7 +244,7 @@
                                 [spaces (make-spaces (- x mincol))])
                             ;; markers always follow end-of-lines
                             (unless (eol-syntax? eol)
-                              (error 'reader "internal error [done-items]"))
+                              (internal-error 'done-items))
                             (cons (syntax-property
                                    (datum->syntax-object eol spaces eol)
                                    'scribble 'indentation)
@@ -347,7 +350,7 @@
              (read-error* line-num col-num position (span-from position)
                           'eof "missing closing `~a'" end-token)
              (done-items r))]
-          [else (read-error "internal error [get-lines*]")])))
+          [else (internal-error 'get-lines*)])))
 
     (define (get-lines)
       (cond [(*skip re:lines-begin) (get-lines* re:lines-begin re:lines-end #f
@@ -408,7 +411,7 @@
                                            [#","  unquote]
                                            [#",@" unquote-splicing]))
                                 => cadr]
-                               [else (read-error "internal error [rpfxs]")])])
+                               [else (internal-error 'get-rprefixes)])])
                     (loop (cons (datum->syntax-object #f sym
                                   (list source-name line col pos
                                         (span-from pos)))
@@ -444,7 +447,7 @@
                        cmd  ; no attrs/lines => simple expression (no parens)
                        ;; impossible: either we saw []s or {}s, or we read a
                        ;; scheme expression
-                       (read-error "internal error [dispatcher]"))]
+                       (internal-error 'dispatcher))]
             [(stx)
              ;; wrap the prefixes around the result
              (let loop ([rpfxs rpfxs] [stx stx])
