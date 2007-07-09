@@ -220,7 +220,7 @@ end of the text.  In addition, a "{" is allowed as part of the text,
 and it makes the matching "}" be part of the text too -- so balanced
 braces are valid text.
 
-  @foo{f{o}o}    --reads-as-->    (foo "f{o}o")
+  @foo{f{o}o}     --reads-as-->    (foo "f{o}o")
   @foo{{{}}{}}    --reads-as-->    (foo "{{}}{}")
 
 As described above, the text turns to a sequence of string arguments
