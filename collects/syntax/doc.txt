@@ -453,6 +453,10 @@ _readerr.ss_: signaling parse errors
   known), and `span-k' is #f or a non-negative exact integer for an
   item range starting from the indicated position.
 
+  The usual location values should point at the beginning of whatever
+  it is you were reading, and the span usually goes to the point the
+  error was discovered.
+
 > (raise-read-eof-error msg-string source-v line-k col-k pos-k span-k)
 
   Like `raise-read-error', but raises
