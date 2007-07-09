@@ -165,14 +165,13 @@
   (define ((dispatcher start-inside?)
            char inp source-name line-num col-num position)
 
-    (define (read-error* line col pos span msg . xs)
+    (define (read-error line col pos msg . xs)
       (let* ([eof? (and (eq? 'eof msg) (pair? xs))]
              [msg  (apply format (if eof? xs (cons msg xs)))])
         ((if eof? raise-read-error raise-read-eof-error)
-         msg source-name line col pos span)))
-    (define (read-error msg . xs)
-      (let-values ([(line col pos) (port-next-location inp)])
-        (apply read-error* line col pos #f msg xs)))
+         msg source-name line col pos (span-from pos))))
+    (define (read-error* . xs)
+      (apply read-error line-num col-num position xs))
 
     (define (read-stx) (read-syntax/recursive source-name inp))
     (define (read-stx/rt rt) (read-syntax/recursive source-name inp #f rt))
@@ -192,15 +191,16 @@
                    (- pos start))))
 
     (define (read-delimited-list begin-re end-re end-ch)
-      (and (*skip begin-re)
-           (let loop ([r '()])
-             (skip-whitespace inp)
-             (if (*skip end-re)
-               (reverse! r)
-               (let ([x (read-stx)])
-                 (if (eof-object? x)
-                   (read-error 'eof "expected a '~a'" end-ch)
-                   (loop (if (special-comment? x) r (cons x r)))))))))
+      (let-values ([(line col pos) (port-next-location inp)])
+        (and (*skip begin-re)
+             (let loop ([r '()])
+               (skip-whitespace inp)
+               (if (*skip end-re)
+                 (reverse! r)
+                 (let ([x (read-stx)])
+                   (if (eof-object? x)
+                     (read-error line col pos 'eof "expected a '~a'" end-ch)
+                     (loop (if (special-comment? x) r (cons x r))))))))))
 
     ;; gets an accumulated (reversed) list of syntaxes and column markers, and
     ;; sorts things out (remove prefix and suffix newlines, adds indentation if
@@ -290,12 +290,11 @@
         ;; this loop collects lines etc for the body, and also puts in column
         ;; markers (integers) after newlines -- the result is handed off to
         ;; `done-items' to finish the job
-        (define make-stx
-          (let-values ([(line col pos) (port-next-location inp)])
-            (lambda (sexpr)
-              (datum->syntax-object #f
-                (if (bytes? sexpr) (bytes->string/utf-8 sexpr) sexpr)
-                (list source-name line col pos (span-from pos))))))
+        (define-values (line col pos) (port-next-location inp))
+        (define (make-stx sexpr)
+          (datum->syntax-object #f
+            (if (bytes? sexpr) (bytes->string/utf-8 sexpr) sexpr)
+            (list source-name line col pos (span-from pos))))
         (cond
           [(and re:begin (*match1 re:begin))
            => (lambda (m) (loop (add1 lvl) (maybe-merge (make-stx m) r)))]
@@ -333,7 +332,9 @@
                             (get-escape-expr #f)]
                            [else (read-stx)])]) ; otherwise: a plain sub-read
                   (loop lvl (cond [(eof-object? x)
-                                   (read-error 'eof "missing command")]
+                                   ;; shouldn't happen -- the sub-read would
+                                   ;; raise an error
+                                   (internal-error 'get-lines*-sub-read)]
                                   ;; throw away comments
                                   [(special-comment? x) r]
                                   ;; escaped expressions: no merge
@@ -347,8 +348,7 @@
                       (maybe-merge (make-stx (read-bytes (cdadr m) inp)) r)))]
           [(*peek #rx#"^$")
            (if end-token
-             (read-error* line-num col-num position (span-from position)
-                          'eof "missing closing `~a'" end-token)
+             (read-error* 'eof "missing closing `~a'" end-token)
              (done-items r))]
           [else (internal-error 'get-lines*)])))
 
@@ -385,18 +385,17 @@
             (cond [(not xs) xs]
                   [(null? xs) (make-special-comment #f)]
                   [(null? (cdr xs)) (car xs)]
-                  [else (read-error* line col pos (span-from pos)
-                                     "too many escape expressions")]))
+                  [else (read-error line col pos
+                                    "too many escape expressions")]))
           (get))))
 
     ;; called only when we must see a command in the input
     (define (get-command)
-      (define-values (line col pos) (port-next-location inp))
       (let ([cmd (read-stx/rt command-readtable)])
         (cond [(special-comment? cmd)
-               (read-error* line col pos (span-from pos)
-                            "expecting a command expression, got a comment")]
-              [(eof-object? cmd) (read-error 'eof "missing command")]
+               (read-error* "expecting a command expression, got a comment")]
+              [(eof-object? cmd)
+               (read-error* 'eof "missing command")]
               [else cmd])))
 
     (define (get-rprefixes) ; return punctuation prefixes in reverse
@@ -416,16 +415,16 @@
                                   (list source-name line col pos
                                         (span-from pos)))
                                 r))))]
-            [(*peek re:whitespaces)
-             (read-error "unexpected whitespace after ~a" ch:command)]
+            [(*skip re:whitespaces)
+             (read-error* "unexpected whitespace after ~a" ch:command)]
             [else r]))))
 
     (cond
       [start-inside?
        (datum->syntax-object #f (get-lines* #f #f #f re:line-item-no-nests #f)
          (list source-name line-num col-num position (span-from position)))]
-      [(*peek re:whitespaces)
-       (read-error "unexpected whitespace after ~a" ch:command)]
+      [(*skip re:whitespaces)
+       (read-error* "unexpected whitespace after ~a" ch:command)]
       [(*skip re:comment-start)
        (unless (get-lines) (*skip re:comment-line))
        (make-special-comment #f)]
