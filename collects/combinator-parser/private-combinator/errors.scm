@@ -102,20 +102,30 @@
                      [top-names (map fail-type-name winners)]
                      [non-dup-tops (remove-dups top-names name)]
                      [top-name (car top-names)])
-                (fail-type->message 
-                 (car winners)
-                 (add-to-message
-                  (msg
-                   (cond
-                     [(and (> (length winners) 1) (> (length non-dup-tops) 1))
-                      (format "There is an error in this ~a. It is likely you intended one of ~a here.~n"
-                              name (nice-list non-dup-tops))]
-                     [else
+                (cond 
+                  [(and (> (length winners) 1) 
+                        (> (length non-dup-tops) 1)
+                        (> (length winners) max-choice-depth))
+                   (combine-message 
+                    (msg (format "An error occurred in this ~a. Program resembles one of ~a.~n"
+                                 name (nice-list non-dup-tops)))
+                    message-to-date)]
+                  [(and (> (length winners) 1)
+                        (<= (length winners) max-choice-depth))
+                   (combine-message
+                    (msg (format "An error occured in the ~a, program no longer matches expectation."
+                                 name))
+                    message-to-date)]
+                  [else
+                   (fail-type->message 
+                    (car winners)
+                    (add-to-message
+                     (msg
                       (format "There is an error in this ~a~a.~n"
                               name 
                               (if (equal? top-name name) "" 
-                                  (format ", it is likely you intended ~a ~a here" (a/an top-name) top-name)))]))
-                  name  #f message-to-date)))]
+                                  (format ", it is likely you intended ~a ~a here" (a/an top-name) top-name))))
+                     name  #f message-to-date))]))]
            [(choice-fail? fail-type)
             #;(printf "selecting for ~a~n message-to-date ~a~n" name message-to-date)
             (let* ([winners (select-errors (choice-fail-messages fail-type))]               
@@ -135,16 +145,16 @@
                       (> (length no-dup-names) 1)
                       (> (length winners) 1))
                  (combine-message 
-                  (msg (format "An error occured in this ~a, one of ~a is expected here. Input is close to one of ~a.~n"
+                  (msg (format "An error occured in this ~a, one of ~a is expected here. Program resembles one of ~a.~n"
                                name (nice-list no-dup-names) (nice-list top-names)))
                   message-to-date)]
-                #;[(and (<= (choice-fail-options fail-type) max-choice-depth)
-                      (> (length no-dup-names) 1))
+                [(and (> (length no-dup-names) max-choice-depth)
+                      (> (length winners) 1))
                  (combine-message 
-                  (msg (format "An error occured in this ~a, one of ~a is expected here. Current input is close to ~a.~a~n"
-                               name (nice-list no-dup-names) top-name
-                               (if show-options " To see all options click here." "")))
-                  message-to-date)] ;Add support for formatting and passing up all options
+                  (msg (format "An error occured in this ~a. Possible options are ~a.~n"
+                               name (nice-list 
+                                     (first-n max-choice-depth no-dup-names))))
+                  message-to-date)]
                 [else                 
                  (fail-type->message
                   (car winners)
