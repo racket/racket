@@ -108,13 +108,10 @@ exec mzscheme -r "$0" "$@"
       3 4)
      (1 2 3 4)]
 
-    [@foo{bar @; comment, note the extra space
-          baz}
-     (foo "bar baz")]
-
-    [@foo{bar@; comment, no space
-          baz}
-     (foo "barbaz")]
+    [@foo{bar @; comment
+          baz@;
+          blah}
+     (foo "bar bazblah")]
 
     [@foo{bar @; comment, with space and newline
 
@@ -196,8 +193,8 @@ exec mzscheme -r "$0" "$@"
     [@foo|{...}|
      (foo "...")]
 
-    [@foo|{close with "}", open with "{"}|
-     (foo "close with \"}\", open with \"{\"")]
+    [@foo|{"}" closes, "{" opens}|
+     (foo "\"}\" closes, \"{\" opens")]
 
     [@foo|{Nesting |{is}| ok}|
      (foo "Nesting |{is}| ok")]
@@ -415,6 +412,27 @@ exec mzscheme -r "$0" "$@"
           x5}
      (foo "x1" "\n" "x2y2" "\n" "x3y3" "\n" "x4" "y4" "\n" "x5")]
 
+    [,(let-syntax ([verb
+                    (lambda (stx)
+                      (syntax-case stx ()
+                        [(_ cmd item ...)
+                         #`(cmd .
+                            #,(let loop ([items (syntax->list #'(item ...))])
+                                (if (null? items)
+                                  '()
+                                  (let* ([fst  (car items)]
+                                         [prop (syntax-property fst 'scribble)]
+                                         [rst  (loop (cdr items))])
+                                    (cond [(not prop) (cons fst rst)]
+                                          [(eq? prop 'indentation) rst]
+                                          [else (cons (datum->syntax-object
+                                                       fst (cadr prop) fst)
+                                                      rst)])))))]))])
+        @verb[string-append]{
+          foo
+            bar
+        })
+     "foo\n            bar"]
 
     ))
 

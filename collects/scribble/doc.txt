@@ -113,7 +113,7 @@ use Scheme's `quote'.
 
   '@foo{bar}
 
-** Concrete Syntax: The Command Part
+** The Command Part
 
 Besides being a Scheme identifier, the <cmd> part of an @-form can
 have Scheme punctuation prefixes, which will end up wrapping the
@@ -145,7 +145,7 @@ contains, say, just strings:
 If the command part begins with a ";" (with no newline between the "@"
 and the ";"), then the construct is a comment.  There are two comment
 forms, one for arbitrary-text and possibly nested comments, and
-another one for a line comments:
+another one for line comments:
 
   @;{<anything> ...}
 
@@ -156,8 +156,9 @@ the description of the body syntax below.  In the second form, all
 text from the "@;" to the end of the line *and* all following spaces
 (or tabs) are part of the comment (similar to "%" comments in TeX).
 
-  @foo{bar @; comment    --reads-as-->    (foo "bar baz")
-       baz}
+  @foo{bar @; comment    --reads-as-->    (foo "bar bazblah")
+       baz@;
+       blah}
 
 Tip: if you're editing in a Scheme-aware editor (like DrScheme or
 Emacs), it is useful to comment out blocks like this:
@@ -183,7 +184,7 @@ in the command itself, which can lead to things like:
 
   @@foo{bar}{baz}    --reads-as-->    ((foo "bar") "baz")
 
-** Concrete Syntax: The Datum Part
+** The Datum Part
 
 The datum part can contains arbitrary Scheme expressions, which are
 simply stacked before the body text arguments:
@@ -211,14 +212,14 @@ keyword-value arguments that precede the body of text arguments.
 
   @foo[#:style 'big]{bar}    --reads-as-->    (foo #:style 'big "bar")
 
-** Concrete Syntax: The Body Part
+** The Body Part
 
 The syntax of the body part is intended to be as convenient as
 possible for free text.  It can contain almost any text -- the only
-characters with special meaning is "@" for sub forms, and "}" for the
-end of the text.  In addition, a "{" is allowed as part of the text,
-and it makes the matching "}" be part of the text too -- so balanced
-braces are valid text.
+characters with special meaning is "@" for sub-@-forms, and "}" for
+the end of the text.  In addition, a "{" is allowed as part of the
+text, and it makes the matching "}" be part of the text too -- so
+balanced braces are valid text.
 
   @foo{f{o}o}     --reads-as-->    (foo "f{o}o")
   @foo{{{}}{}}    --reads-as-->    (foo "{{}}{}")
@@ -269,19 +270,19 @@ of the text.  This works for "@" too:
   --reads-as-->
   (foo "@foo{bar} reads as (foo \"bar\")")
 
-* Concrete Syntax: Alternative Body Syntax
+* Alternative Body Syntax
 
-In addition, there is an alternative syntax for the body, one that
-specifies a new marker for its end: use "|{" for the opening marker to
-have the text terminated by a "}|".
+In addition to the above, there is an alternative syntax for the body,
+one that specifies a new marker for its end: use "|{" for the opening
+marker to have the text terminated by a "}|".
 
   @foo|{...}|
   --reads-as-->
   (foo "...")
 
-  @foo|{close with "}", open with "{"}|
+  @foo|{"}" closes, "{" opens}|
   --reads-as-->
-  (foo "close with \"}\", open with \"{\"")
+  (foo "\"}\" closes, \"{\" opens")
 
   @foo|{Nesting |{is}| ok}|
   --reads-as-->
@@ -325,7 +326,7 @@ string for confusing situations.  This works well when you only need
 to quote short pieces, and the above works well when you have larger
 multi-line body texts.
 
-* Concrete Syntax: Scheme Expression Escapes
+* Scheme Expression Escapes
 
 In some cases, you may want to use a Scheme identifier (or a number or
 a boolean etc.) in a position that touches the following text; in
@@ -344,7 +345,7 @@ or datum part when you use this form.
   @foo{foo@|(f 1)|{bar}}    --reads-as-->   (foo "foo" (f 1) "{bar}")
   @foo{foo@|bar|[1]{baz}}   --reads-as-->   (foo "foo" bar "[1]{baz}")
 
-This works for string expressions too, but not that unlike the above,
+This works for string expressions too, but note that unlike the above,
 the string is (intentionally) not merged with the rest of the text:
 
   @foo{x@"y"z}      --reads-as-->    (foo "xyz")
@@ -370,7 +371,7 @@ is little point in Scheme code that uses braces.
 
   @|{blah}|    --reads-as-->    ("blah")
 
-* Concrete Syntax: Comments
+* Comments
 
 As noted above, there are two kinds of Scribble comments: "@;{...}" is
 a (nestable) comment for a whole body of text (following the same
@@ -396,7 +397,7 @@ get further control of the subforms.
 Note how this is different from using "@||"s in that strings around it
 are not merged.
 
-* Concrete Syntax: Spaces, Newlines, and Indentation
+* Spaces, Newlines, and Indentation
 
 The Scribble syntax treats spaces and newlines in a special way is
 meant to be sensible for dealing with text.  As mentioned above,
@@ -410,9 +411,9 @@ for spaces between a "{" and text, or between text and a "}".
   @foo{ bar         --reads-as-->    (foo " bar" "\n" "baz ")
        baz }
 
-A single newline that follows an open brace or precedes a closing brace is
-discarded, unless there are only newlines in the body; other newlines
-are read as a "\n" string
+A single newline that follows an open brace or precedes a closing
+brace is discarded, unless there are only newlines in the body; other
+newlines are read as a "\n" string
 
   @foo{bar     --reads-as-->    (foo "bar")
   }
@@ -603,3 +604,4 @@ Here is an example of this.
     foo
       bar
   }
+  --> "foo\n      bar"

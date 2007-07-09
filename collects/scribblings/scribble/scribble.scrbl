@@ -23,7 +23,7 @@ The layers are:
 @itemize{
 
  @item{@file{reader.ss}: a reader that extends the syntax of Scheme
-       with @at forms for conveniently embedding a mixin of text and
+       with @"@"-forms for conveniently embedding a mixin of text and
        escapes. See @secref["reader"].}
 
  @item{@file{struct.ss}: a set of document datatypes, which define the
