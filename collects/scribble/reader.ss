@@ -169,10 +169,6 @@
                          [(and line col) (format "at ~a:~a" line col)]
                          [pos (format "at #~a" pos)]
                          [else #f])]
-             [loc  (cond [(and source-name loc)
-                          (format "when reading ~a ~a" source-name loc)]
-                         [source-name (format "when reading ~a" source-name)]
-                         [else loc])]
              [msg  (if loc (format "~a (~a)" msg loc) msg)])
         ((if eof? raise-read-error raise-read-eof-error)
          msg source-name line col pos span)))
