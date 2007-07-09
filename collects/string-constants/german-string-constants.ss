@@ -304,7 +304,7 @@
  (show-character-offsets "Zeichen-Offsets anzeigen") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "Tastenbelegung für Menüs")
  (automatically-to-ps "Automatisch in PostScript-Datei drucken")
- (option-as-meta "Option-Taste als Mera behandeln") ;; macos/macos x only
+ (command-as-meta "Command-Taste als Meta behandeln") ;; macos/macos x only
  (separate-dialog-for-searching "Für Textsuche separaten Dialog verwenden")
  (reuse-existing-frames "Existierende Fenster für neu geöffnete Dateien wiederverwenden")
  (default-fonts "Standard-Fonts")
@@ -693,6 +693,8 @@
  (print-interactions "Interaktionen drucken...")
  (new-tab "Neuer Tab")
  (close-tab "Tab schließen")
+
+ (close-tab-amp "Tab &schließen") ;; like close-tab, but with an ampersand on the same letter as the one in close-menu-item
  
  ;;; edit-menu
  (split-menu-item-label "&Splitten")
@@ -1132,6 +1134,8 @@
   (profj-advanced-lang-one-line-summary "Java-ähnliche Lehrsprache für Fortgeschrittene")
   (profj-intermediate-lang "Zwischenstufe")
   (profj-intermediate-lang-one-line-summary "Java-ähnliche Lehrsprache, Zwischenstufe")
+  (profj-intermediate-access-lang "Zwischenstufe + Zugriffskontrolle")
+  (profj-intermediate-access-lang-one-line-summary "Java-ähnliche Lehrsprache, Zwischenstufe, mit Zugriffskontrolle")
   (profj-dynamic-lang "Java+dynamic")
   (profj-dynamic-lang-one-summary "Java mit dynamischen Typen")
 
