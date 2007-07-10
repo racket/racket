@@ -726,6 +726,7 @@
   (print-interactions "列印交互...")
   (new-tab "新建標籤")
   (close-tab "關閉標籤") ;; must not have any &s in it.
+  (close-tab-amp "關閉標籤(&C)") ;; like close-tab, but with an ampersand on the same letter as the one in close-menu-item
   
   ;;; edit-menu
   (split-menu-item-label "分屏(&S)")
@@ -1054,6 +1055,10 @@
   (module-browser-name-medium "中")
   (module-browser-name-long "長")
   (module-browser-open-all "打開所有這些文件")
+  
+  (happy-birthday-matthias "生日快樂，Matthias！")
+  (happy-birthday-matthew "生日快樂，馬曉！")
+  (happy-birthday-shriram "生日快樂，Shriram！")
   
   (mrflow-using-default-language-title "正在使用預設語言")
   (mrflow-using-default-language "當前使用的語言並不包含定義primitive類型的標。改用R5RS Scheme。")
