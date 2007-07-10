@@ -4,7 +4,7 @@
 @require["mz.ss"]
 
 @;------------------------------------------------------------------------
-@title{Syntax Model}
+@title[#:tag "mz:syntax-model"]{Syntax Model}
 
 The syntax of a Scheme program is defined by
 
@@ -30,7 +30,7 @@ process, and when the @tech{expansion} process encounters a
 new binding information.
 
 @;------------------------------------------------------------------------
-@section{Identifiers and Binding}
+@section[#:tag "mz:id-model"]{Identifiers and Binding}
 
 @guideintro["guide:binding"]{binding}
 
@@ -85,7 +85,7 @@ identifier has a @tech{top-level binding} or @tech{module binding},
 then it can have different such bindings in different phase levels.
 
 @;------------------------------------------------------------------------
-@section{Syntax Objects}
+@section[#:tag "mz:stxobj-model"]{Syntax Objects}
 
 A @deftech{syntax object} combines a simpler Scheme value, such as a
 symbol or pair, with @deftech{lexical information} about bindings and
@@ -147,7 +147,7 @@ information that @scheme[_datum] had when it was parsed as part of the
 @section[#:tag "mz:expansion"]{Expansion@aux-elem{ (Parsing)}}
 
 @deftech{Expansion} recursively processes a @tech{syntax object} in a
-particular phase level, starting with phase level 0. @tech{Bindings}
+particular phase level, starting with @tech{phase level} 0. @tech{Bindings}
 from the @tech{syntax object}'s @tech{lexical information} drive the
 expansion process, and cause new bindings to be introduced for the
 lexical information of sub-expressions. In some cases, a
@@ -219,7 +219,7 @@ one whose binding is @scheme[define-values]). In all cases,
 identifiers above typeset as syntactic-form names refer to the
 bindings defined in @secref["mz:syntax"].
 
-Only phase levels 0 and 1 are relevant for following the parse of a
+Only @tech{phase levels} 0 and 1 are relevant for following the parse of a
 program (though the @scheme[_datum] in a @scheme[quote-syntax] form
 preserves its information for all phase levels). In particular, the
 relevant phase level is 0, except for the @scheme[_expr]s in a
@@ -425,7 +425,7 @@ binding @scheme[x] and the body @scheme[y] are not
 @scheme[bound-identifier=?].
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection{Transformer Bindings}
+@subsection[#:tag "mz:transformer-model"]{Transformer Bindings}
 
 In a @tech{top-level context} or @tech{module context}, when the
 expander encounters a @scheme[define-syntaxes] form, the binding that
@@ -486,6 +486,12 @@ present in the argument to the transformer. The introduced @scheme[x]
 is the one left with a mark, and the reference @scheme[x] has no mark,
 so the binding @scheme[x] is not @scheme[bound-identifier=?] to the
 body @scheme[x].
+
+The @scheme[set!] form and the @scheme[make-set!-transformer]
+procedure work together to support @deftech{assignment transformers}
+that transformer @scheme[set!] expression. @tech{Assignment
+transformers} are applied by @scheme[set!] in the same way as a normal
+transformer by the macro expander.
 
 The expander's handling of @scheme[letrec-values+syntaxes] is similar
 to its handling of @scheme[define-syntaxes]. A

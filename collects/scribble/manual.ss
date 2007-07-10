@@ -192,6 +192,7 @@
 
   (provide defproc defproc* defstruct defthing defparam defboolparam
            defform defform* defform/subs defform*/subs defform/none
+           defidform
            specform specform/subs 
            specsubform specsubform/subs specspecsubform specspecsubform/subs specsubform/inline
            schemegrammar schemegrammar*
@@ -310,6 +311,15 @@
        #'(*defforms #f null
                     '(spec) (list (lambda (ignored) (schemeblock0 spec))) 
                     null null
+                    (lambda () (list desc ...)))]))
+  (define-syntax (defidform stx)
+    (syntax-case stx ()
+      [(_ spec-id desc ...)
+       #'(*defforms (quote-syntax spec-id) null
+                    '(spec-id)
+                    (list (lambda (x) (make-paragraph (list x))))
+                    null
+                    null
                     (lambda () (list desc ...)))]))
   (define-syntax specsubform
     (syntax-rules ()
@@ -837,7 +847,11 @@
                     (apply 
                      append
                      (map (lambda (form)
-                            (let loop ([form (cons (if kw-id (cdr form) form)
+                            (let loop ([form (cons (if kw-id 
+                                                       (if (pair? form)
+                                                           (cdr form) 
+                                                           null)
+                                                       form)
                                                    subs)])
                               (cond
                                [(symbol? form) (if (or (meta-symbol? form)
@@ -869,7 +883,10 @@
                           (eq? form (car forms))
                           (make-target-element
                            #f
-                           (list (to-element (make-just-context (car form) kw-id)))
+                           (list (to-element (make-just-context (if (pair? form)
+                                                                    (car form) 
+                                                                    form)
+                                                                kw-id)))
                            (register-scheme-form-definition kw-id))))))))
                forms form-procs)
           (if (null? sub-procs)

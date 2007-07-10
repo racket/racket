@@ -21,6 +21,7 @@ language.
 @include-section["struct.scrbl"]
 @include-section["control.scrbl"]
 @include-section["concurrency.scrbl"]
+@include-section["macros.scrbl"]
 @include-section["security.scrbl"]
 @include-section["io.scrbl"]
 @include-section["os.scrbl"]

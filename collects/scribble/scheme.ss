@@ -363,6 +363,7 @@
                           (let ([c (syntax-e c)])
                             (let ([s (format "~s" c)])
                               (if (and (symbol? c)
+                                       ((string-length s) . > . 1)
                                        (char=? (string-ref s 0) #\_))
                                   (values (substring s 1) #t #f)
                                   (values s #f #f))))]

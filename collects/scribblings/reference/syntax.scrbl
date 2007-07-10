@@ -745,12 +745,17 @@ Equivalent to @scheme[(when (not test-expr) expr ...)].
 
 @defform[(set! id expr)]{
 
-Evaluates @scheme[expr] and installs the result into the location for
-@scheme[id], which must be bound as a local variable or defined as a
-@tech{top-level variable} or @tech{module-level variable}. If
-@scheme[id] refers to an imported binding, a syntax error is reported.
-If @scheme[id] refers to a @tech{top-level variable} that has not been
-defined, the @exnraise[exn:fail:contract].
+If @scheme[id] is bound as syntax to an @tech{assignment transformer},
+as produced by @scheme[make-set!-transformer], then this form is
+expanded by calling the assignment transformer with the full
+expressions.
+
+Otherwise, evaluates @scheme[expr] and installs the result into the
+location for @scheme[id], which must be bound as a local variable or
+defined as a @tech{top-level variable} or @tech{module-level
+variable}. If @scheme[id] refers to an imported binding, a syntax
+error is reported.  If @scheme[id] refers to a @tech{top-level
+variable} that has not been defined, the @exnraise[exn:fail:contract].
 
 @defexamples[
 (define x 12)
@@ -764,7 +769,8 @@ x
 
 @defform[(set!-values (id ...) expr)]{
 
-Evaluates @scheme[expr], which must produce as many values as supplied
+Assuming that all @scheme[id]s refer to variables, this form evaluates
+@scheme[expr], which must produce as many values as supplied
 @scheme[id]s.  The location of each @scheme[id] is filled wih to the
 corresponding value from @scheme[expr] in the same way as for
 @scheme[set!].
@@ -774,7 +780,17 @@ corresponding value from @scheme[expr] in the same way as for
       [b 2])
   (set!-values (a b) (values b a))
   (list a b))
-]}
+]
+
+More generally, the @scheme[set!-values] form is expanded to
+
+@schemeblock[
+(let-values ([(_tmp-id ...) expr])
+  (set! id _tmp-id) ...)
+]
+
+which triggers further expansion if any @scheme[id] has a transformer
+binding to an @tech{assignment transformer}.}
 
 @;------------------------------------------------------------------------
 @include-section["for.scrbl"]
