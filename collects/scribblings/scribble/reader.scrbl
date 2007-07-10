@@ -338,7 +338,7 @@ the opening marker to have the text terminated by a @litchar["}|"].
 
 @scribble-examples|==={
   @foo|{...}|
-  @foo|{"}" closes, "{" opens}|
+  @foo|{"}" follows "{"}|
   @foo|{Nesting |{is}| ok}|
 }===|
 
@@ -474,7 +474,6 @@ A single newline that follows an open brace or precedes a closing
 brace is discarded, unless there are only newlines in the body; other
 newlines are read as a @scheme["\n"] string
 
-@;FIXME empty lines are ignored in generated HTML output (with IE?)
 @scribble-examples|==={
   @foo{bar
   }

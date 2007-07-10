@@ -15,7 +15,10 @@
         (make-table
          #f
          (map (lambda (s)
-                (list (make-flow (list (make-paragraph (list (litchar s)))))))
+                (list (make-flow (list (make-paragraph 
+					(if (string=? s "")
+					    '(nbsp) ; needed for IE
+					    (list (litchar s))))))))
               strs)))))
 
   (define (as-flow e)
