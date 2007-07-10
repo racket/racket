@@ -319,15 +319,15 @@ This is particularly useful with strings, which can be used to include
 arbitrary text.
 
 @scribble-examples|==={
-  @foo{@"}" is a closing brace}
+  @foo{A @"}" marks the end}
 }===|
 
 Note that the escaped string is (intentionally) merged with the rest
 of the text.  This works for @litchar["@"] too:
 
 @scribble-examples|==={
-  @foo{Command prefix: @"@".}
-  @foo{@"@f{b}" -> (f "b")}
+  @foo{The prefix: @"@".}
+  @foo{@"@x{y}" --> (x "y")}
 }===|
 
 @subsubsub*section{Alternative Body Syntax}
@@ -349,7 +349,7 @@ prefixed with a @litchar["|"]:
   @foo|{Maze
         |@bar{is}
         Life!}|
-  @foo|{|@bar|{subforms}| ok}|
+  @t|{In |@i|{sub|@"@"s}| too}|
 }===|
 
 Note that the subform uses its own delimiters, @litchar["{...}"] or
@@ -366,8 +366,8 @@ in reverse order with paren-like characters (@litchar["("],
 @litchar["["], @litchar["<"]) mirrored.
 
 @scribble-examples|==={
-  @foo|<<<{@x{m} |@{t}|.}>>>|
-  @foo|!!{B |!!@bold{b}...}!!|
+  @foo|<<<{@x{foo} |@{bar}|.}>>>|
+  @foo|!!{X |!!@b{Y}...}!!|
 }===|
 
 Finally, remember that you can use an expression escape with a Scheme
@@ -448,7 +448,8 @@ of the line @italic{and} all following spaces (or tabs).  Using this,
 you can get further control of the subforms.
 
 @scribble-examples|==={
-  @foo{A long single-@;
+  @foo{A long @;
+       single-@;
        string arg.}
 }===|
 
@@ -568,8 +569,9 @@ block).
   @foo{ bar
      baz
        bbb}
-  @text{Text@note{And
-    note.}.  More.}
+  @text{Some @b{bold
+    text}, and
+    more text.}
 }===|
 
 Note that each @"@"-form is parsed to an S-expression that has its own
