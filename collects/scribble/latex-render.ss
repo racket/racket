@@ -54,6 +54,7 @@
         (define-color "schemestdout" "OutputColor")
         (define-color "schememeta" "IdentifierColor")
         (define-color "schememod" "black")
+        (define-color "schemereader" "black")
         (define-color "schemevariablecol" "IdentifierColor")
         (printf "\\newcommand{\\schemevariable}[1]{{\\schemevariablecol{\\textsl{#1}}}}\n")
         (define-color "schemeerrorcol" "red")

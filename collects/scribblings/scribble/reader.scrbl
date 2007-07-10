@@ -1,7 +1,9 @@
 #reader(lib "docreader.ss" "scribble")
 @require[(lib "manual.ss" "scribble")]
 @require[(lib "bnf.ss" "scribble")]
+@require[(lib "eval.ss" "scribble")]
 @require["utils.ss"]
+@require-for-syntax[mzscheme]
 
 @title[#:tag "reader"]{The Scribble Reader}
 
@@ -112,16 +114,23 @@ When the above @"@"-forms appear in a Scheme expression context, the
 lexical environment must provide bindings for @scheme[foo] (as a procedure or
 a macro).
 
-@; FIXME: need to show evaluation here (with the scribble syntax)
-@schemeblock[
+@; FIXME: unfortunate code duplication
+@interaction[
+(eval:alts
   (let* ([formatter (lambda (fmt)
           (lambda args (format fmt (apply string-append args))))]
          [bf (formatter "*~a*")]
          [it (formatter "/~a/")]
          [ul (formatter "_~a_")]
          [text string-append])
-    @text{@it{Note}: @bf{This is @ul{not} a pipe}.})
-  --> "/Note/: *This is _not_ a pipe*."
+    #,(tt "@text{@it{Note}: @bf{This is @ul{not} a pipe}.}"))
+  (let* ([formatter (lambda (fmt)
+          (lambda args (format fmt (apply string-append args))))]
+         [bf (formatter "*~a*")]
+         [it (formatter "/~a/")]
+         [ul (formatter "_~a_")]
+         [text string-append])
+    @text{@it{Note}: @bf{This is @ul{not} a pipe}.}))
 ]
 
 If you want to see the expression that is actually being read, you can
@@ -310,15 +319,15 @@ This is particularly useful with strings, which can be used to include
 arbitrary text.
 
 @scribble-examples|==={
-  @foo{This @"}" is a closing brace}
+  @foo{@"}" is a closing brace}
 }===|
 
 Note that the escaped string is (intentionally) merged with the rest
 of the text.  This works for @litchar["@"] too:
 
 @scribble-examples|==={
-  @foo{The command prefix is @"@".}
-  @foo{@"@foo{bar}" reads as (foo "bar")}
+  @foo{Command prefix: @"@".}
+  @foo{@"@f{b}" -> (f "b")}
 }===|
 
 @subsubsub*section{Alternative Body Syntax}
@@ -340,7 +349,7 @@ prefixed with a @litchar["|"]:
   @foo|{Maze
         |@bar{is}
         Life!}|
-  @foo|{Works for |@bar|{subforms}| too}|
+  @foo|{|@bar|{subforms}| ok}|
 }===|
 
 Note that the subform uses its own delimiters, @litchar["{...}"] or
@@ -357,8 +366,8 @@ in reverse order with paren-like characters (@litchar["("],
 @litchar["["], @litchar["<"]) mirrored.
 
 @scribble-examples|==={
-  @foo|<<<{Some @x{more} |@{text}|.}>>>|
-  @foo|!!{Blah |!!@bold{blah}...}!!|
+  @foo|<<<{@x{m} |@{t}|.}>>>|
+  @foo|!!{B |!!@bold{b}...}!!|
 }===|
 
 Finally, remember that you can use an expression escape with a Scheme
@@ -430,7 +439,7 @@ rules for @"@"-forms), and @litchar["@;..."] is a line-comment.
 
 @scribble-examples|==={
   @foo{First line@;{there is still a
-                    newline at this point;}
+                    newline here;}
        Second line}
 }===|
 
@@ -439,10 +448,8 @@ of the line @italic{and} all following spaces (or tabs).  Using this,
 you can get further control of the subforms.
 
 @scribble-examples|==={
-  @foo{This is @;
-       a pretty long @;
-       single string-@;
-       argument.}
+  @foo{A long single-@;
+       string arg.}
 }===|
 
 Note how this is different from using @litchar["@||"]s in that strings
@@ -467,7 +474,7 @@ A single newline that follows an open brace or precedes a closing
 brace is discarded, unless there are only newlines in the body; other
 newlines are read as a @scheme["\n"] string
 
-@;FIXME empty lines are ignored in generated HTML output
+@;FIXME empty lines are ignored in generated HTML output (with IE?)
 @scribble-examples|==={
   @foo{bar
   }
@@ -497,20 +504,23 @@ In the parsed S-expression syntax, a single newline string is used for
 all newlines; you can use @scheme[eq?] to identify this line.  This
 can be used to identify newlines in the original @nonterm{text-body}.
 
-@; FIXME: need to show printout here (with the scribble syntax)
-@schemeblock[
+@; FIXME: unfortunate code duplication (again):
+@interaction[
+(eval:alts
+  (let ([nl (car #, @tt["@'{"]
+                 #, @tt["  }"])])
+    (for-each (lambda (x) (display (if (eq? x nl) "\n... " x)))
+              #, @tt["@`{foo"]
+              #, @elem[@tt["   @"] @scheme[,@(list "bar" "\n" "baz")]]
+              #, @tt["   blah}}"])
+    (newline))
   (let ([nl (car @'{
                    })])
     (for-each (lambda (x) (display (if (eq? x nl) "\n... " x)))
               @`{foo
                  @,@(list "bar" "\n" "baz")
                  blah})
-    (newline))
-  --prints-->
-  foo
-  ... bar
-  baz
-  ... blah
+    (newline)))
 ]
 
 Spaces at the beginning of body lines do not appear in the resulting
@@ -543,7 +553,6 @@ syntax object used for indentation).  This makes sense when formatting
 structured code as well as text (see the last example in the following
 block).
 
-@;FIXME: last example too long, messes up output
 @scribble-examples|==={
   @foo{bar
          baz
@@ -560,8 +569,8 @@ block).
   @foo{ bar
      baz
        bbb}
-  @text{Some text@footnote{And a
-    footnote comment.}.  More text.}
+  @text{Text@note{And
+    note.}.  More.}
 }===|
 
 Note that each @"@"-form is parsed to an S-expression that has its own
@@ -634,28 +643,33 @@ To implement a verbatim environment you need to drop indentation
 strings, and use the original newline strings instead of the
 single-newline string.  Here is an example of this.
 
-@; FIXME: need to show evaluation here (with the scribble syntax)
-@schemeblock[
+@; FIXME: a bit of code duplication here
+@def+int[
   (define-syntax (verb stx)
     (syntax-case stx ()
       [(_ cmd item ...)
-       ;;FIXME: show a "#`" in the rendering of the following line
-       #`(cmd .
-          ;;FIXME: the next line should begin with a #,
-          ,(let loop ([items (syntax->list #'(item ...))])
-              (if (null? items)
-                '()
-                (let* ([fst  (car items)]
-                       [prop (syntax-property fst 'scribble)]
-                       [rst  (loop (cdr items))])
-                  (cond [(not prop) (cons fst rst)]
-                        [(eq? prop 'indentation) rst]
-                        [else (cons (datum->syntax-object
-                                     fst (cadr prop) fst)
-                                    rst)])))))]))
+       #`(cmd
+          #,@(let loop ([items (syntax->list #'(item ...))])
+               (if (null? items)
+                 '()
+                 (let* ([fst  (car items)]
+                        [prop (syntax-property fst 'scribble)]
+                        [rst  (loop (cdr items))])
+                   (cond [(not prop) (cons fst rst)]
+                         [(eq? prop 'indentation) rst]
+                         [else (cons (datum->syntax-object
+                                      fst (cadr prop) fst)
+                                     rst)])))))]))
+(eval:alts
+
+ (code:line
+  #, @tt["@verb[string-append]{"]
+  #, @tt["  foo"]
+  #, @tt["    bar"]
+  #, @tt["}"])
+
   @verb[string-append]{
     foo
       bar
-  }
-  --> "foo\n      bar"
+  })
 ]

@@ -67,14 +67,13 @@ object, @scheme[#f] otherwise. See also @secref["mz:model-eq"].}
 @guideintro["guide:symbols"]{symbols}
 
 A symbol is like an immutable string, but symbols are normally
-@index["interned symbols"]{@defterm{interned}}, so that two symbols
-with the same character content are normally @scheme[eq?]. All symbols
-produced by the default reader (see @secref["mz:parse-symbol"]) are
-interned.
+@deftech{interned}, so that two symbols with the same character
+content are normally @scheme[eq?]. All symbols produced by the default
+reader (see @secref["mz:parse-symbol"]) are interned.
 
 @index['("symbols" "generating")]{@index['("symbols" "unique")]{The}} two
 procedures @scheme[string->uninterned-symbol] and @scheme[gensym]
-generate @idefterm{uninterned symbols}, i.e., a symbols that are not
+generate @deftech{uninterned} symbols, i.e., symbols that are not
 @scheme[eq?], @scheme[eqv?], or @scheme[equal?] to any other symbol,
 although they may print the same as other symbols.
 
@@ -98,22 +97,23 @@ ephemeron key (see @secref["mz:ephemerons"]).
 @examples[(symbol->string 'Apple)]
 
 
-@defproc[(string->symbol [str string?]) symbol?]{Returns an interned
- symbol whose characters are the same as in @scheme[str].}
+@defproc[(string->symbol [str string?]) symbol?]{Returns an
+ @tech{interned} symbol whose characters are the same as in
+ @scheme[str].}
 
 @examples[(string->symbol "Apple") (string->symbol "1")]
 
 
 @defproc[(string->uninterned-symbol [str string?]) symbol?]{Like
  @scheme[(string->symbol str)], but the resulting symbol is a new
- uninterned symbol. Calling @scheme[string->uninterned-symbol] twice
- with the same @scheme[str] returns two distinct symbols.}
+ @tech{uninterned} symbol. Calling @scheme[string->uninterned-symbol]
+ twice with the same @scheme[str] returns two distinct symbols.}
 
 @examples[(string->uninterned-symbol "Apple") (eq? 'a (string->uninterned-symbol "a"))]
 
 
 @defproc[(gensym [base (or/c string? symbol?) "g"]) symbol?]{Returns a
- new uninterned symbol with an automatically-generated name. The
+ new @tech{uninterned} symbol with an automatically-generated name. The
  optional @scheme[base] argument is a prefix symbol or string.}
 
 @examples[(gensym "apple")]
@@ -122,7 +122,39 @@ ephemeron key (see @secref["mz:ephemerons"]).
 @include-section["regexps.scrbl"]
 
 @; ------------------------------------------------------------
-@section[#:tag "keywords"]{Keywords}
+@section[#:tag "mz:keywords"]{Keywords}
+
+@guideintro["guide:keywords"]{keywords}
+
+A keyword is like an @tech{interned} symbol, but its printed form
+starts with @litchar{#:}, and a keyword cannot be used as an
+identifier. Furthermore, a keyword by itself is not a valid
+expression, though a keyword can be @scheme[quote]d to form an
+expression that produces the symbol.
+
+Two keywords are @scheme[eq?] if and only if they print the same.
+
+Like symbols, keywords are only weakly held by the internal keyword
+table; see @secref["mz:symbols"] for more information.
+
+@item{@defproc[(keyword? [v any/c]) any] returns @scheme[#t] if @scheme[v] is a
+keyword, @scheme[#f] otherwise.}
+
+@defproc[(keyword->string [keyword keyword?]) string?]{
+
+Returns a string for the @scheme[display]ed form of @scheme[keyword],
+not including the leading @litchar{#:}.}
+
+@defproc[(string->keyword [str string?]) keyword]{
+
+Returns a keyword whose @scheme[display]ed form is the same as that of
+@scheme[str], but with a leading @litchar{#:}.}
+
+@defproc[(keyword<? [a-keyword keyword?][b-keyword keyword?] ...+) boolean?]{
+
+Returns @scheme[#t] if the arguments are sorted, where the comparison
+for each pair of keywords is the same as using
+@scheme[keyword->string] and @scheme[string<?].}
 
 @; ----------------------------------------------------------------------
 @section[#:tag "mz:pairs"]{Pairs and Lists}

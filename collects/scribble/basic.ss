@@ -89,7 +89,24 @@
     (make-element 'bold (decode-content str)))
 
   (define (tt . str)
-    (make-element 'tt (decode-content str)))
+    (let ([l (decode-content str)])
+      (let ([l (let ([m (and (pair? l)
+                             (string? (car l))
+                             (regexp-match-positions #rx"^ +" (car l)))])
+                 (if m
+                     (cons (hspace (- (cdar m) (caar m)))
+                           (cons
+                            (substring (car l) (cdar m))
+                            (cdr l)))
+                     l))])
+        (if (andmap string? l)
+            (make-element 'tt l)
+            (make-element #f (map (lambda (s)
+                                    (if (or (string? s)
+                                            (symbol? s))
+                                        (make-element 'tt (list s))
+                                        s))
+                                  l))))))
 
   (define (span-class classname . str)
     (make-element classname (decode-content str)))

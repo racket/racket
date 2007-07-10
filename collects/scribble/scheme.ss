@@ -22,7 +22,7 @@
            (struct just-context (val ctx)))
 
   (define no-color "schemeplain")
-  (define reader-color "schemeplain")
+  (define reader-color "schemereader")
   (define keyword-color "schemekeyword")
   (define comment-color "schemecomment")
   (define paren-color "schemeparen")
@@ -253,7 +253,7 @@
            [(and (pair? (syntax-e c))
                  (memq (syntax-e (car (syntax-e c))) 
                        '(quote quasiquote unquote unquote-splicing
-                               syntax unsyntax)))
+                               quasisyntax syntax unsyntax unsyntax-splicing)))
             (advance c init-line!)
             (let-values ([(str quote-delta)
                           (case (syntax-e (car (syntax-e c)))
@@ -262,7 +262,9 @@
                             [(unquote-splicing) (values ",@" -1)]
                             [(quasiquote) (values "`" +1)]
                             [(syntax) (values "#'" 0)]
-                            [(unsyntax) (values "#," 0)])])
+                            [(quasisyntax) (values "#`" 0)]
+                            [(unsyntax) (values "#," 0)]
+                            [(unsyntax-splicing) (values "#,@" 0)])])
               (out str (if (positive? (+ quote-depth quote-delta))
                            value-color
                            reader-color))
@@ -308,7 +310,9 @@
                                  c)])
                 (cond
                  [(and (syntax? l)
-                       (pair? (syntax-e l)))
+                       (pair? (syntax-e l))
+                       (not (memq (syntax-e (car (syntax-e l)))
+                                  '(quote unquote syntax unsyntax quasiquote quasiunsyntax))))
                   (lloop (syntax-e l))]
                  [(or (null? l)
                       (and (syntax? l)
@@ -318,6 +322,7 @@
                   ((loop init-line! quote-depth) (car l))
                   (lloop (cdr l))]
                  [else
+                  
                   (advance l init-line! -2)
                   (out ". " (if (positive? quote-depth) value-color paren-color))
                   (set! src-col (+ src-col 3))
