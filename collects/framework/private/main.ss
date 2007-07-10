@@ -165,7 +165,7 @@
   (let ([hash-table (make-hash-table)])
     (for-each (λ (x) 
                 (hash-table-put! hash-table x 'define))
-              '())
+              '(local))
     (for-each (λ (x) 
                 (hash-table-put! hash-table x 'begin))
               '(case-lambda
@@ -206,7 +206,7 @@
                  define-some do opt-lambda
                  send* with-method
                  define-record
-                 local catch shared
+                 catch shared
                  unit/sig unit/lang
                  with-handlers
                  interface
