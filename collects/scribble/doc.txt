@@ -255,20 +255,20 @@ arbitrary Scheme code.
 This is particularly useful with strings, which can be used to include
 arbitrary text.
 
-  @foo{This @"}" is a closing brace}
+  @foo{A @"}" marks the end}
   --reads-as-->
-  (foo "This } is a closing brace")
+  (foo "A } marks the end")
 
 Note that the escaped string is (intentionally) merged with the rest
 of the text.  This works for "@" too:
 
-  @foo{The command prefix is @"@".}
+  @foo{The prefix: @"@".}
   --reads-as-->
-  (foo "The command prefix is @.")
+  (foo "The prefix: @.")
 
-  @foo{@"@foo{bar}" reads as (foo "bar")}
+  @foo{@"@x{y}" --> (x "y")}
   --reads-as-->
-  (foo "@foo{bar} reads as (foo \"bar\")")
+  (foo "@x{y} --> (x \"y\")")
 
 * Alternative Body Syntax
 
@@ -280,9 +280,9 @@ marker to have the text terminated by a "}|".
   --reads-as-->
   (foo "...")
 
-  @foo|{"}" closes, "{" opens}|
+  @foo|{"}" follows "{"}|
   --reads-as-->
-  (foo "\"}\" closes, \"{\" opens")
+  (foo "\"}\" follows \"{\"")
 
   @foo|{Nesting |{is}| ok}|
   --reads-as-->
@@ -297,9 +297,9 @@ This applies to sub-@-forms too -- the "@" must be prefixed with a
   --reads-as-->
   (foo "Maze" "\n" (bar "is") "Life!")
 
-  @foo|{Works for |@bar|{subforms}| too}|
+  @t|{In |@i|{sub|@"@"s}| too}|
   --reads-as-->
-  (foo "Works for " (bar "subforms") " too")
+  (t "In " (i "sub@s") " too")
 
 Note that the subform uses its own delimiters, "{...}" or "|{...}|".
 This means that you can copy and paste Scribble text with @-forms
@@ -313,13 +313,13 @@ also be used for sub-@-forms, and the end-of-body marker should have
 these characters in reverse order with paren-like characters ("(",
 "[", "<") mirrored.
 
-  @foo|<<<{Some @x{more} |@{text}|.}>>>|
+  @foo|<<<{@x{foo} |@{bar}|.}>>>|
   --reads-as-->
-  (foo "Some @x{more} |@{text}|.")
+  (foo "@x{foo} |@{bar}|.")
 
-  @foo|!!{Blah |!!@bold{blah}...}!!|
+  @foo|!!{X |!!@b{Y}...}!!|
   --reads-as-->
-  (foo "Blah " (bold "blah") "...")
+  (foo "X " (b "Y") "...")
 
 Finally, remember that you can use an expression escape with a Scheme
 string for confusing situations.  This works well when you only need
@@ -378,7 +378,7 @@ a (nestable) comment for a whole body of text (following the same
 rules for @-forms), and "@;..." is a line-comment.
 
   @foo{First line@;{there is still a
-                    newline at this point;}
+                    newline here;}
        Second line}
   --reads-as-->
   (foo "First line" "\n" "Second line")
@@ -387,12 +387,11 @@ One useful property of line-comments is that they continue to the end
 of the line *and* all following spaces (or tabs).  Using this, you can
 get further control of the subforms.
 
-  @foo{This is @;
-       a pretty long @;
-       single string-@;
-       argument.}
+  @foo{A long @;
+       single-@;
+       string arg.}
   --reads-as-->
-  (foo "This is a pretty long single string-argument.")
+  (foo "A long single-string arg.")
 
 Note how this is different from using "@||"s in that strings around it
 are not merged.
@@ -511,12 +510,11 @@ block).
      baz                            "baz" "\n"
        bbb}                         "  " "bbb")
 
-  @text{Some text@footnote{And a
-    footnote comment.}.  More text.}
+  @text{Some @b{bold
+    text}, and
+    more text.}
   --reads-as-->
-  (text "Some text"
-        (footnote "And a" "\n" "footnote comment.")
-        ".  More text.")
+  (text "Some " (b "bold" "\n" "text") ", and" "\n" "more text.")
 
 Note that each @-form is parsed to an S-expression that has its own
 indentation.  This means that Scribble source can be indented like

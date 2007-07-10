@@ -181,20 +181,20 @@ exec mzscheme -r "$0" "$@"
     [@foo{a @(bar 2) c}
      (foo "a " (bar 2) " c")]
 
-    [@foo{This @"}" is a closing brace}
-     (foo "This } is a closing brace")]
+    [@foo{A @"}" marks the end}
+     (foo "A } marks the end")]
 
-    [@foo{The command prefix is @"@".}
-     (foo "The command prefix is @.")]
+    [@foo{The prefix: @"@".}
+     (foo "The prefix: @.")]
 
-    [@foo{@"@foo{bar}" reads as (foo "bar")}
-     (foo "@foo{bar} reads as (foo \"bar\")")]
+    [@foo{@"@x{y}" --> (x "y")}
+     (foo "@x{y} --> (x \"y\")")]
 
     [@foo|{...}|
      (foo "...")]
 
-    [@foo|{"}" closes, "{" opens}|
-     (foo "\"}\" closes, \"{\" opens")]
+    [@foo|{"}" follows "{"}|
+     (foo "\"}\" follows \"{\"")]
 
     [@foo|{Nesting |{is}| ok}|
      (foo "Nesting |{is}| ok")]
@@ -204,14 +204,14 @@ exec mzscheme -r "$0" "$@"
            Life!}|
      (foo "Maze" "\n" (bar "is") "\n" "Life!")]
 
-    [@foo|{Works for |@bar|{subforms}| too}|
-     (foo "Works for " (bar "subforms") " too")]
+    [@t|{In |@i|{sub|@"@"s}| too}|
+     (t "In " (i "sub@s") " too")]
 
-    [@foo|<<<{Some @x{more} |@{text}|.}>>>|
-     (foo "Some @x{more} |@{text}|.")]
+    [@foo|<<<{@x{foo} |@{bar}|.}>>>|
+     (foo "@x{foo} |@{bar}|.")]
 
-    [@foo|!!{Blah |!!@bold{blah}...}!!|
-     (foo "Blah " (bold "blah") "...")]
+    [@foo|!!{X |!!@b{Y}...}!!|
+     (foo "X " (b "Y") "...")]
 
     [@foo{foo@bar.}
      (foo "foo" bar.)]
@@ -255,15 +255,14 @@ exec mzscheme -r "$0" "$@"
      ("blah")]
 
     [@foo{First line@;{there is still a
-                       newline at this point;}
+                       newline here;}
           Second line}
      (foo "First line" "\n" "Second line")]
 
-    [@foo{This is @;
-          a pretty long @;
-          single string-@;
-          argument.}
-     (foo "This is a pretty long single string-argument.")]
+    [@foo{A long @;
+          single-@;
+          string arg.}
+     (foo "A long single-string arg.")]
 
     [@foo{bar}
      (foo "bar")]
@@ -369,11 +368,10 @@ exec mzscheme -r "$0" "$@"
           bbb}
      (foo " bar" "\n" "baz" "\n" "  " "bbb")]
 
-    [@text{Some text@footnote{And a
-       footnote comment.}.  More text.}
-     (text "Some text"
-           (footnote "And a" "\n" "footnote comment.")
-           ".  More text.")]
+    [@text{Some @b{bold
+       text}, and
+       more text.}
+     (text "Some " (b "bold" "\n" "text") ", and" "\n" "more text.")]
 
     [@code{
        begin
