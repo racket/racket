@@ -215,11 +215,6 @@
   (eval #'(set! s? 12))
   (eval #'(set! set-s-x! 12)))
 
-;; CCE: This tests the error handling for ...
-;; It should be duplicated for .. through ......
-;; but (for-each (lambda foo bar) baz) won't work here.
-(htdp-err/rt-test (set! ... true) "found a placeholder")
-
 ;; ----------------------------------------
 
 (report-errs)

@@ -67,7 +67,6 @@
 (htdp-test 15 'app-f (f 10))
 (htdp-top-pop 1)
 (htdp-top-pop 1)
-(htdp-top-pop 1)
 
 (htdp-top (define-struct a0 ()))
 (htdp-top (define-struct a1 (b)))
@@ -228,8 +227,8 @@
 (htdp-top (define (my-f x) (+ x 5)))
 (htdp-syntax-test #'(cond [true my-x 5]) #rx"found a clause with 3 parts")
 (htdp-syntax-test #'(define foo17 my-x 5) #rx"found one extra part")
-(htdp-syntax-test #'(my-y 17) #rx"not defined, not an argument, and not a primitive name")
-(htdp-syntax-test #'(cond [true my-y 17]) #rx"not defined, not an argument, and not a primitive name")
+(htdp-syntax-test #'(my-y 17) #rx"not defined, not a parameter, and not a primitive name")
+(htdp-syntax-test #'(cond [true my-y 17]) #rx"not defined, not a parameter, and not a primitive name")
 (htdp-syntax-test #'(define my-f 12) #rx"cannot be re-defined")
 (htdp-syntax-test #'(define (my-x h) 12) #rx"cannot be re-defined")
 (htdp-top-pop 1)
@@ -249,13 +248,14 @@
 (htdp-syntax-test #'(require (lib "a" 2)) #rx"string for a lib path")
 (htdp-syntax-test #'(require (planet "a" 2)) #rx"not a valid planet path")
 
-(define rx:placeholder "found a placeholder")
+(define rx:dots-error "found a template")
 
 ;; CCE: These test the error handling for ...
 ;; They should be duplicated for .. through ......
 ;; but (for-each (lambda foo bar) baz) won't work here.
-(htdp-err/rt-test ... rx:placeholder)
-(htdp-err/rt-test (+ 1 ... 2) rx:placeholder)
-(htdp-err/rt-test (... 1 2) rx:placeholder)
-(htdp-err/rt-test (if false 1 ...) rx:placeholder)
+(htdp-err/rt-test ... rx:dots-error)
+(htdp-err/rt-test (+ 1 ... 2) rx:dots-error)
+(htdp-err/rt-test (... 1 2) rx:dots-error)
+(htdp-err/rt-test (if false 1 ...) rx:dots-error)
 (htdp-test 1 'ok-dots (if true 1 ...))
+(htdp-error-test #'(set! ... true))

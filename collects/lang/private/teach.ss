@@ -1226,7 +1226,7 @@
     (define (dots-error stx name)
       (quasisyntax/loc stx
         (error (quote (unsyntax name))
-               "expected a finished expression, but found a placeholder")))
+               "expected a finished expression, but found a template")))
 
     ;; Expression -> Expression
     ;; Transforms unfinished code (... and the like) to code
