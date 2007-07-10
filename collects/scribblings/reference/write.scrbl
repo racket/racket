@@ -161,7 +161,7 @@ A parameter that controls printing box values; defaults to
 @defboolparam[print-vector-length on?]{
 
 A parameter that controls printing vectors; defaults to
-@scheme[#t]. See @secref["mz:print-vector"] for more information.}
+@scheme[#t]. See @secref["mz:print-vectors"] for more information.}
 
 @defboolparam[print-hash-table on?]{
 

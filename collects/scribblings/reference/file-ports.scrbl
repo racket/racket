@@ -56,7 +56,7 @@ closed, either though @scheme[close-input-port] or indirectly via
 handle. The input port will not closed automatically if it is
 otherwise available for garbage collection (see
 @secref["mz:gc-model"]); a @tech{will} could be associated input port
-to close it more automatically (see @secref["mz:wills"]).
+to close it more automatically (see @secref["mz:willexecutor"]).
 
 A @tech{path} value that is the expanded version of @scheme[path] is
 used as the name of the opened port.}
@@ -122,7 +122,7 @@ closed, either though @scheme[close-output-port] or indirectly via
 handle. The output port will not closed automatically if it is
 otherwise available for garbage collection (see
 @secref["mz:gc-model"]); a @tech{will} could be associated input port
-to close it more automatically (see @secref["mz:wills"]).
+to close it more automatically (see @secref["mz:willexecutor"]).
 
 A @tech{path} value that is the expanded version of @scheme[path] is
 used as the name of the opened port.}

@@ -111,7 +111,7 @@ is used multiple times, it is faster to compile the string once to a
 regexp value and use it for repeated matches instead of using the
 string each time.
 
-The @scheme[object-name] procedure (see @secref["mz:infernames"]) returns
+The @scheme[object-name] procedure returns
 the source string for a regexp value.
 
 @examples[
@@ -147,7 +147,7 @@ Takes a byte-string representation of a regular expression (using the
 syntax in @secref["mz:regexp-syntax"]) and compiles it into a
 byte-regexp value.
 
-The @scheme[object-name] procedure (see @secref["mz:infernames"])
+The @scheme[object-name] procedure
 returns the source byte string for a regexp value.
 
 @examples[

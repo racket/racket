@@ -24,6 +24,7 @@ language.
 @include-section["security.scrbl"]
 @include-section["io.scrbl"]
 @include-section["os.scrbl"]
+@include-section["memory.scrbl"]
 
 @;------------------------------------------------------------------------
 

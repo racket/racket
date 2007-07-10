@@ -80,7 +80,7 @@ although they may print the same as other symbols.
 Regular (interned) symbols are only weakly held by the internal symbol
 table. This weakness can never affect the result of an @scheme[eq?],
 @scheme[eqv?], or @scheme[equal?] test, but a symbol may disappear
-when placed into a weak box (see @secref["weakbox"]) used as the key
+when placed into a weak box (see @secref["mz:weakbox"]) used as the key
 in a weak hash table (see @secref["mz:hashtables"]), or used as an
 ephemeron key (see @secref["mz:ephemerons"]).
 

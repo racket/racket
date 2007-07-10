@@ -46,7 +46,7 @@ In addition, the initial current output and error ports are
 automatically flushed when @scheme[read], @scheme[read-line],
 @scheme[read-bytes], @scheme[read-string], etc. are performed on the
 initial standard input port; more precisely, flushing is performed by
-the default port read handler (see @secref["mz:portreadhandler"]).
+the default port read handler (see @scheme[port-read-handler]).
 
 @defproc[(flush-output [out output-port? (current-output-port)]) void?]{
 

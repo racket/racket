@@ -172,7 +172,7 @@ immutability of procedure fields disallows cycles in the procedure
 graph, so that the procedure call will eventually continue with a
 non-structure procedure.) That procedure receives all of the arguments
 from the application expression. The procedure's name (see
-@secref["mz:infernames"]) and arity (see @secref["mz:arity"]) are also
+@scheme[object-name]) and arity (see @scheme[procedure-arity]) are also
 used for the name and arity of the structure. If the value in the
 designated field is not a procedure, then the instance behaves like
 @scheme[(case-lambda)] (i.e., a procedure which does not accept any
@@ -203,7 +203,7 @@ called with the instance as the first argument. The remaining
 arguments to the property-value procedure are the arguments from the
 application expression. Thus, if the application expression contained
 five arguments, the property-value procedure is called with six
-arguments. The name of the instance (see @secref["mz:infernames"]) is
+arguments. The name of the instance (see @scheme[object-name]) is
 unaffected by the property-value procedure, but the instance's arity
 is determined by subtracting one from every possible argument count of
 the property-value procedure. If the property-value procedure cannot

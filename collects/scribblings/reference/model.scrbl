@@ -309,7 +309,7 @@ program. A program representation created with
 existing @tech{objects}.
 
 @;------------------------------------------------------------------------
-@section{Object Identity and Comparisons}
+@section[#:tag "mz:model-eq"]{Object Identity and Comparisons}
 
 The @scheme[eq?] operator compares two @tech{values}, returning
 @scheme[#t] when the values refer to the same @tech{object}. This form

@@ -101,7 +101,7 @@ mapping is also adjusted (see @secref["mz:namespace-model"]) so that
          void?]{
 
 Removes the @scheme[sym] variable, if any, in the top-level
-environment of @scheme[namespace] at @tech{phase level 0}. The
+environment of @scheme[namespace] at @tech{phase level} 0. The
 namespace's identifier mapping (see @secref["mz:namespace-model"]) is
 unaffected.}
 

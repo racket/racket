@@ -1076,7 +1076,7 @@ the symbolic form of the identifier bound within the module:
 
 If @scheme[provide] wraps a @scheme[provide-spec], then the exports of
 the @scheme[provide-spec] are protected; see
-@secref["mz:protected-exports"]. The @scheme[provide-spec] must
+@secref["mz:modprotect"]. The @scheme[provide-spec] must
 specify only bindings that are defined within the exporting module.
 
 Each export specified within a module must have a distinct symbolic
