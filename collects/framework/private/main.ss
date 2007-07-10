@@ -35,8 +35,9 @@
                                                                      (number? (cadr x))
                                                                      (null? (cddr x))))
                                                          x))))
-  (preferences:set-default 'framework:white-on-black? #f boolean?)
-  
+  (preferences:set-default 'framework:square-bracket:local
+                           '("local")
+                           (λ (x) (and (list? x) (andmap string? x))))
   (preferences:set-default 'framework:square-bracket:letrec
                            '("let" 
                              "let*" "let-values" "let*-values"
@@ -46,6 +47,8 @@
                              "parameterize"
                              "with-syntax")
                            (λ (x) (and (list? x) (andmap string? x))))
+  
+  (preferences:set-default 'framework:white-on-black? #f boolean?)
   
   (preferences:set-default 'framework:case-sensitive-search?
                            #f

@@ -1316,30 +1316,18 @@
           (send text insert "[" start-pos 'same #f)
           (when (eq? (send text classify-position pos) 'parenthesis)
             (let* ([before-whitespace-pos (send text skip-whitespace pos 'backward #t)]
-                   [matched-cond-like-keyword
-                    ;; searches backwards for the keyword in the sequence at this level.
-                    ;; if found, it counts how many sexps back it was and then uses that to
-                    ;; check the preferences.
-                    (let loop ([pos before-whitespace-pos]
-                               [n 0])
-                      (let ([backward-match (send text backward-match pos 0)])
-                        (cond
-                          [backward-match
-                           (let ([before-whitespace-pos (send text skip-whitespace backward-match 'backward #t)])
-                             (loop before-whitespace-pos
-                                   (+ n 1)))]
-                          [else
-                           (let* ([afterwards (send text get-forward-sexp pos)]
-                                  [keyword
-                                   (and afterwards
-                                        (send text get-text pos afterwards))])
-                             (and keyword
-                                  (member (list keyword (- n 1))
-                                          (preferences:get 'framework:square-bracket:cond/offset))))])))])
+                   [keyword/distance (find-keyword-and-distance before-whitespace-pos text)])
               (cond
-                [matched-cond-like-keyword
+                [(and keyword/distance
+                      (member keyword/distance
+                              (preferences:get 'framework:square-bracket:cond/offset)))
                  ;; just leave the square backet in, in this case
                  (void)]
+                [(and keyword/distance
+                      (member (car keyword/distance)
+                              (preferences:get 'framework:square-bracket:local)))
+                 (unless (= (cadr keyword/distance) 0)
+                   (change-to 7 #\())]
                 [else
                  (let* ([backward-match (send text backward-match before-whitespace-pos 0)]
                         [b-m-char (and (number? backward-match) (send text get-character backward-match))])
@@ -1411,6 +1399,26 @@
           (send text delete pos (+ pos 1) #f)
           (send text end-edit-sequence)
           (send text insert real-char start-pos end-pos)))
+  
+  ;; find-keyword-and-distance : -> (union #f (cons string number))
+  (define (find-keyword-and-distance before-whitespace-pos text)
+    ;; searches backwards for the keyword in the sequence at this level.
+    ;; if found, it counts how many sexps back it was 
+    (let loop ([pos before-whitespace-pos]
+               [n 0])
+      (let ([backward-match (send text backward-match pos 0)])
+        (cond
+          [backward-match
+           (let ([before-whitespace-pos (send text skip-whitespace backward-match 'backward #t)])
+             (loop before-whitespace-pos
+                   (+ n 1)))]
+          [else
+           (let* ([afterwards (send text get-forward-sexp pos)]
+                  [keyword
+                   (and afterwards
+                        (send text get-text pos afterwards))])
+             (and keyword
+                  (list keyword (- n 1))))]))))
       
       ;; beginning-of-sequence? : text number -> boolean 
       ;; determines if this position is at the beginning of a sequence
@@ -1518,19 +1526,20 @@
                                         (send lb clear)
                                         (for-each (λ (x) (send lb append (pref->string x))) v)))))
         
-        (define (get-new-letrec-keyword)
-          (let ([new-one
-                 (keymap:call/text-keymap-initializer
-                  (λ ()
-                    (get-text-from-user
-                     (format (string-constant enter-new-keyword) "Letrec")
-                     (format (string-constant x-keyword) "Letrec"))))])
-            (and new-one
-                 (let ([parsed (with-handlers ((exn:fail:read? (λ (x) #f)))
-                                 (read (open-input-string new-one)))])
-
-                   (and (symbol? parsed)
-                        (symbol->string parsed))))))
+        (define (get-new-simple-keyword label)
+          (λ ()
+            (let ([new-one
+                   (keymap:call/text-keymap-initializer
+                    (λ ()
+                      (get-text-from-user
+                       (format (string-constant enter-new-keyword) label)
+                       (format (string-constant x-keyword) label))))])
+              (and new-one
+                   (let ([parsed (with-handlers ((exn:fail:read? (λ (x) #f)))
+                                   (read (open-input-string new-one)))])
+                     
+                     (and (symbol? parsed)
+                          (symbol->string parsed)))))))
         
         (define (get-new-cond-keyword)
           (define f (new dialog% [label (format (string-constant enter-new-keyword) "Cond")]))
@@ -1573,7 +1582,12 @@
           answers)
         
         (define stupid-internal-definition-syntax1
-          (mk-list-box 'framework:square-bracket:letrec "Letrec" values get-new-letrec-keyword))
+          (mk-list-box 'framework:square-bracket:letrec "Letrec" values (get-new-simple-keyword "Letrec")))
+        (define stupid-internal-definition-syntax3
+          (mk-list-box 'framework:square-bracket:local 
+                       "Local" 
+                       values
+                       (get-new-simple-keyword "Local")))
         (define stupid-internal-definition-syntax2
           (mk-list-box 'framework:square-bracket:cond/offset 
                        "Cond" 
