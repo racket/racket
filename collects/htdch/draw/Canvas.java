@@ -34,13 +34,13 @@ public class Canvas {
 	    
   public native boolean xshow();
   public native boolean xclose();
-  public native boolean drawCircle(Posn p, int r, Color c);
-  public native boolean drawDisk(Posn p, int r, Color c);
-  public native boolean drawRect(Posn p, int width, int height, Color c);
-  public native boolean drawLine(Posn p0, Posn p1, Color c);
+  public native boolean drawCircle(Posn p, int r, AColor c);
+  public native boolean drawDisk(Posn p, int r, AColor c);
+  public native boolean drawRect(Posn p, int width, int height, AColor c);
+  public native boolean drawLine(Posn p0, Posn p1, AColor c);
   public native boolean drawString(Posn p, String s);
-  public native boolean clearCircle(Posn p, int r, Color c);
-  public native boolean clearDisk(Posn p, int r, Color c);
-  public native boolean clearRect(Posn p, int width, int height, Color c);
-  public native boolean clearLine(Posn p0, Posn p1, Color c);
+  public native boolean clearCircle(Posn p, int r, AColor c);
+  public native boolean clearDisk(Posn p, int r, AColor c);
+  public native boolean clearRect(Posn p, int width, int height, AColor c);
+  public native boolean clearLine(Posn p0, Posn p1, AColor c);
 }    

@@ -1,3 +1,3 @@
 package colors;
 
-public class Yellow extends Color { }
+public class Yellow extends AColor { }

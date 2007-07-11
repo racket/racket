@@ -15,7 +15,7 @@
         (javac "World.java")
 	#|
         (javac "Posn.java")
-        (javac "Color.java")
+        (javac "AColor.java")
         (javac "Red.java")
         (javac "White.java")
         (javac "Blue.java")

@@ -10,8 +10,8 @@ import geometry.*;
 class SW extends World {
  int x = 50; 
  int y;
- Color red = new Red();
- Color white = new White();
+ AColor red = new Red();
+ AColor white = new White();
  
  SW(int v) { y = v; }
 
@@ -21,7 +21,7 @@ class SW extends World {
 
  World onKeyEvent(String ke) { 
   if (ke.equals("s"))
-   return this.endOfWorld();
+   return this.endOfWorld("the end");
   else if (ke.equals("*"))
    return new SW(99);
   else 

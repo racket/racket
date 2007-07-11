@@ -6,16 +6,16 @@ class SW extends World {
  int x = 50; 
  int y;
  int low; 
- Color c;
- Color white = new White();
+ AColor c;
+ AColor white = new White();
  
- SW(int y, int low, Color c) { this.y = y; this.low = low; this.c = c; }
+ SW(int y, int low, AColor c) { this.y = y; this.low = low; this.c = c; }
 
  boolean go() { return this.bigBang(100,100,.1); }
  
  World onTick() { 
   if (y >= low)
-    return endOfWorld();
+    return endOfWorld("the end");
   else
    return new SW(this.y+1,this.low,this.c); 
  }
