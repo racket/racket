@@ -14,4 +14,4 @@ called.
 @include-section["stx-patterns.scrbl"]
 @include-section["stx-ops.scrbl"]
 @include-section["stx-comp.scrbl"]
-
+@include-section["stx-trans.scrbl"]

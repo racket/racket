@@ -72,17 +72,25 @@ variable}. A hyperlinked @tech{identifier} @scheme[cons] is a
 reference to a specific @tech{top-level variable}.
 
 Every binding has a @deftech{phase level} in which it can be
-referenced, where a phase level corresponds to an integer. Phase level
-0 corresponds to the run time of the enclosing module (or the run time
-of top-level expression); phase level 1 corresponds to the time during
-which the enclosing module (or top-level expression) is expanded;
-phase level -1 corresponds to the run time of a different module for
-which the enclosing module is imported for use at phase level 1
-(relative to the importing module). If an identifier has a @tech{local
-binding}, then it is the same for all phase levels, though the
-reference is allowed only at a particular phase level. If an
-identifier has a @tech{top-level binding} or @tech{module binding},
-then it can have different such bindings in different phase levels.
+referenced, where a @tech{phase level} corresponds to an
+integer. @tech{Phase level} 0 corresponds to the run time of the
+enclosing module (or the run time of top-level expression). bindings
+in @tech{phase level} 0 constitute the @deftech{base environment}.
+@tech{Phase level} 1 corresponds to the time during which the
+enclosing module (or top-level expression) is expanded; bindings in
+@tech{phase level} 0 constitute the @deftech{transformer environment}.
+Phase level -1 corresponds to the run time of a different module for
+which the enclosing module is imported for use at @tech{phase level} 1
+(relative to the importing module); bindings in @tech{phase level} -1
+constitute the @deftech{template environment}.
+
+If an identifier has a @tech{local binding}, then it is the same for
+all phase levels, though the reference is allowed only at a particular
+phase level. Attempting to reference a @tech{local binding} in a
+different @tech{phase level} than the binding's context produces a
+syntax error. If an identifier has a @tech{top-level binding} or
+@tech{module binding}, then it can have different such bindings in
+different phase levels.
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:stxobj-model"]{Syntax Objects}
@@ -161,7 +169,7 @@ A complete expansion produces a @tech{syntax object} matching the
 following grammar:
 
 @schemegrammar*[
-#:literals (#%expression module #%plain-module-begin begin provide
+#:literals (#%expression module #%module-begin begin provide
             define-values define-syntaxes define-values-for-syntax
             require require-for-syntax require-for-template
             #%plain-lambda case-lambda if begin begin0 let-values letrec-values
@@ -170,7 +178,7 @@ following grammar:
 [top-level-form general-top-level-form
                 (#%expression expr)
                 (module id name-id
-                  (#%plain-module-begin
+                  (#%module-begin
                    module-level-form ...))
                 (begin top-level-form ...)]
 [module-level-form general-top-level-form
@@ -219,20 +227,21 @@ one whose binding is @scheme[define-values]). In all cases,
 identifiers above typeset as syntactic-form names refer to the
 bindings defined in @secref["mz:syntax"].
 
-Only @tech{phase levels} 0 and 1 are relevant for following the parse of a
+Only @tech{phase levels} 0 and 1 are relevant for the parse of a
 program (though the @scheme[_datum] in a @scheme[quote-syntax] form
-preserves its information for all phase levels). In particular, the
-relevant phase level is 0, except for the @scheme[_expr]s in a
-@scheme[define-syntaxes] @scheme[define-values-for-syntax], in which
-case the relevant phase is 1 (for which comparisons are made using
-@scheme[free-transformer-identifier=?] instead of
-@scheme[free-identifier=?]).
+preserves its information for all @tech{phase level}s). In particular,
+the relevant @tech{phase level} is 0, except for the @scheme[_expr]s
+in a @scheme[define-syntax], @scheme[define-syntaxes],
+@scheme[define-for-syntax], or @scheme[define-values-for-syntax] form,
+in which case the relevant @tech{phase level} is 1 (for which
+comparisons are made using @scheme[free-transformer-identifier=?]
+instead of @scheme[free-identifier=?]).
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "mz:expand-steps"]{Expansion Steps}
 
 In a recursive expansion, each single step in expanding a @tech{syntax
-object} at a particular phase level depends on the immediate shape of
+object} at a particular @tech{phase level} depends on the immediate shape of
 the @tech{syntax object} being expanded:
 
 @itemize{
@@ -317,7 +326,7 @@ things:
 }
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection{Expansion Context}
+@subsection[#:tag "mz:expand-context-model"]{Expansion Context}
 
 Each expansion step occurs in a particular @deftech{context}, and
 transformers and core syntactic forms may expand differently for
@@ -362,28 +371,32 @@ core syntactic forms are encountered:
  @item{When a @scheme[require] form is encountered at the top level or
        module level, all lexical information derived from the top
        level or the specific module's level are extended with bindings
-       from the specified modules, and at the phase levels (normally
-       0) specified by the exporting modules.}
+       from the specified modules, and at the @tech{phase level}s
+       (normally 0) specified by the exporting modules.}
 
  @item{When a @scheme[require-for-syntax] form is encountered at the
        top level or module level, it is treated like @scheme[require],
-       except that the phase level for all bindings is incremented by
+       except that the @tech{phase level} for all bindings is incremented by
        1.}
 
  @item{When a @scheme[require-for-template] form is encountered at the
        top level or module level, it is treated like @scheme[require],
-       except that the phase level for all bindings is decremented by
+       except that the @tech{phase level} for all bindings is decremented by
        1.}
 
- @item{When a @scheme[define-values] or @scheme[define-syntaxes] form
-       is encountered at the top level or module level, all lexical
+ @item{When a @scheme[define], @scheme[define-values],
+       @scheme[define-syntax], or @scheme[define-syntaxes] form is
+       encountered at the top level or module level, all lexical
        information derived from the top level or the specific module's
-       level are extended with bindings for the specified identifiers
-       at phase level 0.}
+       level is extended with bindings for the specified identifiers
+       at @tech{phase level} 0 (i.e., the @tech{base environment} is
+       extended).}
 
- @item{When a @scheme[define-values-for-syntax] form is encountered at
-       the top level or module level, bindings are introduced as for
-       @scheme[define-values], but at phase level 1.}
+ @item{When a @scheme[define-for-syntax] or
+       @scheme[define-values-for-syntax] form is encountered at the
+       top level or module level, bindings are introduced as for
+       @scheme[define-values], but at @tech{phase level} 1 (i.e., the
+       @tech{transformer environment} is extended).}
 
  @item{When a @scheme[let-values] form is encountered, the body of the
        @scheme[let-values] form is extended (by creating new
@@ -391,7 +404,7 @@ core syntactic forms are encountered:
        identifiers. The same bindings are added to the identifiers
        themselves, so that the identifiers in binding position are
        @scheme[bound-identifier=?] to uses in the fully expanded form,
-       and so they are not @scheme[bound-identifier=?] t other
+       and so they are not @scheme[bound-identifier=?] to other
        identifiers. The bindings are available for use at the
        @tech{phase level} at which the @scheme[let-values] form is
        expanded.}
@@ -432,19 +445,21 @@ expander encounters a @scheme[define-syntaxes] form, the binding that
 it introduces for the defined identifiers is a @deftech{transformer
 binding}. The @tech{value} of the @tech{binding} exists at expansion
 time, rather than run time (though the two times can overlap), though
-the binding itself is introduced with phase level 0.
+the binding itself is introduced with @tech{phase level} 0 (i.e., in
+the @tech{base environment}).
 
 The @deftech{value} for the binding is obtained by evaluating the
 expression in the @scheme[define-syntaxes] form. This expression must
 be @tech{expand}ed (i.e. parsed) before it can be evaluated, and it is
-expanded at @tech{phase level} 1 instead of @tech{phase level} 0.
+expanded at @tech{phase level} 1 (i.e., in the @tech{transformer
+environment}) instead of @tech{phase level} 0.
 
-The if resulting @scheme[value] is a procedure of one argument, then
-is it used as a @deftech{syntax transformer}.  The procedure is
-expected to accept a syntax object and return a syntax object. A use
-of the binding (at @tech{phase level} 0) triggers a call of the
-@tech{syntax transformer} by the expander; see
-@secref["mz:expand-steps"].
+The if resulting @scheme[value] is a procedure of one argument or as
+the result of @scheme[make-set!-transformer] on a procedure, then is
+it used as a @deftech{syntax transformer}.  The procedure is expected
+to accept a syntax object and return a syntax object. A use of the
+binding (at @tech{phase level} 0) triggers a call of the @tech{syntax
+transformer} by the expander; see @secref["mz:expand-steps"].
 
 Before the expander passes a @tech{syntax object} to a transformer,
 the @tech{syntax object} is extend with a @deftech{syntax mark} (that
@@ -493,16 +508,26 @@ that transformer @scheme[set!] expression. @tech{Assignment
 transformers} are applied by @scheme[set!] in the same way as a normal
 transformer by the macro expander.
 
+The @scheme[make-rename-transformer] procedure creates a value that is
+also handled specially by the expander and by @scheme[set!] as a
+transformer binding's value. When @scheme[_id] is bound to a
+@deftech{rename transformer} produced by
+@scheme[make-rename-transformer], it is replaced with the identifier
+passed to @scheme[make-rename-transformer]. Furthermore, the binding
+is also specially handled by @scheme[syntax-local-value] as used by
+@tech{syntax transformer}s.
+
 The expander's handling of @scheme[letrec-values+syntaxes] is similar
 to its handling of @scheme[define-syntaxes]. A
 @scheme[letrec-values+syntaxes] mist be expanded in an arbitrary phase
 level @math{n} (not just 0), in which case the expression for the
-@tech{transformer binding} is expanded at phase level @math{n+1}.
+@tech{transformer binding} is expanded at @tech{phase level} @math{n+1}.
 
-The expression in a @scheme[define-values-for-syntax] form is expanded
-and evaluated in the same way as for @scheme[syntax]. However, the
-introduced binding is a normal binding at phase level 1 (not a
-@tech{transformer binding} at phase level 0).
+The expression in a @scheme[define-for-syntax] or
+@scheme[define-values-for-syntax] form is expanded and evaluated in
+the same way as for @scheme[syntax]. However, the introduced binding
+is a variable binding at @tech{phase level} 1 (not a @tech{transformer
+binding} at @tech{phase level} 0).
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "mz:partial-expansion"]{Partial Expansion}
@@ -587,7 +612,8 @@ the required module to be merely visited at @tech{phase} 0, not
 
 When the expander encounters @scheme[require-for-syntax], it
 immediately instantiates the required module at @tech{phase} 1, in
-addition to adding bindings scheme @tech{phase level} 1.
+addition to adding bindings scheme @tech{phase level} 1 (i.e., the
+@tech{transformer enviornment}).
 
 When the expander encounters @scheme[require] and
 @scheme[require-for-syntax] within a @tech{module context}, the
@@ -626,8 +652,8 @@ namespace is also the starting point evaluating expanded code, where
 the first step in evaluation is linking the code to specific module
 instances and top-level variables.
 
-For expansion purposes, a namespace maps each symbol in each phase
-level to one of three possible bindings:
+For expansion purposes, a namespace maps each symbol in each
+@tech{phase level} to one of three possible bindings:
 
 @itemize{
 
@@ -648,18 +674,21 @@ variable (in addition to installing a value into the variable).
 
 A namespace also has a @deftech{module registry} that maps module
 names to module declarations (see @secref["mz:module-eval-model"]).
-This registry is shared by all phase levels, though instances of
-declared modules are not.
+This registry is shared by all @tech{phase level}s.
 
 For evaluation, each namespace encapsulates a distinct set of
 top-level variables, as well as a potentially distinct set of module
-instances in each phase. After a namespace is created, module
-instances from existing namespaces can be attached to the new
-namespace.  In terms of the evaluation model, top-level variables from
-different namespaces essentially correspond to definitions with
-different prefixes.  Furthermore, the first step in evaluating any
-compiled expression is to link its top-level variable and module-level
-variable references to specific variables in the namespace.
+instances in each @tech{phase}. That is, even though module
+declarations are shared for all @tech{phase levels}, module instances
+are distinct for each @tech{phase}.
+
+After a namespace is created, module instances from existing
+namespaces can be attached to the new namespace.  In terms of the
+evaluation model, top-level variables from different namespaces
+essentially correspond to definitions with different prefixes.
+Furthermore, the first step in evaluating any compiled expression is
+to link its top-level variable and module-level variable references to
+specific variables in the namespace.
 
 At all times during evaluation, some namespace is designated as the
 @deftech{current namespace}. The current namespace has no particular

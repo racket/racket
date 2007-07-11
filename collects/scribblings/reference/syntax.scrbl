@@ -356,7 +356,7 @@ Like @scheme[lambda], but without support for keyword or optional arguments.
 }
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:let"]{Local Binding: @scheme[let], @scheme[let*], and @scheme[letrec]}
+@section[#:tag "mz:let"]{Local Binding: @scheme[let], @scheme[let*], @scheme[letrec], ...}
 
 @guideintro["guide:let"]{local binding}
 
@@ -590,7 +590,7 @@ position with respect to the original @scheme[or] form.
 ]}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:define"]{Definitions: @scheme[define] and @scheme[define-values]}
+@section[#:tag "mz:define"]{Definitions: @scheme[define], @scheme[define-syntax], ...}
 
 @guideintro["guide:define"]{definitions}
 
@@ -660,8 +660,45 @@ z
 ]
 }
 
+
+@defform*[[(define-syntax id expr)
+           (define-syntax (head args) body ...+)]]{
+
+The first form creates a @tech{transformer binding} (see
+@secref["mz:transformer-model"]) of @scheme[id] with the value of
+@scheme[expr], which is an expression at @tech{phase level} 1 relative
+to the surrounding context. (See @secref["mz:id-model"] for
+information on @tech{phase levels}.)
+
+The second form is a shorthand the same as for @scheme[define]; it
+expands to a definition of the first form where the @scheme[expr] is a
+@scheme[lambda] form.}
+
+
+@defform[(define-syntaxes (id ...) expr)]{
+
+Like @scheme[define-syntax], but creates a @tech{transformer binding}
+for each @scheme[id].  The @scheme[expr] should produce as many values
+as @scheme[id]s, and each value is bound to the corresponding
+@scheme[id].}
+
+
+@defform*[[(define-for-syntax id expr)
+           (define-for-syntax (head args) body ...+)]]{
+
+Like @scheme[define], except that the binding is at @tech{phase level}
+1 instead of @tech{phase level} 0 relative to its context. The
+expression for the binding is also at @tech{phase level} 1. (See
+@secref["mz:id-model"] for information on @tech{phase levels}.)}
+
+@defform[(define-values-for-syntax (id ...) expr)]{
+
+Like @scheme[define-for-syntax], but @scheme[expr] must produce as
+many value as supplied @scheme[id]s, and all of the @scheme[id]s are
+bound (at @tech{phase level} 1).}
+
 @;------------------------------------------------------------------------
-@section[#:tag "mz:begin"]{Sequencing: @scheme[begin] and @scheme[begin0]}
+@section[#:tag "mz:begin"]{Sequencing: @scheme[begin], @scheme[begin0], and @scheme[begin-for-syntax]}
 
 @guideintro["guide:begin"]{@scheme[begin] and @scheme[begin0]}
 
@@ -706,6 +743,34 @@ in tail position only if no @scheme[body]s are present.
   (printf "hi\n"))
 ]}
 
+@defform[(begin-for-syntax form ...)]{
+
+Allowed only in a @tech{top-level context} or @tech{module context}.
+Each @scheme[form] is partially expanded (see
+@secref["mz:partial-expansion"]) to determine one of the following
+classifications:
+
+@itemize{
+
+ @item{@scheme[define] or @scheme[define-values] form: converted to
+       a @scheme[define-for-syntax] form.}
+
+ @item{@scheme[require] form: converted to a
+       @scheme[require-for-syntax] form.}
+
+ @item{@scheme[require-for-template] form: converted to a
+       @scheme[require].}
+
+ @item{expression form @scheme[_expr]: converted to
+       @scheme[(define-values () (begin _expr (values)))], which
+       effectively evaluates the expression at expansion time and, in
+       the case of a @tech{module context}, preserves the expression
+       for future @tech{visit}s of the module.}
+
+}
+
+}
+
 @;------------------------------------------------------------------------
 @section[#:tag "mz:when+unless"]{Guarded Evaluation: @scheme[when] and @scheme[unless]}
 
@@ -745,10 +810,14 @@ Equivalent to @scheme[(when (not test-expr) expr ...)].
 
 @defform[(set! id expr)]{
 
-If @scheme[id] is bound as syntax to an @tech{assignment transformer},
-as produced by @scheme[make-set!-transformer], then this form is
-expanded by calling the assignment transformer with the full
-expressions.
+If @scheme[id] has a @tech{transformer bounding} to an
+@tech{assignment transformer}, as produced by
+@scheme[make-set!-transformer], then this form is expanded by calling
+the assignment transformer with the full expressions. If @scheme[id]
+has a @tech{transformer bounding} to a @tech{rename transformer} as
+produced by @scheme[make-rename-transformer], then this form is
+expanded by replacing @scheme[id] with the one provided to
+@scheme[make-rename-transformer].
 
 Otherwise, evaluates @scheme[expr] and installs the result into the
 location for @scheme[id], which must be bound as a local variable or
@@ -830,7 +899,7 @@ information} and source-location information attached to
 }
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:module"]{Modules: @scheme[module]}
+@section[#:tag "mz:module"]{Modules: @scheme[module], ...}
 
 @defform[(module id require-spec form ...)]{
 
@@ -843,16 +912,16 @@ is treated like a @scheme[(require require-spec)] prefix on
 
 If a single @scheme[form] is provided, then it is partially expanded
 in a @tech{module-begin context}. If the expansion leads to
-@scheme[#%plain-module-begin], then the body of the
-@scheme[#%plain-module-begin] is the body of the module. If partial
-expansion leads to any other primitive form, then the form is wrapped
-with @schemeidfont{#%module-begin} using the lexical context of the
-module body; this identifier must be bound by the initial
+@scheme[#%module-begin], then the body of the @scheme[#%module-begin]
+is the body of the module. If partial expansion leads to any other
+primitive form, then the form is wrapped with
+@schemeidfont{#%module-begin} using the lexical context of the module
+body; this identifier must be bound by the initial
 @scheme[require-spec] import, and its expansion must produce a
-@scheme[#%plain-module-begin] to supply the module body. Finally, if
+@scheme[#%module-begin] to supply the module body. Finally, if
 multiple @scheme[form]s are provided, they are wrapped with
 @schemeidfont{#%module-begin}, as in the case where a single
-@scheme[form] does not expand to @scheme[#%plain-module-begin].
+@scheme[form] does not expand to @scheme[#%module-begin].
 
 Each @scheme[form] is partially expanded (see
 @secref["mz:partial-expansion"]) in a @tech{module context}. Further
@@ -918,6 +987,11 @@ are evaluated in order as they appear within the module; accessing a
 error, just like accessing an undefined global variable.
 
 See also @secref["mz:module-eval-model"] and @secref["mz:mod-parse"].}
+
+@defform[(#%module-begin form ...)]{
+
+Legal only in a @tech{module begin context}, and handled by the
+@scheme[module] form.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:require"]{Importing: @scheme[require], @scheme[require-for-syntax], @scheme[require-for-template]}
