@@ -4,9 +4,9 @@
 This <code>draw</code> package provides classes for representing colors: 
 <pre>
 <code>
-                              +-------+
-                              | Color |
-                              +-------+
+                              +--------+
+                              | AColor |
+                              +--------+
                                   |
                                  / \
                                  ---
@@ -19,7 +19,7 @@ This <code>draw</code> package provides classes for representing colors:
 </code>
 </pre>
 
-<p>The <code>Color</code> class is abstract. Its variants (subclasses) are
+<p>The <code>AColor</code> class is abstract. Its variants (subclasses) are
 created with no arguments. 
 </p>
 

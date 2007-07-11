@@ -16,15 +16,15 @@ import geometry.*;
  | boolean bigBang(int,int,double)   |       +---------------------------------------+
  | boolean endOfTime(String)         |       | boolean show()                        |
  | World endOfWorld(String)          |       | boolean close()                       |
- |                                   |       | boolean drawCircle(Posn,int,Color)    |
- |                                   |       | boolean drawDisk(Posn,int,Color)      |
- | abstract World onTick()           |       | boolean drawRect(Posn,int,int,Color)  |
- | abstract World onKeyEvent(String) |       | boolean drawLine(Posn,Posn,Color)     |
+ |                                   |       | boolean drawCircle(Posn,int,AColor)   |
+ |                                   |       | boolean drawDisk(Posn,int,AColor)     |
+ | abstract World onTick()           |       | boolean drawRect(Posn,int,int,AColor) |
+ | abstract World onKeyEvent(String) |       | boolean drawLine(Posn,Posn,AColor)    |
  | abstract boolean draw()           |       | boolean drawString(Posn,String)       |
- | abstract boolean erase()          |       | boolean clearCircle(Posn,int,Color)   |
- +-----------------------------------+       | boolean clearDisk(Posn,int,Color)     |
-                                             | boolean clearRect(Posn,int,int,Color) |
-                                             | boolean clearLine(Posn,Posn,Color)    |
+ | abstract boolean erase()          |       | boolean clearCircle(Posn,int,AColor)  |
+ +-----------------------------------+       | boolean clearDisk(Posn,int,AColor)    |
+                                             | boolean clearRect(Posn,int,int,AColor)|
+                                             | boolean clearLine(Posn,Posn,AColor)   |
                                              +---------------------------------------+
 </code>
 </pre>
@@ -111,7 +111,8 @@ screen's borders. A program can use the following methods on instances of
   time without calling <code>close</code> before has no effect.  
 </li>
 
-<li><code>close()</code>, which hides the canvas. If it succeeds, it produces <code>true</code>. 
+<li><code>close()</code>, which hides the canvas and erases the current content. 
+If it succeeds, it produces <code>true</code>. 
 
 <p>Closing the Canvas using the display controls does not fully hide the
 canvas; it is still necessary to invoke <code>close</code> before
@@ -152,7 +153,7 @@ Canvas</code> at <code>p</code> with width <code>w</code>, height
 <code>h</code>, and color <code>c</code>.  The rectangle's lines are parallel to
 the canvas's borders. If it succeeds, it produces <code>true</code>.</li>
 
-<li><code>clearLine(Posn p0, Posn p1, Color c)</code>, which erases a line from <code>this
+<li><code>clearLine(Posn p0, Posn p1, AColor c)</code>, which erases a line from <code>this
 Canvas</code> from <code>p0</code> to <code>p1</code> using color
 <code>c</code>.  If it succeeds, it produces <code>true</code>.</li>
 
