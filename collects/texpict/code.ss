@@ -48,10 +48,10 @@
 
   (define code-vl-append
     (case-lambda
-     [(a b) (to-code-pict (vl-append a b) b)]
-     [(a) a]
-     [(a . rest)
-      (code-vl-append a (apply code-vl-append rest))]))
+     [(sep a b) (to-code-pict (vl-append sep a b) b)]
+     [(sep a) a]
+     [(sep a . rest)
+      (code-vl-append sep a (apply code-vl-append sep rest))]))
 
   (define-syntax (define-code stx)
     (syntax-case stx ()
