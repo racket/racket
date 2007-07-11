@@ -162,7 +162,7 @@
   ;; --------------------------------------------------------------------------
   ;; main reader function for @ constructs
 
-  (define ((dispatcher start-inside?)
+  (define ((make-dispatcher start-inside?)
            char inp source-name line-num col-num position)
 
     (define (read-error line col pos msg . xs)
@@ -175,7 +175,7 @@
 
     (define (read-stx) (read-syntax/recursive source-name inp))
     (define (read-stx/rt rt) (read-syntax/recursive source-name inp #f rt))
-    ;; use this to avoid placeholders so we have source location information
+    ;; use this to avoid placeholders
     (define (read-stx*)
       ;; (read-syntax/recursive source-name inp #f (current-readtable) #f)
       (read-syntax source-name inp))
@@ -322,8 +322,7 @@
                            [(cadr m)
                             ;; the command is a string escape, use `read-stx*'
                             ;; to not get a placeholder, so we can merge the
-                            ;; string to others, and adjust source location to
-                            ;; avoid bogus indentation
+                            ;; string to others
                             (read-stx*)]
                            [(caddr m)
                             ;; it's an expression escape, get multiple
@@ -375,8 +374,7 @@
       ;; single? means expect just one expression (or none, which is returned
       ;; as a special-comment)
       (let ([get (lambda ()
-                   (parameterize ([current-readtable command-readtable])
-                     ;; tweak source information to avoid bad indentation
+                   (parameterize ([current-readtable (make-command-readtable)])
                      (read-delimited-list re:expr-escape re:expr-escape
                                           ch:expr-escape)))])
         (if single?
@@ -391,7 +389,7 @@
 
     ;; called only when we must see a command in the input
     (define (get-command)
-      (let ([cmd (read-stx/rt command-readtable)])
+      (let ([cmd (read-stx/rt (make-command-readtable))])
         (cond [(special-comment? cmd)
                (read-error* "expecting a command expression, got a comment")]
               [(eof-object? cmd)
@@ -457,24 +455,28 @@
            (list source-name line-num col-num position
                  (span-from position))))]))
 
+  (define dispatcher (make-dispatcher #f))
+  (define inside-dispatcher (make-dispatcher #t))
+
   ;; --------------------------------------------------------------------------
   ;; readtables
 
-  (define at-readtable
-    (make-readtable #f ch:command 'non-terminating-macro (dispatcher #f)))
+  (define (make-at-readtable)
+    (make-readtable (current-readtable)
+                    ch:command 'non-terminating-macro dispatcher))
 
   (provide use-at-readtable)
   (define (use-at-readtable)
     (port-count-lines! (current-input-port))
-    (current-readtable at-readtable))
+    (current-readtable (make-at-readtable)))
 
   ;; similar to plain Scheme (scribble, actually), but with `@' and `|' as
   ;; terminating macro characters (otherwise it behaves the same; the only
   ;; difference is that `a|b|c' is three symbols and `@foo@bar' are two
   ;; @-forms)
-  (define command-readtable
-    (make-readtable at-readtable
-      ch:command 'terminating-macro (dispatcher #f)
+  (define (make-command-readtable)
+    (make-readtable (current-readtable)
+      ch:command 'terminating-macro dispatcher
       #\| 'terminating-macro
       (lambda (char inp source-name line-num col-num position)
         (let ([m (*regexp-match #rx#"^([^|]*)\\|" inp)])
@@ -490,26 +492,29 @@
   (define (src-name src port)
     (if (eq? src default-src) (object-name port) src))
 
+  (define-syntax with-at-reader
+    (syntax-rules ()
+      [(_ body ...)
+       (parameterize ([current-readtable (make-at-readtable)]) body ...)]))
+
   (define/kw (*read #:optional [inp (current-input-port)])
-    (parameterize ([current-readtable at-readtable])
-      (read inp)))
+    (with-at-reader (read inp)))
 
   (define/kw (*read-syntax #:optional [src default-src]
                                       [inp (current-input-port)])
-    (parameterize ([current-readtable at-readtable])
-      (read-syntax (src-name src inp) inp)))
+    (with-at-reader (read-syntax (src-name src inp) inp)))
 
   (define/kw (read-inside #:optional [inp (current-input-port)])
     (let-values ([(line col pos) (port-next-location inp)])
-      (parameterize ([current-readtable at-readtable])
+      (with-at-reader
         (syntax-object->datum
-         ((dispatcher #t) #f inp (object-name inp) line col pos)))))
+         (inside-dispatcher #f inp (object-name inp) line col pos)))))
 
   (define/kw (read-inside-syntax #:optional [src default-src]
                                             [inp (current-input-port)])
     (let-values ([(line col pos) (port-next-location inp)])
-      (parameterize ([current-readtable at-readtable])
-        ((dispatcher #t) #f inp (src-name src inp) line col pos))))
+      (with-at-reader
+        (inside-dispatcher #f inp (src-name src inp) line col pos))))
 
   (provide (rename *read read) (rename *read-syntax read-syntax)
            read-inside read-inside-syntax)
