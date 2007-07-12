@@ -101,6 +101,31 @@ arbitrarily large sequence).
 @;------------------------------------------------------------------------
 @section{Regexp Constructors}
 
+@defproc[(regexp? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a regexp value created by
+@scheme[regexp] or @scheme[pregexp], @scheme[#f] otherwise.}
+
+
+@defproc[(pregexp? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a regexp value created by
+@scheme[pregexp] (not @scheme[regexp]), @scheme[#f] otherwise.}
+
+
+@defproc[(byte-regexp? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a regexp value created by
+@scheme[byte-regexp] or @scheme[byte-pregexp], @scheme[#f] otherwise.}
+
+
+@defproc[(byte-pregexp? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a regexp value created by
+@scheme[byte-pregexp] (not @scheme[byte-regexp]), @scheme[#f]
+otherwise.}
+
+
 @defproc[(regexp [str string?]) regexp?]{
 
 Takes a string representation of a regular expression (using the
@@ -131,16 +156,6 @@ Like @scheme[regexp], except that it uses a slightly different syntax
 (regexp? #px"ap*le")
 ]}
 
-@defproc[(regexp? [v any/c]) boolean?]{
-
-Returns @scheme[#t] if @scheme[v] is a regexp value created by
-@scheme[regexp] or @scheme[pregexp], @scheme[#f] otherwise.}
-
-@defproc[(pregexp? [v any/c]) boolean?]{
-
-Returns @scheme[#t] if @scheme[v] is a regexp value created by
-@scheme[pregexp] (not @scheme[regexp]), @scheme[#f] otherwise.}
-
 @defproc[(byte-regexp [bstr bytes?]) byte-regexp?]{
 
 Takes a byte-string representation of a regular expression (using the
@@ -166,22 +181,11 @@ syntax (see @secref["mz:regexp-syntax"]). The result can be used with
 (byte-pregexp #"ap*le")
 ]}
 
-@defproc[(byte-regexp? [v any/c]) boolean?]{
-
-Returns @scheme[#t] if @scheme[v] is a regexp value created by
-@scheme[byte-regexp] or @scheme[byte-pregexp], @scheme[#f] otherwise.}
-
-@defproc[(byte-pregexp? [v any/c]) boolean?]{
-
-Returns @scheme[#t] if @scheme[v] is a regexp value created by
-@scheme[byte-pregexp] (not @scheme[byte-regexp]), @scheme[#f]
-otherwise.}
-
 
 @;------------------------------------------------------------------------
 @section{Regexp Matching}
 
-@defproc[(regexp-match [pattern (or/c string? bytes? regexp? bytes-regexp?)]
+@defproc[(regexp-match [pattern (or/c string? bytes? regexp? byte-regexp?)]
                        [input (or/c string? bytes? input-port?)]
                        [start-pos nonnegative-exact-integer? 0]
                        [end-pos (or/c nonnegative-exact-integer? false/c) #f]
@@ -271,7 +275,7 @@ bytes. To avoid such interleaving, use @scheme[regexp-match-peek]
 (with a @scheme[progress-evt] argument) followed by
 @scheme[port-commit-peeked].}
 
-@defproc[(regexp-match-positions [pattern (or/c string? bytes? regexp? bytes-regexp?)]
+@defproc[(regexp-match-positions [pattern (or/c string? bytes? regexp? byte-regexp?)]
                         [input (or/c string? bytes? input-port?)]
                         [start-pos nonnegative-exact-integer? 0]
                         [end-pos (or/c nonnegative-exact-integer? false/c) #f]
@@ -295,7 +299,7 @@ Range results are returned in a @scheme[substring]- and
 positions indicate the number of bytes that were read, including
 @scheme[start-pos], before the first matching byte.}
 
-@defproc[(regexp-match? [pattern (or/c string? bytes? regexp? bytes-regexp?)]
+@defproc[(regexp-match? [pattern (or/c string? bytes? regexp? byte-regexp?)]
                         [input (or/c string? bytes? input-port?)]
                         [start-pos nonnegative-exact-integer? 0]
                         [end-pos (or/c nonnegative-exact-integer? false/c) #f]
@@ -305,7 +309,7 @@ positions indicate the number of bytes that were read, including
 Like @scheme[regexp-match], but returns merely @scheme[#t] when the
 match succeeds, @scheme[#f] otherwise.}
 
-@defproc[(regexp-match-peek [pattern (or/c string? bytes? regexp? bytes-regexp?)]
+@defproc[(regexp-match-peek [pattern (or/c string? bytes? regexp? byte-regexp?)]
                             [input input-port?]
                             [start-pos nonnegative-exact-integer? 0]
                             [end-pos (or/c nonnegative-exact-integer? false/c) #f]
@@ -324,7 +328,7 @@ and returns @scheme[#f]. The @scheme[progress] argument can be
 information if another process meanwhile reads from
 @scheme[input-port].}
 
-@defproc[(regexp-match-peek-positions [pattern (or/c string? bytes? regexp? bytes-regexp?)]
+@defproc[(regexp-match-peek-positions [pattern (or/c string? bytes? regexp? byte-regexp?)]
                             [input input-port?]
                             [start-pos nonnegative-exact-integer? 0]
                             [end-pos (or/c nonnegative-exact-integer? false/c) #f]
@@ -338,7 +342,7 @@ Like @scheme[regexp-match-positions] on input ports, but only peeks
 bytes from @scheme[input-port] instead of reading them, and with a
 @scheme[progress] argument like @scheme[regexp-match-peek].}
 
-@defproc[(regexp-match-peek-immediate [pattern (or/c string? bytes? regexp? bytes-regexp?)]
+@defproc[(regexp-match-peek-immediate [pattern (or/c string? bytes? regexp? byte-regexp?)]
                             [input input-port?]
                             [start-pos nonnegative-exact-integer? 0]
                             [end-pos (or/c nonnegative-exact-integer? false/c) #f]
@@ -352,7 +356,7 @@ that are available from @scheme[input-port] without blocking.  The
 match fails if not-yet-available characters might be used to match
 @scheme[pattern].}
 
-@defproc[(regexp-match-peek-positions-immediate [pattern (or/c string? bytes? regexp? bytes-regexp?)]
+@defproc[(regexp-match-peek-positions-immediate [pattern (or/c string? bytes? regexp? byte-regexp?)]
                             [input input-port?]
                             [start-pos nonnegative-exact-integer? 0]
                             [end-pos (or/c nonnegative-exact-integer? false/c) #f]

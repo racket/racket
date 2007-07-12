@@ -59,7 +59,7 @@ up to @math{4+2n} names:
        value. The structure is destructively updated with the new
        value, and @|void-const| is returned.}
 
- @item{@scheme[id], a transformer binding that encapsulates
+ @item{@scheme[id], a @tech{transformer binding} that encapsulates
        information about the structure type declaration. This binding
        is used to define subtypes, and it also works with the
        @scheme[shared] and @scheme[match] forms. For detailed

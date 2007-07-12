@@ -143,8 +143,8 @@ in @scheme[v] are given the lexical context information of
 @scheme[ctxt] and the source-location information of
 @scheme[srcloc]. If @scheme[v] is not already a syntax object, then
 the resulting immediate syntax object it is given the properties (see
-@secref["mz:stxprops"]) of @scheme[prop] and the inactive certificates
-(see @secref["mz:stxprotect"]) of @scheme[cert].  Any of
+@secref["mz:stxprops"]) of @scheme[prop] and the @tech{inactive certificates}
+(see @secref["mz:stxcerts"]) of @scheme[cert].  Any of
 @scheme[ctxt], @scheme[srcloc], @scheme[prop], or @scheme[cert] can be
 @scheme[#f], in which case the resulting syntax has no lexical
 context, source information, new properties, and/or certificates.

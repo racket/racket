@@ -178,6 +178,12 @@ types can generate events (see @scheme[prop:evt]).
 
 @;------------------------------------------------------------------------
 
+@defproc[(evt? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a @tech{synchronizable event},
+@scheme[#f] otherwise.}
+
+
 @defproc[(sync [evt evt?] ...+) any]{
 
 Blocks as long as none of the @tech{synchronizable events}
@@ -291,11 +297,6 @@ less than @scheme[msecs], and it is ready when
 @scheme[(current-inexact-milliseconds)] would return a value that is
 more than @scheme[msecs].}
 
-
-@defproc[(evt? [v any/c]) boolean?]{
-
-Returns @scheme[#t] if @scheme[v] is a @tech{synchronizable event},
-@scheme[#f] otherwise.}
 
 @defproc[(handle-evt? [evt evt?]) boolean?]{
 

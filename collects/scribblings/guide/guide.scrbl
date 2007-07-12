@@ -80,7 +80,7 @@ of an expression to the values for the clause:
 @section[#:tag "threads"]{Threads}
 
 @; ----------------------------------------------------------------------
-@section[#:tag "guide:macros"]{Syntactic Extension@aux-elem{ (Macros)}}
+@include-section["macros.scrbl"]
 
 
 @; ----------------------------------------------------------------------

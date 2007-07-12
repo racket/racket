@@ -903,8 +903,11 @@ information} and source-location information attached to
 
 @defform[(module id require-spec form ...)]{
 
-Declares a module named by @scheme[id]. The @scheme[require-spec] must
-be as for @scheme[require] (see @secref["mz:require"]), and it
+Declares a module named by combining @scheme[(#,(scheme quote) id)]
+with @scheme[(current-module-name-prefix)] if the latter is not
+@scheme[#f], or named @scheme[(#,(scheme quote) id)] otherwise.
+
+The @scheme[require-spec] must be as for @scheme[require], and it
 supplies the initial bindings for the body @scheme[form]s. That is, it
 is treated like a @scheme[(require require-spec)] prefix on
 @scheme[form], where @scheme[require] is the preimitive
@@ -1031,7 +1034,8 @@ be different from the symbolic name of the originally exported
 identifier.
 
  @specsubform[module-path]{ Imports all exported bindings from the
-  named module, using the export identifier as the local identifiers.}
+  named module, using the export identifier as the local identifiers.
+  (See below for information on @scheme[module-path].)}
 
  @specsubform[#:literals (only) (only require-spec id-maybe-renamed ...)]{
   Like @scheme[require-spec], but constrained to those exports for
@@ -1060,7 +1064,11 @@ identifier.
 
 A @scheme[module-path] identifies a module, either through a concrete
 name in the form of an identifier, or through an indirect name that
-can trigger automatic loading of the module declaration:
+can trigger automatic loading of the module declaration. Except for
+the @scheme[id] case below, the actual resolution is up to the current
+@tech{module name resolver} (see
+@scheme[current-module-name-resolver]), and the description below
+corresponds to the default @tech{module name resolver}.
 
  @specsubform[id]{ Refers to a module previously declared with the name
   @scheme[id].}
@@ -1087,8 +1095,7 @@ can trigger automatic loading of the module declaration:
 
  @specsubform[#:literals(planet)
               (planet rel-string (user-string pkg-string vers ...))]{
- Specifies a library available via the @PLaneT server.
- }
+ Specifies a library available via the @PLaneT server.}
 
 No identifier can be bound multiple times by an import, unless all of
 the bindings refer to the same original definition in the same module.

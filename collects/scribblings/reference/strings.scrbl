@@ -28,6 +28,12 @@ See also: @scheme[immutable], @scheme[symbol->string],
 @; ----------------------------------------
 @section{String Constructors, Selectors, and Mutators}
 
+@defproc[(string? [v any/c]) boolean?]{ Returns @scheme[#t] if @scheme[v]
+ is a string, @scheme[#f] otherwise.
+
+@examples[(string? "Apple") (string? 'apple)]}
+
+
 @defproc[(make-string [k exact-nonnegative-integer?] [char char?
 #\nul]) string?]{ Returns a new mutable string of length @scheme[k] where
 each position in the string is initialized with the character
@@ -47,12 +53,6 @@ whose positions are initialized with the given @scheme[char]s.
 Returns an immutable string with the same content as
  @scheme[str], returning @scheme[str] itself if @scheme[str] is
  immutable.}
-
-
-@defproc[(string? [v any/c]) boolean?]{ Returns @scheme[#t] if @scheme[v]
- is a string, @scheme[#f] otherwise.
-
-@examples[(string? "Apple") (string? 'apple)]}
 
 
 @defproc[(string-length [str string?]) exact-nonnegative-integer?]{

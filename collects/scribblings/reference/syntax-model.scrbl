@@ -96,10 +96,11 @@ different phase levels.
 @section[#:tag "mz:stxobj-model"]{Syntax Objects}
 
 A @deftech{syntax object} combines a simpler Scheme value, such as a
-symbol or pair, with @deftech{lexical information} about bindings and
-(optionally) source-location information. In particular, an
-@tech{identifier} is represented as a symbol object that combines a
-symbol and lexical/source information.
+symbol or pair, with @deftech{lexical information} about bindings,
+source-location information, @tech{syntax properties}, and
+@tech{syntax certificates}. In particular, an @tech{identifier} is
+represented as a symbol object that combines a symbol and lexical and
+other information.
 
 For example, a @schemeidfont{car} @tech{identifier} might have
 @tech{lexical information} that designates it as the @scheme[car] from
@@ -456,10 +457,11 @@ environment}) instead of @tech{phase level} 0.
 
 The if resulting @scheme[value] is a procedure of one argument or as
 the result of @scheme[make-set!-transformer] on a procedure, then is
-it used as a @deftech{syntax transformer}.  The procedure is expected
-to accept a syntax object and return a syntax object. A use of the
-binding (at @tech{phase level} 0) triggers a call of the @tech{syntax
-transformer} by the expander; see @secref["mz:expand-steps"].
+it used as a @deftech{syntax transformer} (a.k.a. @deftech{macro}).
+The procedure is expected to accept a syntax object and return a
+syntax object. A use of the binding (at @tech{phase level} 0) triggers
+a call of the @tech{syntax transformer} by the expander; see
+@secref["mz:expand-steps"].
 
 Before the expander passes a @tech{syntax object} to a transformer,
 the @tech{syntax object} is extend with a @deftech{syntax mark} (that
@@ -506,7 +508,7 @@ The @scheme[set!] form and the @scheme[make-set!-transformer]
 procedure work together to support @deftech{assignment transformers}
 that transformer @scheme[set!] expression. @tech{Assignment
 transformers} are applied by @scheme[set!] in the same way as a normal
-transformer by the macro expander.
+transformer by the expander.
 
 The @scheme[make-rename-transformer] procedure creates a value that is
 also handled specially by the expander and by @scheme[set!] as a
@@ -516,6 +518,16 @@ transformer binding's value. When @scheme[_id] is bound to a
 passed to @scheme[make-rename-transformer]. Furthermore, the binding
 is also specially handled by @scheme[syntax-local-value] as used by
 @tech{syntax transformer}s.
+
+In addition to using marks to track introduced identifiers, the
+expander tracks the expansion history of a form through @tech{syntax
+properties} such as @scheme['origin]. See @secref["mz:stxprops"] for
+more information.
+
+Finally, the expander uses @tech{syntax certificates} to control the
+way that unexported and protected @tech{module-level bindings} are
+used. See @secref["mz:stxcerts"] for more information on @tech{syntax
+certificates}.
 
 The expander's handling of @scheme[letrec-values+syntaxes] is similar
 to its handling of @scheme[define-syntaxes]. A
@@ -613,7 +625,7 @@ the required module to be merely visited at @tech{phase} 0, not
 When the expander encounters @scheme[require-for-syntax], it
 immediately instantiates the required module at @tech{phase} 1, in
 addition to adding bindings scheme @tech{phase level} 1 (i.e., the
-@tech{transformer enviornment}).
+@tech{transformer environment}).
 
 When the expander encounters @scheme[require] and
 @scheme[require-for-syntax] within a @tech{module context}, the
@@ -623,7 +635,7 @@ expansion of the enclosing module, and are kept separate from
 @tech{top-level context} or from the expansion of a different module.
 
 @;------------------------------------------------------------------------
-@section{Compilation}
+@section[#:tag "mz:compilation-model"]{Compilation}
 
 Before expanded code is evaluated, it is first @deftech{compiled}. A
 compiled form has essentially the same information as the

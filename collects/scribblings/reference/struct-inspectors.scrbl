@@ -3,7 +3,7 @@
 
 @title[#:tag "mz:inspectors"]{Structure Inspectors}
 
-An @pidefterm{inspector} provides access to structure fields and
+An @deftech{inspector} provides access to structure fields and
 structure type information without the normal field accessors and
 mutators. (Inspectors are also used to control access to module
 bindings; see @secref["mz:modprotect"].) Inspectors are primarily
@@ -22,6 +22,11 @@ be provided though the @scheme[#:inspector] option of the
 through an optional @scheme[inspector] argument to
 @scheme[make-struct-type].
 
+
+@defproc[(inspector? [v any/c]) boolean?]{Returns @scheme[#t] if
+@scheme[v] is an inspector, @scheme[#f] otherwise.}
+
+
 @defproc[(make-inspector [inspector inspector? (current-inspector)])
          inspector?]{
 
@@ -29,9 +34,6 @@ Returns a new inspector that is a subinspector of
 @scheme[inspector]. Any structure type controlled by the new inspector
 is also controlled by its ancestor inspectors, but no other
 inspectors.}
-
-@defproc[(inspector? [v any/c]) boolean?]{Returns @scheme[#t] if
-@scheme[v] is an inspector, @scheme[#f] otherwise.}
 
 
 @defparam[current-inspector insp inspector?]{

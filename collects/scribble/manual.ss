@@ -172,7 +172,10 @@
            [s (regexp-replace* #px"[-\\s]+" 
                                (regexp-replace 
                                 #rx"s$" 
-                                (string-foldcase (content->string c))
+                                (regexp-replace 
+                                 #rx"ies$" 
+                                 (string-foldcase (content->string c))
+                                 "y")
                                 "")
                                " ")])
       (make-elem style

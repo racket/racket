@@ -166,13 +166,18 @@ of the sequence. See also @scheme[in-list].
 @; ----------------------------------------
 @subsection{Pair Constructors, Selectors, and Mutators}
 
-@defproc[(cons [a any/c] [d any/c]) pair?]{Returns a pair whose first
-element is @scheme[a] and second element is @scheme[d].}
-
 @defproc[(pair? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
 a pair, @scheme[#f] otherwise.}
 
 @defproc[(cons? [v any/c]) boolean?]{The same as @scheme[(pair? v)].}
+
+@defproc[(null? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
+the empty list, @scheme[#f] otherwise.}
+
+@defproc[(empty? [v any/c]) boolean?]{The same as @scheme[(null? v)].}
+
+@defproc[(cons [a any/c] [d any/c]) pair?]{Returns a pair whose first
+element is @scheme[a] and second element is @scheme[d].}
 
 @defproc[(car [p pair?]) any/c]{Returns the first element of the
 pair @scheme[p].}
@@ -187,11 +192,6 @@ pair @scheme[p].}
 @defthing[null null?]{The empty list.}
 
 @defthing[empty null?]{The empty list.}
-
-@defproc[(null? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
-the empty list, @scheme[#f] otherwise.}
-
-@defproc[(empty? [v any/c]) boolean?]{The same as @scheme[(null? v)].}
 
 @defproc[(list [v any/c] ...) list?]{Returns a newly allocated list
 containing the @scheme[v]s as its elements.}
@@ -299,10 +299,10 @@ that have a side-effect and no useful result. The constant
 @|undefined-const| is used as the initial value for @scheme[letrec]
 bindings.
 
-@defproc[(void [v any/c] ...) void?]{Returns the constant @|void-const|. Each
- @scheme[v] argument is ignored.}
-
 @defproc[(void? [v any/c]) void?]{Returns @scheme[#t] if @scheme[v] is the
  constant @|void-const|, @scheme[#f] otherwise.}
 
+
+@defproc[(void [v any/c] ...) void?]{Returns the constant @|void-const|. Each
+ @scheme[v] argument is ignored.}
 

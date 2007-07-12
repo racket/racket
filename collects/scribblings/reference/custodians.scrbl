@@ -7,12 +7,19 @@
 See @secref["mz:custodian-model"] for basic information on the PLT
 Scheme custodian model.
 
+@defproc[(custodian? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a @tech{custodian} value,
+@scheme[#f] otherwise.}
+
+
 @defproc[(make-custodian [cust custodian? (current-custodian)]) custodian?]{
 
 Creates a new custodian that is subordinate to @scheme[cust]. When
 @scheme[cust] is directed (via @scheme[custodian-shutdown-all]) to
 shut down all of its managed values, the new subordinate custodian is
 automatically directed to shut down its managed values as well.}
+
 
 @defproc[(custodian-shutdown-all [cust custodian?]) void?]{
 
@@ -23,11 +30,6 @@ a thread has no managers, it is killed (or suspended; see
 @scheme[thread/suspend-to-kill]) If the current thread is to be
 killed, all other shut-down actions take place before killing the
 thread.}
-
-@defproc[(custodian? [v any/c]) boolean?]{
-
-Returns @scheme[#t] if @scheme[v] is a @tech{custodian} value,
-@scheme[#f] otherwise.}
 
 
 @defparam[current-custodian cust custodian?]{

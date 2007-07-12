@@ -27,6 +27,12 @@ See also: @scheme[immutable].
 @; ----------------------------------------
 @section{Byte String Constructors, Selectors, and Mutators}
 
+@defproc[(bytes? [v any/c]) boolean?]{ Returns @scheme[#t] if @scheme[v]
+ is a byte string, @scheme[#f] otherwise.
+
+@examples[(bytes? #"Apple") (bytes? "Apple")]}
+
+
 @defproc[(make-bytes [k exact-nonnegative-integer?] [b byte? 0])
 bytes?]{ Returns a new mutable byte string of length @scheme[k] where each
 position in the byte string is initialized with the byte @scheme[b].
@@ -47,12 +53,6 @@ positions are initialized with the given @scheme[b]s.
  Returns an immutable byte string with the same content
  as @scheme[bstr], returning @scheme[bstr] itself if @scheme[bstr] is
  immutable.}
-
-
-@defproc[(bytes? [v any/c]) boolean?]{ Returns @scheme[#t] if @scheme[v]
- is a byte string, @scheme[#f] otherwise.
-
-@examples[(bytes? #"Apple") (bytes? "Apple")]}
 
 
 @defproc[(byte? [v any/c]) boolean?]{ Returns @scheme[#t] if @scheme[v] is

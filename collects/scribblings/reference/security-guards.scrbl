@@ -4,6 +4,12 @@
 
 @title[#:tag "mz:securityguards"]{Security Guards}
 
+@defproc[(security-guard? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a security guard value as created
+by @scheme[make-security-guard], @scheme[#f] otherwise.}
+
+
 A @deftech{security guard} provides a set of access-checking
 procedures to be called when a thread initiates access of a file,
 directory, or network connection through a primitive procedure. For
@@ -139,12 +145,6 @@ the access-checked primitive. Breaks may or may not be enabled (see
 @secref["mz:breakhandler"]). Full continuation jumps are blocked going
 into or out of the @scheme[file-guard] or @scheme[network-guard] call
 (see @secref["mz:prompt-model"]).}
-
-
-@defproc[(security-guard? [v any/c]) boolean?]{
-
-Returns @scheme[#t] if @scheme[v] is a security guard value as created
-by @scheme[make-security-guard], @scheme[#f] otherwise.}
 
 
 @defparam[current-security-guard guard security-guard?]{

@@ -14,6 +14,13 @@ providing the namespace to procedures such as @scheme[eval] and
 
 [FIXME: define the initial namespace.]
 
+
+@defproc[(namespace? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a namespace value, @scheme[#f]
+otherwise.}
+
+
 @defproc[(make-namespace [flag (one-of/c 'initial 'empty) 'initial]) namespace?]{
 
 Creates a new namespace with a new module registry. The @scheme[flag]
@@ -31,11 +38,6 @@ is an option that determines the initial bindings in the namespace:
    bindings or module declarations.}
 
 }}
-
-@defproc[(namespace? [v any/c]) boolean?]{
-
-Returns @scheme[#t] if @scheme[v] is a namespace value, @scheme[#f]
-otherwise.}
 
 
 @defproc[(namespace-symbol->identifier [sym symbol?]) identifier?]{
