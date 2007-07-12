@@ -184,7 +184,7 @@
                                 manager
                                 start))]
                [else
-                (error 'load-servlet/path "unknown servlet version ~e" version)]))]
+                (error 'load-servlet/path "unknown servlet version ~e, must be 'v1 or 'v2" version)]))]
           [(response? s)
            (make-servlet (current-custodian)
                          (current-namespace)
@@ -194,7 +194,7 @@
                           timeouts-default-servlet)
                          (v0.response->v1.lambda s a-path))]
           [else
-           (error 'load-servlet/path "Loading ~e produced ~n~e~n instead of a servlet." a-path s)])))
+           (error 'load-servlet/path "Loading ~e produced ~n~e~n instead of either (1) a response or (2) nothing and exports 'interface-version" a-path s)])))
     
     (values (lambda ()
               ;; XXX - this is broken - only out of date or specifically mentioned scripts should be flushed.  This destroys persistent state!

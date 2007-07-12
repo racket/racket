@@ -65,6 +65,7 @@
                      (dynamic-require `(file ,(path->string a-path))
                                       'start))
                    (set-session-servlet! ses (initialize-servlet start)))
+                 (install-session ses url-servlet-paths)
                  ses)]))
           (parameterize ([current-custodian (session-cust ses)]
                          [current-namespace (session-namespace ses)]

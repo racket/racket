@@ -19,10 +19,12 @@
      (test-case
       "lookup-session"
       (let ([ses (new-session (make-custodian) (make-namespace) url0 url0ps)])
+        (install-session ses url0ps)
         (check-eq? (lookup-session url0ps)
                    ses)))
      
      (test-case
       "lookup-session (fail)"
       (let ([ses (new-session (make-custodian) (make-namespace) url0 url0ps)])
+        (install-session ses url0ps)
         (check-false (lookup-session empty)))))))

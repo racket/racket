@@ -30,6 +30,7 @@
                     [servlet (request? . -> . response?)]
                     [url url?])]
    [lookup-session ((listof string?) . -> . (or/c session? false/c))]
+   [install-session (session? (listof string?) . -> . void)]
    [new-session (custodian? namespace? url? (listof string?) . -> . session?)])
   (provide current-session)  
   
@@ -44,13 +45,13 @@
                  ns
                  (lambda (req) (error "session not initialized"))
                  (make-session-url uri paths)))
-    #;(printf "New session of ~a~n" (hash-table-count the-session-table))
-    (hash-table-put! the-session-table paths (make-weak-box ses))
+    #;(printf "New session of ~a~n" (hash-table-count the-session-table))    
     ses)
+  
+  (define (install-session ses paths)
+    (hash-table-put! the-session-table paths ses))
   
   ;; lookup-session : (listof string) -> (union session #f)
   (define (lookup-session paths)
-    (let/ec esc
-      (weak-box-value 
-       (hash-table-get the-session-table paths 
-                       (lambda () (esc #f)))))))
+    (hash-table-get the-session-table paths 
+                    (lambda () #f))))
