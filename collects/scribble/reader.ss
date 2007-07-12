@@ -37,13 +37,13 @@
   ;; syntax
 
   ;; basic customization
-  (define ch:command     #\@)
-  (define ch:comment     #\;)
-  (define ch:expr-escape #\|)
-  (define ch:attrs-begin #\[)
-  (define ch:attrs-end   #\])
-  (define ch:lines-begin #\{)
-  (define ch:lines-end   #\})
+  (define ch:command      #\@)
+  (define ch:comment      #\;)
+  (define ch:expr-escape  #\|)
+  (define ch:datums-begin #\[)
+  (define ch:datums-end   #\])
+  (define ch:lines-begin  #\{)
+  (define ch:lines-end    #\})
 
   (define str:lines-begin* #"(\\|[^a-zA-Z0-9 \t\r\n\f@\\\177-\377{]*)\\{")
 
@@ -55,8 +55,8 @@
   (define re:comment-start (^px ch:comment))
   (define re:comment-line  (^px "[^\n]*\n[ \t]*")) ; like tex's `%'
   (define re:expr-escape   (^px ch:expr-escape))
-  (define re:attrs-begin   (^px ch:attrs-begin))
-  (define re:attrs-end     (^px ch:attrs-end))
+  (define re:datums-begin  (^px ch:datums-begin))
+  (define re:datums-end    (^px ch:datums-end))
   (define re:lines-begin   (^px ch:lines-begin))
   (define re:lines-begin*  (^px str:lines-begin*))
   (define re:lines-end     (^px ch:lines-end))
@@ -367,8 +367,8 @@
                                 end)))]
             [else #f]))
 
-    (define (get-attrs)
-      (read-delimited-list re:attrs-begin re:attrs-end ch:attrs-end))
+    (define (get-datums)
+      (read-delimited-list re:datums-begin re:datums-end ch:datums-end))
 
     (define (get-escape-expr single?)
       ;; single? means expect just one expression (or none, which is returned
@@ -429,19 +429,20 @@
       [else
        (let*-values
            ([(rpfxs) (get-rprefixes)]
-            [(cmd attrs lines)
-             (cond
-               ;; try get-lines first -- so @|{...}| is not used as a
-               ;; simple expression escape, same for get-attrs
-               [(get-lines) => (lambda (lines) (values #f #f lines))]
-               [(get-attrs) => (lambda (attrs) (values #f attrs (get-lines)))]
-               [(get-escape-expr #t) => (lambda (expr) (values expr #f #f))]
-               [else (values (get-command) (get-attrs) (get-lines))])]
-            [(stx) (and (or attrs lines)
-                        (append (or attrs '()) (or lines '())))]
+            [(cmd datums lines)
+             (cond [(get-lines)
+                    ;; try get-lines first -- so @|{...}| is not used as a
+                    ;; simple expression escape, same for get-datums
+                    => (lambda (lines) (values #f #f lines))]
+                   [(get-datums)
+                    => (lambda (datums) (values #f datums (get-lines)))]
+                   [(get-escape-expr #t) => (lambda (expr) (values expr #f #f))]
+                   [else (values (get-command) (get-datums) (get-lines))])]
+            [(stx) (and (or datums lines)
+                        (append (or datums '()) (or lines '())))]
             [(stx) (or (and cmd stx (cons cmd stx)) ; all parts
                        stx  ; no cmd part => just a parenthesized expression
-                       cmd  ; no attrs/lines => simple expression (no parens)
+                       cmd  ; no datums/lines => simple expression (no parens)
                        ;; impossible: either we saw []s or {}s, or we read a
                        ;; scheme expression
                        (internal-error 'dispatcher))]
