@@ -37,12 +37,7 @@ function to switch the current readtable to a readtable that parses
 
 @commandline{mzscheme -Le reader.ss scribble "(use-at-readtable)"}
 
-In addition to @scheme[read] and @scheme[read-syntax], which are used
-by @schemefont{#reader}, the @file{reader.ss} library provides the
-procedures @scheme[read-inside] and @scheme[read-inside-syntax]; these
-@schemeid[-inner] variants parse as if starting inside a
-@litchar["@{"]...@litchar["}"], and they return a (syntactic) list.
-
+@;--------------------------------------------------------------------
 @section{Concrete Syntax}
 
 Informally, the concrete syntax of @"@"-forms is
@@ -140,7 +135,7 @@ use Scheme's @scheme[quote].
   '@foo{bar}
 }===|
 
-@; - - -  - - -  - - -  - - -  - - -  - - -  - - -  - - -
+@;--------------------------------------------------------------------
 @subsection{The Command Part}
 
 Besides being a Scheme identifier, the @nonterm{cmd} part of an
@@ -229,6 +224,7 @@ Finally, note that there are currently no special rules for using
   @@foo{bar}{baz}
 }===|
 
+@;--------------------------------------------------------------------
 @subsection{The Datum Part}
 
 The datum part can contains arbitrary Scheme expressions, which
@@ -265,6 +261,7 @@ keyword-value arguments that precede the body of text arguments.
   @foo[#:style 'big]{bar}
 }===|
 
+@;--------------------------------------------------------------------
 @subsection{The Body Part}
 
 The syntax of the body part is intended to be as convenient as
@@ -330,6 +327,7 @@ of the text.  This works for @litchar["@"] too:
   @foo{@"@x{y}" --> (x "y")}
 }===|
 
+@;--------------------------------------------------------------------
 @subsubsub*section{Alternative Body Syntax}
 
 In addition to the above, there is an alternative syntax for the body,
@@ -375,6 +373,7 @@ string for confusing situations.  This works well when you only need
 to quote short pieces, and the above works well when you have larger
 multi-line body texts.
 
+@;--------------------------------------------------------------------
 @subsubsub*section{Scheme Expression Escapes}
 
 In some cases, you may want to use a Scheme identifier (or a number or
@@ -431,6 +430,7 @@ is little point in Scheme code that uses braces.
   @|{blah}|
 }===|
 
+@;--------------------------------------------------------------------
 @subsubsub*section{Comments}
 
 As noted above, there are two kinds of Scribble comments: @litchar["@;{...}"] is
@@ -456,6 +456,7 @@ you can get further control of the subforms.
 Note how this is different from using @litchar["@||"]s in that strings
 around it are not merged.
 
+@;--------------------------------------------------------------------
 @subsubsub*section{Spaces, Newlines, and Indentation}
 
 The Scribble syntax treats spaces and newlines in a special way is
@@ -631,7 +632,8 @@ matter, you can begin (or end) a line with a "@||".
     @|| baz}
 }===|
 
-@subsubsub*section{Syntax Properties}
+@;--------------------------------------------------------------------
+@section{Syntax Properties}
 
 The Scribble reader attaches properties to syntax objects.  These
 properties might be useful in rare situations.
@@ -715,3 +717,49 @@ an example of this.
      bar
  })
 ]
+
+@;--------------------------------------------------------------------
+@section{Interface}
+
+The @file{reader.ss} module provides very little functionality for
+advanced needs.
+
+@defproc[(read [in input-port? (current-input-port)]) any]{}
+@defproc[(read-syntax [source-name any/c (object-name in)]
+                      [in input-port? (current-input-port)])
+         (or/c syntax? eof-object?)]{
+These procedures implement the Scribble reader.  They do so by
+constructing a reader table based on the current one, and using that
+in reading.
+}
+
+@defproc[(read-inside [in input-port? (current-input-port)]) any]{}
+@defproc[(read-inside-syntax [source-name any/c (object-name in)]
+                             [in input-port? (current-input-port)])
+         (or/c syntax? eof-object?)]{
+These @schemeid[-inner] variants parse as if starting inside a
+@litchar["@{"]...@litchar["}"], and they return a (syntactic) list.
+Useful for implementing languages that are textual by default (see
+@file{docreader.ss} for example).
+}
+
+@defproc[(make-at-readtable
+          [readtable (or/c readtable? false/c) (current-readtable)])
+         readtable?]{
+Constructs an @"@"-readtable, based on the input argument.
+}
+
+@defproc[(use-at-readtable) void?]{
+Installs the Scribble readtable as the default.  Useful for REPL
+experimentation.  (Note: enables line and column tracking.)
+}
+
+@defparam[datum-readtable readtable
+          (or/c #t false/c readtable? (readtable? . -> . readtable?))]{
+A parameter that determines the readtable used for reading the datum
+part.  The default (@scheme[#t]) is to use the current readtable
+(usually a result of @scheme[make-at-readtable]), otherwise it can be
+a readtable, or a readtable-to-readtable function that will construct
+one.  (The idea is that you may want to have completely different uses
+for the datum part.)
+}

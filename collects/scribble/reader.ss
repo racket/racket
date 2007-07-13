@@ -36,7 +36,7 @@
   ;; --------------------------------------------------------------------------
   ;; syntax
 
-  ;; basic customization
+  ;; basic syntax customization
   (define ch:command      #\@)
   (define ch:comment      #\;)
   (define ch:expr-escape  #\|)
@@ -46,7 +46,13 @@
   (define ch:lines-end    #\})
 
   (define str:lines-begin* #"(\\|[^a-zA-Z0-9 \t\r\n\f@\\\177-\377{]*)\\{")
+  (define str:end-of-line  "[ \t]*\r?\n[ \t]*") ; eat spaces on the next line
 
+  ;; other
+  (provide datum-readtable)
+  (define datum-readtable (make-parameter #t))
+
+  ;; regexps based on the above
   (define re:command       (^px ch:command
                                 ;; the following identifies string and
                                 ;; expression escapes, see how it is used below
@@ -60,7 +66,6 @@
   (define re:lines-begin   (^px ch:lines-begin))
   (define re:lines-begin*  (^px str:lines-begin*))
   (define re:lines-end     (^px ch:lines-end))
-  (define str:end-of-line  "[ \t]*\r?\n[ \t]*") ; eat spaces on the next line
   (define re:end-of-line   (^px str:end-of-line))
   (define (re:line-item* bgn end cmd-prefix)
     (^px "(.+?)(?:" (and bgn `(,bgn"|")) (and end `(,end"|"))
@@ -378,7 +383,13 @@
             [else #f]))
 
     (define (get-datums)
-      (read-delimited-list re:datums-begin re:datums-end ch:datums-end))
+      (let ([drt (datum-readtable)])
+        (if (eq? #t drt)
+          (read-delimited-list re:datums-begin re:datums-end ch:datums-end)
+          (parameterize ([current-readtable
+                          (if (procedure? drt) (drt (current-readtable)) drt)])
+            (read-delimited-list
+             re:datums-begin re:datums-end ch:datums-end)))))
 
     (define (get-escape-expr single?)
       ;; single? means expect just one expression (or none, which is returned
@@ -483,6 +494,7 @@
   ;; --------------------------------------------------------------------------
   ;; readtables
 
+  (provide make-at-readtable)
   (define make-at-readtable
     (readtable-cached
      (lambda (rt)

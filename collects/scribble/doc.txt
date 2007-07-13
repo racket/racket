@@ -28,11 +28,6 @@ function to switch the current readtable to a readtable that parses
 
   mzscheme -Le reader.ss scribble "(use-at-readtable)"
 
-In addition to `read' and `read-syntax', which are used by `#reader',
-the "reader.ss" library provides the procedures `read-inside' and
-`read-inside-syntax'; these `-inner' variants parse as if starting
-inside a "@{...}", and they return a (syntactic) list.
-
 *** Concrete Syntax
 
 Informally, the concrete syntax of @-forms is
@@ -570,7 +565,7 @@ matter, you can begin (or end) a line with a "@||".
     @|| bar @||    --reads-as-->    (foo " bar " "\n" " baz")
     @|| baz}
 
-* Syntax Properties
+*** Syntax Properties
 
 The Scribble reader attaches properties to syntax objects.  These
 properties might be useful in rare situations.
@@ -634,3 +629,41 @@ Here is an example of this.
       bar
   }
   --> "foo\n      bar"
+
+*** Interface
+
+The "reader.ss" module provides very little functionality for advanced
+needs.
+
+> (read [input-port])
+> (read-syntax [source-name] [input-port])
+
+These procedures implement the Scribble reader.  They do so by
+constructing a reader table based on the current one, and using that
+in reading.
+
+> (read-inside [input-port])
+> (read-inside-syntax [source-name] [input-port])
+
+These `-inner' variants parse as if starting inside a "@{...}", and
+they return a (syntactic) list.  Useful for implementing languages
+that are textual by default (see "docreader.ss" for example).
+
+> (make-at-readtable [readtable])
+
+Constructs an @-readtable, based on the input argument if given, or
+`current-readtable' otherwise.
+
+> (use-at-readtable)
+
+Installs the Scribble readtable as the default.  Useful for REPL
+experimentation.  (Note: enables line and column tracking.)
+
+> datum-readtable
+
+A parameter that determines the readtable used for reading the datum
+part.  The default (#t) is to use the current readtable (usually a
+result of `make-at-readtable'), otherwise it can be a readtable, or a
+readtable-to-readtable function that will construct one.  (The idea is
+that you may want to have completely different uses for the datum
+part.)
