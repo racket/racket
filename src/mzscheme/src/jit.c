@@ -252,14 +252,14 @@ static Scheme_Object *_scheme_tail_apply_from_native_fixup_args(Scheme_Object *r
 #endif
 
 #define _jit (jitter->js)
-#define PAST_LIMIT() ((long)jit_get_ip().ptr > (long)jitter->limit)
+#define PAST_LIMIT() ((unsigned long)jit_get_ip().ptr > (unsigned long)jitter->limit)
 #define CHECK_LIMIT() if (PAST_LIMIT()) return past_limit(jitter);
 #if 1
 # define past_limit(j) 0
 #else
 static int past_limit(mz_jit_state *jitter)
 {
-  if ((jit_get_ip().ptr > jitter->limit + JIT_BUFFER_PAD_SIZE)
+  if (((unsigned long)jit_get_ip().ptr > (unsigned long)jitter->limit + JIT_BUFFER_PAD_SIZE)
       || (jitter->retain_start)) {
     printf("way past\n");
   }
