@@ -149,9 +149,6 @@
 		    [(string? style)
 		     (send the-font-list find-or-create-font
 			   size style 'default 'normal 'normal #f 'default #t)]
-		    [(string? style)
-		     (send the-font-list find-or-create-font
-			   size style 'default 'normal 'normal #f 'default #t)]
 		    [(and (pair? style)
 			  (memq (car style)
 				'(superscript 
