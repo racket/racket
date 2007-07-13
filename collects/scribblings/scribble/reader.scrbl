@@ -631,18 +631,59 @@ matter, you can begin (or end) a line with a "@||".
     @|| baz}
 }===|
 
-Finally, you might be need a verbatim-like environment, where the
-parsed body matches exactly the textual source.  To make this
-possible, the @"@"-parser uses syntax properties on the resulting
-syntax values.  All items that are not physically in the Scribble
-source---newlines and indentation-spaces---have a 'scribble property.
-An indentation string will have @scheme['indentation] as the value of
-this property, and a newline will have a @scheme['(newline S)] value
-where S is the original newline string including spaces that precede
-and follow it (which includes the indentation for the following item).
-To implement a verbatim environment you need to drop indentation
-strings, and use the original newline strings instead of the
-single-newline string.  Here is an example of this.
+@subsubsub*section{Syntax Properties}
+
+The Scribble reader attaches properties to syntax objects.  These
+properties might be useful in rare situations.
+
+Forms that Scribble reads is marked with a @scheme['scribble]
+property, and a value of a list of three elements: the first is
+@scheme['form], the second is the number of items that were read from
+the datum part, and the third is the number of items in the body part
+(strings, sub-forms, and escapes).  In both cases, a @scheme[0] means
+an empty datum/body part, and @scheme[#f] means that the corresponding
+part was omitted.  If the form has neither parts, the property is not
+attached to the result.  This property can be used to give different
+meanings to expressions from the datum and the body parts, for
+example, implicitly quoted keywords:
+
+@; FIXME: a bit of code duplication here
+@def+int[
+  (define-syntax (foo stx)
+    (let ([p (syntax-property stx 'scribble)])
+      (syntax-case stx ()
+        [(_ x ...)
+         (and (pair? p) (eq? (car p) 'form) (even? (cadr p)))
+         (let loop ([n (/ (cadr p) 2)]
+                    [as '()]
+                    [xs (syntax->list #'(x ...))])
+           (if (zero? n)
+             (with-syntax ([attrs (reverse as)]
+                           [(x ...) xs])
+               #'(list 'foo `attrs x ...))
+             (loop (sub1 n)
+                   (cons (with-syntax ([key (car xs)]
+                                       [val (cadr xs)])
+                           #'(key ,val))
+                         as)
+                   (cddr xs))))])))
+(eval:alts
+ (code:line
+  #, @tt["@foo[x 1 y (* 2 3)]{blah}"])
+  @foo[x 1 y (* 2 3)]{blah})
+]
+
+In addition, the Scribble parser uses syntax properties to mark syntax
+items that are not physically in the original source --- indentation
+spaces and newlines.  Both of these will have a @scheme['scribble]
+property; an indentation string of spaces will have
+@scheme['indentation] as the value of the property, and a newline will
+have a @scheme['(newline S)] value where @scheme[S] is the original
+newline string including spaces that precede and follow it (which
+includes the indentation for the following item).  This can be used to
+implement a verbatim environment: drop indentation strings, and use
+the original source strings instead of single-newline string.  Here is
+an example of this.
 
 @; FIXME: a bit of code duplication here
 @def+int[
@@ -656,21 +697,21 @@ single-newline string.  Here is an example of this.
                  (let* ([fst  (car items)]
                         [prop (syntax-property fst 'scribble)]
                         [rst  (loop (cdr items))])
-                   (cond [(not prop) (cons fst rst)]
-                         [(eq? prop 'indentation) rst]
+                   (cond [(eq? prop 'indentation) rst]
+                         [(not (and (pair? prop)
+                                    (eq? (car prop) 'newline)))
+                          (cons fst rst)]
                          [else (cons (datum->syntax-object
                                       fst (cadr prop) fst)
                                      rst)])))))]))
 (eval:alts
-
  (code:line
   #, @tt["@verb[string-append]{"]
   #, @tt["  foo"]
   #, @tt["    bar"]
   #, @tt["}"])
-
-  @verb[string-append]{
-    foo
-      bar
-  })
+ @verb[string-append]{
+   foo
+     bar
+ })
 ]

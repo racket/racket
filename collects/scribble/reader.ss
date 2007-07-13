@@ -446,6 +446,17 @@
                        ;; impossible: either we saw []s or {}s, or we read a
                        ;; scheme expression
                        (internal-error 'dispatcher))]
+            [(stx) (let ([ds (and datums (length datums))]
+                         [ls (and lines  (length lines))])
+                     (if (or ds ls)
+                       (syntax-property
+                        (if (syntax? stx)
+                          stx
+                          (datum->syntax-object #f stx
+                            (list source-name line-num col-num position
+                                  (span-from position))))
+                        'scribble (list 'form ds ls))
+                       stx))]
             [(stx)
              ;; wrap the prefixes around the result
              (let loop ([rpfxs rpfxs] [stx stx])

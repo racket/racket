@@ -410,22 +410,42 @@ exec mzscheme -r "$0" "$@"
           x5}
      (foo "x1" "\n" "x2y2" "\n" "x3y3" "\n" "x4" "y4" "\n" "x5")]
 
+    [,(let-syntax ([foo
+                    (lambda (stx)
+                      (let ([p (syntax-property stx 'scribble)])
+                        (syntax-case stx ()
+                          [(_ x ...)
+                           (and (pair? p) (eq? (car p) 'form) (even? (cadr p)))
+                           (let loop ([n (/ (cadr p) 2)]
+                                      [as '()]
+                                      [xs (syntax->list #'(x ...))])
+                             (if (zero? n)
+                               #`(list 'foo `#,(reverse as) #,@xs)
+                               (loop (sub1 n)
+                                     (cons #`(#,(car xs) ,#,(cadr xs)) as)
+                                     (cddr xs))))])))])
+        @foo[x 1 y (* 2 3)]{blah})
+     (foo ((x 1) (y 6)) "blah")]
+
     [,(let-syntax ([verb
                     (lambda (stx)
                       (syntax-case stx ()
                         [(_ cmd item ...)
-                         #`(cmd .
-                            #,(let loop ([items (syntax->list #'(item ...))])
-                                (if (null? items)
-                                  '()
-                                  (let* ([fst  (car items)]
-                                         [prop (syntax-property fst 'scribble)]
-                                         [rst  (loop (cdr items))])
-                                    (cond [(not prop) (cons fst rst)]
-                                          [(eq? prop 'indentation) rst]
-                                          [else (cons (datum->syntax-object
-                                                       fst (cadr prop) fst)
-                                                      rst)])))))]))])
+                         #`(cmd
+                            #,@(let loop ([items (syntax->list #'(item ...))])
+                                 (if (null? items)
+                                   '()
+                                   (let* ([fst  (car items)]
+                                          [prop (syntax-property fst 'scribble)]
+                                          [rst  (loop (cdr items))])
+                                     (cond [(eq? prop 'indentation) rst]
+                                           [(not (and (pair? prop)
+                                                      (eq? (car prop)
+                                                           'newline)))
+                                            (cons fst rst)]
+                                           [else (cons (datum->syntax-object
+                                                        fst (cadr prop) fst)
+                                                       rst)])))))]))])
         @verb[string-append]{
           foo
             bar
