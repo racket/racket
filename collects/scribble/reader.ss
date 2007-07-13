@@ -98,6 +98,19 @@
     (let ([m (*regexp-match-peek-positions pattern input-port)])
       (and m (read-bytes (cdar m) input-port))))
 
+  ;; Utility for readtable-based caches
+  (define (readtable-cached fun)
+    (let ([cache (make-hash-table 'weak)])
+      (letrec ([readtable-cached
+                (case-lambda
+                  [(rt) (hash-table-get cache rt
+                          (lambda ()
+                            (let ([r (fun rt)])
+                              (hash-table-put! cache rt r)
+                              r)))]
+                  [() (readtable-cached (current-readtable))])])
+        readtable-cached)))
+
   ;; Skips whitespace characters, sensitive to the current readtable's
   ;; definition of whitespace; optimizes common spaces when possible
   (define skip-whitespace
@@ -117,13 +130,10 @@
             (and (char? like-ch/sym) (char-whitespace? like-ch/sym)))
           ;; `char-whitespace?' is fine for the default readtable
           (char-whitespace? ch)))
-      (define (plain-readtable? rt)
-        (hash-table-get plain-readtables rt
-          (lambda ()
-            (let ([plain? (andmap (lambda (ch) (whitespace? ch rt))
-                                  plain-spaces-list)])
-              (hash-table-put! plain-readtables rt #t)
-              rt))))
+      (define plain-readtable?
+        (readtable-cached
+         (lambda (rt)
+           (andmap (lambda (ch) (whitespace? ch rt)) plain-spaces-list))))
       (lambda (port)
         (let* ([rt (current-readtable)] [plain? (plain-readtable? rt)])
           (let loop ()
@@ -473,9 +483,10 @@
   ;; --------------------------------------------------------------------------
   ;; readtables
 
-  (define (make-at-readtable)
-    (make-readtable (current-readtable)
-                    ch:command 'non-terminating-macro dispatcher))
+  (define make-at-readtable
+    (readtable-cached
+     (lambda (rt)
+       (make-readtable rt ch:command 'non-terminating-macro dispatcher))))
 
   (provide use-at-readtable)
   (define (use-at-readtable)
@@ -486,19 +497,21 @@
   ;; terminating macro characters (otherwise it behaves the same; the only
   ;; difference is that `a|b|c' is three symbols and `@foo@bar' are two
   ;; @-forms)
-  (define (make-command-readtable)
-    (make-readtable (current-readtable)
-      ch:command 'terminating-macro dispatcher
-      #\| 'terminating-macro
-      (lambda (char inp source-name line-num col-num position)
-        (let ([m (*regexp-match #rx#"^([^|]*)\\|" inp)])
-          (unless m
-            (raise-read-error
-             "unbalanced `|'" source-name line-num col-num position #f))
-          (datum->syntax-object
-            #f (string->symbol (bytes->string/utf-8 (cadr m)))
-            (list source-name line-num col-num position
-                  (add1 (bytes-length (car m)))))))))
+  (define make-command-readtable
+    (readtable-cached
+     (lambda (rt)
+       (make-readtable rt
+         ch:command 'terminating-macro dispatcher
+         #\| 'terminating-macro
+         (lambda (char inp source-name line-num col-num position)
+           (let ([m (*regexp-match #rx#"^([^|]*)\\|" inp)])
+             (unless m
+               (raise-read-error
+                "unbalanced `|'" source-name line-num col-num position #f))
+             (datum->syntax-object
+              #f (string->symbol (bytes->string/utf-8 (cadr m)))
+              (list source-name line-num col-num position
+                    (add1 (bytes-length (car m)))))))))))
 
   (define default-src (gensym 'scribble-reader))
   (define (src-name src port)
