@@ -29,7 +29,8 @@
          (set-diff (free-vars #'ve)
                    (syntax->list #'(v ...))))]
       [(set! v ve)
-       (free-vars #'ve)]
+       (union (free-vars #'v)
+              (free-vars #'ve))]
       [(let-values ([(v ...) ve] ...) be ...)
        (union (free-vars* (syntax->list #'(ve ...)))
               (set-diff (free-vars* (syntax->list #'(be ...)))
@@ -84,9 +85,12 @@
       [id (identifier? #'id)
           (let ([i-bdg (identifier-binding #'id)])
             (cond
-              [(eqv? 'lexical (identifier-binding #'id))
+              [(eqv? 'lexical i-bdg)
+               (list #'id)]
+              [(not i-bdg)
                (list #'id)]
               [else 
+               #;(printf "Not including id ~S with binding ~S in freevars~n" (syntax-object->datum #'id) i-bdg)
                empty]))]
       [_
        (raise-syntax-error 'freevars "Dropped through:" stx)]))  

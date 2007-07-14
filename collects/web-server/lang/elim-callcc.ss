@@ -80,6 +80,7 @@
        (let* ([ke-prime (elim-callcc #'ke)]
               [me-prime (elim-callcc #'me)]
               [be-prime (elim-callcc #'be)])
+         ; XXX Could be dangerous to evaluate ke-prime and me-prime twice
          (markit 
           (quasisyntax/loc stx
             (with-continuation-mark #,ke-prime #,me-prime
@@ -101,19 +102,21 @@
                                      (lambda () (#%app resume #,ref-to-cm #,ref-to-x)))))
                           (#%app activation-record-list))))))]
       [(#%app call-with-values (lambda () prod) cons)
-       (let ([cons-prime (mark-lambda-as-safe (elim-callcc #'cons))])
-         (markit
-          (quasisyntax/loc stx
-            (#%app call-with-values 
-                   #,(mark-lambda-as-safe
-                      (quasisyntax/loc stx
-                        (lambda ()
-                          #,(elim-callcc/mark
-                             (lambda (x)
-                               (quasisyntax/loc stx
-                                 (with-continuation-mark the-cont-key #,cons-prime #,x)))
-                             #'prod))))
-                   #,cons-prime))))]
+       (let ([cons-prime (datum->syntax-object #f (gensym 'cons))])
+         (quasisyntax/loc stx
+           (let-values ([(#,cons-prime) #,(mark-lambda-as-safe (elim-callcc #'cons))])
+             #,(markit
+                (quasisyntax/loc stx
+                  (#%app call-with-values 
+                         #,(mark-lambda-as-safe
+                            (quasisyntax/loc stx
+                              (lambda ()
+                                #,(elim-callcc/mark
+                                   (lambda (x)
+                                     (quasisyntax/loc stx
+                                       (with-continuation-mark the-cont-key #,cons-prime #,x)))
+                                   #'prod))))
+                         #,cons-prime))))))]
       [(#%app w (#%app . stuff))
        (with-syntax ([e #'(#%app . stuff)])
          (syntax-case #'w (lambda case-lambda)

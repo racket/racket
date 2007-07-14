@@ -525,6 +525,16 @@
              
              (define-struct posn (x y))
              (provide/contract
-              [struct posn ([x integer?] [y integer?])])))))))
+              [struct posn ([x integer?] [y integer?])]))))))
+      
+      (test-case
+       "define-values error"
+       (check-not-exn
+        (lambda ()
+          (make-module-eval
+           (module test (lib "lang.ss" "web-server")
+             (define (show-user)
+               (define-values (point i) (values #t 1))
+               i)))))))
      
      )))
