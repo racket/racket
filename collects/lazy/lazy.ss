@@ -218,7 +218,8 @@
                          [strict (syntax/loc stx (p (hidden-! y) ...))])
              (quasisyntax/loc stx
                (let ([p f] [y x] ...)
-                 #,($$ #`(if (lazy? p) lazy strict)))))))]))
+                 ;; #,($$ #`(if (lazy? p) lazy strict))
+                 (if (lazy? p) lazy strict))))))]))
 
   (defsubst (!app   f x ...) (!*app (hidden-! f) x ...))
   (defsubst (~!*app f x ...) (~ (!*app f x ...)))

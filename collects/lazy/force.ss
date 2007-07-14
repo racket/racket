@@ -1,11 +1,9 @@
-(module force mzscheme
+(module force "mz-without-promises.ss"
+  (require "promise.ss")
   (provide (all-defined-except do-!!))
 
-  (define-syntax (~ stx)
-    (syntax-case stx ()
-      [(~ E) (syntax/loc stx (delay E))]))
-
-  (define (! x) (if (promise? x) (! (force x)) x))
+  (define-syntax ! (make-rename-transformer #'force))
+  (define-syntax ~ (make-rename-transformer #'lazy))
 
   (define (!! x) (do-!! x #f))
   ;; Similar to the above, but wrap procedure values too
