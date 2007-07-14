@@ -2,8 +2,8 @@
   (require "promise.ss")
   (provide (all-defined-except do-!!))
 
-  (define-syntax ! (make-rename-transformer #'force))
   (define-syntax ~ (make-rename-transformer #'lazy))
+  (define ! force)
 
   (define (!! x) (do-!! x #f))
   ;; Similar to the above, but wrap procedure values too
