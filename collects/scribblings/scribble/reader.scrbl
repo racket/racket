@@ -755,7 +755,7 @@ experimentation.  (Note: enables line and column tracking.)
 }
 
 @defparam[datum-readtable readtable
-          (or/c #t false/c readtable? (readtable? . -> . readtable?))]{
+          (or/c (one-of/c #t #f) readtable? (readtable? . -> . readtable?))]{
 A parameter that determines the readtable used for reading the datum
 part.  The default (@scheme[#t]) is to use the current readtable
 (usually a result of @scheme[make-at-readtable]), otherwise it can be
