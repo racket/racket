@@ -136,6 +136,11 @@ for example,
 
 requires three `force's to evaluate E.
 
+Note: `lazy' cannot be used with an expression that evaluates to
+multiple values.  `delay' is, however, is fine with multiple values.
+(This is for efficiency in the lazy language, where multiple values
+are avoided.)
+
 As mentioned above, using `delay' and `force' is as in Scheme, except
 for two differences.  The first is a technicality -- force is an
 identity for non-promise values.  This makes it more convenient in

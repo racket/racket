@@ -64,16 +64,16 @@
   (define-syntax (delay stx)
     (syntax-case stx ()
       [(delay expr)
+       ;; see below for using multiple-values:
        (syntax/loc stx
-         (lazy (promise (list expr)))
-         ;; for use with the multiple-values variant:
-         ;; (lazy (promise (call-with-values (lambda () expr) list)))
-         )]))
+         (lazy (promise (call-with-values (lambda () expr) list))))]))
 
-  ;; iterates on lazy promises (forbid dependency cycles)
+  ;; force iterates on lazy promises (forbid dependency cycles)
   ;; * (force X) = X for non promises
   ;; * does not deal with multiple values, since they're not used by the lazy
   ;;   language (but would be easy to add them)
+
+  #; ; this version cannot handle multiple values
   (define (force promise)
     (if (promise? promise)
       (let loop ([p (p:ref promise)])
@@ -88,7 +88,8 @@
                        [(pair? p*) (p:set! promise p*) (car p*)]
                        [(promise? p*) (loop p*)]
                        [(not p*) (error 'force "reentrant promise")]
-                       [else (error 'force "invalid promise, contains ~e" p*)]))
+                       [else (error 'force
+                                    "invalid promise, contains ~e" p*)]))
                (begin ; error here for "library approach" (see above URL)
                  (p:set! promise (list promise*))
                  promise*)))]
@@ -99,7 +100,7 @@
       ;; different from srfi-45: identity for non-promises
       promise))
 
-  #; ; this version deals with multiple values
+  #; ; this version works properly with multiple values
   (define (force promise)
     (if (promise? promise)
       (let loop ([p (p:ref promise)])
@@ -119,7 +120,47 @@
                           (apply values p*)]
                          [(promise? p*) (loop2 p*)]
                          [(not p*) (error 'force "reentrant promise")]
-                         [else (error 'force "invalid promise, contains ~e" p*)])))
+                         [else (error 'force
+                                      "invalid promise, contains ~e" p*)])))
+               (begin ; error here for "library approach" (see above URL)
+                 (p:set! promise vals*)
+                 (apply values vals*))))]
+          [(or (pair? p) (null? p)) (apply values p)]
+          [(promise? p) (loop (p:ref p))]
+          [(not p) (error 'force "reentrant promise")]
+          [else (error 'force "invalid promise, contains ~e" p)]))
+      ;; different from srfi-45: identity for non-promises
+      promise))
+
+  ;; finally: this version deals with multiple values only in `delay'
+  ;; (technicality: actually it doesn't work with `lazy' holding `lazy' of
+  ;; multiple values, so `lazy' works with multiple values unless rewrapped in
+  ;; `lazy'.)
+  (define (force promise)
+    (if (promise? promise)
+      (let loop ([p (p:ref promise)])
+        (cond
+          [(procedure? p)
+           (p:set! promise #f) ; mark root for cycle detection
+           (let ([vals* (call-with-values p list)])
+             (if (and (pair? vals*)
+                      (null? (cdr vals*)))
+               (let loop1 ([val* (car vals*)])
+                 (if (promise? val*)
+                   (let loop2 ([promise* val*])
+                     (let ([p* (p:ref promise*)])
+                       (p:set! promise* promise) ; share with root
+                       (cond [(procedure? p*) (loop1 (p*))]
+                             [(or (pair? p*) (null? p*))
+                              (p:set! promise p*)
+                              (apply values p*)]
+                             [(promise? p*) (loop2 p*)]
+                             [(not p*) (error 'force "reentrant promise")]
+                             [else (error 'force
+                                          "invalid promise, contains ~e" p*)])))
+                   (begin ; error here for "library approach" (see above URL)
+                     (p:set! promise vals*)
+                     val*)))
                (begin ; error here for "library approach" (see above URL)
                  (p:set! promise vals*)
                  (apply values vals*))))]
