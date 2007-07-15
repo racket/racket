@@ -14,7 +14,7 @@
 
   ;; (define-struct promise (p)) <-- use a more sophisticated struct below
 
-  ;; promise that can print in meaningful ways
+  ;; Promise records (note: print in meaningful ways like thunks)
   (define-values (promise promise? p:ref p:set!)
     (let*-values
         ([(printer)
@@ -44,7 +44,7 @@
   ;;             | (promise <promise>)       (shared promise)
   ;;             | (promise #f)              (currently running)
 
-  ;; creates a `composable' promise
+  ;; Creates a `composable' promise
   ;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
   (define-syntax (lazy stx)
     (syntax-case stx ()
@@ -53,14 +53,14 @@
                                         'inferred-name (syntax-local-name))])
                      (syntax/loc stx (promise proc)))]))
 
-  ;; creates a promise that does not compose
+  ;; Creates a promise that does not compose
   ;;   X = (force (delay X)) = (force (lazy (delay X)))
   ;;                         = (force (lazy^n (delay X)))
   ;;   X = (force (force (delay (delay X)))) =/= (force (delay (delay X)))
   ;; so each sequence of `(lazy^n o delay)^m' requires m `force's and a
   ;; sequence of `(lazy^n o delay)^m o lazy^k' requires m+1 `force's (for k>0)
   ;; (This is not needed with a lazy language (see the above URL for details),
-  ;; but provided for completeness)
+  ;; but provided for completeness.)
   (define-syntax (delay stx)
     (syntax-case stx ()
       [(delay expr) (syntax/loc stx (lazy (promise (list expr))))]))
