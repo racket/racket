@@ -34,9 +34,10 @@
   ;; Multiple values are problematic: MzScheme promises can use multiple
   ;; values, but to carry that out `call-with-values' should be used in all
   ;; places that deal with multiple values, which will make the whole thing
-  ;; much slower -- but multiple values are rarely used (spceifically, students
-  ;; never use them).  Instead, `values' is redefined to produce a first-class
-  ;; tuple-holding struct, and `split-values' turns that into multiple values.
+  ;; much slower (about twice in tight loops) -- but multiple values are rarely
+  ;; used (spceifically, students never use them).  So `values' is redefined to
+  ;; produce a first-class tuple-holding struct, and `split-values' turns that
+  ;; into multiple values.
   (define-struct multiple-values (values))
   (define (split-values x)
     (let ([x (! x)])
