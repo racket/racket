@@ -3,11 +3,11 @@
 ;; This is similar to the *new* version of srfi-45 -- see the post-finalization
 ;; discussion at http://srfi.schemers.org/srfi-45/ for more details;
 ;; specifically, this version is the `lazy2' version from
-;; http://srfi.schemers.org/srfi-45/post-mail-archive/msg00013.html and `lazy3'
-;; in that post shows how to extend it to multiple values.  Note: if you use
-;; only `force'+`delay' it behaves as in Scheme (except that `force' is
-;; identity for non promise values), and `force'+`lazy' are sufficient for
-;; implementing the lazy language.
+;; http://srfi.schemers.org/srfi-45/post-mail-archive/msg00013.html and (a
+;; `lazy3' variant of `force' that deals with multiple values is included and
+;; commented).  Note: if you use only `force'+`delay' it behaves as in Scheme
+;; (except that `force' is identity for non promise values), and `force'+`lazy'
+;; are sufficient for implementing the lazy language.
 (module promise "mz-without-promises.ss"
 
   (provide lazy delay force promise?)
@@ -63,7 +63,12 @@
   ;; but provided for completeness.)
   (define-syntax (delay stx)
     (syntax-case stx ()
-      [(delay expr) (syntax/loc stx (lazy (promise (list expr))))]))
+      [(delay expr)
+       (syntax/loc stx
+         (lazy (promise (list expr)))
+         ;; for use with the multiple-values variant:
+         ;; (lazy (promise (call-with-values (lambda () expr) list)))
+         )]))
 
   ;; iterates on lazy promises (forbid dependency cycles)
   ;; * (force X) = X for non promises
@@ -88,6 +93,37 @@
                  (p:set! promise (list promise*))
                  promise*)))]
           [(pair? p) (car p)]
+          [(promise? p) (loop (p:ref p))]
+          [(not p) (error 'force "reentrant promise")]
+          [else (error 'force "invalid promise, contains ~e" p)]))
+      ;; different from srfi-45: identity for non-promises
+      promise))
+
+  #; ; this version deals with multiple values
+  (define (force promise)
+    (if (promise? promise)
+      (let loop ([p (p:ref promise)])
+        (cond
+          [(procedure? p)
+           (p:set! promise #f) ; mark root for cycle detection
+           (let loop1 ([vals* (call-with-values p list)])
+             (if (and (pair? vals*)
+                      (null? (cdr vals*))
+                      (promise? (car vals*)))
+               (let loop2 ([promise* (car vals*)])
+                 (let ([p* (p:ref promise*)])
+                   (p:set! promise* promise) ; share with root
+                   (cond [(procedure? p*) (loop1 (call-with-values p* list))]
+                         [(or (pair? p*) (null? p*))
+                          (p:set! promise p*)
+                          (apply values p*)]
+                         [(promise? p*) (loop2 p*)]
+                         [(not p*) (error 'force "reentrant promise")]
+                         [else (error 'force "invalid promise, contains ~e" p*)])))
+               (begin ; error here for "library approach" (see above URL)
+                 (p:set! promise vals*)
+                 (apply values vals*))))]
+          [(or (pair? p) (null? p)) (apply values p)]
           [(promise? p) (loop (p:ref p))]
           [(not p) (error 'force "reentrant promise")]
           [else (error 'force "invalid promise, contains ~e" p)]))
