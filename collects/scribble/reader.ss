@@ -48,15 +48,7 @@
   (define str:lines-begin* #"(\\|[^a-zA-Z0-9 \t\r\n\f@\\\177-\377{]*)\\{")
   (define str:end-of-line  "[ \t]*\r?\n[ \t]*") ; eat spaces on the next line
 
-  ;; other
-  (provide datum-readtable)
-  (define datum-readtable (make-parameter #t))
-
-  ;; regexps based on the above
-  (define re:command       (^px ch:command
-                                ;; the following identifies string and
-                                ;; expression escapes, see how it is used below
-                                "(?:(\")|("ch:expr-escape"))?"))
+  ;; regexps based on the above (more in make-dispatcher)
   (define re:whitespaces   (^px "\\s+"))
   (define re:comment-start (^px ch:comment))
   (define re:comment-line  (^px "[^\n]*\n[ \t]*")) ; like tex's `%'
@@ -67,11 +59,6 @@
   (define re:lines-begin*  (^px str:lines-begin*))
   (define re:lines-end     (^px ch:lines-end))
   (define re:end-of-line   (^px str:end-of-line))
-  (define (re:line-item* bgn end cmd-prefix)
-    (^px "(.+?)(?:" (and bgn `(,bgn"|")) (and end `(,end"|"))
-         cmd-prefix ch:command"|"str:end-of-line"|$)"))
-  (define re:line-item (re:line-item* ch:lines-begin ch:lines-end #f))
-  (define re:line-item-no-nests (re:line-item* #f #f #f))
 
   ;; --------------------------------------------------------------------------
   ;; utilities
@@ -177,8 +164,11 @@
   ;; --------------------------------------------------------------------------
   ;; main reader function for @ constructs
 
-  (define/kw ((make-dispatcher #:key start-inside?)
-              char inp source-name line-num col-num position)
+  (define (dispatcher char inp source-name line-num col-num position
+                      start-inside? command-readtable ch:command
+                      re:command re:line-item* re:line-item
+                      re:line-item-no-nests datum-readtable
+                      syntax-post-processor)
 
     (define (read-error line col pos msg . xs)
       (let* ([eof? (and (eq? 'eof msg) (pair? xs))]
@@ -383,19 +373,14 @@
             [else #f]))
 
     (define (get-datums)
-      (let ([drt (datum-readtable)])
-        (if (eq? #t drt)
-          (read-delimited-list re:datums-begin re:datums-end ch:datums-end)
-          (parameterize ([current-readtable
-                          (if (procedure? drt) (drt (current-readtable)) drt)])
-            (read-delimited-list
-             re:datums-begin re:datums-end ch:datums-end)))))
+      (parameterize ([current-readtable datum-readtable])
+        (read-delimited-list re:datums-begin re:datums-end ch:datums-end)))
 
     (define (get-escape-expr single?)
       ;; single? means expect just one expression (or none, which is returned
       ;; as a special-comment)
       (let ([get (lambda ()
-                   (parameterize ([current-readtable (make-command-readtable)])
+                   (parameterize ([current-readtable command-readtable])
                      (read-delimited-list re:expr-escape re:expr-escape
                                           ch:expr-escape)))])
         (if single?
@@ -410,7 +395,7 @@
 
     ;; called only when we must see a command in the input
     (define (get-command)
-      (let ([cmd (read-stx/rt (make-command-readtable))])
+      (let ([cmd (read-stx/rt command-readtable)])
         (cond [(special-comment? cmd)
                (read-error* "expecting a command expression, got a comment")]
               [(eof-object? cmd)
@@ -478,6 +463,7 @@
                                   (span-from position))))
                         'scribble (list 'form ds ls))
                        stx))]
+            [(stx) (syntax-post-processor stx)]
             [(stx)
              ;; wrap the prefixes around the result
              (let loop ([rpfxs rpfxs] [stx stx])
@@ -488,45 +474,83 @@
            (list source-name line-num col-num position
                  (span-from position))))]))
 
+  (define (make-dispatcher start-inside? ch:command
+                           get-command-readtable get-datum-readtable
+                           syntax-post-processor)
+    (define re:command (^px ch:command
+                            ;; the following identifies string and expression
+                            ;; escapes, see how it is used above
+                            "(?:(\")|("ch:expr-escape"))?"))
+    (define (re:line-item* bgn end cmd-prefix)
+      (^px "(.+?)(?:" (and bgn `(,bgn"|")) (and end `(,end"|"))
+           cmd-prefix ch:command"|"str:end-of-line"|$)"))
+    (define re:line-item (re:line-item* ch:lines-begin ch:lines-end #f))
+    (define re:line-item-no-nests (and start-inside? (re:line-item* #f #f #f)))
+    (lambda (char inp source-name line-num col-num position)
+      (dispatcher char inp source-name line-num col-num position
+                  start-inside? (get-command-readtable) ch:command
+                  re:command re:line-item* re:line-item re:line-item-no-nests
+                  (get-datum-readtable) syntax-post-processor)))
+
   ;; --------------------------------------------------------------------------
-  ;; readtables
-
-  (define (make-at-readtable . args)
-    )
-
-  (define dispatcher (make-dispatcher))
-  (define inside-dispatcher (make-dispatcher #:start-inside? #t))
+  ;; readtable
 
   (provide make-at-readtable)
-  (define make-at-readtable
-    (readtable-cached
-     (lambda (rt)
-       (make-readtable rt ch:command 'non-terminating-macro dispatcher))))
+  (define/kw (make-at-readtable
+              #:key [readtable (current-readtable)]
+                    [command-char ch:command]
+                    [start-inside? #f]
+                    [datum-readtable #t]
+                    [syntax-post-processor values])
+    (define dispatcher
+      (make-dispatcher start-inside? command-char
+                       (lambda () cmd-rt) (lambda () datum-rt)
+                       syntax-post-processor))
+    (define at-rt
+      (make-readtable readtable command-char 'non-terminating-macro dispatcher))
+    (define cmd-rt
+      ;; similar to plain Scheme (scribble, actually), but with `@' and `|' as
+      ;; terminating macro characters (otherwise it behaves the same; the only
+      ;; difference is that `a|b|c' is three symbols and `@foo@bar' are two
+      ;; @-forms)
+      (make-readtable readtable
+        command-char 'terminating-macro dispatcher
+        #\| 'terminating-macro
+        (lambda (char inp source-name line-num col-num position)
+          (let ([m (*regexp-match #rx#"^([^|]*)\\|" inp)])
+            (unless m
+              (raise-read-error "unbalanced `|'" source-name
+                                line-num col-num position #f))
+            (datum->syntax-object
+             #f (string->symbol (bytes->string/utf-8 (cadr m)))
+             (list source-name line-num col-num position
+                   (add1 (bytes-length (car m)))))))))
+    (define datum-rt
+      (cond [(or (not datum-readtable) (readtable? datum-readtable))
+             datum-readtable]
+            [(eq? #t datum-readtable) at-rt]
+            [(procedure? datum-readtable) (datum-readtable at-rt)]
+            [else (error 'make-at-readtable
+                         "bad datum-readtable: ~e" datum-readtable)]))
+    at-rt)
 
   (provide use-at-readtable)
-  (define (use-at-readtable)
+  (define (use-at-readtable . args)
     (port-count-lines! (current-input-port))
-    (current-readtable (make-at-readtable)))
+    (current-readtable (apply make-at-readtable args)))
 
-  ;; similar to plain Scheme (scribble, actually), but with `@' and `|' as
-  ;; terminating macro characters (otherwise it behaves the same; the only
-  ;; difference is that `a|b|c' is three symbols and `@foo@bar' are two
-  ;; @-forms)
-  (define make-command-readtable
+  ;; utilities for below
+  (define make-default-at-readtable
+    (readtable-cached
+     (lambda (rt) (make-at-readtable #:readtable rt))))
+  (define make-default-at-dispatcher/inside
     (readtable-cached
      (lambda (rt)
-       (make-readtable rt
-         ch:command 'terminating-macro dispatcher
-         #\| 'terminating-macro
-         (lambda (char inp source-name line-num col-num position)
-           (let ([m (*regexp-match #rx#"^([^|]*)\\|" inp)])
-             (unless m
-               (raise-read-error
-                "unbalanced `|'" source-name line-num col-num position #f))
-             (datum->syntax-object
-              #f (string->symbol (bytes->string/utf-8 (cadr m)))
-              (list source-name line-num col-num position
-                    (add1 (bytes-length (car m)))))))))))
+       (let-values ([(_1 disp _2)
+                     (readtable-mapping
+                      (make-at-readtable #:readtable rt #:start-inside? #t)
+                      ch:command)])
+         disp))))
 
   ;; --------------------------------------------------------------------------
   ;; readers
@@ -538,7 +562,8 @@
   (define-syntax with-at-reader
     (syntax-rules ()
       [(_ body ...)
-       (parameterize ([current-readtable (make-at-readtable)]) body ...)]))
+       (parameterize ([current-readtable (make-default-at-readtable)])
+         body ...)]))
 
   (define/kw (*read #:optional [inp (current-input-port)])
     (with-at-reader (read inp)))
@@ -548,14 +573,16 @@
     (with-at-reader (read-syntax (src-name src inp) inp)))
 
   (define/kw (read-inside #:optional [inp (current-input-port)])
-    (let-values ([(line col pos) (port-next-location inp)])
+    (let*-values ([(line col pos) (port-next-location inp)]
+                  [(inside-dispatcher) (make-default-at-dispatcher/inside)])
       (with-at-reader
         (syntax-object->datum
          (inside-dispatcher #f inp (object-name inp) line col pos)))))
 
   (define/kw (read-inside-syntax #:optional [src default-src]
                                             [inp (current-input-port)])
-    (let-values ([(line col pos) (port-next-location inp)])
+    (let*-values ([(line col pos) (port-next-location inp)]
+                  [(inside-dispatcher) (make-default-at-dispatcher/inside)])
       (with-at-reader
         (inside-dispatcher #f inp (src-name src inp) line col pos))))
 
