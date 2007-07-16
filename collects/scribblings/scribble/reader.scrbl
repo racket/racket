@@ -737,29 +737,73 @@ in reading.
 @defproc[(read-inside-syntax [source-name any/c (object-name in)]
                              [in input-port? (current-input-port)])
          (or/c syntax? eof-object?)]{
-These @schemeid[-inner] variants parse as if starting inside a
+These @schemeid[-inside] variants parse as if starting inside a
 @litchar["@{"]...@litchar["}"], and they return a (syntactic) list.
 Useful for implementing languages that are textual by default (see
 @file{docreader.ss} for example).
 }
 
-@defproc[(make-at-readtable
-          [readtable (or/c readtable? false/c) (current-readtable)])
-         readtable?]{
-Constructs an @"@"-readtable, based on the input argument.
-}
+@defform[(make-at-readtable [keyword-args ...])]{
+Constructs an @"@"-readtable.  The keyword arguments can customize the
+resulting reader in several ways.
 
-@defproc[(use-at-readtable) void?]{
+@itemize{
+@item{@scheme[#:readtable] --- a readtable to base the @"@"-readtable
+  on.  Defaults to the current readtable.}
+@item{@scheme[#:command-char] --- the character used for @"@"-forms;
+  defaults to @scheme[#\@].}
+@item{@scheme[#:datum-readtable] --- determines the readtable used for
+  reading the datum part.  The default (@scheme[#t]) is to use the
+  @"@"-readtable, otherwise it can be a readtable, or a
+  readtable-to-readtable function that will construct one from the
+  @"@"-readtable.  The idea is that you may want to have completely
+  different uses for the datum part, for example, introducing a
+  convenient @litchar["key=val"] syntax for attributes.}
+@item{@scheme[#:syntax-post-processor] --- function that is applied on
+  each resulting syntax value after it has been parsed (but before it
+  is wrapped quoting punctuations).  You can use this to further
+  control uses of @"@"-forms, for example, making the command be the
+  head of a list:
+
+  @schemeblock[
+    (use-at-readtable
+      #:syntax-post-processor
+      (lambda (stx)
+        (syntax-case stx ()
+          [(cmd rest ...) #'(list 'cmd rest ...)]
+          [_else (error "@ forms must have a body")])))
+  ]
+
+  Beware that the syntax may contain placeholder values at this stage
+  (e.g: the command part), so you can `plant' your own form that will
+  do some plain processing later.  For example, here's a setup that
+  uses a @schemeid[mk-] prefix for all command names:
+
+  @schemeblock[
+    (use-at-readtable
+      #:syntax-post-processor
+      (lambda (stx)
+        (syntax-case stx ()
+          [(cmd rest ...) #'(add-mk cmd rest ...)]
+          [_else (error "@ forms must have a body")])))
+    (define-syntax (add-mk stx)
+      (syntax-case stx ()
+        [(_ cmd rest ...)
+         (identifier? #'cmd)
+         (with-syntax ([mk-cmd (datum->syntax-object
+                                #'cmd
+                                (string->symbol
+                                 (format "mk-~a" (syntax-e #'cmd)))
+                                #'cmd)])
+           (syntax/loc stx (mk-cmd rest ...)))]))
+  ]
+}
+@item{@scheme[#:start-inside?] --- used internally by the above
+  @schemeid[-inside] variants.}
+}}
+
+@defproc[(use-at-readtable ...) void?]{
 Installs the Scribble readtable as the default.  Useful for REPL
-experimentation.  (Note: enables line and column tracking.)
-}
-
-@defparam[datum-readtable readtable
-          (or/c (one-of/c #t #f) readtable? (readtable? . -> . readtable?))]{
-A parameter that determines the readtable used for reading the datum
-part.  The default (@scheme[#t]) is to use the current readtable
-(usually a result of @scheme[make-at-readtable]), otherwise it can be
-a readtable, or a readtable-to-readtable function that will construct
-one.  (The idea is that you may want to have completely different uses
-for the datum part.)
+experimentation.  (Note: enables line and column tracking.)  The given
+keyword arguments are used with `make-at-readtable'.
 }

@@ -664,7 +664,7 @@ resulting reader in several ways.
   it can be a readtable, or a readtable-to-readtable function that
   will construct one from the @-readtable.  The idea is that you may
   want to have completely different uses for the datum part, for
-  example, introducing an easy syntax for `key=val' attributes.
+  example, introducing a convenient `key=val' syntax for attributes.
 
 * #:syntax-post-processor -- a function that is applied on each
   resulting syntax value after it has been parsed (but before it is
