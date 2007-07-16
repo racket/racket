@@ -25,9 +25,16 @@
                  (cond [(object-name p)
                         => (lambda (n) (fprintf port "#<promise:~a>" n))]
                        [else (display "#<promise:?>" port)])]
+                ;; no values
+                [(null? p) (fprintf port "#<promise!>")]
                 [(pair? p)
-                 (fprintf port (if write? "#<promise::~s>" "#<promise::~a>")
-                          (car p))]
+                 ;; single value
+                 (fprintf port (if write? "#<promise!~s" "#<promise!~a")
+                          (car p))
+                 (when (pair? (cdr p))
+                   (let ([fmt (if write? ",~s" ",~a")])
+                     (for-each (lambda (x) (fprintf port fmt x)) (cdr p))))
+                 (display ">" port)]
                 [(promise? p) (loop p)] ; hide sharing
                 [(not p) (display "#<promise*active>" port)]
                 [else (error 'promise-printer "bad promise value: ~e" p)])))]
