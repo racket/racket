@@ -177,8 +177,8 @@
   ;; --------------------------------------------------------------------------
   ;; main reader function for @ constructs
 
-  (define ((make-dispatcher start-inside?)
-           char inp source-name line-num col-num position)
+  (define/kw ((make-dispatcher #:key start-inside?)
+              char inp source-name line-num col-num position)
 
     (define (read-error line col pos msg . xs)
       (let* ([eof? (and (eq? 'eof msg) (pair? xs))]
@@ -488,11 +488,14 @@
            (list source-name line-num col-num position
                  (span-from position))))]))
 
-  (define dispatcher (make-dispatcher #f))
-  (define inside-dispatcher (make-dispatcher #t))
-
   ;; --------------------------------------------------------------------------
   ;; readtables
+
+  (define (make-at-readtable . args)
+    )
+
+  (define dispatcher (make-dispatcher))
+  (define inside-dispatcher (make-dispatcher #:start-inside? #t))
 
   (provide make-at-readtable)
   (define make-at-readtable
@@ -524,6 +527,9 @@
               #f (string->symbol (bytes->string/utf-8 (cadr m)))
               (list source-name line-num col-num position
                     (add1 (bytes-length (car m)))))))))))
+
+  ;; --------------------------------------------------------------------------
+  ;; readers
 
   (define default-src (gensym 'scribble-reader))
   (define (src-name src port)
