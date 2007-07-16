@@ -139,10 +139,10 @@
       ;; different from srfi-45: identity for non-promises
       promise))
 
-  ;; finally: this version deals with multiple values only in `delay'
-  ;; (technicality: actually it doesn't work with `lazy' holding `lazy' of
-  ;; multiple values, so `lazy' works with multiple values unless rewrapped in
-  ;; `lazy'.)
+  ;; this version deals with multiple values only in `delay' (technicality:
+  ;; actually it doesn't work with `lazy' holding `lazy' of multiple values, so
+  ;; `lazy' works with multiple values unless rewrapped in `lazy'.)
+  ;; #;
   (define (force promise)
     (if (promise? promise)
       (let loop ([p (p:ref promise)])
@@ -176,4 +176,24 @@
           [(not p) (error 'force "reentrant promise")]
           [else (error 'force "invalid promise, contains ~e" p)]))
       ;; different from srfi-45: identity for non-promises
-      promise)))
+      promise))
+
+  #|
+
+  Timing results (#1, #2, #3 are the above versions), in Lazy Scheme:
+
+    loop: (define (foo n) (if (zero? n) n (foo (sub1 n))))
+          (time (! (foo 1000000)))
+    #1 cpu time: 2532 real time: 2624 gc time: 628
+    #3 cpu time: 3080 real time: 3145 gc time: 596
+    #2 cpu time: 5196 real time: 5379 gc time: 744
+
+    fib: (define (fib n) (if (<= n 1) n (+ (fib (- n 1)) (fib (- n 2)))))
+         (time (! (fib 28)))
+    #1 cpu time: 4241 real time: 4333 gc time: 776
+    #3 cpu time: 4048 real time: 4177 gc time: 756
+    #2 cpu time: 5272 real time: 5373 gc time: 872
+
+  |#
+
+  )
