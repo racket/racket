@@ -8,7 +8,7 @@ _wxme.ss_ --- reading PLT graphical format (WXME) files without MrEd
 Peeks from `input-port' and returns #t if it starts with magic bytes
 indicating a WXME-format stream, #f otherwise.
 
-The magic bytes are "WXME01<n><m> ##" for digits <n> and <n>, followed
+The magic bytes are "WXME01<n><m> ##" for digits <n> and <m>, followed
 by either a space, carriage return, or newline, and optionally
 prefixed with "#reader(\"read.ss\"\"wxme\")".
 
