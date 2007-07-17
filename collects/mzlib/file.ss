@@ -185,6 +185,14 @@
       (cond [(and name (regexp-match #rx#"[.]([^.]+)$" name)) => cadr]
             [else #f])))
 
+  ;; utility: sorted dirlist so functions are deterministic
+  (define/kw (sorted-dirlist . args)
+    (let* ([ps (apply directory-list args)]
+           [ps (map (lambda (p) (cons (path->string p) p)) ps)]
+           [ps (sort ps (lambda (p1 p2) (string<? (car p1) (car p2))))]
+           [ps (map cdr ps)])
+      ps))
+
   (define (delete-directory/files path)
     (unless (path-string? path)
       (raise-type-error 'delete-directory/files "path or string" path))
@@ -193,25 +201,24 @@
        (delete-file path)]
       [(directory-exists? path)
        (for-each (lambda (e) (delete-directory/files (build-path path e)))
-                 (directory-list path))
+                 (sorted-dirlist path))
        (delete-directory path)]
       [else (error 'delete-directory/files
                    "encountered ~a, neither a file nor a directory"
                    path)]))
 
   (define (copy-directory/files src dest)
-    (cond
-      [(file-exists? src)
-       (copy-file src dest)]
-      [(directory-exists? src)
-       (make-directory dest)
-       (for-each (lambda (e)
-                   (copy-directory/files (build-path src e)
-                                         (build-path dest e)))
-                 (directory-list src))]
-      [else (error 'copy-directory/files
-                   "encountered ~a, neither a file nor a directory"
-                   src)]))
+    (cond [(file-exists? src)
+           (copy-file src dest)]
+          [(directory-exists? src)
+           (make-directory dest)
+           (for-each (lambda (e)
+                       (copy-directory/files (build-path src e)
+                                             (build-path dest e)))
+                     (sorted-dirlist src))]
+          [else (error 'copy-directory/files
+                       "encountered ~a, neither a file nor a directory"
+                       src)]))
 
   (define (make-directory* dir)
     (let-values ([(base name dir?) (split-path dir)])
@@ -473,8 +480,7 @@
                          (case-lambda
                            [(acc)
                             (do-paths (map (lambda (p) (build-path path p))
-                                           (sort
-                                            (directory-list path) void))
+                                           (sorted-dirlist path))
                                       acc)]
                            [(acc descend?)
                             (if descend? (descend acc) acc)])])
@@ -485,7 +491,7 @@
     (define (do-paths paths acc)
       (cond [(null? paths) acc]
             [else (do-paths (cdr paths) (do-path (car paths) acc))]))
-    (if path (do-path path init) (do-paths (directory-list) init)))
+    (if path (do-path path init) (do-paths (sorted-dirlist) init)))
 
   (define/kw (find-files f #:optional [path #f])
     (reverse!
