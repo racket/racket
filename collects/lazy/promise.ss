@@ -143,7 +143,7 @@
   ;; actually it doesn't work with `lazy' holding `lazy' of multiple values, so
   ;; `lazy' works with multiple values unless rewrapped in `lazy'.)
   ;; #;
-  (define (force promise)
+  #;(define (force promise)
     (if (promise? promise)
       (let loop ([p (p:ref promise)])
         (cond
@@ -178,6 +178,32 @@
       ;; different from srfi-45: identity for non-promises
       promise))
 
+  (define (force promise)
+    (if (promise? promise)
+      (let loop ([p (p:ref promise)])
+        (cond
+          [(procedure? p)
+           (p:set! promise #f) ; mark root for cycle detection
+           (let loop ([promise* (p)])
+             (if (promise? promise*)
+               (let ([p* (p:ref promise*)])
+                 (p:set! promise* promise) ; share with root
+                 (cond [(procedure? p*) (loop (p*))]
+                       [(pair? p*) (p:set! promise p*) (car p*)]
+                       [(promise? p*) (loop p*)]
+                       [(not p*) (error 'force "reentrant promise")]
+                       [else (error 'force
+                                    "invalid promise, contains ~e" p*)]))
+               (begin ; error here for "library approach" (see above URL)
+                 (p:set! promise (list promise*))
+                 promise*)))]
+          [(pair? p) (car p)]
+          [(promise? p) (loop (p:ref p))]
+          [(not p) (error 'force "reentrant promise")]
+          [else (error 'force "invalid promise, contains ~e" p)]))
+      ;; different from srfi-45: identity for non-promises
+      promise))
+  
   #|
 
   Timing results (#1, #2, #3 are the above versions), in Lazy Scheme:
