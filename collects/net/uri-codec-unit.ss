@@ -305,65 +305,39 @@ JALQefhDMCATcl2/bZL0bw==
   ;; http://www.w3.org/TR/html401/appendix/notes.html#ampersands-in-uris
   ;; listof (cons symbol string) -> string
   (define (alist->form-urlencoded args)
-    (let* ([mode (current-alist-separator-mode)]
+    (let* ([sep (if (eq? (current-alist-separator-mode) 'amp) "&" ";")]
            [format-one
             (lambda (arg)
-              (let* ([name (car arg)]
-                     [value (cdr arg)])
-                (string-append (form-urlencoded-encode (symbol->string name))
-                               "="
-                               (form-urlencoded-encode value))))]
-           [strs (let loop ([args args])
-                   (cond
-                     [(null? args) null]
-                     [(null? (cdr args)) (list (format-one (car args)))]
-                     [else (list* (format-one (car args))
-                                  (if (eq? mode 'amp) "&" ";")
-                                  (loop (cdr args)))]))])
+              (let* ([name  (car arg)]
+                     [value (cdr arg)]
+                     [name  (form-urlencoded-encode (symbol->string name))]
+                     [value (and value (form-urlencoded-encode value))])
+                (if value (string-append name "=" value) name)))]
+           [strs (if (null? args)
+                   '()
+                   (cons (format-one (car args))
+                         (apply append
+                                (map (lambda (a) (list sep (format-one a)))
+                                     (cdr args)))))])
       (apply string-append strs)))
 
   ;; string -> listof (cons string string)
   ;; http://www.w3.org/TR/html401/appendix/notes.html#ampersands-in-uris
   (define (form-urlencoded->alist str)
-    (define key-regexp #rx"[^=]*")
-    (define value-regexp (case (current-alist-separator-mode)
-                           [(semi) #rx"[^;]*"]
-                           [(amp) #rx"[^&]*"]
-                           [else #rx"[^&;]*"]))
-    (define (next-key str start)
-      (and (< start (string-length str))
-           (match (regexp-match-positions key-regexp str start)
-             [((start . end))
-              (vector (let ([s (form-urlencoded-decode
-                                (substring str start end))])
-                        (string->symbol s))
-                      (add1 end))]
-             [#f #f])))
-    (define (next-value str start)
-      (and (< start (string-length str))
-           (match (regexp-match-positions value-regexp str start)
-             [((start . end))
-              (vector (form-urlencoded-decode (substring str start end))
-                      (add1 end))]
-             [#f #f])))
-    (define (next-pair str start)
-      (match (next-key str start)
-        [#(key start)
-         (match (next-value str start)
-           [#(value start)
-            (vector (cons key value) start)]
-           [#f
-            (vector (cons key "") (string-length str))])]
-        [#f #f]))
-    (let loop ([start 0]
-               [end (string-length str)]
-               [make-alist (lambda (x) x)])
-      (if (>= start end)
-        (make-alist '())
-        (match (next-pair str start)
-          [#(pair next-start)
-           (loop next-start end (lambda (x) (make-alist (cons pair x))))]
-          [#f (make-alist '())]))))
+    (define keyval-regexp #rx"^([^=]*)(?:=(.*))?$")
+    (define value-regexp
+      (case (current-alist-separator-mode)
+        [(semi) #rx"[;]"]
+        [(amp) #rx"[&]"]
+        [else #rx"[&;]"]))
+    (if (equal? "" str)
+      '()
+      (map (lambda (keyval)
+             (let ([m (regexp-match keyval-regexp keyval)]) ; cannot fail
+               (cons (string->symbol (form-urlencoded-decode (cadr m)))
+                     ;; can be #f for no "=..." part
+                     (and (caddr m) (form-urlencoded-decode (caddr m))))))
+           (regexp-split value-regexp str))))
 
   (define current-alist-separator-mode
     (make-parameter 'amp-or-semi

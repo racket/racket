@@ -37,7 +37,7 @@ _url struct_
 > url-port : url -> (union false/c number?)
 > url-path-absolute? : url -> boolean?
 > url-path : url -> (listof path/param?)
-> url-query : url -> (listof (cons/c symbol? string?))
+> url-query : url -> (listof (cons/c symbol? (union false/c string?)))
 > url-fragment : url -> (union false/c string?)
 > url? : any -> boolean
 > make-url : ...as-above.. -> url

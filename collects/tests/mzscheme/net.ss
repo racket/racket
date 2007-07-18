@@ -132,7 +132,7 @@
   (test '((key . "value")) form-urlencoded->alist "key=value")
   (test '((key . "hello there")) form-urlencoded->alist "key=hello+there")
   (test '((key . "a value")) form-urlencoded->alist "key=a%20value")
-  (test '((key . ""))  form-urlencoded->alist "key")
+  (test '((key . #f))  form-urlencoded->alist "key")
   (test '((key1 . "value 1") (key2 . "value 2")) form-urlencoded->alist "key1=value+1&key2=value+2"))
 
 ;;
@@ -299,6 +299,19 @@
         string->url/vec
         "http://foo:/abc/def.html")
   (set-url:os-type! 'unix)
+
+  ;; see PR8809 (value-less keys in the query part)
+  (test-s->u #("http" #f "foo.bar" #f #t (#("baz")) ((ugh . #f)) #f)
+             "http://foo.bar/baz?ugh")
+  (test-s->u #("http" #f "foo.bar" #f #t (#("baz")) ((ugh . "")) #f)
+             "http://foo.bar/baz?ugh=")
+  (test-s->u #("http" #f "foo.bar" #f #t (#("baz")) ((ugh . #f) (x . "y") (|1| . "2")) #f)
+             "http://foo.bar/baz?ugh;x=y;1=2")
+  (parameterize ([current-alist-separator-mode 'amp])
+    (test-s->u #("http" #f "foo.bar" #f #t (#("baz")) ((ugh . #f) (x . "y") (|1| . "2")) #f)
+             "http://foo.bar/baz?ugh&x=y&1=2"))
+  (test-s->u #("http" #f "foo.bar" #f #t (#("baz")) ((ugh . "") (x . "y") (|1| . "2")) #f)
+             "http://foo.bar/baz?ugh=;x=y;1=2")
 
   ;; test case sensitivity
   (test #("http" "ROBBY" "www.drscheme.org" 80 #t (#("INDEX.HTML" "XXX")) ((T . "P")) "YYY")
