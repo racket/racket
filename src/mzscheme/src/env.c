@@ -3717,11 +3717,12 @@ local_exp_time_value(int argc, Scheme_Object *argv[])
     scheme_wrong_type("syntax-local-value", "syntax identifier", 0, argc, argv);
 
   if (argc > 1) {
-    scheme_check_proc_arity("syntax-local-value", 0, 1, argc, argv);
-    if (argc > 2) {
+    scheme_check_proc_arity2("syntax-local-value", 0, 1, argc, argv, 1);
+    if ((argc > 2)
+        && SCHEME_TRUEP(argv[2])) { 
       Scheme_Comp_Env *stx_env;
       if (!SAME_TYPE(scheme_intdef_context_type, SCHEME_TYPE(argv[2])))
-	scheme_wrong_type("syntax-local-value", "internal-definition context", 2, argc, argv);
+	scheme_wrong_type("syntax-local-value", "internal-definition context or #f", 2, argc, argv);
       stx_env = (Scheme_Comp_Env *)SCHEME_PTR1_VAL(argv[2]);
       if (!scheme_is_sub_env(stx_env, env)) {
 	scheme_raise_exn(MZEXN_FAIL_CONTRACT, "syntax-local-value: transforming context does "

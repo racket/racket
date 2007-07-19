@@ -2118,7 +2118,7 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
     Scheme_Object *sym;
     sym = scheme_intern_symbol("link");
     if (SAME_OBJ(argv[0], sym)) {
-#ifdef OS_X
+#if defined(OS_X) && !defined(XONX)
       return scheme_intern_symbol("framework");
 #else
 # ifdef DOS_FILE_SYSTEM

@@ -52,12 +52,12 @@ the Unix instructions below, but note the following:
 
  * The --enable-shared flag for `configure' must not be used,
    because builds create and use frameworks by default. Furthermore,
-   --disable-shared is not supported.
+   --disable-shared is not supported. (Unless you use --enable-xonx...)
 
  * To build an X11-based MrEd, run `configure' with the --enable-xonx
-   flag. Frameworks are not used for such builds (and shared libraries
-   are not supported). The --enable-xonx flag also affects the
-   MzScheme build so that `system-type' reports 'unix.
+   flag. Frameworks are not used for such builds, so --enable-shared
+   is allowed. The --enable-xonx flag also affects the MzScheme build,
+   so that `system-type' reports 'unix.
 
 ========================================================================
  Compiling for supported Unix variants (including Linux) or Cygwin

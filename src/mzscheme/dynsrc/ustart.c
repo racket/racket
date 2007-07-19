@@ -342,14 +342,20 @@ int main(int argc, char **argv)
   exe_path = absolutize(exe_path, me);
   lib_path = absolutize(lib_path, me);
 
+# ifdef OS_X
+#  define LD_LIB_PATH "DYLD_LIBRARY_PATH"
+# else
+#  define LD_LIB_PATH "LD_LIBRARY_PATH"
+# endif
+
   if (*lib_path) {
-    dll_path = getenv("LD_LIBRARY_PATH");
+    dll_path = getenv(LD_LIB_PATH);
     if (!dll_path) {
       dll_path = "";
     }
     dll_path = string_append(dll_path, ":");
     dll_path = string_append(lib_path, dll_path);
-    dll_path = string_append("LD_LIBRARY_PATH=", dll_path);
+    dll_path = string_append(LD_LIB_PATH "=", dll_path);
     putenv(dll_path);
   }
 

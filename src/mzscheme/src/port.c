@@ -7993,6 +7993,9 @@ void scheme_signal_received(void)
     write(put_external_event_fd, "!", 1);
   }
 #endif
+#if defined(WINDOWS_PROCESSES) || defined(WINDOWS_FILE_HANDLES)
+  ReleaseSemaphore(scheme_break_semaphore, 1, NULL);
+#endif
 }
 
 #ifdef MZ_XFORM

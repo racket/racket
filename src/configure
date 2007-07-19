@@ -1585,8 +1585,11 @@ fi
 
 if test "${enable_shared}" = "yes" ; then
   if test "$OS" = "Darwin" ; then
-    echo "ERROR: don't use --enable-shared or --enable-dynlib under Mac OS X"
-    exit 1
+    if test "${enable_xonx}" != "yes" ; then
+       echo "ERROR: don't use --enable-shared or --enable-dynlib under Mac OS X,"
+       echo "       unless you also use --enable-xonx"
+       exit 1
+    fi
   fi
 fi
 
