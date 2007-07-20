@@ -958,20 +958,23 @@ module browser threading seems wrong.
   ;   ;     ;;;;; ;   ;   ;    ;;;; 
                                     
                                     
-                                    
-      (define vertical-dragable/def-int%
-        (class panel:vertical-dragable%
-          (init-field unit-frame)
-          (inherit get-percentages)
-          (define/augment (after-percentage-change)
-            (let ([percentages (get-percentages)])
-              (when (and (= 1
-                            (length (send unit-frame get-definitions-canvases))
-                            (length (send unit-frame get-interactions-canvases)))
-                         (= 2 (length percentages)))
-                (preferences:set 'drscheme:unit-window-size-percentage (car percentages))))
-            (inner (void) after-percentage-change))
-          (super-new)))
+    
+    (define dragable/def-int-mixin
+      (mixin (panel:dragable<%>) ()
+        (init-field unit-frame)
+        (inherit get-percentages)
+        (define/augment (after-percentage-change)
+          (let ([percentages (get-percentages)])
+            (when (and (= 1
+                          (length (send unit-frame get-definitions-canvases))
+                          (length (send unit-frame get-interactions-canvases)))
+                       (= 2 (length percentages)))
+              (preferences:set 'drscheme:unit-window-size-percentage (car percentages))))
+          (inner (void) after-percentage-change))
+        (super-new)))
+    
+    (define vertical-dragable/def-int% (dragable/def-int-mixin panel:vertical-dragable%))
+    (define horizontal-dragable/def-int% (dragable/def-int-mixin panel:horizontal-dragable%))
       
     (define super-frame%
       (drscheme:frame:mixin
@@ -3170,9 +3173,11 @@ module browser threading seems wrong.
                                               (let ([sel (send tabs-panel get-selection)])
                                                 (when sel
                                                   (change-to-nth-tab sel)))))))
-          [define resizable-panel (new vertical-dragable/def-int%
-                                    (unit-frame this)
-                                    (parent panel-with-tabs))]
+          [define resizable-panel (new (if (preferences:get 'drscheme:defs/ints-horizontal)
+                                           horizontal-dragable/def-int%
+                                           vertical-dragable/def-int%)
+                                       (unit-frame this)
+                                       (parent panel-with-tabs))]
           
           [define definitions-canvas #f]
           (initialize-definitions-canvas)

@@ -417,6 +417,7 @@ please adhere to these guidelines:
  (open-files-in-tabs "Open files in separate tabs (not separate windows)")
  (show-interactions-on-execute "Automatically open interactions window when running a program")
   (switch-to-module-language-automatically "Automatically switch to the module language when opening a module")
+  (interactions-beside-definitions "Put the interactions window beside the definitions window") ;; in preferences, below the checkbox one line above this one
  (limit-interactions-size "Limit interactions size")
  (background-color "Background Color")
  (default-text-color "Default text") ;; used for configuring colors, but doesn't need the word "color"
