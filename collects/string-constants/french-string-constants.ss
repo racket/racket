@@ -408,7 +408,7 @@
   (show-character-offsets "Montrer la distance depuis le début de l'éditeur") ; used for popup menu; right click on line/column box in bottom of drs window
   (enable-keybindings-in-menus "Raccourcis clavier dans les menus.")
   (automatically-to-ps "Imprimer automatiquement dans un fichier postscript.")
-  (option-as-meta "Utiliser la touche option comme touche meta") ;; macos/macos x only
+  (command-as-meta "Utiliser la touche de commande comme touche meta") ;; macos/macos x only
   (separate-dialog-for-searching "Utiliser un dialogue séparé pour les recherches.")
   (reuse-existing-frames "Réutiliser les fenêtres existantes lors de l'ouverture de nouveaux fichiers")
   (default-fonts "Polices par défaut")
@@ -433,6 +433,7 @@
   
   (change-font-button-label "Changer")
   (fonts "Polices")
+  (other... "Autre...") ;; used in the font choice menu item
   
   ; filled with type of font, eg modern, swiss, etc.
   (choose-a-new-font "Sélectionnez une nouvelle police \"~a\".")
@@ -799,6 +800,7 @@
   (print-interactions "Imprimer les interactions...")
   (new-tab "Nouvel onglet")
   (close-tab "Fermer l'onglet")
+  (close-tab-amp "Fermer l'onglet") ;; like close-tab, but with an ampersand on the same letter as the one in close-menu-item
 
   ;;; edit-menu
   (split-menu-item-label "Di&viser")
@@ -1238,6 +1240,8 @@
   (profj-advanced-lang-one-line-summary "Langage Java restreint pour l'enseignement des etudiants niveau avancé")
   (profj-intermediate-lang "Intermédiaire")
   (profj-intermediate-lang-one-line-summary "Langage Java restreint pour l'enseignement des etudiants niveau intermédiaire")
+  (profj-intermediate-access-lang "Intermédiaire + accès")
+  (profj-intermediate-access-lang-one-line-summary "Langage Java restreint pour l'enseignement des etudiants niveau intermédiaire, avec modificateurs d'accès")
   (profj-dynamic-lang "Java + types dynamiques")
   (profj-dynamic-lang-one-summary "Java, plus types dynamiques")
 
