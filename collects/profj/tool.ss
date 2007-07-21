@@ -77,6 +77,87 @@
              (get-token get-syntax-token)
              (token-sym->style short-sym->style-name)))
             
+
+      (define java-keymap (new keymap%))
+      (send java-keymap add-function "do-return" (λ (edit event) (send edit do-return)))
+      (send java-keymap map-function "return" "do-return")
+      (send java-keymap map-function "s:return" "do-return")
+      (send java-keymap map-function "s:c:return" "do-return")
+      (send java-keymap map-function "a:return" "do-return")
+      (send java-keymap map-function "s:a:return" "do-return")
+      (send java-keymap map-function "c:a:return" "do-return")
+      (send java-keymap map-function "c:s:a:return" "do-return")
+      (send java-keymap map-function "c:return" "do-return")
+      (send java-keymap map-function "d:return" "do-return")
+      (keymap:send-map-function-meta java-keymap "return" "do-return")
+      (keymap:send-map-function-meta java-keymap "s:return" "do-return")
+      (keymap:send-map-function-meta java-keymap "s:c:return" "do-return")
+      (keymap:send-map-function-meta java-keymap "a:return" "do-return")
+      (keymap:send-map-function-meta java-keymap "s:a:return" "do-return")
+      (keymap:send-map-function-meta java-keymap "c:a:return" "do-return")
+      (keymap:send-map-function-meta java-keymap "c:s:a:return" "do-return")
+      (keymap:send-map-function-meta java-keymap "c:return" "do-return")
+    
+      (send java-keymap add-function "tabify-at-caret" (λ (edit event) (send edit java-tabify-selection)))
+      (send java-keymap map-function "TAB" "tabify-at-caret")
+      
+      (define defs-text-mixin
+        (mixin (color:text<%> editor:keymap<%>) ()
+          (inherit insert classify-position
+                   get-start-position get-end-position get-character delete
+                   backward-match backward-containing-sexp
+                   find-string position-paragraph paragraph-start-position
+                   begin-edit-sequence end-edit-sequence)
+          
+          (define single-tab-stop 2)
+          
+          (define/private (get-indentation start-pos)
+            (let ([to-insert 0])
+              (let loop ([pos start-pos])
+                (let ([pos-before (backward-containing-sexp pos 0)])
+                  (when pos-before
+                    (let ([brace-pos (find-string "{" 'backward pos-before 0 #f)])
+                      (when brace-pos
+                        (set! to-insert (+ single-tab-stop to-insert))
+                        (loop brace-pos))))))
+              (build-string to-insert (λ (x) #\space))))
+            
+          (define/public (do-return)
+            (let ([start-pos (get-start-position)]
+                  [end-pos (get-end-position)])
+              (let ([to-insert ""])
+                (if (= start-pos end-pos)
+                    (insert (string-append "\n" (get-indentation start-pos)))
+                    (insert "\n")))))
+          
+          (define/public (java-tabify-selection)
+            (let ([start-para (position-paragraph (get-start-position))]
+                  [end-para (position-paragraph (get-end-position))])
+              (begin-edit-sequence)
+              (let loop ([para start-para])
+                (let* ([para-start (paragraph-start-position para)]
+                       [insertion (get-indentation para-start)]
+                       [closer? #f])
+                  (let loop ()
+                    (let ([c (get-character para-start)])
+                      (cond
+                        [(and (char-whitespace? c)
+                              (not (char=? c #\newline)))
+                         (delete para-start (+ para-start 1))
+                         (loop)]
+                        [(char=? #\} c)
+                         (set! closer? #t)])))
+                  (if closer?
+                      (insert (substring insertion 0 (max 0 (- (string-length insertion) single-tab-stop))) para-start para-start)
+                      (insert insertion para-start para-start)))
+                (unless (= para end-para)
+                  (loop (+ para 1))))
+              (end-edit-sequence)))
+          
+          (define/override (get-keymaps)
+            (cons java-keymap (super get-keymaps)))
+          (super-new)))
+      
       ;repl-submit: text int -> bool
       ;Determines if the reple should submit or not
       (define (repl-submit text prompt-position)
@@ -1005,6 +1086,7 @@
           (register-capability-menu-item 'profj:special:java-interactions-box (get-special-menu))
           ))
       
+      (drscheme:get/extend:extend-definitions-text defs-text-mixin)
       (drscheme:get/extend:extend-unit-frame java-interactions-box-mixin)
       (drscheme:language:register-capability 'profj:special:java-interactions-box (flat-contract boolean?) #t)
  
