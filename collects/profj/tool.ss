@@ -78,7 +78,7 @@
              (token-sym->style short-sym->style-name)))
             
 
-      (define java-keymap (new keymap%))
+      (define java-keymap (new keymap:aug-keymap%))
       (send java-keymap add-function "do-return" (λ (edit event) (send edit do-return)))
       (send java-keymap map-function "return" "do-return")
       (send java-keymap map-function "s:return" "do-return")
