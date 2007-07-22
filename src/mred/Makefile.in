@@ -315,12 +315,12 @@ install-no-lib-3m-wx_xt:
 	echo "no dynamic libs"
 
 install-lib-3m-wx_xt:
-	cd ..; $(ICP) mred/libmred3m.@LIBSFX@ "$(libdir)"
+	cd ..; $(ICP) mred/libmred3m.@LIBSFX@ "$(DESTDIR)$(libdir)"
 
 install-wx_xt-3m:
 	$(MAKE) @MRLIBINSTALL@-3m-wx_xt
-	cd ..; $(ICP) mred/mred@MMM@ "$(bindir)/mred@MMM_INSTALLED@"
-	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(bindir)/mred@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	cd ..; $(ICP) mred/mred@MMM@ "$(DESTDIR)$(bindir)/mred@MMM_INSTALLED@"
+	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(DESTDIR)$(bindir)/mred@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 install-wx_xt-3m-final:
 	cd .
