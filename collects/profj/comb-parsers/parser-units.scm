@@ -21,6 +21,7 @@
     (define class-type "keyword")
     
     (define (output-map x)
+      #;(!!! (printf "in output-map ~a~n" x))
       (!!! (when (position-token? x)
              (set! x (position-token-token x))))
       (!!! (case (token-name x)
@@ -395,6 +396,11 @@
     (define instanceof-back
       (sequence (instanceof name) "instanceof expression"))
     
+    (define super-ctor
+      (choose ((sequence (super O_PAREN C_PAREN) id)
+               (sequence (super O_PAREN (comma-sep expression "arguments") C_PAREN) id))
+              "super constructor call"))
+    
     (define super-call
       (choose ((sequence (super PERIOD identifier O_PAREN C_PAREN) id)
                (sequence (super PERIOD identifier O_PAREN (comma-sep expression "arguments") C_PAREN) id))
@@ -738,9 +744,8 @@
     
     (define constructor
       (make-constructor #f
-                        (choose ((sequence ((super-call expression) (repeat statement)) id)
-                                 (sequence ((this-call expression) (repeat statement)) id)
-                            (repeat statement)) "constructor body")))
+                        (choose ((sequence (super-ctor-call (repeat statement)) id)
+                                 (repeat statement)) "constructor body")))
     
     (define interface 
       (interface-def
@@ -821,8 +826,8 @@
 
     (define constructor
       (make-constructor access-mods
-                        (choose ((sequence ((super-call expression) (repeat statement)) id)
-                                 (sequence ((this-call expression) (repeat statement)) id)
+                        (choose ((sequence (super-ctor-call (repeat statement)) id)
+                                 (sequence (this-call (repeat statement)) id)
                                  (repeat statement)) "constructor body")))
     
     (define interface 
@@ -922,8 +927,8 @@
     
     (define constructor
       (make-constructor access-mods
-                   (choose ((sequence ((super-call expression) (repeat statement)) id)
-                            (sequence ((this-call expression) (repeat statement)) id)
+                   (choose ((sequence (super-ctor-call (repeat statement)) id)
+                            (sequence (this-call (repeat statement)) id)
                             (repeat statement)) "constructor body")))
     
     (define interface 
@@ -952,6 +957,7 @@
     (export token-proc^)
     
     (define (old-tokens->new tok-list)
+      #;(!!! (printf "old-tokens->new ~a~n" (map position-token-token tok-list)))
       (cond
         [(null? tok-list) null]
         [(eq? (token-name (position-token-token (car tok-list))) 'EOF) null]

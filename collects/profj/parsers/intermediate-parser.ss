@@ -410,11 +410,11 @@
        [(ClassInstanceCreationExpression) $1])
       
       (IfThenElseStatement
-       [(if O_PAREN Expression C_PAREN StatementNoShortIf else Statement)
+       [(if O_PAREN Expression C_PAREN Block else Block)
 	(make-ifS $3 $5 $7 (build-src 1) (build-src 7))])
       
       (IfThenElseStatementNoShortIf
-       [(if O_PAREN Expression C_PAREN StatementNoShortIf else StatementNoShortIf)
+       [(if O_PAREN Expression C_PAREN Block else Block)
 	(make-ifS $3 $5 $7 (build-src 1) (build-src 7))])
       
       (StatementExpressionList
