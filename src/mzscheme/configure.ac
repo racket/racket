@@ -518,6 +518,7 @@ case $OS in
     ;;
   Linux)
     LIBS="$LIBS -rdynamic"
+    DYN_CFLAGS="-fPIC"
     # PPC: X11 librares are not found
     case `$UNAME -m` in
       ppc)
@@ -1192,8 +1193,8 @@ if test "${enable_shared}" = "yes" ; then
   STATIC_AR="${LIBTOOLPROG} --mode=link $CC -o"
   ARFLAGS=""
   RANLIB=":"
-  MZLINKER="${LIBTOOLPROG} --mode=link $CC${need_gcc_static_libgcc} -rpath ${absprefix}/lib"
-  MREDLINKER="${LIBTOOLPROG} --mode=link $CXX${need_gcc_static_libgcc} -rpath ${absprefix}/lib"
+  MZLINKER="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc} -rpath ${absprefix}/lib"
+  MREDLINKER="${LIBTOOLPROG} --mode=link --tag=CXX $CXX${need_gcc_static_libgcc} -rpath ${absprefix}/lib"
   PLAIN_CC="$CC"
   CC="${LIBTOOLPROG} --mode=compile --tag=CC $CC"
   CXX="${LIBTOOLPROG} --mode=compile --tag=CXX $CXX"
