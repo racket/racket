@@ -11182,8 +11182,8 @@ if test "${enable_shared}" = "yes" ; then
   MZLINKER="${LIBTOOLPROG} --mode=link $CC${need_gcc_static_libgcc} -rpath ${absprefix}/lib"
   MREDLINKER="${LIBTOOLPROG} --mode=link $CXX${need_gcc_static_libgcc} -rpath ${absprefix}/lib"
   PLAIN_CC="$CC"
-  CC="${LIBTOOLPROG} --mode=compile $CC"
-  CXX="${LIBTOOLPROG} --mode=compile $CXX"
+  CC="${LIBTOOLPROG} --mode=compile --tag=CC $CC"
+  CXX="${LIBTOOLPROG} --mode=compile --tag=CXX $CXX"
   AS="${LIBTOOLPROG} --mode=compile $AS"
   LIBSFX=la
   WXLIBS=WXLIBSDYN
