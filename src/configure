@@ -11176,8 +11176,8 @@ if test "${enable_shared}" = "yes" ; then
     plt_lib_version=`grep " MZSCHEME_VERSION " ${srcdir}/mzscheme/src/schvers.h | cut -d '"' -f 2`
   fi
 
-  AR="${LIBTOOLPROG} --mode=link $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${absprefix}/lib -o"
-  STATIC_AR="${LIBTOOLPROG} --mode=link $CC -o"
+  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${absprefix}/lib -o"
+  STATIC_AR="${LIBTOOLPROG} --mode=link --tag=CC $CC -o"
   ARFLAGS=""
   RANLIB=":"
   MZLINKER="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc} -rpath ${absprefix}/lib"
