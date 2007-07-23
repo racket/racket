@@ -11146,12 +11146,14 @@ if test "${enable_shared}" = "yes" ; then
   fi
   abssrcdir=`(cd ${srcdir}; pwd)`
 
-  # Try to convert prefix to an absolute path:
-  if test -d "${prefix}" ; then
-    absprefix=`(cd ${prefix}; pwd)`
+  # Try to convert libdir to an absolute path:
+  # (Is this necessary anymore?)
+  if test -d "${libdir}" ; then
+    abslibdir=`(cd ${libdir}; pwd)`
   else
-    absprefix="${prefix}"
+    abslibdir="${libdir}"
   fi
+
 
   if test "${LIBTOOLPROG}" = "" ; then
     (cd lt; sh ${abssrcdir}/lt/configure --enable-shared --disable-static)
@@ -11176,12 +11178,12 @@ if test "${enable_shared}" = "yes" ; then
     plt_lib_version=`grep " MZSCHEME_VERSION " ${srcdir}/mzscheme/src/schvers.h | cut -d '"' -f 2`
   fi
 
-  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${absprefix}/lib -o"
+  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${abslibdir} -o"
   STATIC_AR="${LIBTOOLPROG} --mode=link --tag=CC $CC -o"
   ARFLAGS=""
   RANLIB=":"
-  MZLINKER="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc} -rpath ${absprefix}/lib"
-  MREDLINKER="${LIBTOOLPROG} --mode=link --tag=CXX $CXX${need_gcc_static_libgcc} -rpath ${absprefix}/lib"
+  MZLINKER="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc} -rpath ${abslibdir}"
+  MREDLINKER="${LIBTOOLPROG} --mode=link --tag=CXX $CXX${need_gcc_static_libgcc} -rpath ${abslibdir}"
   PLAIN_CC="$CC"
   CC="${LIBTOOLPROG} --mode=compile --tag=CC $CC"
   CXX="${LIBTOOLPROG} --mode=compile --tag=CXX $CXX"
