@@ -53,33 +53,44 @@
           
           (opt-lambda (input [last-src (list 0 0 0 0)] [alts 1])
             #;(!!! (printf "terminal ~a~n" name))
+            #;(!!! (printf "input ~a~n" (cons? input)))
+            #;(!!! (if (eq? input return-name)
+                     (printf "dummy given~n")
+                     (let ([token (!!! ((!!! position-token-token) (!!! (car input))))])
+                       (!!! (printf "Look at token ~a~n" token))
+                       (!!! (printf "calling token-name: ~a~n" ((!!! token-name) token)))
+                       (!!! (printf "calling pred: ~a~n" (pred token)))
+                       (!!! (printf "called pred~n"))
+                       (!!! (printf "car of input ~a~n" (position-token-token (car input)))))))
             (cond
               [(eq? input return-name) name]
               [(null? input) 
                (fail-res null (make-terminal-fail rank-end last-src name 0 0 'end #f))]
-              [(pred (if src? (position-token-token (car input)) (car input)))
-               (make-res (list (builder (car input))) (cdr input) 
-                         name (value (car input)) 1 #f (car input))]
               [else 
-               #;(printf "Incorrect input for ~a : ~a miscase? ~a misspell? ~a ~n" name 
-                         (cond 
-                           [(and (position-token? (car input))
-                                 (token-value (position-token-token (car input))))
-                            (token-value (position-token-token (car input)))]
-                           [(position-token? (car input))
-                            (token-name (position-token-token (car input)))]
-                           [else (car input)])
-                         (case? (car input))
-                         (spell? (car input)))
-                 (fail-res (cdr input) 
-                           (let-values ([(chance kind may-use)
-                                         (cond
-                                           [(case? (car input)) (values rank-caps 'misscase 1)]
-                                           [(> (spell? (car input)) 3/5)
-                                            (values (* rank-misspell (spell? (car input))) 'misspell 1)]
-                                           [(class? (car input)) (values rank-class 'missclass 1)]
-                                           [else (values rank-wrong 'wrong 0)])])
-                             (make-fail chance name kind (car input) may-use)))])))))
+               (let* ([curr-input (car input)]
+                      [token (position-token-token curr-input)])
+                 (cond
+                   [(pred token)
+                    (make-res (list (builder curr-input)) (cdr input) name 
+                              (value curr-input) 1 #f curr-input)]
+                   [else 
+                    #;(!!! (printf "Incorrect input for ~a : ~a miscase? ~a misspell? ~a ~n" name 
+                                 (cond 
+                                   [(token-value token)
+                                    (token-value token)]
+                                   [else (token-name token)])
+                                 (case? curr-input)
+                                 (spell? curr-input)))
+                    (fail-res (cdr input) 
+                              (let-values ([(chance kind may-use)
+                                            (cond
+                                              [(case? curr-input) (values rank-caps 'misscase 1)]
+                                              [(> (spell? curr-input) 3/5)
+                                               (values (* rank-misspell 
+                                                          (spell? curr-input)) 'misspell 1)]
+                                              [(class? curr-input) (values rank-class 'missclass 1)]
+                                              [else (values rank-wrong 'wrong 0)])])
+                                (make-fail chance name kind curr-input may-use)))]))])))))
     
     ;seq: ( (list ((list 'a) -> res)) ((list 'b) -> 'c) string -> ((list 'a) -> result)
     (define seq 
@@ -103,7 +114,8 @@
                                name (res-id (repeat-res-a r))
                                (res-used (repeat-res-a r))
                                (repeat-res-stop r)
-                               (res-first-tok (repeat-res-a r)))]))]
+                               (res-first-tok (repeat-res-a r)))]
+                    [else (!!! (printf "~a~n" r)) (error 'stop1)]))]
                [my-error (sequence-error-gen name sequence-length)]
                [my-walker (seq-walker id-position name my-error)])
           (opt-lambda (input [last-src (list 0 0 0 0)] [alts 1])
@@ -139,6 +151,7 @@
                                (or id (res-id (repeat-res-a rst)))
                                (+ used (res-used (repeat-res-a rst)))
                                (repeat-res-stop rst) tok)]
+                    [else (printf "~a~n" rst) (error 'stop2)]
                     ))]
                [walker
                 (lambda (subs input previous? look-back curr-id seen used alts last-src)
@@ -186,7 +199,8 @@
                                               (car next-preds) look-back used curr-id 
                                               seen alts last-src)])]
                              [(repeat-res? fst)
-                             #;(printf "repeat-res: ~a~n" fst)
+                              #;(!!! (printf "repeat-res: ~n"))
+                              #;(!!! (printf "res? ~a~n" (res? (repeat-res-a fst))))
                               (next-call (repeat-res-a fst) fst 
                                          (res-msg (repeat-res-a fst)) #f 
                                          (res-first-tok (repeat-res-a fst)) alts)]
@@ -211,10 +225,13 @@
                                                            (and id-spot? (res-id res))
                                                            (res-first-tok res) new-alts)]
                                                [(repeat-res? res)
+                                                #;(!!! (printf "choice-res, repeat-res ~a~n"
+                                                        (res? (repeat-res-a res))))
                                                 (next-call (repeat-res-a res) res
                                                            (res-msg (repeat-res-a res)) #f 
                                                            (res-first-tok (repeat-res-a res))
-                                                           new-alts)])) lst)]
+                                                           new-alts)]
+                                               [else (!!! (printf "~a~n" res))(error 'stop) ])) lst)]
                                      [(correct-rsts) (correct-list rsts)])
                                   #;(printf "rsts =~a~n" rsts)
                                   #;(printf "correct-rsts ~a~n" (map res-a correct-rsts))
@@ -223,7 +240,8 @@
                                     [(null? correct-rsts)
                                      (let ([fails 
                                             (map 
-                                             (lambda (rst) 
+                                             (lambda (rst)
+                                               (!!! (unless (res? rst) (error 'here-we-are)))
                                                (res-msg 
                                                 (build-error rst (previous? input) (previous? return-name)
                                                              (car next-preds) look-back used curr-id seen alts last-src)))
@@ -247,7 +265,8 @@
         [(sequence-fail? fail)
          (values 'sub-seq (sequence-fail-expected fail) fail)]
         [(choice-fail? fail) (values 'choice null fail)]
-        [(options-fail? fail) (values 'options null fail)]))
+        [(options-fail? fail) (values 'options null fail)]
+        [else (printf "~a~n" fail) (error 'stop3)]))
     
     ;update-src: symbol src-list src-list token -> src-list
     (define (update-src error-kind src prev-src tok)
@@ -420,7 +439,8 @@
               [else
                (let* ([options (map (lambda (term) (term input last-src sub-opts)) opt-list)]
                       #;[a (!!! (printf "choice-options ~a ~n ~a ~n~n~n" choice-names options))]
-                      [fails (map res-msg options)]
+                      [fails (map (lambda (x) (if (res? x) (res-msg x) (error 'here-non-res)))
+                                  options)]
                       [corrects (correct-list options)]
                       [ans
                        (cond
@@ -454,9 +474,10 @@
            [(repeat-res? (car subs))
             (correct-list (cons (repeat-res-a (car subs)) (cdr subs)))]
            [(pair? (car subs))
-            (append (car subs) (correct-list (cdr subs)))]
+            (append (correct-list (car subs)) (correct-list (cdr subs)))]
            [else (correct-list (cdr subs))])]
-        [(null? subs) null]))
+        [(null? subs) null]
+        [else (printf "subs~a~n" subs) (error 'stop5)]))
     
     (define (update-src-start src new-start)
       (list (position-line new-start)

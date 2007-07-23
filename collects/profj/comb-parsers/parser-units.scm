@@ -391,10 +391,10 @@
                (sequence (base --) id)) "unary modification"))
     
     (define (cast type)
-      (sequence (O_PAREN type C_PAREN expression) "cast expression"))
+      (sequence (O_PAREN type C_PAREN expression) id "cast expression"))
     
     (define instanceof-back
-      (sequence (instanceof name) "instanceof expression"))
+      (sequence (instanceof name) id "instanceof expression"))
     
     (define super-ctor
       (choose ((sequence (super O_PAREN C_PAREN) id)
@@ -714,10 +714,9 @@
       (sequence (unique-base (repeat unique-end)) id "expression"))
     
     (define stmt-expr
-      (choose (new-class
-               super-call
-               (sequence (expression (method-call-end expression))
-                         id "method call")
+      (choose (#;new-class
+               #;super-call
+               #;(sequence (unique-base method-call-end) id "method call")
                (assignment 
                 (choose (identifier
                          (sequence (unique-base field-access-end) id))
@@ -797,8 +796,7 @@
     (define stmt-expr
       (choose (new-class
                super-call
-               (sequence (expression (method-call-end expression))
-                         id "method call")
+               (sequence (expression method-call-end) id "method call")
                (assignment 
                 (choose (identifier
                          (sequence (unique-base field-access-end) id))
@@ -885,7 +883,7 @@
     (define stmt-expr
       (choose (new-class
                super-call
-               (sequence (expression method-call-end expression) id "method call")
+               (sequence (expression method-call-end) id "method call")
                (assignment 
                 (choose (identifier
                          (sequence (expression field-access-end) id)
