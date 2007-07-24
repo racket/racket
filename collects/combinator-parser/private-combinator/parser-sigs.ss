@@ -23,7 +23,7 @@
   (define-signature language-dictionary^ (misspelled misscap missclass))
     
   (define-signature combinator-parser-forms^ 
-    (terminal choice seq repeat
+    (terminal choice seq repeat repeat-greedy
      (define-syntaxes (define-simple-terminals)
        (values 
         (lambda (stx)

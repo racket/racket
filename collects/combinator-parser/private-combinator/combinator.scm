@@ -177,7 +177,10 @@
                                 [(pair? rsts)
                                  (map (lambda (rst) (next-res old-answer new-id old-used tok rst))
                                       (correct-list rsts))]
-                                [else (error 'here2)])))])
+                                [(choice-res? rsts)
+                                 (map (lambda (rst) (next-res old-answer new-id old-used tok rst))
+                                      (correct-list (choice-res-matches rsts)))]
+                                [else (printf "~a~n" rsts) (error 'here2)])))])
                     (cond
                       [(null? next-preds)
                        (build-error (curr-pred input last-src) 
@@ -359,8 +362,8 @@
                   revised-expectation probability-with-sub probability-without-sub expected-sub expected-no-sub)
         probability))
     
-    ;repeat: (list 'a) -> result -> (list 'a)  -> result
-    (define (repeat sub)
+    ;greedy-repeat: (list 'a) -> result -> (list 'a)  -> result
+    (define (repeat-greedy sub)
       (letrec ([repeat-name (string-append "any number of " (sub return-name))]
                [memo-table (make-hash-table 'weak)]
                [process-rest
@@ -432,6 +435,7 @@
             [choice-names (map (lambda (o) (o return-name)) opt-list)])
         (opt-lambda (input [last-src (list 0 0 0 0)] [alts 1])
           #;(!!! (printf "choice ~a~n" name))
+          #;(!!! (printf "possible options are ~a~n" choice-names))
           (let ([sub-opts (sub1 (+ alts num-choices))])
             (cond
               [(hash-table-get memo-table input #f) (hash-table-get memo-table input)]
@@ -456,7 +460,9 @@
                                                       name
                                                       (rank-choice (map fail-type-used fails))
                                                       (rank-choice (map fail-type-may-use fails))
-                                                      num-choices choice-names fails))]
+                                                      num-choices choice-names 
+                                                      (null? input)
+                                                      fails))]
                          [(null? (cdr corrects)) (car corrects)]
                          [else (make-choice-res name corrects)])])
                  #;(!!! (printf "choice ~a is returning ~a options were ~a ~n" name ans choice-names))
@@ -490,6 +496,16 @@
     (define (update-src-end src new-end)
       (list (first src) (second src) (third src)
             (- (position-offset new-end) (third src))))
+    
+    (define (repeat op)
+      (letrec ([name (string-append "any number of "(op return-name))]
+               [r* (choice (list op
+                                 (seq (list op r*) 
+                                      (lambda (list-args) (cons (car list-args) (cadr list-args)))
+                                      name)
+                                 (seq null (lambda (x) null) return-name))
+                           name)])
+        r*))
     
     )
   )

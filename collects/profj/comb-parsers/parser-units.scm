@@ -206,7 +206,8 @@
       (choice (list base-t voidT) "method return"))
     
     (define (array-type base-t)
-      (choice (base-t (sequence (base-t O_BRACKET C_BRACKET (repeat (sequence (O_BRACKET C_BRACKET) id))) id
+      (choice (base-t (sequence (base-t O_BRACKET C_BRACKET 
+                                        (repeat (sequence (O_BRACKET C_BRACKET) id))) id
                                 "array type")) "type"))
     )
     
@@ -264,7 +265,7 @@
     (export general-productions^)
   
     (define (comma-sep term name)
-      (sequence (term (repeat (sequence (COMMA term) id))) id (string-append "list of " name)))
+      (sequence (term (repeat (sequence (COMMA term) id))) id (string-append "a list of " name)))
     
     (define (variable-declaration type expr share-type? name)
       (let* ([f (choose (IDENTIFIER (sequence ((^ IDENTIFIER) EQUAL expr) id)) (string-append name " declaration"))]
@@ -370,13 +371,13 @@
     (define simple-method-call
       (choose
        ((sequence ((^ identifier) O_PAREN C_PAREN) id)
-        (sequence ((^ identifier) O_PAREN (comma-sep expression "argument list") C_PAREN) id))
+        (sequence ((^ identifier) O_PAREN (comma-sep expression "arguments") C_PAREN) id))
        "method invocation"))
     
     (define method-call-end
       (choose
        ((sequence (PERIOD (^ identifier) O_PAREN C_PAREN) id)
-        (sequence (PERIOD (^ identifier) O_PAREN (comma-sep expression "argument list") C_PAREN) id))
+        (sequence (PERIOD (^ identifier) O_PAREN (comma-sep expression "arguments") C_PAREN) id))
        "method invocation"))
     
     (define (assignment asignee op)
@@ -441,7 +442,7 @@
                (sequence (super O_PAREN (comma-sep expression "arguments") C_PAREN SEMI_COLON) id)) "super constructor call"))
     
     (define (block repeat?)
-      (sequence (O_BRACE (if repeat? (repeat (eta statement)) (eta statement)) C_BRACE) 
+      (sequence (O_BRACE (if repeat? (repeat-greedy (eta statement)) (eta statement)) C_BRACE) 
                 id "block statement"))
     
     (define expression-stmt
@@ -503,13 +504,13 @@
 
     (define (make-field mods type expr share-types?)
       (cond 
-        [mods (sequence ((repeat mods) (variable-declaration type expr share-types? "field"))
+        [mods (sequence ((repeat-greedy mods) (variable-declaration type expr share-types? "field"))
                         id "field definition")]
         [else (variable-declaration type expr share-types? "field")]))  
     
     (define arg (sequence ((value+name-type prim-type) identifier) id "argument"))
     
-    (define args (comma-sep arg "parameter list"))
+    (define args (comma-sep arg "parameters"))
     
     ;method-signature: {U parser #f} [U parser #f] [U parser #f] bool bool parser -> parser
     (define (method-signature m ret a t? n)
@@ -517,9 +518,9 @@
                                (choose ((sequence (O_PAREN C_PAREN) id)
                                         (sequence (O_PAREN a C_PAREN) id)) "method parameter list")
                                (sequence (O_PAREN C_PAREN) id "method parameter list"))]
-             [full (sequence ((repeat m) ret (^ identifier) method-parms throws (comma-sep n "thrown type")) id "method signature")]
+             [full (sequence ((repeat m) ret (^ identifier) method-parms throws (comma-sep n "thrown types")) id "method signature")]
              [full-no-t (sequence ((repeat m) ret (^ identifier) method-parms) id "method signature")]
-             [no-mods-t (sequence (ret (^ identifier) method-parms throws (comma-sep n "thrown type")) id "method signature")]
+             [no-mods-t (sequence (ret (^ identifier) method-parms throws (comma-sep n "thrown types")) id "method signature")]
              [no-mods (sequence (ret (^ identifier) method-parms) id "method signature")])
          (cond 
            [(and m t?) (choose (full full-no-t) "method signature")]
@@ -549,7 +550,7 @@
     (export interfaces^)
   
     (define (interface-body members)
-      (repeat (choice members "interface member")))
+      (repeat-greedy (choice members "interface member")))
     
     (define (interface-def modifier extends body)
       (let ([m&e (sequence ((repeat modifier) interface (^ IDENTIFIER) extends O_BRACE body C_BRACE)
@@ -658,7 +659,7 @@
               "expression"))
     
     (define expression
-      (sequence (unique-base (repeat unique-end)) id "expression"))
+      (sequence (unique-base (repeat-greedy unique-end)) id "expression"))
     
     (define statement
       (choose ((if-s (block #f) #f) (return-s #f)) "statement"))
@@ -670,17 +671,18 @@
     
     (define method (make-method method-sig statement))
     
-    (define constructor (make-constructor #f (repeat init)))
+    (define constructor (make-constructor #f (repeat-greedy init)))
     
     (define interface (interface-def #f #f 
-                                     (repeat (sequence (method-sig SEMI_COLON) id "method signature"))))
+                                     (repeat-greedy 
+                                      (sequence (method-sig SEMI_COLON) id "method signature"))))
     
     (define class
       (class-def #f #f (implements-dec identifier)
-                 (repeat (class-body (list field method constructor)))))
+                 (repeat-greedy (class-body (list field method constructor)))))
     
     (define program 
-      (make-program #f (repeat import-dec) (repeat (top-member (list class interface)))))
+      (make-program #f (repeat import-dec) (repeat-greedy (top-member (list class interface)))))
     )
 
   (define-unit intermediate-grammar@
@@ -711,15 +713,15 @@
                instanceof-back) "expression"))
     
     (define expression
-      (sequence (unique-base (repeat unique-end)) id "expression"))
+      (sequence (unique-base (repeat-greedy unique-end)) id "expression"))
     
     (define stmt-expr
       (choose (#;new-class
-               #;super-call
-               #;(sequence (unique-base method-call-end) id "method call")
+               super-call
+               (sequence (unique-base (repeat unique-end) method-call-end) id "method call")
                (assignment 
                 (choose (identifier
-                         (sequence (unique-base field-access-end) id))
+                         (sequence (unique-base (repeat unique-end) field-access-end) id))
                         "assignee")
                 EQUAL)) "expression"))
     
@@ -743,23 +745,23 @@
     
     (define constructor
       (make-constructor #f
-                        (choose ((sequence (super-ctor-call (repeat statement)) id)
-                                 (repeat statement)) "constructor body")))
+                        (choose ((sequence (super-ctor-call (repeat-greedy statement)) id)
+                                 (repeat-greedy statement)) "constructor body")))
     
     (define interface 
       (interface-def
        #f
        (sequence (tok:extends (comma-sep identifier "interfaces")) id "extends")
-       (repeat (sequence (method-sig-no-abs SEMI_COLON) id "method signature"))))
+       (repeat-greedy (sequence (method-sig-no-abs SEMI_COLON) id "method signature"))))
     
     (define class
       (class-def tok:abstract (extend-dec identifier) 
                  (implements-dec (comma-sep identifier "interfaces"))
-                 (repeat (class-body (list field method constructor)))))
+                 (repeat-greedy (class-body (list field method constructor)))))
 
     
     (define program
-      (make-program #f (repeat import-dec) (repeat (top-member (list class interface)))))
+      (make-program #f (repeat import-dec) (repeat-greedy (top-member (list class interface)))))
     
     )
     
@@ -791,15 +793,15 @@
                instanceof-back) "expression"))
     
     (define expression
-      (sequence (unique-base (repeat unique-end)) id "expression"))
+      (sequence (unique-base (repeat-greedy unique-end)) id "expression"))
     
     (define stmt-expr
-      (choose (new-class
+      (choose (#;new-class
                super-call
-               (sequence (expression method-call-end) id "method call")
+               (sequence (unique-base (repeat unique-end) method-call-end) id "method call")
                (assignment 
                 (choose (identifier
-                         (sequence (unique-base field-access-end) id))
+                         (sequence (unique-base (repeat unique-end) field-access-end) id))
                         "assignee")
                 EQUAL)) "expression"))
     
@@ -824,23 +826,23 @@
 
     (define constructor
       (make-constructor access-mods
-                        (choose ((sequence (super-ctor-call (repeat statement)) id)
-                                 (sequence (this-call (repeat statement)) id)
-                                 (repeat statement)) "constructor body")))
+                        (choose ((sequence (super-ctor-call (repeat-greedy statement)) id)
+                                 (sequence (this-call (repeat-greedy statement)) id)
+                                 (repeat-greedy statement)) "constructor body")))
     
     (define interface 
       (interface-def
        #f
        (sequence (tok:extends (comma-sep identifier "interfaces")) id "extends")
-       (repeat (sequence (method-sig-no-abs SEMI_COLON) id "method signature"))))
+       (repeat-greedy (sequence (method-sig-no-abs SEMI_COLON) id "method signature"))))
     
     (define class
       (class-def tok:abstract (extend-dec identifier) (implements-dec (comma-sep identifier "interfaces"))
-                 (repeat (class-body (list field method constructor)))))
+                 (repeat-greedy (class-body (list field method constructor)))))
     
     (define program
       (make-program #f (repeat import-dec)
-               (repeat (top-member (list class interface)))))
+               (repeat-greedy (top-member (list class interface)))))
 
     )
   
@@ -878,16 +880,16 @@
               "expression"))
     
     (define expression
-      (sequence (unique-base (repeat unique-end)) id "expression"))
+      (sequence (unique-base (repeat-greedy unique-end)) id "expression"))
     
     (define stmt-expr
       (choose (new-class
                super-call
-               (sequence (expression method-call-end) id "method call")
+               (sequence (unique-base (repeat unique-end) method-call-end) id "method call")
                (assignment 
                 (choose (identifier
-                         (sequence (expression field-access-end) id)
-                         (sequence (expression array-access-end) id))
+                         (sequence (unique-base (repeat unique-end) field-access-end) id)
+                         (sequence (unique-base (repeat unique-end) array-access-end) id))
                         "asignee")
                 assignment-ops expression)
                (sequence (expression ++) id "unary mutation")
@@ -925,28 +927,28 @@
     
     (define constructor
       (make-constructor access-mods
-                   (choose ((sequence (super-ctor-call (repeat statement)) id)
-                            (sequence (this-call (repeat statement)) id)
-                            (repeat statement)) "constructor body")))
+                   (choose ((sequence (super-ctor-call (repeat-greedy statement)) id)
+                            (sequence (this-call (repeat-greedy statement)) id)
+                            (repeat-greedy statement)) "constructor body")))
     
     (define interface 
       (interface-def
        #f
        (sequence (tok:extends (comma-sep IDENTIFIER "interfaces")) id "extends")
-       (repeat (choose (method-sig-no-abs
+       (repeat-greedy (choose (method-sig-no-abs
                         (make-field (global-mods access-mods) (value+name-type prim-type) expression #t))
                        "interface member definition"))))
     
     (define class
       (class-def (choose (tok:abstract tok:public) "class modifier")
                  (extend-dec IDENTIFIER) (implements-dec (comma-sep IDENTIFIER "interfaces"))
-                 (repeat (class-body (list field method constructor
+                 (repeat-greedy (class-body (list field method constructor
                                            (method-header method-sig-abs))))))
     
     (define program
       (make-program (sequence (tok:package name SEMI_COLON) id "package specification")
                (repeat import-dec)
-               (repeat (top-member (list class interface)))))
+               (repeat-greedy (top-member (list class interface)))))
     )
   
   (define-unit token@

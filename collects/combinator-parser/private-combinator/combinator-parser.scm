@@ -12,7 +12,8 @@
     (export parser^)
     
     (define (sort-used reses)
-      (sort reses (lambda (a b) (> (res-used a) (res-used b)))))
+      (sort reses
+            (lambda (a b) (!!! (> (res-used a) (res-used b))))))
     
     (define (parser start)
       (lambda (input file)
@@ -29,7 +30,8 @@
                             (!!! (res-msg result)) 
                             (input->output-name (!!! (car (res-rest result)))) input-type)
                     (and src? 
-                         (make-src-lst (position-token-start-pos (!!! (car (res-rest result)))))))]
+                         (make-src-lst (position-token-start-pos (!!! (car (res-rest result))))
+                                       (position-token-end-pos (!!! (car (res-rest result)))))))]
                   [(res? result) 
                    (fail-type->message (res-msg (!!! result)))]
                   [(or (choice-res? result) (pair? result))
@@ -50,12 +52,15 @@
                               (res-possible-error (!!! (car (sort-used possible-errors))))))]                
                        [else
                         (let ([used-sort (sort-used options)])
+                          #;(!!! (printf "~a~n" used-sort))
                           (make-err
-                           (format "Found additional content after ~a, begining with ~a." 
+                           (format "Found additional content after ~a, begining with '~a'." 
                                    (!!! (res-msg (car used-sort)))
                                    (input->output-name (!!! (car (res-rest (car used-sort))))))
                            (and src?
                                 (make-src-lst (position-token-start-pos 
+                                               (!!! (car (res-rest (car used-sort)))))
+                                              (position-token-end-pos
                                                (!!! (car (res-rest (car used-sort)))))))))]))]
                   [(and (repeat-res? result) (eq? 'out-of-input (repeat-res-stop (!!! result))))
                    (res-a (repeat-res-a result))]
