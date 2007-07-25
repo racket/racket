@@ -3036,6 +3036,19 @@ void wxWindowDC::BeginSetPixel(int mini, int near_i, int near_j)
     XColor *cols;
     cols = new WXGC_ATOMIC XColor[NUM_GETPIX_CACHE_COLORS];
     X->get_pixel_color_cache = cols;
+
+    if (X->get_pixel_image_cache->depth == 1) {
+      cols[0].pixel = 1;
+      cols[0].red = 0;
+      cols[0].green = 0;
+      cols[0].blue = 0;
+
+      cols[1].pixel = 0;
+      cols[1].red = 255;
+      cols[1].green = 255;
+      cols[1].blue = 255;
+      X->get_pixel_cache_pos = 2;
+    }
   }
   X->set_a_pixel = FALSE;
   X->cache_dx = dx;
@@ -3239,12 +3252,13 @@ void wxWindowDC::GetPixelFast(int i, int j, int *r, int *g, int *b)
     *b = ((pixel >> wx_simple_b_start) & 0xFF);
   } else {
     XColor xcol;
+
     if (!wx_alloc_color_is_fast
 	|| (X->get_pixel_image_cache->depth == 1)) {
       int get_pixel_cache_pos, k;
       XColor *get_pixel_color_cache;
       Bool get_pixel_cache_full;
-    
+
       get_pixel_cache_pos = X->get_pixel_cache_pos;
       get_pixel_color_cache = X->get_pixel_color_cache;
       get_pixel_cache_full = X->get_pixel_cache_full;
