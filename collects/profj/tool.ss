@@ -107,12 +107,41 @@
                    get-start-position get-end-position get-character delete
                    backward-match backward-containing-sexp
                    find-string position-paragraph paragraph-start-position
-                   begin-edit-sequence end-edit-sequence)
+                   begin-edit-sequence end-edit-sequence
+                   skip-whitespace forward-match)
           
           (define single-tab-stop 2)
+          (define eol "\n")
+          
+          ;Returns the position immediately following the nearest open, or the start of the buffer
+          ;In some cases of mismatched parens, returns false
+          (define/private (get-sexp-start pos)
+            (let ([sexp-start+whitespace (backward-containing-sexp pos 0)])
+              (and sexp-start+whitespace
+                   (skip-whitespace sexp-start+whitespace 'backward #t))))
           
           (define/private (get-indentation start-pos)
-            (let ([to-insert 0])
+            (letrec ([indent
+                      (let* ([base-offset 0]
+                             [curr-open (get-sexp-start start-pos)])
+                        (cond 
+                          [(and (eq? (classify-position start-pos) 'comment) 
+                                (eq? (classify-position (add1 start-pos)) 'comment))
+                           base-offset]
+                          [(or (not curr-open) (= curr-open 0)) base-offset]
+                          [else
+                           (let ([previous-line (find-string eol 'backward start-pos 0 #f)])
+                             (cond 
+                               [(not previous-line) (+ base-offset single-tab-stop)]
+                               [else
+                                (let* ([last-line-start (skip-whitespace previous-line 'forward #f)]
+                                       [last-line-indent (sub1 (- last-line-start previous-line))]
+                                       [old-open (get-sexp-start last-line-start)])
+                                  (cond
+                                    [(<= curr-open old-open) last-line-indent]
+                                    [else (+ single-tab-stop last-line-indent)]))]))]))])
+              (build-string (max indent 0) (λ (x) #\space)))
+            #;(let ([to-insert 0])
               (let loop ([pos start-pos])
                 (let ([pos-before (backward-containing-sexp pos 0)])
                   (when pos-before
@@ -136,13 +165,14 @@
               (begin-edit-sequence)
               (let loop ([para start-para])
                 (let* ([para-start (paragraph-start-position para)]
-                       [insertion (get-indentation para-start)]
+                       [insertion (get-indentation (max 0 (sub1 para-start)) #;para-start)]
                        [closer? #f])
                   (let loop ()
                     (let ([c (get-character para-start)])
                       (cond
                         [(and (char-whitespace? c)
-                              (not (char=? c #\newline)))
+                              (not (char=? c #\015))
+                              (not (char=? c #\012)))
                          (delete para-start (+ para-start 1))
                          (loop)]
                         [(char=? #\} c)
