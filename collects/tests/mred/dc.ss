@@ -126,7 +126,7 @@
    (let ([col3 (make-object color%)]
 	 [white (make-object color% 255 255 255)]
 	 [check-col (lambda (what a b)
-		      (test #t `(same red ,what) (= (send a red) (send b red)))
+		      (test #t `(same red ,what, (send a red) ,(send b red)) (= (send a red) (send b red)))
 		      (test #t `(same green ,what) (= (send a green) (send b green)))
 		      (test #t `(same blue ,what) (= (send a blue) (send b blue))))])
      (let i-loop ([i 0])
@@ -148,6 +148,36 @@
 
 (pixel-tests #f)
 (pixel-tests #t)
+
+;; ----------------------------------------
+
+;; Extra get-argb-pixels on monochrome text (from PR 8821):
+
+(let* ((bm (make-object bitmap% 5 5 #t))
+       (bm2 (make-object bitmap% 5 5 #t))
+       (dc (new bitmap-dc% (bitmap bm)))
+       (pt (lambda (x y) (make-object point% x y)))
+       (bs (make-bytes 100))
+       (bs2 (make-bytes 100)))
+  (send dc clear)
+  (send dc set-brush (make-object color% 0 0 0) 'solid)
+  (send dc draw-polygon (list (pt 2 0) (pt 2 4)
+                              (pt 4 4) (pt 4 0)))
+  (send dc set-bitmap #f)
+  (send bm get-argb-pixels 0 0 5 5 bs)
+  (send dc set-bitmap bm2)
+  (send dc set-argb-pixels 0 0 5 5 bs)
+  (send dc get-argb-pixels 0 0 5 5 bs2)
+  (send dc set-bitmap #f)
+  (test #t 'mono-bits
+        (equal?
+         bs
+         (bytes-append 
+          #"\377\377\377\377\377\377\377\377\377\0\0\0\377\0\0\0\377\0\0\0\377\377\377\377\377"
+          #"\377\377\377\377\0\0\0\377\0\0\0\377\0\0\0\377\377\377\377\377\377\377\377\377\0\0\0"
+          #"\377\0\0\0\377\0\0\0\377\377\377\377\377\377\377\377\377\0\0\0\377\0\0\0\377\0\0\0"
+          #"\377\377\377\377\377\377\377\377\377\0\0\0\377\0\0\0\377\0\0\0")))
+  (test #t 'same-bits (equal? bs bs2)))
 
 ;; ----------------------------------------
 
