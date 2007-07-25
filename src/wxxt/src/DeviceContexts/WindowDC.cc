@@ -3229,6 +3229,21 @@ Bool wxWindowDC::BeginGetPixelFast(int x, int y, int w, int h)
   if ((x >= 0) && (y >= 0)
       && ((unsigned int)(x + w) <= X->width)
       && ((unsigned int)(y + h) <= X->height)) {
+
+    /* Possible improvement: get only the revelant section of the
+       bitmap into the image cache, instead of always the entire
+       image. (In that case, use offsets in the fast Get and Put
+       operations.) */
+
+    if (X->get_pixel_image_cache
+        && (X->cache_dx
+            || X->cache_dy
+            || (X->get_pixel_image_cache->width < (int)X->width)
+            || (X->get_pixel_image_cache->height < (int)X->height))) {
+      /* Need to get out of mini mode */
+      EndSetPixel();
+    }
+
     BeginSetPixel(0, 0, 0);
     return TRUE;
   } else
