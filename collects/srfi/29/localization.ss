@@ -23,7 +23,8 @@
 ;;; Modified for PLT Scheme by: Francisco Solsona <solsona@acm.org>
 
 (module localization mzscheme
-  (require (lib "etc.ss"))
+  (require (lib "etc.ss")
+           (lib "runtime-path.ss"))
   (provide current-language current-country current-locale-details
 	   load-bundle! store-bundle! declare-bundle!
 	   localized-template
@@ -94,8 +95,7 @@
       (current-locale-details (get-from-locale 'details))))
   
   ;; System bundles are here:
-  (define system-bundles (build-path
-			  (collection-path "srfi") "29" "bundles"))
+  (define-runtime-path system-bundles "bundles")
 
   ;; bundle-specifier: (listof symbol)
   ;; i.e. package + locale, (package-name [language] [country] [details ...])
