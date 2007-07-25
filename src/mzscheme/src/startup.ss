@@ -1190,7 +1190,9 @@
 			    ,(let ([s (let ([apph (app match-head '(stx-car e))]
 					    [appt (app match-tail '(stx-cdr e))])
 					(if mh-did-var?
-					    (app-append apph appt)
+                                            (if mt-did-var?
+                                                (app-append apph appt)
+                                                `(let ([mh ,apph]) (and mh ,appt mh)))
 					    `(if ,apph ,appt #f)))])
 			       (if cap?
 				   (if id-is-rest?
