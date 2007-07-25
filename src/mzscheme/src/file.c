@@ -4986,7 +4986,7 @@ static Scheme_Object *make_directory(int argc, Scheme_Object *argv[])
   while (1) {
     if (!MSC_W_IZE(mkdir)(MSC_WIDE_PATH(filename)
 #  ifndef MKDIR_NO_MODE_FLAG
-			  , 0x0777
+			  , 0777
 # endif
 			  ))
       return scheme_void;
