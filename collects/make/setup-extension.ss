@@ -6,7 +6,6 @@
 	   (lib "file.ss" "dynext")
 	   (lib "file.ss")
 	   (lib "list.ss")
-	   (lib "process.ss")
 	   (lib "etc.ss")
 	   (lib "launcher.ss" "launcher")
 	   (lib "xform.ss" "compiler")
@@ -132,6 +131,8 @@
 	       "/usr/local/gnu"
 	       ;; OS X fink location:
 	       "/sw"
+	       ;; OS X DarwinPorts location:
+	       "/opt/local"
 	       ;; Hack for NU PLT's convenience:
 	       "/arch/gnu/packages/readline-4.2")))
       
@@ -256,11 +257,16 @@
                                            headers
                                            extra-depends)
                                    (lambda ()
-                                     (xform #f xform-src.c file.c (list (let-values ([(base name dir?)
-                                                                                      (split-path xform-src.c)])
-                                                                          (if (path? base)
-                                                                              base
-                                                                              (current-directory)))
-                                                                        mz-inc-dir)))))
+                                     (xform #f 
+                                            (if (path? xform-src.c)
+                                                (path->string xform-src.c)
+                                                xform-src.c)
+                                            file.c
+                                            (list (let-values ([(base name dir?)
+                                                                (split-path xform-src.c)])
+                                                    (if (path? base)
+                                                        base
+                                                        (current-directory)))
+                                                  mz-inc-dir)))))
                        null))
                   #())))))))))))))
