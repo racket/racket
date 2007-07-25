@@ -2020,7 +2020,7 @@ void wxWindowDC::TryColour(wxColour *src, wxColour *dest)
     wxQueryColor(wxAPP_DISPLAY, cm, &xcol);
     
     dest->Set(xcol.red >> SHIFT, xcol.green >> SHIFT, xcol.blue >> SHIFT);
-  } else if (xcol.pixel == wx_black_pixel) {
+  } else if (xcol.pixel == 1) { /* not wx_black_pixel */
     dest->Set(0, 0, 0);
   } else {
     dest->Set(255, 255, 255);
