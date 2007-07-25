@@ -295,7 +295,14 @@
       (format "#%embedded:~a:" (gensym)))
     
     (define (normalize filename)
-      (normal-case-path (simplify-path (expand-path filename))))
+      (let ([f (simplify-path (expand-path filename))])
+        ;; Use normal-case-path on just the base part, to avoid
+        ;; changing the filename case (which should match the
+        ;; module-name case within the file):
+        (let-values ([(base name dir?) (split-path f)])
+          (if (path? base)
+              (build-path (normal-case-path base) name)
+              f))))
     
     (define (is-lib-path? a)
       (and (pair? a)
