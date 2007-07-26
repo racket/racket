@@ -158,10 +158,10 @@
                           "there can only be one expression in the definitions window"
                           super-result)))]
                   [(= 4 iteration-number)
-                   #`(eval #,#`(#%app current-namespace 
+                   #`(#%app current-namespace 
                                       (#%app 
                                        module->namespace
-                                       '#,(get-full-module-name))))]
+                                       (#%datum . #,(get-full-module-name))))]
                   [else eof]))))
           
           ;; printer settings are just ignored here.
