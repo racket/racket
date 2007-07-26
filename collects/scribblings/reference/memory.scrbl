@@ -14,7 +14,7 @@ is only reachable via weak references, the content of the weak box is
 replaced with @scheme[#f]. A @deftech{weak reference} is a reference
 through a weak box, through a key reference in a weak hash table (see
 @secref["mz:hashtables"]), through a value in an ephemeron where the
-value can be replaced by @scheme[#f] (see @secref["mz:ephemeron"]), or
+value can be replaced by @scheme[#f] (see @secref["mz:ephemerons"]), or
 through a custodian (see @secref["mz:custodians"]).
 
 @defproc[(make-weak-box [v any/c]) weak-box?]{
@@ -34,7 +34,7 @@ collector has proven that the previous content value of
 Returns @scheme[#t] if @scheme[v] is a weak box, @scheme[#f] otherwise.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:ephemeron"]{Ephemerons}
+@section[#:tag "mz:ephemerons"]{Ephemerons}
 
 An @deftech{ephemeron} is similar to a weak box (see
 @secref["mz:weakbox"]), except that

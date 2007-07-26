@@ -8,8 +8,9 @@
 @guideintro["guide:characters"]{characters}
 
 MzScheme characters range over Unicode scalar values, which includes
-characters whose values range from @scheme[#x0] to @scheme[#x10FFFF],
-but not including @scheme[#xD800] to @scheme[#xDFFF].
+characters whose values range from @schemevalfont{#x0} to
+@schemevalfont{#x10FFFF}, but not including @schemevalfont{#xD800} to
+@schemevalfont{#xDFFF}.
 
 Two characters are @scheme[eqv?] if they correspond to the same scalar
 value. For each scalar value less than 256, character values that are

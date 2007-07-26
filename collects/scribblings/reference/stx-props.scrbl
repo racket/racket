@@ -78,7 +78,7 @@ MzScheme adds properties to expanded syntax (often using
 
  @item{When a reference to an unexported or protected identifier from
  a module is discovered (and the reference is certified; see
- @secref["mz:stxprotect"]), the @scheme['protected] property is added
+ @secref["mz:stxcerts"]), the @scheme['protected] property is added
  to the identifier with a @scheme[#t] value.}
 
  @item{When or @scheme[read-syntax] or @scheme[read-honu-syntax]
@@ -91,9 +91,9 @@ MzScheme adds properties to expanded syntax (often using
 }
 
 See @secref["mz:modinfo"] for information about properties generated
-by the expansion of a module declaration. See @secref["mz:arity"] and
+by the expansion of a module declaration. See @scheme[lambda] and
 @secref["mz:infernames"] for information about properties recognized
-when compiling a procedure. See @secref["mz:compilation"] for
+when compiling a procedure. See @scheme[current-compile] for
 information on properties and byte codes.
 
 @;------------------------------------------------------------------------
@@ -116,7 +116,7 @@ the key @scheme[key], or @scheme[#f] if no value is associated to
 @defproc[(syntax-property-symbol-keys [stx syntax?]) list?]{
 
 Returns a list of all symbols that as keys have associated properties
-in @scheme[stx]. @tech{Uninterned} symbols (see @secref["mz:symbol"])
+in @scheme[stx]. @tech{Uninterned} symbols (see @secref["mz:symbols"])
 are not included in the result list.}
 
 

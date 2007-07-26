@@ -324,6 +324,19 @@ the procedure body.
        (f #:arg 2 1)))
 ]}
 
+When compiling a @scheme[lambda] or @scheme[case-lambda] expression,
+Scheme looks for a @scheme['method-arity-error] property attached to
+the expression (see @secref["mz:stxprops"]). If it is present with a
+true value, and if no case of the procedure accepts zero arguments,
+then the procedure is marked so that an
+@scheme[exn:fail:contract:arity] exception involving the procedure
+will hide the first argument, if one was provided. (Hiding the first
+argument is useful when the procedure implements a method, where the
+first argument is implicit in the original source). The property
+affects only the format of @scheme[exn:fail:contract:arity]
+exceptions, not the result of @scheme[procedure-arity].
+
+
 @defform[(case-lambda [formals body ...+] ...)]{
 
 Produces a procedure. Each @scheme[[forms body ...+]]
@@ -810,11 +823,11 @@ Equivalent to @scheme[(when (not test-expr) expr ...)].
 
 @defform[(set! id expr)]{
 
-If @scheme[id] has a @tech{transformer bounding} to an
+If @scheme[id] has a @tech{transformer binding} to an
 @tech{assignment transformer}, as produced by
 @scheme[make-set!-transformer], then this form is expanded by calling
 the assignment transformer with the full expressions. If @scheme[id]
-has a @tech{transformer bounding} to a @tech{rename transformer} as
+has a @tech{transformer binding} to a @tech{rename transformer} as
 produced by @scheme[make-rename-transformer], then this form is
 expanded by replacing @scheme[id] with the one provided to
 @scheme[make-rename-transformer].
@@ -1131,7 +1144,7 @@ and @secref["mz:mod-parse"]).
                              (prefix provide-spec prefix-id)])]{
 
 Declares exports from a module. A @scheme[provide] form must appear in
-a @tech{module context} or a @tech{module-begin} context.
+a @tech{module context} or a @tech{module-begin context}.
 
 A @scheme[provide-spec] indicates one or more bindings to provide,
 specifying for each an export symbol that can be different from

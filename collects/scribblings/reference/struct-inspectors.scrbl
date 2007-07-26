@@ -127,3 +127,16 @@ type for @scheme[struct-type].  If the type for @scheme[struct-type]
 is not controlled by the current inspector, the
 @exnraise[exn:fail:contract].}
 
+
+
+@defproc[(object-name [v any/c]) any]{
+
+Returns a value for the name of @scheme[v] if @scheme[v] has a name,
+@scheme[#f] otherwise. The argument @scheme[v] can be any value, but
+only (some) procedures, structs, struct types, struct type properties,
+regexp values, and ports have names. The name of a procedure, struct,
+struct type, or struct type property is always a symbol. The name of a
+regexp value is a string, and a byte-regexp value's name is a byte
+string. The name of a port is typically a path or a string, but it can
+be arbitrary. See also @secref["mz:infernames"].}
+

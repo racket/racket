@@ -96,7 +96,7 @@ If the second argument to the load handler is a symbol, then:
 @itemize{
 
  @item{The @scheme[read-syntax] from the file is additionally
-       @tech{parameterize}d as follows (to provide consistent reading
+       @scheme[parameterize]d as follows (to provide consistent reading
        of module source):
 
        @schemeblock[
@@ -325,8 +325,8 @@ long as the @scheme[read-accept-compiled] parameter is set to
 @scheme[#t]).
 
 When a compiled form contains syntax object constants, the
-@litchar{#~}-marshaled form drops location information and properties
-(@secref["mz:stxprops"]) for the @tech{syntax objects}.
+@litchar{#~}-marshaled form drops source-location information and
+properties (@secref["mz:stxprops"]) for the @tech{syntax objects}.
 
 Compiled code parsed from @litchar{#~} may contain references to
 unexported or protected bindings from a module. At read time, such
@@ -358,7 +358,7 @@ tail position with @scheme[top-level-form].}
 
 @defproc[(compile-syntax [stx syntax?]) compiled-expression?]{
 
-Like @scheme[eval-syntax], but calls the current @tech{compile
+Like @scheme[eval-syntax], but calls the current @tech{compilation
 handler} in tail position with @scheme[stx].}
 
 

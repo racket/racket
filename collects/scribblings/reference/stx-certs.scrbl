@@ -32,7 +32,7 @@ object is hidden. (Applying the result of
 keys.) The certificate's mark is applied to both the input and output
 of the syntax transformer, so that it identifies every piece of syntax
 that was introduced by the transformer (see
-@secref["mz:transformer-mode"]). The expander attaches this
+@secref["mz:transformer-model"]). The expander attaches this
 certificate to parts of the transformer's result, depending on the
 shape and properties of the result:
 

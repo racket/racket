@@ -222,11 +222,12 @@ assignments to the binding via @scheme[set!].}
 @defproc[(namespace-syntax-introduce [stx syntax-object?]) syntax-object?]{
 
 Returns a syntax object like @scheme[stx], except that the current
-namespace's bindings are included in the syntax object's context (see
-@secref["mz:stxscope"]). The additional context is overridden by any
-existing top-level context in the syntax object, or by any existing or
-future module context. See @secref["mz:stxobj"] for more information
-about syntax objects.}
+namespace's bindings are included in the @tech{syntax object}'s
+@tech{lexical information} (see @secref["mz:stxobj-model"]). The
+additional context is overridden by any existing @tech{top-level
+bindings} in the @tech{syntax object}'s @tech{lexical information}, or
+by any existing or future @tech{module bindings} in the @tech{lexical
+information}.}
 
 
 @defproc[(module-provide-protected? [module-path-index (or/c symbol? module-path-index?)]
@@ -245,4 +246,4 @@ indices.
 
 Typically, the arguments to @scheme[module-provide-protected?]
 correspond to the first two elements of a list produced by
-@scheme[identifier-binding] (see @secref["mz:stxscope"]).}
+@scheme[identifier-binding].}

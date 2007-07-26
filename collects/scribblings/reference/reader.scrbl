@@ -120,7 +120,7 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar["#!/"]]{starts a line comment; see @secref["mz:parse-comment"]}
   @dispatch[@litchar{#`}]{starts a syntax quasiquote; see @secref["mz:parse-quote"]}
   @dispatch[@litchar{#,}]{starts an syntax unquote or splicing unquote; see @secref["mz:parse-quote"]}
-  @dispatch[@litchar["#~"]]{starts compiled code; see @secref["compilation"]}
+  @dispatch[@litchar["#~"]]{starts compiled code; see @scheme[current-compile]}
 
   @dispatch[@cilitchar{#i}]{starts a number; see @secref["mz:parse-number"]}
   @dispatch[@cilitchar{#e}]{starts a number; see @secref["mz:parse-number"]}

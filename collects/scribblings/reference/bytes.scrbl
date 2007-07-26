@@ -112,17 +112,17 @@ positions are initialized with the given @scheme[b]s.
                       [src-start exact-nonnegative-integer? 0]
                       [src-end exact-nonnegative-integer? (bytes-length src)])
          void?]{
- Changes the bytes of @scheme[dest] from positions
- @scheme[dest-start] (inclusive) to @scheme[dest-end] (exclusive) to
- match the bytes in @scheme[src] from @scheme[src-start]
- (inclusive). The bytes strings @scheme[dest] and @scheme[src] can be the
- same byte string, and in that case the destination region can overlap with
- the source region; the destination bytes after the copy match
- the source bytes from before the copy. If any of
- @scheme[dest-start], @scheme[src-start], or @scheme[src-end]
- are out of range (taking into account the sizes of the bytes strings and
- the source and destination regions), the
- @exnraise[exn:fail:contract].
+
+ Changes the bytes of @scheme[dest] starting at position
+ @scheme[dest-start] to match the bytes in @scheme[src] from
+ @scheme[src-start] (inclusive) to @scheme[src-end] (exclusive). The
+ bytes strings @scheme[dest] and @scheme[src] can be the same byte
+ string, and in that case the destination region can overlap with the
+ source region; the destination bytes after the copy match the source
+ bytes from before the copy. If any of @scheme[dest-start],
+ @scheme[src-start], or @scheme[src-end] are out of range (taking into
+ account the sizes of the bytes strings and the source and destination
+ regions), the @exnraise[exn:fail:contract].
 
 @examples[(define s (bytes 65 112 112 108 101))
           (bytes-copy! s 4 #"y")
@@ -204,14 +204,14 @@ positions are initialized with the given @scheme[b]s.
                               [end exact-nonnegative-integer? (bytes-length bstr)])
          string?]{
  Produces a string by decoding the @scheme[start] to @scheme[end]
- substring of @scheme[bstr] as a UTF-8 encoding of Unicode code points.
- If @scheme[err-char] is not @scheme[#f], then it is used
- for bytes that fall in the range @scheme[#o200] to @scheme[#o377] but
- are not part of a valid encoding sequence. (This is consistent with
- reading characters from a port; see @secref["ports"] for more details.)
- If @scheme[err-char] is @scheme[#f], and if the
- @scheme[start] to @scheme[end] substring of @scheme[bstr] is not a valid
- UTF-8 encoding overall, then the @exnraise[exn:fail:contract].}
+ substring of @scheme[bstr] as a UTF-8 encoding of Unicode code
+ points.  If @scheme[err-char] is not @scheme[#f], then it is used for
+ bytes that fall in the range @scheme[#o200] to @scheme[#o377] but are
+ not part of a valid encoding sequence. (This is consistent with
+ reading characters from a port; see @secref["mz:encodings"] for more
+ details.)  If @scheme[err-char] is @scheme[#f], and if the
+ @scheme[start] to @scheme[end] substring of @scheme[bstr] is not a
+ valid UTF-8 encoding overall, then the @exnraise[exn:fail:contract].}
 
 @defproc[(bytes->string/locale [bstr bytes?]
                                [err-char (or/c false/c char?) #f]
@@ -220,7 +220,7 @@ positions are initialized with the given @scheme[b]s.
          string?]{
  Produces a string by decoding the @scheme[start] to @scheme[end] substring
  of @scheme[bstr] using the current locale's encoding (see also
- @secref["locales"]). If @scheme[err-char] is not
+ @secref["mz:encodings"]). If @scheme[err-char] is not
  @scheme[#f], it is used for each byte in @scheme[bstr] that is not part
  of a valid encoding; if @scheme[err-char] is @scheme[#f], and if the
  @scheme[start] to @scheme[end] substring of @scheme[bstr] is not a valid
@@ -235,7 +235,7 @@ positions are initialized with the given @scheme[b]s.
  of @scheme[bstr] as a Latin-1 encoding of Unicode code points; i.e.,
  each byte is translated directly to a character using
  @scheme[integer->char], so the decoding always succeeds. (See also the
- Latin-1 footnote of @secref["encodings"].)  The @scheme[err-char]
+ Latin-1 footnote of @secref["mz:encodings"].)  The @scheme[err-char]
  argument is ignored, but present for consistency with the other
  operations.}
 
@@ -256,7 +256,7 @@ positions are initialized with the given @scheme[b]s.
          bytes?]{
  Produces a string by encoding the @scheme[start] to @scheme[end] substring
  of @scheme[str] using the current locale's encoding (see also
- @secref["locales"]). If @scheme[err-byte] is not @scheme[#f], it is used
+ @secref["mz:encodings"]). If @scheme[err-byte] is not @scheme[#f], it is used
  for each character in @scheme[str] that cannot be encoded for the
  current locale; if @scheme[err-byte] is @scheme[#f], and if the
  @scheme[start] to @scheme[end] substring of @scheme[str] cannot be encoded,
@@ -272,7 +272,7 @@ positions are initialized with the given @scheme[b]s.
  directly to a byte using @scheme[char->integer]. If @scheme[err-byte] is
  not @scheme[#f], it is used for each character in @scheme[str] whose
  value is greater than @scheme[255]. (See also the Latin-1 footnote of
- @secref["encodings"]. If @scheme[err-byte] is @scheme[#f], and if the
+ @secref["mz:encodings"]. If @scheme[err-byte] is @scheme[#f], and if the
  @scheme[start] to @scheme[end] substring of @scheme[str] has a character
  with a value greater than @scheme[255], then the
  @exnraise[exn:fail:contract].}
@@ -356,12 +356,12 @@ Certain encoding combinations are always available:
    characters; see @secref["mz:ports"].)}
 
  @item{@scheme[(bytes-open-converter "" "UTF-8")] --- converts from
-   the current locale's default encoding (see @secref["mz:locales"])
+   the current locale's default encoding (see @secref["mz:encodings"])
    to UTF-8.}
 
  @item{@scheme[(bytes-open-converter "UTF-8" "")] --- converts from
    UTF-8 to the current locale's default encoding (see
-   @secref["mz:locales"]).}
+   @secref["mz:encodings"]).}
 
  @item{@scheme[(bytes-open-converter "platform-UTF-8" "platform-UTF-16")]
    --- converts UTF-8 to UTF-16 under @|AllUnix|, where each UTF-16

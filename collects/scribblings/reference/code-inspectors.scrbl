@@ -5,8 +5,8 @@
 
 In the same way that inspectors control access to structure fields
 (see @secref["mz:inspectors"]), inspectors also control access to
-module bindings (see @secref["mz:modules"]). The default inspector for
-module bindings is determined by the @scheme[current-code-inspector]
+@tech{module bindings}. The default inspector for @tech{module
+bindings} is determined by the @scheme[current-code-inspector]
 parameter, instead of the @scheme[current-inspector] parameter.
 
 When a @scheme[module] declaration is evaluated, the value of the
@@ -28,7 +28,7 @@ Control over a module invocation enables
  identifiers exported from the module with @scheme[protect]; and}
 
  @item{access to the module's protected and unexported variables
- within compiled code from @scheme[read] (see @secref["mz:compilation"]).}
+ within compiled code from @scheme[read] (see @scheme[current-compile]).}
 
 }
 
@@ -51,7 +51,7 @@ macro expander prevent any reference to an unexported identifier,
 unless the reference appears within an expression that was generated
 by the module's macros (or, more precisely, a macro from a module
 whose declaration inspector controls the invocation of the
-identifier's module). See @secref["mz:stxprotect"] for further
+identifier's module). See @secref["mz:stxcerts"] for further
 information.
 
 @defparam[current-code-inspector insp inspector?]{

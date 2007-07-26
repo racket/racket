@@ -105,17 +105,17 @@ Returns an immutable string with the same content as
                        [src-start exact-nonnegative-integer? 0]
                        [src-end exact-nonnegative-integer? (string-length src)])
          void?]{
- Changes the characters of @scheme[dest] from positions
- @scheme[dest-start] (inclusive) to @scheme[dest-end] (exclusive) to
- match the characters in @scheme[src] from @scheme[src-start]
- (inclusive). The strings @scheme[dest] and @scheme[src] can be the
- same string, and in that case the destination region can overlap with
- the source region; the destination characters after the copy match
- the source characters from before the copy. If any of
- @scheme[dest-start], @scheme[src-start], or @scheme[src-end]
- are out of range (taking into account the sizes of the strings and
- the source and destination regions), the
- @exnraise[exn:fail:contract].
+
+ Changes the characters of @scheme[dest] starting at position
+ @scheme[dest-start] to match the characters in @scheme[src] from
+ @scheme[src-start] (inclusive) to @scheme[src-end] (exclusive). The
+ strings @scheme[dest] and @scheme[src] can be the same string, and in
+ that case the destination region can overlap with the source region;
+ the destination characters after the copy match the source characters
+ from before the copy. If any of @scheme[dest-start],
+ @scheme[src-start], or @scheme[src-end] are out of range (taking into
+ account the sizes of the strings and the source and destination
+ regions), the @exnraise[exn:fail:contract].
 
 @examples[(define s (string #\A #\p #\p #\l #\e))
           (string-copy! s 4 "y")
@@ -310,7 +310,7 @@ allocated string).}
 @defproc[(string-locale=? [str1 string?] [str2 string?] ...+)
  boolean?]{  Like @scheme[string=?], but the strings are compared in a
  locale-specific way, based the value of @scheme[current-locale]. See
- @secref["locales"] for more information on locales.}
+ @secref["mz:encodings"] for more information on locales.}
 
 @defproc[(string-locale<? [str1 string?] [str2 string?] ...+) boolean?]{
  Like @scheme[string<?], but the sort order compares strings in a

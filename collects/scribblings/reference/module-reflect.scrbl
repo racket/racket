@@ -110,10 +110,10 @@ with a message about a dependency cycle.
 
 Module loading is suppressed (i.e., @scheme[#f] is supplied as a third
 argument to the module name resolver) when resolving module paths in
-syntax objects (see @secref["mz:stxobj"]). When a syntax object is
-manipulated, the current namespace might not match the original
-namespace for the syntax object, and the module should not necessarily
-be loaded in the current namespace.
+@tech{syntax objects} (see @secref["mz:stxobj-model"]). When a
+@tech{syntax object} is manipulated, the current namespace might not
+match the original namespace for the syntax object, and the module
+should not necessarily be loaded in the current namespace.
 
 The current module name resolver is called with a single argument by
 @scheme[namespace-attach-module] to notify the resolver that a module
@@ -237,7 +237,7 @@ path index}. The @scheme[path] argument can @scheme[#f] only if
 
 Returns @scheme[#t] if @scheme[v] is a compiled @scheme[module]
 declaration, @scheme[#f] otherwise. See also
-@secref["mz:compilation"].}
+@scheme[current-compile].}
 
 
 @defproc[(module-compiled-name [compiled-module-code compiled-module-expression?])

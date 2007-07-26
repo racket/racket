@@ -13,7 +13,9 @@ otherwise. See also @secref["mz:stxobj-model"].}
 Returns the source for the syntax object @scheme[stx], or @scheme[#f]
 if none is known. The source is represented by an arbitrary value
 (e.g., one passed to @scheme[read-syntax]), but it is typically a file
-path string. See also @secref["mz:compilation"].}
+path string. Source-location information is dropped for a syntax
+object that is marshaled as part of compiled code; see also
+@scheme[current-compile].}
 
 
 @defproc[(syntax-line [stx syntax?]) 
@@ -24,7 +26,8 @@ Returns the line number (positive exact integer) for the start of the
 syntax object in its source, or @scheme[#f] if the line number or
 source is unknown. The result is @scheme[#f] if and only if
 @scheme[(syntax-column stx)] produces @scheme[#f]. See also
-@secref["mz:linecol"] and @secref["mz:compilation"].}
+@secref["mz:linecol"], and see @scheme[syntax-source] for information
+about marshaling compiled syntax objects.}
 
 
 @defproc[(syntax-column [stx syntax?])
@@ -35,7 +38,8 @@ Returns the column number (non-negative exact integer) for the start
 of the syntax object in its source, or @scheme[#f] if the source
 column is unknown. The result is @scheme[#f] if and only if
 @scheme[(syntax-line stx)] produces @scheme[#f]. See also
-@secref["mz:linecol"] and @secref["mz:compilation"].}
+@secref["mz:linecol"], and see @scheme[syntax-source] for information
+about marshaling compiled syntax objects.}
 
 
 @defproc[(syntax-position [stx syntax?])
@@ -44,8 +48,9 @@ column is unknown. The result is @scheme[#f] if and only if
 
 Returns the character position (positive exact integer) for the start
 of the syntax object in its source, or @scheme[#f] if the source
-position is unknown. See also @secref["mz:linecol"] and
-@secref["mz:compilation"].}
+position is unknown. See also @secref["mz:linecol"], and see
+@scheme[syntax-source] for information about marshaling compiled
+syntax objects.}
 
 
 @defproc[(syntax-span [stx syntax?])
@@ -54,7 +59,8 @@ position is unknown. See also @secref["mz:linecol"] and
 
 Returns the span (non-negative exact integer) in characters of the
 syntax object in its source, or @scheme[#f] if the span is
-unknown. See also @secref["mz:compilation"].}
+unknown. See also @scheme[syntax-source] for information about
+marshaling compiled syntax objects.}
 
 
 @defproc[(syntax-original? [stx syntax?]) boolean?]{
@@ -62,9 +68,9 @@ unknown. See also @secref["mz:compilation"].}
 Returns @scheme[#t] if @scheme[stx] has the property that
 @scheme[read-syntax] and @scheme[read-honu-syntax] attach to the
 syntax objects that they generate (see @secref["mz:stxprops"]), and if
-@scheme[stx]'s lexical information does not indicate that the object
-was introduced by a syntax transformer (see
-@secref["mz:stxscope"]). The result is @scheme[#f] otherwise. This
+@scheme[stx]'s @tech{lexical information} does not indicate that the
+object was introduced by a syntax transformer (see
+@secref["mz:stxobj-model"]). The result is @scheme[#f] otherwise. This
 predicate can be used to distinguish syntax objects in an expanded
 expression that were directly present in the original expression, as
 opposed to syntax objects inserted by macros.}
@@ -203,4 +209,4 @@ of @scheme[stx-pair] can be anything, but string, symbol, and
 identifier elements will be embedded in the corresponding generated
 name (useful for debugging purposes). The generated identifiers are
 built with interned symbols (not @scheme[gensym]s), so the limitations
-described in @secref["mz:compilation"] do not apply.}
+described with @scheme[current-compile] do not apply.}

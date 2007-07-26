@@ -119,7 +119,7 @@ quoting @litchar["\\"] or @litchar["|"] vertical-bar quotes and the
 @litchar{#cs} and @litchar{#ci} prefixes; see
 @secref["mz:parse-symbol"] for more information. While a module is
 loaded, the parameter is set to @scheme[#t] (see
-@secref["mz:modloadhandler"]).}
+@scheme[current-load]).}
 
 @defboolparam[read-square-bracket-as-paren on?]{
 
@@ -141,7 +141,8 @@ A parameter that controls parsing @litchar{#&} input. See
 @defboolparam[read-accept-compiled on?]{
 
 A parameter that controls parsing @litchar{#~} compiled input. See
-@secref["mz:parsing"] for more information.}
+@secref["mz:reader"] and @scheme[current-compile] for more
+information.}
 
 @defboolparam[read-accept-bar-quote on?]{
 

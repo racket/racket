@@ -93,14 +93,13 @@ value and @scheme[cons] it onto the current result of
 
 When an identifier in @scheme[stop-ids] is encountered by the expander
 in a subexpression, expansions stops for the subexpression.  If
-@scheme[#%app], @scheme[#%top], or @scheme[#%datum] (see
-@secref["mz:stxspecial"]) appears in @scheme[stop-ids], then
-application, top-level variable reference, and literal data
-expressions without the respective explicit form are not wrapped with
-the explicit form. If @scheme[stop-ids] is @scheme[#f] instead of a
-list, then @scheme[stx] is expanded only as long as the outermost form
-of @scheme[stx] is a macro (i.e., expansion does not proceed to
-sub-expressions).
+@scheme[#%app], @scheme[#%top], or @scheme[#%datum] appears in
+@scheme[stop-ids], then application, top-level variable reference, and
+literal data expressions without the respective explicit form are not
+wrapped with the explicit form. If @scheme[stop-ids] is @scheme[#f]
+instead of a list, then @scheme[stx] is expanded only as long as the
+outermost form of @scheme[stx] is a macro (i.e., expansion does not
+proceed to sub-expressions).
 
 The optional @scheme[intdef-ctx] argument must be either @scheme[#f]
 or the result of @scheme[syntax-local-make-definition-context]. In the
@@ -110,7 +109,7 @@ added to the expansion result (because the expansion might introduce
 bindings or references to internal-definition bindings).
 
 Expansion of @scheme[stx] can use certificates for the expression
-already being expanded (see @secref["mz:stxprotect"]) , and inactive
+already being expanded (see @secref["mz:stxcerts"]) , and inactive
 certificates associated with @scheme[stx] are activated for
 @scheme[stx] (see @secref["mz:stxinactivecerts"]). Furthermore, if the
 transformer is defined within a module (i.e., the current expansion
@@ -248,7 +247,7 @@ if not @scheme[#f]. If @scheme[failure-thunk] is @scheme[false], the
 @exnraise[exn:fail:contract].
 
 Resolving @scheme[id-stx] can use certificates for the expression
-being transformed (see @secref["mz:stxprotect"]) as well as inactive
+being transformed (see @secref["mz:stxcerts"]) as well as inactive
 certificates associated with @scheme[id-stx] (see
 @secref["mz:stxinactivecerts"]). Furthermore, if the transformer is
 defined within a module (i.e., the current transformation was
@@ -367,14 +366,13 @@ procedure accepts one to three arguments: @scheme[_stx] (required),
 procedure's result is a syntax object like @scheme[stx], except that
 it includes the captured certificates as inactive (see
 @secref["mz:stxinactivecerts"]) if @scheme[active?] is @scheme[#f]
-(the default) or active otherwise. If @scheme[key] is supplied and
-not @scheme[#f], it is associated with each captured certificate for
-later use through @scheme[syntax-recertify] (see
-@secref["mz:stxtransfer"]). If @scheme[_intro] is supplied, and if it
-is not @scheme[#f] (the default), then it must be a procedure created
-by @scheme[make-syntax-introducer], in which case the certificate
-applies only to parts of @scheme[stx] that are marked as introduced by
-@scheme[_intro].
+(the default) or active otherwise. If @scheme[key] is supplied and not
+@scheme[#f], it is associated with each captured certificate for later
+use through @scheme[syntax-recertify]. If @scheme[_intro] is supplied,
+and if it is not @scheme[#f] (the default), then it must be a
+procedure created by @scheme[make-syntax-introducer], in which case
+the certificate applies only to parts of @scheme[stx] that are marked
+as introduced by @scheme[_intro].
 
 Supply @scheme[#t] for @scheme[active?] when the syntax to be
 certified can be safely used in any context by any party, and where

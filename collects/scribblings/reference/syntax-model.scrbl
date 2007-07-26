@@ -41,17 +41,17 @@ some are quoted to produce a symbol or a syntax object.
 
 An identifier @deftech{binds} another (i.e., it is a
 @deftech{binding}) when the former is parsed as a @tech{variable} and
-the latter is parsed as a reference to the former.  The
-@deftech{scope} of a binding is the set of source forms to which it
-applies. The @deftech{environment} of a form is the set of bindings
-whose @tech{scope} includes the form. A binding for a sub-expression
-@deftech{shadows} any @tech{bindings} (i.e., it is
-@deftech{shadowing}) in its @tech{environment}, so that uses of an
-@tech{identifier} refer to the @tech{shadowing} @tech{binding}.  A
-@deftech{top-level binding} is a @tech{binding} from a definition at
-the top-level; a @deftech{module binding} is a binding from a
-definition in a module; and a @deftech{local binding} is another other
-kind of binding.
+the latter is parsed as a reference to the former; the latter is
+@deftech{bound}.  The @deftech{scope} of a @tech{binding} is the set
+of source forms to which it applies. The @deftech{environment} of a
+form is the set of bindings whose @tech{scope} includes the form. A
+binding for a sub-expression @deftech{shadows} any @tech{bindings}
+(i.e., it is @deftech{shadowing}) in its @tech{environment}, so that
+uses of an @tech{identifier} refer to the @tech{shadowing}
+@tech{binding}.  A @deftech{top-level binding} is a @tech{binding}
+from a definition at the top-level; a @deftech{module binding} is a
+binding from a definition in a module; and a @deftech{local binding}
+is another other kind of binding.
 
 For example, as a bit of source, the text
 
@@ -525,8 +525,8 @@ properties} such as @scheme['origin]. See @secref["mz:stxprops"] for
 more information.
 
 Finally, the expander uses @tech{syntax certificates} to control the
-way that unexported and protected @tech{module-level bindings} are
-used. See @secref["mz:stxcerts"] for more information on @tech{syntax
+way that unexported and protected @tech{module bindings} are used. See
+@secref["mz:stxcerts"] for more information on @tech{syntax
 certificates}.
 
 The expander's handling of @scheme[letrec-values+syntaxes] is similar
@@ -669,7 +669,7 @@ For expansion purposes, a namespace maps each symbol in each
 
 @itemize{
 
- @item{a particular module-level binding from a particular module}
+ @item{a particular @tech{module binding} from a particular module}
 
  @item{a top-level transformer binding named by the symbol}
 
@@ -752,3 +752,41 @@ x
 (eval:alts x (eval 'x))
 (f)
 ]
+
+@;------------------------------------------------------------------------
+@section[#:tag "mz:infernames"]{Inferred Value Names}
+
+To improve error reporting, names are inferred at compile-time for
+certain kinds of values, such as procedures. For example, evaluating
+the following expression:
+
+@schemeblock[
+(let ([f (lambda () 0)]) (f 1 2 3))
+]
+
+produces an error message because too many arguments are provided to
+the procedure. The error message is able to report @schemeidfont{f} as
+the name of the procedure. In this case, Scheme decides, at
+compile-time, to name as @scheme['f] all procedures created by the
+@scheme[let]-bound @scheme[lambda].
+
+Names are inferred whenever possible for procedures. Names closer to
+an expression take precedence. For example, in
+
+@schemeblock[
+(define my-f
+  (let ([f (lambda () 0)]) f))
+]
+
+the procedure bound to @scheme[my-f] will have the inferred name
+@scheme['f].
+
+When an @scheme['inferred-name] property is attached to a syntax
+object for an expression (see @secref["mz:stxprops"]), the property
+value is used for naming the expression, and it overrides any name
+that was inferred from the expression's context.
+
+When an inferred name is not available, but a source location is
+available, a name is constructed using the source location
+information. Inferred and property-assigned names are also available
+to syntax transformers, via @scheme[syntax-local-name].
