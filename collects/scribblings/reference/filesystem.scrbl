@@ -110,7 +110,7 @@ by @scheme[kind], which must be one of the following:
   initially to @scheme[program].}
 
  @item{@scheme['collects-dir] --- a path to the main collection
- of libraries (see @secref["mz:mzlib"]). If this path is relative, it's
+ of libraries (see @secref["mz:collects"]). If this path is relative, it's
  relative to the directory of @scheme[(find-system-path 'exec-file)].
  This path is normally embedded in the @exec{mzscheme} executable,
  but it can be overridden by the @DFlag{collects} or @Flag{X}
@@ -150,7 +150,7 @@ directory as the executable. The result is then the full path for the
 found @scheme[related-sub], instead of the path for the executable.
  
 This procedure is used by the @exec{mzscheme} executable to find the
-standard library collection directory (see @secref["mz:mzlib"]).  In
+standard library collection directory (see @secref["mz:collects"]).  In
 this case, @scheme[program] is the name used to start MzScheme and
 @scheme[related] is @scheme["collects"].  The @scheme[related-sub]
 argument is used because, under @|AllUnix|, @scheme[program-sub] may

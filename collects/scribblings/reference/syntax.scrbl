@@ -1100,7 +1100,8 @@ corresponds to the default @tech{module name resolver}.
  least two path elements. All path elements up to the last one form a
  @tech{collection} path, which is used to locate the relevant
  directory (not relative to the containing source), and the last path
- element refers to a file.}
+ element refers to a file. See @secref["mz:collects"] for more
+ information.}
 
  @specsubform[#:literals (file) (file string)]{Similar to the plain
  @scheme[rel-string] case, but @scheme[string] is a path (possibly
