@@ -288,6 +288,7 @@ input syntax for the boolean constant true, and
 @as-index{@litchar{#f}} or @as-index{@litchar{#F}} is the complete
 input syntax for the boolean constant false.
 
+
 @section[#:tag "mz:parse-pair"]{Reading Pairs and Lists}
 
 When the reader encounters a @as-index{@litchar{(}},

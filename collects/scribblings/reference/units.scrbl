@@ -556,6 +556,7 @@ each of the bindings implied by an @scheme[export]
 @scheme[tagged-sig-spec] in the linking clause.}
 
 @defform[
+#:literals (import export)
 (define-unit/new-import-export unit-id
   (import tagged-sig-spec ...)
   (export tagged-sig-spec ...)
