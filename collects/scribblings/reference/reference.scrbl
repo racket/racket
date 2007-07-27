@@ -20,6 +20,7 @@ language.
 @include-section["data.scrbl"]
 @include-section["struct.scrbl"]
 @include-section["class.scrbl"]
+@include-section["units.scrbl"]
 @include-section["control.scrbl"]
 @include-section["concurrency.scrbl"]
 @include-section["macros.scrbl"]

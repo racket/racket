@@ -303,6 +303,7 @@
       [(_ [spec ...] desc ...) #'(defform*/subs [spec ...] () desc ...)]))
   (define-syntax (defform stx)
     (syntax-case stx ()
+      [(_ #:literals (lit ...) spec desc ...) #'(defform*/subs #:literals (lit ...) [spec] () desc ...)]
       [(_ spec desc ...) #'(defform*/subs [spec] () desc ...)]))
   (define-syntax (defform/subs stx)
     (syntax-case stx ()
