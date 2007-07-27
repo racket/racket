@@ -837,7 +837,7 @@
                 (make-paragraph
                  (list (make-target-element
                         #f
-                        (list (to-element name))
+                        (list (to-element (make-just-context name stx-id)))
                         (register-scheme-definition stx-id))
                        spacer ":" spacer
                        (to-element result-contract))))))))

@@ -636,7 +636,7 @@ indefinitely.}
 @include-section["procedures.scrbl"]
 
 @; ----------------------------------------------------------------------
-@section[#:tag "void"]{Void and Undefined}
+@section[#:tag "mz:void"]{Void and Undefined}
 
 The constant @|void-const| is returned by most forms and procedures
 that have a side-effect and no useful result. The constant
