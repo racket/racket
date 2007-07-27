@@ -1,6 +1,5 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
-@require[(lib "contract.ss")]
 
 @title[#:tag "mzlib:contract" #:style 'toc]{Contracts}
 
@@ -14,6 +13,9 @@ associating a contract with a binding.
 @; ----------------------------------------
 
 @section{Flat Contracts}
+
+A @deftech{flat contract} can be fully checked immediately for
+a given value.
 
 @defproc[(flat-contract [predicate (any/c . -> . any/c)]) flat-contract?]{
 
@@ -334,6 +336,9 @@ error.}
 @; ------------------------------------------------------------------------
 
 @section{Function Contracts}
+
+A @deftech{function contract} wraps a procedure to delay
+checks for its arguments and results.
 
 @defform*[#:literals (any)
           [(-> expr ... res-expr)

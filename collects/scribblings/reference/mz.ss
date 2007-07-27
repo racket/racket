@@ -4,10 +4,12 @@
            (lib "eval.ss" "scribble")
            (lib "decode.ss" "scribble")
            (lib "kw.ss")
+           (lib "contract.ss")
            "../icons.ss")
 
   (provide (all-from (lib "manual.ss" "scribble"))
-           (all-from (lib "eval.ss" "scribble")))
+           (all-from (lib "eval.ss" "scribble"))
+           (all-from (lib "contract.ss")))
 
   (define AllUnix "Unix and Mac OS X")
   (provide AllUnix)

@@ -292,7 +292,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 @examples[(truncate 17/4) (truncate -17/4) (truncate 2.5) (truncate -2.5)]}
 
 
-@defproc[(numerator [x real?]) (or integer? (one-of/c +nan.0))]{
+@defproc[(numerator [x real?]) (or/c integer? (one-of/c +nan.0))]{
  Coreces @scheme[x] to an exact number, finds the numerator of the number
  expressed in its simplest fractional form, and returns this number
  coerced to the exactness of @scheme[x]. An exception is when @scheme[x] is
@@ -531,10 +531,10 @@ noted above). Two numbers are @scheme[equal?] when they are
 @; ------------------------------------------------------------------------
 @section{Random Numbers}
 
-@defproc*[([(random [k (and positive-exact-integer?
-                            (integer-in 1 (sub1 (expt 2 31))))])
+@defproc*[([(random [k (and/c positive-exact-integer?
+                              (integer-in 1 (sub1 (expt 2 31))))])
             nonnegative-exact-integer?]
-           [(random) (and real? inexact? (>/c 0) (</c 1))])]{  
+           [(random) (and/c real? inexact? (>/c 0) (</c 1))])]{  
 
 When called with one argument, returns a random exact integer in the
 range @scheme[0] to @math{@scheme[k]-1}. The number is provided by the
@@ -548,8 +548,8 @@ between @scheme[0] and @scheme[1], exclusive, using the current
 pseudo-random number generator.}
 
 
-@defproc[(random-seed [k (and nonnegative-exact-integer?
-                              (integer-in 1 (sub1 (expt 2 31))))])
+@defproc[(random-seed [k (and/c nonnegative-exact-integer?
+                                (integer-in 1 (sub1 (expt 2 31))))])
           void?]{
 
 Seeds the current pseudo-random number generator with
@@ -642,8 +642,8 @@ bits, and so on..}
                                  [size-n (one-of/c 2 4 8)]
                                  [signed? any/c]
                                  [big-endian? any/c (system-big-endian?)]
-                                 [dest-bstr (and bytes? 
-                                                 (not/c immutable?))
+                                 [dest-bstr (and/c bytes? 
+                                                   (not/c immutable?))
                                             (make-bytes size-n)])
           bytes?]{
 
@@ -667,7 +667,7 @@ of length @scheme[size-n], the @exnraise[exn:fail:contract].}
 
 @defproc[(floating-point-bytes->real [bstr bytes?]
                                      [big-endian? any/c (system-big-endian?)])
-         (and real? inexact?)]{
+         (and/c real? inexact?)]{
 
 Converts the IEEE floating-point number encoded in @scheme[bstr] to an
 inexact real number. The @scheme[bstr] must contain either 4 or 8
@@ -680,8 +680,8 @@ least-significant eight bits, and so on.}
 @defproc[(real->floating-point-bytes [x real?]
                                      [size-n (one-of/c 4 8)]
                                      [big-endian? any/c (system-big-endian?)]
-                                     [dest-bstr (and bytes? 
-                                                     (not/c immutable?))
+                                     [dest-bstr (and/c bytes? 
+                                                       (not/c immutable?))
                                                  (make-bytes size-n)])
           bytes?]{
 
