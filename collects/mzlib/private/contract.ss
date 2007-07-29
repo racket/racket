@@ -808,7 +808,6 @@ improve method arity mismatch contract violation error messages?
 	   not/c
            =/c >=/c <=/c </c >/c between/c
            integer-in
-           exact-integer-in
 	   real-in
            natural-number/c
 	   string/len
@@ -1305,8 +1304,8 @@ improve method arity mismatch contract violation error messages?
       [(_ 'sym x-exp)
        (identifier? #'sym)
        #'(let ([x x-exp])
-           (unless (number? x)
-             (error 'sym "expected a number, got ~e" x)))]))
+           (unless (real? x)
+             (error 'sym "expected a real number, got ~e" x)))]))
   
   (define (=/c x) 
     (check-unary-between/c '=/c x)
@@ -1480,22 +1479,12 @@ improve method arity mismatch contract violation error messages?
   
   (define (integer-in start end)
     (unless (and (integer? start)
-                 (integer? end))
-      (error 'integer-in "expected two integers as arguments, got ~e and ~e" start end))
-    (flat-named-contract 
-     `(integer-in ,start ,end)
-     (λ (x)
-       (and (integer? x)
-            (<= start x end)))))
-  
-  (define (exact-integer-in start end)
-    (unless (and (integer? start)
                  (exact? start)
                  (integer? end)
                  (exact? end))
       (error 'integer-in "expected two exact integers as arguments, got ~e and ~e" start end))
     (flat-named-contract 
-     `(exact-integer-in ,start ,end)
+     `(integer-in ,start ,end)
      (λ (x)
        (and (integer? x)
             (exact? x)
