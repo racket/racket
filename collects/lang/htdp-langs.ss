@@ -106,7 +106,7 @@
              #t
              'none
              #f 
-             '()))
+             (preferences:get 'drscheme:htdp:last-set-teachpacks)))
           
           (define/override (default-settings? s)
             (and (super default-settings? s)
@@ -566,20 +566,17 @@
                                                   (cadr teachpack)))
                              settings)
                            
-                           (make-htdp-lang-settings
-                            (drscheme:language:simple-settings-case-sensitive settings)
-                            (drscheme:language:simple-settings-printing-style settings)
-                            (drscheme:language:simple-settings-fraction-style settings)
-                            (drscheme:language:simple-settings-show-sharing settings)
-                            (drscheme:language:simple-settings-insert-newlines settings)
-                            (drscheme:language:simple-settings-annotations settings)
-                            (htdp-lang-settings-tracing? settings)
-                            (append old-tps (list teachpack)))
-                           
-                           #;
-                           (copy-struct htdp-lang-settings settings
-                                        [htdp-lang-settings-teachpacks 
-                                         (append old-tps (list teachpack))])))
+                           (let ([new-tps (append old-tps (list teachpack))])
+                             (preferences:set 'drscheme:htdp:last-set-teachpacks new-tps)
+                             (make-htdp-lang-settings
+                              (drscheme:language:simple-settings-case-sensitive settings)
+                              (drscheme:language:simple-settings-printing-style settings)
+                              (drscheme:language:simple-settings-fraction-style settings)
+                              (drscheme:language:simple-settings-show-sharing settings)
+                              (drscheme:language:simple-settings-insert-newlines settings)
+                              (drscheme:language:simple-settings-annotations settings)
+                              (htdp-lang-settings-tracing? settings)
+                              new-tps))))
                      settings)))
              (λ (settings name) 
                (make-htdp-lang-settings

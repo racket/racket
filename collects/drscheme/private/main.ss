@@ -57,6 +57,16 @@
                                      (finder:default-filters)))
       (application:current-app-name (string-constant drscheme))
 
+  (preferences:set-default 'drscheme:htdp:last-set-teachpacks
+                           '() 
+                           (λ (x)
+                             (and (list? x)
+                                  (andmap (λ (x)
+                                            (and (list? x)
+                                                 (pair? x)
+                                                 (eq? (car x) 'lib)
+                                                 (andmap string? (cdr x))))
+                                          x))))
   (preferences:set-default 'drscheme:defs/ints-horizontal #f boolean?)
   (preferences:set-default 'drscheme:unit-window-max? #f boolean?)
   (preferences:set-default 'drscheme:frame:initial-position #f 
