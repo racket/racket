@@ -22,7 +22,7 @@
   ;(make-sequence-fail float fail-src string symbol (list string) string 'a boolean string)
   (define-struct (sequence-fail fail-type) (id kind correct expected found repeat? last-seen))
   ;(make-choice-fail float fail-src string int (list string) (list fail-type) boolean)
-  (define-struct (choice-fail fail-type) (options names messages ended?) (make-inspector))
+  (define-struct (choice-fail fail-type) (options names ended? messages) (make-inspector))
   ;(make-options-fail float #f #f (list fail-type))
   (define-struct (options-fail fail-type) (opts))
   
@@ -53,8 +53,8 @@
          (make-choice-fail chance src name used may-use
                            (!!! (choice-fail-options fail))
                            (!!! (choice-fail-names fail))
-                           (map !!!-fail (!!! (choice-fail-messages fail)))
-                           (!!! (choice-fail-ended? fail)))]
+                           (!!! (choice-fail-ended? fail))
+                           (map !!!-fail (!!! (choice-fail-messages fail))))]
         [(options-fail? fail)
          (make-options-fail chance src name used may-use
                             (map !!!-fail (!!! (options-fail-opts fail))))]         

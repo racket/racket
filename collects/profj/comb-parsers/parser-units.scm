@@ -206,9 +206,11 @@
       (choice (list base-t voidT) "method return"))
     
     (define (array-type base-t)
-      (choice (base-t (sequence (base-t O_BRACKET C_BRACKET 
-                                        (repeat (sequence (O_BRACKET C_BRACKET) id))) id
-                                "array type")) "type"))
+      (choose (base-t 
+               (sequence (base-t O_BRACKET C_BRACKET 
+                                 (repeat-greedy 
+                                  (sequence (O_BRACKET C_BRACKET) id "array type")))
+                         id "type")) "type"))
     )
     
 
@@ -265,7 +267,7 @@
     (export general-productions^)
   
     (define (comma-sep term name)
-      (sequence (term (repeat (sequence (COMMA term) id))) id (string-append "a list of " name)))
+      (sequence (term (repeat-greedy (sequence (COMMA term) id))) id (string-append "a list of " name)))
     
     (define (variable-declaration type expr share-type? name)
       (let* ([f (choose (IDENTIFIER (sequence ((^ IDENTIFIER) EQUAL expr) id)) (string-append name " declaration"))]
@@ -682,7 +684,7 @@
                  (repeat-greedy (class-body (list field method constructor)))))
     
     (define program 
-      (make-program #f (repeat import-dec) (repeat-greedy (top-member (list class interface)))))
+      (make-program #f (repeat-greedy import-dec) (repeat-greedy (top-member (list class interface)))))
     )
 
   (define-unit intermediate-grammar@
@@ -740,7 +742,7 @@
       (method-signature tok:abstract (method-type (value+name-type prim-type)) args #f identifier))
     
     (define method
-      (choose ((make-method method-sig-no-abs statement)
+      (choose ((make-method method-sig-no-abs (repeat-greedy statement))
                (method-header method-sig-abs)) "method definition"))
     
     (define constructor
@@ -761,7 +763,7 @@
 
     
     (define program
-      (make-program #f (repeat import-dec) (repeat-greedy (top-member (list class interface)))))
+      (make-program #f (repeat-greedy import-dec) (repeat-greedy (top-member (list class interface)))))
     
     )
     
@@ -841,7 +843,7 @@
                  (repeat-greedy (class-body (list field method constructor)))))
     
     (define program
-      (make-program #f (repeat import-dec)
+      (make-program #f (repeat-greedy import-dec)
                (repeat-greedy (top-member (list class interface)))))
 
     )
@@ -891,7 +893,7 @@
                          (sequence (unique-base (repeat unique-end) field-access-end) id)
                          (sequence (unique-base (repeat unique-end) array-access-end) id))
                         "asignee")
-                assignment-ops expression)
+                assignment-ops)
                (sequence (expression ++) id "unary mutation")
                (sequence (expression --) id "unary mutation")
                (sequence (++ expression) id "unary mutation")
@@ -900,10 +902,10 @@
     (define statement
       (choose ((if-s #t (eta statement))
                (return-s #t)
-               (variable-declaration (value+name-type prim-type) expression #t "local variable")
+               (variable-declaration (array-type (value+name-type prim-type)) expression #t "local variable")
                (block #t)
                (sequence (stmt-expr SEMI_COLON) id)
-               (for-l (choose ((variable-declaration (value+name-type prim-type) expression #t "for loop variable")
+               (for-l (choose ((variable-declaration (array-type (value+name-type prim-type)) expression #t "for loop variable")
                                (comma-sep stmt-expr "initializations")) "for loop initialization") 
                       #t #t
                       (comma-sep stmt-expr "for loop increments") #t (block #t))
@@ -912,14 +914,14 @@
                (break-s #f)
                (cont-s #f)) "statement"))
     
-    (define field (make-field (global-mods access-mods) (value+name-type prim-type) expression #t))
+    (define field (make-field (global-mods access-mods) (array-type (value+name-type prim-type)) expression #t))
     
     (define method-sig-no-abs
       (method-signature (global-mods access-mods) 
-                        (method-type (value+name-type prim-type)) args #f IDENTIFIER))
+                        (method-type (array-type (value+name-type prim-type))) args #f IDENTIFIER))
     (define method-sig-abs
       (method-signature (method-mods (global-mods access-mods)) 
-                        (method-type (value+name-type prim-type)) args #f IDENTIFIER))
+                        (method-type (array-type (value+name-type prim-type))) args #f IDENTIFIER))
     
     (define method
       (choose ((make-method method-sig-no-abs statement)
@@ -947,7 +949,7 @@
     
     (define program
       (make-program (sequence (tok:package name SEMI_COLON) id "package specification")
-               (repeat import-dec)
+               (repeat-greedy import-dec)
                (repeat-greedy (top-member (list class interface)))))
     )
   

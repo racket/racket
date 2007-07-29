@@ -37,16 +37,16 @@
   
   ;;Environment variable properties
   ;;(make-properties bool bool bool bool bool bool)
-  (define-struct properties (parm? field? static? settable? final? usable?))
-  (define parm (make-properties #t #f #f #t #f #t))
-  (define final-parm (make-properties #t #f #f #f #t #t))
-  (define method-var (make-properties #f #f #f #t #f #t))
-  (define final-method-var (make-properties #f #f #f #f #t #t))
-  (define obj-field (make-properties #f #t #f #t #f #t))
-  (define (final-field settable) (make-properties #f #t #f settable #t #t))
-  (define class-field (make-properties #f #t #t #f #t #t))
-  (define (final-class-field settable) (make-properties #f #t #t settable #t #t))
-  (define inherited-conflict (make-properties #f #t #f #f #f #f))
+  (define-struct properties (parm? field? static? settable? final? usable? set?) (make-inspector))
+  (define parm (make-properties #t #f #f #t #f #t #t))
+  (define final-parm (make-properties #t #f #f #f #t #t #t))
+  (define method-var (make-properties #f #f #f #t #f #t #f))
+  (define final-method-var (make-properties #f #f #f #f #t #t #f))
+  (define (obj-field set?) (make-properties #f #t #f #t #f #t set?))
+  (define (final-field settable) (make-properties #f #t #f settable #t #t #f))
+  (define (class-field set?) (make-properties #f #t #t #f #t #t set?))
+  (define (final-class-field settable) (make-properties #f #t #t settable #t #t #f))
+  (define inherited-conflict (make-properties #f #t #f #f #f #f #f))
   
   ;; add-var-to-env: string type properties env -> env
   (define (add-var-to-env name type properties env)
@@ -64,6 +64,16 @@
                      (if (string=? name (var-type-var (car env)))
                          (car env)
                          (lookup (cdr env)))))))
+      (lookup (environment-types env))))
+  
+  (define (lookup-field-in-env name env)
+    (letrec ([lookup
+              (lambda (env)
+                (and (not (null? env))
+                     (if (and (string=? name (var-type-var (car env)))
+                              (properties-field? (var-type-properties (car env))))
+                         (car env)
+                         (lookup (cdr env)))))])
       (lookup (environment-types env))))
 
   ;lookup-specific-this: name env symbol type-records -> bool
@@ -429,7 +439,7 @@
   (define (tested-not-found test class src)
     (raise-error
      'tests
-     (format "test ~a does not test class ~a, as the class cannot be found."
+     (format "test ~a cannot test class ~a, as the class cannot be found."
              (id->ext-name test) (path->ext (name->path class)))
      'tests src))
   
@@ -492,10 +502,10 @@
                        (set! setting-fields (cons member setting-fields))))
                  (if static?
                      (loop (cdr rest) 
-                           (add-var-to-env name type class-field statics) 
-                           (add-var-to-env name type class-field fields))
+                           (add-var-to-env name type (class-field (var-init? member)) statics) 
+                           (add-var-to-env name type (class-field (var-init? member)) fields))
                      (loop (cdr rest) statics 
-                           (add-var-to-env name type obj-field fields)))))
+                           (add-var-to-env name type (obj-field #f #;(var-init? member)) fields)))))
               ((def? member)
                (check-inner-def member level type-recs c-class field-env)
                (loop (cdr rest) statics fields))
@@ -533,9 +543,9 @@
                          (field-record-type field)
                          (cond
                            ((and in-env? (not current?)) inherited-conflict)
-                           ((and (not static?) (not final?)) obj-field)
+                           ((and (not static?) (not final?)) (obj-field #f))
                            ((and (not static?) final?) (final-field current?))
-                           ((and static? (not final?)) class-field)
+                           ((and static? (not final?)) (class-field #f))
                            ((and static? final?) (final-class-field current?)))
                          (create-field-env (cdr fields) env class))))))
   
@@ -1726,6 +1736,23 @@
                            (special-name? obj)
                            (not (lookup-var-in-env fname env)))
                   (access-before-define (string->symbol fname) src))
+                                
+                (when (and (eq? 'beginner level)
+                           assign-left?
+                           (special-name? obj)
+                           (properties-set? (var-type-properties (lookup-field-in-env fname env))))
+                  (assign-twice (string->symbol fname) src))
+                
+                (when (and (eq? 'beginner level)
+                           assign-left?
+                           (special-name? obj))
+                  (set-properties-set?! (var-type-properties (lookup-field-in-env fname env)) #t))
+                
+                (when (and (eq? 'beginner level)
+                           (special-name? obj)
+                           (not (properties-set? (var-type-properties (lookup-field-in-env fname env)))))
+                  (access-before-assign (string->symbol fname) src))
+                           
                 
                 (when (and (field-access-access acc)
                            (var-access-static? (field-access-access acc)))
@@ -3005,6 +3032,17 @@
   (define (access-before-define name src)
     (raise-error name
                  (format "Field ~a cannot be accessed before its declaration." name)
+                 name src))
+  
+  ;assign-twice: symbol src -> void
+  (define (assign-twice name src)
+    (raise-error name
+                 (format "Field ~a has been initialized and cannot be initialized again." name)
+                 name src))
+  
+  (define (access-before-assign name src)
+    (raise-error name
+                 (format "Field ~a cannot be accessed before it is initialized." name)
                  name src))
   
   ;not-static-field-access-error symbol symbol src -> void

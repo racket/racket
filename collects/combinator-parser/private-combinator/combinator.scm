@@ -51,7 +51,7 @@
                                            (position-token-end-pos token)))
                     build)])
           
-          (opt-lambda (input [last-src (list 0 0 0 0)] [alts 1])
+          (opt-lambda (input [last-src (list 1 0 1 0)] [alts 1])
             #;(!!! (printf "terminal ~a~n" name))
             #;(!!! (printf "input ~a~n" (cons? input)))
             #;(!!! (if (eq? input return-name)
@@ -118,7 +118,7 @@
                     [else (!!! (printf "~a~n" r)) (error 'stop1)]))]
                [my-error (sequence-error-gen name sequence-length)]
                [my-walker (seq-walker id-position name my-error)])
-          (opt-lambda (input [last-src (list 0 0 0 0)] [alts 1])
+          (opt-lambda (input [last-src (list 1 0 1 0)] [alts 1])
             #;(!!! (printf "seq ~a~n" name))
             (cond
               [(eq? input return-name) name]
@@ -234,7 +234,7 @@
                                                            (res-msg (repeat-res-a res)) #f 
                                                            (res-first-tok (repeat-res-a res))
                                                            new-alts)]
-                                               [else (!!! (printf "~a~n" res))(error 'stop) ])) lst)]
+                                               [else (!!! (printf "~a~n" res))(error 'stop) ])) (correct-list lst))]
                                      [(correct-rsts) (correct-list rsts)])
                                   #;(printf "rsts =~a~n" rsts)
                                   #;(printf "correct-rsts ~a~n" (map res-a correct-rsts))
@@ -395,7 +395,7 @@
                     [(pair? rest-ans)
                      (map (lambda (r) (process-rest curr-ans r)) rest-ans)]
                     [else (error 'here4)]))])
-        (opt-lambda (input [last-src (list 0 0 0 0)] [alts 1])
+        (opt-lambda (input [last-src (list 1 0 1 0)] [alts 1])
           (cond
             [(eq? input return-name) repeat-name]
             [(hash-table-get memo-table input #f) (hash-table-get memo-table input)]
@@ -494,7 +494,9 @@
                (fourth src))))
     
     (define (update-src-end src new-end)
-      (list (first src) (second src) (third src)
+      (list (max (first src) 1)
+            (second src) 
+            (max (third src) 1)
             (- (position-offset new-end) (third src))))
     
     (define (repeat op)
