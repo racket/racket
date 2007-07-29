@@ -1,7 +1,7 @@
 ;; Load this one with MrEd
 
 (load-relative "loadtest.ss")
-(require (lib "image.ss" "htdp")
+(require (lib "image.ss" "teachpack" "htdp")
          (lib "error.ss" "htdp")
          (lib "posn.ss" "lang")
          (lib "list.ss")
@@ -1181,5 +1181,11 @@
 (err/rt-name-test (overlay/xy (rectangle 100 200 'outline 'red) 10 10 #f) "fourth")
 (err/rt-name-test (overlay/xy (rectangle 100 200 'outline 'red) 10 +inf.0 #f) "third")
 (err/rt-name-test (overlay/xy (rectangle 100 200 'outline 'red) -inf.0 +inf.0 #f) "second")
+
+(parameterize ((current-namespace (make-namespace)))
+  (err/rt-test (eval '(module m (lib "htdp-beginner.ss" "lang") (require (lib "image.ss" "teachpack" "htdp")) overlay))
+               (lambda (exn)
+                 (regexp-match #rx"must be applied to arguments" 
+                               (exn-message exn)))))
 
 (report-errs)
