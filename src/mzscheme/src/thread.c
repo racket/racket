@@ -893,7 +893,7 @@ static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[])
   retval = GC_get_memory_use();
 #endif
   
-  return scheme_make_integer(retval);
+  return scheme_make_integer_value(retval);
 }
 
 
