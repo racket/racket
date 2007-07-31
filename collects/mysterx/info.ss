@@ -10,5 +10,4 @@
      "ActiveX controls and other COM components under Windows. "
      "MysterX also has a programmable Web browser with support for "
      "Dynamic HTML."))
-  (define compile-omit-files '("mxdemo.ss"))
   (define post-install-collection "installer.ss"))
