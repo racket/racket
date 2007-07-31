@@ -462,9 +462,9 @@ module browser threading seems wrong.
                 (let ([modified? (is-modified?)])
                   (delete 0 (string-length save-file-metadata))
                   (set! save-file-metadata #f)
-                  (end-edit-sequence)
                   ;; restore modification status to where it was before the metadata is removed
-                  (set-modified modified?)))
+                  (set-modified modified?)
+                  (end-edit-sequence)))
               (inner (void) after-save-file success?))
             
             (define/augment (on-load-file filename format)
