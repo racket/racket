@@ -14,8 +14,8 @@ This directory contains
     with Microsoft Visual Studio 8.0 (not Express, which doesn't
     support ATL and MFC).
 
-Visual Studio Express is available for free from Microsoft, and it is
-the recommended compiler for building MzScheme and MrEd.
+Visual Studio Express is available for free from Microsoft; it can be
+used to build MzScheme and MrEd, but not MzCOM and MysterX.
 
 MzScheme and MrEd also compile with Cygwin gcc (a free compiler from
 GNU and Cygnus Solutions), but the result is a Unix-style
@@ -40,6 +40,12 @@ As always, please report bugs via one of the following:
 ----------------------------------------------------------------------
 Building MzScheme and MrEd
 ----------------------------------------------------------------------
+
+If you're using MSVC 8.0 (not Express), and if `devenv.exe' is in your
+path, then you can just run 
+       plt\src\worksp\build.bat
+from its won directory to perform all steps up to "Versioning",
+including the MzCOM and MysterX steps.
 
 The CGC variants of MzScheme, MzCOM, MrEd, and MysterX can be built
 via Visual Studio projects. The 3m variants are built by a Scheme

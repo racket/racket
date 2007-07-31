@@ -25,7 +25,7 @@
 				[else dep])])
 		      (> t (file-or-directory-modify-seconds dep))))
 		  (append (if precomp?
-			      null
+			      (list "../../mzscheme/src/schvers.h")
 			      (if use-precomp (list use-precomp) null))
 			  (list src)
 			  (let ([deps (path-replace-suffix dest #".sdep")])
