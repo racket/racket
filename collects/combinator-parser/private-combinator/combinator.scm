@@ -190,6 +190,7 @@
                                  (next-res old-answer new-id old-used tok rsts)]
                                 [else (printf "~a~n" rsts) (error 'here2)])))])
                     (cond
+                      [(null? subs) (error 'end-of-subs)]
                       [(null? next-preds)
                        (build-error (curr-pred input last-src) 
                                     (previous? input) (previous? return-name) #f
@@ -334,6 +335,7 @@
                                       [else (res-msg old-res)])]
                                    [(next-ok?)
                                     (and (= (fail-type-may-use fail) 1)
+                                         (not (null? (res-rest old-res)))
                                          next-pred
                                          (next-pred (cdr (res-rest old-res))))]
                                    [(next-used)
@@ -503,7 +505,7 @@
                      (cond
                        [(null? corrects) (fail-res input (fail-builder fails))]
                        [else (make-choice-res name corrects (fail-builder errors))])])
-                 #;(!!! (printf "choice ~a is returning ~a options were ~a ~n" name ans choice-names))
+                 #;(!!! (printf "choice ~a is returning options were ~a ~n" name choice-names))
                  (hash-table-put! memo-table input ans) ans)])))))
     
     ;correct-list: (list result) -> (list result)

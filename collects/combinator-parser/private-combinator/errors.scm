@@ -211,19 +211,23 @@
         winners))
     
     (define (first-n n lst)
-      (let loop ([count 0] [l lst])
-        (cond
-          [(>= count n) null]
-          [else (cons (car l) (loop (add1 count) (cdr l)))])))
+      (if (<= (length lst) n)
+          lst
+          (let loop ([count 0] [l lst])
+            (cond
+              [(>= count n) null]
+              [else (cons (car l) (loop (add1 count) (cdr l)))]))))
     
     (define (get-ties lst evaluate)
-      (letrec ([getter
-                (lambda (sub)
-                  (cond
-                    [(null? sub) null]
-                    [(>= (- (evaluate (car lst)) (evaluate (car sub))) .0001) null]
-                    [else (cons (car sub) (getter (cdr sub)))]))])
-        (cons (car lst) (getter (cdr lst)))))
+      (if (> (length lst) 1)
+          (letrec ([getter
+                    (lambda (sub)
+                      (cond
+                        [(null? sub) null]
+                        [(>= (- (evaluate (car lst)) (evaluate (car sub))) .0001) null]
+                        [else (cons (car sub) (getter (cdr sub)))]))])
+            (cons (car lst) (getter (cdr lst))))
+          lst))
     
     (define (a/an next-string)
       (if (string? next-string)
@@ -244,6 +248,7 @@
       (letrec ([formatter 
                 (lambda (l)
                   (cond
+                    [(null? l) ""]
                     [(null? (cdr l)) (string-append "or " (car l))]
                     [else (string-append (car l) ", " (formatter (cdr l)))]))])
         (cond
