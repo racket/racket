@@ -911,7 +911,10 @@
                [make-read-only
                 (λ (text event)
                   (send text lock #t)
-                  #t)])
+                  #t)]
+               
+               [greek-letters "αβγδεζηθι κλμνξοπρςστυφχψω"]
+               [Greek-letters "ΑΒΓΔΕΖΗΘΙ ΚΛΜΝΞΟΠΡ ΣΤΥΦΧΨΩ"]) ;; don't have a capital ς, just comes out as \u03A2 (or junk) 
                
 	  (λ (kmap)
 	    (let* ([map (λ (key func) 
@@ -924,7 +927,14 @@
 			    (send kmap add-function name func))])
               
               ; Map names to keyboard functions
-
+              
+              (for-each
+               (λ (c) 
+                 (unless (equal? c #\space)
+                   (add (format "insert ~a" c) 
+                        (λ (txt evt) (send txt insert c)))))
+               (string->list (string-append greek-letters Greek-letters)))
+              
 	      (add "down-into-embedded-editor" down-into-embedded-editor)
               (add "up-out-of-embedded-editor" up-out-of-embedded-editor)
               (add "forward-to-next-embedded-editor" forward-to-next-embedded-editor)
@@ -993,6 +1003,23 @@
               
               ; Map keys to functions
               
+              (let ([setup-mappings
+                     (λ (greek-chars start-char)
+                       (let loop ([i 0])
+                         (when (< i (string-length greek-chars))
+                           (let ([greek-char (string-ref greek-chars i)])
+                             (unless (equal? greek-char #\space)
+                               (let ([roman-char
+                                      (integer->char
+                                       (+ (char->integer start-char) i))])
+                                 (map (format "a:g;~a" roman-char)
+                                      (format "insert ~a" greek-char))
+                                 (map (format "c:x;c:g;~a" roman-char)
+                                      (format "insert ~a" greek-char)))))
+                           (loop (+ i 1)))))])
+                (setup-mappings greek-letters #\a)
+                (setup-mappings Greek-letters #\A))
+              
               (map-meta "c:down" "down-into-embedded-editor")
               (map "a:c:down" "down-into-embedded-editor")
               (map-meta "c:up" "up-out-of-embedded-editor")
@@ -1002,9 +1029,6 @@
               (map-meta "c:left" "back-to-prev-embedded-editor")
               (map "a:c:left" "back-to-prev-embedded-editor")
               
-	      (map "c:g" "ring-bell")
-	      (map-meta "c:g" "ring-bell")
-	      (map "c:x;c:g" "ring-bell")
 	      (map "c:c;c:g" "ring-bell")
 
 	      (map-meta "(" "insert-()-pair")
