@@ -425,7 +425,8 @@
 		   classify-position)
           
           (inherit get-styles-fixed)
-          (inherit has-focus? find-snip split-snip)
+          (inherit has-focus? find-snip split-snip
+                   position-location get-dc)
           
           (public tabify-on-return? tabify
                   tabify-all insert-return calc-last-para 
@@ -475,18 +476,30 @@
                                      (position-paragraph last))])
                 (letrec	
                     ([find-offset
-                      (λ (pos)
-                        (let loop ([p pos][o 0])
-                          (let ([c (get-character p)])
-                            (cond
-                              [(char=? c #\tab)
-                               (loop (add1 p) (+ o (- 8 (modulo o 8))))]
-                              [(char=? c #\newline)
-                               (cons o p)]
-                              [(char-whitespace? c)
-                               (loop (add1 p) (add1 o))]
-                              [else
-                               (cons o p)]))))]
+                      (λ (start-pos)
+                        (let ([end-pos
+                               (let loop ([p start-pos])
+                                 (let ([c (get-character p)])
+                                   (cond
+                                     [(char=? c #\tab)
+                                      (loop (add1 p))]
+                                     [(char=? c #\newline)
+                                      p]
+                                     [(char-whitespace? c)
+                                      (loop (add1 p))]
+                                     [else
+                                      p])))]
+                              [start-x (box 0)]
+                              [end-x (box 0)])
+                          (position-location start-pos start-x #f #t #t)
+                          (position-location end-pos end-x #f #t #t)
+                          (let-values ([(w _1 _2 _3) (send (get-dc) get-text-extent "x" 
+                                                           (send (send (get-style-list)
+                                                                       find-named-style "Standard")
+                                                                 get-font))])
+                            (cons (inexact->exact (floor (/ (- (unbox end-x) (unbox start-x)) w)))
+                                  end-pos))))]
+                     
                      [visual-offset
                       (λ (pos)
                         (let loop ([p (sub1 pos)])
