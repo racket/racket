@@ -760,7 +760,7 @@ void wxKeymap::RemoveGrabKeyFunction(void)
 
 Bool wxKeymap::HandleKeyEvent(UNKNOWN_OBJ media, wxKeyEvent *event)
 {
-  int score;
+  int score, result;
 
   if (event->keyCode == WXK_SHIFT
       || event->keyCode == WXK_CONTROL
@@ -770,7 +770,12 @@ Bool wxKeymap::HandleKeyEvent(UNKNOWN_OBJ media, wxKeyEvent *event)
 
   score = GetBestScore(event);
 
-  return ChainHandleKeyEvent(media, event, NULL, NULL, 0, score) ? TRUE : FALSE;
+  result = ChainHandleKeyEvent(media, event, NULL, NULL, 0, score);
+
+  if (result >= 0)
+    Reset();
+
+  return result ? TRUE : FALSE;
 }
 
 int wxKeymap::GetBestScore(wxKeyEvent *event)
@@ -812,7 +817,7 @@ int wxKeymap::ChainHandleKeyEvent(UNKNOWN_OBJ media, wxKeyEvent *event,
 				  int try_state, int score)
 {
   char *fname;
-  int result;
+  int result, found_prefix = 0;
 
   lastTime = event->timeStamp;
   lastButton = 0;
@@ -831,8 +836,11 @@ int wxKeymap::ChainHandleKeyEvent(UNKNOWN_OBJ media, wxKeyEvent *event,
 
     if (try_state > 0)
       return r;
-    else
+    else {
+      if (r < 0)
+        found_prefix = -1;
       try_state = -1;
+    }
   } else if (prefix && (try_state < 0))
     return OtherHandleKeyEvent(media, event, grab, grabData, -1, score);
 
@@ -872,6 +880,9 @@ int wxKeymap::ChainHandleKeyEvent(UNKNOWN_OBJ media, wxKeyEvent *event,
   if (!result && grabKeyFunction)
     if (grabKeyFunction(NULL, this, media, event, grabKeyData))
       return 1;
+
+  if (!result && found_prefix)
+    return found_prefix;
 
   return result;
 }
