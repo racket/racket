@@ -123,7 +123,7 @@ Returns a flat contract that requires the input to be a real number
 between @scheme[n] and @scheme[m], inclusive.}
 
 
-@defproc[(integer-in [j exact-integer?][k exact-integer?]) flat-contract?]
+@defproc[(integer-in [j exact-integer?][k exact-integer?]) flat-contract?]{
 
 Returns a flat contract that requires the input to be an exact integer
 between @scheme[j] and @scheme[k], inclusive.}

@@ -898,6 +898,72 @@ expression).
 @moreref["mz:contmarks"]{continuation marks}}
 
 @;------------------------------------------------------------------------
+@section[#:tag "mz:quasiquote"]{Quasiquoting: @scheme[quasiquote], @scheme[unquote], and @scheme[unquote-splicing]}
+
+@defform[(quasiquote datum)]{
+
+The same as @scheme[(quote datum)] if @scheme[datum] does not include
+@scheme[(unquote _expr)] or @scheme[(unquote-splicing _expr)]. An
+@scheme[(unquote _expr)] expression escapes from the quote, however,
+and the result of the @scheme[_expr] takes the place of the
+@scheme[(unquote _expr)] form in the @scheme[quasiquote] result. An
+@scheme[(unquote-splicing _expr)] similarly escapes, but the
+@scheme[_expr] must produce a list, and its elements are spliced as
+multiple values place of the @scheme[(unquote-splicing _expr)], which
+must appear as the @scheme[car] or a quoted pair.
+
+@examples[
+(eval:alts (#,(scheme quasiquote) (0 1 2)) `(0 1 2))
+(eval:alts (#,(scheme quasiquote) (0 (#,(scheme unquote) (+ 1 2)) 4)) `(1 ,(+ 1 2) 4))
+(eval:alts (#,(scheme quasiquote) (0 (#,(scheme unquote-splicing) (list 1 2)) 4)) `(1 ,@(list 1 2) 4))
+]
+
+A @scheme[quasiquote], @scheme[unquote], or @scheme[unquote-splicing]
+form is typically abbreviated with @litchar{`}, @litchar{,}, or
+@litchar[",@"], respectively. See also @secref["mz:parse-quote"].
+
+@examples[
+`(0 1 2)
+`(1 ,(+ 1 2) 4)
+`(1 ,@(list 1 2) 4)
+]
+
+A @scheme[quasiquote] form within the original @scheme[datum]
+increments the level of quasiquotation: within the @scheme[quasiquote]
+form, each @scheme[unquote] or @scheme[unquote-splicing] is preserved,
+but a further nested @scheme[unquote] or @scheme[unquote-splicing]
+escapes.  Multiple nestings of @scheme[quasiquote] require multiple
+nestings of @scheme[unquote] or @scheme[unquote-splicing] to escape.
+
+@examples[
+`(1 `,(+ 1 ,(+ 2 3)) 4)
+`(1 ```,,@,,@(list (+ 1 2)) 4)
+]
+
+The @scheme[quasiquote] form allocates only as many fresh cons cells,
+vectors, and boxes as are needed without analyzing @scheme[unquote]
+and @scheme[unquote-splicing] expressions. For example, in
+
+@schemeblock[
+`(,1 2 3)
+]
+
+a single tail @scheme['(2 3)] is used for every evaluation of the
+@scheme[quasiquote] expression.
+
+}
+
+@defidform[unquote]{
+
+See @scheme[quasiquote], where @scheme[unquote] is recognized as an
+escape. An @scheme[unquote] form as an expression is a syntax error.}
+
+@defidform[unquote-splicing]{
+
+See @scheme[quasiquote], where @scheme[unquote-splicing] is recognized as an
+escape. An @scheme[unquote-splicing] form as an expression is a syntax error.}
+
+@;------------------------------------------------------------------------
 @section{Syntax Quoting: @scheme[quote-syntax]}
 
 @defform[(quote-syntax datum)]{
