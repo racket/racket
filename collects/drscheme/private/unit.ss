@@ -437,8 +437,12 @@ module browser threading seems wrong.
             
             (define save-file-metadata #f)
             
-            (define/pubment (begin-metadata-changes) (inner (void) begin-metadata-changes))
-            (define/pubment (end-metadata-changes) (inner (void) end-metadata-changes))
+            (define/pubment (begin-metadata-changes) 
+              (set! ignore-edits? #t)
+              (inner (void) begin-metadata-changes))
+            (define/pubment (end-metadata-changes)
+              (set! ignore-edits? #f)
+              (inner (void) end-metadata-changes))
                               
             (define/augment (on-save-file filename fmt)
               (inner (void) on-save-file filename fmt)
@@ -605,11 +609,15 @@ module browser threading seems wrong.
               already-warned-state)
             (define/pubment (already-warned)
               (set! already-warned-state #t))
+            
+            (define ignore-edits? #f)
             (define/augment (after-insert x y)
-              (set! needs-execution-state (string-constant needs-execute-defns-edited))
+              (unless ignore-edits? 
+                (set! needs-execution-state (string-constant needs-execute-defns-edited)))
               (inner (void) after-insert x y))
             (define/augment (after-delete x y)
-              (set! needs-execution-state (string-constant needs-execute-defns-edited))
+              (unless ignore-edits?
+                (set! needs-execution-state (string-constant needs-execute-defns-edited)))
               (inner (void) after-delete x y))
             
             (inherit get-filename)
