@@ -833,7 +833,8 @@ profile todo:
           
           (define/private (can-clear-coverage?)
             (let ([tab (get-tab)])
-              (or (not (send tab get-test-coverage-info-visible?))
+              (or (not tab)
+                  (not (send tab get-test-coverage-info-visible?))
                   (not (send tab ask-about-clearing-test-coverage?))
                   (clear-test-coverage?))))
             

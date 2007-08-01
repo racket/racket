@@ -88,9 +88,12 @@ module browser threading seems wrong.
 
       (define definitions-text<%> 
         (interface ()
+          begin-metadata-changes
+          end-metadata-changes
           get-tab
 	  get-next-settings
-	  after-set-next-settings))
+	  after-set-next-settings
+          set-needs-execution-message))
       
     (define-struct teachpack-callbacks 
       (get-names   ;; settings -> (listof string)
@@ -433,6 +436,10 @@ module browser threading seems wrong.
                      get-character)
             
             (define save-file-metadata #f)
+            
+            (define/pubment (begin-metadata-changes) (inner (void) begin-metadata-changes))
+            (define/pubment (end-metadata-changes) (inner (void) end-metadata-changes))
+                              
             (define/augment (on-save-file filename fmt)
               (inner (void) on-save-file filename fmt)
               (let* ([lang (drscheme:language-configuration:language-settings-language next-settings)]
@@ -441,6 +448,7 @@ module browser threading seems wrong.
                 (when name-mod ;; the reader-module method's result is used a test of whether or not the get-metadata method is used for this language
                   (let ([metadata (send lang get-metadata (filename->modname filename) settings)])
                     (begin-edit-sequence)
+                    (begin-metadata-changes)
                     (set! save-file-metadata metadata)
                     (insert metadata 0 0)))))
             (define/private (filename->modname filename)
@@ -464,6 +472,7 @@ module browser threading seems wrong.
                   (set! save-file-metadata #f)
                   ;; restore modification status to where it was before the metadata is removed
                   (set-modified modified?)
+                  (end-metadata-changes)
                   (end-edit-sequence)))
               (inner (void) after-save-file success?))
             
