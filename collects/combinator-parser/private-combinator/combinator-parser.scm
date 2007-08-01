@@ -49,7 +49,7 @@
                        [(not (null? possible-errors))
                         ;(printf "choice or pair fail~n")
                         (!!! (fail-type->message
-                              (res-possible-error (!!! (car (sort-used possible-errors))))))]                
+                              (res-possible-error (!!! (car (sort-used possible-errors))))))]
                        [else
                         (let ([used-sort (sort-used options)])
                           #;(!!! (printf "~a~n" used-sort))

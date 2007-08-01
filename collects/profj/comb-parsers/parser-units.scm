@@ -411,8 +411,8 @@
     
     (define checks
       (choose
-       ((sequence (check (eta expression) expect (eta expression)) id)
-        (sequence (check (eta expression) expect (eta expression) within (eta expression)) id))
+       ((sequence (check (eta expression) expect (eta expression) within (eta expression)) id)
+        (sequence (check (eta expression) expect (eta expression)) id))
        "check expression"))
     
     )
@@ -652,13 +652,13 @@
         (sequence (O_PAREN (eta expression) C_PAREN) id)
         (sequence (! (eta expression)) id "conditional expression")
         (sequence (MINUS (eta expression)) id "negation expression")
-        checks) "expression"))
+        checks) "expression -unique base"))
     
     (define unique-end
       (choose (field-access-end
                method-call-end
                (binary-expression-end (bin-ops (list math-ops compare-ops bool-ops))))
-              "expression"))
+              "expression -unique end"))
     
     (define expression
       (sequence (unique-base (repeat-greedy unique-end)) id "expression"))

@@ -42,6 +42,7 @@
                                     (input->output-name (terminal-fail-found fail-type)) a name class-type a name)]))
             message-to-date)]
           [(sequence-fail? fail-type)
+           #;(printf "sequence-fail case: kind is ~a~n" (sequence-fail-kind fail-type))
            (let* ([id-name 
                    (if (sequence-fail-id fail-type)
                        (string-append name " " (sequence-fail-id fail-type)) name)]
@@ -91,14 +92,19 @@
                [(options)
                 (let ([sorted-opts (sort (options-fail-opts (sequence-fail-found fail-type))
                                          (lambda (a b) (>= (fail-type-chance a) (fail-type-chance b))))])
-                  (fail-type->message (car sorted-opts)
-                                      (add-to-message
-                                       (msg (format "There is an error in this ~a after ~a, it is likely you intended a(n) ~a here.~n"
-                                                    id-name (car (reverse show-sequence)) (fail-type-name (car sorted-opts))))
-                                       name (sequence-fail-id fail-type) message-to-date)))]))]
+                  (if (null? show-sequence)
+                      (fail-type->message (car sorted-opts)
+                                          (add-to-message (msg (format "This ~a did not start as expected." id-name))
+                                                          name (sequence-fail-id fail-type) message-to-date))
+                      
+                      (fail-type->message (car sorted-opts)
+                                          (add-to-message
+                                           (msg (format "There is an error in this ~a after ~a, it is likely you intended a(n) ~a here.~n"
+                                                        id-name (car (reverse show-sequence)) (fail-type-name (car sorted-opts))))
+                                           name (sequence-fail-id fail-type) message-to-date))))]))]
           [(options-fail? fail-type)
            #;(printf "selecting for options on ~a~n" name)
-              (let* ([winners (select-errors (options-fail-opts fail-type))]
+           (let* ([winners (select-errors (options-fail-opts fail-type))]
                      [top-names (map fail-type-name winners)]
                      [non-dup-tops (remove-dups top-names name)]
                      [top-name (car top-names)])

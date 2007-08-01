@@ -138,7 +138,8 @@
                                        [last-line-indent (sub1 (- last-line-start previous-line))]
                                        [old-open (get-sexp-start last-line-start)])
                                   (cond
-                                    [(<= curr-open old-open) last-line-indent]
+                                    [(not old-open) last-line-indent]
+                                    [(and old-open (<= curr-open old-open)) last-line-indent]
                                     [else (+ single-tab-stop last-line-indent)]))]))]))])
               (build-string (max indent 0) (λ (x) #\space)))
             #;(let ([to-insert 0])
