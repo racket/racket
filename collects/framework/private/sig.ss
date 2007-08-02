@@ -1,20 +1,20 @@
 (module sig mzscheme
   (require (lib "unit.ss"))
-
+  
   (provide (prefix-all-defined-except framework: framework^)
            framework^)
-       
+  
   (define-signature number-snip-class^ 
     (snip-class%))
   (define-signature number-snip^ extends number-snip-class^
     (make-repeating-decimal-snip
      make-fraction-snip))
-
+  
   (define-signature comment-box-class^
     (snipclass snip%))
   (define-signature comment-box^ extends comment-box-class^
     ())
-
+  
   (define-signature menu-class^
     (can-restore<%>
      can-restore-mixin
@@ -25,73 +25,73 @@
      can-restore-underscore-menu%))
   (define-signature menu^ extends menu-class^
     ())
-
+  
   (define-signature version-class^
     ())
   (define-signature version^ extends version-class^
     (add-spec
      version))
-
+  
   (define-signature panel-class^
     (single-mixin
      single<%>
-
+     
      single-window<%>
      single-window-mixin
-
+     
      ;;multi-view-mixin
      ;;multi-view<%>
-
+     
      
      single%
      single-pane%
      ;;multi-view%
-
+     
      dragable<%>
      dragable-mixin
-
+     
      vertical-dragable<%>
      vertical-dragable-mixin
      vertical-dragable%
-
+     
      horizontal-dragable<%>
      horizontal-dragable-mixin
      horizontal-dragable%))
   (define-signature panel^ extends panel-class^
     ())
-
+  
   (define-signature application-class^
     ())
   (define-signature application^ extends application-class^
     (current-app-name))
-
+  
   (define-signature preferences-class^
     ())
   (define-signature preferences^ extends preferences-class^
     (put-preferences/gui
      add-panel
      add-font-panel
-
+     
      add-editor-checkbox-panel
      add-warnings-checkbox-panel
      add-scheme-checkbox-panel
-
+     
      add-to-editor-checkbox-panel
      add-to-warnings-checkbox-panel
      add-to-scheme-checkbox-panel
      
      add-on-close-dialog-callback
      add-can-close-dialog-callback
-
+     
      show-dialog
      hide-dialog))
-
+  
   (define-signature autosave-class^
     (autosavable<%>))
   (define-signature autosave^ extends autosave-class^
     (register
      restore-autosave-files/gui))
-
+  
   (define-signature exit-class^
     ())
   (define-signature exit^ extends exit-class^
@@ -103,13 +103,13 @@
      can-exit?
      on-exit
      exit))
-
+  
   (define-signature path-utils-class^
     ())
   (define-signature path-utils^ extends path-utils-class^
     (generate-autosave-name 
      generate-backup-name))
-
+  
   (define-signature finder-class^
     ())
   (define-signature finder^ extends finder-class^
@@ -123,7 +123,7 @@
      common-get-file-list
      get-file
      put-file))
-
+  
   (define-signature editor-class^
     (basic<%>
      standard-style-list<%>
@@ -145,7 +145,7 @@
      set-standard-style-list-delta
      set-default-font-color
      get-default-color-style-name))
-
+  
   (define-signature pasteboard-class^
     (basic%
      standard-style-list%
@@ -155,7 +155,7 @@
      info%))
   (define-signature pasteboard^ extends pasteboard-class^
     ())
-
+  
   (define-signature text-class^
     (basic<%>
      foreground-color<%>
@@ -204,7 +204,7 @@
      input-box-mixin))
   (define-signature text^ extends text-class^
     ())
-
+  
   (define-signature canvas-class^
     (basic<%>
      color<%>
@@ -217,7 +217,7 @@
      info%
      delegate%
      wide-snip%
-
+     
      basic-mixin
      color-mixin
      delegate-mixin
@@ -225,7 +225,7 @@
      wide-snip-mixin))
   (define-signature canvas^ extends canvas-class^
     ())
-
+  
   (define-signature frame-class^
     (basic<%>
      size-pref<%>
@@ -277,12 +277,12 @@
      remove-empty-menus
      add-snip-menu-items
      setup-size-pref))
-
+  
   (define-signature group-class^
     (%))
   (define-signature group^ extends group-class^
     (get-the-frame-group))
-
+  
   (define-signature handler-class^
     ())
   (define-signature handler^ extends handler-class^
@@ -301,7 +301,7 @@
      set-recent-position
      set-recent-items-frame-superclass
      size-recently-opened-files))
-
+  
   (define-signature icon-class^
     ())
   (define-signature icon^ extends icon-class^
@@ -312,13 +312,13 @@
      get-lock-bitmap
      get-unlock-bitmap
      get-anchor-bitmap
-
+     
      get-left/right-cursor
      get-up/down-cursor
      
      get-gc-on-bitmap
      get-gc-off-bitmap))
-
+  
   (define-signature keymap-class^
     (aug-keymap%
      aug-keymap<%>
@@ -326,22 +326,22 @@
   (define-signature keymap^ extends keymap-class^
     (send-map-function-meta
      make-meta-prefix-list
-
+     
      canonicalize-keybinding-string
-
+     
      add-to-right-button-menu
      add-to-right-button-menu/before
-
+     
      setup-global
      setup-search
      setup-file
      setup-editor
-
+     
      get-global
      get-search
      get-file
      get-editor
-
+     
      set-chained-keymaps
      remove-chained-keymap
      
@@ -349,12 +349,12 @@
      
      add-user-keybindings-file
      remove-user-keybindings-file))
-
+  
   (define-signature color-class^
     (text<%>
      text-mixin
      text%
-
+     
      text-mode<%>
      text-mode-mixin
      text-mode%))
@@ -382,7 +382,7 @@
      text-mode%
      
      set-mode-mixin
-
+     
      sexp-snip%
      sexp-snip<%>))
   (define-signature scheme^ extends scheme-class^
@@ -399,17 +399,17 @@
      short-sym->style-name
      
      text-balanced?))
-
+  
   (define-signature main-class^ ())
   (define-signature main^ extends main-class^ ())
-
+  
   (define-signature mode-class^ 
     (host-text-mixin
      host-text<%>
      surrogate-text%
      surrogate-text<%>))
   (define-signature mode^ extends mode-class^ ())
-
+  
   (define-signature color-model-class^
     ())
   (define-signature color-model^ extends color-model-class^

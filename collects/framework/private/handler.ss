@@ -3,11 +3,11 @@
   (require (lib "class.ss")
            (lib "list.ss")
            (lib "hierlist.ss" "hierlist")
-	   "sig.ss"
-	   "../preferences.ss"
+           "sig.ss"
+           "../preferences.ss"
            "../gui-utils.ss"
-	   (lib "mred-sig.ss" "mred")
-	   (lib "file.ss")
+           (lib "mred-sig.ss" "mred")
+           (lib "file.ss")
            (lib "string-constant.ss" "string-constants"))
   
   

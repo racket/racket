@@ -8,10 +8,10 @@
            "module-language.ss"
            "tools.ss"
            (lib "unit.ss")
-	   "language.ss"
+           "language.ss"
            "language-configuration.ss"
            "drsig.ss"
-	   "init.ss"
+           "init.ss"
            "text.ss"
            "app.ss"
            "main.ss"
@@ -23,7 +23,7 @@
   (provide drscheme@)
   
   
-(define-compound-unit/infer drscheme-unit@
+  (define-compound-unit/infer drscheme-unit@
     (import)
     (export drscheme:debug^
             drscheme:unit^
@@ -52,4 +52,4 @@
       (prefix drscheme:eval: drscheme:eval^)
       (prefix drscheme:modes: drscheme:modes^))
      drscheme-unit@)))
-      
+

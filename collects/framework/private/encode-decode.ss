@@ -95,7 +95,7 @@
              [(char<=? #\a char #\f) 
               (+ 10 (- (char->integer char)
                        (char->integer #\a)))]))
-
+         
          (define decoded
            (decode-sexp 
             (apply 

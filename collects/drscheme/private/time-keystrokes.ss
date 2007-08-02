@@ -1,5 +1,5 @@
 (module time-keystrokes mzscheme
-
+  
   (require (lib "tool.ss" "drscheme")
            (lib "list.ss")
            (lib "unit.ss")
@@ -9,7 +9,7 @@
            (lib "framework.ss" "framework"))
   
   (provide tool@)
-
+  
   (define short-str "(abc)")
   (define chars-to-test (build-string
                          400
@@ -19,7 +19,7 @@
     (unit 
       (import drscheme:tool^)
       (export drscheme:tool-exports^)
-            
+      
       (define (phase1) (void))
       (define (phase2) (void))
       

@@ -1,8 +1,8 @@
 (module main (lib "a-unit.ss")
   (require (lib "class.ss")
-	   "sig.ss"
+           "sig.ss"
            "../preferences.ss"
-   	   (lib "mred-sig.ss" "mred"))
+           (lib "mred-sig.ss" "mred"))
   
   (import mred^
           [prefix preferences: framework:preferences^]
@@ -276,7 +276,7 @@
   (color-prefs:set-default/color-scheme 'framework:delegatee-overview-color
                                         "light blue"
                                         (make-object color% 62 67 155))
-                                        
+  
   
   ;; groups
   

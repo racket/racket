@@ -1,22 +1,22 @@
 
 (module tool-contracts "tool-contract-language.ss"
-
-;                           
-;                           
-;                           
-;                        ;  
-;                        ;  
-;                        ;  
-;    ;;;  ;     ; ;;;    ;  
-;   ;   ;  ;   ; ;   ;   ;  
-;  ;    ;  ;   ;     ;   ;  
-;  ;;;;;;   ; ;   ;;;;   ;  
-;  ;        ; ;  ;   ;   ;  
-;   ;        ;   ;   ;   ;  
-;    ;;;;    ;    ;;;;;  ;  
-;                           
-;                           
-;                           
+  
+  ;                           
+  ;                           
+  ;                           
+  ;                        ;  
+  ;                        ;  
+  ;                        ;  
+  ;    ;;;  ;     ; ;;;    ;  
+  ;   ;   ;  ;   ; ;   ;   ;  
+  ;  ;    ;  ;   ;     ;   ;  
+  ;  ;;;;;;   ; ;   ;;;;   ;  
+  ;  ;        ; ;  ;   ;   ;  
+  ;   ;        ;   ;   ;   ;  
+  ;    ;;;;    ;    ;;;;;  ;  
+  ;                           
+  ;                           
+  ;                           
   
   
   (drscheme:eval:set-basic-parameters
@@ -238,23 +238,23 @@
    "\\rawscm{drscheme:eval:build-user-eventspace/custodian} was called from.)")
   
   
-
-;                                         
-;                                         
-;                                         
-;       ;          ;                      
-;       ;          ;                      
-;       ;          ;                      
-;    ;; ;    ;;;   ; ;;    ;   ;    ;; ;  
-;   ;  ;;   ;   ;  ;;  ;   ;   ;   ;  ;;  
-;  ;    ;  ;    ;  ;    ;  ;   ;  ;    ;  
-;  ;    ;  ;;;;;;  ;    ;  ;   ;  ;    ;  
-;  ;    ;  ;       ;    ;  ;   ;  ;    ;  
-;   ;  ;;   ;      ;;  ;   ;  ;;   ;  ;;  
-;    ;; ;    ;;;;  ; ;;     ;; ;    ;; ;  
-;                                      ;  
-;                                 ;    ;  
-;                                  ;;;;   
+  
+  ;                                         
+  ;                                         
+  ;                                         
+  ;       ;          ;                      
+  ;       ;          ;                      
+  ;       ;          ;                      
+  ;    ;; ;    ;;;   ; ;;    ;   ;    ;; ;  
+  ;   ;  ;;   ;   ;  ;;  ;   ;   ;   ;  ;;  
+  ;  ;    ;  ;    ;  ;    ;  ;   ;  ;    ;  
+  ;  ;    ;  ;;;;;;  ;    ;  ;   ;  ;    ;  
+  ;  ;    ;  ;       ;    ;  ;   ;  ;    ;  
+  ;   ;  ;;   ;      ;;  ;   ;  ;;   ;  ;;  
+  ;    ;; ;    ;;;;  ; ;;     ;; ;    ;; ;  
+  ;                                      ;  
+  ;                                 ;    ;  
+  ;                                  ;;;;   
   
   (drscheme:debug:show-error-and-highlight
    (string? 
@@ -376,23 +376,23 @@
    "the input to"
    "@flink drscheme:debug:open-and-highlight-in-file %"
    ".")
-
-;                           
-;                           
-;                           
-;                   ;       
-;                           
-;                       ;   
-;   ;   ;   ; ;;    ;  ;;;; 
-;   ;   ;   ;;  ;   ;   ;   
-;   ;   ;   ;   ;   ;   ;   
-;   ;   ;   ;   ;   ;   ;   
-;   ;   ;   ;   ;   ;   ;   
-;   ;  ;;   ;   ;   ;   ;   
-;    ;; ;   ;   ;   ;    ;; 
-;                           
-;                           
-;                           
+  
+  ;                           
+  ;                           
+  ;                           
+  ;                   ;       
+  ;                           
+  ;                       ;   
+  ;   ;   ;   ; ;;    ;  ;;;; 
+  ;   ;   ;   ;;  ;   ;   ;   
+  ;   ;   ;   ;   ;   ;   ;   
+  ;   ;   ;   ;   ;   ;   ;   
+  ;   ;   ;   ;   ;   ;   ;   
+  ;   ;  ;;   ;   ;   ;   ;   
+  ;    ;; ;   ;   ;   ;    ;; 
+  ;                           
+  ;                           
+  ;                           
   
   
   (drscheme:unit:get-program-editor-mixin
@@ -424,7 +424,7 @@
    
    "Opens a drscheme frame that displays \\var{filename},"
    "or nothing if \\var{filename} is \\scmc{\\#f} or not supplied.")
-
+  
   
   
   ;                                            
@@ -543,23 +543,23 @@
    "@flink drscheme:modes:add-mode %"
    ".")
   
-
-;                      
-;                      
-;                      
-;                      
-;                      
-;                      
-;   ; ;   ;;;   ; ;;   
-;   ;;   ;   ;  ;;  ;  
-;   ;   ;    ;  ;    ; 
-;   ;   ;;;;;;  ;    ; 
-;   ;   ;       ;    ; 
-;   ;    ;      ;;  ;  
-;   ;     ;;;;  ; ;;   
-;               ;      
-;               ;      
-;               ;      
+  
+  ;                      
+  ;                      
+  ;                      
+  ;                      
+  ;                      
+  ;                      
+  ;   ; ;   ;;;   ; ;;   
+  ;   ;;   ;   ;  ;;  ;  
+  ;   ;   ;    ;  ;    ; 
+  ;   ;   ;;;;;;  ;    ; 
+  ;   ;   ;       ;    ; 
+  ;   ;    ;      ;;  ;  
+  ;   ;     ;;;;  ; ;;   
+  ;               ;      
+  ;               ;      
+  ;               ;      
   
   
   (drscheme:rep:get-welcome-delta 
@@ -573,7 +573,7 @@
    ()
    "Returns a style delta that matches the style and color of the "
    "name of a language in the interactions window.")
-
+  
   (drscheme:rep:get-drs-bindings-keymap
    (-> (is-a?/c keymap%))
    ()
@@ -605,23 +605,23 @@
    ""
    "It is only initialized on the user's thread")
   
-
-;                                                                        
-;                                                                        
-;                                                                        
-;                          ;                                          ;  
-;                          ;                                          ;  
-;                  ;      ;                   ;                       ;  
-;    ;; ;    ;;;  ;;;;    ;     ;;;  ;     ; ;;;;   ;;;   ; ;;     ;; ;  
-;   ;  ;;   ;   ;  ;      ;    ;   ;  ;   ;   ;    ;   ;  ;;  ;   ;  ;;  
-;  ;    ;  ;    ;  ;      ;   ;    ;   ; ;    ;   ;    ;  ;   ;  ;    ;  
-;  ;    ;  ;;;;;;  ;     ;    ;;;;;;    ;     ;   ;;;;;;  ;   ;  ;    ;  
-;  ;    ;  ;       ;     ;    ;        ; ;    ;   ;       ;   ;  ;    ;  
-;   ;  ;;   ;      ;     ;     ;      ;   ;   ;    ;      ;   ;   ;  ;;  
-;    ;; ;    ;;;;   ;;  ;       ;;;; ;     ;   ;;   ;;;;  ;   ;    ;; ;  
-;       ;               ;                                                
-;  ;    ;               ;                                                
-;   ;;;;                                                                 
+  
+  ;                                                                        
+  ;                                                                        
+  ;                                                                        
+  ;                          ;                                          ;  
+  ;                          ;                                          ;  
+  ;                  ;      ;                   ;                       ;  
+  ;    ;; ;    ;;;  ;;;;    ;     ;;;  ;     ; ;;;;   ;;;   ; ;;     ;; ;  
+  ;   ;  ;;   ;   ;  ;      ;    ;   ;  ;   ;   ;    ;   ;  ;;  ;   ;  ;;  
+  ;  ;    ;  ;    ;  ;      ;   ;    ;   ; ;    ;   ;    ;  ;   ;  ;    ;  
+  ;  ;    ;  ;;;;;;  ;     ;    ;;;;;;    ;     ;   ;;;;;;  ;   ;  ;    ;  
+  ;  ;    ;  ;       ;     ;    ;        ; ;    ;   ;       ;   ;  ;    ;  
+  ;   ;  ;;   ;      ;     ;     ;      ;   ;   ;    ;      ;   ;   ;  ;;  
+  ;    ;; ;    ;;;;   ;;  ;       ;;;; ;     ;   ;;   ;;;;  ;   ;    ;; ;  
+  ;       ;               ;                                                
+  ;  ;    ;               ;                                                
+  ;   ;;;;                                                                 
   
   
   (drscheme:get/extend:extend-tab
@@ -738,39 +738,39 @@
    "raises an error, disallowing any more extensions.")
   
   
-;                                                           
-;                                                           
-;                                                           
-;   ;                                                       
-;   ;                                                       
-;   ;                                                       
-;   ;   ;;;    ; ;;     ;; ;   ;   ;   ;;;     ;; ;    ;;;  
-;   ;  ;   ;   ;;  ;   ;  ;;   ;   ;  ;   ;   ;  ;;   ;   ; 
-;   ;      ;   ;   ;  ;    ;   ;   ;      ;  ;    ;  ;    ; 
-;   ;   ;;;;   ;   ;  ;    ;   ;   ;   ;;;;  ;    ;  ;;;;;; 
-;   ;  ;   ;   ;   ;  ;    ;   ;   ;  ;   ;  ;    ;  ;      
-;   ;  ;   ;   ;   ;   ;  ;;   ;  ;;  ;   ;   ;  ;;   ;     
-;   ;   ;;;;;  ;   ;    ;; ;    ;; ;   ;;;;;   ;; ;    ;;;; 
-;                          ;                      ;         
-;                     ;    ;                 ;    ;         
-;                      ;;;;                   ;;;;          
-;                                                                                       
-;                                                                                       
-;                                                                                       
-;                           ;;; ;                                    ;                  
-;                          ;                                                            
-;                          ;                                    ;                       
-;    ;;;    ;;;    ; ;;   ;;;;  ;    ;; ;   ;   ;   ; ;  ;;;   ;;;;  ;    ;;;    ; ;;   
-;   ;   ;  ;   ;   ;;  ;   ;    ;   ;  ;;   ;   ;   ;;  ;   ;   ;    ;   ;   ;   ;;  ;  
-;  ;      ;     ;  ;   ;   ;    ;  ;    ;   ;   ;   ;       ;   ;    ;  ;     ;  ;   ;  
-;  ;      ;     ;  ;   ;   ;    ;  ;    ;   ;   ;   ;    ;;;;   ;    ;  ;     ;  ;   ;  
-;  ;      ;     ;  ;   ;   ;    ;  ;    ;   ;   ;   ;   ;   ;   ;    ;  ;     ;  ;   ;  
-;   ;   ;  ;   ;   ;   ;   ;    ;   ;  ;;   ;  ;;   ;   ;   ;   ;    ;   ;   ;   ;   ;  
-;    ;;;    ;;;    ;   ;   ;    ;    ;; ;    ;; ;   ;    ;;;;;   ;;  ;    ;;;    ;   ;  
-;                                       ;                                               
-;                                  ;    ;                                               
-;                                   ;;;;                                                
-
+  ;                                                           
+  ;                                                           
+  ;                                                           
+  ;   ;                                                       
+  ;   ;                                                       
+  ;   ;                                                       
+  ;   ;   ;;;    ; ;;     ;; ;   ;   ;   ;;;     ;; ;    ;;;  
+  ;   ;  ;   ;   ;;  ;   ;  ;;   ;   ;  ;   ;   ;  ;;   ;   ; 
+  ;   ;      ;   ;   ;  ;    ;   ;   ;      ;  ;    ;  ;    ; 
+  ;   ;   ;;;;   ;   ;  ;    ;   ;   ;   ;;;;  ;    ;  ;;;;;; 
+  ;   ;  ;   ;   ;   ;  ;    ;   ;   ;  ;   ;  ;    ;  ;      
+  ;   ;  ;   ;   ;   ;   ;  ;;   ;  ;;  ;   ;   ;  ;;   ;     
+  ;   ;   ;;;;;  ;   ;    ;; ;    ;; ;   ;;;;;   ;; ;    ;;;; 
+  ;                          ;                      ;         
+  ;                     ;    ;                 ;    ;         
+  ;                      ;;;;                   ;;;;          
+  ;                                                                                       
+  ;                                                                                       
+  ;                                                                                       
+  ;                           ;;; ;                                    ;                  
+  ;                          ;                                                            
+  ;                          ;                                    ;                       
+  ;    ;;;    ;;;    ; ;;   ;;;;  ;    ;; ;   ;   ;   ; ;  ;;;   ;;;;  ;    ;;;    ; ;;   
+  ;   ;   ;  ;   ;   ;;  ;   ;    ;   ;  ;;   ;   ;   ;;  ;   ;   ;    ;   ;   ;   ;;  ;  
+  ;  ;      ;     ;  ;   ;   ;    ;  ;    ;   ;   ;   ;       ;   ;    ;  ;     ;  ;   ;  
+  ;  ;      ;     ;  ;   ;   ;    ;  ;    ;   ;   ;   ;    ;;;;   ;    ;  ;     ;  ;   ;  
+  ;  ;      ;     ;  ;   ;   ;    ;  ;    ;   ;   ;   ;   ;   ;   ;    ;  ;     ;  ;   ;  
+  ;   ;   ;  ;   ;   ;   ;   ;    ;   ;  ;;   ;  ;;   ;   ;   ;   ;    ;   ;   ;   ;   ;  
+  ;    ;;;    ;;;    ;   ;   ;    ;    ;; ;    ;; ;   ;    ;;;;;   ;;  ;    ;;;    ;   ;  
+  ;                                       ;                                               
+  ;                                  ;    ;                                               
+  ;                                   ;;;;                                                
+  
   (drscheme:language-configuration:get-languages
    (-> (listof (is-a?/c drscheme:language:language<%>)))
    ()
@@ -968,24 +968,24 @@
         (λ (s) (drscheme:language:get-capability-contract s)))
    (s)
    "Returns the default for a particular capability.")
-     
-
-;                                                           
-;                                                           
-;                                                           
-;   ;                                                       
-;   ;                                                       
-;   ;                                                       
-;   ;   ;;;    ; ;;     ;; ;   ;   ;   ;;;     ;; ;    ;;;  
-;   ;  ;   ;   ;;  ;   ;  ;;   ;   ;  ;   ;   ;  ;;   ;   ; 
-;   ;      ;   ;   ;  ;    ;   ;   ;      ;  ;    ;  ;    ; 
-;   ;   ;;;;   ;   ;  ;    ;   ;   ;   ;;;;  ;    ;  ;;;;;; 
-;   ;  ;   ;   ;   ;  ;    ;   ;   ;  ;   ;  ;    ;  ;      
-;   ;  ;   ;   ;   ;   ;  ;;   ;  ;;  ;   ;   ;  ;;   ;     
-;   ;   ;;;;;  ;   ;    ;; ;    ;; ;   ;;;;;   ;; ;    ;;;; 
-;                          ;                      ;         
-;                     ;    ;                 ;    ;         
-;                      ;;;;                   ;;;;          
+  
+  
+  ;                                                           
+  ;                                                           
+  ;                                                           
+  ;   ;                                                       
+  ;   ;                                                       
+  ;   ;                                                       
+  ;   ;   ;;;    ; ;;     ;; ;   ;   ;   ;;;     ;; ;    ;;;  
+  ;   ;  ;   ;   ;;  ;   ;  ;;   ;   ;  ;   ;   ;  ;;   ;   ; 
+  ;   ;      ;   ;   ;  ;    ;   ;   ;      ;  ;    ;  ;    ; 
+  ;   ;   ;;;;   ;   ;  ;    ;   ;   ;   ;;;;  ;    ;  ;;;;;; 
+  ;   ;  ;   ;   ;   ;  ;    ;   ;   ;  ;   ;  ;    ;  ;      
+  ;   ;  ;   ;   ;   ;   ;  ;;   ;  ;;  ;   ;   ;  ;;   ;     
+  ;   ;   ;;;;;  ;   ;    ;; ;    ;; ;   ;;;;;   ;; ;    ;;;; 
+  ;                          ;                      ;         
+  ;                     ;    ;                 ;    ;         
+  ;                      ;;;;                   ;;;;          
   
   
   (drscheme:language:add-snip-value
@@ -1079,9 +1079,9 @@
     (or/c (λ (x) (eq? x #t)) (symbols 'mzscheme 'mred))
     . -> .
     (or/c false/c
-           (list/c (symbols 'no-show 'launcher 'stand-alone 'distribution)
-                   (symbols 'no-show 'mred 'mzscheme)
-                   string?)))
+          (list/c (symbols 'no-show 'launcher 'stand-alone 'distribution)
+                  (symbols 'no-show 'mred 'mzscheme)
+                  string?)))
    (parent program-name show-type show-base)
    "Opens a dialog to prompt the user about their choice of executable."
    "If \\var{show-type} is \\scmc{\\#t}, the user is prompted about"
@@ -1105,8 +1105,8 @@
   (drscheme:language:create-module-based-stand-alone-executable 
    ((or/c path? string?)
     (or/c path? string?) any/c any/c any/c boolean? boolean?
-            . -> .
-            void?)
+    . -> .
+    void?)
    (program-filename
     executable-filename
     module-language-spec
@@ -1143,8 +1143,8 @@
   (drscheme:language:create-module-based-distribution
    ((or/c path? string?)
     (or/c path? string?) any/c any/c any/c boolean? boolean?
-            . -> .
-            void?)
+    . -> .
+    void?)
    (program-filename
     distribution-filename
     module-language-spec
@@ -1175,11 +1175,11 @@
    "must generate) depends on the type of executable. During the distribution-making "
    "process, a progress dialog is shown to the user, and the user can click an "
    "\\OnScreen{Abort} button that sends a break to the current thread.")
-
+  
   (drscheme:language:create-module-based-launcher
    ((or/c path? string?) (or/c path? string?) any/c any/c any/c boolean? boolean?
-            . -> .
-            void?)
+                         . -> .
+                         void?)
    (program-filename
     executable-filename
     module-language-spec
@@ -1220,8 +1220,8 @@
   
   (drscheme:language:make-text/pos
    ((is-a?/c text%) number? number?
-    . -> .
-    drscheme:language:text/pos?)
+                    . -> .
+                    drscheme:language:text/pos?)
    (text start end)
    
    "Constructs a text/pos.")
@@ -1358,7 +1358,7 @@
    "they default to \\scmc{\\#t} \\Symbol{keyword+index} and \\Symbol{exact},"
    "and \\Symbol{all} respectively.")
   
-
+  
   
   
   ;                                                     
@@ -1408,8 +1408,8 @@
      (get-one-line-summary (-> string?))
      (get-comment-character (-> (values string? char?)))
      (get-style-delta (-> (or/c false/c
-                                 (is-a?/c style-delta%)
-                                 (listof (list/c (is-a?/c style-delta%) number? number?)))))
+                                (is-a?/c style-delta%)
+                                (listof (list/c (is-a?/c style-delta%) number? number?)))))
      (marshall-settings (any/c . -> . printable/c))
      (on-execute (any/c ((-> any) . -> . any) . -> . any))
      (render-value (any/c 

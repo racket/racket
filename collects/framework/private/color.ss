@@ -8,7 +8,7 @@
            (lib "default-lexer.ss" "syntax-color")
            "../preferences.ss"
            "sig.ss")
-
+  
   (import [prefix icon: framework:icon^]
           [prefix mode: framework:mode^]
           [prefix text: framework:text^]

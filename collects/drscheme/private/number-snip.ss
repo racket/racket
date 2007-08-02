@@ -1,6 +1,6 @@
 (module number-snip mzscheme
   (require (lib "mred.ss" "mred")
-	   (lib "class.ss")
+           (lib "class.ss")
            (lib "framework.ss" "framework"))
   
   (provide snip-class)

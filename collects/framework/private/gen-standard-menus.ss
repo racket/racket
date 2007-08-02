@@ -56,18 +56,18 @@
                (and (,create-menu-item-name)
                     ,(if (a-submenu-item? item)
                          `(instantiate (get-menu%) ()
-                           (label (,(an-item->string-name item)))
-                           (parent ,(menu-item-menu-name item))
-                           (help-string (,(an-item->help-string-name item)))
-                           (demand-callback (λ (menu-item) (,(an-item->on-demand-name item) menu-item))))
+                            (label (,(an-item->string-name item)))
+                            (parent ,(menu-item-menu-name item))
+                            (help-string (,(an-item->help-string-name item)))
+                            (demand-callback (λ (menu-item) (,(an-item->on-demand-name item) menu-item))))
                          `(instantiate (get-menu-item%) ()
-                           (label (,(an-item->string-name item)))
-                           (parent ,(menu-item-menu-name item))
-                           (callback (let ([,callback-name (λ (item evt) (,callback-name item evt))])
-                                       ,callback-name))
-                           (shortcut ,key)
-                           (help-string (,(an-item->help-string-name item)))
-                           (demand-callback (λ (menu-item) (,(an-item->on-demand-name item) menu-item))))))))))
+                            (label (,(an-item->string-name item)))
+                            (parent ,(menu-item-menu-name item))
+                            (callback (let ([,callback-name (λ (item evt) (,callback-name item evt))])
+                                        ,callback-name))
+                            (shortcut ,key)
+                            (help-string (,(an-item->help-string-name item)))
+                            (demand-callback (λ (menu-item) (,(an-item->on-demand-name item) menu-item))))))))))
   
   ;; build-after-super-clause : ((X -> symbol) -> X -> (listof clause))
   (define build-after-super-clause
@@ -95,7 +95,7 @@
        (list)]
       [(generic-method? x)
        null]))
-
+  
   ;; build-before-super-generic-clause : generic -> (listof clause)
   (define (build-before-super-generic-clause generic)
     (cond
@@ -145,42 +145,42 @@
       
       (pretty-print
        `(define standard-menus-mixin
-	  (mixin (basic<%>) (standard-menus<%>)
-	    (inherit on-menu-char on-traverse-char)
-	    
-	    (define remove-prefs-callback
-	      (preferences:add-callback
-	       'framework:menu-bindings
-	       (λ (p v)
-		 (let loop ([menu (get-menu-bar)])
-		   (when (is-a? menu menu:can-restore<%>)
-		     (if v
-			 (send menu restore-keybinding)
-			 (send menu set-shortcut #f)))
-		   (when (is-a? menu menu:can-restore-underscore<%>)
-		     (if v
-			 (send menu restore-underscores)
-			 (send menu erase-underscores)))
-		   (when (is-a? menu menu-item-container<%>)
-		     (for-each loop (send menu get-items)))))))
-	    
-	    (inherit get-menu-bar show can-close? get-edit-target-object)
-	    ,@(apply append (map (λ (x)
-				   (cond
-				     [(between? x) (build-before-super-between-clause x)]
-				     [(or (after? x) (before? x)) (build-before-super-before/after-clause x)]
-				     [(an-item? x) (build-before-super-item-clause x)]
-				     [(generic? x) (build-before-super-generic-clause x)]))
-				 items))
-	    (super-instantiate ())
-	    ,@(apply append (map (λ (x)
-				   (cond
-				     [(between? x) (build-after-super-between-clause x)]
-				     [(an-item? x) (build-after-super-item-clause x)]
-				     [(or (after? x) (before? x)) (build-after-super-before/after-clause x)]
-				     [(generic? x) (build-after-super-generic-clause x)]))
-				 items))
-	    (reorder-menus this)))
+          (mixin (basic<%>) (standard-menus<%>)
+            (inherit on-menu-char on-traverse-char)
+            
+            (define remove-prefs-callback
+              (preferences:add-callback
+               'framework:menu-bindings
+               (λ (p v)
+                 (let loop ([menu (get-menu-bar)])
+                   (when (is-a? menu menu:can-restore<%>)
+                     (if v
+                         (send menu restore-keybinding)
+                         (send menu set-shortcut #f)))
+                   (when (is-a? menu menu:can-restore-underscore<%>)
+                     (if v
+                         (send menu restore-underscores)
+                         (send menu erase-underscores)))
+                   (when (is-a? menu menu-item-container<%>)
+                     (for-each loop (send menu get-items)))))))
+            
+            (inherit get-menu-bar show can-close? get-edit-target-object)
+            ,@(apply append (map (λ (x)
+                                   (cond
+                                     [(between? x) (build-before-super-between-clause x)]
+                                     [(or (after? x) (before? x)) (build-before-super-before/after-clause x)]
+                                     [(an-item? x) (build-before-super-item-clause x)]
+                                     [(generic? x) (build-before-super-generic-clause x)]))
+                                 items))
+            (super-instantiate ())
+            ,@(apply append (map (λ (x)
+                                   (cond
+                                     [(between? x) (build-after-super-between-clause x)]
+                                     [(an-item? x) (build-after-super-item-clause x)]
+                                     [(or (after? x) (before? x)) (build-after-super-before/after-clause x)]
+                                     [(generic? x) (build-after-super-generic-clause x)]))
+                                 items))
+            (reorder-menus this)))
        port))
     'text
     'truncate))

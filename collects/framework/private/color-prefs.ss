@@ -85,9 +85,9 @@
       
       (define smoothing-options
         '(default
-          partly-smoothed
-          smoothed
-          unsmoothed))
+           partly-smoothed
+           smoothed
+           unsmoothed))
       (define smoothing-option-strings
         '("Default"
           "Partly smoothed"
@@ -119,7 +119,7 @@
                    (send delta set-smoothing-on 
                          (list-ref smoothing-options
                                    (send c get-selection))))))]))
-
+      
       (define color-button
         (and (>= (get-display-depth) 8)
              (new button%

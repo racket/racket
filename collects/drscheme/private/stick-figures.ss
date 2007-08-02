@@ -100,7 +100,7 @@
       
       (define-values (w h running-dx running-dy waiting-dx waiting-dy)
         (get-size-parameters))
-
+      
       (define/override (on-paint) 
         (if is-running?
             (draw-callback (get-dc) small-factor #f 
@@ -187,7 +187,7 @@
             (λ (x y) (send c set-running #f))])
       (send f show #t)))
   
-
+  
   (define (normalize points)
     (let-values ([(min-x min-y) (get-max/min-x/y min points)])
       (map (λ (x) (list (car x) 
@@ -340,7 +340,7 @@
             (set! show-dots? (not show-dots?))
             (send cbig refresh))])
     (send f show #t))
-
+  
   #;
   (let ()
     (define f (new frame% [label ""]))

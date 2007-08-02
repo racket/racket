@@ -4,7 +4,7 @@
   
   (require (lib "contract.ss"))
   (require-for-syntax (lib "list.ss"))
-
+  
   (define-syntax (-#%module-begin stx)
     
     (define-struct ctc-binding (var arg))
@@ -21,7 +21,7 @@
               (andmap (λ (x) (string? (syntax-object->datum x))) (syntax->list (syntax (strs ...)))))
          (make-ctc-binding (syntax name) (syntax type))]
         [else (raise-syntax-error 'tool-contract-language.ss "unknown case" stx case-stx)]))
-              
+    
     
     (syntax-case stx ()
       [(_ cases ...)
@@ -87,33 +87,33 @@
                     (apply append (map syntax->list (syntax->list (syntax ((strs ...) ...)))))))
        (with-syntax ([wrap-tool-inputs (datum->syntax-object stx 'wrap-tool-inputs #'here)])
          (syntax/loc stx
-          (#%module-begin
-           (provide wrap-tool-inputs)
-           (define-syntax wrap-tool-inputs
-             (λ (in-stx)
-               (syntax-case in-stx ()
-                 [(_ body tool-name)
-                  (with-syntax ([(in-type (... ...))
-                                 (map (λ (in-type-obj) 
-                                        (datum->syntax-object 
-                                         in-stx
-                                         (syntax-object->datum in-type-obj)
-                                         in-type-obj))
-                                      (syntax->list (syntax (type ...))))]
-                                [(in-name (... ...))
-                                 (map (λ (in-name-obj) 
-                                        (datum->syntax-object 
-                                         in-stx 
-                                         (syntax-object->datum in-name-obj)
-                                         in-name-obj))
-                                      (syntax->list (syntax (name ...))))])
-                    (syntax/loc in-stx
-                     (let ([in-name (contract (let ([in-name in-type]) in-name)
-                                              in-name
-                                              'drscheme
-                                              tool-name
-                                              (quote-syntax in-name))] (... ...))
-                       body)))]))))))]
+           (#%module-begin
+            (provide wrap-tool-inputs)
+            (define-syntax wrap-tool-inputs
+              (λ (in-stx)
+                (syntax-case in-stx ()
+                  [(_ body tool-name)
+                   (with-syntax ([(in-type (... ...))
+                                  (map (λ (in-type-obj) 
+                                         (datum->syntax-object 
+                                          in-stx
+                                          (syntax-object->datum in-type-obj)
+                                          in-type-obj))
+                                       (syntax->list (syntax (type ...))))]
+                                 [(in-name (... ...))
+                                  (map (λ (in-name-obj) 
+                                         (datum->syntax-object 
+                                          in-stx 
+                                          (syntax-object->datum in-name-obj)
+                                          in-name-obj))
+                                       (syntax->list (syntax (name ...))))])
+                     (syntax/loc in-stx
+                       (let ([in-name (contract (let ([in-name in-type]) in-name)
+                                                in-name
+                                                'drscheme
+                                                tool-name
+                                                (quote-syntax in-name))] (... ...))
+                         body)))]))))))]
       [(_ (name type type-names strs ...) ...)
        (begin
          (for-each

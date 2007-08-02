@@ -14,18 +14,18 @@
   (define to-be-copied-module-specs (read-from-string (vector-ref argv 5)))
   
   (define to-be-copied-module-names
-        (let ([get-name
-               (λ (spec)
-                 (if (symbol? spec)
-                     spec
-                     ((current-module-name-resolver) spec #f #f)))])
-          (map get-name to-be-copied-module-specs)))
+    (let ([get-name
+           (λ (spec)
+             (if (symbol? spec)
+                 spec
+                 ((current-module-name-resolver) spec #f #f)))])
+      (map get-name to-be-copied-module-specs)))
   
   (define init-code-tmp-filename (make-temporary-file "drs-launcher-init~a"))
   (define-values (_1 init-code-mod-name _2) (split-path init-code-tmp-filename))
-
+  
   (set-car! (cdr init-code) (string->symbol (path->string init-code-mod-name)))
-
+  
   (call-with-output-file init-code-tmp-filename
     (λ (port)
       (write init-code port))
@@ -42,10 +42,10 @@
   ((if use-require/copy? namespace-require/copy namespace-require)
    language-module-spec)
   (namespace-transformer-require transformer-module-spec)
-
+  
   (init-code-proc)
-
+  
   ;; safe to do this earlier?
   (delete-file init-code-tmp-filename)
-
+  
   (load program-filename))

@@ -27,7 +27,7 @@
            drscheme:modes^
            drscheme:tool-exports^
            drscheme:tool^)
-
+  
   (define-signature drscheme:modes^
     (add-mode
      get-modes
@@ -50,7 +50,7 @@
      profile-tab-mixin
      profile-unit-frame-mixin
      profiling-enabled
-
+     
      test-coverage-enabled
      test-coverage-interactions-text-mixin
      test-coverage-definitions-text-mixin
@@ -102,7 +102,7 @@
     (add-info-specified-languages
      get-default-language-settings
      settings-preferences-symbol
-
+     
      add-built-in-languages))
   
   (define-signature drscheme:tools^
@@ -110,7 +110,7 @@
      get-successful-tools
      only-in-phase
      load/invoke-all-tools))
-
+  
   (define-signature drscheme:get/extend^
     (extend-tab
      extend-interactions-text
@@ -124,7 +124,7 @@
      get-interactions-canvas
      get-definitions-canvas
      get-unit-frame))
-    
+  
   (define-signature drscheme:unit^
     (tab%
      tab<%>
@@ -151,7 +151,7 @@
   
   (define-signature drscheme:program^
     (frame%))
-
+  
   (define-signature drscheme:eval^
     (expand-program
      expand-program/multiple
@@ -208,14 +208,14 @@
      create-module-based-launcher
      create-module-based-stand-alone-executable
      create-module-based-distribution
-
+     
      create-distribution-for-executable
-
+     
      create-executable-gui
      put-executable
      
      ;(struct loc (source position line column span) -setters)
-
+     
      (struct text/pos (text start end) -setters)
      (struct simple-settings (case-sensitive 
                               printing-style 
@@ -225,12 +225,12 @@
                               annotations)
              -setters)
      simple-settings->vector
-
+     
      simple-module-based-language-config-panel
      
      add-snip-value
      setup-setup-values
-
+     
      register-capability
      capability-registered?
      get-capability-default
@@ -242,7 +242,7 @@
      simple-module-based-language%
      simple-module-based-language->module-based-language-mixin
      module-based-language->language-mixin))
-
+  
   (define-signature drscheme:multi-file-search^
     (multi-file-search))
   
@@ -250,7 +250,7 @@
     (module-overview
      make-module-overview-pasteboard
      fill-pasteboard))
-
+  
   (define-signature drscheme:tool-exports^
     (phase1 
      phase2))

@@ -4,7 +4,7 @@
   (provide (all-from-except (lib "mred.ss" "mred") frame%)
            (rename registering-frame% frame%)
            lookup-frame-name)
-
+  
   (define (lookup-frame-name frame)
     (semaphore-wait label-sema)
     (begin0

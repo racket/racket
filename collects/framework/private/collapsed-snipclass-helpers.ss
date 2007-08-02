@@ -24,4 +24,3 @@
             (right-bracket right-bracket)
             (saved-snips saved-snips))))
       (super-instantiate ()))))
-  

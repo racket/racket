@@ -1,15 +1,15 @@
 
 (module drscheme-normal mzscheme
   (require (lib "mred.ss" "mred")
-	   (lib "class.ss")
+           (lib "class.ss")
            (lib "cmdline.ss")
            (lib "bday.ss" "framework" "private"))
-
+  
   ;; this used to be done by mred, but
   ;; since drscheme uses the -Z flag now,
   ;; we have to do it explicitly.
   (current-load text-editor-load-handler)
-
+  
   (define files-to-open
     (command-line
      (case (system-type)
@@ -18,38 +18,38 @@
        [else "drscheme"])
      (current-command-line-arguments)
      (args filenames filenames)))
-
+  
   (define icons-bitmap
     (let ([icons (collection-path "icons")])
       (lambda (name)
         (make-object bitmap% (build-path icons name)))))
-
+  
   ;; updates the command-line-arguments with only the files
   ;; to open. See also main.ss.
   (current-command-line-arguments (apply vector files-to-open))
-
+  
   (define-values (texas-independence-day? halloween?)
     (let* ([date (seconds->date (current-seconds))]
            [month (date-month date)]
            [day (date-day date)])
       (values (and (= 3 month) (= 2 day))
               (and (= 10 month) (= 31 day)))))
-
+  
   (define high-color? ((get-display-depth) . > . 8))
   (define special-state #f)
   (define normal-bitmap #f) ; set by load-magic-images
-
+  
   (define-struct magic-image (chars filename bitmap))
-
+  
   (define (magic-img str img)
     (make-magic-image (reverse (string->list str)) img #f))
-
+  
   ;; magic strings and their associated images.  There should not be a string
   ;; in this list that is a prefix of another.
   (define magic-images
     (list (magic-img "larval" "PLT-206-larval.png")
           (magic-img "mars"   "PLT-206-mars.jpg")))
-
+  
   (define (load-magic-images)
     (set! load-magic-images void) ; run only once
     (unless normal-bitmap (set! normal-bitmap (icons-bitmap "PLT-206.png")))
@@ -59,12 +59,12 @@
                    magic-image
                    (icons-bitmap (magic-image-filename magic-image)))))
               magic-images))
-
+  
   (define longest-magic-string
     (apply max (map (λ (s) (length (magic-image-chars s))) magic-images)))
-
+  
   (define key-codes null)
-
+  
   (define (find-magic-image)
     (define (prefix? l1 l2)
       (or (null? l1)
@@ -73,14 +73,14 @@
                (prefix? (cdr l1) (cdr l2)))))
     (ormap (λ (i) (and (prefix? (magic-image-chars i) key-codes) i))
            magic-images))
-
+  
   (define (add-key-code new-code)
     (let loop ([n (- longest-magic-string 2)] [l key-codes])
       (cond [(null? l) 'done]
             [(zero? n) (set-cdr! l '())]
             [else (loop (sub1 n) (cdr l))]))
     (set! key-codes (cons new-code key-codes)))
-
+  
   (let ([set-splash-bitmap
          (dynamic-require '(lib "splash.ss" "framework") 'set-splash-bitmap)])
     ((dynamic-require '(lib "splash.ss" "framework") 'set-splash-char-observer)
@@ -95,10 +95,10 @@
                (set! key-codes null)
                (set-splash-bitmap
                 (if (eq? special-state match)
-                  (begin (set! special-state #f) normal-bitmap)
-                  (begin (set! special-state match)
-                         (magic-image-bitmap match)))))))))))
-
+                    (begin (set! special-state #f) normal-bitmap)
+                    (begin (set! special-state match)
+                           (magic-image-bitmap match)))))))))))
+  
   (when (eb-bday?)
     (let ()
       (define main-size 260)
@@ -181,7 +181,7 @@
                  (send ebdc set-bitmap #f)
                  b)]
               [else #f]))))
-
+      
       
       (define (eli-paint dc)
         (send dc draw-bitmap bitmap 0 0))
