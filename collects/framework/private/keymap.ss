@@ -1004,21 +1004,25 @@
               ; Map keys to functions
               
               (let ([setup-mappings
-                     (λ (greek-chars start-char)
+                     (λ (greek-chars shift?)
                        (let loop ([i 0])
                          (when (< i (string-length greek-chars))
                            (let ([greek-char (string-ref greek-chars i)])
                              (unless (equal? greek-char #\space)
                                (let ([roman-char
                                       (integer->char
-                                       (+ (char->integer start-char) i))])
-                                 (map (format "a:g;~a" roman-char)
+                                       (+ (char->integer #\a) i))])
+                                 (map (format "a:g;~a~a" 
+                                              (if shift? "s:" "")
+                                              roman-char)
                                       (format "insert ~a" greek-char))
-                                 (map (format "c:x;c:g;~a" roman-char)
+                                 (map (format "c:x;c:g;~a~a"
+                                              (if shift? "s:" "")
+                                              roman-char)
                                       (format "insert ~a" greek-char)))))
                            (loop (+ i 1)))))])
-                (setup-mappings greek-letters #\a)
-                (setup-mappings Greek-letters #\A))
+                (setup-mappings greek-letters #f)
+                (setup-mappings Greek-letters #t))
               
               (map-meta "c:down" "down-into-embedded-editor")
               (map "a:c:down" "down-into-embedded-editor")
