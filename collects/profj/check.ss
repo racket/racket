@@ -3148,8 +3148,8 @@
                    (case kind
                      ((method) 
                       (string-append
-                       (format "This method call uses an unfound method ~a, which is similar to a reserved word~n"
-                               n)
+                       (format "No method ~a for this call can be found. ~a resembles a reserved word.~n"
+                               n n)
                        "Perhaps it is miscapitalized or misspelled"))
                      ((field)
                        (string-append
@@ -3171,7 +3171,7 @@
   (define (beginner-method-access-error name src)
     (let ((n (id->ext-name name)))
       (raise-error n
-                   (format "Method ~a from the current class must be called on 'this'" n)
+                   (format "A call to method ~a requires a target object, such as 'this'." n)
                    n src)))
 
   

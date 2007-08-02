@@ -537,6 +537,7 @@
       
       (StatementExpressionList
        [(StatementExpression) (list $1)]
+       [(Assignment) (list $1)]
        [(StatementExpressionList COMMA StatementExpression) (cons $3 $1)])
       
       (BreakStatement
