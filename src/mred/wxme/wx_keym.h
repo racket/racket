@@ -56,6 +56,7 @@ class wxKeymap : public wxObject
   double lastX, lastY;
 
   class wxKeycode *prefix;
+  int prefixed;
 
   char *active_mouse_function;
 

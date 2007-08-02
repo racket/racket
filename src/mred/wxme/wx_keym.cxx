@@ -134,6 +134,7 @@ void wxKeymap::Reset(void)
   int i;
 
   prefix = NULL;
+  prefixed = 0;
 
   for (i = 0; i < chainCount; i++) {
     chainTo[i]->Reset();  
@@ -760,7 +761,7 @@ void wxKeymap::RemoveGrabKeyFunction(void)
 
 Bool wxKeymap::HandleKeyEvent(UNKNOWN_OBJ media, wxKeyEvent *event)
 {
-  int score, result;
+  int score, result, was_prefixed;
 
   if (event->keyCode == WXK_SHIFT
       || event->keyCode == WXK_CONTROL
@@ -770,7 +771,15 @@ Bool wxKeymap::HandleKeyEvent(UNKNOWN_OBJ media, wxKeyEvent *event)
 
   score = GetBestScore(event);
 
-  result = ChainHandleKeyEvent(media, event, NULL, NULL, 0, score);
+  was_prefixed = prefixed;
+
+  result = ChainHandleKeyEvent(media, event, NULL, NULL, prefixed, score);
+
+  if (!result && was_prefixed) {
+    Reset();
+    /* Try again without prefix: */
+    result = ChainHandleKeyEvent(media, event, NULL, NULL, 0, score);
+  }
 
   if (result >= 0)
     Reset();
@@ -814,10 +823,11 @@ int wxKeymap::OtherHandleKeyEvent(UNKNOWN_OBJ media, wxKeyEvent *event,
 
 int wxKeymap::ChainHandleKeyEvent(UNKNOWN_OBJ media, wxKeyEvent *event,
 				  wxGrabKeyFunction grab, void *grabData,
-				  int try_state, int score)
+				  int only_prefixed, int score)
+/* Results: 0 = no match, 1 = match, -1 = matched prefix */
 {
   char *fname;
-  int result, found_prefix = 0;
+  int result, sub_result;
 
   lastTime = event->timeStamp;
   lastButton = 0;
@@ -827,22 +837,13 @@ int wxKeymap::ChainHandleKeyEvent(UNKNOWN_OBJ media, wxKeyEvent *event,
     grabData = grabKeyData;
   }
 
-  if (!prefix && (try_state >= 0)) {
-    int r;
-    r = OtherHandleKeyEvent(media, event, grab, grabData, 1, score);
-    
-    if (r > 0)
-      return r;
+  if (only_prefixed && !prefixed)
+    return 0;
 
-    if (try_state > 0)
-      return r;
-    else {
-      if (r < 0)
-        found_prefix = -1;
-      try_state = -1;
-    }
-  } else if (prefix && (try_state < 0))
-    return OtherHandleKeyEvent(media, event, grab, grabData, -1, score);
+  sub_result = OtherHandleKeyEvent(media, event, grab, grabData, only_prefixed, score);
+
+  if (sub_result > 0)
+    return sub_result;
 
   if (HandleEvent(event->keyCode,
 		  event->otherKeyCode,
@@ -865,24 +866,23 @@ int wxKeymap::ChainHandleKeyEvent(UNKNOWN_OBJ media, wxKeyEvent *event,
       return CallFunction(fname, media, event) ? 1 : 0;
     } else {
       if (prefix) {
-	/* Just found prefix; try others */
-	int r;
-	r = OtherHandleKeyEvent(media, event, grab, grabData, try_state, score);
-	if (r > 0)
-	  return r;
-	return -1;
+        prefixed = 1;
+        return -1;
       }
+      /* Huh? */
+      result = 0;
     }
-  }
+  } else
+    result = 0;
 
-  result = OtherHandleKeyEvent(media, event, grab, grabData, try_state, score);
+  if (sub_result < 0) {
+    prefixed = 1;
+    result = -1;
+  }
 
   if (!result && grabKeyFunction)
     if (grabKeyFunction(NULL, this, media, event, grabKeyData))
       return 1;
-
-  if (!result && found_prefix)
-    return found_prefix;
 
   return result;
 }
