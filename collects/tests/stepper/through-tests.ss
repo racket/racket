@@ -1,7 +1,7 @@
-#!/bin/sh
-#|
-exec mred -u "$0" "$@"
-|#
+;;#!/bin/sh
+;;#|
+;;exec mred -u "$0" "$@"
+;;|#
 
 (module through-tests mzscheme
   (require (lib "shared.ss" "stepper" "private")
@@ -10,14 +10,22 @@ exec mred -u "$0" "$@"
            (lib "match.ss")
            (lib "sexp-diff.ss" "tests" "utils")
            "module-elaborator.ss"
+           (lib "list.ss")
+           (only (lib "13.ss" "srfi") string-contains)
            ;; for xml testing:
            ;; (lib "class.ss")
            ;; (all-except (lib "xml-snipclass.ss" "xml") snip-class)
            ;; (all-except (lib "scheme-snipclass.ss" "xml") snip-class)
            ;; (lib "mred.ss" "mred")
            )
+  
+  (provide (all-defined))
 
   (define test-directory (find-system-path 'temp-dir))
+  
+  (define display-only-errors (make-parameter #f))
+  
+  (define error-has-occurred-box (make-parameter #f))
 
   (define (stream-ify expr-list iter)
     (lambda ()
@@ -26,6 +34,7 @@ exec mred -u "$0" "$@"
         (iter (expand (car expr-list)) (stream-ify (cdr expr-list) iter)))))
 
   (define (warn who fmt . args)
+    (set-box! (error-has-occurred-box) #t)
     (fprintf (current-error-port) "~a: ~a\n" who (apply format fmt args)))
 
   (define (test-sequence-core namespace-spec teachpack-specs render-settings
@@ -78,7 +87,8 @@ exec mred -u "$0" "$@"
       (call-with-output-file filename
         (lambda (port) (fprintf port "~a" exp-str))
         'truncate)
-      (printf "testing string: ~v\n" exp-str)
+      (unless (display-only-errors)
+        (printf "testing string: ~v\n" exp-str))
       (letrec ([port (open-input-file filename)])
         (test-sequence-core namespace-spec teachpack-specs render-settings
                             track-inferred-names? port expected-steps))))
@@ -164,7 +174,7 @@ exec mred -u "$0" "$@"
                     (list before after)))]
       [`(error ,err-msg)
        (and (error-result? actual)
-            (equal? err-msg (error-result-err-msg actual)))]
+            (string-contains (error-result-err-msg actual) err-msg))]
       [`(before-error ,before ,err-msg)
        (and (before-error-result? actual)
             (and (noisy-equal? (map syntax-object->hilite-datum
@@ -270,20 +280,43 @@ exec mred -u "$0" "$@"
                (tester
                 ;printf "exprs = ~s\n args = ~s\n"
                 (exprs->string `exprs) `(arg ...))))))]))
+  
+  ;; run a test : (list symbol test-thunk) -> boolean
+  ;; run the named test, return #t if a failure occurred during the test
+  (define (run-one-test test-pair)
+    (unless (display-only-errors)
+      (printf "running test: ~v\n" (car test-pair)))
+    (parameterize ([error-has-occurred-box (box #f)])
+      ((cadr test-pair))
+      (if (unbox (error-has-occurred-box))
+          (begin (fprintf (current-error-port) "...Error has occurred during test: ~v\n" (car test-pair))
+                 #t)
+          #f)))
 
   (define (run-all-tests)
-    (for-each (lambda (test-pair)
-                (printf "running test: ~v\n" (car test-pair))
-                ((cadr test-pair)))
-              list-of-tests))
+    (ormap/no-shortcut 
+     run-one-test
+     list-of-tests))
+  
+  (define (run-all-tests-except nix-list)
+    (ormap/no-shortcut 
+     run-one-test
+     (filter (lambda (pr) (not (member (car pr) nix-list)))
+             list-of-tests)))
 
   (define (run-test name)
-    (printf "running test: ~v\n" name)
-    ((cadr (or (assq name list-of-tests)
-               (error 'run-test "test not found: ~e" name)))))
+    (let ([maybe-test (assq name list-of-tests)])
+      (if maybe-test
+          (run-one-test (cadr maybe-test))
+          (error 'run-test "test not found: ~e" name))))
 
   (define (run-tests names)
-    (for-each run-test names))
+    (ormap/no-shortcut run-test names))
+  
+  
+  ;; like an ormap, but without short-cutting
+  (define (ormap/no-shortcut f args)
+    (foldl (lambda (a b) (or a b)) #f (map f args)))
 
   (t mz1 test-mz-sequence
      (for-each (lambda (x) x) '(1 2 3))
@@ -1560,8 +1593,13 @@ exec mred -u "$0" "$@"
       "(define (f2c x) x) (convert-gui f2c)" `() ; placeholder
       ))
 
+  ;; make sure to leave these off when saving, or the nightly tests will run these too...
+  #;(run-all-tests)
   #;(run-tests '(mz1 empty-begin empty-begin0))
-  (run-all-tests)
+  #;(parameterize ([display-only-errors #t])
+    (run-all-tests-except '(prims qq-splice time set! local-set! lazy1 lazy2 lazy3)))
+  
+  
 
   )
 ;; Local variables:
