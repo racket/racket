@@ -192,6 +192,7 @@
                     (cond
                       [(null? subs) (error 'end-of-subs)]
                       [(null? next-preds)
+                       #;(printf "seq-warker called: last case, ~a ~n" seq-name)
                        (build-error (curr-pred input last-src) 
                                     (previous? input) (previous? return-name) #f
                                     look-back used curr-id seen alts last-src)]
@@ -203,7 +204,8 @@
                          (cond
                              [(res? fst)
                               (cond
-                                [(res-a fst) (next-call fst fst (res-msg fst) (and id-spot? (res-id fst))
+                                [(res-a fst) (next-call fst fst (res-msg fst) 
+                                                        (and id-spot? (res-id fst))
                                                         (res-first-tok fst) alts)]
                                 [else
                                  #;(printf "error situation~n")
@@ -291,99 +293,134 @@
                   (update-src-start src (position-token-start-pos tok))
                   src)])))
     
+    ;build-options-fail: name (list-of fail-type) -> fail-type
+    (define (build-options-fail name fails)
+      (make-options-fail (rank-choice (map fail-type-chance fails))
+                         #f
+                         name
+                         (rank-choice (map fail-type-used fails))
+                         (rank-choice (map fail-type-may-use fails))
+                         fails))
+    
     ;build-sequence-error: result boolean result string int [U #f string] [listof string] int int -> result
     (define (sequence-error-gen name len)
-      (lambda (old-res prev prev-name next-pred look-back used id seen alts last-src)
-        (cond
-          [(and (pair? old-res) (null? (cdr old-res))) (car old-res)]
-          [(repeat-res? old-res) 
-           (let ([inner-res (repeat-res-a old-res)]
-                 [stop (repeat-res-stop old-res)])
-             (cond
-               [stop 
-                (make-res (res-a inner-res) 
-                          (res-rest inner-res)
-                          (res-msg inner-res)
-                          (res-id inner-res)
-                          (res-used inner-res)
-                          (if (and (zero? (res-used inner-res))
-                                   (choice-res? look-back) (choice-res-errors look-back)
-                                   (> (fail-type-chance (choice-res-errors look-back))
-                                      (fail-type-chance stop)))
-                              (choice-res-errors look-back)
-                              stop)
-                          (res-first-tok inner-res))]
-               [else inner-res]))]
-          [(or (and (res? old-res) (res-a old-res))
-               (choice-res? old-res)
-               (pair? old-res)) old-res]
-          [else
-           ;There actually was an error
-           (fail-res (res-rest old-res)
-                     (let*-values ([(fail) 
-                                    (cond 
-                                      [(and (repeat-res? look-back)
-                                            (fail-type? (repeat-res-stop look-back))
-                                            (> (fail-type-chance (repeat-res-stop look-back))
-                                               (fail-type-chance (res-msg old-res))))
-                                       (repeat-res-stop look-back)]
-                                      [(and (choice-res? look-back)
-                                            (choice-res-errors look-back)
-                                            (> (fail-type-chance (choice-res-errors look-back))
-                                               (fail-type-chance (res-msg old-res))))
-                                       (choice-res-errors look-back)]
-                                      [else (res-msg old-res)])]
-                                   [(next-ok?)
-                                    (and (= (fail-type-may-use fail) 1)
-                                         (not (null? (res-rest old-res)))
-                                         next-pred
-                                         (next-pred (cdr (res-rest old-res))))]
-                                   [(next-used)
-                                    (if (and next-ok? (res? next-ok?) (res-a next-ok?))
-                                        (res-used next-ok?)
-                                        0)]
-                                   [(kind expected found) (get-fail-info fail)]
-                                   [(new-src) (update-src kind
-                                                          (fail-type-src fail)
-                                                          last-src
-                                                          (res-first-tok old-res))]
-                                   [(seen-len) (length seen)]
-                                   [(updated-len) (+ (- used seen-len) len)])
-                       #;(printf "sequence ~a failed.~n seen ~a~n" name (reverse seen))
-                       #;(when (repeat-res? look-back)
-                           (printf "look-back ~a : ~a vs ~a : ~a > ~a~n"
-                                   (repeat-res-stop look-back)
-                                   (and (fail-type? (repeat-res-stop look-back)) (fail-type-name (repeat-res-stop look-back)))
-                                   (fail-type-name (res-msg old-res))
-                                   (and (fail-type? (repeat-res-stop look-back)) (fail-type-chance (repeat-res-stop look-back)))
-                                   (fail-type-chance (res-msg old-res))))
-                       #;(when (choice-res? look-back)
-                         (printf "look-back choice: ~a vs ~a : ~a > ~a~n"
-                                 (choice-res-name look-back)
-                                 (fail-type-name (res-msg old-res))
-                                 (when (choice-res-errors look-back)
-                                   (fail-type-chance (choice-res-errors look-back)))
-                                 (fail-type-chance (res-msg old-res))))
-                       #;(when (pair? look-back)
-                         (printf "look-back is a pair~n"))
-                       #;(when (res? look-back)
-                         (printf "lookbac is a res~n"))
-                       #;(printf "old-probability ~a new probability ~a~n"
-                                 (cond
-                                   [(= 0 used) (fail-type-chance fail)]
-                                   [else (+ (* (fail-type-chance fail) (/ 1 updated-len))
-                                            (/ used updated-len))])
-                                 (compute-chance len seen-len used alts (fail-type-chance fail)))
-                       (make-sequence-fail 
-                        (cond
-                          [(= 0 used) (fail-type-chance fail)]
-                          [else (compute-chance len seen-len used alts (fail-type-chance fail))])
-                        (fail-type-src fail)
-                        name used 
-                        (+ used (fail-type-may-use fail) next-used)
-                        id kind (reverse seen) expected found 
-                        (and (res? prev) (res-a prev) (res-msg prev))
-                        prev-name)))])))
+      (letrec ([repeat->res
+                (lambda (rpt back)
+                  (cond 
+                    [(pair? rpt) (map (lambda (r) (repeat->res r back)) rpt)]
+                    [(repeat-res? rpt)
+                     (let ([inn (repeat-res-a rpt)]
+                           [stop (repeat-res-stop rpt)])
+                       (cond
+                         [stop 
+                          (make-res (res-a inn) (res-rest inn) (res-msg inn) (res-id inn) (res-used inn)
+                                    (if (and (zero? (res-used inn))
+                                             (choice-res? back) (choice-res-errors back)
+                                             (or (not (fail-type? stop))
+                                                 (> (fail-type-chance (choice-res-errors back))
+                                                    (fail-type-chance stop))))
+                                        (choice-res-errors back)
+                                        stop)
+                                    (res-first-tok inn))]
+                         [else inn]))]
+                    [else rpt]))])
+        (lambda (old-res prev prev-name next-pred look-back used id seen alts last-src)
+          (cond
+            #;[(and (pair? old-res) (null? (cdr old-res))) (car old-res)]
+            [(or (and (res? old-res) (res-a old-res)) (choice-res? old-res))
+             old-res]
+            [(repeat-res? old-res) 
+             #;(!!! (printf "finished on repeat-res for ~a res ~a~n" name old-res))
+             (repeat->res old-res look-back)]
+            [(pair? old-res) 
+             #;(!!! (printf "finished on pairs of res ~a~n" old-res))
+             (map (lambda (r) (repeat->res r look-back)) old-res)]
+            [else
+             ;There actually was an error
+             (fail-res (res-rest old-res)
+                       (let*-values ([(fail) (res-msg old-res)]
+                                     [(possible-fail)
+                                      (cond 
+                                        [(and (repeat-res? look-back)
+                                              (fail-type? (repeat-res-stop look-back))
+                                              (> (fail-type-chance (repeat-res-stop look-back))
+                                                 (fail-type-chance fail)))
+                                         (repeat-res-stop look-back)]
+                                        [(and (choice-res? look-back)
+                                              (choice-res-errors look-back)
+                                              (> (fail-type-chance (choice-res-errors look-back))
+                                                 (fail-type-chance fail)))
+                                         (choice-res-errors look-back)]
+                                        [(and (res? look-back)
+                                              (fail-type? (res-possible-error look-back))
+                                              (> (fail-type-chance (res-possible-error look-back))
+                                                 (fail-type-chance fail)))
+                                         (res-possible-error look-back)]
+                                        [else #f])]
+                                     [(next-ok?)
+                                      (and (= (fail-type-may-use fail) 1)
+                                           (not (null? (res-rest old-res)))
+                                           next-pred
+                                           (next-pred (cdr (res-rest old-res))))]
+                                     [(next-used)
+                                      (if (and next-ok? (res? next-ok?) (res-a next-ok?))
+                                          (res-used next-ok?)
+                                          0)]
+                                     [(kind expected found) (get-fail-info fail)]
+                                     [(new-src) (update-src kind
+                                                            (fail-type-src fail)
+                                                            last-src
+                                                            (res-first-tok old-res))]
+                                     [(seen-len) (length seen)]
+                                     [(updated-len) (+ (- used seen-len) len)])
+                         #;(printf "sequence ~a failed.~n seen ~a~n" name (reverse seen))
+                         #;(when (repeat-res? look-back)
+                             (printf "look-back ~a : ~a vs ~a : ~a > ~a~n"
+                                     (repeat-res-stop look-back)
+                                     (and (fail-type? (repeat-res-stop look-back)) (fail-type-name (repeat-res-stop look-back)))
+                                     (fail-type-name (res-msg old-res))
+                                     (and (fail-type? (repeat-res-stop look-back)) (fail-type-chance (repeat-res-stop look-back)))
+                                     (fail-type-chance (res-msg old-res))))
+                         #;(when (choice-res? look-back)
+                             (printf "look-back choice: ~a vs ~a : ~a > ~a~n"
+                                     (choice-res-name look-back)
+                                     (fail-type-name (res-msg old-res))
+                                     (when (choice-res-errors look-back)
+                                       (fail-type-chance (choice-res-errors look-back)))
+                                     (fail-type-chance (res-msg old-res))))
+                         #;(when (pair? look-back)
+                             (printf "look-back is a pair~n"))
+                         #;(when (res? look-back)
+                             (printf "lookbac is a res~n"))
+                         #;(printf "old-probability ~a new probability ~a~n"
+                                   (cond
+                                     [(= 0 used) (fail-type-chance fail)]
+                                     [else (+ (* (fail-type-chance fail) (/ 1 updated-len))
+                                              (/ used updated-len))])
+                                   (compute-chance len seen-len used alts (fail-type-chance fail)))
+                         (let* ([seq-fail-maker
+                                 (lambda (fail)
+                                   (make-sequence-fail 
+                                    (cond
+                                      [(= 0 used) (fail-type-chance fail)]
+                                      [else (compute-chance len seen-len used alts (fail-type-chance fail))])
+                                    (fail-type-src fail)
+                                    name used 
+                                    (+ used (fail-type-may-use fail) next-used)
+                                    id kind (reverse seen) expected found 
+                                    (and (res? prev) (res-a prev) (res-msg prev))
+                                    prev-name))]
+                                [seq-fail (seq-fail-maker fail)]
+                                [pos-fail (and possible-fail (seq-fail-maker fail))]
+                                [opt-fails (list seq-fail pos-fail)])
+                           (if pos-fail
+                               (make-options-fail (rank-choice (map fail-type-chance opt-fails))
+                                                  #f
+                                                  name
+                                                  (rank-choice (map fail-type-used opt-fails))
+                                                  (rank-choice (map fail-type-may-use opt-fails))
+                                                  opt-fails)
+                               seq-fail))))]))))
     
     (define (compute-chance expected-length seen-length used-toks num-alts sub-chance)
       (let* ([revised-expectation (+ (- used-toks seen-length) expected-length)]
@@ -456,6 +493,9 @@
                               (process-rest (repeat-res-a this-res)
                                             (res-rest (repeat-res-a this-res)))]
                              [(or (choice-res? this-res) (pair? this-res))
+                              #;(printf "repeat call, choice-res ~a~n" 
+                                      (and (choice-res? this-res) 
+                                           (length (choice-res-matches this-res))))
                               (map (lambda (match) (process-rest match (loop (res-rest match))))
                                    (if (choice-res? this-res) 
                                        (choice-res-matches this-res) 
@@ -520,7 +560,7 @@
            [(repeat-res? (car subs))
             (correct-list (cons (repeat-res-a (car subs)) (cdr subs)))]
            [(pair? (car subs))
-            (append (correct-list (car subs)) (correct-list (cdr subs)))]
+            (apply append (cons (correct-list (car subs)) (correct-list (cdr subs))))]
            [else (correct-list (cdr subs))])]
         [(null? subs) null]
         [else (printf "subs~a~n" subs) (error 'stop5)]))

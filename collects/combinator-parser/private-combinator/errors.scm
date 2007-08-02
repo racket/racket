@@ -142,8 +142,8 @@
                 [(and (choice-fail-ended? fail-type)
                       (> (length winners) 1))
                  (combine-message 
-                  (msg (format "Expected a ~a, possible forms are ~a.")
-                       (nice-list (first-n max-choice-depth no-dup-names)))
+                  (msg (format "Expected a ~a, possible forms are ~a." name
+                               (nice-list (first-n max-choice-depth no-dup-names))))
                   message-to-date)]
                 [(and (<= (choice-fail-options fail-type) max-choice-depth)
                       (> (length no-dup-names) 1)

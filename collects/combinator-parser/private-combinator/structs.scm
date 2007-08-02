@@ -68,7 +68,7 @@
   ;(make-res (U #f (listof 'b)) (listof 'a) (U string fail-type) (U string 'a) int) [U #f fail-type] token
   (define-struct res (a rest msg id used possible-error first-tok) (make-inspector))
   ;make-choice-res string (listof res fail-type)
-  (define-struct choice-res (name matches errors))
+  (define-struct choice-res (name matches errors) (make-inspector))
   ;(make-repeat-res answer (U symbol fail-type))
   (define-struct repeat-res (a stop) (make-inspector))
   

@@ -22,7 +22,7 @@
                 (cond
                   [(and (res? result) (res-a result) (null? (res-rest result)))
                    (car (res-a (!!! result)))]
-                  [(and (res? result) (res-a result) (res-possible-error result))
+                  [(and (res? result) (res-a result) (!!! (res-possible-error result)))
                    (fail-type->message (!!! (res-possible-error result)))]
                   [(and (res? result) (res-a result))
                    (make-err
@@ -51,17 +51,20 @@
                         (!!! (fail-type->message
                               (res-possible-error (!!! (car (sort-used possible-errors))))))]
                        [else
+                        #;(printf "result ~a~n" result)
                         (let ([used-sort (sort-used options)])
-                          #;(!!! (printf "~a~n" used-sort))
-                          (make-err
-                           (format "Found additional content after ~a, begining with '~a'." 
-                                   (!!! (res-msg (car used-sort)))
-                                   (input->output-name (!!! (car (res-rest (car used-sort))))))
-                           (and src?
-                                (make-src-lst (position-token-start-pos 
-                                               (!!! (car (res-rest (car used-sort)))))
-                                              (position-token-end-pos
-                                               (!!! (car (res-rest (car used-sort)))))))))]))]
+                          (if (and (choice-res? result)
+                                   (choice-res-errors result))
+                              (!!! (fail-type->message (choice-res-errors result)))
+                              (make-err
+                               (format "Found additional content after ~a, begining with '~a'." 
+                                       (!!! (res-msg (car used-sort)))
+                                       (input->output-name (!!! (car (res-rest (car used-sort))))))
+                               (and src?
+                                    (make-src-lst (position-token-start-pos 
+                                                   (!!! (car (res-rest (car used-sort)))))
+                                                  (position-token-end-pos
+                                                   (!!! (car (res-rest (car used-sort))))))))))]))]
                   [(and (repeat-res? result) (eq? 'out-of-input (repeat-res-stop (!!! result))))
                    (res-a (repeat-res-a result))]
                   [(and (repeat-res? result) (fail-type? (repeat-res-stop (!!! result))))

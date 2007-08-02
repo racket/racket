@@ -558,7 +558,7 @@
       (let ([m&e (sequence ((repeat modifier) interface (^ IDENTIFIER) extends O_BRACE body C_BRACE)
                            id "interface definition")]
             [m (sequence ((repeat modifier) interface (^ IDENTIFIER) O_BRACE body C_BRACE) id "interface definition")]
-            [e (sequence (interface (^ IDENTIFIER) extends O_BRACE body C_BRACE id) "interface definition")]
+            [e (sequence (interface (^ IDENTIFIER) extends O_BRACE body C_BRACE) id "interface definition")]
             [always (sequence (interface (^ IDENTIFIER) O_BRACE body C_BRACE) id "interface definition")])
         (choice (cond 
                   [(and modifier extends) (list m&e m e always)]
@@ -684,7 +684,8 @@
                  (repeat-greedy (class-body (list field method constructor)))))
     
     (define program 
-      (make-program #f (repeat-greedy import-dec) (repeat-greedy (top-member (list class interface)))))
+      (make-program #f (repeat-greedy import-dec) 
+                    (repeat-greedy (top-member (list class interface)))))
     )
 
   (define-unit intermediate-grammar@
@@ -763,7 +764,8 @@
 
     
     (define program
-      (make-program #f (repeat-greedy import-dec) (repeat-greedy (top-member (list class interface)))))
+      (make-program #f (repeat-greedy import-dec) 
+                    (repeat-greedy (choose (class interface) "class or interface"))))
     
     )
     
