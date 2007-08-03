@@ -130,8 +130,9 @@
            (unless (hash-table-get table keyname (λ () #f))
              (cond
                [(and (eq? (system-type) 'windows)
-                     (or (regexp-match #rx"a:c" (format "~a" keyname))
-                         (regexp-match #rx"c:m" (format "~a" keyname))))
+                     (let ([cs (canonicalize-keybinding-string (format "~a" keyname))])
+                       (or (regexp-match #rx"a:c" cs)
+                           (regexp-match #rx"c:m" cs))))
                 (void) ;; don't show these keybindigns -- they don't work
                 ]
                [else
@@ -226,7 +227,7 @@
       
       (join-strings ":"
                     (filter
-                     (λ (x) x)
+                     values
                      (list
                       (do-key #\a alt)
                       (do-key #\c control)
