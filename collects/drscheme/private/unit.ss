@@ -2834,7 +2834,26 @@ module browser threading seems wrong.
                                        (update-settings ((teachpack-callbacks-remove tp-callbacks) settings name)))]))
                              tp-names))))]
               [else 
-               (set! teachpack-items '())])))
+               (set! teachpack-items 
+                     (list
+                      (new menu:can-restore-menu-item%
+                           [label (string-constant add-teachpack-menu-item-label)]
+                           [parent language-menu]
+                           [callback
+                            (λ (_1 _2)
+                              (message-box (string-constant drscheme)
+                                           (format (string-constant teachpacks-only-in-languages)
+                                                   (apply 
+                                                    string-append
+                                                    (reverse
+                                                     (filter
+                                                      values
+                                                      (map (λ (l) 
+                                                             (and 
+                                                              (send l capability-value 'drscheme:teachpack-menu-items)
+                                                              (format "\n  ~a" (send l get-language-name))))
+                                                           (drscheme:language-configuration:get-languages))))))
+                                           this))])))])))
         
         (define/private (initialize-menus)
           (let* ([mb (get-menu-bar)]

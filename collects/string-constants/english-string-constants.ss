@@ -920,6 +920,9 @@ please adhere to these guidelines:
   (teachpack-user-installed "User-installed Teachpacks")
   (install-teachpack... "Install Teachpack...")
   (teachpack-already-installed "A teachpack with the name '~a' has already been installed. Overwrite it?")
+  ; ~a is filled with a list of language names. Each name is separated by a newline and is indented two spaces (no commas, no 'and')
+  (teachpacks-only-in-languages "Teachpacks are only available in these languages: ~a")
+  
   
  ;;; Language dialog
  (introduction-to-language-dialog
