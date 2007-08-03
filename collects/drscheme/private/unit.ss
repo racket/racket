@@ -566,7 +566,7 @@ module browser threading seems wrong.
                 (preferences:set
                  'drscheme:recent-language-names
                  (limit-length
-                  (remove-duplicates
+                  (remove-duplicate-languages
                    (cons (cons (send lang get-language-name)
                                (send lang marshall-settings sets))
                          (preferences:get 'drscheme:recent-language-names)))
@@ -3451,13 +3451,13 @@ module browser threading seems wrong.
         (cond
           [(or (null? l) (zero? n))  null]
           [else (cons (car l) (loop (cdr l) (- n 1)))])))
-    (define (remove-duplicates l)
+    (define (remove-duplicate-languages l)
       (reverse
        (let loop ([l (reverse l)])
          (cond
            [(null? l) l]
            [else
-            (if (member (car l) (cdr l))
+            (if (member (car (car l)) (map car (cdr l)))
                 (loop (cdr l))
                 (cons (car l) (loop (cdr l))))]))))
     
@@ -3563,11 +3563,7 @@ module browser threading seems wrong.
                        (set! added-one? #t)
                        (new menu-item%
                             [parent menu]
-                            [label (string-append "  "
-                                                  (send lang get-language-name)
-                                                  (if (send lang default-settings? settings)
-                                                      ""
-                                                      (string-append " " (string-constant custom))))]
+                            [label (send lang get-language-name)]
                             [callback
                              (λ (x y)
                                (send (send frame get-definitions-text)
