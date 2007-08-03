@@ -719,7 +719,7 @@
         
         (define add-button (new button%
                                 [parent user-installed-gb]
-                                [label (string-constant install-teachpack...)]
+                                [label (string-constant add-teachpack-to-list...)]
                                 [callback (λ (x y) (install-teachpack))]))
         
         (define (install-teachpack)

@@ -918,7 +918,7 @@ please adhere to these guidelines:
   (compiling-teachpack "Compiling ~a teachpack ...")
   (teachpack-pre-installed "Preinstalled Teachpacks")
   (teachpack-user-installed "User-installed Teachpacks")
-  (install-teachpack... "Install Teachpack...")
+  (add-teachpack-to-list... "Add Teachpack to List...")
   (teachpack-already-installed "A teachpack with the name '~a' has already been installed. Overwrite it?")
   ; ~a is filled with a list of language names. Each name is separated by a newline and is indented two spaces (no commas, no 'and')
   (teachpacks-only-in-languages "Teachpacks are only available in these languages: ~a")
