@@ -334,7 +334,7 @@
   (show-character-offsets "顯示字元在文件中的位置") ; used for popup menu; right click on line/column box in bottom of drs window
   (enable-keybindings-in-menus "允許使用菜單中的快捷鍵")
   (automatically-to-ps "自動列印成postscript文件")
-  (option-as-meta "將option鍵當作meta") ;; macos/macos x only
+  (command-as-meta "將command鍵當作meta") ;; macos/macos x only
   (separate-dialog-for-searching "使用單獨的搜索對話框")
   (reuse-existing-frames "在打開新文件時，使用現有的框架")
   (default-fonts "預設字體")
