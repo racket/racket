@@ -364,10 +364,10 @@ the settings above should match r5rs
       (test-expression "(sqrt -1)" "0+1i")
 
       (test-expression "class" 
-                       "class: name is not defined, not an argument, and not a primitive name"
+                       "class: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: class")
       (test-expression "shared"
-                       "shared: name is not defined, not an argument, and not a primitive name"
+                       "shared: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: shared")
 
       (test-expression "(define (. x y) (* x y))"
@@ -375,7 +375,7 @@ the settings above should match r5rs
       (test-expression "'(1 . 2)" "read: illegal use of \".\"")
       
       (test-expression "call/cc"
-                       "call/cc: name is not defined, not an argument, and not a primitive name"
+                       "call/cc: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: call/cc")
       
       (test-expression "(error 'a \"~a\" 1)"
@@ -384,19 +384,19 @@ the settings above should match r5rs
                        "error: expected a symbol and a string, got \"a\" and \"a\"")
       
       (test-expression "(time 1)"
-                       "time: name is not defined, not an argument, and not a primitive name"
+                       "time: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: time")
       
       (test-expression "true" "true")
       (test-expression "mred^" 
-                       "mred^: name is not defined, not an argument, and not a primitive name"
+                       "mred^: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: mred^")
       (test-expression "(eq? 'a 'A)" "false")
       (test-expression "(set! x 1)"
-                       "set!: name is not defined, not an argument, and not a primitive name"
+                       "set!: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: set!")
       (test-expression "(define qqq 2) (set! qqq 1)" 
-                       "set!: name is not defined, not an argument, and not a primitive name"
+                       "set!: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: set!")
 
       (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
@@ -406,10 +406,10 @@ the settings above should match r5rs
                        "(cons (cons 1 empty) (cons (cons 1 empty) empty))"
                        "define: cannot redefine name: shrd\n(cons (cons 1 empty) (cons (cons 1 empty) empty))")
       (test-expression "(local ((define x x)) 1)"
-                       "local: name is not defined, not an argument, and not a primitive name"
+                       "local: name is not defined, not a parameter, and not a primitive name"
                        "function call: expected a defined name or a primitive operation name after an open parenthesis, but found something else")
       (test-expression "(letrec ([x x]) 1)"
-                       "letrec: name is not defined, not an argument, and not a primitive name"
+                       "letrec: name is not defined, not a parameter, and not a primitive name"
                        "function call: expected a defined name or a primitive operation name after an open parenthesis, but found something else")
       (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
       (test-expression "(+ 1)" "procedure +: expects at least 2 arguments, given 1: 1")
@@ -430,7 +430,7 @@ the settings above should match r5rs
       (test-expression "(exact? 1.5)" "true")
       
       (test-expression "(let ([f (lambda (x) x)]) f)"
-                       "let: name is not defined, not an argument, and not a primitive name"
+                       "let: name is not defined, not a parameter, and not a primitive name"
                        "function call: expected a defined name or a primitive operation name after an open parenthesis, but found something else")
       (test-expression ",1"
                        "read: illegal use of comma")
@@ -439,7 +439,7 @@ the settings above should match r5rs
       (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
 
       (test-expression "argv" 
-                       "argv: name is not defined, not an argument, and not a primitive name"
+                       "argv: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: argv")))
   
 
@@ -488,17 +488,17 @@ the settings above should match r5rs
       (test-expression "(sqrt -1)" "0+1i")
 
       (test-expression "class"
-                       "class: name is not defined, not an argument, and not a primitive name"
+                       "class: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: class")
       (test-expression "shared"
-                       "shared: name is not defined, not an argument, and not a primitive name"
+                       "shared: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: shared")
 
       (test-expression "(define (. x y) (* x y))" "read: illegal use of \".\"")
       (test-expression "'(1 . 2)" "read: illegal use of \".\"")
       
       (test-expression "call/cc"
-                       "call/cc: name is not defined, not an argument, and not a primitive name"
+                       "call/cc: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: call/cc")
       
       (test-expression "(error 'a \"~a\" 1)"
@@ -507,19 +507,19 @@ the settings above should match r5rs
                        "error: expected a symbol and a string, got \"a\" and \"a\"")
       
       (test-expression "(time 1)"
-		         "time: name is not defined, not an argument, and not a primitive name"
+		         "time: name is not defined, not a parameter, and not a primitive name"
 		         "reference to undefined identifier: time")
       
       (test-expression "true" "true")
       (test-expression "mred^" 
-                       "mred^: name is not defined, not an argument, and not a primitive name"
+                       "mred^: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: mred^")
       (test-expression "(eq? 'a 'A)" "false")
       (test-expression "(set! x 1)"
-                       "set!: name is not defined, not an argument, and not a primitive name"
+                       "set!: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: set!")
       (test-expression "(define qqq 2) (set! qqq 1)" 
-                       "set!: name is not defined, not an argument, and not a primitive name"
+                       "set!: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: set!")
       (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
       (test-expression "(cons 1 2)" "cons: second argument must be of type <list>, given 1 and 2")
@@ -528,10 +528,10 @@ the settings above should match r5rs
                        "(list (list 1) (list 1))"
                        "define: cannot redefine name: shrd\n(list (list 1) (list 1))")
       (test-expression "(local ((define x x)) 1)"
-                       "local: name is not defined, not an argument, and not a primitive name"
+                       "local: name is not defined, not a parameter, and not a primitive name"
                        "function call: expected a defined name or a primitive operation name after an open parenthesis, but found something else")
       (test-expression "(letrec ([x x]) 1)"
-                       "letrec: name is not defined, not an argument, and not a primitive name"
+                       "letrec: name is not defined, not a parameter, and not a primitive name"
                        "function call: expected a defined name or a primitive operation name after an open parenthesis, but found something else")
       (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
       (test-expression "(+ 1)" "procedure +: expects at least 2 arguments, given 1: 1")
@@ -552,7 +552,7 @@ the settings above should match r5rs
       (test-expression "(exact? 1.5)" "true")
       
       (test-expression "(let ([f (lambda (x) x)]) f)" 
-                       "let: name is not defined, not an argument, and not a primitive name"
+                       "let: name is not defined, not a parameter, and not a primitive name"
                        "function call: expected a defined name or a primitive operation name after an open parenthesis, but found something else")
       (test-expression ",1"
                        "unquote: misuse of a comma or `unquote', not under a quasiquoting backquote")
@@ -561,7 +561,7 @@ the settings above should match r5rs
       (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
 
       (test-expression "argv" 
-                       "argv: name is not defined, not an argument, and not a primitive name"
+                       "argv: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: argv")))
 
 
@@ -608,17 +608,17 @@ the settings above should match r5rs
       (test-expression "(sqrt -1)" "0+1i")
 
       (test-expression "class" 
-                       "class: name is not defined, not an argument, and not a primitive name"
+                       "class: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: class")
       (test-expression "shared"
-                       "shared: name is not defined, not an argument, and not a primitive name"
+                       "shared: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: shared")
       
       (test-expression "(define (. x y) (* x y))" "read: illegal use of \".\"")
       (test-expression "'(1 . 2)" "read: illegal use of \".\"")
       
       (test-expression "call/cc"
-                       "call/cc: name is not defined, not an argument, and not a primitive name"
+                       "call/cc: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: call/cc")
       
       (test-expression "(error 'a \"~a\" 1)"
@@ -631,14 +631,14 @@ the settings above should match r5rs
             
       (test-expression "true" "true")
       (test-expression "mred^" 
-                       "mred^: name is not defined, not an argument, and not a primitive name"
+                       "mred^: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: mred^")
       (test-expression "(eq? 'a 'A)" "false")
       (test-expression "(set! x 1)"
-                       "set!: name is not defined, not an argument, and not a primitive name"
+                       "set!: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: set!")
       (test-expression "(define qqq 2) (set! qqq 1)" 
-                       "set!: name is not defined, not an argument, and not a primitive name"
+                       "set!: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: set!")
       (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
       (test-expression "(cons 1 2)" "cons: second argument must be of type <list>, given 1 and 2")
@@ -673,7 +673,7 @@ the settings above should match r5rs
       (test-expression "(list 1)" "(list 1)")
       (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
       (test-expression "argv" 
-                       "argv: name is not defined, not an argument, and not a primitive name"
+                       "argv: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: argv")))
 
 
@@ -720,17 +720,17 @@ the settings above should match r5rs
       (test-expression "(sqrt -1)" "0+1i")
       
       (test-expression "class"
-                       "class: name is not defined, not an argument, and not a primitive name"
+                       "class: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: class")
       (test-expression "shared" 
-                       "shared: name is not defined, not an argument, and not a primitive name"
+                       "shared: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: shared")
       
       (test-expression "(define (. x y) (* x y))" "read: illegal use of \".\"")
       (test-expression "'(1 . 2)" "read: illegal use of \".\"")
       
       (test-expression "call/cc"
-                       "call/cc: name is not defined, not an argument, and not a primitive name"
+                       "call/cc: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: call/cc")
       
       (test-expression "(error 'a \"~a\" 1)"
@@ -743,14 +743,14 @@ the settings above should match r5rs
             
       (test-expression "true" "true")
       (test-expression "mred^" 
-                       "mred^: name is not defined, not an argument, and not a primitive name"
+                       "mred^: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: mred^")
       (test-expression "(eq? 'a 'A)" "false")
       (test-expression "(set! x 1)"
-                       "set!: name is not defined, not an argument, and not a primitive name"
+                       "set!: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: set!")
       (test-expression "(define qqq 2) (set! qqq 1)" 
-                       "set!: name is not defined, not an argument, and not a primitive name"
+                       "set!: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: set!")
       (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
       (test-expression "(cons 1 2)" "cons: second argument must be of type <list>, given 1 and 2")
@@ -785,7 +785,7 @@ the settings above should match r5rs
       (test-expression "(list 1)" "(list 1)")
       (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
       (test-expression "argv" 
-                       "argv: name is not defined, not an argument, and not a primitive name"
+                       "argv: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: argv")))
   
 
@@ -831,7 +831,7 @@ the settings above should match r5rs
       (test-expression "(sqrt -1)" "0+1i")
 
       (test-expression "class"
-                       "class: name is not defined, not an argument, and not a primitive name"
+                       "class: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: class")
 
       (test-expression "shared" "shared: found a use of `shared' that does not follow an open parenthesis")
@@ -840,7 +840,7 @@ the settings above should match r5rs
       (test-expression "'(1 . 2)" "read: illegal use of \".\"")
       
       (test-expression "call/cc" 
-                       "call/cc: name is not defined, not an argument, and not a primitive name"
+                       "call/cc: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: call/cc")
       
       (test-expression "(error 'a \"~a\" 1)"
@@ -853,7 +853,7 @@ the settings above should match r5rs
             
       (test-expression "true" "true")
       (test-expression "mred^" 
-                       "mred^: name is not defined, not an argument, and not a primitive name"
+                       "mred^: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: mred^")
       (test-expression "(eq? 'a 'A)" "false")
       (test-expression "(set! x 1)"
@@ -895,7 +895,7 @@ the settings above should match r5rs
       (test-expression "(list 1)" "(list 1)")
       (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
       (test-expression "argv"
-                       "argv: name is not defined, not an argument, and not a primitive name"
+                       "argv: name is not defined, not a parameter, and not a primitive name"
                        "reference to undefined identifier: argv")))
 
                                                  
@@ -944,7 +944,7 @@ the settings above should match r5rs
                   (language) setting-name expression result got)))))
   
   (define (test-hash-bang)
-    (let* ([expression (format "#!~n1")]
+    (let* ([expression "#!/bin/sh\n1"]
            [result "1"]
            [drs (get-top-level-focus-window)]
            [interactions (send drs get-interactions-text)])
@@ -1223,11 +1223,11 @@ the settings above should match r5rs
                       (printf ">> finished ~a\n" (syntax-object->datum #'arg))))]))
   
   (define (run-test)
-    ;(go mred)
-    ;(go mzscheme)
-    ;(go beginner)
-    ;(go beginner/abbrev)
-    ;(go intermediate)
+    (go mred)
+    (go mzscheme)
+    (go beginner)
+    (go beginner/abbrev)
+    (go intermediate)
     (go intermediate/lambda)
     (go advanced)
     (go r5rs)))
