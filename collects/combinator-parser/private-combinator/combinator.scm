@@ -343,17 +343,17 @@
                                       (cond 
                                         [(and (repeat-res? look-back)
                                               (fail-type? (repeat-res-stop look-back))
-                                              (> (fail-type-chance (repeat-res-stop look-back))
+                                              (>= (fail-type-chance (repeat-res-stop look-back))
                                                  (fail-type-chance fail)))
                                          (repeat-res-stop look-back)]
                                         [(and (choice-res? look-back)
                                               (choice-res-errors look-back)
-                                              (> (fail-type-chance (choice-res-errors look-back))
+                                              (>= (fail-type-chance (choice-res-errors look-back))
                                                  (fail-type-chance fail)))
                                          (choice-res-errors look-back)]
                                         [(and (res? look-back)
                                               (fail-type? (res-possible-error look-back))
-                                              (> (fail-type-chance (res-possible-error look-back))
+                                              (>= (fail-type-chance (res-possible-error look-back))
                                                  (fail-type-chance fail)))
                                          (res-possible-error look-back)]
                                         [else #f])]
@@ -375,8 +375,8 @@
                                      [(updated-len) (+ (- used seen-len) len)])
                          #;(printf "sequence ~a failed.~n seen ~a~n" name (reverse seen))
                          #;(when (repeat-res? look-back)
-                             (printf "look-back ~a : ~a vs ~a : ~a > ~a~n"
-                                     (repeat-res-stop look-back)
+                             (printf "look-back repeat-res ~a : ~a vs ~a : ~a > ~a~n"
+                                     (fail-type? (repeat-res-stop look-back))
                                      (and (fail-type? (repeat-res-stop look-back)) (fail-type-name (repeat-res-stop look-back)))
                                      (fail-type-name (res-msg old-res))
                                      (and (fail-type? (repeat-res-stop look-back)) (fail-type-chance (repeat-res-stop look-back)))
@@ -391,28 +391,24 @@
                          #;(when (pair? look-back)
                              (printf "look-back is a pair~n"))
                          #;(when (res? look-back)
-                             (printf "lookbac is a res~n"))
-                         #;(printf "old-probability ~a new probability ~a~n"
-                                   (cond
-                                     [(= 0 used) (fail-type-chance fail)]
-                                     [else (+ (* (fail-type-chance fail) (/ 1 updated-len))
-                                              (/ used updated-len))])
-                                   (compute-chance len seen-len used alts (fail-type-chance fail)))
+                             (printf "lookbac is a res, ~a~n" (fail-type? (res-possible-error look-back))))
                          (let* ([seq-fail-maker
                                  (lambda (fail)
-                                   (make-sequence-fail 
-                                    (cond
-                                      [(= 0 used) (fail-type-chance fail)]
-                                      [else (compute-chance len seen-len used alts (fail-type-chance fail))])
-                                    (fail-type-src fail)
-                                    name used 
-                                    (+ used (fail-type-may-use fail) next-used)
-                                    id kind (reverse seen) expected found 
-                                    (and (res? prev) (res-a prev) (res-msg prev))
-                                    prev-name))]
+                                   (let-values ([(kind expected found) (get-fail-info fail)])
+                                     (make-sequence-fail 
+                                      (cond
+                                        [(= 0 used) (fail-type-chance fail)]
+                                        [else (compute-chance len seen-len used alts (fail-type-chance fail))])
+                                      (fail-type-src fail)
+                                      name used 
+                                      (+ used (fail-type-may-use fail) next-used)
+                                      id kind (reverse seen) expected found 
+                                      (and (res? prev) (res-a prev) (res-msg prev))
+                                      prev-name)))]
                                 [seq-fail (seq-fail-maker fail)]
-                                [pos-fail (and possible-fail (seq-fail-maker fail))]
+                                [pos-fail (and possible-fail (seq-fail-maker possible-fail))]
                                 [opt-fails (list seq-fail pos-fail)])
+                           #;(when pos-fail (printf "opt-fails ~a~n" opt-fails))
                            (if pos-fail
                                (make-options-fail (rank-choice (map fail-type-chance opt-fails))
                                                   #f
@@ -481,12 +477,14 @@
                          (make-repeat-res (make-res null null repeat-name "" 0 #f #f) 'out-of-input)]
                         [else
                          (let ([this-res (sub curr-input last-src)])
-                           #;(printf "Repeat of ~a called it's repeated entity: ~a~n" 
-                                   repeat-name this-res)
+                           #;(printf "Repeat of ~a called it's repeated entity: ~n" 
+                                   repeat-name #;this-res)
                            (cond
                              [(and (res? this-res) (res-a this-res))
+                              #;(printf "loop again case~n")
                               (process-rest this-res (loop (res-rest this-res)))]
                              [(res? this-res)
+                              #;(printf "fail for error case ~a~n" (fail-type? (res-msg this-res)))
                               (make-repeat-res (make-res null curr-input repeat-name "" 0 #f #f)
                                                (res-msg this-res))]
                              [(repeat-res? this-res)
