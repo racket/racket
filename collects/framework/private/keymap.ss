@@ -130,8 +130,8 @@
            (unless (hash-table-get table keyname (λ () #f))
              (cond
                [(and (eq? (system-type) 'windows)
-                     (or (regexp-match #rx"a:c" keyname)
-                         (regexp-match #rx"c:m" keyname)))
+                     (or (regexp-match #rx"a:c" (format "~a" keyname))
+                         (regexp-match #rx"c:m" (format "~a" keyname))))
                 (void) ;; don't show these keybindigns -- they don't work
                 ]
                [else
