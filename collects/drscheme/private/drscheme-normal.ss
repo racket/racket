@@ -110,7 +110,7 @@
       
       (define outer-color (send the-color-database find-color "darkorange"))
       (define inner-color (send the-color-database find-color "green"))
-      (define omega-str "λ (x) (x x)) (λ (x) (x x))) ((")
+      (define omega-str "(λ (x) (x x)) (λ (x) (x x)) ")
       (define hebrew-str "  ףוס ןיא  ףוס ןיא")
       
       (define (draw-letter dc cx cy angle radius letter color)
