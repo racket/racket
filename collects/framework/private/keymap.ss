@@ -7,8 +7,7 @@
            (lib "match.ss")
            "../preferences.ss"
            "sig.ss")
-  
-  
+
   (import mred^
           [prefix finder: framework:finder^]
           [prefix handler: framework:handler^]
@@ -129,7 +128,14 @@
          function-table
          (λ (keyname fname)
            (unless (hash-table-get table keyname (λ () #f))
-             (hash-table-put! table keyname fname))))
+             (cond
+               [(and (eq? (system-type) 'windows)
+                     (or (regexp-match #rx"a:c" keyname)
+                         (regexp-match #rx"c:m" keyname)))
+                (void) ;; don't show these keybindigns -- they don't work
+                ]
+               [else
+                (hash-table-put! table keyname fname)]))))
         (for-each
          (λ (chained-keymap)
            (when (is-a? chained-keymap aug-keymap<%>)
