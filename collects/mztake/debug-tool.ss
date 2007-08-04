@@ -89,6 +89,26 @@
       (define (average . values)
         (/ (apply + values) (length values)))
       
+      (define (truncate-value v size depth)
+        (cond
+          [(zero? depth) "..."]
+          [(and (string? v)
+                (> (string-length v) size))
+           (string-append (substring v 0 size) "...")]
+          [(list? v)
+           (let* ([len (length v)]
+                  [res (build-list (min size len)
+                                   (lambda (i) (truncate-value (list-ref v i) size (sub1 depth))))])
+             (if (> len size) (append res (list '...)) res))]
+          [(vector? v)
+           (build-vector (min size (vector-length v))
+                         (lambda (i)
+                           (if (and (= i (sub1 size))
+                                    (> size (vector-length v)))
+                               "..."
+                               (truncate-value (vector-ref v i) size (sub1 depth)))))]
+          [else v]))
+      
       (define (filename->defs source)
         (if (is-a? source editor<%>)
             source
@@ -340,7 +360,7 @@
                                           (lambda (item evt)
                                             (hash-table-put!
                                              breakpoints pos
-                                             (lambda () (hash-table-put! breakpoints pos #f) #t))
+                                             (lambda () (hash-table-put! breakpoints pos break-status) #t))
                                             (invalidate-bitmap-cache)
                                             (when (send (get-tab) get-stack-frames)
                                               (send (get-tab) resume))))))
@@ -429,7 +449,10 @@
                                  (send dc set-brush pc-brk-brush)]
                         [else    (send dc set-pen pc-pen)
                                  (send dc set-brush pc-brush)]))
-                    (drscheme:arrow:draw-arrow dc xl ym xr ym dx dy))
+                    (send dc draw-polygon (list (make-object point% xl yl)
+                                                (make-object point% xl yr)
+                                                (make-object point% xr ym)) dx dy)
+                    #;(drscheme:arrow:draw-arrow dc xl ym xr ym dx dy))
                   #;
                   (let loop ([end-pos pos]
                              [marks (send (get-tab) get-stack-frames)])
@@ -744,7 +767,8 @@
           (define/public (render v)
             ;; ==drscheme eventspace thread==
             ;; only when a user thread is suspended
-            (let ([result-ch (make-channel)])
+            (let ([result-ch (make-channel)]
+                  [v (truncate-value v 100 5)])
               (do-in-user-thread
                (lambda ()
                  (let ([s (open-output-string)])
@@ -763,17 +787,40 @@
             ;; only when a user thread is suspended
             (do-in-user-thread (lambda () (fprintf (current-error-port) " ### DEBUGGER: ~a~n" v))))
           
+          (define (frame->end-breakpoint-status frame)
+            (let/ec k
+              (let* ([stx (mark-source frame)]
+                     [src (syntax-source stx)]
+                     [pos (+ (syntax-position stx) (syntax-span stx) -1)]
+                     [defs (filename->defs src)]
+                     [tab (if defs (send defs get-tab) (k (begin #;(printf "no defs for ~a~n" src) 'invalid)))]
+                     [bps (send tab get-breakpoints)])
+                (hash-table-get bps pos 'invalid))))
+          
+          (define (can-step-over? frames status)
+            (and (eq? status 'entry-break)
+                 (not (eq? (frame->end-breakpoint-status (first frames)) 'invalid))))
+          
+          (define (can-step-out? frames status)
+            (or (ormap (lambda (f) (not (eq? (frame->end-breakpoint-status f) 'invalid)))
+                       (rest frames))
+                (begin
+                  #;(printf "cannot step out: stack is ~a~n" frames)
+                  #f)))
+
           (define/public suspend-gui
             (opt-lambda (frames status [switch-tabs? #f])
               (set! want-suspend-on-break? #f)
               (set-single-step?! #f)
+              (set-box! stack-frames frames)
+              (set-box! break-status status)
               (send (send (get-frame) get-pause-button) enable #f)
               (send (send (get-frame) get-step-button) enable #t)
+              (send (send (get-frame) get-step-over-button) enable (can-step-over? frames status))
+              (send (send (get-frame) get-step-out-button) enable (can-step-out? frames status))
               (send (send (get-frame) get-resume-button) enable #t)
               ;;(fprintf (current-error-port) "break: ~a~n" (map expose-mark frames))
               ;;(printf "status = ~a~n" status)
-              (set-box! stack-frames frames)
-              (set-box! break-status status)
               (when (cons? status)
                 (let ([expr (mark-source (first frames))])
                   (cond
@@ -808,6 +855,8 @@
             (set-box! break-status #f)
             (send (send (get-frame) get-pause-button) enable #t)
             (send (send (get-frame) get-step-button) enable #f)
+            (send (send (get-frame) get-step-over-button) enable #f)
+            (send (send (get-frame) get-step-out-button) enable #f)
             (send (send (get-frame) get-resume-button) enable #f)
             (send (send (get-frame) get-status-message) set-label "")
             (send (get-defs) invalidate-bitmap-cache))
@@ -1000,10 +1049,67 @@
                               (bell)))]
               [enabled #f]))
           
+          (define (make-big-step-callback out?)
+            (lambda (btn evt)
+              ; go through stack frames until it's possible to set a breakpoint at the end
+              (let* ([frames (send (get-current-tab) get-stack-frames)]
+                     [frames (case (send (get-current-tab) get-break-status)
+                               [(entry-break) (if out? (rest frames) frames)]
+                               [else (if out? (rest frames) empty)])]
+                     [frame (ormap (lambda (f depth)
+                                     (let/ec k
+                                       (let* ([stx (mark-source f)]
+                                              [src (syntax-source stx)]
+                                              [pos (+ (syntax-position stx) (syntax-span stx) -1)]
+                                              [defs (filename->defs src)]
+                                              [tab (if defs (send defs get-tab) (k (begin #;(printf "no defs for ~a~n" src) #f)))]
+                                              [bps (send tab get-breakpoints)]
+                                              [cur-stat (hash-table-get bps pos 'invalid)])
+                                         ;(printf "stat for ~a in ~a is ~a~n" pos src cur-stat)
+                                         (case cur-stat
+                                           [(invalid) #f]
+                                           [else
+                                            (hash-table-put!
+                                             bps pos
+                                             (lambda ()
+                                               (and (< (length (continuation-mark-set->list (current-continuation-marks) debug-key)) depth)
+                                                    (begin
+                                                      (hash-table-put! bps pos cur-stat)
+                                                      #t))))
+                                            f]))))
+                                   frames
+                                   (let ([len (length frames)])
+                                     (build-list len (lambda (i) (- len i)))))])
+                (if frames
+                    (begin
+                      (send (get-current-tab) set-single-step?! (not frame))
+                      (send (get-current-tab) resume))
+                    (bell)))))
+          
+          (define step-over-button
+            (new button%
+                 [label ((bitmap-label-maker
+                          "Over"
+                          (build-path (collection-path "mztake" "icons") "step-over2.png")) this)]
+                 [parent debug-panel]
+                 [callback (make-big-step-callback #f)]
+                 [enabled #f]))
+          
+          (define step-out-button
+            (new button%
+                 [label ((bitmap-label-maker
+                          "Out"
+                          (build-path (collection-path "mztake" "icons") "step-out2.png")) this)]
+                 [parent debug-panel]
+                 [callback (make-big-step-callback #t)]
+                 [enabled #f]))
+          
           (define/public (get-debug-button) debug-button)
           (define/public (get-pause-button) pause-button)
           (define/public (get-resume-button) resume-button)
           (define/public (get-step-button) step-button)
+          (define/public (get-step-over-button) step-over-button)
+          (define/public (get-step-out-button) step-out-button)
           (define/public (get-status-message) status-message)
           
           (define mouse-over-message
