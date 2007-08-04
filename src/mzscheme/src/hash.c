@@ -862,6 +862,10 @@ static Scheme_Object *hash_k(void)
 #define MZ_HASH_K hash_k
 #define MZ_HASH_I1 (k - t)
 
+/* Based on Bob Jenkins's one-at-a-time hash function at
+   http://www.burtleburtle.net/bob/hash/doobs.html: */
+#define MZ_MIX(k) (k += (k << 10), k ^= (k >> 6))
+
 static long equal_hash_key(Scheme_Object *o, long k)
 {
   Scheme_Type t;
@@ -963,7 +967,8 @@ static long equal_hash_key(Scheme_Object *o, long k)
       char *s = SCHEME_BYTE_STR_VAL(o);
       
       while (i--) {
-	k = (k << 5) + k + s[i];
+	k += s[i];
+        MZ_MIX(k);
       }
       
       return k;
@@ -974,7 +979,8 @@ static long equal_hash_key(Scheme_Object *o, long k)
       mzchar *s = SCHEME_CHAR_STR_VAL(o);
       
       while (i--) {
-	k = (k << 5) + k + s[i];
+	k += s[i];
+        MZ_MIX(k);
       }
       
       return k;
@@ -992,7 +998,7 @@ static long equal_hash_key(Scheme_Object *o, long k)
 	
 	for (i = SCHEME_STRUCT_NUM_SLOTS(s1); i--; ) {
 	  k += equal_hash_key(s1->slots[i], 0);
-	  k = (k << 5) + k;
+          MZ_MIX(k);
 	}
 	
 	return k;
@@ -1012,6 +1018,7 @@ static long equal_hash_key(Scheme_Object *o, long k)
       Scheme_Hash_Table *ht = (Scheme_Hash_Table *)o;
       Scheme_Object **vals, **keys;
       int i;
+      long vk;
 
 #     include "mzhashchk.inc"
 
@@ -1021,8 +1028,11 @@ static long equal_hash_key(Scheme_Object *o, long k)
       vals = ht->vals;
       for (i = ht->size; i--; ) {
 	if (vals[i]) {
-	  k += equal_hash_key(keys[i], 0);
-	  k += (equal_hash_key(vals[i], 0) << 1);
+          vk = equal_hash_key(keys[i], 0);
+          MZ_MIX(vk);
+	  vk += equal_hash_key(vals[i], 0);
+          MZ_MIX(vk);
+          k += vk;  /* can't mix k, because the key order shouldn't matter */
 	}
       }
       
@@ -1034,6 +1044,7 @@ static long equal_hash_key(Scheme_Object *o, long k)
       Scheme_Bucket **buckets, *bucket;
       const char *key;
       int i, weak;
+      long vk;
   
 #    include "mzhashchk.inc"
 
@@ -1051,8 +1062,11 @@ static long equal_hash_key(Scheme_Object *o, long k)
 	    key = bucket->key;
 	  }
 	  if (key) {
-	    k += (equal_hash_key((Scheme_Object *)bucket->val, 0) << 1);
-	    k += equal_hash_key((Scheme_Object *)key, 0);
+	    vk = equal_hash_key((Scheme_Object *)bucket->val, 0);
+            MZ_MIX(vk);
+	    vk += equal_hash_key((Scheme_Object *)key, 0);
+            MZ_MIX(vk);
+            k += vk; /* can't mix k, because the key order shouldn't matter */
 	  }
 	}
       }
@@ -1092,7 +1106,7 @@ static long equal_hash_key(Scheme_Object *o, long k)
     }
   }
 
-  k = (k << 1) + k;
+  MZ_MIX(k);
   goto top;
 }
 
