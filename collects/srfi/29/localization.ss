@@ -24,7 +24,8 @@
 
 (module localization mzscheme
   (require (lib "etc.ss")
-           (lib "runtime-path.ss"))
+           (lib "runtime-path.ss")
+           (lib "modread.ss" "syntax"))
   (provide current-language current-country current-locale-details
 	   load-bundle! store-bundle! declare-bundle!
 	   localized-template
@@ -97,6 +98,15 @@
   ;; System bundles are here:
   (define-runtime-path system-bundles "bundles")
 
+  (define (with-reader-params thunk)
+    ;; Use `with-module-reading-parameterization' to get
+    ;; most defaults...
+    (with-module-reading-parameterization 
+     (lambda ()
+       ;; ... but disable `#reader':
+       (parameterize ([read-accept-reader #f])
+         thunk))))
+
   ;; bundle-specifier: (listof symbol)
   ;; i.e. package + locale, (package-name [language] [country] [details ...])
   (define load-bundle!
@@ -115,7 +125,9 @@
 	(and (file-exists? path)
 	     ;; Found!
 	     (declare-bundle! bundle-specifier
-			      (with-input-from-file path read))))))
+                              (with-reader-params
+                               (lambda ()
+                                 (with-input-from-file path read))))))))
 
   (define extract-assoc-list
     (lambda (bundle-specifier)
