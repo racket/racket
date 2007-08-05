@@ -110,7 +110,7 @@ struct jit_local_state {
 #ifdef JIT_X86_64
 # define jit_bra_l(rs, is, op) (_s32P((long)(is)) \
                                 ? _jit_bra_l(rs, is, op) \
-                                : (jit_movi_l(JIT_REXTMP, is), jit_bra_qr(JIT_REXTMP, rs, op)))
+                                : (MOVQir(is, JIT_REXTMP), jit_bra_qr(JIT_REXTMP, rs, op)))
 #else
 # define jit_bra_l(rs, is, op) _jit_bra_l(rs, is, op)
 #endif
