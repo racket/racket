@@ -517,11 +517,10 @@
                   (λ (amt)
                     (let* ([pos-start end]
                            [curr-offset (find-offset pos-start)])
-                      (unless (= amt (car curr-offset))
+                      (unless (= amt (- (cdr curr-offset) pos-start))
                         (delete pos-start (cdr curr-offset))
-                        (insert
-                         (make-string amt #\space)
-                         pos-start))))]
+                        (insert (make-string amt #\space)
+                                pos-start))))]
                  [get-proc
                   (λ ()
                     (let ([id-end (get-forward-sexp contains)])
@@ -540,9 +539,7 @@
                     (let* ([proc-name (get-proc)])
                       (or (eq? proc-name 'define)
                           (eq? proc-name 'lambda))))]
-                 [indent-first-arg
-                  (λ (start)
-                    (car (find-offset start)))])
+                 [indent-first-arg (λ (start) (car (find-offset start)))])
               (when (and okay
                          (not (char=? (get-character (sub1 end))
                                       #\newline)))
