@@ -342,17 +342,34 @@ TODO
                (λ (frame)
                  (send frame execute-callback)))))
       
-      (send drs-bindings-keymap add-function
-            "toggle-focus-between-definitions-and-interactions"
-            (λ (obj evt)
-              (with-drs-frame 
-               obj
-               (λ (frame)
-                 (cond
-                   [(send (send frame get-definitions-canvas) has-focus?)
-                    (send (send frame get-interactions-canvas) focus)]
-                   [else
-                    (send (send frame get-definitions-canvas) focus)])))))
+      (let ([shift-focus
+             (λ (adjust frame)
+               (let ([candidates (adjust (append
+                                          (send frame get-definitions-canvases)
+                                          (send frame get-interactions-canvases)))])
+                 (let loop ([cs candidates])
+                   (cond
+                     [(null? cs) (send (car candidates) focus)]
+                     [else
+                      (let ([c (car cs)])
+                        (if (send c has-focus?)
+                            (send (if (null? (cdr cs))
+                                      (car candidates)
+                                      (cadr cs))
+                                  focus)
+                            (loop (cdr cs))))]))))])
+        (send drs-bindings-keymap add-function
+              "toggle-focus-between-definitions-and-interactions"
+              (λ (obj evt)
+                (with-drs-frame 
+                 obj
+                 (λ (frame) (shift-focus values frame)))))
+        (send drs-bindings-keymap add-function
+              "toggle-focus-between-definitions-and-interactions backwards"
+              (λ (obj evt)
+                (with-drs-frame 
+                 obj
+                 (λ (frame) (shift-focus reverse frame))))))
       (send drs-bindings-keymap add-function
             "next-tab"
             (λ (obj evt)
@@ -367,6 +384,7 @@ TODO
                (λ (frame) (send frame prev-tab))))))
     
     (send drs-bindings-keymap map-function "c:x;o" "toggle-focus-between-definitions-and-interactions")
+    (send drs-bindings-keymap map-function "c:x;p" "toggle-focus-between-definitions-and-interactions backwards")
     (send drs-bindings-keymap map-function "c:f6" "toggle-focus-between-definitions-and-interactions")
     (send drs-bindings-keymap map-function "f5" "execute")
     (send drs-bindings-keymap map-function "f1" "search-help-desk")
