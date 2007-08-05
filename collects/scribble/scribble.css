@@ -35,13 +35,22 @@
                 border: 0.5em solid #F5F5DC;
                }
 
-               .tocview { 
+               .tocset { 
                  position: relative;
                  float: left;
                  width: 10em;
                  margin-right: 2em;
+               }
+
+               .tocview {
                  text-align: left;
                  background-color: #F5F5DC;
+               }
+
+               .tocsub {
+                 margin-top: 1em;
+                 text-align: left;
+                 background-color: #DCF5F5;
                }
 
                .tocviewtitle { 
@@ -61,6 +70,35 @@
 
                .tocviewlink { 
                   text-decoration: none;
+                }
+
+               .tocsublist { 
+                  margin: 0.2em 0.2em 0.2em 0.2em;
+                }
+
+               .tocsublist td { 
+                  vertical-align: top;
+                  padding-left: 1em;
+                  text-indent: -1em;
+               }
+
+               .tocsublinknumber { 
+                  font-size: 80%;
+                }
+
+               .tocsublink { 
+                  text-decoration: none;
+                }
+
+               .tocsubseclink { 
+                  font-size: 80%;
+                  text-decoration: none;
+                }
+
+               .tocsubtitle { 
+                  font-size: 80%;
+                  font-style: italic;
+                  margin: 0.2em 0.2em 0.2em 0.2em;
                 }
 
                .leftindent { 

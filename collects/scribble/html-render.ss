@@ -32,7 +32,8 @@
                get-dest-directory
                format-number
                strip-aux
-               lookup)
+               lookup
+               quiet-table-of-contents)
 
       (define/override (get-suffix) #".html")
 
@@ -47,7 +48,11 @@
                fns)
           ht))
 
-      (define/public (part-whole-page? d)
+      (define/public (part-whole-page? p ht)
+        (let ([dest (lookup p ht `(part ,(part-tag p)))])
+          (caddr dest)))
+
+      (define/public (current-part-whole-page?)
         #f)
 
       (define/override (collect-part-tag d ht number)
@@ -55,7 +60,7 @@
                          `(part ,(part-tag d)) 
                          (list (current-output-file)
                                (part-title-content d)
-                               (part-whole-page? d))))
+                               (current-part-whole-page?))))
 
       (define/override (collect-target-element i ht)
         (hash-table-put! ht 
@@ -71,37 +76,117 @@
                           (if p
                               (loop p d)
                               (values d mine))))])
-          `((div ((class "tocview"))
-                 (div ((class "tocviewtitle"))
-                      (a ((href "index.html")
-                          (class "tocviewlink"))
-                         ,@(render-content (part-title-content top) d ht)))
-                 (div nbsp)
-                 (table 
-                  ((class "tocviewlist")
-                   (cellspacing "0"))
-                  ,@(map (lambda (p)
-                           `(tr
-                             (td 
-                              ((align "right"))
-                              ,@(format-number (collected-info-number (part-collected-info p))
-                                               '((tt nbsp))))
-                             (td
-                              (a ((href ,(let ([dest (lookup p ht `(part ,(part-tag p)))])
-                                           (format "~a~a~a" 
-                                                   (from-root (car dest)
-                                                              (get-dest-directory))
-                                                   (if (caddr dest)
-                                                       ""
-                                                       "#")
-                                                   (if (caddr dest)
-                                                       ""
-                                                       `(part ,(part-tag p))))))
-                                  (class ,(if (eq? p mine)
-                                              "tocviewselflink"
-                                              "tocviewlink")))
-                                 ,@(render-content (part-title-content p) d ht)))))
-                         (part-parts top)))))))
+          `((div ((class "tocset"))
+                 (div ((class "tocview"))
+                      (div ((class "tocviewtitle"))
+                           (a ((href "index.html")
+                               (class "tocviewlink"))
+                              ,@(render-content (part-title-content top) d ht)))
+                      (div nbsp)
+                      (table 
+                       ((class "tocviewlist")
+                        (cellspacing "0"))
+                       ,@(map (lambda (p)
+                                `(tr
+                                  (td 
+                                   ((align "right"))
+                                   ,@(format-number (collected-info-number (part-collected-info p))
+                                                    '((tt nbsp))))
+                                  (td
+                                   (a ((href ,(let ([dest (lookup p ht `(part ,(part-tag p)))])
+                                                (format "~a~a~a" 
+                                                        (from-root (car dest)
+                                                                   (get-dest-directory))
+                                                        (if (caddr dest)
+                                                            ""
+                                                            "#")
+                                                        (if (caddr dest)
+                                                            ""
+                                                            `(part ,(part-tag p))))))
+                                       (class ,(if (eq? p mine)
+                                                   "tocviewselflink"
+                                                   "tocviewlink")))
+                                      ,@(render-content (part-title-content p) d ht)))))
+                              (part-parts top))))
+                 ,@(if (ormap (lambda (p) (part-whole-page? p ht)) (part-parts d))
+                       null
+                       (let ([ps (cdr
+                                  (let flatten ([d d])
+                                    (cons d 
+                                          (apply
+                                           append
+                                           (letrec ([flow-targets
+                                                     (lambda (flow)
+                                                       (apply append (map flow-element-targets (flow-paragraphs flow))))]
+                                                    [flow-element-targets
+                                                     (lambda (e)
+                                                       (cond
+                                                        [(table? e) (table-targets e)]
+                                                        [(paragraph? e) (para-targets e)]
+                                                        [(itemization? e)
+                                                         (apply append (map flow-targets (itemization-flows e)))]
+                                                        [(blockquote? e)
+                                                         (apply append (map flow-element-targets (blockquote-paragraphs e)))]
+                                                        [(delayed-flow-element? e)
+                                                         null]))]
+                                                    [para-targets
+                                                     (lambda (para)
+                                                       (let loop ([c (paragraph-content para)])
+                                                         (cond
+                                                          [(empty? c) null]
+                                                          [else (let ([a (car c)])
+                                                                  (cond
+                                                                   [(toc-target-element? a)
+                                                                    (cons a (loop (cdr c)))]
+                                                                   [(element? a)
+                                                                    (append (loop (element-content a))
+                                                                            (loop (cdr c)))]
+                                                                   [(delayed-element? a)
+                                                                    (loop (cons (force-delayed-element a this d ht)
+                                                                                (cdr c)))]
+                                                                   [else
+                                                                    (loop (cdr c))]))])))]
+                                                    [table-targets
+                                                     (lambda (table)
+                                                       (apply append 
+                                                              (map (lambda (flows)
+                                                                     (apply append (map (lambda (f)
+                                                                                          (if (eq? f 'cont)
+                                                                                              null
+                                                                                              (flow-targets f)))
+                                                                                        flows)))
+                                                                   (table-flowss table))))])
+                                             (apply append (map flow-element-targets (flow-paragraphs (part-flow d)))))
+                                           (map flatten (part-parts d))))))])
+                         (if (null? ps)
+                             null
+                             `((div ((class "tocsub"))
+                                    (div ((class "tocsubtitle"))
+                                         "On this page:")
+                                    (table
+                                     ((class "tocsublist")
+                                      (cellspacing "0"))
+                                     ,@(map (lambda (p)
+                                              (parameterize ([current-no-links #t])
+                                                `(tr
+                                                  (td 
+                                                   ,@(if (part? p)
+                                                         `((span ((class "tocsublinknumber"))
+                                                                 ,@(format-number (collected-info-number (part-collected-info p))
+                                                                                  '((tt nbsp)))))
+                                                         '(""))
+                                                   (a ((href ,(if (part? p)
+                                                                  (let ([dest (lookup p ht `(part ,(part-tag p)))])
+                                                                    (format "#~a" 
+                                                                            `(part ,(part-tag p))))
+                                                                  (format "#~a" (target-element-tag p))))
+                                                       (class ,(if (part? p)
+                                                                   "tocsubseclink"
+                                                                   "tocsublink")))
+                                                      ,@(if (part? p)
+                                                            (render-content (part-title-content p) d ht)
+                                                            (render-content (element-content p) d ht)))))))
+                                            ps)))))))))))
 
       (define/public (render-one-part d ht fn number)
         (parameterize ([current-output-file fn])
@@ -356,7 +441,7 @@
                                  (build-path fn "index.html"))
                                fns)))
 
-      (define/override (part-whole-page? d)
+      (define/override (current-part-whole-page?)
         ((collecting-sub) . <= . 2))
 
       (define/private (toc-part? d)

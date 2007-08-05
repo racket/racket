@@ -487,7 +487,7 @@
                                             (loop (cdr a) (cons (car a) o-accum)))))
                                     (loop (cdr a) (cons (car a) r-accum))))]
                              [(tagged) (if first?
-                                           (make-target-element
+                                           (make-toc-target-element
                                             #f
                                             (list (to-element (make-just-context (car prototype)
                                                                                  stx-id)))
@@ -661,12 +661,13 @@
              (cons #t (map (lambda (x) #f) (cdr prototypes))))))
           (content-thunk))))))
 
-  (define (make-target-element* stx-id content wrappers)
+  (define (make-target-element* inner-make-target-element stx-id content wrappers)
     (if (null? wrappers)
         content
         (make-target-element*
+         make-target-element
          stx-id
-         (make-target-element
+         (inner-make-target-element
           #f
           (list content)
           (register-scheme-definition 
@@ -686,38 +687,42 @@
        (cons
         (list (make-flow 
                (list
-                (let* ([the-name 
-                       (make-target-element*
-                        stx-id
-                        (to-element (if (pair? name)
-                                        (map (lambda (x)
-                                               (make-just-context x stx-id))
-                                             name)
-                                        stx-id))
-                        (let ([name (if (pair? name)
-                                        (car name)
-                                        name)])
-                          (list* (list name)
-                                 (list name '?)
-                                 (list 'make- name)
-                                 (append
-                                  (map (lambda (f)
-                                         (list name '- (car f)))
-                                       fields)
-                                  (if immutable?
-                                      null
-                                      (map (lambda (f)
-                                             (list 'set- name '- (car f) '!))
-                                           fields))))))]
-                      [short-width (apply +
-                                          (length fields)
-                                          8
-                                          (map (lambda (s)
-                                                 (string-length (symbol->string s)))
-                                               (append (if (pair? name)
-                                                           name
-                                                           (list name))
-                                                     (map car fields))))])
+                (let* ([the-name
+                        (let ([just-name
+                               (make-target-element*
+                                make-toc-target-element
+                                stx-id
+                                (to-element (if (pair? name)
+                                                (make-just-context (car name) stx-id)
+                                                stx-id))
+                                (let ([name (if (pair? name)
+                                                (car name)
+                                                name)])
+                                  (list* (list name)
+                                         (list name '?)
+                                         (list 'make- name)
+                                         (append
+                                          (map (lambda (f)
+                                                 (list name '- (car f)))
+                                               fields)
+                                          (if immutable?
+                                              null
+                                              (map (lambda (f)
+                                                     (list 'set- name '- (car f) '!))
+                                                   fields))))))])
+                          (if (pair? name)
+                              (to-element (list just-name
+                                                (make-just-context (cadr name) stx-id)))
+                              just-name))]
+                       [short-width (apply +
+                                           (length fields)
+                                           8
+                                           (map (lambda (s)
+                                                  (string-length (symbol->string s)))
+                                                (append (if (pair? name)
+                                                            name
+                                                            (list name))
+                                                        (map car fields))))])
                   (if (and (short-width . < . max-proto-width)
                            (not immutable?)
                            (not transparent?))
@@ -836,7 +841,7 @@
         (list (make-flow 
                (list
                 (make-paragraph
-                 (list (make-target-element
+                 (list (make-toc-target-element
                         #f
                         (list (to-element (make-just-context name stx-id)))
                         (register-scheme-definition stx-id))
@@ -885,7 +890,7 @@
                                 . ,(cdr form)))))))
                      (and kw-id
                           (eq? form (car forms))
-                          (make-target-element
+                          (make-toc-target-element
                            #f
                            (list (to-element (make-just-context (if (pair? form)
                                                                     (car form) 

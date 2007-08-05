@@ -72,6 +72,7 @@
    [element ([style any/c]
              [content list?])]
    [(target-element element) ([tag tag?])]
+   [(toc-target-element target-element) ()]
    [(link-element element) ([tag tag?])]
    [(index-element element) ([tag tag?]
                              [plain-seq (listof string?)]

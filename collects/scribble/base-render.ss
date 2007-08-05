@@ -273,24 +273,32 @@
 
       ;; ----------------------------------------
 
-      (define/public (table-of-contents part ht)
+      (define/private (do-table-of-contents part ht delta quiet)
         (make-table #f (render-toc part
-                                   (sub1 (length (collected-info-number
-                                                  (part-collected-info part))))
-                                   #t)))
+                                   (+ delta
+                                      (length (collected-info-number
+                                               (part-collected-info part))))
+                                   #t
+                                   quiet)))
+
+      (define/public (table-of-contents part ht)
+        (do-table-of-contents part ht -1 not))
 
       (define/public (local-table-of-contents part ht)
         (table-of-contents part ht))
 
-      (define/private (render-toc part base-len skip?)
+      (define/public (quiet-table-of-contents part ht)
+        (do-table-of-contents part ht 1 (lambda (x) #t)))
+
+      (define/private (render-toc part base-len skip? quiet)
         (let ([number (collected-info-number (part-collected-info part))])
           (let ([subs 
-                 (if (not (and (styled-part? part)
-                               (eq? 'quiet (styled-part-style part))
-                               (not (= base-len (sub1 (length number))))))
+                 (if (quiet (and (styled-part? part)
+                                 (eq? 'quiet (styled-part-style part))
+                                 (not (= base-len (sub1 (length number))))))
                      (apply
                       append
-                      (map (lambda (p) (render-toc p base-len #f)) (part-parts part)))
+                      (map (lambda (p) (render-toc p base-len #f quiet)) (part-parts part)))
                      null)])
             (if skip?
                 subs

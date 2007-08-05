@@ -119,7 +119,7 @@ specification of @tech{tail positions} goes with each syntactic form,
 like @scheme[if].
 
 @;------------------------------------------------------------------------
-@section{Multiple Return Values}
+@section[#:tag "mz:values-model"]{Multiple Return Values}
 
 A Scheme expression can evaluate to @deftech{multiple values}, in the
 same way that a procedure can accept multiple arguments.

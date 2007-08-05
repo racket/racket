@@ -802,3 +802,344 @@ source location of the location where the contract was assumed. If the
 syntax object wraps a symbol, the symbol is used as the name of the
 primitive whose contract was assumed. If absent, it defaults to the
 source location of the @scheme[contract] expression.}
+
+@; ------------------------------------------------------------------------
+
+@section{Building New Contract Combinators}
+
+Contracts are represented internally as functions that
+accept information about the contract (who is to blame,
+source locations, etc) and produce projections (in the
+spirit of Dana Scott) that enforce the contract. A
+projection is a function that accepts an arbitrary value,
+and returns a value that satisfies the corresponding
+contract. For example, a projection that accepts only
+integers corresponds to the contract @scheme[(flat-contract
+integer?)], and can be written like this:
+
+@schemeblock[
+(define int-proj
+  (lambda (x)
+    (if (integer? x)
+        x
+        (signal-contract-violation))))
+]
+
+As a second example, a projection that accepts unary functions
+on integers looks like this:
+
+@schemeblock[
+(define int->int-proj
+  (lambda (f)
+    (if (and (procedure? f)
+             (procedure-arity-includes? f 1))
+        (lambda (x)
+          (int-proj (f (int-proj x))))
+        (signal-contract-violation))))
+]
+
+Although these projections have the right error behavior,
+they are not quite ready for use as contracts, because they
+do not accomodate blame, and do not provide good error
+messages. In order to accomodate these, contracts do not
+just use simple projections, but use functions that accept
+the names of two parties that are the candidates for blame,
+as well as a record of the source location where the
+contract was established and the name of the contract. They
+can then, in turn, pass that information
+to @scheme[raise-contract-error] to signal a good error
+message (see below for details on its behavior).
+
+Here is the first of those two projections, rewritten for
+use in the contract system:
+
+@schemeblock[
+(define (int-proj pos neg src-info contract-name)
+  (lambda (x)
+    (if (integer? x)
+        x
+        (raise-contract-error
+         val
+         src-info
+         pos
+         contract-name
+         "expected <integer>, given: ~e"
+         val))))
+]
+
+The first two new arguments specify who is to be blamed for
+positive and negative contract violations,
+respectively. Contracts, in this system, are always
+established between two parties. One party provides some
+value according to the contract, and the other consumes the
+value, also according to the contract. The first is called
+the ``positive'' person and the second the ``negative''. So,
+in the case of just the integer contract, the only thing
+that can go wrong is that the value provided is not an
+integer. Thus, only the positive argument can ever accrue
+blame (and thus only @scheme[pos] is passed
+to @scheme[raise-contract-error]).
+
+Compare that to the projection for our function contract:
+
+@schemeblock[
+(define (int->int-proj pos neg src-info contract-name)
+  (let ([dom (int-proj neg pos src-info contract-name)]
+        [rng (int-proj pos neg src-info contract-name)])
+    (lambda (f)
+      (if (and (procedure? f)
+               (procedure-arity-includes? f 1))
+          (lambda (x)
+            (rng (f (dom x))))
+          (raise-contract-error
+           val
+           src-info
+           pos
+           contract-name
+           "expected a procedure of one argument, given: ~e"
+           val)))))
+]
+
+In this case, the only explicit blame covers the situation
+where either a non-procedure is supplied to the contract, or
+where the procedure does not accept one argument. As with
+the integer projection, the blame here also lies with the
+producer of the value, which is
+why @scheme[raise-contract-error] gets @scheme[pos] and
+not @scheme[neg] as its argument. 
+
+The checking for the domain and range are delegated to
+the @scheme[int-proj] function, which is supplied its
+arguments in the first two line of
+the @scheme[int->int-proj] function. The trick here is that,
+even though the @scheme[int->int-proj] function always
+blames what it sees as positive we can reverse the order of
+the @scheme[pos] and @scheme[neg] arguments so that the
+positive becomes the negative. 
+
+This is not just a cheap trick to get this example to work,
+however. The reversal of the positive and the negative is a
+natural consequence of the way functions behave. That is,
+imagine the flow of values in a program between two
+modules. First, one module defines a function, and then that
+module is required by another. So, far the function itself
+has to go from the original, providing module to the
+requiring module. Now, imagine that the providing module
+invokes the function, suppying it an argument. At this
+point, the flow of values reverses. The argument is
+travelling back from the requiring module to the providing
+module! And finally, when the function produces a result,
+that result flows back in the original
+direction. Accordingly, the contract on the domain reverses
+the positive and the negative, just like the flow of values
+reverses.
+
+We can use this insight to generalize the function contracts
+and build a function that accepts any two contracts and
+returns a contract for functions between them.
+
+@schemeblock[
+(define (make-simple-function-contract dom-proj range-proj)
+  (lambda (pos neg src-info contract-name)
+    (let ([dom (dom-proj neg pos src-info contract-name)]
+          [rng (range-proj pos neg src-info contract-name)])
+      (lambda (f)
+        (if (and (procedure? f)
+                 (procedure-arity-includes? f 1))
+            (lambda (x)
+              (rng (f (dom x))))
+            (raise-contract-error
+             val
+             src-info
+             pos
+             contract-name
+             "expected a procedure of one argument, given: ~e"
+             val))))))
+]
+
+Projections like the ones described above, but suited to
+other, new kinds of value you might make, can be used with
+the contract library primitives below.
+
+@defproc[(make-proj-contract [name any/c]
+                             [proj (symbol? symbol? any/c any/c . -> . any/c)]
+                             [first-order-test (any/c . -> . any/c)])
+         contract?]{
+
+The simplest way to build a contract. It can be less
+efficient than using other contract constructors described
+below, but it is the right choice for new contract
+constructors or first-time contract builders.
+
+The first argument is the name of the contract. It can be an
+arbitrary s-expression. The second is a projection (see
+above). 
+
+The final argument is a predicate that is a
+conservative, first-order test of a value. It should be a
+function that accepts one argument and returns a boolean. If
+it returns @scheme[#f], its argument must be guaranteed to
+fail the contract, and the contract should detect this right
+when the projection is invoked. If it returns true,
+the value may or may not violate the contract, but any
+violations must not be signaled immediately. 
+
+From the example above, the predicate should accept unary
+functions, but reject all other values.}
+
+@defproc[(build-compound-type-name [c/s any/c] ...) any]{
+
+Produces an s-expression to be used as a name
+for a contract. The arguments should be either contracts or
+symbols. It wraps parenthesis around its arguments and
+extracts the names from any contracts it is supplied with.}
+
+@defform[(coerce-contract id expr)]{
+
+Evaluates @scheme[expr] and, if the result is a
+contract, just returns it. If the result is a procedure of arity
+one, it converts that into a contract. If the result is neither, it
+signals an error, using the first argument in the error
+message. The message says that a contract or a procedure of
+arity one was expected.}
+
+@defproc[(flat-contract/predicate? [val any/c]) boolean?]{
+
+A predicate that indicates when @scheme[coerce-contract] will fail.}
+
+@defproc[(raise-contract-error [val any/c]
+                               [src-info any/c]
+                               [to-blame symbol?]
+                               [contract-name any/c]
+                               [fmt string?]
+                               [arg any/c] ...)
+         any]{
+
+Signals a contract violation. The first argument is the value that
+failed to satisfy the contract. The second argument is is the
+@scheme[src-info] passed to the projection and the third should be
+either @scheme[pos] or @scheme[neg] (typically @scheme[pos], see the
+beginning of this section) that was passed to the projection. The
+fourth argument is the @scheme[contract-name] that was passed to the
+projection and the remaining arguments are used with @scheme[format]
+to build an actual error message.}
+
+@;{
+% to document:
+%           proj-prop proj-pred? proj-get
+%           name-prop name-pred? name-get
+%           stronger-prop stronger-pred? stronger-get
+%           flat-prop flat-pred? flat-get
+%           first-order-prop first-order-get
+%           contract-stronger?
+}
+
+@; ------------------------------------------------------------------------
+
+@section{Contract Utilities}
+
+@defproc[(guilty-party [exn exn?]) any]{
+
+Extracts the name of the guilty party from an exception
+raised by the contract system.}
+
+@defproc[(contract? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if its argument is a contract (ie, constructed
+with one of the combinators described in this section), @scheme[#f]
+otherwise.}
+
+@defproc[(flat-contract? [v any/c]) boolean?]{
+
+Returns @scheme[#t] when its argument is a contract that has been
+constructed with @scheme[flat-contract] (and thus is essentially just
+a predicate), @scheme[#f] otherwise.}
+
+@defproc[(flat-contract-predicate [v flat-contract?])
+         (any/c . -> . any/c)]{
+
+Extracts the predicate from a flat contract.}
+
+
+@defproc[(contract-first-order-passes? [contract contract?]
+                                       [v any/c])
+         boolean?]{
+
+Returns a boolean indicating if the first-order tests
+of @scheme[contract] pass for @scheme[v].
+
+If it returns @scheme[#f], the contract is guaranteed not to
+hold for that value; if it returns @scheme[#t], the contract
+may or may not hold. If the contract is a first-order
+contract, a result of @scheme[#t] guarantees that the
+contract holds.}
+
+
+@defproc[(make-none/c [sexp-name any/c]) contract?]{
+
+Makes a contract that accepts no values, and reports the
+name @scheme[sexp-name] when signaling a contract violation.}
+
+
+@defparam[contract-violation->string 
+          proc 
+          (any/c any/c symbol? symbol? any/c string? . -> . string?)]{
+
+
+This is a parameter that is used when constructing a
+contract violation error. Its value is procedure that
+accepts six arguments: the value that the contract applies
+to, a syntax object representing the source location where
+the contract was established, the names of the two parties
+to the contract (as symbols) where the first one is the
+guilty one, an sexpression representing the contract, and a
+message indicating the kind of violation. The procedure then
+returns a string that is put into the contract error
+message. Note that the value is often already included in
+the message that indicates the violation.}
+
+
+@defform[(recursive-contract contract-expr)]{
+
+Delays the evaluation of its argument until the contract is checked,
+making recursive contracts possible.}
+
+
+@defform[(opt/c contract-expr)]{
+
+This optimizes its argument contract expression by
+traversing its syntax and, for known contract combinators,
+fuses them into a single contract combinator that avoids as
+much allocation overhad as possible. The result is a
+contract that should behave identically to its argument,
+except faster (due to the less allocation).}
+
+
+@defform[(define-opt/c (id id ...) expr)]{
+
+This defines a recursive contract and simultaneously
+optimizes it. Semantically, it behaves just as if
+the @scheme[-opt/c] were not present, defining a function on
+contracts (except that the body expression must return a
+contract). But, it also optimizes that contract definition,
+avoiding extra allocation, much like @scheme[opt/c] does.
+
+For example, 
+
+@schemeblock[
+(define-contract-struct bt (val left right))
+
+(define-opt/c (bst-between/c lo hi)
+  (or/c null?
+        (bt/c [val (between/c lo hi)]
+              [left (val) (bst-between/c lo val)]
+              [right (val) (bst-between/c val hi)])))
+
+(define bst/c (bst-between/c -inf.0 +inf.0))
+]
+
+defines the @scheme[bst/c] contract that checks the binary
+search tree invariant. Removing the @scheme[-opt/c] also
+makes a binary search tree contract, but one that is
+(approximately) 20 times slower.}
+
