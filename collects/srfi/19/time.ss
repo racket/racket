@@ -97,7 +97,7 @@
   
   ;; SRFI-29: Localization initialization:
   (re-read-locale)
-  (or (load-bundle! (list 'srfi-19
+  (or (load-bundle! (list* 'srfi-19
 			  (current-language)
 			  (current-country)
 			  (current-locale-details)))
