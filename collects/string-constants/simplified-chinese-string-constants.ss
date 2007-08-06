@@ -344,6 +344,7 @@
   (open-files-in-tabs "在不同的标签下打开多个文件（不使用多个窗口）")
   (show-interactions-on-execute "在运行程序时自动打开交互窗口")
   (switch-to-module-language-automatically "打开module文件时自动切换至module语言")
+  (interactions-beside-definitions "将定义窗口和交互窗口左右放置") ;; in preferences, below the checkbox one line above this one
   (limit-interactions-size "限制交互窗口的大小")
   (background-color "背景颜色")
   (default-text-color "默认颜色") ;; used for configuring colors, but doesn't need the word "color"
@@ -953,8 +954,8 @@
   (profiling-choose-low-color "请选择代表低的颜色")
   (profiling-choose-high-color "请选择代表高的颜色")
   (profiling "Profiling")
-  (profiling-example-text "(define (理) (理))")
-  (profiling-color-config "Profiling色谱") 
+  (profiling-example-text "(define (马) (马))")
+  (profiling-color-config "Profiling色谱")
   (profiling-scale "Profiling的色彩比例")
   (profiling-sqrt "平方根")
   (profiling-linear "线性")
@@ -1087,10 +1088,6 @@
   (xml-tool-scheme-splice-box "Scheme接合框")
   (xml-tool-switch-to-scheme "转变成Scheme框")
   (xml-tool-switch-to-scheme-splice "转变成Scheme接合框")
-  (xml-tool-eliminate-whitespace-in-empty-tags
-   "Eliminiate whitespace in empty tags")
-  (xml-tool-leave-whitespace-alone
-   "Leave whitespace alone")
   
   (show-recent-items-window-menu-item "在单独窗口中显示最近使用的文件")
   (show-recent-items-window-label "最近使用的文件")
