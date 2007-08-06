@@ -777,7 +777,15 @@
                     (repeat-greedy (choose (class interface) "class or interface"))))
     
     (define interact
-      (choose (field (statement-c #t) expression) "interactive program"))
+      (choose (field 
+               (if-s (block #t) #f)
+               (return-s #t)
+               (assignment 
+                (choose (identifier
+                         (sequence (unique-base (repeat unique-end) field-access-end) id))
+                        "assignee") EQUAL)
+               (block #t)
+               expression) "interactive program"))
     
     )
     

@@ -391,14 +391,12 @@
                          #;(when (pair? look-back)
                              (printf "look-back is a pair~n"))
                          #;(when (res? look-back)
-                             (printf "lookbac is a res, ~a~n" (fail-type? (res-possible-error look-back))))
+                             (printf "lookback is a res, ~a~n" (fail-type? (res-possible-error look-back))))
                          (let* ([seq-fail-maker
                                  (lambda (fail)
                                    (let-values ([(kind expected found) (get-fail-info fail)])
                                      (make-sequence-fail 
-                                      (cond
-                                        [(= 0 used) (fail-type-chance fail)]
-                                        [else (compute-chance len seen-len used alts (fail-type-chance fail))])
+                                      (compute-chance len seen-len used alts (fail-type-chance fail))
                                       (fail-type-src fail)
                                       name used 
                                       (+ used (fail-type-may-use fail) next-used)
@@ -419,18 +417,20 @@
                                seq-fail))))]))))
     
     (define (compute-chance expected-length seen-length used-toks num-alts sub-chance)
-      (let* ([revised-expectation (+ (- used-toks seen-length) expected-length)]
-             [probability-with-sub (* (/ (add1 used-toks) revised-expectation) (/ 1 num-alts))]
-             [probability-without-sub (* (/ used-toks revised-expectation) (/ 1 num-alts))]
-             [expected-sub probability-with-sub]
-             [expected-no-sub probability-without-sub]
-             [probability (/ (* expected-sub sub-chance) (+ (* expected-sub sub-chance)
-                                                            (* expected-no-sub (- 1 sub-chance))))])
-        #;(printf "compute-chance: args ~a ~a ~a ~a ~a~n"
-                  expected-length seen-length used-toks num-alts sub-chance)
-        #;(printf "compute-chance: intermediate values: ~a ~a ~a ~a ~a~n"
-                  revised-expectation probability-with-sub probability-without-sub expected-sub expected-no-sub)
-        probability))
+      (if (zero? used-toks)
+          (* (* (/ 1 expected-length) (/ 1 num-alts)) sub-chance)
+          (let* ([revised-expectation (+ (- used-toks seen-length) expected-length)]
+                 [probability-with-sub (* (/ (add1 used-toks) revised-expectation) (/ 1 num-alts))]
+                 [probability-without-sub (* (/ used-toks revised-expectation) (/ 1 num-alts))]
+                 [expected-sub probability-with-sub]
+                 [expected-no-sub probability-without-sub]
+                 [probability (/ (* expected-sub sub-chance) (+ (* expected-sub sub-chance)
+                                                                (* expected-no-sub (- 1 sub-chance))))])
+            #;(printf "compute-chance: args ~a ~a ~a ~a ~a~n"
+                    expected-length seen-length used-toks num-alts sub-chance)
+            #;(printf "compute-chance: intermediate values: ~a ~a ~a ~a ~a~n"
+                    revised-expectation probability-with-sub probability-without-sub expected-sub expected-no-sub)
+            probability)))
     
     ;greedy-repeat: (list 'a) -> result -> (list 'a)  -> result
     (define (repeat-greedy sub)
