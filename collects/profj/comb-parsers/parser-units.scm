@@ -8,7 +8,7 @@
            (lib "string.ss"))
 
     
-  (define-signature language-forms^ (program statement expression field)) ;value-type method-type))
+  (define-signature language-forms^ (program statement expression field interact)) ;value-type method-type))
   
   (define-signature token-proc^ (old-tokens->new))
   
@@ -206,13 +206,9 @@
       (choice (list base-t voidT) "method return"))
     
     (define (array-type base-t)
-      (choose (base-t 
-               (sequence (base-t O_BRACKET C_BRACKET 
-                                 (repeat-greedy 
-                                  (sequence (O_BRACKET C_BRACKET) id "array type")))
-                         id "type")) "type"))
-    )
+      (sequence (base-t (repeat (sequence (O_BRACKET C_BRACKET) id "array type"))) "type"))
     
+    )    
 
   (define-unit mods@
     (import combinator-parser^ java-definition-keywords^)
@@ -686,6 +682,9 @@
     (define program 
       (make-program #f (repeat-greedy import-dec) 
                     (repeat-greedy (top-member (list class interface)))))
+    
+    (define interact
+      (choose (field statement expression) "interactive program"))
     )
 
   (define-unit intermediate-grammar@
@@ -728,12 +727,22 @@
                         "assignee")
                 EQUAL)) "expression"))
     
-    (define statement
-      (choose ((if-s (block #t) #f)
-               (return-s #t)
-               (variable-declaration (value+name-type prim-type) expression #f "local variable")
-               (block #t)
-               (sequence (stmt-expr SEMI_COLON) id)) "statement"))
+    (define (statement-c interact?)
+      (if interact?
+          (choose ((if-s (block #t) #f)
+                   (return-s #t)
+                   (assignment 
+                    (choose (identifier
+                             (sequence (unique-base (repeat unique-end) field-access-end) id))
+                            "assignee") EQUAL)
+                    (block #t)) "statement")
+          (choose ((if-s (block #t) #f)
+                   (return-s #t)
+                   (block #t)
+                   (variable-declaration (value+name-type prim-type) expression #f "local variable")                   
+                   (sequence (stmt-expr SEMI_COLON) id)) "statement")))
+    
+    (define statement (statement-c #f))
     
     (define field (make-field #f (value+name-type prim-type) expression #t))
     
@@ -766,6 +775,9 @@
     (define program
       (make-program #f (repeat-greedy import-dec) 
                     (repeat-greedy (choose (class interface) "class or interface"))))
+    
+    (define interact
+      (choose (field (statement-c #t) expression) "interactive program"))
     
     )
     
@@ -809,12 +821,23 @@
                         "assignee")
                 EQUAL)) "expression"))
     
-    (define statement
-      (choose ((if-s (block #t) #f)
-               (return-s #t)
-               (variable-declaration (value+name-type prim-type) expression #f "local variable")
-               (block #t)
-               (sequence (stmt-expr SEMI_COLON) id)) "statement"))
+    (define (statement-c interact?)
+      (if (not interact?)
+          (choose ((if-s (block #t) #f)
+                   (return-s #t)
+                   (variable-declaration (value+name-type prim-type) expression #f "local variable")
+                   (block #t)
+                   (sequence (stmt-expr SEMI_COLON) id)) "statement")
+          (choose ((if-s (block #t) #f)
+                   (return-s #t)
+                   (assignment 
+                    (choose (identifier
+                             (sequence (unique-base (repeat unique-end) field-access-end) id))
+                            "assignee")
+                    EQUAL)
+                   (block #t)) "statement")))
+    
+    (define statement (statement-c #f))
     
     (define field (make-field access-mods (value+name-type prim-type) expression #t))
         
@@ -847,6 +870,8 @@
     (define program
       (make-program #f (repeat-greedy import-dec)
                (repeat-greedy (top-member (list class interface)))))
+    
+    (define interact (choose (field expression (statement-c #t)) "interactive program"))
 
     )
   
@@ -901,20 +926,41 @@
                (sequence (++ expression) id "unary mutation")
                (sequence (-- expression) id "unary mutation")) "expression"))
     
-    (define statement
-      (choose ((if-s #t (eta statement))
-               (return-s #t)
-               (variable-declaration (array-type (value+name-type prim-type)) expression #t "local variable")
-               (block #t)
-               (sequence (stmt-expr SEMI_COLON) id)
-               (for-l (choose ((variable-declaration (array-type (value+name-type prim-type)) expression #t "for loop variable")
-                               (comma-sep stmt-expr "initializations")) "for loop initialization") 
-                      #t #t
-                      (comma-sep stmt-expr "for loop increments") #t (block #t))
-               (while-l (block #t))
-               (do-while (block #t))
-               (break-s #f)
-               (cont-s #f)) "statement"))
+    (define (statement-c interact?)
+      (if interact?
+          (choose ((if-s #t (eta statement))
+                   (return-s #t)
+                   (block #t)
+                   (for-l (choose ((variable-declaration (array-type (value+name-type prim-type)) expression #t "for loop variable")
+                                   (comma-sep stmt-expr "initializations")) "for loop initialization") 
+                          #t #t
+                          (comma-sep stmt-expr "for loop increments") #t (block #t))
+                   (while-l (block #t))
+                   (do-while (block #t))
+                   (break-s #f)
+                   (cont-s #f)
+                   (assignment 
+                    (choose (identifier
+                             (sequence (unique-base (repeat unique-end) field-access-end) id)
+                             (sequence (unique-base (repeat unique-end) array-access-end) id))
+                            "asignee")
+                    assignment-ops)
+                   ) "statement")
+          (choose ((if-s #t (eta statement))
+                   (return-s #t)
+                   (variable-declaration (array-type (value+name-type prim-type)) expression #t "local variable")
+                   (block #t)
+                   (sequence (stmt-expr SEMI_COLON) id)
+                   (for-l (choose ((variable-declaration (array-type (value+name-type prim-type)) expression #t "for loop variable")
+                                   (comma-sep stmt-expr "initializations")) "for loop initialization") 
+                          #t #t
+                          (comma-sep stmt-expr "for loop increments") #t (block #t))
+                   (while-l (block #t))
+                   (do-while (block #t))
+                   (break-s #f)
+                   (cont-s #f)) "statement")))
+    
+    (define statement (statement-c #f))
     
     (define field (make-field (global-mods access-mods) (array-type (value+name-type prim-type)) expression #t))
     
@@ -953,6 +999,10 @@
       (make-program (sequence (tok:package name SEMI_COLON) id "package specification")
                (repeat-greedy import-dec)
                (repeat-greedy (top-member (list class interface)))))
+    
+    (define interact 
+      (choose (field expression (statement-c #t)) "interactive program"))
+    
     )
   
   (define-unit token@
@@ -1001,7 +1051,7 @@
   (define-unit interactions-parsers@
     (import language-forms^ combinator-parser^)
     (export parsers^)
-    (define parse-program (parser (choose (expression statement field) "interactions program"))))
+    (define parse-program (parser interact)))
 
   
 ;  (define-unit full-program-parsers@
@@ -1043,7 +1093,7 @@
     (import)
     (export error-format-parameters^)
     (define src? #t)
-    (define input-type "definitions window")
+    (define input-type "Definitions")
     (define show-options #f)
     (define max-depth 1)
     (define max-choice-depth 3))
@@ -1052,7 +1102,7 @@
     (import)
     (export error-format-parameters^)
     (define src? #t)
-    (define input-type "interactions-window")
+    (define input-type "Interactions")
     (define show-options #f)
     (define max-depth 0)
     (define max-choice-depth 3))

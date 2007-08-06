@@ -17,7 +17,10 @@
     
     (define (parser start)
       (lambda (input file)
-        (let* ([result (start input)]
+        (let* ([first-src (and src? (pair? input) 
+                               (make-src-lst (position-token-start-pos (car input))
+                                              (position-token-end-pos (car input))))]
+               [result (if first-src (start input first-src) (start input))]
                [out 
                 (cond
                   [(and (res? result) (res-a result) (null? (res-rest result)))
