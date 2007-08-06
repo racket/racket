@@ -105,7 +105,7 @@
      (lambda ()
        ;; ... but disable `#reader':
        (parameterize ([read-accept-reader #f])
-         thunk))))
+         (thunk)))))
 
   ;; bundle-specifier: (listof symbol)
   ;; i.e. package + locale, (package-name [language] [country] [details ...])
