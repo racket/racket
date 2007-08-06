@@ -1973,8 +1973,13 @@ void GC_init_type_tags(int count, int pair, int weakbox, int ephemeron, int weak
 
   if(!initialized) {
     initialized = 1;
+    /* Our best guess at what the OS will let us allocate: */
     max_heap_size = determine_max_heap_size();
     pages_in_heap = max_heap_size / APAGE_SIZE;
+    /* Not all of that memory is available for allocating GCable
+       objects.  There's the memory used by the stack, code,
+       malloc()/free()ed memory, etc., and there's also the
+       administrative structures for the GC itself. */
     max_used_pages = pages_in_heap / 2;
     
     resize_gen0(INIT_GEN0_SIZE);
