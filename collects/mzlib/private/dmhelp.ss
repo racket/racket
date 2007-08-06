@@ -5,7 +5,7 @@
   (provide dm-syntax->datum
 	   dm-subst)
 
-  ;; `dm->syntax-datum' is like syntax-object->datum, but it also
+  ;; `dm-syntax->datum' is like syntax-object->datum, but it also
   ;; builds a hash table that maps generated data to original syntax
   ;; objects. The hash table can then be used with `dm-subst' to
   ;; replace each re-used, unmodified datum with the original syntax
