@@ -23,6 +23,7 @@ ones.)
 Matthew
 |#
 
+;; Mon Aug  6 19:50:30 EDT 2007: exporting both add-line from image.ss and scene+line 
 ;; Fri May  4 18:05:33 EDT 2007: define-run-time-path 
 ;; Thu May  3 22:06:16 EDT 2007: scene # image; pasteboard% for text%
 ;; Sat Apr 28 13:31:02 EDT 2007: fixed the image and animated-gif thing, using Matthew's lib
@@ -73,15 +74,14 @@ Matthew
   
   ;; image manipulation functions:
   ;; =============================
-  (provide (all-from-except (lib "image.ss" "htdp") add-line))
+  (provide (all-from (lib "image.ss" "htdp")))
   
   (provide
     ;; Scene is Image with pinhole in origin 
    nw:rectangle ;; Number Number Mode Color -> Image
    place-image  ;; Image Number Number Scene -> Scene
    empty-scene  ;; Number Number -> Scene 
-   (rename add-line-to-scene add-line)
-   ;; Scene Number Number Number Number Color -> Scene 
+   scene+line   ;; Scene Number Number Number Number Color -> Scene 
    ;; cut all pieces that are outside the given rectangle 
    )
   
@@ -169,12 +169,13 @@ Matthew
               (rectangle width height 'outline 'black))
      0 0))
   
-  (define (add-line-to-scene img x0 y0 x1 y1 c)
+  (define (scene+line img x0 y0 x1 y1 c)
     ;; img and c are checked via calls to add-line from image.ss
-    (check-arg 'add-line (number? x0) "number" "second" x0)
-    (check-arg 'add-line (number? y0) "number" "third" y0)
-    (check-arg 'add-line (number? x1) "number" "fourth" x1)
-    (check-arg 'add-line (number? y1) "number" "fifth" y1)
+    (check-arg 'scene+line (scene? img) "scene" "first" "plain image")
+    (check-arg 'scene+line (number? x0) "number" "second" x0)
+    (check-arg 'scene+line (number? y0) "number" "third" y0)
+    (check-arg 'scene+line (number? x1) "number" "fourth" x1)
+    (check-arg 'scene+line (number? y1) "number" "fifth" y1)
     (let ([x0 (number->integer x0)]
           [x1 (number->integer x1)]
           [y0 (number->integer y0)]
