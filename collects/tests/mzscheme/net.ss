@@ -44,6 +44,10 @@
 (test 'amp-or-semi current-alist-separator-mode)
 (err/rt-test (current-alist-separator-mode 'bad))
 
+;; Test the current-proxy-servers parameter can be set
+(parameterize ([current-proxy-servers '(("http" "proxy.com" 3128))])
+  (test '(("http" "proxy.com" 3128)) current-proxy-servers))
+
 (let ([with-censor (load-relative "censor.ss")])
   (with-censor
    (lambda ()
