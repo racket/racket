@@ -1,6 +1,12 @@
 
 srcdir = @srcdir@
 builddir = @builddir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+libdir = @libdir@
+libpltdir = @libpltdir@
+collectsdir = @collectsdir@
 
 # for version.mak:
 mainsrcdir = @srcdir@/../..

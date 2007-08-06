@@ -8,7 +8,6 @@ libdir = @libdir@
 libpltdir = @libpltdir@
 collectsdir = @collectsdir@
 
-
 # for version.mak:
 mainsrcdir = @srcdir@/../..
 @INCLUDEDEP@ @srcdir@/../../mzscheme/version.mak
