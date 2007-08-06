@@ -49,6 +49,6 @@
    (combine-url/relative (url? string? . -> . url?))
    (url-exception? (any/c . -> . boolean?))
    (current-proxy-servers
-    (case-> ((or/c false/c (listof (list/c string? string? number?))) . -> . void?)
-            (-> (or/c false/c (listof (list/c string? string? number?))))))))
+    (parameter/c (or/c false/c (listof (list/c string? string? number?))))))
+  )
 
