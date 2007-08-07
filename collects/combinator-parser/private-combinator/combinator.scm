@@ -61,10 +61,10 @@
                    [(null? input) (printf "null given~n")]
                    [else
                     (let ([token (!!! ((!!! position-token-token) (!!! (car input))))])
-                      #;(!!! (printf "Look at token ~a~n" token))
+                      (!!! (printf "Look at token ~a~n" token))
                       #;(!!! (printf "calling token-name: ~a~n" ((!!! token-name) token)))
                       #;(!!! (printf "calling pred: ~a~n" (pred token)))
-                      #;(!!! (printf "called pred~n"))
+                      (!!! (printf "called pred~n"))
                       #;(!!! (printf "car of input ~a~n" (position-token-token (car input)))))]))
             (cond
               [(eq? input return-name) name]
@@ -188,11 +188,12 @@
                                       (correct-list (choice-res-matches rsts)))]
                                 [(repeat-res? rsts)
                                  (next-res old-answer new-id old-used tok rsts)]
-                                [else (printf "~a~n" rsts) (error 'here2)])))])
+                                [else (error 'parser-internal-error3 rsts)])))])
                     (cond
                       [(null? subs) (error 'end-of-subs)]
                       [(null? next-preds)
-                       #;(printf "seq-warker called: last case, ~a ~n" seq-name)
+                       #;(printf "seq-warker called: last case, ~a case of ~a ~n" 
+                               seq-name (curr-pred return-name))
                        (build-error (curr-pred input last-src) 
                                     (previous? input) (previous? return-name) #f
                                     look-back used curr-id seen alts last-src)]
@@ -247,7 +248,7 @@
                                                        (res-msg (repeat-res-a res)) #f 
                                                        (res-first-tok (repeat-res-a res))
                                                        new-alts)]
-                                           [else (!!! (printf "~a~n" res))(error 'stop) ])) (correct-list lst))]
+                                           [else (!!! (error 'parser-internal-error4 res))])) (correct-list lst))]
                                  [(correct-rsts) (correct-list rsts)])
                               #;(printf "rsts =~a~n" rsts)
                               #;(printf "correct-rsts ~a~n" (map res-a correct-rsts))
@@ -282,7 +283,7 @@
          (values 'sub-seq (sequence-fail-expected fail) fail)]
         [(choice-fail? fail) (values 'choice null fail)]
         [(options-fail? fail) (values 'options null fail)]
-        [else (printf "~a~n" fail) (error 'stop3)]))
+        [else (error 'parser-internal-error5 fail)]))
     
     ;update-src: symbol src-list src-list token -> src-list
     (define (update-src error-kind src prev-src tok)
@@ -344,17 +345,17 @@
                                       (cond 
                                         [(and (repeat-res? look-back)
                                               (fail-type? (repeat-res-stop look-back))
-                                              (>= (fail-type-chance (repeat-res-stop look-back))
+                                              (> (fail-type-chance (repeat-res-stop look-back))
                                                  (fail-type-chance fail)))
                                          (repeat-res-stop look-back)]
-                                        [(and (choice-res? look-back)
+                                        #;[(and (choice-res? look-back)
                                               (choice-res-errors look-back)
-                                              (>= (fail-type-chance (choice-res-errors look-back))
+                                              (> (fail-type-chance (choice-res-errors look-back))
                                                  (fail-type-chance fail)))
                                          (choice-res-errors look-back)]
-                                        [(and (res? look-back)
+                                        #;[(and (res? look-back)
                                               (fail-type? (res-possible-error look-back))
-                                              (>= (fail-type-chance (res-possible-error look-back))
+                                              (> (fail-type-chance (res-possible-error look-back))
                                                  (fail-type-chance fail)))
                                          (res-possible-error look-back)]
                                         [else #f])]
@@ -601,7 +602,7 @@
             (apply append (cons (correct-list (car subs)) (correct-list (cdr subs))))]
            [else (correct-list (cdr subs))])]
         [(null? subs) null]
-        [else (printf "subs~a~n" subs) (error 'stop5)]))
+        [else (error 'parser-internal-error6 subs)]))
     
     (define (split-list subs)
       (let loop ([in subs] [correct null] [incorrect null])

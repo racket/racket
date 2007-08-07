@@ -230,31 +230,31 @@
     (export java-ops^)
   
     (define math-ops
-      (choose (PLUS MINUS TIMES DIVIDE %) "binary operation"))
+      (choose (PLUS MINUS TIMES DIVIDE %) "binary operater"))
     
     (define shift-ops
-      (choose (<< >> >>>) "shift operation"))
+      (choose (<< >> >>>) "shift operater"))
     
     (define compare-ops
-      (choose (== GT LT LTEQ GTEQ !=) "binary operation"))
+      (choose (== GT LT LTEQ GTEQ !=) "binary operater"))
     
     (define bool-ops
-      (choose (&& OR) "binary operation"))
+      (choose (&& OR) "binary operater"))
     
     (define bit-ops 
-      (choose (^T PIPE &) "binary operation"))
+      (choose (^T PIPE &) "binary operater"))
     
     (define assignment-ops
       (choose (EQUAL OREQUAL += -= *= /= &= ^= %= <<= >>= >>>=) "assignment"))
     
     (define (bin-ops ops)
-      (choice ops "binary operation"))
+      (choice ops "binary operater"))
     
     (define un-assignment
-      (choose (++ --) "unary operation"))
+      (choose (++ --) "unary operater"))
     
     (define un-op
-      (choose (~ + -) "unary operation"))
+      (choose (~ PLUS MINUS) "unary operater"))
     
     )
 
@@ -361,7 +361,7 @@
         (sequence (new type-name init) "array initialization")))
     
     (define (binary-expression-end op)
-      (sequence ((^ op) expression) id "binary expression"))
+      (sequence (op expression) id "binary expression"))
     
     (define if-expr-end 
       (sequence (? (eta expression) : (eta expression)) id "conditional expression"))
@@ -648,13 +648,13 @@
         (sequence (O_PAREN (eta expression) C_PAREN) id)
         (sequence (! (eta expression)) id "conditional expression")
         (sequence (MINUS (eta expression)) id "negation expression")
-        checks) "expression -unique base"))
+        checks) "expression"))
     
     (define unique-end
       (choose (field-access-end
                method-call-end
                (binary-expression-end (bin-ops (list math-ops compare-ops bool-ops))))
-              "expression -unique end"))
+              "expression"))
     
     (define expression
       (sequence (unique-base (repeat-greedy unique-end)) id "expression"))
