@@ -1,22 +1,13 @@
-Version 370.6
-Added continuation?
-Added continuation-prompt-tag?
-
-Version 370.5
-Added keyword<?
-Changed make-derived-parameter to accept a wrap procedure
-
-Version 370.4
-Added read-accept-infix-dot
-Added make-derived-parameter
-
-Version 370.3
+Version 371, August 2007
 Added hash-table-iterate-{first,next,key,value}
-
-Version 370.2
+Added keyword<?
+Added make-derived-parameter
 Added make-sibling-inspector
 Added graph? argument to read[-syntax]/recursive
-Changed `#! ' and `#!/' to general comment forms
+Added read-accept-infix-dot
+Changed #!<space> and #!/ to general comment forms
+Added continuation?
+Added continuation-prompt-tag?
 Inside MzScheme: GC_{malloc,free}_immobile_box
 foreign.ss: added {malloc,free}-immobile-box
 

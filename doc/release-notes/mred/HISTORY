@@ -1,11 +1,7 @@
-Version 370.3
+Version 371, August 2007
 
 Fixed (get-face-list 'mono) for Mac OS X and X11
 Changed begin-container-sequence to delay making windows visible
-
-
-Version 370.2
-
 Added 'no-focus style for canvas%
 
 ----------------------------------------------------------------------
