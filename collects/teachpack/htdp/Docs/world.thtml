@@ -124,8 +124,8 @@ students to simulate a small world of animated drawings and games:
    <code>(place-image image x y scene)</code>
    places image at (x,y) into scene; (x,y) are comp. graph. coordinates
    
-<li><code>{(idx add-line)} : Scene Number Number Number Number Color -> Scene</code><br>
-   <code>(add-line scene x0 y0 x1 y1 c)</code>
+<li><code>{(idx scene+line)} : Scene Number Number Number Number Color -> Scene</code><br>
+   <code>(scene+line scene x0 y0 x1 y1 c)</code>
    places a line of color <code>c</code> from <code>(x0,y0)</code> to
    <code>(x1,y1)</code> into <code>scene</code>;  
    <code>(x,y)</code> are comp. graph. coordinates; 
@@ -143,9 +143,8 @@ students to simulate a small world of animated drawings and games:
 
 <h3>Image Manipulation</h3>
 
-<p>Finally, the teachpack provides all the functions that image.ss provides
-except <code>add-line</code>, which has a slightly different
-functionality. For completeness, the documentation of this teackpack is
+<p>Finally, the teachpack provides all the functions that image.ss
+provides. For completeness, the documentation of this teackpack is
 included here: 
 
 {(include "image-content.tinc")}
