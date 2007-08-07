@@ -6,6 +6,7 @@
 
   (define current-table-mode (make-parameter #f))
   (define rendering-tt (make-parameter #f))
+  (define show-link-page-numbers (make-parameter #f))
 
   (define-struct (toc-paragraph paragraph) ())
 
@@ -69,8 +70,9 @@
         (printf "\\newcommand{\\schemeinput}[1]{\\colorbox{LightGray}{\\hspace{-0.5ex}\\schemeinputbg{#1}\\hspace{-0.5ex}}}\n")
         (printf "\\newcommand{\\highlighted}[1]{\\colorbox{PaleBlue}{\\hspace{-0.5ex}\\schemeinputbg{#1}\\hspace{-0.5ex}}}\n")
         (printf "\\newcommand{\\techlink}[1]{#1}\n")
+        (printf "\\newcommand{\\indexlink}[1]{#1}\n")
         (printf "\\newcommand{\\imageleft}[1]{} % drop it\n")
-        (printf "\\begin{document}\n")
+        (printf "\\begin{document}\n\\sloppy\n")
         (when (part-title-content d)
           (printf "\\title{")
           (render-content (part-title-content d) d ht)
@@ -82,6 +84,9 @@
         (let ([number (collected-info-number (part-collected-info d))])
           (when (and (part-title-content d)
                      (pair? number))
+            (when (and (styled-part? d)
+                       (eq? 'index (styled-part-style d)))
+              (printf "\\twocolumn\n\\parskip=0pt\n\\addcontentsline{toc}{section}{Index}\n"))
             (printf "\\~a~a{"
                     (case (length number)
                       [(0 1) "newpage\n\n\\section"]
@@ -93,10 +98,13 @@
                         "*"
                         ""))
             (render-content (part-title-content d) d ht)
-            (printf "}"))
-          #;
-          (when (part-tag d)
-            (printf "\\label{section:~a}" (protect-tag (part-tag d))))
+            (printf "}")
+            (when (and (styled-part? d)
+                       (eq? 'index (styled-part-style d)))
+              (printf "\n\n")))
+          (for-each (lambda (t)
+                      (printf "\\label{t:~a}" (t-encode `(part ,t))))
+                    (part-tags d))
           (render-flow (part-flow d) d ht)
           (for-each (lambda (sec) (render-part sec ht))
                     (part-parts d))
@@ -121,48 +129,68 @@
                                 (pair? (link-element-tag e))
                                 (eq? 'part (car (link-element-tag e)))
                                 (null? (element-content e)))])
+          (parameterize ([show-link-page-numbers #f])
+            (when (target-element? e)
+              (printf "\\label{t:~a}" (t-encode (target-element-tag e))))
+            (when part-label?
+              (printf "\\S")
+              (render-content (let ([dest (lookup part ht (link-element-tag e))])
+                                (if dest
+                                    (format-number (cadr dest) null)
+                                    (list "???")))
+                              part
+                              ht)
+              (printf " ``"))
+            (let ([style (and (element? e)
+                              (element-style e))]
+                  [wrap (lambda (e s tt?)
+                          (printf "{\\~a{" s)
+                          (parameterize ([rendering-tt (or tt?
+                                                           (rendering-tt))])
+                            (super render-element e part ht))
+                          (printf "}}"))])
+              (cond
+               [(symbol? style)
+                (case style
+                  [(italic) (wrap e "textit" #f)]
+                  [(bold) (wrap e "textbf" #f)]
+                  [(tt) (wrap e "mytexttt" #t)]
+                  [(sf) (wrap e "textsf" #f)]
+                  [(subscript) (wrap e "textsub" #f)]
+                  [(superscript) (wrap e "textsuper" #f)]
+                  [(hspace) (let ([s (content->string (element-content e))])
+                              (case (string-length s)
+                                [(0) (void)]
+                                [else
+                                 (printf "{\\mytexttt{~a}}"
+                                         (regexp-replace* #rx"." s "~"))]))]
+                  [else (error 'latex-render "unrecognzied style symbol: ~s" style)])]
+               [(string? style)
+                (wrap e style (regexp-match? #px"^scheme(?!error)" style))]
+               [(image-file? style) 
+                (let ([fn (install-file (image-file-path style))])
+                  (printf "\\includegraphics{~a}" fn))]
+               [else (super render-element e part ht)])))
           (when part-label?
-            (printf "\\S")
-            (render-content (let ([dest (lookup part ht (link-element-tag e))])
-                              (if dest
-                                  (format-number (cadr dest) null)
-                                  (list "???")))
-                            part
-                            ht)
-            (printf " ``"))
-          (let ([style (and (element? e)
-                            (element-style e))]
-                [wrap (lambda (e s tt?)
-                        (printf "{\\~a{" s)
-                        (parameterize ([rendering-tt (or tt?
-                                                         (rendering-tt))])
-                          (super render-element e part ht))
-                        (printf "}}"))])
-            (cond
-             [(symbol? style)
-              (case style
-                [(italic) (wrap e "textit" #f)]
-                [(bold) (wrap e "textbf" #f)]
-                [(tt) (wrap e "mytexttt" #t)]
-                [(sf) (wrap e "textsf" #f)]
-                [(subscript) (wrap e "textsub" #f)]
-                [(superscript) (wrap e "textsuper" #f)]
-                [(hspace) (let ([s (content->string (element-content e))])
-                            (case (string-length s)
-                              [(0) (void)]
-                              [else
-                               (printf "{\\mytexttt{~a}}"
-                                       (regexp-replace* #rx"." s "~"))]))]
-                [else (error 'latex-render "unrecognzied style symbol: ~s" style)])]
-             [(string? style)
-              (wrap e style (regexp-match? #px"^scheme(?!error)" style))]
-             [(image-file? style) 
-              (let ([fn (install-file (image-file-path style))])
-                (printf "\\includegraphics{~a}" fn))]
-             [else (super render-element e part ht)]))
-          (when part-label?
-            (printf "''")))
-        null)
+            (printf "''"))
+          (when (and (link-element? e)
+                     (show-link-page-numbers))
+            (printf ", \\pageref{t:~a}" (t-encode (link-element-tag e))))
+          null))
+
+      (define/private (t-encode s)
+        (apply
+         string-append
+         (map (lambda (c)
+                (cond
+                 [(and (or (char-alphabetic? c)
+                           (char-numeric? c))
+                       ((char->integer c) . < . 128))
+                  (string c)]
+                 [(char=? c #\space) "_"]
+                 [else
+                  (format "x~x" (char->integer c))]))
+              (string->list (format "~s" s)))))
 
       (define/override (render-table t part ht)
         (let* ([boxed? (eq? 'boxed (table-style t))]
@@ -176,7 +204,7 @@
                                     (equal? "longtable" (car m))
                                     (= 1 (length (car (table-flowss (cadr m))))))))]
                [tableform (cond
-                           [index? "theindex"]
+                           [index? "list"]
                            [(not (current-table-mode))
                             "longtable"]
                            [else "tabular"])]
@@ -188,10 +216,11 @@
                       (null? (car (table-flowss t))))
             (parameterize ([current-table-mode (if inline?
                                                    (current-table-mode)
-                                                   (list tableform t))])
+                                                   (list tableform t))]
+                           [show-link-page-numbers (or index?
+                                                       (show-link-page-numbers))])
               (cond
-               [index?
-                (printf "\n\n\\begin{theindex}\n")]
+               [index? (printf "\\begin{list}{}{\\parsep=0pt \\itemsep=1pt \\leftmargin=2ex \\itemindent=-2ex}\n")]
                [inline? (void)]
                [else
                 (printf "\n\n~a\\begin{~a}~a{@{}~a}\n"
@@ -223,6 +252,8 @@
                       [row-style (car row-styles)])
                   (let loop ([flows flows])
                     (unless (null? flows)
+                      (when index?
+                        (printf "\\item "))
                       (unless (eq? 'cont (car flows))
                         (let ([cnt (let loop ([flows (cdr flows)][n 1])
                                      (cond

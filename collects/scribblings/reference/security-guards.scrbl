@@ -64,16 +64,16 @@ The @scheme[file-guard] procedure must accept three arguments:
 
     @itemize{
 
-    @item{@scheme['read] --- read a file or directory}
+    @item{@indexed-scheme['read] --- read a file or directory}
 
-    @item{@scheme['write] --- modify or create a file or
+    @item{@indexed-scheme['write] --- modify or create a file or
     directory}
 
-    @item{@scheme['execute] --- execute a file}
+    @item{@indexed-scheme['execute] --- execute a file}
 
-    @item{@scheme['delete] --- delete a file or directory}
+    @item{@indexed-scheme['delete] --- delete a file or directory}
 
-    @item{@scheme['exists] --- determine whether a file or
+    @item{@indexed-scheme['exists] --- determine whether a file or
     directory exists, or that a path string is well-formed}
 
     }
@@ -104,11 +104,12 @@ The @scheme[network-guard] procedure must accept four arguments:
  number is the target port on the server. For a listening server, the
  port number is the local port number.}
 
- @item{a symbol, either @scheme['client] or @scheme['server],
- indicating whether the check is for the creation of a client
- connection or a listening server. The opening of an unbound UDP
- socket is identified as a @scheme['client] connection; explicitly
- binding the socket is identified as a @scheme['server] action.}
+ @item{a symbol, either @indexed-scheme['client] or
+ @indexed-scheme['server], indicating whether the check is for the
+ creation of a client connection or a listening server. The opening of
+ an unbound UDP socket is identified as a @scheme['client] connection;
+ explicitly binding the socket is identified as a @scheme['server]
+ action.}
 
 }
 

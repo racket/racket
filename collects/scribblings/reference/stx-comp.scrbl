@@ -58,8 +58,8 @@ Returns one of three kinds of values, depending on the binding of
 
 @itemize{ 
 
-      @item{The result is @scheme['lexical] if @scheme[id-stx] has 
-      a @tech{local binding}.
+      @item{The result is @indexed-scheme['lexical] if @scheme[id-stx]
+      has a @tech{local binding}.
 
       @item{The result is a list of five items when @scheme[id-stx]
       has a @tech{module binding}: @scheme[(list source-mod source-id

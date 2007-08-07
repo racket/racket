@@ -138,11 +138,13 @@ positions are initialized with the given @scheme[b]s.
           s]}
 
 
-@defproc[(bytes-append [bstr bytes?] ...) bytes?]{  Returns a new
- mutable byte string that is as long as the sum of the given @scheme[bstr]s'
- lengths, and that contains the concatenated bytes of the given
- @scheme[bstr]s. If no @scheme[bstr]s are provided, the result is a zero-length
- byte string.
+@defproc[(bytes-append [bstr bytes?] ...) bytes?]{ 
+
+@index["byte strings" "concatenate"]{Returns} a new mutable byte string
+that is as long as the sum of the given @scheme[bstr]s' lengths, and
+that contains the concatenated bytes of the given @scheme[bstr]s. If
+no @scheme[bstr]s are provided, the result is a zero-length byte
+string.
 
 @examples[(bytes-append #"Apple" #"Banana")]}
 
@@ -349,11 +351,11 @@ Certain encoding combinations are always available:
    to a decoding failure.}
 
  @item{@scheme[(bytes-open-converter "UTF-8-permissive" "UTF-8")] ---
-   the identity conversion, except that any input byte that is not
-   part of a valid encoding sequence is effectively replaced by
-   @scheme[(char->integer #\?)].  (This handling of invalid sequences
-   is consistent with the interpretation of port bytes streams into
-   characters; see @secref["mz:ports"].)}
+   @index['("UTF-8-permissive")]{the} identity conversion, except that
+   any input byte that is not part of a valid encoding sequence is
+   effectively replaced by @scheme[(char->integer #\?)].  (This
+   handling of invalid sequences is consistent with the interpretation
+   of port bytes streams into characters; see @secref["mz:ports"].)}
 
  @item{@scheme[(bytes-open-converter "" "UTF-8")] --- converts from
    the current locale's default encoding (see @secref["mz:encodings"])
@@ -454,9 +456,9 @@ The result of @scheme[bytes-convert] is three values:
  @item{@scheme[_src-read-amt] --- the number of bytes successfully converted
  from @scheme[src-bstr].}
 
- @item{@scheme['complete], @scheme['continues],
- @scheme['aborts], or @scheme['error] --- indicates how
- conversion terminated:
+ @item{@indexed-scheme['complete], @indexed-scheme['continues],
+ @indexed-scheme['aborts], or @indexed-scheme['error] --- indicates
+ how conversion terminated:
 
   @itemize{
 
@@ -520,7 +522,7 @@ The result of @scheme[bytes-convert-end] is two values:
   @scheme[dest-bstr] is @scheme[#f] or not provided, or the number of
   bytes written into @scheme[dest-bstr] otherwise.}
 
-  @item{@scheme['complete] or @scheme['continues] ---
+  @item{@indexed-scheme['complete] or @indexed-scheme['continues] ---
   indicates whether conversion completed. If @scheme['complete], then
   an entire ending sequence was produced. If @scheme['continues], then
   the conversion could not complete due to the limit on the result

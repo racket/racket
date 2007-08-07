@@ -2,7 +2,6 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["mz.ss"]
 
-@define[(fileFirst s) (index (list s) (file s))]
 @define[MzAdd (italic "Scheme-specific:")]
 
 @title[#:tag "mz:windowspaths"]{Windows Path Conventions}
@@ -65,14 +64,14 @@ include @litchar["\\"].
  @item{The following special ``files'', which access devices, exist in
        all directories, case-insensitively, and with all possible
        endings after a period or colon, except in pathnames that start
-       with @litchar["\\\\?\\"]: @fileFirst{NUL}, @fileFirst{CON},
-       @fileFirst{PRN}, @fileFirst{AUX}, @fileFirst{COM1},
-       @fileFirst{COM2}, @fileFirst{COM3}, @fileFirst{COM4},
-       @fileFirst{COM5}, @fileFirst{COM6}, @fileFirst{COM7},
-       @fileFirst{COM8}, @fileFirst{COM9}, @fileFirst{LPT1},
-       @fileFirst{LPT2}, @fileFirst{LPT3}, @fileFirst{LPT4},
-       @fileFirst{LPT5}, @fileFirst{LPT6}, @fileFirst{LPT7},
-       @fileFirst{LPT8}, @fileFirst{LPT9}.}
+       with @litchar["\\\\?\\"]: @indexed-file{NUL}, @indexed-file{CON},
+       @indexed-file{PRN}, @indexed-file{AUX}, @indexed-file{COM1},
+       @indexed-file{COM2}, @indexed-file{COM3}, @indexed-file{COM4},
+       @indexed-file{COM5}, @indexed-file{COM6}, @indexed-file{COM7},
+       @indexed-file{COM8}, @indexed-file{COM9}, @indexed-file{LPT1},
+       @indexed-file{LPT2}, @indexed-file{LPT3}, @indexed-file{LPT4},
+       @indexed-file{LPT5}, @indexed-file{LPT6}, @indexed-file{LPT7},
+       @indexed-file{LPT8}, @indexed-file{LPT9}.}
 
  @item{Except for @litchar["\\\\?\\"] paths, @litchar{/}s are
        equivalent to @litchar["\\"]s. Except for @litchar["\\\\?\\"]

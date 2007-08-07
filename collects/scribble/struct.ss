@@ -52,13 +52,14 @@
         (delayed-flow-element? p)))
 
   (provide-structs 
-   [part ([tag (or/c false/c tag?)]
+   [part ([tags (listof tag?)]
           [title-content (or/c false/c list?)]
           [collected-info (or/c false/c collected-info?)]
+          [to-collect list?]
           [flow flow?]
           [parts (listof part?)])]
    [(styled-part part) ([style any/c])]
-   [(unnumbered-part part) ()]
+   [(unnumbered-part styled-part) ()]
    [flow ([paragraphs (listof flow-element?)])]
    [paragraph ([content list?])]
    [(styled-paragraph paragraph) ([style any/c])]
@@ -96,48 +97,54 @@
                   delayed-element-ref
                   delayed-element-set!)
     (make-struct-type 'delayed-element #f
-                      2 1 #f
+                      3 1 #f
                       (list (cons prop:serializable 
                                   (make-serialize-info
                                    (lambda (d)
-                                     (unless (delayed-element-ref d 2)
+                                     (unless (delayed-element-ref d 3)
                                        (error 'serialize-delayed-element
                                               "cannot serialize a delayed element that was not resolved: ~e"
                                               d))
-                                     (vector (delayed-element-ref d 2)))
+                                     (vector (delayed-element-ref d 3)))
                                    #'deserialize-delayed-element
                                    #f
                                    (or (current-load-relative-directory) (current-directory)))))))
   (define-syntax delayed-element (list-immutable #'struct:delayed-element
                                                  #'make-delayed-element
                                                  #'delayed-element?
-                                                 (list-immutable #'delayed-element-sizer 
+                                                 (list-immutable #'delayed-element-plain 
+                                                                 #'delayed-element-sizer
                                                                  #'delayed-element-render)
-                                                 (list-immutable #'set-delayed-element-sizer!
+                                                 (list-immutable #'set-delayed-element-plain!
+                                                                 #'set-delayed-element-sizer!
                                                                  #'set-delayed-element-render!)
                                                  #t))
   (define delayed-element-render (make-struct-field-accessor delayed-element-ref 0))
   (define delayed-element-sizer (make-struct-field-accessor delayed-element-ref 1))
+  (define delayed-element-plain (make-struct-field-accessor delayed-element-ref 2))
   (define set-delayed-element-render! (make-struct-field-mutator delayed-element-set! 0))
   (define set-delayed-element-sizer! (make-struct-field-mutator delayed-element-set! 1))
+  (define set-delayed-element-plain! (make-struct-field-mutator delayed-element-set! 2))
   (provide/contract
    (struct delayed-element ([render (any/c part? any/c . -> . list?)]
-                            [sizer (-> any)])))
-
+                            [sizer (-> any)]
+                            [plain (-> any)])))
+  
   (provide deserialize-delayed-element)
   (define deserialize-delayed-element
     (make-deserialize-info values values))
   
   (provide force-delayed-element)
   (define (force-delayed-element d renderer sec ht)
-    (or (delayed-element-ref d 2)
+    (or (delayed-element-ref d 3)
         (let ([v ((delayed-element-ref d 0) renderer sec ht)])
-          (delayed-element-set! d 2 v)
+          (delayed-element-set! d 3 v)
           v)))
 
   ;; ----------------------------------------
 
-  (provide content->string)
+  (provide content->string
+           element->string)
 
   (define content->string
     (case-lambda
@@ -154,6 +161,7 @@
      [(c)
       (cond
        [(element? c) (content->string (element-content c))]
+       [(delayed-element? c) (element->string ((delayed-element-plain c)))]
        [(string? c) c]
        [else (case c
                [(ndash) "--"]

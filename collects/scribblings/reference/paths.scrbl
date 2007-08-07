@@ -194,7 +194,8 @@ type.}
          (one-of 'unix 'windows)]{
 
 Returns the path convention type of the current platform:
-@scheme['unix] for @|AllUnix|, @scheme['windows] for Windows.}
+@indexed-scheme['unix] for @|AllUnix|, @indexed-scheme['windows] for
+Windows.}
 
 
 @defproc[(build-path [base path-string?]
@@ -208,12 +209,12 @@ absolute path; if @scheme[base] is a relative path, the result is a
 relative path.
 
 Each @scheme[sub] must be either a relative path, the symbol
-@scheme['up] (indicating the relative parent directory), or the symbol
-@scheme['same] (indicating the relative current directory).  For
-Windows paths, if @scheme[base] is a drive specification (with or
-without a trailing slash) the first @scheme[sub] can be an absolute
-(driveless) path. For all platforms, the last @scheme[sub] can be a
-filename.
+@indexed-scheme['up] (indicating the relative parent directory), or
+the symbol @indexed-scheme['same] (indicating the relative current
+directory).  For Windows paths, if @scheme[base] is a drive
+specification (with or without a trailing slash) the first
+@scheme[sub] can be an absolute (driveless) path. For all platforms,
+the last @scheme[sub] can be a filename.
 
 The @scheme[base] and @scheme[sub-paths] arguments can be paths for
 any platform. The platform for the resulting path is inferred from the
@@ -428,8 +429,8 @@ directory or file name.  Three values are returned:
 
   @itemize{
    @item{a path,} 
-   @item{@scheme['relative] if @scheme[path] is an immediate relative directory 
-    or filename, or}
+   @item{@indexed-scheme['relative] if @scheme[path] is an immediate
+    relative directory or filename, or}
    @item{@scheme[#f] if @scheme[path] is a root directory.}
  }}
 

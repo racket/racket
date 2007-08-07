@@ -51,8 +51,8 @@ not exist.
 values are @scheme[equal?] if they are @scheme[eq?], or if they are
 instances of the same structure type, no fields are opaque, and the
 results of applying @scheme[struct->vector] to the structs are
-@scheme[equal?]. (Consequently, @scheme[equal?] testing for structures
-depends on the current inspector.)
+@scheme[equal?]. (Consequently, @scheme[equal?]  testing for
+structures depends on the current inspector.)
 
 @;------------------------------------------------------------------------
 @include-section["define-struct.scrbl"]
@@ -222,11 +222,11 @@ For examples, see @scheme[make-struct-type].}
 @;------------------------------------------------------------------------
 @section[#:tag "mz:structprops"]{Structure Type Properties}
 
-A @index['("structure type properties")]{@deftech{structure type
- property}} allows per-type information to be associated with a
- structure type (as opposed to per-instance information associated
- with a structure value). A property value is associated with a
- structure type through the @scheme[make-struct-type] procedure (see
+A @deftech{structure type property} allows per-type information to be
+ associated with a structure type (as opposed to per-instance
+ information associated with a structure value). A property value is
+ associated with a structure type through the
+ @scheme[make-struct-type] procedure (see
  @secref["mz:creatingmorestructs"]) or through the @scheme[#:property]
  option of @scheme[define-struct].  Subtypes inherit the property
  values of their parent types, and subtypes can override an inherited

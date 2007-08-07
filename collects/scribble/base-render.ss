@@ -69,8 +69,8 @@
         (let ([p-ht (make-hash-table 'equal)])
           (when (part-title-content d)
             (collect-content (part-title-content d) p-ht))
-          (when (part-tag d)
-            (collect-part-tag d p-ht number))
+          (collect-part-tags d p-ht number)
+          (collect-content (part-to-collect d) p-ht)
           (collect-flow (part-flow d) p-ht)
           (let loop ([parts (part-parts d)]
                      [pos 1])
@@ -91,8 +91,10 @@
                                (lambda (k v)
                                  (hash-table-put! ht k v)))))
 
-      (define/public (collect-part-tag d ht number)
-        (hash-table-put! ht `(part ,(part-tag d)) (list (part-title-content d) number)))
+      (define/public (collect-part-tags d ht number)
+        (for-each (lambda (t)
+                    (hash-table-put! ht `(part ,t) (list (part-title-content d) number)))
+                  (part-tags d)))
       
       (define/public (collect-content c ht)
         (for-each (lambda (i)
@@ -316,7 +318,7 @@
                                                                        (list
                                                                         (make-element 'hspace '(" "))))
                                                         (part-title-content part))
-                                                       `(part ,(part-tag part))))))))
+                                                       `(part ,(car (part-tags part)))))))))
                           subs)])
                   (if (and (= 1 (length number))
                            (or (not (car number))

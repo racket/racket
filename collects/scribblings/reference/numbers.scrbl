@@ -26,10 +26,10 @@ and an inexact imaginary part; a complex number with an zero imaginary
 part (inexact or exact) is a real number.
 
 Inexact real numbers are implemented as either single- or
-double-precision IEEE floating-point numbers---the latter by default,
-and the former only when support for 32-bit inexact numbers is
-specifically enabled when the run-time system is built, and when
-computation starts with numerical constants specified as
+double-precision @as-index{IEEE floating-point numbers}---the latter
+by default, and the former only when support for 32-bit inexact
+numbers is specifically enabled when the run-time system is built, and
+when computation starts with numerical constants specified as
 single-precision numbers.
 
 The precision and size of exact numbers is limited only by available
@@ -37,20 +37,21 @@ memory (and the precision of operations that can produce irrational
 numbers). In particular, adding, multiplying, subtracting, and
 dividing exact numbers always produces an extract result.
 
-@index["division by inexact zero"]{Inexact} numbers can be coerced to
-exact form, except for the inexact numbers @as-index{@scheme[+inf.0]}
-(positive infinity), @as-index{@scheme[-inf.0]} (negative infinity), and
-@as-index{@scheme[+nan.0]} (not-a-number), which have no exact
-form. Dividing a number by exact zero raises an exception; dividing a
-non-zero number other than @scheme[+nan.0] by an inexact zero returns
-@scheme[+inf.0] or @scheme[-inf.0], depending on the sign of the
-dividend.  The infinities @scheme[+inf.0] and @scheme[-inf.0] are
-integers, and they answer @scheme[#t] for both @scheme[even?] and
-@scheme[odd?]. The @scheme[+nan.0] value is not an integer and is not
-@scheme[=] to itself, but @scheme[+nan.0] is @scheme[eqv?] to
-itself. Conversely, @scheme[(= 0.0 -0.0)] is @scheme[#t], but
-@scheme[(eqv? 0.0 -0.0)] is @scheme[#f]. The datum @scheme[-nan.0]
-refers to the same constant as @scheme[+nan.0].
+Inexact numbers can be coerced to exact form, except for the inexact
+numbers @as-index{@scheme[+inf.0]} (positive @as-index{infinity}),
+@as-index{@scheme[-inf.0]} (negative infinity), and
+@as-index{@scheme[+nan.0]} (@as-index{not-a-number}), which have no
+exact form. @index["division by inexact zero"]{Dividing} a number by
+exact zero raises an exception; dividing a non-zero number other than
+@scheme[+nan.0] by an inexact zero returns @scheme[+inf.0] or
+@scheme[-inf.0], depending on the sign of the dividend.  The
+infinities @scheme[+inf.0] and @scheme[-inf.0] are integers, and they
+answer @scheme[#t] for both @scheme[even?] and @scheme[odd?]. The
+@scheme[+nan.0] value is not an integer and is not @scheme[=] to
+itself, but @scheme[+nan.0] is @scheme[eqv?] to itself. Conversely,
+@scheme[(= 0.0 -0.0)] is @scheme[#t], but @scheme[(eqv? 0.0 -0.0)] is
+@scheme[#f]. The datum @scheme[-nan.0] refers to the same constant as
+@scheme[+nan.0].
 
 Calculations with infinites produce results consistent with IEEE
 double-precision floating point where IEEE specifies the result; in
@@ -479,6 +480,8 @@ noted above). Two numbers are @scheme[equal?] when they are
 @; ------------------------------------------------------------------------
 @section{Bitwise Operations}
 
+@section-index{logical operators}
+
 @defproc[(bitwise-ior [n exact-integer?] ...) exact-integer?]{ Returns
  the bitwise ``inclusive or'' of the @scheme[n]s in their (semi-infinite)
  two's complement representation. If no arguments are provided, the
@@ -599,6 +602,12 @@ one of the last three integers must be non-zero.}
 
 @; ------------------------------------------------------------------------
 @section{Number--String Conversions}
+
+@section-index["numbers" "machine representations"]
+@section-index["numbers" "floating-point"]
+@section-index["numbers" "big-endian"]
+@section-index["numbers" "little-endian"]
+@section-index["numbers" "converting"]
 
 @defproc[(number->string [z number?]
                          [radix (one-of/c 2 8 10 16) 10]) string?]{

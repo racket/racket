@@ -388,6 +388,7 @@
                                   [vd
                                    (make-link-element "schemevaluelink" (list s) vtag)]
                                   [else s]))))
+                            (lambda () s)
                             (lambda () s))
                            (literalize-spaces s))
                        (cond

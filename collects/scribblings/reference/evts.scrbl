@@ -9,12 +9,14 @@
 
 @title[#:tag "mz:sync"]{Events}
 
-@index['("select")]{@index['("poll")]{A}} @deftech{synchronizable
-event} (or just @defterm{event} for short) works with the
-@scheme[sync] procedure to coordinate synchronization among
-threads. Certain kinds of objects double as events, including
-ports and threads. Other kinds of objects exist only for their
-use as events.
+@section-index["select"]
+@section-index["poll"]
+
+A @deftech{synchronizable event} (or just @defterm{event} for short)
+works with the @scheme[sync] procedure to coordinate synchronization
+among threads. Certain kinds of objects double as events, including
+ports and threads. Other kinds of objects exist only for their use as
+events.
 
 At an point in time, an event is either @defterm{ready} for
 synchronization, or it is not; depending on the kind of event and how

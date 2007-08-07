@@ -38,12 +38,13 @@ shape and properties of the result:
 
 @itemize{
 
- @item{If the result has a @scheme['certify-mode] property (see
-          @secref["mz:stxprops"]) that is @scheme['opaque], then the
-          certificate is attached to the immediate syntax object.}
+ @item{If the result has a @indexed-scheme['certify-mode] property
+          (see @secref["mz:stxprops"]) that is
+          @indexed-scheme['opaque], then the certificate is attached
+          to the immediate syntax object.}
 
  @item{If the result has a @scheme['certify-mode] property that is
-          @scheme['transparent], then the certificate is also
+          @indexed-scheme['transparent], then the certificate is also
           propagated recursively to syntax object that corresponds to
           elements of the syntax object's datum as a list (or, more
           precisely, to the @scheme[car]s of the datum as reached by
@@ -52,8 +53,8 @@ shape and properties of the result:
           attachment.}
 
  @item{If the result has a @scheme['certify-mode] property that is
-          @scheme['transparent-binding], then the certificate is
-          attached to similar to @scheme['transparent], but further
+          @indexed-scheme['transparent-binding], then the certificate
+          is attached to similar to @scheme['transparent], but further
           treating the syntax object corresponding to the second list
           element as having a @scheme['transparent] value for the
           @scheme['certify-mode] property if it does not already have

@@ -3,15 +3,16 @@
 
 @title[#:tag "mz:breakhandler"]{Breaks}
 
-@index['("threads" "breaking")]{A} @deftech{break} is an asynchronous
-exception, usually triggered through an external source controlled by
-the user, or through the @scheme[break-thread] procedure. A break
-exception can only occur in a thread while breaks are enabled. When a
-break is detected and enabled, the @exnraise[exn:break] in the thread
-sometime afterward; if breaking is disabled when @scheme[break-thread]
-is called, the break is suspended until breaking is again enabled for
-the thread. While a thread has a suspended break, additional breaks
-are ignored.
+@section-index["threads" "breaking"]
+
+A @deftech{break} is an asynchronous exception, usually triggered
+through an external source controlled by the user, or through the
+@scheme[break-thread] procedure. A break exception can only occur in a
+thread while breaks are enabled. When a break is detected and enabled,
+the @exnraise[exn:break] in the thread sometime afterward; if breaking
+is disabled when @scheme[break-thread] is called, the break is
+suspended until breaking is again enabled for the thread. While a
+thread has a suspended break, additional breaks are ignored.
 
 Breaks are enabled through the @scheme[break-enabled] parameter-like
 procedure, and through the @scheme[parameterize-break] form, which is

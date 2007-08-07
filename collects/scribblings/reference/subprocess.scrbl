@@ -20,9 +20,9 @@ arguments for the program. Under Unix and Mac OS X, command-line
 arguments are passed as byte strings using the current locale's
 encoding (see @secref["mz:encodings"]).
 
-Under Windows, the first @scheme[arg] can be @scheme['exact], which
-triggers a Windows-specific hack: the second @scheme[arg] is used
-exactly as the command-line for the subprocess, and no additional
+Under Windows, the first @scheme[arg] can be @indexed-scheme['exact],
+which triggers a Windows-specific hack: the second @scheme[arg] is
+used exactly as the command-line for the subprocess, and no additional
 @scheme[arg]s can be supplied.  Otherwise, a command-line string is
 constructed from @scheme[command] and @scheme[arg] so that a typical
 Windows console application can parse it back to an array of
@@ -43,7 +43,7 @@ pipe is created and the corresponding returned value is @scheme[#f].
 
 The @scheme[subprocess] procedure returns four values:
 
-\begin{itemize}
+@itemize{
 
  @item{a subprocess value representing the created process;}
 
@@ -67,7 +67,8 @@ The returned ports are @tech{file-stream ports} (see
 the current custodian (see @secref["mz:custodians"]).  The
 @exnraise[exn:fail] when a low-level error prevents the spawning of a
 process or the creation of operating system pipes for process
-communication.
+communication.}
+
 
 @defproc[(subprocess-wait [subproc subprocess?]) void?]{
 
@@ -78,10 +79,11 @@ Blocks until the process represented by @scheme[subproc] terminates.}
          (or/c (one-of/c 'running)
                nonnegative-exact-integer?)]{
 
-Returns @scheme['running] if the process represented by @scheme[subproc] is still running, or its exit
-code otherwise. The exit code is an exact integer, and @scheme[0]
-typically indicates success. If the process terminated due to a fault
-or signal, the exit code is non-zero.}
+Returns @indexed-scheme['running] if the process represented by
+@scheme[subproc] is still running, or its exit code otherwise. The
+exit code is an exact integer, and @scheme[0] typically indicates
+success. If the process terminated due to a fault or signal, the exit
+code is non-zero.}
 
 
 @defproc[(subprocess-kill [subproc subprocess?][force? any/c]) void?]{
@@ -113,9 +115,9 @@ otherwise.}
                         [target string?][parameters string?][dir path-string?][show-mode symbol?]) 
          false/c]
 
-@index['("ShellExecute")]{Performs} the action specified by
-@scheme[verb] on @scheme[target] in Windows. For platforms other than
-Windows, the @exnraise[exn:fail:unsupported].
+@index['("ShellExecute")]{Performs} the action specified by @scheme[verb]
+on @scheme[target] in Windows. For platforms other than Windows, the
+@exnraise[exn:fail:unsupported].
 
 For example,
 
@@ -149,45 +151,51 @@ of each symbol's meaning is taken from the Windows API documentation.
 
 @itemize{
 
- @item{@scheme['sw_hide] or @scheme['SW_HIDE] --- Hides the window and
- activates another window.}
+ @item{@indexed-scheme['sw_hide] or @indexed-scheme['SW_HIDE] ---
+ Hides the window and activates another window.}
 
- @item{@scheme['sw_maximize] or @scheme['SW_MAXIMIZE] --- Maximizes
- the window.}
+ @item{@indexed-scheme['sw_maximize] or @indexed-scheme['SW_MAXIMIZE]
+ --- Maximizes the window.}
 
- @item{@scheme['sw_minimize] or @scheme['SW_MINIMIZE] --- Minimizes
- the window and activates the next top-level window in the z-order.}
+ @item{@indexed-scheme['sw_minimize] or @indexed-scheme['SW_MINIMIZE]
+ --- Minimizes the window and activates the next top-level window in
+ the z-order.}
 
- @item{@scheme['sw_restore] or @scheme['SW_RESTORE] --- Activates and
- displays the window. If the window is minimized or maximized, Windows
- restores it to its original size and position.}
-
- @item{@scheme['sw_show] or @scheme['SW_SHOW] --- Activates the window
- and displays it in its current size and position.}
-
- @item{@scheme['sw_showdefault] or @scheme['SW_SHOWDEFAULT] --- Uses a
- default.}
-
- @item{@scheme['sw_showmaximized] or @scheme['SW_SHOWMAXIMIZED] ---
- Activates the window and displays it as a maximized window.}
-
- @item{@scheme['sw_showminimized] or @scheme['SW_SHOWMINIMIZED] ---
- Activates the window and displays it as a minimized window.}
-
- @item{@scheme['sw_showminnoactive] or @scheme['SW_SHOWMINNOACTIVE]
- --- Displays the window as a minimized window. The active window
- remains active.}
-
- @item{@scheme['sw_showna] or @scheme['SW_SHOWNA] --- Displays the
- window in its current state. The active window remains active.}
-
- @item{@scheme['sw_shownoactivate] or @scheme['SW_SHOWNOACTIVATE] ---
- Displays a window in its most recent size and position. The active
- window remains active.}
-
- @item{@scheme['sw_shownormal] or @scheme['SW_SHOWNORMAL] ---
- Activates and displays a window. If the window is minimized or
+ @item{@indexed-scheme['sw_restore] or @indexed-scheme['SW_RESTORE]
+ --- Activates and displays the window. If the window is minimized or
  maximized, Windows restores it to its original size and position.}
+
+ @item{@indexed-scheme['sw_show] or @indexed-scheme['SW_SHOW] ---
+ Activates the window and displays it in its current size and
+ position.}
+
+ @item{@indexed-scheme['sw_showdefault] or
+ @indexed-scheme['SW_SHOWDEFAULT] --- Uses a default.}
+
+ @item{@indexed-scheme['sw_showmaximized] or
+ @indexed-scheme['SW_SHOWMAXIMIZED] --- Activates the window and
+ displays it as a maximized window.}
+
+ @item{@indexed-scheme['sw_showminimized] or
+ @indexed-scheme['SW_SHOWMINIMIZED] --- Activates the window and
+ displays it as a minimized window.}
+
+ @item{@indexed-scheme['sw_showminnoactive] or
+ @indexed-scheme['SW_SHOWMINNOACTIVE] --- Displays the window as a
+ minimized window. The active window remains active.}
+
+ @item{@indexed-scheme['sw_showna] or @indexed-scheme['SW_SHOWNA] ---
+ Displays the window in its current state. The active window remains
+ active.}
+
+ @item{@indexed-scheme['sw_shownoactivate] or
+ @indexed-scheme['SW_SHOWNOACTIVATE] --- Displays a window in its most
+ recent size and position. The active window remains active.}
+
+ @item{@indexed-scheme['sw_shownormal] or
+ @indexed-scheme['SW_SHOWNORMAL] --- Activates and displays a
+ window. If the window is minimized or maximized, Windows restores it
+ to its original size and position.}
 
  }
 

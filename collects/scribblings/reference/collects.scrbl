@@ -85,8 +85,8 @@ Produces a list of paths as follows:
   executable) and it exists, then it is added to the end of the
   default collection path list.}
 
- @item{If the @envvar{PLTCOLLECTS} environment variable is defined, it
-  is combined with the default list using
+ @item{If the @indexed-envvar{PLTCOLLECTS} environment variable is
+  defined, it is combined with the default list using
   @scheme[path-list-string->path-list]. If it is not defined, the
   default collection path list (as constructed by the first three
   bullets above) is used directly.}

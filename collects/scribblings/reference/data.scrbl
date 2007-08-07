@@ -66,16 +66,18 @@ object, @scheme[#f] otherwise. See also @secref["mz:model-eq"].}
 
 @guideintro["guide:symbols"]{symbols}
 
+@section-index["symbols" "generating"]
+@section-index["symbols" "unique"]
+
 A symbol is like an immutable string, but symbols are normally
 @deftech{interned}, so that two symbols with the same character
 content are normally @scheme[eq?]. All symbols produced by the default
 reader (see @secref["mz:parse-symbol"]) are interned.
 
-@index['("symbols" "generating")]{@index['("symbols" "unique")]{The}} two
-procedures @scheme[string->uninterned-symbol] and @scheme[gensym]
-generate @deftech{uninterned} symbols, i.e., symbols that are not
-@scheme[eq?], @scheme[eqv?], or @scheme[equal?] to any other symbol,
-although they may print the same as other symbols.
+The two procedures @scheme[string->uninterned-symbol] and
+@scheme[gensym] generate @deftech{uninterned} symbols, i.e., symbols
+that are not @scheme[eq?], @scheme[eqv?], or @scheme[equal?] to any
+other symbol, although they may print the same as other symbols.
 
 Regular (interned) symbols are only weakly held by the internal symbol
 table. This weakness can never affect the result of an @scheme[eq?],
@@ -466,10 +468,10 @@ must one of the following:
 
  @itemize{
 
-  @item{@scheme['weak] --- creates a hash table with weakly-held
+  @item{@indexed-scheme['weak] --- creates a hash table with weakly-held
    keys (see @secref["mz:weakbox"]).}
 
-  @item{@scheme['equal] --- creates a hash table that compares
+  @item{@indexed-scheme['equal] --- creates a hash table that compares
    keys using @scheme[equal?] instead of @scheme[eq?] (needed, for
    example, when using strings as keys).}
 

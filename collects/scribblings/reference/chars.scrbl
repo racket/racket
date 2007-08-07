@@ -205,13 +205,17 @@ inclusive.}
 @defproc[(char-general-category [char char?]) boolean?]{
 
 Returns a symbol representing the character's Unicode general
-category, which is @scheme['lu], @scheme['ll], @scheme['lt],
-@scheme['lm], @scheme['lo], @scheme['mn], @scheme['mc], @scheme['me],
-@scheme['nd], @scheme['nl], @scheme['no], @scheme['ps], @scheme['pe],
-@scheme['pi], @scheme['pf], @scheme['pd], @scheme['pc], @scheme['po],
-@scheme['sc], @scheme['sm], @scheme['sk], @scheme['so], @scheme['zs],
-@scheme['zp], @scheme['zl], @scheme['cc], @scheme['cf], @scheme['cs],
-@scheme['co], or @scheme['cn].}
+category, which is @indexed-scheme['lu], @indexed-scheme['ll],
+@indexed-scheme['lt], @indexed-scheme['lm], @indexed-scheme['lo],
+@indexed-scheme['mn], @indexed-scheme['mc], @indexed-scheme['me],
+@indexed-scheme['nd], @indexed-scheme['nl], @indexed-scheme['no],
+@indexed-scheme['ps], @indexed-scheme['pe], @indexed-scheme['pi],
+@indexed-scheme['pf], @indexed-scheme['pd], @indexed-scheme['pc],
+@indexed-scheme['po], @indexed-scheme['sc], @indexed-scheme['sm],
+@indexed-scheme['sk], @indexed-scheme['so], @indexed-scheme['zs],
+@indexed-scheme['zp], @indexed-scheme['zl], @indexed-scheme['cc],
+@indexed-scheme['cf], @indexed-scheme['cs], @indexed-scheme['co], or
+@indexed-scheme['cn].}
 
 @defproc[(make-known-char-range-list) 
          (listof (list/c nonnegative-integer?

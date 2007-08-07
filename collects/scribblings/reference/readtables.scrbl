@@ -85,7 +85,7 @@ The possible combinations for @scheme[key], @scheme[mode], and
 
 @itemize{
 
- @item{@scheme[(code:line _char 'terminating-macro _proc)] --- causes
+ @item{@scheme[(code:line _char (unsyntax @indexed-scheme['terminating-macro]) _proc)] --- causes
  @scheme[_char] to be parsed as a delimiter, and an
  unquoted/uncommented @scheme[_char] in the input string triggers a
  call to the @deftech{reader macro} @scheme[_proc]; the activity of
@@ -93,13 +93,13 @@ The possible combinations for @scheme[key], @scheme[mode], and
  like @litchar{;}, @litchar{(}, and @litchar{)} are mapped to
  terminating reader macros in the default readtable.}
 
- @item{@scheme[(code:line _char 'non-terminating-macro _proc)] --- like
+ @item{@scheme[(code:line _char (unsyntax @indexed-scheme['non-terminating-macro]) _proc)] --- like
  the @scheme['terminating-macro] variant, but @scheme[_char] is not
  treated as a delimiter, so it can be used in the middle of an
  identifier or number. Conceptually, @litchar{#} is mapped to a
  non-terminating macro in the default readtable.}
 
- @item{@scheme[(code:line _char 'dispatch-macro _proc)] --- like the
+ @item{@scheme[(code:line _char (unsyntax @indexed-scheme['dispatch-macro]) _proc)] --- like the
  @scheme['non-terminating-macro] variant, but for @scheme[_char] only
  when it follows a @litchar{#} (or, more precisely, when the character
  follows one that has been mapped to the behavior of @litchar{#}hash
@@ -121,7 +121,7 @@ The possible combinations for @scheme[key], @scheme[mode], and
  that the character is disallowed when the
  @scheme[read-curly-brace-as-paren] parameter is set to @scheme[#f].}
 
- @item{@scheme[(code:line #f 'non-terminating-macro _proc)] ---
+ @item{@scheme[(code:line #f (unsyntax @indexed-scheme['non-terminating-macro]) _proc)] ---
  replaces the macro used to parse characters with no specific mapping:
  i.e., characters (other than @litchar{#} or @litchar{|}) that can
  start a symbol or number with the default readtable.}

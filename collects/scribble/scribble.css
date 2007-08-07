@@ -118,6 +118,10 @@
                font-weight: bold;
                }
 
+               .indexlink { 
+                  text-decoration: none;
+                }
+
                .title {
                font-size: 200%;
                font-weight: normal;
@@ -404,4 +408,9 @@
 
                .colophon a {
                color: gray;
+               }
+
+               .mywbr { 
+                 width: 0;
+                 font-size: 1px;
                }

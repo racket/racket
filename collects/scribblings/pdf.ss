@@ -25,7 +25,8 @@
 
   (parameterize ([current-directory temp-dir])
     (for-each (lambda (name)
-                (unless (system (format "pdflatex ~a && pdflatex ~a"
+                (unless (system (format "pdflatex ~a && pdflatex ~a && pdflatex ~a"
+                                        name
                                         name
                                         name))
                   (error "stopped")))

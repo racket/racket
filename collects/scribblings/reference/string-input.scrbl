@@ -38,22 +38,22 @@ must be one of the following symbols:
 
  @itemize{
 
-  @item{@scheme['linefeed] breaks lines on linefeed characters.}
+  @item{@indexed-scheme['linefeed] breaks lines on linefeed characters.}
 
-  @item{@scheme['return] breaks lines on return characters.}
+  @item{@indexed-scheme['return] breaks lines on return characters.}
 
-  @item{@scheme['return-linefeed] breaks lines on
+  @item{@indexed-scheme['return-linefeed] breaks lines on
   return-linefeed combinations. If a return character is not followed
   by a linefeed character, it is included in the result string;
   similarly, a linefeed that is not preceded by a return is included
   in the result string.}
 
-  @item{@scheme['any] breaks lines on any of a return
+  @item{@indexed-scheme['any] breaks lines on any of a return
   character, linefeed character, or return-linefeed combination. If a
   return character is followed by a linefeed character, the two are
   treated as a combination.}
 
-  @item{@scheme['any-one] breaks lines on either a return or
+  @item{@indexed-scheme['any-one] breaks lines on either a return or
   linefeed character, without recognizing return-linefeed
   combinations.}
 

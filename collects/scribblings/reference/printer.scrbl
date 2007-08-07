@@ -28,8 +28,6 @@ terms of Unicode characters; see @secref["mz:ports"] for information
 on how a character stream is written to an port's underlying byte
 stream.
 
-@local-table-of-contents[]
-
 @section[#:tag "mz:print-symbol"]{Printing Symbols}
 
 Symbols containing spaces or special characters @scheme[write] using

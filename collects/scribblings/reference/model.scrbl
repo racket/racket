@@ -568,6 +568,8 @@ by prefixes.
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "mz:module-redeclare"]{Module Re-declarations}
 
+@section-index["modules" "re-define"]
+
 When a module is declared using a name for which a module is already
 declared, the new declaration's definitions replace and extend the old
 declarations. If a variable in the old declaration has no counterpart

@@ -216,9 +216,9 @@ available, the @file{.so}/@file{.dll}/@file{.dylib} file is used.
 
 Multiple files can be combined into a single
 @file{.so}/@file{.dll}/@file{.dylib} file by creating a special file
-@file{_loader.so}, @file{_loader.dll}, or
-@file{_loader.dylib}. When such a file is present where a normal
-@file{.so}/@file{.dll}/@file{.dylib} would be loaded, then the
+@indexed-file{_loader.so}, @indexed-file{_loader.dll}, or
+@indexed-file{_loader.dylib}. When such a file is present where a
+normal @file{.so}/@file{.dll}/@file{.dylib} would be loaded, then the
 @file{_loader} file is first loaded via @scheme[load-extension]. The
 result returned by @file{_loader} must be a procedure that accepts a
 symbol. This procedure will be called with a symbol matching the base

@@ -6,13 +6,10 @@
 
 @title[#:tag "mz:regexp"]{Regular Expressions}
 
-@;{
-\index{regular expressions}
-\index{regexps|see{regular expressions}}
-\index{pattern matching}
-\index{strings!pattern matching}
-\index{input ports!pattern matching}
-}
+@section-index{regexps}
+@section-index{pattern matching}
+@section-index["strings" "pattern matching"]
+@section-index["input ports" "pattern matching"]
 
 Regular expressions are specified as strings or byte strings, using
 the same pattern language as the Unix utility @exec{egrep} or Perl. A

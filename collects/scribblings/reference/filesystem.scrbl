@@ -13,28 +13,29 @@ by @scheme[kind], which must be one of the following:
 
 @itemize{
 
- @item{@scheme['home-dir] --- the current user's home directory.
+ @item{@indexed-scheme['home-dir] --- the current user's home
+ directory.
 
  Under Unix and Mac OS X, this directory is determined by expanding
  the path @file{~}, which is expanded by first checking for a
- @envvar{HOME} environment variable. If none is defined, the
- @envvar{USER} and @envvar{LOGNAME} environment variables are
- consulted (in that order) to find a user name, and then system files
- are consulted to locate the user's home directory.
+ @indexed-envvar{HOME} environment variable. If none is defined, the
+ @indexed-envvar{USER} and @indexed-envvar{LOGNAME} environment
+ variables are consulted (in that order) to find a user name, and then
+ system files are consulted to locate the user's home directory.
 
  Under Windows, the user's home directory is the user-specific profile
  directory as determined by the Windows registry. If the registry
  cannot provide a directory for some reason, the value of the
- @envvar{USERPROFILE} environment variable is used instead, as long as
- it refers to a directory that exists. If @envvar{USERPROFILE} also
- fails, the directory is the one specified by the @envvar{HOMEDRIVE}
- and @envvar{HOMEPATH} environment variables.  If those environment
- variables are not defined, or if the indicated directory still does
- not exist, the directory containing the current executable is used as
- the home directory.}
+ @indexed-envvar{USERPROFILE} environment variable is used instead, as
+ long as it refers to a directory that exists. If @envvar{USERPROFILE}
+ also fails, the directory is the one specified by the
+ @indexed-envvar{HOMEDRIVE} and @indexed-envvar{HOMEPATH} environment
+ variables.  If those environment variables are not defined, or if the
+ indicated directory still does not exist, the directory containing
+ the current executable is used as the home directory.}
 
- @item{@scheme['pref-dir] --- the standard directory for storing the
- current user's preferences. Under Unix, the directory is
+ @item{@indexed-scheme['pref-dir] --- the standard directory for
+ storing the current user's preferences. Under Unix, the directory is
  @file{.plt-scheme} in the user's home directory.  Under Windows, it
  is @file{PLT Scheme} in the user's application-data folder as
  specified by the Windows registry; the application-data folder is
@@ -42,84 +43,86 @@ by @scheme[kind], which must be one of the following:
  directory. Under Mac OS X, it is @file{Library/Preferences} in the
  user's home directory. This directory might not exist.}
 
- @item{@scheme['pref-file] --- a file that contains a symbol-keyed
- association list of preference values. The file's directory path
- always matches the result returned for @scheme['pref-dir]. The file
- name is @file{plt-prefs.ss} under Unix and Windows, and it is
- @file{org.plt-scheme.prefs.ss} under Mac OS X. The file's directory
- might not exist. See also @scheme[get-preference].}
+ @item{@indexed-scheme['pref-file] --- a file that contains a
+ symbol-keyed association list of preference values. The file's
+ directory path always matches the result returned for
+ @scheme['pref-dir]. The file name is @file{plt-prefs.ss} under Unix
+ and Windows, and it is @file{org.plt-scheme.prefs.ss} under Mac OS
+ X. The file's directory might not exist. See also
+ @scheme[get-preference].}
 
- @item{@scheme['temp-dir] --- the standard directory for storing
- temporary files. Under @|AllUnix|, this is the directory specified by
- the @envvar{TMPDIR} environment variable, if it is defined.}
+ @item{@indexed-scheme['temp-dir] --- the standard directory for
+ storing temporary files. Under @|AllUnix|, this is the directory
+ specified by the @indexed-envvar{TMPDIR} environment variable, if it
+ is defined.}
 
- @item{@scheme['init-dir] --- the directory containing the
+ @item{@indexed-scheme['init-dir] --- the directory containing the
  initialization file used by stand-alone @exec{mzscheme} executable.
  It is the same as the current user's home directory.}
 
- @item{@scheme['init-file] --- the file loaded at start-up
- by the stand-alone @exec{mzscheme} executable. The directory part
- of the path is the same path as returned for @scheme['init-dir].
- The file name is platform-specific:
+ @item{@indexed-scheme['init-file] --- the file loaded at start-up by
+ the stand-alone @exec{mzscheme} executable. The directory part of the
+ path is the same path as returned for @scheme['init-dir].  The file
+ name is platform-specific:
 
   @itemize{
 
-  @item{@|AllUnix|: @file{.mzschemerc}}
+  @item{@|AllUnix|: @indexed-file{.mzschemerc}}
 
-  @item{Windows: @file{mzschemerc.ss}}
+  @item{Windows: @indexed-file{mzschemerc.ss}}
 
   }}
 
- @item{@scheme['addon-dir] --- a directory for installing PLT Scheme
+ @item{@indexed-scheme['addon-dir] --- a directory for installing PLT Scheme
  extensions. It's the same as @scheme['pref-dir], except under Mac OS
  X, where it is @file{Library/PLT Scheme} in the user's home
  directory. This directory might not exist.}
 
- @item{@scheme['doc-dir] --- the standard directory for storing the
+ @item{@indexed-scheme['doc-dir] --- the standard directory for storing the
  current user's documents. It's the same as @scheme['home-dir] under
  @|AllUnix|. Under Windows, it is the user's documents folder as
  specified by the Windows registry; the documents folder is usually
  @file{My Documents} in the user's home directory.}
 
- @item{@scheme['desk-dir] --- the directory for the current user's
+ @item{@indexed-scheme['desk-dir] --- the directory for the current user's
  desktop. Under Unix, it's the same as @scheme['home-dir]. Under
  Windows, it is the user's desktop folder as specified by the Windows
  registry; the documents folder is usually @file{Desktop} in the
  user's home directory. Under Mac OS X, it is the desktop directory,
  which is specifically @file{~/Desktop} under Mac OS X.}
 
- @item{@scheme['sys-dir] --- the directory containing the
+ @item{@indexed-scheme['sys-dir] --- the directory containing the
  operating system for Windows. Under @|AllUnix|, the
  result is @scheme["/"].}
 
- @item{@scheme['exec-file] --- the path of the @exec{mzscheme}
+ @item{@indexed-scheme['exec-file] --- the path of the @exec{mzscheme}
  executable as provided by the operating system for the current
  invocation.
 
  @margin-note{For MrEd, the executable path is the name of a MrEd
  executable.}}
 
- @item{@scheme['run-file] --- the path of the current executable; this
-  may be different from result for @scheme['exec-file] because an
-  alternate path was provided through a @DFlag{name} or @Flag{N}
-  command-line flag to the @exec{mzscheme} (or @exec{mred})
-  executable, or because an embedding executable installed an
-  alternate path. In particular a ``launcher'' script created by
-  @scheme[make-mzscheme-launcher] sets this path to the script's
-  path. In the @exec{mzscheme} executable, this path is also bound
-  initially to @scheme[program].}
+ @item{@indexed-scheme['run-file] --- the path of the current
+  executable; this may be different from result for
+  @scheme['exec-file] because an alternate path was provided through a
+  @DFlag{name} or @Flag{N} command-line flag to the @exec{mzscheme}
+  (or @exec{mred}) executable, or because an embedding executable
+  installed an alternate path. In particular a ``launcher'' script
+  created by @scheme[make-mzscheme-launcher] sets this path to the
+  script's path. In the @exec{mzscheme} executable, this path is also
+  bound initially to @scheme[program].}
 
- @item{@scheme['collects-dir] --- a path to the main collection
- of libraries (see @secref["mz:collects"]). If this path is relative, it's
- relative to the directory of @scheme[(find-system-path 'exec-file)].
- This path is normally embedded in the @exec{mzscheme} executable,
- but it can be overridden by the @DFlag{collects} or @Flag{X}
- command-line flag.}
+ @item{@indexed-scheme['collects-dir] --- a path to the main
+ collection of libraries (see @secref["mz:collects"]). If this path is
+ relative, it's relative to the directory of @scheme[(find-system-path
+ 'exec-file)].  This path is normally embedded in the @exec{mzscheme}
+ executable, but it can be overridden by the @DFlag{collects} or
+ @Flag{X} command-line flag.}
 
- @item{@scheme['orig-dir] --- the current directory at start-up, which
- can be useful in converting a relative-path result from
- @scheme[(find-system-path 'exec-file)] or @scheme[(find-system-path
- 'run-file)] to a complete path.}
+ @item{@indexed-scheme['orig-dir] --- the current directory at
+ start-up, which can be useful in converting a relative-path result
+ from @scheme[(find-system-path 'exec-file)] or
+ @scheme[(find-system-path 'run-file)] to a complete path.}
 
  }}
 
@@ -169,16 +172,17 @@ explored); otherwise, the result corresponds to the last link in the
 chain for which @scheme[related-sub] is found.
 
 If @scheme[program-sub] is a pathless name,
-@scheme[find-executable-path] gets the value of the @envvar{PATH}
-environment variable; if this environment variable is defined,
-@scheme[find-executable-path] tries each path in @envvar{PATH} as a
-prefix for @scheme[program-sub] using the search algorithm described
-above for path-containing @scheme[program-sub]s. If the @envvar{PATH}
-environment variable is not defined, @scheme[program-sub] is prefixed
-with the current directory and used in the search algorithm
-above. (Under Windows, the current directory is always implicitly the
-first item in @envvar{PATH}, so @scheme[find-executable-path] checks
-the current directory first under Windows.)}
+@scheme[find-executable-path] gets the value of the
+@indexed-envvar{PATH} environment variable; if this environment
+variable is defined, @scheme[find-executable-path] tries each path in
+@envvar{PATH} as a prefix for @scheme[program-sub] using the search
+algorithm described above for path-containing
+@scheme[program-sub]s. If the @envvar{PATH} environment variable is
+not defined, @scheme[program-sub] is prefixed with the current
+directory and used in the search algorithm above. (Under Windows, the
+current directory is always implicitly the first item in
+@envvar{PATH}, so @scheme[find-executable-path] checks the current
+directory first under Windows.)}
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:fileutils"]{Files}
@@ -261,10 +265,10 @@ called, and the default @scheme[fail-thunk] raises
 
 @defproc[(file-or-directory-permissions [path path-string?]) (listof symbol?)]{
 
-Returns a list containing @scheme['read], @scheme['write], and/or
-@scheme['execute] for the given file or directory path. On error
-(e.g., if no such file exists), the
-@exnraise[exn:fail:filesystem]. Under @|AllUnix|, permissions are
+Returns a list containing @indexed-scheme['read],
+@indexed-scheme['write], and/or @indexed-scheme['execute] for the
+given file or directory path. On error (e.g., if no such file exists),
+the @exnraise[exn:fail:filesystem]. Under @|AllUnix|, permissions are
 checked for the current effective user instead of the real user.}
 
 @defproc[(file-size [path path-string?]) nonnegative-exact-integer?]{

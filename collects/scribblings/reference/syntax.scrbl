@@ -147,6 +147,8 @@ The result is useful only to low-level extensions; see
 @;------------------------------------------------------------------------
 @section[#:tag "mz:application"]{Procedure Applications and @scheme[#%app]}
 
+@section-index{evaluation order}
+
 @guideintro["guide:application"]{procedure applications}
 
 @defform/none[(proc-expr arg ...)]{
@@ -325,10 +327,10 @@ the procedure body.
 ]}
 
 When compiling a @scheme[lambda] or @scheme[case-lambda] expression,
-Scheme looks for a @scheme['method-arity-error] property attached to
-the expression (see @secref["mz:stxprops"]). If it is present with a
-true value, and if no case of the procedure accepts zero arguments,
-then the procedure is marked so that an
+Scheme looks for a @indexed-scheme['method-arity-error] property
+attached to the expression (see @secref["mz:stxprops"]). If it is
+present with a true value, and if no case of the procedure accepts
+zero arguments, then the procedure is marked so that an
 @scheme[exn:fail:contract:arity] exception involving the procedure
 will hide the first argument, if one was provided. (Hiding the first
 argument is useful when the procedure implements a method, where the
@@ -1005,6 +1007,12 @@ multiple @scheme[form]s are provided, they are wrapped with
 @schemeidfont{#%module-begin}, as in the case where a single
 @scheme[form] does not expand to @scheme[#%module-begin].
 
+After such wrapping, if any, and before any expansion, an
+@indexed-scheme['enclosing-module-name] property is attached to the
+@schemeidfont{#%module-begin} syntax object (see
+@secref["mz:stxprops"]); the property's value is a symbol
+corresponding to @scheme[id].
+
 Each @scheme[form] is partially expanded (see
 @secref["mz:partial-expansion"]) in a @tech{module context}. Further
 action depends on the shape of the form:
@@ -1077,6 +1085,8 @@ Legal only in a @tech{module begin context}, and handled by the
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:require"]{Importing: @scheme[require], @scheme[require-for-syntax], @scheme[require-for-template]}
+
+@section-index["modules" "imports"]
 
 @defform/subs[#:literals (only only-rename prefix all-except prefix-all-except rename lib file planet)
               (require require-spec ...)
@@ -1198,6 +1208,8 @@ and @secref["mz:mod-parse"]).
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:provide"]{Exporting: @scheme[provide] and @scheme[provide-for-syntax]}
+
+@section-index["modules" "exports"]
 
 @defform/subs[#:literals (protect all-defined all-from rename except prefix)
               (provide protected-provide-spec ...)

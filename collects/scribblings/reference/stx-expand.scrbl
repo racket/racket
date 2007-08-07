@@ -72,20 +72,20 @@ to the syntax object:
 
 @itemize{
 
- @item{@scheme['module-direct-requires] --- a list of
- @tech{module path index}es (or symbols) representing the modules explicitly
- imported into the module.}
-
- @item{@scheme['module-direct-for-syntax-requires] --- a list of
- @tech{module path index}es (or symbols) representing the modules explicitly
- for-syntax imported into the module.}
-
- @item{@scheme['module-direct-for-template-requires] --- a list of
+ @item{@indexed-scheme['module-direct-requires] --- a list of
  @tech{module path index}es (or symbols) representing the modules
- explicitly for-template imported into the module.}
+ explicitly imported into the module.}
 
- @item{@scheme['module-variable-provides] --- a list of provided
- items, where each item is one of the following:
+ @item{@indexed-scheme['module-direct-for-syntax-requires] --- a list
+ of @tech{module path index}es (or symbols) representing the modules
+ explicitly for-syntax imported into the module.}
+
+ @item{@indexed-scheme['module-direct-for-template-requires] --- a
+ list of @tech{module path index}es (or symbols) representing the
+ modules explicitly for-template imported into the module.}
+
+ @item{@indexed-scheme['module-variable-provides] --- a list of
+ provided items, where each item is one of the following:
  
   @itemize{
 
@@ -108,11 +108,11 @@ to the syntax object:
 
   }}
 
- @item{@scheme['module-syntax-provides] --- like
+ @item{@indexed-scheme['module-syntax-provides] --- like
  @scheme['module-variable-provides], but for syntax exports instead of
  variable exports.}
 
- @item{@scheme['module-indirect-provides] --- a list of symbols for
+ @item{@indexed-scheme['module-indirect-provides] --- a list of symbols for
  variables that are defined in the module but not exported; they may
  be exported indirectly through macro expansions.  Definitions of
  macro-generated identifiers create uninterned symbols in this list.}

@@ -23,12 +23,12 @@ translated on input:
 
 @itemize{
 
- @item{@scheme['binary] --- bytes are returned from the port
+ @item{@indexed-scheme['binary] --- bytes are returned from the port
  exactly as they are read from the file.}
 
- @item{@scheme['text] --- return and linefeed bytes (10 and 13)
- as read from the file are filtered by the port in a
- platform specific manner:
+ @item{@indexed-scheme['text] --- return and linefeed bytes (10 and
+ 13) as read from the file are filtered by the port in a platform
+ specific manner:
 
   @itemize{
 
@@ -91,22 +91,24 @@ that the file already exists.
 
 @itemize{
 
- @item{@scheme['error] --- raise @scheme[exn:fail:filesystem].}
+ @item{@indexed-scheme['error] --- raise @scheme[exn:fail:filesystem].}
 
- @item{@scheme['replace] --- remove the old file and write a new one.}
+ @item{@indexed-scheme['replace] --- remove the old file and write a new one.}
 
- @item{@scheme['truncate] --- removed all old data.}
+ @item{@indexed-scheme['truncate] --- removed all old data.}
 
- @item{@scheme['truncate/replace] --- try @scheme['truncate]; if it
-       fails (perhaps due to file permissions), try @scheme['replace].}
+ @item{@indexed-scheme['truncate/replace] --- try @scheme['truncate];
+       if it fails (perhaps due to file permissions), try
+       @scheme['replace].}
 
- @item{@scheme['update] --- open an existing file without truncating it;
-  if the file does not exist, the @exnraise[exn:fail:filesystem].}
+ @item{@indexed-scheme['update] --- open an existing file without
+       truncating it; if the file does not exist, the
+       @exnraise[exn:fail:filesystem].}
 
- @item{@scheme['append] --- append to the end of the file under
-   @|AllUnix|; under Windows, @scheme['append] is equivalent to
-   @scheme['update], except that the file position is immediately set
-   to the end of the file after opening it.}
+ @item{@indexed-scheme['append] --- append to the end of the file
+       under @|AllUnix|; under Windows, @scheme['append] is equivalent
+       to @scheme['update], except that the file position is
+       immediately set to the end of the file after opening it.}
 
 }
 

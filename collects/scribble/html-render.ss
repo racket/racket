@@ -19,6 +19,7 @@
   (define next-separate-page (make-parameter #f))
   (define collecting-sub (make-parameter 0))
   (define current-no-links (make-parameter #f))
+  (define extra-breaking? (make-parameter #f))
 
   ;; ----------------------------------------
   ;;  main mixin
@@ -49,18 +50,20 @@
           ht))
 
       (define/public (part-whole-page? p ht)
-        (let ([dest (lookup p ht `(part ,(part-tag p)))])
+        (let ([dest (lookup p ht `(part ,(car (part-tags p))))])
           (caddr dest)))
 
       (define/public (current-part-whole-page?)
         #f)
 
-      (define/override (collect-part-tag d ht number)
-        (hash-table-put! ht 
-                         `(part ,(part-tag d)) 
-                         (list (current-output-file)
-                               (part-title-content d)
-                               (current-part-whole-page?))))
+      (define/override (collect-part-tags d ht number)
+        (for-each (lambda (t)
+                    (hash-table-put! ht 
+                                     `(part ,t)
+                                     (list (current-output-file)
+                                           (part-title-content d)
+                                           (current-part-whole-page?))))
+                  (part-tags d)))
 
       (define/override (collect-target-element i ht)
         (hash-table-put! ht 
@@ -93,7 +96,7 @@
                                    ,@(format-number (collected-info-number (part-collected-info p))
                                                     '((tt nbsp))))
                                   (td
-                                   (a ((href ,(let ([dest (lookup p ht `(part ,(part-tag p)))])
+                                   (a ((href ,(let ([dest (lookup p ht `(part ,(car (part-tags p))))])
                                                 (format "~a~a~a" 
                                                         (from-root (car dest)
                                                                    (get-dest-directory))
@@ -102,7 +105,7 @@
                                                             "#")
                                                         (if (caddr dest)
                                                             ""
-                                                            `(part ,(part-tag p))))))
+                                                            `(part ,(car (part-tags p)))))))
                                        (class ,(if (eq? p mine)
                                                    "tocviewselflink"
                                                    "tocviewlink")))
@@ -167,7 +170,8 @@
                                      ((class "tocsublist")
                                       (cellspacing "0"))
                                      ,@(map (lambda (p)
-                                              (parameterize ([current-no-links #t])
+                                              (parameterize ([current-no-links #t]
+                                                             [extra-breaking? #t])
                                                 `(tr
                                                   (td 
                                                    ,@(if (part? p)
@@ -176,9 +180,9 @@
                                                                                   '((tt nbsp)))))
                                                          '(""))
                                                    (a ((href ,(if (part? p)
-                                                                  (let ([dest (lookup p ht `(part ,(part-tag p)))])
+                                                                  (let ([dest (lookup p ht `(part ,(car (part-tags p))))])
                                                                     (format "#~a" 
-                                                                            `(part ,(part-tag p))))
+                                                                            `(part ,(car (part-tags p)))))
                                                                   (format "#~a" (target-element-tag p))))
                                                        (class ,(if (part? p)
                                                                    "tocsubseclink"
@@ -221,9 +225,9 @@
                         [(2) 'h4]
                         [else 'h5])
                      ,@(format-number number '((tt nbsp)))
-                     ,@(if (part-tag d)
-                           `((a ((name ,(format "~a" `(part ,(part-tag d)))))))
-                           null)
+                     ,@(map (lambda (t)
+                              `(a ((name ,(format "~a" `(part ,t))))))
+                            (part-tags d))
                      ,@(if (part-title-content d)
                            (render-content (part-title-content d) d ht)
                            null))))
@@ -399,7 +403,13 @@
 
       (define/override (render-other i part ht)
         (cond
-         [(string? i) (list i)]
+         [(string? i) (let ([m (and (extra-breaking?)
+                                    (regexp-match-positions #rx":" i))])
+                        (if m
+                            (list* (substring i 0 (cdar m))
+                                   `(span ((class "mywbr")) " ")
+                                   (render-other (substring i (cdar m)) part ht))
+                            (list i)))]
          [(eq? i 'mdash) `(" " ndash " ")]
          [(eq? i 'hline) `((hr))]
          [(symbol? i) (list i)]
@@ -428,9 +438,7 @@
       (define/private (derive-filename d ht)
         (let ([fn (format "~a.html" (regexp-replace*
                                      "[^-a-zA-Z0-9_=]"
-                                     (or (format "~a" (part-tag d))
-                                         (content->string (part-title-content d)
-                                                          this d ht))
+                                     (format "~a" (car (part-tags d)))
                                      "_"))])
           (when ((string-length fn) . >= . 48)
             (error "file name too long (need a tag):" fn))
@@ -560,7 +568,7 @@
                                               (make-link-element
                                                #f
                                                index-content
-                                               `(part ,(part-tag index)))))))))
+                                               `(part ,(car (part-tags index))))))))))
                                      null))))
                               d ht)
               ,@(render-table (make-table

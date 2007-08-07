@@ -3,11 +3,12 @@
 
 @title[#:tag "mz:linecol"]{Counting Positions, Lines, and Columns}
 
-@index['("line numbers")]{
-@index['("column numbers")]{
-@index['("port positions")]{
-By}}} default, Scheme keeps track of the @deftech{position} in a port as the
-number of bytes that have been read from or written to any port
+@section-index["line numbers"]
+@section-index["column numbers"]
+@section-index["port positions"]
+
+By default, Scheme keeps track of the @deftech{position} in a port as
+the number of bytes that have been read from or written to any port
 (independent of the read/write position, which is accessed or changed
 with @scheme[file-position]). Optionally, however, Scheme can track
 the position in terms of characters (after UTF-8 decoding), instead of

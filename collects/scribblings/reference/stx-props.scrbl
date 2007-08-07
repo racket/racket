@@ -26,17 +26,17 @@ value first, original value second).
 
 Before performing the merge, however, the syntax expander
 automatically adds a property to the original syntax object using the
-key @scheme['origin]. If the source syntax has no @scheme['origin]
-property, it is set to the empty list.  Then, still before the merge,
-the identifier that triggered the macro expansion (as syntax) is
-@scheme[cons-immutable]d onto the @scheme['origin] property so far.
-The @scheme['origin] property thus records (in reverse order) the
-sequence of macro expansions that produced an expanded
-expression. Usually, the @scheme['origin] value is an immutable list
-of identifiers. However, a transformer might return syntax that has
-already been expanded, in which case an @scheme['origin] list can
-contain other lists after a merge. The @scheme[syntax-track-origin]
-procedure implements this tracking.
+key @indexed-scheme['origin]. If the source syntax has no
+@scheme['origin] property, it is set to the empty list.  Then, still
+before the merge, the identifier that triggered the macro expansion
+(as syntax) is @scheme[cons-immutable]d onto the @scheme['origin]
+property so far.  The @scheme['origin] property thus records (in
+reverse order) the sequence of macro expansions that produced an
+expanded expression. Usually, the @scheme['origin] value is an
+immutable list of identifiers. However, a transformer might return
+syntax that has already been expanded, in which case an
+@scheme['origin] list can contain other lists after a merge. The
+@scheme[syntax-track-origin] procedure implements this tracking.
 
 Besides @scheme['origin] tracking for general macro expansion,
 MzScheme adds properties to expanded syntax (often using
@@ -68,18 +68,18 @@ MzScheme adds properties to expanded syntax (often using
  the body contained multiple expressions). To record the disappeared
  syntax bindings, a property is added to the expansion result: an
  immutable list of identifiers from the disappeared bindings, as a
- @scheme['disappeared-binding] property.}
+ @indexed-scheme['disappeared-binding] property.}
 
  @item{When a subtyping @scheme[define-struct] form is expanded, the
  identifier used to reference the base type does not appear in the
  expansion. Therefore, the @scheme[define-struct] transformer adds the
- identifier to the expansion result as a @scheme['disappeared-use]
- property.}
+ identifier to the expansion result as a
+ @indexed-scheme['disappeared-use] property.}
 
  @item{When a reference to an unexported or protected identifier from
  a module is discovered (and the reference is certified; see
- @secref["mz:stxcerts"]), the @scheme['protected] property is added
- to the identifier with a @scheme[#t] value.}
+ @secref["mz:stxcerts"]), the @indexed-scheme['protected] property is
+ added to the identifier with a @scheme[#t] value.}
 
  @item{When or @scheme[read-syntax] or @scheme[read-honu-syntax]
  generates a syntax object, it attaches a property to the object

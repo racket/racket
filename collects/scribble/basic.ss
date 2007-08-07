@@ -119,10 +119,13 @@
 
   ;; ----------------------------------------
 
-  (provide index index* as-index index-section)
+  (provide section-index index index* as-index index-section)
+
+  (define (section-index . elems)
+    (make-section-index-decl (map element->string elems) elems))
 
   (define (gen-target)
-    (format "index:~s:~s" (current-seconds) (gensym)))
+    (format "index:~s:~s" (current-inexact-milliseconds) (gensym)))
   
   (define (record-index word-seq element-seq tag content)
     (make-index-element
@@ -155,9 +158,10 @@
 
   (define (index-section tag)
     (make-unnumbered-part
-     tag
+     (and tag (list tag))
      (list "Index")
      #f
+     null
      (make-flow (list (make-delayed-flow-element
                        (lambda (renderer sec ht)
                          (let ([l null])
@@ -180,7 +184,14 @@
                                           [(string-ci=? (car a) (car b))
                                            (loop (cdr a) (cdr b))]
                                           [else
-                                           (string-ci<? (car a) (car b))]))))])
+                                           (string-ci<? (car a) (car b))]))))]
+                                 [commas (lambda (l)
+                                           (if (or (null? l)
+                                                   (null? (cdr l)))
+                                               l
+                                               (cdr (apply append (map (lambda (i)
+                                                                         (list ", " i))
+                                                                       l)))))])
                              (make-table
                               'index
                               (map (lambda (i)
@@ -189,11 +200,12 @@
                                              (make-paragraph
                                               (list
                                                (make-link-element
-                                                #f
-                                                (caddr i)
+                                                "indexlink"
+                                                (commas (caddr i))
                                                 (car i))))))))
                                    l))))))))
-     null))
+     null
+     'index))
 
   ;; ----------------------------------------
 

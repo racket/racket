@@ -25,43 +25,43 @@ contain a null character; the environment variable named by
 Returns information about the operating system, build mode, or machine
 for a running Scheme.
 
-In @scheme['os] mode,
+In @indexed-scheme['os] mode,
  the possible symbol results are:
 
 @itemize{
-@item{@scheme['unix]}
-@item{@scheme['windows]}
-@item{@scheme['macosx]}
+@item{@indexed-scheme['unix]}
+@item{@indexed-scheme['windows]}
+@item{@indexed-scheme['macosx]}
 }
 
-In @scheme['gc] mode,
+In @indexed-scheme['gc] mode,
 the possible symbol results are:
 
 @itemize{
-@item{@scheme['cgc]}
-@item{@scheme['3m]}
+@item{@indexed-scheme['cgc]}
+@item{@indexed-scheme['3m]}
 }
 
-In @scheme['link] mode, the possible symbol results are:
+In @indexed-scheme['link] mode, the possible symbol results are:
 
 @itemize{
-@item{@scheme['static] (Unix)}
-@item{@scheme['shared] (Unix)}
-@item{@scheme['dll] (Windows)}
-@item{@scheme['framework] (Mac OS X)}
+@item{@indexed-scheme['static] (Unix)}
+@item{@indexed-scheme['shared] (Unix)}
+@item{@indexed-scheme['dll] (Windows)}
+@item{@indexed-scheme['framework] (Mac OS X)}
 }
 
 Future ports of Scheme may expand the list of @scheme['os],
 @scheme['gc], and @scheme['link] results.
 
-In @scheme['so-suffix] mode, then the result is a byte string that
-represents the file extension used for shared objects on the current
-platform. The byte string starts with a period, so it is suitable as a
-second argument to @scheme[path-replace-suffix].
+In @indexed-scheme['so-suffix] mode, then the result is a byte string
+that represents the file extension used for shared objects on the
+current platform. The byte string starts with a period, so it is
+suitable as a second argument to @scheme[path-replace-suffix].
 
-In @scheme['machine] mode, then the result is a string, which contains
-further details about the current machine in a platform-specific
-format.}
+In @indexed-scheme['machine] mode, then the result is a string, which
+contains further details about the current machine in a
+platform-specific format.}
 
 
 @defproc[(system-language+country) string?]{
@@ -75,13 +75,13 @@ letters for the country. Under Windows, the string can be arbitrarily
 long, but the language and country are in English (all ASCII letters
 or spaces) separated by an underscore.
 
-Under Unix, the result is determined by checking the @envvar{LC_ALL},
-@envvar{LC_TYPE}, and @envvar{LANG} environment variables, in that
-order (and the result is used if the environment variable's value
-starts with two lowercase ASCII letters, an underscore, and two
-uppercase ASCII letters, followed by either nothing or a
-period). Under Windows and Mac OS X, the result is determined by
-system calls.}
+Under Unix, the result is determined by checking the
+@indexed-envvar{LC_ALL}, @indexed-envvar{LC_TYPE}, and
+@indexed-envvar{LANG} environment variables, in that order (and the
+result is used if the environment variable's value starts with two
+lowercase ASCII letters, an underscore, and two uppercase ASCII
+letters, followed by either nothing or a period). Under Windows and
+Mac OS X, the result is determined by system calls.}
 
 
 @defproc[(system-library-subpath [mode (one-of 'cgc '3m #f)

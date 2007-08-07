@@ -28,14 +28,14 @@ is an option that determines the initial bindings in the namespace:
 
 @itemize{
 
-   @item{@scheme['initial] --- the new namespace contains the module
-   declarations of the initial namespace, and the new namespace's
-   @tech{phase-level} 1 top-level environment contains bindings and
-   imports as in the initial namespace. However, the namespace's
-   @tech{phase-level} 1 top-level environment is empty.}
+   @item{@indexed-scheme['initial] --- the new namespace contains the
+   module declarations of the initial namespace, and the new
+   namespace's @tech{phase-level} 1 top-level environment contains
+   bindings and imports as in the initial namespace. However, the
+   namespace's @tech{phase-level} 1 top-level environment is empty.}
 
-   @item{@scheme['empty] --- creates a namespace with no initial
-   bindings or module declarations.}
+   @item{@indexed-scheme['empty] --- creates a namespace with no
+   initial bindings or module declarations.}
 
 }}
 

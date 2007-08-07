@@ -131,11 +131,12 @@ Returns an immutable string with the same content as
           s]}
 
 
-@defproc[(string-append [str string?] ...) string?]{  Returns a new
- mutable string that is as long as the sum of the given @scheme[str]s'
- lengths, and that contains the concatenated characters of the given
- @scheme[str]s. If no @scheme[str]s are provided, the result is a zero-length
- string.
+@defproc[(string-append [str string?] ...) string?]{
+
+@index["strings" "concatenate"]{Returns} a new mutable string that is
+as long as the sum of the given @scheme[str]s' lengths, and that
+contains the concatenated characters of the given @scheme[str]s. If no
+@scheme[str]s are provided, the result is a zero-length string.
 
 @examples[(string-append "Apple" "Banana")]}
 

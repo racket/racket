@@ -65,10 +65,11 @@ TCP ports (see @secref["mz:networking"]) support setting and getting
 the buffer mode, and custom ports (see @secref["mz:customport"]) may
 support getting and setting buffer modes.
 
-If @scheme[mode] is provided, it must be one of @scheme['none],
-@scheme['line] (output only), or @scheme['block], and the port's
-buffering is set accordingly. If the port does not support setting the
-mode, the @exnraise[exn:fail].
+If @scheme[mode] is provided, it must be one of
+@indexed-scheme['none], @indexed-scheme['line] (output only), or
+@indexed-scheme['block], and the port's buffering is set
+accordingly. If the port does not support setting the mode, the
+@exnraise[exn:fail].
 
 If @scheme[mode] is not provided, the current mode is returned, or
 @scheme[#f] is returned if the mode cannot be determined. If

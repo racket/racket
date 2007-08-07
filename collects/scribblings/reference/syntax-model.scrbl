@@ -781,10 +781,10 @@ an expression take precedence. For example, in
 the procedure bound to @scheme[my-f] will have the inferred name
 @scheme['f].
 
-When an @scheme['inferred-name] property is attached to a syntax
-object for an expression (see @secref["mz:stxprops"]), the property
-value is used for naming the expression, and it overrides any name
-that was inferred from the expression's context.
+When an @indexed-scheme['inferred-name] property is attached to a
+syntax object for an expression (see @secref["mz:stxprops"]), the
+property value is used for naming the expression, and it overrides any
+name that was inferred from the expression's context.
 
 When an inferred name is not available, but a source location is
 available, a name is constructed using the source location

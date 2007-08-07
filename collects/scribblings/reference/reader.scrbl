@@ -41,8 +41,6 @@ Reading is defined in terms of Unicode characters; see
 @secref["mz:ports"] for information on how a byte stream is converted
 to a character stream.
 
-@local-table-of-contents[]
-
 @;------------------------------------------------------------------------
 @section[#:tag "mz:default-readtable-dispatch"]{Delimiters and Dispatch}
 
@@ -169,14 +167,16 @@ never parsed as a symbol or character (unless the
 @as-index{@litchar{#%}} also starts a symbol. A successful number
 parse takes precedence over a symbol parse.
 
-When the @scheme[read-case-sensitive] @tech{parameter} is set to @scheme[#f],
+@index["case-sensitivity"]{@index["case-insensitive"]{When}} the
+@scheme[read-case-sensitive] @tech{parameter} is set to @scheme[#f],
 characters in the sequence that are not quoted by @litchar["|"] or
 @litchar["\\"] are first case-normalized. If the reader encounters
-@as-index{@litchar{#ci}}, @litchar{#CI}, @litchar{#Ci}, or @litchar{#cI},
-then it recursively reads the following datum in
-case-insensitive mode. If the reader encounters @as-index{@litchar{#cs}},
-@litchar{#CS}, @litchar{#Cs}, or @litchar{#cS}, then recursively reads
-the following datum in case-sensitive mode.
+@as-index{@litchar{#ci}}, @litchar{#CI}, @litchar{#Ci}, or
+@litchar{#cI}, then it recursively reads the following datum in
+case-insensitive mode. If the reader encounters
+@as-index{@litchar{#cs}}, @litchar{#CS}, @litchar{#Cs}, or
+@litchar{#cS}, then recursively reads the following datum in
+case-sensitive mode.
 
 @reader-examples[#:symbols? #f
 "Apple"
@@ -195,10 +195,12 @@ the following datum in case-sensitive mode.
 
 @guideintro["guide:numbers"]{the syntax of numbers}
 
-@index['("numbers" "parsing")]{A} sequence that does not start with a
-delimiter is parsed as a number when it matches the following grammar
-case-insenstively for @nonterm{number@sub{10}} (decimal), where
-@metavar{n} is a meta-meta-variable in the grammar.
+@section-index["numbers" "parsing"]
+
+A sequence that does not start with a delimiter is parsed as a number
+when it matches the following grammar case-insenstively for
+@nonterm{number@sub{10}} (decimal), where @metavar{n} is a
+meta-meta-variable in the grammar.
 
 A number is optionally prefixed by an exactness specifier,
 @as-index{@litchar{#e}} (exact) or @as-index{@litchar{#i}} (inexact),
@@ -319,8 +321,7 @@ parentheses, and if a pair of delimited @litchar{.}s surrounds any
 other than the first and last elements, the result is a list
 containing the element surrounded by @litchar{.}s as the first
 element, followed by the others in the read order. This convention
-supports a kind of @index["infix"]{infix} notation at the reader
-level.
+supports a kind of @as-index{infix} notation at the reader level.
 
 In @scheme[read-syntax] mode, the recursive reads for the pair/list
 elements are themselves in @scheme[read-syntax] mode, so that the
@@ -329,10 +330,11 @@ syntax object. If the reader constructs nested pairs because the input
 included a single delimited @litchar{.}, then only the innermost pair
 and outtermost pair are wrapped as syntax objects. Whether wrapping a
 pair or list, if the pair or list was formed with @litchar{[} and
-@litchar{]}, then a @scheme['paren-shape] property is attached to the
-result with the value @scheme[#\[];if the list or pair was formed with
-@litchar["{"] and @litchar["}"], then a @scheme['paren-shape] property
-is attached to the result with the value @scheme[#\{].
+@litchar{]}, then a @indexed-scheme['paren-shape] property is attached
+to the result with the value @scheme[#\[];if the list or pair was
+formed with @litchar["{"] and @litchar["}"], then a
+@scheme['paren-shape] property is attached to the result with the
+value @scheme[#\{].
 
 If a delimited @litchar{.} appears in any other configuration, then
 the @exnraise[exn:fail:read]. Similarly, if the reader encounters a
@@ -368,10 +370,12 @@ conversion.
 
 @guideintro["guide:strings"]{the syntax of strings}
 
-@index['("strings" "parsing")]{When} the reader encouters
-@as-index{@litchar{"}}, it begins parsing characters to form a string. The
-string continues until it is terminated by another @litchar{"} (that
-is not escaped by @litchar["\\"]).
+@section-index["strings" "parsing"]
+
+When the reader encounters @as-index{@litchar{"}}, it begins parsing
+characters to form a string. The string continues until it is
+terminated by another @litchar{"} (that is not escaped by
+@litchar["\\"]).
 
 Within a string sequence, the following escape sequences are
  recognized:
@@ -437,12 +441,13 @@ constant, the @exnraise[exn:fail:read].
 
 @guideintro["guide:bytestrings"]{the syntax of byte strings}
 
-@index['("byte strings" "parsing")]{A} string constant preceded by
-@litchar{#} is parsed as a byte-string. (That is, @as-index{@litchar{#"}} starts
-a byte-string literal.) See @secref["mz:bytestrings"] for
-information on byte strings. Byte string constants support the same
-escape sequences as character strings, except @litchar["\\u"] and
-@litchar["\\U"].
+@section-index["byte strings" "parsing"]
+
+A string constant preceded by @litchar{#} is parsed as a
+byte-string. (That is, @as-index{@litchar{#"}} starts a byte-string
+literal.) See @secref["mz:bytestrings"] for information on byte
+strings. Byte string constants support the same escape sequences as
+character strings, except @litchar["\\u"] and @litchar["\\U"].
 
 When the reader encounters @as-index{@litchar{#<<}}, it starts parsing a
 @pidefterm{here string}. The characters following @litchar{#<<} until

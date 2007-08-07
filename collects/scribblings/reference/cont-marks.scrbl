@@ -120,13 +120,13 @@ Returns @scheme[#t] if @scheme[v] is a mark set created by
           [mark-set continuation-mark-set?])
           list?]{
 
-Returns a list representing a ``stack trace'' for @scheme[mark-set]'s
-continuation. The list contains pairs, where the @scheme[car] of each
-pair contains either @scheme[#f] or a symbol for a procedure name, and
-the @scheme[cdr] of each pair contains either @scheme[#f] or a
-@scheme[srcloc] value for the procedure's source location (see
-@secref["mz:linecol"]); the @scheme[car] and @scheme[cdr] are never
-both @scheme[#f].
+Returns a list representing a ``@index["stack dump"]{@as-index{stack
+trace}}'' for @scheme[mark-set]'s continuation. The list contains
+pairs, where the @scheme[car] of each pair contains either @scheme[#f]
+or a symbol for a procedure name, and the @scheme[cdr] of each pair
+contains either @scheme[#f] or a @scheme[srcloc] value for the
+procedure's source location (see @secref["mz:linecol"]); the
+@scheme[car] and @scheme[cdr] are never both @scheme[#f].
 
 The stack-trace list is the result of
 @scheme[continuation-mark-set->list] with @scheme[mark-set] and
