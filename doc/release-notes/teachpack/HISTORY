@@ -1,4 +1,10 @@
 ------------------------------------------------------------------------
+VERSION 371				  [Tue Aug  7 17:49:47 EDT 2007]
+
+* changed world.ss so that it exports both add-line from image.ss and
+  scene+image. 
+
+------------------------------------------------------------------------
 VERSION 370				  [Mon May  7 09:54:19 EDT 2007]
 
 * Added testing.ss teachpack. 
