@@ -61,7 +61,7 @@ For example, this url:
   `url->string' translate things like %20 into spaces and back again.
 
   By default, query associations are parsed with either ";" or "&" as
-  a separator, and they are generated with ";" as a separator. The
+  a separator, and they are generated with "&" as a separator. The
   `current-alist-separator-mode' parameter for "uri-codec.ss" adjusts
   this default.
 
@@ -131,9 +131,8 @@ PROCEDURES -----------------------------------------------------------
   The `url->string' procedure uses `alist->form-urlencoded' when
   formatting the query, so it it sensitive to the
   `current-alist-separator-mode' parameter for determining the
-  association separator. In particular, the default is to separate
-  associations with ";" (based on modern recommendations) instead of
-  "&".
+  association separator. The default is to separate associations with
+  a "&".
 
 > (decode-some-url-parts url) -> url
 
@@ -2291,25 +2290,21 @@ PROCEDURES -----------------------------------------------------------
   A parameter that determines the separator used/recognized between
   alist pairs in `form-urlencoded->alist', `alist->form-urlencoded',
   `url->string', and `string->url'. The possible mode symbols are
-  'amp, 'semi, and 'amp-or-semi.
+  'amp, 'semi, 'amp-or-semi, or 'semi-or-amp.
 
   The default value is 'amp-or-semi, which means that both "&" and ";"
-  are treated as separators when parsing, and ";" is used as a
+  are treated as separators when parsing, and "&" is used as a
   separator when encoding. The other modes use/recognize only of the
   separators.
 
-  Examples for '((name . "shriram") (host "nw")):
+  Examples for '((x . "foo") (y . "bar") (z . "baz")):
 
-    Mode                     Parse                    Generate
-   ------             --------------------      --------------------
-
-   'amp               name=shriram&host=nw      name=shriram&host=nw
-
-   'semi              name=shriram;host=nw      name=shriram;host=nw
-
-   'amp-or-semi       name=shriram&host=nw      name=shriram;host=nw
-                               or
-                      name=shriram;host=nw
+    Mode               Parse            Generate
+   ------        -----------------  -----------------
+   'amp          x=foo&y=bar&z=baz  x=foo&y=bar&z=baz
+   'semi         x=foo;y=bar;z=baz  x=foo;y=bar;z=baz
+   'amp-or-semi  x=foo&y=bar;z=baz  x=foo&y=bar&z=baz
+   'semi-or-amp  x=foo&y=bar;z=baz  x=foo;y=bar;z=baz
 
 ==========================================================================
 _GIF_ writing, _animated GIF_ writing
