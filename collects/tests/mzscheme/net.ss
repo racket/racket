@@ -18,28 +18,33 @@
 (test "%P" uri-decode "%P")
 (test "a=hel%2Blo+%E7%88%B8" alist->form-urlencoded '((a . "hel+lo \u7238")))
 (test '((a . "hel+lo \u7238")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo \u7238"))))
-(test "a=hel%2Blo;b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))
+(test "a=hel%2Blo&b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))
+(let* ([alist   '((a . "hel+lo") (b . "good-bye"))]
+       [ampstr  "a=hel%2Blo&b=good-bye"]
+       [semistr "a=hel%2Blo;b=good-bye"])
+  (define (test:alist<->str mode str)
+    (parameterize ([current-alist-separator-mode
+                    (or mode (current-alist-separator-mode))])
+      (test str alist->form-urlencoded alist)
+      (test alist form-urlencoded->alist str)))
+  (test:alist<->str #f ampstr) ; the default
+  (test:alist<->str 'amp         ampstr)
+  (test:alist<->str 'amp-or-semi ampstr)
+  (test:alist<->str 'semi        semistr)
+  (test:alist<->str 'semi-or-amp semistr))
+(test '((x . "foo") (y . "bar") (z . "baz"))
+      form-urlencoded->alist "x=foo&y=bar;z=baz")
 (parameterize ([current-alist-separator-mode 'semi])
-  (test "a=hel%2Blo;b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))
-(parameterize ([current-alist-separator-mode 'amp])
-  (test "a=hel%2Blo&b=good-bye" alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))
-(test '((a . "hel+lo") (b . "good-bye")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))
-(parameterize ([current-alist-separator-mode 'amp])
-  (test '((a . "hel+lo") (b . "good-bye")) form-urlencoded->alist (alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))))
-(test '((a . "hel+lo") (b . "good-bye")) form-urlencoded->alist 
-      (parameterize ([current-alist-separator-mode 'amp])
-	(alist->form-urlencoded '((a . "hel+lo") (b . "good-bye")))))
-(parameterize ([current-alist-separator-mode 'semi])
-  (test '((a . "hel+lo&b=good-bye")) form-urlencoded->alist 
+  (test '((a . "hel+lo&b=good-bye")) form-urlencoded->alist
 	(parameterize ([current-alist-separator-mode 'amp])
 	  (alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))))
 (parameterize ([current-alist-separator-mode 'amp])
-  (test '((a . "hel+lo;b=good-bye")) form-urlencoded->alist 
+  (test '((a . "hel+lo;b=good-bye")) form-urlencoded->alist
 	(parameterize ([current-alist-separator-mode 'semi])
 	  (alist->form-urlencoded '((a . "hel+lo") (b . "good-bye"))))))
-(test "aNt=hi" alist->form-urlencoded '((aNt . "hi")))
-(test '((aNt . "hi")) form-urlencoded->alist (alist->form-urlencoded '((aNt . "hi"))))
-(test "aNt=hi" alist->form-urlencoded (form-urlencoded->alist "aNt=hi"))
+(test "aNt=Hi" alist->form-urlencoded '((aNt . "Hi")))
+(test '((aNt . "Hi")) form-urlencoded->alist (alist->form-urlencoded '((aNt . "Hi"))))
+(test "aNt=Hi" alist->form-urlencoded (form-urlencoded->alist "aNt=Hi"))
 
 (test 'amp-or-semi current-alist-separator-mode)
 (err/rt-test (current-alist-separator-mode 'bad))
@@ -100,7 +105,7 @@
 
   (test "" alist->form-urlencoded '())
   (test "key=hello+there" alist->form-urlencoded '((key . "hello there")))
-  (test "key1=hi;key2=hello" alist->form-urlencoded '((key1 . "hi") (key2 . "hello")))
+  (test "key1=hi&key2=hello" alist->form-urlencoded '((key1 . "hi") (key2 . "hello")))
   (test "key1=hello+there" alist->form-urlencoded '((key1 . "hello there")))
 
   (test "hello" uri-decode "hello")
@@ -214,7 +219,7 @@
   (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((tam . "tom")) "joe")
              "http://www.drscheme.org/a/b/c?tam=tom#joe")
   (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((tam . "tom") (pam . "pom")) "joe")
-             "http://www.drscheme.org/a/b/c?tam=tom;pam=pom#joe")
+             "http://www.drscheme.org/a/b/c?tam=tom&pam=pom#joe")
   (parameterize ([current-alist-separator-mode 'semi])
     (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((tam . "tom") (pam . "pom")) "joe")
                "http://www.drscheme.org/a/b/c?tam=tom;pam=pom#joe"))
@@ -310,12 +315,15 @@
   (test-s->u #("http" #f "foo.bar" #f #t (#("baz")) ((ugh . "")) #f)
              "http://foo.bar/baz?ugh=")
   (test-s->u #("http" #f "foo.bar" #f #t (#("baz")) ((ugh . #f) (x . "y") (|1| . "2")) #f)
-             "http://foo.bar/baz?ugh;x=y;1=2")
+             "http://foo.bar/baz?ugh&x=y&1=2")
+  (test-s->u #("http" #f "foo.bar" #f #t (#("baz")) ((ugh . "") (x . "y") (|1| . "2")) #f)
+             "http://foo.bar/baz?ugh=&x=y&1=2")
   (parameterize ([current-alist-separator-mode 'amp])
     (test-s->u #("http" #f "foo.bar" #f #t (#("baz")) ((ugh . #f) (x . "y") (|1| . "2")) #f)
              "http://foo.bar/baz?ugh&x=y&1=2"))
-  (test-s->u #("http" #f "foo.bar" #f #t (#("baz")) ((ugh . "") (x . "y") (|1| . "2")) #f)
-             "http://foo.bar/baz?ugh=;x=y;1=2")
+  (parameterize ([current-alist-separator-mode 'semi])
+    (test-s->u #("http" #f "foo.bar" #f #t (#("baz")) ((ugh . #f) (x . "y") (|1| . "2")) #f)
+             "http://foo.bar/baz?ugh;x=y;1=2"))
 
   ;; test case sensitivity
   (test #("http" "ROBBY" "www.drscheme.org" 80 #t (#("INDEX.HTML" "XXX")) ((T . "P")) "YYY")
