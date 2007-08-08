@@ -82,7 +82,7 @@ Profiling
 
 Errortrace's profiling instrumentation is off by default.  Enable
 profiling instrumentation with the `profiling-enabled' boolean
-parameter (but setting `instrumentation-enabled' to #f also disables
+parameter (but setting `instrumenting-enabled' to #f also disables
 profiling):
 
 > (profiling-enabled) - returns #t if profiling instrumentation is
@@ -184,7 +184,7 @@ profiling (when the expected counts are large).
 > (execute-counts-enabled  [on?])
   parameters that determine if the first (exact coverage) or second
   (profiler-based coverage) are enabled.  (Remember that setting
-  `instrumentation-enabled' to #f also disables both)
+  `instrumenting-enabled' to #f also disables both)
 
 > (get-coverage-counts)
 > (get-execute-counts)
