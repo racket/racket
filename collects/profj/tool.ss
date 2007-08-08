@@ -68,15 +68,25 @@
           (for-each (put standard-color-prefs) color-prefs-table)
           (for-each (put coverage-color-panel) coverage-color-prefs)))
       
+      (define mode-surrogate% 
+        (class color:text-mode%
+          (define/override (on-disable-surrogate text)
+            (keymap:remove-chained-keymap text java-keymap)
+            (super on-disable-surrogate text))
+          
+          (define/override (on-enable-surrogate text)
+            (super on-enable-surrogate text)
+            (send (send text get-keymap) chain-to-keymap java-keymap #t))
+          (super-new)))
+      
       ;Create the Java editing mode
       (define mode-surrogate
-        (new color:text-mode%
+        (new mode-surrogate%
              (matches (list (list '|{| '|}|)
                             (list '|(| '|)|)
                             (list '|[| '|]|)))
              (get-token get-syntax-token)
              (token-sym->style short-sym->style-name)))
-            
 
       (define java-keymap (new keymap:aug-keymap%))
       (send java-keymap add-function "do-return" (λ (edit event) (send edit do-return)))
@@ -187,9 +197,7 @@
                 (unless (= para end-para)
                   (loop (+ para 1))))
               (end-edit-sequence)))
-          
-          (define/override (get-keymaps)
-            (cons java-keymap (super get-keymaps)))
+
           (super-new)))
       
       ;repl-submit: text int -> bool
