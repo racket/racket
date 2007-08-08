@@ -6,7 +6,7 @@
                                       (|[| |]|)))))
 
 
-(SECTION 'add-token)
+(Section 'add-token)
 (send t add-token #f 12)
 (test '(((0 12 (#f . 12))) ())
       'add-token
@@ -28,7 +28,7 @@
       'add-token
       (send t test))
 
-(SECTION 'split-tree)
+(Section 'split-tree)
 (define (build-tree)
   (set! t (new paren-tree% (matches '((|(| |)|) (|[| |]|)))))
   (send t add-token #f 2)
@@ -91,7 +91,7 @@
 (set! t (new paren-tree% (matches '((|(| |)|) (|[| |]|)))))
 (split-test 0 '(()()))
 
-(SECTION 'merge-tree)
+(Section 'merge-tree)
 (build-tree)
 (send t split-tree 6)
 (send t merge-tree 10)
@@ -117,7 +117,7 @@
       'merge-tree
       (send t test))
 
-(SECTION 'truncate)
+(Section 'truncate)
 (build-tree)
 (send t truncate 0)
 (test '(()())
@@ -152,7 +152,7 @@
       'add-token
       (send t test))
 
-(SECTION 'is-open-pos?)
+(Section 'is-open-pos?)
 (build-tree)
 (test '|)| 'is-open-pos? (send t is-open-pos? 0))
 (test '|]| 'is-open-pos? (send t is-open-pos? 2))
@@ -164,7 +164,7 @@
 (test #f 'is-open-pos? (send t is-open-pos? 14))
 (test #f 'is-open-pos? (send t is-open-pos? 16))
 
-(SECTION 'is-close-pos?)
+(Section 'is-close-pos?)
 (test #f 'is-close-pos? (send t is-close-pos? 0))
 (test #f 'is-close-pos? (send t is-close-pos? 2))
 (test '|[| 'is-close-pos? (send t is-close-pos? 4))
@@ -175,7 +175,7 @@
 (test '|(| 'is-close-pos? (send t is-close-pos? 14))
 (test #f 'is-close-pos? (send t is-close-pos? 16))
 
-(SECTION 'match)
+(Section 'match)
 (define (test-match-forward num res)
   (let-values (((a b c) (send t match-forward num)))
     (test res 'match-forward (list a b c))))

@@ -15,13 +15,13 @@
   (test sp 'get-root-start-position (send t get-root-start-position))
   (test ep 'get-root-end-position (send t get-root-end-position)))
 
-(SECTION 'init-tree)
+(Section 'init-tree)
 (test #f 'is-empty (send t is-empty?))
 (check-only-root)
 (check-root 1 'a 0 1)
 
 (send t reset-tree)
-(SECTION 'empty-tree)
+(Section 'empty-tree)
 (test #f 'get-root (send t get-root))
 (test #t 'is-empty (send t is-empty?))
 (check-root 0 #f 0 0)
@@ -45,20 +45,20 @@
       
 
 (build-tree 4 #t)
-(SECTION 'check-tree)
+(Section 'check-tree)
 (check-tree 4)
 (send t search-min!)
 (check-root 5 '(1 1) 0 5)
 (send t search-max!)
 (check-root 5 '(1 2) 35 40)
 
-(SECTION 'remove-root)
+(Section 'remove-root)
 (send t search! 20)
 (send t remove-root!)
 (send t search-max!)
 (check-root 5 '(1 2) 30 35)
 
-(SECTION 'add-to-root-length)
+(Section 'add-to-root-length)
 (send t search-min!)
 (send t add-to-root-length 1)
 (check-root 6 '(1 1) 0 6)
@@ -67,7 +67,7 @@
 (send t search-max!)
 (check-root 5 '(1 2) 31 36)
 
-(SECTION 'for-each)
+(Section 'for-each)
 (send t reset-tree)
 (build-tree 4 #f)
 (let loop ((i 0))
@@ -88,7 +88,7 @@
         (19 1 (1 2)))
       'for-each  (to-list t))
 
-(SECTION 'stress)
+(Section 'stress)
 (send t reset-tree)
 (build-tree 100 #f)
 (let loop ((i 0))
@@ -98,7 +98,7 @@
 (send t search-max!)
 (check-root 1 '(1 2) 10099 10100)
 
-(SECTION 'splits)
+(Section 'splits)
 (send t reset-tree)
 (build-tree 5 #f)
 (let-values (((s e t1 t2)
