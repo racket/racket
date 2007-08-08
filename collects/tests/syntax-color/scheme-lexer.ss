@@ -104,7 +104,7 @@
 ase
 aa
 string-end
-      "ooooooooooooo ii")
+      ";;;;;;;;;;;;; ii")
 (test "#;z" ";;i")
 
 ;; Bad #
