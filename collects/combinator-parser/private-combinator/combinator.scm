@@ -127,7 +127,7 @@
             #;(!!! (printf "seq ~a~n" name))
             (cond
               [(eq? input return-name) name]
-              #;[(hash-table-get memo-table input #f) (hash-table-get memo-table input)]
+              [(hash-table-get memo-table input #f) (hash-table-get memo-table input)]
               [(null? sub-list)
                (builder (make-res null input name #f 0 #f #f))]
               [else
@@ -261,7 +261,9 @@
                                          rsts)])
                                    (fail-res input 
                                              (make-options-fail 
-                                              (rank-choice (map fail-type-chance fails)) #f seq-name
+                                              (rank-choice (map fail-type-chance fails))
+                                              last-src
+                                              seq-name
                                               (rank-choice (map fail-type-used fails))
                                               (rank-choice (map fail-type-may-use fails)) fails)))]
                                 [else correct-rsts]))]
@@ -427,8 +429,8 @@
     (define (compute-chance expected-length seen-length used-toks num-alts may-use sub-chance)
       (let* ([revised-expectation (+ (- used-toks seen-length) expected-length)]
              [possible-expectation (+ revised-expectation (max 0 (sub1 may-use)))]
-             [probability-with-sub (* (/ (+ may-use used-toks) possible-expectation) (/ 1 num-alts))]
-             #;[probability-with-sub (* (/ (add1 used-toks) revised-expectation) (/ 1 num-alts))]
+             #;[probability-with-sub (* (/ (+ may-use used-toks) possible-expectation) (/ 1 num-alts))]
+             [probability-with-sub (* (/ (add1 used-toks) revised-expectation) (/ 1 num-alts))]
              [probability-without-sub (* (/ used-toks revised-expectation) (/ 1 num-alts))]
              [expected-sub probability-with-sub]
              [expected-no-sub probability-without-sub]
@@ -441,8 +443,8 @@
                   (* (/ 1 num-alts) (/ 1 expected-length) sub-chance)))
         (cond
           [(and (zero? used-toks) (zero? may-use))
-           (* (/ 1 expected-length) (/ 1 num-alts) sub-chance)]
-          [(zero? used-toks) probability-with-sub]
+           sub-chance #;(* (/ 1 expected-length) (/ 1 num-alts) sub-chance)]
+          [(zero? used-toks) sub-chance #;probability-with-sub]
           [else
            #;(printf "compute-chance: args ~a ~a ~a ~a ~a ~a~n"
                    expected-length seen-length used-toks num-alts may-use sub-chance)
@@ -497,7 +499,7 @@
         (opt-lambda (input [start-src (list 1 0 1 0)] [alts 1])
           (cond
             [(eq? input return-name) repeat-name]
-            #;[(hash-table-get memo-table input #f) (hash-table-get memo-table input)]
+            [(hash-table-get memo-table input #f) (hash-table-get memo-table input)]
             [else
              (let ([ans
                     (let loop ([curr-input input] [curr-src start-src])
@@ -562,7 +564,7 @@
           #;(!!! (printf "possible options are ~a~n" choice-names))
           (let ([sub-opts (sub1 (+ alts num-choices))])
             (cond
-              #;[(hash-table-get memo-table input #f) (hash-table-get memo-table input)]
+              [(hash-table-get memo-table input #f) (hash-table-get memo-table input)]
               [(eq? input return-name) name]
               [else
                #;(!!! (printf "choice ~a~n" name))

@@ -126,12 +126,17 @@
                   [(and (> (length winners) 1)
                         (<= (length winners) max-choice-depth))
                    (let ([messages (map (lambda (f) (fail-type->message f null)) winners)])
-                     (collapse-message
-                      (add-to-message 
-                       (msg (format "An error occured in the ~a. Possible errors were: ~n ~a"
-                                    name 
-                                    (alternate-error-list (map err-msg messages))))
-                       name #f message-to-date)))]
+                     (cond
+                       [(identical-messages? messages)
+                        (collapse-message
+                         (add-to-message (car messages) name #f message-to-date))]
+                       [else
+                        (collapse-message
+                         (add-to-message 
+                          (msg (format "An error occured in the ~a. Possible errors were: ~n ~a"
+                                       name 
+                                       (alternate-error-list (map err-msg messages))))
+                          name #f message-to-date))]))]
                   [else
                    (fail-type->message 
                     (car winners)
@@ -169,12 +174,21 @@
                       (> (length no-dup-names) 1)
                       (> (length winners) 1))
                  (let ([messages (map (lambda (f) (fail-type->message f null)) winners)])
-                   (collapse-message 
-                    (add-to-message
-                     (msg (format "An error occured in this ~a, expected one of ~a. Possible errors were:~n~a"
-                                  name (nice-list no-dup-names) 
-                                  (alternate-error-list (map err-msg messages))))
-                     name #f message-to-date)))]
+                   (cond
+                     [(identical-messages? messages)
+                      (collapse-message
+                       (add-to-message (car messages) #f #f
+                                       (add-to-message
+                                        (msg (format "An error occured in this ~a, expected one of ~a."
+                                                     name (nice-list no-dup-names))
+                                             name #f message-to-date))))]
+                     [else
+                      (collapse-message 
+                       (add-to-message
+                        (msg (format "An error occured in this ~a, expected one of ~a. Possible errors were:~n~a"
+                                     name (nice-list no-dup-names) 
+                                     (alternate-error-list (map err-msg messages))))
+                        name #f message-to-date))]))]
                 [(and (> (length no-dup-names) max-choice-depth)
                       (> (length winners) 1))
                  (collapse-message 
@@ -287,6 +301,11 @@
       (string-append (string-downcase (substring string 0 1))
                      (substring string 1 (string-length string))))
     
+    (define (identical-messages? msgs)
+      (andmap (lambda (err) (equal? (err-msg (car msgs))
+                                    (err-msg err)))
+              (cdr msgs)))
+        
     (define (remove-dups l n)
       (cond
         [(null? l) null]

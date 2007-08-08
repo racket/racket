@@ -206,7 +206,7 @@
       (choice (list base-t voidT) "method return"))
     
     (define (array-type base-t)
-      (sequence (base-t (repeat (sequence (O_BRACKET C_BRACKET) id "array type"))) "type"))
+      (sequence (base-t (repeat (sequence (O_BRACKET C_BRACKET) id "array type"))) id "type"))
     
     )    
 
@@ -440,8 +440,8 @@
                (sequence (super O_PAREN (comma-sep expression "arguments") C_PAREN SEMI_COLON) id)) "super constructor call"))
     
     (define (block repeat?)
-      (sequence (O_BRACE (if repeat? (repeat-greedy (eta statement)) (eta statement)) C_BRACE) 
-                id "block statement"))
+      (let ([body (if repeat? (repeat-greedy statement) statement)])
+        (sequence (O_BRACE body C_BRACE) id "block statement")))
     
     (define expression-stmt
       (sequence (expression SEMI_COLON) id "statement"))

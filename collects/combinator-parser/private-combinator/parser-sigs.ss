@@ -166,7 +166,7 @@
      (define-syntaxes (eta)
        (values (syntax-rules ()
                  [(_ f)
-                  (opt-lambda (x [c 1]) (f x c))])))
+                  (opt-lambda (x [s (list 0 1 0 1)] [o 1]) (f x s o))])))
      ))
     
   (define-signature parser^ (parser))
