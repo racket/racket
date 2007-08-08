@@ -103,7 +103,7 @@ static void initialize_signal_handler()
 # ifdef NEED_SIGACTION
   {
     struct sigaction act, oact;
-    memset(&act, sizeof(sigaction), 0);
+    memset(&act, 0, sizeof(sigaction));
     act.sa_sigaction = fault_handler;
     sigemptyset(&act.sa_mask);
     /* In MzScheme, SIGCHLD or SIGINT handling may trigger a write barrier: */

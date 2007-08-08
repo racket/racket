@@ -4594,7 +4594,7 @@ static int utf8_decode_x(const unsigned char *s, int start, int end,
 	/* Continues a sequence ... */
 	if (state) {
 	  /* ... and we're in one ... */
-	  if (!nextbits | (sc & nextbits)) {
+	  if (!nextbits || (sc & nextbits)) {
 	    /* and we have required bits. */
 	    v = (v << 6) + (sc & 0x3F);
 	    nextbits = 0;
