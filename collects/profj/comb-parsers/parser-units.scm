@@ -263,7 +263,7 @@
     (export general-productions^)
   
     (define (comma-sep term name)
-      (sequence (term (repeat-greedy (sequence (COMMA term) id))) id (string-append "a list of " name)))
+      (sequence (term (repeat (sequence (COMMA term) id))) id (string-append "a list of " name)))
     
     (define (variable-declaration type expr share-type? name)
       (let* ([f (choose (IDENTIFIER (sequence ((^ IDENTIFIER) EQUAL expr) id)) (string-append name " declaration"))]
@@ -645,16 +645,16 @@
         identifier
         new-class
         simple-method-call
-        (sequence (O_PAREN (eta expression) C_PAREN) id)
+        (sequence (O_PAREN (eta expression) C_PAREN) id "parened expression")
         (sequence (! (eta expression)) id "conditional expression")
         (sequence (MINUS (eta expression)) id "negation expression")
-        checks) "expression"))
+        checks) "expression unique-base"))
     
-    (define unique-end
+    (define unique-end 
       (choose (field-access-end
                method-call-end
                (binary-expression-end (bin-ops (list math-ops compare-ops bool-ops))))
-              "expression"))
+              "expression unique-end"))
     
     (define expression
       (sequence (unique-base (repeat-greedy unique-end)) id "expression"))
