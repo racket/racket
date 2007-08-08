@@ -1115,7 +1115,7 @@ void DeleteRegisteredGDIObject(HANDLE x)
 
       if (!v[0] && !v[1]) {
 	/* Remove from hash table: */
-	scheme_hash_set(gdi_objects, (Scheme_Object *)x, NULL);
+	scheme_hash_set(gdi_objects, key, NULL);
       }
     }
   }
