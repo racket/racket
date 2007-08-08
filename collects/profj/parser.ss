@@ -39,6 +39,7 @@
   (define (error-builder parser old-parser lexed loc)
     (if (new-parser?)
         (lambda ()
+          (printf "Syntax error detected~n")
           (let ([result (!!! (parser lexed loc))])
             #;(printf "~a~n" result)
             (if (list? result)

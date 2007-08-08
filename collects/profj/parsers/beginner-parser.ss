@@ -450,8 +450,11 @@
         (make-check-expect #f (build-src 6) $2 $4 $6 (build-src 2 4))])
       
       (Assignment
-       [(LeftHandSide AssignmentOperator CheckExpression)
-	(make-assignment #f (build-src 3) $1 $2 $3 (build-src 2 2))])
+       [(LeftHandSide AssignmentOperator #;CheckExpression IDENTIFIER)
+	(make-assignment #f (build-src 3) $1 $2 #;$3 
+                         (make-access #f (build-src 3 3)
+                                      (make-local-access 
+                                       (make-id $3 (build-src 3 3)))) (build-src 2 2))])
       
       (LeftHandSide
        [(Name) (name->access $1)]

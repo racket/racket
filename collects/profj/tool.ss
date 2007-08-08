@@ -108,6 +108,7 @@
                    backward-match backward-containing-sexp
                    find-string position-paragraph paragraph-start-position
                    begin-edit-sequence end-edit-sequence
+                   is-stopped? is-frozen?
                    skip-whitespace forward-match)
           
           (define single-tab-stop 2)
@@ -122,25 +123,27 @@
           
           (define/private (get-indentation start-pos)
             (letrec ([indent
-                      (let* ([base-offset 0]
-                             [curr-open (get-sexp-start start-pos)])
-                        (cond 
-                          [(and (eq? (classify-position start-pos) 'comment) 
-                                (eq? (classify-position (add1 start-pos)) 'comment))
-                           base-offset]
-                          [(or (not curr-open) (= curr-open 0)) base-offset]
-                          [else
-                           (let ([previous-line (find-string eol 'backward start-pos 0 #f)])
-                             (cond 
-                               [(not previous-line) (+ base-offset single-tab-stop)]
-                               [else
-                                (let* ([last-line-start (skip-whitespace previous-line 'forward #f)]
-                                       [last-line-indent (sub1 (- last-line-start previous-line))]
-                                       [old-open (get-sexp-start last-line-start)])
-                                  (cond
-                                    [(not old-open) last-line-indent]
-                                    [(and old-open (<= curr-open old-open)) last-line-indent]
-                                    [else (+ single-tab-stop last-line-indent)]))]))]))])
+                      (if (or (is-stopped?) (is-frozen?))
+                          0
+                          (let* ([base-offset 0]
+                                 [curr-open (get-sexp-start start-pos)])
+                            (cond 
+                              [(and (eq? (classify-position start-pos) 'comment) 
+                                    (eq? (classify-position (add1 start-pos)) 'comment))
+                               base-offset]
+                              [(or (not curr-open) (= curr-open 0)) base-offset]
+                              [else
+                               (let ([previous-line (find-string eol 'backward start-pos 0 #f)])
+                                 (cond 
+                                   [(not previous-line) (+ base-offset single-tab-stop)]
+                                   [else
+                                    (let* ([last-line-start (skip-whitespace previous-line 'forward #f)]
+                                           [last-line-indent (sub1 (- last-line-start previous-line))]
+                                           [old-open (get-sexp-start last-line-start)])
+                                      (cond
+                                        [(not old-open) last-line-indent]
+                                        [(and old-open (<= curr-open old-open)) last-line-indent]
+                                        [else (+ single-tab-stop last-line-indent)]))]))])))])
               (build-string (max indent 0) (λ (x) #\space)))
             #;(let ([to-insert 0])
               (let loop ([pos start-pos])
@@ -749,7 +752,7 @@
                                     (examples (if (testcase-ext?)
                                                   (list (send execute-types get-test-classes) null)
                                                   (find-examples compilation-units))))
-                               (printf "ProfJ compilation complete~n")
+                               #;(printf "ProfJ compilation complete~n")
                                (let ((name-to-require #f)
                                      (tests-run? #f))
                                  (let loop ((mods (order compilation-units))

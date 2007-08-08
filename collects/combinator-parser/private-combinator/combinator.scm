@@ -440,10 +440,9 @@
         #;(when (zero? used-toks)
           (printf "compute-chance 0 case: ~a, ~a, ~a, ~a -> ~a~n" 
                   sub-chance expected-length num-alts may-use
-                  (* (/ 1 num-alts) (/ 1 expected-length) sub-chance)))
+                  (* (/ 1 num-alts) sub-chance)))
         (cond
-          [(and (zero? used-toks) (zero? may-use))
-           sub-chance #;(* (/ 1 expected-length) (/ 1 num-alts) sub-chance)]
+          #;[(zero? used-toks) (* (/ 1 num-alts) sub-chance)]
           [(zero? used-toks) sub-chance #;probability-with-sub]
           [else
            #;(printf "compute-chance: args ~a ~a ~a ~a ~a ~a~n"

@@ -1816,6 +1816,12 @@
          (let ((var (lookup-var-in-env (id-string (local-access-name acc)) env)))
            (unless (properties-usable? (var-type-properties var))
              (unusable-var-error (string->symbol (var-type-var var)) (id-src (local-access-name acc))))
+
+           (when (and (eq? level 'beginner)
+                      (not interact?)
+                      (properties-field? (var-type-properties var)))
+             (beginner-field-access-error (string->symbol (var-type-var var))
+                                          (id-src (local-access-name acc))))
            (unless interact?
              (unless assign-left?
                (unless (properties-parm? (var-type-properties var))
