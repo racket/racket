@@ -9,7 +9,7 @@ The @file{manual.ss} module provides all of @file{basic.ss}, and
 more...
 
 @; ------------------------------------------------------------------------
-@section{Typesetting Code}
+@section[#:tag "scribble:manual:code"]{Typesetting Code}
 
 @defform[(schemeblock datum ...)]{
 
@@ -109,6 +109,13 @@ module whose language is @scheme[lang].}
 a single line and wrapped with its enclosing paragraph, independent of
 the formatting of @scheme[datum].}
 
+@defform[(indexed-scheme datum ...)]{
+
+A combination of @scheme[scheme] and @scheme[as-index], with the
+special case that if a single @scheme[datum] is provided and it is a
+@scheme[quote] form, then the quote is removed from the key (so that
+it's sorted using its unquoted form).}
+
 @defform[(schemeresult datum ...)]{Like @scheme[scheme], but typeset
 as a REPL value (i.e., a single color with no hyperlinks).}
 
@@ -145,9 +152,16 @@ for typesetting things like @scheme{#module}, which are not
 @defproc[(schemekeywordfont [pre-content any/c] ...) element?]{Like
 @scheme[schemefont], but colored as a syntactic form name.}
 
+@defproc[(schemeparenfont [pre-content any/c] ...) element?]{Like
+@scheme[schemefont], but colored like parentheses.}
+
+@defproc[(schememetafont [pre-content any/c] ...) element?]{Like
+@scheme[schemefont], but colored as meta-syntax, such as backquote or
+unquote.}
+
 @defproc[(procedure [pre-content any/c] ...) element?]{Typesets the given
 content as a procedure name in a REPL result (e.g., in typewriter font
-with a @schemefont{#<procedure:} prefix and @schemefont{>} suffix.).}
+with a @litchar{#<procedure:} prefix and @litchar{>} suffix.).}
 
 @defform[(var datum)]{Typesets @scheme[var] as an identifier that is
 an argument or sub-form in a procedure being
@@ -167,9 +181,10 @@ in a form definition.}
                   pre-flow ...)]{
 
 Produces a sequence of flow elements (encaptured in a @scheme[splice])
-to document a procedure named @scheme[id]. The @scheme[id] is
-registered so that @scheme[scheme]-typeset uses of the identifier
-(with the same lexical binding) are hyperlinked to this documentation.
+to document a procedure named @scheme[id]. The @scheme[id] is indexed,
+and it also registered so that @scheme[scheme]-typeset uses of the
+identifier (with the same lexical binding) are hyperlinked to this
+documentation.
 
 Each @scheme[arg-spec] must have one of the following forms:
 
@@ -222,9 +237,9 @@ Like @scheme[defproc], but for multiple cases with the same
 
 Produces a a sequence of flow elements (encaptured in a
 @scheme[splice]) to document a syntatic form named by @scheme[id]. The
-@scheme[id] is registered so that @scheme[scheme]-typeset uses of the
-identifier (with the same lexical binding) are hyperlinked to this
-documentation.
+@scheme[id] is indexed, and it is also registered so that
+@scheme[scheme]-typeset uses of the identifier (with the same lexical
+binding) are hyperlinked to this documentation.
 
 The @scheme[pre-flow]s list is parsed as a flow that documents the
 procedure. In this description, a reference to any identifier in
@@ -240,24 +255,33 @@ layout, like @scheme[schemeblock], and unlike @scheme[defproc].}
 Like @scheme[defform], but for multiple forms using the same
 @scheme[id].}
 
-@defform/subs[(defform/subs maybe-literals (id . datum)
-                ([nonterm-id clause-datum ...+] ...)
-                pre-flow ...)
-              ([maybe-literals code:blank
-                               (code:line #:literals (literal-id ...))])]{
+@defform[(defform/subs maybe-literals (id . datum)
+           ([nonterm-id clause-datum ...+] ...)
+           pre-flow ...)]{
+
 Like @scheme[defform], but including an auxiliary grammar of
 non-terminals shown with the @scheme[id] form. Each
 @scheme[nonterm-id] is specified as being any of the corresponding
 @scheme[clause-datum]s, where the formatting of each
 @scheme[clause-datum] is preserved.}
 
-@defform/subs[(specform maybe-literals (id . datum) pre-flow ...)
-              ([maybe-literals code:blank
-                               (code:line #:literals (literal-id ...))])]{
 
-Like @scheme[defform], with without registering a definition, and with
-indenting on the left for both the specification and the
-@scheme[pre-flow]s.}
+@defform[(defform/none datum pre-flow ...)]{
+
+Like @scheme[defform], but without registering a definition.}
+
+
+@defform[(defidform id pre-flow ...)]{
+
+Like @scheme[defform], but with a plain @scheme[id] as the form.}
+
+
+@defform[(specform maybe-literals (id . datum) pre-flow ...)]{
+
+Like @scheme[defform], with without indexing or registering a
+definition, and with indenting on the left for both the specification
+and the @scheme[pre-flow]s.}
+
 
 @defform[(specsubform maybe-literals datum pre-flow ...)]{
 
@@ -272,17 +296,63 @@ The @scheme[pre-flow]s list is parsed as a flow that documents the
 procedure. In this description, a reference to any identifier in
 @scheme[datum] is typeset as a sub-form non-terminal.}
 
+
+@defform[(specsubform/subs maybe-literals datum
+           ([nonterm-id clause-datum ...+] ...)
+           pre-flow ...)]{
+
+Like @scheme[specsubform], but with a grammar like
+@scheme[defform/subs].}
+
+
+@defform[(specspecsubform maybe-literals datum pre-flow ...)]{
+
+Like @scheme[specsubform], but indented an extra level. Since using
+@scheme[specsubform] within the body of @scheme[specsubform] already
+nests indentation, @scheme[specspecsubform] is for extra indentation
+without nesting a description.}
+
+
+@defform[(specspecsubform/subs maybe-literals datum
+          ([nonterm-id clause-datum ...+] ...)
+          pre-flow ...)]{
+
+Like @scheme[specspecsubform], but with a grammar like
+@scheme[defform/subs].}
+
+
+@defform[(defparam id arg-id contract-expr-datum pre-flow ...)]{
+
+Like @scheme[defproc], but for a parameter. The
+@scheme[contract-expr-datum] serves as both the result contract on the
+parameter and the contract on values supplied for the parameter. The
+@scheme[arg-id] refers to the parameter argument in the latter case.}
+
+@defform[(defboolparam id arg-id pre-flow ...)]{
+
+Like @scheme[defparam], but the contract on a parameter argument is
+@scheme[any/c], and the contract on the parameter result is
+@scheme[boolean?].}
+
+
 @defform[(defthing id contract-expr-datum pre-flow ...)]{
 
 Like @scheme[defproc], but for a non-procedure binding.}
 
+
 @defform/subs[(defstruct struct-name ([field-name contract-expr-datum] ...)
+                flag-keywords
                 pre-flow ...)
               ([struct-name id
-                            (id super-id)])]{
+                            (id super-id)]
+               [flag-keywords code:blank
+                              #:immutable
+                              (code:line #:inspector #f)
+                              (code:line #:immutable #:inspector #f)])]{
 
 Similar to @scheme[defform] or @scheme[defproc], but for a structure
 definition.}
+
 
 @defform/subs[(schemegrammar maybe-literals id clause-datum ...+)
               ([maybe-literals code:blank
@@ -293,6 +363,7 @@ mentioned in a @scheme[clause-datum] is typeset as a non-terminal,
 except for the identifiers listed as @scheme[literal-id]s, which are
 typeset as with @scheme[scheme].}
 
+
 @defform[(schemegrammar* maybe-literals [id clause-datum ...+] ...)]{
 
 Like @scheme[schemegrammar], but for typesetting multiple productions
@@ -301,8 +372,10 @@ at once, aligned around the @litchar{=} and @litchar{|}.}
 @; ------------------------------------------------------------------------
 @section{Various String Forms}
 
-@defproc[(defterm [pre-content any/c] ...) element?]{Typesets the given
-content as a defined term (e.g., in italic).}
+@defproc[(defterm [pre-content any/c] ...) element?]{Typesets the
+given content as a defined term (e.g., in italic). Consider using
+@scheme[deftech] instead, though, so that uses of @scheme[tech] can
+hyper-link to the definition.}
 
 @defproc[(onscreen [pre-content any/c] ...) element?]{ Typesets the given
 content as a string that appears in a GUI, such as the name of a
@@ -317,30 +390,135 @@ as a file name (e.g., in typewriter font and in in quotes).}
 @defproc[(exec [pre-content any/c] ...) element?]{Typesets the given content
 as a command line (e.g., in typewriter font).}
 
+@defproc[(envvar [pre-content any/c] ...) element?]{Typesets the given
+content as an environment variable (e.g., in typewriter font).}
+
+@defproc[(Flag [pre-content any/c] ...) element?]{Typesets the given
+content as a flag (e.g., in typewriter font with a leading hyphen).}
+
+@defproc[(DFlag [pre-content any/c] ...) element?]{Typesets the given
+content a long flag (e.g., in typewriter font with two leading
+hyphens).}
+
+@defproc[(math [pre-content any/c] ...) element?]{The content form of
+@scheme[pre-content] is transformed:
+
+ @itemize{
+
+  @item{Any immediate @scheme['rsquo] is converted to @scheme['prime].}
+
+  @item{Parentheses and sequences of decimal digits in immediate
+        strings are left as-is, but any other immediate string is
+        italicized.}
+ }
+
+Extensions to @scheme[math] are likely, such as recognizing @litchar{_}
+and @litchar{^} for subscripts and superscripts.}
+
 @; ------------------------------------------------------------------------
-@section[#:tag "scribble:manual:section-links"]{Section Links}
+@section[#:tag "scribble:manual:section-links"]{Links}
 
-@defproc[(secref [tag string?]) element?]{Inserts the hyperlinked
-title of the section tagged @scheme[tag], but @scheme{aux-element}
-items in the title content are omitted in the hyperlink label.}
+@defproc[(secref [tag string?]) element?]{
 
-@defproc[(seclink [tag string?] [pre-content any/c] ...) element?]{The content from
-@scheme[pre-content] is hyperlinked to the section tagged @scheme[tag].}
+Inserts the hyperlinked title of the section tagged @scheme[tag], but
+@scheme{aux-element} items in the title content are omitted in the
+hyperlink label.}
 
-@defproc[(schemelink [id symbol?] [pre-content any/c] ...) element?]{The content from
-@scheme[pre-content] is hyperlinked to the definition of @scheme[id].}
 
+@defproc[(seclink [tag string?] [pre-content any/c] ...) element?]{
+
+The content from @scheme[pre-content] is hyperlinked to the section
+tagged @scheme[tag].}
+
+
+@defproc[(schemelink [id symbol?] [pre-content any/c] ...) element?]{
+
+The content from @scheme[pre-content] is hyperlinked to the definition
+of @scheme[id].}
+
+
+@defproc[(link [url string?] [pre-content any/c] ...) element?]{
+
+The content from @scheme[pre-content] is hyperlinked to @scheme[url].}
+
+
+@defproc[(elemtag [t tag?] [pre-content any/c] ...) element?]{
+
+The tag @scheme[t] refers to the content form of
+@scheme[pre-content].}
+
+
+@defproc[(elemref [t tag?] [pre-content any/c] ...) element?]{
+
+The content from @scheme[pre-content] is hyperlinked to @scheme[t],
+which is normally defined using @scheme[elemtag].}
+
+
+@defproc[(deftech [pre-content any/c] ...) element?]{
+
+Produces an element for the content form of @scheme[pre-content], and
+also defines a term that can be referenced elsewhere using
+@scheme[tech].
+
+The @scheme[content->string] result of the content form of
+@scheme[pre-content] is used as a key for references, but normalized
+as follows:
+
+@itemize{
+
+ @item{A trailing ``ies'' is replaced by ``y''.}
+
+ @item{A trailing ``s'' is removed.}
+
+ @item{Consecutive hyphens and whitespaces are all replaced by a
+       single space.}
+
+}
+
+These normalization steps help support natural-language references
+that differ slightly from a defined form. For example, a definition of
+``bananas'' can be referenced with a use of ``banana''.}
+
+@defproc[(tech [pre-content any/c] ...) element?]{
+
+Produces an element for the content form of @scheme[pre-content], and
+hyperlinks it to the definition of the content as established by
+@scheme[deftech]. The content's string form is normalized in the same
+way as for @scheme[deftech].
+
+The hyperlink is relatively quiet, in that underlining in HTML output
+appears only when the mouse is moved over the term.
+
+In some cases, combining both natural-language uses of a term and
+proper linking can require some creativity, even with the
+normalization performed on the term. For example, if ``bind'' is
+defined, but a sentence uses the term ``binding,'' the latter can be
+linked to the former using @schemefont["@tech{bind}ing"].}
+
+@defproc[(techlink [pre-content any/c] ...) element?]{
+
+Like @scheme[tech], but the link is not a quiet. For example, in HTML
+output, a hyperlink underline appears even when the mouse is not over
+the link.}
 
 @; ------------------------------------------------------------------------
 @section{Indexing}
 
 @defproc[(idefterm [pre-content any/c] ...) element?]{Combines
 @scheme[as-index] and @scheme[defterm]. The content normally should be
-plurarl, rather than singular.}
+plural, rather than singular. Consider using @scheme[deftech],
+instead, which always indexes.}
 
 @defproc[(pidefterm [pre-content any/c] ...) element?]{Like
 @scheme[idefterm], but plural: adds an ``s'' on the end of the content
-for the index entry.}
+for the index entry. Consider using @scheme[deftech], instead.}
+
+@defproc[(indexed-file [pre-content any/c] ...) element?]{A
+combination of @scheme[file] and @scheme[as-index], but where the sort
+key for the index iterm does not include quotes.}
+
+@defproc[(indexed-envvar [pre-content any/c] ...) element?]{A
+combination of @scheme[envvar] and @scheme[as-index].}
 
 @; ------------------------------------------------------------------------
 @section{Miscellaneous}
@@ -358,3 +536,6 @@ centered table with the @scheme[pre-flow] parsed by
 
 @defproc[(commandline [pre-content any/c] ...) paragraph?]{Produces
 an inset command-line example (e.g., in typewriter font).}
+
+@defproc[(margin-code [pre-content any/c] ...) paragraph?]{Produces
+a paragraph to be typeset in the margin instead of inlined.}

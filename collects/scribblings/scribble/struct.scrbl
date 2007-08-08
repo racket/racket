@@ -8,12 +8,15 @@ A single document is represented as a @defterm{part}:
 
 @itemize{
 
- @item{A @defterm{part} is an instance of @scheme[part]; it has a
-       title @defterm{content}, an initial @defterm{flow}, and a list
-       of subsection @defterm{part}s.  After the ``collect'' phase of
-       rendering, it also has @defterm{collected info}. An
-       @scheme[unnumbered-part] is the same as a @scheme[part], but it
-       isn't numbered.}
+ @item{A @defterm{part} is an instance of @scheme[part]; it has a list
+       of @defterm{tags} used as link targets, a title
+       @defterm{content}, a list of @defterm{elements} that supply
+       information during the ``collect'' phase but are not rendered,
+       an initial @defterm{flow}, and a list of subsection
+       @defterm{part}s.  After the ``collect'' phase of rendering, it
+       also has @defterm{collected info}. A @scheme[styled-part]
+       includes an extra style flag. An @scheme[unnumbered-part] is
+       the same as a @scheme[styled-part], but it isn't numbered.}
 
  @item{A @defterm{flow} is an instance of @scheme[flow]; it has a list
        of @defterm{flow element}s.}
@@ -61,9 +64,9 @@ A single document is represented as a @defterm{part}:
 
                    @item{A symbol element is either @scheme['mdash],
                          @scheme['ndash], @scheme['ldquo],
-                         @scheme['lsquo], @scheme['rsquo], or
-                         @scheme['rarr]; it is drawn as the
-                         corresponding HTML entity.}
+                         @scheme['lsquo], @scheme['rsquo],
+                         @scheme['rarr], or @scheme['prime]; it is
+                         drawn as the corresponding HTML entity.}
 
                    @item{An instance of @scheme[element] has a list of
                          @defterm{element}s plus a style. The style's
@@ -83,7 +86,11 @@ A single document is represented as a @defterm{part}:
 
                    @item{An instance of @scheme[target-element] has a
                          @defterm{tag} to be referenced by
-                         @scheme[link-element]s.}
+                         @scheme[link-element]s. An instance of the
+                         subtype @scheme[toc-target-element] is
+                         treated like a kind of section label, to be
+                         shown in the ``on this page'' table for HTML
+                         output.}
 
                    @item{An instance of @scheme[index-element] has a
                          @defterm{tag} (as a target), a list of
@@ -96,6 +103,10 @@ A single document is represented as a @defterm{part}:
                          procedure that produces a
                          @defterm{element}. The ``collect'' phase of
                          rendering ignores delayed flow elements.}
+
+                   @item{An instance of @scheme[aux-element] is
+                         excluded in the text of a link when it
+                         appears in a referenced section name.}
 
              }}}}
 
@@ -119,20 +130,39 @@ Note that there's no difference between a part and a full document. A
 particular source module just as easily defines a subsection
 (incoprated via @scheme[include-section]) as a document.
 
-@defstruct[part ([tag (or/c false/c tag?)]
+@defstruct[part ([tags (listof tag?)]
                  [title-content (or/c false/c list?)]
                  [collected-info (or/c false/c collected-info?)]
+                 [to-collect list?]
                  [flow flow?]
                  [parts (listof part?)])]{
 
+Each element of @scheme[tags] is actually wrapped as @scheme[`(part
+,_tag)] as a target for links; functions like @scheme[seclink]
+similarly insert the @scheme[`(part ,_tag)] wrapper.
+
 }
 
-
-@defstruct[(unnumbered-part part) ()]{
-
-}
 
 @defstruct[(styled-part part) ([style any/c])]{
+
+The currently recognized values for @scheme[style] are as follows:
+
+@itemize{
+
+ @item{@scheme['toc] --- sub-parts of the part are rendered on separate
+       pages for multi-page HTML mode.}
+
+ @item{@scheme['index] --- the part represents an index.}
+
+}
+
+}
+
+@defstruct[(unnumbered-part styled-part) ()]{
+
+Although a section number is computed for an ``unnumbered'' section
+during the ``collect'' phase, the number is not rendered.
 
 }
 
@@ -182,6 +212,10 @@ section, and the last argument correspond to global information
 
 }
 
+@defstruct[(toc-target-element target-element) ()]{
+
+}
+
 @defstruct[(link-element element) ([tag any/c]
                                    [complain-if-fail? boolean?])]{
 
@@ -191,6 +225,12 @@ section, and the last argument correspond to global information
 @defstruct[(index-element element) ([tag tag?]
                                     [plain-seq (listof string?)]
                                     [entry-seq list?])]{
+
+The @scheme[plain-seq] specifies the keys for sorting, where the first
+element is the main key, the second is a sub-key, etc. The
+@scheme[entry-seq] list must have the same length, and it provides the
+form of each key to render in the final document. See also
+@scheme[index].
 
 }
 
@@ -202,7 +242,9 @@ example, @scheme[secref].
 
 }
 
-@defstruct[delayed-element ([render (any/c part? any/c . -> . list?)])]{
+@defstruct[delayed-element ([render (any/c part? any/c . -> . list?)]
+                            [sizer (-> any/c)]
+                            [plain (-> any/c)])]{
 
 The @scheme[render] procedure's arguments are the same as for
 @scheme[delayed-flow-element]. Unlike @scheme[delayed-flow-element],
@@ -211,11 +253,20 @@ on the first call. Furthemore, the element can be marshelled (e.g.,
 for an index entry or a section-title entry) only if it has been
 rendered first.
 
+The @scheme[sizer] field is a procedure that produces a substitute
+element for the delayed element for the purposes of determine the
+element's width (see @scheme[element-width]).
+
+The @scheme[plain] field is a procedure that produces a substitute for
+the element when needed before the ``collect'' phase.
+
 }
 
 @defstruct[collected-info ([number (listof (or/c false/c integer?))]
                            [parent (or/c false/c part?)]
                            [info any/c])]{
+
+Computed for each part by the ``collect'' phase.
 
 }
 
@@ -227,18 +278,28 @@ Returns @scheme[#t] if @scheme[v] is a @scheme[paragraph],
 
 }
 
+
 @defproc[(tag? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is acceptable as a link tag,
 @scheme[#f], otherwise. Currently, an acceptable tag is either a
-string or a list containing a symbol and a string.
+string or a list containing a symbol and a string.}
 
-}
 
-@defproc[(content->string (content list?)) string?]{
+@defproc*[([(content->string (content list?)) string?]
+           [(content->string (content list?) (p part?) (info any/c)) string?])]{
 
 Converts a list of elements to a single string (essentially
 rendering the content as ``plain text'').
 
-}
+If @scheme[p] and @scheme[info] arguments are not supplied, then a
+pre-``collect'' substitute is obtained for delayed
+elements. Otherwise, the two arguments are used to force the delayed
+element (if it has not been forced already).}
 
+
+@defproc*[([(element->string (element any/c)) string?]
+           [(element->string (element any/c) (p part?) (info any/c)) string?])]{
+
+Like @scheme[content->string], but for a single element.
+}

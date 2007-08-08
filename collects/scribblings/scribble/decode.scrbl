@@ -34,10 +34,12 @@ special text conversions:
 Decodes a document, producing a part. In @scheme[lst], instances of
 @scheme[splice] are inlined into the list. An instance of
 @scheme[title-decl] supplies the title for the part. Instances of
-@scheme[part-start] at level 0 trigger sub-part parsing. Instances of
-@scheme[section] trigger are used as-is as subsections, and instances
-of @scheme[paragraph] and other flow-element datatypes are used as-is
-in the enclosing flow.
+@scheme[index-section-decl] (that preceed any sub-part) add index
+entries that point to the section. Instances of @scheme[part-start] at
+level 0 trigger sub-part parsing. Instances of @scheme[section]
+trigger are used as-is as subsections, and instances of
+@scheme[paragraph] and other flow-element datatypes are used as-is in
+the enclosing flow.
 
 }
 
@@ -100,6 +102,13 @@ See @scheme[decode] and @scheme[decode-part].
                        [title list?])]{
 
 See @scheme[decode] and @scheme[decode-part].
+
+}
+
+@defstruct[part-index-decl ([plain-seq (listof string?)]
+                            [content-seq list?])]{
+
+See @scheme[decode]. The two fields are as for @scheme[index-element].
 
 }
 

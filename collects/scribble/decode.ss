@@ -20,8 +20,8 @@
                 [tag (or/c false/c string?)]
                 [title list?])]
    [splice ([run list?])]
-   [section-index-decl ([plain-seq (listof string?)]
-                        [entry-seq list?])])
+   [part-index-decl ([plain-seq (listof string?)]
+                     [entry-seq list?])])
 
   (define (decode-string s)
     (let loop ([l '((#rx"---" mdash)
@@ -68,8 +68,8 @@
                                              #f
                                              null
                                              `(part ,tag)
-                                             (section-index-decl-plain-seq k)
-                                             (section-index-decl-entry-seq k)))
+                                             (part-index-decl-plain-seq k)
+                                             (part-index-decl-entry-seq k)))
                                           keys tags)])
                               (if title
                                   (cons (make-index-element
@@ -152,7 +152,7 @@
        [(splice? (car l))
 	(loop (append (splice-run (car l)) (cdr l)) next? keys accum title tag style)]
        [(null? (cdr l)) (loop null #f keys (cons (car l) accum) title tag style)]
-       [(section-index-decl? (car l))
+       [(part-index-decl? (car l))
         (loop (cdr l) next? (cons (car l) keys) accum title tag style)]
        [(and (pair? (cdr l))
 	     (splice? (cadr l)))

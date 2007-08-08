@@ -122,7 +122,7 @@
   (provide section-index index index* as-index index-section)
 
   (define (section-index . elems)
-    (make-section-index-decl (map element->string elems) elems))
+    (make-part-index-decl (map element->string elems) elems))
 
   (define (gen-target)
     (format "index:~s:~s" (current-inexact-milliseconds) (gensym)))

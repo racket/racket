@@ -42,17 +42,31 @@ Although the procedures are mostly design to be used from @elem["@"]
 mode, they are easier to document in Scheme mode (partly because we
 have Scribble's @file{scheme.ss} and @file{manual.ss}).
 
+@; ------------------------------------------------------------------------
+
 @section{Document Structure}
 
 @defproc[(title [#:tag tag (or/c false/c string?) #f]
                 [#:style style any/c #f]
                 [pre-content any/c] ...+)
-         title-decl?]{ Generates a @scheme[title-decl] to
- be picked up by @scheme[decode] or @scheme[decode-part].  The
- @scheme[pre-content]s list is parsed with @scheme[decode-content] for
- the title content. If @scheme[tag] is @scheme[#f], a tag string is
- generated automatically from the content. The tag string is combined
- with the symbol @scheme['part] to form the full tag.}
+         title-decl?]{
+
+Generates a @scheme[title-decl] to be picked up by @scheme[decode] or
+@scheme[decode-part].  The @scheme[pre-content]s list is parsed with
+@scheme[decode-content] for the title content. If @scheme[tag] is
+@scheme[#f], a tag string is generated automatically from the
+content. The tag string is combined with the symbol @scheme['part] to
+form the full tag.
+
+A style of @scheme['toc] causes sub-sections to be generated as
+separate pages in multi-page HTML output. A style of @scheme['index]
+indicates an index section whose body is rendered in two columns for
+Latex output.
+
+The section title is automatically indexed. For the index key, a
+leading ``A'', ``An'', or ``The'' (followed by whitespace) is
+removed.}
+
 
 @def-section-like[section part-start?]{ Like @scheme[title], but
  generates a @scheme[part-start] of depth @scheme[0] to be by
@@ -87,6 +101,8 @@ have Scribble's @file{scheme.ss} and @file{manual.ss}).
  visible to the enclosing context). Since this form expands to
  @scheme[require], it must be used in a module or top-level context.}
 
+@; ------------------------------------------------------------------------
+
 @section{Text Styles}
 
 @def-elem-proc[elem]{ Parses the @scheme[pre-content] list using
@@ -113,6 +129,8 @@ Parses the @scheme[pre-content] list using @scheme[decode-content],
 and produces an element with style @scheme[style-name].
 
 }
+
+@; ------------------------------------------------------------------------
 
 @section{Indexing}
 
@@ -143,15 +161,37 @@ the list of contents render in the index (in parallel to
          index-element?]{
 
 Like @scheme[index], but the word to index is determined by applying
-@scheme[content->string] on the parsed @scheme[pre-content] list.
+@scheme[content->string] on the parsed @scheme[pre-content] list.}
 
-}
 
+@defproc[(section-index [word string?] ...)]{
+
+Creates a @scheme[part-index-decl] to be associated with the enclosing
+section by @scheme[decode]. The @scheme[word]s serve as both the keys
+and as the rendered forms of the keys.}
+
+
+@defproc[(index-section [tag string?])]{
+
+Produces a section that shows the index the enclosing document. The
+@scheme[tag] is required to be unique for each index among a set of
+documents that share ``collected'' information.}
+
+
+@; ------------------------------------------------------------------------
 
 @section{Tables of Contents}
 
 @defproc[(table-of-contents) delayed-flow-element?]{
- Returns a flow element that expands to a table of contents for the
- enclosing section. For LaTeX output, however, the table of contents
- currently spans the entire enclosing document.
-}
+
+Returns a delayed flow element that expands to a table of contents for
+the enclosing section. For LaTeX output, however, the table of
+contents currently spans the entire enclosing document.}
+
+
+@defproc[(local-table-of-contents) delayed-flow-element?]{
+
+Returns a delayed flow element that may expand to a table of contents
+for the enclosing section, depending on the output type. For
+multi-page HTML output, the flow element is a table of contents; for
+Latex output, the flow element is empty.}

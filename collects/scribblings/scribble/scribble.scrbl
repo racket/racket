@@ -88,3 +88,4 @@ information.
 @include-section["basic.scrbl"]
 @include-section["manual.scrbl"]
 @include-section["eval.scrbl"]
+@include-section["style.scrbl"]

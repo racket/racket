@@ -1088,17 +1088,6 @@
 
   ;; ----------------------------------------
 
-  (provide where-is-one-of
-           is-one-of)
-
-  (define (where-is-one-of id)
-    (make-element #f (list "where " id " is one of")))
-
-  (define (is-one-of id)
-    (make-element #f (list id " is one of")))
-  
-  ;; ----------------------------------------
-
   (provide math)
   (define (math . s)
     (let ([c (decode-content s)])
