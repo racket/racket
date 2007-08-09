@@ -19,6 +19,15 @@ The windowing toolbox.
 @require["button-class.scrbl"]
 @include-class[button%]
 
+@require["canvas-class.scrbl"]
+@include-class[canvas%]
+
+@require["canvas-intf.scrbl"]
+@include-class[canvas<%>]
+
+@require["check-box-class.scrbl"]
+@include-class[check-box%]
+
 @require["control-intf.scrbl"]
 @include-class[control<%>]
 

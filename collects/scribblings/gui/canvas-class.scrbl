@@ -7,22 +7,24 @@ A @scheme[canvas%] object is a general-purpose window for drawing
  and handling events.
 
 
-
-
-@defconstructor[[parent (or/c (is-a/c frame%) (is-a/c dialog%) (is-a/c panel%) (is-a/c pane%))]
-                [style (symbols/c no-focus transparent no-autoclear deleted gl resize-corner hscroll vscroll combo control-border border) null]
-                [paint-callback procedure of two arguments: a @scheme[canvas%] object and a @scheme[dc<%>] object void]
-                [label (or/c label-string? false/c) #f]
-                [gl-config (or/c (is-a/c gl-config%) false/c) #f]
-                [enabled any/c #t]
-                [vert-margin (integer-in 0 1000) 0]
-                [horiz-margin (integer-in 0 1000) 0]
-                [min-width (integer-in 0 10000) {\rm graphical minimum width}]
-                [min-height (integer-in 0 10000) {\rm graphical minimum height}]
-                [stretchable-width any/c #t]
-                [stretchable-height any/c #t]]{
+@defconstructor[([parent (or/c (is-a/c frame%) (is-a/c dialog%) 
+                               (is-a/c panel%) (is-a/c pane%))]
+                 [style (listof (symbols/c no-focus transparent no-autoclear 
+                                           deleted gl resize-corner hscroll vscroll 
+                                           combo control-border border)) null]
+                 [paint-callback ((is-a/c button%) (is-a/c dc<%>) . -> . any) void]
+                 [label (or/c label-string? false/c) #f]
+                 [gl-config (or/c (is-a/c gl-config%) false/c) #f]
+                 [enabled any/c #t]
+                 [vert-margin (integer-in 0 1000) 0]
+                 [horiz-margin (integer-in 0 1000) 0]
+                 [min-width (integer-in 0 10000) _graphical-minimum-width]
+                 [min-height (integer-in 0 10000) _graphical-minimum-height]
+                 [stretchable-width any/c #t]
+                 [stretchable-height any/c #t])]{
 
 The @scheme[style] argument indicates one or more of the following styles:
+
 @itemize{
 
  @item{@scheme['border] --- gives the canvas a thin border}
@@ -86,52 +88,44 @@ The @scheme[gl-config] argument determines properties of an OpenGL
 
 @WindowKWs[] @SubareaKWs[] @AreaKWs[]
 
-
-
 }
 
 @defmethod[(with-gl-context [thunk (-> any)])
            any]{
-@spec{
-
 Passes the given thunk to
-@method[gl-context<%> call-as-current] % 
+@method[gl-context<%> call-as-current]
 of the result of 
-@method[dc<%> get-gl-context] % 
+@method[dc<%> get-gl-context]
 for this canvas's DC as returned by
 @method[canvas<%> get-dc].
 
 The 
-@method[gl-context<%> call-as-current] % 
+@method[gl-context<%> call-as-current]
 method acquires a re-entrant lock, so nested calls to
 @method[canvas% with-gl-context] on different threads or OpenGL contexts can block or deadlock.
 
 
-}}
+}
 
 @defmethod[(swap-gl-buffers)
            void?]{
-@spec{
-
 Calls
-@method[gl-context<%> swap-buffers] % 
+@method[gl-context<%> swap-buffers]
 on the result of 
-@method[dc<%> get-gl-context] % 
+@method[dc<%> get-gl-context]
 for this canvas's DC as returned by
 @method[canvas<%> get-dc].
 
 The 
-@method[gl-context<%> swap-buffers] % 
+@method[gl-context<%> swap-buffers]
 method acquires a re-entrant lock, so nested calls to
 @method[canvas% with-gl-context] on different threads or OpenGL contexts can block or deadlock.
 
 
-}}
+}
 
 @defmethod[(on-scroll [event (is-a/c scroll-event%)])
            void?]{
-@spec{
-
 Called when the user changes one of the canvas's scrollbars. A
  @scheme[scroll-event%] argument provides information about the
  scroll action.
@@ -141,36 +135,32 @@ This method is called only when manual
  the
 @method[canvas<%> on-paint] method is called, instead.
 
-}}
+}
 
 @defmethod[(get-scroll-pos [which (symbols/c vertical horizontal)])
            (integer-in 0 10000)]{
-@spec{
 
 Gets the current value of a manual scrollbar. The result is always
  @scheme[0] if the scrollbar is not active or it is automatic.
-
-See also
-@method[canvas% init-manual-scrollbars].
-
-}
-@impl{
 
 The @scheme[which] argument is either @scheme['horizontal] or
  @scheme['vertical], indicating that the value of the horizontal or
  vertical scrollbar should be returned, respectively.
 
-
-
-}}
+See also
+@method[canvas% init-manual-scrollbars].
+}
 
 @defmethod[(set-scroll-pos [which (symbols/c vertical horizontal)]
                            [value (integer-in 0 10000)])
            void?]{
-@spec{
 
 Sets the current value of a manual scrollbar. (This method has no
  effect on automatic scrollbars.)
+
+The @scheme[which] argument is either @scheme['horizontal] or
+ @scheme['vertical], indicating whether to set the value of the
+ horizontal or vertical scrollbar set, respectively.
 
 @MonitorMethod[@elem{The value of the canvas's scrollbar} @elem{the user scrolling} @elem{@method[canvas% on-scroll]} @elem{scrollbar value}]
 
@@ -179,124 +169,82 @@ See also
 @method[canvas% scroll].
 
 }
-@impl{
-
-The @scheme[which] argument is either @scheme['horizontal] or
- @scheme['vertical], indicating whether to set the value of the
- horizontal or vertical scrollbar set, respectively.
-
-
-
-}}
 
 @defmethod[(get-scroll-range [which (symbols/c vertical horizontal)])
            (integer-in 0 10000)]{
-@spec{
 
 Gets the current maximum value of a manual scrollbar. The result is
  always @scheme[0] if the scrollbar is not active or it is automatic.
-
-See also
-@method[canvas% init-manual-scrollbars].
-
-}
-@impl{
 
 The @scheme[which] argument is either @scheme['horizontal] or
  @scheme['vertical], indicating whether to get the maximum value of the
  horizontal or vertical scrollbar, respectively.
 
-
-
-}}
+See also
+@method[canvas% init-manual-scrollbars].
+}
 
 @defmethod[(set-scroll-range [which (symbols/c vertical horizontal)]
                              [value (integer-in 0 10000)])
            void?]{
-@spec{
 
 Sets the current maximum value of a manual scrollbar. (This method has
  no effect on automatic scrollbars.)
-
-See also
-@method[canvas% init-manual-scrollbars].
-
-}
-@impl{
 
 The @scheme[which] argument is either @scheme['horizontal] or
  @scheme['vertical], indicating whether to set the maximum value of the
  horizontal or vertical scrollbar, respectively.
 
-
-
-}}
+See also
+@method[canvas% init-manual-scrollbars].
+}
 
 @defmethod[(get-scroll-page [which (symbols/c vertical horizontal)])
            (integer-in 1 10000)]{
-@spec{
 
 Get the current page step size of a manual scrollbar. The result is
  @scheme[0] if the scrollbar is not active or it is automatic.
-
-See also
-@method[canvas% init-manual-scrollbars].
-
-}
-@impl{
 
 The @scheme[which] argument is either @scheme['horizontal] or
  @scheme['vertical], indicating whether to get the page step size of
  the horizontal or vertical scrollbar, respectively.
 
-
-
-}}
+See also
+@method[canvas% init-manual-scrollbars].
+}
 
 @defmethod[(set-scroll-page [which (symbols/c vertical horizontal)]
                             [value (integer-in 1 10000)])
            void?]{
-@spec{
 
 Set the current page step size of a manual scrollbar. (This method has
  no effect on automatic scrollbars.)
-
-See also
-@method[canvas% init-manual-scrollbars].
-
-}
-@impl{
 
 The @scheme[which] argument is either @scheme['horizontal] or
  @scheme['vertical], indicating whether to set the page step size of
  the horizontal or vertical scrollbar, respectively.
 
+See also
+@method[canvas% init-manual-scrollbars].
 
-
-}}
+}
 
 @defmethod[(get-virtual-size)
-           two \IntsIn{0}{10000}]{
-@spec{
-
+           (value (integer-in 0 10000) (integer-in 0 10000))]{
 Gets the size in device units of the scrollable canvas area (as
  opposed to the client size, which is the area of the canvas currently
  visible). This is the same size as the client size (as returned by
 @method[window<%> get-client-size]) unless scrollbars are initialized as automatic (see
 @method[canvas% init-auto-scrollbars]).
 
-}}
+}
 
 @defmethod[(scroll [h-value (or/c (real-in 0.0 1.0) false/c)]
                    [v-value (or/c (real-in 0.0 1.0) false/c)])
            void?]{
-@spec{
 
 Sets the values of automatic scrollbars. (This method has no effect on
  manual scrollbars.)
-
-}
-@impl{
 
 If either argument is @scheme[#f], the scrollbar value is not changed in
  the corresponding direction.
@@ -306,23 +254,20 @@ The @scheme[h-value] and @scheme[v-value] arguments each specify a fraction
  its left/top, while a @scheme[1.0] value sets the scrollbar to its
  right/bottom. A @scheme[0.5] value sets the scrollbar to its middle. In
  general, if the canvas's virtual size is @scheme[v], its client size is
- @scheme[c], and @scheme[(> @scheme[v] \var{c])}, then scrolling to @scheme[p]
- sets the view start to @scheme[(floor (* @scheme[p] (- \var{v] @scheme[c])))}.
+ @scheme[c], and @scheme[(> v c)], then scrolling to @scheme[p]
+ sets the view start to @scheme[(floor (* p (- v c)))].
 
 See also
 @method[canvas% init-auto-scrollbars] and
 @method[canvas% get-view-start].
 
-
-
-}}
+}
 
 @defmethod[(init-auto-scrollbars [horiz-pixels (or/c (integer-in 1 10000) false/c)]
                                  [vert-pixels (or/c (integer-in 1 10000) false/c)]
                                  [h-value (real-in 0.0 1.0)]
                                  [v-value (real-in 0.0 1.0)])
            void?]{
-@spec{
 
 Enables and initializes automatic scrollbars for the canvas.  A
  horizontal or vertical scrollbar can be activated only in a canvas
@@ -341,11 +286,7 @@ See also
  are independently enabled. Automatic scrollbars can be
  re-initialized as manual, and vice-versa.
 
-}
-@impl{
-
-Initializes the scrollbars and resets the canvas's virtual size to the
- given values. If either @scheme[horiz-pixels] or @scheme[vert-pixels] is
+If either @scheme[horiz-pixels] or @scheme[vert-pixels] is
  @scheme[#f], the scrollbar is not enabled in the corresponding
  direction, and the canvas's virtual size in that direction is the
  same as its client size.
@@ -359,9 +300,7 @@ See also
 @method[canvas% on-scroll] and
 @method[canvas% get-virtual-size].
 
-
-
-}}
+}
 
 @defmethod[(init-manual-scrollbars [h-length (or/c (integer-in 0 10000) false/c)]
                                    [v-length (or/c (integer-in 0 10000) false/c)]
@@ -370,7 +309,6 @@ See also
                                    [h-value (integer-in 0 10000)]
                                    [v-value (integer-in 0 10000)])
            void?]{
-@spec{
 
 Enables and initializes manual scrollbars for the canvas.  A
  horizontal or vertical scrollbar can be activated only in a canvas
@@ -388,9 +326,6 @@ See also
  are independently enabled. Automatic scrollbars can be re-initialized
  as manual, and vice-versa.
 
-}
-@impl{
-
 The @scheme[h-length] and @scheme[v-length] arguments specify the length of
  each scrollbar in scroll steps (i.e., the maximum value of each
  scrollbar). If either is @scheme[#f], the scrollbar is disabled in the
@@ -404,108 +339,77 @@ The @scheme[h-value] and @scheme[v-value] arguments specify the initial
  values of the scrollbars.
 
 If @scheme[h-value] is greater than @scheme[h-length] or @scheme[v-value] is
- greater than @scheme[v-length], @|MismatchExn|}. (The page step may be
+ greater than @scheme[v-length], @|MismatchExn|. (The page step may be
  larger than the total size of a scrollbar.)
-
 
 See also
 @method[canvas% on-scroll] and
 @method[canvas% get-virtual-size].
 
-
-
-}}
+}
 
 @defmethod[(show-scrollbars [show-horiz? any/c]
                             [show-vert? any/c])
            void?]{
-@spec{
 
-Shows or hides scrollbar. The horizontal scrollbar can be shown only
- if the canvas was created with the @scheme['hscroll] style, and the
- vertical scrollbar can be shown only if the canvas was created with
- the @scheme['vscroll] style. See also
-@method[canvas% init-auto-scrollbars] and
-@method[canvas% init-manual-scrollbars].
+Shows or hides the scrollbars as indicated by
+@scheme[show-horiz?] and @scheme[show-vert?]. If
+@scheme[show-horiz?] is true and the canvas was not created with
+the @scheme['hscroll] style, @|MismatchExn|.  Similarly, if
+@scheme[show-vert?] is true and the canvas was not created with
+the @scheme['vscroll] style, @|MismatchExn|.
+
+
+The horizontal scrollbar can be shown only if the canvas was
+created with the @scheme['hscroll] style, and the vertical
+scrollbar can be shown only if the canvas was created with the
+@scheme['vscroll] style. See also @method[canvas%
+init-auto-scrollbars] and @method[canvas%
+init-manual-scrollbars].
 
 }
-@impl{
-
-Shows or hides the scrollbars as indicated by @scheme[show-horiz?]\ and
- @scheme[show-vert?]. If @scheme[show-horiz?]\ is true and the canvas
- was not created with the @scheme['hscroll] style, @|MismatchExn|}.
- Similarly, if @scheme[show-vert?]\ is true and the canvas
- was not created with the @scheme['vscroll] style, @|MismatchExn|}.
-
-
-
-}}
 
 @defmethod[(get-view-start)
-           two \IntsIn{0}{10000}]{
-@spec{
+           (values (integer-in 0 10000) (integer-in 0 10000))]{
 
-Get the location at which the visible portion of the canvas starts,
- based on the current values of the horizontal and vertical scrollbars
- if they are initialized as automatic (see
-@method[canvas% init-auto-scrollbars] ). Combined with
-@method[window<%> get-client-size], an application can efficiently redraw only the visible portion of
- the canvas.  The values are in pixels.
+Get the location at which the visible portion of the canvas
+starts, based on the current values of the horizontal and
+vertical scrollbars if they are initialized as automatic (see
+@method[canvas% init-auto-scrollbars]). Combined with
+@method[window<%> get-client-size], an application can
+efficiently redraw only the visible portion of the canvas.  The
+values are in pixels.
 
 If the scrollbars are disabled or initialized as manual (see
-@method[canvas% init-manual-scrollbars]), the result is @scheme[(values \scmc{0] @scheme[0])}.
+@method[canvas% init-manual-scrollbars]), the result is @scheme[(values 0 0)].
 
-}}
+}
 
 @defmethod*[([(accept-tab-focus)
               boolean?]
              [(accept-tab-focus [on? any/c])
               void?])]{
-@spec{
 
-\index{keyboard focus!navigation}
-Gets or sets whether tab-focus is enabled for the canvas (assuming
- that the canvas is not created with the @scheme['no-focus] style). When
- tab-focus is enabled, the canvas can receive the keyboard focus when
- the user navigates among a frame or dialog's controls with the Tab and
- arrow keys. By default, tab-focus is disabled.
+@index['("keyboard focus" "navigation")]{Gets} or sets whether
+tab-focus is enabled for the canvas (assuming that the canvas is
+not created with the @scheme['no-focus] style). When tab-focus is
+enabled, the canvas can receive the keyboard focus when the user
+navigates among a frame or dialog's controls with the Tab and
+arrow keys. By default, tab-focus is disabled.
 
 When tab-focus is enabled for a canvas, Tab, arrow, and Enter keyboard
  events are consumed by a frame's default
 @method[top-level-window<%> on-traverse-char] method. (In addition, a dialog's default method consumes Escape key
  events.) Otherwise,
 @method[top-level-window<%> on-traverse-char] allows the keyboard events to be propagated to the canvas.
-
 }
-@impl{
-First case:
-
-
-Returns @scheme[#t] if tab-focus is enabled for the canvas, @scheme[#f]
- otherwise.
-
-
-
-Second case:
-
-
-Enables or disables tab-focus for the canvas.
-
-
-
-}}
 
 @defmethod[#:mode 'override 
            (on-paint)
            void?]{
-@impl{
 
 Calls the procedure supplied as the @scheme[paint-callback] argument when
  the @scheme[canvas%] was created.
 
-
-
-
-
-}}}
+}}
 
