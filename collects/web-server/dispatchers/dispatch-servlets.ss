@@ -67,7 +67,7 @@
               (parameterize ([current-directory (directory-part servlet-path)]
                              [current-custodian instance-custodian]
                              [exit-handler
-                              (lambda (v)
+                              (lambda _
                                 (kill-connection! conn)
                                 (custodian-shutdown-all instance-custodian))])
                 ;; any resources (e.g. threads) created when the
@@ -105,7 +105,7 @@
                        [current-custodian (servlet-custodian the-servlet)]
                        [current-namespace (servlet-namespace the-servlet)]
                        [exit-handler
-                        (lambda (v)
+                        (lambda _
                           (kill-connection! conn)
                           (custodian-shutdown-all (servlet-custodian the-servlet)))])
           (with-handlers ([exn:fail:servlet-manager:no-instance?
