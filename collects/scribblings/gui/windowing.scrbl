@@ -7,6 +7,30 @@ The windowing toolbox.
 
 @local-table-of-contents[]
 
+@require["area-intf.scrbl"]
+@include-class[area<%>]
+
+@require["area-container-intf.scrbl"]
+@include-class[area-container<%>]
+
+@require["area-container-window-intf.scrbl"]
+@include-class[area-container-window<%>]
+
+@require["button-class.scrbl"]
+@include-class[button%]
+
+@require["control-intf.scrbl"]
+@include-class[control<%>]
+
+@require["subarea-intf.scrbl"]
+@include-class[subarea<%>]
+
+@require["subwindow-intf.scrbl"]
+@include-class[subwindow<%>]
+
+@require["window-intf.scrbl"]
+@include-class[window<%>]
+
 @include-section["dialog-funcs.scrbl"]
 @include-section["eventspace-funcs.scrbl"]
 @include-section["system-menu-funcs.scrbl"]

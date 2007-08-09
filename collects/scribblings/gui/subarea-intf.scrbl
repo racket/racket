@@ -26,55 +26,21 @@ All @scheme[subarea<%>] classes accept the following named
               (integer-in 0 1000)]
              [(horiz-margin [margin (integer-in 0 1000)])
               void?])]{
-@spec{
 
 Gets or sets the area's horizontal margin, which is added both to the
  right and left, for geometry management. See @|geomdiscuss| for more
  information.
 
 }
-@impl{
-First case:
-
-
-Returns the current horizontal margin.
-
-
-
-Second case:
-
-
-Sets the horizontal margin.
-
-
-
-}}
 
 @defmethod*[([(vert-margin)
               (integer-in 0 1000)]
              [(vert-margin [margin (integer-in 0 1000)])
               void?])]{
-@spec{
 
 Gets or sets the area's vertical margin, which is added both to the
- right and left, for geometry management. See @|geomdiscuss| for more
+ top and bottom, for geometry management. See @|geomdiscuss| for more
  information.
 
-}
-@impl{
-First case:
-
-
-Returns the current vertical margin.
-
-
-
-Second case:
-
-
-Sets the vertical margin.
-
-
-
-}}}
+}}
 

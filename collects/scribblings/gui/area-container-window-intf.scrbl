@@ -3,6 +3,6 @@
 
 @definterface[area-container-window<%> (area-container<%> window<%>)]{
 
+Combines two interfaces.
 
 }
-
