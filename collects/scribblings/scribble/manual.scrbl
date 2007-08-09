@@ -109,13 +109,6 @@ module whose language is @scheme[lang].}
 a single line and wrapped with its enclosing paragraph, independent of
 the formatting of @scheme[datum].}
 
-@defform[(indexed-scheme datum ...)]{
-
-A combination of @scheme[scheme] and @scheme[as-index], with the
-special case that if a single @scheme[datum] is provided and it is a
-@scheme[quote] form, then the quote is removed from the key (so that
-it's sorted using its unquoted form).}
-
 @defform[(schemeresult datum ...)]{Like @scheme[scheme], but typeset
 as a REPL value (i.e., a single color with no hyperlinks).}
 
@@ -503,6 +496,22 @@ the link.}
 
 @; ------------------------------------------------------------------------
 @section{Indexing}
+
+@defform[(indexed-scheme datum ...)]{
+
+A combination of @scheme[scheme] and @scheme[as-index], with the
+following special cases when a single @scheme[datum] is provided:
+
+ @itemize{
+
+ @item{If @scheme[datum] is a @scheme[quote] form, then the quote is
+       removed from the key (so that it's sorted using its unquoted
+       form).}
+
+ @item{If @scheme[datum] is a string, then quotes are removed from the
+       key (so that it's sorted using the string content).}
+
+}}
 
 @defproc[(idefterm [pre-content any/c] ...) element?]{Combines
 @scheme[as-index] and @scheme[defterm]. The content normally should be

@@ -1,0 +1,45 @@
+#reader(lib "defreader.ss" "scribble")
+@require["common.ss"]
+
+@defclass[menu-item% object% (selectable-menu-item<%>)]{
+
+A @scheme[menu-item%] is a plain string-labelled menu item. Its
+ parent must be a @scheme[menu%] or @scheme[popup-menu%]. When the
+ user selects the menu item, its callback procedure is called.
+
+
+
+
+@defconstructor[[label label-string?]
+                [parent @scheme[menu%] or @scheme[popup-menu%] object]
+                [callback procedure of two arguments: a @scheme[menu-item%] object and a @scheme[control-event%] object]
+                [shortcut (or/c character false/c) #f]
+                [help-string (or/c label-string? false/c) #f]
+                [demand-callback procedure of one argument: a @scheme[menu-item%] object @scheme[void]]
+                [shortcut-prefix (symbols/c option shift ctl meta cmd alt) @scheme[(\iscmprocedure{get-default-shortcut-prefix])}]]{
+
+Creates a new menu item in @scheme[parent]. The item is initially shown,
+ appended to the end of its parent. The @scheme[callback] procedure is
+ called (with the event type @indexed-scheme['menu]) when the user selects
+ the menu item (either via a menu bar,
+@xmethod[window<%> popup-menu], or
+@xmethod[editor-admin% popup-menu]).
+
+See
+@method[labelled-menu-item<%> set-label] for information about mnemonic ampersands (``\&'') in @scheme[label].
+
+If @scheme[shortcut] is not @scheme[#f], the item has a shortcut. See
+@method[selectable-menu-item<%> get-shortcut] for more information.  The @scheme[shortcut-prefix] argument determines the
+set of modifier keys for the shortcut; see
+@method[selectable-menu-item<%> get-shortcut-prefix].
+
+If @scheme[help] is not @scheme[#f], the item has a help string. See
+@method[labelled-menu-item<%> get-help-string] for more information.
+
+The @scheme[demand-callback] procedure is called by the default
+@method[menu-item-container<%> on-demand] method with the object itself.
+
+
+
+}}
+

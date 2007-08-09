@@ -117,7 +117,7 @@ Like @scheme[</c], but for @scheme[<=].}
 Like @scheme[</c], but for @scheme[>=].}
 
 
-@defproc[(real-in [n real?][m meal?]) flat-contract?]{
+@defproc[(real-in [n real?][m real?]) flat-contract?]{
 
 Returns a flat contract that requires the input to be a real number
 between @scheme[n] and @scheme[m], inclusive.}

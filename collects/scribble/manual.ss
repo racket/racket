@@ -93,11 +93,13 @@
       [(_ x) (add-scheme-index 'x (scheme x))]))
 
   (define (add-scheme-index s e)
-    (let ([k (if (and (pair? s)
-                      (eq? (car s) 'quote))
-                 (cadr s)
-                 s)])
-      (index* (list (format "~s" k)) (list e) e)))
+    (let ([k (cond
+              [(and (pair? s)
+                    (eq? (car s) 'quote))
+               (format "~s" (cadr s))]
+              [(string? s) s]
+              [else (format "~s" s)])])
+      (index* (list k) (list e) e)))
 
   (provide schemeblock SCHEMEBLOCK
            schemeblock0 SCHEMEBLOCK0
@@ -174,6 +176,20 @@
     (syntax-rules ()
       [(_ body ...)
        (code body ...)]))
+
+  ;; ----------------------------------------
+
+  (provide method xmethod)
+
+  (define-syntax method
+    (syntax-rules ()
+      [(_ a b)
+       (scheme b)]))
+
+  (define-syntax xmethod
+    (syntax-rules ()
+      [(_ a b)
+       (elem (scheme b) " in " (scheme a))]))
 
   ;; ----------------------------------------
 

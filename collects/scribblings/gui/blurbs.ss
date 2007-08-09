@@ -1,0 +1,291 @@
+#reader(lib "reader.ss" "scribble")
+(module blurbs mzscheme
+  (require (lib "struct.ss" "scribble")
+           (lib "manual.ss" "scribble")
+           (lib "scheme.ss" "scribble")
+           (lib "decode.ss" "scribble"))
+
+  (provide (all-defined-except p))
+
+  (define (p . l)
+    (decode-paragraph l))
+
+  (define (itemstyleinfo)
+    @elem{The @scheme[style] argument is reserved for future use.})
+
+  (define (labelsimplestripped where what)
+    @elem{If @litchar{&} occurs in @|where|, it is specially parsed; 
+          under Windows and X, the character
+ following @litchar{&} is underlined in the displayed control to
+ indicate a keyboard mnemonic. (Under Mac OS X, mnemonic underlines are
+ not shown.) The mnemonic is meaningless for a @|what| (as far as
+ @method[top-level-window<%> on-traverse-char] is concerned),
+ but it is supported for consistency with other control types. A
+ programmer may assign a meaning to the mnemonic, e.g., by overriding
+ @method[top-level-window<%> on-traverse-char].})
+
+  (define (labelstripped where detail what)
+    @elem{If @litchar{&} occurs in @|where|@|detail|, it 
+ is specially parsed; under Windows and X, the character following
+ @litchar{&} is underlined in the displayed control to indicate a
+ keyboard mnemonic. (Under Mac OS X, mnemonic underlines are not shown.)
+ The underlined mnemonic character must be a letter or a digit. The
+ user can @|what| by typing the mnemonic when the control's
+ top-level-window contains the keyboard focus. The user must also hold
+ down the Meta or Alt key if the keyboard focus is currently in a
+ control that handles normal alphanumeric input. The ampersand itself
+ is removed from @|where| before it is displayed for the control; a
+ double-ampersand in @|where| is converted to a single ampersand
+ (with no mnemonic underlining). Under Mac OS X, a parenthesized
+ mnemonic character is removed (along with any surrounding space)
+ before the label is displayed, since a parenthesized mnemonic is
+ often used for non-Roman languages. Finally, any text after a tab
+ character is removed on all platforms. Mnemonic keyboard events are handled
+ by @method[top-level-window<%> on-traverse-char] (but not under
+ Mac OS X).})
+
+  (define (bitmapuseinfo pre what thing then detail)
+   @elem{@|pre| @|what| is @|thing|, @|then| the bitmap@|detail|
+ must be valid (see @xmethod[bitmap% ok?]) and not installed
+ in a @scheme[bitmap-dc%] object; otherwise, @|MismatchExn|. If the
+ bitmap has a mask (see @xmethod[bitmap% get-loaded-mask])
+ that is the same size as the bitmap, then the mask is used for the
+ label; furthermore, in contrast to the limitations of
+ @xmethod[dc% draw-bitmap], non-monochrome label masks work
+ consistently on all platforms.})
+
+  (define-syntax bitmaplabeluse
+   (syntax-rules ()
+     [(_ id) @bitmapuseinfo["If" (scheme id) "a bitmap" "then" ""]]))
+  (define-syntax bitmaplabelusearray
+   (syntax-rules ()
+     [(_ id) @bitmapuseinfo["If" (scheme id) "a list of bitmaps" "then" "s"]]))
+  (define-syntax bitmaplabeluseisbm
+    (syntax-rules ()
+      [(_ id) @bitmapuseinfo["Since" (scheme id) "a bitmap" "" ""]]))
+  
+  (define bitmapiforiglabel
+    @elem{The bitmap label is installed only
+          if the control was originally created with a bitmap label.})
+
+  (define (NotDCRelated)
+   @elem{A path is not connected to any particular @scheme[dc<%>] object, so
+ setting a @scheme[dc<%>] origin or scale does not affect path
+ operations. Instead, a @scheme[dc<%>]'s origin and scale apply at the
+ time that the path is drawn or used to set a region.})
+
+  (define (popupmenuinfo what other more)
+   (make-splice
+    (list*
+     @p{Pops up the given @scheme[popup-menu%] object at the specified
+        coordinates (in this window's coordinates), and returns after
+        handling an unspecified number of events; the menu may still be
+        popped up when this method returns. If a menu item is selected from
+        the popup-menu, the callback for the menu item is called. (The
+        eventspace for menu item's callback is the @|what|'s eventspace.)}
+
+     @p{While the menu is popped up, its target is set to the @|other|. See
+        @method[popup-menu% get-popup-target]
+        for more information.}
+ 
+     (if (string=? more "")
+         null
+         @p{@|more|}))))
+
+  (define insertcharundos
+    @elem{Multiple calls to the character-inserting method are grouped together
+ for undo purposes, since this case of the method is typically used
+ for handling user keystrokes. However, this undo-grouping feature
+ interferes with the undo grouping performed by
+ @method[editor<%> begin-edit-sequence] and
+ @method[editor<%> end-edit-sequence], so the string-inserting
+ method should be used instead during undoable edit sequences.})
+
+  (define (insertscrolldetails what)
+    @elem{@|what| editor's display is scrolled to show the new selection @techlink{position}.})
+
+  (define (insertdetails what)
+    @elem{If @scheme[end] is
+          not @scheme['same], then the region from @scheme[start] to @scheme[end] is
+          replaced with the text. @insertmovedetails[@scheme[end]]. If @scheme[scroll-ok?] is not @scheme[#f]
+          @insertscrolldetails[@elem{and @scheme[start] is the same as the
+          current caret @techlink{position}, then the}]})
+
+  (define (insertmovedetails what)
+    @elem{If the insertion @techlink{position} is before
+or equal to the selection's start/end @techlink{position}, then the selection's
+start/end @techlink{position} is incremented by @|what|.})
+
+  (define OVD
+    @elem{The result is only valid when the editor is displayed (see
+          @secref["tb:miaoverview"]).})
+
+  (define (FCAX c details)
+    @elem{@|c|alling this method may force the recalculation of @techlink{location}
+information@|details|, even if the editor currently has delayed refreshing (see
+@method[editor<%> refresh-delayed?]).})
+
+  (define FCA (FCAX "C" ""))
+  (define FCAMW (FCAX "C" " if a maximum width is set for the editor"))
+  (define (FCAME) (FCAX @elem{For @scheme[text%] objects, c} " if a maximum width is set for the editor"))
+  
+  (define EVD
+    @elem{If the editor is not displayed and the editor has a
+          maximum width, line breaks are calculated as for
+          @method[text% line-start-position] (which handles specially
+          the case of no display when the editor has a maximum width).})
+
+  (define (LineToPara what)
+    @elem{See also @method[text% paragraph-start-position], which
+          operates on paragraphs (determined by explicit newline characters)
+          instead of lines (determined by both explicit newline
+          characters and automatic line-wrapping).})
+
+  (define admindiscuss @secref["mr:editoradministrators"])
+  (define ateoldiscuss @secref["mr:editoreol"])
+  (define textdiscuss @secref["mr:editorflattened"])
+  (define clickbackdiscuss @secref["mr:editorclickback"])
+  (define stylediscuss @secref["mr:editorstyles"])
+  (define timediscuss @secref["mr:editorcutandpastetime"])
+  (define filediscuss @secref["mr:editorfileformat"])
+  (define editordatadiscuss @secref["mr:editordata"])
+  (define snipclassdiscuss @secref["mr:editorsnipclasses"])
+  (define togglediscuss @secref["mr:styledeltatoggle"])
+  (define drawcaretdiscuss @secref["mr:drawcaretinfo"])
+  (define eventspacediscuss @secref["mr:eventspaceinfo"])
+  (define lockdiscuss @secref["mr:lockinfo"])
+  (define mousekeydiscuss @secref["mr:mouseandkey"])
+  (define globaleditordatadiscuss @secref["mr:globaleditordata"])
+
+  (define geomdiscuss @secref["mr:containeroverview"])
+
+  (define mrprefsdiscuss @secref["mr:mredprefs"])
+
+  (define seesniporderdiscuss
+    @elem{See @secref["mr:tb:miaoverview"] for information about snip order in pasteboards.})
+
+  (define (clipboardtypes)
+    @elem{The @scheme[format] string is typically four capital letters. (Under
+          Mac OS X, only four characters for @scheme[format] are ever used.) For
+          example, @scheme["TEXT"] is the name of the UTF-8-encoded string format. New
+          format names can be used to communicate application- and
+          platform-specific data formats.})
+
+  (define PrintNote
+    (make-splice
+     (list
+      @p{Be sure to use the following methods to start/end drawing:}
+      @itemize{@item{@method[dc<%> start-doc]}
+               @item{@method[dc<%> start-page]}
+               @item{@method[dc<%> end-page]}
+               @item{@method[dc<%> end-doc]}}
+      @p{Attempts to use a drawing method outside of an active page raises an exception.})))
+
+  (define SeeMzParam @elem{(see @secref["mz:parameters"])})
+  
+  (define DrawSizeNote @elem{Restrictions on the magnitude of
+                            drawing coordinates are described with @scheme[dc<%>].})
+
+  (define LineNumbering @elem{Lines are numbered starting with @scheme[0].})
+  (define ParagraphNumbering @elem{Paragraphs are numbered starting with @scheme[0].})
+
+  (define (italicptyStyleNote)
+    @elem{The @scheme[style] argument is provided for future extensions. Currently, @scheme[style] must be the empty list.})
+
+  (define (HVLabelNote what)
+    @elem{If @scheme[style] includes @scheme['vertical-label], then the #1 is
+          created with a label above the control; if @scheme[style] does not include
+          @scheme['vertical-label] (and optionally includes @scheme['horizontal-label]), then the
+          label is created to the left of the @|what|.})
+
+  (define (DeletedStyleNote what)
+    @elem{If @scheme[style] includes @scheme['deleted], then the @|what| is created as hidden,
+          and it does not affect its parent's geometry; the @|what| can be made active later by calling
+          @scheme[parent]'s @method[area-container<%> add-child] method.})
+
+  (define (InStyleListNote)
+    @elem{The editor's style list must contain @scheme[style], otherwise
+          the style is not changed. See also @xmethod[style-list% convert].})
+
+  (define (FontKWs) @elem{The @scheme[font] argument determines the font for the control.})
+  (define (FontLabelKWs) @elem{The @scheme[font] argument determines the font for the control content, 
+                               and @scheme[label-font] determines the font for the control label.})
+
+  (define (WindowKWs) @elem{For information about the @scheme[enabled] argument, see @scheme[window<%>].})
+  (define (SubareaKWs) @elem{For information about the @scheme[horiz-margin] and @scheme[vert-margin]
+                                 arguments, see @scheme[subarea<%>].})
+  (define (AreaContKWs) @elem{For information about the @scheme[border], @scheme[spacing], and @scheme[alignment]
+                                  arguments, see @scheme[area-container<%>].})
+
+  (define (AreaKWs) @elem{For information about the
+                              @scheme[min-width], @scheme[min-height], @scheme[stretchable-width], and 
+                              @scheme[stretchable-height] arguments, see @scheme[area<%>].})
+
+  (define MismatchExn @elem{an @scheme[exn:fail:contract] exception is raised})
+  
+  (define AFM @elem{Adobe Font Metrics})
+  
+  (define (MonitorMethod what by-what method whatsit)
+    @elem{@|what| can be changed
+          by @|by-what|, and such changes do not go through this method; use @|method| to
+          monitor @|whatsit| changes.})
+
+  (define (MonitorCallbackX a b c d)
+    (MonitorMethod a b @elem{the @|d|callback procedure (provided as an initialization argument)} c))
+
+  (define (MonitorCallback a b c)
+    (MonitorCallbackX a b c "control"))
+  
+  (define (Unmonitored what by-what the-what method)
+    @elem{@|what| can be changed
+          by @|by-what|, and such changes do not go through this method. A program
+          cannot detect when @|the-what| except by polling @|method|.})
+  
+  (define OnInsertNote
+    (MonitorMethod @elem{The content of an editor}
+                   @elem{the system in response to other method calls}
+                   @elem{@xmethod[text% on-insert] or @xmethod[pasteboard% on-insert]}
+                   @elem{content additions}))
+  
+  (define OnDeleteNote
+    (MonitorMethod @elem{The content of an editor}
+                   @elem{the system in response to other method calls}
+                   @elem{@xmethod[text% on-delete] or @xmethod[pasteboard% on-delete]}
+                   @elem{content deletions}))
+  
+  (define OnSelectNote
+    (MonitorMethod @elem{The selection in a pasteboard}
+                   @elem{the system in response to other method calls}
+                   @elem{@method[pasteboard% on-select]}
+                   @elem{selection}))
+
+  (define OnMoveNote
+    (MonitorMethod @elem{Snip @techlink{location}s in a pasteboard}
+                   @elem{the system in response to other method calls}
+                   @elem{@method[pasteboard% on-move-to]}
+                   @elem{snip @techlink{position}}))
+
+  (define (colorName name name2 r g b)
+    name)
+  
+  (define (Resource s)
+    @elem{@to-element[`(quote ,(string->symbol (string-append "MrEd:" s)))]
+          preference})
+  (define (ResourceFirst s) ; fixme -- add index
+    (Resource s))
+
+  (define (edsnipsize a b c)
+    @elem{An @scheme[editor-snip%] normally stretches to wrap around the size
+          of the editor it contains. This method #1 of the snip
+          (and if the editor is #2, #3).})
+  (define (edsnipmax n)
+    (edsnipsize @elem{limits the @|n|}
+                @elem{larger}
+                @elem{only part of the editor is displayed}))
+  (define (edsnipmin a b)
+    (edsnipsize @elem{sets the minimum @|a|}
+                "smaller"
+                @elem{the editor is @|b|-aligned in the snip}))
+
+  )
+

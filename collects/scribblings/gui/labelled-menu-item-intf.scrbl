@@ -1,0 +1,132 @@
+#reader(lib "defreader.ss" "scribble")
+@require["common.ss"]
+
+@definterface[labelled-menu-item<%> (menu-item<%>)]{
+
+A @scheme[labelled-menu-item<%>] object is a @scheme[menu-item<%>] with
+ a string label (i.e., any menu item other than a separator).  More
+ specifically, it is an instance of either @scheme[menu-item%] (a
+ plain menu item), @scheme[checkable-menu-item%] (a checkable menu
+ item), or @scheme[menu%] (a submenu).
+
+
+
+@defmethod[(get-label)
+           label-string?]{
+@spec{
+
+Returns the item's label.
+
+See also
+@method[labelled-menu-item<%> set-label] and
+@method[labelled-menu-item<%> get-plain-label].
+
+
+}}
+
+@defmethod[(set-label [label label-string?])
+           void?]{
+@spec{
+
+Sets the menu item's label. If the item has a shortcut, the shortcut
+ is not affected.
+
+If the label contains an ampersand (``\&'') and the window is a
+ control, the label is parsed specially; under Windows and X, the
+ character following an ampersand is underlined in the displayed menu
+ to indicate a keyboard mnemonic. Pressing the Alt key with an
+ underlined character from a menu's name in the menu bar causes the
+ menu to be selected (via @method[frame% on-menu-char]). When
+ a menu has the focus, the mnemonic characters are used for navigation
+ without Alt. A double-ampersand in the label is replaced by a literal
+ (non-navigation) ampersand. Under Mac OS X, ampersands in the
+ label are parsed in the same way as for X and Windows, but no
+ mnemonic underline is displayed.
+ 
+An ampersand is always preserved in the label returned by
+@method[labelled-menu-item<%> get-label], but never preserved in the label returned by
+@method[labelled-menu-item<%> get-plain-label].
+
+For historical reasons, if a label contains a tab character, then the
+ tab and all remaining characters are hidden in the displayed menu.
+
+}}
+
+@defmethod[(get-plain-label)
+           label-string?]{
+@spec{
+
+Like
+@method[labelled-menu-item<%> get-label], except that ampersands in the label are removed as described in
+@method[labelled-menu-item<%> set-label].
+
+
+}}
+
+@defmethod[(get-help-string)
+           (or/c label-string? false/c)]{
+@spec{
+
+Returns the help string for the menu item, or @scheme[#f] if the item
+ has no help string.
+
+When an item has a @scheme[help], the string may be used to
+ display help information to the user.
+
+}}
+
+@defmethod[(set-help-string [help (or/c label-string? false/c)])
+           void?]{
+@spec{
+
+Sets the help string for the menu item. Use @scheme[#f] to remove
+ the help string for an item.
+
+}}
+
+@defmethod[(enable [enabled? any/c])
+           void?]{
+@spec{
+
+Enables or disables the menu item. If the item is a submenu (or menu in
+ a menu bar), the entire menu is disabled, but each submenu item's
+@method[labelled-menu-item<%> is-enabled?] method returns @scheme[#f] only if the item is specifically disabled (in
+ addition to the submenu).
+
+}}
+
+@defmethod[(is-enabled?)
+           boolean?]{
+@spec{
+
+Returns @scheme[#t] if the menu item is enabled, @scheme[#f] otherwise.
+
+See also
+@method[labelled-menu-item<%> enable].
+
+}}
+
+@defmethod[(on-demand)
+           void?]{
+@spec{
+
+Normally called when the user clicks on the menu bar containing the
+ item (before the user sees any menu items), just before the popup
+ menu containing the item is popped up, or just before inspecting the
+ menu bar containing the item for a shortcut key binding.
+
+A
+@xmethod[menu-item-container<%> on-demand] method can be overridden in such a way that the container does not
+ call the
+@method[labelled-menu-item<%> on-demand] method of its items.
+
+}
+@impl{
+
+Calls the @scheme[demand-callback] procedure that was provided when the
+ object was created.
+
+
+
+}}}
+

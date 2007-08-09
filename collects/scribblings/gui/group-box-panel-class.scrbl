@@ -1,0 +1,40 @@
+#reader(lib "defreader.ss" "scribble")
+@require["common.ss"]
+
+@defclass[group-box-panel% vertical-panel% ()]{
+
+A group-box panel arranges its subwindows in a single column, but also
+ draws an optional label at the top of the panel and a border around
+ the panel content.
+
+Unlike most panel classes, a group-box panel's horizontal and vertical
+ margins default to @scheme[2].
+
+
+
+
+@defconstructor[[label label-string?]
+                [parent (or/c (is-a/c frame%) (is-a/c dialog%) (is-a/c panel%) (is-a/c pane%))]
+                [style (symbols/c deleted) null]
+                [font (is-a/c font%) @scheme[small-control-font]]
+                [enabled any/c #t]
+                [vert-margin (integer-in 0 1000) 2]
+                [horiz-margin (integer-in 0 1000) 2]
+                [border (integer-in 0 1000) 0]
+                [spacing (integer-in 0 1000) 0]
+                [alignment two-element list: @scheme['left], @scheme['center], or @scheme['right] and @scheme['top], @scheme['center], or @scheme['bottom] '(center top)]
+                [min-width (integer-in 0 10000) {\rm graphical minimum width}]
+                [min-height (integer-in 0 10000) {\rm graphical minimum height}]
+                [stretchable-width any/c #t]
+                [stretchable-height any/c #t]]{
+
+Creates a group pane whose title is @scheme[label].
+
+\DeletedStyleNote{group panel}
+
+@FontKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]
+
+
+
+}}
+
