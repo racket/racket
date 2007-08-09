@@ -148,7 +148,9 @@
                                     (make-flow para)
                                     (cons s (part-parts part))
                                     (styled-part-style part)))
-                (loop (cdr l) (cons (car l) s-accum)))))]
+                (if (splice? (car l))
+                    (loop (append (splice-run (car l)) (cdr l)) s-accum)
+                    (loop (cdr l) (cons (car l) s-accum))))))]
        [(splice? (car l))
 	(loop (append (splice-run (car l)) (cdr l)) next? keys accum title tag style)]
        [(null? (cdr l)) (loop null #f keys (cons (car l) accum) title tag style)]
