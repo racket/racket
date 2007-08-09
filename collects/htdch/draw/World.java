@@ -71,8 +71,4 @@ public abstract class World {
      */
     public abstract boolean draw();
 
-    /**
-     *@return true, if the method succeeds in erasing this world ('s canvas)
-     */
-    public abstract boolean erase();
 }    

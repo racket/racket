@@ -94,23 +94,4 @@ public class Canvas {
      */
     public native boolean drawString(Posn p, String s);
 
-    /** 
-     *@return true, if it can erase the specified circle from this canvas 
-     */
-    public native boolean clearCircle(Posn p, int r, AColor c);
-
-    /** 
-     *@return true, if it can erase the specified disk from this canvas 
-     */
-    public native boolean clearDisk(Posn p, int r, AColor c);
-
-    /** 
-     *@return true, if it can erase the specified rectangle from this canvas 
-     */
-    public native boolean clearRect(Posn p, int width, int height, AColor c);
-
-    /** 
-     *@return true, if it can erase the specified string from this canvas 
-     */
-    public native boolean clearLine(Posn p0, Posn p1, AColor c);
 }    

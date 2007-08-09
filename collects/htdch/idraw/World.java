@@ -31,5 +31,4 @@ public abstract class World {
  public abstract void onTick();
  public abstract void onKeyEvent(String ke); 
  public abstract void draw();
- public abstract void erase();
 }

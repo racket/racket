@@ -26,10 +26,7 @@
      drawRect-geometry.Posn-int-int-colors.AColor-native
      drawLine-geometry.Posn-geometry.Posn-colors.AColor-native
      drawString-geometry.Posn-java.lang.String-native
-     clearCircle-geometry.Posn-int-colors.AColor-native
-     clearDisk-geometry.Posn-int-colors.AColor-native
-     clearRect-geometry.Posn-int-int-colors.AColor-native
-     clearLine-geometry.Posn-geometry.Posn-colors.AColor-native))
+     ))
   
   (define-signature support^ (void-or-true imperative))
   
@@ -146,22 +143,26 @@
 	(wrap-start-check
          ([hash-table-get privates '%draw-string] (build-posn p) s*)))
       
+      #;
       (define (clearCircle-geometry.Posn-int-colors.AColor-native this accs gets privates p r c)
 	(wrap-start-check 
          (check-arg r "clearCircle(Posn, int, AColor)" "second")
          ([hash-table-get privates '%clear-circle] (build-posn p) r (color->symbol c))))
-      
+
+      #;
       (define (clearDisk-geometry.Posn-int-colors.AColor-native this accs gets privates p r c)
 	(wrap-start-check 
          (check-arg r "clearDisk(Posn, int, AColor)" "second")
          ([hash-table-get privates '%clear-solid-disk] (build-posn p) r (color->symbol c))))
       
+      #;
       (define (clearRect-geometry.Posn-int-int-colors.AColor-native this accs gets privates p w h c)
 	(wrap-start-check 
          (check-arg w "clearRect(Posn, int, int, AColor)" "second")
          (check-arg h "clearRect(Posn, int, int, AColor)" "third")
          ([hash-table-get privates '%clear-solid-rect] (build-posn p) w h (color->symbol c))))
       
+      #;
       (define (clearLine-geometry.Posn-geometry.Posn-colors.AColor-native this accs gets privates p0 p1 c)
 	(wrap-start-check 
          ([hash-table-get privates '%clear-solid-line] (build-posn p0) (build-posn p1) (color->symbol c))))
@@ -181,7 +182,7 @@
         (define (on-event world0 th)
           (begin-draw-sequence)
           (send theCanvas copy)
-          (send world0 erase)
+          ;(send world0 erase)
           (let ([world (imperative (th) world0)])
 	    (unless (eq? world0 world)
 	      (setCanvas world theCanvas))

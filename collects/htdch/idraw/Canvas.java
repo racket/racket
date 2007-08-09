@@ -40,8 +40,4 @@ public class Canvas {
   public native void drawRect(Posn p, int width, int height, AColor c);
   public native void drawLine(Posn p0, Posn p1, AColor c);
   public native void drawString(Posn p, String s);
-  public native void clearCircle(Posn p, int r, AColor c);
-  public native void clearDisk(Posn p, int r, AColor c);
-  public native void clearRect(Posn p, int width, int height, AColor c);
-  public native void clearLine(Posn p0, Posn p1, AColor c);
 }    
