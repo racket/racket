@@ -21,12 +21,8 @@ import geometry.*;
   | abstract void onTick()          |       | void drawCircle(Posn,int,AColor)   |
   | abstract void onKeyEvent(String)|       | void drawDisk(Posn,int,AColor)     |
   | abstract void draw()            |       | void drawRect(Posn,int,int,AColor) |
-  | abstract void erase()           |       | void drawLine(Posn,Posn,AColor)    |
-  +---------------------------------+       | void drawString(Posn,String)       |
-                                            | void clearCircle(Posn,int,AColor)  |
-                                            | void clearDisk(Posn,int,AColor)    |
-                                            | void clearRect(Posn,int,int,AColor)|
-                                            | void clearLine(Posn,Posn,AColor)   |
+  +---------------------------------+       | void drawLine(Posn,Posn,AColor)    |
+                                            | void drawString(Posn,String)       |
                                             +------------------------------------+
 </code>
 </pre>

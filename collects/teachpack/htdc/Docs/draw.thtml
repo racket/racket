@@ -21,11 +21,7 @@ import geometry.*;
  | abstract World onTick()           |       | boolean drawRect(Posn,int,int,AColor) |
  | abstract World onKeyEvent(String) |       | boolean drawLine(Posn,Posn,AColor)    |
  | abstract boolean draw()           |       | boolean drawString(Posn,String)       |
- | abstract boolean erase()          |       | boolean clearCircle(Posn,int,AColor)  |
- +-----------------------------------+       | boolean clearDisk(Posn,int,AColor)    |
-                                             | boolean clearRect(Posn,int,int,AColor)|
-                                             | boolean clearLine(Posn,Posn,AColor)   |
-                                             +---------------------------------------+
+ +-----------------------------------+       +---------------------------------------+
 </code>
 </pre>
 
@@ -86,12 +82,6 @@ handlers has been called. Its purpose is to present <code>this World </code>
 graphically on its canvas. If it succeeds, its result is <code>true.</code>
 </li>
 
-<li><code>erase()</code>, which is invoked <em>before</em> one of the two event
- handlers has been called. Its purpose is to erase <code>this World</code>'s
- canvas, as much as needed. If it succeeds, its result is <code>true.</code>
- Simple erase methods just draw a white rectangle of appropriate width and
- height located at the origin. 
-</li>
 </ul>
 A program may, in principle, start several instances of (subclasses of)
 <code>World</code>. If it does, the event handlers are called in a unpredictable
@@ -139,23 +129,6 @@ Canvas</code> from <code>p0</code> to <code>p1</code> using color
 <li><code>drawString(p,s)</code>, which draws the string <code>s</code> at
 <code>p</code> on <code>this Canvas</code>.  If it succeeds, it produces
 <code>true</code>.</li>
-
-<li><code>clearCircle(p,r,c)</code>, which erases a circle from <code>this
-Canvas</code> at <code>p</code> with radius <code>r</code> and color
-<code>c</code>.  If it succeeds, it produces <code>true</code>.</li>
-
-<li><code>clearDisk(p,r,c)</code>, which erases a disk from
-<code>this Canvas</code> at <code>p</code> with radius <code>r</code> and color
-<code>c</code>.  If it succeeds, it produces <code>true</code>.</li>
-
-<li><code>clearRect(p,w,w,c)</code>, which draws a solid rectangle from <code>this
-Canvas</code> at <code>p</code> with width <code>w</code>, height
-<code>h</code>, and color <code>c</code>.  The rectangle's lines are parallel to
-the canvas's borders. If it succeeds, it produces <code>true</code>.</li>
-
-<li><code>clearLine(Posn p0, Posn p1, AColor c)</code>, which erases a line from <code>this
-Canvas</code> from <code>p0</code> to <code>p1</code> using color
-<code>c</code>.  If it succeeds, it produces <code>true</code>.</li>
 
 </ul>
 The methods may fail due to the unavailability of the physical devices,
