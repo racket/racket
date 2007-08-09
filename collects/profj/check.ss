@@ -470,9 +470,13 @@
           (let ((member (car rest)))
             (cond
               ((method? member)
-               (if (memq 'static (map modifier-kind (method-modifiers member)))
-                   (check-method member static-env level type-recs c-class #t iface?)
-                   (check-method member field-env level type-recs c-class #f iface?))
+               (cond
+                 [(memq 'static (map modifier-kind (method-modifiers member)))
+                  (check-method member static-env level type-recs c-class #t iface?)]
+                 [(and (eq? level 'beginner) (eq? 'ctor (type-spec-name (method-type member))))
+                  (check-method member fields level type-recs c-class #f iface?)]
+                 [else 
+                  (check-method member field-env level type-recs c-class #f iface?)])
                (loop (cdr rest) statics fields))
               ((initialize? member)
                (if (initialize-static member)
@@ -505,7 +509,7 @@
                            (add-var-to-env name type (class-field (var-init? member)) statics) 
                            (add-var-to-env name type (class-field (var-init? member)) fields))
                      (loop (cdr rest) statics 
-                           (add-var-to-env name type (obj-field #f #;(var-init? member)) fields)))))
+                           (add-var-to-env name type (obj-field (var-init? member)) fields)))))
               ((def? member)
                (check-inner-def member level type-recs c-class field-env)
                (loop (cdr rest) statics fields))
@@ -527,7 +531,7 @@
                          (lambda (assign)
                            (field-set? field assign (car c-class) level #f)) assigns)))
                   setting-fields))))
-    
+      
   ;create-field-env: (list field-record) env string -> env
   (define (create-field-env fields env class)
     (cond
@@ -543,9 +547,9 @@
                          (field-record-type field)
                          (cond
                            ((and in-env? (not current?)) inherited-conflict)
-                           ((and (not static?) (not final?)) (obj-field #f))
+                           ((and (not static?) (not final?)) (obj-field #t))
                            ((and (not static?) final?) (final-field current?))
-                           ((and static? (not final?)) (class-field #f))
+                           ((and static? (not final?)) (class-field #t))
                            ((and static? final?) (final-class-field current?)))
                          (create-field-env (cdr fields) env class))))))
   
