@@ -291,7 +291,7 @@
                            [(annotated-stx pos-list)
                             (annotate-for-single-stepping 
                              stx 
-                             (break? process client)
+                             (lambda (_) (break? process client))
                              (break-before process client)
                              (break-after process client)
                              (lambda (kind bound binding) (void))
