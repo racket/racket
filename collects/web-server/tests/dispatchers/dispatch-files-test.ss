@@ -63,9 +63,9 @@
      (test-equal? "dir, exists, head"
                   (collect (dispatch #t a-dir) (req #t 'head empty))
                   #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 81\r\nContent-Range: bytes 0-81/81\r\n\r\n")
-     (test-exn "dir, not dir-url, get"
-               exn:dispatcher?
-               (lambda () (collect (dispatch #t a-dir) (req #f 'get empty))))
+     (test-equal? "dir, not dir-url, get"
+                  (collect (dispatch #t a-dir) (req #f 'get empty))
+                  #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 81\r\nContent-Range: bytes 0-81/81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
      (test-exn "dir, not exists, get"
                exn:dispatcher?
                (lambda () (collect (dispatch #f a-dir) (req #t 'get empty))))
