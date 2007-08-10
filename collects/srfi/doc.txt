@@ -102,6 +102,7 @@ sub-collection number of the already ported SRFIs:
  SRFI-31            rec.ss                       31
  SRFI-32            sort.scm                     32
  SRFI-34            exception.ss                 34
+ SRFI-35            condition.ss                 35
  SRFI-38(+)         38.ss
  SRFI-39(+)         39.ss
  SRFI-40            stream.ss                    40
@@ -115,6 +116,7 @@ sub-collection number of the already ported SRFIs:
  SRFI-60            60.ss                        60
  SRFI-61(+)         61.ss
  SRFI-63            63.ss                        63
+ SRFI-64            testing.ss                   64
  SRFI-66            66.ss                        66
  SRFI-67            compare.ss                   67
  SRFI-69            hash.ss                      69
