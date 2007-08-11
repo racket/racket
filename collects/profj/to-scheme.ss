@@ -2517,9 +2517,10 @@
                       (if cant-be-null?
                           (make-syntax #f `(,id ,expr) (build-src src))
                           (make-syntax #f
-                                       `(if (null? ,expr)
-                                            (javaRuntime:nullError 'field)
-                                            (,id ,expr))
+                                       `(let ([val~1 ,expr])
+                                          (if (null? val~1)
+                                              (javaRuntime:nullError 'field)
+                                              (,id val~1)))
                                        (build-src src)))))
                 (if (dynamic-val? type)
                    (let ((access-syntax (cond 
