@@ -146,6 +146,10 @@
 				      (not (has-index-installed? path)))
 				  ;; Manual not installed...
 				  (let ([doc-pr (assoc (string->path manual) known-docs)])
+                                    (unless doc-pr
+                                      (error 'remap-url
+                                             "Internal error: manual ~s not found in known-docs"
+                                             manual))
 				    (string->url
 				     (make-missing-manual-url manual
 							      (cdr doc-pr) 
