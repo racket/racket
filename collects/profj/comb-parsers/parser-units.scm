@@ -606,9 +606,11 @@
     
     ;Note -- should enfore name to be identifier.identifier instead of name
     (define import-dec
+      (let ([name (sequence (identifier (repeat-greedy (sequence (PERIOD identifier) id "import name")))
+                            id "import name")])
       (choose
        ((sequence (import name PERIOD TIMES SEMI_COLON) id)
-        (sequence (import name SEMI_COLON) id)) "import declaration"))
+        (sequence (import name SEMI_COLON) id)) "import declaration")))
     
     (define (make-program package import body)
       (let ([p&i (sequence (package import body) id "program")]

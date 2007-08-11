@@ -328,6 +328,14 @@
   ;;Execute tests with errors
   
   (execute-test
+   "
+interface I {}
+
+interface J extends I {}
+
+abstract class implements J {}" 'intermediate #t "Parser error, class identifier")
+  
+  (execute-test
    "class CheckError {
      void foo() { }
    }
@@ -433,11 +441,12 @@
             //in the original list that are longer than the given number.    
                List longer(int n){
                   
-                  if (n <= this.first.length)
+                  if (n <= this.first.length) {
                      rest.longer(n);
-                  else 
+                  } else { 
                      rest.longer(n)
                      return this.first;
+                  }
      }
     }"
    'intermediate #t "Incorrect statement- parse error")
@@ -522,10 +531,11 @@
   
     (interact-test
    "import draw.*;
+    import colors.*;
 class BlockWorld extends World {
  int WIDTH = 100;
  int HEIGHT = 100;
- Color BACKGROUND = new Red();
+ AColor BACKGROUND = new Red();
  DrpBlock block;
  BlockWorld(DrpBlock block) {  
   this. block = block;
@@ -575,24 +585,29 @@ class DrpBlock {
   return w.theCanvas.drawRect(new Posn(this.right,this.down),this.HEIGHT,this.WIDTH,w.BACKGROUND);
  }
  boolean hasLanded(BlockWorld w) {
-  if (this. down + this. HEIGHT >= w.HEIGHT)
+  if (this. down + this. HEIGHT >= w.HEIGHT) {
    return true;
-  else 
+  } else {
    return false;
+  }
  }
  DrpBlock steer(String ke) {
-  if (ke.equals(\"left\"))
+  if (ke.equals(\"left\")) {
    return new DrpBlock(this. down,this. right - this. deltaX);
-  else if (ke.equals(\"right\"))
-   return new DrpBlock(this. down,this. right + this. deltaX);
-  else 
-   return this; 
+  } else {
+    if (ke.equals(\"right\")) {
+     return new DrpBlock(this. down,this. right + this. deltaX);
+    } else { 
+      return this; 
+    }
+   }
  }
  boolean toStop(BlockWorld w, int down) {
-  if (this. down + this. HEIGHT >= down)
+  if (this. down + this. HEIGHT >= down) {
    return true;
-  else 
+  } else { 
    return false;
+  }
  }
 }"
    'intermediate

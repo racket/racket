@@ -32,7 +32,7 @@
      boolean t9 = check new MyClass(\"\").field expect \"\";
      boolean t10 = check new MyClass(\"\").method() expect new MyClass(\"\");
 
-     CorrectChecks() { this.t= check 1 expect 4; }
+     CorrectChecks(boolean t) { this.t= t; }
 
    }" language #f "Class with many different style of checks within it")
   
@@ -100,10 +100,11 @@
         this.x = x;
       }
       int lessThan( int y) {
-         if (y < this.x) 
+         if (y < this.x) {
            return -1;
-         else
+         } else {
            return 1;
+         }
       }
     }" language #f "Class & interface, containing if statement")
   
@@ -125,11 +126,11 @@
   (execute-test
     "class A {
       B var;
-      A() { this.var = new B(); }
+      A(B var) { this.var = var; }
      }
      class B {
       A var;
-      B() { this.var = new A(); }
+      B( A var) { this.var = var; }
      }" language #f "Two classes with cycles: cannot be instantiated")
   
   (execute-test
@@ -143,6 +144,30 @@
   
   ;;Execution tests that should produce errors
 
+  (execute-test
+   "class UseNoSet {
+       Object x;
+       Object y = this.x;
+       UseNoSet(Object x) { this.x = x; }
+    }" language #t "using fields before setting them")
+  
+  (execute-test
+   "class DoubleSet {
+     int x;
+     DoubleSet(int x, int y) {
+       this.x = x;
+       this.x = y;
+     }
+   }" language #t "Setting a field twice, in the constructor")
+  
+  (execute-test
+   "class DoubleSet2 {
+     int x = 3;
+     DoubleSet2(int x) {
+       this.x = x;
+     }
+   }" language #t "Setting a field twice, init and ctor")
+  
   (execute-test
    "class CorrectChecks {
      
@@ -159,7 +184,7 @@
 
      ()
      
-     CorrectChecks() { this.t= check 1 expect 4; }
+     CorrectChecks(boolean t) { this.t= t; }
 
    }" language #t "Correct checks, followed by a parse error: should mention (")
   
@@ -180,14 +205,14 @@
     Z y;
     A(int z) { 
      this.z = z;
-     this.y = new B();
+     this.y = y;//new B();
     } 
    }
 
    class B implements Z {
     B() { }
     int x() { return 3; }
-    int oX() { if (this.x() == 3) return 5; else return 6; }
+    int oX() { if (this.x() == 3) { return 5; } else { return 6; } }
    }
   foo"
    language #t "Parse-error test, mentioning foo")
@@ -279,7 +304,7 @@
   (execute-test
    "class F1 {
      F1(int x) {
-      x = 4;
+      x = x;
      }
     }"
    'beginner #t "Set non-field")
@@ -288,7 +313,7 @@
     "class F2 {
       int f;
       F2() {
-       this.f = this.f;
+       this.f = f;
       }
      }"
     'beginner #t "Set with field")
@@ -355,12 +380,15 @@
        this.numPages = numPages;
      }
      String level() {
-       if ( this.numPages < 10 )
+       if ( this.numPages < 10 ) {
          return \"Apprentice\";
-       else if (this.numPages < 100)
-         return \"Journeyman\";
-       else
-         return \"Master\";
+       } else { 
+         if (this.numPages < 100) {
+           return \"Journeyman\";
+         } else {
+           return \"Master\";
+         } 
+       }
      }
    }
    "
