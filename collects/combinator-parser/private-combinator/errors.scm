@@ -120,7 +120,7 @@
                         (> (length winners) max-choice-depth))
                    (collapse-message 
                     (add-to-message
-                     (msg (format "An error occurred in this ~a. Program resembles one of ~a.~n"
+                     (msg (format "An error occurred in this ~a. Program resembles one of: ~a.~n"
                                   name (nice-list non-dup-tops)))
                      name #f message-to-date))]
                   [(and (> (length winners) 1)
@@ -167,7 +167,7 @@
                       (equal? top-names no-dup-names))
                  (collapse-message 
                   (add-to-message
-                   (msg (format "An error occured in this ~a, expected one of ~a."
+                   (msg (format "An error occured in this ~a, expected one of: ~a."
                                 name (nice-list no-dup-names)))
                    name #f message-to-date))]
                 [(and (<= (choice-fail-options fail-type) max-choice-depth)
@@ -179,13 +179,13 @@
                       (collapse-message
                        (add-to-message (car messages) #f #f
                                        (add-to-message
-                                        (msg (format "An error occured in this ~a, expected one of ~a."
+                                        (msg (format "An error occured in this ~a, expected one of: ~a."
                                                      name (nice-list no-dup-names))
                                              name #f message-to-date))))]
                      [else
                       (collapse-message 
                        (add-to-message
-                        (msg (format "An error occured in this ~a, expected one of ~a. Possible errors were:~n~a"
+                        (msg (format "An error occured in this ~a, expected one of: ~a. Possible errors were:~n~a"
                                      name (nice-list no-dup-names) 
                                      (alternate-error-list (map err-msg messages))))
                         name #f message-to-date))]))]

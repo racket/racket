@@ -72,6 +72,9 @@
                         (!!! (fail-type->message 
                               (!!! (car (repeat-res-stop 
                                          (sort-repeats possible-repeat-errors))))))]
+                       [(and (choice-res? result) (fail-type? (choice-res-errors result)))
+                        (!!! (fail-type->message
+                              (choice-res-errors result)))]
                        [(not (null? possible-errors))
                         ;(printf "choice or pair fail~n")
                         (!!! (fail-type->message
