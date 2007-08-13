@@ -259,7 +259,7 @@ A test case:
 		    (yield s))
 		  (let ([headers (get-headers/read-from-port progress)])
 		    ;; Page is a redirection?
-		    (let ([m (regexp-match "^HTTP/[^ ]+ 301 " headers)])
+		    (let ([m (regexp-match "^HTTP/[^ ]+ 30[12] " headers)])
 		      (when m
 			(let ([loc (extract-field "location" headers)])
 			  (when loc
