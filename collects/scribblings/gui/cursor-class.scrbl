@@ -7,40 +7,29 @@ A cursor is a small icon that indicates the location of the mouse
  pointer.  The bitmap image typically indicates the current mode or
  meaning of a mouse click at its current location.
 
-A cursor is assigned to each window (or the window may use its parent's
- cursor; see
-@method[window<%> set-cursor] for more information), and the pointer image is changed to match the
- window's cursor when the pointer is moved over the window. Each
- cursor object may be assigned to many windows.
+A cursor is assigned to each window (or the window may use its
+ parent's cursor; see @method[window<%> set-cursor] for more
+ information), and the pointer image is changed to match the window's
+ cursor when the pointer is moved over the window. Each cursor object
+ may be assigned to many windows.
 
 
-
-
-@defconstructor*/make[([[image (is-a/c bitmap%)]
+@defconstructor*/make[(([image (is-a/c bitmap%)]
                         [mask (is-a/c bitmap%)]
                         [hot-spot-x (integer-in 0 15) 0]
-                        [hot-spot-y (integer-in 0 15) 0]]
-                       [[id (symbols/c size-nw/se size-ne/sw size-e/w size-n/s blank watch ibeam hand cross bullseye arrow)]])]{
-First case:
+                        [hot-spot-y (integer-in 0 15) 0])
+                       ([id (one-of/c 'arrow 'bullseye 'cross 'hand 'ibeam 'watch 'blank 
+                                      'size-n/s 'size-e/w 'size-ne/sw 'size-nw/se)]))]{
 
+The first case creates a cursor using an image bitmap and a mask
+bitmap. Both bitmaps must have depth 1 and size 16 by 16
+pixels. The @scheme[hot-spot-x] and @scheme[hot-spot-y] arguments
+determine the focus point of the cursor within the cursor image,
+relative to its top-left corner.
 
-Creates a cursor using an image bitmap and a mask bitmap. Both
- bitmaps must have depth 1 and size 16 by 16 pixels.
+The second case creates a cursor using a stock cursor, specified
+as one of the following:
 
-The @scheme[hot-spot-x] and @scheme[hot-spot-y] arguments determine the
- focus point of the cursor within the cursor image, relative to its
- top-left corner.
-
-If the cursor is created successfully,
-@method[cursor% ok?] returns @scheme[#t], otherwise the cursor object cannot be assigned to a
- window.
-
-
-
-Second case:
-
-
-Creates a cursor using a stock cursor, specified as one of the following:
 @itemize{
 
  @item{@scheme['arrow] --- the default cursor}
@@ -73,22 +62,17 @@ Creates a cursor using a stock cursor, specified as one of the following:
 
 }
 
-
+If the cursor is created successfully, @method[cursor% ok?]
+returns @scheme[#t], otherwise the cursor object cannot be
+assigned to a window.
 
 }
 
 @defmethod[(ok?)
            boolean?]{
-@spec{
 
 Returns @scheme[#t] if the cursor is can be assigned to a window,
  @scheme[#f] otherwise.
 
-}
-@impl{
-
-
-
-
-}}}
+}}
 

@@ -18,6 +18,263 @@ All @scheme[window<%>] classes accept the following named instantiation
 
 
 
+@defmethod*[([(accept-drop-files)
+              boolean?]
+             [(accept-drop-files [accept-files? any/c])
+              void?])]{
+
+@index["drag-and-drop"]{Enables} or disables drag-and-drop dropping
+ for the window, or gets the enable state. Dropping is initially
+ disabled. See also @method[window<%> on-drop-file].
+}
+
+@defmethod[(client->screen [x (integer-in -10000 10000)]
+                           [y (integer-in -10000 10000)])
+           (values (integer-in -10000 10000)
+                   (integer-in -10000 10000))]{
+
+@index["global coordinates"]{Converts} local window coordinates to
+screen coordinates.
+
+}
+
+@defmethod[(enable [enable? any/c])
+           void?]{
+
+Enables or disables a window so that input events are ignored. (Input
+ events include mouse events, keyboard events, and close-box clicks,
+ but not focus or update events.) When a window is disabled, input
+ events to its children are also ignored.
+
+@MonitorMethod[@elem{The enable state of a window} @elem{enabling a parent window} @elem{@method[window<%> on-superwindow-enable]} @elem{enable state}]
+
+If @scheme[enable?] is true, the window is enabled, otherwise it is
+ disabled.
+
+}
+
+@defmethod[(focus)
+           void?]{
+
+@index['("keyboard focus" "setting")]{Moves} the keyboard focus to the
+ window, relative to its top-level window, if the window ever accepts
+ the keyboard focus.  If the focus is in the window's top-level
+ window, then the focus is immediately moved to this
+ window. Otherwise, the focus is not immediately moved, but when the
+ window's top-level window gets the keyboard focus, the focus is
+ delegated to this window.
+
+See also
+@method[window<%> on-focus].
+
+Note that under X, keyboard focus can move to the menu bar
+ when the user is selecting a menu item.
+
+@MonitorMethod[@elem{The current keyboard focus window} @elem{the user} @elem{@method[window<%> on-focus]} @elem{focus}]
+
+}
+
+
+@defmethod[(get-client-size)
+           (values (integer-in 0 10000)
+                   (integer-in 0 10000))]{
+
+Gets the interior size of the window in pixels. For a container, the
+ interior size is the size available for placing subwindows (including
+ the border margin). For a canvas, this is the visible drawing
+ area.
+
+The client size is returned as two values: width and height (in pixels).
+
+See also
+@method[area-container<%> reflow-container].
+
+}
+
+
+@defmethod[(get-cursor)
+           (or/c (is-a/c cursor%) false/c)]{
+
+Returns the window's cursor, or @scheme[#f] if this window's cursor
+ defaults to the parent's cursor.  See
+@method[window<%> set-cursor] for more information.
+
+}
+
+@defmethod[(get-handle)
+           exact-integer?]{
+
+Returns an exact integer representing a handle to the window in the
+current platform's GUI toolbox. Cast this number from a C \cpp{long}
+to a platform-specific C type:
+
+@itemize{
+
+ @item{Windows: @tt{HWND}}
+
+ @item{Mac OS X: @tt{WindowRef} for a @scheme[top-level-window<%>] object,
+       @tt{ControlRef} for other windows}
+
+ @item{X: @tt{Widget*}}
+
+}
+
+Some windows may not have a representation in the platform's GUI level,
+ in which case the result of this method is @scheme[0].
+
+}
+
+
+@defmethod[(get-height)
+           (integer-in 0 10000)]{
+
+Returns the window's total height (in pixels).
+
+See also
+@method[area-container<%> reflow-container].
+
+}
+
+@defmethod[(get-label)
+           (or/c {\labelstring}, @scheme[bitmap%] object, @scheme['app], @scheme['caution], @scheme['stop], false/c)]{
+
+Gets a window's label, if any. Control windows generally display their
+ label in some way. Frames and dialogs display their label as a window
+ title. Panels do not display their label, but the label can be used
+ for identification purposes. Messages, buttons, and check boxes can
+ have bitmap labels (only when they are created with bitmap labels),
+ but all other windows have string labels. In addition, a message
+ label can be an icon symbol @scheme['app], @scheme['caution], or
+ @scheme['stop].
+
+The label string may contain ampersands (``\&''), which serve as
+ keyboard navigation annotations for controls under Windows and X. The
+ ampersands are not part of the displayed label of a control; instead,
+ ampersands are removed in the displayed label (under all platforms),
+ and any character preceding an ampersand is underlined (Windows and
+ X) indicating that the character is a mnemonic for the
+ control. Double ampersands are converted into a single ampersand
+ (with no displayed underline). See also
+ @method[top-level-window<%> on-traverse-char].
+
+If the window does not have a label, @scheme[#f] is returned.
+
+}
+
+
+@defmethod[(get-plain-label)
+           (or/c string false/c)]{
+
+Like
+@method[window<%> get-label], except that ampersands in the label are removed. If the window has
+ no label or the window's
+ label is not a string, @scheme[#f] is returned.
+
+}
+
+
+@defmethod[(get-size)
+           (values (integer-in 0 10000)
+                   (integer-in 0 10000))]{
+
+Gets the current size of the entire window in pixels, not counting
+ horizontal and vertical margins. (Under X, this size does not include
+ a title bar or borders for a frame/dialog.) See also
+@method[window<%> get-client-size].
+
+The geometry is returned as two values: width and height (in pixels).
+
+See also
+@method[area-container<%> reflow-container].
+
+}
+
+
+@defmethod[(get-width)
+           (integer-in 0 10000)]{
+
+Returns the window's current total width (in pixels).
+
+See also
+@method[area-container<%> reflow-container].
+
+}
+
+@defmethod[(get-x)
+           (integer-in -10000 10000)]{
+
+Returns the position of the window's left edge in its
+ parent's coordinate system.
+
+See also
+@method[area-container<%> reflow-container].
+
+}
+
+@defmethod[(get-y)
+           (integer-in -10000 10000)]{
+
+Returns the position of the window's top edge in its
+ parent's coordinate system.
+
+See also
+@method[area-container<%> reflow-container].
+
+}
+
+
+@defmethod[(has-focus?)
+           boolean?]{
+
+Indicates whether the window currently has the keyboard focus. See
+ also
+@method[window<%> on-focus].
+
+}
+
+@defmethod[(is-enabled?)
+           boolean?]{
+
+Returns @scheme[#t] if the window is enabled when all of its ancestors
+ are enabled, @scheme[#f] otherwise.
+
+}
+
+
+@defmethod[(is-shown?)
+           boolean?]{
+
+Indicates whether the window is currently shown or not (when
+ all of its ancestors are also shown).
+
+The result is @scheme[#t] if this window is shown when its ancestors are
+ shown, or @scheme[#f] if this window remains hidden when its ancestors
+ are shown.
+
+}
+
+
+@defmethod[(on-drop-file [pathname path])
+           void?]{
+
+@index["drag-and-drop"]{Called} when the user drags a file onto the
+ window. (Under X, drag-and-drop is supported via the XDND
+ protocol.) Drag-and-drop must first be enabled for the window with
+ @method[window<%> accept-drop-files].
+
+Under Mac OS X, when the application is running and user
+ double-clicks an application-handled file or drags a file onto the
+ application's icon, the main thread's application file handler is
+ called (see
+@scheme[application-file-handler]). The default handler calls the
+@method[window<%> on-drop-file] method of the most-recently activated frame if drag-and-drop is
+ enabled for that frame, independent of the frame's eventspace (but
+ the method is called in the frame's eventspace's handler
+ thread). When the application is not running, the filenames are
+ provided as command-line arguments.
+
+}
+
 @defmethod[(on-focus [on? any/c])
            void?]{
 @methspec{
@@ -38,14 +295,14 @@ Does nothing.
 
 }}
 
-@defmethod[(on-size [width (integer-in 0 10000)]
-                    [height (integer-in 0 10000)])
+@defmethod[(on-move [x (integer-in -10000 10000)]
+                    [y (integer-in -10000 10000)])
            void?]{
 @methspec{
 
-Called when the window is resized. The window's new size (in pixels)
- is provided to the method. The size values are for the entire window,
- not just the client area.
+Called when the window is moved. (For windows that are not top-level
+ windows, ``moved'' means moved relative to the parent's top-left
+ corner.) The new position is provided to the method.
 
 }
 @methimpl{
@@ -56,14 +313,14 @@ Does nothing.
 
 }}
 
-@defmethod[(on-move [x (integer-in -10000 10000)]
-                    [y (integer-in -10000 10000)])
+@defmethod[(on-size [width (integer-in 0 10000)]
+                    [height (integer-in 0 10000)])
            void?]{
 @methspec{
 
-Called when the window is moved. (For windows that are not top-level
- windows, ``moved'' means moved relative to the parent's top-left
- corner.) The new position is provided to the method.
+Called when the window is resized. The window's new size (in pixels)
+ is provided to the method. The size values are for the entire window,
+ not just the client area.
 
 }
 @methimpl{
@@ -130,39 +387,6 @@ Returns @scheme[#f].
 
 }}
 
-@defmethod[(client->screen [x (integer-in -10000 10000)]
-                           [y (integer-in -10000 10000)])
-           (values (integer-in -10000 10000)
-                   (integer-in -10000 10000))]{
-
-@index["global coordinates"]{Converts} local window coordinates to
-screen coordinates.
-
-}
-
-@defmethod[(enable [enable? any/c])
-           void?]{
-
-Enables or disables a window so that input events are ignored. (Input
- events include mouse events, keyboard events, and close-box clicks,
- but not focus or update events.) When a window is disabled, input
- events to its children are also ignored.
-
-@MonitorMethod[@elem{The enable state of a window} @elem{enabling a parent window} @elem{@method[window<%> on-superwindow-enable]} @elem{enable state}]
-
-If @scheme[enable?] is true, the window is enabled, otherwise it is
- disabled.
-
-}
-
-@defmethod[(is-enabled?)
-           boolean?]{
-
-Returns @scheme[#t] if the window is enabled when all of its ancestors
- are enabled, @scheme[#f] otherwise.
-
-}
-
 @defmethod[(on-superwindow-enable [enabled? any/c])
            void?]{
 
@@ -187,151 +411,34 @@ If the enable state of a window's ancestor changes while the window is
 
 }
 
-@defmethod[(get-width)
-           (integer-in 0 10000)]{
-
-Returns the window's current total width (in pixels).
-
-See also
-@method[area-container<%> reflow-container].
-
-}
-
-@defmethod[(get-height)
-           (integer-in 0 10000)]{
-
-Returns the window's total height (in pixels).
-
-See also
-@method[area-container<%> reflow-container].
-
-}
-
-@defmethod[(get-x)
-           (integer-in -10000 10000)]{
-
-Returns the position of the window's left edge in its
- parent's coordinate system.
-
-See also
-@method[area-container<%> reflow-container].
-
-}
-
-@defmethod[(get-y)
-           (integer-in -10000 10000)]{
-
-Returns the position of the window's top edge in its
- parent's coordinate system.
-
-See also
-@method[area-container<%> reflow-container].
-
-}
-
-@defmethod[(get-label)
-           (or/c {\labelstring}, @scheme[bitmap%] object, @scheme['app], @scheme['caution], @scheme['stop], false/c)]{
-
-Gets a window's label, if any. Control windows generally display their
- label in some way. Frames and dialogs display their label as a window
- title. Panels do not display their label, but the label can be used
- for identification purposes. Messages, buttons, and check boxes can
- have bitmap labels (only when they are created with bitmap labels),
- but all other windows have string labels. In addition, a message
- label can be an icon symbol @scheme['app], @scheme['caution], or
- @scheme['stop].
-
-The label string may contain ampersands (``\&''), which serve as
- keyboard navigation annotations for controls under Windows and X. The
- ampersands are not part of the displayed label of a control; instead,
- ampersands are removed in the displayed label (under all platforms),
- and any character preceding an ampersand is underlined (Windows and
- X) indicating that the character is a mnemonic for the
- control. Double ampersands are converted into a single ampersand
- (with no displayed underline). See also
- @method[top-level-window<%> on-traverse-char].
-
-If the window does not have a label, @scheme[#f] is returned.
-
-}
-
-@defmethod[(set-label [l label-string?])
+@defmethod[(on-superwindow-show [shown? any/c])
            void?]{
 
-Sets a window's label. The window's natural minimum size might be
- different after the label is changed, but the window's minimum size
- is not recomputed.
+Called via the event queue whenever the visibility of a window has
+ changed, either through a call to the window's
+@method[window<%> show], through the showing/hiding of one of the window's ancestors, or
+ through the activating or deactivating of the window or its ancestor
+ in a container (e.g., via
+@method[area-container<%> delete-child]). The method's argument indicates whether the window is now
+ visible or not.
 
-If the window was not created with a label, or if the window was
- created with a non-string label, @scheme[l] is ignored.
-
-See
-@method[window<%> get-label] for more information.
-
-}
-
-@defmethod[(get-plain-label)
-           (or/c string false/c)]{
-
-Like
-@method[window<%> get-label], except that ampersands in the label are removed. If the window has
- no label or the window's
- label is not a string, @scheme[#f] is returned.
+This method is not called when the window is initially created; it is
+ called only after a change from the window's initial
+ visibility. Furthermore, if a show notification event is queued for
+ the window and it reverts its visibility before the event is
+ dispatched, then the dispatch is canceled.
 
 }
 
-@defmethod[(get-handle)
-           exact-integer?]{
+@defmethod[(popup-menu [menu (is-a/c popup-menu%)]
+                       [x (integer-in 0 10000)]
+                       [y (integer-in 0 10000)])
+           void?]{
 
-Returns an exact integer representing a handle to the window in the
-current platform's GUI toolbox. Cast this number from a C \cpp{long}
-to a platform-specific C type:
+@popupmenuinfo["window" "window" ""]
 
-@itemize{
-
- @item{Windows: @tt{HWND}}
-
- @item{Mac OS X: @tt{WindowRef} for a @scheme[top-level-window<%>] object,
-       @tt{ControlRef} for other windows}
-
- @item{X: @tt{Widget*}}
-
-}
-
-Some windows may not have a representation in the platform's GUI level,
- in which case the result of this method is @scheme[0].
-
-}
-
-@defmethod[(get-size)
-           (values (integer-in 0 10000)
-                   (integer-in 0 10000))]{
-
-Gets the current size of the entire window in pixels, not counting
- horizontal and vertical margins. (Under X, this size does not include
- a title bar or borders for a frame/dialog.) See also
-@method[window<%> get-client-size].
-
-The geometry is returned as two values: width and height (in pixels).
-
-See also
-@method[area-container<%> reflow-container].
-
-}
-
-@defmethod[(get-client-size)
-           (values (integer-in 0 10000)
-                   (integer-in 0 10000))]{
-
-Gets the interior size of the window in pixels. For a container, the
- interior size is the size available for placing subwindows (including
- the border margin). For a canvas, this is the visible drawing
- area.
-
-The client size is returned as two values: width and height (in pixels).
-
-See also
-@method[area-container<%> reflow-container].
+The @scheme[menu] is popped up within the window at position
+ (@scheme[x], @scheme[y]).
 
 }
 
@@ -352,47 +459,6 @@ local coordinates.
 
 }
 
-@defmethod[(focus)
-           void?]{
-
-@index['("keyboard focus" "setting")]{Moves} the keyboard focus to the
- window, relative to its top-level window, if the window ever accepts
- the keyboard focus.  If the focus is in the window's top-level
- window, then the focus is immediately moved to this
- window. Otherwise, the focus is not immediately moved, but when the
- window's top-level window gets the keyboard focus, the focus is
- delegated to this window.
-
-See also
-@method[window<%> on-focus].
-
-Note that under X, keyboard focus can move to the menu bar
- when the user is selecting a menu item.
-
-@MonitorMethod[@elem{The current keyboard focus window} @elem{the user} @elem{@method[window<%> on-focus]} @elem{focus}]
-
-}
-
-@defmethod[(has-focus?)
-           boolean?]{
-
-Indicates whether the window currently has the keyboard focus. See
- also
-@method[window<%> on-focus].
-
-}
-
-@defmethod[(popup-menu [menu (is-a/c popup-menu%)]
-                       [x (integer-in 0 10000)]
-                       [y (integer-in 0 10000)])
-           void?]{
-
-@popupmenuinfo["window" "window" ""]
-
-The @scheme[menu] is popped up within the window at position
- (@scheme[x], @scheme[y]).
-
-}
 
 @defmethod[(set-cursor [cursor (or/c (is-a/c cursor%) false/c)])
            void?]{
@@ -407,12 +473,19 @@ If a window does not have a cursor, it uses the cursor of its parent.
 
 }
 
-@defmethod[(get-cursor)
-           (or/c (is-a/c cursor%) false/c)]{
 
-Returns the window's cursor, or @scheme[#f] if this window's cursor
- defaults to the parent's cursor.  See
-@method[window<%> set-cursor] for more information.
+@defmethod[(set-label [l label-string?])
+           void?]{
+
+Sets a window's label. The window's natural minimum size might be
+ different after the label is changed, but the window's minimum size
+ is not recomputed.
+
+If the window was not created with a label, or if the window was
+ created with a non-string label, @scheme[l] is ignored.
+
+See
+@method[window<%> get-label] for more information.
 
 }
 
@@ -428,65 +501,5 @@ window is shown.
 
 }
 
-@defmethod[(is-shown?)
-           boolean?]{
-
-Indicates whether the window is currently shown or not (when
- all of its ancestors are also shown).
-
-The result is @scheme[#t] if this window is shown when its ancestors are
- shown, or @scheme[#f] if this window remains hidden when its ancestors
- are shown.
-
 }
-
-@defmethod[(on-superwindow-show [shown? any/c])
-           void?]{
-
-Called via the event queue whenever the visibility of a window has
- changed, either through a call to the window's
-@method[window<%> show], through the showing/hiding of one of the window's ancestors, or
- through the activating or deactivating of the window or its ancestor
- in a container (e.g., via
-@method[area-container<%> delete-child]). The method's argument indicates whether the window is now
- visible or not.
-
-This method is not called when the window is initially created; it is
- called only after a change from the window's initial
- visibility. Furthermore, if a show notification event is queued for
- the window and it reverts its visibility before the event is
- dispatched, then the dispatch is canceled.
-
-}
-
-@defmethod[(on-drop-file [pathname path])
-           void?]{
-
-@index["drag-and-drop"]{Called} when the user drags a file onto the
- window. (Under X, drag-and-drop is supported via the XDND
- protocol.) Drag-and-drop must first be enabled for the window with
- @method[window<%> accept-drop-files].
-
-Under Mac OS X, when the application is running and user
- double-clicks an application-handled file or drags a file onto the
- application's icon, the main thread's application file handler is
- called (see
-@scheme[application-file-handler]). The default handler calls the
-@method[window<%> on-drop-file] method of the most-recently activated frame if drag-and-drop is
- enabled for that frame, independent of the frame's eventspace (but
- the method is called in the frame's eventspace's handler
- thread). When the application is not running, the filenames are
- provided as command-line arguments.
-
-}
-
-@defmethod*[([(accept-drop-files)
-              boolean?]
-             [(accept-drop-files [accept-files? any/c])
-              void?])]{
-
-@index["drag-and-drop"]{Enables} or disables drag-and-drop dropping
- for the window, or gets the enable state. Dropping is initially
- disabled. See also @method[window<%> on-drop-file].
-}}
 

@@ -13,10 +13,8 @@ A @scheme[grow-box-spacer-pane%] object is intended for use as a
  @scheme[grow-box-spacer-pane%] is unstretchable by default.
 
 
+@defconstructor/auto-super[()]{
 
+See @scheme[pane%] for information on initialization arguments.
 
-
-@defconstructor/auto-super[[#f unknown]]{
-Passes all arguments to @scheme[super-init].
 }}
-

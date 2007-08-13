@@ -9,14 +9,14 @@ These functions get input from the user and/or display
 
 
 
-@defproc[(get-file [message (or/c string false/c) #f]
+@defproc[(get-file [message (or/c string? false/c) #f]
                    [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
-                   [directory (or/c path false/c) #f]
-                   [filename (or/c path false/c) #f]
-                   [extension (or/c string false/c) #f]
-                   [style (listof (symbols/c enter-packages packages)) null]
+                   [directory (or/c path-string? false/c) #f]
+                   [filename (or/c path-string? false/c) #f]
+                   [extension (or/c string? false/c) #f]
+                   [style (listof (one-of/c 'packages 'enter-packages)) null]
                    [filters (listof (list/c string? string?)) @scheme['(("Any" "*.*"))]])
-         (or/c path false/c)]{
+         (or/c path? false/c)]{
 
 Obtains a file pathname from the user via the platform-specific
  standard (modal) dialog, using @scheme[parent] as the parent window if
@@ -62,28 +62,28 @@ See also @scheme[path-dialog%].
 
 }
 
-@defproc[(get-file-list [message (or/c string false/c) #f]
+@defproc[(get-file-list [message (or/c string? false/c) #f]
                         [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
-                        [directory (or/c path false/c) #f]
-                        [filename (or/c path false/c) #f]
-                        [extension (or/c string false/c) #f]
+                        [directory (or/c path-string? false/c) #f]
+                        [filename (or/c path-string? false/c) #f]
+                        [extension (or/c string? false/c) #f]
                         [style null? null]
                         [filters (listof (list/c string? string?)) @scheme['(("Any" "*.*"))]])
-         (or/c list of paths false/c)]{
+         (or/c (listof path?) false/c)]{
 Like
 @scheme[get-file], except that the user can select multiple files, and the
  result is either a list of file paths of @scheme[#f].
 
 }
 
-@defproc[(put-file [message (or/c string false/c) #f]
+@defproc[(put-file [message (or/c string? false/c) #f]
                    [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
-                   [directory (or/c path false/c) #f]
-                   [filename (or/c path false/c) #f]
-                   [extension (or/c string false/c) #f]
-                   [style (listof (symbols/c enter-packages packages)) null]
+                   [directory (or/c path-string? false/c) #f]
+                   [filename (or/c path-string? false/c) #f]
+                   [extension (or/c string? false/c) #f]
+                   [style (listof (one-of/c 'packages 'enter-packages)) null]
                    [filters (listof (list/c string? string?)) @scheme['(("Any" "*.*"))]])
-         (or/c path false/c)]{
+         (or/c path? false/c)]{
 
 Obtains a file pathname from the user via the platform-specific
  standard (modal) dialog, using @scheme[parent] as the parent window if
@@ -136,10 +136,10 @@ See also @scheme[path-dialog%].
 
 }
 
-@defproc[(get-directory [message (or/c string false/c) #f]
+@defproc[(get-directory [message (or/c string? false/c) #f]
                         [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
-                        [directory (or/c path false/c) #f]
-                        [style (listof (symbols/c enter-packages)) null])
+                        [directory (or/c path? false/c) #f]
+                        [style (listof (one-of/c 'enter-packages)) null])
          (or/c path false/c)]{
 
 Obtains a directory pathname from the user via the platform-specific
@@ -169,8 +169,8 @@ See also @scheme[path-dialog%].
 @defproc[(message-box [title label-string?]
                       [message string]
                       [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
-                      [style (listof (symbols/c stop caution yes-no ok-cancel ok)) '(ok)])
-         (symbols/c no yes cancel ok)]{
+                      [style (listof (one-of/c 'ok 'ok-cancel 'yes-no 'caution 'stop)) '(ok)])
+         (one-of/c 'ok 'cancel 'yes 'no)]{
 See also @scheme[message-box/custom].
 
 
@@ -223,9 +223,9 @@ The class that implements the dialog provides a @scheme[get-message]
                              [button2-label (or/c label-string? (is-a/c bitmap%) false/c)]
                              [button3-label (or/c label-string? (is-a/c bitmap%) false/c)]
                              [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
-                             [style (listof (symbols/c stop caution number-order 
-                                                       disallow-close no-default 
-                                                       default=3 default=2 default=1))
+                             [style (listof (one-of/c 'stop 'caution 'number-order 
+                                                      'disallow-close 'no-default 
+                                                      'default=1 'default=2 'default=3))
                                    '(no-default)]
                              [close-result any/c #f])
          (one-of/c 1 2 3 close-result)]{
@@ -304,8 +304,10 @@ The class that implements the dialog provides a @scheme[get-message]
                             [message string]
                             [check-label label-string?]
                             [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
-                            [style (listof (symbols/c checked stop caution yes-no ok-cancel ok)) '(ok)])
-         (symbols/c no yes cancel ok)]{
+                            [style (listof (one-of/c 'ok 'ok-cancel 'yes-no 
+                                                     'caution 'stop 'checked))
+                              '(ok)])
+         (one-of/c 'ok 'cancel 'yes 'no)]{
 
 See also @scheme[message+check-box/custom].
 
@@ -326,9 +328,9 @@ Like @scheme[message-box], except that
                                    [button2-label (or/c label-string? (is-a/c bitmap%) false/c)]
                                    [button3-label (or/c label-string? (is-a/c bitmap%) false/c)]
                                    [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
-                                   [style (listof (symbols/c checked stop caution number-order 
-                                                             disallow-close no-default 
-                                                             default=3 default=2 default=1))
+                                   [style (listof (one-of/c 'stop 'caution 'number-order 
+                                                            'disallow-close 'no-default 
+                                                            'default=1 'default=2 'default=3))
                                           '(no-default)]
                                    [close-result any/c #f])
          (one-of/c 1 2 3 close-result)]{
@@ -348,11 +350,11 @@ Like @scheme[message-box/custom], except that
 }
 
 @defproc[(get-text-from-user [title string]
-                             [message (or/c string false/c)]
+                             [message (or/c string? false/c)]
                              [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
-                             [init-val string ""]
-                             [style (listof (symbols/c password)) null])
-         (or/c string false/c)]{
+                             [init-val string? ""]
+                             [style (listof (one-of/c 'password)) null])
+         (or/c string? false/c)]{
 
 Gets a text string from the user via a modal dialog, using
  @scheme[parent] as the parent window if it is specified. The dialog's
@@ -372,12 +374,12 @@ If @scheme[style] includes @scheme['password], the dialog's text field
 }
 
 @defproc[(get-choices-from-user [title string]
-                                [message (or/c string false/c)]
+                                [message (or/c string? false/c)]
                                 [choices (listof string?)]
                                 [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
                                 [init-choices (listof nonnegative-exact-integer?) null]
-                                [style (listof (symbols/c extended multiple single)) '(single)])
-         (or/c list of {\NNInts} false/c)]{
+                                [style (listof (one-of/c 'single 'multiple 'extended)) '(single)])
+         (or/c (listof nonnegative-exact-integer?) false/c)]{
 
 Gets a list box selection from the user via a modal dialog, using
  @scheme[parent] as the parent window if it is specified. The dialog's
@@ -398,7 +400,7 @@ The result is @scheme[#f] if the user cancels the dialog, the
 
 }
 
-@defproc[(get-color-from-user [message (or/c string false/c) #f]
+@defproc[(get-color-from-user [message (or/c string? false/c) #f]
                               [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
                               [init-color (or/c (is-a/c color%) false/c) #f]
                               [style null? null])
@@ -419,7 +421,7 @@ The result is @scheme[#f] if the user cancels the dialog, the selected
 
 }
 
-@defproc[(get-font-from-user [message (or/c string false/c) #f]
+@defproc[(get-font-from-user [message (or/c string? false/c) #f]
                              [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
                              [init-font (or/c (is-a/c font%) false/c) #f]
                              [style null? null])
@@ -440,7 +442,7 @@ The result is @scheme[#f] if the user cancels the dialog, the selected
 
 }
 
-@defproc[(get-ps-setup-from-user [message (or/c string false/c) #f]
+@defproc[(get-ps-setup-from-user [message (or/c string? false/c) #f]
                                  [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
                                  [init-setup (or/c (is-a/c ps-setup%) false/c) #f]
                                  [style null? null])
@@ -463,7 +465,7 @@ The result is @scheme[#f] if the user cancels the dialog, , a
 
 }
 
-@defproc[(get-page-setup-from-user [message (or/c string false/c) #f]
+@defproc[(get-page-setup-from-user [message (or/c string? false/c) #f]
                                    [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
                                    [init-setup (or/c (is-a/c ps-setup%) false/c) #f]
                                    [style null? null])

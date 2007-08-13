@@ -21,6 +21,59 @@ The @scheme[canvas<%>] interface is implemented by two classes:
 }
 
 
+@defmethod[(get-canvas-background)
+           (or/c (is-a/c color%) false/c)]{
+Returns the color currently used to ``erase'' the canvas content before
+@method[canvas<%> on-paint] is called. See also
+@method[canvas<%> set-canvas-background].
+
+The result is @scheme[#f] if the canvas was created with the
+ @indexed-scheme['transparent] style, otherwise it is always a
+ @scheme[color%] object.
+
+}
+
+
+@defmethod[(get-dc)
+           (is-a/c dc<%>)]{
+Gets the canvas's device context. See
+@scheme[dc<%>] for more information about drawing.
+
+}
+
+
+
+@defmethod*[([(min-client-height)
+              (integer-in 0 10000)]
+             [(min-client-height [h (integer-in 0 10000)])
+              void?])]{
+
+Gets or sets the canvas's minimum height for geometry management,
+ based on the client size rather than the full size. The client height
+ is obtained or changed via
+@xmethod[area<%> min-height], adding or subtracting border and scrollbar sizes as appropriate.
+
+The minimum height is ignored when it is smaller than the canvas's
+ @tech{graphical minimum height}. See @|geomdiscuss| for
+ more information.
+}
+
+
+@defmethod*[([(min-client-width)
+              (integer-in 0 10000)]
+             [(min-client-width [w (integer-in 0 10000)])
+              void?])]{
+
+Gets or sets the canvas's minimum width for geometry management, based
+ on the canvas's client size rather than its full size. The client
+ width is obtained or changed via
+@xmethod[area<%> min-width], adding or subtracting border and scrollbar sizes as appropriate.
+
+The minimum width is ignored when it is smaller than the canvas's
+ @tech{graphical minimum width}. See @|geomdiscuss| for
+ more information.
+
+}
 
 
 @defmethod[(on-char [ch (is-a/c key-event%)])
@@ -38,6 +91,7 @@ Does nothing.
 
 
 }}
+
 
 @defmethod[(on-event [event (is-a/c mouse-event%)])
            void?]{
@@ -102,50 +156,6 @@ Does nothing.
 
 }}
 
-@defmethod[(get-dc)
-           (is-a/c dc<%>)]{
-Gets the canvas's device context. See
-@scheme[dc<%>] for more information about drawing.
-
-}
-
-@defmethod*[([(min-client-width)
-              (integer-in 0 10000)]
-             [(min-client-width [w (integer-in 0 10000)])
-              void?])]{
-
-Gets or sets the canvas's minimum width for geometry management, based
- on the canvas's client size rather than its full size. The client
- width is obtained or changed via
-@xmethod[area<%> min-width], adding or subtracting border and scrollbar sizes as appropriate.
-
-The minimum width is ignored when it is smaller than the canvas's
- @tech{graphical minimum width}. See @|geomdiscuss| for
- more information.
-
-}
-
-@defmethod*[([(min-client-height)
-              (integer-in 0 10000)]
-             [(min-client-height [h (integer-in 0 10000)])
-              void?])]{
-
-Gets or sets the canvas's minimum height for geometry management,
- based on the client size rather than the full size. The client height
- is obtained or changed via
-@xmethod[area<%> min-height], adding or subtracting border and scrollbar sizes as appropriate.
-
-The minimum height is ignored when it is smaller than the canvas's
- @tech{graphical minimum height}. See @|geomdiscuss| for
- more information.
-}
-
-@defmethod[(warp-pointer [x (integer-in 0 10000)]
-                         [y (integer-in 0 10000)])
-           void?]{
-Moves the cursor to the given location on the canvas.
-
-}
 
 @defmethod[(set-canvas-background [color (is-a/c color%)])
            void?]{
@@ -160,18 +170,6 @@ If the canvas was created with the @indexed-scheme['transparent] style,
 
 }
 
-@defmethod[(get-canvas-background)
-           (or/c (is-a/c color%) false/c)]{
-Returns the color currently used to ``erase'' the canvas content before
-@method[canvas<%> on-paint] is called. See also
-@method[canvas<%> set-canvas-background].
-
-The result is @scheme[#f] if the canvas was created with the
- @indexed-scheme['transparent] style, otherwise it is always a
- @scheme[color%] object.
-
-}
-
 @defmethod[(set-resize-corner [on? any/c])
            void?]{
 
@@ -182,5 +180,13 @@ Under Mac OS X, enables or disables space for a resize tab at the
  default, but it can be enabled when a canvas is created with the
  @scheme['resize-corner] style.
 
-}}
+}
+
+@defmethod[(warp-pointer [x (integer-in 0 10000)]
+                         [y (integer-in 0 10000)])
+           void?]{
+Moves the cursor to the given location on the canvas.
+
+}
+}
 

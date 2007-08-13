@@ -24,6 +24,20 @@ All @scheme[area<%>] classes accept the following named instantiation
 
 
 
+@defmethod[(get-graphical-min-size)
+           (values (integer-in 0 10000)
+                   (integer-in 0 10000))]{
+
+Returns the area's graphical minimum size as two values: the minimum
+ width and the minimum height (in pixels).
+
+See @|geomdiscuss| for more information. Note that the return value
+ @italic{does not} depend on the area's
+@method[area<%> min-width] and
+@method[area<%> min-height] settings.
+
+}
+
 @defmethod[(get-parent)
            (or/c (is-a/c area-container<%>) false/c)]{
 
@@ -84,17 +98,13 @@ When setting the minimum height (in pixels); if @scheme[h] is smaller
 
 }
 
-@defmethod[(get-graphical-min-size)
-           (values (integer-in 0 10000)
-                   (integer-in 0 10000))]{
+@defmethod*[([(stretchable-height)
+              boolean?]
+             [(stretchable-height [stretch? any/c])
+              void?])]{
 
-Returns the area's graphical minimum size as two values: the minimum
- width and the minimum height (in pixels).
-
-See @|geomdiscuss| for more information. Note that the return value
- @italic{does not} depend on the area's
-@method[area<%> min-width] and
-@method[area<%> min-height] settings.
+Gets or sets the area's vertical stretchability for geometry
+ management. See @|geomdiscuss| for more information.
 
 }
 
@@ -104,16 +114,6 @@ See @|geomdiscuss| for more information. Note that the return value
               void?])]{
 
 Gets or sets the area's horizontal stretchability for geometry
- management. See @|geomdiscuss| for more information.
-
-}
-
-@defmethod*[([(stretchable-height)
-              boolean?]
-             [(stretchable-height [stretch? any/c])
-              void?])]{
-
-Gets or sets the area's vertical stretchability for geometry
  management. See @|geomdiscuss| for more information.
 
 }}

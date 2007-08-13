@@ -26,23 +26,7 @@
 
   (define (labelstripped where detail what)
     @elem{If @litchar{&} occurs in @|where|@|detail|, it 
- is specially parsed; under Windows and X, the character following
- @litchar{&} is underlined in the displayed control to indicate a
- keyboard mnemonic. (Under Mac OS X, mnemonic underlines are not shown.)
- The underlined mnemonic character must be a letter or a digit. The
- user can @|what| by typing the mnemonic when the control's
- top-level-window contains the keyboard focus. The user must also hold
- down the Meta or Alt key if the keyboard focus is currently in a
- control that handles normal alphanumeric input. The ampersand itself
- is removed from @|where| before it is displayed for the control; a
- double-ampersand in @|where| is converted to a single ampersand
- (with no mnemonic underlining). Under Mac OS X, a parenthesized
- mnemonic character is removed (along with any surrounding space)
- before the label is displayed, since a parenthesized mnemonic is
- often used for non-Roman languages. Finally, any text after a tab
- character is removed on all platforms. Mnemonic keyboard events are handled
- by @method[top-level-window<%> on-traverse-char] (but not under
- Mac OS X).})
+ is specially parsed as for @scheme[button%].})
 
   (define (bitmapuseinfo pre what thing then detail)
    @elem{@|pre| @|what| is @|thing|, @|then| the bitmap@|detail|
@@ -193,7 +177,7 @@ information@|details|, even if the editor currently has delayed refreshing (see
     @elem{The @scheme[style] argument is provided for future extensions. Currently, @scheme[style] must be the empty list.})
 
   (define (HVLabelNote what)
-    @elem{If @scheme[style] includes @scheme['vertical-label], then the #1 is
+    @elem{If @scheme[style] includes @scheme['vertical-label], then the @|what| is
           created with a label above the control; if @scheme[style] does not include
           @scheme['vertical-label] (and optionally includes @scheme['horizontal-label]), then the
           label is created to the left of the @|what|.})

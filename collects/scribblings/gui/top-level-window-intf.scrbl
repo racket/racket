@@ -6,94 +6,120 @@
 A top-level window is either a @scheme[frame%] or @scheme[dialog%]
  object.
 
-
-
-
-@defmethod[(get-eventspace)
-           eventspace]{
-@spec{
-
-Returns the window's eventspace.
-
-}}
-
-@defmethod[#:mode 'pubment 
-           (on-close)
-           void?]{
-@spec{
-
-Called just before the window is closed (e.g., by the window manager).
- This method is {\em not}\/ called by
-@method[window<%> show] .
-
-See also
-@method[top-level-window<%> can-close?].
-
-}}
-
 @defmethod[#:mode 'pubment 
            (can-close?)
            boolean?]{
-@spec{
 
 Called just before the window might be closed (e.g., by the window
- manager). If @scheme[#f] is returned, the window is not\/
- closed, otherwise
-@method[top-level-window<%> on-close] is called and the window is closed (i.e., the window is hidden,
- like calling
-@method[window<%> show] with @scheme[#f]).
+ manager). If @scheme[#f] is returned, the window is not\/ closed,
+ otherwise @method[top-level-window<%> on-close] is called and the
+ window is closed (i.e., the window is hidden, like calling
+ @method[window<%> show] with @scheme[#f]).
 
-This method is {\em not}\/ called by
-@method[window<%> show] .
-
-
-}}
-
-@defmethod[(on-exit)
-           void?]{
-@spec{
-
-Called by the default application quit handler (as determined by the
- @scheme[application-quit-handler] parameter) when the
- operating system requests that the application shut down (e.g., when
- the \OnScreen{Quit} menu item is selected in the main application
- menu under Mac OS X). In that case, this method is called for the
- most recently active top-level window in the initial eventspace, but
- only if the window's
-@method[top-level-window<%> can-exit?]  method first returns true.
-
+This method is @italic{not} called by @method[window<%> show].
 }
-@impl{
-
-Calls
-@method[top-level-window<%> on-close] and then
-@method[top-level-window<%> show] to hide the window.
-
-
-
-}}
 
 @defmethod[(can-exit?)
            boolean?]{
-@spec{
+@methspec{
 
-Called before
-@method[top-level-window<%> on-exit] to check whether an exit is allowed. See
-@method[top-level-window<%> on-exit] for more information.
+Called before @method[top-level-window<%> on-exit] to check whether an
+exit is allowed. See @method[top-level-window<%> on-exit] for more
+information.
 
 }
-@impl{
+@methimpl{
 
-Calls
-@method[top-level-window<%> can-close?] and returns the result.
-
-
+Calls @method[top-level-window<%> can-close?] and returns the result.
 
 }}
 
+@defmethod[(center [direction (one-of/c 'horizontal 'vertical 'both) 'both])
+           void?]{
+
+Centers the window on the screen if it has no parent. If it has a
+ parent, the window is centered with respect to its parent's location.
+
+If @scheme[direction] is @scheme['horizontal], the window is centered
+ horizontally.  If @scheme[direction] is @scheme['vertical], the
+ window is centered vertically.  If @scheme[direction] is
+ @scheme['both], the window is centered in both directions.
+
+}
+
+@defmethod[(get-edit-target-object)
+           (or/c (or/c (is-a/c window<%>) (is-a/c editor<%>)) false/c)]{
+
+@index['("keyboard focus" "last active")]{Like}
+ @method[top-level-window<%> get-edit-target-window], but if an editor
+ canvas had the focus and it also displays an editor, the editor is
+ returned instead of the canvas. Further, if the editor's focus is
+ delegated to an embedded editor, the embedded editor is returned.
+
+See also @method[top-level-window<%> get-focus-object].
+
+}
+
+@defmethod[(get-edit-target-window)
+           (or/c (is-a/c window<%>) false/c)]{
+
+@index['("keyboard focus" "last active")]{Returns} the window that
+most recently had the keyboard focus, either the top-level window or
+one of its currently-shown children. If neither the window nor any of
+its currently-shown children has even owned the keyboard focus,
+@scheme[#f] is returned.
+
+See also @method[top-level-window<%> get-focus-window] and
+@method[top-level-window<%> get-edit-target-object].
+
+}
+
+@defmethod[(get-eventspace)
+           eventspace]{
+Returns the window's eventspace.
+
+}
+
+@defmethod[(get-focus-object)
+           (or/c (or/c (is-a/c window<%>) (is-a/c editor<%>)) false/c)]{
+
+@index["keyboard focus"]{Like} @method[top-level-window<%>
+get-focus-window], but if an editor canvas has the focus and it also
+displays an editor, the editor is returned instead of the
+canvas. Further, if the editor's focus is delegated to an embedded
+editor, the embedded editor is returned.
+
+See also @method[top-level-window<%> get-edit-target-object].
+
+}
+
+@defmethod[(get-focus-window)
+           (or/c (is-a/c window<%>) false/c)]{
+
+@index["keyboard focus"]{Returns} the window that has the keyboard
+ focus, either the top-level window or one of its children. If neither
+ the window nor any of its children has the focus, @scheme[#f] is
+ returned.
+
+See also @method[top-level-window<%> get-edit-target-window] and
+@method[top-level-window<%> get-focus-object].
+
+}
+
+
+@defmethod[(move [x (integer-in -10000 10000)]
+                 [y (integer-in -10000 10000)])
+           void?]{
+
+Moves the window to the given position on the screen.
+
+@MonitorMethod[@elem{A window's position} @elem{the user dragging the window} @elem{@method[window<%> on-move]} @elem{position}]
+
+}
+
+
 @defmethod[(on-activate [active? any/c])
            void?]{
-@spec{
 
 Called when a window is @defterm{activated} or
  @defterm{deactivated}. A top-level window is activated when the
@@ -107,149 +133,81 @@ Called when a window is @defterm{activated} or
 The method's argument is @scheme[#t] when the window is activated,
  @scheme[#f] when it is deactivated.
 
+}
+
+@defmethod[#:mode 'pubment 
+           (on-close)
+           void?]{
+
+Called just before the window is closed (e.g., by the window manager).
+ This method is @italic{not} called by @method[window<%> show].
+
+See also
+@method[top-level-window<%> can-close?].
+
+}
+
+@defmethod[(on-exit)
+           void?]{
+
+@methspec{
+
+Called by the default application quit handler (as determined by the
+ @scheme[application-quit-handler] parameter) when the operating
+ system requests that the application shut down (e.g., when the
+ @onscreen{Quit} menu item is selected in the main application menu
+ under Mac OS X). In that case, this method is called for the most
+ recently active top-level window in the initial eventspace, but only
+ if the window's @method[top-level-window<%> can-exit?]  method first
+ returns true.
+
+}
+@methimpl{
+
+Calls
+@method[top-level-window<%> on-close] and then
+@method[top-level-window<%> show] to hide the window.
+
+
+
 }}
 
-@defmethod[(on-message [message value])
-           value]{
-@spec{
+@defmethod[(on-message [message any/c])
+           any/c]{
+@methspec{
 
-\index{drag-and-drop}
-A generic message method, usually called by
+@index["drag-and-drop"]{A} generic message method, usually called by
 @scheme[send-message-to-window].
 
-If the method is invoked by
-@scheme[send-message-to-window], then it is invoked in the thread where
-@scheme[send-message-to-window] was called (which is possibly {\em not\/} the handler thread of the
- window's eventspace).
+If the method is invoked by @scheme[send-message-to-window], then it
+is invoked in the thread where @scheme[send-message-to-window] was
+called (which is possibly @italic{not} the handler thread of the
+window's eventspace).
 
 }
-@impl{
+@methimpl{
 
-Returns void.
-
-
+Returns @|void-const|.
 
 }}
 
-@defmethod[(get-focus-window)
-           (or/c (is-a/c window<%>) false/c)]{
-@spec{
-
-\index{keyboard focus}
-Returns the window that has the keyboard focus, either the top-level
- window or one of its children. If neither the window nor any of its
- children has the focus, @scheme[#f] is returned.
-
-See also
-@method[top-level-window<%> get-edit-target-window] and
-@method[top-level-window<%> get-focus-object].
-
-}}
-
-@defmethod[(get-focus-object)
-           (or/c (or/c (is-a/c window<%>) (is-a/c editor<%>)) false/c)]{
-@spec{
-
-\index{keyboard focus}
-Like
-@method[top-level-window<%> get-focus-window], but if an editor canvas has the focus and it also displays an
- editor, the editor is returned instead of the canvas. Further, if the
- editor's focus is delegated to an embedded editor, the embedded
- editor is returned.
-
-See also
-@method[top-level-window<%> get-edit-target-object].
-
-}}
-
-@defmethod[(get-edit-target-window)
-           (or/c (is-a/c window<%>) false/c)]{
-@spec{
-
-\index{keyboard focus!last active}
-Returns the window that most recently had the keyboard focus, either
- the top-level window or one of its currently-shown children. If
- neither the window nor any of its currently-shown children has even
- owned the keyboard focus, @scheme[#f] is returned.
-
-See also
-@method[top-level-window<%> get-focus-window] and
-@method[top-level-window<%> get-edit-target-object].
-
-}}
-
-@defmethod[(get-edit-target-object)
-           (or/c (or/c (is-a/c window<%>) (is-a/c editor<%>)) false/c)]{
-@spec{
-
-\index{keyboard focus!last active}
-Like
-@method[top-level-window<%> get-edit-target-window], but if an editor canvas had the focus and it also displays an
- editor, the editor is returned instead of the canvas. Further, if the
- editor's focus is delegated to an embedded editor, the embedded
- editor is returned.
-
-See also
-@method[top-level-window<%> get-focus-object].
-
-}}
-
-@defmethod[(center [direction (symbols/c both vertical horizontal) 'both])
-           void?]{
-@spec{
-
-Centers the window on the screen if it has no parent. If it has a
- parent, the window is centered with respect to its parent's location.
-
-}
-@impl{
-
-If @scheme[direction] is @scheme['horizontal], the window is centered
- horizontally.  If @scheme[direction] is @scheme['vertical], the
- window is centered vertically.  If @scheme[direction] is
- @scheme['both], the window is centered in both directions.
-
-
-
-}}
-
-@defmethod[(move [x (integer-in -10000 10000)]
-                 [y (integer-in -10000 10000)])
-           void?]{
-@spec{
-
-Moves the window to the given position on the screen.
-
-@MonitorMethod[@elem{A window's position} @elem{the user dragging the window} @elem{@method[window<%> on-move]} @elem{position}]
-
-}}
-
-@defmethod[(resize [width (integer-in 0 10000)]
-                   [height (integer-in 0 10000)])
-           void?]{
-@spec{
-
-Sets the size of the window (in pixels), but only if the given size is
- larger than the window's minimum size.
-
-@MonitorMethod[@elem{A window's size} @elem{the user} @elem{@method[window<%> on-size]} @elem{size}]
-
-}}
 
 @defmethod[(on-traverse-char [event (is-a/c key-event%)])
            boolean?]{
-@spec{
 
-\index{keyboard focus!navigation}
-Attempts to handle the given keyboard event as a navigation event, such
- as a Tab key event that moves the keyboard focus. If the event is
- handled, @scheme[#t] is returned, otherwise @scheme[#f] is returned.
+@methspec{
+
+@index['("keyboard focus" "navigation")]{Attempts} to handle the given
+ keyboard event as a navigation event, such as a Tab key event that
+ moves the keyboard focus. If the event is handled, @scheme[#t] is
+ returned, otherwise @scheme[#f] is returned.
 
 }
-@impl{
+@methimpl{
 
 The following rules determine, in order, whether and how @scheme[event]
 is handled:
+
 @itemize{
 
 @item{
@@ -331,32 +289,35 @@ If @scheme[event] is an alphanumeric key event and the current top-level
 Otherwise, @scheme[#f] is returned.}
 
 }
-
-
-
 }}
 
 @defmethod[(on-system-menu-char [event (is-a/c key-event%)])
            boolean?]{
-@spec{
 
 Checks whether the given event pops open the system menu in the
  top-left corner of the window (Windows only). If the window's system
  menu is opened, @scheme[#t] is returned, otherwise @scheme[#f] is
  returned.
 
-}}
+}
+
+@defmethod[(resize [width (integer-in 0 10000)]
+                   [height (integer-in 0 10000)])
+           void?]{
+
+Sets the size of the window (in pixels), but only if the given size is
+ larger than the window's minimum size.
+
+@MonitorMethod[@elem{A window's size} @elem{the user} @elem{@method[window<%> on-size]} @elem{size}]
+
+}
 
 @defmethod[#:mode 'auto-super 
            (show [show any/c])
            void?]{
-@impl{
 
 If the window is already shown, it is moved front of other top-level
  windows. If the window is iconized (frames only), it is deiconized.
 
-
-
-
-}}}
+}}
 

@@ -181,7 +181,7 @@
 
   ;; ----------------------------------------
 
-  (provide method xmethod)
+  (provide method xmethod (rename method ::))
 
   (define-syntax method
     (syntax-rules ()
@@ -269,7 +269,7 @@
     (make-element "schememeta" (list "...+")))
 
   (define-syntax (arg-contract stx)
-    (syntax-case stx (... ...+)
+    (syntax-case stx (... ...+ _...superclass-args...)
       [(_ [id contract])
        (identifier? #'id)
        #'(schemeblock0 contract)]
@@ -287,6 +287,8 @@
       [(_ (... ...))
        #'#f]
       [(_ (... ...+))
+       #'#f]
+      [(_ _...superclass-args...)
        #'#f]
       [(_ arg)
        (raise-syntax-error
@@ -549,6 +551,11 @@
                                                        (list (scheme new)
                                                              (hspace 1)
                                                              (to-element within-id)))]
+                                        [(eq? mode 'make)
+                                         (make-element #f
+                                                       (list (scheme make-object)
+                                                             (hspace 1)
+                                                             (to-element within-id)))]
                                         [(eq? mode 'send)
                                          (make-element #f
                                                        (list (scheme send)
@@ -556,22 +563,30 @@
                                                              (to-element (string->symbol
                                                                           (regexp-replace
                                                                            #rx"(%|<%>|-mixin)$"
-                                                                           (format "a-~s" (syntax-e within-id))
+                                                                           (format "a~a-~s" 
+                                                                                   (if (member
+                                                                                        (string-ref (symbol->string (syntax-e within-id)) 0)
+                                                                                        '(#\a #\e #\i #\o #\u))
+                                                                                       "n"
+                                                                                       "")
+                                                                                   (syntax-e within-id))
                                                                            "")))
                                                              (hspace 1)
-                                                             (let* ([mname (car prototype)]
-                                                                    [tag (format "~a::~a"
-                                                                                 (register-scheme-definition within-id)
-                                                                                 mname)]
-                                                                    [content (list (*method mname within-id))])
-                                                               (make-toc-target-element
-                                                                #f
-                                                                (list (make-index-element #f
-                                                                                          content
-                                                                                          tag
-                                                                                          (list (symbol->string mname))
-                                                                                          content))
-                                                                tag))))]
+                                                             (if first?
+                                                                 (let* ([mname (car prototype)]
+                                                                        [tag (format "~a::~a"
+                                                                                     (register-scheme-definition within-id)
+                                                                                     mname)]
+                                                                        [content (list (*method mname within-id))])
+                                                                   (make-toc-target-element
+                                                                    #f
+                                                                    (list (make-index-element #f
+                                                                                              content
+                                                                                              tag
+                                                                                              (list (symbol->string mname))
+                                                                                              content))
+                                                                    tag))
+                                                                 (*method (car prototype) within-id))))]
                                         [else
                                          (if first?
                                              (let ([tag (register-scheme-definition stx-id)]
@@ -594,7 +609,8 @@
                              [(res) (result-contract)]
                              [(result-next-line?) ((+ (if short? 
                                                           flat-size
-                                                          (prototype-size prototype + max))
+                                                          (+ (prototype-size (cdr prototype) max max)
+                                                             (element-width tagged)))
                                                       (flow-element-width res))
                                                    . >= . (- max-proto-width 7))]
                              [(end) (list (to-flow spacer)
@@ -1198,6 +1214,9 @@
   (provide defclass
            definterface
            defconstructor
+           defconstructor/make
+           defconstructor*/make
+           defconstructor/auto-super
            defmethod
            defmethod*
            methspec
@@ -1312,12 +1331,12 @@
                                       (list (quote-syntax intf) ...)))
                           (list body ...))))]))
 
-  (define-syntax (defconstructor stx)
+  (define-syntax (defconstructor*/* stx)
     (syntax-case stx ()
-      [(_ ([id . arg-rest] ...) desc ...)
+      [(_ mode ((arg ...) ...) desc ...)
        (let ([n (syntax-parameter-value #'current-class)])
          (with-syntax ([name n]
-                       [result (let ([s (quote-syntax (is-a/c n))])
+                       [result (let ([s (quote-syntax (is-a/c nm))])
                                  (datum->syntax-object s
                                                        (let ([l (syntax->list s)])
                                                          (cons (car l)
@@ -1325,12 +1344,39 @@
                                                                                            (syntax-e n)
                                                                                            (cadr l)))))
                                                        s))]
-                       [(kw ...) (map (lambda (id)
-                                        (string->keyword (symbol->string (syntax-e id))))
-                                      (syntax->list #'(id ...)))])
+                       [(((kw ...) ...) ...) (map (lambda (ids)
+                                                    (map (lambda (arg)
+                                                           (if (and (pair? (syntax-e arg))
+                                                                    (eq? (syntax-e #'mode) 'new))
+                                                               (list (string->keyword (symbol->string 
+                                                                                       (syntax-e 
+                                                                                        (car (syntax-e arg))))))
+                                                               null))
+                                                         (syntax->list ids)))
+                                                  (syntax->list #'((arg ...) ...)))])
            #'(make-constructor (lambda ()
-                                 (defproc* #:mode new #:within name [[(make [kw id . arg-rest] ...) result]]
+                                 (defproc* #:mode mode #:within name [[(make [kw ... . arg] ...) result] ...]
                                    desc ...)))))]))
+
+  (define-syntax (defconstructor stx)
+    (syntax-case stx ()
+      [(_ ([id . arg-rest] ...) desc ...)
+       #'(defconstructor*/* new (([id . arg-rest] ...)) desc ...)]))
+
+  (define-syntax (defconstructor/make stx)
+    (syntax-case stx ()
+      [(_ ([id . arg-rest] ...) desc ...)
+       #'(defconstructor*/* make (([id . arg-rest] ...)) desc ...)]))
+
+  (define-syntax (defconstructor*/make stx)
+    (syntax-case stx ()
+      [(_ (([id . arg-rest] ...) ...) desc ...)
+       #'(defconstructor*/* make (([id . arg-rest] ...) ...) desc ...)]))
+
+  (define-syntax (defconstructor/auto-super stx)
+    (syntax-case stx ()
+      [(_ ([id . arg-rest] ...) desc ...)
+       #'(defconstructor*/* new (([id . arg-rest] ... _...superclass-args...)) desc ...)]))
 
   (define-syntax (defmethod* stx)
     (syntax-case stx ()

@@ -21,74 +21,9 @@ All @scheme[area-container<%>] classes accept the following named
 
 
 
-
-@defmethod[(get-children)
-           (listof (is-a/c subarea<%>))]{
-Returns a list of the container's non-deleted children. (The non-deleted
- children are the ones currently managed by the container; deleted
- children are generally hidden.) The order of the children in the list
- is significant. For example, in a vertical panel, the first child in
- the list is placed at the top of the panel.
-
-}
-
-@defmethod[(change-children [filter ((listof (is-a/c subarea<%>)) . -> . (listof (is-a/c subarea<%>)))])
-           void?]{
-
-Takes a filter procedure and changes the container's list of
-non-deleted children. The filter procedure takes a list of
-children areas and returns a new list of children areas. The new
-list must consist of children that were created as subareas of
-this area (i.e., @method[area-container<%> change-children]
-cannot be used to change the parent of a subarea).
-
-After the set of non-deleted children is changed, the container computes
- the sets of newly deleted and newly non-deleted children. Newly deleted
- windows are hidden. Newly non-deleted windows are shown.
-
-Since non-window areas cannot be hidden, non-window areas cannot be
- deleted. If the filter procedure removes non-window subareas,
- an exception is raised and the set of non-deleted children is not changed.
-
-}
-
-@defmethod[(place-children [info (listof (list/c (integer-in 0 10000)
-                                                 (integer-in 0 10000)
-                                                 any/c
-                                                 any/c))]
-                           [width (integer-in 0 10000)]
-                           [height (integer-in 0 10000)])
-           (listof (list/c (integer-in 0 10000)
-                           (integer-in 0 10000)
-                           (integer-in 0 10000)
-                           (integer-in 0 10000)))]{
-
-Called to place the children of a container. See @|geomdiscuss|
- for more information.
-
-}
-
-@defmethod[(container-size [info (listof (list/c (integer-in 0 10000)
-                                                 (integer-in 0 10000)
-                                                 any/c
-                                                 any/c))])
-           (values (integer-in 0 10000) (integer-in 0 10000))]{
-
-Called to determine the minimum size of a container. See
- @|geomdiscuss| for more information.
-
-}
-
 @defmethod[(add-child [child (is-a/c subwindow<%>)])
            void?]{
 Add the given subwindow to the set of non-deleted children. See also
-@method[area-container<%> change-children].
-
-}
-
-@defmethod[(delete-child [child (is-a/c subwindow<%>)])
-           void?]{
-Removes the given subwindow from the list of non-deleted children.  See also
 @method[area-container<%> change-children].
 
 }
@@ -110,6 +45,21 @@ Does nothing.
 
 }}
 
+@defmethod[(begin-container-sequence)
+           void?]{
+Suspends geometry management in the container's top-level window
+ until
+@method[area-container<%> end-container-sequence] is called. The
+@method[area-container<%> begin-container-sequence] and 
+@method[area-container<%> end-container-sequence] methods are used to bracket a set of container modifications so that
+ the resulting geometry is computed only once.  A container sequence also 
+ delays show and hide actions by
+@method[area-container<%> change-children], as well as the on-screen part of showing via
+@method[window<%> show] until the sequence is complete.  Sequence begin and end commands may
+ be nested arbitrarily deep.
+
+}
+
 @defmethod*[([(border)
               (integer-in 0 1000)]
              [(border [margin (integer-in 0 1000)])
@@ -120,33 +70,62 @@ Gets or sets the border margin for the container in pixels. This
  locations and sizes of the subareas are computed.
 }
 
-@defmethod*[([(spacing)
-              (integer-in 0 1000)]
-             [(spacing [spacing (integer-in 0 1000)])
-              void?])]{
 
-Gets or sets the spacing, in pixels, used between subareas in the
- container. For example, a vertical panel inserts this spacing between
- each pair of vertically aligned subareas (with no extra space at the
- top or bottom).
+@defmethod[(change-children [filter ((listof (is-a/c subarea<%>)) . -> . (listof (is-a/c subarea<%>)))])
+           void?]{
+
+Takes a filter procedure and changes the container's list of
+non-deleted children. The filter procedure takes a list of
+children areas and returns a new list of children areas. The new
+list must consist of children that were created as subareas of
+this area (i.e., @method[area-container<%> change-children]
+cannot be used to change the parent of a subarea).
+
+After the set of non-deleted children is changed, the container computes
+ the sets of newly deleted and newly non-deleted children. Newly deleted
+ windows are hidden. Newly non-deleted windows are shown.
+
+Since non-window areas cannot be hidden, non-window areas cannot be
+ deleted. If the filter procedure removes non-window subareas,
+ an exception is raised and the set of non-deleted children is not changed.
+
 }
 
-@defmethod[(set-alignment [horiz-align (symbols/c right center left)]
-                          [vert-align (symbols/c bottom center top)])
+@defmethod[(container-flow-modified)
            void?]{
-Sets the alignment specification for a container, which determines how
- it positions its children when the container has leftover space (when
- a child was not stretchable in a particular dimension).
+Call this method when the result changes for an overridden flow-defining method, such as
+@method[area-container<%> place-children]. The call notifies the geometry manager that the placement of the
+ container's children needs to be recomputed. 
 
-When the container's horizontal alignment is @scheme['left], the
- children are left-aligned in the container and whitespace is inserted
- to the right.  When the container's horizontal alignment is
- @scheme['center], each child is horizontally centered in the
- container. When the container's horizontal alignment is
- @scheme['right], leftover whitespace is inserted to the left.
+The
+@method[area-container<%> reflow-container]method only recomputes child positions when the geometry manager
+ thinks that the placement has changed since the last computation.
 
-Similarly, a container's vertical alignment can be @scheme['top],
- @scheme['center], or @scheme['bottom].
+}
+
+@defmethod[(container-size [info (listof (list/c (integer-in 0 10000)
+                                                 (integer-in 0 10000)
+                                                 any/c
+                                                 any/c))])
+           (values (integer-in 0 10000) (integer-in 0 10000))]{
+
+Called to determine the minimum size of a container. See
+ @|geomdiscuss| for more information.
+
+}
+
+@defmethod[(delete-child [child (is-a/c subwindow<%>)])
+           void?]{
+Removes the given subwindow from the list of non-deleted children.  See also
+@method[area-container<%> change-children].
+
+}
+
+@defmethod[(end-container-sequence)
+           void?]{
+
+See
+@method[area-container<%> begin-container-sequence].
 
 }
 
@@ -158,6 +137,33 @@ Returns the container's current alignment specification. See
 @method[area-container<%> set-alignment] for more information.
 
 }
+
+@defmethod[(get-children)
+           (listof (is-a/c subarea<%>))]{
+Returns a list of the container's non-deleted children. (The non-deleted
+ children are the ones currently managed by the container; deleted
+ children are generally hidden.) The order of the children in the list
+ is significant. For example, in a vertical panel, the first child in
+ the list is placed at the top of the panel.
+
+}
+
+@defmethod[(place-children [info (listof (list/c (integer-in 0 10000)
+                                                 (integer-in 0 10000)
+                                                 any/c
+                                                 any/c))]
+                           [width (integer-in 0 10000)]
+                           [height (integer-in 0 10000)])
+           (listof (list/c (integer-in 0 10000)
+                           (integer-in 0 10000)
+                           (integer-in 0 10000)
+                           (integer-in 0 10000)))]{
+
+Called to place the children of a container. See @|geomdiscuss|
+ for more information.
+
+}
+
 
 @defmethod[(reflow-container)
            void?]{
@@ -186,38 +192,35 @@ See also @method[area-container<%> container-flow-modified].
 
 }
 
-@defmethod[(container-flow-modified)
+@defmethod[(set-alignment [horiz-align (symbols/c right center left)]
+                          [vert-align (symbols/c bottom center top)])
            void?]{
-Call this method when the result changes for an overridden flow-defining method, such as
-@method[area-container<%> place-children]. The call notifies the geometry manager that the placement of the
- container's children needs to be recomputed. 
+Sets the alignment specification for a container, which determines how
+ it positions its children when the container has leftover space (when
+ a child was not stretchable in a particular dimension).
 
-The
-@method[area-container<%> reflow-container]method only recomputes child positions when the geometry manager
- thinks that the placement has changed since the last computation.
+When the container's horizontal alignment is @scheme['left], the
+ children are left-aligned in the container and whitespace is inserted
+ to the right.  When the container's horizontal alignment is
+ @scheme['center], each child is horizontally centered in the
+ container. When the container's horizontal alignment is
+ @scheme['right], leftover whitespace is inserted to the left.
+
+Similarly, a container's vertical alignment can be @scheme['top],
+ @scheme['center], or @scheme['bottom].
 
 }
 
-@defmethod[(begin-container-sequence)
-           void?]{
-Suspends geometry management in the container's top-level window
- until
-@method[area-container<%> end-container-sequence] is called. The
-@method[area-container<%> begin-container-sequence] and 
-@method[area-container<%> end-container-sequence] methods are used to bracket a set of container modifications so that
- the resulting geometry is computed only once.  A container sequence also 
- delays show and hide actions by
-@method[area-container<%> change-children], as well as the on-screen part of showing via
-@method[window<%> show] until the sequence is complete.  Sequence begin and end commands may
- be nested arbitrarily deep.
+@defmethod*[([(spacing)
+              (integer-in 0 1000)]
+             [(spacing [spacing (integer-in 0 1000)])
+              void?])]{
 
+Gets or sets the spacing, in pixels, used between subareas in the
+ container. For example, a vertical panel inserts this spacing between
+ each pair of vertically aligned subareas (with no extra space at the
+ top or bottom).
 }
 
-@defmethod[(end-container-sequence)
-           void?]{
-
-See
-@method[area-container<%> begin-container-sequence].
-
-}}
+}
 

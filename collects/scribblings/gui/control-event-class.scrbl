@@ -7,11 +7,11 @@ A @scheme[control-event%] object contains information about a
  control event. An instance of @scheme[control-event%] is always
  provided to a control or menu item callback procedure.
 
-
-
-
-@defconstructor[[event-type (symbols/c tab-panel menu-popdown-none menu-popdown radio-box slider text-field-enter text-field list-box-dclick list-box choice check-box button)]
-                [time-stamp (and/c exact? integer?) 0]]{
+@defconstructor[([event-type (one-of/c 'button 'check-box 'choice
+                                       'list-box 'list-box-dclick 'text-field 
+                                       'text-field-enter 'slider 'radio-box 
+                                       'menu-popdown 'menu-popdown-none 'tab-panel)]
+                [time-stamp (and/c exact? integer?) 0])]{
 
 The @scheme[event-type] argument is one of the following:
 @itemize{
@@ -34,33 +34,29 @@ This value is extracted out of a @scheme[control-event%] object with
  the
 @method[control-event% get-event-type] method.
 
-See the corresponding @scheme[get-] and @scheme[set-] methods for
- information about @scheme[time-stamp].
-
-
+See @method[event% get-time-stamp] for information about
+@scheme[time-stamp].
 
 }
 
 @defmethod[(get-event-type)
-           (symbols/c radio-box slider menu text-field-enter text-field list-box-dclick list-box choice check-box button)]{
-@spec{
-
+           (one-of/c 'button 'check-box 'choice
+                     'list-box 'list-box-dclick 'text-field 
+                     'text-field-enter 'slider 'radio-box 
+                     'menu-popdown 'menu-popdown-none 'tab-panel)]{
 Returns the type of the control event. See
 @scheme[control-event%] for information about each event type symbol.
 
-}}
+}
 
-@defmethod[(set-event-type [type (symbols/c radio-box slider menu text-field-enter text-field list-box-dclick list-box choice check-box button)])
+@defmethod[(set-event-type
+            [type (one-of/c 'button 'check-box 'choice
+                            'list-box 'list-box-dclick 'text-field 
+                            'text-field-enter 'slider 'radio-box 
+                            'menu-popdown 'menu-popdown-none 'tab-panel)])
            void?]{
-@spec{
 
 Sets the type of the event. See
 @scheme[control-event%] for information about each event type symbol.
 
-}
-@impl{
-
-
-
-}}}
-
+}}

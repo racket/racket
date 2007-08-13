@@ -1,6 +1,9 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
+@define[lbnumnote @elem{List box items are indexed from @scheme[0].}]
+
+
 @defclass[list-box% object% (list-control<%>)]{
 
 A list box allows the user to select one or more string items from a
@@ -13,36 +16,35 @@ Whenever the user changes the selection in a list box, the list box's
  callback procedure is called. A callback procedure is provided as an
  initialization argument when each list box is created.
 
-\newcommand{\lbnumnote}[0]{List box items are indexed from
-@scheme[0].}
+@|lbnumnote|
 
-{\lbnumnote}
-
-See also 
-@scheme[choice%].
+See also @scheme[choice%].
 
 
 
+@defconstructor[([label (or/c label-string? false/c)]
+                 [choices (listof label-string?)]
+                 [parent (or/c (is-a/c frame%) (is-a/c dialog%) 
+                               (is-a/c panel%) (is-a/c pane%))]
+                 [callback ((is-a/c list-box%) (is-a/c control-event%) . -> . any) 
+                           (lambda (c e) (void))]
+                 [style (listof (one-of/c 'single 'multiple 'extended 
+                                          'vertical-label 'horizontal-label 
+                                          'deleted)) 
+                        '(single)]
+                 [selection (or/c nonnegative-exact-integer? false/c) #f]
+                 [font (is-a/c font%) @scheme[view-control-font]]
+                 [label-font (is-a/c font%) @scheme[normal-control-font]]
+                 [enabled any/c #t]
+                 [vert-margin (integer-in 0 1000) 2]
+                 [horiz-margin (integer-in 0 1000) 2]
+                 [min-width (integer-in 0 10000) _graphical-minimum-width]
+                 [min-height (integer-in 0 10000) _graphical-minimum-height]
+                 [stretchable-width any/c #t]
+                 [stretchable-height any/c #t])]{
 
-@defconstructor[[label (or/c label-string? false/c)]
-                [choices list of {\labelstrings}]
-                [parent (or/c (is-a/c frame%) (is-a/c dialog%) (is-a/c panel%) (is-a/c pane%))]
-                [callback procedure of two arguments: a @scheme[list-box%] object and a @scheme[control-event%] object @scheme[(\scmk{lambda] (@scheme[lb] @scheme[e]) (void))}]
-                [style (symbols/c deleted horizontal-label vertical-label extended multiple single) '(single)]
-                [selection (or/c nonnegative-exact-integer? false/c) #f]
-                [font (is-a/c font%) @scheme[view-control-font]]
-                [label-font (is-a/c font%) @scheme[normal-control-font]]
-                [enabled any/c #t]
-                [vert-margin (integer-in 0 1000) 2]
-                [horiz-margin (integer-in 0 1000) 2]
-                [min-width (integer-in 0 10000) {\rm graphical minimum width}]
-                [min-height (integer-in 0 10000) {\rm graphical minimum height}]
-                [stretchable-width any/c #t]
-                [stretchable-height any/c #t]]{
-
-If @scheme[label] is not @scheme[#f], it is used as the list box label.
- Otherwise, the list box will not display its
- label. 
+If @scheme[label] is not @scheme[#f], it is used as the list box
+ label.  Otherwise, the list box will not display its label.
 
 @labelstripped[(scheme label) @elem{} @elem{move the keyboard focus to the list box}]
 
@@ -81,7 +83,7 @@ The @scheme['multiple] and @scheme['extended] styles determine a
  user can deselect the (sole) selected item in a @scheme['single] list
  box.
 
-\HVLabelNote{list box} \DeletedStyleNote{list box}
+@HVLabelNote{list box} @DeletedStyleNote{list box}
 
 If @scheme[selection] is an integer, it is passed to
 @method[list-control<%> set-selection] to set the initial selection. The @scheme[selection] must be less than
@@ -89,15 +91,13 @@ If @scheme[selection] is an integer, it is passed to
 
 @FontLabelKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]
 
-
-
 }
+
 
 @defmethod[#:mode 'add 
            (append [item string]
-                   [data value])
+                   [data any/c])
            void?]{
-@impl{
 
 Adds a new item to the list box with an associated ``data'' object.
  The @scheme[data] object is not displayed in the list box; it is
@@ -105,166 +105,85 @@ Adds a new item to the list box with an associated ``data'' object.
 @method[list-box% get-data], possibly allowing a programmer to avoid managing a separate
  item-to-data mapping in addition to the list box control.
 
+}
 
-
-}}
 
 @defmethod[(delete [n nonnegative-exact-integer?])
            void?]{
-@spec{
 
-Deletes a choice from the list box. Selected items that are not
- deleted remain selected, and no other items are selected.
+Deletes the item indexed by @scheme[n]. @|lbnumnote| If @scheme[n] is equal
+ to or larger than the number of items in the control, @|MismatchExn|.
+
+Selected items that are not deleted remain selected, and no other
+ items are selected.
 
 }
-@impl{
-
-Deletes the item indexed by @scheme[n]. {\lbnumnote} If @scheme[n] is equal
- to or larger than the number of items in the control, @|MismatchExn|}.
-
-
-}}
 
 @defmethod[(get-data [n nonnegative-exact-integer?])
-           value]{
-@spec{
+           any/c]{
 
-Returns the data value associated with a list box item, or @scheme[#f]
- if there is no associated data. See also
-@method[list-box% append] and
-@method[list-box% set-data].
+Returns the data for the item indexed by @scheme[n], or @scheme[#f]
+ if there is no associated data. @|lbnumnote| If
+ @scheme[n] is equal to or larger than the number of choices,
+ @|MismatchExn|.
+
+See also @method[list-box% append] and @method[list-box% set-data].
 
 }
-@impl{
-
-Returns the data for the item indexed by @scheme[n]. {\lbnumnote} If
- @scheme[n] is equal to or larger than the number of choices,
- @|MismatchExn|}.
 
 
+@defmethod[(get-first-visible-item)
+           nonnegative-exact-integer?]{
 
-}}
+Reports the index of the item currently scrolled to the top of the
+ list box. @|lbnumnote|
+
+}
+
+@defmethod[(get-label-font)
+           (is-a/c font%)]{
+
+Returns the font used for the control's label, which is optionally
+ supplied when a list box is created.
+
+}
 
 @defmethod[(get-selections)
-           list of {\Ints}]{
-@spec{
+           (listof nonnegative-exact-integer?)]{
 
 Returns a list of indices for all currently selected items.
- {\lbnumnote}
+ @|lbnumnote|
 
 For single-selection lists, the result is always either @scheme[null] or
  a list containing one number.
 
-}}
+}
+
+
+@defmethod[(is-selected? [n nonnegative-exact-integer?])
+           boolean?]{
+
+Returns @scheme[#t] if the item index by @scheme[n] is selected,
+ @scheme[#f] otherwise. @|lbnumnote| If @scheme[n] is equal to or
+ larger than the number of choices, @|MismatchExn|.
+
+
+@MonitorCallback[@elem{A list box's selection} @elem{the user clicking the control} @elem{selection}]
+
+}
 
 @defmethod[(number-of-visible-items)
            positive-exact-integer?]{
-@spec{
 
 Returns the maximum number of items in the list box that are visible
  to the user with the control's current size (rounding down if the
  exact answer is fractional, but returning at least @scheme[1]).
 
-}}
-
-@defmethod[(is-selected? [n nonnegative-exact-integer?])
-           boolean?]{
-@spec{
-
-Returns @scheme[#t] if the item matching the specifies index is
- selected, @scheme[#f] otherwise.
-
-@MonitorCallback[@elem{A list box's selection} @elem{the user clicking the control} @elem{selection}]
-
 }
-@impl{
-
-Returns @scheme[#t] if the item index by @scheme[n] is
- selected. {\lbnumnote} If @scheme[n] is equal to or larger than the
- number of choices, @|MismatchExn|}.
-
-
-
-}}
-
-@defmethod[(set [choices list of {\labelstrings}])
-           void?]{
-@spec{
-
-Clears the list box and installs a new list of items.
-
-}}
-
-@defmethod[(set-data [n nonnegative-exact-integer?]
-                     [data value])
-           void?]{
-@spec{
-
-Sets the associated data for a list box choice item. See also
-@method[list-box% append].
-
-}
-@impl{
-
-Sets the associated data for item indexed by @scheme[n]. {\lbnumnote} If
- @scheme[n] is equal to or larger than the number of choices,
- @|MismatchExn|}.
-
-
-
-}}
-
-@defmethod[(set-string [n nonnegative-exact-integer?]
-                       [label label-string?])
-           void?]{
-@spec{
-
-Changes an item in the list box.
-
-}
-@impl{
-
-Sets the item indexed by @scheme[n]. {\lbnumnote} If @scheme[n] is equal to
- or larger than the number of choices, @|MismatchExn|}.
-
-
-
-}}
-
-@defmethod[(get-first-visible-item)
-           nonnegative-exact-integer?]{
-@spec{
-
-Reports the index of the item currently scrolled to the top of the
- list box. {\lbnumnote}
-
-}}
-
-@defmethod[(set-first-visible-item [n nonnegative-exact-integer?])
-           void?]{
-@spec{
-
-Scrolls the list box so that the specified item is at the top of the
- list box display.
-
-@Unmonitored[@elem{A list box's scroll position} @elem{the user clicking the control} @elem{the scroll position
- changes} @elem{@method[list-box% get-first-visible-item]}]
-
-}
-@impl{
-
-Shows the item indexed by @scheme[n] at the list box's top. {\lbnumnote}
- If @scheme[n] is equal to or larger than the number of choices,
- @|MismatchExn|}.
-
-
-
-}}
 
 @defmethod[(select [n nonnegative-exact-integer?]
                    [select? any/c #t])
            void?]{
-@spec{
 
 Selects or deselects an item. For selection in a single-selection list
  box, if a different choice is currently selected, it is automatically
@@ -272,32 +191,57 @@ Selects or deselects an item. For selection in a single-selection list
  selections are preserved, unlike
 @method[list-control<%> set-selection].
 
+If @scheme[select?] is @scheme[#f], the item indexed by @scheme[n] is
+ deselected; otherwise it is selected. @|lbnumnote| If @scheme[n] is
+ equal to or larger than the number of choices, @|MismatchExn|.
+
 @MonitorCallback[@elem{A list box's selection} @elem{the user clicking the control} @elem{selection}]
 
-The control's callback procedure is {\em not} invoked.
+The control's callback procedure is @italic{not} invoked.
 
 }
-@impl{
-
-If @scheme[select?] is @scheme[#f], the item indexed by @scheme[n] is
- deselected; otherwise it is selected. {\lbnumnote} If @scheme[n] is
- equal to or larger than the number of choices, @|MismatchExn|}.
 
 
+@defmethod[(set [choices (listof label-string?)])
+           void?]{
 
-}}
-
-@defmethod[(get-label-font)
-           (is-a/c font%)]{
-@spec{
-
-Returns the font used for the control's label, which is optionally
- supplied when a list box is created.
+Clears the list box and installs a new list of items.
 
 }
-@impl{
 
 
+@defmethod[(set-data [n nonnegative-exact-integer?]
+                     [data any/c])
+           void?]{
 
-}}}
+Sets the associated data for item indexed by @scheme[n]. @|lbnumnote| If
+ @scheme[n] is equal to or larger than the number of choices,
+ @|MismatchExn|.
 
+See also @method[list-box% append].
+
+}
+
+
+@defmethod[(set-first-visible-item [n nonnegative-exact-integer?])
+           void?]{
+
+Scrolls the list box so that the item indexed by @scheme[n] is at the
+ top of the list box display. @|lbnumnote| If @scheme[n] is equal to
+ or larger than the number of choices, @|MismatchExn|.
+
+@Unmonitored[@elem{A list box's scroll position} @elem{the user clicking the control} @elem{the scroll position
+ changes} @elem{@method[list-box% get-first-visible-item]}]
+
+}
+
+
+@defmethod[(set-string [n nonnegative-exact-integer?]
+                       [label label-string?])
+           void?]{
+
+Sets the item indexed by @scheme[n]. @|lbnumnote| If @scheme[n] is
+equal to or larger than the number of choices, @|MismatchExn|.
+
+}
+}
