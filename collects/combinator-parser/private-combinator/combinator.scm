@@ -113,7 +113,7 @@
                                name (res-id r) (res-used r)
                                (res-possible-error r)
                                (res-first-tok r))]
-                    [(repeat-res? r)
+                    [(and (repeat-res? r) (res? repeat-res-a r))
                      (make-res (list (build (res-a (repeat-res-a r))))
                                (res-rest (repeat-res-a r))
                                name (res-id (repeat-res-a r))
@@ -160,7 +160,7 @@
                      (make-res (append a (res-a rst)) (res-rest rst)
                                seq-name (or id (res-id rst))
                                (+ used (res-used rst)) (res-possible-error rst) tok)]
-                    [(repeat-res? rst)
+                    [(and (repeat-res? rst) (res? (repeat-res-a rst)))
                      (make-res (append a (res-a (repeat-res-a rst)))
                                (res-rest (repeat-res-a rst)) seq-name
                                (or id (res-id (repeat-res-a rst)))
@@ -175,33 +175,36 @@
                          [id-spot? (= id-position (add1 (length seen)))]
                          [next-call
                           (lambda (old-result curr curr-name new-id tok alts)
-                            (let* ([old-answer (res-a old-result)]
-                                   [rest (res-rest old-result)]
-                                   [old-used (res-used old-result)]
-                                   [rsts (walker next-preds rest curr-pred curr 
-                                                 (or new-id curr-id) (cons curr-name seen) 
-                                                 (+ old-used used) alts 
-                                                 (if (and src? (res-first-tok old-result)) 
-                                                     (make-src-lst (position-token-start-pos (res-first-tok old-result))
-                                                                   (position-token-end-pos (res-first-tok old-result)))
-                                                     last-src))])
-                              #;(printf "next-call ~a ~a: ~a ~a ~a ~a~n" 
-                                      seq-name (length seen) old-result (res? rsts)
-                                      (and (res? rsts) (res-a rsts))
-                                      (and (res? rsts) (choice-fail? (res-possible-error rsts))))
-                              (cond
-                                [(and (res? rsts) (res-a rsts))
-                                 (next-res old-answer new-id old-used tok rsts)]
-                                [(res? rsts) (fail-res rest (res-msg rsts))]
-                                [(pair? rsts)
-                                 (map (lambda (rst) (next-res old-answer new-id old-used tok rst))
-                                      (correct-list rsts))]
-                                [(choice-res? rsts)
-                                 (map (lambda (rst) (next-res old-answer new-id old-used tok rst))
-                                      (correct-list (choice-res-matches rsts)))]
-                                [(repeat-res? rsts)
-                                 (next-res old-answer new-id old-used tok rsts)]
-                                [else (error 'parser-internal-error3 (format "~a" rsts))])))])
+                            (cond 
+                              [(res? old-result)
+                               (let* ([old-answer (res-a old-result)]
+                                      [rest (res-rest old-result)]
+                                      [old-used (res-used old-result)]
+                                      [rsts (walker next-preds rest curr-pred curr 
+                                                    (or new-id curr-id) (cons curr-name seen) 
+                                                    (+ old-used used) alts 
+                                                    (if (and src? (res-first-tok old-result)) 
+                                                        (make-src-lst (position-token-start-pos (res-first-tok old-result))
+                                                                      (position-token-end-pos (res-first-tok old-result)))
+                                                        last-src))])
+                                 #;(printf "next-call ~a ~a: ~a ~a ~a ~a~n" 
+                                           seq-name (length seen) old-result (res? rsts)
+                                           (and (res? rsts) (res-a rsts))
+                                           (and (res? rsts) (choice-fail? (res-possible-error rsts))))
+                                 (cond
+                                   [(and (res? rsts) (res-a rsts))
+                                    (next-res old-answer new-id old-used tok rsts)]
+                                   [(res? rsts) (fail-res rest (res-msg rsts))]
+                                   [(pair? rsts)
+                                    (map (lambda (rst) (next-res old-answer new-id old-used tok rst))
+                                         (flatten (correct-list rsts)))]
+                                   [(choice-res? rsts)
+                                    (map (lambda (rst) (next-res old-answer new-id old-used tok rst))
+                                         (flatten (correct-list (choice-res-matches rsts))))]
+                                   [(repeat-res? rsts)
+                                    (next-res old-answer new-id old-used tok rsts)]
+                                   [else (error 'parser-internal-error3 (format "~a" rsts))]))]
+                              [else (error 'parser-internal-error11 (format "~a" old-result))]))])
                     (cond
                       [(null? subs) (error 'end-of-subs)]
                       [(null? next-preds)
@@ -322,11 +325,12 @@
       (letrec ([repeat->res
                 (lambda (rpt back)
                   (cond 
-                    [(pair? rpt) (map (lambda (r) (repeat->res r back)) rpt)]
-                    [(repeat-res? rpt)
+                    [(pair? rpt) (map (lambda (r) (repeat->res r back)) (flatten rpt))]
+                    [(and (repeat-res? rpt) (res? (repeat-res-a rpt)))
                      (let ([inn (repeat-res-a rpt)]
                            [stop (repeat-res-stop rpt)])
                        #;(printf "in repeat->res for ~a~n" name)
+                       #;(printf "repeat-res-a res ~a~n" (res? inn))
                        #;(printf "fail-type? stop ~a~n" (fail-type? stop))
                        #;(printf "stop ~a~n" stop)
                        #;(printf "choice-res? back ~a~n" (choice-res? back))
@@ -364,7 +368,7 @@
              (repeat->res old-res look-back)]
             [(pair? old-res) 
              #;(!!! (printf "finished on pairs of res for ~a~n" name #;old-res))
-             (map (lambda (r) (repeat->res r look-back)) old-res)]
+             (map (lambda (r) (repeat->res r look-back)) (flatten old-res))]
             [else
              #;(printf "There actually was an error for ~a~n" name)
              (fail-res (res-rest old-res)
@@ -489,27 +493,31 @@
                   (cond 
                     [(repeat-res? rest-ans)
                      #;(printf "building up the repeat answer for ~a~n" repeat-name)
-                     (let* ([a (res-a curr-ans)]
-                            [rest (repeat-res-a rest-ans)]
-                            [repeat-build
-                             (lambda (r)
-                               (cond
-                                 [(res? r)
-                                  #;(printf "rest is a res for ~a~n" repeat-name)
-                                  (make-repeat-res
-                                   (make-res (append a (res-a r)) (res-rest r) repeat-name #f 
-                                             (+ (res-used curr-ans) (res-used r)) 
-                                             #f (res-first-tok curr-ans))
-                                   (repeat-res-stop rest-ans))]
-                                 [else
-                                  (error 'parser-internal-error9 (format "~a" r))]))])
-                       (cond
-                         [(and (pair? rest) (null? (cdr rest)))
-                          #;(printf "rest is a one-element list for ~a~n" repeat-name)
-                          (repeat-build (car rest))]
-                         [(pair? rest)
-                          (map repeat-build (flatten rest))]
-                         [else (repeat-build rest)]))]
+                     (cond 
+                       [(res? curr-ans)
+                        (let* ([a (res-a curr-ans)]
+                               [rest (repeat-res-a rest-ans)]
+                               [repeat-build
+                                (lambda (r)
+                                  (cond
+                                    [(res? r)
+                                     #;(printf "rest is a res for ~a~n" repeat-name)
+                                     (make-repeat-res
+                                      (make-res (append a (res-a r)) (res-rest r) repeat-name #f 
+                                                (+ (res-used curr-ans) (res-used r)) 
+                                                #f (res-first-tok curr-ans))
+                                      (repeat-res-stop rest-ans))]
+                                    [else
+                                     (error 'parser-internal-error9 (format "~a" r))]))])
+                          (cond
+                            [(and (pair? rest) (null? (cdr rest)))
+                             #;(printf "rest is a one-element list for ~a~n" repeat-name)
+                             (repeat-build (car rest))]
+                            [(pair? rest)
+                             #;(printf "rest is a pair for ~a ~a~n" repeat-name (length rest))
+                             (map repeat-build (flatten rest))]
+                            [else (repeat-build rest)]))]
+                       [else (error 'parser-internal-error12 (format "~a" curr-ans))])]
                     [(pair? rest-ans)
                      (map (lambda (r) (process-rest curr-ans r)) (flatten rest-ans))]
                     [else (error 'parser-internal-error10 (format "~a" rest-ans))]))]
@@ -527,6 +535,8 @@
             [else
              (let ([ans
                     (let loop ([curr-input input] [curr-src start-src])
+                      #;(printf "length of curr-input for ~a ~a~n" repeat-name (length curr-input))
+                      #;(printf "curr-input ~a~n" (map position-token-token curr-input))
                       (cond 
                         [(null? curr-input) 
                          #;(printf "out of input for ~a~n" repeat-name)
@@ -557,7 +567,7 @@
                                             (res-rest (repeat-res-a this-res)))]
                              [(or (choice-res? this-res) (pair? this-res))
                               (let ([list-of-answer
-                                     (if (choice-res? this-res) (choice-res-matches this-res) this-res)])
+                                     (if (choice-res? this-res) (choice-res-matches this-res) (flatten this-res))])
                                 #;(printf "repeat call of ~a, choice-res ~a~n" 
                                         repeat-name
                                         (and (choice-res? this-res) 
@@ -575,7 +585,7 @@
                                         list-of-answer)]))]
                              [else (error 'internal-parser-error8 (format "~a" this-res))]))]))])
                (hash-table-put! memo-table input ans)
-               #;(!!! (printf "repeat of ~a ended with ans ~a ~n" repeat-name ans))
+               #;(!!! (printf "repeat of ~a ended with ans  ~n" repeat-name #;ans))
                ans)]))))
     
     ;choice: [list [[list 'a ] -> result]] name -> result
@@ -675,7 +685,7 @@
               (loop (cdr in) correct (cons (res-msg (car in)) incorrect))]
              [else (error 'split-list (car in))])]
           [(null? in) 
-           (values correct incorrect)])))
+           (values (flatten correct) (flatten incorrect))])))
     
     (define (src-list src-s src-e)
       (list (position-line src-s)
