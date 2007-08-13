@@ -7,10 +7,16 @@
            "../private/util.ss"
            "../private/request-structs.ss"
            "../private/response-structs.ss"
+           "../servlet/helpers.ss"
            "../private/response.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?])
   (provide make)
+  
+  ;; looks-like-directory : str -> bool
+  ;; to determine if is url style path looks like it refers to a directory
+  (define (looks-like-directory? path)
+    (eq? #\/ (string-ref path (sub1 (string-length path)))))
   
   (define interface-version 'v1)
   (define/kw (make #:key 
@@ -46,14 +52,18 @@
                         r)
                (output-file conn path method (path->mime-type path)
                             0 +inf.0)])])]
-        [(and (directory-exists? path))
-         (let/ec esc
-           (for-each (lambda (dir-default)
-                       (define full-name (build-path path dir-default))
-                       (when (file-exists? full-name)
-                         (esc (output-file conn full-name method (path->mime-type full-name)
-                                           0 +inf.0))))
-                     indices)
-           (next-dispatcher))]
+        [(directory-exists? path)
+         (if (looks-like-directory? (url-path->string (url-path uri)))
+             (let/ec esc
+               (for-each (lambda (dir-default)
+                           (define full-name (build-path path dir-default))
+                           (when (file-exists? full-name)
+                             (esc (output-file conn full-name method (path->mime-type full-name)
+                                               0 +inf.0))))
+                         indices)
+               (next-dispatcher))
+             (output-response 
+              conn
+              (redirect-to (string-append (url-path->string (url-path uri)) "/"))))]
         [else
          (next-dispatcher)]))))
