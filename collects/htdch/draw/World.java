@@ -1,7 +1,7 @@
 package draw;
-        
+
 public abstract class World {
-    protected Canvas theCanvas;
+    protected Canvas theCanvas = null; // can I do better here? 
     
     /** 
      *@author Matthias Felleisen, Kathy Gray 

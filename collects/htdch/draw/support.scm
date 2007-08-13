@@ -182,7 +182,6 @@
         (define (on-event world0 th)
           (begin-draw-sequence)
           (send theCanvas copy)
-          ;(send world0 erase)
           (let ([world (imperative (th) world0)])
 	    (unless (eq? world0 world)
 	      (setCanvas world theCanvas))
