@@ -8,8 +8,8 @@ A vertical pane arranges its subwindows in a single column. See also @scheme[pan
 
 
 
-@defconstructor[([parent (or/c (is-a/c frame%) (is-a/c dialog%) 
-                               (is-a/c panel%) (is-a/c pane%))]
+@defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
+                               (is-a?/c panel%) (is-a?/c pane%))]
                  [vert-margin (integer-in 0 1000) 0]
                  [horiz-margin (integer-in 0 1000) 0]
                  [border (integer-in 0 1000) 0]

@@ -29,7 +29,7 @@ Generic data is always retrieved from the clipboard as a byte
 
 
 @defmethod[(get-clipboard-bitmap [time (and/c exact? integer?)])
-           (or/c (is-a/c bitmap%) false/c)]{
+           (or/c (is-a?/c bitmap%) false/c)]{
 
 Gets the current clipboard contents as a bitmap (Windows, Mac OS X),
  returning @scheme[#f] if the clipboard does not contain a bitmap.
@@ -80,7 +80,7 @@ See @|timediscuss| for a discussion of the @scheme[time] argument.  If
 
 }
 
-@defmethod[(set-clipboard-bitmap [new-bitmap (is-a/c bitmap%)]
+@defmethod[(set-clipboard-bitmap [new-bitmap (is-a?/c bitmap%)]
                                  [time (and/c exact? integer?)])
            void?]{
 
@@ -93,7 +93,7 @@ See @|timediscuss| for
 
 }
 
-@defmethod[(set-clipboard-client [new-owner (is-a/c clipboard-client%)]
+@defmethod[(set-clipboard-client [new-owner (is-a?/c clipboard-client%)]
                                  [time (and/c exact? integer?)])
            void?]{
 

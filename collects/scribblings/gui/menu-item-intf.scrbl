@@ -28,7 +28,7 @@ See also @method[menu-item<%> restore].
 }
 
 @defmethod[(get-parent)
-           (or/c (is-a/c menu%) (is-a/c popup-menu%) (is-a/c menu-bar%))]{
+           (or/c (is-a?/c menu%) (is-a?/c popup-menu%) (is-a?/c menu-bar%))]{
 
 Returns the menu, popup menu, or menu bar containing the item. The
  parent for a menu item is specified when the menu item is created,

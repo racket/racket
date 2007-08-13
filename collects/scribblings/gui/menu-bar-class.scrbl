@@ -10,8 +10,8 @@ A @scheme[menu-bar%] object is created for a particular
 
 
 
-@defconstructor[([parent (or/c (is-a/c frame%) (one-of/c 'root))]
-                 [demand-callback ((is-a/c menu-bar%) . -> . any) (lambda (m) (void))])]{
+@defconstructor[([parent (or/c (is-a?/c frame%) (one-of/c 'root))]
+                 [demand-callback ((is-a?/c menu-bar%) . -> . any) (lambda (m) (void))])]{
 
 Creates a menu bar in the specified frame. The menu bar is initially
  empty. If @indexed-scheme['root] is supplied as @scheme[parent], the
@@ -39,7 +39,7 @@ Enables or disables the menu bar (i.e., all of its menus).  Each
 
 
 @defmethod[(get-frame)
-           (is-a/c frame%)]{
+           (is-a?/c frame%)]{
 
 Returns the menu bar's frame.
 

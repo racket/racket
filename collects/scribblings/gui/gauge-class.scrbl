@@ -12,13 +12,13 @@ of the gauge.
 
 @defconstructor[([label (or/c label-string? false/c)]
                  [range (integer-in 1 10000)]
-                 [parent (or/c (is-a/c frame%) (is-a/c dialog%) 
-                               (is-a/c panel%) (is-a/c pane%))]
+                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
+                               (is-a?/c panel%) (is-a?/c pane%))]
                  [style (listof (one-of/c 'horizontal 'vertical 
                                           'vertical-label 'horizontal-label 
                                           'deleted)) 
                         '(horizontal)]
-                 [font (is-a/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) @scheme[normal-control-font]]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
@@ -30,7 +30,7 @@ of the gauge.
 If @scheme[label] is a string, it is used as the gauge label; otherwise
  the gauge does not display a label.
 
-@labelstripped[(scheme label) "" @elem{gauge}]
+@labelsimplestripped[(scheme label) @elem{gauge}]
 
 The @scheme[range] argument is an integer specifying the maximum value of
  the gauge (inclusive). The minimum gauge value is always @scheme[0].

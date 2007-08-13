@@ -7,21 +7,18 @@ A @scheme[menu-item-container<%>] object is a @scheme[menu%],
  @scheme[popup-menu%], or @scheme[menu-bar%].
 
 
-
-
 @defmethod[(get-items)
-           list of @scheme[menu-item<%>] objects]{
-@spec{
-
+           (listof (is-a?/c menu-item<%>))]{
 Returns a list of the items in the menu, popup menu, or menu bar. The
  order of the items in the returned list corresponds to the order as
  the user sees them in the menu or menu bar.
 
-}}
+}
+
 
 @defmethod[(on-demand)
            void?]{
-@spec{
+@methspec{
 
 Called when the user clicks on the container as a menu bar (before the
  user sees any menu items), just before the container as a popup menu
@@ -29,22 +26,19 @@ Called when the user clicks on the container as a menu bar (before the
  item for a shortcut key binding.
 
 If the container is not a menu bar or a popup menu, this method is
- normally called via the
-@method[menu-item-container<%> on-demand] method of the container's owning menu bar or popup menu, because the
+ normally called via the @method[menu-item-container<%> on-demand]
+ method of the container's owning menu bar or popup menu, because the
  default implementation of the method chains to the
-@method[labelled-menu-item<%> on-demand] method of its items. However, the method can be overridden in a
- container such that it does not call the
-@method[labelled-menu-item<%> on-demand] method of its items.
+ @method[labelled-menu-item<%> on-demand] method of its
+ items. However, the method can be overridden in a container such that
+ it does not call the @method[labelled-menu-item<%> on-demand] method
+ of its items.
 
 }
-@impl{
+@methimpl{
 
-Calls the @scheme[demand-callback] procedure that was provided when the
- object was created, then calls the 
-@method[labelled-menu-item<%> on-demand] method of the contained items.
-
-
-
+Calls the @scheme[demand-callback] procedure that was provided when
+ the object was created, then calls the @method[labelled-menu-item<%>
+ on-demand] method of the contained items.
 
 }}}
-

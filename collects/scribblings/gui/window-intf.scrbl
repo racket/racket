@@ -93,7 +93,7 @@ See also
 
 
 @defmethod[(get-cursor)
-           (or/c (is-a/c cursor%) false/c)]{
+           (or/c (is-a?/c cursor%) false/c)]{
 
 Returns the window's cursor, or @scheme[#f] if this window's cursor
  defaults to the parent's cursor.  See
@@ -136,7 +136,8 @@ See also
 }
 
 @defmethod[(get-label)
-           (or/c {\labelstring}, @scheme[bitmap%] object, @scheme['app], @scheme['caution], @scheme['stop], false/c)]{
+           (or/c label-string? (is-a?/c bitmap%)
+                 (one-of/c 'app 'caution 'stop) false/c)]{
 
 Gets a window's label, if any. Control windows generally display their
  label in some way. Frames and dialogs display their label as a window
@@ -331,8 +332,8 @@ Does nothing.
 
 }}
 
-@defmethod[(on-subwindow-char [receiver (is-a/c window<%>)]
-                              [event (is-a/c key-event%)])
+@defmethod[(on-subwindow-char [receiver (is-a?/c window<%>)]
+                              [event (is-a?/c key-event%)])
            boolean?]{
 @methspec{
 
@@ -363,8 +364,8 @@ Returns @scheme[#f].
 
 }}
 
-@defmethod[(on-subwindow-event [receiver (is-a/c window<%>)]
-                               [event (is-a/c mouse-event%)])
+@defmethod[(on-subwindow-event [receiver (is-a?/c window<%>)]
+                               [event (is-a?/c mouse-event%)])
            boolean?]{
 @methspec{
 
@@ -430,7 +431,7 @@ This method is not called when the window is initially created; it is
 
 }
 
-@defmethod[(popup-menu [menu (is-a/c popup-menu%)]
+@defmethod[(popup-menu [menu (is-a?/c popup-menu%)]
                        [x (integer-in 0 10000)]
                        [y (integer-in 0 10000)])
            void?]{
@@ -460,7 +461,7 @@ local coordinates.
 }
 
 
-@defmethod[(set-cursor [cursor (or/c (is-a/c cursor%) false/c)])
+@defmethod[(set-cursor [cursor (or/c (is-a?/c cursor%) false/c)])
            void?]{
 
 Sets the window's cursor. Providing @scheme[#f] instead of a cursor

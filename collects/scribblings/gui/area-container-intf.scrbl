@@ -21,14 +21,14 @@ All @scheme[area-container<%>] classes accept the following named
 
 
 
-@defmethod[(add-child [child (is-a/c subwindow<%>)])
+@defmethod[(add-child [child (is-a?/c subwindow<%>)])
            void?]{
 Add the given subwindow to the set of non-deleted children. See also
 @method[area-container<%> change-children].
 
 }
 
-@defmethod[(after-new-child [child (is-a/c subarea<%>)])
+@defmethod[(after-new-child [child (is-a?/c subarea<%>)])
            void?]{
 @methspec{
 
@@ -71,7 +71,7 @@ Gets or sets the border margin for the container in pixels. This
 }
 
 
-@defmethod[(change-children [filter ((listof (is-a/c subarea<%>)) . -> . (listof (is-a/c subarea<%>)))])
+@defmethod[(change-children [filter ((listof (is-a?/c subarea<%>)) . -> . (listof (is-a?/c subarea<%>)))])
            void?]{
 
 Takes a filter procedure and changes the container's list of
@@ -114,7 +114,7 @@ Called to determine the minimum size of a container. See
 
 }
 
-@defmethod[(delete-child [child (is-a/c subwindow<%>)])
+@defmethod[(delete-child [child (is-a?/c subwindow<%>)])
            void?]{
 Removes the given subwindow from the list of non-deleted children.  See also
 @method[area-container<%> change-children].
@@ -139,7 +139,7 @@ Returns the container's current alignment specification. See
 }
 
 @defmethod[(get-children)
-           (listof (is-a/c subarea<%>))]{
+           (listof (is-a?/c subarea<%>))]{
 Returns a list of the container's non-deleted children. (The non-deleted
  children are the ones currently managed by the container; deleted
  children are generally hidden.) The order of the children in the list

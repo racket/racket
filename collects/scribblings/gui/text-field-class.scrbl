@@ -39,11 +39,11 @@ The keymap for the text field's editor is initialized by calling the
 
 
 @defconstructor[[label (or/c label-string? false/c)]
-                [parent (or/c (is-a/c frame%) (is-a/c dialog%) (is-a/c panel%) (is-a/c pane%))]
+                [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) (is-a?/c panel%) (is-a?/c pane%))]
                 [callback procedure of two arguments: a @scheme[text-field%] object and a @scheme[control-event%] object @scheme[(\scmk{lambda] (@scheme[tf] @scheme[e]) (void))}]
                 [init-value string ""]
                 [style (symbols/c deleted horizontal-label vertical-label password hscroll multiple single) '(single)]
-                [font (is-a/c font%) @scheme[normal-control-font]]
+                [font (is-a?/c font%) @scheme[normal-control-font]]
                 [enabled any/c #t]
                 [vert-margin (integer-in 0 1000) 2]
                 [horiz-margin (integer-in 0 1000) 2]
@@ -110,7 +110,7 @@ Sets the text currently in the text field. (The control's callback
 }}
 
 @defmethod[(get-editor)
-           (is-a/c text%)]{
+           (is-a?/c text%)]{
 @spec{
 
 Returns the editor used to implement the text field.

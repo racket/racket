@@ -16,10 +16,10 @@ The @scheme[tab-panel%] class does not implement the virtual
 
 
 @defconstructor[[choices list of {\labelstrings}]
-                [parent (or/c (is-a/c frame%) (is-a/c dialog%) (is-a/c panel%) (is-a/c pane%))]
+                [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) (is-a?/c panel%) (is-a?/c pane%))]
                 [callback procedure of two arguments: a @scheme[tab-panel%] object and a @scheme[control-event%] object @scheme[(\scmk{lambda] (@scheme[tp] @scheme[e]) (void))}]
                 [style (symbols/c deleted no-border) null]
-                [font (is-a/c font%) @scheme[normal-control-font]]
+                [font (is-a?/c font%) @scheme[normal-control-font]]
                 [enabled any/c #t]
                 [vert-margin (integer-in 0 1000) 0]
                 [horiz-margin (integer-in 0 1000) 0]

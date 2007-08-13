@@ -98,7 +98,7 @@ See
 
 }}
 
-@defmethod[(command [event (is-a/c control-event%)])
+@defmethod[(command [event (is-a?/c control-event%)])
            void?]{
 @spec{
 

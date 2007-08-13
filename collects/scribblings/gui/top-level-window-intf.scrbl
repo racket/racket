@@ -48,7 +48,7 @@ If @scheme[direction] is @scheme['horizontal], the window is centered
 }
 
 @defmethod[(get-edit-target-object)
-           (or/c (or/c (is-a/c window<%>) (is-a/c editor<%>)) false/c)]{
+           (or/c (or/c (is-a?/c window<%>) (is-a?/c editor<%>)) false/c)]{
 
 @index['("keyboard focus" "last active")]{Like}
  @method[top-level-window<%> get-edit-target-window], but if an editor
@@ -61,7 +61,7 @@ See also @method[top-level-window<%> get-focus-object].
 }
 
 @defmethod[(get-edit-target-window)
-           (or/c (is-a/c window<%>) false/c)]{
+           (or/c (is-a?/c window<%>) false/c)]{
 
 @index['("keyboard focus" "last active")]{Returns} the window that
 most recently had the keyboard focus, either the top-level window or
@@ -81,7 +81,7 @@ Returns the window's eventspace.
 }
 
 @defmethod[(get-focus-object)
-           (or/c (or/c (is-a/c window<%>) (is-a/c editor<%>)) false/c)]{
+           (or/c (or/c (is-a?/c window<%>) (is-a?/c editor<%>)) false/c)]{
 
 @index["keyboard focus"]{Like} @method[top-level-window<%>
 get-focus-window], but if an editor canvas has the focus and it also
@@ -94,7 +94,7 @@ See also @method[top-level-window<%> get-edit-target-object].
 }
 
 @defmethod[(get-focus-window)
-           (or/c (is-a/c window<%>) false/c)]{
+           (or/c (is-a?/c window<%>) false/c)]{
 
 @index["keyboard focus"]{Returns} the window that has the keyboard
  focus, either the top-level window or one of its children. If neither
@@ -192,7 +192,7 @@ Returns @|void-const|.
 }}
 
 
-@defmethod[(on-traverse-char [event (is-a/c key-event%)])
+@defmethod[(on-traverse-char [event (is-a?/c key-event%)])
            boolean?]{
 
 @methspec{
@@ -291,7 +291,7 @@ Otherwise, @scheme[#f] is returned.}
 }
 }}
 
-@defmethod[(on-system-menu-char [event (is-a/c key-event%)])
+@defmethod[(on-system-menu-char [event (is-a?/c key-event%)])
            boolean?]{
 
 Checks whether the given event pops open the system menu in the

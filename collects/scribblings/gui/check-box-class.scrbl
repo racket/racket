@@ -13,13 +13,13 @@ Whenever a check box is clicked by the user, the check box's value is
 
 
 
-@defconstructor[([label (or/c label-string? (is-a/c bitmap%))]
-                 [parent (or/c (is-a/c frame%) (is-a/c dialog%)
-                               (is-a/c panel%) (is-a/c pane%))]
-                 [callback ((is-a/c check-box%) (is-a/c control-event%) . -> . any) (lambda (c e) (void))]
+@defconstructor[([label (or/c label-string? (is-a?/c bitmap%))]
+                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%)
+                               (is-a?/c panel%) (is-a?/c pane%))]
+                 [callback ((is-a?/c check-box%) (is-a?/c control-event%) . -> . any) (lambda (c e) (void))]
                  [style (listof (one-of/c 'deleted)) null]
                  [value any/c #f]
-                 [font (is-a/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) @scheme[normal-control-font]]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
@@ -54,7 +54,7 @@ Gets the state of the check box: @scheme[#t] if it is checked, @scheme[#f]
 }
 
 @defmethod[#:mode 'add 
-           (set-label [label (is-a/c bitmap%)])
+           (set-label [label (is-a?/c bitmap%)])
            void?]{
 
 Sets the bitmap label for a bitmap check box.

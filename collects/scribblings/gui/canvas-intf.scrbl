@@ -22,7 +22,7 @@ The @scheme[canvas<%>] interface is implemented by two classes:
 
 
 @defmethod[(get-canvas-background)
-           (or/c (is-a/c color%) false/c)]{
+           (or/c (is-a?/c color%) false/c)]{
 Returns the color currently used to ``erase'' the canvas content before
 @method[canvas<%> on-paint] is called. See also
 @method[canvas<%> set-canvas-background].
@@ -35,7 +35,7 @@ The result is @scheme[#f] if the canvas was created with the
 
 
 @defmethod[(get-dc)
-           (is-a/c dc<%>)]{
+           (is-a?/c dc<%>)]{
 Gets the canvas's device context. See
 @scheme[dc<%>] for more information about drawing.
 
@@ -76,7 +76,7 @@ The minimum width is ignored when it is smaller than the canvas's
 }
 
 
-@defmethod[(on-char [ch (is-a/c key-event%)])
+@defmethod[(on-char [ch (is-a?/c key-event%)])
            void?]{
 @methspec{
 
@@ -93,7 +93,7 @@ Does nothing.
 }}
 
 
-@defmethod[(on-event [event (is-a/c mouse-event%)])
+@defmethod[(on-event [event (is-a?/c mouse-event%)])
            void?]{
 @methspec{
 
@@ -157,7 +157,7 @@ Does nothing.
 }}
 
 
-@defmethod[(set-canvas-background [color (is-a/c color%)])
+@defmethod[(set-canvas-background [color (is-a?/c color%)])
            void?]{
 
 Sets the color used to ``erase'' the canvas content before

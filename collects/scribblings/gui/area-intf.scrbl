@@ -39,7 +39,7 @@ See @|geomdiscuss| for more information. Note that the return value
 }
 
 @defmethod[(get-parent)
-           (or/c (is-a/c area-container<%>) false/c)]{
+           (or/c (is-a?/c area-container<%>) false/c)]{
 
 Returns the area's parent. A top-level window may have no parent (in
  which case @scheme[#f] is returned), or it may have another top-level
@@ -48,7 +48,7 @@ Returns the area's parent. A top-level window may have no parent (in
 }
 
 @defmethod[(get-top-level-window)
-           (or/c (is-a/c frame%) (is-a/c dialog))]{
+           (or/c (is-a?/c frame%) (is-a?/c dialog))]{
 
 Returns the area's closest frame or dialog ancestor. For a frame or
  dialog area, the frame or dialog itself is returned.

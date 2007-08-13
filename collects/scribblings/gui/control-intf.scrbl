@@ -19,7 +19,7 @@ The @scheme[control<%>] interface is implemented by the built-in
 
 
 
-@defmethod[(command [event (is-a/c control-event%)])
+@defmethod[(command [event (is-a?/c control-event%)])
            void?]{
 
 Calls the control's callback function, passing on the given
@@ -28,7 +28,7 @@ Calls the control's callback function, passing on the given
 }
 
 @defmethod[(get-font)
-           (is-a/c font%)]{
+           (is-a?/c font%)]{
 
 Returns the font used for the control, which is optionally supplied
  when a control is created.

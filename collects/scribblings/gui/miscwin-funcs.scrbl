@@ -22,7 +22,7 @@ Rings the system bell.
 
 }
 
-@defproc[(play-sound [filename path]
+@defproc[(play-sound [filename path-string?]
                      [async? any/c])
          boolean?]{
 
@@ -126,10 +126,10 @@ Hides the cursor until the user moves the mouse or clicks the mouse
 
 }
 
-@defproc[(get-resource [section string]
-                       [entry string]
-                       [value (boxof exact-integer?)]
-                       [file (or/c path false/c) #f])
+@defproc[(get-resource [section string?]
+                       [entry string?]
+                       [value (box/c exact-integer?)]
+                       [file (or/c path? false/c) #f])
          boolean?]{
 
 Gets a resource value from the resource database. The resource value
@@ -191,10 +191,10 @@ Strips shortcut ampersands from @scheme[label], removes parenthesized
 
 }
 
-@defproc[(write-resource [section string]
-                         [entry string]
+@defproc[(write-resource [section string?]
+                         [entry string?]
                          [value (or/c string? exact-integer?)]
-                         [file (or/c path false/c) #f])
+                         [file (or/c path-string? false/c) #f])
          boolean?]{
 
 Writes a resource value to the specified resource database. The
@@ -218,7 +218,7 @@ See also @scheme[get-resource].}
 
 
 @defproc[(get-default-shortcut-prefix)
-         (listof (symbols/c option shift ctl meta cmd alt))]{
+         (listof (one-of/c 'alt 'cmd 'meta 'ctl 'shift 'option))]{
 Returns an immutable list specifying the default prefix for menu
 shortcuts. See also
 @xmethod[selectable-menu-item<%> get-shortcut-prefix].
@@ -229,8 +229,8 @@ default is @scheme['(cmd)]. Under X, the default is normally
 @Resource{defaultMenuPrefix} low-level preference (see
 @|mrprefsdiscuss|).}
 
-@defproc[(find-graphical-system-path [what (symbols/c x-display setup-file init-file)])
-         (or/c path false/c)]{
+@defproc[(find-graphical-system-path [what (one-of/c 'init-file 'setup-file 'x-display)])
+         (or/c path? false/c)]{
 
 Finds a platform-specific (and possibly user- or machine-specific)
  standard filename or directory. See also @scheme[find-system-path].
@@ -307,14 +307,14 @@ The keymap for the read-eval-print loop's editor is initialized by
 
 }
 
-@defthing[the-clipboard (is-a/c clipboard<%>)]{
+@defthing[the-clipboard (is-a?/c clipboard<%>)]{
 
 See @scheme[clipboard<%>].
 
 
 }
 
-@defthing[the-x-selection-clipboard (is-a/c clipboard<%>)]{
+@defthing[the-x-selection-clipboard (is-a?/c clipboard<%>)]{
 
 See @scheme[clipboard<%>].
 
@@ -322,7 +322,7 @@ See @scheme[clipboard<%>].
 }
 
 @defproc[(get-window-text-extent [string string]
-                                 [font (is-a/c font%)])
+                                 [font (is-a?/c font%)])
          (values nonnegative-exact-integer?
                  nonnegative-exact-integer?)]{
 
@@ -333,7 +333,7 @@ See also @method[dc<%> get-text-extent].
 }
 
 @defproc[(get-panel-background)
-         (is-a/c color%)]{
+         (is-a?/c color%)]{
 
 Returns the background color of a panel (usually some shade of gray)
  for the current platform.
@@ -366,7 +366,7 @@ The get operation always returns @scheme[#"????"] and @scheme[#"????"] for
                      [event-id-bytes (lambda (s) (and (bytes? s)
                                                       (= 4 (bytes-length s))))]
                      [direct-arg-v any/c (void)]
-                     [argument-list list null])
+                     [argument-list list? null])
          any/c]{
 
 Sends an AppleEvent or raises @scheme[exn:fail:unsupported].
@@ -424,8 +424,8 @@ If the AppleEvent reply contains a value that cannot be
 
 }
 
-@defproc[(make-namespace-with-mred [flag (symbols/c empty initial mred) 'mred])
-         namespace]{
+@defproc[(make-namespace-with-mred [flag (one-of/c 'mred 'initial 'empty) 'mred])
+         namespace?]{
 
 Like @scheme[make-namespace], but the @scheme[(lib "mred.ss"
  "mred")] module of the current namespace is attached. In addition, by

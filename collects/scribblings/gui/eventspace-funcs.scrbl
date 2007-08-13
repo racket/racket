@@ -64,7 +64,7 @@ Inspects the event queue of the current eventspace, searching for a
 }
 
 @defproc[(get-top-level-windows)
-         (listof (or/c (is-a/c frame%) (is-a/c dialog%)))]{
+         (listof (or/c (is-a?/c frame%) (is-a?/c dialog%)))]{
 Returns a list of visible top-level frames and dialogs in the current
  eventspace.
 

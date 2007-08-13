@@ -7,15 +7,15 @@ A @scheme[canvas%] object is a general-purpose window for drawing
  and handling events.
 
 
-@defconstructor[([parent (or/c (is-a/c frame%) (is-a/c dialog%) 
-                               (is-a/c panel%) (is-a/c pane%))]
+@defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
+                               (is-a?/c panel%) (is-a?/c pane%))]
                  [style (listof (one-of/c 'border 'control-border 'combo 
                                           'vscroll 'hscroll 'resize-corner
                                           'gl 'no-autoclear 'transparent
                                           'no-focus 'deleted)) null]
-                 [paint-callback ((is-a/c button%) (is-a/c dc<%>) . -> . any) void]
+                 [paint-callback ((is-a?/c button%) (is-a?/c dc<%>) . -> . any) void]
                  [label (or/c label-string? false/c) #f]
-                 [gl-config (or/c (is-a/c gl-config%) false/c) #f]
+                 [gl-config (or/c (is-a?/c gl-config%) false/c) #f]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 0]
                  [horiz-margin (integer-in 0 1000) 0]
@@ -279,7 +279,7 @@ Calls the procedure supplied as the @scheme[paint-callback] argument when
 }
 
 
-@defmethod[(on-scroll [event (is-a/c scroll-event%)])
+@defmethod[(on-scroll [event (is-a?/c scroll-event%)])
            void?]{
 Called when the user changes one of the canvas's scrollbars. A
  @scheme[scroll-event%] argument provides information about the

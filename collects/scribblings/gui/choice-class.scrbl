@@ -18,15 +18,15 @@ See also
 
 @defconstructor[([label (or/c label-string? false/c)]
                  [choices (listof label-string?)]
-                 [parent (or/c (is-a/c frame%) (is-a/c dialog%) 
-                               (is-a/c panel%) (is-a/c pane%))]
-                 [callback ((is-a/c choice%) (is-a/c control-event%) . -> . any) 
+                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
+                               (is-a?/c panel%) (is-a?/c pane%))]
+                 [callback ((is-a?/c choice%) (is-a?/c control-event%) . -> . any) 
                            (lambda (c e) (void))]
                  [style (listof (one-of/c 'horizontal-label 'vertical-label
                                           'deleted)) 
                    null]
                  [selection nonnegative-exact-integer? 0]
-                 [font (is-a/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) @scheme[normal-control-font]]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]

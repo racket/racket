@@ -8,17 +8,16 @@ A @scheme[menu-item%] is a plain string-labelled menu item. Its
  user selects the menu item, its callback procedure is called.
 
 
-
-
 @defconstructor[([label label-string?]
-                 [parent (or/c (is-a/c menu% popup-menu%))]
-                 [callback ((is-a/c menu-item%) (is-a/c control-event%) . -> . any) 
+                 [parent (or/c (is-a?/c menu% popup-menu%))]
+                 [callback ((is-a?/c menu-item%) (is-a?/c control-event%) . -> . any) 
                            (lambda (i e) (void))]
                  [shortcut (or/c char? false/c) #f]
                  [help-string (or/c label-string? false/c) #f]
-                 [demand-callback ((is-a/c menu-item%) . -> . any) 
+                 [demand-callback ((is-a?/c menu-item%) . -> . any) 
                            (lambda (i) (void))]
-                 [shortcut-prefix (listof (one-of/c 'alt 'cmd 'meta 'ctl 'shift 'option)) 
+                 [shortcut-prefix (listof (one-of/c 'alt 'cmd 'meta 'ctl 
+                                                    'shift 'option)) 
                                   (get-default-shortcut-prefix)])]{
 
 Creates a new menu item in @scheme[parent]. The item is initially
@@ -29,7 +28,7 @@ Creates a new menu item in @scheme[parent]. The item is initially
  popup-menu]).
 
 See @method[labelled-menu-item<%> set-label] for information about
-mnemonic ampersands (``\&'') in @scheme[label].
+mnemonic @litchar{&}s in @scheme[label].
 
 If @scheme[shortcut] is not @scheme[#f], the item has a shortcut. See
 @method[selectable-menu-item<%> get-shortcut] for more information.
@@ -44,4 +43,3 @@ The @scheme[demand-callback] procedure is called by the default
 @method[menu-item-container<%> on-demand] method with the object itself.
 
 }}
-

@@ -14,15 +14,15 @@ A @scheme[combo-field%] object is a @scheme[text-field%]
 
 @defconstructor[([label (or/c label-string? false/c)]
                  [choices (listof label-string?)]
-                 [parent (or/c (is-a/c frame%) (is-a/c dialog%) 
-                               (is-a/c panel%) (is-a/c pane%))]
-                 [callback ((is-a/c combo-field%) (is-a/c control-event%) . -> . any) 
+                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
+                               (is-a?/c panel%) (is-a?/c pane%))]
+                 [callback ((is-a?/c combo-field%) (is-a?/c control-event%) . -> . any) 
                            (lambda (c e) (void))]
                  [init-value string ""]
                  [style (listof (one-of/c 'horizontal-label 'vertical-label 
                                           'deleted)) 
                         null]
-                 [font (is-a/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) @scheme[normal-control-font]]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
@@ -74,7 +74,7 @@ Adds a new item to the combo's popup menu. The given label is used for
 
 
 @defmethod[(get-menu)
-           (is-a/c popup-menu%)]{
+           (is-a?/c popup-menu%)]{
 Returns the @scheme[popup-menu%] that is used by the default
 @method[combo-field% on-popup] method. This menu is initialized with the @scheme[labels] argument when
  the @scheme[combo-field%] is created, and the
@@ -83,7 +83,7 @@ Returns the @scheme[popup-menu%] that is used by the default
 }
 
 
-@defmethod[(on-popup [event (is-a/c control-event%)])
+@defmethod[(on-popup [event (is-a?/c control-event%)])
            void?]{
 
 @methspec{

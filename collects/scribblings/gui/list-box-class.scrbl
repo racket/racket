@@ -24,17 +24,17 @@ See also @scheme[choice%].
 
 @defconstructor[([label (or/c label-string? false/c)]
                  [choices (listof label-string?)]
-                 [parent (or/c (is-a/c frame%) (is-a/c dialog%) 
-                               (is-a/c panel%) (is-a/c pane%))]
-                 [callback ((is-a/c list-box%) (is-a/c control-event%) . -> . any) 
+                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
+                               (is-a?/c panel%) (is-a?/c pane%))]
+                 [callback ((is-a?/c list-box%) (is-a?/c control-event%) . -> . any) 
                            (lambda (c e) (void))]
                  [style (listof (one-of/c 'single 'multiple 'extended 
                                           'vertical-label 'horizontal-label 
                                           'deleted)) 
                         '(single)]
                  [selection (or/c nonnegative-exact-integer? false/c) #f]
-                 [font (is-a/c font%) @scheme[view-control-font]]
-                 [label-font (is-a/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) @scheme[view-control-font]]
+                 [label-font (is-a?/c font%) @scheme[normal-control-font]]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
@@ -141,7 +141,7 @@ Reports the index of the item currently scrolled to the top of the
 }
 
 @defmethod[(get-label-font)
-           (is-a/c font%)]{
+           (is-a?/c font%)]{
 
 Returns the font used for the control's label, which is optionally
  supplied when a list box is created.

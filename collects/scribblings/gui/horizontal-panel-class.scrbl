@@ -6,8 +6,8 @@
 A horizontal panel arranges its subwindows in a single row. See also
  @scheme[panel%].
 
-@defconstructor[([parent (or/c (is-a/c frame%) (is-a/c dialog%) 
-                               (is-a/c panel%) (is-a/c pane%))]
+@defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
+                               (is-a?/c panel%) (is-a?/c pane%))]
                  [style (listof (one-of/c 'border 'deleted)) null]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 0]

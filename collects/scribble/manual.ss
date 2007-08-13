@@ -1336,14 +1336,15 @@
       [(_ mode ((arg ...) ...) desc ...)
        (let ([n (syntax-parameter-value #'current-class)])
          (with-syntax ([name n]
-                       [result (let ([s (quote-syntax (is-a/c nm))])
-                                 (datum->syntax-object s
-                                                       (let ([l (syntax->list s)])
-                                                         (cons (car l)
-                                                               (list (datum->syntax-object n
-                                                                                           (syntax-e n)
-                                                                                           (cadr l)))))
-                                                       s))]
+                       [result (datum->syntax-object #f
+                                                     (list
+                                                      (datum->syntax-object #'is-a?/c
+                                                                            'is-a?/c
+                                                                            (list 'src 1 1 2 1))
+                                                      (datum->syntax-object n
+                                                                            (syntax-e n)
+                                                                            (list 'src 1 3 4 1)))
+                                                     (list 'src 1 0 1 5))]
                        [(((kw ...) ...) ...) (map (lambda (ids)
                                                     (map (lambda (arg)
                                                            (if (and (pair? (syntax-e arg))

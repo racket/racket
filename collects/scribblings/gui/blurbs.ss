@@ -19,10 +19,10 @@
  following @litchar{&} is underlined in the displayed control to
  indicate a keyboard mnemonic. (Under Mac OS X, mnemonic underlines are
  not shown.) The mnemonic is meaningless for a @|what| (as far as
- @method[top-level-window<%> on-traverse-char] is concerned),
+ @xmethod[top-level-window<%> on-traverse-char] is concerned),
  but it is supported for consistency with other control types. A
- programmer may assign a meaning to the mnemonic, e.g., by overriding
- @method[top-level-window<%> on-traverse-char].})
+ programmer may assign a meaning to the mnemonic (e.g., by overriding
+ @method[top-level-window<%> on-traverse-char]).})
 
   (define (labelstripped where detail what)
     @elem{If @litchar{&} occurs in @|where|@|detail|, it 

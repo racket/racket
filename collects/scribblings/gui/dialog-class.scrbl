@@ -11,7 +11,7 @@ A dialog is a top-level window that is @defterm{modal}: while the
 
 
 @defconstructor[([label label-string?]
-                 [parent (or/c (is-a/c frame%) (is-a/c dialog%) false/c) #f]
+                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) false/c) #f]
                  [width (or/c (integer-in 0 10000) false/c) #f]
                  [height (or/c (integer-in 0 10000) false/c) #f]
                  [x (or/c (integer-in 0 10000) false/c) #f]
@@ -79,8 +79,8 @@ Even if the dialog is not shown, a few notification events may be
 }
 
 @defmethod[#:mode 'override 
-           (on-subwindow-char [receiver (is-a/c window<%>)]
-                              [event (is-a/c key-event%)])
+           (on-subwindow-char [receiver (is-a?/c window<%>)]
+                              [event (is-a?/c key-event%)])
            boolean?]{
 
 Returns the result of

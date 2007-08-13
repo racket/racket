@@ -20,7 +20,7 @@ A popup menu is {\em not} a control. A @scheme[choice%] control,
 @defconstructor[[title (or/c label-string? false/c) #f]
                 [popdown-callback procedure of two arguments: a @scheme[popup-menu%] object and a @scheme[control-event%] object @scheme[(\scmk{lambda] (@scheme[m] @scheme[e]) (void))}]
                 [demand-callback procedure of one argument: a @scheme[popup-menu%] object @scheme[void]]
-                [font (is-a/c font%) @scheme[normal-control-font]]]{
+                [font (is-a?/c font%) @scheme[normal-control-font]]]{
 
 If @scheme[title] is not @scheme[#f], it is used as a displayed title at
  the top of the popup menu.
@@ -50,7 +50,7 @@ The @scheme[font] argument determines the font for the popup menu's
 }
 
 @defmethod[(get-popup-target)
-           (or/c (or/c (is-a/c window<%>) (is-a/c editor<%>)) false/c)]{
+           (or/c (or/c (is-a?/c window<%>) (is-a?/c editor<%>)) false/c)]{
 @spec{
 
 Returns the context in which the popup menu is currently displayed, or
@@ -64,7 +64,7 @@ The context is set before the
 }}
 
 @defmethod[(get-font)
-           (is-a/c font%)]{
+           (is-a?/c font%)]{
 @spec{
 
 Returns the font used for the popup menu's items, which is optionally

@@ -14,8 +14,8 @@ A cursor is assigned to each window (or the window may use its
  may be assigned to many windows.
 
 
-@defconstructor*/make[(([image (is-a/c bitmap%)]
-                        [mask (is-a/c bitmap%)]
+@defconstructor*/make[(([image (is-a?/c bitmap%)]
+                        [mask (is-a?/c bitmap%)]
                         [hot-spot-x (integer-in 0 15) 0]
                         [hot-spot-y (integer-in 0 15) 0])
                        ([id (one-of/c 'arrow 'bullseye 'cross 'hand 'ibeam 'watch 'blank 

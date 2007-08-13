@@ -8,12 +8,12 @@ Whenever a button is clicked by the user, the buttons's callback
  procedure is invoked. A callback procedure is provided as an
  initialization argument when each button is created.
 
-@defconstructor[([label (or/c label-string? (is-a/c bitmap%))]
-                 [parent (or/c (is-a/c frame%) (is-a/c dialog%) 
-                               (is-a/c panel%) (is-a/c pane%))]
-                 [callback ((is-a/c button%) (is-a/c control-event%) . -> . any) (lambda (b e) (void))]
+@defconstructor[([label (or/c label-string? (is-a?/c bitmap%))]
+                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
+                               (is-a?/c panel%) (is-a?/c pane%))]
+                 [callback ((is-a?/c button%) (is-a?/c control-event%) . -> . any) (lambda (b e) (void))]
                  [style (one-of/c 'border 'deleted) null]
-                 [font (is-a/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) @scheme[normal-control-font]]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
@@ -57,7 +57,7 @@ on-traverse-char]). @DeletedStyleNote{button}
 
 
 @defmethod[#:mode 'add 
-           (set-label [label (is-a/c bitmap%)])
+           (set-label [label (is-a?/c bitmap%)])
            void?]{
 
 Sets the bitmap label for a bitmap button. @bitmaplabeluseisbm[label]

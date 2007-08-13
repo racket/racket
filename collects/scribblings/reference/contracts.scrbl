@@ -166,7 +166,7 @@ Accepts any number of symbols and returns a flat contract that
 recognizes those symbols.}
 
 
-@defproc[(is-a?/c [type? (or/c class? interface?)]) flat-contract?]{
+@defproc[(is-a?/c [type (or/c class? interface?)]) flat-contract?]{
 
 Accepts a class or interface and returns a flat contract that
 recognizes objects that instantiate the class/interface.}

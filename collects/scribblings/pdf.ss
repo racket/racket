@@ -5,16 +5,19 @@
            (prefix reference: "reference/reference.scrbl")
            (prefix quick: "quick/quick.scrbl")
            (prefix scribble: "scribble/scribble.scrbl")
+           (prefix gui: "gui/gui.scrbl")
            (lib "process.ss"))
 
   (define docs (list guide:doc
                      reference:doc
                      quick:doc
-                     scribble:doc))
+                     scribble:doc
+                     gui:doc))
   (define names (list "guide"
                       "reference"
                       "quick"
-                      "scribble"))
+                      "scribble"
+                      "gui"))
 
   (define temp-dir (find-system-path 'temp-dir))
 

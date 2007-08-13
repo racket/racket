@@ -19,11 +19,11 @@ Whenever the user changes the selected radio button, the radio box's
 
 @defconstructor[[label (or/c label-string? false/c)]
                 [choices list of {\labelstrings} or @scheme[bitmap%] objects]
-                [parent (or/c (is-a/c frame%) (is-a/c dialog%) (is-a/c panel%) (is-a/c pane%))]
+                [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) (is-a?/c panel%) (is-a?/c pane%))]
                 [callback procedure of two arguments: a @scheme[radio-box%] object and a @scheme[control-event%] object @scheme[(\scmk{lambda] (@scheme[rb] @scheme[e]) (void))}]
                 [style (symbols/c deleted horizontal-label vertical-label vertical horizontal) '(vertical)]
                 [selection nonnegative-exact-integer? 0]
-                [font (is-a/c font%) @scheme[normal-control-font]]
+                [font (is-a?/c font%) @scheme[normal-control-font]]
                 [enabled any/c #t]
                 [vert-margin (integer-in 0 1000) 2]
                 [horiz-margin (integer-in 0 1000) 2]

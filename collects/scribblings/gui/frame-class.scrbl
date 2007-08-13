@@ -11,7 +11,7 @@ Under Windows, both Multiple Document Interface (MDI) and Single
  Document Interface (SDI) frames are supported.
 
 @defconstructor[([label label-string?]
-                 [parent (or/c (is-a/c frame%) false/c) #f]
+                 [parent (or/c (is-a?/c frame%) false/c) #f]
                  [width (or/c (integer-in 0 10000) false/c) #f]
                  [height (or/c (integer-in 0 10000) false/c) #f]
                  [x (or/c (integer-in -10000 10000) false/c) #f]
@@ -128,7 +128,7 @@ See also @method[frame% set-status-text].
 }
 
 @defmethod[(get-menu-bar)
-           (or/c (is-a/c menu-bar%) false/c)]{
+           (or/c (is-a?/c menu-bar%) false/c)]{
 
 Returns the frame's menu bar, or @scheme[#f] if none has been created
  for the frame.
@@ -219,7 +219,7 @@ MDI activation is different from keyboard-focus activation. If the
 
 }
 
-@defmethod[(on-menu-char [event (is-a/c key-event%)])
+@defmethod[(on-menu-char [event (is-a?/c key-event%)])
            boolean?]{
 
 If the frame has a menu bar with keyboard shortcuts, and if the key
@@ -242,8 +242,8 @@ If the event does not correspond to a complete shortcut combination,
 }
 
 @defmethod[#:mode 'override 
-           (on-subwindow-char [receiver (is-a/c window<%>)]
-                              [event (is-a/c key-event%)])
+           (on-subwindow-char [receiver (is-a?/c window<%>)]
+                              [event (is-a?/c key-event%)])
            boolean?]{
 
 Returns the result of
@@ -263,8 +263,8 @@ Under Mac OS X, called when the user clicks the toolbar button on a
 
 }
 
-@defmethod[(set-icon [icon (is-a/c bitmap%)]
-                     [mask (is-a/c bitmap%) #f]
+@defmethod[(set-icon [icon (is-a?/c bitmap%)]
+                     [mask (is-a?/c bitmap%) #f]
                      [which (one-of/c 'small 'large 'both) 'both])
            void?]{
 
