@@ -178,7 +178,7 @@
                          url]
                         [else #f])]
                      [(preferences:get 'drscheme:help-desk:separate-browser)
-                      (send-url url)
+                      (send-url (url->string url))
                       #f]
                      [else url])]
                   [else url]))
