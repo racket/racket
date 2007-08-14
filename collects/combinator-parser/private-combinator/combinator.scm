@@ -15,6 +15,21 @@
     
     (define return-name "dummy")
     
+    (define (make-weak-map) (make-hash-table 'weak))
+ 
+    (define (weak-map-put! m k v)
+      (hash-table-put! m k (make-ephemeron k (box v))))
+ 
+    (define weak-map-get 
+      (opt-lambda (m k [def-v (lambda () (error 'weak-map-get "value unset"))])
+        (let ([v (hash-table-get m k #f)])
+          (if v 
+              (let ([v (ephemeron-value v)])
+                (if v 
+                    (unbox v)
+                    def-v))
+              def-v))))
+    
     ;terminal: ('a -> bool 'a -> 'b string) -> ( (list 'a) -> res )
     (define terminal
       (opt-lambda (pred build name [spell? #f] [case? #f] [class? #f])
@@ -100,7 +115,7 @@
     (define seq 
       (opt-lambda (sub-list build name [id-position 0])
         (let* ([sequence-length (length sub-list)]
-               [memo-table (make-hash-table 'weak)]
+               [memo-table (make-weak-map)]
                [prev (lambda (x) 
                        (cond [(eq? x return-name) "default previous"]
                              [else (fail-res null null)]))]
@@ -127,7 +142,8 @@
             #;(!!! (printf "seq ~a~n" name))
             (cond
               [(eq? input return-name) name]
-              [(hash-table-get memo-table input #f) (hash-table-get memo-table input)]
+              [(weak-map-get memo-table input #f) 
+               (weak-map-get memo-table input)]
               [(null? sub-list)
                (builder (make-res null input name #f 0 #f #f))]
               [else
@@ -138,7 +154,7 @@
                          [(and (pair? pre-build-ans) (null? (cdr pre-build-ans))) (builder (car pre-build-ans))]
                          [(pair? pre-build-ans) (map builder pre-build-ans)]
                          [else pre-build-ans])])
-                 (hash-table-put! memo-table input ans)
+                 (weak-map-put! memo-table input ans)
                  #;(!!! (printf "sequence ~a returning ~n" name))
                  #;(when (res? pre-build-ans) (printf "pre-build is a res~n"))
                  #;(when (pair? pre-build-ans) (printf "pre-build is a pair of length ~a~n" 
@@ -487,7 +503,7 @@
     ;greedy-repeat: (list 'a) -> result -> (list 'a)  -> result
     (define (repeat-greedy sub)
       (letrec ([repeat-name (string-append "any number of " (sub return-name))]
-               [memo-table (make-hash-table 'weak)]
+               [memo-table (make-weak-map)]
                [process-rest
                 (lambda (curr-ans rest-ans)
                   (cond 
@@ -531,7 +547,7 @@
         (opt-lambda (input [start-src (list 1 0 1 0)] [alts 1])
           (cond
             [(eq? input return-name) repeat-name]
-            [(hash-table-get memo-table input #f) (hash-table-get memo-table input)]
+            [(weak-map-get memo-table input #f)(weak-map-get memo-table input)]
             [else
              (let ([ans
                     (let loop ([curr-input input] [curr-src start-src])
@@ -584,13 +600,13 @@
                                                               (update-src (res-rest match) curr-src))))
                                         list-of-answer)]))]
                              [else (error 'internal-parser-error8 (format "~a" this-res))]))]))])
-               (hash-table-put! memo-table input ans)
+               (weak-map-put! memo-table input ans)
                #;(!!! (printf "repeat of ~a ended with ans  ~n" repeat-name #;ans))
                ans)]))))
     
     ;choice: [list [[list 'a ] -> result]] name -> result
     (define (choice opt-list name)
-      (let ([memo-table (make-hash-table 'weak)]
+      (let ([memo-table (make-weak-map)]
             [num-choices (length opt-list)]
             [choice-names (map (lambda (o) (o return-name)) opt-list)])
         (opt-lambda (input [last-src (list 0 0 0 0)] [alts 1])
@@ -598,7 +614,7 @@
           #;(!!! (printf "possible options are ~a~n" choice-names))
           (let ([sub-opts (sub1 (+ alts num-choices))])
             (cond
-              [(hash-table-get memo-table input #f) (hash-table-get memo-table input)]
+              [(weak-map-get memo-table input #f) (weak-map-get memo-table input)]
               [(eq? input return-name) name]
               [else
                #;(!!! (printf "choice ~a~n" name))
@@ -633,7 +649,7 @@
                  #;(!!! (printf "choice ~a is returning options were ~a ~n" name choice-names))
                  #;(printf "corrects were ~a~n" corrects)
                  #;(printf "errors were ~a~n" errors)
-                 (hash-table-put! memo-table input ans) ans)])))))
+                 (weak-map-put! memo-table input ans) ans)])))))
     
     (define (flatten lst)
       (cond
