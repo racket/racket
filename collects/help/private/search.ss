@@ -221,11 +221,13 @@
                        [key (let loop ([l-entry entry])
                               (cond
                                 [(symbol? l-entry) l-entry]
+                                [(keyword? l-entry) l-entry]
                                 [(pair? l-entry) (if (and (eq? (car l-entry) 'quote)
                                                           (pair? (cdr l-entry)))
                                                      (loop (cadr l-entry))
                                                      (loop (car l-entry)))]
-                                [else (error 'load-txt-keyworsd "bad entry in ~s: ~s" doc entry)]))]
+                                [else (fprintf (current-error-port) "load-txt-keyword: bad entry in ~s: ~s\n" doc entry)
+                                      #f]))]
                        [content (if (symbol? entry)
                                     (with-handlers ([exn:fail:read? (lambda (x) #f)])
                                       (let ([s (read peek-port)])
@@ -244,14 +246,17 @@
                                   (display entry p)))
                           (get-output-string p))]
                        [kwd-entry
-                        ; Make the keyword entry:
-                        (list (symbol->string key) ; the keyword name
-                              txt-to-display ; the text to display
-                              (cadr doc) ; file
-                              (let-values ([(line col pos) (port-next-location p)])
-                                (- pos 2)) ; label (a position in this case)
-                              "doc.txt")])
-                  (cons kwd-entry (loop))))] ; title
+                        (and key
+                             ; Make the keyword entry:
+                             (list (format "~s" key) ; the keyword name
+                                   txt-to-display ; the text to display
+                                   (cadr doc) ; file
+                                   (let-values ([(line col pos) (port-next-location p)])
+                                     (- pos 2)) ; label (a position in this case)
+                                   "doc.txt"))])
+                  (if kwd-entry
+                      (cons kwd-entry (loop))
+                      (loop))))] ; title
              [else null]))))))
       
   (define re:index-line (regexp "_([^_]*)_(.*)"))
