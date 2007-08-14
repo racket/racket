@@ -812,8 +812,10 @@
  
   (teachpack-pre-installed "Vorinstallierte Teachpacks")
   (teachpack-user-installed "selbst installierte Teachpacks")
-  (install-teachpack... "Teachpack installieren...")
+  (add-teachpack-to-list... "Teachpack zu Liste hinzufügen...")
   (teachpack-already-installed "Ein Teachpack names '~a' ist schon installiert. Überschreiben?")
+  ; ~a is filled with a list of language names. Each name is separated by a newline and is indented two spaces (no commas, no 'and')
+  (teachpacks-only-in-languages "Die Teachpacks sind nur in diesen Sprachen verfügbar: ~a")
 
  ;;; Language dialog
  (introduction-to-language-dialog
@@ -900,7 +902,7 @@
  
  ;; the three string constants are concatenated together and the middle
  ;; one is hyperlinked to the dialog that suggests various languages
- (get-guidance-before "Wählen Sie “Sprache auswählen...” im “Sprache”-Menü oder ")
+ (get-guidance-before "Wählen Sie Sprache auswählen... im Sprache-Menü oder ")
  (get-guidance-during "Hilfe anfordern")
  (get-guidance-after ".")
 
