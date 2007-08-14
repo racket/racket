@@ -2483,7 +2483,8 @@
                 (make-syntax #f `(send ,expr ,(translate-id field-string field-src)) (build-src src))
                 (make-syntax #f
                              `(if (null? ,expr)
-                                  (javaRuntime:nullError 'field)
+                                  ,(create-syntax #f '(javaRuntime:nullError 'field (current-continuation-marks))
+                                                 expr)
                                   (send ,expr ,(translate-id field-string field-src)))
                              (build-src src))))
            ((and (eq? (var-access-access access) 'private) #;(or (static-method) (inner-class)))
@@ -2492,7 +2493,10 @@
                    (get-syntax  (if cant-be-null?
                                     (make-syntax #f getter (build-src src))
                                     (make-syntax #f `(if (null? ,expr)
-                                                         (javaRuntime:nullError 'field)
+                                                         ,(create-syntax 
+                                                           #f
+                                                           '(javaRuntime:nullError 'field (current-continuation-marks))
+                                                           expr)
                                                          ,getter)
                                                  (build-src src)))))
               (if (dynamic-val? type)
@@ -2519,7 +2523,8 @@
                           (make-syntax #f
                                        `(let ([val~1 ,expr])
                                           (if (null? val~1)
-                                              (javaRuntime:nullError 'field)
+                                              ,(create-syntax #f '(javaRuntime:nullError 'field (current-continuation-marks))
+                                                             expr)
                                               (,id val~1)))
                                        (build-src src)))))
                 (if (dynamic-val? type)
@@ -2585,7 +2590,8 @@
                             (else
                              `(let ((,unique-name ,expression))
                                 (if (null? ,unique-name)
-                                    (javaRuntime:nullError 'method)
+                                    ,(create-syntax #f '(javaRuntime:nullError 'method (current-continuation-marks))
+                                                   expression)
                                     (send-generic ,unique-name ,generic-c-name ,@args)))))
                           (build-src src))
            
@@ -2594,7 +2600,8 @@
                (create-syntax #f 
                               `(let ((,unique-name ,expression))
                                  (if (null? ,unique-name)
-                                     ,(create-syntax #f `(javaRuntime:nullError 'method) expression)
+                                     ,(create-syntax #f `(javaRuntime:nullError 'method (current-continuation-marks))
+                                                     expression)
                                      (send ,unique-name ,c-name ,@translated-args)))
                               (build-src src)))))
           
@@ -2668,7 +2675,9 @@
                          (create-syntax #f
                                         `(let ((,unique-name ,expression))
                                            (if (null? ,unique-name)
-                                               (javaRuntime:nullError 'method)
+                                               (javaRuntime:nullError 'method 
+                                                                      ,(create-syntax #f
+                                                                                      '(current-continuation-marks) expression))
                                                (send ,unique-name ,name ,@translated-args)))
                                         (build-src src))))))
                 (if (or (method-contract? method-record)

@@ -1457,7 +1457,7 @@
                                            (expr-src exp)
                                            type-recs
                                            c-class
-                                           env level static?)))
+                                           env level static? interact?)))
         ((inner-alloc? exp)
          (set-expr-type exp
                         (check-inner-alloc exp 
@@ -2315,8 +2315,8 @@
   
   ;; 15.9
   ;;check-class-alloc: expr (U name identifier) (list exp) (exp env -> type/env) src type-records 
-  ;                   (list string) env symbol bool-> type/env
-  (define (check-class-alloc exp name/def arg-exps check-e src type-recs c-class env level static?)
+  ;                   (list string) env symbol bool bool-> type/env
+  (define (check-class-alloc exp name/def arg-exps check-e src type-recs c-class env level static? interact?)
     (let* ((args/env (check-args arg-exps check-e env))
            (args (car args/env))
            (name (cond
@@ -2387,7 +2387,7 @@
                       (unless (lookup-exn thrown env type-recs level)
                         (ctor-throws-error (ref-type-class/iface thrown) type src)))
                     (method-record-throws const)))
-        (when (and (memq 'private mods) (not (eq? class-record this)))
+        (when (and (memq 'private mods) (or interact? (not (eq? class-record this))))
           (class-access-error 'pri level type src))
         (when (and (memq 'protected mods) (or (not (is-eq-subclass? this type type-recs)) 
                                               (not (package-members? c-class (cons (ref-type-class/iface type) 
@@ -3346,7 +3346,7 @@
                        ((pro) 
                         (format "method ~a from ~a may only be called by ~a, a subclass, or package member of ~a" 
                                 n t t t))
-                       ((pri) (format "~a does not contain a method named ~a" t n))
+                       ((pri) (format "~a does not contain a visible method named ~a" t n))
                        ((pac) (format "method ~a from ~a may only be called by ~a or a package member of ~a" 
                                       n t t t))))
                  n src)))

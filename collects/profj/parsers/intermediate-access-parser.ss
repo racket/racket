@@ -225,7 +225,7 @@
       (VariableDeclaratorId
        [(IDENTIFIER)
 	(make-var-decl (make-id $1 (build-src 1)) 
-                       (list (make-modifier 'public #f))
+                       null
                        (make-type-spec #f 0 (build-src 1)) #f (build-src 1))])
 			
       (VariableInitializer
@@ -245,16 +245,17 @@
                                                (build-src 2))])
 
       (MethodHeader
-       [(Modifiers Type MethodDeclarator) (construct-method-header (cons (make-modifier 'public #f) $1) null $2 $3 null)]
+       [(Modifiers Type MethodDeclarator) 
+        (construct-method-header $1 null $2 $3 null)]
        [(Modifiers void MethodDeclarator)
-	(construct-method-header (cons (make-modifier 'public #f) $1)
+	(construct-method-header $1
 				 null 
 				 (make-type-spec 'void 0 (build-src 2 2))
 				 $3
 				 null)]
-       [(Type MethodDeclarator) (construct-method-header (list (make-modifier 'public #f)) null $1 $2 null)]
+       [(Type MethodDeclarator) (construct-method-header null null $1 $2 null)]
        [(void MethodDeclarator)
-	(construct-method-header (list (make-modifier 'public #f))
+	(construct-method-header null
 				 null 
 				 (make-type-spec 'void 0 (build-src 1 1))
 				 $2
@@ -280,9 +281,13 @@
       
       (ConstructorDeclaration
        [(ConstructorDeclarator ConstructorBody)
-	(make-method (list (make-modifier 'public #f))         
+	(make-method null         
                      (make-type-spec 'ctor 0 (build-src 2)) null (car $1)
-                     (cadr $1) null $2 #f #f (build-src 2))])
+                     (cadr $1) null $2 #f #f (build-src 2))]
+       [(Modifiers ConstructorDeclarator ConstructorBody)
+        (make-method $1
+                     (make-type-spec 'ctor 0 (build-src 3)) null (car $2)
+                     (cadr $2) null $3 #f #f (build-src 3))])
       
       (ConstructorDeclarator
        [(IDENTIFIER O_PAREN FormalParameterList C_PAREN) (list (make-id $1 (build-src 1)) (reverse $3))]

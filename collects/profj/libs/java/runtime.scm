@@ -187,7 +187,7 @@
         (send val check-ref-type type dim)))
   
   ;nullError: symbol -> void
-  (define (nullError kind)
+  (define (nullError kind marks)
     (raise
      (create-java-exception NullPointerException
                             (case kind
@@ -197,7 +197,7 @@
                                "This value cannot retrieve a field as it is null and therefore has no fields"))
                             (lambda (exn msg)
                               (send exn NullPointerException-constructor-java.lang.String msg))
-                            (current-continuation-marks))))
+                            marks #;(current-continuation-marks))))
   
   (define in-check-mutate? (make-parameter #f))
   (define stored-checks (make-parameter null))
