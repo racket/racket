@@ -45,6 +45,9 @@
   ; send-url : str [bool] -> void
   (define/kw (send-url url-str
                        #:optional [separate-window? separate-by-default?])
+    (define stupid-internal-define-syntax1
+      (unless (string? url-str)
+        (error 'send-url "expected a string, got ~e" url-str)))
     (define external (external-browser))
     (define stype (force systype))
     (define preferred '|? ? ?|)
