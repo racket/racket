@@ -88,17 +88,26 @@ an excessive amount of memory or executes very slowly, try turning off
 coverage collection during execution.
 
 _ProfessorJ Beginner_
+ In Version 371, the if statement now requires { } around both branches.
  In Version 300, the Beginner language level has undergone significant
  changes.  Largest among these is that interfaces are supported within
  the language, but abstract classes are no longer allowed. Further,
  interface implementation is supported but class extension is not. For
- further details please see the language manual.
+ further details please see the language manual. 
 
 _ProfessorJ Intermediate_
+ In Version 371, the if statement now requires { } around both branches.
  In Version 300, instanceof is now allowed. For further language
  details please see the language manual.
+
+_ProfessorJ Intermediate + access_
+ New to version 371, augments the Intermediate language with access
+ modifiers and overloading. For further details, please see the 
+ language manual.
  
 _ProfessorJ Advanced_
+ In Version 371, the various statements including if, for, and while
+ require { }.
  For details, please see the language manual.
  
 _ProfessorJ Full
