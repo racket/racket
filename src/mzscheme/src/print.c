@@ -1705,8 +1705,13 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  s[0] = (unsigned char)(v + CPT_SMALL_NUMBER_START);
 	  print_this_string(pp, (char *)s, 0, 1);
 	} else {
-	  print_compact(pp, CPT_INT);
-	  print_compact_number(pp, v);
+          /* Make sure it's a fixnum on all platforms... */
+          if ((v >= -1073741824) && (v <= 1073741824)) {
+            print_compact(pp, CPT_INT);
+            print_compact_number(pp, v);
+          } else {
+            print_escaped(pp, notdisplay, obj, ht, mt, 1);
+          }
 	}
       } else {
 	sprintf(quick_buffer, "%ld", SCHEME_INT_VAL(obj));
