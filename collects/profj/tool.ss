@@ -148,7 +148,10 @@
                                    [(not previous-line) (+ base-offset single-tab-stop)]
                                    [else
                                     (let* ([last-line-start (skip-whitespace previous-line 'forward #f)]
-                                           [last-line-indent (sub1 (- last-line-start previous-line))]
+                                           [last-line-indent 
+                                            (sub1 (if (> last-line-start start-pos)
+                                                      (- start-pos previous-line)
+                                                      (- last-line-start previous-line)))]
                                            [old-open (get-sexp-start last-line-start)])
                                       (cond
                                         [(not old-open) last-line-indent]
