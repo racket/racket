@@ -1,11 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@title{Eventspaces}
-
-
-
-
+@title[#:tag "mr:eventspace-funcs"]{Eventspaces}
 
 @defproc[(make-eventspace)
          eventspace]{

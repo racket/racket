@@ -13,24 +13,34 @@ See
 
 
 
-@defconstructor[[event-type (symbols/c thumb page-down page-up line-down line-up bottom top) 'thumb]
-                [direction (symbols/c vertical horizontal) 'vertical]
-                [position (integer-in 0 10000) 0]
-                [time-stamp (and/c exact? integer?) 0]]{
+@defconstructor[([event-type (one-of/c 'top 'bottom 'line-up 'line-down 
+                                       'page-up 'page-down 'thumb)
+                             'thumb]
+                 [direction (one-of/c 'horizontal 'vertical) 'vertical]
+                 [position (integer-in 0 10000) 0]
+                 [time-stamp (and/c exact? integer?) 0])]{
 
 See the corresponding @scheme[get-] and @scheme[set-] methods for
  information about @scheme[event-type], @scheme[direction], @scheme[position],
  and @scheme[time-stamp].
 
+}
 
+@defmethod[(get-direction)
+           (one-of/c 'horizontal 'vertical)]{
+
+Gets the identity of the scrollbar that was modified by the event,
+ either the horizontal scrollbar or the vertical scrollbar, as
+ @scheme['horizontal] or @scheme['vertical], respectively. See also
+ @method[scroll-event% set-direction].
 
 }
 
 @defmethod[(get-event-type)
-           (symbols/c thumb page-down page-up line-down line-up bottom top)]{
-@spec{
+           (one-of/c 'top 'bottom 'line-up 'line-down 'page-up 'page-down 'thumb)]{
 
 Returns the type of the event, one of the following:
+
 @itemize{
 @item{@scheme['top] --- user clicked a scroll-to-top button}
 @item{@scheme['bottom] --- user clicked a scroll-to-bottom button}
@@ -41,64 +51,41 @@ Returns the type of the event, one of the following:
 @item{@scheme['thumb] --- user dragged the scroll position indicator}
 }
 
-}}
-
-@defmethod[(set-event-type [type (symbols/c thumb page-down page-up line-down line-up bottom top)])
-           void?]{
-@spec{
-
-Sets the type of the event. See
-@method[scroll-event% get-event-type] for information about each event type.
-
-}}
+}
 
 @defmethod[(get-position)
            (integer-in 0 10000)]{
-@spec{
 
 Returns the position of the scrollbar after the action triggering the
- event. See also
-@method[scroll-event% set-position].
+ event. See also @method[scroll-event% set-position].
 
-}}
+}
 
-@defmethod[(set-position [position (integer-in 0 10000)])
+@defmethod[(set-direction [direction (one-of/c 'horizontal 'vertical)])
            void?]{
-@spec{
-
-Records the position of the scrollbar after the action triggering the
- event. (The scrollbar itself is unaffected). See also
-@method[scroll-event% get-position].
-
-}}
-
-@defmethod[(get-direction)
-           (symbols/c vertical horizontal)]{
-@spec{
-
-Gets the identity of the scrollbar that was modified by the event,
- either the horizontal scrollbar or the vertical scrollbar, as
- @scheme['horizontal] or @scheme['vertical], respectively. See
- also
-@method[scroll-event% set-direction].
-
-}}
-
-@defmethod[(set-direction [direction (symbols/c vertical horizontal)])
-           void?]{
-@spec{
 
 Sets the identity of the scrollbar that was modified by the event,
  either the horizontal scrollbar or the vertical scrollbar, as
- @scheme['horizontal] or @scheme['vertical], respectively. See
- also
-@method[scroll-event% get-direction].
+ @scheme['horizontal] or @scheme['vertical], respectively. See also
+ @method[scroll-event% get-direction].
 
 }
-@impl{
 
+@defmethod[(set-event-type [type (one-of/c 'top 'bottom 'line-up 'line-down 
+                                           'page-up 'page-down 'thumb)])
+           void?]{
 
+Sets the type of the event. See @method[scroll-event% get-event-type]
+for information about each event type.
 
+}
 
-}}}
+@defmethod[(set-position [position (integer-in 0 10000)])
+           void?]{
+
+Records the position of the scrollbar after the action triggering the
+ event. (The scrollbar itself is unaffected). See also
+ @method[scroll-event% get-position].
+
+}}
 

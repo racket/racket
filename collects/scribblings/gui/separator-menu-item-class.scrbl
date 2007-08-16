@@ -7,13 +7,9 @@ A separator is an unselectable line in a menu. Its parent must be a
  @scheme[menu%] or @scheme[popup-menu%].
 
 
-
-
-@defconstructor[[parent @scheme[menu%] or @scheme[popup-menu%] object]]{
+@defconstructor[([parent (or/c (is-a?/c menu%) (is-a?/c popup-menu%))])]{
 
 Creates a new separator in the menu.
-
-
 
 }}
 

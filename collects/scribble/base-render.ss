@@ -296,7 +296,9 @@
         (let ([number (collected-info-number (part-collected-info part))])
           (let ([subs 
                  (if (quiet (and (styled-part? part)
-                                 (eq? 'quiet (styled-part-style part))
+                                 (let ([st(styled-part-style part)])
+                                   (or (eq? 'quiet st)
+                                       (and (list? st) (memq 'quiet st))))
                                  (not (= base-len (sub1 (length number))))))
                      (apply
                       append

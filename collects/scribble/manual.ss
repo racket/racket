@@ -84,10 +84,14 @@
        #f
        (map (lambda (s)
               (list (make-flow (list (make-paragraph 
-                                      (let ([spaces (cdar (regexp-match-positions #rx"^ *" s))])
-                                        (list 
-                                         (hspace spaces)
-                                         (make-element 'tt (list (substring s spaces))))))))))
+                                      (let loop ([s s])
+                                        (let ([spaces (regexp-match-positions #rx"(?:^| ) +" s)])
+                                          (if spaces
+                                              (append
+                                               (loop (substring s 0 (caar spaces)))
+                                               (list (hspace (- (cdar spaces) (caar spaces))))
+                                               (loop (substring s (cdar spaces))))
+                                              (list (make-element 'tt (list s)))))))))))
             strs))))
 
   (define-syntax indexed-scheme

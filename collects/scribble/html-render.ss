@@ -454,7 +454,9 @@
 
       (define/private (toc-part? d)
         (and (styled-part? d)
-             (eq? 'toc (styled-part-style d))))
+             (let ([st (styled-part-style d)])
+               (or (eq? 'toc st)
+                   (and (list? st) (memq 'toc st))))))
 
       (define/override (collect-part d parent ht number)
         (let ([prev-sub (collecting-sub)])

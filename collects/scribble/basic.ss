@@ -22,17 +22,17 @@
     (let ([content (decode-content str)])
       (make-title-decl (or tag (gen-tag content)) style content)))
   
-  (define (section #:tag [tag #f] . str)
+  (define (section #:tag [tag #f] #:style [style #f] . str)
     (let ([content (decode-content str)])
-      (make-part-start 0 (or tag (gen-tag content)) content)))
+      (make-part-start 0 (or tag (gen-tag content)) style content)))
 
   (define (subsection #:tag [tag #f] . str)
     (let ([content (decode-content str)])
-      (make-part-start 1 (or tag (gen-tag content)) content)))
+      (make-part-start 1 (or tag (gen-tag content)) #f content)))
 
   (define (subsubsection #:tag [tag #f] . str)
     (let ([content (decode-content str)])
-      (make-part-start 2 (or tag (gen-tag content)) content)))
+      (make-part-start 2 (or tag (gen-tag content)) #f content)))
 
   (define (subsubsub*section #:tag [tag #f] . str)
     (let ([content (decode-content str)])

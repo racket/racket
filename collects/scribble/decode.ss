@@ -18,6 +18,7 @@
                 [content list?])]
    [part-start ([depth integer?]
                 [tag (or/c false/c string?)]
+                [style any/c]
                 [title list?])]
    [splice ([run list?])]
    [part-index-decl ([plain-seq (listof string?)]
@@ -136,10 +137,11 @@
                              ((part-start-depth (car l)) . <= . part-depth))
                         (part? (car l))))
                 (let ([para (decode-accum-para accum)]
-                      [s (decode-part (reverse s-accum)
-                                      (part-start-tag s)
-                                      (part-start-title s)
-                                      (add1 part-depth))]
+                      [s (decode-styled-part (reverse s-accum)
+                                             (part-start-tag s)
+                                             (part-start-style s)
+                                             (part-start-title s)
+                                             (add1 part-depth))]
                       [part (decode-flow* l keys tag style title part-depth)])
                   (make-styled-part (part-tags part)
                                     (part-title-content part)
@@ -178,6 +180,9 @@
 
   (define (decode-part l tag title depth)
     (decode-flow* l null tag #f title depth))
+
+  (define (decode-styled-part l tag style title depth)
+    (decode-flow* l null tag style title depth))
 
   (define (decode-flow l)
     (part-flow (decode-flow* l null #f #f #f #f)))
