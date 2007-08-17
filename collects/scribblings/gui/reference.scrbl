@@ -10,3 +10,5 @@
 @include-section["draw-classes.scrbl"]
 @include-section["draw-funcs.scrbl"]
 @include-section["editor-classes.scrbl"]
+@include-section["editor-stream-classes.scrbl"]
+@include-section["editor-funcs.scrbl"]

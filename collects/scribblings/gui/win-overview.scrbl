@@ -864,7 +864,7 @@ When an eventspace is created, it is placed under the management of
  the @tech{current custodian}. When a custodian shuts down an
  eventspace, all frames and dialogs associated with the eventspace are
  destroyed (without calling @method[top-level-window<%> can-close?]
- or @xmethod[top-level-window% on-close]), all timers in the
+ or @xmethod[top-level-window<%> on-close]), all timers in the
  eventspace are stopped, and all enqueued callbacks are removed.
  Attempting to create a new window, timer, or explicitly queued event
  in a shut-down eventspace raises the @scheme[exn:misc] exception.

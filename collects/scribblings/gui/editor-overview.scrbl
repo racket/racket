@@ -120,7 +120,7 @@ We can insert the old text editor (which we recently removed from the
 
 @schemeblock[
 (define s (make-object editor-snip% t)) (code:comment #, @t{@scheme[t] is the old text editor})
-(send pb #,(:: editor:<%> insert) s)
+(send pb #,(:: editor<%> insert) s)
 ]
 
 An individual snip cannot be inserted into different editors at the
@@ -666,7 +666,7 @@ Instances of @scheme[editor<%>] have three levels of internal
  reflowing, it is locked for writing, the snip content of the editor
  cannot change, the @techlink{location} of a snip cannot be computed if it
  is not already known (see
- @xmethod[editor% locations-computed?]), and the editor cannot
+ @xmethod[editor<%> locations-computed?]), and the editor cannot
  be drawn to a @techlink{display}. A request for uncomputed location
  information during a flow lock produces undefined results. The
  @method[editor<%> locked-for-flow?] method reports whether an
@@ -689,7 +689,7 @@ Methods that report @techlink{location}-independent information about an
  editor never trigger a lock. A method that reports @techlink{location}
  information may trigger a flow lock or write lock if the relevant
  information has not been computed since the last modification to the
- editor (see @xmethod[editor% locations-computed?]). A method
+ editor (see @xmethod[editor<%> locations-computed?]). A method
  that modifies the editor in any way, even setting the selection
  position, can trigger a read lock, flow lock, or write lock.
 

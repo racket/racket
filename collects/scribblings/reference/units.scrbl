@@ -33,7 +33,7 @@ evaluate its expressions given actual arguments for its formal
 parameters, a unit is invoked to evaluate its definitions given actual
 references for its imported variables. Unlike a procedure, however, a
 unit's imported variables can be partially linked with the exported
-variables of another unit {\em prior to invocation}. Linking merges
+variables of another unit @italic{prior to invocation}. Linking merges
 multiple units together into a single compound unit. The compound unit
 itself imports variables that will be propagated to unresolved
 imported variables in the linked units, and re-exports some variables

@@ -35,7 +35,7 @@
  bitmap has a mask (see @xmethod[bitmap% get-loaded-mask])
  that is the same size as the bitmap, then the mask is used for the
  label; furthermore, in contrast to the limitations of
- @xmethod[dc% draw-bitmap], non-monochrome label masks work
+ @xmethod[dc<%> draw-bitmap], non-monochrome label masks work
  consistently on all platforms.})
 
   (define-syntax bitmaplabeluse
@@ -66,9 +66,9 @@
         @method[popup-menu% get-popup-target]
         for more information.}
  
-     (if (string=? more "")
+     (if (equal? more "")
          null
-         @p{@|more|}))))
+         (list @p{@|more|})))))
 
   (define insertcharundos
     @elem{Multiple calls to the character-inserting method are grouped together
@@ -96,7 +96,7 @@ start/end @techlink{position} is incremented by @|what|.})
 
   (define OVD
     @elem{The result is only valid when the editor is displayed (see
-          @secref["tb:miaoverview"]).})
+          @secref["mr:tb:miaoverview"]).})
 
   (define (FCAX c details)
     @elem{@|c|alling this method may force the recalculation of @techlink{location}

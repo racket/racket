@@ -42,7 +42,7 @@ The following example creates a frame with a drawing canvas, and then
 (code:comment #, @t{Make the drawing area})
 (define canvas (new canvas% [parent frame]))
 (code:comment #, @t{Get the canvas's drawing context})
-(define dc (send canvas #,(:: canvas% get-dc)))
+(define dc (send canvas #,(:: canvas<%> get-dc)))
 
 (code:comment #, @t{Make some pens and brushes})
 (define no-pen (make-object pen% "BLACK" 1 'transparent))
