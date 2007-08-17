@@ -1054,6 +1054,8 @@
                 (wait-for-new-frame f)))
             (set-language-level! level))
         
+        (random-seed-test)
+        
         (test:new-window definitions-canvas)
         (clear-definitions drscheme-frame)
         (do-execute drscheme-frame)
@@ -1099,6 +1101,7 @@
         (error 'kill-test3 "in edit-sequence")))
     
     (define (callcc-test)
+      (next-test)
       (clear-definitions drscheme-frame)
       (type-in-definitions drscheme-frame "(define kont #f) (let/cc empty (set! kont empty))")
       (do-execute drscheme-frame)
@@ -1118,8 +1121,34 @@
                [output (fetch-output drscheme-frame start end)]
                [expected "reference to undefined identifier: x"])
           (unless (equal? output expected)
-            (error 'callcc-test "expected ~s, got ~s" expected output)))))
+            (failure)
+            (fprintf (current-error-port) "callcc-test: expected ~s, got ~s" expected output)))))
     
+    (define (random-seed-test)
+      (define expression
+        (string->list (format "~a" '(pseudo-random-generator->vector (current-pseudo-random-generator)))))
+      (next-test)
+      (clear-definitions drscheme-frame)
+      (do-execute drscheme-frame)
+      (wait-for-execute)
+      
+      (for-each test:keystroke expression)
+      (let ([start1 (+ 1 (send interactions-text last-position))])
+        (test:keystroke #\return)
+        (wait-for-execute)
+        (let ([output1 (fetch-output drscheme-frame start1 (- (get-int-pos) 1))])
+          (for-each test:keystroke expression)
+          (let ([start2 (+ 1 (send interactions-text last-position))])
+            (test:keystroke #\return)
+            (wait-for-execute)
+            (let ([output2 (fetch-output drscheme-frame start2 (- (get-int-pos) 1))])
+              (unless (equal? output1 output2)
+                (failure)
+                (fprintf (current-error-port)
+                         "random-seed-test: expected\n  ~s\nand\n  ~s\nto be the same"
+                         output1
+                         output2)))))))
+      
     (define (top-interaction-test)
       (clear-definitions drscheme-frame)
       (do-execute drscheme-frame)

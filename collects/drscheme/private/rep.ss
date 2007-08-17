@@ -45,8 +45,10 @@ TODO
       [(_ e)
        (with-syntax ([my-funny-name (syntax-local-value #'stacktrace-name)])
          (syntax
-          (let ([my-funny-name (λ () (begin0 e (random 1)))]) 
-            ((if (zero? (random 1)) 
+          (let ([my-funny-name (λ () (begin0 e (parameterize ([current-pseudo-random-generator (make-pseudo-random-generator)])
+                                                 (random 1))))]) 
+            ((if (zero? (parameterize ([current-pseudo-random-generator (make-pseudo-random-generator)])
+                          (random 1))) 
                  my-funny-name
                  values)))))]))
   
