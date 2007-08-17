@@ -950,16 +950,18 @@
           
           (define current-language-settings #f)
           (define control-panel #f)
+          (define debug? #f)
           (define/public (set-mouse-over-msg msg)
             (when (not (string=? msg (send mouse-over-message get-label)))
               (send mouse-over-message set-label msg)))
           
           (define/override execute-callback
-            (opt-lambda ([debug #f])
+            (lambda ()
               (let* ([tab (get-current-tab)])
                 (if (eq? tab (send tab get-master))
                     (begin
-                      (send (get-current-tab) prepare-execution debug)
+                      (send (get-current-tab) prepare-execution debug?)
+                      (set! debug? #f)
                       (super execute-callback))
                     (message-box
                      "Message from Debugger"
@@ -1006,7 +1008,7 @@
                 (string-constant debug-tool-button-name)
                 (build-path (collection-path "mztake" "icons") "icon-small.png")) this)
               (make-object vertical-pane% (get-button-panel))
-              (lambda (button evt) (execute-callback #t))))
+              (lambda (button evt) (set! debug? #t) (execute-callback))))
           
           (define pause-button
             (instantiate button% ()
