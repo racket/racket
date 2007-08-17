@@ -3,7 +3,7 @@
 @require["common.ss"]
 @require["diagrams.ss"]
 
-@title[#:tag "mred:drawing-toolbox"]{Drawing Toolbox Overview}
+@title[#:tag "mr:drawing-overview"]{Drawing Guide}
 
 Drawing in MrEd requires a @deftech{device context} (@deftech{DC}),
  which is an instance of the @scheme[dc<%>] interface. For example,

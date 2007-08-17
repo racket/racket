@@ -314,6 +314,16 @@
               [else (error 'html-render "unrecognized style symbol: ~e" style)])]
            [(string? style) 
             `((span ([class ,style]) ,@(super render-element e part ht)))]
+           [(and (pair? style)
+                 (eq? (car style) 'show-color))
+            `((font ((style ,(format "background-color: ~a"
+                                    (apply string-append "#"
+                                           (map (lambda (v) (let ([s (format "0~x" v)])
+                                                              (substring s (- (string-length s) 2))))
+                                                (cdr style))))))
+                    (tt nbsp nbsp nbsp nbsp nbsp))
+              nbsp
+              ,@(super render-element e part ht))]
            [(target-url? style)
             (if (current-no-links)
                 (super render-element e part ht)

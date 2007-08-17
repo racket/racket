@@ -1,11 +1,12 @@
 #reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["diagrams.ss"]
 
-@title[#:tag "mr:windowing" #:style 'toc]{Windowing Toolbox}
+@title[#:style 'toc]{Reference}
 
 @local-table-of-contents[]
 
-@include-section["win-overview.scrbl"]
 @include-section["win-classes.scrbl"]
 @include-section["win-funcs.scrbl"]
+@include-section["draw-classes.scrbl"]
+@include-section["draw-funcs.scrbl"]
+@include-section["editor-classes.scrbl"]

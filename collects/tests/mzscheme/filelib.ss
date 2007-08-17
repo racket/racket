@@ -21,9 +21,9 @@
 	  (current-directory))
 
     (let ([rel2 (fold-files (lambda (name kind accum)
-			      (test kind values (if (file-exists? name)
-						    'file
-						    'dir))
+			      (test kind name (if (file-exists? name)
+                                                  'file
+                                                  'dir))
 			      (cons name accum))
 			    null)]
 	  [sort (lambda (l)
@@ -41,9 +41,10 @@
 		(test kind values (cond
 				   [(link-exists? name) 'link]
 				   [(file-exists? name) 'file]
-				   [else 'dir]))
+				   [(dir-exists? name) 'dir]
+				   [else '???]))
 		(when (member name '("filelib-link.ss" "loop-link"))
-		  (test kind values 'link))
+		  (test kind name 'link))
 		(add1 accum))
 	      0
 	      #f
@@ -58,7 +59,7 @@
 				   [(file-exists? name) 'file]
 				   [else 'dir]))
 		(when (member name '("filelib-link.ss"))
-		  (test kind values 'file))
+		  (test kind name 'file))
 		(add1 accum))
 	      0
 	      #f

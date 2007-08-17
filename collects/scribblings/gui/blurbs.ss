@@ -52,12 +52,6 @@
     @elem{The bitmap label is installed only
           if the control was originally created with a bitmap label.})
 
-  (define (NotDCRelated)
-   @elem{A path is not connected to any particular @scheme[dc<%>] object, so
- setting a @scheme[dc<%>] origin or scale does not affect path
- operations. Instead, a @scheme[dc<%>]'s origin and scale apply at the
- time that the path is drawn or used to set a region.})
-
   (define (popupmenuinfo what other more)
    (make-splice
     (list*
@@ -250,7 +244,7 @@ information@|details|, even if the editor currently has delayed refreshing (see
                    @elem{snip @techlink{position}}))
 
   (define (colorName name name2 r g b)
-    name)
+    (make-element `(show-color ,r ,g ,b) (list (to-element (bytes->string/latin-1 name)))))
   
   (define (Resource s)
     @elem{@to-element[`(quote ,(string->symbol (string-append "MrEd:" s)))]
@@ -270,6 +264,11 @@ information@|details|, even if the editor currently has delayed refreshing (see
     (edsnipsize @elem{sets the minimum @|a|}
                 "smaller"
                 @elem{the editor is @|b|-aligned in the snip}))
+
+  (define (boxisfill which what)
+    @elem{The @|which| box is filled with @|what|.})
+  (define (boxisfillnull which what)
+    @elem{The @|which| box is filled with @|what|, unless @|which| is @scheme[#f].})
 
   )
 

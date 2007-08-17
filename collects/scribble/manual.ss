@@ -480,6 +480,20 @@
 
   (define max-proto-width 65)
 
+  (define (name-this-object type-sym)
+    (to-element
+     (string->symbol
+      (regexp-replace
+       #rx"(%|<%>|-mixin)$"
+       (format "_a~a-~s" 
+               (if (member
+                    (string-ref (symbol->string type-sym) 0)
+                    '(#\a #\e #\i #\o #\u))
+                   "n"
+                   "")
+               type-sym)
+       ""))))
+
   (define (*defproc mode within-id
                     stx-ids prototypes arg-contractss result-contracts content-thunk)
     (let ([spacer (hspace 1)]
@@ -564,17 +578,7 @@
                                          (make-element #f
                                                        (list (scheme send)
                                                              (hspace 1)
-                                                             (to-element (string->symbol
-                                                                          (regexp-replace
-                                                                           #rx"(%|<%>|-mixin)$"
-                                                                           (format "a~a-~s" 
-                                                                                   (if (member
-                                                                                        (string-ref (symbol->string (syntax-e within-id)) 0)
-                                                                                        '(#\a #\e #\i #\o #\u))
-                                                                                       "n"
-                                                                                       "")
-                                                                                   (syntax-e within-id))
-                                                                           "")))
+                                                             (name-this-object (syntax-e within-id))
                                                              (hspace 1)
                                                              (if first?
                                                                  (let* ([mname (car prototype)]
@@ -1225,6 +1229,7 @@
            defmethod*
            methspec
            methimpl
+           this-obj
            include-class)
 
   (define-syntax-parameter current-class #f)
@@ -1416,6 +1421,15 @@
   (define-syntax methspec
     (syntax-rules ()
       [(_ body ...) (make-spec (lambda () (list (italic "Specification:") body ...)))]))
+
+  (define (*this-obj cname)
+    (name-this-object cname))
+
+  (define-syntax (this-obj stx)
+    (syntax-case stx ()
+      [(_) 
+       (with-syntax ([cname (syntax-parameter-value #'current-class)])
+         #'(*this-obj 'cname))]))
 
   ;; ----------------------------------------
   )

@@ -3,9 +3,7 @@
 @require["common.ss"]
 @require["diagrams.ss"]
 
-@title[#:tag "mr:windowing-overview" #:style 'toc]{Windowing Toolbox Overview}
-
-@local-table-of-contents[]
+@title[#:tag "mr:windowing-overview"]{Windowing Guide}
 
 @section{Basic GUI Building Blocks}
 
