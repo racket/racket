@@ -41,7 +41,7 @@
 		(test kind values (cond
 				   [(link-exists? name) 'link]
 				   [(file-exists? name) 'file]
-				   [(dir-exists? name) 'dir]
+				   [(directory-exists? name) 'dir]
 				   [else '???]))
 		(when (member name '("filelib-link.ss" "loop-link"))
 		  (test kind name 'link))
