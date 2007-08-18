@@ -720,7 +720,7 @@
                                                                  (not result-next-line?))
                                                             end
                                                             not-end))
-                                               (loop ((if dots-next? cddr cdr) args) (sub1 req))))))))))))))
+                                                 (loop ((if dots-next? cddr cdr) args) (sub1 req))))))))))))))
                   (if result-next-line?
                       (list (list (make-flow (make-table-if-necessary
                                               "prototype" 
@@ -1241,35 +1241,63 @@
 
   (define-syntax-parameter current-class #f)
 
-  (define class-decls (make-hash-table 'equal))
-
-  (define-struct decl (name super intfs mk-body))
+  (define-struct decl (name super intfs mk-head body methods))
   (define-struct constructor (def))
-  (define-struct meth (mode desc def))
+  (define-struct meth (name mode desc def))
   (define-struct spec (def))
   (define-struct impl (def))
 
-  (define (register-class name super intfs body)
-    (let ([key (register-scheme-definition name)])
-      (hash-table-put! class-decls 
-                       key
-                       (make-decl name super intfs body))))
+  (define-for-syntax (class-id->class-doc-info-id id)
+    (datum->syntax-object id
+                          (string->symbol (format "class-doc-info:~a" (syntax-e id)))
+                          id))
 
-  (define (*include-class name)
-    (let ([decl (hash-table-get class-decls (register-scheme-definition name))])
-      (make-splice
-       (cons (section #:style 'hidden (to-element (decl-name decl)))
-             (map (lambda (i)
-                    (cond
-                     [(constructor? i) ((constructor-def i))]
-                     [(meth? i)
-                      ((meth-def i) (meth-desc i))]
-                     [else i]))
-                  ((decl-mk-body decl) #t))))))
+  (define-syntax (define-class-doc-info stx)
+    (syntax-case stx ()
+      [(_ id val)
+       (with-syntax ([id (class-id->class-doc-info-id #'id)])
+         #'(begin
+             (provide id)
+             (define id val)))]))
+
+  (define-syntax (class-doc-info stx)
+    (syntax-case stx (object%)
+      [(_ object%) #'#f]
+      [(_ id) (class-id->class-doc-info-id #'id)]))
+
+  (define (register-class name super intfs mk-head body)
+    (let ([ht (make-hash-table)])
+      (when super
+        (hash-table-for-each (decl-methods super)
+                             (lambda (k v)
+                               (hash-table-put! ht k v))))
+      (for-each (lambda (intf)
+                  (hash-table-for-each (decl-methods intf)
+                                       (lambda (k v)
+                                         (hash-table-put! ht k v))))
+                intfs)
+      (for-each (lambda (i)
+                  (when (meth? i) 
+                    (hash-table-put! ht (meth-name i) (cons name i))))
+                body)
+      (make-decl name super intfs mk-head body ht)))
+
+  (define (*include-class decl)
+    (make-splice
+     (cons (section #:style 'hidden (to-element (decl-name decl)))
+           (map (lambda (i)
+                  (cond
+                   [(constructor? i) ((constructor-def i))]
+                   [(meth? i)
+                    ((meth-def i) (meth-desc i))]
+                   [else i]))
+                (append
+                 ((decl-mk-head decl) #t)
+                 (decl-body decl))))))
 
   (define-syntax include-class
     (syntax-rules ()
-      [(_ id) (*include-class (quote-syntax id))]))
+      [(_ id) (*include-class (class-doc-info id))]))
 
   (define (*defclass stx-id super intfs whole-page?)
     (let ([spacer (hspace 1)])
@@ -1324,34 +1352,34 @@
   (define-syntax defclass
     (syntax-rules ()
       [(_ name super (intf ...) body ...)
-       (syntax-parameterize ([current-class (quote-syntax name)])
-         (register-class (quote-syntax name)
-                         (quote-syntax super)
-                         (list (quote-syntax intf) ...)
-                         (lambda (whole-page?)
-                           (append
-                            (list
-                             (*defclass (quote-syntax name)
-                                        (quote-syntax super)
-                                        (list (quote-syntax intf) ...)
-                                        whole-page?))
-                            (list body ...)))))]))
+       (define-class-doc-info name
+         (syntax-parameterize ([current-class (quote-syntax name)])
+           (register-class (quote-syntax name)
+                           (class-doc-info super)
+                           (list (class-doc-info intf) ...)
+                           (lambda (whole-page?)
+                             (list
+                              (*defclass (quote-syntax name)
+                                         (quote-syntax super)
+                                         (list (quote-syntax intf) ...)
+                                         whole-page?)))
+                           (list body ...))))]))
 
   (define-syntax definterface
     (syntax-rules ()
       [(_ name (intf ...) body ...)
-       (syntax-parameterize ([current-class (quote-syntax name)])
-         (register-class (quote-syntax name)
-                         #f
-                         (list (quote-syntax intf) ...)
-                         (lambda (whole-page?)
-                           (append
-                            (list
-                             (*defclass (quote-syntax name)
-                                        #f
-                                        (list (quote-syntax intf) ...)
-                                        whole-page?))
-                            (list body ...)))))]))
+       (define-class-doc-info name
+         (syntax-parameterize ([current-class (quote-syntax name)])
+           (register-class (quote-syntax name)
+                           #f
+                           (list (class-doc-info intf) ...)
+                           (lambda (whole-page?)
+                             (list
+                              (*defclass (quote-syntax name)
+                                         #f
+                                         (list (quote-syntax intf) ...)
+                                         whole-page?)))
+                           (list body ...))))]))
 
   (define-syntax (defconstructor*/* stx)
     (syntax-case stx ()
@@ -1404,19 +1432,32 @@
   (define-syntax (defmethod* stx)
     (syntax-case stx ()
       [(_ #:mode mode ([(name arg ...) result-type] ...) desc ...)
-       (with-syntax ([cname (syntax-parameter-value #'current-class)])
-         #'(make-meth 'mode
-                      (lambda () (make-splice (apply
-                                               append
-                                               (map (lambda (f)
-                                                      (cond
-                                                       [(impl? f) ((impl-def f))]
-                                                       [(spec? f) ((spec-def f))]
-                                                       [else (list f)]))
-                                                    (list desc ...)))))
-                      (lambda (desc-splice)
-                        (defproc* #:mode send #:within cname ([(name arg ...) result-type] ...)
-                          (desc-splice)))))]
+       (with-syntax ([cname (syntax-parameter-value #'current-class)]
+                     [name1 (car (syntax->list #'(name ...)))])
+         (with-syntax ([(extra ...) (case (syntax-e #'mode)
+                                      [(pubment)
+                                       #'((t "Refine this method with " (scheme augment) "."))]
+                                      [(override extend augment)
+                                       #'((t (case (syntax-e #'mode)
+                                               [(override) "Overrides "]
+                                               [(extend) "Extends "]
+                                               [(augment) "Augments "])
+                                             (*xmethod/super (class-doc-info cname) 'name1) "."))]
+                                      [else
+                                       null])])
+           #'(make-meth 'name1
+                        'mode
+                        (lambda () (make-splice (apply
+                                                 append
+                                                 (map (lambda (f)
+                                                        (cond
+                                                         [(impl? f) ((impl-def f))]
+                                                         [(spec? f) ((spec-def f))]
+                                                         [else (list f)]))
+                                                      (list extra ... desc ...)))))
+                        (lambda (desc-splice)
+                          (defproc* #:mode send #:within cname ([(name arg ...) result-type] ...)
+                            (desc-splice))))))]
       [(_ ([(name arg ...) result-type] ...) desc ...)
        #'(defmethod* #:mode public ([(name arg ...) result-type] ...) desc ...)]))
 
@@ -1443,6 +1484,18 @@
       [(_) 
        (with-syntax ([cname (syntax-parameter-value #'current-class)])
          #'(*this-obj 'cname))]))
+
+  (define (*xmethod/super decl name)
+    (let ([super (ormap (lambda (decl)
+                          (and decl
+                               (let ([m (hash-table-get (decl-methods decl) name #f)])
+                                 (and m (car m)))))
+                        (cons (decl-super decl)
+                              (decl-intfs decl)))])
+      (make-element #f
+                    (list (*method name super)
+                          " in " 
+                          (to-element super)))))
 
   ;; ----------------------------------------
   )

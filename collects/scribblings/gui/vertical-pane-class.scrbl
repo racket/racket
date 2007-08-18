@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["pane-class.scrbl"]
 
 @defclass[vertical-pane% pane% ()]{
 

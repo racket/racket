@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["top-level-window-intf.scrbl"]
 
 @defclass[dialog% object% (top-level-window<%>)]{
 
@@ -78,7 +79,7 @@ Even if the dialog is not shown, a few notification events may be
 @WindowKWs[] @AreaContKWs[] @AreaKWs[]
 }
 
-@defmethod[#:mode 'override 
+@defmethod[#:mode override 
            (on-subwindow-char [receiver (is-a?/c window<%>)]
                               [event (is-a?/c key-event%)])
            boolean?]{
@@ -92,7 +93,7 @@ Returns the result of
 
 }
 
-@defmethod[#:mode 'auto-super 
+@defmethod[#:mode override
            (show [show? any/c])
            void?]{
 
@@ -107,8 +108,6 @@ If @scheme[show?] is true, the method does not immediately return. Instead,
  between calls to @scheme[yield]. An internal semaphore is used with
  @scheme[yield] to avoid a busy-wait, and to ensure that the @scheme[show]
   method returns as soon as possible after the dialog is hidden.
-
-
 
 }
 }

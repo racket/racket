@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["snip-class.scrbl"]
 
 @defclass[image-snip% snip% ()]{
 
@@ -105,7 +106,7 @@ If @scheme[inline?] is not @scheme[#f], the image data will be saved
 
 }
 
-@defmethod[#:mode 'override 
+@defmethod[#:mode override 
            (resize [w (and/c real? (not/c negative?))]
                    [h (and/c real? (not/c negative?))])
            void?]{

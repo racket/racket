@@ -117,7 +117,7 @@ The drawing context and snip's @techlink{location}s in drawing context
 }
 
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (can-do-edit-operation? [op (one-of/c 'undo 'redo 'clear 'cut 'copy 
                                                  'paste 'kill 'select-all 
                                                  'insert-text-box 'insert-pasteboard-box 

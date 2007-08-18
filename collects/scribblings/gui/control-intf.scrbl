@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["subwindow-intf.scrbl"]
 
 @definterface[control<%> (subwindow<%>)]{
 

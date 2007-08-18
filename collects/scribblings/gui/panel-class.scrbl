@@ -1,5 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["subwindow-intf.scrbl"]
+@require["area-container-window-intf.scrbl"]
 
 @defclass[panel% object% (area-container-window<%> subwindow<%>)]{
 

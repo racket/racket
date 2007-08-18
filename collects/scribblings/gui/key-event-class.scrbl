@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["event-class.scrbl"]
 
 @defclass[key-event% event% ()]{
 

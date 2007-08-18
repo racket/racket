@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["control-intf.scrbl"]
 
 @defclass[slider% object% (control<%>)]{
 

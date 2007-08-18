@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["canvas-intf.scrbl"]
 
 @defclass[editor-canvas% object% (canvas<%>)]{
 
@@ -198,7 +199,7 @@ Enables or disables lazy-refresh mode, or gets the current enable
 }
 
 
-@defmethod[#:mode 'override 
+@defmethod[#:mode override 
            (on-char [event (is-a?/c key-event%)])
            void?]{
 
@@ -211,7 +212,7 @@ See also @method[editor-canvas% get-editor].
 }
 
 
-@defmethod[#:mode 'override 
+@defmethod[#:mode override 
            (on-event [event (is-a?/c mouse-event%)])
            void?]{
 
@@ -222,7 +223,7 @@ See also @method[editor-canvas% get-editor].
 
 }
 
-@defmethod[#:mode 'override 
+@defmethod[#:mode override 
            (on-focus [on? any/c])
            void?]{
 
@@ -231,7 +232,7 @@ Enables or disables the caret in the @techlink{display}'s editor, if
 
 }
 
-@defmethod[#:mode 'override 
+@defmethod[#:mode override 
            (on-paint)
            void?]{
 
@@ -239,7 +240,7 @@ Repaints the editor.
 
 }
 
-@defmethod[#:mode 'override 
+@defmethod[#:mode override 
            (on-size [width (integer-in 0 10000)]
                     [height (integer-in 0 10000)])
            void?]{

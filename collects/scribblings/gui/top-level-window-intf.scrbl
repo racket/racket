@@ -1,12 +1,13 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["area-container-window-intf.scrbl"]
 
 @definterface[top-level-window<%> (area-container-window<%>)]{
 
 A top-level window is either a @scheme[frame%] or @scheme[dialog%]
  object.
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (can-close?)
            boolean?]{
 
@@ -135,7 +136,7 @@ The method's argument is @scheme[#t] when the window is activated,
 
 }
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (on-close)
            void?]{
 
@@ -312,12 +313,13 @@ Sets the size of the window (in pixels), but only if the given size is
 
 }
 
-@defmethod[#:mode 'auto-super 
-           (show [show any/c])
+@defmethod[(show [show any/c])
            void?]{
 
 If the window is already shown, it is moved front of other top-level
  windows. If the window is iconized (frames only), it is deiconized.
+
+See also @xmethod[window<%> show].
 
 }}
 

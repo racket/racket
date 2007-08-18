@@ -1,5 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["area-container-intf.scrbl"]
+@require["subarea-intf.scrbl"]
 
 @defclass[pane% object% (area-container<%> subarea<%>)]{
 

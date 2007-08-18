@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["control-intf.scrbl"]
 
 @defclass[radio-box% object% (control<%>)]{
 
@@ -72,7 +73,7 @@ By default, the first radio button is initially selected. If
 }
 
 
-@defmethod*[#:mode 'override 
+@defmethod*[#:mode override 
             ([(enable [enable? any/c])
               void?]
              [(enable [n nonnegative-exact-integer?]
@@ -122,7 +123,7 @@ numbered from @scheme[0].
 
 }
 
-@defmethod*[#:mode 'override 
+@defmethod*[#:mode override 
             ([(is-enabled?)
               boolean?]
              [(is-enabled? [n nonnegative-exact-integer?])

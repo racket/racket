@@ -327,7 +327,7 @@ Examples:
 A call to @method[keymap% map-function] that would map a particular
  key sequence both as a prefix and as a complete sequence raises an
  exception, but the exception handler cannot escape (see
- @secref["mr:mr:evtcontjump"]).
+ @secref["mr:evtcontjump"]).
 
 A function name does not have to be mapped to a handler before input
  states are mapped to the name; the handler is dispatched by name at

@@ -1,31 +1,11 @@
 #reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 @require["diagrams.ss"]
+@require["mred-classes.ss"]
 
 @title[#:style '(toc quiet)]{Drawing Classes}
 
 @local-table-of-contents[]
-
-@require["bitmap-class.scrbl"]
-@require["bitmap-dc-class.scrbl"]
-@require["brush-class.scrbl"]
-@require["brush-list-class.scrbl"]
-@require["color-class.scrbl"]
-@require["color-database-intf.scrbl"]
-@require["dc-intf.scrbl"]
-@require["dc-path-class.scrbl"]
-@require["font-class.scrbl"]
-@require["font-list-class.scrbl"]
-@require["font-name-directory-intf.scrbl"]
-@require["gl-config-class.scrbl"]
-@require["gl-context-intf.scrbl"]
-@require["pen-class.scrbl"]
-@require["pen-list-class.scrbl"]
-@require["point-class.scrbl"]
-@require["post-script-dc-class.scrbl"]
-@require["printer-dc-class.scrbl"]
-@require["ps-setup-class.scrbl"]
-@require["region-class.scrbl"]
 
 @include-class[bitmap%]
 @include-class[bitmap-dc%]

@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@title{PLT Scheme GUI Toolbox}
+@title{PLT Scheme GUI: MrEd}
 
 This manual describes MrEd.
 

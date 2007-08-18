@@ -2,7 +2,8 @@
   (require (lib "dirs.ss" "setup")
            (prefix core: "core.ss")
            (prefix quick: "quick.ss")
-           (prefix scribble: "scribble.ss"))
+           (prefix scribble: "scribble.ss")
+           (prefix gui: "gui.ss"))
 
   (provide post-installer)
 
@@ -12,4 +13,5 @@
         (when doc
           (core:build)
           (quick:build)
-          (scribble:build))))))
+          (scribble:build)
+          (gui:build))))))

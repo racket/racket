@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["text-field-class.scrbl"]
 
 @defclass[combo-field% text-field% ()]{
 

@@ -180,7 +180,7 @@ The fundamental graphical element in MrEd's windowing toolbox is an
  @item{@scheme[editor-canvas%] --- an @deftech{editor canvas} is a
  subwindow for displaying a text editor or pasteboard editor. The
  @scheme[editor-canvas%] class is documented with the editor classes
- in @secref["mr:editoredit"].}
+ in @secref["mr:editor-overview"].}
 
  @item{@deftech{Controls} --- containees that the user can manipulate:
 
@@ -700,7 +700,7 @@ Controls, such as buttons and list boxes, handle keyboard and mouse
 
 @section[#:tag "mr:eventspaceinfo"]{Event Dispatching and Eventspaces}
 
-@section-index['("events" "dispatching")]
+@section-index["events" "dispatching"]
 
 A graphical user interface is an inherently multi-threaded system: one
  thread is the program managing windows on the screen, and the other
@@ -770,15 +770,15 @@ In MrEd, an @deftech{eventspace} is a context for processing GUI
 
 @subsection{Event Types and Priorities}
 
-@section-index['("events" "timer")]
-@section-index['("events" "explicitly queued")]
+@section-index["events" "timer"]
+@section-index["events" "explicitly queued"]
 
 In addition to events corresponding to user and windowing actions,
  such as button clicks, key presses, and updates, the system
  dispatches two kinds of internal events: @tech{timer events} and
  @tech{explicitly queued events}.
 
-@tech{Timer events} are created by instances of @scheme[timer%]. When
+@deftech{Timer events} are created by instances of @scheme[timer%]. When
  a timer is started and then expires, the timer queues an event to
  call the timer's @method[timer% notify] method. Like a top-level
  window, each timer is associated with a particular eventspace (the
@@ -786,7 +786,7 @@ In addition to events corresponding to user and windowing actions,
  @secref["mr:currenteventspace"]) when it is created, and the timer
  queues the event in its eventspace.
 
-@deftech{Explicitly queued} events are created with
+@deftech{Explicitly queued events} are created with
  @scheme[queue-callback], which accepts a callback procedure to handle
  the event. The event is enqueued in the current eventspace at the
  time of the call to @scheme[queue-callback], with either a high or
@@ -843,11 +843,8 @@ When a handler thread shows a dialog, the dialog's @method[dialog%
 @subsection[#:tag "mr:currenteventspace"]{Creating and Setting the Eventspace}
 
 Whenever a frame, dialog, or timer is created, it is associated with
- the eventspace specified by the @scheme[current-eventspace] parameter
- @|SeeMzParam|. When the @scheme[current-eventspace] procedure is
- called with no arguments, it returns the current eventspace value.
- When @scheme[current-eventspace] is called with an eventspace value,
- it changes the current eventspace to the provided one.
+ the @deftech{current eventspace} as determined by the
+ @scheme[current-eventspace] parameter @|SeeMzParam|.
 
 The @scheme[make-eventspace] procedure creates a new
  eventspace. The following example creates a new eventspace and a new

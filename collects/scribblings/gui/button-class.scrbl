@@ -1,6 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
-
+@require["control-intf.scrbl"]
 
 @defclass[button% object% (control<%>)]{
 
@@ -56,11 +56,14 @@ on-traverse-char]). @DeletedStyleNote{button}
 @FontKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]}
 
 
-@defmethod[#:mode 'add 
-           (set-label [label (is-a?/c bitmap%)])
+@defmethod[#:mode override
+           (set-label [label (or/c label-string? (is-a?/c bitmap%))])
            void?]{
 
-Sets the bitmap label for a bitmap button. @bitmaplabeluseisbm[label]
+The same as @xmethod[window<%> set-label] when @scheme[label] is a
+ string.
+
+Otherwise, sets the bitmap label for a bitmap button. @bitmaplabeluseisbm[label]
  @|bitmapiforiglabel|
 
 }}

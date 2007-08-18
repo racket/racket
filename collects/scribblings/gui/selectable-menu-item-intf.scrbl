@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["labelled-menu-item-intf.scrbl"]
 
 @definterface[selectable-menu-item<%> (labelled-menu-item<%>)]{
 

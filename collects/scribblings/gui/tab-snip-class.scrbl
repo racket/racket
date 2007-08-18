@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["string-snip-class.scrbl"]
 
 @defclass[tab-snip% string-snip% ()]{
 

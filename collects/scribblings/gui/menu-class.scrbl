@@ -1,5 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["labelled-menu-item-intf.scrbl"]
+@require["menu-item-container-intf.scrbl"]
 
 @defclass[menu% object% (menu-item-container<%> labelled-menu-item<%>)]{
 

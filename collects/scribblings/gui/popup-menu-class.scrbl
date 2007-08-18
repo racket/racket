@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["menu-item-container-intf.scrbl"]
 
 @defclass[popup-menu% object% (menu-item-container<%>)]{
 

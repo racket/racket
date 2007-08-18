@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["control-intf.scrbl"]
 
 @defclass[message% object% (control<%>)]{
 
@@ -38,11 +39,14 @@ Creates a string or bitmap message initially showing @scheme[label].
 
 }
 
-@defmethod[#:mode 'add 
-           (set-label [label (is-a?/c bitmap%)])
+@defmethod[#:mode override
+           (set-label [label (or/c label-string? (is-a?/c bitmap%))])
            void?]{
 
-Sets the bitmap label for a bitmap message.
+The same as @xmethod[window<%> set-label] when @scheme[label] is a
+ string.
+
+Otherwise, sets the bitmap label for a bitmap message.
  @bitmaplabeluseisbm[label] @|bitmapiforiglabel|
 
 }}

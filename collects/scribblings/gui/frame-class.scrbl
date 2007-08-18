@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["top-level-window-intf.scrbl"]
 
 @defclass[frame% object% (top-level-window<%>)]{
 
@@ -241,7 +242,7 @@ If the event does not correspond to a complete shortcut combination,
 
 }
 
-@defmethod[#:mode 'override 
+@defmethod[#:mode override 
            (on-subwindow-char [receiver (is-a?/c window<%>)]
                               [event (is-a?/c key-event%)])
            boolean?]{

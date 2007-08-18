@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["control-intf.scrbl"]
 
 @defclass[check-box% object% (control<%>)]{
 
@@ -53,15 +54,15 @@ Gets the state of the check box: @scheme[#t] if it is checked, @scheme[#f]
 
 }
 
-@defmethod[#:mode 'add 
-           (set-label [label (is-a?/c bitmap%)])
+@defmethod[#:mode override
+           (set-label [label (or/c label-string? (is-a?/c bitmap%))])
            void?]{
 
-Sets the bitmap label for a bitmap check box.
+The same as @xmethod[window<%> set-label] when @scheme[label] is a
+ string.
 
+Otherwise, sets the bitmap label for a bitmap check box.
 @bitmaplabeluseisbm[label] @|bitmapiforiglabel|
-
-
 
 }
 

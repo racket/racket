@@ -1,6 +1,8 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
+@require["editor-intf.scrbl"]
+
 @defclass[text% object% (editor<%>)]{
 
 A @scheme[text%] object is a standard text editor. A text editor is
@@ -32,7 +34,7 @@ A new @scheme[style-list%] object is created for the new editor.  See
 }
 
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (after-change-style [start nonnegative-exact-integer?]
                                [len nonnegative-exact-integer?])
            void?]{
@@ -55,7 +57,7 @@ Does nothing.
 
 }}
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (after-delete [start nonnegative-exact-integer?]
                          [len nonnegative-exact-integer?])
            void?]{
@@ -83,7 +85,7 @@ Does nothing.
 
 }}
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (after-insert [start nonnegative-exact-integer?]
                          [len nonnegative-exact-integer?])
            void?]{
@@ -110,7 +112,7 @@ Does nothing.
 
 }}
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (after-merge-snips [pos nonnegative-exact-integer?])
            void?]{
 @methspec{
@@ -131,7 +133,7 @@ Does nothing.
 
 }}
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (after-set-position)
            void?]{
 
@@ -150,7 +152,7 @@ Does nothing.
 
 }}
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (after-set-size-constraint)
            void?]{
 
@@ -176,7 +178,7 @@ Does nothing.
 }}
 
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (after-split-snip [pos nonnegative-exact-integer?])
            void?]{
 @methspec{
@@ -205,7 +207,7 @@ Simulates a user click that invokes a clickback, if the given range of
 
 }
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (can-change-style? [start nonnegative-exact-integer?]
                               [len nonnegative-exact-integer?])
            boolean?]{
@@ -231,7 +233,7 @@ Returns @scheme[#t].
 }
 }
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (can-delete? [start nonnegative-exact-integer?]
                         [len nonnegative-exact-integer?])
            boolean?]{
@@ -260,7 +262,7 @@ Returns @scheme[#t].
 
 }}
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (can-insert? [start nonnegative-exact-integer?]
                         [len nonnegative-exact-integer?])
            boolean?]{
@@ -288,7 +290,7 @@ Returns @scheme[#t].
 }}
 
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (can-set-size-constraint?)
            boolean?]{
 
@@ -323,9 +325,9 @@ See also @method[text% hide-caret].
 }
 
 
-@defmethod*[#:mode 'add 
+@defmethod*[#:mode extend
             ([(change-style [delta (or/c (is-a?/c style-delta%) false/c)]
-                            [start (or/c nonnegative-exact-integer? (one/of 'start))]
+                            [start (or/c nonnegative-exact-integer? (one/of 'start)) 'start]
                             [end (or/c nonnegative-exact-integer? (one/of 'end)) 'end]
                             [counts-as-mod? any/c @scheme[#t]])
               void?]
@@ -349,10 +351,10 @@ When @scheme[style] is provided: @InStyleListNote[]
 }
 
 
-@defmethod[#:mode 'add 
+@defmethod[#:mode extend
            (copy [extend? any/c]
                  [time (and/c exact? integer?)]
-                 [start (or/c nonnegative-exact-integer? (one/of 'start))]
+                 [start (or/c nonnegative-exact-integer? (one/of 'start)) 'start]
                  [end (or/c nonnegative-exact-integer? (one/of 'end)) 'end])
            void?]{
 
@@ -365,25 +367,25 @@ See @|timediscuss| for a discussion of the @scheme[time] argument. If
  @scheme[time] is outside the platform-specific range of times,
  @|MismatchExn|.
 
-
 }
 
 
-@defmethod[#:mode 'auto-super 
+@defmethod[#:mode override 
            (copy-self-to [dest (or/c (is-a?/c text%) (is-a?/c pasteboard%))])
            void?]{
 
-This editor's file format, wordbreak function, wordbreak map,
+In addition to the default @xmethod[editor<%> copy-self-to] work,
+ this editor's file format, wordbreak function, wordbreak map,
  click-between-threshold, caret visibility state, overwrite mode
  state, and autowrap bitmap are installed into @scheme[dest].
 
 }
 
 
-@defmethod[#:mode 'add 
+@defmethod[#:mode override
            (cut [extend? any/c]
                 [time (and/c exact? integer?)]
-                [start (or/c nonnegative-exact-integer? (one/of 'start))]
+                [start (or/c nonnegative-exact-integer? (one/of 'start)) 'start]
                 [end (or/c nonnegative-exact-integer? (one/of 'end)) 'end])
            void?]{
 
@@ -1027,7 +1029,7 @@ See also @method[text% caret-hidden?] and @method[editor<%> lock].
 }
 
 
-@defmethod*[#:mode 'override 
+@defmethod*[#:mode override 
             ([(insert [str string?]
                       [start nonnegative-exact-integer?]
                       [end (or/c nonnegative-exact-integer? (one/of 'same)) 'same]
@@ -1094,13 +1096,18 @@ See also @method[text% get-styles-sticky].
 }
 
 
-@defmethod[#:mode 'add 
-           (kill [time (and/c exact? integer?)]
-                 [start nonnegative-exact-integer?]
-                 [end nonnegative-exact-integer?])
-           void?]{
+@defmethod*[#:mode override
+            ([(kill [time (and/c exact? integer?) 0])
+              void?]
+             [(kill [time (and/c exact? integer?)]
+                    [start nonnegative-exact-integer?]
+                    [end nonnegative-exact-integer?])
+              void?])]{
 
-Cuts the text in the given region.
+Cuts the text in the given region. If @scheme[start] and @scheme[end]
+ are not supplied, then the selected region plus all whitespace to the
+ end of line is cut; the newline is also cut if only whitespace exists
+ between the selection and the end of line.
 
 See @|timediscuss| for a discussion of the @scheme[time] argument. If
  @scheme[time] is outside the platform-specific range of times,
@@ -1276,7 +1283,7 @@ See also @method[text% set-position].
 }
 
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (on-change-style [start nonnegative-exact-integer?]
                             [len nonnegative-exact-integer?])
            void?]{
@@ -1303,7 +1310,7 @@ Does nothing.
 }
 
 
-@defmethod[#:mode 'override 
+@defmethod[#:mode override 
            (on-default-char [event (is-a?/c key-event%)])
            void?]{
 
@@ -1329,7 +1336,7 @@ Note that an editor's @scheme[editor-canvas%] normally handles mouse
 }
 
 
-@defmethod[#:mode 'override 
+@defmethod[#:mode override 
            (on-default-event [event (is-a?/c mouse-event%)])
            void?]{
 
@@ -1354,7 +1361,7 @@ Tracks clicks on a clickback (see @method[text% set-clickback]) of
 }
 
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (on-delete [start nonnegative-exact-integer?]
                       [len nonnegative-exact-integer?])
            void?]{
@@ -1385,7 +1392,7 @@ Does nothing.
 }}
 
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (on-insert [start nonnegative-exact-integer?]
                       [len nonnegative-exact-integer?])
            void?]{
@@ -1448,7 +1455,7 @@ Returns a @scheme[tab-snip%] instance.
 }}
 
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (on-set-size-constraint)
            void?]{
 
@@ -1526,9 +1533,9 @@ If the paragraph starts with invisible @techlink{item}s and @scheme[visible?] is
 }
 
 
-@defmethod[#:mode 'add 
+@defmethod[#:mode override
            (paste [time (and/c exact? integer?)]
-                  [start (or/c nonnegative-exact-integer? (one/of 'end))]
+                  [start (or/c nonnegative-exact-integer? (one/of 'end)) 'end]
                   [end (or/c nonnegative-exact-integer? (one/of 'same)) 'same])
            void?]{
 
@@ -1564,9 +1571,9 @@ If the previous operation on the editor was not a paste, calling
 }
 
 
-@defmethod[#:mode 'add 
+@defmethod[#:mode override
            (paste-x-selection [time (and/c exact? integer?)]
-                              [start (or/c nonnegative-exact-integer? (one/of 'end))]
+                              [start (or/c nonnegative-exact-integer? (one/of 'end)) 'end]
                               [end (or/c nonnegative-exact-integer? (one/of 'same)) 'same])
            void?]{
 
@@ -1637,7 +1644,7 @@ Returns the paragraph number of the paragraph containing a given @techlink{posit
 }
 
 
-@defmethod[#:mode 'add 
+@defmethod[#:mode extend
            (read-from-file [stream (is-a?/c editor-stream-in%)]
                            [start (or/c nonnegative-exact-integer? (one/of 'start))]
                            [overwrite-styles? any/c #t])
@@ -2020,9 +2027,9 @@ Splitting a snip is disallowed when the editor is internally locked
 }
 
 
-@defmethod[#:mode 'add 
+@defmethod[#:mode extend
            (write-to-file [stream (is-a?/c editor-stream-out%)]
-                          [start nonnegative-exact-integer?]
+                          [start nonnegative-exact-integer? 0]
                           [end (or/c nonnegative-exact-integer? (one/of 'eof)) 'eof])
            boolean?]{
 

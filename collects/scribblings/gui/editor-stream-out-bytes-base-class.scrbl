@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["editor-stream-out-base-class.scrbl"]
 
 @defclass[editor-stream-out-bytes-base% editor-stream-out-base% ()]{
 

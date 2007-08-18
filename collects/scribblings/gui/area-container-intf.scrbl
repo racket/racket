@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["area-intf.scrbl"]
 
 @definterface[area-container<%> (area<%>)]{
 

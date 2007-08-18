@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["dc-intf.scrbl"]
 
 @defclass[post-script-dc% object% (dc<%>)]{
 

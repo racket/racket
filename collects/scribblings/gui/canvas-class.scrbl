@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["canvas-intf.scrbl"]
 
 @defclass[canvas% object% (canvas<%>)]{
 
@@ -269,7 +270,7 @@ See also
 }
 
 
-@defmethod[#:mode 'override 
+@defmethod[#:mode override 
            (on-paint)
            void?]{
 

@@ -1,5 +1,6 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
+@require["list-control-intf.scrbl"]
 
 @defclass[choice% object% (list-control<%>)]{
 

@@ -93,7 +93,7 @@ pasteboard editor, the default cursor is an arrow.
 
 }}
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (after-edit-sequence)
            void?]{
 
@@ -115,7 +115,7 @@ Does nothing.
 
 }
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (after-load-file [success? any/c])
            void?]{
 
@@ -140,7 +140,7 @@ Does nothing.
 }
 }
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (after-save-file [success? any/c])
            void?]{
 
@@ -280,7 +280,7 @@ locked, etc.
 
 }}
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (can-load-file? [filename path?]
                            [format (one-of/c 'guess 'standard 'text 'text-force-cr 'same 'copy)])
            boolean?]{
@@ -305,7 +305,7 @@ Returns @scheme[#t].
 
 }}
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (can-save-file? [filename path?]
                            [format (one-of/c 'guess 'standard 'text 'text-force-cr 'same 'copy)])
            boolean?]{
@@ -336,7 +336,7 @@ Returns @scheme[#t].
               void?])]{
 
 Changes the style for @techlink{items} in the editor, either by
-applying a style delta or using a specific style.
+ applying a style delta or using a specific style.
 
 To change a large collection of snips from one style to another style,
  consider providing a @scheme[style<%>] instance rather than a
@@ -1215,7 +1215,7 @@ For @scheme[text%] objects: @|FCA| @|EVD|
 }
 
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (on-change)
            void?]{
 
@@ -1289,7 +1289,7 @@ Does nothing. See also @xmethod[text% on-default-event] and
 }}
 
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (on-display-size)
            void?]{
 
@@ -1328,7 +1328,7 @@ Calls @method[editor<%> on-display-size] unless the editor is
 }
 
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (on-edit-sequence)
            void?]{
 
@@ -1407,7 +1407,7 @@ Either passes this event on to a caret-owning snip, selects a new
 }
 
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (on-load-file [filename path?]
                          [format (one-of/c 'guess 'standard 'text 'text-force-cr 'same 'copy)])
            void?]{
@@ -1566,7 +1566,7 @@ Does nothing.
 
 }}
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (on-save-file [filename path?]
                          [format (one-of/c 'guess 'standard 'text 'text-force-cr 'same 'copy)])
            void?]{
@@ -1592,7 +1592,7 @@ Does nothing.
 }}
 
 
-@defmethod[#:mode 'pubment 
+@defmethod[#:mode pubment 
            (on-snip-modified [snip (is-a?/c snip%)]
                              [modified? any/c])
            void?]{
