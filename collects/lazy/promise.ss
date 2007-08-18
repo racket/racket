@@ -46,10 +46,12 @@
               (make-struct-field-accessor promise-ref  0 'contents)
               (make-struct-field-mutator  promise-set! 0 'contents))))
 
-  ;; <promise> ::= (promise <thunk>)         (delayed promise)
-  ;;             | (promise (list <object>)) (forced promise)
-  ;;             | (promise <promise>)       (shared promise)
-  ;;             | (promise #f)              (currently running)
+  ;; <promise> ::=
+  ;;   | (promise <thunk>)         delayed promise
+  ;;   | (promise (list <object>)) forced promise (possibly multi-valued)
+  ;;   | (promise <promise>)       shared promise
+  ;;   | (promise #f)              currently running
+  ;;   | (promise <exn>)           exception when forced (last version)
 
   ;; Creates a `composable' promise
   ;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
@@ -142,7 +144,7 @@
   ;; this version deals with multiple values only in `delay' (technicality:
   ;; actually it doesn't work with `lazy' holding `lazy' of multiple values, so
   ;; `lazy' works with multiple values unless rewrapped in `lazy'.)
-  ;; #;
+  #;
   (define (force promise)
     (if (promise? promise)
       (let loop ([p (p:ref promise)])
@@ -177,21 +179,71 @@
       ;; different from srfi-45: identity for non-promises
       promise))
 
+  ;; this version is like the last one, but properly registers
+  ;; exceptions.
+  ;; #;
+  (define (force promise)
+    (if (promise? promise)
+      (let loop ([p (p:ref promise)])
+        (cond
+          [(procedure? p)
+           (p:set! promise #f) ; mark root for cycle detection
+           (with-handlers
+               ([void (lambda (e)
+                        (let ([e (if (exn? e)
+                                   e
+                                   ;; make sure it's actually an exception
+                                   (make-exn (format "~s" e)
+                                             (current-continuation-marks)))])
+                          (p:set! promise e)
+                          (raise e)))])
+             (let ([vals* (call-with-values p list)])
+               (if (and (pair? vals*) (null? (cdr vals*)))
+                 (let loop1 ([val* (car vals*)])
+                   (if (promise? val*)
+                     (let loop2 ([promise* val*])
+                       (let ([p* (p:ref promise*)])
+                         (p:set! promise* promise) ; share with root
+                         (cond [(procedure? p*) (loop1 (p*))]
+                               [(or (pair? p*) (null? p*))
+                                (p:set! promise p*)
+                                (apply values p*)]
+                               [(promise? p*) (loop2 p*)]
+                               [(not p*) (error 'force "reentrant promise")]
+                               [else (error 'force
+                                            "invalid promise, contains ~e"
+                                            p*)])))
+                     (begin ; error here for "library approach" (see above URL)
+                       (p:set! promise (list val*))
+                       val*)))
+                 (begin ; error here for "library approach" (see above URL)
+                   (p:set! promise vals*)
+                   (apply values vals*)))))]
+          [(or (pair? p) (null? p)) (apply values p)]
+          [(promise? p) (loop (p:ref p))]
+          [(exn? p) (raise p)]
+          [(not p) (error 'force "reentrant promise")]
+          [else (error 'force "invalid promise, contains ~e" p)]))
+      ;; different from srfi-45: identity for non-promises
+      promise))
+
   #|
 
   Timing results (#1, #2, #3 are the above versions), in Lazy Scheme:
 
     loop: (define (foo n) (if (zero? n) n (foo (sub1 n))))
-          (time (! (foo 1000000)))
-    #1 cpu time: 2532 real time: 2624 gc time: 628
-    #3 cpu time: 3080 real time: 3145 gc time: 596
-    #2 cpu time: 5196 real time: 5379 gc time: 744
+          (time (! (foo 2000000)))
+    #1 cpu time: 2067 real time: 2069 gc time: 194
+    #2 cpu time: 3057 real time: 3058 gc time: 231
+    #3 cpu time: 2566 real time: 2567 gc time: 235
+    #4 cpu time: 4676 real time: 4678 gc time: 548
 
     fib: (define (fib n) (if (<= n 1) n (+ (fib (- n 1)) (fib (- n 2)))))
-         (time (! (fib 28)))
-    #1 cpu time: 4241 real time: 4333 gc time: 776
-    #3 cpu time: 4048 real time: 4177 gc time: 756
-    #2 cpu time: 5272 real time: 5373 gc time: 872
+         (time (! (fib 29)))
+    #1 cpu time: 2196 real time: 2196 gc time: 200
+    #2 cpu time: 3194 real time: 3195 gc time: 227
+    #3 cpu time: 2833 real time: 2833 gc time: 231
+    #4 cpu time: 5833 real time: 5834 gc time: 708
 
   |#
 
