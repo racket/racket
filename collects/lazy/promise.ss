@@ -188,7 +188,7 @@
         (cond
           [(procedure? p)
            (p:set! promise #f) ; mark root for cycle detection
-           (with-handlers
+           (with-handlers*
                ([void (lambda (e)
                         (let ([e (if (exn? e)
                                    e
@@ -229,21 +229,21 @@
 
   #|
 
-  Timing results (#1, #2, #3 are the above versions), in Lazy Scheme:
+  Timing results (#1, #2, #3, #4 are the above versions), in Lazy Scheme:
 
     loop: (define (foo n) (if (zero? n) n (foo (sub1 n))))
           (time (! (foo 2000000)))
     #1 cpu time: 2067 real time: 2069 gc time: 194
     #2 cpu time: 3057 real time: 3058 gc time: 231
     #3 cpu time: 2566 real time: 2567 gc time: 235
-    #4 cpu time: 4676 real time: 4678 gc time: 548
+    #4 cpu time: 4744 real time: 4746 gc time: 539
 
     fib: (define (fib n) (if (<= n 1) n (+ (fib (- n 1)) (fib (- n 2)))))
          (time (! (fib 29)))
     #1 cpu time: 2196 real time: 2196 gc time: 200
     #2 cpu time: 3194 real time: 3195 gc time: 227
     #3 cpu time: 2833 real time: 2833 gc time: 231
-    #4 cpu time: 5833 real time: 5834 gc time: 708
+    #4 cpu time: 5837 real time: 5837 gc time: 712
 
   |#
 
