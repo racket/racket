@@ -14,6 +14,7 @@ This manual describes MrEd.
 
 @include-section["guide.scrbl"]
 @include-section["reference.scrbl"]
+@include-section["config.scrbl"]
 
 @;------------------------------------------------------------------------
 

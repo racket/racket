@@ -440,7 +440,7 @@
   (define-syntax defthing
     (syntax-rules ()
       [(_ id result desc ...)
-       (*defthing (quote-syntax id) 'id 'result (lambda () (list desc ...)))]))
+       (*defthing (quote-syntax id) 'id (quote-syntax result) (lambda () (list desc ...)))]))
   (define-syntax defparam
     (syntax-rules ()
       [(_ id arg contract desc ...)
@@ -508,9 +508,15 @@
                        (cond
                         [(pair? v)
                          (if (keyword? (car v))
-                             (make-element #f (list (to-element (car v))
-                                                    (hspace 1)
-                                                    (to-element (cadr v))))
+                             (if (eq? mode 'new)
+                                 (make-element #f (list (schemeparenfont "[")
+                                                        (schemeidfont (keyword->string (car v)))
+                                                        (hspace 1)
+                                                        (to-element (cadr v))
+                                                        (schemeparenfont "]")))
+                                 (make-element #f (list (to-element (car v))
+                                                        (hspace 1)
+                                                        (to-element (cadr v)))))
                              (to-element (car v)))]
                         [(eq? v '...+)
                          dots1]
@@ -527,7 +533,8 @@
                                     [(symbol? (car s)) (string-length (symbol->string (car s)))]
                                     [(pair? (car s)) 
                                      (if (keyword? (caar s))
-                                         (+ (string-length (keyword->string (caar s)))
+                                         (+ (if (eq? mode 'new) 2 0)
+                                            (string-length (keyword->string (caar s)))
                                             3
                                             (string-length (symbol->string (cadar s))))
                                          (string-length (symbol->string (caar s))))]
@@ -1236,7 +1243,7 @@
 
   (define class-decls (make-hash-table 'equal))
 
-  (define-struct decl (name super intfs body))
+  (define-struct decl (name super intfs mk-body))
   (define-struct constructor (def))
   (define-struct meth (mode desc def))
   (define-struct spec (def))
@@ -1251,20 +1258,20 @@
   (define (*include-class name)
     (let ([decl (hash-table-get class-decls (register-scheme-definition name))])
       (make-splice
-       (cons (section (to-element (decl-name decl)))
+       (cons (section #:style 'hidden (to-element (decl-name decl)))
              (map (lambda (i)
                     (cond
                      [(constructor? i) ((constructor-def i))]
                      [(meth? i)
                       ((meth-def i) (meth-desc i))]
                      [else i]))
-                  (decl-body decl))))))
+                  ((decl-mk-body decl) #t))))))
 
   (define-syntax include-class
     (syntax-rules ()
       [(_ id) (*include-class (quote-syntax id))]))
 
-  (define (*defclass stx-id super intfs)
+  (define (*defclass stx-id super intfs whole-page?)
     (let ([spacer (hspace 1)])
       (make-table
        'boxed
@@ -1275,7 +1282,9 @@
                  (make-paragraph
                   (list (let ([tag (register-scheme-definition stx-id)]
                               [content (list (to-element stx-id))])
-                          (make-toc-target-element
+                          ((if whole-page? 
+                               make-page-target-element
+                               make-toc-target-element)
                            #f
                            (list (make-index-element #f
                                                      content
@@ -1319,12 +1328,14 @@
          (register-class (quote-syntax name)
                          (quote-syntax super)
                          (list (quote-syntax intf) ...)
-                         (append
-                          (list
-                           (*defclass (quote-syntax name)
-                                      (quote-syntax super)
-                                      (list (quote-syntax intf) ...)))
-                          (list body ...))))]))
+                         (lambda (whole-page?)
+                           (append
+                            (list
+                             (*defclass (quote-syntax name)
+                                        (quote-syntax super)
+                                        (list (quote-syntax intf) ...)
+                                        whole-page?))
+                            (list body ...)))))]))
 
   (define-syntax definterface
     (syntax-rules ()
@@ -1333,12 +1344,14 @@
          (register-class (quote-syntax name)
                          #f
                          (list (quote-syntax intf) ...)
-                         (append
-                          (list
-                           (*defclass (quote-syntax name)
-                                      #f
-                                      (list (quote-syntax intf) ...)))
-                          (list body ...))))]))
+                         (lambda (whole-page?)
+                           (append
+                            (list
+                             (*defclass (quote-syntax name)
+                                        #f
+                                        (list (quote-syntax intf) ...)
+                                        whole-page?))
+                            (list body ...)))))]))
 
   (define-syntax (defconstructor*/* stx)
     (syntax-case stx ()

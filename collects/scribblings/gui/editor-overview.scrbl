@@ -2,7 +2,7 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["common.ss"]
 
-@title[#:tag "mr:editor-overview"]{Editor Guide}
+@title[#:tag "mr:editor-overview"]{Editor}
 
 The editor toolbox provides a foundation for two common kinds of
  applications:

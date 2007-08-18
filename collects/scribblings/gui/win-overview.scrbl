@@ -3,7 +3,7 @@
 @require["common.ss"]
 @require["diagrams.ss"]
 
-@title[#:tag "mr:windowing-overview"]{Windowing Guide}
+@title[#:tag "mr:windowing-overview"]{Windowing}
 
 @section{Basic GUI Building Blocks}
 

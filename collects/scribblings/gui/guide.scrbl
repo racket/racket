@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@title[#:style 'toc]{Guide}
+@title[#:style '(toc reveal)]{Guide}
 
 For documentation purposes, the MrEd toolbox is organized into three
 parts:

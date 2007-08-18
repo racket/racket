@@ -68,16 +68,27 @@
       (define/override (collect-target-element i ht)
         (hash-table-put! ht 
                          (target-element-tag i)
-                         (list (current-output-file) #f #f)))
+                         (list (current-output-file) 
+                               #f 
+                               (page-target-element? i))))
 
       ;; ----------------------------------------
+
+      (define/private (reveal-subparts? p)
+        (and (styled-part? p)
+             (let ([s (styled-part-style p)])
+               (or (eq? s 'reveal)
+                   (and (list? s)
+                        (memq 'reveal s))))))
 
       (define/public (render-toc-view d ht)
         (let-values ([(top mine)
                       (let loop ([d d][mine d])
                         (let ([p (collected-info-parent (part-collected-info d))])
                           (if p
-                              (loop p d)
+                              (loop p (if (reveal-subparts? d)
+                                          mine
+                                          d))
                               (values d mine))))])
           `((div ((class "tocset"))
                  (div ((class "tocview"))
@@ -89,28 +100,39 @@
                       (table 
                        ((class "tocviewlist")
                         (cellspacing "0"))
-                       ,@(map (lambda (p)
-                                `(tr
-                                  (td 
-                                   ((align "right"))
-                                   ,@(format-number (collected-info-number (part-collected-info p))
-                                                    '((tt nbsp))))
-                                  (td
-                                   (a ((href ,(let ([dest (lookup p ht `(part ,(car (part-tags p))))])
-                                                (format "~a~a~a" 
-                                                        (from-root (car dest)
-                                                                   (get-dest-directory))
-                                                        (if (caddr dest)
-                                                            ""
-                                                            "#")
-                                                        (if (caddr dest)
-                                                            ""
-                                                            `(part ,(car (part-tags p)))))))
-                                       (class ,(if (eq? p mine)
-                                                   "tocviewselflink"
-                                                   "tocviewlink")))
-                                      ,@(render-content (part-title-content p) d ht)))))
-                              (part-parts top))))
+                       ,@(map (lambda (pp)
+                                (let ([p (car pp)]
+                                      [show-number? (cdr pp)])
+                                  `(tr
+                                    (td 
+                                     ((align "right"))
+                                     ,@(if show-number?
+                                           (format-number (collected-info-number (part-collected-info p))
+                                                          '((tt nbsp)))
+                                           '("-" nbsp)))
+                                    (td
+                                     (a ((href ,(let ([dest (lookup p ht `(part ,(car (part-tags p))))])
+                                                  (format "~a~a~a" 
+                                                          (from-root (car dest)
+                                                                     (get-dest-directory))
+                                                          (if (caddr dest)
+                                                              ""
+                                                              "#")
+                                                          (if (caddr dest)
+                                                              ""
+                                                              `(part ,(car (part-tags p)))))))
+                                         (class ,(if (eq? p mine)
+                                                     "tocviewselflink"
+                                                     "tocviewlink")))
+                                        ,@(render-content (part-title-content p) d ht))))))
+                              (let loop ([l (map (lambda (v) (cons v #t)) (part-parts top))])
+                                (cond
+                                 [(null? l) null]
+                                 [(reveal-subparts? (caar l))
+                                  (cons (car l) (loop (append (map (lambda (v) (cons v #f))
+                                                                   (part-parts (caar l)))
+                                                              (cdr l))))]
+                                 [else (cons (car l) (loop (cdr l)))])))))
                  ,@(if (ormap (lambda (p) (part-whole-page? p ht)) (part-parts d))
                        null
                        (let ([ps (cdr
@@ -219,18 +241,26 @@
           `(,@(if (and (not (part-title-content d))
                        (null? number))
                   null
-                  `((,(case (length number)
-                        [(0) 'h2]
-                        [(1) 'h3]
-                        [(2) 'h4]
-                        [else 'h5])
-                     ,@(format-number number '((tt nbsp)))
-                     ,@(map (lambda (t)
+                  (if (and (styled-part? d)
+                           (let ([s (styled-part-style d)])
+                             (or (eq? s 'hidden)
+                                 (and (list? s)
+                                      (memq 'hidden s)))))
+                      (map (lambda (t)
                               `(a ((name ,(format "~a" `(part ,t))))))
-                            (part-tags d))
-                     ,@(if (part-title-content d)
-                           (render-content (part-title-content d) d ht)
-                           null))))
+                           (part-tags d))
+                      `((,(case (length number)
+                            [(0) 'h2]
+                            [(1) 'h3]
+                            [(2) 'h4]
+                            [else 'h5])
+                         ,@(format-number number '((tt nbsp)))
+                         ,@(map (lambda (t)
+                                  `(a ((name ,(format "~a" `(part ,t))))))
+                                (part-tags d))
+                         ,@(if (part-title-content d)
+                               (render-content (part-title-content d) d ht)
+                               null)))))
             ,@(render-flow* (part-flow d) d ht #f)
             ,@(let loop ([pos 1]
                          [secs (part-parts d)])

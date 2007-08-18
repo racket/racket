@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["diagrams.ss"]
 
-@title[#:style '(toc quiet)]{Windowing Class Reference}
+@title[#:style '(toc quiet)]{Windowing Classes}
 
 Windows and controls:
 

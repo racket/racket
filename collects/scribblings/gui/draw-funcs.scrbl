@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@title{Drawing Function Reference}
+@title{Drawing Functions}
 
 @local-table-of-contents[]
 

@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@title{Windowing Function Reference}
+@title{Windowing Functions}
 
 @local-table-of-contents[]
 
