@@ -8,6 +8,7 @@
            sandbox-input
            sandbox-output
            sandbox-error-output
+           sandbox-propagate-breaks
            sandbox-coverage-enabled
            sandbox-namespace-specs
            sandbox-override-collection-paths
@@ -44,6 +45,7 @@
   (define sandbox-output       (make-parameter #f))
   (define sandbox-error-output (make-parameter current-error-port))
   (define sandbox-eval-limits  (make-parameter '(30 20))) ; 30sec, 20mb
+  (define sandbox-propagate-breaks (make-parameter #t))
   (define sandbox-coverage-enabled (make-parameter #f))
 
   (define sandbox-namespace-specs
@@ -429,7 +431,9 @@
       (let ([r (if user-thread
                  (begin (channel-put input-ch expr)
                         (let loop ()
-                          (with-handlers ([exn:break?
+                          (with-handlers ([(lambda (e)
+                                             (and (sandbox-propagate-breaks)
+                                                  (exn:break? e)))
                                            (lambda (e)
                                              (user-break)
                                              (loop))])
