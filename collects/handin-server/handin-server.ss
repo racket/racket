@@ -282,7 +282,9 @@
       (error* "no ~a submission directory for ~a" assignment users))
     (log-line "retrieving assignment for ~a: ~a" users assignment)
     (parameterize ([current-directory submission-dir])
-      (define magics '(#"WXME" #"<<<MULTI-SUBMISSION-FILE>>>"))
+      (define magics '(#"WXME" 
+                       #"<<<MULTI-SUBMISSION-FILE>>>" 
+                       #"#reader(lib\"read.ss\"\"wxme\")WXME"))
       (define mlen (apply max (map bytes-length magics)))
       (define file
         ;; find the newest wxme file

@@ -39,15 +39,16 @@ Quick Start for a Test Drive:
 
  2.  Copy "server-cert.pem" from the "handin-client" collection
      to the new directory.
-       NOTE: for real use, you need a new certificate.
-       NOTE: see also "Where is the collection?", below
+       NOTE: For real use, you need a new certificate.
+       NOTE: See also "Where is the collection?", below.
 
  3.  Copy "private-key.pem" from the "handin-server" collection
      to the new directory.
-       NOTE: for real use, you need a new key.
+       NOTE: For real use, you need a new key.
 
  4.  Create a file "users.ss" with the following content:
-       ((tester ("8fe4c11451281c094a6578e6ddbf5eed")))
+       ((tester ("8fe4c11451281c094a6578e6ddbf5eed" 
+                 "Tester" "1" "test@cs")))
 
  5.  Make a "test" subdirectory in your new directory.
 
@@ -58,14 +59,13 @@ Quick Start for a Test Drive:
         mred -mvqM handin-server
 
  8.  In the "handin-client" collection, edit "info.ss" and
-     uncomment the line
-        (define server:port "localhost:7979")
-     and the lines that define `tools', `tool-names', and
-     `tool-icons'.
+     uncomment the lines that define `server:port', `tools', 
+     `tool-names', and `tool-icons'.
 
- 9. Run `setup-plt -l handin-client' (on Windows, the executable is
-    "Setup PLT", and you don't have to supply the command line
-    arguments).
+ 9. Run `setup-plt -l handin-client'
+      NOTE: Under Windows, the executable is "Setup PLT" 
+            instead of setup-plt.
+      NOTE: The command line arguments are optional.
 
  10. Start DrScheme, click "Handin" to run the client, submit with
      username "tester" and password "pw".

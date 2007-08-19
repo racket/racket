@@ -4,7 +4,7 @@
            (lib "string.ss")
            (lib "date.ss")
            (lib "servlet.ss" "web-server")
-           (lib "response-structs.ss" "web-server")
+           (lib "servlet-structs.ss" "web-server" "servlet")
            (lib "uri-codec.ss" "net")
            (lib "md5.ss"    "handin-server" "private")
            (lib "logger.ss" "handin-server" "private")
@@ -175,6 +175,7 @@
                  (loop base (cdr elts)))))))
     (define file (build-path server-dir tag))
     (with-handlers ([exn:fail? (lambda (exn)
+                                 (log-line "Status exception: ~s"  exn)
                                  (make-page "Error" "Illegal file access"))])
       ;; Make sure the user is allowed to read the requested file:
       (or (check file `(,who *) #t)
@@ -187,17 +188,21 @@
       (let* ([data (with-input-from-file file
                      (lambda () (read-bytes (file-size file))))]
              [html? (regexp-match? #rx"[.]html?$" (string-foldcase tag))]
-             [wxme? (regexp-match? #rx#"^WXME" data)])
+             [wxme? (regexp-match? #rx#"^(?:#reader[(]lib\"read.ss\"\"wxme\"[)])?WXME" data)])
         (make-response/full 200 "Okay" (current-seconds)
           (cond [html? #"text/html"]
                 [wxme? #"application/data"]
                 [else  #"text/plain"])
-          `([Content-Length . ,(number->string (bytes-length data))]
-            [Content-Disposition
-             . ,(format "~a; filename=~s"
-                        (if wxme? "attachment" "inline")
-                        (let-values ([(base name dir?) (split-path file)])
-                          (path->string name)))])
+          (list
+           (make-header #"Content-Length"
+                        (string->bytes/latin-1
+                         (number->string (bytes-length data))))
+           (make-header #"Content-Disposition"
+                        (string->bytes/utf-8
+                         (format "~a; filename=~s"
+                                 (if wxme? "attachment" "inline")
+                                 (let-values ([(base name dir?) (split-path file)])
+                                   (path->string name))))))
           (list data)))))
 
   (define (status-page user for-handin)
@@ -251,7 +256,7 @@
     (parameterize ([current-session (web-counter)])
       (login-page null (aget (request-bindings initial-request) 'handin) #f)))
 
-  (define interface-version 'v2-transitional)
+  (define interface-version 'v1)
   (define timeout 600)
 
   (define (instance-expiration-handler failed-request)
