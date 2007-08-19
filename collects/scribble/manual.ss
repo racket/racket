@@ -1265,6 +1265,49 @@
       [(_ object%) #'#f]
       [(_ id) (class-id->class-doc-info-id #'id)]))
 
+  (define (collect-inherited supers ht)
+    (let* ([supers (let loop ([supers supers][accum null])
+                     (cond
+                      [(null? supers) (reverse accum)]
+                      [(memq (car supers) accum)
+                       (loop (cdr supers) accum)]
+                      [else
+                       (let ([super (car supers)])
+                         (loop (append (reverse (decl-intfs super))
+                                       (if (decl-super super)
+                                           (list (decl-super super))
+                                           null)
+                                       (cdr supers))
+                               (cons super accum)))]))]
+           [inh (apply
+                 append
+                 (map (lambda (super)
+                        (let ([inh (filter
+                                    values
+                                    (hash-table-map
+                                     (decl-methods super)
+                                     (lambda (k v)
+                                       (let ([v (hash-table-get ht k)])
+                                         (and (eq? (car v) (decl-name super))
+                                              (cons (symbol->string k)
+                                                    (*method k (car v))))))))])
+                          (if (null? inh)
+                              null
+                              (cons
+                               (make-element #f (list (make-element "inheritedlbl" '("from "))
+                                                      (to-element (decl-name super))))
+                               (map cdr (sort inh
+                                              (lambda (a b)
+                                                (string<? (car a) (car b)))))))))
+                      supers))])
+      (if (null? inh)
+          null
+          (list (make-auxiliary-table
+                 "inherited"
+                 (map (lambda (i)
+                        (list (make-flow (list (make-paragraph (list i))))))
+                      (cons (make-element "inheritedlbl" '("Inherited methods:")) inh)))))))
+
   (define (register-class name super intfs mk-head body)
     (let ([ht (make-hash-table)])
       (when super
@@ -1280,7 +1323,13 @@
                   (when (meth? i) 
                     (hash-table-put! ht (meth-name i) (cons name i))))
                 body)
-      (make-decl name super intfs mk-head body ht)))
+      (make-decl name super intfs mk-head 
+                 (append body 
+                         (collect-inherited (append
+                                             (if super (list super) null)
+                                             intfs)
+                                            ht))
+                 ht)))
 
   (define (*include-class decl)
     (make-splice

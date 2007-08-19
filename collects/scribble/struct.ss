@@ -65,6 +65,7 @@
    [(styled-paragraph paragraph) ([style any/c])]
    [table ([style any/c]
            [flowss (listof (listof (or/c flow? (one-of/c 'cont))))])]
+   [(auxiliary-table table) ()]
    [delayed-flow-element ([render (any/c part? any/c . -> . flow-element?)])]
    [itemization ([flows (listof flow?)])]
    [blockquote ([style any/c]

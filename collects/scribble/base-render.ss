@@ -203,7 +203,9 @@
 
       (define/public (render-flow-element p part ht)
         (cond
-         [(table? p) (render-table p part ht)]
+         [(table? p) (if (auxiliary-table? p)
+                         (render-auxiliary-table p part ht)
+                         (render-table p part ht))]
          [(itemization? p) (render-itemization p part ht)]
          [(blockquote? p) (render-blockquote p part ht)]
          [(delayed-flow-element? p) (render-flow-element
@@ -211,6 +213,9 @@
                                      part ht)]
          [else (render-paragraph p part ht)]))
         
+      (define/public (render-auxiliary-table i part ht)
+        null)
+
       (define/public (render-table i part ht)
         (map (lambda (d) (if (flow? i)
                              (render-flow d part ht)

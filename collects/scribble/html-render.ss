@@ -212,7 +212,11 @@
                                                       ,@(if (part? p)
                                                             (render-content (part-title-content p) d ht)
                                                             (render-content (element-content p) d ht)))))))
-                                            ps)))))))))))
+                                            ps)))))))
+                 ,@(apply append
+                          (map (lambda (t)
+                                 (render-table t d ht))
+                               (filter auxiliary-table? (flow-paragraphs (part-flow d)))))))))
 
       (define/public (render-one-part d ht fn number)
         (parameterize ([current-output-file fn])
