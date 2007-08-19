@@ -16,6 +16,7 @@
            sandbox-network-guard
            sandbox-eval-limits
            kill-evaluator
+           break-evaluator
            set-eval-limits
            put-input
            get-output
@@ -177,31 +178,43 @@
   (define memory-accounting? (custodian-memory-accounting-available?))
 
   (define (call-with-limits sec mb thunk)
-    (let ([cust (make-custodian)]
-          [ch   (make-channel)]
-          ;; use this to copy parameter changes from the sub-thread
-          [p    current-preserved-thread-cell-values])
+    (let ([r #f]
+          [c (make-custodian)]
+          ;; used to copy parameter changes from the nested thread
+          [p current-preserved-thread-cell-values])
       (when (and mb memory-accounting?)
-        (custodian-limit-memory cust (* mb 1024 1024) cust))
-      (let* ([work (parameterize ([current-custodian cust])
-                     (thread (lambda ()
-                               (channel-put ch
-                                 (with-handlers ([void (lambda (e)
-                                                         (list (p) raise e))])
-                                   (call-with-values thunk
-                                       (lambda vs (list* (p) values vs))))))))]
-             [watch (thread (lambda ()
-                              (channel-put ch
-                                (if (sync/timeout sec work) 'memory 'time))))]
-             [r (channel-get ch)])
-        (custodian-shutdown-all cust)
-        (kill-thread watch)
-        (if (list? r)
-          ;; apply parameter changes first
-          (begin (p (car r)) (apply (cadr r) (cddr r)))
-          (raise (make-exn:fail:resource (format "with-limit: out of ~a" r)
+        (custodian-limit-memory c (* mb 1024 1024) c))
+      (parameterize ([current-custodian c])
+        ;; The nested-thread can die on a time-out or memory-limit,
+        ;; and never throws an exception, so we never throw an error,
+        ;; just assume the a death means the custodian was shut down
+        ;; due to memory limit.  Note: cannot copy the
+        ;; parameterization in this case.
+        (with-handlers ([exn:fail? (lambda (e)
+                                     (unless r (set! r (cons #f 'memory))))])
+          (call-in-nested-thread
+           (lambda ()
+             (define this (current-thread))
+             (define timer
+               (thread (lambda ()
+                         (sleep sec)
+                         ;; even in this case there are no parameters
+                         ;; to copy, since it is on a different thread
+                         (set! r (cons #f 'time))
+                         (kill-thread this))))
+             (set! r
+               (with-handlers ([void (lambda (e) (list (p) raise e))])
+                 (call-with-values thunk (lambda vs (list* (p) values vs)))))
+             (kill-thread timer))))
+        (custodian-shutdown-all c)
+        (unless r (error 'call-with-limits "internal error"))
+        ;; apply parameter changes first
+        (when (car r) (p (car r)))
+        (if (pair? (cdr r))
+          (apply (cadr r) (cddr r))
+          (raise (make-exn:fail:resource (format "with-limit: out of ~a" (cdr r))
                                          (current-continuation-marks)
-                                         r))))))
+                                         (cdr r)))))))
 
   (define-syntax with-limits
     (syntax-rules ()
@@ -357,6 +370,7 @@
   (define null-input         (open-input-bytes #""))
 
   (define (kill-evaluator eval)            (eval kill-evaluator))
+  (define (break-evaluator eval)           (eval break-evaluator))
   (define (set-eval-limits eval . args)    ((eval set-eval-limits) args))
   (define (put-input eval . args)          (apply (eval put-input) args))
   (define (get-output eval)                (eval get-output))
@@ -376,13 +390,15 @@
     (define limits        (sandbox-eval-limits))
     (define user-thread   #t) ; set later to the thread
     (define orig-cust (current-custodian))
-    (define (kill-me)
+    (define (user-kill)
       (when user-thread
         (let ([t user-thread])
           (set! user-thread #f)
           (custodian-shutdown-all cust)
           (kill-thread t))) ; just in case
       (void))
+    (define (user-break)
+      (when user-thread (break-thread user-thread)))
     (define (user-process)
       (with-handlers ([void (lambda (exn) (channel-put result-ch exn))])
         ;; first set up the environment
@@ -397,7 +413,7 @@
       ;; finally wait for interaction expressions
       (let loop ([n 1])
         (let ([expr (channel-get input-ch)])
-          (when (eof-object? expr) (channel-put result-ch expr) (kill-me))
+          (when (eof-object? expr) (channel-put result-ch expr) (user-kill))
           (let ([code (input->code (list expr) 'eval n)])
             (with-handlers ([void (lambda (exn)
                                     (channel-put result-ch (cons 'exn exn)))])
@@ -411,7 +427,13 @@
           (loop (add1 n)))))
     (define (user-eval expr)
       (let ([r (if user-thread
-                 (begin (channel-put input-ch expr) (channel-get result-ch))
+                 (begin (channel-put input-ch expr)
+                        (let loop ()
+                          (with-handlers ([exn:break?
+                                           (lambda (e)
+                                             (user-break)
+                                             (loop))])
+                            (channel-get result-ch))))
                  eof)])
         (cond [(eof-object? r) (error 'evaluator "terminated")]
               [(eq? (car r) 'exn) (raise (cdr r))]
@@ -439,7 +461,8 @@
                      [(eq? arg input-putter) input]
                      [else (error 'put-input "bad input: ~e" arg)])]))
     (define (evaluator expr)
-      (cond [(eq? expr kill-evaluator) (kill-me)]
+      (cond [(eq? expr kill-evaluator)  (user-kill)]
+            [(eq? expr break-evaluator) (user-break)]
             [(eq? expr set-eval-limits) (lambda (args) (set! limits args))]
             [(eq? expr put-input) input-putter]
             [(eq? expr get-output) (output-getter output)]

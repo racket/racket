@@ -59,6 +59,34 @@
    --top--
    (when (custodian-memory-accounting-available?)
      (t --eval-- (memory 1000000) =err> "out of memory"))
+   ;; test parameter settings (tricky to get this right since
+   ;; with-limits runs stuff in a different thread)
+   (set-eval-limits ev #f #f)
+   --eval--
+   (define p (make-parameter 0))
+   (p) => 0
+   (p 1)
+   (p) => 1
+   (thread-wait (thread (lambda () (p 100))))
+   (p) => 1
+   --top--
+   (set-eval-limits ev 1 3)
+   --eval--
+   (p) => 1
+   (p 2)
+   (p) => 2
+   (thread-wait (thread (lambda () (p 100))))
+   (p) => 2
+   --top--
+   (set-eval-limits ev #f #f)
+   --eval--
+   (p) => 2
+   ;; breaking
+   --top--
+   (thread (lambda () (sleep 1) (break-evaluator ev)))
+   --eval--
+   (sleep 2) =err> "user break"
+   ;; termination
    --eval--
    (printf "x = ~s\n" x) => (void)
    ,eof =err> "terminated"
