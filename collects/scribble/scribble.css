@@ -119,6 +119,7 @@
                }
 
                .inherited {
+                 width: 100%;
                  margin-top: 1em;
                  text-align: left;
                  background-color: #ECF5F5;
