@@ -1,10 +1,10 @@
 #reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@title[#:style '(toc reveal)]{Guide}
+@title[#:style '(toc reveal)]{Overview}
 
 For documentation purposes, the MrEd toolbox is organized into three
-parts:
+ parts:
 
 @itemize{
 
@@ -30,18 +30,7 @@ These three parts roughly represent layers of increasing
  sophistication. Simple GUI programs access only the windowing toolbox
  directly, more complex programs use both the windowing and drawing
  toolboxes, and large-scale applications rely on all three
- toolboxes. This three-layer view of the toolbox breaks down under
- close scrutiny, because the windowing, drawing, and editor toolboxes
- are actually interdependent and intertwined. Nevertheless, the
- layered separation is a good approximation.
-
-All three parts are immediately available when MrEd is started, as
- well as the base class system from MzLib. The @indexed-file{mred.ss}
- library module of the @file{mred} collection provides all of the
- class, interface, and procedure names defined in this manual.  When
- MrEd starts up, it imports the @file{mred.ss} module and MzLib's
- @indexed-file{class.ss} module into the initial namespace (so no
- knowledge about modules is required to understand this manual).
+ toolboxes.
 
 @local-table-of-contents[]
 

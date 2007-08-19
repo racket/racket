@@ -492,7 +492,7 @@
   (define (register-scheme-definition stx)
     (unless (identifier? stx)
       (error 'register-scheme-definition "not an identifier: ~e" (syntax-object->datum stx)))
-    (format "definition:~s" 
+    (format "definition:~a" 
             (let ([b (identifier-binding stx)])
               (cond
                [(not b) (format "top:~a" (syntax-e stx))]

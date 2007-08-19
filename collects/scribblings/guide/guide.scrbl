@@ -121,8 +121,16 @@ constant propagation, constant folding, and inlining optimizations.
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "gui"]{Graphical User Interfaces@aux-elem{ (GUIs)}}
+@section[#:tag "guide:mred"]{Graphical User Interfaces@aux-elem{ (GUIs)}}
 
+@deftech{MrEd} is both a library and an executable. As a library,
+ @scheme[(lib "mred/mred.ss")] provides class, interface, and function
+ bindings for writing GUI programs. An an executable, @exec{mred}
+ substitutes for @exec{mzscheme} to run MrEd programs. (The
+ @exec{mzscheme} executable cannot run MrEd programs, because
+ @exec{mzscheme} does not include primitive GUI support, and because
+ some operating systems distinguish GUI applications from command-line
+ applications.)
 
 @; ----------------------------------------------------------------------
 @section[#:tag "tools"]{More Tools}
