@@ -356,25 +356,27 @@
        (build-path "index.htm")]
       [(file-exists? (build-path doc-dir "index.html"))
        (build-path "index.html")]
-      [(tex2page-detected doc-dir)
-       =>
-       (lambda (x) x)]
+      [(tex2page-detected doc-dir) => values]
       [else #f]))
   
   ;; tex2page-detected : string -> (union #f string)
   (define (tex2page-detected dir)
-    (let loop ([contents (directory-list dir)])
-      (cond
-        [(null? contents) #f]
-        [else (let* ([file (car contents)]
-                     [m (regexp-match #rx#"(.*)-Z-H-1.html" (path->bytes file))])
-                (or (and m
-                         (file-exists? (build-path dir file))
-                         (let ([index-file (bytes->path (bytes-append (cadr m) #".html"))])
-                           (if (file-exists? (build-path dir index-file))
-                               index-file
-                               #f)))
-                    (loop (cdr contents))))])))
+    (and (directory-exists? dir)
+         (let loop ([contents (directory-list dir)])
+           (cond
+             [(null? contents) #f]
+             [else (let* ([file (car contents)]
+                          [m (regexp-match #rx#"(.*)-Z-H-1.html"
+                                           (path->bytes file))])
+                     (or (and m
+                              (file-exists? (build-path dir file))
+                              (let ([index-file
+                                     (bytes->path
+                                      (bytes-append (cadr m) #".html"))])
+                                (if (file-exists? (build-path dir index-file))
+                                  index-file
+                                  #f)))
+                         (loop (cdr contents))))]))))
   
   
   (provide main-manual-page)
