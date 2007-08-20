@@ -5,6 +5,7 @@
            (lib "date.ss")
            (lib "servlet.ss" "web-server")
            (lib "servlet-structs.ss" "web-server" "servlet")
+           (lib "timeouts.ss" "web-server" "managers")
            (lib "uri-codec.ss" "net")
            (lib "md5.ss"    "handin-server" "private")
            (lib "logger.ss" "handin-server" "private")
@@ -26,21 +27,14 @@
     `(html (head (title ,title))
            (body ([bgcolor "white"]) (h1 ((align "center")) ,title) ,@body)))
 
-  (define handin-prefix-re
-    ;; a regexp that turns a full path to a server-dir relative path
-    (regexp
-     (string-append
-      "^" (regexp-quote
-           (regexp-replace
-            #rx"/?$"
-            (if (path? server-dir) (path->string server-dir) server-dir)
-            "/")))))
+  (define (relativize-path p)
+    (path->string
+     (find-relative-path (normalize-path server-dir)
+                         (normalize-path p))))
 
   (define (make-k k tag)
     (format "~a~atag=~a" k (if (regexp-match? #rx"^[^#]*[?]" k) "&" "?")
-            (uri-encode (regexp-replace handin-prefix-re
-                                        (if (path? tag) (path->string tag) tag)
-                                        ""))))
+            (uri-encode tag)))
 
   ;; `look-for' can be a username as a string (will find "bar+foo" for "foo"),
   ;; or a regexp that should match the whole directory name (used with
@@ -73,7 +67,7 @@
                     (map (lambda (f)
                            (let ([hi (build-path dir f)])
                              `((br)
-                               (a ([href ,(make-k k hi)]) ,f)
+                               (a ([href ,(make-k k (relativize-path hi))]) ,f)
                                " ("
                                ,(date->string
                                  (seconds->date
@@ -90,7 +84,7 @@
           [none `((i "---"))])
       (cond [(not soln) none]
             [(file-exists? soln)
-             `((a ((href ,(make-k k soln))) "Solution"))]
+             `((a ((href ,(make-k k (relativize-path soln)))) "Solution"))]
             [(directory-exists? soln)
              (parameterize ([current-directory soln])
                (let ([files (sort (map path->string
@@ -100,7 +94,7 @@
                    none
                    (apply append
                           (map (lambda (f)
-                                 `((a ([href ,(make-k k (build-path soln f))])
+                                 `((a ([href ,(make-k k (relativize-path (build-path soln f)))])
                                      (tt ,f))
                                    (br)))
                                files)))))]
@@ -256,8 +250,8 @@
     (parameterize ([current-session (web-counter)])
       (login-page null (aget (request-bindings initial-request) 'handin) #f)))
 
-  (define interface-version 'v1)
-  (define timeout 600)
+  (define interface-version 'v2)
+  (define name "status")
 
   (define (instance-expiration-handler failed-request)
     (let ([this (servlet-url->url-string/no-continuation
@@ -267,4 +261,9 @@
              (body "Your session has expired, "
                    (a ([href ,this]) "restarting") " in 3 seconds."))))
 
-  (provide interface-version timeout start instance-expiration-handler))
+  (define manager
+    (create-timeout-manager instance-expiration-handler
+                            600 
+                            600))
+
+  (provide interface-version start name manager))
