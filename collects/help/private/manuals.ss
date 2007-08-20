@@ -93,8 +93,16 @@
                        (cond
                          [(and (list? html-doc-paths)
                                (andmap path-string? html-doc-paths))
-                          (append (map (lambda (x) (build-path dir x)) html-doc-paths)
-                                  (loop (cdr dirs)))]
+                          (let ([candidates (map (lambda (x) (build-path dir x)) html-doc-paths)])
+                            (for-each (λ (c)
+                                        (unless (directory-exists? c)
+                                          (fprintf (current-error-port) 
+                                                   "found reference to ~a in html-docs for ~a, but it is not a directory\n"
+                                                   (path->string c)
+                                                   (path->string dir))))
+                                      candidates)
+                            (append (filter directory-exists? candidates)
+                                    (loop (cdr dirs))))]
                          [else
                           (loop (cdr dirs))]))]
                     [else (loop (cdr dirs))]))]))))
@@ -361,22 +369,20 @@
   
   ;; tex2page-detected : string -> (union #f string)
   (define (tex2page-detected dir)
-    (and (directory-exists? dir)
-         (let loop ([contents (directory-list dir)])
-           (cond
-             [(null? contents) #f]
-             [else (let* ([file (car contents)]
-                          [m (regexp-match #rx#"(.*)-Z-H-1.html"
-                                           (path->bytes file))])
-                     (or (and m
-                              (file-exists? (build-path dir file))
-                              (let ([index-file
-                                     (bytes->path
-                                      (bytes-append (cadr m) #".html"))])
-                                (if (file-exists? (build-path dir index-file))
-                                  index-file
-                                  #f)))
-                         (loop (cdr contents))))]))))
+    (let loop ([contents (directory-list dir)])
+      (cond
+        [(null? contents) #f]
+        [else (let* ([file (car contents)]
+                     [m (regexp-match #rx#"(.*)-Z-H-1.html" (path->bytes file))])
+                (or (and m
+                         (file-exists? (build-path dir file))
+                         (let ([index-file
+                                (bytes->path
+                                 (bytes-append (cadr m) #".html"))])
+                           (if (file-exists? (build-path dir index-file))
+                               index-file
+                               #f)))
+                    (loop (cdr contents))))])))
   
   
   (provide main-manual-page)
