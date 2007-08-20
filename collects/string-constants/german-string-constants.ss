@@ -902,7 +902,7 @@
  
  ;; the three string constants are concatenated together and the middle
  ;; one is hyperlinked to the dialog that suggests various languages
- (get-guidance-before "Wählen Sie Sprache auswählen... im Sprache-Menü oder ")
+ (get-guidance-before "Wählen Sie \"Sprache auswählen...\" im \"Sprache\"-Menü oder ")
  (get-guidance-during "Hilfe anfordern")
  (get-guidance-after ".")
 
