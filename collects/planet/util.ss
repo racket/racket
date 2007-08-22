@@ -94,12 +94,40 @@
            [cache-file (build-path (PLANET-DIR) "cache.ss")])
       (when (file-exists? cache-file)
         (let ([cache-lines (with-input-from-file cache-file read)])
-          (with-output-to-file cache-file
-            (lambda ()
+          (call-with-output-file cache-file
+            (λ (op)
               (if (pair? cache-lines)
-                  (write (filter (lambda (line) (not (and (pair? line) (equal? (car line) pathbytes)))) cache-lines))
-                  (printf "\n")))
+                  (write (filter
+                          (λ (line) 
+                            (not 
+                             (and
+                              (pair? line)
+                              (or (not (directory-exists? (bytes->path (car line))))
+                                  (subpath? path (bytes->path (car line)))))))                              
+                          cache-lines)
+                         op)
+                  (fprintf op "\n")))
             'truncate/replace)))))
+  
+  ;; subpath? : path path -> boolean
+  ;; determines if p1 is a subpath of p2. Both paths must actually exist on the filesystem
+  (define (subpath? p1 p2)
+    (let ([full-p1 (explode-path (normalize-path p1))]
+          [full-p2 (explode-path (normalize-path p2))])
+      (sublist? full-p1 full-p2 (o2 bytes=? path->bytes))))
+
+  ;; o2 : (X X -> Y) (Z -> X) -> (Z Z -> Y)
+  ;; "compose-two"
+  (define (o2 a b) (λ (x y) (a (b x) (b y))))
+
+  ;; sublist? : (listof X) (listof X) (X X -> boolean) -> boolean
+  ;; determine if l1 is a sublist of l2, using = as the comparison operator for elements
+  (define (sublist? l1 l2 =)
+    (cond
+      [(null? l1) #t]
+      [(null? l2) #f]
+      [(= (car l1) (car l2)) (sublist? (cdr l1) (cdr l2) =)]
+      [else #f]))
   
   (define (erase-pkg owner name maj min)
     (let* ([uninstalled-pkg-dir
