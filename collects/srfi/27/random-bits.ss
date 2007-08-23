@@ -20,7 +20,7 @@
    (random-integer (-> positive-integer/c any))
    (random-source-make-integers (-> positive-integer/c any))
    (random-source-make-reals (case-> (-> random-source? any)
-                                     (-> random-source? (and/c (>/c 0) (</c 1)) any))))
+                                     (-> random-source? (and/c (>/c 0) (</c 1)) any))))
   
   (define (random-integer n)
     (if (<= n 2147483647)
@@ -69,12 +69,12 @@
   
   (define-syntax random-source-pseudo-randomize!
     (syntax-rules (default-random-source)
-      ((_ default-random-source . ij)
-       (random-seed (modulo (equal-hash-code 'ij) 2147483648)))
-      ((_ s . ij)
+      ((_ default-random-source ij ...)
+       (random-seed (modulo (equal-hash-code (list ij ...)) 2147483648)))
+      ((_ s ij ...)
        (parameterize ((current-pseudo-random-generator
                        (random-source-generator s)))
-         (random-seed (modulo (equal-hash-code 'ij) 2147483648))))))
+         (random-seed (modulo (equal-hash-code (list ij ...)) 2147483648))))))
   
   (define (random-source-make-integers s)
     (lambda (n)
@@ -90,7 +90,7 @@
                          (random-source-generator s)))
            (random))))
       ((s unit)
-       (let ((n (- (inexact->exact (floor (/ unit))) 2)))
+       (let ((n (inexact->exact (floor (/ unit)))))
          (lambda ()
            (parameterize ((current-pseudo-random-generator
                            (random-source-generator s)))
