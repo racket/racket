@@ -27,6 +27,13 @@
     "check-error requires two expressions. Try (check-error test message).")
   (define-for-syntax CHECK-WITHIN-STR
     "check-within requires three expressions. Try (check-within test expected range).")
+  
+  (define-for-syntax CHECK-EXPECT-DEFN-STR
+    "check-expect cannot be used as an expression")
+  (define-for-syntax CHECK-WITHIN-DEFN-STR
+    "check-within cannot be used as an expression")
+  (define-for-syntax CHECK-ERROR-DEFN-STR
+    "check-error cannot be used as an expression")
 
   ;(make-src (U editor file-name) int int int)
   (define-struct src (file line col pos span))
@@ -47,6 +54,7 @@
   (define-syntax (check-expect stx)
     (syntax-case stx ()
       ((_ test actual)
+       (not (eq? (syntax-local-context) 'expression))
        (quasisyntax/loc stx
          (define #,(gensym 'test)
            (check-values-expected
@@ -56,9 +64,14 @@
                                                        (syntax-position stx)
                                                        (syntax-span stx)))))))
       ((_ test)
+       (not (eq? (syntax-local-context) 'expression))
        (raise-syntax-error 'check-expect CHECK-EXPECT-STR stx))
       ((_ test actual extra ...)
-       (raise-syntax-error 'check-expect CHECK-EXPECT-STR stx))))
+       (not (eq? (syntax-local-context) 'expression))
+       (raise-syntax-error 'check-expect CHECK-EXPECT-STR stx))
+      ((_ test ...)
+       (eq? (syntax-local-context) 'expression)
+       (raise-syntax-error 'check-expect CHECK-EXPECT-DEFN-STR stx))))
 
   ;check-values-expected: (-> scheme-val) scheme-val src -> void
   (define (check-values-expected test actual src)
@@ -72,6 +85,7 @@
   (define-syntax (check-within stx)
     (syntax-case stx ()
       ((_ test actual within)
+       (not (eq? (syntax-local-context) 'expression))
        (quasisyntax/loc stx
          (define #,(gensym 'test-within)
            (check-values-within (lambda () test) actual within
@@ -81,11 +95,17 @@
                                                    (syntax-position stx)
                                                    (syntax-span stx)))))))
       ((_ test actual)
+       (not (eq? (syntax-local-context) 'expression))
        (raise-syntax-error 'check-within CHECK-WITHIN-STR stx))
       ((_ test)
+       (not (eq? (syntax-local-context) 'expression))
        (raise-syntax-error 'check-within CHECK-WITHIN-STR stx))
       ((_ test actual within extra ...)
-       (raise-syntax-error 'check-within CHECK-WITHIN-STR stx))))
+       (not (eq? (syntax-local-context) 'expression))
+       (raise-syntax-error 'check-within CHECK-WITHIN-STR stx))
+      ((_ test ...)
+       (eq? (syntax-local-context) 'expression)
+       (raise-syntax-error 'check-within CHECK-WITHIN-DEFN-STR stx))))
 
   (define (check-values-within test actual within src)
     (error-check number? within CHECK-WITHIN-INEXACT-FMT)
@@ -95,6 +115,7 @@
   (define-syntax (check-error stx)
     (syntax-case stx ()
       ((_ test error)
+       (not (eq? (syntax-local-context) 'expression))
        (quasisyntax/loc stx
          (define #,(gensym 'test-error)
            (check-values-error (lambda () test) error (make-src #,@(list (syntax-source stx)
@@ -103,7 +124,11 @@
                                                                          (syntax-position stx)
                                                                          (syntax-span stx)))))))
       ((_ test)
-       (raise-syntax-error 'check-error CHECK-ERROR-STR stx))))
+       (not (eq? (syntax-local-context) 'expression))
+       (raise-syntax-error 'check-error CHECK-ERROR-STR stx))
+      ((_ test ...)
+       (eq? (syntax-local-context) 'expression)
+       (raise-syntax-error 'check-error CHECK-ERROR-DEFN-STR stx))))
 
   (define (check-values-error test error src)
     (error-check string? error CHECK-ERROR-STR-FMT)
