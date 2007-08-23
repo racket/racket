@@ -190,13 +190,13 @@
                                          (cadr collection-doc-file))])
                    (format "<LI> ~a"
                            (if (file-exists? path)
-                               (format "<A HREF=\"/servlets/doc-anchor.ss?file=~a&name=~a&caption=Documentation for the ~a collection\">~a collection</A>"
+                               (format "<A HREF=\"/servlets/doc-anchor.ss?file=~a&name=~a&caption=Documentation for the ~a\">~a</A>"
                                        ;; escape colons and other junk
                                        (uri-encode (path->string path))
                                        (uri-encode name)
                                        (uri-encode name)
                                        name)
-                               (format "<FONT COLOR=\"RED\">~a collection: specified doc.txt file (~a) not found</FONT>"
+                               (format "<FONT COLOR=\"RED\">~a: specified doc.txt file (~a) not found</FONT>"
                                        name path))))))
               collections-doc-files
               collection-names)])

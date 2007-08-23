@@ -191,7 +191,17 @@
          (not x))))
   
   (preferences:set-default 'drscheme:switch-to-module-language-automatically? #t boolean?)
+
+  (preferences:set-default
+   'drscheme:default-tools-configuration
+   'load
+   (lambda (p)
+     (memq p '(load skip))))
   
+  (preferences:set-default
+   'drscheme:tools-configuration
+   null
+   list?)
   
   (drscheme:font:setup-preferences)
   (drscheme:help-desk:add-help-desk-font-prefs #t)
@@ -275,6 +285,7 @@
                        warnings-panel))))
   (drscheme:debug:add-prefs-panel)
   (install-help-browser-preference-panel)
+  (drscheme:tools:add-prefs-panel)
   
   (drscheme:language:register-capability 'drscheme:define-popup
                                          (or/c (cons/c string? string?) false/c)

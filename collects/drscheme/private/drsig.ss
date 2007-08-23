@@ -109,7 +109,8 @@
     ((struct successful-tool (spec bitmap name url))
      get-successful-tools
      only-in-phase
-     load/invoke-all-tools))
+     load/invoke-all-tools
+     add-prefs-panel))
   
   (define-signature drscheme:get/extend^
     (extend-tab

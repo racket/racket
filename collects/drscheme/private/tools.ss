@@ -22,13 +22,20 @@
           [prefix drscheme:eval: drscheme:eval^]
           [prefix drscheme:modes: drscheme:modes^])
   (export drscheme:tools^)
+
+  ;; An installed-tool is
+  ;; (make-installed-tool directory-record module-spec string/#f string/#f string/#f string/#f)
+  (define-struct installed-tool (dir spec bitmap name url))
+
+  ;; installed-tools : (list-of installed-tool)
+  (define installed-tools null)
   
   ;; successful-tool = (make-successful-tool module-spec 
   ;;                                         (union #f (instanceof bitmap%))
   ;;                                         (union #f string)
   ;;                                         (union #f string))
   (define-struct successful-tool (spec bitmap name url))
-  
+
   ;; successful-tools : (listof successful-tool)
   (define successful-tools null)
   
@@ -48,68 +55,29 @@
   
   ;; load/invoke-all-tools : -> void
   (define (load/invoke-all-tools phase1-extras phase2-extras)
+    (rescan-installed-tools!)
     (set! current-phase 'loading-tools)
-    (load/invoke-all-tools/collections
-     (all-tool-directories)
-     phase1-extras
-     phase2-extras))
+    (let ([candidate-tools (filter candidate-tool? installed-tools)])
+      (for-each load/invoke-tool candidate-tools)
+      (run-phases phase1-extras phase2-extras)))
+
+  ;; rescan-installed-tools! : -> void
+  (define (rescan-installed-tools!)
+    (set! installed-tools (all-installed-tools)))
   
+  ;; all-installed-tools : -> (list-of installed-tool)
+  (define (all-installed-tools)
+    (apply append
+           (map installed-tools-for-directory
+                (all-tool-directories))))
   
+  ;; all-tool-directories : -> (list-of directory-record)
   (define (all-tool-directories)
-    (find-relevant-directories '(tools tool-icons tool-names tool-urls)))
+    (find-relevant-directory-records '(tools tool-icons tool-names tool-urls)))
   
-  ;; loads the the tools in each directory
-  ;; unless PLTNOTOOLS is set, in which case it
-  ;; just runs the phases. If PLTONLYTOOL is set,
-  ;; it only loads tools in those collections
-  (define (load/invoke-all-tools/collections directories phase1-extras phase2-extras)
-    (cond
-      [(getenv "PLTNOTOOLS") (printf "PLTNOTOOLS: skipping tools\n")]
-      [else
-       (let ([onlys (getenv "PLTONLYTOOL")])
-         (if onlys
-             (let* ([allowed (let ([exp (read (open-input-string onlys))])
-                               (cond 
-                                 [(symbol? exp) (list exp)]
-                                 [(pair? exp) exp]
-                                 [else '()]))]
-                    [filtered (filter (lambda (x) 
-                                        (let-values ([(base name dir) (split-path x)])
-                                          (memq (string->symbol (path->string name))
-                                                allowed)))
-                                      directories)])
-               (printf "PLTONLYTOOL: only loading ~s\n" filtered)
-               (for-each load/invoke-tools filtered))
-             (for-each load/invoke-tools directories)))])
-    (run-phases phase1-extras phase2-extras))
-  
-  
-  
-  ;;;                     ;;       ;   ;                        ;;            
-  ;                      ;      ;                              ;            
-  ;                      ;      ;                              ;            
-  ;     ;;;   ;;;;    ;;;;     ;   ;;;   ; ;;;  ;;; ;;;  ;;;   ;  ;;   ;;;  
-  ;    ;   ;      ;  ;   ;     ;     ;    ;;  ;  ;   ;  ;   ;  ; ;    ;   ; 
-  ;    ;   ;   ;;;;  ;   ;    ;      ;    ;   ;  ;   ;  ;   ;  ;;     ;;;;; 
-  ;    ;   ;  ;   ;  ;   ;    ;      ;    ;   ;   ; ;   ;   ;  ; ;    ;     
-  ;    ;   ;  ;   ;  ;   ;   ;       ;    ;   ;   ;;;   ;   ;  ;  ;   ;   ; 
-  ;;;;;;  ;;;    ;;; ;  ;;; ;  ;     ;;;;; ;;;  ;;   ;     ;;;  ;;   ;;  ;;;  
-  ;                                               
-  
-  
-  
-  
-  ;; load/invoke-tools : string[collection-name] -> void
-  ;; loads each tool in a collection
-  (define (load/invoke-tools coll-dir)
-    (let ([table (with-handlers ([(lambda (x) #f) ; exn:fail? 
-                                  (lambda (x)
-                                    (show-error
-                                     (format (string-constant error-getting-info-tool)
-                                             coll-dir)
-                                     x)
-                                    #f)])
-                   (get-info/full coll-dir))])
+  ;; installed-tools-for-directory : directory-record -> (list-of installed-tool)
+  (define (installed-tools-for-directory coll-dir)
+    (let ([table (get-info/full (directory-record-path coll-dir))])
       (when table
         (let* ([tools (table 'tools (lambda () null))]
                [tool-icons (table 'tool-icons (lambda () (map (lambda (x) #f) tools)))]
@@ -136,10 +104,112 @@
                          #f
                          '(ok stop))
             (set! tool-urls (map (lambda (x) #f) tools)))
-          (for-each (load/invoke-tool coll-dir) tools tool-icons tool-names tool-urls)))))
+          (map (lambda (t i n u) (make-installed-tool coll-dir t i n u))
+               tools tool-icons tool-names tool-urls)))))
   
-  ;; load/invoke-tool :    path[directory-of-collection] 
-  ;;                    -> (listof string[sub-collection-name]) 
+  ;; candidate-tool? : installed-tool -> boolean
+  ;; Predicate for tools selected for execution in this
+  ;; run of DrScheme (depending on env variables and preferences)
+  (define candidate-tool?
+    (cond
+      [(getenv "PLTNOTOOLS")
+       (printf "PLTNOTOOLS: skipping tools\n")
+       (lambda (it) #f)]
+      [(getenv "PLTONLYTOOL") =>
+       (lambda (onlys)
+         (let* ([allowed (let ([exp (read (open-input-string onlys))])
+                           (cond 
+                            [(symbol? exp) (list exp)]
+                            [(pair? exp) exp]
+                            [else '()]))]
+                [directory-ok? (lambda (x) 
+                                 (let-values ([(base name dir) (split-path x)])
+                                   (memq (string->symbol (path->string name))
+                                         allowed)))])
+           (printf "PLTONLYTOOL: only loading ~s\n" allowed)
+           (lambda (it)
+             (directory-ok?
+              (directory-record-path
+               (installed-tool-dir it))))))]
+      [else
+       (lambda (it)
+         (eq? (or (get-tool-configuration it)
+                  (default-tool-configuration it))
+              'load))]))
+
+  ;; get-tool-configuration : installed-tool -> symbol/#f
+  ;; Get tool configuration preference or #f if no preference set.
+  (define (get-tool-configuration it)
+    (let ([p (assoc (installed-tool->key it) (toolspref))])
+      (and p (cadr p))))
+  
+  ;; default-tool-configuration : installed-tool -> (union 'load 'skip)
+  (define (default-tool-configuration it)
+    (preferences:get 'drscheme:default-tools-configuration))
+
+  (define toolspref
+    (case-lambda
+      [() (preferences:get 'drscheme:tools-configuration)]
+      [(v) (preferences:set 'drscheme:tools-configuration v)]))
+
+  (define (installed-tool->key it)
+    (list (directory-record-spec (installed-tool-dir it))
+          (installed-tool-spec it)))
+
+  (define (installed-tool-full-path it)
+    (apply build-path
+           (directory-record-path (installed-tool-dir it))
+           (let ([path-parts (installed-tool-spec it)])
+             (cond [(list? path-parts)
+                    (append (cdr path-parts) (list (car path-parts)))]
+                   [else (list path-parts)]))))
+
+  (define (installed-tool->module-spec it)
+    (let* ([dirrec (installed-tool-dir it)]
+           [key (directory-record-spec dirrec)]
+           [maj (directory-record-maj dirrec)]
+           [min (directory-record-min dirrec)]
+           [parts (let ([parts0 (installed-tool-spec it)])
+                    (if (list? parts0)
+                        parts0
+                        (list parts0)))]
+           [file (car parts)]
+           [rest-parts (cdr parts)])
+      (case (car key)
+        ((lib)
+         `(lib ,file ,@(cdr key) ,@rest-parts))
+        ((planet)
+         `(planet ,file (,@(cdr key) ,maj ,min) ,@rest-parts)))))
+
+  ;; installed-tool-is-loaded : installed-tool -> boolean
+  (define (installed-tool-is-loaded? it)
+    (let ([path (installed-tool-full-path it)])
+      (ormap (lambda (st) (equal? path (successful-tool-spec st)))
+             (get-successful-tools))))
+  
+
+  ;;;                     ;;       ;   ;                        ;;            
+  ;                      ;      ;                              ;            
+  ;                      ;      ;                              ;            
+  ;     ;;;   ;;;;    ;;;;     ;   ;;;   ; ;;;  ;;; ;;;  ;;;   ;  ;;   ;;;  
+  ;    ;   ;      ;  ;   ;     ;     ;    ;;  ;  ;   ;  ;   ;  ; ;    ;   ; 
+  ;    ;   ;   ;;;;  ;   ;    ;      ;    ;   ;  ;   ;  ;   ;  ;;     ;;;;; 
+  ;    ;   ;  ;   ;  ;   ;    ;      ;    ;   ;   ; ;   ;   ;  ; ;    ;     
+  ;    ;   ;  ;   ;  ;   ;   ;       ;    ;   ;   ;;;   ;   ;  ;  ;   ;   ; 
+  ;;;;;;  ;;;    ;;; ;  ;;; ;  ;     ;;;;; ;;;  ;;   ;     ;;;  ;;   ;;  ;;;  
+  ;                                               
+
+
+  ;; load/invoke-tool : installed-tool -> void
+  (define (load/invoke-tool it)
+    (load/invoke-tool* (directory-record-path (installed-tool-dir it))
+                       (installed-tool-spec it)
+                       (installed-tool-bitmap it)
+                       (installed-tool-name it)
+                       (installed-tool-url it)))
+  
+  ;; load/invoke-tool* :   path
+  ;;                       (listof string[sub-collection-name]) 
   ;;                       (union #f (cons string[filename] (listof string[collection-name])))
   ;;                       (union #f string)
   ;;                       (union #f string)
@@ -148,60 +218,59 @@
   ;; `in-path' is the `coll'-relative collection-path spec for the tool module file
   ;; `icon-spec' is the collection-path spec for the tool's icon, if there is one.
   ;; `name' is the name of the tool (only used in about box)
-  (define (load/invoke-tool coll-dir)
-    (lambda (in-path icon-spec name tool-url)
-      (let* ([icon-path 
-              (cond
-                [(string? icon-spec)
-                 (build-path coll-dir icon-spec)]
-                [(and (list? icon-spec)
-                      (andmap string? icon-spec))
-                 (build-path (apply collection-path (cdr icon-spec)) (car icon-spec))]
-                [else #f])]
-             [tool-bitmap
-              (and icon-path
-                   (install-tool-bitmap name icon-path))])
-        (let/ec k
-          (unless (or (string? in-path)
-                      (and (list? in-path)
-                           (not (null? in-path))
-                           (andmap string? in-path)))
-            (message-box (string-constant drscheme)
-                         (format (string-constant invalid-tool-spec)
-                                 coll-dir in-path)
-                         #f
-                         '(ok stop))
-            (k (void)))
-          (let* ([tool-path
-                  (if (string? in-path) 
-                      (build-path coll-dir in-path)
-                      (apply build-path coll-dir (append (cdr in-path) (list (car in-path)))))]
-                 [unit 
-                   (with-handlers ([exn:fail? 
-                                    (lambda (x)
-                                      (show-error
-                                       (format (string-constant error-invoking-tool-title)
-                                               coll-dir in-path)
-                                       x)
-                                      (k (void)))])
-                     (dynamic-require tool-path 'tool@))])
-            (with-handlers ([exn:fail? 
-                             (lambda (x)
-                               (show-error 
-                                (format (string-constant error-invoking-tool-title)
-                                        coll-dir in-path)
-                                x))])
-              (let-values ([(phase1-thunk phase2-thunk) 
-                            (invoke-tool unit (string->symbol (or name (path->string coll-dir))))])
-                (set! successfully-loaded-tools 
-                      (cons (make-successfully-loaded-tool
-                             tool-path
-                             tool-bitmap
-                             name
-                             tool-url 
-                             phase1-thunk
-                             phase2-thunk)
-                            successfully-loaded-tools)))))))))
+  (define (load/invoke-tool* coll-dir in-path icon-spec name tool-url)
+    (let* ([icon-path 
+            (cond
+             [(string? icon-spec)
+              (build-path coll-dir icon-spec)]
+             [(and (list? icon-spec)
+                   (andmap string? icon-spec))
+              (build-path (apply collection-path (cdr icon-spec)) (car icon-spec))]
+             [else #f])]
+           [tool-bitmap
+            (and icon-path
+                 (install-tool-bitmap name icon-path))])
+      (let/ec k
+        (unless (or (string? in-path)
+                    (and (list? in-path)
+                         (not (null? in-path))
+                         (andmap string? in-path)))
+          (message-box (string-constant drscheme)
+                       (format (string-constant invalid-tool-spec)
+                               coll-dir in-path)
+                       #f
+                       '(ok stop))
+          (k (void)))
+        (let* ([tool-path
+                (if (string? in-path) 
+                    (build-path coll-dir in-path)
+                    (apply build-path coll-dir (append (cdr in-path) (list (car in-path)))))]
+               [unit 
+                 (with-handlers ([exn:fail? 
+                                  (lambda (x)
+                                    (show-error
+                                     (format (string-constant error-invoking-tool-title)
+                                             coll-dir in-path)
+                                     x)
+                                    (k (void)))])
+                   (dynamic-require tool-path 'tool@))])
+          (with-handlers ([exn:fail? 
+                           (lambda (x)
+                             (show-error 
+                              (format (string-constant error-invoking-tool-title)
+                                      coll-dir in-path)
+                              x))])
+            (let-values ([(phase1-thunk phase2-thunk) 
+                          (invoke-tool unit (string->symbol (or name (path->string coll-dir))))])
+              (set! successfully-loaded-tools 
+                    (cons (make-successfully-loaded-tool
+                           tool-path
+                           tool-bitmap
+                           name
+                           tool-url 
+                           phase1-thunk
+                           phase2-thunk)
+                          successfully-loaded-tools))))))))
   
   ;; invoke-tool : unit/sig string -> (values (-> void) (-> void))
   ;; invokes the tools and returns the two phase thunks.
@@ -362,4 +431,106 @@
       (error func "can only be called in phase: ~a"
              (apply string-append 
                     (map (lambda (x) (format "~e " x))
-                         (filter (lambda (x) x) phases)))))))
+                         (filter (lambda (x) x) phases))))))
+
+  ;; Preferences GUI
+
+  (define load-action "Load the tool")
+  (define skip-action "Skip the tool")
+  
+  (define (add-prefs-panel)
+    (preferences:add-panel
+     "Tools"
+     (lambda (parent)
+       (define main (new vertical-panel% (parent parent)))
+       (define advisory
+         (new message%
+              (parent main)
+              (label "Changes to tool configuration will take effect the next time you start DrScheme.")))
+       (define listing
+         (new list-box%
+              (parent main)
+              (label "Installed tools")
+              (choices null)
+              (callback (lambda _ (on-select-tool)))))
+       (define info
+         (new vertical-panel%
+              (parent main)
+              (style '(border))
+              (stretchable-height #f)))
+       (define location
+         (new text-field%
+              (parent info)
+              (label "Tool: ")))
+       (define location-editor (send location get-editor))
+       (define configuration
+         (new radio-box%
+              (label "Load the tool when DrScheme starts?")
+              (parent info)
+              (choices (list load-action skip-action #| default-action |#))
+              (callback (lambda _ (on-select-policy)))))
+
+       (define (populate-listing!)
+         (send listing clear)
+         (for-each
+          (lambda (entry+it)
+            (send listing append
+                  (car entry+it)
+                  (cdr entry+it)))
+          (sort (map (lambda (it) (cons (tool-list-entry it) it))
+                     installed-tools)
+                (lambda (a b)
+                  (string<? (car a) (car b))))))
+       (define (tool-list-entry it)
+         (let ([name (or (installed-tool-name it)
+                         (format "unnamed tool ~a"
+                                 (installed-tool->module-spec it)))])
+           (if (installed-tool-is-loaded? it)
+               (string-append name " (loaded)")
+               name)))
+       (define (on-select-tool)
+         (let ([it (get-selected-tool)])
+           (send* location-editor
+             (begin-edit-sequence)
+             (lock #f)
+             (erase)
+             (insert
+              (if it
+                  (format "~s" (installed-tool->module-spec it))
+                  ""))
+             (lock #t)
+             (end-edit-sequence))
+           (send configuration set-selection
+                 (case (and it (get-tool-configuration it))
+                   ((load) 0)
+                   ((skip) 1)
+                   ((#f) 0))) ;; XXX (or 2, if default is an option)
+           (send configuration enable (and it #t))
+           (void)))
+       (define (on-select-policy)
+         (let ([it (get-selected-tool)]
+               [policy
+                (case (send configuration get-selection)
+                  ((0) 'load)
+                  ((1) 'skip))])
+           (when it
+             (let ([key (installed-tool->key it)])
+               (case policy
+                 ((load)
+                  (toolspref (cons (list key 'load)
+                                   (let ([ts (toolspref)])
+                                     (remove (assoc key ts) ts)))))
+                 ((skip)
+                  (toolspref (cons (list key 'skip)
+                                   (let ([ts (toolspref)])
+                                     (remove (assoc key ts) ts)))))
+                 ((#f)
+                  (toolspref (let ([ts (toolspref)])
+                               (remove (assoc key ts) ts))))))))
+         (void))
+       (define (get-selected-tool)
+         (let ([index (send listing get-selection)])
+           (and index (send listing get-data index))))
+       (populate-listing!)
+       (send location-editor lock #t)
+       main))))
