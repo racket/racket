@@ -124,7 +124,6 @@
         (all-status-page user)
         (download user tag))))
 
-  (define re:base #rx"^([a-zA-Z]*)([0-9]+)")
   (define (all-status-page user)
     (define (cell  . texts) `(td ([bgcolor "white"]) ,@texts))
     (define (rcell . texts) `(td ([bgcolor "white"] [align "right"]) ,@texts))
