@@ -3113,7 +3113,7 @@
     (format "~a~a"
             (cond
               ((name? (type-spec-name t))
-               (id-string (name-id t)))
+               (id-string (name-id (type-spec-name t))))
               ((symbol? (type-spec-name t))
                (type-spec-name t)))
             (if (= 0 (type-spec-dim t))

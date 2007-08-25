@@ -703,7 +703,7 @@
                identifier
                new-class
                simple-method-call
-               (sequence (O_PAREN (eta expression) C_PAREN) id)
+               (sequence (O_PAREN (eta expression) C_PAREN) id "parened expression")
                (sequence (! (eta expression)) id "conditional expression")
                (sequence (MINUS (eta expression)) id "negation expression")
                (cast (value+name-type prim-type))
