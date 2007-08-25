@@ -9,8 +9,11 @@
 
   ;; Hostnames defined here should not exist as real machines
 
-  ;; The general idea is that there's one virtual host for
+  ;; The general idea is that there's one "virtual" host for
   ;;  every filesystem tree that we need to access.
+  ;;  (now we use static.ss/host/yadayda instead of the virtual
+  ;    host docX.localhost, but we still need to keep track of
+  ;    the file system roots)
   ;; The "get-help-url.ss" library provides a function to
   ;;  convert a path into a suitable URL (i.e., a URL using
   ;;  the right virtual host).
@@ -20,8 +23,8 @@
   ;;  when cross-manual references are implemented as relative
   ;;  URLs.)
 
-  (define internal-host "helpdesk-internal.localhost")
-  (define internal-port 8000)
+  (define internal-host "localhost")
+  (define internal-port 8012)
 
   (define (is-internal-host? str)
     (member str all-internal-hosts))
@@ -30,10 +33,10 @@
     (let loop ([dirs dirs][n 0])
       (if (null? dirs)
 	  null
-	  (cons (format "~a~a.~a" prefix n internal-host)
-		(loop (cdr dirs) (add1 n))))))
+	  (cons (format "~a~a" prefix n)
+                (loop (cdr dirs) (add1 n))))))
 
-  (define planet-host (format "planet.~a" internal-host))
+  (define planet-host "planet")
   
   (define collects-dirs
     (get-collects-search-dirs))

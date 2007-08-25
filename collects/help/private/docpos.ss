@@ -55,8 +55,7 @@
 
       ("profj-beginner" "ProfessorJ Beginner Language" 210)
       ("profj-intermediate" "ProfessorJ Intermediate Language" 211)
-      ("profj-intermediate-access" "ProfessorJ Intermediate + access Language" 212)
-      ("profj-advanced" "ProfessorJ Advanced Language" 213)))
+      ("profj-advanced" "ProfessorJ Advanced Language" 212)))
 
   (define known-docs (map (lambda (x) (cons (string->path (car x)) (cadr x))) docs-and-positions))
   

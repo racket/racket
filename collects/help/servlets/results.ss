@@ -9,30 +9,62 @@ is stored in a module top-level and that's namespace-specific.
 
 (module results mzscheme
   (require (lib "file.ss")
-           (lib "list.ss")
            (lib "string.ss")
            (lib "servlet.ss" "web-server")
            (lib "uri-codec.ss" "net")
 	   (lib "dirs.ss" "setup")
-           "../private/internal-hp.ss"
            "../private/path.ss"
-           "../private/docpos.ss"
            "../private/search.ss"
            "../private/manuals.ss"
            "../private/get-help-url.ss"
            (lib "string-constant.ss" "string-constants")
            "private/util.ss"
            "private/search-util.ss"
-           "private/headelts.ss")
+           "private/html.ss"
+           "private/platform.ss")
   (provide interface-version timeout start)
   (define interface-version 'v1)
   (define timeout +inf.0)
   
+  ; adjust-request : request -> request
+  ;   The bindings received by the online and the internal helpdesk
+  ;   for the search and match type are different.
+  ;   The online version contains user readable descriptions for search-type
+  ;   and match-type. This function changes them to use the short versions 
+  ;   as the internal HelpDesk does.
+  (define (adjust-request request)
+    (case (current-helpdesk-platform)
+      [(internal-browser) request]
+      [(internal-browser-simple) request]
+      [else
+       (let* ([bindings    (request-bindings request)]
+              [search-type (search-type-description->search-type
+                            (get-binding bindings 'search-type search-type-default))]
+              [match-type  (match-type-description->match-type 
+                            (get-binding bindings 'match-type  match-type-default))]
+              [bindings    (append (list (make-binding:form #"search-type" (string->bytes/utf-8 search-type))
+                                         (make-binding:form #"match-type"  (string->bytes/utf-8 match-type)))
+                                   (delete-bindings (list #"search-type" #"match-type")
+                                                    (request-bindings/raw request)))]
+              [request     (make-request (request-method request)
+                                         (request-uri request)
+                                         (request-headers/raw request)
+                                         bindings
+                                         (request-post-data/raw request)
+                                         (request-host-ip request)
+                                         (request-host-port request)
+                                         (request-client-ip request))])
+         request)]))
+  
   (define (start initial-request)
-    (with-errors-to-browser 
+    (with-errors-to-browser
      send/finish
      (lambda ()
-       (let ()
+       (let* ([request      (adjust-request initial-request)]
+              [html-for-top (case (current-helpdesk-platform)
+                              [(internal-browser) '()]
+                              [(internal-browser-simple) '()]
+                              [else               (html-top request)])])
          ;; doc subcollection name -> boolean
          (define (search-type->search-level st)
            (let loop ([n 0] [lst (map car search-types)])
@@ -196,10 +228,11 @@ is stored in a module top-level and that's namespace-specific.
          (define (make-results-page search-string lang-name items regexp? exact?)
            (let-values ([(string-finds finds)
                          (build-string-finds/finds search-string regexp? exact?)])
-             `(html
-               (head ,hd-css ,@hd-links (title "PLT Help Desk search results"))
-               (body
-                (h1 "Search Results")
+             (html-page
+              #:title "PLT Help Desk search results"
+              #:top   html-for-top
+              #:bodies 
+              `((h1 "Search Results")
                 (h2
                  ,@(if lang-name
                        (list "Language: " (with-color "firebrick" lang-name) '(br))
@@ -246,8 +279,11 @@ is stored in a module top-level and that's namespace-specific.
              html))
          
          (define empty-search-page
-           `(html (head (title "Empty search string in PLT Help Desk"))
-                  (body (h2 "Empty search string"))))
+           ; TODO: Improve UI: Feedback possibility
+           (html-page
+            #:title "Empty search string in PLT Help Desk"
+            #:top  html-for-top
+            #:body '(h2 "Empty search string")))
          
          (define (lucky-search? bindings)
            (with-handlers ([exn:fail? (lambda _ #f)])
@@ -265,7 +301,7 @@ is stored in a module top-level and that's namespace-specific.
                      (map car (find-doc-names))))
                (map car (find-doc-names))))
          
-         (let* ([bindings (request-bindings initial-request)]
+         (let* ([bindings (request-bindings request)]
                 [maybe-get (lambda (sym)
                              (with-handlers ([exn:fail?
                                               (lambda (_) #f)])
@@ -274,8 +310,9 @@ is stored in a module top-level and that's namespace-specific.
            (cond
              [flush
               (doc-collections-changed)
-              `(html (head (title "Flush"))
-                     (body (h2 "Flushed documentation cache")))]
+              (html-page #:title "flush"
+                         #:top   (html-top initial-request)
+                         #:body  '(h2 "Flushed documentation cache"))]
              [else
               (let ([search-string (maybe-get 'search-string)]
                     [search-type (maybe-get 'search-type)]
@@ -294,3 +331,5 @@ is stored in a module top-level and that's namespace-specific.
                                           [(equal? doc.txt "false") #f]
                                           [else #t])
                                     lang-name)))])))))))
+  
+  

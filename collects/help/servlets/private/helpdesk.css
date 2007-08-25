@@ -1,0 +1,6 @@
+.sansa { font-family: Arial, Helvetica, sans-serif; }
+.sansa a:link    { color: #3a652b; text-decoration: none; background-color: transparent; }
+.sansa a:visited { color: #3a652b; text-decoration: none; background-color: transparent; }
+.sansa a:active  { color: #3a652b; text-decoration: none; background-color: #97d881; }
+.sansa a:hover   { color: #3a652b; text-decoration: none; background-color: #97d881; }
+body { background-color: white; font-family: Arial, Helvetica, sans-serif; }

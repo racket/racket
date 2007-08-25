@@ -1,6 +1,7 @@
 (module help-desk mzscheme
   (require 
    "bug-report.ss" ;; this is require'd here to get the prefs defaults setup done early.
+   "servlets/private/platform.ss" ;; same reason
    
    "private/manuals.ss"
    "private/buginfo.ss"
@@ -8,6 +9,8 @@
    
    "private/link.ss"
    (lib "contract.ss"))
+  
+  (current-helpdesk-platform 'internal-browser)
   
   (provide help-desk-frame<%>)
   

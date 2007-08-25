@@ -68,7 +68,7 @@
     
     (set! doc-names (append
 		     std-doc-names
-		     (map (lambda (s) (format "the ~a" s))
+		     (map (lambda (s) (format "the ~a collection" s))
 			  txt-doc-names)))
     (set! doc-kinds (append (map (lambda (x) 'html) std-docs) (map (lambda (x) 'text) txt-docs)))
     

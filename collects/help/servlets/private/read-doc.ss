@@ -3,7 +3,7 @@
            (lib "getinfo.ss" "setup")
            "util.ss"
            "read-lines.ss"
-           "headelts.ss")
+           "html.ss")
   (provide read-doc)
 
   ;; extracts help desk message
@@ -15,12 +15,13 @@
 
   (define (build-page file caption coll offset)
     (let ([msg (get-message coll)])
-      `(html (head (title "PLT Help Desk") ,hd-css)
-             ,(if msg
-                `(body ,(format-collection-message msg)
+      (html-page
+       #:title "PLT Help Desk"
+       #:bodies (if msg
+                    `(,(format-collection-message msg)
                        (hr)
                        ,(read-lines file caption offset))
-                `(body ,(read-lines file caption offset))))))
+                    `(,(read-lines file caption offset))))))
 
   (define read-doc
     (opt-lambda (file caption coll [offset #f])

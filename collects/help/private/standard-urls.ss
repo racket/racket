@@ -1,11 +1,11 @@
 (module standard-urls mzscheme
-
-  (require "../servlets/private/util.ss"
-           "internal-hp.ss"
-           "get-help-url.ss"
-           (lib "uri-codec.ss" "net")
+  (require (lib "uri-codec.ss" "net")
            (lib "dirs.ss" "setup")
-           (lib "contract.ss"))
+           (lib "contract.ss")
+           (lib "config.ss" "planet")
+           "../servlets/private/util.ss"
+           "internal-hp.ss"
+           "get-help-url.ss")
   
   (provide home-page-url)
   
@@ -88,6 +88,24 @@
     ; the assq is guarded by the contract
     (cadr (assq sym hd-locations)))
   
+  ; host+dirs : (list (cons host-string dir-path))
+  ;  association between internal (in normal Helpdesk also virtual) 
+  ;  hosts and their corresponding file root.
+  (define host+dirs
+    (map cons 
+         (append collects-hosts  doc-hosts)
+         (append collects-dirs   doc-dirs)))
+ 
+  (define (host+file->path host file-path)
+    (cond [(assoc host host+dirs)
+           => (lambda (internal-host+path)
+                (let ([path (cdr internal-host+path)])
+                  (build-path path file-path)))]
+          [(equal? host "planet")
+           (build-path (PLANET-DIR) file-path)]
+          [else #f]))
+
+  (provide host+file->path)
   (provide search-type? search-how?)
   (provide/contract 
    (make-relative-results-url (string? 

@@ -6,7 +6,7 @@
   (define interface-version 'v1)
   (define timeout +inf.0)
   (define (start initial-request)
-    (with-errors-to-browser 
+    (with-errors-to-browser
      send/finish
      (lambda ()
        (let* ([bindings (request-bindings initial-request)]
@@ -19,3 +19,4 @@
                       ,hd-css
                       ,@hd-links)
                 ,(read-lines file caption offset)))))))
+  

@@ -27,17 +27,18 @@
                   ((cadr candidate) l-o-path anchor))]
 	       [else
                 (loop (cdr candidates))]))])))))
-
+  
   (define manual-path-candidates '())
   (define (maybe-add-candidate candidate host)
     (with-handlers ([exn:fail? void])
       (set! manual-path-candidates
             (cons (list (explode-path (normalize-path candidate))
                         (λ (segments anchor)
-			  (format "http://~a:~a~a~a"
-				  host
+			  (format "http://~a:~a/servlets/static.ss/~a~a~a"
+				  internal-host
 				  internal-port
-				  (apply string-append (map (λ (x) (format "/~a" (path->string x))) 
+                                  host
+                                  (apply string-append (map (λ (x) (format "/~a" (path->string x))) 
 					                    segments))
 				  (if anchor
 				      (string-append "#" anchor)
