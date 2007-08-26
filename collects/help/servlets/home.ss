@@ -150,9 +150,10 @@
               [else `()])
           ; DrScheme Acknowledgements
           ,@(case (helpdesk-platform)
-              [(internal-browser) `((b (a ((href ,url-helpdesk-acknowledge))
-                                          (font ([color "forestgreen"])"Acknowledgments"))))]
-              [else                '()]))
+              [(internal-browser internal-browser-simple) 
+                `((b (a ((href ,url-helpdesk-acknowledge))
+                        (font ([color "forestgreen"])"Acknowledgments"))))]
+              [else '()]))
          -- -- -- --))
   
   ; page-tag->title+items : string -> (values string list-of-right-items)
