@@ -62,7 +62,7 @@
     (html-page 
      #:title title
      #:body (if (equal? left-items "home")
-                `(div (h1 "HelpDesk Home") ,(html-left-items right-items))
+                `(div (h1 "PLT Help Desk") ,(html-left-items right-items))
                 `(div (h1 ,right-header)  
                       ,@(html-right-items right-items)))))
   
