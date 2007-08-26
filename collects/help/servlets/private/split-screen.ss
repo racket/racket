@@ -3,7 +3,7 @@
            (only (lib "misc.ss" "swindle")  mappend)
            "html.ss"
            "url.ss"
-           "../../private/platform.ss")
+           "../../private/options.ss")
   
   ; These items are common to all split screens
   

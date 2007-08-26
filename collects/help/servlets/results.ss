@@ -21,7 +21,7 @@ is stored in a module top-level and that's namespace-specific.
            "private/util.ss"
            "private/search-util.ss"
            "private/html.ss"
-           "../private/platform.ss")
+           "../private/options.ss")
   (provide interface-version timeout start)
   (define interface-version 'v1)
   (define timeout +inf.0)

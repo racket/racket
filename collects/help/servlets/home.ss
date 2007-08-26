@@ -10,7 +10,7 @@
            "private/url.ss"
            "private/html.ss"
            "private/split-screen.ss"
-           "../private/platform.ss")
+           "../private/options.ss")
   
   (define copyright-year 2007)
   

@@ -7,12 +7,8 @@
 ;;   not as a way of deplying it.
 
 ;; NOTES
-;;   The web-server uses the port given by internal-port 
+;;   The web-server uses the port given by internal-port
 ;;   in "collects/help/private/internal-hp.ss".
-
-;;   Change the parameter current-helpdesk-platform
-;;   in "collects/help/servlets/private/platform.ss"
-;;   to 'external-browser when testing the online version.
 
 ;;  Startpage:
 ;;     http://localhost:8000/servlets/home.ss
@@ -22,7 +18,7 @@
          (lib "web-config-unit.ss" "web-server")
          "private/config.ss"
          "private/internal-hp.ss"
-         "private/platform.ss")
+         "private/options.ss")
 
 (current-helpdesk-platform 'external-browser)
 

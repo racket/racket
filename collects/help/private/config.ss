@@ -59,4 +59,4 @@
        #:make-servlet-namespace
        (make-make-servlet-namespace
         #:to-be-copied-module-specs
-        '((lib "platform.ss" "help" "private")))))))
+        '((lib "options.ss" "help" "private")))))))
