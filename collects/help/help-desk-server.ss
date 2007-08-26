@@ -40,6 +40,6 @@
 
 (printf "Press enter to shutdown.\n")
 (read-line)
-;(shutdown)
+(shutdown)
 
 )
