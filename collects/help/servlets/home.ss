@@ -5,6 +5,7 @@
            (lib "uri-codec.ss" "net")
 	   (lib "dirs.ss" "setup")
            (lib "list.ss")
+           (lib "url.ss" "net")
            "../private/manuals.ss"
            "private/util.ss" ; for plt-version
            "private/url.ss"
@@ -29,13 +30,18 @@
        (apply make-split-page xs)]))
   
   (define (start initial-request)
+    ; Note : DrScheme preferences calls start with a #f argument,
+    ;        so initial-request can be either a request structure or #f
+    (unless initial-request
+      (set! initial-request 
+            (make-request 'get (string->url "") '() '() #f "localhost" (internal-port) "localhost")))
     (with-errors-to-browser 
      send/finish
-     (lambda ()
-       (let* ([bindings (request-bindings initial-request)]
-              [subpage  (if (exists-binding? 'subpage bindings)
-                            (extract-binding/single 'subpage bindings)
-                            "home")])
+      (lambda ()
+        (let* ([bindings (request-bindings initial-request)]
+               [subpage  (if (exists-binding? 'subpage bindings)
+                             (extract-binding/single 'subpage bindings)
+                             "home")])
          ; dispatch on subpage
          ;   the dynamic ones (manuals and release) are handled are here,
          ;   the static pages below
