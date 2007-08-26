@@ -21,6 +21,8 @@
   (define system-namespace (current-namespace))
   (define first-dir (current-directory))
   
+  (define error-display-eventspace (make-eventspace))
+  
   (define original-error-display-handler (error-display-handler))
   
   (define error-display-handler-message-box-title
@@ -44,10 +46,6 @@
                        (original-error-display-handler msg exn))
                      (get-output-string p))])
          
-         (if (eq? (current-eventspace) system-eventspace)
-             (message-box title text #f '(stop ok))
-             (parameterize ([current-eventspace system-eventspace]
-                            [current-custodian system-custodian])
-               (queue-callback
-                (λ ()
-                  (message-box title text #f '(stop ok)))))))))))
+         (parameterize ([current-custodian system-custodian])
+           (parameterize ([current-eventspace error-display-eventspace])
+             (message-box title text #f '(stop ok)))))))))
