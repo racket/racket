@@ -107,7 +107,7 @@
                     (string-append (xexpr->string
                                     (html-page 
                                      #:title (short->manual-title manual)
-                                     #:top (case (current-helpdesk-platform)
+                                     #:top (case (helpdesk-platform)
                                              [(internal-browser) '()]
                                              [(internal-browser-simple) '()]
                                              [else               (html-top request)])

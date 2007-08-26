@@ -10,7 +10,7 @@
    "private/link.ss"
    (lib "contract.ss"))
   
-  (current-helpdesk-platform 'internal-browser)
+  (helpdesk-platform 'internal-browser)
   
   (provide help-desk-frame<%>)
   

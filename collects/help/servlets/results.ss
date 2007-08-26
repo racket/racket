@@ -33,7 +33,7 @@ is stored in a module top-level and that's namespace-specific.
   ;   and match-type. This function changes them to use the short versions 
   ;   as the internal HelpDesk does.
   (define (adjust-request request)
-    (case (current-helpdesk-platform)
+    (case (helpdesk-platform)
       [(internal-browser) request]
       [(internal-browser-simple) request]
       [else
@@ -61,7 +61,7 @@ is stored in a module top-level and that's namespace-specific.
      send/finish
      (lambda ()
        (let* ([request      (adjust-request initial-request)]
-              [html-for-top (case (current-helpdesk-platform)
+              [html-for-top (case (helpdesk-platform)
                               [(internal-browser) '()]
                               [(internal-browser-simple) '()]
                               [else               (html-top request)])])

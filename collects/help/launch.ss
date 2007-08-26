@@ -20,7 +20,7 @@
          "private/internal-hp.ss"
          "private/options.ss")
 
-(current-helpdesk-platform 'external-browser)
+(helpdesk-platform 'external-browser)
 
 ;; start the HelpDesk server, and store a shutdown
 (define shutdown

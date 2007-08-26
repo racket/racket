@@ -11,7 +11,7 @@
     `((VERBATIM (big (big (big (b (a ((href ,url-helpdesk-home)) "PLT Scheme Help Desk"))))))))
   
   (define left-footer-items
-    (case (current-helpdesk-platform)
+    (case (helpdesk-platform)
       [(internal-browser)
        '(nbsp)]
       [else

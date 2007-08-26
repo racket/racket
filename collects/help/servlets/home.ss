@@ -20,7 +20,7 @@
   
   ; html-subpage : xexprs -> xexpr
   (define (html-subpage . xs)
-    (case (current-helpdesk-platform)
+    (case (helpdesk-platform)
       [(internal-browser-simple)
        (apply make-simple-page/internal-browser xs)]
       [(internal-browser)
@@ -80,7 +80,7 @@
             (let-values ([(right-header right-items) 
                           (page-tag->title+items subpage)])
               (cond
-                [(and (eq? (current-helpdesk-platform) 'internal-browser-simple)
+                [(and (eq? (helpdesk-platform) 'internal-browser-simple)
                       (equal? subpage "home"))
                  ; change the "home" page for internal HelpDesk with no menus
                  (html-subpage "PLT Scheme Help Desk: Home" 
@@ -124,13 +124,13 @@
          ("Get involved:"
           nbsp nbsp nbsp nbsp
           (a ((href ,url-helpdesk-mailing-lists)) "Mailing Lists")
-          ,@(case (current-helpdesk-platform) 
+          ,@(case (helpdesk-platform) 
               ((external-browser) `(", " (a ((href ,url-external-send-bug-report)) "Send a bug report")))
               (else '())))
          -- --
          (""
           " " " "
-          ,@(case (current-helpdesk-platform)
+          ,@(case (helpdesk-platform)
               [(internal-browser)
                '((b (a ([mzscheme
                          "((dynamic-require '(lib |bug-report.ss| |help|) 'help-desk:report-bug))"])
@@ -138,7 +138,7 @@
                  nbsp nbsp)]
               [else `()])
           ; DrScheme Acknowledgements
-          ,@(case (current-helpdesk-platform)
+          ,@(case (helpdesk-platform)
               [(internal-browser) `((b (a ((href ,url-helpdesk-acknowledge))
                                           (font ([color "forestgreen"])"Acknowledgments"))))]
               [else                '()]))
