@@ -103,15 +103,21 @@
                                (html-top initial-request)
                                (left-items)
                                right-header right-items)]))])))))
+  
+  (define (br)
+    (if (eq? (helpdesk-platform) 'external-browser)
+        '()
+        '((br) (br))))
 
   (define (left-items)
     `(-- -- -- -- -- 
          ("Get help: "
           nbsp nbsp nbsp nbsp
-          (b (a ((href ,url-helpdesk-help)) "Help Desk")))
-         -- --
+          (b (a ((href ,url-helpdesk-help)) "Help Desk"))
+          ,@(br))
+         -- -- 
          ("Learn to program in Scheme: "  
-          nbsp nbsp nbsp nbsp
+          nbsp nbsp nbsp nbsp 
           "Reference: "
           'nbsp
           (a ((href ,url-helpdesk-manuals))   "Manuals") ", "
@@ -121,14 +127,16 @@
           'nbsp
           (a ((href ,url-helpdesk-books)) "Books") ", "
           (a ((href ,url-helpdesk-languages)) "Languages") ", "
-          (a ((href ,url-helpdesk-teachpacks)) "Teachpacks"))
-         -- --
+          (a ((href ,url-helpdesk-teachpacks)) "Teachpacks") 
+          ,@(br))
+         -- -- 
          ("How to run programs: " 
           nbsp nbsp nbsp nbsp (b (a ((href ,url-helpdesk-software)) "Software: "))
           'nbsp
           (a ((href ,url-helpdesk-tour))      "Tour") ", "
           (a ((href ,url-helpdesk-drscheme))  "DrScheme") ", "
-          (a ((href ,url-helpdesk-release))   "Release") 
+          (a ((href ,url-helpdesk-release))   "Release")
+          ,@(br)
           ; (a ((href ,url-helpdesk-drscheme-faq))       "FAQ"))     ; Moved to the DrScheme page
           )
          -- --
@@ -137,8 +145,9 @@
           (a ((href ,url-helpdesk-mailing-lists)) "Mailing Lists")
           ,@(case (helpdesk-platform) 
               ((external-browser) `(", " (a ((href ,url-external-send-bug-report)) "Send a bug report")))
-              (else '())))
-         -- --
+              (else '()))
+          ,@(br))
+         -- -- 
          (""
           " " " "
           ,@(case (helpdesk-platform)
