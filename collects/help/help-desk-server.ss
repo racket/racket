@@ -30,7 +30,6 @@
  (once-each
   [("-p" "--port") port "port to run on"
    (internal-port (string->number port))]))
-(printf "launch>>>> ~s\n" (internal-port))
 
 ;; start the HelpDesk server, and store a shutdown
 (define shutdown
