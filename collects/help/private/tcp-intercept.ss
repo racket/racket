@@ -96,7 +96,7 @@
       (define (gen-tcp-connect raw)
         (lambda (hostname-string port)
           (if (and (is-internal-host? hostname-string)
-                   (equal? internal-port port))
+                   (equal? (internal-port) port))
               (let-values ([(req-in req-out) (make-pipe)]
                            [(resp-in resp-out) (make-pipe)])
                 (parameterize ([current-custodian (make-custodian)])

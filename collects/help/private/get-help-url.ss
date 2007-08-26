@@ -36,7 +36,7 @@
                         (λ (segments anchor)
 			  (format "http://~a:~a/servlets/static.ss/~a~a~a"
 				  internal-host
-				  internal-port
+				  (internal-port)
                                   host
                                   (apply string-append (map (λ (x) (format "/~a" (path->string x))) 
 					                    segments))

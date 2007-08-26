@@ -2,7 +2,7 @@
   (require (lib "dirs.ss" "setup")
            (lib "config.ss" "planet")
            "options.ss")
-  (provide (rename internal-port* internal-port)
+  (provide internal-port
            is-internal-host? internal-host
 	   collects-hosts collects-dirs
 	   doc-hosts doc-dirs
@@ -25,11 +25,6 @@
   ;;  URLs.)
 
   (define internal-host "localhost")
-  ;; fake an internal-port binding (actually a parameter in options.ss)
-  (define-syntax internal-port*
-    (syntax-id-rules ()
-      [(x . xs) ((internal-port) . xs)]
-      [x (internal-port)]))
 
   (define (is-internal-host? str)
     (member str all-internal-hosts))

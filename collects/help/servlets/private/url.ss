@@ -4,8 +4,7 @@
   (provide (all-defined))
   
   (define url-helpdesk-root
-    (string-append
-     "http://" internal-host ":" (number->string internal-port) "/servlets/"))
+    (format "http://~a:~a/servlets/" internal-host (internal-port)))
   
   (define url-helpdesk-home    (string-append url-helpdesk-root "home.ss"))
   (define url-helpdesk-results (string-append url-helpdesk-root "results.ss"))

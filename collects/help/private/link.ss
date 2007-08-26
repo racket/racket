@@ -27,7 +27,7 @@
   
   (define-unit-from-context inst@ setup:plt-installer^)
   (define-unit-from-context real-tcp@ tcp^)
-  (define-unit-binding config@ config (import) (export web-config^))
+  (define-unit-binding config@ (make-config) (import) (export web-config^))
   
   (define-compound-unit/infer help-desk@
     (import)

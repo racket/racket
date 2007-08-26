@@ -27,21 +27,21 @@
     (format "~a/html/~a/index.htm" (base-docs-url) manual-name))
 
   (define (prefix-with-server suffix)
-    (format "http://~a:~a~a" internal-host internal-port suffix))
+    (format "http://~a:~a~a" internal-host (internal-port) suffix))
   
-  (define results-url-prefix (format "http://~a:~a/servlets/results.ss?" internal-host internal-port))
+  (define results-url-prefix (format "http://~a:~a/servlets/results.ss?" internal-host (internal-port)))
   (define flush-manuals-path "/servlets/results.ss?flush=yes")
-  (define flush-manuals-url (format "http://~a:~a~a" internal-host internal-port flush-manuals-path))
+  (define flush-manuals-url (format "http://~a:~a~a" internal-host (internal-port) flush-manuals-path))
   
   
   (define relative-results-url-prefix "/servlets/results.ss?")
 
-  (define home-page-url (format "http://~a:~a/servlets/home.ss" internal-host internal-port))
+  (define home-page-url (format "http://~a:~a/servlets/home.ss" internal-host (internal-port)))
   
   (define (make-missing-manual-url coll name link)
     (format "http://~a:~a/servlets/missing-manual.ss?manual=~a&name=~a&link=~a"
             internal-host
-            internal-port
+            (internal-port)
             coll
             (uri-encode name)
             (uri-encode link)))

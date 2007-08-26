@@ -6,9 +6,9 @@
            "internal-hp.ss"
            (lib "namespace.ss" "web-server" "configuration"))
   
-  (provide config)
+  (provide make-config)
   
-  (define config
+  (define (make-config)
     (let* ([build-normal-path
             (lambda args
               (normalize-path
@@ -44,7 +44,7 @@
                  (mime-types "../../web-server/default-web-root/mime.types")
                  (password-authentication "passwords"))))])
       (configuration-table-sexpr->web-config@
-       `((port ,internal-port)
+       `((port ,(internal-port))
          (max-waiting 40)
          (initial-connection-timeout 30)
          (default-host-table
