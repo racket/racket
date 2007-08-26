@@ -21,16 +21,18 @@
 (require (lib "web-server.ss" "web-server")
          (lib "web-config-unit.ss" "web-server")
          "private/config.ss"
-         "private/internal-hp.ss")
+         "private/internal-hp.ss"
+         "private/platform.ss")
+
+(current-helpdesk-platform 'external-browser)
 
 ;; start the HelpDesk server, and store a shutdown
 (define shutdown
   (serve/web-config@ config))
 
-(printf "Did you remember to change `current-helpdesk-platform' in \"platform.ss\"?\n\n")
-(printf "Start here: http://~a:~a/servlets/home.ss\n\n"
+(printf "\nStart here: http://~a:~a/servlets/home.ss\n\n"
         internal-host internal-port)
 
-(format "Press enter to shutdown.\n")
+(printf "Press enter to shutdown.\n")
 (read-line)
 ;(shutdown)

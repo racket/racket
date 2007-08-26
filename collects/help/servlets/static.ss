@@ -12,7 +12,7 @@
            (lib "port.ss")
            "../private/standard-urls.ss"
            "../private/docpos.ss"
-           "private/platform.ss"
+           "../private/platform.ss"
            "private/html.ss")
   
   (provide interface-version timeout start)

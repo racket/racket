@@ -1,7 +1,7 @@
 (module help-desk mzscheme
   (require 
    "bug-report.ss" ;; this is require'd here to get the prefs defaults setup done early.
-   "servlets/private/platform.ss" ;; same reason
+   "private/platform.ss" ;; same reason
    
    "private/manuals.ss"
    "private/buginfo.ss"

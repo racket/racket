@@ -3,7 +3,8 @@
            (lib "web-config-unit.ss" "web-server")
 	   (lib "dirs.ss" "setup")
            (lib "config.ss" "planet")
-           "internal-hp.ss")
+           "internal-hp.ss"
+           (lib "namespace.ss" "web-server" "configuration"))
   
   (provide config)
   
@@ -54,4 +55,8 @@
 	       `(,virtual-host 
 		 ,(make-host-config dir)))
 	     (cons planet-host (append doc-hosts collects-hosts))
-	     (cons (PLANET-DIR) (append doc-dirs collects-dirs)))))))))
+	     (cons (PLANET-DIR) (append doc-dirs collects-dirs)))))
+       #:make-servlet-namespace
+       (make-make-servlet-namespace
+        #:to-be-copied-module-specs
+        '((lib "platform.ss" "help" "private")))))))
