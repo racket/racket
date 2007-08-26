@@ -17,7 +17,7 @@
 (require (lib "web-server.ss" "web-server")
          (lib "web-config-unit.ss" "web-server")
          "private/config.ss"
-         "private/internal-hp.ss"
+         (only "private/internal-hp.ss" internal-host)
          "private/options.ss")
 
 (helpdesk-platform 'external-browser)
@@ -27,7 +27,7 @@
   (serve/web-config@ config))
 
 (printf "\nStart here: http://~a:~a/servlets/home.ss\n\n"
-        internal-host internal-port)
+        internal-host (internal-port))
 
 (printf "Press enter to shutdown.\n")
 (read-line)

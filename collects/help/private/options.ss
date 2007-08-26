@@ -15,4 +15,8 @@
      ;; 'external-browser
      ))
 
+  ;; Port for the server to listen on
+  ;;   (relevant only for a standalone server)
+  (define internal-port (make-parameter 8012))
+
   )

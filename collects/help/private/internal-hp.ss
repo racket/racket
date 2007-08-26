@@ -1,7 +1,8 @@
 (module internal-hp mzscheme
   (require (lib "dirs.ss" "setup")
-           (lib "config.ss" "planet"))
-  (provide internal-port 
+           (lib "config.ss" "planet")
+           "options.ss")
+  (provide (rename internal-port* internal-port)
            is-internal-host? internal-host
 	   collects-hosts collects-dirs
 	   doc-hosts doc-dirs
@@ -12,8 +13,8 @@
   ;; The general idea is that there's one "virtual" host for
   ;;  every filesystem tree that we need to access.
   ;;  (now we use static.ss/host/yadayda instead of the virtual
-  ;    host docX.localhost, but we still need to keep track of
-  ;    the file system roots)
+  ;;   host docX.localhost, but we still need to keep track of
+  ;;   the file system roots)
   ;; The "get-help-url.ss" library provides a function to
   ;;  convert a path into a suitable URL (i.e., a URL using
   ;;  the right virtual host).
@@ -24,7 +25,11 @@
   ;;  URLs.)
 
   (define internal-host "localhost")
-  (define internal-port 8012)
+  ;; fake an internal-port binding (actually a parameter in options.ss)
+  (define-syntax internal-port*
+    (syntax-id-rules ()
+      [(x . xs) ((internal-port) . xs)]
+      [x (internal-port)]))
 
   (define (is-internal-host? str)
     (member str all-internal-hosts))
