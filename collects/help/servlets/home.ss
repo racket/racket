@@ -77,8 +77,7 @@
                    (ul ,(link-stuff url-helpdesk-license "License")
                        ,(link-stuff url-helpdesk-release-notes "Release Notes")
                        ,(link-stuff url-helpdesk-known-bugs "Known Bugs")
-                       #;(li (a ([mzscheme "((dynamic-require '(lib |bug-report.ss| |help|) 'help-desk:report-bug))"])
-                                (b "Submit a bug report")))
+                       
                        ,(link-stuff url-helpdesk-patches "Downloadable Patches"))
                    (p)
                    "The PLT software is installed on this machine at" (br)
@@ -143,7 +142,7 @@
          (""
           " " " "
           ,@(case (helpdesk-platform)
-              [(internal-browser)
+              [(internal-browser internal-browser-simple)
                '((b (a ([mzscheme
                          "((dynamic-require '(lib |bug-report.ss| |help|) 'help-desk:report-bug))"])
                        (font ([color "forestgreen"]) "Send a bug report")))
