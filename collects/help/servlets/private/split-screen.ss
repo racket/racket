@@ -12,7 +12,7 @@
   
   (define left-footer-items
     (case (helpdesk-platform)
-      [(internal-browser)
+      [(internal-browser internal-browser-simple)
        '(nbsp)]
       [else
        '(nbsp 
@@ -57,12 +57,14 @@
                   (hr)
                   ,@(html-right-items right-items))))
   
+  ; simple version that only shows the contents and no menu
   (define (make-simple-page/internal-browser title top-items left-items right-header right-items)
     (html-page 
      #:title title
      #:body (if (equal? left-items "home")
-                `(div ,(html-left-items right-items))
-                `(div ,@(html-right-items right-items)))))
+                `(div (h1 "HelpDesk Home") ,(html-left-items right-items))
+                `(div (h1 ,right-header)  
+                      ,@(html-right-items right-items)))))
   
   ; an external is capable of displaying a proper split screen
   (define (make-split-page title top-items left-items right-header right-items)

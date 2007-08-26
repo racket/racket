@@ -54,7 +54,9 @@
                (p "To see the list of manuals installed on " (i "your") " computer, "
                   " use the HelpDesk from within DrScheme. This list of manuals reflects "
                   "what is installed on this HelpDesk server only.")
-               (VERBATIM ,(find-manuals))))]
+               (VERBATIM ,(find-manuals))
+               (p)
+               (i "Version: " ,(plt-version))))]
            ["release"
             (let ()
               (define (link-stuff url txt) `(li (b (a ([href ,url]) ,txt))))
@@ -92,13 +94,15 @@
                  (html-subpage "PLT Scheme Help Desk: Home" 
                                (html-top initial-request)
                                "home"
-                               right-header (left-items))]
+                               right-header (append (left-items)
+                                                    `(((p)
+                                                       (i "Version: " ,(plt-version))))))]
                 [else
                  (html-subpage "PLT Scheme Help Desk: Home" 
                                (html-top initial-request)
                                (left-items)
                                right-header right-items)]))])))))
-  
+
   (define (left-items)
     `(-- -- -- -- -- 
          ("Get help: "
@@ -203,9 +207,9 @@
                         #;(li "The " (b "Send a bug report") " link allows you to submit a bug report to PLT."))))
       ("known-bugs" "Known Bugs"
                     ((p (a ([name "bugs"] [value "Bugs"]))
-                        "For an up-to-date list of bug reports, see the "
-                        (a ([href "http://bugs.plt-scheme.org/query/"] [target "_top"])
-                           "PLT bug report query page") ".")))
+                      "For an up-to-date list of bug reports, see the "
+                       (a ([href "http://bugs.plt-scheme.org/query/"] [target "_top"])
+                          "PLT bug report query page") ".")))
       ("languages" "Scheme Languages"
                    ((p "DrScheme supports many dialects of Scheme. "
                        "The following dialects are specifically designed for teaching "
