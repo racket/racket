@@ -50,10 +50,12 @@
             (html-subpage 
              "PLT Scheme Help Desk: Installed Manuals"
              (html-top initial-request) (left-items) ""
-             `((h3 "NOTE")
-               (p "To see the list of manuals installed on " (i "your") " computer, "
-                  " use the HelpDesk from within DrScheme. This list of manuals reflects "
-                  "what is installed on this HelpDesk server only.")
+             `(,@(if (eq? (helpdesk-platform) 'external-browser)
+                     '((h3 "NOTE")
+                       (p "To see the list of manuals installed on " (i "your") " computer, "
+                          " use the HelpDesk from within DrScheme. This list of manuals reflects "
+                          "what is installed on this HelpDesk server only."))
+                     '())
                (VERBATIM ,(find-manuals))
                (p)
                (i "Version: " ,(plt-version))))]
