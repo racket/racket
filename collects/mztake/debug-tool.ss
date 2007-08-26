@@ -791,7 +791,9 @@
             (let/ec k
               (let* ([stx (mark-source frame)]
                      [src (syntax-source stx)]
-                     [pos (+ (syntax-position stx) (syntax-span stx) -1)]
+                     [pos (if (not (syntax-position stx))
+                              (k 'invalid)
+                              (+ (syntax-position stx) (syntax-span stx) -1))]
                      [defs (filename->defs src)]
                      [tab (if defs (send defs get-tab) (k (begin #;(printf "no defs for ~a~n" src) 'invalid)))]
                      [bps (send tab get-breakpoints)])
@@ -802,8 +804,9 @@
                  (not (eq? (frame->end-breakpoint-status (first frames)) 'invalid))))
           
           (define (can-step-out? frames status)
-            (or (ormap (lambda (f) (not (eq? (frame->end-breakpoint-status f) 'invalid)))
-                       (rest frames))
+            (or (and (not (empty? frames))
+                     (ormap (lambda (f) (not (eq? (frame->end-breakpoint-status f) 'invalid)))
+                            (rest frames)))
                 (begin
                   #;(printf "cannot step out: stack is ~a~n" frames)
                   #f)))
