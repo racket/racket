@@ -23,7 +23,7 @@
             (version-major) manual))
 
   (define (url-static doc manual path)
-    (format "~astatic.ss/~a/~a/"
+    (format "~astatic.ss/~a/~a/~a"
             url-helpdesk-root doc manual path))
 
   (define url-external-announcement-list-archive     "http://list.cs.brown.edu/pipermail/plt-announce/")
