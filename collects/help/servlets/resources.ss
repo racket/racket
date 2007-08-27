@@ -10,15 +10,13 @@
      (lambda ()
        (html-page
         #:title "External Resources"
-        #:bodies 
+        #:bodies
         `((h1  "External Resources")
-          (p)
-          "DrScheme is created by "
-          (a ([href "http://www.plt-scheme.org/"] [target "_top"]) "PLT")
-          " based at Northeastern University, the University of Utah,"
-          " Brown University, and the University of Chicago."
-          " Here are some links related to our activities."
-          (p)
+          (p "DrScheme is created by "
+             (a ([href "http://www.plt-scheme.org/"] [target "_top"]) "PLT")
+             " based at Northeastern University, the University of Utah,"
+             " Brown University, and the University of Chicago."
+             " Here are some links related to our activities.")
           (ul (li (b (a ([href "resources/teachscheme.ss"])
                         "TeachScheme! Workshops"))
                   ": Free summer program")
@@ -26,10 +24,9 @@
                   ": From PLT and contributors")
               (li (b (a ([href "resources/maillist.ss"]) "Mailing Lists"))
                   ": How to subscribe"))
-          (p)
-          "Also, the Schemers.org Web site provides links for "
-          "many Scheme resources, including books, implementations, "
-          "and libraries: "
-          (a ([href "http://www.schemers.org/"] [target "_top"])
-             "http://www.schemers.org/") "."))))))
-  
+          (p "Also, the Schemers.org Web site provides links for "
+             "many Scheme resources, including books, implementations, "
+             "and libraries: "
+             (a ([href "http://www.schemers.org/"] [target "_top"])
+                "http://www.schemers.org/") ".")))))))
+

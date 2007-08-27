@@ -23,5 +23,3 @@
     `(("index entries" html)
       ("keyword entries" text)
       ("text" text))))
-
-

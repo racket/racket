@@ -23,21 +23,20 @@
        #:title "Missing PLT manual"
        #:bodies
        `(,(with-color "red" `(h1 "Documentation missing"))
-          (p)
-          "You tried to access documentation for "
-          ,(with-color "blue" `(b ,label)) ". "
-          "The documentation is not installed on this machine, probably"
-          " because it is not part of the standard DrScheme distribution."
-          (p)
-          (h2 "Install Locally")
-          (a ((href ,plt-url)) "Download and/or install")
-          " the documentation."
+          (p "You tried to access documentation for "
+             ,(with-color "blue" `(b ,label)) ". "
+             "The documentation is not installed on this machine, probably"
+             " because it is not part of the standard DrScheme distribution.")
           (br)
-          "After installing, "
-          (a ((href ,link)) "continue")
-          " to the originally requested page."
-          (br) nbsp (br)
+          (h2 "Install Locally")
+          (p (a ([href ,plt-url]) "Download and/or install")
+             " the documentation."
+             (br)
+             "After installing, "
+             (a ((href ,link)) "continue")
+             " to the originally requested page."
+             (br) nbsp (br))
           (h2 "Read Online")
-          "Read the documentation on "
-          (a ((href ,html-url)) "PLT's servers")
-          ".")))))
+          (p "Read the documentation on "
+             (a ((href ,html-url)) "PLT's servers")
+             "."))))))

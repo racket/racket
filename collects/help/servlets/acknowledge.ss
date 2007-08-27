@@ -9,11 +9,9 @@
     (with-errors-to-browser
      send/finish
      (lambda ()
-       (html-page 
+       (html-page
         #:title  "Acknowledgements"
         #:bodies `((a ([name "acknowledgements"] [value "acknowledgements"]))
                    (h1  "Acknowledgements")
-                   (p)
-                   ,(get-general-acks)
-                   (p)
-                   ,(get-translating-acks)))))))
+                   (p ,(get-general-acks))
+                   (p ,(get-translating-acks))))))))

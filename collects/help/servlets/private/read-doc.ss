@@ -18,10 +18,10 @@
       (html-page
        #:title "PLT Help Desk"
        #:bodies (if msg
-                    `(,(format-collection-message msg)
-                       (hr)
-                       ,(read-lines file caption offset))
-                    `(,(read-lines file caption offset))))))
+                  `(,(format-collection-message msg)
+                    (hr)
+                    ,(read-lines file caption offset))
+                  `(,(read-lines file caption offset))))))
 
   (define read-doc
     (opt-lambda (file caption coll [offset #f])

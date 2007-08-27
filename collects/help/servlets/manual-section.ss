@@ -21,13 +21,11 @@
                                  (send/finish
                                   (html-page
                                    #:title "Can't find manual section"
-                                   #:bodies 
+                                   #:bodies
                                    `("Error looking up PLT manual section"
-                                     (p)
-                                     "Requested manual: "
-                                     ,manual (br)
-                                     "Requested section: "
-                                     ,section))))])
+                                     (p "Requested manual: "
+                                        ,manual (br)
+                                        "Requested section: "
+                                        ,section)))))])
                       (finddoc-page-anchor manual section))])
          (send/finish (redirect-to page)))))))
-  

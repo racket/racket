@@ -15,8 +15,5 @@
               [offset (with-handlers ((void (lambda _ #f)))
                         (string->number
                          (extract-binding/single 'offset bindings)))])
-         `(html (head (title "PLT Help Desk")
-                      ,hd-css
-                      ,@hd-links)
-                ,(read-lines file caption offset)))))))
-  
+         `(html (head (title "PLT Help Desk") ,hd-css ,@hd-links)
+            ,(read-lines file caption offset)))))))

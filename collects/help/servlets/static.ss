@@ -1,6 +1,6 @@
-; Serve static documentation.
-; A search bar is added on top of the screen, when an external browser is used.
-; (which is why we don't let the web-server serve the documentation directly)
+;; Serve static documentation.
+;; A search bar is added on top of the screen, when an external browser is used.
+;; (which is why we don't let the web-server serve the documentation directly)
 
 (module static mzscheme
   (require (lib "private/mime-types.ss" "web-server")

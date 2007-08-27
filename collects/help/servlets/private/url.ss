@@ -1,31 +1,31 @@
 (module url mzscheme
   (require "../../private/internal-hp.ss")
-  
+
   (provide (all-defined))
-  
+
   (define url-helpdesk-root
     (format "http://~a:~a/servlets/" internal-host (internal-port)))
-  
+
   (define url-helpdesk-home    (string-append url-helpdesk-root "home.ss"))
   (define url-helpdesk-results (string-append url-helpdesk-root "results.ss"))
-  
+
   (define (url-home-subpage subpage-str)
     (string-append url-helpdesk-home "?subpage=" subpage-str))
-  
+
   (define (version-major)
     ; TODO: Fix this
     (cond [(regexp-match #px"^(\\d+).*$" (version))
            => cadr]
           [else "352"]))
-  
+
   (define (url-manual-on-doc-server manual)
-    (string-append
-     "http://download.plt-scheme.org/doc/"
-     (version-major) "/html/" manual "/"))
-  
+    (format "http://download.plt-scheme.org/doc/~a/html/~a/"
+            (version-major) manual))
+
   (define (url-static doc manual path)
-    (string-append url-helpdesk-root "static.ss/" doc "/" manual "/" path))
-  
+    (format "~astatic.ss/~a/~a/"
+            url-helpdesk-root doc manual path))
+
   (define url-external-announcement-list-archive     "http://list.cs.brown.edu/pipermail/plt-announce/")
   (define url-external-discussion-list-archive       "http://list.cs.brown.edu/pipermail/plt-scheme/")
   (define url-external-discussion-list-archive-old   "http://www.cs.utah.edu/plt/mailarch/")
@@ -33,11 +33,11 @@
   (define url-external-send-bug-report               "http://bugs.plt-scheme.org/")
   (define url-external-tour-of-drscheme              "http://www.plt-scheme.org/software/drscheme/tour/")
   (define url-external-planet                        "http://planet.plt-scheme.org/")
-  
+
   (define url-helpdesk-acknowledge          (url-home-subpage "acknowledge"))
   (define url-helpdesk-books                (url-home-subpage "books"))
   (define url-helpdesk-documentation        (url-home-subpage "documentation"))
-  (define url-helpdesk-drscheme             (url-home-subpage "drscheme")) 
+  (define url-helpdesk-drscheme             (url-home-subpage "drscheme"))
   (define url-helpdesk-drscheme-faq         (url-static "doc1" "drscheme" "drscheme-Z-H-5.html#node_chap_5"))
   (define url-helpdesk-drscheme-manual      (url-static "doc1" "drscheme" "index.htm"))
   (define url-helpdesk-faq                  (url-home-subpage "faq"))

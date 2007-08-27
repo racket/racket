@@ -1,4 +1,4 @@
-; elements to go in HEAD part of HTML document
+;; elements to go in HEAD part of HTML document
 
 (module headelts mzscheme
   (require (lib "list.ss"))

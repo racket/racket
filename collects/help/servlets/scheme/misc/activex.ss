@@ -11,20 +11,21 @@
     (with-errors-to-browser 
      send/finish
      (lambda ()
-    `(HTML 
-      (HEAD ,hd-css
+    `(html 
+      (head ,hd-css
             ,@hd-links
-            (TITLE "How to use ActiveX components"))
-      (BODY 
-       (H1  "How to use ActiveX components")
-       (A ((NAME "com") (VALUE "COM")))
-       (A ((NAME "activex") (VALUE "ActiveX")))
+            (title "How to use ActiveX components"))
+      (body
+       (h1  "How to use ActiveX components")
+       (a ([name "com"] [value "COM"]))
+       (a ([name "activex"] [value "ActiveX"]))
        "If you run Windows, you can use MysterX, a library for "
        "controlling COM and ActiveX components within DrScheme, "
        "MzScheme, or MrEd.  MysterX is available from "
-       (PRE 
-        'nbsp 'nbsp  (A ((HREF "http://www.plt-scheme.org/software/mysterx/")
-                         (TARGET "_top")) "http://www.plt-scheme.org/software/mysterx/"))
-       (P)
-       ,(collection-doc-link "mysterx"
-                             "The MysterX collection")))))))
+       (pre
+        nbsp nbsp
+        (a ((href "http://www.plt-scheme.org/software/mysterx/")
+            (target "_top"))
+           "http://www.plt-scheme.org/software/mysterx/"))
+       (p)
+       ,(collection-doc-link "mysterx" "The MysterX collection")))))))

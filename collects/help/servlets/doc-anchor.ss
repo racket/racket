@@ -16,4 +16,3 @@
                    (extract-binding/single 'caption bindings)
                    (extract-binding/single 'name bindings)
                    offset))))))
-

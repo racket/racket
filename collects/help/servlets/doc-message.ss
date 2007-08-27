@@ -14,4 +14,3 @@
                 (body ,(format-collection-message
                         (extract-binding/single 'msg bindings))
                       (hr))))))))
-  

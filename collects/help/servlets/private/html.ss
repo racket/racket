@@ -35,13 +35,16 @@
         (meta ([http-equiv "Content-Type"] [content "text/html;charset=UTF-8"]))
         (meta ([name "generator"] [content "PLT Scheme"]))
         ;; TODO: Ask Eli what exactly to put here in the online version
-        ;; (script ((src "http://www.google-analytics.com/urchin.js") (type "text/javascript")))
-        ;; (script ((type "text/javascript")) "_uacct=\"UA-808258-1\";_udn=\"plt-scheme.org\";urchinTracker();")
+        ;; (script ([src "http://www.google-analytics.com/urchin.js"]
+        ;;          [type "text/javascript"]))
+        ;; (script ([type "text/javascript"])
+        ;;   "_uacct=\"UA-808258-1\";_udn=\"plt-scheme.org\";urchinTracker();")
         (head
          (title ,title)
          (style ([type "text/css"]) "\n" ,(css))
          ;; TODO: Check the icons work in online version
-         (link ([rel "icon"] [href "/help/servlets/plticon.ico"] [type "image/ico"]))
+         (link ([rel "icon"] [href "/help/servlets/plticon.ico"]
+                [type "image/ico"]))
          (link ([rel "shortcut icon"] [href "/help/servlets/plticon.ico"])))
         (body ,@top ,@bodies))))
 

@@ -56,8 +56,7 @@
                         " what is installed on this HelpDesk server only."))
                    '())
                (VERBATIM ,(find-manuals))
-               (p)
-               (i "Version: " ,(plt-version))))]
+               (p (i "Version: " ,(plt-version)))))]
            ["release"
             (let ([link-stuff (lambda (url txt)
                                 `(li (b (a ([href ,url]) ,txt))))])
@@ -77,8 +76,7 @@
                        ,(link-stuff url-helpdesk-known-bugs "Known Bugs")
                        ,(link-stuff url-helpdesk-patches "Downloadable Patches"))
                    (p "The PLT software is installed on this machine at" (br)
-                      (pre nbsp nbsp
-                           ,(path->string (find-collects-dir)))))))))]
+                      (pre nbsp nbsp ,(path->string (find-collects-dir)))))))))]
            [_
             (let-values ([(right-header right-items)
                           (page-tag->title+items subpage)])
@@ -91,8 +89,7 @@
                                "home"
                                right-header
                                (append (left-items)
-                                       `(((p)
-                                          (i "Version: " ,(plt-version))))))]
+                                       `(((p (i "Version: " ,(plt-version)))))))]
                 [else
                  (html-subpage "PLT Scheme Help Desk: Home"
                                (html-top initial-request)
@@ -173,13 +170,16 @@
     `(("acknowledge" "Acknowledgements"
        ((p ,(get-general-acks))
         (p ,(get-translating-acks))))
+      ;;
       ("books" "Books"
        ((h3 "HTDP - How to Design Programs")
-        (p (a ((href "http://www.htdp.org/"))
-              "'How to Design Programs - An Introduction to Programming and Computing'")
+        (p (a ([href "http://www.htdp.org/"])
+              "'How to Design Programs -"
+              " An Introduction to Programming and Computing'")
            (br)
            " by Matthias Felleisen, Robert Bruce Findler, Matthew Flatt, and Shriram Krishnamurthi")
-        (p (a ((href "http://www.ccs.neu.edu/home/matthias/htdp-plus.html")) "HTDP+")
+        (p (a ([href "http://www.ccs.neu.edu/home/matthias/htdp-plus.html"])
+              "HTDP+")
            (br)
            " Supplemental Materials for 'How to Design Programs'")
         (h3 "Teach Yourself Scheme in Fixnum Days")
@@ -187,15 +187,25 @@
               " Teach Yourself Scheme in Fixnum Days")
            (br)
            "- an introduction to Scheme by Dorai Sitaram")))
+      ;;
       ("drscheme" "DrScheme"
        ((p "DrScheme is PLT's flagship programming environment")
-        (ul (li (a ((href ,url-helpdesk-tour)) (b "Tour: ")    "An introduction to DrScheme"))
-            (li (a ((href ,url-helpdesk-interface-essentials)) "Quick-start jump into the user manual"))
-            (li (a ((href ,url-helpdesk-languages))            "Languages: ") "supported by DrScheme")
-            (li (a ((href ,url-helpdesk-drscheme-manual))    "PLT DrScheme: Programming Environment Manual")
-                (br) "The complete user manual")
-            (li (a ((href ,url-helpdesk-drscheme-faq)) "FAQ") ": DrScheme Frequently asked questions")
-            (li (a ((href ,url-helpdesk-why-drscheme))        "Why DrScheme?")))))
+        (ul (li (a ([href ,url-helpdesk-tour])
+                   (b "Tour: ") "An introduction to DrScheme"))
+            (li (a ([href ,url-helpdesk-interface-essentials])
+                   "Quick-start jump into the user manual"))
+            (li (a ([href ,url-helpdesk-languages])
+                   "Languages: ")
+                "supported by DrScheme")
+            (li (a ([href ,url-helpdesk-drscheme-manual])
+                   "PLT DrScheme: Programming Environment Manual")
+                (br)
+                "The complete user manual")
+            (li (a ([href ,url-helpdesk-drscheme-faq]) "FAQ")
+                ": DrScheme Frequently asked questions")
+            (li (a ([href ,url-helpdesk-why-drscheme])
+                   "Why DrScheme?")))))
+      ;;
       ("home" "Help Desk Home"
        ((p "The HelpDesk is a complete source of information about PLT software, "
            "including DrScheme, MzScheme and MrEd.")
@@ -211,11 +221,13 @@
         (ul (li "The " (b "Home")    " link will take you back to this page.")
             (li "The " (b "Manuals") " link displays a list of manuals and other documentation")
             #;(li "The " (b "Send a bug report") " link allows you to submit a bug report to PLT."))))
+      ;;
       ("known-bugs" "Known Bugs"
        ((p (a ([name "bugs"] [value "Bugs"]))
            "For an up-to-date list of bug reports, see the "
            (a ([href "http://bugs.plt-scheme.org/query/"] [target "_top"])
               "PLT bug report query page") ".")))
+      ;;
       ("languages" "Scheme Languages"
        ((p "DrScheme supports many dialects of Scheme. "
            "The following dialects are specifically designed for teaching "
@@ -255,6 +267,7 @@
         (p "DrScheme's set of languages can be extended, so the above list mentions only "
            "the languages installed by default. "
            "Documentation for all languages is available through the manuals page.")))
+      ;;
       ("libraries" "Libraries"
        ((h3 "Built-in Libraries")
         (p "PLT Scheme has a lot of libraries. The core libraries are described in "
@@ -263,6 +276,7 @@
         (h3 "User / PLaneT Libraries")
         (p (a ((href ,url-external-planet)) "PLaneT") " is the repository for user contributed libraries. "
            "Join the PLaneT announcement mailing list to get notified on new PLaneT packages.")))
+      ;;
       ("license" "License"
        ((a ([name "lic"] [value "License"]))
         (b "PLT Software") (br)
@@ -337,6 +351,7 @@
                  "Copyright (c) 1994, 1995, 1996, 1999, 2000, 2001, 2002 Free Software Foundation, Inc.")
                 ("GNU Classpath"
                  "GNU Public License with special exception"))))))
+      ;;
       ("mailing-lists" "Mailing Lists"
        ((p "There are two mailing lists: the discussion list and the announcements only list.")
         (h3 "Archives")
@@ -349,6 +364,7 @@
            (a ((href ,url-external-mailing-list-subscription))
               "subscription page")
            " to join the mailing lists.")))
+      ;;
       ("patches" "Downloadable Patches"
        ((p (a ([name "patches"] [value "Downloadable patches"]))
            "The following Web page may contain downloadable patches to fix "
@@ -357,6 +373,7 @@
            ,(let ([url (format "http://download.plt-scheme.org/patches/~a/"
                                (version))])
               `(a ([href ,url] [target "_top"]) ,url)))))
+      ;;
       ("program-design" "Program Design"
        ((h3 "For Students")
         (p "The textbook " (a ((href "http://www.htdp.org")) "How to Design Programs")
@@ -368,6 +385,7 @@
            ": For programmers with lots of experience in other languages")
         (h3 "For Teachers and Researchers")
         (p (a ((href ,url-helpdesk-why-drscheme)) "PLT's vision"))))
+      ;;
       ("release-notes" (h1 "Release Notes for PLT Scheme version " ,(version))
        ((a ([name "relnotes"] [VALUE "Release notes"]))
         (p "Detailed release notes:"
@@ -395,6 +413,7 @@
                         ("MrEd release notes"         "mred"      "HISTORY")
                         ("Stepper release notes"      "stepper"   "HISTORY")
                         ("MrFlow release notes"       "mrflow"    "HISTORY")))))))))
+      ;;
       ("software" "Software"
        ((ul (li (a ((href ,url-helpdesk-drscheme)) "DrScheme") ": The programming environment")
             (li (a ((href ,url-helpdesk-languages)) "Languages") ": The family of languages "
@@ -404,11 +423,13 @@
             ;; (li (a ((href ,url-helpdesk-hints)) "Hints")
             ;;      ": How to do things in Scheme")
             )))
+      ;;
       ("teachpacks" "Teachpacks"
        ((ul (li (a ((href ,url-helpdesk-teachpacks-for-htdp))
                    "Teachpacks for 'How to Design Programs'"))
             (li (a ((href ,url-helpdesk-teachpacks-for-htdc))
                    "Teachpacks for 'How to Design Classes'")))))
+      ;;
       ("teachscheme" "Teach Scheme"
        ((h2  "TeachScheme! Workshops")
         (p (a ([name "workshops"] [value "TeachScheme! workshops"]))
@@ -428,10 +449,12 @@
            (a ([href "http://www.teach-scheme.org/Workshops/"]
                [TARGET "_top"])
               "TeachScheme! Workshops page") ".")))
+      ;;
       ("tour" "Tour of DrScheme"
-       ((p "Take a " (a ((href ,url-external-tour-of-drscheme)) "Tour of DrScheme")
+       ((p "Take a " (a ([href ,url-external-tour-of-drscheme]) "Tour of DrScheme")
            " and discover the wealth of features of the interactive, "
            "integrated programming environment.")))
+      ;;
       ("why-drscheme" "Why DrScheme?"
        ((p "Teaching introductory computing courses with Scheme, or any other "
            "functional programming language, facilitates many conceptual tasks "
