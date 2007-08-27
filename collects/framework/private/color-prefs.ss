@@ -21,12 +21,15 @@
     (opt-lambda (parent 
                  pref-sym
                  style-name
-                 example-text
-                 [update-style-delta
-                  (λ (func)
-                    (let ([delta (preferences:get pref-sym)])
-                      (func delta)
-                      (preferences:set pref-sym delta)))])
+                 example-text)
+      (define (update-style-delta func)
+        (func working-delta)
+        (let ([nd (new style-delta%)])
+          (send nd copy working-delta)
+          (preferences:set pref-sym nd)))
+      (define working-delta (let ([sd (new style-delta%)])
+                              (send sd copy (preferences:get pref-sym))
+                              sd))
       (define hp (new horizontal-panel%
                       [parent parent]
                       [style '(border)]
