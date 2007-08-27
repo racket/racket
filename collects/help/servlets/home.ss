@@ -196,6 +196,10 @@
         (h3 "Teach Yourself Scheme in Fixnum Days")
         (p (a ((href, url-helpdesk-teach-yourself)) " Teach Yourself Scheme in Fixnum Days")
            (br) "- an introduction to Scheme by Dorai Sitaram")))
+      ("databases" "Databases"
+       ((p "For ODBC databases see " (a ([href ,url-helpdesk-srpersist]) "SrPersist") ".")
+        (p "For bindings to MySQL, SQLite, PostGreSQL, and more see " 
+           (a ([href ,url-external-planet]) "PLaneT") ".")))
       ;; was: /servlets/scheme/doc.ss
       ("documentation" "Documentation"
        (,(make-header-text "How to use DrScheme")
@@ -409,14 +413,43 @@
        ((p "There are two mailing lists: the discussion list and the announcements only list.")
         (h3 "Archives")
         (p "The lists are archived:"
-           (ul (li (a ((href ,url-external-discussion-list-archive)) "Discussions")
-                   " - " (a ((href ,url-external-discussion-list-archive-old)) "(old archive)"))
-               (li (a ((href ,url-external-announcement-list-archive)) "Announcements only"))))
+           (ul (li (a ([href ,url-external-discussion-list-archive]) "Discussions")
+                   " - " (a ([href ,url-external-discussion-list-archive-old]) "(old archive)"))
+               (li (a ([href ,url-external-announcement-list-archive]) "Announcements only"))))
         (h3 "Subscribing")
         (p "Visit the "
            (a ((href ,url-external-mailing-list-subscription))
               "subscription page")
            " to join the mailing lists.")))
+      ;;
+      ("mrflow" "MrFlow"
+       ((p "MrFlow is a user friendly, interactive static debugger for DrScheme that"
+           (ul (li "highlights operations that may cause errors;")
+               (li "computes invariants describing the set of values each program expression can assume; and")
+               (li "provides a graphical explanation for each invariant.")))
+        (p "The programmer can browse this information, and then resume program development "
+           "with an improved understanding of the program's execution behavior, and in "
+           "particular of potential run-time errors.")
+        (p "See the " (a ([href ,url-external-mrflow]) "MrFlow") " web-site.")))
+      ;;
+      ("mrspidey" "MrSpidey"
+       ((p "MrSpidey is a static debugger for DrScheme v103p1.")
+        (p "See the " (a ([href ,url-external-mrspidey]) "MrSpidey") " web-site.")))
+      ;;
+      ("mzcom" "MzCom"
+       ((p "MzCOM is a COM class containing an embedded MzScheme. With MzCOM, "
+           "you can run Scheme code from your favorite COM host environment, "
+           "such as Visual BASIC, Delphi, Visual FoxPro, Visual C++, or even PLT's MysterX.")
+        (p "See the " (a ([href ,url-external-mzcom]) "MzCom") " web-site.")))
+      ;;
+      ("mysterx" "MysterX"
+       ((p "MysterX (\"Mister X\") is a toolkit for building Windows applications "
+           "within DrScheme or MzScheme using ActiveX and COM components. "
+           "Dynamic HTML is used for component presentation and event-handling.")
+        (p "See the " (a ([href ,url-external-mysterx]) "MysterX") " web-site.")))
+      ;;
+      ("odbc" "ODBC"
+       ((p "See " (a ([href ,url-helpdesk-srpersist]) "SrPersist") ".")))
       ;;
       ("patches" "Downloadable Patches"
        ((p (a ([name "patches"] [value "Downloadable patches"]))
@@ -467,6 +500,11 @@
                         ("MrEd release notes"         "mred"      "HISTORY")
                         ("Stepper release notes"      "stepper"   "HISTORY")
                         ("MrFlow release notes"       "mrflow"    "HISTORY")))))))))
+      ;;
+      ("srpersist" "SrPersist"
+       ((p "SrPersist (\"Sister Persist\") is a set of Scheme bindings for the Open "
+           "Database Connectivity (ODBC) standard.")
+        (p "See the " (a ([href ,url-external-srpersist ]) "SrPersist") " web-site.")))
       ;;
       ("software" "Software"
        ((ul (li (a ((href ,url-helpdesk-drscheme)) "DrScheme") ": The programming environment")
