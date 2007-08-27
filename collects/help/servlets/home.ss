@@ -15,7 +15,9 @@
 
   (define copyright-year 2007)
 
-  (provide interface-version timeout start)
+  (provide interface-version timeout start
+           generate-index-for-static-pages)
+  
   (define interface-version 'v1)
   (define timeout +inf.0)
 
@@ -52,8 +54,8 @@
              `(,@(if (eq? (helpdesk-platform) 'external-browser)
                    '((h3 "NOTE")
                      (p "To see the list of manuals installed on " (i "your") " computer,"
-                        " use the HelpDesk from within DrScheme. This list of manuals reflects"
-                        " what is installed on this HelpDesk server only."))
+                        " use the Help Desk from within DrScheme. This list of manuals reflects"
+                        " what is installed on this Help Desk server only."))
                    '())
                (VERBATIM ,(find-manuals))
                (p (i "Version: " ,(plt-version)))))]
@@ -66,7 +68,7 @@
                `((VERBATIM
                   ((h3 "NOTE")
                    (p "To see the release information for your installation,"
-                      " use the HelpDesk from within DrScheme."
+                      " use the Help Desk from within DrScheme."
                       " The following information reflects the installation on"
                       " this server only.")
                    (h1 "Release Information")
@@ -163,6 +165,16 @@
     (match (assoc page-tag easy-pages)
       [#f                 (page-tag->title+items "home")]
       [(tag header body)  (values header body)]))
+  
+  ;; generate-index-for-static-pages : -> list-of-index-entries
+  ; used by install.ss to generate hdindex
+  (define (generate-index-for-static-pages)
+    ; (<indexed-item> <url> <label-within-html-file> <page-title>)
+    (map (match-lambda
+           [(subpage page-title . more)
+            (let ([url (format "/servlets/home.ss?subpage=~a" subpage)])
+              `(,page-title ,url "" ,page-title))])
+         easy-pages))
 
   ;; static subpages
   ;;  - In ALPHABETICAL order
@@ -206,8 +218,8 @@
             (li (a ([href ,url-helpdesk-why-drscheme])
                    "Why DrScheme?")))))
       ;;
-      ("home" "Help Desk Home"
-       ((p "The HelpDesk is a complete source of information about PLT software, "
+      ("home" "PLT Help Desk Home"
+       ((p "The Help Desk is a complete source of information about PLT software, "
            "including DrScheme, MzScheme and MrEd.")
         (p "There are two ways to find information in the Help Desk: searching and browsing.")
         (h3 "Search the Help Desk")
@@ -386,8 +398,9 @@
         (h3 "For Teachers and Researchers")
         (p (a ((href ,url-helpdesk-why-drscheme)) "PLT's vision"))))
       ;;
-      ("release-notes" (h1 "Release Notes for PLT Scheme version " ,(version))
-       ((a ([name "relnotes"] [VALUE "Release notes"]))
+      ("release-notes" "Release Notes"
+       ((h1 "Release Notes for PLT Scheme version " ,(version))
+        (a ([name "relnotes"] [VALUE "Release notes"]))
         (p "Detailed release notes:"
            (ul
             ,@(let ()

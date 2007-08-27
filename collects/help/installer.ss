@@ -4,7 +4,8 @@
   (require (lib "match.ss")
            (lib "file.ss")
            (lib "list.ss")
-           (lib "dirs.ss" "setup"))
+           (lib "dirs.ss" "setup")
+           "servlets/home.ss")
 
   (define (installer path)
     (create-index-file))
@@ -16,6 +17,7 @@
 
   (define (create-index-file)
     (gen-index servlet-dir)
+    (set! index (append index (generate-index-for-static-pages)))
     (with-output-to-file (build-path dest-dir index-file)
       (lambda ()
         (printf "(\n")
