@@ -80,7 +80,7 @@
       (for-each
        (lambda (file)
          (let ([port (open-input-file file)]
-               [title-value file])
+               [title-value #f])
            (let loop ()
              (let ([sexp (with-handlers ([exn:fail:read?
                                           (lambda (x)
@@ -98,8 +98,8 @@
                      [`(title ,(? string? title))
                       (set! title-value title)]
                      [`(a ((name ,(? string? name)) (value ,(? string? value))))
-                      (unless (path? title-value)
-                        (add-index-entry! value file name title-value))]
+                      (add-index-entry! value file name
+                                        (or title-value (path->string file)))]
                      [_ (when (pair? exp)
                           (begin (loop (car exp))
                                  (loop (cdr exp))))]))
