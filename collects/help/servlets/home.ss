@@ -175,6 +175,9 @@
             (let ([url (format "/servlets/home.ss?subpage=~a" subpage)])
               `(,page-title ,url "" ,page-title))])
          easy-pages))
+  
+  (define (make-header-text s) 
+    (color-highlight `(h2 () ,s)))
 
   ;; static subpages
   ;;  - In ALPHABETICAL order
@@ -185,20 +188,42 @@
       ;;
       ("books" "Books"
        ((h3 "HTDP - How to Design Programs")
-        (p (a ([href "http://www.htdp.org/"])
-              "'How to Design Programs -"
-              " An Introduction to Programming and Computing'")
-           (br)
-           " by Matthias Felleisen, Robert Bruce Findler, Matthew Flatt, and Shriram Krishnamurthi")
-        (p (a ([href "http://www.ccs.neu.edu/home/matthias/htdp-plus.html"])
-              "HTDP+")
-           (br)
-           " Supplemental Materials for 'How to Design Programs'")
+        (p (a ([href "http://www.htdp.org/"]) "'How to Design Programs -"
+              " An Introduction to Programming and Computing'") 
+           (br) " by Matthias Felleisen, Robert Bruce Findler, Matthew Flatt, and Shriram Krishnamurthi")
+        (p (a ([href "http://www.ccs.neu.edu/home/matthias/htdp-plus.html"]) "HTDP+")
+           (br) " Supplemental Materials for 'How to Design Programs'")
         (h3 "Teach Yourself Scheme in Fixnum Days")
-        (p (a ((href, url-helpdesk-teach-yourself))
-              " Teach Yourself Scheme in Fixnum Days")
-           (br)
-           "- an introduction to Scheme by Dorai Sitaram")))
+        (p (a ((href, url-helpdesk-teach-yourself)) " Teach Yourself Scheme in Fixnum Days")
+           (br) "- an introduction to Scheme by Dorai Sitaram")))
+      ;; was: /servlets/scheme/doc.ss
+      ("documentation" "Documentation"
+       (,(make-header-text "How to use DrScheme")
+        (p (a ([href ,url-helpdesk-drscheme]) "DrScheme")
+           " provides information about using the DrScheme development environment.")
+        ,(make-header-text "Languages and Libraries")
+        (p "Language and library documentation is distributed among several"
+           " manuals, plus a number of plain-text files describing small library"
+           " collections.")
+        (p "When you " (a ([href ,url-helpdesk-how-to-search]) "search") ","
+           " Help Desk groups the results by manual and collection.  The manuals"
+           " are ordered from the most-used documentation (e.g., R5RS Scheme) to"
+           " the least-used (e.g., MzScheme internals), and all manuals precede"
+           " library collections.")
+        (p "The PLT distribution archive includes a partial set of documentation."
+           "  A hyperlink in this partial set may refer to a manual that is"
+           " missing from the distribution.  If you follow such a link, Help Desk"
+           " provides a special page for automatically downloading and installing"
+           " the missing manual.  For certain manuals, the PLT distribution"
+           " includes a searchable index file rather than the whole manual, so a"
+           " search result link might refer to a missing manual.")
+        (ul (li (b (a ([href ,url-helpdesk-manuals]) "Manuals"))
+                ": List the currently installed and uninstalled manuals"))
+        ,(make-header-text "Searching")
+        (p (a ([href ,url-helpdesk-how-to-search]) "Searching")
+           " in Help Desk finds documenation from all sources, including ")
+        (p (a ([href ,url-helpdesk-drscheme]) "DrScheme")
+           " and the language and library documentation.")))
       ;;
       ("drscheme" "DrScheme"
        ((p "DrScheme is PLT's flagship programming environment")
@@ -219,6 +244,22 @@
                    "Why DrScheme?")))))
       ;;
       ("home" "PLT Help Desk Home"
+       ((p "The Help Desk is a complete source of information about PLT software, "
+           "including DrScheme, MzScheme and MrEd.")
+        (p "There are two ways to find information in the Help Desk: searching and browsing.")
+        (h3 "Search the Help Desk")
+        (p "Search for keywords, index entries or raw text in the documentation pages"
+           (ul (li (i "Keywords: ") "are Scheme names, such as " (b "define") " and " (b "cons")".")
+               (li (i "Index entries: ") "are topical phrases, such as 'lists'.")
+               (li (i "Raw text: ") "are fragments of text from the documentation pages. "
+                   "Use only as a last resort."))
+           "The Help Desk search results are sorted according to their source.")
+        (h3 "Browse the Help Desk")
+        (ul (li "The " (b "Home")    " link will take you back to this page.")
+            (li "The " (b "Manuals") " link displays a list of manuals and other documentation")
+            #;(li "The " (b "Send a bug report") " link allows you to submit a bug report to PLT."))))
+      ;;
+      ("how-to-search" "PLT Help Desk"
        ((p "The Help Desk is a complete source of information about PLT software, "
            "including DrScheme, MzScheme and MrEd.")
         (p "There are two ways to find information in the Help Desk: searching and browsing.")

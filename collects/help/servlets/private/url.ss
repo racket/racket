@@ -42,6 +42,7 @@
   (define url-helpdesk-drscheme-manual      (url-static "doc1" "drscheme" "index.htm"))
   (define url-helpdesk-faq                  (url-home-subpage "faq"))
   (define url-helpdesk-help                 (url-home-subpage "help"))
+  (define url-helpdesk-how-to-search        (url-home-subpage "how-to-search"))
   (define url-helpdesk-interface-essentials (url-static "doc1" "drscheme" "drscheme-Z-H-2.html#node_chap_2"))
   (define url-helpdesk-known-bugs           (url-home-subpage "known-bugs"))
   (define url-helpdesk-languages            (url-home-subpage "languages"))
