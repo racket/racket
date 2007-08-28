@@ -33,8 +33,7 @@ module browser threading seems wrong.
            (lib "mred.ss" "mred")
            (prefix mred: (lib "mred.ss" "mred"))
            
-           (prefix mzlib:file: (lib "file.ss"))
-           (prefix mzlib:date: (lib "date.ss")))
+           (lib "date.ss"))
   
   (provide unit@)
   
@@ -627,7 +626,7 @@ module browser threading seems wrong.
           (inherit get-filename/untitled-name)
           (define/private (get-date-string)
             (string-append
-             (mzlib:date:date->string (seconds->date (current-seconds)))
+             (date->string (seconds->date (current-seconds)))
              " "
              (get-filename/untitled-name)))
           
@@ -1059,7 +1058,7 @@ module browser threading seems wrong.
           (let ([filename (send defs get-filename)])
             (if (and (path? filename)
                      (file-exists? filename))
-                (let-values ([(base _1 _2) (split-path (mzlib:file:normalize-path filename))])
+                (let-values ([(base _1 _2) (split-path (normalize-path filename))])
                   base)
                 #f)))
         (define/public (needs-execution)
@@ -2304,8 +2303,8 @@ module browser threading seems wrong.
         
         (define/private (pathname-equal? p1 p2)
           (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
-            (string=? (path->string (normalize-path p1))
-                      (path->string (normalize-path p2)))))
+            (string=? (path->string (normal-case-path (normalize-path p1)))
+                      (path->string (normal-case-path (normalize-path p2))))))
         (define/override (make-visible filename)
           (let loop ([tabs tabs])
             (unless (null? tabs)
