@@ -196,6 +196,7 @@
         (h3 "Teach Yourself Scheme in Fixnum Days")
         (p (a ((href, url-helpdesk-teach-yourself)) " Teach Yourself Scheme in Fixnum Days")
            (br) "- an introduction to Scheme by Dorai Sitaram")))
+      ;;
       ("databases" "Databases"
        ((p "For ODBC databases see " (a ([href ,url-helpdesk-srpersist]) "SrPersist") ".")
         (p "For bindings to MySQL, SQLite, PostGreSQL, and more see " 
@@ -280,8 +281,7 @@
             #;(li "The " (b "Send a bug report") " link allows you to submit a bug report to PLT."))))
       ;;
       ("known-bugs" "Known Bugs"
-       ((p (a ([name "bugs"] [value "Bugs"]))
-           "For an up-to-date list of bug reports, see the "
+       ((p "For an up-to-date list of bug reports, see the "
            (a ([href "http://bugs.plt-scheme.org/query/"] [target "_top"])
               "PLT bug report query page") ".")))
       ;;
@@ -335,8 +335,7 @@
            "Join the PLaneT announcement mailing list to get notified on new PLaneT packages.")))
       ;;
       ("license" "License"
-       ((a ([name "lic"] [value "License"]))
-        (b "PLT Software") (br)
+       ((h2 "PLT Software") 
         (b ,(format "Copyright (c) ~a PLT Scheme Inc." copyright-year))
         (p "PLT software is distributed under the GNU Library General Public "
            " License (LGPL).  This means you can link PLT software (such as "
@@ -452,8 +451,7 @@
        ((p "See " (a ([href ,url-helpdesk-srpersist]) "SrPersist") ".")))
       ;;
       ("patches" "Downloadable Patches"
-       ((p (a ([name "patches"] [value "Downloadable patches"]))
-           "The following Web page may contain downloadable patches to fix "
+       ((p "The following Web page may contain downloadable patches to fix "
            "serious bugs in version " ,(version) " of the PLT software:")
         (p nbsp nbsp
            ,(let ([url (format "http://download.plt-scheme.org/patches/~a/"
@@ -524,8 +522,7 @@
       ;;
       ("teachscheme" "TeachScheme"
        ((h2  "TeachScheme! Workshops")
-        (p (a ([name "workshops"] [value "TeachScheme! workshops"]))
-           "TeachScheme! is a free summer workshop for high school teachers. "
+        (p "TeachScheme! is a free summer workshop for high school teachers. "
            "Its goal is to bridge the gulf between high school and "
            "college-level computing curricula.  In the workshop, programming "
            "is taught as an algebraic problem-solving process, and computing "
