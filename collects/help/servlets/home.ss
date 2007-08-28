@@ -522,7 +522,7 @@
             (li (a ((href ,url-helpdesk-teachpacks-for-htdc))
                    "Teachpacks for 'How to Design Classes'")))))
       ;;
-      ("teachscheme" "Teach Scheme"
+      ("teachscheme" "TeachScheme"
        ((h2  "TeachScheme! Workshops")
         (p (a ([name "workshops"] [value "TeachScheme! workshops"]))
            "TeachScheme! is a free summer workshop for high school teachers. "
