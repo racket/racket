@@ -118,6 +118,16 @@
 
   (define (html-left-item item)
     (match item
+<<<<<<< .mine
+      ['UP                (list '(font ((size "-2")) nbsp))]
+      ['--                (list '(tr (td " ") ((height "4")) (td ((colspan "2")))))]
+      [('VERBATIM sxml)   (list `(tr (td ((align "center")) ,sxml)))]
+      [(header)           (list `(tr (td  #;((colspan "2")) ,header)))]
+      [(header body ...)  (list `(tr (td  #;((colspan "2")) ,header))
+                                `(tr (td  ,@body)))]
+      [other              (list other)]))
+  
+=======
       ['UP               (list '(font ((size "-2")) nbsp))]
       ['--               (list '(tr ((height "4")) (td ((colspan "2")))))]
       [('VERBATIM sxml)  (list `(tr (td ((align "center")) ,sxml)))]
@@ -126,6 +136,7 @@
                                `(tr (td ,@body)))]
       [other             (list other)]))
 
+>>>>>>> .r7191
   (define (html-right-items items)
     (mappend html-right-item items))
 
