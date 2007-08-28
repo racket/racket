@@ -186,6 +186,50 @@
        ((p ,(get-general-acks))
         (p ,(get-translating-acks))))
       ;;
+      ("activex" "How to use ActiveX components"
+       ((p  ; (a ([name "com"] [value "COM"]))
+            ;(a ([name "activex"] [value "ActiveX"]))
+         "If you run Windows, you can use MysterX, a library for "
+         "controlling COM and ActiveX components within DrScheme, "
+         "MzScheme, or MrEd.  MysterX is available from ")
+        (pre
+         nbsp nbsp
+         (a ((href "http://www.plt-scheme.org/software/mysterx/")
+             (target "_top"))
+            "http://www.plt-scheme.org/software/mysterx/"))
+        (p ,(collection-doc-link "mysterx" "The MysterX collection"))))
+      ;;
+      ("batch" "How to write Windows batch files"
+       ((p "You can put MzScheme code in a Windows batch file, that is, a "
+           "file with a .BAT extension.  Batch files can be executed "
+           "directly from the command line.  In Windows 95, 98, and Me, "
+           "the batch file looks like:"
+           (pre 
+            " ; @echo off" (br)
+            " ; d:\\plt\\mzscheme -r %0 %1 %2 %3 %4 %5 %6 %7 %8 %9" (br)
+            " ; goto :end" (br)
+            "   ... " (i  "scheme-program") " ..." (br)
+            " ; :end")
+           "With this code, your batch file can use as many as nine "
+           "parameters.")
+        (p "In Windows NT, Windows 2000, and Windows XP, you can instead write "
+           (pre
+            " ; @echo off" (br)
+            " ; d:\\plt\\mzscheme -r %0 %*" (br)
+            " ; goto :end" (br)
+            "   ... " (i "scheme-program") " ..." (br)
+            " ; :end")
+           "This code allows an arbitrary number of parameters to your " 
+           "batch file.")
+        (p "The batch file code works by combining both batch and MzScheme "
+           "syntax in a single file.  When invoked from the command line, "
+           "the semicolons are ignored.  The second line invokes MzScheme "
+           "with the batch file as an argument.  MzScheme interprets the "
+           "lines beginning with semicolons as comments, and runs the "
+           "Scheme code.  When the Scheme program is "
+           "done, control returns to the batch file, and the "
+           (tt  "goto") " jumps around the Scheme code.")))
+      ;;
       ("books" "Books"
        ((h3 "HTDP - How to Design Programs")
         (p (a ([href "http://www.htdp.org/"]) "'How to Design Programs -"
@@ -196,6 +240,109 @@
         (h3 "Teach Yourself Scheme in Fixnum Days")
         (p (a ((href, url-helpdesk-teach-yourself)) " Teach Yourself Scheme in Fixnum Days")
            (br) "- an introduction to Scheme by Dorai Sitaram")))
+      ;;
+      ("cgi" "How to write CGI scripts"
+       ((p "Type " (tt  "CGI") " in the " (b "Search for") " "
+           "field in Help Desk and click on the "
+           (b (tt "Search")) " button to get information "
+           "on CGI-related functions.")
+        (p "A CGI script is merely a program with funny inputs and "
+           "outputs.  Input comes either from an environment variable "
+           "or through the standard input port, in a special format. "
+           "Output consists of a MIME header followed by the content.  "
+           "Everything in-between is pure program.")
+        (p "MzScheme comes with a CGI library that is designed to "
+           "make it easy to write such scripts.  In the mini-tutorial "
+           "below, we'll walk you through the "
+           "construction of such a script.  If you have questions or "
+           "comments, send email to "
+           (a ((href "mailto:sk@plt-scheme.org")) "sk@plt-scheme.org") ".")
+        (hr)
+        (p "Let's write a simple \"finger server\" in MzScheme. "
+           "The front-end will be a Web form that accepts a username. "
+           "The form should supply a username in the field `name'. "
+           "The CGI script fingers that user.")
+        (p "First, make sure you have MzScheme installed on the host "
+           "where your Web server is located.")
+        (p "A CGI script must be an executable.  Each OS has different "
+           "ways of launching an application.  Under Unix, it's "
+           "probably easiest to make them simple shell scripts.  "
+           "Therefore, place the following magic incantation at the "
+           "top of your script:")
+        (p (pre " #!/bin/sh" (br)
+                " string=? ; exec /usr/local/bin/mzscheme -r $0 \"$@\""))
+        (p "Make sure the path to MzScheme is specified correctly.")
+        (p "Now we're in Scheme-land.  First, let's load the Scheme "
+           "CGI library and define where `finger' resides.")
+        (p (pre " (require (lib \"cgi.ss\" \"net\"))" (br)
+                " (define finger-program \"/usr/bin/finger\")"))
+        (p "Next we must get the names bound by the form, and "
+           "extract the username field.")
+        (p (pre  " (let ((bindings (get-bindings)))" (br)
+                 "   (let ((name (extract-binding/single 'name bindings)))"))
+        (p "We use extract-binding/single to make sure only one name "
+           "field was bound.  (You can bind the same field multiple "
+           "times using check-boxes.  This is just one kind of "
+           "error-checking; a robust CGI script will do more.")
+        (p "Next we invoke the finger program using `process*'.  "
+           "If no username was specified, we just run finger on the host.")
+        (p (pre " (let ((results (if (string=? name \"\"))" (br)
+                "   (process* finger-program)" (br)
+                "   (process* finger-program name))))"))
+        (p "The `process*' function returns a list of several values. "
+           "The first of these is the output port.  Let's pull this "
+           "out and name it.")
+        (p (pre " (let ((proc->self (car results)))"))
+        (p "Now we extract the output of running finger into a "
+           "list of strings.")
+        (p (pre " (let ((strings (let loop " (br)
+                "   (let ((l (read-line proc->self)))" (br)
+                "     (if (eof-object? l)" (br)
+                "        null" (br)
+                "        (cons l (loop))))))))"))
+        (p "All that's left is to print this out to the user.  "
+           "We use the `generate-html-output' procedure to do that, "
+           "which takes care of generating the appropriate MIME header "
+           "(as required of CGI scripts). "
+           "Note that the <pre> tag of HTML doesn't prevent its "
+           "contents from being processed.  To avoid this "
+           "(i.e., to generate truly verbatim output), "
+           "we use `string->html', which knows about HTML quoting "
+           "conventions.")
+        (p (pre " (generate-html-output \"Finger Gateway Output\"" (br)
+                "   (append " (br)
+                "    '(\"<pre>\")" (br)
+                "    (map string->html strings)" (br)
+                "    '(\"</pre>\"))))))))"))
+        (p "That's all!  This program will work irrespective of "
+           "whether the form uses a GET or POST method to send its "
+           "data over, which gives designers additional flexibility "
+           "(GET provides a weak form of persistence, while "
+           "POST is more robust and better suited to large volumes of "
+           "data).")
+        (p "Here's the entire program, once again:"
+           (pre " #!/bin/sh" (br)
+                " string=? ; exec /usr/local/bin/mzscheme -r $0 \"$@\"" (br)
+                "" (br)
+                " (require (lib \"cgi.ss\" \"net\"))" (br)
+                " (define finger-program \"/usr/bin/finger\")" (br)
+                "" (br)
+                " (let ((bindings (get-bindings)))" (br)
+                "   (let ((name (extract-binding/single 'name bindings)))" (br)
+                "    (let ((results (if (string=? name "")" (br)
+                "      (process* finger-program)" (br)
+                "     (process* finger-program name))))" (br)
+                "     (let ((proc->self (car results)))" (br)
+                "       (let ((strings (let loop " (br)
+                "                        (let ((l (read-line proc->self)))" (br)
+                "                          (if (eof-object? l)" (br)
+                "                            null" (br)
+                "                            (cons l (loop)))))))" (br)
+                "         (generate-html-output \"Finger Gateway Output\"" (br)
+                "         (append" (br)
+                "           '(\"<pre>\")" (br)
+                "           (map string->html strings)" (br)
+                "           '(\"</pre>\"))))))))"))))
       ;;
       ("databases" "Databases"
        ((p "For ODBC databases see " (a ([href ,url-helpdesk-srpersist]) "SrPersist") ".")
@@ -248,6 +395,22 @@
             (li (a ([href ,url-helpdesk-why-drscheme])
                    "Why DrScheme?")))))
       ;;
+      ("graphics" "How to write graphics programs"
+       ((p ; (a ([name "gfx"] [value "Graphics"]))
+           ; (a ([name "gui"] [value "GUIs"]))
+           ; (a ([name "gui2"] [value "Graphical User Interfaces"]))
+         "To write graphics programs, use DrScheme with the "
+         "Graphical (MrEd) flavor of the PLT " 
+         (a ([href "/servlets/scheme/what.ss"]) " language") ". "
+         "MrEd provides a complete GUI toolbox that is described "
+         "in the manual for MrEd." 
+         ; TODO: make MrEd a link ,(main-manual-page "mred")
+         (p "For simple graphics programs, you may also use the "
+            "viewport-based graphics library, which is described in "
+            ,(manual-entry "misclib" "viewport" "Viewport Graphics") ". "
+            "The following declaration loads viewport graphics into MrEd:"
+            (pre " (require (lib \"graphics.ss\" \"graphics\"))")))))
+      ;;
       ("home" "PLT Help Desk Home"
        ((p "The Help Desk is a complete source of information about PLT software, "
            "including DrScheme, MzScheme and MrEd.")
@@ -263,6 +426,19 @@
         (ul (li "The " (b "Home")    " link will take you back to this page.")
             (li "The " (b "Manuals") " link displays a list of manuals and other documentation")
             #;(li "The " (b "Send a bug report") " link allows you to submit a bug report to PLT."))))
+      ;;
+      ("how-to-do-things-in-scheme" "How to do things in Scheme"
+       ((p (ul 
+            (li (a ([href ,url-helpdesk-stand-alone]) "How to build a stand-alone executable"))
+            (li (a ([href ,url-helpdesk-graphics])   "How to write graphics programs"))
+            (li (a ([href ,url-helpdesk-script])     "How to write Unix shell scripts"))
+            (li (a ([href ,url-helpdesk-batch])      "How to write Windows batch files"))
+            (li (a ([href ,url-helpdesk-cgi])        "How to write CGI scripts"))
+            (li (a ([href ,url-helpdesk-databases])  "How to connect to databases"))
+            (li (a ([href ,url-helpdesk-system])     "How to call low-level system routines"))))
+        (p "If you didn't find what you're looking for in the list above, try "
+           "searching in Help Desk.  Also, check "
+           (a ((href "http://www.htus.org/")) (i "How to Use Scheme")) ".")))
       ;;
       ("how-to-search" "PLT Help Desk"
        ((p "The Help Desk is a complete source of information about PLT software, "
@@ -539,6 +715,30 @@
                         ("Stepper release notes"      "stepper"   "HISTORY")
                         ("MrFlow release notes"       "mrflow"    "HISTORY")))))))))
       ;;
+      ("script" "How to write Unix shell scripts"
+       ((p "When MzScheme is installed as part of the standard Unix "
+           "PLT distribution, " (TT "plt/bin/mzscheme") " and  " 
+           (TT "plt/bin/mred") " are binary executables.") 
+        (p "Thus, they can be used with Unix's " (TT  "#!") 
+           " convention as follows:"
+           (pre "  #! /usr/local/lib/plt/bin/mzscheme -r  ... " (br) 
+                " " (I  "scheme-program") " ...")
+           "assuming that the " (tt  "plt") " tree is installed as " 
+           (tt "/usr/local/lib/plt") ". "
+           "To avoid specifying an absolute path, use " 
+           (tt "/usr/bin/env") ":"
+           (pre " #! /usr/bin/env mzscheme -r  ... " (br)
+                " " (i  "scheme-program") " ...")
+           (p "The above works when " 
+              (tt  "mzscheme") " is in the user's path. "
+              "The " (tt "mred") " executable can be used in the "
+              "same way for GUI scripts.")
+           (p "Within " (i "scheme-program") ", " 
+              (tt  "(current-command-line-arguments)") 
+              " produces a vector of strings for the arguments "
+              "passed to the script. The vector is also available as " 
+              (tt "argv") "."))))
+      ;;
       ("srpersist" "SrPersist"
        ((p "SrPersist (\"Sister Persist\") is a set of Scheme bindings for the Open "
            "Database Connectivity (ODBC) standard.")
@@ -553,6 +753,23 @@
             ;; (li (a ((href ,url-helpdesk-hints)) "Hints")
             ;;      ": How to do things in Scheme")
             )))
+      ;;
+      ("stand-alone" "How to build a stand-alone Executable"
+       ((p "To create stand-alone executables, use DrScheme's "
+           (tt "Scheme | Create Executable ...")
+           " menu item. This menu is sensitive to the language levels; "
+           "the " (tt "module") " language permits the most flexibility "
+           "in creating executables.")
+        (p "The mzc compiler provides a more low-level interface "
+           "to stand-alone executables creation. "
+           "See " ,(main-manual-page "mzc") " for more information.")))
+      ;;
+      ("system" "How to call low-level system routines"
+       ((p "To call low-level system routines, you must write "
+           "an extension to MzScheme using the C programming language. "
+           "See Inside MzScheme"
+           ; TODO: #;,(main-manual-page "insidemz") 
+           " for details.")))
       ;;
       ("teachpacks" "Teachpacks"
        ((ul (li (a ((href ,url-helpdesk-teachpacks-for-htdp))

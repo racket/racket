@@ -7,8 +7,6 @@
       ("help" "servlets")
       ("help" "servlets" "private")
       ("help" "servlets" "release")
-      ("help" "servlets" "research")
-      ("help" "servlets" "resources")
       ("help" "servlets" "scheme")
       ("help" "servlets" "scheme" "misc")))
   (define help-desk-message
