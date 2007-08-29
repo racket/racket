@@ -1,8 +1,7 @@
 
 (module syntax-browser mzscheme
-  (require "syntax-browser/browser.ss")
+  (require "syntax-browser/frame.ss")
   (provide browse-syntax
            browse-syntaxes
-           make-syntax-browser
-           syntax-snip)
+           make-syntax-browser)
   )

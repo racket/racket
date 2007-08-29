@@ -5,11 +5,6 @@
   (provide expand-only
            expand/hide)
   
-  (provide expand/step)
-  (define (expand/step . args)
-    (apply (dynamic-require '(lib "stepper.ss" "macro-debugger") 'expand/step)
-           args))
-  
   (define (expand-only stx show-list)
     (define (show? id)
       (ormap (lambda (x) (module-identifier=? id x))

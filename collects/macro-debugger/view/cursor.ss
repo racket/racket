@@ -3,6 +3,7 @@
   (provide cursor?
            cursor:new
            cursor:add-to-end!
+           cursor:remove-current!
 
            cursor:next
            cursor:prev
@@ -63,6 +64,10 @@
   (define (cursor:add-to-end! c items)
     (let ([suffix (cursor-suffixp c)])
       (set-cursor-suffixp! c (stream-append suffix items))))
+
+  (define (cursor:remove-current! c)
+    (when (cursor:has-next? c)
+      (set-cursor-suffixp! c (stream-cdr (cursor-suffixp c)))))
 
   (define (cursor:next c)
     (let ([suffix (cursor-suffixp c)])

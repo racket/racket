@@ -23,6 +23,7 @@
            revappend)
   (provide walk
            walk/foci
+           walk/mono
            stumble
            stumble/E)
 
@@ -213,15 +214,21 @@
     (current-frontier
      (apply append (map (make-rename-mapping from to) (current-frontier)))))
 
-  (define (make-rename-mapping from to)
+  (define (make-rename-mapping from0 to0)
     (define table (make-hash-table))
-    (let loop ([from from] [to to])
+    (let loop ([from from0] [to to0])
       (cond [(syntax? from)
              (hash-table-put! table from (flatten-syntaxes to))
              (loop (syntax-e from) to)]
             [(syntax? to)
              (loop from (syntax-e to))]
             [(pair? from)
+             #;(unless (pair? to)
+               (fprintf (current-error-port)
+                        "from:\n~s\n\n" (syntax-object->datum from0))
+               (fprintf (current-error-port)
+                        "to:\n~s\n\n" (syntax-object->datum to0))
+               (error 'frontier-renaming))
              (loop (car from) (car to))
              (loop (cdr from) (cdr to))]
             [(vector? from)
@@ -264,6 +271,12 @@
                (current-definites) (current-frontier)
                (foci foci1) (foci foci2) Ee1 Ee2))
 
+  ;; walk/mono : syntax StepType -> Reduction
+  (define (walk/mono e1 type)
+    (make-mono (current-derivation) (big-context) type (context)
+               (current-definites) (current-frontier)
+               (foci e1) e1))
+  
   ;; stumble : syntax exception -> Reduction
   (define (stumble stx exn)
     (make-misstep (current-derivation) (big-context) 'error (context)

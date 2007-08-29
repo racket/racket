@@ -1,26 +1,35 @@
 
 (module view mzscheme
-  (require (lib "unit.ss")
+  (require (lib "class.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            "interfaces.ss"
-           "gui.ss")
+           "frame.ss"
+           "prefs.ss"
+           "../model/trace.ss")
   (provide (all-defined))
 
-  (define view-base@
-    (unit
-      (import)
-      (export view-base^)
+  (define macro-stepper-frame%
+    (macro-stepper-frame-mixin
+     (frame:standard-menus-mixin
+      (frame:basic-mixin frame%))))
+  
+  ;; Main entry points
+  
+  (define (make-macro-stepper)
+    (let ([f (new macro-stepper-frame%
+                  (config (new macro-stepper-config/prefs%)))])
+      (send f show #t)
+      (send f get-widget)))
 
-      (define base-frame%
-        (frame:standard-menus-mixin (frame:basic-mixin frame%)))))
-
-  (define-values/invoke-unit
-    (compound-unit
-      (import)
-      (link [((BASE : view-base^)) view-base@]
-            [((STEPPER : view^)) pre-stepper@ BASE])
-      (export STEPPER))
-    (import)
-    (export view^))
+  (define (go stx)
+    (let ([stepper (make-macro-stepper)])
+      (send stepper add-deriv (trace stx))))
+  
+  (define (go/deriv deriv)
+    (let* ([f (new macro-stepper-frame%)]
+           [w (send f get-widget)])
+      (send w add-deriv deriv)
+      (send f show #t)
+      w))
   )

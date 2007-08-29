@@ -47,11 +47,6 @@ _expand.ss_
 
 This module provides the following procedures:
 
-> expand/step
-
-This export will disappear in a future version of the collection.
-Require from stepper.ss instead.
-
 > (expand-only syntax list-of-identifiers)
 
 Expands the given syntax, but only shows the expansion of macros in

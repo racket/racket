@@ -2,73 +2,75 @@
 (module controller mzscheme
   (require (lib "class.ss")
            "interfaces.ss"
-           "partition.ss")
-  
-  (provide syntax-controller%)
-  
-  ;; syntax-controller%
-  (define syntax-controller%
-    (class* object% (syntax-controller<%>
-                     syntax-pp-snip-controller<%>
-                     color-controller<%>)
-      (init-field (primary-partition (new-bound-partition)))
-      (init-field (properties-controller #f))
+           "partition.ss"
+           "../util/notify.ss")
+  (provide controller%)
 
-      (define colorers null)
-      (define selection-listeners null)
-      (define selected-syntax #f)
-      (define identifier=?-listeners null)
+  ;; displays-manager-mixin
+  (define displays-manager-mixin
+    (mixin () (displays-manager<%>)
+      ;; displays : (list-of display<%>)
+      (field [displays null])
 
-      ;; syntax-controller<%> Methods
+      ;; add-syntax-display : display<%> -> void
+      (define/public (add-syntax-display c)
+        (set! displays (cons c displays)))
 
-      (define/public (select-syntax stx)
-        (set! selected-syntax stx)
-        (send properties-controller set-syntax stx)
-        (for-each (lambda (c) (send c select-syntax stx)) colorers)
-        (for-each (lambda (p) (p stx)) selection-listeners))
+      ;; remove-all-syntax-displays : -> void
+      (define/public (remove-all-syntax-displays)
+        (set! displays null))
 
-      (define/public (get-selected-syntax) selected-syntax)
+      (super-new)))
 
-      (define/public (get-properties-controller) properties-controller)
-      (define/public (set-properties-controller pc)
-        (set! properties-controller pc))
+  ;; selection-manager-mixin
+  (define selection-manager-mixin
+    (mixin (displays-manager<%>) (selection-manager<%>)
+      (inherit-field displays)
+      (field/notify selected-syntax (new notify-box% (value #f)))
 
-      (define/public (add-view-colorer c)
-        (set! colorers (cons c colorers))
-        (send c select-syntax selected-syntax))
-
-      (define/public (get-view-colorers) colorers)
-
-      (define/public (add-selection-listener p)
-        (set! selection-listeners (cons p selection-listeners)))
-      
-      (define/public (on-update-identifier=? name id=?)
-        (set! secondary-partition 
-              (and id=? (new partition% (relation id=?))))
-        (for-each (lambda (c) (send c refresh)) colorers)
-        (for-each (lambda (f) (f name id=?)) identifier=?-listeners))
-      
-      (define/public (add-identifier=?-listener f)
-        (set! identifier=?-listeners
-              (cons f identifier=?-listeners)))
-
-      (define/public (erase)
-        (set! colorers null))
-
-      ;; syntax-pp-snip-controller<%> Methods
-
-      (define/public (on-select-syntax stx)
-        (select-syntax stx))
-
-      ;; color-controller<%> Methods
-
-      (define secondary-partition #f)
-
-      (define/public (get-primary-partition) primary-partition)
-      (define/public (get-secondary-partition) secondary-partition)
-
-      ;; Initialization
       (super-new)
-      ))
-  
+      (listen-selected-syntax
+       (lambda (new-value)
+         (for-each (lambda (display) (send display refresh))
+                   displays)))))
+
+  ;; mark-manager-mixin
+  (define mark-manager-mixin
+    (mixin () (mark-manager<%>)
+      (init-field [primary-partition (new-bound-partition)])
+      (super-new)
+
+      ;; get-primary-partition : -> partition
+      (define/public-final (get-primary-partition)
+        primary-partition)
+
+      ;; reset-primary-partition : -> void
+      (define/public-final (reset-primary-partition)
+        (set! primary-partition (new-bound-partition)))))
+
+  ;; secondary-partition-mixin
+  (define secondary-partition-mixin
+    (mixin (displays-manager<%>) (secondary-partition<%>)
+      (inherit-field displays)
+      (field/notify identifier=? (new notify-box% (value #f)))
+      (field/notify secondary-partition (new notify-box% (value #f)))
+
+      (listen-identifier=?
+       (lambda (name+proc)
+         (set-secondary-partition
+          (and name+proc
+               (new partition% (relation (cdr name+proc)))))))
+      (listen-secondary-partition
+       (lambda (p)
+         (for-each (lambda (d) (send d refresh))
+                   displays)))
+      (super-new)))
+
+  (define controller%
+    (class (secondary-partition-mixin
+            (selection-manager-mixin
+             (mark-manager-mixin
+              (displays-manager-mixin
+               object%))))
+      (super-new)))
   )

@@ -400,7 +400,7 @@
       [(struct local-lift (expr id))
        (list (walk expr id 'local-lift))]
       [(struct local-lift-end (decl))
-       (list (walk decl decl 'module-lift))]
+       (list (walk/mono decl 'module-lift))]
       [(struct local-bind (deriv))
        (reductions* deriv)]))
 

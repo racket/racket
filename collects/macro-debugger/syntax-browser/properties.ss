@@ -4,26 +4,32 @@
            "util.ss"
            (lib "class.ss")
            (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
-           (lib "interactive-value-port.ss" "mrlib"))
+           #;(lib "framework.ss" "framework")
+           #;(lib "interactive-value-port.ss" "mrlib"))
   (provide properties-view%
            properties-snip%)
 
   ;; properties-view-base-mixin
   (define properties-view-base-mixin
     (mixin () ()
-      (init)
+      ;; controller : controller<%>
+      (init-field controller)
 
       ;; selected-syntax : syntax
       (field (selected-syntax #f))
 
-      ;; set-syntax : syntax -> void
-      (define/public (set-syntax stx)
-        (set! selected-syntax stx)
-        (refresh))
-
       ;; mode : maybe symbol in '(term stxobj)
       (define mode 'term)
+
+      ;; text : text%
+      (field (text (new text%)))
+      (field (pdisplayer (new properties-displayer% (text text))))
+
+      (send controller listen-selected-syntax
+            (lambda (stx)
+              (set! selected-syntax stx)
+              (refresh)))
+      (super-new)
 
       ;; get-mode : -> symbol
       (define/public (get-mode) mode)
@@ -53,17 +59,13 @@
           ((term) (send pdisplayer display-meaning-info selected-syntax))
           ((stxobj) (send pdisplayer display-stxobj-info selected-syntax))
           ((#f) (send pdisplayer display-null-info))
-          (else (error 'properties-view%:refresh "internal error: no such mode: ~s" mode))))
-
-      ;; text : text%
-      (field (text (new text%))) ;; text:wide-snip%)))
-      (field (pdisplayer (new properties-displayer% (text text))))
+          (else (error 'properties-view-base:refresh
+                       "internal error: no such mode: ~s" mode))))
 
       (send text set-styles-sticky #f)
       #;(send text hide-caret #t)
       (send text lock #t)
-      (refresh)
-      (super-new)))
+      (refresh)))
 
 
   ;; properties-snip%
@@ -113,14 +115,13 @@
 
       (super-new)
       (define tab-choices (get-tab-choices))
-      (define tab-panel (new tab-panel% 
-                             (choices (map car tab-choices))
-                             (parent parent)
-                             (callback
-                              (lambda (tp e)
-                                (set-mode
-                                 (cdr (list-ref tab-choices (send tp get-selection))))))))
-      ;; canvas:wide-?%
+      (define tab-panel
+        (new tab-panel% 
+             (choices (map car tab-choices))
+             (parent parent)
+             (callback
+              (lambda (tp e)
+                (set-mode (cdr (list-ref tab-choices (send tp get-selection))))))))
       (define ecanvas (new editor-canvas% (editor text) (parent tab-panel)))))
 
   ;; properties-displayer%
@@ -267,20 +268,6 @@
            'editor]
           [else s]))
   
-  ;; make-text-port : text -> port
-  ;; builds a port from a text object.  
-  (define (make-text-port text)
-    (make-output-port #f
-                      always-evt
-                      (lambda (s start end flush? enable-break?)
-                        (send text insert
-                              (bytes->string/utf-8 s #f start end))
-                        (- end start))
-                      void
-                      (lambda (special buffer? enable-break?)
-                        (send text insert special)
-                        #t)))
-
   ;; Styles
     
   (define key-sd

@@ -19,11 +19,9 @@
     (pref:width
      pref:height
      pref:props-percentage
-     pref:macro-hiding?
+     pref:macro-hiding-mode
      pref:show-syntax-properties?
      pref:show-hiding-panel?
-     pref:hide-primitives?
-     pref:hide-libs?
      pref:identifier=?
      pref:show-rename-steps?
      pref:highlight-foci?

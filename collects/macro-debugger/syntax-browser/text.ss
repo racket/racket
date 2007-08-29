@@ -6,13 +6,25 @@
            (lib "arrow.ss" "drscheme")
            (lib "framework.ss" "framework"))
 
-  (provide text:drawings<%>
-           text:mouse-drawings<%>
+  (provide text:mouse-drawings<%>
            text:arrows<%>
 
-           text:drawings-mixin
            text:mouse-drawings-mixin
+           text:tacking-mixin
            text:arrows-mixin)
+
+  (define arrow-brush
+    (send the-brush-list find-or-create-brush "white" 'solid))
+  (define (tacked-arrow-brush color)
+    (send the-brush-list find-or-create-brush color 'solid))
+
+  (define billboard-brush
+    (send the-brush-list find-or-create-brush "white" 'solid))
+
+  (define white (send the-color-database find-color "white"))
+
+  ;; A Drawing is (make-drawing number number (??? -> void) boolean boolean)
+  (define-struct drawing (start end draw visible? tacked?) #f)
 
   (define (mean x y)
     (/ (+ x y) 2))
@@ -45,76 +57,49 @@
               (send dc set-text-background old-background)
               (send dc set-text-mode old-mode))))
 
-  (define text:drawings<%>
-    (interface (text:basic<%>)
-      add-drawings
-      delete-drawings
-      delete-all-drawings))
-
   (define text:mouse-drawings<%>
-    (interface (text:drawings<%>)
+    (interface (text:basic<%>)
       add-mouse-drawing
-      delete-mouse-drawings))
+      for-each-drawing
+      delete-all-drawings))
 
   (define text:arrows<%>
     (interface (text:mouse-drawings<%>)
       add-arrow
-      add-question-arrow))
+      add-question-arrow
+      add-billboard))
 
-  (define text:drawings-mixin
-    (mixin (text:basic<%>) (text:drawings<%>)
-      (define draw-table (make-hash-table))
+  (define text:mouse-drawings-mixin
+    (mixin (text:basic<%>) (text:mouse-drawings<%>)
+      (inherit dc-location-to-editor-location
+               find-position
+               invalidate-bitmap-cache)
 
-      (define/public (add-drawings key draws)
-        (hash-table-put! draw-table
-                         key
-                         (append draws (hash-table-get draw-table key (lambda () null)))))
+      ;; list of Drawings
+      (field [drawings-list null])
 
-      (define/public (delete-drawings key)
-        (hash-table-remove! draw-table key))
+      (define/public add-mouse-drawing
+        (case-lambda
+          [(start end draw)
+           (add-mouse-drawing start end draw (box #f))]
+          [(start end draw tack-box)
+           (set! drawings-list 
+                 (cons (make-drawing start end draw #f tack-box)
+                       drawings-list))]))
 
       (define/public (delete-all-drawings)
-        (for-each (lambda (key) (hash-table-remove! draw-table key))
-                  (hash-table-map draw-table (lambda (k v) k))))
+        (set! drawings-list null))
+
+      (define/public-final (for-each-drawing f)
+        (for-each f drawings-list))
 
       (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
         (super on-paint before? dc left top right bottom dx dy draw-caret)
         (unless before?
-          (hash-table-for-each
-           draw-table
-           (lambda (k v)
-             (for-each (lambda (d) (d this dc left top right bottom dx dy))
-                       v)))))
-
-      (super-new)))
-
-  ;; A Drawing is (make-drawing number number (??? -> void))
-  (define-struct drawing (start end draw) #f)
-
-  (define text:mouse-drawings-mixin
-    (mixin (text:drawings<%>) (text:mouse-drawings<%>)
-      (inherit dc-location-to-editor-location
-               find-position
-               invalidate-bitmap-cache
-               add-drawings
-               delete-drawings)
-
-      ;; lists of Drawings
-      (field [inactive-list null]
-             [active-list null])
-      
-      (define/public (add-mouse-drawing start end draw)
-        (set! inactive-list 
-              (cons (make-drawing start end draw)
-                    inactive-list)))
-      
-      (define/public (delete-mouse-drawings)
-        (set! inactive-list null))
-
-      (define/override (delete-all-drawings)
-        (super delete-all-drawings)
-        (set! inactive-list null)
-        (set! active-list null))
+          (for-each-drawing
+           (lambda (d)
+             (when (or (drawing-visible? d) (unbox (drawing-tacked? d)))
+               ((drawing-draw d) this dc left top right bottom dx dy))))))
 
       (define/override (on-default-event ev)
         (define gx (send ev get-x))
@@ -123,35 +108,69 @@
         (define pos (find-position x y))
         (super on-default-event ev)
         (case (send ev get-event-type)
-          ((enter motion)
-           (let ([new-active-annotations
-                  (filter (lambda (rec)
-                            (<= (drawing-start rec) pos (drawing-end rec)))
-                          inactive-list)])
-             (unless (equal? active-list new-active-annotations)
-               (set! active-list new-active-annotations)
-               (delete-drawings 'mouse-over)
-               (add-drawings 'mouse-over (map drawing-draw active-list))
-               (invalidate-bitmap-cache))))
-          ((leave)
-           (unless (null? active-list)
-             (set! active-list null)
-             (delete-drawings 'mouse-over)
-             (invalidate-bitmap-cache)))))
+          ((enter motion leave)
+           (let ([changed? (update-visible-drawings pos)])
+             (when changed? (invalidate-bitmap-cache 0.0 0.0 +inf.0 +inf.0))))))
+
+      (define/private (update-visible-drawings pos)
+        (let ([changed? #f])
+          (for-each-drawing
+           (lambda (d)
+             (let ([vis? (<= (drawing-start d) pos (drawing-end d))])
+               (unless (eqv? vis? (drawing-visible? d))
+                 (set-drawing-visible?! d vis?)
+                 (set! changed? #t)))))
+          changed?))
 
       (super-new)))
-  
-  (define arrow-brush (send the-brush-list find-or-create-brush "white" 'solid))
+
+  (define text:tacking-mixin
+    (mixin (text:basic<%> text:mouse-drawings<%>) ()
+      (inherit get-canvas
+               for-each-drawing)
+      (inherit-field drawings-list)
+      (super-new)
+
+      (define/override (on-event ev)
+        (case (send ev get-event-type)
+          ((right-down)
+           (if (ormap (lambda (d) (drawing-visible? d)) drawings-list)
+               (send (get-canvas) popup-menu
+                     (make-tack/untack-menu)
+                     (send ev get-x)
+                     (send ev get-y))
+               (super on-event ev)))
+          (else
+           (super on-event ev))))
+
+      (define/private (make-tack/untack-menu)
+        (define menu (new popup-menu%))
+        (new menu-item% (label "Tack")
+             (parent menu)
+             (callback
+              (lambda _ (tack))))
+        (new menu-item% (label "Untack")
+             (parent menu)
+             (callback
+              (lambda _ (untack))))
+        menu)
+
+      (define/private (tack)
+        (for-each-drawing
+         (lambda (d)
+           (when (drawing-visible? d)
+             (set-box! (drawing-tacked? d) #t)))))
+      (define/private (untack)
+        (for-each-drawing
+         (lambda (d)
+           (when (drawing-visible? d)
+             (set-box! (drawing-tacked? d) #f)))))))
 
   (define text:arrows-mixin
     (mixin (text:mouse-drawings<%>) (text:arrows<%>)
       (inherit position-location
                add-mouse-drawing
-               find-wordbreak
-               add-drawings
-               delete-drawings
-               get-canvas)
-      (inherit-field active-list inactive-list)
+               find-wordbreak)
 
       (define/public (add-arrow from1 from2 to1 to2 color)
         (internal-add-arrow from1 from2 to1 to2 color #f))
@@ -159,36 +178,62 @@
       (define/public (add-question-arrow from1 from2 to1 to2 color)
         (internal-add-arrow from1 from2 to1 to2 color #t))
 
-      (define/private (internal-add-arrow from1 from2 to1 to2 color question?)
+      (define/public (add-billboard pos1 pos2 str color-name)
+        (define color (send the-color-database find-color color-name))
+        (let ([draw 
+               (lambda (text dc left top right bottom dx dy)
+                 (let-values ([(x y) (range->mean-loc pos1 pos1)]
+                              [(fw fh _d _v) (send dc get-text-extent "y")])
+                   (with-saved-pen&brush dc
+                     (with-saved-text-config dc
+                       (send* dc
+                         (set-pen color 1 'solid)
+                         (set-brush billboard-brush)
+                         (set-text-mode 'solid)
+                         (set-font (billboard-font dc))
+                         (set-text-foreground color))
+                       (let-values ([(w h d v) (send dc get-text-extent str)]
+                                    [(adj-y) fh]
+                                    [(mini) _d])
+                         (send* dc
+                           (draw-rounded-rectangle
+                            (+ x dx)
+                            (+ y dy adj-y)
+                            (+ w mini mini)
+                            (+ h mini mini))
+                           (draw-text str (+ x dx mini) (+ y dy mini adj-y))))))))])
+          (add-mouse-drawing pos1 pos2 draw)))
+
+      (define/private (internal-add-arrow from1 from2 to1 to2 color-name question?)
+        (define color (send the-color-database find-color color-name))
+        (define tack-box (box #f))
         (unless (and (= from1 to1) (= from2 to2))
           (let ([draw 
                  (lambda (text dc left top right bottom dx dy)
-                   (let*-values ([(start1x start1y) (position->location from1)]
-                                 [(start2x start2y) (position->location from2)]
-                                 [(end1x end1y) (position->location to1)]
-                                 [(end2x end2y) (position->location to2)]
-                                 [(startx) (mean start1x start2x)]
-                                 [(starty) (mean start1y start2y)]
-                                 [(endx) (mean end1x end2x)]
-                                 [(endy) (mean end1y end2y)]
-                                 [(fw fh _d _v) (send dc get-text-extent "")])
-                     (let ([starty (+ starty (/ fh 2))]
-                           [endy (+ endy (/ fh 2))])
-                       (with-saved-pen&brush dc
-                         (with-saved-text-config dc
-                           (send dc set-pen color 1 'solid)
-                           (send dc set-brush arrow-brush)
-                           (draw-arrow dc startx starty endx endy dx dy)
-                           #;(send dc set-text-mode 'solid)
-                           (when question?
-                             (send dc set-font (?-font dc))
-                             (send dc set-text-foreground 
-                                   (send the-color-database find-color color))
-                             (send dc draw-text "?" 
-                                   (+ (+ startx dx) fw)
-                                   (- (+ starty dy) fh))))))))])
-            (add-mouse-drawing from1 from2 draw)
-            (add-mouse-drawing to1 to2 draw))))
+                   (let-values ([(startx starty) (range->mean-loc from1 from2)]
+                                [(endx endy) (range->mean-loc to1 to2)]
+                                [(fw fh _d _v) (send dc get-text-extent "x")])
+                     (with-saved-pen&brush dc
+                       (with-saved-text-config dc
+                         (send dc set-pen color 1 'solid)
+                         (send dc set-brush
+                               (if (unbox tack-box)
+                                   (tacked-arrow-brush color)
+                                   arrow-brush))
+                         (draw-arrow dc startx
+                                     (+ starty (/ fh 2))
+                                     endx
+                                     (+ endy (/ fh 2))
+                                     dx dy)
+                         (send dc set-text-mode 'transparent)
+                         (when question?
+                           (send dc set-font (?-font dc))
+                           (send dc set-text-foreground color)
+                           (send dc draw-text "?" 
+                                 (+ endx dx fw)
+                                 (- endy dy fh)))))))])
+            (add-mouse-drawing from1 from2 draw tack-box)
+            (add-mouse-drawing to1 to2 draw tack-box))))
 
       (define/private (position->location p)
         (define xbox (box 0.0))
@@ -196,62 +241,29 @@
         (position-location p xbox ybox)
         (values (unbox xbox) (unbox ybox)))
 
-      (define/override (on-event ev)
-        (case (send ev get-event-type)
-          ((right-down)
-           (let ([arrows active-list])
-             (if (pair? arrows)
-                 (send (get-canvas) popup-menu
-                       (make-tack/untack-menu)
-                       (send ev get-x)
-                       (send ev get-y))
-                 (super on-event ev))))
-          (else
-           (super on-event ev))))
-
-      (define/private (make-tack/untack-menu)
-        (define menu (new popup-menu%))
-        (new menu-item% (label "Tack arrows")
-             (parent menu)
-             (callback
-              (lambda _ (tack-arrows))))
-        (new menu-item% (label "Untack arrows")
-             (parent menu)
-             (callback
-              (lambda _ (untack-arrows))))
-        menu)
-
-      (define/private (tack-arrows)
-        (for-each (lambda (arrow) 
-                    (add-drawings (drawing-draw arrow) (list (drawing-draw arrow))))
-                  active-list))
-      (define/private (untack-arrows)
-        (for-each (lambda (arrow) (delete-drawings (drawing-draw arrow)))
-                  active-list))
-
       (define/private (?-font dc)
         (let ([size (send (send dc get-font) get-point-size)])
           (send the-font-list find-or-create-font size 'default 'normal 'bold)))
+
+      (define/private (billboard-font dc)
+        (let ([size (send (send dc get-font) get-point-size)])
+          (send the-font-list find-or-create-font size 'default 'normal)))
+
+      (define/private (range->mean-loc pos1 pos2)
+        (let*-values ([(loc1x loc1y) (position->location pos1)]
+                      [(loc2x loc2y) (position->location pos2)]
+                      [(locx) (mean loc1x loc2x)]
+                      [(locy) (mean loc1y loc2y)])
+          (values locx locy)))
 
       (super-new)))
 
   (define text:mouse-drawings%
     (text:mouse-drawings-mixin
-     (text:drawings-mixin text:standard-style-list%)))
+     text:standard-style-list%))
 
   (define text:arrows%
-    (text:arrows-mixin text:mouse-drawings%))
-
-  #;
-  (begin
-    (define f (new frame% (label "testing") (width 100) (height 100)))
-    (define t (new text:crazy% (auto-wrap #t)))
-    (define ec (new editor-canvas% (parent f) (editor t)))
-    (send f show #t)
-    (send t insert "this is the time to remember, because it will not last forever\n")
-    (send t insert "these are the days to hold on to, but we won't although we'll want to\n")
-    
-    (send t add-dot 5)
-    (send t add-arrow 25 8 "blue"))
-  
+    (text:arrows-mixin
+     (text:tacking-mixin
+      text:mouse-drawings%)))
   )
