@@ -368,7 +368,10 @@
   (define current-eventspace (mz/mr (make-parameter #f) current-eventspace))
   (define make-eventspace    (mz/mr void make-eventspace))
   (define run-in-bg          (mz/mr thread queue-callback))
-  (define bg-run->thread     (mz/mr values eventspace-handler-thread))
+  (define bg-run->thread     (if mred? 
+                                 (lambda (ignored) 
+                                   ((mz/mr void eventspace-handler-thread) (current-eventspace)))
+                                 values))
   (define null-input         (open-input-bytes #""))
 
   (define (kill-evaluator eval)            (eval kill-evaluator))
