@@ -645,6 +645,9 @@ _utils.ss_
   submission byte string.  The byte string is opened for reading, with
   line-counting enabled.
 
+  See the "sandbox.ss" MzLib library for information on
+  `make-evaluator'.
+
 > (call-with-evaluator language teachpack-paths input-program proc)
   Calls `proc' with an evaluator for the given language, teachpack
   paths, and initial definition content as supplied by input-program
@@ -788,13 +791,13 @@ Keywords for configuring `check:':
   "utils.ss").
 
 * :language -- the language that is used for evaluating submissions,
-  same as the `language' argument for `make-evaluator' (see above).
-  There is no default for this, so it must be set or an error is
-  raised.
+  same as the `language' argument for `make-evaluator' (see
+  "sandbox.ss").  There is no default for this, so it must be set or
+  an error is raised.
 
 * :teachpacks -- teachpacks for evaluating submissions, same as the
-  `teachpacks' argument for `make-evaluator' (see above).  Defaults to
-  null -- no teachpacks.
+  `teachpacks' argument for `make-evaluator' (see "sandbox.ss").
+  Defaults to null -- no teachpacks.
 
 * :create-text? -- if true, then a textual version of the submission
   is saved as "text.scm" in a "grading" subdirectory (or any suffix

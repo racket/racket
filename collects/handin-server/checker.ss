@@ -174,9 +174,9 @@
 
 (define (submission->bytes submission maxwidth textualize? untabify?
                            markup-prefix bad-re)
-  (define magic #"WXME")
-  (unless (equal? magic (subbytes submission 0 (bytes-length magic)))
-    (error* "bad submission format, expecting a single  DrScheme submission"))
+  (define magic #rx#"^(?:#reader[(]lib\"read.ss\"\"wxme\"[)])?WXME")
+  (unless (regexp-match? magic submission)
+    (error* "bad submission format, expecting a single DrScheme submission"))
   (let-values ([(defs inters) (unpack-submission submission)])
     (parameterize ([current-input-port
                     (if textualize?
