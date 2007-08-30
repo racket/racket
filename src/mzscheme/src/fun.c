@@ -920,6 +920,8 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
   cl->base_closure_map = dcm;
   if (scheme_env_uses_toplevel(info))
     cl->has_tl = 1;
+  else
+    cl->has_tl = 0;
   cl->body_size = info->size;
 
   info->size++;
