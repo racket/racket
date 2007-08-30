@@ -2770,7 +2770,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
     if ((pre_body->count != 1)
         && is_values_apply(value)
         && scheme_omittable_expr(value, pre_body->count)) {
-      if (!pre_body->count && !i && (head->num_clauses > 1)) {
+      if (!pre_body->count && !i) {
         /* We want to drop the clause entirely, but doing it
            here messes up the loop for letrec. So wait and 
            remove it at the end. */
@@ -2947,7 +2947,10 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
   }
 
   body = scheme_optimize_expr(body, body_info);
-  pre_body->body = body;
+  if (head->num_clauses)
+    pre_body->body = body;
+  else
+    head->body = body;
   info->size += 1;
 
   info->single_result = body_info->single_result;
