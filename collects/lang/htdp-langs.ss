@@ -491,38 +491,51 @@
           
           (define/override (front-end/complete-program port settings)
             (let ([state 'init]
-                  ;; state : 'init => 'require => 'done
-                  [reader (get-reader)])
+                  ;; state : 'init => 'require => 'done-or-exn
+                  [reader (get-reader)]
+                  
+                  ;; in state 'done-or-exn, if this is an exn, we raise it
+                  ;; otherwise, we just return eof
+                  [saved-exn #f])
               
               (lambda ()
                 (case state
                   [(init)
                    (set! state 'require)
-                   (let ([body-exps 
-                          (let loop ()
-                            (let ([result (reader (object-name port) port)])
-                              (if (eof-object? result)
-                                  null
-                                  (cons result (loop)))))]
-                         [language-module (get-module)])
-                     (for-each
-                      (λ (tp)
-                        (with-handlers ((exn:fail? (λ (x) (error 'teachpack (missing-tp-message tp)))))
-                          (unless (file-exists? (build-path (apply collection-path (cddr tp))
-                                                            (cadr tp)))
-                            (error))))
-                      (htdp-lang-settings-teachpacks settings))
-                     (rewrite-module
-                      settings
-                      (expand
-                       (datum->syntax-object
-                        #f
-                        `(,#'module #%htdp ,language-module 
-                                    ,@(map (λ (x) `(require ,x))
-                                           (htdp-lang-settings-teachpacks settings))
-                                    ,@body-exps)))))]
+                   (let ([language-module (get-module)])
+                     (with-handlers ([exn:fail?
+                                      (λ (x)
+                                        (set! saved-exn x)
+                                        (expand
+                                         (datum->syntax-object
+                                          #f
+                                          `(,#'module #%htdp ,language-module 
+                                                      ,@(map (λ (x) `(require ,x))
+                                                             (htdp-lang-settings-teachpacks settings))))))])
+                       (let ([body-exps 
+                              (let loop ()
+                                (let ([result (reader (object-name port) port)])
+                                  (if (eof-object? result)
+                                      null
+                                      (cons result (loop)))))])
+                         (for-each
+                          (λ (tp)
+                            (with-handlers ((exn:fail? (λ (x) (error 'teachpack (missing-tp-message tp)))))
+                              (unless (file-exists? (build-path (apply collection-path (cddr tp))
+                                                                (cadr tp)))
+                                (error))))
+                          (htdp-lang-settings-teachpacks settings))
+                         (rewrite-module
+                          settings
+                          (expand
+                           (datum->syntax-object
+                            #f
+                            `(,#'module #%htdp ,language-module 
+                                        ,@(map (λ (x) `(require ,x))
+                                               (htdp-lang-settings-teachpacks settings))
+                                        ,@body-exps)))))))]
                   [(require) 
-                   (set! state 'done)
+                   (set! state 'done-or-exn)
                    (syntax
                     (let ([done-already? #f])
                       (dynamic-wind
@@ -534,7 +547,12 @@
                          (unless done-already?
                            (set! done-already? #t)
                            (current-namespace (module->namespace '#%htdp)))))))]
-                  [(done) eof]))))
+                  [(done-or-exn)
+                   (cond
+                     [saved-exn
+                      (raise saved-exn)]
+                     [else
+                      eof])]))))
           
           (define/private (missing-tp-message x)
             (let* ([m (regexp-match #rx"/([^/]*)$" (cadr x))]
