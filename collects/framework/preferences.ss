@@ -348,7 +348,7 @@ the state transitions / contracts are:
     "Determines if a value is an unknown preference exn.")
 
    (preferences:low-level-put-preferences
-    (parameter/c (-> (listof symbol?) (listof any?) any))
+    (parameter/c (-> (listof symbol?) (listof any/c) any))
     ()
     "This is a parameter (see "
     "\\Mzhyperref{parameters}{mz:parameters} for information about parameters)"

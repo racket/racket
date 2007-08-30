@@ -344,7 +344,7 @@
     (filename)
     "Generates a name for an backup file from \\var{filename}.")
    (finder:dialog-parent-parameter
-    (parameter/c (or/c false/c (is-ac dialog%) (is-a/c frame%)))
+    (parameter/c (or/c false/c (is-a?/c dialog%) (is-a?/c frame%)))
     ()
     "This is a parameter (see "
     "\\Mzhyperref{parameters}{mz:parameters} for information about parameters)"
