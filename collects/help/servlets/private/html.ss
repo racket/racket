@@ -6,6 +6,8 @@
            (lib "etc.ss")
            (lib "kw.ss")
            (lib "port.ss")
+           "../../private/options.ss"
+           "util.ss"
            "url.ss")
 
   ;;;
@@ -23,6 +25,18 @@
     (call-with-input-file (build-path (this-expression-source-directory)
                                       "helpdesk.css")
       port->string))
+  
+  ;;;
+  ;;; HTML FOR THE INTERNAL HELPDESK
+  ;;;
+  
+  (define (make-green-header-text s) 
+    (color-highlight `(h2 () ,s)))
+  
+  (define (br*)
+    (if (eq? (helpdesk-platform) 'external-browser)
+      '()
+      '((br) (br))))
 
   ;;;
   ;;; GENERATE XML FOR THE ENTIRE PAGE

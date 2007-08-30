@@ -97,11 +97,7 @@
                                (html-top initial-request)
                                (left-items)
                                right-header right-items)]))])))))
-
-  (define (br*)
-    (if (eq? (helpdesk-platform) 'external-browser)
-      '()
-      '((br) (br))))
+  
 
   (define (left-items)
     `(-- -- -- -- --
@@ -176,9 +172,6 @@
               `(,page-title ,url "" ,page-title))])
          easy-pages))
   
-  (define (make-header-text s) 
-    (color-highlight `(h2 () ,s)))
-
   ;; static subpages
   ;;  - In ALPHABETICAL order
   (define easy-pages
@@ -350,10 +343,10 @@
            (a ([href ,url-external-planet]) "PLaneT") ".")))
       ;; was: /servlets/scheme/doc.ss
       ("documentation" "Documentation"
-       (,(make-header-text "How to use DrScheme")
+       (,(make-green-header-text "How to use DrScheme")
         (p (a ([href ,url-helpdesk-drscheme]) "DrScheme")
            " provides information about using the DrScheme development environment.")
-        ,(make-header-text "Languages and Libraries")
+        ,(make-green-header-text "Languages and Libraries")
         (p "Language and library documentation is distributed among several"
            " manuals, plus a number of plain-text files describing small library"
            " collections.")
@@ -371,7 +364,7 @@
            " search result link might refer to a missing manual.")
         (ul (li (b (a ([href ,url-helpdesk-manuals]) "Manuals"))
                 ": List the currently installed and uninstalled manuals"))
-        ,(make-header-text "Searching")
+        ,(make-green-header-text "Searching")
         (p (a ([href ,url-helpdesk-how-to-search]) "Searching")
            " in Help Desk finds documenation from all sources, including ")
         (p (a ([href ,url-helpdesk-drscheme]) "DrScheme")

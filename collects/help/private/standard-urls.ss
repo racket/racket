@@ -3,6 +3,7 @@
            (lib "dirs.ss" "setup")
            (lib "contract.ss")
            (lib "config.ss" "planet")
+           (lib "help-desk-urls.ss" "help")
            "../servlets/private/util.ss"
            "internal-hp.ss"
            "get-help-url.ss")
@@ -77,10 +78,10 @@
   
   ; sym, string assoc list
   (define hd-locations
-    `((hd-tour ,(get-help-url (build-path (find-doc-dir) "tour")))
-      (release-notes ,(prefix-with-server "/servlets/release/notes.ss"))
-      (plt-license ,(prefix-with-server "/servlets/release/license.ss"))
-      (front-page ,(prefix-with-server "/servlets/home.ss"))))
+    `((hd-tour ,(format "~a/index.html" (get-help-url (build-path (find-doc-dir) "tour"))))
+      (release-notes ,url-helpdesk-release-notes)
+      (plt-license ,url-helpdesk-license)
+      (front-page ,url-helpdesk-home)))
   
   (define hd-location-syms (map car hd-locations))
 
