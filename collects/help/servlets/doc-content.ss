@@ -16,4 +16,4 @@
                         (string->number
                          (extract-binding/single 'offset bindings)))])
          `(html (head (title "PLT Help Desk") ,hd-css ,@hd-links)
-            ,(read-lines file caption offset)))))))
+            ,(read-lines initial-request file caption offset)))))))

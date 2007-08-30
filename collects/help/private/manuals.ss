@@ -149,7 +149,7 @@
                                                   ;; escape colons and other junk
                                                   (uri-encode (path->string path))
                                                   (uri-encode name)
-                                                  (format "Documentation for the ~a " name))))
+                                                  (format "Documentation for ~a " name))))
                                   ,(format "~a " name))]
                              [else
                               `(font ((color "red"))

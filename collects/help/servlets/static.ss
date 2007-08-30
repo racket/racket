@@ -3,59 +3,20 @@
 ;; (which is why we don't let the web-server serve the documentation directly)
 
 (module static mzscheme
-  (require (lib "private/mime-types.ss" "web-server")
-           (lib "servlet.ss" "web-server")
+  (require (lib "servlet.ss" "web-server")
            (lib "xml.ss" "xml")
            (lib "match.ss")
            (lib "url.ss" "net")
-           (lib "dirs.ss" "setup")
-           (lib "port.ss")
            "../private/standard-urls.ss"
            "../private/docpos.ss"
            "../private/options.ss"
-           "private/html.ss")
+           "private/html.ss"
+           "private/mime.ss")
   
   (provide interface-version timeout start)
   (define interface-version 'v1)
   (define timeout +inf.0)
   
-  ;;;
-  ;;; PORT UTILS
-  ;;;
-  
-  (define (port->string port)
-    (let ([os (open-output-string)])
-      (copy-port port os)
-      (get-output-string os)))
-  
-  (define (file->string path)
-    (call-with-input-file path
-      port->string))
-  
-  (define (port->bytes port)
-    (let ([ob (open-output-bytes)])
-      (copy-port port ob)
-      (get-output-bytes ob)))
-  
-  (define (file->bytes path)
-    (call-with-input-file path
-      port->bytes))
-  
-  ;;;
-  ;;; MIME
-  ;;;
-  
-  ; get-mime-type : path -> string
-  (define get-mime-type 
-    (;make-get-mime-type 
-     make-path->mime-type
-     (build-path (find-collects-dir) 
-                 "web-server" "default-web-root" "mime.types")))
-  
-  
-  (define (text-mime-type? file-path)
-    (regexp-match #rx"^text"
-                  (get-mime-type file-path)))
   
   ;;;
   ;;; URL
@@ -88,7 +49,6 @@
        (let* ([bindings  (request-bindings request)]
               [file      (get-binding bindings 'file "no file")]
               [host      (get-binding bindings 'host "no host")]
-              
               [url       (request-uri request)])
          (let-values
              ([(file-path host manual)
