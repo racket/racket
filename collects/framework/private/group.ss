@@ -14,7 +14,8 @@
           [prefix frame: framework:frame^]
           [prefix text: framework:text^]
           [prefix canvas: framework:canvas^]
-          [prefix menu: framework:menu^])
+          [prefix menu: framework:menu^]
+          [prefix exit: framework:exit^])
   (export framework:group^)
   
   (define-struct frame (frame id))
@@ -156,11 +157,7 @@
                  #f
                  (frame-frame (car candidates))))]))
       
-      (public get-mdi-parent frame-label-changed for-each-frame
-              get-active-frame set-active-frame insert-frame
-              remove-frame clear on-close-all can-close-all? locate-file get-frames
-              frame-shown/hidden)
-      (define (get-mdi-parent)
+      (define/public (get-mdi-parent)
         (when (and (eq? (system-type) 'windows)
                    (preferences:get 'framework:windows-mdi)
                    (not mdi-parent))
@@ -170,35 +167,35 @@
           (send mdi-parent show #t))
         mdi-parent)
       
-      (define (get-frames) (map frame-frame frames))
+      (define/public (get-frames) (map frame-frame frames))
       
-      (define (frame-label-changed frame)
+      (define/public (frame-label-changed frame)
         (when (memq frame (map frame-frame frames))
           (update-windows-menus)))
       
-      (define (frame-shown/hidden frame)
+      (define/public (frame-shown/hidden frame)
         (when (memq frame (map frame-frame frames))
           (update-windows-menus)))
       
-      (define (for-each-frame f)
+      (define/public (for-each-frame f)
         (for-each (λ (x) (f (frame-frame x))) frames)
         (set! todo-to-new-frames
               (let ([old todo-to-new-frames])
                 (λ (frame) (old frame) (f frame)))))
       
-      (define (get-active-frame)
+      (define/public (get-active-frame)
         (cond
           [active-frame active-frame]
           [(null? frames) #f]
           [else (frame-frame (car frames))]))
       
-      (define (set-active-frame f)
+      (define/public (set-active-frame f)
         (when (and active-frame
                    (not (eq? active-frame f)))
           (set! most-recent-window-box (make-weak-box active-frame)))
         (set! active-frame f))
       
-      (define (insert-frame new-frame)
+      (define/public (insert-frame new-frame)
         (unless (memf (λ (fr) (eq? (frame-frame fr) new-frame))
                       frames)
           (set! frame-counter (add1 frame-counter))
@@ -210,7 +207,7 @@
             (update-windows-menus))
           (todo-to-new-frames new-frame)))
       
-      (define (remove-frame f)
+      (define/public (remove-frame f)
         (when (eq? f active-frame)
           (set! active-frame #f))
         (let ([new-frames
@@ -222,24 +219,24 @@
           (remove-windows-menu f)
           (update-windows-menus)))
       
-      (define (clear)
+      (define/public (clear)
         (set! frames null)
         #t)
       
-      (define (on-close-all)
+      (define/public (on-close-all)
         (for-each (λ (f)
                     (let ([frame (frame-frame f)])
                       (send frame on-close) 
                       (send frame show #f)))
                   frames))
       
-      (define (can-close-all?)
+      (define/public (can-close-all?)
         (andmap (λ (f)
                   (let ([frame (frame-frame f)])
                     (send frame can-close?)))
                 frames))
       
-      (define (locate-file name)
+      (define/public (locate-file name)
         (let* ([normalized
                 ;; allow for the possiblity of filenames that are urls
                 (with-handlers ([(λ (x) #t)
@@ -260,6 +257,19 @@
                      (loop (cdr frames))))]))))
       
       (super-new)))
+  
+  (define (can-close-check)
+    (let ([number-of-frames (length (send (get-the-frame-group) get-frames))])
+      (or (not (preferences:get 'framework:exit-when-no-frames))
+          (exit:exiting?)
+          (not (= 1 number-of-frames))
+          (exit:user-oks-exit))))
+
+  (define (on-close-action)
+    (when (preferences:get 'framework:exit-when-no-frames)
+      (unless (exit:exiting?)
+        (when (null? (send (get-the-frame-group) get-frames))
+          (exit:exit)))))
   
   (define (choose-a-frame parent)
     (letrec-values ([(sorted-frames)

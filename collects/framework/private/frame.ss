@@ -237,23 +237,14 @@
     (mixin (basic<%>) (register-group<%>)
       
       (define/augment (can-close?)
-        (let ([number-of-frames 
-               (length (send (group:get-the-frame-group)
-                             get-frames))])
-          (and (inner #t can-close?)
-               (or (not (preferences:get 'framework:exit-when-no-frames))
-                   (exit:exiting?)
-                   (not (= 1 number-of-frames))
-                   (exit:user-oks-exit)))))
+        (and (inner #t can-close?)
+             (group:can-close-check)))
       (define/augment (on-close)
         (send (group:get-the-frame-group)
               remove-frame
               this)
         (inner (void) on-close)
-        (when (preferences:get 'framework:exit-when-no-frames)
-          (unless (exit:exiting?)
-            (when (null? (send (group:get-the-frame-group) get-frames))
-              (exit:exit)))))
+        (group:on-close-action))
       
       (define/override (on-activate on?)
         (super on-activate on?)

@@ -344,7 +344,7 @@
     (filename)
     "Generates a name for an backup file from \\var{filename}.")
    (finder:dialog-parent-parameter
-    any/c
+    (parameter/c (or/c false/c (is-ac dialog%) (is-a/c frame%)))
     ()
     "This is a parameter (see "
     "\\Mzhyperref{parameters}{mz:parameters} for information about parameters)"
@@ -601,6 +601,29 @@
     (-> (is-a?/c group:%))
     ()
     "This returns the frame group.")
+   
+   (group:on-close-action
+    (-> void?)
+    ()
+    "See also "
+    "@flink group:can-close-check %"
+    "."
+    ""
+    "Call this function from the"
+    "@ilink top-level-window can-close?"
+    "callback of a frame"
+    "in order for the group to properly close the application.")
+   (group:can-close-check
+    (-> boolean?)
+    ()
+    "See also "
+    "@flink group:on-close-action %"
+    "."
+    ""
+    "Call this function from the"
+    "@ilink top-level-window can-close?"
+    "callback of a frame"
+    "in order for the group to properly close the application.")
    
    (handler:handler?
     (any/c . -> . boolean?)

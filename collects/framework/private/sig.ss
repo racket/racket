@@ -281,7 +281,9 @@
   (define-signature group-class^
     (%))
   (define-signature group^ extends group-class^
-    (get-the-frame-group))
+    (get-the-frame-group
+     on-close-action
+     can-close-check))
   
   (define-signature handler-class^
     ())
