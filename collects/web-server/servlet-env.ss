@@ -61,7 +61,7 @@
                                    empty)))]
          [(shutdown-server)
           (serve #:dispatch servlet-dispatch
-                 #:port 9999)])
+                 #:port the-port)])
       (cache-table-lookup! the-scripts
                            (string->symbol
                             (path->string
