@@ -298,7 +298,7 @@ please adhere to these guidelines:
  (plt:hd:help-desk-about-string
   "Help Desk is a complete source of information about PLT software, including DrScheme, MzScheme, and MrEd.\n\nVersion ~a\nCopyright (c) ~a-~a PLT")
  (plt:hd:help-on-help "Help on Help")
- (plt:hd:help-on-help-details "For help on using Help Desk, follow the `How to use Help Desk' link on Help Desk's home page. (To get to the home page if you're not already there, click the `Home' button at the top of the Help Desk window.)")
+ (plt:hd:help-on-help-details "For help on using Help Desk, follow the first link `Help Desk' on Help Desk's home page. (To get to the home page if you're not already there, click the `Home' button at the top of the Help Desk window.)")
   (reload "Reload") ;; refresh the page in a web browser
   (plt:hd:ask-about-separate-browser
    "You have selected a link to content from the world-wide web. Would you like to view it in the Help Desk browser, or would you like to use a separate browser program to view it?")
