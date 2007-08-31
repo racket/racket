@@ -17,8 +17,8 @@
   (define-struct random-source (generator))
   
   (provide/contract
-   (random-integer (-> positive-integer/c any))
-   (random-source-make-integers (-> positive-integer/c any))
+   (random-integer (-> random-source? any))
+   (random-source-make-integers (-> random-source? any))
    (random-source-make-reals (case-> (-> random-source? any)
                                      (-> random-source? (and/c (>/c 0) (</c 1)) any))))
   
