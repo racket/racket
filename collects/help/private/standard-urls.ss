@@ -8,7 +8,7 @@
            "internal-hp.ss"
            "get-help-url.ss")
   
-  (provide home-page-url)
+  (provide home-page-url host+dirs)
   
   (define (search-type? x)
     (member x '("keyword" "keyword-index" "keyword-index-text")))

@@ -175,7 +175,11 @@
   ;; static subpages
   ;;  - In ALPHABETICAL order
   (define easy-pages
-    `(("acknowledge" "Acknowledgements"
+    `(("about-the-master-index" "About the Master Index"
+       ((p "The master index is a list of all keywords present in the html documentation.")
+        (p (a ([href ,url-helpdesk-master-index]) "The Master Index"))))
+      ;;
+      ("acknowledge" "Acknowledgements"
        ((p ,(get-general-acks))
         (p ,(get-translating-acks))))
       ;;
@@ -187,8 +191,7 @@
          "MzScheme, or MrEd.  MysterX is available from ")
         (pre
          nbsp nbsp
-         (a ((href "http://www.plt-scheme.org/software/mysterx/")
-             (target "_top"))
+         (a ([href "http://www.plt-scheme.org/software/mysterx/"])
             "http://www.plt-scheme.org/software/mysterx/"))
         (p ,(collection-doc-link "mysterx" "The MysterX collection"))))
       ;;

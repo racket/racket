@@ -6,8 +6,10 @@
   (define url-helpdesk-root
     (format "http://~a:~a/servlets/" internal-host (internal-port)))
 
-  (define url-helpdesk-home    (string-append url-helpdesk-root "home.ss"))
-  (define url-helpdesk-results (string-append url-helpdesk-root "results.ss"))
+  (define url-helpdesk-home         (string-append url-helpdesk-root "home.ss"))
+  (define url-helpdesk-results      (string-append url-helpdesk-root "results.ss"))
+  (define url-helpdesk-master-index (string-append url-helpdesk-root "master-index.ss"))
+
 
   (define (url-home-subpage subpage-str)
     (string-append url-helpdesk-home "?subpage=" subpage-str))
