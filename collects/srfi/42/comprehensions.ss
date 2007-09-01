@@ -305,11 +305,52 @@
   (syntax-rules ()
     ((:while cc (g arg1 arg ...) test)
      (g (:while-1 cc test) arg1 arg ...) )))
-
+  
 (define-syntax :while-1
-  (syntax-rules (:do)
+  (syntax-rules (:do let)
     ((:while-1 cc test (:do olet lbs ne1? ilet ne2? lss))
-     (:do cc olet lbs (and ne1? test) ilet ne2? lss) )))
+     (:while-2 cc test () () () (:do olet lbs ne1? ilet ne2? lss)))))
+
+(define-syntax :while-2
+  (syntax-rules (:do let)
+    ((:while-2 cc
+               test
+               (ib-let     ...)
+               (ib-save    ...)
+               (ib-restore ...)
+               (:do olet
+                    lbs
+                    ne1?
+                    (let ((ib-var ib-rhs) ib ...) ic ...)
+                    ne2?
+                    lss))
+     (:while-2 cc
+               test
+               (ib-let     ... (ib-tmp #f))
+               (ib-save    ... (ib-var ib-rhs))
+               (ib-restore ... (ib-var ib-tmp))
+               (:do olet
+                    lbs
+                    ne1?
+                    (let (ib ...) ic ... (set! ib-tmp ib-var))
+                    ne2?
+                    lss)))
+    ((:while-2 cc
+               test
+               (ib-let     ...)
+               (ib-save    ...)
+               (ib-restore ...)
+               (:do (let (ob ...) oc ...) lbs ne1? (let () ic ...) ne2? lss))
+     (:do cc
+          (let (ob ... ib-let ...) oc ...)
+          lbs
+          (let ((ne1?-value ne1?))
+            (let (ib-save ...)
+                ic ...
+                (and ne1?-value test)))
+          (let (ib-restore ...))
+          ne2?
+          lss))))
 
 
 (define-syntax :until
