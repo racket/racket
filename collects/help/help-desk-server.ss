@@ -39,7 +39,8 @@
         internal-host (internal-port))
 
 (printf "Press enter to shutdown.\n")
-(read-line)
+(with-handlers ([exn:break? (lambda (exn) (shutdown) (exit))])
+  (read-line))
 (shutdown)
 
 )
