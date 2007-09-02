@@ -2,12 +2,10 @@
 @require[(lib "manual.ss" "scribble")]
 @require["utils.ss"]
 
-@title[#:tag "reference-style"]{PLT Reference Style Guide}
-
-@italic{Notes toward an eventual guide chapter...}
+@title[#:tag "reference-style"]{Style Guide}
 
 In the descriptive body of @scheme[defform], @scheme[defproc], etc.,
-do not start with ``This...'' Instead, start with a sentence whose
+do not start with ``This ...'' Instead, start with a sentence whose
 implicit subject is the form or value being described. Thus, the
 description will often start with ``Produces.'' Refer to arguments by
 name.
@@ -19,24 +17,6 @@ syntactic form to mean an identifier, not @schemeidfont{identifier},
 expression position within a syntactic form. Use @schemeidfont{body}
 for a form (definition or expression) in an internal-definition
 position.
-
-Break up HTML documents into multiple pages by using the @scheme['toc]
-section style in combination with
-@scheme[local-table-of-contents]. The @scheme[local-table-of-contents]
-should go after a short introduction, if any. In some cases, a longer
-introduction is better placed after the
-@scheme[local-table-of-contents] call, especially if the contents are
-short.
-
-Favor hyperlinks installed by @scheme[scheme] instead of explicit
-section links produced by @scheme[secref]. In particular, there's
-rarely a need to have both links (e.g., ``see @scheme[scheme] in
-@secref["scribble:manual:code"]'').
-
-Link tags are resolved relative to surrounding sections, but if you
-think anyone will ever refer to a link targer, try to pick a tag that
-will be globally unique. For example, all of the section tags in the
-PLT Scheme reference start with @litchar["mz:"].
 
 Pay attention to the difference between identifiers and meta-variables
 when using @scheme[scheme], especially outside of @scheme[defproc] or
