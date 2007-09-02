@@ -4,13 +4,13 @@
 @title{Module Names and Loading}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:modnameresolver"]{Resolving Module Names}
+@section[#:tag "modnameresolver"]{Resolving Module Names}
 
 The name of a declared module is either a symbol or a @deftech{resolved
 module path}. A symbol normally refers to a predefined module or
 module declared through reflective evaluation (e.g., @scheme[eval]). A
 @tech{resolved module path} encapsulates a filesystem path (see
-@secref["mz:pathutils"]) and normally refers to a module declaration
+@secref["pathutils"]) and normally refers to a module declaration
 that was loaded on demand via @scheme[require] or other forms.
 
 @defproc[(resolved-module-path? [v any/c]) boolean?]{
@@ -110,7 +110,7 @@ with a message about a dependency cycle.
 
 Module loading is suppressed (i.e., @scheme[#f] is supplied as a third
 argument to the module name resolver) when resolving module paths in
-@tech{syntax objects} (see @secref["mz:stxobj-model"]). When a
+@tech{syntax objects} (see @secref["stxobj-model"]). When a
 @tech{syntax object} is manipulated, the current namespace might not
 match the original namespace for the syntax object, and the module
 should not necessarily be loaded in the current namespace.
@@ -136,7 +136,7 @@ with the prefix (via @scheme[build-path]), and then converted to a
 which is used as the name of the declared module.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:modpathidx"]{Compiled Modules and References}
+@section[#:tag "modpathidx"]{Compiled Modules and References}
 
 While expanding a @scheme[module] declaration, the expander resolves
 module paths for imports to load module declarations as necessary and
@@ -148,7 +148,7 @@ among compiled code.
 
 When a module reference is extracted from compiled form (see
 @scheme[module-compiled-imports]) or from syntax objects in macro
-expansion (see @secref["mz:stxops"]), the module reference is
+expansion (see @secref["stxops"]), the module reference is
 typically reported in the form of a @deftech{module path index}. A
 @tech{module path index} is a semi-interned (multiple references to
 the same relative module tend to use the same @tech{module path index}
@@ -267,7 +267,7 @@ list of symbols for the module's explicit variable exports, a list
 symbols for the module's explicit syntax exports.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:dynreq"]{Dynamic Module Access}
+@section[#:tag "dynreq"]{Dynamic Module Access}
 
 @defproc[(dynamic-require [mod module-path?][provided (or/c symbol? false/c void?)]) 
          any]{
@@ -286,11 +286,11 @@ value of the module's export with the given name is returned. If the
 module exports @scheme[provide] as syntax, then a use of the binding
 is expanded and evaluated (in a fresh namespace to which the module is
 attached). If the module has no such exported variable or syntax, or
-if the variable is protected (see @secref["mz:modprotect"]), the
+if the variable is protected (see @secref["modprotect"]), the
 @exnraise[exn:fail:contract].
 
 If @scheme[provided] is @|void-const|, then the module is
-@tech{visit}ed (see @secref["mz:mod-parse"]), but not
+@tech{visit}ed (see @secref["mod-parse"]), but not
 @tech{instantiate}d. The result is @|void-const|.}
 
 

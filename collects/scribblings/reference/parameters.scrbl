@@ -1,9 +1,9 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:parameters"]{Parameters}
+@title[#:tag "parameters"]{Parameters}
 
-See @secref["mz:parameter-model"] for basic information on the
+See @secref["parameter-model"] for basic information on the
 parameter model. Parameters correspond to @defterm{preserved thread
 fluids} in Scsh @cite[#:key "cite:thread-fluids" #:title "Processes
 vs. User-Level Threads in Scsh" #:author "Martin Gasbichler and
@@ -67,7 +67,7 @@ If a continuation is captured during the evaluation of
 @scheme[parameterize], invoking the continuation effectively
 re-introduces the @tech{parameterization}, since a parameterization is
 associated to a continuation via a continuation mark (see
-@secref["mz:contmarks"]) using a private key.}
+@secref["contmarks"]) using a private key.}
 
 @examples[
 (parameterize ([exit-handler (lambda (x) 'no-exit)]) 

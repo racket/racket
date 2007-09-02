@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:module-require"]{Imports: @scheme[require]}
+@title[#:tag "module-require"]{Imports: @scheme[require]}
 
 The @scheme[require] form imports from another module. A
 @scheme[require] form can appear within a module, in which case it
@@ -32,7 +32,7 @@ The allowed shape of a @scheme[_require-spec] is defined recursively:
 
 In its simplest form, a @scheme[_require-spec] is a
 @scheme[module-path] (as defined in the previous section,
-@secref["guide:module-paths"]). In this case, the bindings introduced
+@secref["module-paths"]). In this case, the bindings introduced
 by @scheme[require] are determined by @scheme[provide] declarations
 within each module referenced by each @scheme[module-path].
 

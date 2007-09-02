@@ -83,7 +83,7 @@ If @scheme[try-chain?] is not @scheme[#f], keymaps chained to this one
  are searched for the function name.  If the function is not found and
  @scheme[try-chain?] is @scheme[#f]; an exception is also raised, but
  the exception handler cannot escape (see
- @secref["mr:evtcontjump"]).
+ @secref["evtcontjump"]).
 
 }
 
@@ -327,7 +327,7 @@ Examples:
 A call to @method[keymap% map-function] that would map a particular
  key sequence both as a prefix and as a complete sequence raises an
  exception, but the exception handler cannot escape (see
- @secref["mr:evtcontjump"]).
+ @secref["evtcontjump"]).
 
 A function name does not have to be mapped to a handler before input
  states are mapped to the name; the handler is dispatched by name at

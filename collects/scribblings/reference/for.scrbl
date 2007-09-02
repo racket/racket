@@ -2,9 +2,9 @@
 @require["mz.ss"]
 @require[(lib "for.ss")]
 
-@title[#:tag "mz:for"]{Iterations and Comprehensions: @scheme[for], @scheme[for/list], ...}
+@title[#:tag "for"]{Iterations and Comprehensions: @scheme[for], @scheme[for/list], ...}
 
-@guideintro["guide:for"]{iterations and comprehensions}
+@guideintro["for"]{iterations and comprehensions}
 
 The PLT Scheme iteration forms are based on SRFI-42
 @cite[#:key "srfi-42"
@@ -28,7 +28,7 @@ In the simple case, each @scheme[for-clause] has one of its first two
 forms, where @scheme[[id seq-expr]] is a shorthand for @scheme[[(id
 ...) seq-expr]].  In this simple case, the @scheme[seq-expr]s are
 evaluated left-to-right, and each must produce a sequence value (see
-@secref["mz:sequences"]).
+@secref["sequences"]).
 
 The @scheme[for] form iterates by drawing an element from each
 sequence; if any sequence is empty, then the iteration stops, and

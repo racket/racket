@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:port-buffers"]{Port Buffers and Positions}
+@title[#:tag "port-buffers"]{Port Buffers and Positions}
 
 Some ports---especially those that read from and write to files---are
 internally buffered:
@@ -52,7 +52,7 @@ the default port read handler (see @scheme[port-read-handler]).
 
 @index['("ports" "flushing")]{Forces} all buffered data in the given
 output port to be physically written. Only @tech{file-stream ports},
-TCP ports, and custom ports (see @secref["mz:customport"]) use
+TCP ports, and custom ports (see @secref["customport"]) use
 buffers; when called on a port without a buffer, @scheme[flush-output]
 has no effect.}
 
@@ -61,8 +61,8 @@ has no effect.}
 
 Gets or sets the buffer mode for @scheme[port], if
 possible. @tech{File-stream ports} support setting the buffer mode,
-TCP ports (see @secref["mz:networking"]) support setting and getting
-the buffer mode, and custom ports (see @secref["mz:customport"]) may
+TCP ports (see @secref["networking"]) support setting and getting
+the buffer mode, and custom ports (see @secref["customport"]) may
 support getting and setting buffer modes.
 
 If @scheme[mode] is provided, it must be one of
@@ -84,7 +84,7 @@ Returns or sets the current read/write position of @scheme[port].
 Calling @scheme[file-position] without a position on a
 non-file/non-string input port returns the number of bytes that have
 been read from that port if the position is known (see
-@secref["mz:linecol"]), otherwise the @exnraise[exn:fail:filesystem].
+@secref["linecol"]), otherwise the @exnraise[exn:fail:filesystem].
 
 For @tech{file-stream ports} and string ports, the position-setting
 variants sets the read/write position to @scheme[pos] relative to the

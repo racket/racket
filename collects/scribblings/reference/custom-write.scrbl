@@ -9,7 +9,7 @@ Associates a procedure to a structure type to used by the default
 printer to @scheme[display] or @scheme[write] (or @scheme[print])
 instances of the structure type.
 
-@moreref["mz:structprops"]{structure type properties}
+@moreref["structprops"]{structure type properties}
 
 The procedure for a @scheme[prop:custom-write] value takes three
 arguments: the structure to be printed, the target port, and a boolean

@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:pathutils" #:style 'toc]{Paths}
+@title[#:tag "pathutils" #:style 'toc]{Paths}
 
 When a Scheme procedure takes a filesystem path as an argument, the
 path can be provided either as a string or as an instance of the
@@ -33,8 +33,8 @@ the path before using it. Procedures that build paths or merely check
 the form of a path do not perform this expansion, with the exception
 of @scheme[simplify-path] for Windows paths.  For more information
 about path expansion and other platform-specific details, see
-@secref["mz:unixpaths"] for @|AllUnix| paths and
-@secref["mz:windowspaths"] for Windows paths.
+@secref["unixpaths"] for @|AllUnix| paths and
+@secref["windowspaths"] for Windows paths.
 
 @;------------------------------------------------------------------------
 @section{Manipulating Paths}
@@ -96,7 +96,7 @@ information.
 Furthermore, for display and sorting based on individual path elements
 (such as pathless file names), use @scheme[path-element->string],
 instead, to avoid special encodings use to represent some relative
-paths. See @secref["mz:windowspaths"] for specific information about
+paths. See @secref["windowspaths"] for specific information about
 the conversion of Windows paths.}
 
 @defproc[(path->bytes [path path?]) bytes?]{
@@ -119,9 +119,9 @@ individual path elements.}
 
 Like @scheme[string->path], except that @scheme[str] corresponds to a
 single relative element in a path, and it is encoded as necessary to
-convert it to a path. See @secref["mz:unixpaths"] for more information
+convert it to a path. See @secref["unixpaths"] for more information
 on the conversion for @|AllUnix| paths, and see
-@secref["mz:windowspaths"] for more information on the conversion for
+@secref["windowspaths"] for more information on the conversion for
 Windows paths.
 
 If @scheme[str] does not correspond to any path element
@@ -151,8 +151,8 @@ elements is necessary.}
 @defproc[(path-element->string [path path?]) string?]{
 
 Like @scheme[path->string], except any encoding prefix is removed. See
-@secref["mz:unixpaths"] for more information on the conversion for
-@|AllUnix| paths, and see @secref["mz:windowspaths"] for more
+@secref["unixpaths"] for more information on the conversion for
+@|AllUnix| paths, and see @secref["windowspaths"] for more
 information on the conversion for Windows paths.
 In addition, trailing path separators are removed, as by
 @scheme[split-path].
@@ -235,8 +235,8 @@ is empty or contains a nul character), the
 The @scheme[build-path] procedure builds a path @italic{without}
 checking the validity of the path or accessing the filesystem.
 
-See @secref["mz:unixpaths"] for more information on the construction
-of @|AllUnix| paths, and see @secref["mz:windowspaths"] for more
+See @secref["unixpaths"] for more information on the construction
+of @|AllUnix| paths, and see @secref["windowspaths"] for more
 information on the construction of Windows paths.
 
 The following examples assume that the current directory is
@@ -390,8 +390,8 @@ true, but the source or expanded path might be a non-existent path. If
 still involve a cycle of links if the cycle did not inhibit the
 simplification).
 
-See @secref["mz:unixpaths"] for more information on simplifying
-@|AllUnix| paths, and see @secref["mz:windowspaths"] for more
+See @secref["unixpaths"] for more information on simplifying
+@|AllUnix| paths, and see @secref["windowspaths"] for more
 information on simplifying Windows paths.}
  
 
@@ -460,8 +460,8 @@ platform, and resulting paths for the same platform.
 
 This procedure does not access the filesystem.
 
-See @secref["mz:unixpaths"] for more information on splitting
-@|AllUnix| paths, and see @secref["mz:windowspaths"] for more
+See @secref["unixpaths"] for more information on splitting
+@|AllUnix| paths, and see @secref["windowspaths"] for more
 information on splitting Windows paths.}
 
 

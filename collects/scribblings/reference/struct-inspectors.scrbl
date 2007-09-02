@@ -1,12 +1,12 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:inspectors"]{Structure Inspectors}
+@title[#:tag "inspectors"]{Structure Inspectors}
 
 An @deftech{inspector} provides access to structure fields and
 structure type information without the normal field accessors and
 mutators. (Inspectors are also used to control access to module
-bindings; see @secref["mz:modprotect"].) Inspectors are primarily
+bindings; see @secref["modprotect"].) Inspectors are primarily
 intended for use by debuggers.
 
 When a structure type is created, an inspector can be supplied. The
@@ -18,7 +18,7 @@ opaque to ``peer'' code that cannot access the parent inspector.
 The @scheme[current-inspector] @tech{parameter} determines a default
 inspector argument for new structure types. An alternate inspector can
 be provided though the @scheme[#:inspector] option of the
-@scheme[define-struct] form (see @secref["mz:define-struct"]), or
+@scheme[define-struct] form (see @secref["define-struct"]), or
 through an optional @scheme[inspector] argument to
 @scheme[make-struct-type].
 
@@ -138,5 +138,5 @@ regexp values, and ports have names. The name of a procedure, struct,
 struct type, or struct type property is always a symbol. The name of a
 regexp value is a string, and a byte-regexp value's name is a byte
 string. The name of a port is typically a path or a string, but it can
-be arbitrary. See also @secref["mz:infernames"].}
+be arbitrary. See also @secref["infernames"].}
 

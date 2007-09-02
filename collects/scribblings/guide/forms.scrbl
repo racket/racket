@@ -12,7 +12,7 @@ additional basic forms.
 
 @local-table-of-contents[]
 
-@section[#:tag "guide:syntax-notation"]{Notation}
+@section[#:tag "syntax-notation"]{Notation}
 
 This chapter (and the rest of the documentation) uses a slightly
 different notation than the character-based grammars of the
@@ -42,7 +42,7 @@ convention implicitly defines the meaning of many meta-variables:
        sub-form; it will be parsed as either a local definition or an
        expression. A @scheme[_body] can parse as a definition only if
        it is not preceded by any expression, and the last
-       @scheme[_body] must be an expression; see also @secref["guide:intdefs"].}
+       @scheme[_body] must be an expression; see also @secref["intdefs"].}
 
 }
 

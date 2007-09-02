@@ -2,6 +2,7 @@
 @require[(all-except "mz.ss" link)]
 @require[(lib "unit.ss")]
 @require-for-syntax[mzscheme]
+@require-for-label[(lib "unit.ss")]
 
 @begin[
 (define-syntax defkeywords
@@ -22,6 +23,8 @@
 
 @title[#:tag "mzlib:unit" #:style 'toc]{Units}
 
+@declare-exporting[big (lib "big/unit")]
+
 @local-table-of-contents[]
 
 @deftech{Units} are used to organize a program into separately
@@ -41,7 +44,7 @@ from the linked units for further linking.
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mz:creatingunits"]{Creating Units}
+@section[#:tag "creatingunits"]{Creating Units}
 
 @defform/subs[
 #:literals (import export prefix rename only except tag init-depend tag)
@@ -226,7 +229,7 @@ This form is allowed only within @scheme[define-signature].}
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mz:invokingunits"]{Invoking Units}
+@section[#:tag "invokingunits"]{Invoking Units}
 
 @defform*[#:literals (import)
           [(invoke-unit unit-expr)
@@ -274,7 +277,7 @@ definition is generated for the context of the
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mz:compoundunits"]{Linking Units and Creating Compound Units}
+@section[#:tag "compoundunits"]{Linking Units and Creating Compound Units}
 
 @defform/subs[
 #:literals (: import export link tag)
@@ -351,7 +354,7 @@ evaluated.}
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mz:linkinference"]{Inferred Linking}
+@section[#:tag "linkinference"]{Inferred Linking}
 
 @defform[
 #:literals (import export)
@@ -569,7 +572,7 @@ Like @scheme[unit/new-import-export], but binds static information to
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mz:define-sig-form"]{Extending the Syntax of Signatures}
+@section[#:tag "define-sig-form"]{Extending the Syntax of Signatures}
 
 @defform*[
 [(define-signature-form sig-form-id expr)

@@ -9,31 +9,31 @@
         @elem[what]
         iteration when it appears directly in a @scheme[for] clause.}])]
 
-@title[#:tag "mz:sequences"]{Sequences}
+@title[#:tag "sequences"]{Sequences}
 
-@guideintro["guide:sequences"]{sequences}
+@guideintro["sequences"]{sequences}
 
 A @pidefterm{sequence} encapsulates an ordered stream of values. The
 elements of a sequence can be extracted with one of the @scheme[for]
 syntactic forms or with the procedures returned by
-@scheme[generate-sequence].
+@scheme[sequence-generate].
 
 The sequence datatype overlaps with many other datatypes. Among
 built-in datatypes, the sequence datatype includes the following:
 
 @itemize{
 
- @item{lists (see @secref["mz:pairs"])}
+ @item{lists (see @secref["pairs"])}
 
- @item{vectors (see @secref["mz:vectors"])}
+ @item{vectors (see @secref["vectors"])}
 
- @item{hash tables (see @secref["mz:hashtables"])}
+ @item{hash tables (see @secref["hashtables"])}
 
- @item{strings (see @secref["mz:strings"])}
+ @item{strings (see @secref["strings"])}
 
- @item{byte strings (see @secref["mz:bytestrings"])}
+ @item{byte strings (see @secref["bytestrings"])}
 
- @item{input ports (see @secref["mz:ports"])}
+ @item{input ports (see @secref["ports"])}
 
 }
 
@@ -179,7 +179,7 @@ The @scheme[thunk] results define the generated elements as follows:
 
 @section{Sequence Generators}
 
-@defproc[(generate-sequence [seq sequence?]) (values (-> boolean?)
+@defproc[(sequence-generate [seq sequence?]) (values (-> boolean?)
                                                      (-> any))]{
 Returns two thunks to extract elements from the sequence. The first
 returns @scheme[#t] if more values are available for the sequence. The

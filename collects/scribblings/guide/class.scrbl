@@ -95,7 +95,7 @@ avoid imperative assignment. The relative order of method declarations
 makes no difference for evaluation, because methods are fully defined
 before a class is instantiated.
 
-@section[#:tag "guide:methods"]{Methods}
+@section[#:tag "methods"]{Methods}
 
 Each of the three @scheme[define/public] declarations in
 @scheme[fish%] introduces a new method. The declaration uses the same
@@ -196,7 +196,7 @@ overridden method via a @scheme[super] call. For example, the
 @scheme[grow] implementation in @scheme[picky-fish%] uses
 @scheme[super] to delegate to the superclass implementation.
 
-@section[#:tag "guide:initargs"]{Initialization Arguments}
+@section[#:tag "initargs"]{Initialization Arguments}
 
 Since @scheme[picky-fish%] declares no initialization arguments, any
 initialization values supplied in @scheme[(new picky-fish% ...)]  are
@@ -235,7 +235,7 @@ In this example, the @scheme[super-new] call propagates its own
 @scheme[size] value as the @scheme[size] initialization argument to
 the superclass.
 
-@section[#:tag "guide:intnames"]{Internal and External Names}
+@section[#:tag "intnames"]{Internal and External Names}
 
 The two uses of @scheme[size] in @scheme[default-10-fish%] expose the
 double life of class-member identifiers. When @scheme[size] is the
@@ -298,7 +298,7 @@ checks whether the object's class implements the interface. In
 addition, the @scheme[implementation?]  predicate checks whether a
 given class implements a given interface.
 
-@section[#:tag "guide:inner"]{Final, Augment, and Inner}
+@section[#:tag "inner"]{Final, Augment, and Inner}
 
 As in Java, a method in a @scheme[class] form can be specified as
 @defterm{final}, which means that a subclass cannot override the
@@ -324,9 +324,9 @@ and makes the overriding implementation augmentable. Our earlier
 work~\cite{Super+Inner} motivates and explains these extensions and
 their interleaving.
 
-@section[#:tag "guide:extnames"]{Controlling the Scope of External Names}
+@section[#:tag "extnames"]{Controlling the Scope of External Names}
 
-As noted in @secref["guide:intnames"], class members have both
+As noted in @secref["intnames"], class members have both
 internal and external names. A member definition binds an internal
 name locally, and this binding can be locally renamed.  External
 names, in contrast, have global scope by default, and a member

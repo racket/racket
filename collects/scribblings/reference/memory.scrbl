@@ -1,21 +1,21 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:memory" #:style 'toc]{Memory Management}
+@title[#:tag "memory" #:style 'toc]{Memory Management}
 
 @local-table-of-contents[]
 
-@section[#:tag "mz:weakbox"]{Weak Boxes}
+@section[#:tag "weakbox"]{Weak Boxes}
 
 A @deftech{weak box} is similar to a normal box (see
-@secref["mz:boxes"]), but when the garbage collector (see
-@secref["mz:gc-model"]) can prove that the content value of a weak box
+@secref["boxes"]), but when the garbage collector (see
+@secref["gc-model"]) can prove that the content value of a weak box
 is only reachable via weak references, the content of the weak box is
 replaced with @scheme[#f]. A @deftech{weak reference} is a reference
 through a weak box, through a key reference in a weak hash table (see
-@secref["mz:hashtables"]), through a value in an ephemeron where the
-value can be replaced by @scheme[#f] (see @secref["mz:ephemerons"]), or
-through a custodian (see @secref["mz:custodians"]).
+@secref["hashtables"]), through a value in an ephemeron where the
+value can be replaced by @scheme[#f] (see @secref["ephemerons"]), or
+through a custodian (see @secref["custodians"]).
 
 @defproc[(make-weak-box [v any/c]) weak-box?]{
 
@@ -34,10 +34,10 @@ collector has proven that the previous content value of
 Returns @scheme[#t] if @scheme[v] is a weak box, @scheme[#f] otherwise.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:ephemerons"]{Ephemerons}
+@section[#:tag "ephemerons"]{Ephemerons}
 
 An @deftech{ephemeron} is similar to a weak box (see
-@secref["mz:weakbox"]), except that
+@secref["weakbox"]), except that
 
 @itemize{
 
@@ -45,19 +45,19 @@ An @deftech{ephemeron} is similar to a weak box (see
  extracted from the ephemeron, but the value is replaced
  by @scheme[#f] when the automatic memory manager can prove that
  either the ephemeron or the key is reachable only through weak
- references (see @secref["mz:weakbox"]); and}
+ references (see @secref["weakbox"]); and}
 
  @item{nothing reachable from the value in an ephemeron counts toward
  the reachability of an ephemeron key (whether for the same ephemeron
  or another), unless the same value is reachable through a non-weak
  reference, or unless the value's ephemeron key is reachable through a
- non-weak reference (see @secref["mz:weakbox"] for information on weak
+ non-weak reference (see @secref["weakbox"] for information on weak
  references).}
 
 }
 
 In particular, an ephemeron can be combined with a weak hash table
-(see @secref["mz:hashtables"]) to produce a mapping where the memory
+(see @secref["hashtables"]) to produce a mapping where the memory
 manager can reclaim key--value pairs even when the value refers to the
 key.
 
@@ -81,13 +81,13 @@ Returns @scheme[#t] if @scheme[v] is an @tech{ephemeron}, @scheme[#f]
 otherwise.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:willexecutor"]{Wills and Executors}
+@section[#:tag "willexecutor"]{Wills and Executors}
 
 A @deftech{will executor} manages a collection of values and
 associated @deftech{will} procedures. The will procedure for each
 value is ready to be executed when the value has been proven (by the
 garbage collector) to be unreachable, except through weak references
-(see @secref["mz:weakbox"]) or as the registrant for other will
+(see @secref["weakbox"]) or as the registrant for other will
 executors. A @tech{will} is useful for triggering clean-up actions on
 data associated with an unreachable value, such as closing a port
 embedded in an object when the object is no longer used.
@@ -110,7 +110,7 @@ the values are reachable from each other.
 
 A will executor's register is held non-weakly until after the
 corresponding will procedure is executed. Thus, if the content value
-of a weak box (see @secref["mz:weakbox"]) is registered with a will
+of a weak box (see @secref["weakbox"]) is registered with a will
 executor, the weak box's content is not changed to @scheme[#f] until
 all wills have been executed for the value and the value has been
 proven again reachable through only weak references.
@@ -153,7 +153,7 @@ Like @scheme[will-execute] if a will is ready for immediate
 execution. Otherwise, @scheme[#f] is returned.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:garbagecollection"]{Garbage Collection}
+@section[#:tag "garbagecollection"]{Garbage Collection}
 
 @defproc[(collect-garbage) void?]{
 

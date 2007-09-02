@@ -3,12 +3,12 @@
 
 @require-for-syntax[mzscheme]
 
-@title[#:tag "mz:stxcerts"]{Syntax Certificates}
+@title[#:tag "stxcerts"]{Syntax Certificates}
 
 A @deftech{syntax certificate} combines a @tech{syntax mark} (see
-@secref["mz:transformer-model"]), a @tech{module path index} or symbol
-module name (see @secref["mz:modpathidx"]), an @tech{inspector} (see
-@secref["mz:modprotect"]), and an arbitrary key object. A certificate
+@secref["transformer-model"]), a @tech{module path index} or symbol
+module name (see @secref["modpathidx"]), an @tech{inspector} (see
+@secref["modprotect"]), and an arbitrary key object. A certificate
 is attached as either an @deftech{active certificate} or an
 @deftech{inactive certificate}.
 
@@ -26,20 +26,20 @@ The expander generates a certificate when it applies a syntax
 transformer. The @tech{syntax mark} in the certificate is fresh, the
 certificate's module reference corresponds to the module that defined
 the @tech{transformer binding}, the inspector is the inspector for the
-module's declaration (see @secref["mz:modprotect"]), and the key
+module's declaration (see @secref["modprotect"]), and the key
 object is hidden. (Applying the result of
 @scheme[syntax-local-certifier] can introduce certificates with other
 keys.) The certificate's mark is applied to both the input and output
 of the syntax transformer, so that it identifies every piece of syntax
 that was introduced by the transformer (see
-@secref["mz:transformer-model"]). The expander attaches this
+@secref["transformer-model"]). The expander attaches this
 certificate to parts of the transformer's result, depending on the
 shape and properties of the result:
 
 @itemize{
 
  @item{If the result has a @indexed-scheme['certify-mode] property
-          (see @secref["mz:stxprops"]) that is
+          (see @secref["stxprops"]) that is
           @indexed-scheme['opaque], then the certificate is attached
           to the immediate syntax object.}
 
@@ -94,7 +94,7 @@ expansion context:
    some mark, the identifier's enclosing expressions include a
    certificate with the mark, the identifier's binding module, and
    with an inspector that controls the module's invocation (as opposed
-   to the module's declaration; see again @secref["mz:modprotect"]),
+   to the module's declaration; see again @secref["modprotect"]),
    then the access is allowed. To check access to a protected
    identifier, only the certificate's mark and inspector are used
    (i.e., the module that bound the transformer is irrelevant, as long

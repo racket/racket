@@ -67,7 +67,7 @@
       (when dir 
         (make-directory* dir))
 
-      (let ([renderer (new ((current-render-mixin) render% )
+      (let ([renderer (new ((current-render-mixin) render%)
                            [dest-dir dir])])
         (let* ([fns (map (lambda (fn)
                            (let-values ([(base name dir?) (split-path fn)])
@@ -82,8 +82,15 @@
                                  [files (reverse (current-info-input-files))])
                         (if (null? files)
                             info
-                            (loop (send renderer load-info (car files) info)
+                            (loop (let ([s (with-input-from-file (car files) read)])
+                                    (send renderer deserialize-info s info)
+                                    info)
                                   (cdr files))))])
-            (send renderer render docs fns info))
-          (when (current-info-output-file)
-            (send renderer save-info (current-info-output-file) info)))))))
+            (let ([r-info (send renderer resolve docs fns info)])
+              (send renderer render docs fns r-info)
+              (when (current-info-output-file)
+                (let ([s (send renderer serialize-info r-info)])
+                  (with-output-to-file (current-info-output-file)
+                    (lambda ()
+                      (write s))
+                    'truncate/replace))))))))))

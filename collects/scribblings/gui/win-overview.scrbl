@@ -3,7 +3,7 @@
 @require["common.ss"]
 @require["diagrams.ss"]
 
-@title[#:tag "mr:windowing-overview"]{Windowing}
+@title[#:tag "windowing-overview"]{Windowing}
 
 @section{Basic GUI Building Blocks}
 
@@ -18,7 +18,7 @@ MrEd's windowing toolbox provides the basic building blocks of GUI
 (define frame (new frame% [label "Example"]))
  
 (code:comment #, @t{Show the frame by calling its @method[top-level-window<%> show] method})
-(send frame top-level-window::show #t)
+(send frame #,(:: top-level-window<%> show) #t)
 ]
 
 The built-in classes provide various mechanisms for handling GUI
@@ -103,7 +103,7 @@ The system dispatches GUI events sequentially; that is, after invoking
 After the user clicks @onscreen{Pause}, the entire frame becomes
  unresponsive for five seconds; the system cannot dispatch more events
  until the call to @scheme[sleep] returns. For more information about
- event dispatching, see @secref["mr:eventspaceinfo"].
+ event dispatching, see @secref["eventspaceinfo"].
 
 In addition to dispatching events, the GUI classes also handle the
  graphical layout of windows. Our example frame demonstrates a simple
@@ -128,7 +128,7 @@ In addition to dispatching events, the GUI classes also handle the
 ]
 
 For more information about window layout and containers, see
- @secref["mr:containeroverview"].
+ @secref["containeroverview"].
 
 @section{Core Windowing Classes}
 
@@ -180,7 +180,7 @@ The fundamental graphical element in MrEd's windowing toolbox is an
  @item{@scheme[editor-canvas%] --- an @deftech{editor canvas} is a
  subwindow for displaying a text editor or pasteboard editor. The
  @scheme[editor-canvas%] class is documented with the editor classes
- in @secref["mr:editor-overview"].}
+ in @secref["editor-overview"].}
 
  @item{@deftech{Controls} --- containees that the user can manipulate:
 
@@ -318,7 +318,7 @@ system:
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mr:containeroverview"]{Geometry Management}
+@section[#:tag "containeroverview"]{Geometry Management}
 
 MrEd's geometry management makes it easy to design windows that look
  right on all platforms, despite different graphical representations
@@ -385,15 +385,15 @@ As the example demonstrates, a stretchable container grows to fill its
 
 The following subsections describe the container system in detail,
  first discussing the attributes of a containee in
- @secref["mr:containees"], and then describing
+ @secref["containees"], and then describing
  the attributes of a container in
- @secref["mr:containers"]. In addition to the
+ @secref["containers"]. In addition to the
  built-in vertical and horizontal containers, programmers can define
  new types of containers as discussed in the final subsection,
- @secref["mr:new-containers"].
+ @secref["new-containers"].
 
 
-@subsection[#:tag "mr:containees"]{Containees}
+@subsection[#:tag "containees"]{Containees}
 
 Each @tech{containee}, or child, has the following properties:
 
@@ -414,7 +414,7 @@ A @tech{container} arranges its children based on these four
  container is specified when the @tech{containee} is created, and the
  parent cannot be changed. However, a @tech{containee} can be
  @tech{hidden} or @tech{deleted} within its parent, as described in
- @secref["mr:containers"].
+ @secref["containers"].
 
 The @deftech{graphical minimum size} of a particular containee, as
  reported by @method[area<%> get-graphical-min-size], depends on the
@@ -462,7 +462,7 @@ In practice, the @tech{requested minimum size} and @tech{margin} of a
  containee, depending on the visual effect desired by the programmer.
 
 
-@subsection[#:tag "mr:containers"]{Containers}
+@subsection[#:tag "containers"]{Containers}
 
 A container has the following properties:
 
@@ -573,7 +573,7 @@ The alignment specification for a container determines how it
  the container. A container's alignment is changed with the
  @method[area-container<%> set-alignment] method.
 
-@subsection[#:tag "mr:new-containers"]{Defining New Types of Containers}
+@subsection[#:tag "new-containers"]{Defining New Types of Containers}
 
 Although nested horizontal and vertical containers can express most
  layout patterns, a programmer can define a new type of container with
@@ -613,7 +613,7 @@ The widths and heights for both the input and output include the
  placing the control.
 
 
-@section[#:tag "mr:mouseandkey"]{Mouse and Keyboard Events}
+@section[#:tag "mouseandkey"]{Mouse and Keyboard Events}
 
 Whenever the user moves the mouse, clicks or releases a mouse button,
  or presses a key on the keyboard, an event is generated for some
@@ -698,7 +698,7 @@ Controls, such as buttons and list boxes, handle keyboard and mouse
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mr:eventspaceinfo"]{Event Dispatching and Eventspaces}
+@section[#:tag "eventspaceinfo"]{Event Dispatching and Eventspaces}
 
 @section-index["events" "dispatching"]
 
@@ -754,12 +754,12 @@ In MrEd, an @deftech{eventspace} is a context for processing GUI
 
 @index['("dialogs" "modal")]{When} a frame or dialog is created
  without a parent, it is associated with the @tech{current eventspace}
- as described in @secref["mr:currenteventspace"].  Events for a
+ as described in @secref["currenteventspace"].  Events for a
  top-level window and its descendants are always dispatched in the
  window's eventspace.  Every dialog is modal; a dialog's
  @method[dialog% show] method implicitly calls @scheme[yield] to
  handle events while the dialog is shown. (See also
- @secref["mr:espacethreads"] for information about threads and modal
+ @secref["espacethreads"] for information about threads and modal
  dialogs.) Furthermore, when a modal dialog is shown, the system
  disables all other top-level windows in the dialog's eventspace, but
  windows in other eventspaces are unaffected by the modal dialog.
@@ -783,7 +783,7 @@ In addition to events corresponding to user and windowing actions,
  call the timer's @method[timer% notify] method. Like a top-level
  window, each timer is associated with a particular eventspace (the
  @tech{current eventspace} as described in
- @secref["mr:currenteventspace"]) when it is created, and the timer
+ @secref["currenteventspace"]) when it is created, and the timer
  queues the event in its eventspace.
 
 @deftech{Explicitly queued events} are created with
@@ -817,10 +817,10 @@ Although a programmer has no direct control over the order in which
  dispatches by setting the event dispatch handler via the
  @scheme[event-dispatch-handler] parameter. This parameter and other
  eventspace procedures are described in more detail in
- @secref["mr:eventspace-funcs"].
+ @secref["eventspace-funcs"].
 
 
-@subsection[#:tag "mr:espacethreads"]{Eventspaces and Threads}
+@subsection[#:tag "espacethreads"]{Eventspaces and Threads}
 
 When a new eventspace is created, a corresponding @deftech{handler
  thread} is created for the eventspace. When the system dispatches an
@@ -840,7 +840,7 @@ When a handler thread shows a dialog, the dialog's @method[dialog%
  @scheme[semaphore-wait].
 
 
-@subsection[#:tag "mr:currenteventspace"]{Creating and Setting the Eventspace}
+@subsection[#:tag "currenteventspace"]{Creating and Setting the Eventspace}
 
 Whenever a frame, dialog, or timer is created, it is associated with
  the @deftech{current eventspace} as determined by the
@@ -858,23 +858,24 @@ The @scheme[make-eventspace] procedure creates a new
 ]
 
 When an eventspace is created, it is placed under the management of
- the @tech{current custodian}. When a custodian shuts down an
- eventspace, all frames and dialogs associated with the eventspace are
- destroyed (without calling @method[top-level-window<%> can-close?]
- or @xmethod[top-level-window<%> on-close]), all timers in the
- eventspace are stopped, and all enqueued callbacks are removed.
- Attempting to create a new window, timer, or explicitly queued event
- in a shut-down eventspace raises the @scheme[exn:misc] exception.
+ the @tech[#:doc reference-doc]{current custodian}. When a custodian
+ shuts down an eventspace, all frames and dialogs associated with the
+ eventspace are destroyed (without calling @method[top-level-window<%>
+ can-close?]  or @xmethod[top-level-window<%> on-close]), all timers
+ in the eventspace are stopped, and all enqueued callbacks are
+ removed.  Attempting to create a new window, timer, or explicitly
+ queued event in a shut-down eventspace raises the @scheme[exn:misc]
+ exception.
 
-An eventspace is a @techlink{synchronizable event} (not to be confused
- with a GUI event), so it can be used with @scheme[sync]. As a
- synchronizable event, an eventspace is in a blocking state when a
- frame is visible, a timer is active, a callback is queued, or a
- @scheme[menu-bar%] is created with a @scheme['root] parent. (Note
- that the blocking state of an eventspace is unrelated to whether an
- event is ready for dispatching.)
+An eventspace is a @techlink[#:doc reference-doc]{synchronizable
+ event} (not to be confused with a GUI event), so it can be used with
+ @scheme[sync]. As a synchronizable event, an eventspace is in a
+ blocking state when a frame is visible, a timer is active, a callback
+ is queued, or a @scheme[menu-bar%] is created with a @scheme['root]
+ parent. (Note that the blocking state of an eventspace is unrelated
+ to whether an event is ready for dispatching.)
 
-@subsection[#:tag "mr:evtcontjump"]{Exceptions and Continuation Jumps}
+@subsection[#:tag "evtcontjump"]{Exceptions and Continuation Jumps}
 
 Whenever the system dispatches an event, the call to the handler
  procedure is wrapped so that full continuation jumps are not allowed

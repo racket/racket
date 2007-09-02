@@ -1,9 +1,10 @@
-(module scheme mzscheme
+(module scheme (lib "lang.ss" "big")
   (require "struct.ss"
            "basic.ss"
            (lib "class.ss")
            (lib "for.ss")
-           (lib "modcollapse.ss" "syntax"))
+           (lib "main-collects.ss" "setup")
+           (lib "modresolve.ss" "syntax"))
 
   (provide define-code
            to-element
@@ -33,13 +34,7 @@
   (define opt-color "schemeopt")
 
   (define current-keyword-list 
-    ;; This is temporary, until the MzScheme manual is filled in...
-    (make-parameter null #;'(require 
-                      provide
-                      new send else => and or
-                      define-syntax syntax-rules define-struct
-                      quasiquote unquote unquote-splicing
-                      syntax quasisyntax unsyntax unsyntax-splicing)))
+    (make-parameter null))
   (define current-variable-list 
     (make-parameter null))
   (define current-meta-list 
@@ -51,7 +46,76 @@
 
   (define-struct spaces (pre cnt post))
 
-  (define (typeset c multi-line? prefix1 prefix suffix color?)
+  (define (literalize-spaces i)
+    (let ([m (regexp-match-positions #rx"  +" i)])
+      (if m
+          (make-spaces (literalize-spaces (substring i 0 (caar m)))
+                       (- (cdar m) (caar m))
+                       (literalize-spaces (substring i (cdar m))))
+          i)))
+
+  (define (typeset-atom c out color? quote-depth)
+    (let-values ([(s it? sub?)
+                  (let ([c (syntax-e c)])
+                    (let ([s (format "~s" c)])
+                      (if (and (symbol? c)
+                               ((string-length s) . > . 1)
+                               (char=? (string-ref s 0) #\_))
+                          (values (substring s 1) #t #f)
+                          (values s #f #f))))]
+                 [(is-var?) (and (identifier? c)
+                                 (memq (syntax-e c) (current-variable-list)))])
+      (if (or (element? (syntax-e c))
+              (delayed-element? (syntax-e c)))
+          (out (syntax-e c) #f)
+          (out (if (and (identifier? c)
+                        color?
+                        (quote-depth . <= . 0)
+                        (not (or it? is-var?)))
+                   (let ([tag (register-scheme c)])
+                     (if tag
+                         (make-delayed-element
+                          (lambda (renderer sec ri)
+                            (let* ([vtag `(def ,tag)]
+                                   [stag `(form ,tag)]
+                                   [sd (resolve-get sec ri stag)])
+                              (list
+                               (cond
+                                [sd 
+                                 (make-link-element "schemesyntaxlink" (list s) stag)]
+                                [else
+                                 (make-link-element "schemevaluelink" (list s) vtag)]))))
+                          (lambda () s)
+                          (lambda () s))
+                         s))
+                   (literalize-spaces s))
+               (cond
+                [(positive? quote-depth) value-color]
+                [(let ([v (syntax-e c)])
+                   (or (number? v)
+                       (string? v)
+                       (bytes? v)
+                       (char? v)
+                       (regexp? v)
+                       (byte-regexp? v)
+                       (boolean? v)))
+                 value-color]
+                [(identifier? c) 
+                 (cond
+                  [is-var?
+                   variable-color]
+                  [(and (identifier? c)
+                        (memq (syntax-e c) (current-keyword-list)))
+                   keyword-color]
+                  [(and (identifier? c)
+                        (memq (syntax-e c) (current-meta-list)))
+                   meta-color]
+                  [it? variable-color]
+                  [else symbol-color])]
+                [else paren-color])
+               (string-length s)))))
+
+  (define (gen-typeset c multi-line? prefix1 prefix suffix color?)
     (let* ([c (syntax-ize c 0)]
            [content null]
            [docs null]
@@ -80,6 +144,10 @@
                         [(and (element? v)
                               (= 1 (length (element-content v))))
                          (sz-loop (car (element-content v)))]
+                        [(element? v)
+                         (element-width v)]
+                        [(delayed-element? v)
+                         (element-width v)]
                         [(spaces? v)
                          (+ (sz-loop (spaces-pre v))
                             (spaces-cnt v)
@@ -176,13 +244,6 @@
                                                       c)
                                 (loop (cdr l)
                                       (cons (car l) prev))))]))))))
-      (define (literalize-spaces i)
-        (let ([m (regexp-match-positions #rx"  +" i)])
-          (if m
-              (make-spaces (literalize-spaces (substring i 0 (caar m)))
-                           (- (cdar m) (caar m))
-                           (literalize-spaces (substring i (cdar m))))
-              i)))
       (define (no-fancy-chars s)
         (cond
          [(eq? s 'rsquo) "'"]
@@ -359,65 +420,10 @@
                 (set! src-col (+ orig-col (syntax-span c)))))]
            [else
             (advance c init-line!)
-            (let-values ([(s it? sub?)
-                          (let ([c (syntax-e c)])
-                            (let ([s (format "~s" c)])
-                              (if (and (symbol? c)
-                                       ((string-length s) . > . 1)
-                                       (char=? (string-ref s 0) #\_))
-                                  (values (substring s 1) #t #f)
-                                  (values s #f #f))))]
-                         [(is-var?) (and (identifier? c)
-                                         (memq (syntax-e c) (current-variable-list)))])
-              (if (element? (syntax-e c))
-                  (out (syntax-e c) #f)
-                  (out (if (and (identifier? c)
-                                color?
-                                (quote-depth . <= . 0)
-                                (not (or it? is-var?)))
-                           (make-delayed-element
-                            (lambda (renderer sec ht)
-                              (let* ([vtag (register-scheme-definition c)]
-                                     [stag (register-scheme-form-definition c)]
-                                     [vd (hash-table-get ht vtag #f)]
-                                     [sd (hash-table-get ht stag #f)])
-                                (list
-                                 (cond
-                                  [sd 
-                                   (make-link-element "schemesyntaxlink" (list s) stag)]
-                                  [vd
-                                   (make-link-element "schemevaluelink" (list s) vtag)]
-                                  [else s]))))
-                            (lambda () s)
-                            (lambda () s))
-                           (literalize-spaces s))
-                       (cond
-                        [(positive? quote-depth) value-color]
-                        [(or (number? (syntax-e c))
-                             (string? (syntax-e c))
-                             (bytes? (syntax-e c))
-                             (char? (syntax-e c))
-                             (regexp? (syntax-e c))
-                             (byte-regexp? (syntax-e c))
-                             (boolean? (syntax-e c)))
-                         value-color]
-                        [(identifier? c) 
-                         (cond
-                          [is-var?
-                           variable-color]
-                          [(and (identifier? c)
-                                (memq (syntax-e c) (current-keyword-list)))
-                           keyword-color]
-                          [(and (identifier? c)
-                                (memq (syntax-e c) (current-meta-list)))
-                           meta-color]
-                          [it? variable-color]
-                          [else symbol-color])]
-                        [else paren-color])
-                       (string-length s)))
-              (set! src-col (+ src-col (or (syntax-span c) 1)))
-              #;
-              (hash-table-put! next-col-map src-col dest-col))])))
+            (typeset-atom c out color? quote-depth)
+            (set! src-col (+ src-col (or (syntax-span c) 1)))
+            #;
+            (hash-table-put! next-col-map src-col dest-col)])))
       (out prefix1 #f)
       (set! dest-col 0)
       (hash-table-put! next-col-map init-col dest-col)
@@ -436,6 +442,25 @@
               (make-table "schemeblock" (map list (reverse docs))))
           (make-sized-element #f (reverse content) dest-col))))
 
+  (define (typeset c multi-line? prefix1 prefix suffix color?)
+    (let* ([c (syntax-ize c 0)]
+           [s (syntax-e c)])
+      (if (or multi-line?
+              (eq? 'code:blank s)
+              (pair? s)
+              (vector? s)
+              (box? s)
+              (null? s)
+              (hash-table? s))
+          (gen-typeset c multi-line? prefix1 prefix suffix color?)
+          (typeset-atom c 
+                        (case-lambda 
+                         [(elem color)
+                          (make-sized-element (and color? color) (list elem) (or (syntax-span c) 1))]
+                         [(elem color len)
+                          (make-sized-element (and color? color) (list elem) len)])
+                        color? 0))))
+    
   (define (to-element c)
     (typeset c #f "" "" "" #t))
 
@@ -457,15 +482,15 @@
 	     (cond
 	      [(syntax? v)
 	       (let ([mk `(,#'d->s
-			   (quote-syntax ,v)
+			   (quote-syntax ,(datum->syntax-object v 'defcode))
 			   ,(syntax-case v (uncode)
 			      [(uncode e) #'e]
 			      [else (stx->loc-s-expr (syntax-e v))])
-			   (list 'code
-				 ,(syntax-line v)
-				 ,(syntax-column v)
-				 ,(syntax-position v)
-				 ,(syntax-span v)))])
+			   '(code
+                             ,(syntax-line v)
+                             ,(syntax-column v)
+                             ,(syntax-position v)
+                             ,(syntax-span v)))])
 		 (let ([prop (syntax-property v 'paren-shape)])
 		   (if prop
 		       `(,#'stx-prop ,mk 'paren-shape ,prop)
@@ -484,27 +509,43 @@
 	     [(_ expr) #`(typeset-code #,(cvt #'expr))]
 	     [(_ expr (... ...))
 	      #`(typeset-code #,(cvt #'(code:line expr (... ...))))])))]
+      [(_ code typeset-code uncode d->s)
+       #'(define-code code typeset-code uncode d->s syntax-property)]
       [(_ code typeset-code uncode)
        #'(define-code code typeset-code uncode datum->syntax-object syntax-property)]
       [(_ code typeset-code) #'(define-code code typeset-code unsyntax)]))
 
   
-  (define (register-scheme-definition stx)
+  (define (register-scheme stx [warn-if-no-label? #f])
     (unless (identifier? stx)
       (error 'register-scheme-definition "not an identifier: ~e" (syntax-object->datum stx)))
-    (format "definition:~a" 
-            (let ([b (identifier-binding stx)])
-              (cond
-               [(not b) (format "top:~a" (syntax-e stx))]
-               [(eq? b 'lexical) (format "lexical:~a" (syntax-e stx))]
-               [else (format "module:~a:~a" 
-                             (if (module-path-index? (car b))
-                                 (collapse-module-path-index (car b) '(lib "ack.ss" "scribble"))
-                                 (car b))
-                             (cadr b))]))))
+    (let ([b (identifier-label-binding stx)])
+      (if (or (not b)
+              (eq? b 'lexical))
+          (if warn-if-no-label?
+              (begin
+                (fprintf (current-error-port)
+                         "~a\n"
+                         ;; Call raise-syntax-error to capture error message:
+                         (with-handlers ([exn:fail:syntax? (lambda (exn)
+                                                             (exn-message exn))])
+                           (raise-syntax-error 'WARNING
+                                               "no for-label binding of identifier"
+                                               stx)))
+                (format ":NOLABEL:~a" (syntax-e stx)))
+              #f)
+          (format ":~a:~a" 
+                  (if (module-path-index? (car b))
+                      (let ([p (resolve-module-path-index (car b) #f)])
+                        (path->main-collects-relative p))
+                      (car b))
+                  (cadr b)))))
 
-  (define (register-scheme-form-definition stx)
-    (format "form~s" (register-scheme-definition stx)))
+  (define (register-scheme-definition stx [warn-if-no-label? #f])
+    `(def ,(register-scheme stx warn-if-no-label?)))
+
+  (define (register-scheme-form-definition stx [warn-if-no-label? #f])
+    `(form ,(register-scheme stx warn-if-no-label?)))
 
   (define syntax-ize-hook (make-parameter (lambda (v col) #f)))
 
@@ -551,7 +592,11 @@
                               (just-context-ctx v)))]
      [(and (list? v)
            (pair? v)
-           (memq (car v) '(quote unquote unquote-splicing)))
+           (memq (let ([s (car v)])
+                   (if (just-context? s)
+                       (just-context-val s)
+                       s))
+                 '(quote unquote unquote-splicing)))
       (let ([c (syntax-ize (cadr v) (+ col 1))])
         (datum->syntax-object #f
                               (list (syntax-ize (car v) col)

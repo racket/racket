@@ -3,7 +3,7 @@
 
 @title{Namespaces}
 
-See @secref["mz:namespace-model"] for basic information on the
+See @secref["namespace-model"] for basic information on the
 namespace model.
 
 A new namespace is created with the @scheme[make-namespace] procedure,
@@ -40,6 +40,11 @@ is an option that determines the initial bindings in the namespace:
 }}
 
 
+@defparam[current-namespace n namespace?]{
+
+A parameter that determines the @techlink{current namespace}.}
+
+
 @defproc[(namespace-symbol->identifier [sym symbol?]) identifier?]{
 
 Similar to @scheme[datum->syntax-object] restricted to symbols. The
@@ -60,7 +65,7 @@ depends on @scheme[use-mapping?]:
 
    @item{If @scheme[use-mapping?] is true (the default), and if
    @scheme[sym] maps to a top-level variable or an imported variable
-   (see @secref["mz:namespace-model"]), then the result is the same as
+   (see @secref["namespace-model"]), then the result is the same as
    evaluating @scheme[sym] as an expression. If @scheme[sym] maps to
    syntax or imported syntax, then @scheme[failure-thunk] is called or
    the @exnraise[exn:fail:syntax]. If @scheme[sym] is mapped to an
@@ -94,7 +99,7 @@ Sets the value of @scheme[sym] in the top-level environment of
 it is not already defined.
 
 If @scheme[map?] is supplied as true, then the namespace's identifier
-mapping is also adjusted (see @secref["mz:namespace-model"]) so that
+mapping is also adjusted (see @secref["namespace-model"]) so that
 @scheme[sym] maps to the variable.}
 
 
@@ -104,7 +109,7 @@ mapping is also adjusted (see @secref["mz:namespace-model"]) so that
 
 Removes the @scheme[sym] variable, if any, in the top-level
 environment of @scheme[namespace] at @tech{phase level} 0. The
-namespace's identifier mapping (see @secref["mz:namespace-model"]) is
+namespace's identifier mapping (see @secref["namespace-model"]) is
 unaffected.}
 
  
@@ -151,7 +156,7 @@ value is copied to a top-level variable in the current namespace.}
 
 Like @scheme[namespace-require], but only the transformer part of the
 module is executed; that is, the module is merely @tech{visit}ed, and
-not @tech{instantiate}d (see @secref["mz:mod-parse"]). If the required
+not @tech{instantiate}d (see @secref["mod-parse"]). If the required
 module has not been instantiated before, the module's variables remain
 undefined.}
 
@@ -186,7 +191,7 @@ Changes the inspector for the instance of the module referenced by
 controlled by the current code inspector. The given @scheme[inspector]
 must currently control the invocation of the module in
 @scheme[namespace]'s registry, otherwise the
-@exnraise[exn:fail:contract]. See also @secref["mz:modprotect"].}
+@exnraise[exn:fail:contract]. See also @secref["modprotect"].}
 
 
 @defproc[(namespace-module-registry [namespace namespace?])
@@ -211,7 +216,7 @@ declarations are not allowed.
 If the current code inspector does not control the invocation of the
 module in the current namespace's registry, the
 @exnraise[exn:fail:contract]; see also
-@secref["mz:modprotect"].
+@secref["modprotect"].
 
 Bindings in the namespace cannot be modified if the
 @scheme[compile-enforce-module-constants] parameter was true when the
@@ -223,7 +228,7 @@ assignments to the binding via @scheme[set!].}
 
 Returns a syntax object like @scheme[stx], except that the current
 namespace's bindings are included in the @tech{syntax object}'s
-@tech{lexical information} (see @secref["mz:stxobj-model"]). The
+@tech{lexical information} (see @secref["stxobj-model"]). The
 additional context is overridden by any existing @tech{top-level
 bindings} in the @tech{syntax object}'s @tech{lexical information}, or
 by any existing or future @tech{module bindings} in the @tech{lexical
@@ -241,7 +246,7 @@ corresponds to an unexported definition, a protected export, or an
 identifier that is not defined at all within the module).
 
 The @scheme[module-path-index] argument can be a symbol; see
-@secref["mz:modpathidx"] for more information on module path
+@secref["modpathidx"] for more information on module path
 indices.
 
 Typically, the arguments to @scheme[module-provide-protected?]

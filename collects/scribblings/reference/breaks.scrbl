@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:breakhandler"]{Breaks}
+@title[#:tag "breakhandler"]{Breaks}
 
 @section-index["threads" "breaking"]
 
@@ -72,7 +72,7 @@ internal sub-expressions that can be interrupted by a break.
 In general, it is impossible using only @scheme[semaphore-wait] to
 implement the guarantee that either the semaphore is decremented or an
 exception is raised, but not both.  Scheme therefore supplies
-@scheme[semaphore-wait/enable-break] (see @secref["mz:semaphore"]),
+@scheme[semaphore-wait/enable-break] (see @secref["semaphore"]),
 which does permit the implementation of such an exclusive guarantee:
 
 @schemeblock[
@@ -110,8 +110,8 @@ enabled in while evaluating the @scheme[body]s in sequence. The result
 of the @scheme[parameter-break] expression is the result of the last
 @scheme[expr].
 
-Like @scheme[parameterize] (see @secref["mz:parameters"]), a fresh
-@tech{thread cell} (see @secref["mz:threadcells"]) is allocated to
+Like @scheme[parameterize] (see @secref["parameters"]), a fresh
+@tech{thread cell} (see @secref["threadcells"]) is allocated to
 hold the break-enabled state of the continuation, and calls to
 @scheme[break-enabled] within the continuation access or modify the
 new cell. Unlike parameters, the break setting is not inherited by new
@@ -119,7 +119,7 @@ threads.}
  
 @defproc[(current-break-parameterization) break-parameterization?]{
 Analogous to @scheme[(current-parameterization)] (see
-@secref["mz:parameters"]); it returns a break-parameterization
+@secref["parameters"]); it returns a break-parameterization
 (effectively a thread cell) that holds the current continuation's
 break-enable state.}
 
@@ -128,7 +128,7 @@ break-enable state.}
                 [thunk (-> any)]) 
                any]{
 Analogous to @scheme[(call-with-parameterization parameterization
-thunk)] (see @secref["mz:parameters"]), calls @scheme[thunk] in a
+thunk)] (see @secref["parameters"]), calls @scheme[thunk] in a
 continuation whose break-enabled state is in @scheme[break-param]. The
 @scheme[thunk] is @italic{not} called in tail position with respect to
 the @scheme[call-with-break-parameterization] call.}

@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:let"]{Local Binding}
+@title[#:tag "let"]{Local Binding}
 
 Although internal @scheme[define]s can be used for local binding,
 Scheme provides three forms that give the programmer more
@@ -13,7 +13,7 @@ control over bindings: @scheme[let], @scheme[let*], and
 @;------------------------------------------------------------------------
 @section{Parallel Binding: @scheme[let]}
 
-@refalso["mz:let"]{@scheme[let]}
+@refalso["let"]{@scheme[let]}
 
 A @scheme[let] form binds a set of identifiers, each to the result of
 some expression, for use in the @scheme[let] body:
@@ -69,7 +69,7 @@ evaluated in order, even though the bindings are delayed until all
 @;------------------------------------------------------------------------
 @section{Sequential Binding: @scheme[let*]}
 
-@refalso["mz:let"]{@scheme[let*]}
+@refalso["let"]{@scheme[let*]}
 
 The syntax of @scheme[let*] is the same as @scheme[let]:
 
@@ -104,7 +104,7 @@ In other words, a @scheme[let*] form is equivalent to nested
 @;------------------------------------------------------------------------
 @section{Recursive Binding: @scheme[letrec]}
 
-@refalso["mz:let"]{@scheme[letrec]}
+@refalso["let"]{@scheme[letrec]}
 
 The syntax of @scheme[letrec] is also the same as @scheme[let]:
 
@@ -163,10 +163,10 @@ an @scheme[_id] is referenced before its value is ready, the result is
 @; ----------------------------------------
 @section{Multiple Values: @scheme[let-values], @scheme[let*-values], @scheme[letrec-values]}
 
-@refalso["mz:let"]{multiple-value binding forms}
+@refalso["let"]{multiple-value binding forms}
 
 In the same way that @scheme[define-values] binds multiple
-results in a definition (see @secref["guide:multiple-values"]),
+results in a definition (see @secref["multiple-values"]),
 @scheme[let-values], @scheme[let*-values], and
 @scheme[letrec-values] bind multiple results locally.
 

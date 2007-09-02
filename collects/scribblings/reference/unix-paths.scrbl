@@ -2,7 +2,7 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["mz.ss"]
 
-@title[#:tag "mz:unixpaths"]{@|AllUnix| Paths}
+@title[#:tag "unixpaths"]{@|AllUnix| Paths}
 
 In @|AllUnix| paths, a @litchar{/} separates elements of the path,
 @litchar{.} as a path element always means the directory indicated by

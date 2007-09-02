@@ -19,6 +19,6 @@
 		       (string->symbol (path->string (path-replace-suffix name #""))))
 		     'page)]
            [id 'doc])
-      `(module ,name mzscheme
+      `(module ,name (lib "lang.ss" "big")
          . ,body))))
 

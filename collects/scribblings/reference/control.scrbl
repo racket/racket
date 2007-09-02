@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:control" #:style 'toc]{Control Flow}
+@title[#:tag "control" #:style 'toc]{Control Flow}
 
 @local-table-of-contents[]
 

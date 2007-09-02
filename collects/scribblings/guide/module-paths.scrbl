@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:module-paths"]{Module Paths}
+@title[#:tag "module-paths"]{Module Paths}
 
 A @deftech{module path} is a reference to a module, as used with
 @scheme[require] or as the @scheme[_initial-module-path] in a
@@ -40,7 +40,7 @@ to the current directory. (More precisely, the path is relative to the
 value of @scheme[(current-load-relative-directory)], which is set
 while loading a file.)
 
-@secref["guide:module-basics"] shows examples using relative paths.
+@secref["module-basics"] shows examples using relative paths.
 }
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -50,7 +50,7 @@ while loading a file.)
 Like a plain-string @scheme[rel-path], but the elements of
 @scheme[rel-path] refer to @tech{collection}s and
 sub-@tech{collections}, instead of directories and sub-directories. A
-collection is represented by a directory in one of several
+@deftech{collection} is represented by a directory in one of several
 installation-specific locations.
 
 An example of this form is @scheme[(lib "big/lang.ss")], which is

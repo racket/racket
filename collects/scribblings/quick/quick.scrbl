@@ -1,6 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 
-@title{An Introduction to PLT Scheme with Pictures}
+@title[#:tag-prefix '(lib "quick.scrbl" "scribblings" "quick") 
+       #:tag "top"]{An Introduction to PLT Scheme with Pictures}
 
 @bold{This reference describes a potential future version of PLT Scheme.
       It does not match the current implementation.}
@@ -14,6 +15,11 @@
 @require["slideshow-doc.ss"]
 @require["slideshow-code-doc.ss"]
 @require["mred-doc.ss"]
+
+@require-for-label[(lib "lang.ss" "big")]
+@require-for-label[(lib "mred.ss" "mred")]
+@require-for-label[(lib "class.ss")]
+
 @require-for-syntax[mzscheme]
 
 @define[filled-flash (lambda args (apply (eval 'filled-flash) args))]
@@ -485,7 +491,7 @@ constantly giving talks and writing papers that involve Scheme code,
 and it's worthwhile for everyone who works on those products to know
 about @scheme[code].
 
-In fact, you might want to take a look at the @link["quick/quick.scrbl"]{source of
+In fact, you might want to take a look at the @link["quick.scrbl"]{source of
 this document}. You'll see that it starts with @schemefont{#module},
 but otherwise doesn't look a lot like Scheme; nevertheless, we build
 this document by running its source as a PlT Scheme program. We have
@@ -545,7 +551,7 @@ picture into a canvas:
 (add-drawing (colorize (filled-flash 50 30) "yellow"))
 ]
 
-@centerline{@mr-interaction-eval-show[(scale (bitmap "quick/art.png") 0.5)]}
+@centerline{@mr-interaction-eval-show[(scale (bitmap "art.png") 0.5)]}
 
 Each canvas stratches to fill an equal portion of the frame, because
 that's how a frame manages its children by default.
@@ -568,4 +574,5 @@ way that Scheme is often described---PLT Scheme offers a rich language
 with an extensive set of libraries and tools.
 
 To start learning about the full PLT Scheme language and tools in
-depth, move on to @link["../guide/index.html"]{A Guide to PLT Scheme}.
+depth, move on to @italic[@secref[#:doc '(lib "guide.scrbl"
+"scribblings" "guide") "top"]].

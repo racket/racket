@@ -1,9 +1,9 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:values"]{Multiple Values}
+@title[#:tag "values"]{Multiple Values}
 
-See @secref["mz:values-model"] for general information about multiple
+See @secref["values-model"] for general information about multiple
 result values. In addition to @scheme[call-with-values] (described in
 this section), the @scheme[let-values], @scheme[let*-values],
 @scheme[letrec-values], and @scheme[define-values] forms (among

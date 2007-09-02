@@ -2,18 +2,18 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["mz.ss"]
 
-@title[#:tag "mz:threads"]{Threads}
+@title[#:tag "threads"]{Threads}
 
-See @secref["mz:thread-model"] for basic information on the PLT Scheme
+See @secref["thread-model"] for basic information on the PLT Scheme
 thread model.
 
 When a thread is created, it is placed into the management of the
 @tech{current custodian} and added to the current thread group (see
-@secref["mz:threadgroups"]). A thread can have any number of custodian
+@secref["threadgroups"]). A thread can have any number of custodian
 managers added through @scheme[thread-resume].
 
 A thread that has not terminated can be garbage collected (see
-@secref["mz:gc-model"]) if it is unreachable and suspended, or if it
+@secref["gc-model"]) if it is unreachable and suspended, or if it
 is unreachable and blocked on a set of unreachable events through
 @scheme[semaphore-wait] or @scheme[semaphore-wait/enable-break],
 @scheme[channel-put] or @scheme[channel-get], @scheme[sync] or
@@ -30,7 +30,7 @@ thread-safe because they are @defterm{atomic}. For example,
 to all threads, so that no thread can see a ``half-assigned''
 variable. Similarly, @scheme[vector-set!] assigns to a vector
 atomically. The @scheme[hash-table-put!] procedure is not atomic, but
-the table is protected by a lock; see @secref["mz:hashtables"] for more
+the table is protected by a lock; see @secref["hashtables"] for more
 information. Port operations are generally not atomic, but they are
 thread-safe in the sense that a byte consumed by one thread from an
 input port will not be returned also to another thread, and procedures
@@ -90,7 +90,7 @@ moved to the nested thread. If a break remains queued on the nested
 thread when it completes, the break is moved to the original thread.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:threadkill"]{Suspending, Resuming, and Killing Threads}
+@section[#:tag "threadkill"]{Suspending, Resuming, and Killing Threads}
 
 @defproc[(thread-suspend [thd  thread?]) void?]{
 
@@ -163,7 +163,7 @@ consumed or not consumed, and other threads can safely use the port.}
 
 @index['("threads" "breaking")]{Registers} a break with the specified
 thread. If breaking is disabled in @scheme[thd], the break will be
-ignored until breaks are re-enabled (see @secref["mz:breakhandler"]).}
+ignored until breaks are re-enabled (see @secref["breakhandler"]).}
 
 @defproc[(sleep [secs nonnegative-number? 0]) void?]{
 
@@ -185,26 +185,26 @@ Returns @scheme[#t] if @scheme[thd] has terminated, @scheme[#f]
 otherwise.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:threadsync"]{Synchronizing Thread State}
+@section[#:tag "threadsync"]{Synchronizing Thread State}
 
 @defproc[(thread-wait [thd thread?]) void?]{
 
 Blocks execution of the current thread until @scheme[thd] has
 terminated. Note that @scheme[(thread-wait (current-thread))]
 deadlocks the current thread, but a break can end the deadlock (if
-breaking is enabled; see @secref["mz:breakhandler"]).}
+breaking is enabled; see @secref["breakhandler"]).}
 
 @defproc[(thread-dead-evt [thd thread?]) evt?]{
 
-Returns a @tech{synchronizable event} (see @secref["mz:sync"]) that is
+Returns a @tech{synchronizable event} (see @secref["sync"]) that is
 ready if and only if @scheme[thd] has terminated.  Unlike using
 @scheme[thd] directly, however, a reference to the event does not
 prevent @scheme[thd] from being garbage collected (see
-@secref["mz:gc-model"]).}
+@secref["gc-model"]).}
 
 @defproc[(thread-resume-evt [thd thread?]) evt?]{
 
-Returns a @tech{synchronizable event} (see @secref["mz:sync"]) that
+Returns a @tech{synchronizable event} (see @secref["sync"]) that
 becomes ready when @scheme[thd] is running.  (If @scheme[thd] has
 terminated, the event never becomes ready.)  If @scheme[thd] runs and
 is then suspended after a call to @scheme[thread-resume-evt], the
@@ -212,11 +212,11 @@ result event remains ready; after each suspend of @scheme[thd] a fresh
 event is generated to be returned by @scheme[thread-resume-evt].  The
 result of the event is @scheme[thd], but if @scheme[thd] is never
 resumed, then reference to the event does not prevent @scheme[thd]
-from being garbage collected (see @secref["mz:gc-model"]).}
+from being garbage collected (see @secref["gc-model"]).}
 
 @defproc[(thread-suspend-evt [thd thread?]) evt?]{
 
-Returns a @tech{synchronizable event} (see @secref["mz:sync"]) that
+Returns a @tech{synchronizable event} (see @secref["sync"]) that
 becomes ready when @scheme[thd] is suspended.  (If @scheme[thd] has
 terminated, the event will never unblock.)  If @scheme[thd] is
 suspended and then resumes after a call to

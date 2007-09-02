@@ -2,7 +2,7 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["mz.ss"]
 
-@title[#:tag "mz:printing" #:style 'quiet]{The Printer}
+@title[#:tag "printing" #:style 'quiet]{The Printer}
 
 The default printer generally prints core datatypes in such a way that
 using @scheme[read] on the output produces a value that is
@@ -19,16 +19,16 @@ the components of pairs, vectors, boxes (when @scheme[print-box] is
 @scheme[struct->vector] (when @scheme[print-struct] is
 @scheme[#t]). If @scheme[print-graph] is @scheme[#t], then this
 information is used to display sharing by printing graph definitions
-and references (see @secref["mz:parse-graph"]). If a cycle is detected
+and references (see @secref["parse-graph"]). If a cycle is detected
 in the initial scan, then @scheme[print-graph] is effectively set to
 @scheme[#t] automatically.
 
 With the exception of displaying byte strings, printing is defined in
-terms of Unicode characters; see @secref["mz:ports"] for information
+terms of Unicode characters; see @secref["ports"] for information
 on how a character stream is written to an port's underlying byte
 stream.
 
-@section[#:tag "mz:print-symbol"]{Printing Symbols}
+@section[#:tag "print-symbol"]{Printing Symbols}
 
 Symbols containing spaces or special characters @scheme[write] using
 escaping @litchar["\\"] and quoting @litchar{|}s. When the
@@ -131,7 +131,7 @@ with two exceptions: @litchar{"} is printed as @litchar{\"}, and
 @litchar{\} is printed as @litchar{\\}. Each non-graphic, non-blank
 character (according to @scheme[char-graphic?] and
 @scheme[char-blank?]) is printed using the escape sequences described
-in @secref["mz:parse-string"], using @litchar{\a}, @litchar{\b},
+in @secref["parse-string"], using @litchar{\a}, @litchar{\b},
 @litchar{\t}, @litchar{\n}, @litchar{\v}, @litchar{\f}, @litchar{\r},
 or @litchar{\e} if possible, otherwise using @litchar{\u} with four
 hexadecimal digits or @litchar{\U} with eight hexadecimal digits
@@ -152,7 +152,7 @@ is written using @litchar{\a}, @litchar{\b}, @litchar{\t},
 @litchar{\e} if possible, otherwise using @litchar{\} followed by one
 to three octal digits (only as many as necessary).
 
-@section[#:tag "mz:print-vectors"]{Printing Vectors}
+@section[#:tag "print-vectors"]{Printing Vectors}
 
 In @scheme[display] mode, the printed form of a vector is @litchar{#}
 followed by the printed form of @scheme[vector->list] applied to the
@@ -160,7 +160,7 @@ vector. In @scheme[write] mode, the printed form is the same, except
 that a decimal integer is printed after the @litchar{#} when the
 @scheme[print-vector-length] parameter is @scheme[#t].
 
-@section[#:tag "mz:print-hashtable"]{Printing Hash Tables}
+@section[#:tag "print-hashtable"]{Printing Hash Tables}
 
 When the @scheme[print-hash-table] parameter is set to @scheme[#t], a
 hash table prints starting with @litchar{#hash(} or @litchar{#hasheq(}
@@ -175,7 +175,7 @@ After all key-value pairs, the printed form completes with
 When the @scheme[print-hash-table] parameter is set to @scheme[#f], a
 hash table prints (un@scheme[read]ably) as @litchar{#<hash-table>}.
 
-@section[#:tag "mz:print-box"]{Printing Boxes}
+@section[#:tag "print-box"]{Printing Boxes}
 
 When the @scheme[print-box] parameter is set to @scheme[#t], 
 a box prints as @litchar{#&} followed by the printed form of its content.
@@ -186,7 +186,7 @@ prints (un@scheme[read]ably) as @litchar{#<box>}.
 @section{Printing Characters}
 
 Characters with the special names described in
-@secref["mz:parse-character"] @scheme[write] using the same name.
+@secref["parse-character"] @scheme[write] using the same name.
 (Some characters have multiple names; the @scheme[#\newline] and
 @scheme[#\nul] names are used instead of @scheme[#\linefeed] and
 @scheme[#\null]).  Other graphic characters (according to
@@ -202,7 +202,7 @@ character).
 @section{Printing Keywords}
 
 Keywords @scheme[write] and @scheme[display] the same as symbols,
-except (see @secref["mz:print-symbol"]) with a leading @litchar{#:},
+except (see @secref["print-symbol"]) with a leading @litchar{#:},
 and without special handing for an initial @litchar{#} or when the
 printed form would matches a number or a delimited @litchar{.} (since
 @litchar{#:} distinguishes the keyword).

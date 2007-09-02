@@ -6,6 +6,23 @@
            (prefix scribble: (lib "reader.ss" "scribble"))
            (lib "string.ss"))
 
+  (define-syntax bounce-for-label
+    (syntax-rules ()
+      [(_ mod) (begin
+                 (require-for-label mod)
+                 (provide-for-label (all-from mod)))]
+      [(_ mod ...) (begin (bounce-for-label mod) ...)]))
+
+  (bounce-for-label (lib "lang.ss" "big")
+                    (lib "struct.ss" "scribble")
+                    (lib "base-render.ss" "scribble")
+                    (lib "decode.ss" "scribble")
+                    (lib "basic.ss" "scribble")
+                    (lib "manual.ss" "scribble")
+                    (lib "scheme.ss" "scribble")
+                    (lib "eval.ss" "scribble")
+                    (lib "bnf.ss" "scribble"))
+
   (provide scribble-examples litchar/lines)
 
   (define (litchar/lines . strs)

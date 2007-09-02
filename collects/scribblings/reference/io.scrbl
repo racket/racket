@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:input-and-output" #:style 'toc]{Input and Output}
+@title[#:tag "input-and-output" #:style 'toc]{Input and Output}
 
 @local-table-of-contents[]
 

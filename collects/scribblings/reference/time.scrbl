@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:time"]{Time}
+@title[#:tag "time"]{Time}
  
 
 @defproc[(current-seconds) exact-integer?]{

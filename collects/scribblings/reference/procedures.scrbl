@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:procedures"]{Procedures}
+@title[#:tag "procedures"]{Procedures}
 
 @defproc[(procedure? [v any/c]) boolean]{ Returns @scheme[#t] if
 @scheme[v] is a procedure, @scheme[#f] otherwise.}
@@ -9,7 +9,7 @@
 
 @defproc[(apply [proc procedure?] [v any/c] ... [lst list?]) any]{
 
-@guideintro["guide:apply"]{@scheme[apply]}
+@guideintro["apply"]{@scheme[apply]}
 
 Applies @scheme[proc] using the content of @scheme[(list* v ... lst)]
 as the (by-position) arguments. The given @scheme[proc] must accept as
@@ -32,7 +32,7 @@ is called in tail position with respect to the @scheme[apply] call.
                         [lst list?])
          any]{
 
-@guideintro["guide:apply"]{@scheme[keyword-apply]}
+@guideintro["apply"]{@scheme[keyword-apply]}
 
 Like @scheme[apply], but @scheme[kw-lst] and @scheme[kw-val-lst]
 supply by-keyword arguments in addition to the by-position arguments

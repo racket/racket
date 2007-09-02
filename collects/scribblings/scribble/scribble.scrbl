@@ -3,12 +3,16 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["utils.ss"]
 
-@title{PLT Scribble}
+@title[#:tag-prefix '(lib "scribble.scrbl" "scribblings" "scribble") 
+       #:tag "top"]{PLT Scribble}
 
 The @file{scribble} collection provides libraries that can be used to
 create documents from Scheme.
 
 @table-of-contents[]
+
+@; ------------------------------------------------------------------------
+@include-section["how-to.scrbl"]
 
 @; ------------------------------------------------------------------------
 @section{Scribble Layers}
@@ -26,23 +30,24 @@ The layers are:
        with @"@"-forms for conveniently embedding a mixin of text and
        escapes. See @secref["reader"].}
 
- @item{@file{struct.ss}: a set of document datatypes, which define the
-       basic layout of a document. See @secref["struct"].}
+ @item{@file{struct.ss}: a set of document datatypes and utilities
+       that define the basic layout and processing of a document. See
+       @secref["struct"].}
 
  @item{@file{base-render.ss} with @file{html-render.ss},
        @file{latex-render.ss}, or @file{text-render.ss}: A base
        renderer and mixins that generate documents in various formats
-       from instances of the @file{struct.ss} datatype. See
+       from instances of the @file{struct.ss} datatypes. See
        @secref["renderer"].}
 
  @item{@file{decode.ss}: Processes a stream of text, section-start
        markers, etc. to produce instances of the @file{struct.ss}
-       datatype. See @secref["decode"].}
+       datatypes. See @secref["decode"].}
 
  @item{@file{doclang.ss}: to be used for the initial import of a
        module; processes the module top level through
        @file{decode.ss}, and otherwise provides all of
-       @scheme[mzscheme].  See @secref["doclang"].}
+       @schememodname[big].  See @secref["doclang"].}
 
  @item{@file{docreader.ss}: a reader that is meant to tbe used to
        process an entire file; it essentially combines
@@ -88,4 +93,3 @@ information.
 @include-section["basic.scrbl"]
 @include-section["manual.scrbl"]
 @include-section["eval.scrbl"]
-@include-section["style.scrbl"]

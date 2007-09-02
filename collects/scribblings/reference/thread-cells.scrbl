@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:threadcells"]{Thread Cells}
+@title[#:tag "threadcells"]{Thread Cells}
 
 A @deftech{thread cell} contains a thread-specific value; that is, it
 contains a specific value for each thread, but it may contain

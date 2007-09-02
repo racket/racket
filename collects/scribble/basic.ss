@@ -4,7 +4,9 @@
            "struct.ss"
            "config.ss"
            (lib "list.ss")
-           (lib "class.ss"))
+           (lib "class.ss")
+           (lib "main-collects.ss" "setup")
+           (lib "modresolve.ss" "syntax"))
   
   (provide title 
            section
@@ -18,21 +20,41 @@
                      (content->string content)
                      "_"))
 
-  (define (title #:tag [tag #f] #:style [style #f] . str)
+  (define (prefix->string p)
+    (and p
+         (if (string? p)
+             p
+             (module-path-prefix->string p))))
+
+  (define (title #:tag [tag #f] #:tag-prefix [prefix #f] #:style [style #f] . str)
     (let ([content (decode-content str)])
-      (make-title-decl (or tag (gen-tag content)) style content)))
+      (make-title-decl (prefix->string prefix)
+                       `((part ,(or tag (gen-tag content)))) 
+                       style
+                       content)))
   
-  (define (section #:tag [tag #f] #:style [style #f] . str)
+  (define (section #:tag [tag #f] #:tag-prefix [prefix #f] #:style [style #f] . str)
     (let ([content (decode-content str)])
-      (make-part-start 0 (or tag (gen-tag content)) style content)))
+      (make-part-start 0 (prefix->string prefix)
+                       `((part ,(or tag (gen-tag content)))) 
+                       style
+                       content)))
 
-  (define (subsection #:tag [tag #f] . str)
+  (define (subsection #:tag [tag #f] #:tag-prefix [prefix #f] . str)
     (let ([content (decode-content str)])
-      (make-part-start 1 (or tag (gen-tag content)) #f content)))
+      (make-part-start 1 
+                       (prefix->string prefix)
+                       `((part ,(or tag (gen-tag content))))
+                       #f 
+                       content)))
 
-  (define (subsubsection #:tag [tag #f] . str)
+  (define (subsubsection #:tag [tag #f] #:tag-prefix [prefix #f] . str)
     (let ([content (decode-content str)])
-      (make-part-start 2 (or tag (gen-tag content)) #f content)))
+      (make-part-start 2 
+                       (prefix->string prefix)
+                       `((part ,(or tag (gen-tag content))))
+                       #f
+                       content)))
 
   (define (subsubsub*section #:tag [tag #f] . str)
     (let ([content (decode-content str)])
@@ -45,6 +67,14 @@
          (require (only mod doc))
          doc)]))
 
+  ;; ----------------------------------------
+
+  (provide module-path-prefix->string)
+
+  (define (module-path-prefix->string p)
+    (format "~a" (path->main-collects-relative
+                  (resolve-module-path p #f))))
+           
   ;; ----------------------------------------
 
   (provide itemize item item?)
@@ -124,19 +154,16 @@
   (define (section-index . elems)
     (make-part-index-decl (map element->string elems) elems))
 
-  (define (gen-target)
-    (format "index:~s:~s" (current-inexact-milliseconds) (gensym)))
-  
   (define (record-index word-seq element-seq tag content)
     (make-index-element
      #f
-     (list (make-target-element #f content tag))
-     tag
+     (list (make-target-element #f content `(idx ,tag)))
+     `(idx ,tag)
      word-seq
      element-seq))
 
   (define (index* word-seq content-seq . s)
-    (let ([key (gen-target)])
+    (let ([key (make-generated-tag)])
       (record-index word-seq
                     content-seq
                     key
@@ -149,7 +176,7 @@
       (apply index* word-seq word-seq s)))
 
   (define (as-index . s)
-    (let ([key (gen-target)]
+    (let ([key (make-generated-tag)]
           [content (decode-content s)])
       (record-index (list (content->string content))
                     (list (make-element #f content)) 
@@ -158,18 +185,21 @@
 
   (define (index-section tag)
     (make-unnumbered-part
-     (and tag (list tag))
-     (list "Index")
      #f
+     `((part , (or tag 
+                   (make-generated-tag))))
+     '("Index")
+     'index
      null
      (make-flow (list (make-delayed-flow-element
-                       (lambda (renderer sec ht)
+                       (lambda (renderer sec ri)
                          (let ([l null])
                            (hash-table-for-each 
                             (collected-info-info 
                              (part-collected-info
                               (collected-info-parent
-                               (part-collected-info sec))))
+                               (part-collected-info sec ri))
+                              ri))
                             (lambda (k v)
                               (if (and (pair? k)
                                        (eq? 'index-entry (car k)))
@@ -204,8 +234,7 @@
                                                 (commas (caddr i))
                                                 (car i))))))))
                                    l))))))))
-     null
-     'index))
+     null))
 
   ;; ----------------------------------------
 
@@ -214,13 +243,13 @@
 
   (define (table-of-contents)
     (make-delayed-flow-element
-     (lambda (renderer part ht)
-       (send renderer table-of-contents part ht))))
+     (lambda (renderer part ri)
+       (send renderer table-of-contents part ri))))
 
   (define (local-table-of-contents)
     (make-delayed-flow-element
-     (lambda (renderer part ht)
-       (send renderer local-table-of-contents part ht)))))
+     (lambda (renderer part ri)
+       (send renderer local-table-of-contents part ri)))))
 
 
 

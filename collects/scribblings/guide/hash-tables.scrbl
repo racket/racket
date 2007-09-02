@@ -33,7 +33,7 @@ key--value pair. Literal hash tables are immutable.
 (hash-table-get ht "apple")
 ]
 
-@refdetails/gory["mz:parse-hashtable"]{the syntax of hash table literals}
+@refdetails/gory["parse-hashtable"]{the syntax of hash table literals}
 
 A hash table can optionally retain its keys @defterm{weakly}, so each
 mapping is retained only so long as the key is retained elsewhere.
@@ -49,7 +49,7 @@ Beware that even a weak hash table retains its values strongly, as
 long as the corresponding key is accessible. This creates a catch-22
 dependency when a value refers back to its key, so that the mapping is
 retained permanently. To break the cycle, map the key to an
-@seclink["guide:ephemerons"]{ephemeron} that pairs the value with its key (in
+@seclink["ephemerons"]{ephemeron} that pairs the value with its key (in
 addition to the implicit pairing of the hash table).
 
 @examples[
@@ -68,4 +68,4 @@ addition to the implicit pairing of the hash table).
 (eval:alts (hash-table-count ht) 0)
 ]
 
-@refdetails["mz:hashtables"]{hash tables and hash-table procedures}
+@refdetails["hashtables"]{hash tables and hash-table procedures}

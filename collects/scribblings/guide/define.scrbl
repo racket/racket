@@ -4,7 +4,7 @@
 @require["guide-utils.ss"]
 @require[(lib "string.ss")]
 
-@title[#:tag "guide:define"]{Definitions: @scheme[define]}
+@title[#:tag "define"]{Definitions: @scheme[define]}
 
 A basic definition has the form
 
@@ -127,7 +127,7 @@ for each @scheme[_head] in the definition, where the innermost
 
 
 @;------------------------------------------------------------------------
-@section[#:tag "guide:multiple-values"]{Multiple Values and @scheme[define-values]}
+@section[#:tag "multiple-values"]{Multiple Values and @scheme[define-values]}
 
 A Scheme expression normally produces a single result, but some
 expressions can produce multiple results. For example,
@@ -176,10 +176,10 @@ surname
 A @scheme[define] form (that is not a function shorthand) is
 equivalent to a @scheme[define-values] form with a single @scheme[_id].
 
-@refdetails["mz:define"]{definitions}
+@refdetails["define"]{definitions}
 
 @;------------------------------------------------------------------------
-@section[#:tag "guide:intdefs"]{Internal Definitions}
+@section[#:tag "intdefs"]{Internal Definitions}
 
 When the grammar for a syntactic form specifies @scheme[_body], then
 the corresponding form can be either a definition or an expression.
@@ -240,7 +240,7 @@ A sequence of internal definitions using just @scheme[define] is
 easily translated to an equivalent @scheme[letrec] form (as introduced
 in the next section). However, other definition forms can appear as a
 @scheme[_body], including @scheme[define-values], @scheme[define-struct] (see
-@secref["guide:define-struct"]) or @scheme[define-syntax] (see
-@secref["guide:macros"]).
+@secref["define-struct"]) or @scheme[define-syntax] (see
+@secref["macros"]).
 
-@refdetails/gory["mz:intdef-body"]{internal definitions}
+@refdetails/gory["intdef-body"]{internal definitions}

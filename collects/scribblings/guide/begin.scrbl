@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:begin"]{Sequencing}
+@title[#:tag "begin"]{Sequencing}
 
 Scheme programmers prefer to write programs with as few side-effects
 as possible, since purely functional code is more easily tested and
@@ -14,7 +14,7 @@ display, opening a graphical window, or manipulating a file on disk.
 @;------------------------------------------------------------------------
 @section{Effects Before: @scheme[begin]}
 
-@refalso["mz:begin"]{@scheme[begin]}
+@refalso["begin"]{@scheme[begin]}
 
 A @scheme[begin] expression sequences expressions:
 
@@ -64,12 +64,12 @@ positions, instead of forming an expression, the content of
 ]
 
 This splicing behavior is mainly useful for macros, as we discuss
-later in @secref["guide:macros"].
+later in @secref["macros"].
 
 @;------------------------------------------------------------------------
 @section{Effects After: @scheme[begin0]}
 
-@refalso["mz:begin"]{@scheme[begin0]}
+@refalso["begin"]{@scheme[begin0]}
 
 A @scheme[begin0] expression has the same syntax as a @scheme[begin]
 expression:
@@ -93,9 +93,9 @@ computation produces an unknown number of results.
 ]
 
 @;------------------------------------------------------------------------
-@section[#:tag "guide:when+unless"]{Effects If...: @scheme[when] and @scheme[unless]}
+@section[#:tag "when+unless"]{Effects If...: @scheme[when] and @scheme[unless]}
 
-@refalso["mz:when+unless"]{@scheme[when] and @scheme[unless]}
+@refalso["when+unless"]{@scheme[when] and @scheme[unless]}
 
 The @scheme[when] form combines an @scheme[if]-style conditional with
 sequencing for the ``then'' clause and no ``else'' clause:

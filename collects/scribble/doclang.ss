@@ -43,7 +43,8 @@
                                              (kernel-form-identifier-list #'here)
                                              (syntax->list #'(provide
                                                               require
-                                                              require-for-syntax))))])
+                                                              require-for-syntax
+                                                              require-for-label))))])
                 (syntax-case expanded  (begin)
                   [(begin body1 ...)
                    #`(doc-begin m-id exprs body1 ... . body)]
@@ -53,6 +54,7 @@
                                (syntax->list #'(require 
                                                 provide 
                                                 require-for-syntax
+                                                require-for-label
                                                 define-values
                                                 define-syntaxes
                                                 define-for-syntaxes))))

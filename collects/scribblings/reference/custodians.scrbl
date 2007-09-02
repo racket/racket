@@ -2,9 +2,9 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["mz.ss"]
 
-@title[#:tag "mz:custodians"]{Custodians}
+@title[#:tag "custodians"]{Custodians}
 
-See @secref["mz:custodian-model"] for basic information on the PLT
+See @secref["custodian-model"] for basic information on the PLT
 Scheme custodian model.
 
 @defproc[(custodian? [v any/c]) boolean?]{
@@ -65,7 +65,7 @@ per-custodian memory accounting, otherwise the
 @exnraise[exn:fail:unsupported].
 
 If a check is registered, and if PLT Scheme later reaches a state after
-garbage collection (see @secref["mz:gc-model"]) where allocating
+garbage collection (see @secref["gc-model"]) where allocating
 @scheme[need-amt] bytes charged to @scheme[limit-cust] would fail or
 tigger some shutdown, then @scheme[stop-cust] is shut down.}
 
@@ -78,7 +78,7 @@ per-custodian memory accounting, otherwise the
 @exnraise[exn:fail:unsupported].
 
 If a check is registered, and if PLT Scheme later reaches a state
-after garbage collection (see @secref["mz:gc-model"]) where
+after garbage collection (see @secref["gc-model"]) where
 @scheme[limit-cust] owns more than @scheme[limit-amt] bytes, then
 @scheme[stop-cust] is shut down.
 

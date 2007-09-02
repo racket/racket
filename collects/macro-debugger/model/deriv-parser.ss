@@ -57,8 +57,8 @@
       ;; Entry point
      (productions
       (Expansion
-       [(EE/Lifts) $1]
-       [(EE/Lifts/Interrupted) $1]))
+       [(start EE/Lifts) $2]
+       [(start EE/Lifts/Interrupted) $2]))
 
      (productions/I
 
@@ -106,7 +106,10 @@
       
       ;; Evaluation
       (Eval
-       [() #f])
+       (#:no-wrap)
+       [() #f]
+       [(start (? EE) (? Eval)) #f]
+       [(start (? CheckImmediateMacro) (? Eval)) #f])
       
       ;; Expansion of an expression to primitive form
       ;; CheckImmediateMacro Answer = Derivation (I)
@@ -150,18 +153,19 @@
        (#:no-wrap)
        (#:skipped null)
        [() null]
-       [((? LocalAction) (? LocalActions)) (cons $1 $2)])
+       [((? LocalAction) (? LocalActions)) (cons $1 $2)]
+       [((? NotReallyLocalAction) (? LocalActions)) $2])
 
       (LocalAction
        (#:no-wrap)
-       [(enter-local local-pre (? EE) local-post exit-local)
-        (make-local-expansion $1 $5 $2 $4 #f $3)]
-       [(enter-local phase-up local-pre (? EE) local-post exit-local)
-        (make-local-expansion $1 $6 $3 $5 #t $4)]
-       [(enter-local/expr local-pre (? EE) local-post exit-local/expr)
-        (make-local-expansion/expr $1 (car $5) $2 $4 #f (cdr $5) $3)]
-       [(enter-local/expr local-pre phase-up (? EE) local-post exit-local/expr)
-        (make-local-expansion/expr $1 (car $6) $3 $5 #t (cdr $6) $4)]
+       [(enter-local local-pre start (? EE) local-post exit-local)
+        (make-local-expansion $1 $6 $2 $5 #f $4)]
+       [(enter-local phase-up local-pre start (? EE) local-post exit-local)
+        (make-local-expansion $1 $7 $3 $6 #t $5)]
+       [(enter-local/expr local-pre start (? EE) local-post exit-local/expr)
+        (make-local-expansion/expr $1 (car $6) $2 $5 #f (cdr $6) $4)]
+       [(enter-local/expr local-pre phase-up start (? EE) local-post exit-local/expr)
+        (make-local-expansion/expr $1 (car $7) $3 $6 #t (cdr $7) $5)]
        [(lift)
         (make-local-lift (cdr $1) (car $1))]
        [(lift-statement)
@@ -169,6 +173,17 @@
        [(phase-up (? EE/LetLifts))
         (make-local-bind $2)])
 
+      (NotReallyLocalAction
+       (#:no-wrap)
+       ;; called 'expand' (not 'local-expand') within transformer
+       [(start (? EE))
+        (make-local-expansion (lift/deriv-e1 $2)
+                              (lift/deriv-e2 $2)
+                              (lift/deriv-e1 $2)
+                              (lift/deriv-e2 $2)
+                              #f
+                              $2)])
+      
       ;; Multiple calls to local-expand
       ;; EEs Answer = (listof Derivation)
       (EEs
@@ -245,8 +260,8 @@
        (#:args e1 e2 rs)
        ;; Multiple forms after language
        ;; #%module-begin tagging done automatically
-       [(prim-module ! (? EE 'body))
-        (make-p:module e1 e2 rs #f $3)]
+       [(prim-module ! (? Eval) (? EE 'body))
+        (make-p:module e1 e2 rs #f $4)]
 
        ;; One form after language ... macro that expands into #%module-begin
        [(prim-module NoError next
@@ -287,14 +302,14 @@
       (ModulePass1/Prim
        [(enter-prim prim-define-values ! exit-prim)
         (make-p:define-values $1 $4 null #f)]
-       [(enter-prim prim-define-syntaxes ! phase-up (? EE/LetLifts) exit-prim)
-        (make-p:define-syntaxes $1 $6 null $5)]
-       [(enter-prim prim-require ! exit-prim)
-        (make-p:require $1 $4 null)]
-       [(enter-prim prim-require-for-syntax ! exit-prim)
-        (make-p:require-for-syntax $1 $4 null)]
-       [(enter-prim prim-require-for-template ! exit-prim)
-        (make-p:require-for-template $1 $4 null)]
+       [(enter-prim prim-define-syntaxes ! phase-up (? EE/LetLifts) (? Eval) exit-prim)
+        (make-p:define-syntaxes $1 $7 null $5)]
+       [(enter-prim prim-require ! (? Eval) exit-prim)
+        (make-p:require $1 $5 null)]
+       [(enter-prim prim-require-for-syntax ! (? Eval) exit-prim)
+        (make-p:require-for-syntax $1 $5 null)]
+       [(enter-prim prim-require-for-template ! (? Eval) exit-prim)
+        (make-p:require-for-template $1 $5 null)]
        [(enter-prim prim-provide ! exit-prim)
         (make-p:provide $1 $4 null)]
        [()
@@ -324,7 +339,7 @@
       ;; Definitions
       (PrimDefineSyntaxes
        (#:args e1 e2 rs)
-       [(prim-define-syntaxes ! (? EE/LetLifts))
+       [(prim-define-syntaxes ! (? EE/LetLifts) (? Eval))
         (make-p:define-syntaxes e1 e2 rs $3)])
       
       (PrimDefineValues
@@ -439,15 +454,18 @@
       
       (PrimRequire
        (#:args e1 e2 rs)
-       [(prim-require !) (make-p:require e1 e2 rs)])
+       [(prim-require ! (? Eval))
+        (make-p:require e1 e2 rs)])
       
       (PrimRequireForSyntax
        (#:args e1 e2 rs)
-       [(prim-require-for-syntax !) (make-p:require-for-syntax e1 e2 rs)])
+       [(prim-require-for-syntax ! (? Eval))
+        (make-p:require-for-syntax e1 e2 rs)])
       
       (PrimRequireForTemplate
        (#:args e1 e2 rs)
-       [(prim-require-for-template !) (make-p:require-for-template e1 e2 rs)])
+       [(prim-require-for-template ! (? Eval))
+        (make-p:require-for-template e1 e2 rs)])
       
       (PrimProvide 
        (#:args e1 e2 rs)
@@ -500,7 +518,7 @@
 
       ;; BindSyntaxes Answer = Derivation
       (BindSyntaxes
-       [(phase-up (? EE/LetLifts) ! Eval) $2])
+       [(phase-up (? EE/LetLifts) ! (? Eval)) $2])
       
       ;; NextBindSyntaxess Answer = (list-of Derivation)
       (NextBindSyntaxess

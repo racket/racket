@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:module-provide"]{Exports: @scheme[provide]}
+@title[#:tag "module-provide"]{Exports: @scheme[provide]}
 
 By default, all of a module's definitions are private to the
 module. The @scheme[provide] form specifies definitions to be made
@@ -11,10 +11,11 @@ available where the module is @scheme[require]d.
 
 @specform[(provide provide-spec ...)]{}
 
-A @scheme[provide] form can only appear at @tech{module level}.
-Specifying multiple @scheme[_provide-spec]s in a single
-@scheme[require] is exactly the same as using multiple
-@scheme[provide]s each with a single @scheme[_provide-spec].
+A @scheme[provide] form can only appear at module level (i.e., in the
+immediate body of a @scheme[module]).  Specifying multiple
+@scheme[_provide-spec]s in a single @scheme[require] is exactly the
+same as using multiple @scheme[provide]s each with a single
+@scheme[_provide-spec].
 
 Each identifier can be exported at most once from a module across all
 @scheme[provide]s within the module. More precisely, the external name

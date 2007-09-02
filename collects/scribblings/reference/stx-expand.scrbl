@@ -1,14 +1,14 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:expansion"]{Expanding Top-Level Forms}
+@title[#:tag "expansion"]{Expanding Top-Level Forms}
 
 
 @defproc[(expand [top-level-form any/c]) syntax?]{
 
 Expands all non-primitive syntax in @scheme[top-level-form], and
 returns a syntax object for the expanded form that contains only core
-forms, matching the grammar specified by @secref["mz:fully-expanded"].
+forms, matching the grammar specified by @secref["fully-expanded"].
 
 Before @scheme[top-level-form] is expanded, its lexical context is
 enriched with @scheme[namespace-syntax-introduce], just as for
@@ -64,10 +64,10 @@ be a @tech{syntax object}, and its lexical context is not enriched
 before expansion.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:modinfo"]{Information on Expanded Modules}
+@section[#:tag "modinfo"]{Information on Expanded Modules}
 
 Information for an expanded @scheme[module] declaration is stored in a
-set of @tech{syntax properties} (see @secref["mz:stxprops"]) attached
+set of @tech{syntax properties} (see @secref["stxprops"]) attached
 to the syntax object:
 
 @itemize{
@@ -100,7 +100,7 @@ to the syntax object:
   @item{@scheme[(list* module-path-index _provided-sym _defined-sym)]
   --- represents a re-exported and possibly re-named variable from the
   specified module; @scheme[module-path-index] is either a
-  @tech{module path index} or symbol (see @secref["mz:modpathidx"]),
+  @tech{module path index} or symbol (see @secref["modpathidx"]),
   indicating the source module for the binding. The
   @scheme[_provided-sym] is the external name for the re-export, and
   @scheme[_defined-sym] is the originally defined name in the module

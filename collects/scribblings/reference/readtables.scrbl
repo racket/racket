@@ -5,10 +5,10 @@
 @title[#:style 'toc]{Reader Extension}
 
 Scheme's reader can be extended in three ways: through a reader-macro
-procedure in a readtable (see @secref["mz:readtables"]), through a
-@litchar{#reader} form (see @secref["mz:parse-reader"]), or through a
+procedure in a readtable (see @secref["readtables"]), through a
+@litchar{#reader} form (see @secref["parse-reader"]), or through a
 custom-port byte reader that returns a ``special'' result procedure
-(see @secref["mz:customport"]). All three kinds of @deftech{reader
+(see @secref["customport"]). All three kinds of @deftech{reader
 extension procedures} accept similar arguments, and their results are
 treated in the same way by @scheme[read] and @scheme[read-syntax] (or,
 more precisely, by the default read handler; see
@@ -17,9 +17,9 @@ more precisely, by the default read handler; see
 @local-table-of-contents[]
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:readtables"]{Readtables}
+@section[#:tag "readtables"]{Readtables}
 
-The dispatch table in @secref["mz:default-readtable-dispatch"]
+The dispatch table in @secref["default-readtable-dispatch"]
 corresponds to the default @deftech{readtable}. By creating a new
 readtable and installing it via the @scheme[current-readtable]
 parameter, the reader's behavior can be extended.
@@ -59,7 +59,14 @@ does not consult the readtable.
 For many contexts, @scheme[#f] identifies the default readtable. In
 particular, @scheme[#f] is the initial value for the
 @scheme[current-readtable] parameter, which causes the reader to
-behave as described in @secref["mz:reader"].
+behave as described in @secref["reader"].
+
+@defproc[(readtable? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a readtable, @scheme[#f]
+otherwise.
+
+}
 
 @defproc[(make-readtable [readtable readtable?]
                          [key (or/c character? false/c)]
@@ -142,13 +149,13 @@ additional arguments that represent a source location. When the reader
 macro is triggered by @scheme[read] (or @scheme[read/recursive]), the
 procedure is passed only two arguments if it accepts two arguments,
 otherwise it is passed six arguments where the last four are all
-@scheme[#f]. See @secref["mz:reader-procs"] for information on the
+@scheme[#f]. See @secref["reader-procs"] for information on the
 procedure's results.
 
 A reader macro normally reads characters from the given input port to
 produce a value to be used as the ``reader macro-expansion'' of the
 consumed characters. The reader macro might produce a special-comment
-value (see @secref["mz:special-comments"]) to cause the consumed
+value (see @secref["special-comments"]) to cause the consumed
 character to be treated as whitespace, and it might use
 @scheme[read/recursive] or @scheme[read-syntax/recursive].}
 
@@ -316,7 +323,7 @@ character and the @scheme[#f] readtable.}
 ]]
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:reader-procs"]{Reader-Extension Procedures}
+@section[#:tag "reader-procs"]{Reader-Extension Procedures}
 
 Calls to @techlink{reader extension procedures} can be triggered
 through @scheme[read], @scheme[read/recursive], @scheme[read-syntax],
@@ -339,7 +346,7 @@ object that has no lexical context (e.g., a syntax object created
 using @scheme[datum->syntax-object] with @scheme[#f] as the first
 argument and with the given location information as the third
 argument). Another possible result is a special-comment value (see
-@secref["mz:special-comments"]). If the procedure's result is not a
+@secref["special-comments"]). If the procedure's result is not a
 syntax object and not a special-comment value, it is converted to one
 using @scheme[datum->syntax-object].
 
@@ -349,7 +356,7 @@ object is returned, it is converted to a plain value using
 @scheme[syntax-object->datum].
 
 In either context, when the result from a reader-extension procedure
-is a special-comment value (see @secref["mz:special-comments"]), then
+is a special-comment value (see @secref["special-comments"]), then
 @scheme[read], @scheme[read-syntax], @|etc| treat the value as a
 delimiting comment and otherwise ignore it.
 
@@ -363,7 +370,7 @@ shared value. Graph structure (including cycles) is preserved in the
 copy.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:special-comments"]{Special Comments}
+@section[#:tag "special-comments"]{Special Comments}
 
 @defproc[(make-special-comment [v any/c]) special-comment?]{
 
@@ -371,7 +378,7 @@ Creates a special-comment value that encapsulates @scheme[v]. The
 @scheme[read], @scheme[read-syntax], @|etc| procedures treat values
 constructed with @scheme[make-special-comment] as delimiting
 whitespace when returned by a reader-extension procedure (see
-@secref["mz:reader-procs"]).}
+@secref["reader-procs"]).}
 
 @defproc[(special-comment? [v any/c]) boolean?]{
 

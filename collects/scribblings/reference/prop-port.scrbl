@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:portstructs"]{Structures as Ports}
+@title[#:tag "portstructs"]{Structures as Ports}
 
 @defthing[prop:input-port struct-type-property?]
 @defthing[prop:output-port struct-type-property?]

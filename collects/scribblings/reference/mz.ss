@@ -1,4 +1,4 @@
-(module mz mzscheme
+(module mz (lib "lang.ss" "big")
   (require (lib "struct.ss" "scribble")
            (lib "manual.ss" "scribble")
            (lib "eval.ss" "scribble")
@@ -10,6 +10,11 @@
   (provide (all-from (lib "manual.ss" "scribble"))
            (all-from (lib "eval.ss" "scribble"))
            (all-from (lib "contract.ss")))
+
+  (require-for-label (lib "lang.ss" "big")
+                     "to-do.ss")
+  (provide-for-label (all-from (lib "lang.ss" "big"))
+                     (all-from "to-do.ss"))
 
   (define AllUnix "Unix and Mac OS X")
   (provide AllUnix)
@@ -24,7 +29,7 @@
       [(_ s) (scheme s)]))
   (provide exnraise Exn)
 
-  (provide refalso moreref Guide guideintro)
+  (provide refalso moreref Guide guideintro guidesecref)
 
   (define/kw (refalso tag #:body s)
     (apply margin-note
@@ -38,12 +43,15 @@
                                    s
                                    (list ".")))))
 
-  (define Guide
-    (italic (link "../guide/index.html" "A Guide to PLT Scheme")))
+  (define (guidesecref s)
+    (secref #:doc '(lib "guide.scrbl" "scribblings" "guide") s))
 
   (define/kw (guideintro tag #:body s)
     (apply margin-note
-           (decode-content (append (list finger (secref tag) " in " Guide " introduces ")
+           (decode-content (append (list finger (guidesecref tag) " in " Guide " introduces ")
                                    s
-                                   (list "."))))))
+                                   (list ".")))))
+
+  (define Guide
+    (italic (guidesecref "top"))))
 

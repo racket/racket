@@ -7,7 +7,7 @@ dynamic extent of a @tech{syntax transformer} application by the
 expander, otherwise the @exnraise[exn:fail:contract].}]
 
 
-@title[#:tag "mz:stxtrans"]{Syntax Transformers}
+@title[#:tag "stxtrans"]{Syntax Transformers}
 
 @defproc[(make-set!-transformer [proc (syntax? . -> . syntax?)])
          set!-transformer?]{
@@ -109,9 +109,9 @@ added to the expansion result (because the expansion might introduce
 bindings or references to internal-definition bindings).
 
 Expansion of @scheme[stx] can use certificates for the expression
-already being expanded (see @secref["mz:stxcerts"]) , and inactive
-certificates associated with @scheme[stx] are activated for
-@scheme[stx] (see @secref["mz:stxinactivecerts"]). Furthermore, if the
+already being expanded (see @secref["stxcerts"]) , and @tech{inactive
+certificates} associated with @scheme[stx] are activated for
+@scheme[stx] (see @secref["stxcerts"]). Furthermore, if the
 transformer is defined within a module (i.e., the current expansion
 was triggered by a use of a module-defined identifier with a
 @tech{transformer binding}) or if the current expression is being
@@ -247,12 +247,12 @@ if not @scheme[#f]. If @scheme[failure-thunk] is @scheme[false], the
 @exnraise[exn:fail:contract].
 
 Resolving @scheme[id-stx] can use certificates for the expression
-being transformed (see @secref["mz:stxcerts"]) as well as inactive
-certificates associated with @scheme[id-stx] (see
-@secref["mz:stxinactivecerts"]). Furthermore, if the transformer is
-defined within a module (i.e., the current transformation was
-triggered by a use of a module-defined identifier) or if the current
-expression is being expanded for the body of a module, then resolving
+being transformed (see @secref["stxcerts"]) as well as @tech{inactive
+certificates} associated with @scheme[id-stx] (see
+@secref["stxcerts"]). Furthermore, if the transformer is defined
+within a module (i.e., the current transformation was triggered by a
+use of a module-defined identifier) or if the current expression is
+being expanded for the body of a module, then resolving
 @scheme[id-stx] can access any identifier defined by the module.
 
 @transform-time[]}
@@ -301,7 +301,7 @@ eventually expanded in an expression context.
 
 Returns an inferred name for the expression position being
 transformed, or @scheme[#f] if no such name is available. See also
-@secref["mz:infernames"].
+@secref["infernames"].
 
 @transform-time[]}
 
@@ -311,7 +311,7 @@ transformed, or @scheme[#f] if no such name is available. See also
                list?)]{
 
 Returns an indication of the context for expansion that triggered a
-@tech{syntax transformer} call. See @secref["mz:expand-context-model"]
+@tech{syntax transformer} call. See @secref["expand-context-model"]
 for more information on contexts.
 
 The symbol results indicate that the expression is being expanded for
@@ -365,14 +365,14 @@ procedure accepts one to three arguments: @scheme[_stx] (required),
 @scheme[_key] (optional), and @scheme[_intro] (optional). The
 procedure's result is a syntax object like @scheme[stx], except that
 it includes the captured certificates as inactive (see
-@secref["mz:stxinactivecerts"]) if @scheme[active?] is @scheme[#f]
-(the default) or active otherwise. If @scheme[key] is supplied and not
-@scheme[#f], it is associated with each captured certificate for later
-use through @scheme[syntax-recertify]. If @scheme[_intro] is supplied,
-and if it is not @scheme[#f] (the default), then it must be a
-procedure created by @scheme[make-syntax-introducer], in which case
-the certificate applies only to parts of @scheme[stx] that are marked
-as introduced by @scheme[_intro].
+@secref["stxcerts"]) if @scheme[active?] is @scheme[#f] (the default)
+or active otherwise. If @scheme[key] is supplied and not @scheme[#f],
+it is associated with each captured certificate for later use through
+@scheme[syntax-recertify]. If @scheme[_intro] is supplied, and if it
+is not @scheme[#f] (the default), then it must be a procedure created
+by @scheme[make-syntax-introducer], in which case the certificate
+applies only to parts of @scheme[stx] that are marked as introduced by
+@scheme[_intro].
 
 Supply @scheme[#t] for @scheme[active?] when the syntax to be
 certified can be safely used in any context by any party, and where
@@ -396,7 +396,7 @@ transformer} application by the expander, @scheme[#f] otherwise.}
 Produces a syntax object that is like @scheme[stx], except that a
 @tech{syntax mark} for the current expansion is added (possibly
 canceling an existing mark in parts of @scheme[stx]). See
-@secref["mz:transformer-model"] for information on @tech{syntax
+@secref["transformer-model"] for information on @tech{syntax
 marks}.
 
 @transform-time[]}

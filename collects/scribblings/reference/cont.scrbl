@@ -1,9 +1,9 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:cont"]{Continuations}
+@title[#:tag "cont"]{Continuations}
 
-See @secref["mz:cont-model"] and @secref["mz:prompt-model"] for
+See @secref["cont-model"] and @secref["prompt-model"] for
 general information about continuations. PLT Scheme's support for
 prompts and composable continuations most closely resembles Dorai
 Sitaram's @scheme[\%] and @scheme[fcontrol] operator @cite[#:key
@@ -18,23 +18,23 @@ barrier:
 @itemize{
 
  @item{applying an exception handler, an error escape handler, or an
- error display handler (see @secref["mz:exns"]);}
+ error display handler (see @secref["exns"]);}
 
- @item{applying a macro transformer (see @secref["mz:stxtrans"]),
+ @item{applying a macro transformer (see @secref["stxtrans"]),
  evaluating a compile-time expression, or applying a module name
- resolver (see @secref["mz:modnameresolver"]);}
+ resolver (see @secref["modnameresolver"]);}
 
- @item{applying a custom-port procedure (see @secref["mz:customport"]), an
- event guard procedure (see @secref["mz:sync"]), or a parameter guard
- procedure (see @secref["mz:parameters"]);}
+ @item{applying a custom-port procedure (see @secref["customport"]), an
+ event guard procedure (see @secref["sync"]), or a parameter guard
+ procedure (see @secref["parameters"]);}
 
  @item{applying a security-guard procedure (see
- @secref["mz:securityguards"]);}
+ @secref["securityguards"]);}
 
- @item{applying a will procedure (see @secref["mz:willexecutor"]); or}
+ @item{applying a will procedure (see @secref["willexecutor"]); or}
 
  @item{evaluating or loading code from the stand-alone MzScheme
- command line (see @secref["mz:running-sa"]).}
+ command line (see @secref["running-sa"]).}
 
 }
 
@@ -141,7 +141,7 @@ and if the same barrier is not part of the captured continuation, then
 the @exnraise[exn:fail:contract:continuation].
 
 A continuation can be invoked from the thread (see
-@secref["mz:threads"]) other than the one where it was captured.}
+@secref["threads"]) other than the one where it was captured.}
 
 @defproc[(call/cc
           [proc (continuation? . -> . any)]
@@ -275,12 +275,12 @@ Normally, the second part of this continuation is never reached, due
 to a jump in the first part. However, the second part is relevant
 because it enables jumps to escape continuations that are contained in
 the context of the @scheme[dynamic-wind] call. Furthermore, it means
-that the continuation marks (see @secref["mz:contmarks"]) and
-parameterization (see @secref["mz:parameters"]) for @scheme[pre-thunk]
+that the continuation marks (see @secref["contmarks"]) and
+parameterization (see @secref["parameters"]) for @scheme[pre-thunk]
 correspond to those of the @scheme[dynamic-wind] call that installed
 @scheme[pre-thunk]. The @scheme[pre-thunk] call, however, is
 @scheme[parameterize-break]ed to disable breaks (see also
-@secref["mz:breakhandler"]).
+@secref["breakhandler"]).
 
 Similarly, when @scheme[post-thunk] is called due to a continuation
 jump, the continuation of @scheme[post-thunk] jumps to a less deeply
@@ -294,7 +294,7 @@ to disable breaks.
 
 In both cases, the target for a jump is recomputed after each
 @scheme[pre-thunk] or @scheme[post-thunk] completes. When a
-prompt-delimited continuation (see @secref["mz:prompt-model"]) is
+prompt-delimited continuation (see @secref["prompt-model"]) is
 captured in a @scheme[post-thunk], it might be delimited and
 instantiated in such a way that the target of a jump turns out to be
 different when the continuation is applied than when the continuation

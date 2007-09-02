@@ -2,6 +2,7 @@
 @require["mz.ss"]
 @require[(lib "class.ss")]
 @require-for-syntax[mzscheme]
+@require-for-label[(lib "class.ss")]
 
 @begin[
 
@@ -70,6 +71,8 @@
   
 
 @title[#:tag "mzlib:class" #:style 'toc]{Classes and Objects}
+
+@declare-exporting[big (lib "big/class")]
 
 @local-table-of-contents[]
 
@@ -147,7 +150,7 @@ interface is not an object (i.e., there are no ``meta-classes'' or
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mz:createinterface"]{Creating Interfaces}
+@section[#:tag "createinterface"]{Creating Interfaces}
 
 @defform[(interface (super-interface-expr ...) id ...)]{
 
@@ -179,7 +182,7 @@ superinterfaces specify inconsistent derivation requirements, the
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mz:createclass"]{Creating Classes}
+@section[#:tag "createclass"]{Creating Classes}
 
 @defthing[object% class?]{
 
@@ -277,14 +280,14 @@ implementation requirement of each interface, otherwise the
 @exnraise[exn:fail:object].
 
 An @scheme[inspect] @scheme[class-clause] selects an inspector (see
-@secref["mz:inspectors"]) for the class extension. The
+@secref["inspectors"]) for the class extension. The
 @scheme[inspector-expr] must evaluate to an inspector or @scheme[#f]
 when the @scheme[class*] form is evaluated. Just as for structure
 types, an inspector controls access to the class's fields, including
 private fields, and also affects comparisons using @scheme[equal?]. If
 no @scheme[inspect] clause is provided, access to the class is
 controlled by the parent of the current inspector (see
-@secref["mz:inspectors"]). A syntax error is reported if more than one
+@secref["inspectors"]). A syntax error is reported if more than one
 @scheme[inspect] clause is specified.
 
 The other @scheme[class-clause]s define initialization arguments,
@@ -296,13 +299,13 @@ public and private fields, and public and private methods. For each
 clause, there must be one @scheme[method-definition]. All other
 definition @scheme[class-clause]s create private fields. All remaining
 @scheme[expr]s are initialization expressions to be evaluated when the
-class is instantiated (see @secref["mz:objcreation"]).
+class is instantiated (see @secref["objcreation"]).
 
 The result of a @scheme[class*] expression is a new class, derived
 from the specified superclass and implementing the specified
 interfaces. Instances of the class are created with the
 @scheme[instantiate] form or @scheme[make-object] procedure, as
-described in @secref["mz:objcreation"].
+described in @secref["objcreation"].
 
 Each @scheme[class-clause] is (partially) macro-expanded to reveal its
 shapes. If a @scheme[class-clause] is a @scheme[begin] expression, its
@@ -314,39 +317,44 @@ Within a @scheme[class*] form for instances of the new class,
 @scheme[this] is bound to the object itself;
 @scheme[super-instantiate], @scheme[super-make-object], and
 @scheme[super-new] are bound to forms to initialize fields in the
-superclass (see @secref["mz:objcreation"]); @scheme[super] is
+superclass (see @secref["objcreation"]); @scheme[super] is
 available for calling superclass methods (see
-@secref["mz:clmethoddefs"]); and @scheme[inner] is available for
+@secref["clmethoddefs"]); and @scheme[inner] is available for
 calling subclass augmentations of methods (see
-@secref["mz:clmethoddefs"]).}
+@secref["clmethoddefs"]).}
 
 @defform[(class superclass-expr class-clause ...)]{
 
 Like @scheme[class*], but omits the @scheme[interface-expr]s, for the case that none are needed.}
 
+@defidform[this]{
+
+Within a @scheme[class*] form, refers to the current object (i.e., the
+object being initialized or whose method was called). Use outside the
+body of a @scheme[class*] form is a syntax error.}
 
 @defclassforms[
   [(inspect inspector-expr) ()]
-  [(init init-decl ...) ("mz:clinitvars")]
-  [(init-field init-decl ...) ("mz:clinitvars" "mz:clfields")]
-  [(field field-decl ...) ("mz:clfields")]
-  [(inherit-field maybe-renamed ...) ("mz:clfields")]
-  [* ((init-rest id) (init-rest)) ("mz:clinitvars")]
-  [(public maybe-renamed ...) ("mz:clmethoddefs")]
-  [(pubment maybe-renamed ...) ("mz:clmethoddefs")]
-  [(public-final maybe-renamed ...) ("mz:clmethoddefs")]
-  [(override maybe-renamed ...) ("mz:clmethoddefs")]
-  [(overment maybe-renamed ...) ("mz:clmethoddefs")]
-  [(override-final maybe-renamed ...) ("mz:clmethoddefs")]
-  [(augment maybe-renamed ...) ("mz:clmethoddefs")]
-  [(augride maybe-renamed ...) ("mz:clmethoddefs")]
-  [(augment-final maybe-renamed ...) ("mz:clmethoddefs")]
-  [(private id ...) ("mz:clmethoddefs")]
-  [(inherit maybe-renamed ...) ("mz:classinherit")]
-  [(inherit/super maybe-renamed ...)  ("mz:classinherit")]
-  [(inherit/inner maybe-renamed ...) ("mz:classinherit")]
-  [(rename-super renamed ...) ("mz:classinherit")]
-  [(rename-inner renamed ...) ("mz:classinherit")]
+  [(init init-decl ...) ("clinitvars")]
+  [(init-field init-decl ...) ("clinitvars" "clfields")]
+  [(field field-decl ...) ("clfields")]
+  [(inherit-field maybe-renamed ...) ("clfields")]
+  [* ((init-rest id) (init-rest)) ("clinitvars")]
+  [(public maybe-renamed ...) ("clmethoddefs")]
+  [(pubment maybe-renamed ...) ("clmethoddefs")]
+  [(public-final maybe-renamed ...) ("clmethoddefs")]
+  [(override maybe-renamed ...) ("clmethoddefs")]
+  [(overment maybe-renamed ...) ("clmethoddefs")]
+  [(override-final maybe-renamed ...) ("clmethoddefs")]
+  [(augment maybe-renamed ...) ("clmethoddefs")]
+  [(augride maybe-renamed ...) ("clmethoddefs")]
+  [(augment-final maybe-renamed ...) ("clmethoddefs")]
+  [(private id ...) ("clmethoddefs")]
+  [(inherit maybe-renamed ...) ("classinherit")]
+  [(inherit/super maybe-renamed ...)  ("classinherit")]
+  [(inherit/inner maybe-renamed ...) ("classinherit")]
+  [(rename-super renamed ...) ("classinherit")]
+  [(rename-inner renamed ...) ("classinherit")]
 ]
 
 @defstarshorthands[
@@ -404,7 +412,7 @@ with @scheme[deserialize-id-expr].}
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-@subsection[#:tag "mz:clinitvars"]{Initialization Variables}
+@subsection[#:tag "clinitvars"]{Initialization Variables}
 
 A class's initialization variables, declared with @scheme[init],
 @scheme[init-field], and @scheme[init-rest], are instantiated
@@ -438,7 +446,7 @@ an argument is not provided for its variable. The environment of
 variables, all of the fields, and all of the methods of the class. If
 multiple @scheme[default-value-expr]s are evaluated, they are
 evaluated from left to right. Object creation and field initialization
-are described in detail in @secref["mz:objcreation"].
+are described in detail in @secref["objcreation"].
 
 If an initialization variable has no @scheme[default-value-expr], then
 the object creation or superclass initialization call must supply an
@@ -456,7 +464,7 @@ using the order of @scheme[init] and @scheme[init-field] clauses and
 the order of variables within each clause. When a @scheme[instantiate]
 form provides both by-position and by-name arguments, the converted
 arguments are placed before by-name arguments. (The order can be
-significant; see also @secref["mz:objcreation"].)
+significant; see also @secref["objcreation"].)
 
 Unless a class contains an @scheme[init-rest] clause, when the number
 of by-position arguments exceeds the number of declared initialization
@@ -480,18 +488,18 @@ are provided to a class with an @scheme[init-rest] clause, the
 @exnraise[exn:fail:object].
 
 Unused (by-name) arguments are to be propagated to the superclass, as
-described in @secref["mz:objcreation"].  Multiple initialization
+described in @secref["objcreation"].  Multiple initialization
 arguments can use the same name if the class derivation contains
 multiple declarations (in different classes) of initialization
-variables with the name. See @secref["mz:objcreation"] for further
+variables with the name. See @secref["objcreation"] for further
 details.
 
-See also @secref["mz:extnames"] for information about internal and
+See also @secref["extnames"] for information about internal and
 external names.
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-@subsection[#:tag "mz:clfields"]{Fields}
+@subsection[#:tag "clfields"]{Fields}
 
 Each @scheme[field], @scheme[init-field], and non-method
 @scheme[define-values] clause in a class declares one or more new
@@ -500,11 +508,11 @@ fields for the class. Fields declared with @scheme[field] or
 mutated by subclasses using @scheme[inherit-field]. Public fields are
 also accessible outside the class via @scheme[class-field-accessor]
 and mutable via @scheme[class-field-mutator] (see
-@secref["mz:ivaraccess"]). Fields declared with @scheme[define-values]
+@secref["ivaraccess"]). Fields declared with @scheme[define-values]
 are accessible only within the class.
 
 A field declared with @scheme[init-field] is both a public field and
-an initialization variable. See @secref["mz:clinitvars"] for
+an initialization variable. See @secref["clinitvars"] for
 information about initialization variables.
 
 An @scheme[inherit-field] declaration makes a public field defined by
@@ -517,19 +525,19 @@ is not declared with @scheme[inherit-field] in the derived class. The
 controls lexical scope within a class expression.
 
 When an object is first created, all of its fields have the
-@|undefined-const| value (see @secref["mz:void"]). The fields of a
+@|undefined-const| value (see @secref["void"]). The fields of a
 class are initialized at the same time that the class's initialization
-expressions are evaluated; see @secref["mz:objcreation"] for more
+expressions are evaluated; see @secref["objcreation"] for more
 information.
 
-See also @secref["mz:extnames"] for information about internal and
+See also @secref["extnames"] for information about internal and
 external names.
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-@subsection[#:tag "mz:clmethods"]{Methods}
+@subsection[#:tag "clmethods"]{Methods}
 
-@subsubsection[#:tag "mz:clmethoddefs"]{Method Definitions}
+@subsubsection[#:tag "clmethoddefs"]{Method Definitions}
 
 Each @scheme[public], @scheme[override], @scheme[augment],
 @scheme[pubment], @scheme[overment], @scheme[augride],
@@ -631,7 +639,7 @@ the @scheme[arg-list-expr] must not be a parenthesized expression.}
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-@subsubsection[#:tag "mz:classinherit"]{Inherited and Superclass Methods}
+@subsubsection[#:tag "classinherit"]{Inherited and Superclass Methods}
 
 Each @scheme[inherit], @scheme[inherit/super], @scheme[inherit/inner],
 @scheme[rename-super], and @scheme[rename-inner] clause declares one
@@ -683,7 +691,7 @@ If a method declared with @scheme[inherit], @scheme[inherit/super],
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-@subsubsection[#:tag "mz:extnames"]{Internal and External Names}
+@subsubsection[#:tag "extnames"]{Internal and External Names}
 
 Each method declared with @scheme[public], @scheme[override],
 @scheme[augment], @scheme[pubment], @scheme[overment],
@@ -695,7 +703,7 @@ when @scheme[(internal-id external-id)] is used for declaring the
 method. The internal name is used to access the method directly within
 the class expression (including within @scheme[super] or
 @scheme[inner] forms), while the external name is used with
-@scheme[send] and @scheme[generic] (see @secref["mz:ivaraccess"]).  If
+@scheme[send] and @scheme[generic] (see @secref["ivaraccess"]).  If
 a single @scheme[identifier] is provided for a method declaration, the
 identifier is used for both the internal and external names.
 
@@ -844,7 +852,7 @@ Produces an integer hash code consistent with
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mz:objcreation"]{Creating Objects}
+@section[#:tag "objcreation"]{Creating Objects}
 
 The @scheme[make-object] procedure creates a new object with
 by-position initialization arguments, the @scheme[new] form
@@ -855,7 +863,7 @@ by-position and by-name initialization arguments.
 
 All fields in the newly created object are initially bound to the
 special @|undefined-const| value (see
-@secref["mz:void"]). Initialization variables with default value
+@secref["void"]). Initialization variables with default value
 expressions (and no provided value) are also initialized to
 @|undefined-const|. After argument values are assigned to
 initialization variables, expressions in @scheme[field] clauses,
@@ -901,7 +909,7 @@ initialization (unlike objects in C++).
 Creates an instance of @scheme[class]. The @scheme[init-v]s are
 passed as initialization arguments, bound to the initialization
 variables of @scheme[class] for the newly created object as
-described in @secref["mz:clinitvars"]. If @scheme[class] is not a
+described in @secref["clinitvars"]. If @scheme[class] is not a
 class, the @exnraise[exn:fail:contract].}
 
 @defform[(new class-expr (id by-name-expr) ...)]{
@@ -922,7 +930,7 @@ argument for the corresponding @scheme[id].}
 @defidform[super-make-object]{
 
 Produces a procedure that takes by-position arguments an invokes
-superclass initialization. See @secref["mz:objcreation"] for more
+superclass initialization. See @secref["objcreation"] for more
 information.}
 
 
@@ -930,18 +938,18 @@ information.}
 
 
 Invokes superclass initialization with the specified by-position and
-by-name arguments. See @secref["mz:objcreation"] for more
+by-name arguments. See @secref["objcreation"] for more
 information.}
 
 
 @defform[(super-new (id by-name-expr ...) ...)]{
 
 Invokes superclass initialization with the specified by-name
-arguments. See @secref["mz:objcreation"] for more information.}
+arguments. See @secref["objcreation"] for more information.}
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mz:ivaraccess"]{Field and Method Access}
+@section[#:tag "ivaraccess"]{Field and Method Access}
 
 In expressions within a class definition, the initialization
 variables, fields, and methods of the class all part of the
@@ -953,7 +961,7 @@ initialization variables can be mutated with @scheme[set!].
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-@subsection[#:tag "mz:methodcalls"]{Methods}
+@subsection[#:tag "methodcalls"]{Methods}
 
 Method names within a class can only be used in the procedure position
 of an application expression; any other use is a syntax error.
@@ -1024,7 +1032,7 @@ applied directly (in the same way as declared methods within a class)
 for each method. The each @scheme[obj-expr] must produce an object,
 which must have a public method named by the corresponding
 @scheme[method-id]. The corresponding @scheme[id] is bound so that it
-can be applied directly (see @secref["mz:methodcalls"]).
+can be applied directly (see @secref["methodcalls"]).
 
 Example:
 
@@ -1123,7 +1131,7 @@ of @scheme[generic-expr], the @exnraise[exn:fail:object].}
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mz:mixins"]{Mixins}
+@section[#:tag "mixins"]{Mixins}
 
 @defform[(mixin (interface-expr ...) (interface-expr ...)
            class-clause ...)]{
@@ -1146,7 +1154,7 @@ Evaluation of a @scheme[mixin] form checks that the
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mz:objectserialize"]{Object Serialization}
+@section[#:tag "objectserialize"]{Object Serialization}
 
 @defform[
 (define-serializable-class* class-id superclass-expr 
@@ -1230,7 +1238,7 @@ The @scheme[externalizable<%>] interface includes only the
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mz:objectutils"]{Object, Class, and Interface Utilities}
+@section[#:tag "objectutils"]{Object, Class, and Interface Utilities}
 
 @defproc[(object? [v any/c]) boolean?]{
 
@@ -1385,3 +1393,10 @@ values of @scheme[struct-type-info]:
    specific ancestor class, @scheme[#t] otherwise.}
 
 }}
+
+@defstruct[(exn:fail:object exn:fail) ()]{
+
+Raised for @scheme[class]-related failures, such as attempting to call
+a method that is not supplied by an object.
+
+}

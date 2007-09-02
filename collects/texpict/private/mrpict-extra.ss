@@ -185,7 +185,7 @@
 		[sup? (memq* 'superscript orig-style)])
 	    (let ([s-font (if (or sub? sup?)
 			      (extend-font font
-					   (floor (* 2/3 (send font get-point-size)))
+					   (floor (* 6/10 (send font get-point-size)))
 					   (send font get-style)
 					   (send font get-weight))
 			      font)]

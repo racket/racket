@@ -1,9 +1,10 @@
 #reader(lib "reader.ss" "scribble")
-(module blurbs mzscheme
+(module blurbs (lib "lang.ss" "big")
   (require (lib "struct.ss" "scribble")
            (lib "manual.ss" "scribble")
            (lib "scheme.ss" "scribble")
            (lib "decode.ss" "scribble"))
+  (require-for-label (lib "mred.ss" "mred"))
 
   (provide (all-defined-except p))
 
@@ -96,7 +97,7 @@ start/end @techlink{position} is incremented by @|what|.})
 
   (define OVD
     @elem{The result is only valid when the editor is displayed (see
-          @secref["mr:tb:miaoverview"]).})
+          @secref["tb:miaoverview"]).})
 
   (define (FCAX c details)
     @elem{@|c|alling this method may force the recalculation of @techlink{location}
@@ -119,28 +120,28 @@ information@|details|, even if the editor currently has delayed refreshing (see
           instead of lines (determined by both explicit newline
           characters and automatic line-wrapping).})
 
-  (define admindiscuss @secref["mr:editoradministrators"])
-  (define ateoldiscuss @secref["mr:editoreol"])
-  (define textdiscuss @secref["mr:editorflattened"])
-  (define clickbackdiscuss @secref["mr:editorclickback"])
-  (define stylediscuss @secref["mr:editorstyles"])
-  (define timediscuss @secref["mr:editorcutandpastetime"])
-  (define filediscuss @secref["mr:editorfileformat"])
-  (define editordatadiscuss @secref["mr:editordata"])
-  (define snipclassdiscuss @secref["mr:editorsnipclasses"])
-  (define togglediscuss @secref["mr:styledeltatoggle"])
-  (define drawcaretdiscuss @secref["mr:drawcaretinfo"])
-  (define eventspacediscuss @secref["mr:eventspaceinfo"])
-  (define lockdiscuss @secref["mr:lockinfo"])
-  (define mousekeydiscuss @secref["mr:mouseandkey"])
-  (define globaleditordatadiscuss @secref["mr:globaleditordata"])
+  (define admindiscuss @secref["editoradministrators"])
+  (define ateoldiscuss @secref["editoreol"])
+  (define textdiscuss @secref["editorflattened"])
+  (define clickbackdiscuss @secref["editorclickback"])
+  (define stylediscuss @secref["editorstyles"])
+  (define timediscuss @secref["editorcutandpastetime"])
+  (define filediscuss @secref["editorfileformat"])
+  (define editordatadiscuss @secref["editordata"])
+  (define snipclassdiscuss @secref["editorsnipclasses"])
+  (define togglediscuss @secref["styledeltatoggle"])
+  (define drawcaretdiscuss @secref["drawcaretinfo"])
+  (define eventspacediscuss @secref["eventspaceinfo"])
+  (define lockdiscuss @secref["lockinfo"])
+  (define mousekeydiscuss @secref["mouseandkey"])
+  (define globaleditordatadiscuss @secref["globaleditordata"])
 
-  (define geomdiscuss @secref["mr:containeroverview"])
+  (define geomdiscuss @secref["containeroverview"])
 
-  (define mrprefsdiscuss @secref["mr:mredprefs"])
+  (define mrprefsdiscuss @secref["mredprefs"])
 
   (define seesniporderdiscuss
-    @elem{See @secref["mr:tb:miaoverview"] for information about snip order in pasteboards.})
+    @elem{See @secref["tb:miaoverview"] for information about snip order in pasteboards.})
 
   (define (clipboardtypes)
     @elem{The @scheme[format] string is typically four capital letters. (Under
@@ -159,7 +160,9 @@ information@|details|, even if the editor currently has delayed refreshing (see
                @item{@method[dc<%> end-doc]}}
       @p{Attempts to use a drawing method outside of an active page raises an exception.})))
 
-  (define SeeMzParam @elem{(see @secref["mz:parameters"])})
+  (define reference-doc '(lib "reference.scrbl" "scribblings" "reference"))
+
+  (define SeeMzParam @elem{(see @secref[#:doc reference-doc "parameters"])})
   
   (define DrawSizeNote @elem{Restrictions on the magnitude of
                             drawing coordinates are described with @scheme[dc<%>].})

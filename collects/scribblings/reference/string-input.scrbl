@@ -9,7 +9,7 @@
 
 Reads a single character from @scheme[in]---which may involve reading
 several bytes to UTF-8-decode them into a character (see
-@secref["mz:ports"]); a minimal number of bytes are read/peeked to
+@secref["ports"]); a minimal number of bytes are read/peeked to
 perform the decoding. If no bytes are available before an end-of-file,
 then @scheme[eof] is returned.}
 
@@ -145,10 +145,10 @@ triggered by future reads.) If an error is encountered before any
 bytes have been read, an exception is raised.
 
 When @scheme[in] produces a special value, as described in
-@secref["mz:customport"], the result is a procedure of four
+@secref["customport"], the result is a procedure of four
 arguments. The four arguments correspond to the location of the
 special value within the port, as described in
-@secref["mz:customport"]. If the procedure is called more than once
+@secref["customport"]. If the procedure is called more than once
 with valid arguments, the @exnraise[exn:fail:contract]. If
 @scheme[read-bytes-avail] returns a special-producing procedure, then
 it does not place characters in @scheme[bstr]. Similarly,
@@ -172,7 +172,7 @@ is not reached.}
          (or/c positive-exact-integer? eof-object? procedure?)]{
 
 Like @scheme[read-bytes-avail!], but breaks are enabled during the
-read (see also @secref["mz:breakhandler"]). If breaking is disabled
+read (see also @secref["breakhandler"]). If breaking is disabled
 when @scheme[read-bytes-avail!/enable-break] is called, and if the
 @scheme[exn:break] exception is raised as a result of the call, then
 no bytes will have been read from @scheme[in].}
@@ -196,10 +196,10 @@ For most kinds of ports, inspecting @scheme[skip-bytes-amt] bytes and
 @math{@scheme[skip-bytes-amt]+@scheme[amt]} bytes of memory overhead
 associated with the port, at least until the bytes/characters are
 read. No such overhead is required when peeking into a string port
-(see @secref["mz:stringport"]), a pipe port (see
-@secref["mz:pipeports"]), or a custom port with a specific peek
+(see @secref["stringport"]), a pipe port (see
+@secref["pipeports"]), or a custom port with a specific peek
 procedure (depending on how the peek procedure is implemented; see
-@secref["mz:customport"]).
+@secref["customport"]).
 
 If a port produces @scheme[eof] mid-stream, peek skips beyond the
 @scheme[eof] always produce @scheme[eof] until the @scheme[eof] is
@@ -284,7 +284,7 @@ with @scheme[skip-bytes-amt] and @scheme[progress] arguments like
 
 Like @scheme[read-char], but that if the input port returns a non-byte
 value (through a value-generating procedure in a custom port; see
-@secref["mz:customport"] and @secref["mz:special-comments"] for
+@secref["customport"] and @secref["special-comments"] for
 details), the non-byte value is returned.}
 
 @defproc[(read-byte-or-special [in input-port? (current-input-port)])
@@ -338,7 +338,7 @@ ready, it remains ready.  If progress events are unavailable for
 Returns @scheme[#t] if @scheme[port-progress-evt] can return an event
 for @scheme[in]. All built-in kinds of ports support progress events,
 but ports created with @scheme[make-input-port] (see
-@secref["mz:customport"]) may not.}
+@secref["customport"]) may not.}
  
 @defproc[(port-commit-peeked [amt nonnegative-exact-integer?]
                              [progress evt?]

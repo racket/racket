@@ -373,16 +373,13 @@ Scheme_Object *scheme_complex_sqrt(const Scheme_Object *o)
 			scheme_make_integer(2));
 
   nr = scheme_sqrt(1, &nrsq);
-  
+  if (scheme_is_negative(i))
+    nr = scheme_bin_minus(zero, nr);
+    
   prsq = scheme_bin_div(scheme_bin_plus(srssq, r),
 			scheme_make_integer(2));
 
   ni = scheme_sqrt(1, &prsq);
 
-  /* Choose root with positive real part: */
-  if (scheme_bin_lt(ni, zero)) {
-    return scheme_make_complex(scheme_bin_minus(zero, ni), 
-			       scheme_bin_minus(zero, nr));
-  } else
-    return scheme_make_complex(ni, nr);
+  return scheme_make_complex(ni, nr);
 }

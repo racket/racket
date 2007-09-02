@@ -350,9 +350,9 @@ If @scheme[raise-errors?] is true, then an error in reading triggers an
 This procedure is a load handler for use with @scheme[current-load].
 
 The handler recognizes MrEd editor-format files (see
- @secref["mr:editorfileformat"]) and decodes them for loading. It is
+ @secref["editorfileformat"]) and decodes them for loading. It is
  normally installed as MrEd starts (see
- @secref["mr:startupsequence"]).
+ @secref[#:doc reference-doc "running-sa"]).
 
 The handler recognizes editor files by the first twelve characters of
  the file: @litchar{WXME01}@nonterm{digit}@nonterm{digit}@litchar{ ## }.
@@ -412,7 +412,7 @@ One or more editors can be written to the stream by calling the
 To support streams that span MrEd versions, use
  @scheme[write-editor-version] before this procedure.
 
-See also @secref["mr:editorfileformat"].
+See also @secref["editorfileformat"].
 
 }
 

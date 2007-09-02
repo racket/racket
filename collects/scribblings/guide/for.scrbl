@@ -4,7 +4,7 @@
 @require["guide-utils.ss"]
 @require[(lib "for.ss")]
 
-@title[#:tag "guide:for"]{Iterations and Comprehensions}
+@title[#:tag "for"]{Iterations and Comprehensions}
 
 The @scheme[for] family of syntactic forms support iteration over
 @defterm{sequences}. Lists, vectors, strings, byte strings, input
@@ -55,7 +55,7 @@ iterations can be included along with bindings.
 Before details on the variations of @scheme[for], though, it's best to
 see the kinds of sequence generators that make interesting examples.
 
-@section[#:tag "guide:sequences"]{Sequence Constructors}
+@section[#:tag "sequences"]{Sequence Constructors}
 
 The @scheme[in-range] function generates a sequence of numbers, given
 an optional starting number (which defaults to @scheme[0]), a number
@@ -115,7 +115,7 @@ code generation; see @secref["for-performance"] for more information.
   (display i))
 ]
 
-@refdetails["mz:sequences"]{sequences}
+@refdetails["sequences"]{sequences}
 
 @section{@scheme[for] and @scheme[for*]}
 
@@ -290,7 +290,7 @@ the same facility with nested iterations:
   (list book chapter))
 ]
 
-@section[#:tag "guide:for/fold"]{@scheme[for/fold] and @scheme[for*/fold]}
+@section[#:tag "for/fold"]{@scheme[for/fold] and @scheme[for*/fold]}
 
 The @scheme[for/fold] form generalizes the way to combine iteration
 results. Its syntax is slightly different than the syntax of
@@ -438,4 +438,4 @@ set of sequence values. The documentation for a sequence constructor
 should indicate the performance benefits of using it directly in
 a @scheme[for] @scheme[_clause].
 
-@refdetails["mz:for"]{iterations and comprehensions}
+@refdetails["for"]{iterations and comprehensions}

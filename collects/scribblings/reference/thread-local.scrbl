@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:thread-local-storage" #:style 'toc]{Thread-Local Storage}
+@title[#:tag "thread-local-storage" #:style 'toc]{Thread-Local Storage}
 
 @tech{Thread cells} provides primitive support for thread-local
 storage. @tech{Parameters} combine thread cells and continuation marks

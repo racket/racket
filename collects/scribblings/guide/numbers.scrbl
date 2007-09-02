@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:numbers"]{Numbers}
+@title[#:tag "numbers"]{Numbers}
 
 A Scheme @defterm{number} is either exact or inexact:
 
@@ -53,7 +53,7 @@ or inexact number. The prefixes @litchar{#b}, @litchar{#o}, and
 @litchar{#x} specificy binary, octal, and hexadecimal
 interprertation of digits.
 
-@refdetails/gory["mz:parse-number"]{the syntax of numbers}
+@refdetails/gory["parse-number"]{the syntax of numbers}
 
 @examples[
 0.5
@@ -146,4 +146,4 @@ can only approximate @scheme[1/10]:
 (inexact->exact 0.1)
 ]
 
-@refdetails["mz:numbers"]{numbers and number procedures}
+@refdetails["numbers"]{numbers and number procedures}

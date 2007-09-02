@@ -14,9 +14,12 @@
      make-so
      make-info-domain
      make-launchers
+     make-docs
      call-install
+     call-post-install
      pause-on-errors
      force-unpacks
+     doc-pdf-dest
      specific-collections
      specific-planet-dirs
      archives

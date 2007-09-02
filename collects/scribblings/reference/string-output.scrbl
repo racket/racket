@@ -16,6 +16,11 @@ that are the UTF-8 encoding of @scheme[char] are written to
 
 Writes a single byte to @scheme[out].}
 
+@defproc[(newline [out output-port? (current-output-port)])
+         void?]{
+
+The same as @scheme[(write-char #\newline out)].}
+
 @defproc[(write-string [str string?]
                        [out output-port? (current-output-port)]
                        [start-pos nonnegative-exact-integer? 0]
@@ -84,7 +89,7 @@ writing and breaks: if breaking is disabled when
 @scheme[write-bytes-avail/enable-break] is called, and if the
 @scheme[exn:break] exception is raised as a result of the call, then
 no bytes will have been written to @scheme[out].  See also
-@secref["mz:breakhandler"].}
+@secref["breakhandler"].}
 
 @defproc[(write-special [v any/c][out output-port? (current-output-port)]) boolean?]{
 
@@ -108,7 +113,7 @@ is written.}
 
 Similar to @scheme[write-bytes-avail], but instead of writing bytes
 immediately, it returns a synchronizable event (see
-@secref["mz:sync"]).  The @scheme[out] must support atomic writes, as
+@secref["sync"]).  The @scheme[out] must support atomic writes, as
 indicated by @scheme[port-writes-atomic?].
 
 Synchronizing on the object starts a write from @scheme[bstr], and the
@@ -123,7 +128,7 @@ bytes will have been written to @scheme[out].}
 
 Similar to @scheme[write-special], but instead of writing the special
 value immediately, it returns a synchronizable event (see
-@secref["mz:sync"]).  The @scheme[out] must support atomic writes, as
+@secref["sync"]).  The @scheme[out] must support atomic writes, as
 indicated by @scheme[port-writes-atomic?].
 
 Synchronizing on the object starts a write of the special value, and
@@ -138,7 +143,7 @@ provide an exclusive-or guarantee (break or write, but not both) for
 @scheme[out], and if the port can be used with procedures like
 @scheme[write-bytes-avail-evt]. Scheme's file-stream ports, pipes,
 string ports, and TCP ports all support atomic writes; ports created
-with @scheme[make-output-port] (see @secref["mz:customport"]) may
+with @scheme[make-output-port] (see @secref["customport"]) may
 support atomic writes.}
 
 @defproc[(port-writes-special? [out output-port?]) boolean?]{
@@ -147,4 +152,4 @@ Returns @scheme[#t] if procedures like @scheme[write-special] can
 write arbitrary values to the port. Scheme's file-stream ports,
 pipes, string ports, and TCP ports all reject special values, but
 ports created with @scheme[make-output-port] (see
-@secref["mz:customport"]) may support them.}
+@secref["customport"]) may support them.}

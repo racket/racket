@@ -12,7 +12,7 @@
                      (make-flow (list b)))))]
 @interaction-eval[(print-hash-table #t)]
 
-@title[#:tag "guide:i/o" #:style 'toc]{Input and Output}
+@title[#:tag "i/o" #:style 'toc]{Input and Output}
 
 A Scheme @defterm{port} represents an input or output stream, such as
 a file, a terminal, a TCP connection, or an in-memory string. More
@@ -167,7 +167,7 @@ stdout in purple, and output written to stderr in red italics.
 The current-port functions actually @tech{parameters}, which means
 that their values can be set with @scheme[parameterize].
 
-@moreguide["guide:parameters"]{parameters}
+@moreguide["parameters"]{parameters}
 
 @examples[
 (let ([s (open-output-string)])
@@ -181,7 +181,7 @@ that their values can be set with @scheme[parameterize].
 @; ----------------------------------------------------------------------
 @section{Reading and Writing Scheme Data}
 
-As noted throughout @secref["guide:datatypes"], Scheme provides two
+As noted throughout @secref["datatypes"], Scheme provides two
 ways to print an instance of a built-in value:
 
 @itemize{

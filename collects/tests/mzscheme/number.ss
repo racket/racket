@@ -1466,6 +1466,16 @@
 (test (make-rectangular 0 +inf.0) sqrt -inf.0)
 (test-nan.0 sqrt +nan.0)
 
+;; Complex `sqrt' cases where both z and (magnitude z) are exact:
+(test 1414.0 round (* 1000 (real-part (sqrt +4i))))
+(test +1414.0 round (* 1000 (imag-part (sqrt +4i))))
+(test 1414.0 round (* 1000 (real-part (sqrt -4i))))
+(test -1414.0 round (* 1000 (imag-part (sqrt -4i))))
+(test 1155.0 round (* 1000 (real-part (sqrt 1+4/3i))))
+(test +577.0 round (* 1000 (imag-part (sqrt 1+4/3i))))
+(test 1155.0 round (* 1000 (real-part (sqrt 1-4/3i))))
+(test -577.0 round (* 1000 (imag-part (sqrt 1-4/3i))))
+
 (test (expt 5 13) sqrt (expt 5 26))
 (test 545915034.0 round (sqrt (expt 5 25)))
 (test (make-rectangular 0 (expt 5 13)) sqrt (- (expt 5 26)))

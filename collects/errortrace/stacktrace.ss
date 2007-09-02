@@ -420,8 +420,11 @@
              [(require i ...) expr]
              [(require-for-syntax i ...) expr]
              [(require-for-template i ...) expr]
+             [(require-for-label i ...) expr]
              ;; No error possible (and no way to wrap)
              [(provide i ...) expr]
+             [(provide-for-syntax i ...) expr]
+             [(provide-for-label i ...) expr]
 
              ;; No error possible
              [(quote _)

@@ -227,10 +227,11 @@ enum {
   scheme_rt_native_code_plus_case,      /* 205 */
   scheme_rt_jitter_data,                /* 206 */
   scheme_rt_module_exports,             /* 207 */
-  scheme_rt_delay_load_info,            /* 208 */
-  scheme_rt_marshal_info,               /* 209 */
-  scheme_rt_unmarshal_info,             /* 210 */
-  scheme_rt_runstack,                   /* 211 */
+  scheme_rt_module_phase_exports,       /* 208 */
+  scheme_rt_delay_load_info,            /* 209 */
+  scheme_rt_marshal_info,               /* 210 */
+  scheme_rt_unmarshal_info,             /* 211 */
+  scheme_rt_runstack,                   /* 212 */
 #endif
 
   _scheme_last_type_

@@ -11,7 +11,7 @@
     (class object%
 
       (init-field dest-dir)
-      
+
       (define/public (get-dest-directory)
         dest-dir)
 
@@ -43,209 +43,333 @@
                      (strip-aux (cdr content)))]))
 
       ;; ----------------------------------------
+      ;; marshal info
+
+      (define/public (get-serialize-version)
+        1)
+      
+      (define/public (serialize-info ri)
+        (parameterize ([current-serialize-resolve-info ri])
+          (serialize (collect-info-ht (resolve-info-ci ri)))))
+
+      (define/public (deserialize-info v ci)
+        (let ([ht (deserialize v)]
+              [in-ht (collect-info-ext-ht ci)])
+          (hash-table-for-each ht (lambda (k v)
+                                    (hash-table-put! in-ht k v)))))
+      (define/public (get-defined ci)
+        (hash-table-map (collect-info-ht ci) (lambda (k v) k)))
+
+      (define/public (get-undefined ri)
+        (hash-table-map (resolve-info-undef ri) (lambda (k v) k)))
+      
+      ;; ----------------------------------------
       ;; global-info collection
 
-      (define/public (save-info fn info)
-        (let ([s (serialize info)])
-          (with-output-to-file fn
-            (lambda ()
-              (write s))
-            'truncate/replace)))
-
-      (define/public (load-info fn info)
-        (let ([ht (deserialize (with-input-from-file fn read))])
-          (hash-table-for-each ht (lambda (k v)
-                                    (hash-table-put! info k v))))
-        info)
-      
       (define/public (collect ds fns)
-        (let ([ht (make-hash-table 'equal)])
-          (map (lambda (d)
-                 (collect-part d #f ht null))
-               ds)
-          ht))
+        (let ([ci (make-collect-info (make-hash-table 'equal)
+                                     (make-hash-table 'equal)
+                                     (make-hash-table)
+                                     (make-hash-table)
+                                     "")])
+          (start-collect ds fns ci)
+          ci))
 
-      (define/public (collect-part d parent ht number)
-        (let ([p-ht (make-hash-table 'equal)])
+      (define/public (start-collect ds fns ci)
+        (map (lambda (d)
+               (collect-part d #f ci null))
+             ds))
+
+      (define/public (collect-part d parent ci number)
+        (let ([p-ci (make-collect-info (make-hash-table 'equal)
+                                       (collect-info-ext-ht ci)
+                                       (collect-info-parts ci)
+                                       (collect-info-tags ci)
+                                       (if (part-tag-prefix d)
+                                           (string-append (collect-info-gen-prefix ci)
+                                                          (part-tag-prefix d)
+                                                          ":")
+                                           (collect-info-gen-prefix ci)))])
           (when (part-title-content d)
-            (collect-content (part-title-content d) p-ht))
-          (collect-part-tags d p-ht number)
-          (collect-content (part-to-collect d) p-ht)
-          (collect-flow (part-flow d) p-ht)
+            (collect-content (part-title-content d) p-ci))
+          (collect-part-tags d p-ci number)
+          (collect-content (part-to-collect d) p-ci)
+          (collect-flow (part-flow d) p-ci)
           (let loop ([parts (part-parts d)]
                      [pos 1])
             (unless (null? parts)
               (let ([s (car parts)])
-                (collect-part s d p-ht
+                (collect-part s d p-ci
                               (cons (if (unnumbered-part? s)
                                         #f
                                         pos)
                                     number))
                 (loop (cdr parts)
                       (if (unnumbered-part? s) pos (add1 pos))))))
-          (set-part-collected-info! d (make-collected-info
-                                       number
-                                       parent
-                                       p-ht))
-          (hash-table-for-each p-ht
-                               (lambda (k v)
-                                 (hash-table-put! ht k v)))))
+          (hash-table-put! (collect-info-parts ci)
+                           d 
+                           (make-collected-info
+                            number
+                            parent
+                            (collect-info-ht p-ci)))
+          (let ([prefix (part-tag-prefix d)])
+            (hash-table-for-each (collect-info-ht p-ci)
+                                 (lambda (k v)
+                                   (when (cadr k)
+                                     (hash-table-put! (collect-info-ht ci)
+                                                      (if prefix
+                                                          (convert-key prefix k)
+                                                          k)
+                                                      v)))))))
 
-      (define/public (collect-part-tags d ht number)
+      (define/private (convert-key prefix k)
+        (case (car k)
+          [(part tech)
+           (if (string? (cadr k))
+               (list (car k)
+                     (string-append prefix
+                                    ":"
+                                    (cadr k)))
+               k)]
+          [(index-entry)
+           (let ([v (convert-key prefix (cadr k))])
+             (if (eq? v (cadr k))
+                 k
+                 (list 'index-entry v)))]
+          [else k]))
+
+      (define/public (collect-part-tags d ci number)
         (for-each (lambda (t)
-                    (hash-table-put! ht `(part ,t) (list (part-title-content d) number)))
+                    (hash-table-put! (collect-info-ht ci)
+                                     (generate-tag t ci)
+                                     (list (or (part-title-content d) '("???"))
+                                           number)))
                   (part-tags d)))
       
-      (define/public (collect-content c ht)
+      (define/public (collect-content c ci)
         (for-each (lambda (i)
-                    (collect-element i ht))
+                    (collect-element i ci))
                   c))
 
-      (define/public (collect-paragraph p ht)
-        (collect-content (paragraph-content p) ht))
+      (define/public (collect-paragraph p ci)
+        (collect-content (paragraph-content p) ci))
 
-      (define/public (collect-flow p ht)
+      (define/public (collect-flow p ci)
         (for-each (lambda (p)
-                    (collect-flow-element p ht))
+                    (collect-flow-element p ci))
                   (flow-paragraphs p)))
 
-      (define/public (collect-flow-element p ht)
+      (define/public (collect-flow-element p ci)
         (cond
-         [(table? p) (collect-table p ht)]
-         [(itemization? p) (collect-itemization p ht)]
-         [(blockquote? p) (collect-blockquote p ht)]
+         [(table? p) (collect-table p ci)]
+         [(itemization? p) (collect-itemization p ci)]
+         [(blockquote? p) (collect-blockquote p ci)]
          [(delayed-flow-element? p) (void)]
-         [else (collect-paragraph p ht)]))
+         [else (collect-paragraph p ci)]))
         
-      (define/public (collect-table i ht)
+      (define/public (collect-table i ci)
         (for-each (lambda (d) (when (flow? d)
-                                (collect-flow d ht)))
+                                (collect-flow d ci)))
                   (apply append (table-flowss i))))
       
-      (define/public (collect-itemization i ht)
-        (for-each (lambda (d) (collect-flow d ht))
+      (define/public (collect-itemization i ci)
+        (for-each (lambda (d) (collect-flow d ci))
                   (itemization-flows i)))
 
-      (define/public (collect-blockquote i ht)
-        (for-each (lambda (d) (collect-flow-element d ht))
+      (define/public (collect-blockquote i ci)
+        (for-each (lambda (d) (collect-flow-element d ci))
                   (blockquote-paragraphs i)))
 
-      (define/public (collect-element i ht)
+      (define/public (collect-element i ci)
         (when (target-element? i)
-          (collect-target-element i ht))
+          (collect-target-element i ci))
         (when (index-element? i)
-          (collect-index-element i ht))
+          (collect-index-element i ci))
+        (when (collect-element? i)
+          ((collect-element-collect i) ci))
         (when (element? i)
           (for-each (lambda (e)
-                      (collect-element e ht))
+                      (collect-element e ci))
                     (element-content i))))
 
-      (define/public (collect-target-element i ht)
-        (hash-table-put! ht (target-element-tag i) (list i)))
+      (define/public (collect-target-element i ci)
+        (collect-put! ci
+                      (generate-tag (target-element-tag i) ci)
+                      (list i)))
 
-      (define/public (collect-index-element i ht)
-        (hash-table-put! ht `(index-entry ,(index-element-tag i))
-                         (list (index-element-plain-seq i)
-                               (index-element-entry-seq i))))
+      (define/public (collect-index-element i ci)
+        (collect-put! ci
+                      `(index-entry ,(generate-tag (index-element-tag i) ci))
+                      (list (index-element-plain-seq i)
+                            (index-element-entry-seq i))))
 
-      (define/public (lookup part ht key)
-        (let ([v (hash-table-get (if part
-                                     (collected-info-info (part-collected-info part))
-                                     ht)
-                                 key
-                                 #f)])
-          (or v
-              (and part
-                   (lookup (collected-info-parent
-                            (part-collected-info part))
-                           ht
-                           key)))))
+      ;; ----------------------------------------
+      ;; global-info resolution
+
+      (define/public (resolve ds fns ci)
+        (let ([ri (make-resolve-info ci
+                                     (make-hash-table)
+                                     (make-hash-table 'equal))])
+          (start-resolve ds fns ri)
+          ri))
+
+      (define/public (start-resolve ds fns ri)
+        (map (lambda (d)
+               (resolve-part d ri))
+             ds))
+
+      (define/public (resolve-part d ri)
+        (when (part-title-content d)
+          (resolve-content (part-title-content d) d ri))
+        (resolve-flow (part-flow d) d ri)
+        (for-each (lambda (p)
+                    (resolve-part p ri))
+                  (part-parts d)))
+      
+      (define/public (resolve-content c d ri)
+        (for-each (lambda (i)
+                    (resolve-element i d ri))
+                  c))
+
+      (define/public (resolve-paragraph p d ri)
+        (resolve-content (paragraph-content p) d ri))
+
+      (define/public (resolve-flow p d ri)
+        (for-each (lambda (p)
+                    (resolve-flow-element p d ri))
+                  (flow-paragraphs p)))
+
+      (define/public (resolve-flow-element p d ri)
+        (cond
+         [(table? p) (resolve-table p d ri)]
+         [(itemization? p) (resolve-itemization p d ri)]
+         [(blockquote? p) (resolve-blockquote p d ri)]
+         [(delayed-flow-element? p) 
+          (let ([v ((delayed-flow-element-resolve p) this d ri)])
+            (hash-table-put! (resolve-info-delays ri) p v)
+            (resolve-flow-element v d ri))]
+         [else (resolve-paragraph p d ri)]))
+        
+      (define/public (resolve-table i d ri)
+        (for-each (lambda (f) (when (flow? f)
+                                (resolve-flow f d ri)))
+                  (apply append (table-flowss i))))
+      
+      (define/public (resolve-itemization i d ri)
+        (for-each (lambda (f) (resolve-flow f d ri))
+                  (itemization-flows i)))
+
+      (define/public (resolve-blockquote i d ri)
+        (for-each (lambda (f) (resolve-flow-element f d ri))
+                  (blockquote-paragraphs i)))
+
+      (define/public (resolve-element i d ri)
+        (cond
+         [(delayed-element? i)
+          (resolve-content (or (hash-table-get (resolve-info-delays ri)
+                                               i
+                                               #f)
+                               (let ([v ((delayed-element-resolve i) this d ri)])
+                                 (hash-table-put! (resolve-info-delays ri)
+                                                  i
+                                                  v)
+                                 v))
+                           d ri)]
+         [(element? i)
+          (cond
+           [(link-element? i)
+            (let-values ([(dest ext?) (resolve-get/where d ri (link-element-tag i))])
+              (when ext?
+                (hash-table-put! (resolve-info-undef ri)
+                                 (tag-key (link-element-tag i) ri)
+                                 #t)))])
+          (for-each (lambda (e)
+                      (resolve-element e d ri))
+                    (element-content i))]))
 
       ;; ----------------------------------------
       ;; render methods
 
-      (define/public (render ds fns ht)
+      (define/public (render ds fns ri)
         (map (lambda (d fn)
                (printf " [Output to ~a]\n" fn)
                (with-output-to-file fn
                  (lambda ()
-                   (render-one d ht fn))
+                   (render-one d ri fn))
                  'truncate/replace))
-
              ds
              fns))
                
-      (define/public (render-one d ht fn)
-        (render-part d ht))
+      (define/public (render-one d ri fn)
+        (render-part d ri))
 
-      (define/public (render-part d ht)
+      (define/public (render-part d ri)
         (list
          (when (part-title-content d)
-           (render-content (part-title-content d) d ht))
-         (render-flow (part-flow d) d ht)
-         (map (lambda (s) (render-part s ht))
+           (render-content (part-title-content d) d ri))
+         (render-flow (part-flow d) d ri)
+         (map (lambda (s) (render-part s ri))
               (part-parts d))))
       
-      (define/public (render-content c part ht)
+      (define/public (render-content c part ri)
         (apply append
                (map (lambda (i)
-                      (render-element i part ht))
+                      (render-element i part ri))
                     c)))
 
-      (define/public (render-paragraph p part ht)
-        (render-content (paragraph-content p) part ht))
+      (define/public (render-paragraph p part ri)
+        (render-content (paragraph-content p) part ri))
 
-      (define/public (render-flow p part ht)
+      (define/public (render-flow p part ri)
         (apply append
                (map (lambda (p)
-                      (render-flow-element p part ht))
+                      (render-flow-element p part ri))
                     (flow-paragraphs p))))
 
-      (define/public (render-flow-element p part ht)
+      (define/public (render-flow-element p part ri)
         (cond
          [(table? p) (if (auxiliary-table? p)
-                         (render-auxiliary-table p part ht)
-                         (render-table p part ht))]
-         [(itemization? p) (render-itemization p part ht)]
-         [(blockquote? p) (render-blockquote p part ht)]
-         [(delayed-flow-element? p) (render-flow-element
-                                     ((delayed-flow-element-render p) this part ht)
-                                     part ht)]
-         [else (render-paragraph p part ht)]))
+                         (render-auxiliary-table p part ri)
+                         (render-table p part ri))]
+         [(itemization? p) (render-itemization p part ri)]
+         [(blockquote? p) (render-blockquote p part ri)]
+         [(delayed-flow-element? p) 
+          (render-flow-element (delayed-flow-element-flow-elements p ri) part ri)]
+         [else (render-paragraph p part ri)]))
         
-      (define/public (render-auxiliary-table i part ht)
+      (define/public (render-auxiliary-table i part ri)
         null)
 
-      (define/public (render-table i part ht)
+      (define/public (render-table i part ri)
         (map (lambda (d) (if (flow? i)
-                             (render-flow d part ht)
+                             (render-flow d part ri)
                              null))
              (apply append (table-flowss i))))
       
-      (define/public (render-itemization i part ht)
-        (map (lambda (d) (render-flow d part ht))
+      (define/public (render-itemization i part ri)
+        (map (lambda (d) (render-flow d part ri))
              (itemization-flows i)))
       
-      (define/public (render-blockquote i part ht)
-        (map (lambda (d) (render-flow-element d part ht))
+      (define/public (render-blockquote i part ri)
+        (map (lambda (d) (render-flow-element d part ri))
              (blockquote-paragraphs i)))
       
-      (define/public (render-element i part ht)
+      (define/public (render-element i part ri)
         (cond
          [(and (link-element? i)
                (null? (element-content i)))
-          (let ([v (lookup part ht (link-element-tag i))])
+          (let ([v (resolve-get part ri (link-element-tag i))])
             (if v
-                (render-content (strip-aux (car v)) part ht)
-                (render-content (list "[missing]") part ht)))]
+                (render-content (strip-aux (car v)) part ri)
+                (render-content (list "[missing]") part ri)))]
          [(element? i)
-          (render-content (element-content i) part ht)]
+          (render-content (element-content i) part ri)]
          [(delayed-element? i)
-          (render-content (force-delayed-element i this part ht) part ht)]
+          (render-content (delayed-element-content i ri) part ri)]
          [else
-          (render-other i part ht)]))
+          (render-other i part ri)]))
 
-      (define/public (render-other i part ht)
+      (define/public (render-other i part ri)
         (list i))
 
       ;; ----------------------------------------
@@ -280,34 +404,32 @@
 
       ;; ----------------------------------------
 
-      (define/private (do-table-of-contents part ht delta quiet)
-        (make-table #f (render-toc part
-                                   (+ delta
-                                      (length (collected-info-number
-                                               (part-collected-info part))))
-                                   #t
-                                   quiet)))
+      (define/private (do-table-of-contents part ri delta quiet)
+        (make-table #f (generate-toc part
+                                     ri
+                                     (+ delta
+                                        (length (collected-info-number
+                                                 (part-collected-info part ri))))
+                                     #t
+                                     quiet)))
 
-      (define/public (table-of-contents part ht)
-        (do-table-of-contents part ht -1 not))
+      (define/public (table-of-contents part ri)
+        (do-table-of-contents part ri -1 not))
 
-      (define/public (local-table-of-contents part ht)
-        (table-of-contents part ht))
+      (define/public (local-table-of-contents part ri)
+        (table-of-contents part ri))
 
-      (define/public (quiet-table-of-contents part ht)
-        (do-table-of-contents part ht 1 (lambda (x) #t)))
+      (define/public (quiet-table-of-contents part ri)
+        (do-table-of-contents part ri 1 (lambda (x) #t)))
 
-      (define/private (render-toc part base-len skip? quiet)
-        (let ([number (collected-info-number (part-collected-info part))])
+      (define/private (generate-toc part ri base-len skip? quiet)
+        (let ([number (collected-info-number (part-collected-info part ri))])
           (let ([subs 
-                 (if (quiet (and (styled-part? part)
-                                 (let ([st(styled-part-style part)])
-                                   (or (eq? 'quiet st)
-                                       (and (list? st) (memq 'quiet st))))
+                 (if (quiet (and (part-style? part 'quiet)
                                  (not (= base-len (sub1 (length number))))))
                      (apply
                       append
-                      (map (lambda (p) (render-toc p base-len #f quiet)) (part-parts part)))
+                      (map (lambda (p) (generate-toc p ri base-len #f quiet)) (part-parts part)))
                      null)])
             (if skip?
                 subs
@@ -324,8 +446,8 @@
                                                         (format-number number 
                                                                        (list
                                                                         (make-element 'hspace '(" "))))
-                                                        (part-title-content part))
-                                                       `(part ,(car (part-tags part)))))))))
+                                                        (or (part-title-content part) '("???")))
+                                                       (car (part-tags part))))))))
                           subs)])
                   (if (and (= 1 (length number))
                            (or (not (car number))

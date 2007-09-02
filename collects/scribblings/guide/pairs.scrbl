@@ -86,4 +86,4 @@ iterate through the lists elements:
        '((when "3:30") (where "Florida") (who "Mickey")))
 ]
 
-@refdetails["mz:pairs"]{pairs and lists}
+@refdetails["pairs"]{pairs and lists}

@@ -2051,6 +2051,7 @@ static int namespace_val_MARK(void *p) {
   gcMARK(e->rename);
   gcMARK(e->et_rename);
   gcMARK(e->tt_rename);
+  gcMARK(e->dt_rename);
 
   gcMARK(e->syntax);
   gcMARK(e->exp_env);
@@ -2062,6 +2063,7 @@ static int namespace_val_MARK(void *p) {
   gcMARK(e->require_names);
   gcMARK(e->et_require_names);
   gcMARK(e->tt_require_names);
+  gcMARK(e->dt_require_names);
 
   gcMARK(e->toplevel);
   gcMARK(e->modchain);
@@ -2085,6 +2087,7 @@ static int namespace_val_FIXUP(void *p) {
   gcFIXUP(e->rename);
   gcFIXUP(e->et_rename);
   gcFIXUP(e->tt_rename);
+  gcFIXUP(e->dt_rename);
 
   gcFIXUP(e->syntax);
   gcFIXUP(e->exp_env);
@@ -2096,6 +2099,7 @@ static int namespace_val_FIXUP(void *p) {
   gcFIXUP(e->require_names);
   gcFIXUP(e->et_require_names);
   gcFIXUP(e->tt_require_names);
+  gcFIXUP(e->dt_require_names);
 
   gcFIXUP(e->toplevel);
   gcFIXUP(e->modchain);
@@ -2309,8 +2313,9 @@ static int module_val_MARK(void *p) {
   gcMARK(m->modname);
 
   gcMARK(m->et_requires);
-  gcMARK(m->tt_requires);
   gcMARK(m->requires);
+  gcMARK(m->tt_requires);
+  gcMARK(m->dt_requires);
 
   gcMARK(m->body);
   gcMARK(m->et_body);
@@ -2319,9 +2324,15 @@ static int module_val_MARK(void *p) {
 
   gcMARK(m->provide_protects);
   gcMARK(m->indirect_provides);
+
+  gcMARK(m->et_provide_protects);
+  gcMARK(m->et_indirect_provides);
+
   gcMARK(m->self_modidx);
 
   gcMARK(m->accessible);
+  gcMARK(m->et_accessible);
+
   gcMARK(m->insp);
 
   gcMARK(m->hints);
@@ -2334,6 +2345,7 @@ static int module_val_MARK(void *p) {
   gcMARK(m->rn_stx);
   gcMARK(m->et_rn_stx);
   gcMARK(m->tt_rn_stx);
+  gcMARK(m->dt_rn_stx);
 
   gcMARK(m->primitive);
   return
@@ -2345,8 +2357,9 @@ static int module_val_FIXUP(void *p) {
   gcFIXUP(m->modname);
 
   gcFIXUP(m->et_requires);
-  gcFIXUP(m->tt_requires);
   gcFIXUP(m->requires);
+  gcFIXUP(m->tt_requires);
+  gcFIXUP(m->dt_requires);
 
   gcFIXUP(m->body);
   gcFIXUP(m->et_body);
@@ -2355,9 +2368,15 @@ static int module_val_FIXUP(void *p) {
 
   gcFIXUP(m->provide_protects);
   gcFIXUP(m->indirect_provides);
+
+  gcFIXUP(m->et_provide_protects);
+  gcFIXUP(m->et_indirect_provides);
+
   gcFIXUP(m->self_modidx);
 
   gcFIXUP(m->accessible);
+  gcFIXUP(m->et_accessible);
+
   gcFIXUP(m->insp);
 
   gcFIXUP(m->hints);
@@ -2370,6 +2389,7 @@ static int module_val_FIXUP(void *p) {
   gcFIXUP(m->rn_stx);
   gcFIXUP(m->et_rn_stx);
   gcFIXUP(m->tt_rn_stx);
+  gcFIXUP(m->dt_rn_stx);
 
   gcFIXUP(m->primitive);
   return
@@ -2380,6 +2400,43 @@ static int module_val_FIXUP(void *p) {
 #define module_val_IS_CONST_SIZE 1
 
 
+static int module_phase_exports_val_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Phase_Exports));
+}
+
+static int module_phase_exports_val_MARK(void *p) {
+  Scheme_Module_Phase_Exports *m = (Scheme_Module_Phase_Exports *)p;
+
+  gcMARK(m->provides);
+  gcMARK(m->provide_srcs);
+  gcMARK(m->provide_src_names);
+  gcMARK(m->provide_src_phases);
+
+  gcMARK(m->kernel_exclusion);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Phase_Exports));
+}
+
+static int module_phase_exports_val_FIXUP(void *p) {
+  Scheme_Module_Phase_Exports *m = (Scheme_Module_Phase_Exports *)p;
+
+  gcFIXUP(m->provides);
+  gcFIXUP(m->provide_srcs);
+  gcFIXUP(m->provide_src_names);
+  gcFIXUP(m->provide_src_phases);
+
+  gcFIXUP(m->kernel_exclusion);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Phase_Exports));
+}
+
+#define module_phase_exports_val_IS_ATOMIC 0
+#define module_phase_exports_val_IS_CONST_SIZE 1
+
+
 static int module_exports_val_SIZE(void *p) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Exports));
@@ -2388,11 +2445,9 @@ static int module_exports_val_SIZE(void *p) {
 static int module_exports_val_MARK(void *p) {
   Scheme_Module_Exports *m = (Scheme_Module_Exports *)p;
 
-  gcMARK(m->provides);
-  gcMARK(m->provide_srcs);
-  gcMARK(m->provide_src_names);
-
-  gcMARK(m->kernel_exclusion);
+  gcMARK(m->rt);
+  gcMARK(m->et);
+  gcMARK(m->dt);
 
   gcMARK(m->src_modidx);
   return
@@ -2402,11 +2457,9 @@ static int module_exports_val_MARK(void *p) {
 static int module_exports_val_FIXUP(void *p) {
   Scheme_Module_Exports *m = (Scheme_Module_Exports *)p;
 
-  gcFIXUP(m->provides);
-  gcFIXUP(m->provide_srcs);
-  gcFIXUP(m->provide_src_names);
-
-  gcFIXUP(m->kernel_exclusion);
+  gcFIXUP(m->rt);
+  gcFIXUP(m->et);
+  gcFIXUP(m->dt);
 
   gcFIXUP(m->src_modidx);
   return

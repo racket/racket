@@ -3,10 +3,10 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:strings"]{Strings (Unicode)}
+@title[#:tag "strings"]{Strings (Unicode)}
 
 A @defterm{string} is a fixed-length array of
-@seclink["guide:characters"]{characters}. It prints using doublequotes,
+@seclink["characters"]{characters}. It prints using doublequotes,
 where doublequote and backslash characters within the string are
 escaped with backslashes. Other common string escapes are supported,
 including @litchar["\\n"] for a linefeed, @litchar["\\r"] for a
@@ -15,10 +15,10 @@ to three octal digits, and hexadimal escapes with @litchar["\\u"]
 (up to four digits).  Unprintable characters in a string normally
 shown with @litchar["\\u"] when the string is printed.
 
-@refdetails/gory["mz:parse-string"]{the syntax of strings}
+@refdetails/gory["parse-string"]{the syntax of strings}
 
 The @scheme[display] procedure directly writes the characters of a
-string to the current output port (see @secref["guide:i/o"]), in contrast
+string to the current output port (see @secref["i/o"]), in contrast
 to the string-constant syntax used to print a string result.
 
 @examples[
@@ -66,6 +66,6 @@ for an end user.
 
 For working with plain ASCII, working with raw bytes, or
 encoding/decoding Unicode strings as bytes, use
-@seclink["guide:bytestrings"]{byte strings}.
+@seclink["bytestrings"]{byte strings}.
 
-@refdetails["mz:strings"]{strings and string procedures}
+@refdetails["strings"]{strings and string procedures}

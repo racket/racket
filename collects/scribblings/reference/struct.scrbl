@@ -1,9 +1,9 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:structures"]{Structures}
+@title[#:tag "structures"]{Structures}
 
-@guideintro["guide:define-struct"]{structure types via @scheme[define-struct]}
+@guideintro["define-struct"]{structure types via @scheme[define-struct]}
 
 A @deftech{structure type} is a record datatype composing a number
 of @idefterm{fields}. A @pidefterm{structure}, an instance of a
@@ -58,7 +58,7 @@ structures depends on the current inspector.)
 @include-section["define-struct.scrbl"]
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:creatingmorestructs"]{Creating Structure Types}
+@section[#:tag "creatingmorestructs"]{Creating Structure Types}
 
 @defproc[(make-struct-type [name symbol?]
                            [super-type (or/c struct-type? false/c)]
@@ -95,12 +95,12 @@ fields are initialized with @scheme[auto-v].
 
 The @scheme[props] argument is a list of pairs, where the @scheme[car]
 of each pair is a structure type property descriptor, and the
-@scheme[cdr] is an arbitrary value. See @secref["mz:structprops"] for
+@scheme[cdr] is an arbitrary value. See @secref["structprops"] for
 more information about properties.
 
 The @scheme[inspector] argument controls access to reflective
 information about the structure type and its instances; see
-@secref["mz:inspectors"] for more information.
+@secref["inspectors"] for more information.
 
 If @scheme[proc-spec] is an integer or procedure, instances of the
 structure type act as procedures. See @scheme[prop:procedure] for
@@ -220,14 +220,14 @@ For examples, see @scheme[make-struct-type].}
 
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:structprops"]{Structure Type Properties}
+@section[#:tag "structprops"]{Structure Type Properties}
 
 A @deftech{structure type property} allows per-type information to be
  associated with a structure type (as opposed to per-instance
  information associated with a structure value). A property value is
  associated with a structure type through the
  @scheme[make-struct-type] procedure (see
- @secref["mz:creatingmorestructs"]) or through the @scheme[#:property]
+ @secref["creatingmorestructs"]) or through the @scheme[#:property]
  option of @scheme[define-struct].  Subtypes inherit the property
  values of their parent types, and subtypes can override an inherited
  property value with a new value.
@@ -266,7 +266,7 @@ list containing information about the new structure type. The list
 contains the values that @scheme[struct-type-info] would return for
 the new structure type if it skipped the immediate current-inspector
 control check (but not the check for exposing an ancestor structure
-type, if any; see @secref["mz:inspectors"]).
+type, if any; see @secref["inspectors"]).
 
 The result of calling @scheme[guard] is associated with the property
 in the target structure type, instead of the value supplied to
@@ -301,7 +301,7 @@ descriptor} value, @scheme[#f] otherwise.
 }
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:structutils"]{Structure Utilities}
+@section[#:tag "structutils"]{Structure Utilities}
 
 @defproc[(struct->vector [v any/c] [opaque-v any/c '...]) vector?]{
 
@@ -344,7 +344,7 @@ is inaccessible.)}
  @scheme[make-struct-field-mutator], @scheme[#f] otherwise.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:structinfo"]{Structure Type Transformer Binding}
+@section[#:tag "structinfo"]{Structure Type Transformer Binding}
 
 The @scheme[define-struct] form binds the name of a structure type as
 a @tech{transformer binding} that records the other identifiers bound

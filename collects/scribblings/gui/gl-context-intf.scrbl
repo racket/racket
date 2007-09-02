@@ -53,8 +53,9 @@ The lock prevents interference among OpenGL-using threads.  If a
  set the OpenGL context. See @scheme[gl-context<%>] for more
  information on interference.
 
-The method accepts an alternate @tech{synchronizable event} for use
- while blocking for the context lock; see also @scheme[sync].
+The method accepts an alternate @tech[#:doc
+ reference-doc]{synchronizable event} for use while blocking for the
+ context lock; see also @scheme[sync].
 
 The result of the method call is the result of the thunk if it is
  called, or the result of the alternate event if it is chosen instead

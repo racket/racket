@@ -3,6 +3,7 @@
            (lib "struct.ss" "scribble")
            (lib "scheme.ss" "scribble")
            (lib "manual.ss" "scribble"))
+  (require-for-label (lib "mred.ss" "mred"))
 
   (provide diagram->table
            short-windowing-diagram
@@ -31,7 +32,8 @@
                              [(regexp-match #rx"([^-a-zA-Z0-9]*)([-a-zA-Z0-9<%>]+)(.*)" line)
                               => (lambda (m)
                                    (append (loop (cadr m))
-                                           (list (to-element (string->symbol (caddr m))))
+                                           (list (to-element (make-just-context (string->symbol (caddr m))
+                                                                                #'here)))
                                            (loop (cadddr m))))]
                              [else (list (make-element 'tt (list line)))])))))))
           (regexp-split #rx"[\r\n]+" d))))

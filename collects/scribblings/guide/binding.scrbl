@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:binding"]{Identifiers and Binding}
+@title[#:tag "binding"]{Identifiers and Binding}
 
 The context of an expression determines the meaning of identifiers
 that appear in the expression. In particular, starting a module with
@@ -16,7 +16,7 @@ start with the meaning described here: @scheme[cons] refers to the
 function that creates a pair, @scheme[car] refers to the function
 that extracts the first element of a pair, and so on.
 
-@guideother{@secref["guide:symbols"] introduces the syntax of
+@guideother{@secref["symbols"] introduces the syntax of
 identifiers.}
 
 Forms like @scheme[define], @scheme[lambda], and @scheme[let]

@@ -16,7 +16,8 @@ A @scheme[readable-snip<%>] object is treated specially by the port
            any/c]{
 
 The arguments are the same as the arguments to a procedure returned by
- a custom input port's @scheme[read]; see @secref["mz:customport"] for
+ a custom input port's @scheme[read]; see @secref[#:doc '(lib
+ "reference.scrbl" "scribblings" "reference") "customport"] for
  details. The result is also the same as the result from a
  @scheme[read]-produced procedure.
 

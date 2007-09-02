@@ -402,9 +402,9 @@
                                              null null)
                                    (unbox codes)))]
                   [code
-                   (let-values ([(imports fs-imports ft-imports) (module-compiled-imports code)])
+                   (let-values ([(imports fs-imports ft-imports fl-imports) (module-compiled-imports code)])
                      (let ([all-file-imports (filter (lambda (x) (not (symbol? x)))
-                                                     (append imports fs-imports ft-imports))]
+                                                     (append imports fs-imports ft-imports fl-imports))]
                            [extra-paths (get-extra-imports filename code)])
                        (let ([sub-files (map (lambda (i) (normalize (resolve-module-path-index i filename)))
                                              all-file-imports)]

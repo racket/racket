@@ -1,12 +1,12 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:stxops"]{Syntax Object Content}
+@title[#:tag "stxops"]{Syntax Object Content}
 
 @defproc[(syntax? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a @tech{syntax object}, @scheme[#f]
-otherwise. See also @secref["mz:stxobj-model"].}
+otherwise. See also @secref["stxobj-model"].}
 
 @defproc[(syntax-source [stx syntax?]) any]{
 
@@ -26,7 +26,7 @@ Returns the line number (positive exact integer) for the start of the
 syntax object in its source, or @scheme[#f] if the line number or
 source is unknown. The result is @scheme[#f] if and only if
 @scheme[(syntax-column stx)] produces @scheme[#f]. See also
-@secref["mz:linecol"], and see @scheme[syntax-source] for information
+@secref["linecol"], and see @scheme[syntax-source] for information
 about marshaling compiled syntax objects.}
 
 
@@ -38,7 +38,7 @@ Returns the column number (non-negative exact integer) for the start
 of the syntax object in its source, or @scheme[#f] if the source
 column is unknown. The result is @scheme[#f] if and only if
 @scheme[(syntax-line stx)] produces @scheme[#f]. See also
-@secref["mz:linecol"], and see @scheme[syntax-source] for information
+@secref["linecol"], and see @scheme[syntax-source] for information
 about marshaling compiled syntax objects.}
 
 
@@ -48,7 +48,7 @@ about marshaling compiled syntax objects.}
 
 Returns the character position (positive exact integer) for the start
 of the syntax object in its source, or @scheme[#f] if the source
-position is unknown. See also @secref["mz:linecol"], and see
+position is unknown. See also @secref["linecol"], and see
 @scheme[syntax-source] for information about marshaling compiled
 syntax objects.}
 
@@ -67,10 +67,10 @@ marshaling compiled syntax objects.}
 
 Returns @scheme[#t] if @scheme[stx] has the property that
 @scheme[read-syntax] and @scheme[read-honu-syntax] attach to the
-syntax objects that they generate (see @secref["mz:stxprops"]), and if
+syntax objects that they generate (see @secref["stxprops"]), and if
 @scheme[stx]'s @tech{lexical information} does not indicate that the
 object was introduced by a syntax transformer (see
-@secref["mz:stxobj-model"]). The result is @scheme[#f] otherwise. This
+@secref["stxobj-model"]). The result is @scheme[#f] otherwise. This
 predicate can be used to distinguish syntax objects in an expanded
 expression that were directly present in the original expression, as
 opposed to syntax objects inserted by macros.}
@@ -79,7 +79,7 @@ opposed to syntax objects inserted by macros.}
 @defproc[(syntax-source-module [stx syntax?])
          (or/c module-path-index? symbol?)]{
 
-Returns a module path index or symbol (see @secref["mz:modpathidx"])
+Returns a module path index or symbol (see @secref["modpathidx"])
 for the module whose source contains @scheme[stx], or @scheme[#f] if
 @scheme[stx] has no source module.}
 
@@ -112,7 +112,7 @@ A syntax object that is the result of @scheme[read-syntax] reflects
 the use of delimited @litchar{.} in the input by creating a syntax
 object for every pair of parentheses in the source, and by creating a
 pair-valued syntax object @italic{only} for parentheses in the
-source. See @secref["mz:parse-pair"] for more information.}
+source. See @secref["parse-pair"] for more information.}
 
 
 @defproc[(syntax->list [stx syntax?])
@@ -124,11 +124,16 @@ would produce a list. In other words, @tech{syntax pairs} in
 @scheme[(syntax-e @scheme[stx])] are flattened.}
 
 
-@defproc[(syntax->datum [stx syntax?]) any]{
+@defproc[(syntax->datum ...) any]{
 
 Returns a datum by stripping the lexical and source-location
 information from @scheme[stx]. Graph structure is preserved by the
 conversion.}
+
+@defproc[(syntax-object->datum [stx syntax?]) any]{
+
+FIXME: this entry is a temporary target for references that should be
+to @scheme[syntax->datum]. }
 
 
 @defproc[(datum->syntax [ctxt (or/c syntax? false/c)]
@@ -149,8 +154,8 @@ in @scheme[v] are given the lexical context information of
 @scheme[ctxt] and the source-location information of
 @scheme[srcloc]. If @scheme[v] is not already a syntax object, then
 the resulting immediate syntax object it is given the properties (see
-@secref["mz:stxprops"]) of @scheme[prop] and the @tech{inactive certificates}
-(see @secref["mz:stxcerts"]) of @scheme[cert].  Any of
+@secref["stxprops"]) of @scheme[prop] and the @tech{inactive certificates}
+(see @secref["stxcerts"]) of @scheme[cert].  Any of
 @scheme[ctxt], @scheme[srcloc], @scheme[prop], or @scheme[cert] can be
 @scheme[#f], in which case the resulting syntax has no lexical
 context, source information, new properties, and/or certificates.
@@ -176,6 +181,12 @@ syntax object, but graph structure that is distributed among distinct
 syntax objects in @scheme[v] may be hidden from future applications of
 @scheme[syntax->datum] and @scheme[syntax-graph?] to the new
 syntax object.}
+
+@defproc[(datum->syntax-object ...) any]{
+
+FIXME: this entry is a temporary target for references that should be
+to @scheme[datum->syntax]. }
+
 
 @defproc[(syntax-graph? [stx syntax?]) boolean?]{
 

@@ -6,6 +6,9 @@
            (lib "eval.ss" "scribble")
            "../icons.ss")
 
+  (require-for-label (lib "lang.ss" "big"))
+  (provide-for-label (all-from (lib "lang.ss" "big")))
+
   (provide Quick MzScheme HtDP
            tool
            moreguide
@@ -13,13 +16,11 @@
            refalso
            refdetails
            refdetails/gory
-           refsecref)
+           refsecref
+           ext-refsecref)
 
   (define Quick
-    (italic (link "../quick/index.html" "An Introduction to PLT Scheme with Pictures")))
-
-  (define MzScheme
-    (italic (link "../reference/index.html" "PLT Scheme Reference")))
+    (italic (secref #:doc '(lib "quick.scrbl" "scribblings" "quick") "top")))
 
   (define HtDP
     (italic (link "http://www.htdp.org" "How to Design Programs")))
@@ -42,7 +43,7 @@
 
   (define (refdetails* tag what . s)
     (apply margin-note
-           (decode-content (append (list magnify (refsecref tag))
+           (decode-content (append (list magnify (ext-refsecref tag))
                                    (list what)
                                    s
                                    (list ".")))))
@@ -57,4 +58,10 @@
     (apply refdetails* tag " documents the fine points of " s))
 
   (define (refsecref s)
-    (make-element #f (list (secref s) " in " MzScheme))))
+    (secref #:doc '(lib "reference.scrbl" "scribblings" "reference") s))
+
+  (define (ext-refsecref s)
+    (make-element #f (list (refsecref s) " in " MzScheme)))
+
+  (define MzScheme
+    (italic (refsecref "top"))))

@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@title[#:tag "mr:mredprefs"]{Preferences}
+@title[#:tag "mredprefs"]{Preferences}
 
 MrEd supports a number of preferences for global configuration. The
  MrEd preferences are stored in the common file reported by
@@ -22,7 +22,7 @@ The following are the (case-sensitive) preference names used by MrEd:
  @item{@ResourceFirst{controlFontSize} --- sets the font size for
  control and menu labels (Windows, X); the font is the @scheme['system]
  font, which can be configured as described in
- @secref["mr:fontresources"].}
+ @secref["fontresources"].}
 
  @item{@ResourceFirst{defaultMenuPrefix} --- sets the prefix used by
  default for menu item shortcuts under X, one of @scheme['ctl],
@@ -82,4 +82,4 @@ The following are the (case-sensitive) preference names used by MrEd:
 
 In addition, preference names built from font face names can provide
  or override default entries for the @scheme[font-name-directory<%>];
- see @secref["mr:fontresources"] for information.
+ see @secref["fontresources"] for information.

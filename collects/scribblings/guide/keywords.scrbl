@@ -3,13 +3,13 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:keywords"]{Keywords}
+@title[#:tag "keywords"]{Keywords}
 
 A @defterm{keyword} value is similar to a symbol (see
-@secref["guide:symbols"]), but its printed form is prefixed with
+@secref["symbols"]), but its printed form is prefixed with
 @litchar{#:}.
 
-@refdetails/gory["mz:parse-keyword"]{the syntax of keywords}
+@refdetails/gory["parse-keyword"]{the syntax of keywords}
 
 @examples[
 (string->keyword "apple")

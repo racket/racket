@@ -5,9 +5,9 @@
 @define[(cont n) (make-element "schemevariable"
                                 (list "C" (make-element 'subscript (list (format "~a" n)))))]
 
-@title[#:tag "mz:contmarks"]{Continuation Marks}
+@title[#:tag "contmarks"]{Continuation Marks}
 
-See @secref["mz:mark-model"] and @secref["mz:prompt-model"] for
+See @secref["mark-model"] and @secref["prompt-model"] for
 general information about continuation marks.
 
 The list of continuation marks for a key @scheme[_k] and a continuation
@@ -29,7 +29,7 @@ The list of continuation marks for a key @scheme[_k] and a continuation
 }
 
 The @scheme[with-continuation-mark] form installs a mark on the first
-frame of the current continuation (see @secref["mz:wcm"]).  Procedures
+frame of the current continuation (see @secref["wcm"]).  Procedures
 such as @scheme[current-continuation-marks] allow inspection of marks.
 
 Whenever Scheme creates an exception record for a primitive exception,
@@ -52,7 +52,7 @@ continuation's frames to the marks that were present when
 Returns an opaque value containing the set of continuation marks for
 all keys in the continuation @scheme[cont] up to the prompt tagged by
 @scheme[prompt-tag].  If @scheme[cont] is an escape continuation (see
-@secref["mz:prompt-model"]), then the current continuation must extend
+@secref["prompt-model"]), then the current continuation must extend
 @scheme[cont], or the @exnraise[exn:fail:contract]. If @scheme[cont]
 was not captured with respect to @scheme[prompt-tag] and does not
 include a prompt for @scheme[prompt-tag], the
@@ -125,7 +125,7 @@ trace}}'' for @scheme[mark-set]'s continuation. The list contains
 pairs, where the @scheme[car] of each pair contains either @scheme[#f]
 or a symbol for a procedure name, and the @scheme[cdr] of each pair
 contains either @scheme[#f] or a @scheme[srcloc] value for the
-procedure's source location (see @secref["mz:linecol"]); the
+procedure's source location (see @secref["linecol"]); the
 @scheme[car] and @scheme[cdr] are never both @scheme[#f].
 
 The stack-trace list is the result of
@@ -134,7 +134,7 @@ Scheme's private key for procedure-call marks. A stack trace is
 extracted from an exception and displayed by the default error display
 handler (see @scheme[current-error-display-handler]) for exceptions other than
 @scheme[exn:fail:user] (see @scheme[raise-user-error] in
-@secref["mz:errorproc"]).}
+@secref["errorproc"]).}
 
 @examples[
 (define (extract-current-continuation-marks key) 

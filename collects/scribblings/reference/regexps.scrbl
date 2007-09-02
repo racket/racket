@@ -4,7 +4,9 @@
 
 @require["rx.ss"]
 
-@title[#:tag "mz:regexp"]{Regular Expressions}
+@title[#:tag "regexp"]{Regular Expressions}
+
+@declare-exporting[big (lib "big/regexp")]
 
 @section-index{regexps}
 @section-index{pattern matching}
@@ -16,7 +18,7 @@ the same pattern language as the Unix utility @exec{egrep} or Perl. A
 string-specified pattern produces a character regexp matcher, and a
 byte-string pattern produces a byte regexp matcher. If a character
 regexp is used with a byte string or input port, it matches UTF-8
-encodings (see @secref["mz:encodings"]) of matching character streams;
+encodings (see @secref["encodings"]) of matching character streams;
 if a byte regexp is used with a character string, it matches bytes in
 the UTF-8 encoding of the string.
 
@@ -28,7 +30,7 @@ compatible to @exec{egrep}. The @scheme[pregexp] and
 @scheme[byte-pregexp] procedures produce a regexp value using a
 slightly different syntax of regular expressions that is more
 compatible with Perl.  In addition, Scheme constants written with
-@litchar{#rx} or @litchar{#px} (see @secref["mz:reader"]) produce
+@litchar{#rx} or @litchar{#px} (see @secref["reader"]) produce
 compiled regexp values.
 
 The internal size of a regexp value is limited to 32 kilobytes; this
@@ -36,7 +38,7 @@ limit roughly corresponds to a source string with 32,000 literal
 characters or 5,000 operators.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:regexp-syntax"]{Regexp Syntax}
+@section[#:tag "regexp-syntax"]{Regexp Syntax}
 
 The following syntax specifications describe the content of a string
 that represents a regular expression. The syntax of the corresponding
@@ -126,7 +128,7 @@ otherwise.}
 @defproc[(regexp [str string?]) regexp?]{
 
 Takes a string representation of a regular expression (using the
-syntax in @secref["mz:regexp-syntax"]) and compiles it into a regexp
+syntax in @secref["regexp-syntax"]) and compiles it into a regexp
 value. Other regular expression procedures accept either a string or a
 regexp value as the matching pattern. If a regular expression string
 is used multiple times, it is faster to compile the string once to a
@@ -144,7 +146,7 @@ the source string for a regexp value.
 @defproc[(pregexp [string string?]) pregexp?]{
 
 Like @scheme[regexp], except that it uses a slightly different syntax
-(see @secref["mz:regexp-syntax"]). The result can be used with
+(see @secref["regexp-syntax"]). The result can be used with
 @scheme[regexp-match], etc., just like the result from
 @scheme[regexp].
 
@@ -156,7 +158,7 @@ Like @scheme[regexp], except that it uses a slightly different syntax
 @defproc[(byte-regexp [bstr bytes?]) byte-regexp?]{
 
 Takes a byte-string representation of a regular expression (using the
-syntax in @secref["mz:regexp-syntax"]) and compiles it into a
+syntax in @secref["regexp-syntax"]) and compiles it into a
 byte-regexp value.
 
 The @scheme[object-name] procedure
@@ -170,7 +172,7 @@ returns the source byte string for a regexp value.
 @defproc[(byte-pregexp [bstr bytes?]) byte-pregexp?]{
 
 Like @scheme[byte-regexp], except that it uses a slightly different
-syntax (see @secref["mz:regexp-syntax"]). The result can be used with
+syntax (see @secref["regexp-syntax"]). The result can be used with
 @scheme[regexp-match], etc., just like the result from
 @scheme[byte-regexp].
 
@@ -265,7 +267,7 @@ determine a match.
 
 If the input port is read simultaneously by another thread, or if the
 port is a custom port with inconsistent reading and peeking procedures
-(see @secref["mz:customport"]), then the bytes that are peeked and
+(see @secref["customport"]), then the bytes that are peeked and
 used for matching may be different than the bytes read and discarded
 after the match completes; the matcher inspects only the peeked
 bytes. To avoid such interleaving, use @scheme[regexp-match-peek]

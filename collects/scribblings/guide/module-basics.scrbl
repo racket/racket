@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:module-basics"]{Module Basics}
+@title[#:tag "module-basics"]{Module Basics}
 
 The space of module names is distinct from the space of normal Scheme
 definitions. Indeed, since modules typically reside in files, the
@@ -62,4 +62,4 @@ big
 ]
 
 We discuss more forms of module reference later in
-@secref["guide:module-paths"].
+@secref["module-paths"].

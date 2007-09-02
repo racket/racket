@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:collects"]{Libraries and Collections}
+@title[#:tag "collects"]{Libraries and Collections}
 
 A @deftech{library} is @scheme[module] declaration for use by multiple
 programs. Scheme further groups libraries into @deftech{collections}
@@ -106,7 +106,7 @@ collection is not found, the @exnraise[exn:fail:filesystem].}
 
 Parameter that determines a list of complete directory paths for
 library collections used by @scheme[require]. See
-@secref["mz:collects"] for more information.}
+@secref["collects"] for more information.}
 
 
 @defboolparam[use-user-specific-search-paths on?]{

@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:symbols"]{Symbols}
+@title[#:tag "symbols"]{Symbols}
 
 A @defterm{symbol} is an atomic value that prints like an identifier.
 An expression that starts with @litchar{'} and continues with an
@@ -59,7 +59,7 @@ special characters or that might otherwise look like numbers.
 (string->symbol "6")
 ]
 
-@refdetails/gory["mz:parse-symbol"]{the syntax of symbols}
+@refdetails/gory["parse-symbol"]{the syntax of symbols}
 
 The @scheme[display] form of a symbol is the same as the corresponding
 string.
@@ -83,4 +83,4 @@ confused with any other value.
 ]
 
 
-@refdetails["mz:symbols"]{symbols}
+@refdetails["symbols"]{symbols}

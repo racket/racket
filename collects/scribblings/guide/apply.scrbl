@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:application"]{Function Calls@aux-elem{ (Procedure Applications)}}
+@title[#:tag "application"]{Function Calls@aux-elem{ (Procedure Applications)}}
 
 An expression of the form
 
@@ -39,14 +39,14 @@ arguments. A function's @idefterm{arity} is the number of arguments
 that it accepts.
 
 @;------------------------------------------------------------------------
-@section[#:tag "guide:keyword-args"]{Keyword Arguments}
+@section[#:tag "keyword-args"]{Keyword Arguments}
 
 Some functions accept @defterm{keyword arguments} in addition to
 by-position arguments. For that case, an @scheme[_arg] can be an
 @scheme[_arg-keyword _arg-expr] sequence instead of just a
 @scheme[_arg-expr]:
 
-@guideother{@secref["guide:keywords"] introduces keywords.}
+@guideother{@secref["keywords"] introduces keywords.}
 
 @specform/subs[
 (_proc-expr _arg ...)
@@ -78,10 +78,10 @@ above call to @scheme[go] can be equivalently written
 
 @schemeblock[(go #:mode 'fast "super.ss")]
 
-@refdetails["mz:application"]{procedure applications}
+@refdetails["application"]{procedure applications}
 
 @;------------------------------------------------------------------------
-@section[#:tag "guide:apply"]{The @scheme[apply] Function}
+@section[#:tag "apply"]{The @scheme[apply] Function}
 
 The syntax for function calls supports any number of arguments, but a
 specific call always specifies a fixed number of arguments. As a

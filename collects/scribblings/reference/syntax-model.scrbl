@@ -4,7 +4,7 @@
 @require["mz.ss"]
 
 @;------------------------------------------------------------------------
-@title[#:tag "mz:syntax-model"]{Syntax Model}
+@title[#:tag "syntax-model"]{Syntax Model}
 
 The syntax of a Scheme program is defined by
 
@@ -18,7 +18,7 @@ The syntax of a Scheme program is defined by
 
 }
 
-For details on the @tech{read} phase, see @secref["mz:reader"]. Source
+For details on the @tech{read} phase, see @secref["reader"]. Source
 code is normally read in @scheme[read-syntax] mode, which produces a
 @tech{syntax object}.
 
@@ -30,9 +30,9 @@ process, and when the @tech{expansion} process encounters a
 new binding information.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:id-model"]{Identifiers and Binding}
+@section[#:tag "id-model"]{Identifiers and Binding}
 
-@guideintro["guide:binding"]{binding}
+@guideintro["binding"]{binding}
 
 An @deftech{identifier} is source-program entity. Parsing (i.e.,
 expanding) a Scheme program reveals that some @tech{identifiers}
@@ -72,17 +72,22 @@ variable}. A hyperlinked @tech{identifier} @scheme[cons] is a
 reference to a specific @tech{top-level variable}.
 
 Every binding has a @deftech{phase level} in which it can be
-referenced, where a @tech{phase level} corresponds to an
-integer. @tech{Phase level} 0 corresponds to the run time of the
-enclosing module (or the run time of top-level expression). bindings
-in @tech{phase level} 0 constitute the @deftech{base environment}.
-@tech{Phase level} 1 corresponds to the time during which the
-enclosing module (or top-level expression) is expanded; bindings in
-@tech{phase level} 0 constitute the @deftech{transformer environment}.
-Phase level -1 corresponds to the run time of a different module for
-which the enclosing module is imported for use at @tech{phase level} 1
-(relative to the importing module); bindings in @tech{phase level} -1
-constitute the @deftech{template environment}.
+referenced, where a @tech{phase level} normally corresponds to an
+integer (but the special @deftech{label phase level} does not
+correspond to an integer).  @tech{Phase level} 0 corresponds to the
+run time of the enclosing module (or the run time of top-level
+expression). Bindings in @tech{phase level} 0 constitute the
+@deftech{base environment}.  @tech{Phase level} 1 corresponds to the
+time during which the enclosing module (or top-level expression) is
+expanded; bindings in @tech{phase level} 0 constitute the
+@deftech{transformer environment}.  Phase level -1 corresponds to the
+run time of a different module for which the enclosing module is
+imported for use at @tech{phase level} 1 (relative to the importing
+module); bindings in @tech{phase level} -1 constitute the
+@deftech{template environment}. The @tech{label phase level} does not
+correspond to any execution time; it is used to track bindings (e.g.,
+to identifiers within documentation) without implying an execution
+dependency.
 
 If an identifier has a @tech{local binding}, then it is the same for
 all phase levels, though the reference is allowed only at a particular
@@ -93,7 +98,7 @@ syntax error. If an identifier has a @tech{top-level binding} or
 different phase levels.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:stxobj-model"]{Syntax Objects}
+@section[#:tag "stxobj-model"]{Syntax Objects}
 
 A @deftech{syntax object} combines a simpler Scheme value, such as a
 symbol or pair, with @deftech{lexical information} about bindings,
@@ -153,7 +158,7 @@ information that @scheme[_datum] had when it was parsed as part of the
 @scheme[quote-syntax] form.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:expansion"]{Expansion@aux-elem{ (Parsing)}}
+@section[#:tag "expansion"]{Expansion@aux-elem{ (Parsing)}}
 
 @deftech{Expansion} recursively processes a @tech{syntax object} in a
 particular phase level, starting with @tech{phase level} 0. @tech{Bindings}
@@ -164,15 +169,16 @@ sub-expression is expanded in a deeper phase than the enclosing
 expression.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "mz:fully-expanded"]{Fully Expanded Programs}
+@subsection[#:tag "fully-expanded"]{Fully Expanded Programs}
 
 A complete expansion produces a @tech{syntax object} matching the
 following grammar:
 
 @schemegrammar*[
 #:literals (#%expression module #%module-begin begin provide
+            provide-for-syntax provide-for-label
             define-values define-syntaxes define-values-for-syntax
-            require require-for-syntax require-for-template
+            require require-for-syntax require-for-template require-for-label
             #%plain-lambda case-lambda if begin begin0 let-values letrec-values
             set! quote-syntax quote with-continuation-mark
             #%plain-app #%datum #%top #%variable-reference)
@@ -183,14 +189,17 @@ following grammar:
                    module-level-form ...))
                 (begin top-level-form ...)]
 [module-level-form general-top-level-form
-                   (provide provide-spec ...)]
+                   (provide provide-spec ...)
+                   (provide-for-syntax provide-spec ...)
+                   (provide-for-label provide-spec ...)]
 [general-top-level-form expr
                         (define-values (id ...) expr)
                         (define-syntaxes (id ...) expr)
                         (define-values-for-syntax (id ...) expr)
                         (require require-spec ...)
                         (require-for-syntax require-spec ...)
-                        (require-for-template require-spec ...)]
+                        (require-for-template require-spec ...)
+                        (require-for-label require-spec ...)]
 [expr id
       (#%plain-lambda formals expr ...+)
       (case-lambda (formals expr ...+) ...)
@@ -226,7 +235,7 @@ binding to the @scheme[define-values] of the @schememodname[big]
 language (i.e., the @tech{identifier} is @scheme[free-identifier=?] to
 one whose binding is @scheme[define-values]). In all cases,
 identifiers above typeset as syntactic-form names refer to the
-bindings defined in @secref["mz:syntax"].
+bindings defined in @secref["syntax"].
 
 Only @tech{phase levels} 0 and 1 are relevant for the parse of a
 program (though the @scheme[_datum] in a @scheme[quote-syntax] form
@@ -239,7 +248,7 @@ comparisons are made using @scheme[free-transformer-identifier=?]
 instead of @scheme[free-identifier=?]).
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "mz:expand-steps"]{Expansion Steps}
+@subsection[#:tag "expand-steps"]{Expansion Steps}
 
 In a recursive expansion, each single step in expanding a @tech{syntax
 object} at a particular @tech{phase level} depends on the immediate shape of
@@ -319,7 +328,7 @@ things:
        parsing continues.}
 
  @item{A core @deftech{syntactic form}, which is parsed as described
-       for each form in @secref["mz:syntax"]. Parsing a core syntactic
+       for each form in @secref["syntax"]. Parsing a core syntactic
        form typically involves recursive parsing of sub-forms, and may
        introduce @tech{bindings} that determine the parsing of
        sub-forms.}
@@ -327,7 +336,7 @@ things:
 }
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "mz:expand-context-model"]{Expansion Context}
+@subsection[#:tag "expand-context-model"]{Expansion Context}
 
 Each expansion step occurs in a particular @deftech{context}, and
 transformers and core syntactic forms may expand differently for
@@ -362,7 +371,7 @@ but it starts parsing the body in an @tech{internal-definition
 context}.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "mz:intro-binding"]{Introducing Bindings}
+@subsection[#:tag "intro-binding"]{Introducing Bindings}
 
 @tech{Bindings} are introduced during @tech{expansion} when certain
 core syntactic forms are encountered:
@@ -373,17 +382,25 @@ core syntactic forms are encountered:
        module level, all lexical information derived from the top
        level or the specific module's level are extended with bindings
        from the specified modules, and at the @tech{phase level}s
-       (normally 0) specified by the exporting modules.}
+       specified by the exporting modules: @tech{phase level} 0 for
+       each @scheme[provide], @tech{phase level} 1 for each
+       @scheme[provide-for-syntax], and the @tech{label phase level}
+       for each @scheme[provide-for-label].}
 
  @item{When a @scheme[require-for-syntax] form is encountered at the
        top level or module level, it is treated like @scheme[require],
-       except that the @tech{phase level} for all bindings is incremented by
-       1.}
+       except that only @tech{phase level} 0 exports are imported,
+       and the resulting bindings are for @tech{phase level} 1.}
 
  @item{When a @scheme[require-for-template] form is encountered at the
        top level or module level, it is treated like @scheme[require],
-       except that the @tech{phase level} for all bindings is decremented by
-       1.}
+       except that only @tech{phase level} 0 exports are imported,
+       and the resulting bindings are for @tech{phase level} -1.}
+
+ @item{When a @scheme[require-for-label] form is encountered at the
+       top level or module level, it is treated like @scheme[require],
+       except that only @tech{phase level} 0 exports are imported, and
+       the resulting bindings are for the @tech{label phase level}.}
 
  @item{When a @scheme[define], @scheme[define-values],
        @scheme[define-syntax], or @scheme[define-syntaxes] form is
@@ -417,7 +434,7 @@ core syntactic forms are encountered:
        bindings.}
 
  @item{Definitions in @scheme[internal-definition contexts] introduce
-       bindings as described in @secref["mz:intdef-body"].}
+       bindings as described in @secref["intdef-body"].}
 
 }
 
@@ -439,7 +456,7 @@ binding @scheme[x] and the body @scheme[y] are not
 @scheme[bound-identifier=?].
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "mz:transformer-model"]{Transformer Bindings}
+@subsection[#:tag "transformer-model"]{Transformer Bindings}
 
 In a @tech{top-level context} or @tech{module context}, when the
 expander encounters a @scheme[define-syntaxes] form, the binding that
@@ -461,7 +478,7 @@ it used as a @deftech{syntax transformer} (a.k.a. @deftech{macro}).
 The procedure is expected to accept a syntax object and return a
 syntax object. A use of the binding (at @tech{phase level} 0) triggers
 a call of the @tech{syntax transformer} by the expander; see
-@secref["mz:expand-steps"].
+@secref["expand-steps"].
 
 Before the expander passes a @tech{syntax object} to a transformer,
 the @tech{syntax object} is extend with a @deftech{syntax mark} (that
@@ -521,12 +538,12 @@ is also specially handled by @scheme[syntax-local-value] as used by
 
 In addition to using marks to track introduced identifiers, the
 expander tracks the expansion history of a form through @tech{syntax
-properties} such as @scheme['origin]. See @secref["mz:stxprops"] for
+properties} such as @scheme['origin]. See @secref["stxprops"] for
 more information.
 
 Finally, the expander uses @tech{syntax certificates} to control the
 way that unexported and protected @tech{module bindings} are used. See
-@secref["mz:stxcerts"] for more information on @tech{syntax
+@secref["stxcerts"] for more information on @tech{syntax
 certificates}.
 
 The expander's handling of @scheme[letrec-values+syntaxes] is similar
@@ -542,7 +559,7 @@ is a variable binding at @tech{phase level} 1 (not a @tech{transformer
 binding} at @tech{phase level} 0).
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "mz:partial-expansion"]{Partial Expansion}
+@subsection[#:tag "partial-expansion"]{Partial Expansion}
 
 In certain contexts, such as an @tech{internal-definition context} or
 @tech{module context}, forms are partially expanded to determine
@@ -557,10 +574,10 @@ primitive @scheme[#%app], @scheme[#%datum], or @scheme[#%top] form,
 then expansion stops without adding the identifier.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "mz:intdef-body"]{Internal Definitions}
+@subsection[#:tag "intdef-body"]{Internal Definitions}
 
 An internal-definition context corresponds to a partial expansion step
-(see @secref["mz:partial-expansion"]). A form that supports internal
+(see @secref["partial-expansion"]). A form that supports internal
 definitions starts by expanding its first form in an
 internal-definition context, but only partially. That is, it
 recursively expands only until the form becomes one of the following:
@@ -605,7 +622,7 @@ If the last expression form turns out to be a @scheme[define-values]
 or @scheme[define-syntaxes] form, expansion fails with a syntax error.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "mz:mod-parse"]{Module Phases}
+@subsection[#:tag "mod-parse"]{Module Phases}
 
 A @scheme[require] form not only introduces @tech{bindings} at
 expansion time, but also @deftech{visits} the referenced module when
@@ -635,7 +652,7 @@ expansion of the enclosing module, and are kept separate from
 @tech{top-level context} or from the expansion of a different module.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:compilation-model"]{Compilation}
+@section[#:tag "compilation-model"]{Compilation}
 
 Before expanded code is evaluated, it is first @deftech{compiled}. A
 compiled form has essentially the same information as the
@@ -653,7 +670,7 @@ example, the @scheme[eval] procedure takes a syntax object and expands
 it, compiles it, and evaluates it.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:namespace-model"]{Namespaces}
+@section[#:tag "namespace-model"]{Namespaces}
 
 A @deftech{namespace} is a top-level mapping from symbols to binding
 information. It is the starting point for expanding an expression; a
@@ -685,7 +702,7 @@ for all of the imported named, and evaluating a top-level
 variable (in addition to installing a value into the variable).
 
 A namespace also has a @deftech{module registry} that maps module
-names to module declarations (see @secref["mz:module-eval-model"]).
+names to module declarations (see @secref["module-eval-model"]).
 This registry is shared by all @tech{phase level}s.
 
 For evaluation, each namespace encapsulates a distinct set of
@@ -754,7 +771,7 @@ x
 ]
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:infernames"]{Inferred Value Names}
+@section[#:tag "infernames"]{Inferred Value Names}
 
 To improve error reporting, names are inferred at compile-time for
 certain kinds of values, such as procedures. For example, evaluating
@@ -782,7 +799,7 @@ the procedure bound to @scheme[my-f] will have the inferred name
 @scheme['f].
 
 When an @indexed-scheme['inferred-name] property is attached to a
-syntax object for an expression (see @secref["mz:stxprops"]), the
+syntax object for an expression (see @secref["stxprops"]), the
 property value is used for naming the expression, and it overrides any
 name that was inferred from the expression's context.
 

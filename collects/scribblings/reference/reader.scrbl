@@ -15,10 +15,10 @@
 @define[(graph-defn) @elem{@litchar{#}@graph-tag[]@litchar{=}}]
 @define[(graph-ref) @elem{@litchar{#}@graph-tag[]@litchar{#}}]
 
-@title[#:tag "mz:reader" #:style 'quiet]{The Reader}
+@title[#:tag "reader" #:style 'quiet]{The Reader}
 
 Scheme's reader is a recursive-descent parser that can be configured
-through a @seclink["mz:readtables"]{readtable} and various other
+through a @seclink["readtables"]{readtable} and various other
 @tech{parameters}. This section describes the reader's parsing when
 using the default readtable.
 
@@ -38,11 +38,11 @@ and @scheme[read-syntax] mode does the same modulo wrapping the final
 result.
 
 Reading is defined in terms of Unicode characters; see
-@secref["mz:ports"] for information on how a byte stream is converted
+@secref["ports"] for information on how a byte stream is converted
 to a character stream.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:default-readtable-dispatch"]{Delimiters and Dispatch}
+@section[#:tag "default-readtable-dispatch"]{Delimiters and Dispatch}
 
 Along with @schemelink[char-whitespace?]{whitespace}, the following
 characters are @defterm{delimiters}:
@@ -82,86 +82,86 @@ on the next character or characters in the input stream as follows:
 
 @dispatch-table[
 
-  @dispatch[@litchar{(}]{starts a pair or list; see @secref["mz:parse-pair"]}
-  @dispatch[@litchar{[}]{starts a pair or list; see @secref["mz:parse-pair"]}
-  @dispatch[@litchar["{"]]{starts a pair or list; see @secref["mz:parse-pair"]}
+  @dispatch[@litchar{(}]{starts a pair or list; see @secref["parse-pair"]}
+  @dispatch[@litchar{[}]{starts a pair or list; see @secref["parse-pair"]}
+  @dispatch[@litchar["{"]]{starts a pair or list; see @secref["parse-pair"]}
 
   @dispatch[@litchar{)}]{matches @litchar{(} or raises @Exn{exn:fail:read}}
   @dispatch[@litchar{]}]{matches @litchar{[} or raises @Exn{exn:fail:read}}
   @dispatch[@litchar["}"]]{matches @litchar["{"] or raises @Exn{exn:fail:read}}
 
-  @dispatch[@litchar{"}]{starts a string; see @secref["mz:parse-string"]}
-  @dispatch[@litchar{,}]{starts a quote; see @secref["mz:parse-quote"]}
-  @dispatch[@litchar{`}]{starts a quasiquote; see @secref["mz:parse-quote"]}
-  @dispatch[@litchar{,}]{starts an unquote or splicing unquote; see @secref["mz:parse-quote"]}
+  @dispatch[@litchar{"}]{starts a string; see @secref["parse-string"]}
+  @dispatch[@litchar{,}]{starts a quote; see @secref["parse-quote"]}
+  @dispatch[@litchar{`}]{starts a quasiquote; see @secref["parse-quote"]}
+  @dispatch[@litchar{,}]{starts an unquote or splicing unquote; see @secref["parse-quote"]}
 
-  @dispatch[@litchar{;}]{starts a line comment; see @secref["mz:parse-comment"]}
+  @dispatch[@litchar{;}]{starts a line comment; see @secref["parse-comment"]}
 
-  @dispatch[@cilitchar{#t}]{true; see @secref["mz:parse-boolean"]}
-  @dispatch[@cilitchar{#f}]{false; see @secref["mz:parse-boolean"]}
+  @dispatch[@cilitchar{#t}]{true; see @secref["parse-boolean"]}
+  @dispatch[@cilitchar{#f}]{false; see @secref["parse-boolean"]}
 
-  @dispatch[@litchar{#(}]{starts a vector; see @secref["mz:parse-vector"]}
-  @dispatch[@litchar{#[}]{starts a vector; see @secref["mz:parse-vector"]}
-  @dispatch[@litchar["#{"]]{starts a vector; see @secref["mz:parse-vector"]}
+  @dispatch[@litchar{#(}]{starts a vector; see @secref["parse-vector"]}
+  @dispatch[@litchar{#[}]{starts a vector; see @secref["parse-vector"]}
+  @dispatch[@litchar["#{"]]{starts a vector; see @secref["parse-vector"]}
 
-  @dispatch[@litchar["#\\"]]{starts a character; see @secref["mz:parse-character"]}
+  @dispatch[@litchar["#\\"]]{starts a character; see @secref["parse-character"]}
 
-  @dispatch[@litchar{#"}]{starts a byte string; see @secref["mz:parse-string"]}
-  @dispatch[@litchar{#%}]{starts a symbol; see @secref["mz:parse-symbol"]}
-  @dispatch[@litchar{#:}]{starts a keyword; see @secref["mz:parse-keyword"]}
-  @dispatch[@litchar{#&}]{starts a box; see @secref["mz:parse-box"]}
+  @dispatch[@litchar{#"}]{starts a byte string; see @secref["parse-string"]}
+  @dispatch[@litchar{#%}]{starts a symbol; see @secref["parse-symbol"]}
+  @dispatch[@litchar{#:}]{starts a keyword; see @secref["parse-keyword"]}
+  @dispatch[@litchar{#&}]{starts a box; see @secref["parse-box"]}
 
-  @dispatch[@litchar["#|"]]{starts a block comment; see @secref["mz:parse-comment"]}
-  @dispatch[@litchar["#;"]]{starts an S-expression comment; see @secref["mz:parse-comment"]}
-  @dispatch[@litchar{#,}]{starts a syntax quote; see @secref["mz:parse-quote"]}
-  @dispatch[@litchar["#! "]]{starts a line comment; see @secref["mz:parse-comment"]}
-  @dispatch[@litchar["#!/"]]{starts a line comment; see @secref["mz:parse-comment"]}
-  @dispatch[@litchar{#`}]{starts a syntax quasiquote; see @secref["mz:parse-quote"]}
-  @dispatch[@litchar{#,}]{starts an syntax unquote or splicing unquote; see @secref["mz:parse-quote"]}
+  @dispatch[@litchar["#|"]]{starts a block comment; see @secref["parse-comment"]}
+  @dispatch[@litchar["#;"]]{starts an S-expression comment; see @secref["parse-comment"]}
+  @dispatch[@litchar{#,}]{starts a syntax quote; see @secref["parse-quote"]}
+  @dispatch[@litchar["#! "]]{starts a line comment; see @secref["parse-comment"]}
+  @dispatch[@litchar["#!/"]]{starts a line comment; see @secref["parse-comment"]}
+  @dispatch[@litchar{#`}]{starts a syntax quasiquote; see @secref["parse-quote"]}
+  @dispatch[@litchar{#,}]{starts an syntax unquote or splicing unquote; see @secref["parse-quote"]}
   @dispatch[@litchar["#~"]]{starts compiled code; see @scheme[current-compile]}
 
-  @dispatch[@cilitchar{#i}]{starts a number; see @secref["mz:parse-number"]}
-  @dispatch[@cilitchar{#e}]{starts a number; see @secref["mz:parse-number"]}
-  @dispatch[@cilitchar{#x}]{starts a number; see @secref["mz:parse-number"]}
-  @dispatch[@cilitchar{#o}]{starts a number; see @secref["mz:parse-number"]}
-  @dispatch[@cilitchar{#d}]{starts a number; see @secref["mz:parse-number"]}
-  @dispatch[@cilitchar{#b}]{starts a number; see @secref["mz:parse-number"]}
+  @dispatch[@cilitchar{#i}]{starts a number; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#e}]{starts a number; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#x}]{starts a number; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#o}]{starts a number; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#d}]{starts a number; see @secref["parse-number"]}
+  @dispatch[@cilitchar{#b}]{starts a number; see @secref["parse-number"]}
 
-  @dispatch[@cilitchar["#<<"]]{starts a string; see @secref["mz:parse-string"]}
+  @dispatch[@cilitchar["#<<"]]{starts a string; see @secref["parse-string"]}
 
-  @dispatch[@litchar{#rx}]{starts a regular expression; see @secref["mz:parse-regexp"]}
-  @dispatch[@litchar{#px}]{starts a regular expression; see @secref["mz:parse-regexp"]}
+  @dispatch[@litchar{#rx}]{starts a regular expression; see @secref["parse-regexp"]}
+  @dispatch[@litchar{#px}]{starts a regular expression; see @secref["parse-regexp"]}
 
-  @dispatch[@cilitchar{#ci}]{switches case sensitivity; see @secref["mz:parse-symbol"]}
-  @dispatch[@cilitchar{#cs}]{switches case sensitivity; see @secref["mz:parse-symbol"]}
+  @dispatch[@cilitchar{#ci}]{switches case sensitivity; see @secref["parse-symbol"]}
+  @dispatch[@cilitchar{#cs}]{switches case sensitivity; see @secref["parse-symbol"]}
 
-  @dispatch[@cilitchar["#sx"]]{starts a Scheme expression; see @secref["mz:parse-honu"]}
+  @dispatch[@cilitchar["#sx"]]{starts a Scheme expression; see @secref["parse-honu"]}
 
-  @dispatch[@litchar["#hx"]]{starts a Honu expression; see @secref["mz:parse-honu"]}
-  @dispatch[@litchar["#honu"]]{starts a Honu module; see @secref["mz:parse-honu"]}
+  @dispatch[@litchar["#hx"]]{starts a Honu expression; see @secref["parse-honu"]}
+  @dispatch[@litchar["#honu"]]{starts a Honu module; see @secref["parse-honu"]}
 
-  @dispatch[@litchar["#hash"]]{starts a hash table; see @secref["mz:parse-hashtable"]}
+  @dispatch[@litchar["#hash"]]{starts a hash table; see @secref["parse-hashtable"]}
 
-  @dispatch[@litchar["#reader"]]{starts a reader extension use; see @secref["mz:parse-reader"]}
+  @dispatch[@litchar["#reader"]]{starts a reader extension use; see @secref["parse-reader"]}
 
-  @dispatch[@elem{@litchar{#}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{(}}]{starts a vector; see @secref["mz:parse-vector"]}
-  @dispatch[@elem{@litchar{#}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{[}}]{starts a vector; see @secref["mz:parse-vector"]}
-  @dispatch[@elem{@litchar{#}@kleeneplus{@nonterm{digit@sub{10}}}@litchar["{"]}]{starts a vector; see @secref["mz:parse-vector"]}
-  @dispatch[@graph-defn[]]{binds a graph tag; see @secref["mz:parse-graph"]}
-  @dispatch[@graph-ref[]]{uses a graph tag; see @secref["mz:parse-graph"]}
+  @dispatch[@elem{@litchar{#}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{(}}]{starts a vector; see @secref["parse-vector"]}
+  @dispatch[@elem{@litchar{#}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{[}}]{starts a vector; see @secref["parse-vector"]}
+  @dispatch[@elem{@litchar{#}@kleeneplus{@nonterm{digit@sub{10}}}@litchar["{"]}]{starts a vector; see @secref["parse-vector"]}
+  @dispatch[@graph-defn[]]{binds a graph tag; see @secref["parse-graph"]}
+  @dispatch[@graph-ref[]]{uses a graph tag; see @secref["parse-graph"]}
 
-  @dispatch[@italic{otherwise}]{starts a symbol; see @secref["mz:parse-symbol"]}
+  @dispatch[@italic{otherwise}]{starts a symbol; see @secref["parse-symbol"]}
 
 ]
 
 
-@section[#:tag "mz:parse-symbol"]{Reading Symbols}
+@section[#:tag "parse-symbol"]{Reading Symbols}
 
-@guideintro["guide:symbols"]{the syntax of symbols}
+@guideintro["symbols"]{the syntax of symbols}
 
 A sequence that does not start with a delimiter or @litchar{#} is
 parsed as either a symbol or a number (see
-@secref["mz:parse-number"]), except that @litchar{.} by itself is
+@secref["parse-number"]), except that @litchar{.} by itself is
 never parsed as a symbol or character (unless the
 @scheme[read-accept-dot] parameter is set to @scheme[#f]). A
 @as-index{@litchar{#%}} also starts a symbol. A successful number
@@ -191,9 +191,9 @@ case-sensitive mode.
 "#%Apple"
 ]
 
-@section[#:tag "mz:parse-number"]{Reading Numbers}
+@section[#:tag "parse-number"]{Reading Numbers}
 
-@guideintro["guide:numbers"]{the syntax of numbers}
+@guideintro["numbers"]{the syntax of numbers}
 
 @section-index["numbers" "parsing"]
 
@@ -205,7 +205,7 @@ meta-meta-variable in the grammar.
 A number is optionally prefixed by an exactness specifier,
 @as-index{@litchar{#e}} (exact) or @as-index{@litchar{#i}} (inexact),
 which specifies its parsing as an exact or inexact number; see
-@secref["mz:numbers"] for information on number exactness. As the
+@secref["numbers"] for information on number exactness. As the
 non-terminal names suggest, a number that has no exactness specifier
 and matches only @nunterm{inexact-number} is normally parsed as an
 inexact number, otherwise it is parsed as an excat number. If the
@@ -223,7 +223,7 @@ matches the @nonterm{general-number@sub{2}},
 
 An @nunterm{exponent-mark} in an inexact number serves both to specify
 an exponent and specify a numerical precision. If single-precision
-IEEE floating point is supported (see @secref["mz:numbers"]), the marks
+IEEE floating point is supported (see @secref["numbers"]), the marks
 @litchar{f} and @litchar{s} specifies single-precision. Otherwise, or
 with any other mark, double-precision IEEE floating point is used.
 
@@ -283,7 +283,7 @@ with any other mark, double-precision IEEE floating point is used.
 "#b101"
 ]
 
-@section[#:tag "mz:parse-boolean"]{Reading Booleans}
+@section[#:tag "parse-boolean"]{Reading Booleans}
 
 A @as-index{@litchar{#t}} or @as-index{@litchar{#T}} is the complete
 input syntax for the boolean constant true, and
@@ -291,11 +291,11 @@ input syntax for the boolean constant true, and
 input syntax for the boolean constant false.
 
 
-@section[#:tag "mz:parse-pair"]{Reading Pairs and Lists}
+@section[#:tag "parse-pair"]{Reading Pairs and Lists}
 
 When the reader encounters a @as-index{@litchar{(}},
 @as-index{@litchar["["]}, or @as-index{@litchar["{"]}, it starts
-parsing a pair or list; see @secref["mz:pairs"] for information on pairs
+parsing a pair or list; see @secref["pairs"] for information on pairs
 and lists.
 
 To parse the pair or list, the reader recursively reads data
@@ -366,9 +366,9 @@ is instead parsed a s symbol. If the @scheme[read-accept-infix-dot]
 @litchar{.}s trigger a @scheme[exn:fail:read], instead of the infix
 conversion.
 
-@section[#:tag "mz:parse-string"]{Reading Strings}
+@section[#:tag "parse-string"]{Reading Strings}
 
-@guideintro["guide:strings"]{the syntax of strings}
+@guideintro["strings"]{the syntax of strings}
 
 @section-index["strings" "parsing"]
 
@@ -439,13 +439,13 @@ Within a string sequence, the following escape sequences are
 If the reader encounteres any other use of a backslash in a string
 constant, the @exnraise[exn:fail:read].
 
-@guideintro["guide:bytestrings"]{the syntax of byte strings}
+@guideintro["bytestrings"]{the syntax of byte strings}
 
 @section-index["byte strings" "parsing"]
 
 A string constant preceded by @litchar{#} is parsed as a
 byte-string. (That is, @as-index{@litchar{#"}} starts a byte-string
-literal.) See @secref["mz:bytestrings"] for information on byte
+literal.) See @secref["bytestrings"] for information on byte
 strings. Byte string constants support the same escape sequences as
 character strings, except @litchar["\\u"] and @litchar["\\U"].
 
@@ -472,7 +472,7 @@ encountered before a terminating line, the @exnraise[exn:fail:read].
 "#\"Apple\""
 ]
 
-@section[#:tag "mz:parse-quote"]{Reading Quotes}
+@section[#:tag "parse-quote"]{Reading Quotes}
 
 When the reader enounters @as-index{@litchar{'}}, then it recursively
 reads one datum, and it forms a new list containing the symbol
@@ -501,7 +501,7 @@ The @litchar{`}, @litchar{,}, and @litchar[",@"] forms are disabled when
 the @scheme[read-accept-quasiquote] @tech{parameter} is set to
 @scheme[#f], in which case the @exnraise[exn:fail:read], instead.
 
-@section[#:tag "mz:parse-comment"]{Reading Comments}
+@section[#:tag "parse-comment"]{Reading Comments}
 
 A @as-index{@litchar{;}} starts a line comment. When the reader
 encounters @litchar{;}, then it skips past all characters until the
@@ -531,7 +531,7 @@ normally appears at the beginning of a Unix script file.
 "#! /bin/sh"
 ]
 
-@section[#:tag "mz:parse-vector"]{Reading Vectors}
+@section[#:tag "parse-vector"]{Reading Vectors}
 
 When the reader encounters a @litchar{#(}, @litchar{#[}, or
 @litchar["#{"], it starts parsing a vector; see @secref["vectors"] for
@@ -539,7 +539,7 @@ information on vectors.
 
 The elements of the vector are recursively read until a matching
 @litchar{)}, @litchar{]}, or @litchar["}"] is found, just as for
-lists (see @secref["mz:parse-pair"]). A delimited @litchar{.} is not
+lists (see @secref["parse-pair"]). A delimited @litchar{.} is not
 allowed among the vector elements.
 
 An optional vector length can be specified between the @litchar{#} and
@@ -560,11 +560,11 @@ vector's elements are also wraped as syntax objects.
 "#3()"
 ]
 
-@section[#:tag "mz:parse-hashtable"]{Reading Hash Tables}
+@section[#:tag "parse-hashtable"]{Reading Hash Tables}
 
 A @litchar{#hash} starts an immutable hash-table constant with key
 matching based on @scheme[equal?]. The characters after @litchar{hash}
-must parse as a list of pairs (see @secref["mz:parse-pair"]) with a
+must parse as a list of pairs (see @secref["parse-pair"]) with a
 specific use of delimited @litchar{.}: it must appear between the
 elements of each pair in the list, and nowhere in the sequence of list
 elements. The first element of each pair is used as the key for a
@@ -588,7 +588,7 @@ In either case, the table is constructed by adding each mapping to the
 "#hasheq((a . 5) (a . 7))"
 ]
 
-@section[#:tag "mz:parse-box"]{Reading Boxes}
+@section[#:tag "parse-box"]{Reading Boxes}
 
 When the reader encounters a @litchar{#&}, it starts parsing a box;
 see @secref["boxes"] for information on boxes. The content of the box
@@ -602,9 +602,9 @@ content is also wraped as a syntax object.
 "#&17"
 ]
 
-@section[#:tag "mz:parse-character"]{Reading Characters}
+@section[#:tag "parse-character"]{Reading Characters}
 
-@guideintro["guide:characters"]{the syntax of characters}
+@guideintro["characters"]{the syntax of characters}
 
 A @litchar["#\\"] starts a character constant, which has one of the
 following forms:
@@ -624,12 +624,12 @@ following forms:
  @item{@litchar["#\\"]@kleenerange[1 3]{@nonterm{digit@sub{8}}}:
        Unicode for the octal number specified by @kleenerange[1
        3]{@nonterm{digit@sub{8}}}, as in string escapes (see
-       @secref["mz:parse-string"]).}
+       @secref["parse-string"]).}
 
  @item{@litchar["#\\x"]@kleenerange[1 2]{@nonterm{digit@sub{16}}}:
        Unicode for the hexadecimal number specified by @kleenerange[1
        2]{@nonterm{digit@sub{16}}}, as in string escapes (see
-       @secref["mz:parse-string"]).}
+       @secref["parse-string"]).}
 
  @item{@litchar["#\\u"]@kleenerange[1 4]{@nonterm{digit@sub{16}}}:
        like @litchar["#\\x"], but with up to four hexadecimal digits.}
@@ -652,7 +652,7 @@ following forms:
 "#\\\u3BB"
 ]
 
-@section[#:tag "mz:parse-keyword"]{Reading Keywords}
+@section[#:tag "parse-keyword"]{Reading Keywords}
 
 A @litchar{#:} starts a keyword. The parsing of a keyword after the
 @litchar{#:} is the same as for a symbol, including case-folding in
@@ -664,11 +664,11 @@ never parsed as a number.
 "#:1"
 ]
 
-@section[#:tag "mz:parse-regexp"]{Reading Regular Expressions}
+@section[#:tag "parse-regexp"]{Reading Regular Expressions}
 
 A @litchar{#rx} or @litchar{#px} starts a regular expression. The
 characters immediately after @litchar{#rx} or @litchar{#px} must parse
-as a string or byte string (see @secref["mz:parse-string"]). A
+as a string or byte string (see @secref["parse-string"]). A
 @litchar{#rx} prefix starts a regular expression as would be
 constructed by @scheme[regexp], @litchar{#px} as
 constructed by @scheme[pregexp], @litchar{#rx#} as
@@ -682,7 +682,7 @@ constructed by @scheme[byte-pregexp].
 "#px#\"[\\\\s]*\""
 ]
 
-@section[#:tag "mz:parse-graph"]{Reading Graph Structure}
+@section[#:tag "parse-graph"]{Reading Graph Structure}
 
 A @graph-defn[] tags the following datum for reference via
 @graph-ref[], which allows the reader to produce a datum that
@@ -712,7 +712,7 @@ neither defines nor uses graph tags for other top-level forms.
 
 @local-table-of-contents[]
 
-@section[#:tag "mz:parse-reader"]{Reading via an External Reader}
+@section[#:tag "parse-reader"]{Reading via an External Reader}
 
 When the reader encounters @litchar{#reader}, then it loads an
 external reader procedure and applies it to the current input stream.
@@ -733,10 +733,10 @@ the result is a syntax object in @scheme[read] mode, then it is
 converted to a datum using @scheme[syntax-object->datum]; if the
 result is not a syntax object in @scheme[read-syntax] mode, then it is
 converted to one using @scheme[datum->syntax-object]. See also
-@secref["mz:reader-procs"] for information on the procedure's results.
+@secref["reader-procs"] for information on the procedure's results.
 
 If the @scheme[read-accept-reader] @tech{parameter} is set to
 @scheme[#f], then if the reader encounters @litchar{#reader}, the
 @exnraise[exn:fail:read].
 
-@section[#:tag "mz:parse-honu"]{Honu Parsing}
+@section[#:tag "parse-honu"]{Honu Parsing}

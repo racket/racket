@@ -140,6 +140,10 @@
                   text-decoration: none;
                 }
 
+               .nobreak { 
+                  white-space: nowrap;
+                }
+
                .title {
                font-size: 200%;
                font-weight: normal;

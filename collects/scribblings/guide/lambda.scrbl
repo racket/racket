@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:lambda"]{Functions@aux-elem{ (Procedures)}: @scheme[lambda]}
+@title[#:tag "lambda"]{Functions@aux-elem{ (Procedures)}: @scheme[lambda]}
 
 A @scheme[lambda] expression creates a function. In the simplest
 case, a @scheme[lambda] expression has the form
@@ -51,7 +51,7 @@ into a list bound to @scheme[_rest-id].
 Functions with a @scheme[_rest-id] often use @scheme[apply] to call
 another function that accepts any number of arguments.
 
-@guideother{@secref["guide:apply"] describes @scheme[apply].}
+@guideother{@secref["apply"] describes @scheme[apply].}
 
 @defexamples[
 (define max-mag
@@ -129,14 +129,14 @@ and every following @scheme[_arg-id] must have a default as well.
 (greet "Adam")
 ]
 
-@section[#:tag "guide:lambda-keywords"]{Declaring Keyword Arguments}
+@section[#:tag "lambda-keywords"]{Declaring Keyword Arguments}
 
 A @scheme[lambda] form can declare an argument to be passed by
 keyword, instead of position. Keyword arguments can be mixed with
 by-position arguments, and default-value expressions can be supplied
 for either kind of argument:
 
-@guideother{@secref["guide:keyword-args"] introduces function
+@guideother{@secref["keyword-args"] introduces function
 calls with keywords.}
 
 @specform/subs[
@@ -186,7 +186,7 @@ through parallel lists in the first two (by-position) arguments,
 and then all by-position arguments from an application as the
 remaining by-position arguments.
 
-@guideother{@secref["guide:apply"] inroduces @scheme[keyword-apply].}
+@guideother{@secref["apply"] inroduces @scheme[keyword-apply].}
 
 @defexamples[
 (define (trace-wrap f)
@@ -197,7 +197,7 @@ remaining by-position arguments.
 ((trace-wrap greet) "John" #:hi "Howdy")
 ]
 
-@refdetails["mz:lambda"]{function expressions}
+@refdetails["lambda"]{function expressions}
 
 @;------------------------------------------------------------------------
 @section{Arity-Sensitive Functions: @scheme[case-lambda]}

@@ -814,6 +814,7 @@ namespace_val {
   gcMARK(e->rename);
   gcMARK(e->et_rename);
   gcMARK(e->tt_rename);
+  gcMARK(e->dt_rename);
 
   gcMARK(e->syntax);
   gcMARK(e->exp_env);
@@ -825,6 +826,7 @@ namespace_val {
   gcMARK(e->require_names);
   gcMARK(e->et_require_names);
   gcMARK(e->tt_require_names);
+  gcMARK(e->dt_require_names);
 
   gcMARK(e->toplevel);
   gcMARK(e->modchain);
@@ -912,8 +914,9 @@ module_val {
   gcMARK(m->modname);
 
   gcMARK(m->et_requires);
-  gcMARK(m->tt_requires);
   gcMARK(m->requires);
+  gcMARK(m->tt_requires);
+  gcMARK(m->dt_requires);
 
   gcMARK(m->body);
   gcMARK(m->et_body);
@@ -922,9 +925,15 @@ module_val {
 
   gcMARK(m->provide_protects);
   gcMARK(m->indirect_provides);
+
+  gcMARK(m->et_provide_protects);
+  gcMARK(m->et_indirect_provides);
+
   gcMARK(m->self_modidx);
 
   gcMARK(m->accessible);
+  gcMARK(m->et_accessible);
+
   gcMARK(m->insp);
 
   gcMARK(m->hints);
@@ -937,21 +946,35 @@ module_val {
   gcMARK(m->rn_stx);
   gcMARK(m->et_rn_stx);
   gcMARK(m->tt_rn_stx);
+  gcMARK(m->dt_rn_stx);
 
   gcMARK(m->primitive);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Module));
 }
 
-module_exports_val {
+module_phase_exports_val {
  mark:
-  Scheme_Module_Exports *m = (Scheme_Module_Exports *)p;
+  Scheme_Module_Phase_Exports *m = (Scheme_Module_Phase_Exports *)p;
 
   gcMARK(m->provides);
   gcMARK(m->provide_srcs);
   gcMARK(m->provide_src_names);
+  gcMARK(m->provide_src_phases);
 
   gcMARK(m->kernel_exclusion);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Phase_Exports));
+}
+
+module_exports_val {
+ mark:
+  Scheme_Module_Exports *m = (Scheme_Module_Exports *)p;
+
+  gcMARK(m->rt);
+  gcMARK(m->et);
+  gcMARK(m->dt);
 
   gcMARK(m->src_modidx);
  size:

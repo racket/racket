@@ -182,7 +182,7 @@ Beware, however, that the @tech{REPL}'s printer recognizes the symbol
 ]
 
 @;------------------------------------------------------------------------
-@section[#:tag "guide:lists-and-syntax"]{Lists and Scheme Syntax}
+@section[#:tag "lists-and-syntax"]{Lists and Scheme Syntax}
 
 Now that you know the truth about pairs and lists, and now that you've
 seen @scheme[quote], you're ready to understand the main way in which

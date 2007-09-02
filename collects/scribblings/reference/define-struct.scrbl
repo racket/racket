@@ -1,9 +1,9 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:define-struct"]{Defining Structure Types: @scheme[define-struct]}
+@title[#:tag "define-struct"]{Defining Structure Types: @scheme[define-struct]}
 
-@guideintro["guide:define-struct"]{@scheme[define-struct]}
+@guideintro["define-struct"]{@scheme[define-struct]}
 
 @defform/subs[(define-struct id-maybe-super (field ...)
                              struct-option ...)
@@ -64,16 +64,16 @@ up to @math{4+2n} names:
        is used to define subtypes, and it also works with the
        @scheme[shared] and @scheme[match] forms. For detailed
        information about the binding of @scheme[id], see
-       @secref["mz:structinfo"].}
+       @secref["structinfo"].}
 
 }
 
 If @scheme[super-id] is provided, it must have a transformer binding
-of the same sort bound to @scheme[id] (see @secref["mz:structinfo"]),
+of the same sort bound to @scheme[id] (see @secref["structinfo"]),
 and it specifies a supertype for the new structure type. Alternately,
 the @scheme[#:super] option can be used to specify an expression that
 must produce a @tech{structure type descriptor}. See
-@secref["mz:structures"] for more information on structure subtypes
+@secref["structures"] for more information on structure subtypes
 and supertypes. If both @scheme[super-id] and @scheme[#:super] are
 provided, a syntax error is reported.
 
@@ -88,10 +88,10 @@ a syntax error is reported.
 The @scheme[#:inspector], @scheme[#:auto-value], and @scheme[#:guard]
 options specify an inspector, value for automatic fields, and guard
 procedure, respectively. See @scheme[make-struct-type] (in
-@secref["mz:creatingmorestructs"]) for more information on these
+@secref["creatingmorestructs"]) for more information on these
 properties of a structure type. The @scheme[#:property] option, which
 is the only one that can be specified multiple times, attaches a
-property value to the structure type; see @secref["mz:structprops"]
+property value to the structure type; see @secref["structprops"]
 for more information on properties.
 
 If the @scheme[#:omit-define-syntaxes] option is supplied, then

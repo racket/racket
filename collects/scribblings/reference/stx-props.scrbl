@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:stxprops"]{Syntax Object Properties}
+@title[#:tag "stxprops"]{Syntax Object Properties}
 
 Every syntax object has an associated @deftech{syntax property} list,
 which can be queried or extended with
@@ -29,7 +29,7 @@ automatically adds a property to the original syntax object using the
 key @indexed-scheme['origin]. If the source syntax has no
 @scheme['origin] property, it is set to the empty list.  Then, still
 before the merge, the identifier that triggered the macro expansion
-(as syntax) is @scheme[cons-immutable]d onto the @scheme['origin]
+(as syntax) is @scheme[cons]ed onto the @scheme['origin]
 property so far.  The @scheme['origin] property thus records (in
 reverse order) the sequence of macro expansions that produced an
 expanded expression. Usually, the @scheme['origin] value is an
@@ -45,7 +45,7 @@ MzScheme adds properties to expanded syntax (often using
 @itemize{
 
  @item{When a @scheme[begin] form is spliced into a sequence with
- internal definitions (see @secref["mz:intdef-body"]),
+ internal definitions (see @secref["intdef-body"]),
  @scheme[syntax-track-origin] is applied to every spliced element from
  the @scheme[begin] body. The second argument to
  @scheme[syntax-track-origin] is the @scheme[begin] form, and the
@@ -54,7 +54,7 @@ MzScheme adds properties to expanded syntax (often using
 
  @item{When an internal @scheme[define-values] or
  @scheme[define-syntaxes] form is converted into a
- @scheme[letrec-values+syntaxes] form (see @secref["mz:intdef-body"]),
+ @scheme[letrec-values+syntaxes] form (see @secref["intdef-body"]),
  @scheme[syntax-track-origin] is applied to each generated binding
  clause.  The second argument to @scheme[syntax-track-origin] is the
  converted form, and the third argument is the @scheme[define-values]
@@ -78,21 +78,21 @@ MzScheme adds properties to expanded syntax (often using
 
  @item{When a reference to an unexported or protected identifier from
  a module is discovered (and the reference is certified; see
- @secref["mz:stxcerts"]), the @indexed-scheme['protected] property is
+ @secref["stxcerts"]), the @indexed-scheme['protected] property is
  added to the identifier with a @scheme[#t] value.}
 
  @item{When or @scheme[read-syntax] or @scheme[read-honu-syntax]
  generates a syntax object, it attaches a property to the object
  (using a private key) to mark the object as originating from a
  read. The @scheme[syntax-original?]  predicate looks for the property
- to recognize such syntax objects. (See @secref["mz:stxops"] for more
+ to recognize such syntax objects. (See @secref["stxops"] for more
  information.)}
 
 }
 
-See @secref["mz:modinfo"] for information about properties generated
+See @secref["modinfo"] for information about properties generated
 by the expansion of a module declaration. See @scheme[lambda] and
-@secref["mz:infernames"] for information about properties recognized
+@secref["infernames"] for information about properties recognized
 when compiling a procedure. See @scheme[current-compile] for
 information on properties and byte codes.
 
@@ -116,7 +116,7 @@ the key @scheme[key], or @scheme[#f] if no value is associated to
 @defproc[(syntax-property-symbol-keys [stx syntax?]) list?]{
 
 Returns a list of all symbols that as keys have associated properties
-in @scheme[stx]. @tech{Uninterned} symbols (see @secref["mz:symbols"])
+in @scheme[stx]. @tech{Uninterned} symbols (see @secref["symbols"])
 are not included in the result list.}
 
 

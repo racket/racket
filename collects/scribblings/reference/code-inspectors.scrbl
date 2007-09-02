@@ -1,10 +1,10 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:modprotect"]{Code Inspectors}
+@title[#:tag "modprotect"]{Code Inspectors}
 
 In the same way that inspectors control access to structure fields
-(see @secref["mz:inspectors"]), inspectors also control access to
+(see @secref["inspectors"]), inspectors also control access to
 @tech{module bindings}. The default inspector for @tech{module
 bindings} is determined by the @scheme[current-code-inspector]
 parameter, instead of the @scheme[current-inspector] parameter.
@@ -51,7 +51,7 @@ macro expander prevent any reference to an unexported identifier,
 unless the reference appears within an expression that was generated
 by the module's macros (or, more precisely, a macro from a module
 whose declaration inspector controls the invocation of the
-identifier's module). See @secref["mz:stxcerts"] for further
+identifier's module). See @secref["stxcerts"] for further
 information.
 
 @defparam[current-code-inspector insp inspector?]{

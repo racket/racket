@@ -442,6 +442,10 @@
               5)
            5)
 
+(test-comp '(let-values ([() (values)])
+              (lambda () x))
+           '(lambda () x))
+
 (test-comp '(letrec-values ([() (values)])
               5)
            5)

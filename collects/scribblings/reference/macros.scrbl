@@ -3,10 +3,10 @@
 
 @title[#:style 'toc]{Macros}
 
-See @secref["mz:syntax-model"] for general information on how programs
-are parsed. In particular, the subsection @secref["mz:expand-steps"]
+See @secref["syntax-model"] for general information on how programs
+are parsed. In particular, the subsection @secref["expand-steps"]
 describes how parsing triggers macros, and
-@secref["mz:transformer-model"] describes how macro transformers are
+@secref["transformer-model"] describes how macro transformers are
 called.
 
 @local-table-of-contents[]

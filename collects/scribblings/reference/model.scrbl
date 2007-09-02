@@ -48,7 +48,7 @@ expression that evaluation simplifies no further, such as the number
 @scheme[2].
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:cont-model"]{Sub-expression Evaluation and Continuations}
+@section[#:tag "cont-model"]{Sub-expression Evaluation and Continuations}
 
 Some simplifications require more than one step. For example:
 
@@ -119,7 +119,7 @@ specification of @tech{tail positions} goes with each syntactic form,
 like @scheme[if].
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:values-model"]{Multiple Return Values}
+@section[#:tag "values-model"]{Multiple Return Values}
 
 A Scheme expression can evaluate to @deftech{multiple values}, in the
 same way that a procedure can accept multiple arguments.
@@ -309,7 +309,7 @@ program. A program representation created with
 existing @tech{objects}.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:model-eq"]{Object Identity and Comparisons}
+@section[#:tag "model-eq"]{Object Identity and Comparisons}
 
 The @scheme[eq?] operator compares two @tech{values}, returning
 @scheme[#t] when the values refer to the same @tech{object}. This form
@@ -332,7 +332,7 @@ The behavior of a datatype with respect to @scheme[eq?] is generally
 specified with the datatype and its associated procedures.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:gc-model"]{Garbage Collection}
+@section[#:tag "gc-model"]{Garbage Collection}
 
 In the program state
 
@@ -497,7 +497,7 @@ forms. As a result, future references of the @tech{variable} always
 access the same @tech{location}.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:module-eval-model"]{Modules and Module-Level Variables}
+@section[#:tag "module-eval-model"]{Modules and Module-Level Variables}
 
 Most definitions in PLT Scheme are in modules. In terms of evaluation,
 a module is essentially a prefix on a defined name, so that different
@@ -524,7 +524,7 @@ and installs @scheme[10] as its value. This @scheme[x] is unrelated to
 any top-level definition of @scheme[x].
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "mz:module-phase"]{Module Phases}
+@subsection[#:tag "module-phase"]{Module Phases}
 
 A module can be @tech{instantiate}d in multiple @deftech{phases}. A
 phase is an integer that, again, is effectively a prefix on the names
@@ -535,7 +535,7 @@ already @tech{instantiate}d at phase 0.  A top-level
 @tech{phase} 1 (if it is not already @tech{instantiate}d at that
 level); a @scheme[require-for-syntax] also has a different binding
 effect on further program parsing, as described in
-@secref["mz:intro-binding"].
+@secref["intro-binding"].
 
 Within a module, some definitions are shifted by a phase already; the
 @scheme[define-for-syntax] form is like @scheme[define], but it
@@ -562,11 +562,11 @@ first @tech{instantiate}d at @tech{phase} @math{n-1}, and so on.
 A final distinction among module @tech{instantiations} is that
 multiple @tech{instantiations} may exist at phase 1 and higher. These
 @tech{instantiations} are created by the parsing of module forms (see
-@secref["mz:mod-parse"]), and are, again, conceptually distinguished
+@secref["mod-parse"]), and are, again, conceptually distinguished
 by prefixes.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "mz:module-redeclare"]{Module Re-declarations}
+@subsection[#:tag "module-redeclare"]{Module Re-declarations}
 
 @section-index["modules" "re-define"]
 
@@ -583,7 +583,7 @@ re-declared, each re-declaration of the module is immediately
 @tech{instantiate}d in the same @tech{phase}s.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:mark-model"]{Continuation Frames and Marks}
+@section[#:tag "mark-model"]{Continuation Frames and Marks}
 
 Every continuation @scheme[_C] can be partitioned into
 @deftech{continuation frames} @frame[1], @frame[2], ..., @frame["n"]
@@ -602,7 +602,7 @@ for a ``stack trace'' to be used when an exception is raised, or
 to implement dynamic scope.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:prompt-model"]{Prompts, Delimited Continuations, and Barriers}
+@section[#:tag "prompt-model"]{Prompts, Delimited Continuations, and Barriers}
 
 A @deftech{prompt} is a special kind of continuation frame that is
 annotated with a specific @deftech{prompt-tag} (essentially a
@@ -634,7 +634,7 @@ used only to abort to the point of capture, which means that
 escape-continuation aborts can cross continuation barriers.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:thread-model"]{Threads}
+@section[#:tag "thread-model"]{Threads}
 
 Scheme supports multiple, pre-emptive @deftech{threads} of
 evaluation. In terms of the evaluation model, this means that each
@@ -657,7 +657,7 @@ new thread sees the same initial value (specified when the thread cell
 is created) as all other threads.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:parameter-model"]{Parameters}
+@section[#:tag "parameter-model"]{Parameters}
 
 @deftech{Parameters} are essentially a derived concept in Scheme; they
 are defined in terms of continuation marks and thread cells. However,
@@ -684,7 +684,7 @@ Various operations, such as @scheme[parameterize] or
 current continuation's frame.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:exn-model"]{Exceptions}
+@section[#:tag "exn-model"]{Exceptions}
 
 @deftech{Exceptions} are essentially a derived concept in Scheme; they
 are defined in terms of continuations, prompts, and continuation
@@ -706,7 +706,7 @@ prompt is installed in the outermost frame of the continuation for any
 new thread.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:custodian-model"]{Custodians}
+@section[#:tag "custodian-model"]{Custodians}
 
 A @deftech{custodian} manages a collection of threads, file-stream
 ports, TCP ports, TCP listeners, UDP sockets, and byte converters.
@@ -734,7 +734,7 @@ down before a procedure is called to create a managed resource (e.g.,
 A thread can have multiple managing custodians, and a suspended thread
 created with @scheme[thread/suspend-to-kill] can have zero
 custodians. Extra custodians become associated with a thread through
-@scheme[thread-resume] (see @secref["mz:threadkill"]). When a thread
+@scheme[thread-resume] (see @secref["threadkill"]). When a thread
 has multiple custodians, it is not necessarily killed by a
 @scheme[custodian-shutdown-all], but shut-down custodians are removed
 from the thread's managing set, and the thread is killed when its

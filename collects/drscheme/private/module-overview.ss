@@ -941,7 +941,7 @@
       (unless (hash-table-get visited-hash-table module-name (λ () #f))
         (async-channel-put progress-channel (format adding-file module-name))
         (hash-table-put! visited-hash-table module-name #t)
-        (let-values ([(imports fs-imports ft-imports) (module-compiled-imports module-code)])
+        (let-values ([(imports fs-imports ft-imports fl-imports) (module-compiled-imports module-code)])
           (let ([requires (extract-filenames imports module-name)]
                 [syntax-requires (extract-filenames fs-imports module-name)]
                 [template-requires (extract-filenames ft-imports module-name)])

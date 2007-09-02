@@ -5,9 +5,9 @@
 
 @interaction-eval[(require (lib "for.ss"))]
 
-@title[#:tag "guide:set!"]{Assignment: @scheme[set!]}
+@title[#:tag "set!"]{Assignment: @scheme[set!]}
 
-@refalso["mz:set!"]{@scheme[set!]}
+@refalso["set!"]{@scheme[set!]}
 
 Assign to a variable using @scheme[set!]:
 
@@ -166,7 +166,7 @@ the program.
 @;------------------------------------------------------------------------
 @section{Multiple Values: @scheme[set!-values]}
 
-@refalso["mz:set!"]{@scheme[set!-values]}
+@refalso["set!"]{@scheme[set!-values]}
 
 The @scheme[set!-values] form assigns to multiple variables at once,
 given an expression that produces an appropriate number of values:

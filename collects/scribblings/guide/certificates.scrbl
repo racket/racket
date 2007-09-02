@@ -59,7 +59,7 @@ these certifications, the macro expander rejects the local-binding
 reference, and @scheme[unchecked-go] remains protected.
 
 In much the same way that the macro expander copies properties from a
-syntax transformer's input to its output (see @secref["mz:stxprops"]),
+syntax transformer's input to its output (see @refsecref["stxprops"]),
 the expander copies certificates from a transformer's input to its
 output. Building on the previous example,
 
@@ -81,11 +81,11 @@ to @scheme[unchecked-go].
 
 When a protected identifier becomes inaccessible by direct reference
 (i.e., when the current code inspector is changed so that it does not
-control the module's invocation; see @secref["mz:modprotect"]), the
+control the module's invocation; see @refsecref["modprotect"]), the
 protected identifier is treated like an unexported identifier.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:stxinactivecerts"]{Certificate Propagation}
+@section[#:tag "stxinactivecerts"]{Certificate Propagation}
 
 When the result of a macro expansion contains a @scheme[quote-syntax]
 form, the macro expansion's certificate must be attached to the
@@ -239,7 +239,7 @@ handling recursively, in case a macro produces a @scheme[begin] form
 that contains nested @scheme[define-values] forms.
 
 The default application of certificates can be overridden by attaching
-a @scheme['certify-mode] property (see @secref["mz:stxprops"]) to the
+a @scheme['certify-mode] property (see @refsecref["stxprops"]) to the
 result syntax object of a macro transformer. If the property value is
 @scheme['opaque], then the certificate is attached to the syntax
 object and not its parts. If the property value is

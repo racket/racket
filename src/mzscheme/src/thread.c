@@ -2433,6 +2433,8 @@ static void do_swap_thread()
   } else {
     Scheme_Thread *new_thread = swap_target;
 
+    swap_target = NULL;
+
     swap_no_setjmp = 0;
 
     /* We're leaving... */

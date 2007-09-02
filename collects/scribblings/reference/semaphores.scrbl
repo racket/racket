@@ -2,7 +2,7 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["mz.ss"]
 
-@title[#:tag "mz:semaphore"]{Semaphores}
+@title[#:tag "semaphore"]{Semaphores}
 
 A @deftech{semaphore} has an internal counter; when this counter is
 zero, the semaphore can block a thread's execution (through
@@ -18,7 +18,7 @@ semaphore's internal value is non-zero infinitely often, then the
 thread is eventually unblocked.
 
 In addition to its use with semaphore-specific procedures, semaphores
-can be used as events; see @secref["mz:sync"].
+can be used as events; see @secref["sync"].
 
 @defproc[(make-semaphore [init nonnegative-exact-integer? 0]) semaphore?]{
 
@@ -52,7 +52,7 @@ is decremented and @scheme[#t] is returned.}
 
 @defproc[(semaphore-wait/enable-break [sema semaphore?]) void?]{Like
 @scheme[semaphore-wait], but breaking is enabled (see
-@secref["mz:breakhandler"]) while waiting on @scheme[sema]. If
+@secref["breakhandler"]) while waiting on @scheme[sema]. If
 breaking is disabled when @scheme[semaphore-wait/enable-break] is
 called, then either the semaphore's counter is decremented or the
 @scheme[exn:break] exception is raised, but not both.}
@@ -70,7 +70,7 @@ the event does not decrement @scheme[sema]'s internal count.}
 Waits on @scheme[sema] using @scheme[semaphore-wait], calls
 @scheme[proc] with all @scheme[arg]s, and then posts to
 @scheme[sema]. A @tech{continuation barrier} blocks full continuation jumps
-into or out of @scheme[proc] (see @secref["mz:prompt-model"]), but
+into or out of @scheme[proc] (see @secref["prompt-model"]), but
 escape jumps are allowed, and @scheme[sema] is posted on escape. If
 @scheme[try-fail-thunk] is provided and is not @scheme[#f], then
 @scheme[semaphore-try-wait?] is called on @scheme[sema] instead of

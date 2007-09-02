@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:subprocess"]{Processes}
+@title[#:tag "subprocess"]{Processes}
 
 @defproc[(subprocess [stdout (or/c output-port? false/c)]
                      [stdin (or/c input-port? false/c)]
@@ -18,7 +18,7 @@ Creates a new process in the underlying operating system to execute
 path to a program executable, and the @scheme[arg]s are command-line
 arguments for the program. Under Unix and Mac OS X, command-line
 arguments are passed as byte strings using the current locale's
-encoding (see @secref["mz:encodings"]).
+encoding (see @secref["encodings"]).
 
 Under Windows, the first @scheme[arg] can be @indexed-scheme['exact],
 which triggers a Windows-specific hack: the second @scheme[arg] is
@@ -63,8 +63,8 @@ explicitly closed with @scheme[close-input-port] or
 @scheme[close-output-port].
 
 The returned ports are @tech{file-stream ports} (see
-@secref["mz:file-ports"]), and they are placed into the management of
-the current custodian (see @secref["mz:custodians"]).  The
+@secref["file-ports"]), and they are placed into the management of
+the current custodian (see @secref["custodians"]).  The
 @exnraise[exn:fail] when a low-level error prevents the spawning of a
 process or the creation of operating system pipes for process
 communication.}

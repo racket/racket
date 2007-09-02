@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:modules" #:style 'toc]{Modules}
+@title[#:tag "modules" #:style 'toc]{Modules}
 
 Scheme definitions and expressions are normally written inside of a
 module. Although a @tech{REPL} evaluates definitions and expressions outside

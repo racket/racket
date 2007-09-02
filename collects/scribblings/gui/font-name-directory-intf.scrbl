@@ -35,7 +35,7 @@ To extract mapping information from @scheme[the-font-name-directory],
 For a family without a face string, the corresponding font ID has a
  useful built-in mapping for every platform and device. (The built-in
  mapping can be overridden through the user's preferences; see
- @secref["mr:fontresources"] for information.) For a family with a
+ @secref["fontresources"] for information.) For a family with a
  face string, @scheme[the-font-name-directory] interprets the string
  (in a platform-specific way) to generate a mapping for ``screen''
  drawing (to a canvas's @scheme[dc<%>], a @scheme[bitmap-dc%], or a
@@ -93,7 +93,7 @@ Under Windows and Mac OS X, a face name is interpreted simply as a
 
 The mapping for face names can be overridden (on all platforms)
  through the user's preferences, as described in
- @secref["mr:fontresources"].
+ @secref["fontresources"].
 
 
 
@@ -159,7 +159,7 @@ Font ID are useful only as mapping indices for
 Gets a PostScript font name for a font ID, weight, and style
  combination. The PostScript font name is used both for the font name
  in PostScript output (sans character set) and as the @|AFM| file
- name; see also @secref["mr:postscriptfonts"].
+ name; see also @secref["postscriptfonts"].
 
 See @scheme[font%] for information about @scheme[weight] and
  @scheme[style].

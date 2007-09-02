@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require[(lib "bnf.ss" "scribble")]
 
-@title[#:tag "mr:fontresources"]{Font Configuration}
+@title[#:tag "fontresources"]{Font Configuration}
 
 This chapter describes how to set up face mappings for screen and
  PostScript fonts via preferences (see @|mrprefsdiscuss|). The
@@ -50,7 +50,7 @@ The value of the preference is parsed as described in
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mr:exampleresources"]{Wildcards}
+@section[#:tag "exampleresources"]{Wildcards}
 
 Building items names by concatenating @nonterm{dest}, @nonterm{type},
  @nonterm{weight}, and @nonterm{style} can create a large number of preference
@@ -319,7 +319,7 @@ Internal preferences for Mac OS X only:
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "mr:postscriptfonts"]{PostScript Fonts}
+@section[#:tag "postscriptfonts"]{PostScript Fonts}
 
 @section-index["fonts" "PostScript"]
 @section-index["PostScript fonts"]

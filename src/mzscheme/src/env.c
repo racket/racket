@@ -3906,11 +3906,18 @@ local_module_introduce(int argc, Scheme_Object *argv[])
 	v = scheme_stx_to_rename(env->genv->module->et_rn_stx);
 	s = scheme_add_rename(s, v);
       }
+      if (env->genv->module->dt_rn_stx && !SAME_OBJ(scheme_true, env->genv->module->dt_rn_stx)) {
+	v = scheme_stx_to_rename(env->genv->module->dt_rn_stx);
+	s = scheme_add_rename(s, v);
+      }
     } else {
       if (env->genv->rename)
 	s = scheme_add_rename(s, env->genv->rename);
       if (env->genv->et_rename)
 	s = scheme_add_rename(s, env->genv->et_rename);
+      if (env->genv->dt_rename) {
+	s = scheme_add_rename(s, env->genv->dt_rename);
+      }
     }
   }
 

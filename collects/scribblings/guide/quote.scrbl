@@ -3,9 +3,9 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:quote"]{Quoting: @scheme[quote] and @schemevalfont{'}}
+@title[#:tag "quote"]{Quoting: @scheme[quote] and @schemevalfont{'}}
 
-@refalso["mz:quote"]{@scheme[quote]}
+@refalso["quote"]{@scheme[quote]}
 
 The @scheme[quote] form produces a constant:
 
@@ -59,7 +59,7 @@ and this shorthand is almost always used instead of
 @scheme[quote]. The shorthand applies even within the @scheme[_datum],
 so it can produce a list containing @scheme[quote].
 
-@refdetails["mz:parse-quote"]{the @schemevalfont{'} shorthand}
+@refdetails["parse-quote"]{the @schemevalfont{'} shorthand}
 
 @examples[
 'apple

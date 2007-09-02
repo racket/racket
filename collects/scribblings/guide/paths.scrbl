@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:paths"]{Paths}
+@title[#:tag "paths"]{Paths}
 
 A @defterm{path} encapsulates a filesystem path that (potentially)
 names a file or directory. Although paths can be converted to and from
@@ -45,7 +45,7 @@ named @file{~}. Windows path manipulation, furthermore, is far
 trickier, because path elements like @file{aux} can have special
 meanings.
 
-@refdetails/gory["mz:windows-path"]{Windows filesystem paths}
+@refdetails/gory["windows-path"]{Windows filesystem paths}
 
 Use procedures like @scheme[split-path] and @scheme[build-path] to
 deconstruct and construct paths. When you must manipulate the name of

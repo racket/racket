@@ -3651,6 +3651,8 @@ static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env 
     form = scheme_add_rename(form, genv->exp_env->rename);
   if (genv->template_env && genv->template_env->rename)
     form = scheme_add_rename(form, genv->template_env->rename);
+  if (genv->dt_rename)
+    form = scheme_add_rename(form, genv->dt_rename);
 
   return form;
 }
@@ -6327,7 +6329,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
 	  extra = num_rands - n;
 	  if (extra) {
-	    Scheme_Object *rest_vals, *pairs;
+	    Scheme_Object *rest_vals;
+            GC_CAN_IGNORE Scheme_Object *pairs;
 
 	    /* This is a special case: GC may be triggered, but
 	       p->runstack does not point at everything that needs
@@ -6613,6 +6616,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       {
       case scheme_toplevel_type:
 	{
+          /* Make sure that the GC can ignore tmp: */
 #define global_lookup(prefix, _obj, tmp)                                \
           tmp = RUNSTACK[SCHEME_TOPLEVEL_DEPTH(_obj)];                  \
           tmp = ((Scheme_Object **)tmp)[SCHEME_TOPLEVEL_POS(_obj)];     \
@@ -6747,7 +6751,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       case scheme_application2_type:
 	{
 	  Scheme_App2_Rec *app;
-	  Scheme_Object *arg;
+	  GC_CAN_IGNORE Scheme_Object *arg;
 	  short flags;
 
 	  app = (Scheme_App2_Rec *)obj;
@@ -6811,7 +6815,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       case scheme_application3_type:
 	{
 	  Scheme_App3_Rec *app;
-	  Scheme_Object *arg;
+	  GC_CAN_IGNORE Scheme_Object *arg;
 	  short flags;
 	  GC_CAN_IGNORE Scheme_Object *tmpv;
 
@@ -7423,7 +7427,7 @@ Scheme_Object *scheme_eval_compiled_stx_string(Scheme_Object *expr, Scheme_Env *
 static void *expand_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object *obj, *certs;
+  Scheme_Object *obj, *certs, *observer;
   Scheme_Comp_Env *env;
   Scheme_Expand_Info erec1;
   int depth, rename, just_to_top, catch_lifts;
@@ -7448,13 +7452,16 @@ static void *expand_k(void)
     obj = add_renames_unless_module(obj, env->genv);
   }
 
+  observer = scheme_get_expand_observe();
+  SCHEME_EXPAND_OBSERVE_START_EXPAND(observer);
+
   /* Loop for lifted expressions: */
   while (1) {
     erec1.comp = 0;
     erec1.depth = depth;
     erec1.value_name = scheme_false;
     erec1.certs = certs;
-    erec1.observer = scheme_get_expand_observe();
+    erec1.observer = observer;
 
     if (catch_lifts)
       scheme_frame_captures_lifts(env, scheme_make_lifted_defn, scheme_sys_wraps(env), scheme_false);

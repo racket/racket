@@ -1,6 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require[(lib "manual.ss" "scribble")]
 @require["utils.ss"]
+@require-for-label[(lib "class.ss")]
 
 @title[#:tag "renderer"]{Renderer}
 
@@ -29,3 +30,56 @@ See @file{base-render.ss} for more information about the methods of
 the renderer. Documents built with higher layers, such as
 @file{manual.ss}, generally do not call the render object's methods
 directly.
+
+@defclass[render% object% ()]{
+
+Represents a renderer.
+
+@defconstructor[([dest-dir path-string?])]{
+
+Creates a renderer whose output goes to @scheme[dest-dir].
+
+}
+
+
+@defmethod[(collect [srcs (listof path-string?)]
+                    [dests (listof path-string?)])
+           collect-info?]{
+
+
+}
+
+@defmethod[(resolve [srcs (listof path-string?)]
+                    [dests (listof path-string?)]
+                    [ci collect-info?])
+           resolve-info?]{
+
+
+}
+
+@defmethod[(render [srcs (listof path-string?)]
+                   [dests (listof path-string?)]
+                   [ri resolve-info?])
+           void?]{
+
+
+}
+
+@defmethod[(serialize-info [ri resolve-info?])
+           any/c]{
+
+Serializes the collected info in @scheme[ri].
+
+}
+
+@defmethod[(deserialize-info [v any/c]
+                              [ci collect-info?])
+           void?]{
+
+Adds the deserialized form of @scheme[v] to @scheme[ci].
+
+}
+
+}
+
+@include-class[render%]

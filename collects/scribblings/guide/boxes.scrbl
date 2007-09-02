@@ -18,4 +18,4 @@ b
 b
 ]
 
-@refdetails["mz:boxes"]{boxes and box procedures}
+@refdetails["boxes"]{boxes and box procedures}

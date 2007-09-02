@@ -19,7 +19,7 @@ Returns a list of font face names available on the current system. If
 
 Returns the built-in default face mapping for a particular font
  family. The built-in default can be overridden via preferences, as
- described in @secref["mr:fontresources"].
+ described in @secref["fontresources"].
 
 See  @scheme[font%] for information about @scheme[family].
 

@@ -558,6 +558,8 @@ extern Scheme_Object *scheme_source_property;
 /*                         syntax objects                                 */
 /*========================================================================*/
 
+#define MZ_LABEL_PHASE 30000
+
 typedef struct Scheme_Stx_Srcloc {
   MZTAG_IF_REQUIRED
   long line, col, pos, span;
@@ -2280,6 +2282,7 @@ struct Scheme_Env {
   Scheme_Object *rename;    /* module rename record */
   Scheme_Object *et_rename; /* exp-time rename record */
   Scheme_Object *tt_rename; /* template-time rename record */
+  Scheme_Object *dt_rename; /* template-time rename record */
 
   Scheme_Bucket_Table *syntax;
   struct Scheme_Env *exp_env;
@@ -2290,7 +2293,7 @@ struct Scheme_Env {
   /* Per-instance: */
   long phase, mod_phase;
   Scheme_Object *link_midx;
-  Scheme_Object *require_names, *et_require_names, *tt_require_names; /* resolved */
+  Scheme_Object *require_names, *et_require_names, *tt_require_names, *dt_require_names; /* resolved */
   char running, et_running, tt_running, lazy_syntax, attached;
 
   Scheme_Bucket_Table *toplevel;
@@ -2323,6 +2326,7 @@ typedef struct Scheme_Module
   Scheme_Object *et_requires;  /* list of symbol-or-module-path-index */
   Scheme_Object *requires;     /* list of symbol-or-module-path-index */
   Scheme_Object *tt_requires;  /* list of symbol-or-module-path-index */
+  Scheme_Object *dt_requires;  /* list of symbol-or-module-path-index */
 
   Scheme_Invoke_Proc prim_body;
   Scheme_Invoke_Proc prim_et_body;
@@ -2338,9 +2342,14 @@ typedef struct Scheme_Module
   Scheme_Object **indirect_provides; /* symbols (internal names) */
   int num_indirect_provides;
 
+  char *et_provide_protects;            /* 1 => protected, 0 => not */
+  Scheme_Object **et_indirect_provides; /* symbols (internal names) */
+  int num_indirect_et_provides;
+
   Scheme_Object *self_modidx;
 
   Scheme_Hash_Table *accessible;
+  Scheme_Hash_Table *et_accessible;
   Scheme_Object *insp; /* declaration-time inspector, for creating certificates
 			  and for module instantiation */
 
@@ -2355,8 +2364,23 @@ typedef struct Scheme_Module
 
   Scheme_Env *primitive;
 
-  Scheme_Object *rn_stx, *et_rn_stx, *tt_rn_stx;
+  Scheme_Object *rn_stx, *et_rn_stx, *tt_rn_stx, *dt_rn_stx;
 } Scheme_Module;
+
+typedef struct Scheme_Module_Phase_Exports
+{
+  MZTAG_IF_REQUIRED
+
+  Scheme_Object **provides;          /* symbols (extenal names) */
+  Scheme_Object **provide_srcs;      /* module access paths, #f for self */
+  Scheme_Object **provide_src_names; /* symbols (original internal names) */
+  char *provide_src_phases;          /* NULL, or src phase for for-syntax import */
+  int num_provides;
+  int num_var_provides;              /* non-syntax listed first in provides */
+
+  int reprovide_kernel;              /* if true, extend provides with kernel's */
+  Scheme_Object *kernel_exclusion;  /* we allow one exn, but it must be shadowed */
+} Scheme_Module_Phase_Exports;
 
 typedef struct Scheme_Module_Exports
 {
@@ -2366,14 +2390,7 @@ typedef struct Scheme_Module_Exports
      unmarshal syntax-object context. */
   MZTAG_IF_REQUIRED
 
-  Scheme_Object **provides;          /* symbols (extenal names) */
-  Scheme_Object **provide_srcs;      /* module access paths, #f for self */
-  Scheme_Object **provide_src_names; /* symbols (original internal names) */
-  int num_provides;
-  int num_var_provides;              /* non-syntax listed first in provides */
-
-  int reprovide_kernel;              /* if true, extend provides with kernel's */
-  Scheme_Object *kernel_exclusion;  /* we allow one exn, but it must be shadowed */
+  Scheme_Module_Phase_Exports *rt, *et, *dt;
 
   Scheme_Object *src_modidx;  /* the one used in marshalled syntax */
 } Scheme_Module_Exports;

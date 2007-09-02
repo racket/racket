@@ -205,7 +205,7 @@ When an editor contains other editors, using @method[editor<%>
  end-edit-sequence] for the sub-editor.
 
 See also @method[editor<%> refresh-delayed?] and @method[editor<%>
- in-edit-sequence?], and see @secref["mr:editorthreads"] for
+ in-edit-sequence?], and see @secref["editorthreads"] for
  information about edit sequences and refresh requests.
 
 If the @scheme[undoable?] flag is @scheme[#f], then the changes made
@@ -1322,7 +1322,7 @@ If automatic wrapping is enabled (see @method[editor<%> auto-wrap] )
 Calls @method[editor<%> on-display-size] unless the editor is
  currently in an edit sequence or currently being refreshed. In the
  latter cases, the call to @method[editor<%> on-display-size] is
- delegated to another thread; see @secref["mr:editorthreads"] for more
+ delegated to another thread; see @secref["editorthreads"] for more
  information.
 
 }
@@ -1853,7 +1853,7 @@ See also @method[editor<%> add-undo].
            void?]{
 
 Repaints a region of the editor, generally called by an editor
- administrator. See @secref["mr:editorthreads"] for information about
+ administrator. See @secref["editorthreads"] for information about
  edit sequences and refresh requests.
   
 The @scheme[x], @scheme[y], @scheme[width], and @scheme[height] arguments specify

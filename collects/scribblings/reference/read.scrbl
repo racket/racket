@@ -12,7 +12,7 @@ default reader is used, as parameterized by the
 @scheme[current-readtable] parameter, as well as many other
 parameters.
 
-See @secref["mz:reader"] for information on the default reader.}
+See @secref["reader"] for information on the default reader.}
 
 @defproc[(read-syntax [source-name any/c (object-name in)]
                       [in input-port? (current-input-port)])
@@ -23,7 +23,7 @@ source-location information. The @scheme[source-name] is used as the
 source field of the syntax object; it can be an arbitrary value, but
 it should generally be a path for the source file.
 
-See @secref["mz:reader"] for information on the default reader in
+See @secref["reader"] for information on the default reader in
 @scheme[read-syntax] mode.}
 
 @defproc[(read/recursive [in input-port? (current-input-port)]
@@ -34,9 +34,9 @@ See @secref["mz:reader"] for information on the default reader in
 
 Similar to calling @scheme[read], but normally used during the dynamic
 extent of @scheme[read] within a reader-extension procedure (see
-@secref["mz:reader-procs"]). The main effect of using
+@secref["reader-procs"]). The main effect of using
 @scheme[read/recursive] instead of @scheme[read] is that
-graph-structure annotations (see @secref["mz:parse-graph"]) in the
+graph-structure annotations (see @secref["parse-graph"]) in the
 nested read are considered part of the overall read, at least when the
 @scheme[graph?] argument is true; since the result is wrapped in a
 placeholder, however, it is not directly inspectable.
@@ -60,17 +60,17 @@ the read datum are local to the datum.
 When called within the dynamic extent of @scheme[read], the
 @scheme[read/recursive] procedure produces either an opaque
 placeholder value, a special-comment value, or an end-of-file.  The
-result is a special-comment value (see @secref["mz:special-comments"])
+result is a special-comment value (see @secref["special-comments"])
 when the input stream's first non-whitespace content parses as a
 comment. The result is end-of-file when @scheme[read/recursive]
 encounters an end-of-file. Otherwise, the result is a placeholder that
 protects graph references that are not yet resolved. When this
 placeholder is returned within an S-expression that is produced by any
-reader-extension procedure (see @secref["mz:reader-procs"]) for the
+reader-extension procedure (see @secref["reader-procs"]) for the
 same outermost @scheme[read], it will be replaced with the actual read
 value before the outermost @scheme[read] returns.
 
-See @secref["mz:readtables"] for an extended example that uses
+See @secref["readtables"] for an extended example that uses
 @scheme[read/recursive].}
 
 @defproc[(read-syntax/recursive [source-name any/c (object-name in)]
@@ -101,7 +101,7 @@ using @scheme[read-syntax/recursive] within the dynamic extent of
 @scheme[read-syntax], except that a special-comment value is returned
 when the input stream starts with a comment (after whitespace).
 
-See @secref["mz:readtables"] for an extended example that uses
+See @secref["readtables"] for an extended example that uses
 @scheme[read-syntax/recursive].}
 
 
@@ -117,86 +117,86 @@ symbols are printed with uppercase characters quoted by a
 @litchar["\\"] or @litchar["|"]. The parameter's value is overridden by
 quoting @litchar["\\"] or @litchar["|"] vertical-bar quotes and the
 @litchar{#cs} and @litchar{#ci} prefixes; see
-@secref["mz:parse-symbol"] for more information. While a module is
+@secref["parse-symbol"] for more information. While a module is
 loaded, the parameter is set to @scheme[#t] (see
 @scheme[current-load]).}
 
 @defboolparam[read-square-bracket-as-paren on?]{
 
 A parameter that controls whether @litchar["["] and @litchar["]"] 
-are treated as parentheses. See @secref["mz:parse-pair"] for more
+are treated as parentheses. See @secref["parse-pair"] for more
 information.}
 
 @defboolparam[read-curly-brace-as-paren on?]{
 
 A parameter that controls whether @litchar["{"] and @litchar["}"] 
-are treated as parentheses. See @secref["mz:parse-pair"] for more
+are treated as parentheses. See @secref["parse-pair"] for more
 information.}
 
 @defboolparam[read-accept-box on?]{
 
 A parameter that controls parsing @litchar{#&} input. See
-@secref["mz:parse-box"] for more information.}
+@secref["parse-box"] for more information.}
 
 @defboolparam[read-accept-compiled on?]{
 
 A parameter that controls parsing @litchar{#~} compiled input. See
-@secref["mz:reader"] and @scheme[current-compile] for more
+@secref["reader"] and @scheme[current-compile] for more
 information.}
 
 @defboolparam[read-accept-bar-quote on?]{
 
 A parameter that controls parsing and printing of @litchar["|"] in
-symbols. See @secref["mz:parse-symbol"] and @secref["mz:printing"] for
+symbols. See @secref["parse-symbol"] and @secref["printing"] for
 more information.}
 
 @defboolparam[read-accept-graph on?]{
 
 A parameter value that controls parsing input with sharing. See
-@secref["mz:parse-graph"] for more information.}
+@secref["parse-graph"] for more information.}
 
 @defboolparam[read-decimal-as-inexact on?]{
 
 A parameter that controls parsing input numbers with a decimal point
 or exponent (but no explicit exactness tag). See
-@secref["mz:parse-number"] for more information.}
+@secref["parse-number"] for more information.}
 
 @defboolparam[read-accept-dot on?]{
 
 A parameter that controls parsing input with a dot, which is normally
-used for literal cons cells. See @secref["mz:parse-pair"] for more
+used for literal cons cells. See @secref["parse-pair"] for more
 information.}
 
 @defboolparam[read-accept-infix-dot on?]{
 
 A parameter that controls parsing input with two dots to trigger infix
- conversion. See @secref["mz:parse-pair"] for more information.}
+ conversion. See @secref["parse-pair"] for more information.}
 
 @defboolparam[read-accept-quasiquote on?]{
 
 A parameter that controls parsing input with @litchar{`} or
 @litchar{,} which is normally used for @scheme[quasiquote],
 @scheme[unquote], and @scheme[unquote-splicing] abbreviations. See
-@secref["mz:parse-quote"] for more information.}
+@secref["parse-quote"] for more information.}
 
 @defboolparam[read-accept-reader on?]{
 
 A parameter that controls whether @litchar{#reader} is allowed for
-selecting a parser. See @secref["mz:parse-reader"] for more
+selecting a parser. See @secref["parse-reader"] for more
 information.}
 
 @defparam[current-reader-guard proc (any/c . -> . any)]{
 
 A parameter whose value converts or rejects (by raising an exception)
 a module-path datum following @litchar{#reader}. See
-@secref["mz:parse-reader"] for more information.}
+@secref["parse-reader"] for more information.}
 
 
 @defparam[current-readtable readtable (or/c readtable? false/c)]{
 
 A parameter whose value determines a readtable that
 adjusts the parsing of S-expression input, where @scheme[#f] implies the
-default behavior. See @secref["mz:readtables"] for more information.}
+default behavior. See @secref["readtables"] for more information.}
 
 @defproc*[([(port-read-handler [in input-port?]) (case->
                                                   (input-port? . -> . any)
@@ -230,11 +230,42 @@ arguments:
 }
 
 The default port read handler reads standard Scheme expressions with
-Scheme's built-in parser (see @secref["mz:reader"]). It handles a
+Scheme's built-in parser (see @secref["reader"]). It handles a
 special result from a custom input port (see
 @scheme[make-custom-input-port]) by treating it as a single expression,
 except that special-comment values (see
-@secref["mz:special-comments"]) are treated as whitespace.
+@secref["special-comments"]) are treated as whitespace.
 
 The default port read handler itself can be customized through a
-readtable; see @secref["mz:readtables"] for more information.}
+readtable; see @secref["readtables"] for more information.}
+
+
+@defproc[(read-honu [in input-port? (current-input-port)]) any]{
+
+Like @scheme[read], but for Honu mode (see @secref["parse-honu"]).}
+
+@defproc[(read-honu-syntax [source-name any/c (object-name in)]
+                           [in input-port? (current-input-port)])
+         (or/c syntax? eof-object?)]{
+
+Like @scheme[read-syntax], but for Honu mode (see
+@secref["parse-honu"]).}
+
+@defproc[(read-honu/recursive [in input-port? (current-input-port)]
+                              [start (or/c character? false/c) #f]
+                              [readtable readtable? (current-readtable)]
+                              [graph? any/c #f])
+          any]{
+
+Like @scheme[read/recursive], but for Honu mode (see
+@secref["parse-honu"]).}
+
+@defproc[(read-honu-syntax/recursive [source-name any/c (object-name in)]
+                                     [in input-port? (current-input-port)]
+                                     [start (or/c character? false/c) #f]
+                                     [readtable readtable? (current-readtable)]
+                                     [graph? any/c #f])
+          any]{
+
+Like @scheme[read-syntax/recursive], but for Honu mode (see
+@secref["parse-honu"]).}

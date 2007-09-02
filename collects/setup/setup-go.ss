@@ -33,6 +33,7 @@
   (all-flags clean
 	     make-zo
 	     call-install
+	     call-post-install
 	     make-launchers
 	     make-so
 	     verbose
@@ -41,7 +42,9 @@
 	     pause-on-errors
 	     force-unpacks
 	     all-users
-	     compile-mode)
+	     compile-mode
+             make-docs
+             doc-pdf-dest)
 
   (specific-collections x-specific-collections)
   (archives x-archives)

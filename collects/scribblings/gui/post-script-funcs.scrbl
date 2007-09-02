@@ -6,14 +6,14 @@
 @defparam[current-ps-afm-file-paths paths (listof path?)]{
 
 A parameter determines the list of paths that is used to find AFM
- files. See @secref["mr:postscriptfonts"] for more information.
+ files. See @secref["postscriptfonts"] for more information.
 
 }
 
 @defparam[current-ps-cmap-file-paths paths (listof path?)]{
 
 A parameter that determines the list of paths that is used to find
- CMap files. See @secref["mr:postscriptfonts"] for more information.
+ CMap files. See @secref["postscriptfonts"] for more information.
 
 }
 

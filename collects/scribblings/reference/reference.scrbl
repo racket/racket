@@ -1,12 +1,14 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title{PLT Scheme Reference}
+@title[#:tag-prefix '(lib "reference.scrbl" "scribblings" "reference")
+       #:tag "top"]{PLT Scheme Reference}
+
+@declare-exporting[big little]
 
 This manual defines the core PLT Scheme language and describes its
-most prominent libraries. The companion manual
-@italic{@link["../guide/index.html"]{A Guide to PLT Scheme}} provides
-a friendlier (though less precise and less complete) overview of the
+most prominent libraries. The companion manual @|Guide| provides a
+friendlier (though less precise and less complete) overview of the
 language.
 
 @bold{This reference describes a potential future version of PLT Scheme.
@@ -30,6 +32,17 @@ language.
 @include-section["os.scrbl"]
 @include-section["memory.scrbl"]
 @include-section["running.scrbl"]
+
+@;------------------------------------------------------------------------
+
+@section{To Do}
+
+This chapter provides some temporary hyper-link targets.
+
+@subsection[#:tag "inside-mzscheme"]{Inside MzScheme}
+@subsection[#:tag "running-sa"]{Running MzScheme}
+@subsection[#:tag "async-channel"]{Asynchronous Channels}
+@subsection[#:tag "honu"]{Honu}
 
 @;------------------------------------------------------------------------
 

@@ -3,7 +3,8 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title{A Guide to PLT Scheme}
+@title[#:tag-prefix '(lib "guide.scrbl" "scribblings" "guide") 
+       #:tag "top"]{A Guide to PLT Scheme}
 
 This guide is intended for programmers who are new to Scheme, new to PLT
 Scheme, or new to some part of PLT Scheme. It assumes
@@ -36,7 +37,7 @@ precise details to @|MzScheme| and other reference manuals.
 @include-section["io.scrbl"]
 
 @; ----------------------------------------------------------------------
-@section[#:tag "guide:contracts"]{Contracts}
+@section[#:tag "contracts"]{Contracts}
 
 In the reference manual, the documentation for each procedure
 describes the acceptable arguments and the result of the procedure
@@ -79,6 +80,12 @@ of an expression to the values for the clause:
 @; ----------------------------------------------------------------------
 @section[#:tag "threads"]{Threads}
 
+@subsection[#:tag "parameters"]{Parameters}
+
+A @deftech{parameter} holds a kind of global option. For example,
+there is a parameter that determines the default destination for
+printed output.
+
 @; ----------------------------------------------------------------------
 @include-section["macros.scrbl"]
 
@@ -97,9 +104,9 @@ of an expression to the values for the clause:
 @; ----------------------------------------------------------------------
 @section[#:tag "memory-management"]{Memory Management}
 
-@subsection[#:tag "guide:weakboxes"]{Weak Boxes}
+@subsection[#:tag "weakboxes"]{Weak Boxes}
 
-@subsection[#:tag "guide:ephemerons"]{Ephemerons}
+@subsection[#:tag "ephemerons"]{Ephemerons}
 
 @; ----------------------------------------------------------------------
 @section[#:tag "performance"]{Performance}
@@ -121,7 +128,7 @@ constant propagation, constant folding, and inlining optimizations.
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "guide:mred"]{Graphical User Interfaces@aux-elem{ (GUIs)}}
+@section[#:tag "mred"]{Graphical User Interfaces@aux-elem{ (GUIs)}}
 
 @deftech{MrEd} is both a library and an executable. As a library,
  @scheme[(lib "mred/mred.ss")] provides class, interface, and function

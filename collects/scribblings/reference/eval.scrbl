@@ -76,7 +76,7 @@ top-level forms from a file. The @tech{load handler} is called by
 default @tech{compiled-load handler}.
 
 A load handler takes two arguments: a path (see
-@secref["mz:pathutils"]) and an expected module name. The expected
+@secref["pathutils"]) and an expected module name. The expected
 module name is a symbol when the call is to load a module declaration
 in response to a @scheme[require] (in which case the file should
 contain a module declaration), or @scheme[#f] for any other load.
@@ -261,7 +261,7 @@ default @tech{compiled-load handler}, and used by
 default @tech{compiled-load handler}.
 
 When a new path or string is provided as the parameter's value, it is
-immediately expanded (see @secref["mz:pathutils"]) and converted to a
+immediately expanded (see @secref["pathutils"]) and converted to a
 path. (The directory need not exist.)}
 
 
@@ -302,11 +302,23 @@ evaluate. This procedure is called by the read phase of
 ]}
 
 
+@defparam[current-print proc (any/c -> any)]{
+
+A parameter that determines the @deftech{print handler} that is called
+ by @scheme[read-eval-print-loop] to print the result of an evaluation
+ (and the result is ignored).
+
+The default @tech{print handler} @scheme[print]s the value to the
+ current output port (as determined by the
+ @scheme[current-output-port] parameter) and then outputs a newline,
+ except that it prints nothing when the value is @|void-const|.}
+
+
 @defparam[current-compile proc (any/c boolean? . -> . compiled-expression?)]{
 
 A parameter that determines the current @deftech{compilation handler}.
 The @tech{compilation handler} is a procedure that takes a top-level form and
-returns a compiled form; see see @secref["mz:compilation-model"] for
+returns a compiled form; see see @secref["compilation-model"] for
 more information on compilation.
 
 The @tech{compilation handler} is called by @scheme[compile], and
@@ -326,17 +338,17 @@ long as the @scheme[read-accept-compiled] parameter is set to
 
 When a compiled form contains syntax object constants, the
 @litchar{#~}-marshaled form drops source-location information and
-properties (@secref["mz:stxprops"]) for the @tech{syntax objects}.
+properties (@secref["stxprops"]) for the @tech{syntax objects}.
 
 Compiled code parsed from @litchar{#~} may contain references to
 unexported or protected bindings from a module. At read time, such
 references are associated with the current code inspector (see
 @scheme[current-code-inspector]), and the code will only execute if
 that inspector controls the relevant module invocation (see
-@secref["mz:modprotect"]).
+@secref["modprotect"]).
 
 A compiled-form object may contain @tech{uninterned} symbols (see
-@secref["mz:symbols"]) that were created by @scheme[gensym] or
+@secref["symbols"]) that were created by @scheme[gensym] or
 @scheme[string->uninterned-symbol]. When the compiled object is read
 via @litchar{#~}, each uninterned symbol in the original form is
 mapped to a new uninterned symbol, where multiple instances of a
@@ -366,3 +378,20 @@ handler} in tail position with @scheme[stx].}
 
 Returns @scheme[#t] if @scheme[v] is a compiled form, @scheme[#f]
 otherwise.}
+
+
+@defboolparam[compile-enforce-module-constants on?]{
+
+A parameter that determines how a module declaration is compiled. 
+
+When constants are enforced, and when the macro-expanded body of a
+module contains no @scheme[set!] assignment to a particular variable
+defined within the module, then the variable is marked as constant
+when the definition is evaluated. Afterward, the variable's value
+cannot be assigned or undefined through @scheme[module->namespace],
+and it cannot be defined by redeclaring the module.
+
+Enforcing constants allows the compiler to inline some variable
+values, and it allows the native-code just-in-time compiler to
+generate code that skips certain run-time checks.}
+

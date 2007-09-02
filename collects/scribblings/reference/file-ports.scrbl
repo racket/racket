@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:file-ports"]{File Ports}
+@title[#:tag "file-ports"]{File Ports}
 
 A port created by @scheme[open-input-file], @scheme[open-output-file],
 @scheme[subprocess], and related functions is a @deftech{file-stream
@@ -11,7 +11,7 @@ predicate recognizes file-stream ports.
 
 When an input or output file-stream port is created, it is placed into
 the management of the current custodian (see
-@secref["mz:custodians"]).
+@secref["custodians"]).
 
 @defproc[(open-input-file [path path-string?]
                           [#:mode mode-flag (one-of/c 'binary 'text) 'binary])
@@ -55,8 +55,8 @@ closed, either though @scheme[close-input-port] or indirectly via
 @scheme[custodian-shutdown-all], to release the OS-level file
 handle. The input port will not closed automatically if it is
 otherwise available for garbage collection (see
-@secref["mz:gc-model"]); a @tech{will} could be associated input port
-to close it more automatically (see @secref["mz:willexecutor"]).
+@secref["gc-model"]); a @tech{will} could be associated input port
+to close it more automatically (see @secref["willexecutor"]).
 
 A @tech{path} value that is the expanded version of @scheme[path] is
 used as the name of the opened port.}
@@ -123,8 +123,8 @@ closed, either though @scheme[close-output-port] or indirectly via
 @scheme[custodian-shutdown-all], to release the OS-level file
 handle. The output port will not closed automatically if it is
 otherwise available for garbage collection (see
-@secref["mz:gc-model"]); a @tech{will} could be associated input port
-to close it more automatically (see @secref["mz:willexecutor"]).
+@secref["gc-model"]); a @tech{will} could be associated input port
+to close it more automatically (see @secref["willexecutor"]).
 
 A @tech{path} value that is the expanded version of @scheme[path] is
 used as the name of the opened port.}

@@ -1,12 +1,12 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:networking" #:style 'toc]{Networking}
+@title[#:tag "networking" #:style 'toc]{Networking}
 
 @local-table-of-contents[]
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:tcp"]{TCP}
+@section[#:tag "tcp"]{TCP}
 
 For information about TCP in general, see @italic{TCP/IP Illustrated,
  Volume 1} by W. Richard Stevens.
@@ -53,7 +53,7 @@ The return value of @scheme[tcp-listen] is a TCP listener value. This
 value can be used in future calls to @scheme[tcp-accept],
 @scheme[tcp-accept-ready?], and @scheme[tcp-close].  Each new TCP
 listener value is placed into the management of the current custodian
-(see @secref["mz:custodians"]).
+(see @secref["custodians"]).
 
 If the server cannot be started by @scheme[tcp-listen], the
 @exnraise[exn:fail:network].}
@@ -90,7 +90,7 @@ output port. Data can be received from the server through the input
 port and sent to the server through the output port.  If the server is
 a @exec{mzscheme} process, it can obtain ports to communicate to the
 client with @scheme[tcp-accept].  These ports are placed into the
-management of the current custodian (see @secref["mz:custodians"]).
+management of the current custodian (see @secref["custodians"]).
 
 Initially, the returned input port is block-buffered, and the returned
 output port is block-buffered. Change the buffer mode using
@@ -125,7 +125,7 @@ If a connection cannot be established by @scheme[tcp-connect], the
           (values input-port? output-port?)]{
 
 Like @scheme[tcp-connect], but breaking is enabled (see
-@secref["mz:breakhandler"]) while trying to connect. If breaking is
+@secref["breakhandler"]) while trying to connect. If breaking is
 disabled when @scheme[tcp-connect/enable-break] is called, then either
 ports are returned or the @scheme[exn:break] exception is raised, but
 not both.}
@@ -143,7 +143,7 @@ Two values are returned by @scheme[tcp-accept]: an input port and an
 output port. Data can be received from the client through the input
 port and sent to the client through the output port.  These ports are
 placed into the management of the current custodian (see
-@secref["mz:custodians"]).
+@secref["custodians"]).
 
 In terms of buffering and connection states, the ports act the same as
 ports from @scheme[tcp-connect].
@@ -156,7 +156,7 @@ listener has been closed, the @exnraise[exn:fail:network].}
          (values input-port? output-port?)]{
 
 Like @scheme[tcp-accept], but breaking is enabled (see
-@secref["mz:breakhandler"]) while trying to accept a connection. If
+@secref["breakhandler"]) while trying to accept a connection. If
 breaking is disabled when @scheme[tcp-accept/enable-break] is called,
 then either ports are returned or the @scheme[exn:break] exception is
 raised, but not both.}
@@ -198,7 +198,7 @@ Returns @scheme[#t] if @scheme[v] is a TCP listener value created by
 
 @defproc[(tcp-accept-evt [listener tcp-listener?]) evt?]{
 
-Returns a @tech{synchronizable event} (see @secref["mz:sync"]) that is
+Returns a @tech{synchronizable event} (see @secref["sync"]) that is
 in a blocking state when @scheme[tcp-accept] on @scheme[listener]
 would block. If the event is chosen in a synchronization, the result
 is a list of two items, which correspond to the two results of
@@ -251,7 +251,7 @@ Returns @scheme[#t] if @scheme[v] is a port returned by
 @scheme[tcp-connect/enable-break], @scheme[#f] otherwise.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:udp"]{UDP}
+@section[#:tag "udp"]{UDP}
 
 For information about UDP in general, see @italic{TCP/IP Illustrated,
 Volume 1} by W. Richard Stevens.
@@ -299,7 +299,7 @@ and port. If a socket is not bound before it is used with a sending
 procedure @scheme[udp-send], @scheme[udp-send-to], etc., the sending
 procedure binds the socket to a random local port. Similarly, if an
 event from @scheme[udp-send-evt] or @scheme[udp-send-to-evt] is chosen
-for a synchronization (see @secref["mz:sync"]), the socket is bound;
+for a synchronization (see @secref["sync"]), the socket is bound;
 if the event is not chosen, the socket may or may not become
 bound. The binding of a bound socket cannot be changed.
 
@@ -399,7 +399,7 @@ never blocks and returns @scheme[#f] or @scheme[#t].}
          void]{
 
 Like @scheme[udp-send-to], but breaking is enabled (see
-@secref["mz:breakhandler"]) while trying to send the datagram. If
+@secref["breakhandler"]) while trying to send the datagram. If
 breaking is disabled when @scheme[udp-send-to/enable-break] is called,
 then either the datagram is sent or the @scheme[exn:break] exception
 is raised, but not both.}
@@ -462,7 +462,7 @@ datagram is available, the three result values are all @scheme[#f].}
                  (integer-in 1 65535))]{
 
 Like @scheme[udp-receive!], but breaking is enabled (see
-@secref["mz:breakhandler"]) while trying to receive the datagram. If
+@secref["breakhandler"]) while trying to receive the datagram. If
 breaking is disabled when @scheme[udp-receive!/enable-break] is
 called, then either a datagram is received or the @scheme[exn:break]
 exception is raised, but not both.}
@@ -494,14 +494,14 @@ address and port, @scheme[#f] otherwise.}
 
 @defproc[(udp-send-ready-evt [udp-socket udp?]) evt?]{
 
-Returns a @tech{synchronizable event} (see @secref["mz:sync"]) that is
+Returns a @tech{synchronizable event} (see @secref["sync"]) that is
 in a blocking state when @scheme[udp-send-to] on @scheme[udp-socket]
 would block.}
 
 
 @defproc[(udp-receive-ready-evt [udp-socket udp?]) evt?]{
 
-Returns a @tech{synchronizable event} (see @secref["mz:sync"]) that is
+Returns a @tech{synchronizable event} (see @secref["sync"]) that is
 in a blocking state when @scheme[udp-receive!] on @scheme[udp-socket]
 would block.}
 

@@ -42,7 +42,8 @@
 			 public-final override-final augment-final
 			 rename-super rename-inner inherit inherit-field
                          inherit/super inherit/inner
-			 inspect)
+			 inspect
+                         init-rest)
 
   (define-syntax provide-class-define-like-keyword
     (syntax-rules ()

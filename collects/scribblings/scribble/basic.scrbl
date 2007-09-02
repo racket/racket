@@ -96,6 +96,11 @@ removed.}
  @scheme[pre-flow] list is parsed with @scheme[decode-flow].
 }
 
+@defproc[(item? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is an item produced by
+@scheme[item], @scheme[#f] otherwise.}
+
 @defform[(include-section module-path)]{ Requires @scheme[module-path]
  and returns its @scheme[doc] export (without making any imports
  visible to the enclosing context). Since this form expands to

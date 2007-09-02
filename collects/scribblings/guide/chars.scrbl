@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:characters"]{Characters}
+@title[#:tag "characters"]{Characters}
 
 A Scheme @defterm{character} corresponds to a Unicode @defterm{scalar
 value}. Roughly, a scalar value is an unsigned integer whose
@@ -26,7 +26,7 @@ number. A few characters are printed specially; for example, the space
 and linefeed characters print as @scheme[#\space] and
 @scheme[#\newline], respectively.
 
-@refdetails/gory["mz:parse-character"]{the syntax of characters}
+@refdetails/gory["parse-character"]{the syntax of characters}
 
 @examples[
 (integer->char 65)
@@ -38,7 +38,7 @@ and linefeed characters print as @scheme[#\space] and
 ]
 
 The @scheme[display] procedure directly writes a character to the
-current output port (see @secref["guide:i/o"]), in contrast to the
+current output port (see @secref["i/o"]), in contrast to the
 character-constant syntax used to print a character result.
 
 @examples[
@@ -72,4 +72,4 @@ characters.
 (eqv? #\a #\A)
 ]
 
-@refdetails["mz:characters"]{characters and character procedures}
+@refdetails["characters"]{characters and character procedures}

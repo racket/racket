@@ -5,7 +5,8 @@
   (provide (all-defined))
 
   (define-tokens basic-tokens
-    (visit                ; syntax
+    (start                ; .
+     visit                ; syntax
      resolve              ; identifier
      next                 ; .
      next-group           ; .
@@ -138,6 +139,7 @@
       (138 . prim-expression)
       (139 . ,token-enter-local/expr)
       (140 . ,token-exit-local/expr)
+      (141 . ,token-start)
       ))
   
   (define (tokenize sig-n val pos)

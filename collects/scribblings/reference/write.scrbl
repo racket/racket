@@ -15,7 +15,7 @@ handler associated to it via @scheme[port-write-handler], then the
 handler is called. Otherwise, the default printer is used (in
 @scheme[write] mode), as configured by various parameters.
 
-See @secref["mz:printing"] for more information about the default
+See @secref["printing"] for more information about the default
 printer. In particular, note that @scheme[write] may require memory
 proportional to the depth of the value being printed, due to the
 initial cycle check.}
@@ -30,7 +30,7 @@ associated to it via @scheme[port-display-handler], then the handler
 is called. Otherwise, the default printer is used (in @scheme[display]
 mode), as configured by various parameters.
 
-See @secref["mz:printing"] for more information about the default
+See @secref["printing"] for more information about the default
 printer. In particular, note that @scheme[display] may require memory
 proportional to the depth of the value being printed, due to the
 initial cycle check.}
@@ -138,17 +138,17 @@ A parameter that controls printing values that have no
 @scheme[read]able form (using the default reader), including
 structures that have a custom-write procedure (see
 @scheme[prop:custom-write]); defaults to @scheme[#t]. See
-@secref["mz:printing"] for more information.}
+@secref["printing"] for more information.}
 
 @defboolparam[print-graph on?]{
 
 A parameter that controls printing data with sharing; defaults to
-@scheme[#f]. See @secref["mz:printing"] for more information.}
+@scheme[#f]. See @secref["printing"] for more information.}
 
 @defboolparam[print-struct on?]{
 
 A parameter that controls printing structure values in vector form;
-defaults to @scheme[#t]. See @secref["mz:printing"] for more
+defaults to @scheme[#t]. See @secref["printing"] for more
 information. This parameter has no effect on the printing of
 structures that have a custom-write procedure (see
 @scheme[prop:custom-write]).}
@@ -156,22 +156,22 @@ structures that have a custom-write procedure (see
 @defboolparam[print-box on?]{
 
 A parameter that controls printing box values; defaults to
-@scheme[#t]. See @secref["mz:print-box"] for more information.}
+@scheme[#t]. See @secref["print-box"] for more information.}
 
 @defboolparam[print-vector-length on?]{
 
 A parameter that controls printing vectors; defaults to
-@scheme[#t]. See @secref["mz:print-vectors"] for more information.}
+@scheme[#t]. See @secref["print-vectors"] for more information.}
 
 @defboolparam[print-hash-table on?]{
 
 A parameter that controls printing hash tables; defaults to
-@scheme[#f]. See @secref["mz:print-hashtable"] for more information.}
+@scheme[#f]. See @secref["print-hashtable"] for more information.}
 
 @defboolparam[print-honu on?]{
 
 A parameter that controls printing values in an alternate syntax.  See
-@secref["mz:honu"] for more information.}
+@secref["honu"] for more information.}
 
 
 @defproc*[([(port-write-handler [out output-port?]) (any/c output-port? . -> . any)]
@@ -197,7 +197,7 @@ port.  Each handler takes a two arguments: the value to be printed and
 the destination port. The handler's return value is ignored.
 
 The default port display and write handlers print Scheme expressions
-with Scheme's built-in printer (see @secref["mz:printing"]). The
+with Scheme's built-in printer (see @secref["printing"]). The
 default print handler calls the global port print handler (the value
 of the @scheme[global-port-print-handler] parameter); the default
 global port print handler is the same as the default write handler.}
@@ -208,4 +208,4 @@ A parameter that determines @deftech{global port print handler},
 which is called by the default port print handler (see
 @scheme[port-print-handler]) to @scheme[print] values into a port.
 The default value uses the built-in printer (see
-@secref["mz:printing"]) in @scheme[write] mode.}
+@secref["printing"]) in @scheme[write] mode.}

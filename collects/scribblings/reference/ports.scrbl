@@ -1,11 +1,11 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:ports" #:style 'toc]{Ports}
+@title[#:tag "ports" #:style 'toc]{Ports}
 
 @deftech{Ports} produce and consume bytes. When a port is provided to
 a character-based operation, the port's bytes are decoded; see
-@secref["mz:encodings"].
+@secref["encodings"].
 
 The global variable @scheme[eof] is bound to the end-of-file value,
 and @scheme[eof-object?] returns @scheme[#t] only when applied to this

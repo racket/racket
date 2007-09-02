@@ -29,6 +29,7 @@
            stop-after
            (rename *in-indexed in-indexed)
            
+           sequence?
            sequence-generate
            
            define-sequence-syntax

@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:port-ops"]{Managing Ports}
+@title[#:tag "port-ops"]{Managing Ports}
 
 @defproc[(input-port? [v any/c]) boolean?]{
 Returns @scheme[#t] if @scheme[v] is an input port, @scheme[#f] otherwise.}
@@ -44,7 +44,7 @@ port.}
 
 @defproc[(file-stream-port? [port port?]) boolean?]{
 Returns @scheme[#t] if the given port is a @tech{file-stream port} (see
-@secref["mz:file-ports"]), @scheme[#f] otherwise.}
+@secref["file-ports"]), @scheme[#f] otherwise.}
 
 @defproc[(terminal-port? [port port?]) boolean?]{
 Returns @scheme[#t] if the given port is attached to an interactive

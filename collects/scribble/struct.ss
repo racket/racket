@@ -1,7 +1,55 @@
 
-(module struct mzscheme
+(module struct (lib "lang.ss" "big")
   (require (lib "contract.ss")
            (lib "serialize.ss"))
+
+  ;; ----------------------------------------
+  
+  (define-struct collect-info (ht ext-ht parts tags gen-prefix))
+  (define-struct resolve-info (ci delays undef))
+
+  (define (part-collected-info part ri)
+    (hash-table-get (collect-info-parts (resolve-info-ci ri))
+                    part))
+
+
+  (define (collect-put! ci key val)
+    (hash-table-put! (collect-info-ht ci)
+                     key
+                     val))
+
+  (define (resolve-get/where part ri key)
+    (let ([key (tag-key key ri)])
+      (let ([v (hash-table-get (if part
+                                   (collected-info-info (part-collected-info part ri))
+                                   (collect-info-ht (resolve-info-ci ri)))
+                               key
+                               #f)])
+        (cond
+         [v (values v #f)]
+         [part (resolve-get/where (collected-info-parent
+                                   (part-collected-info part ri))
+                                  ri
+                                  key)]
+         [else
+          (let ([v (hash-table-get (collect-info-ext-ht (resolve-info-ci ri))
+                                   key
+                                   #f)])
+            (values v #t))]))))
+
+  (define (resolve-get part ri key)
+    (let-values ([(v ext?) (resolve-get/where part ri key)])
+      v))
+
+  (provide 
+   (struct collect-info (ht ext-ht parts tags gen-prefix))
+   (struct resolve-info (ci delays undef))
+   part-collected-info
+   collect-put!
+   resolve-get
+   resolve-get/where)
+
+  ;; ----------------------------------------
 
   (provide provide-structs)
 
@@ -36,12 +84,12 @@
                         fields+cts)))))]))
 
   (provide tag?)
-  (define (tag? s) (or (string? s)
-                       (and (pair? s)
-                            (symbol? (car s))
-                            (pair? (cdr s))
-                            (string? (cadr s))
-                            (null? (cddr s)))))
+  (define (tag? s) (and (pair? s)
+                        (symbol? (car s))
+                        (pair? (cdr s))
+                        (or (string? (cadr s))
+                            (generated-tag? (cadr s)))
+                        (null? (cddr s))))
 
   (provide flow-element?)
   (define (flow-element? p)
@@ -52,21 +100,21 @@
         (delayed-flow-element? p)))
 
   (provide-structs 
-   [part ([tags (listof tag?)]
+   [part ([tag-prefix (or/c false/c string?)]
+          [tags (listof tag?)]
           [title-content (or/c false/c list?)]
-          [collected-info (or/c false/c collected-info?)]
+          [style any/c]
           [to-collect list?]
           [flow flow?]
           [parts (listof part?)])]
-   [(styled-part part) ([style any/c])]
-   [(unnumbered-part styled-part) ()]
+   [(unnumbered-part part) ()]
    [flow ([paragraphs (listof flow-element?)])]
    [paragraph ([content list?])]
    [(styled-paragraph paragraph) ([style any/c])]
    [table ([style any/c]
            [flowss (listof (listof (or/c flow? (one-of/c 'cont))))])]
    [(auxiliary-table table) ()]
-   [delayed-flow-element ([render (any/c part? any/c . -> . flow-element?)])]
+   [delayed-flow-element ([resolve (any/c part? resolve-info? . -> . flow-element?)])]
    [itemization ([flows (listof flow?)])]
    [blockquote ([style any/c]
                 [paragraphs (listof flow-element?)])]
@@ -81,6 +129,7 @@
                              [plain-seq (listof string?)]
                              [entry-seq list?])]
    [(aux-element element) ()]
+   [(hover-element element) ([text string?])]
    ;; specific renders support other elements, especially strings
 
    [collected-info ([number (listof (or/c false/c integer?))]
@@ -89,46 +138,32 @@
 
    [target-url ([addr string?])]
    [image-file ([path path-string?])])
-
+  
   ;; ----------------------------------------
 
   ;; Delayed element has special serialization support:
-  (define-values (struct:delayed-element
-                  make-delayed-element
-                  delayed-element?
-                  delayed-element-ref
-                  delayed-element-set!)
-    (make-struct-type 'delayed-element #f
-                      3 1 #f
-                      (list (cons prop:serializable 
-                                  (make-serialize-info
-                                   (lambda (d)
-                                     (unless (delayed-element-ref d 3)
-                                       (error 'serialize-delayed-element
-                                              "cannot serialize a delayed element that was not resolved: ~e"
-                                              d))
-                                     (vector (delayed-element-ref d 3)))
-                                   #'deserialize-delayed-element
-                                   #f
-                                   (or (current-load-relative-directory) (current-directory)))))))
-  (define-syntax delayed-element (list-immutable #'struct:delayed-element
-                                                 #'make-delayed-element
-                                                 #'delayed-element?
-                                                 (list-immutable #'delayed-element-plain 
-                                                                 #'delayed-element-sizer
-                                                                 #'delayed-element-render)
-                                                 (list-immutable #'set-delayed-element-plain!
-                                                                 #'set-delayed-element-sizer!
-                                                                 #'set-delayed-element-render!)
-                                                 #t))
-  (define delayed-element-render (make-struct-field-accessor delayed-element-ref 0))
-  (define delayed-element-sizer (make-struct-field-accessor delayed-element-ref 1))
-  (define delayed-element-plain (make-struct-field-accessor delayed-element-ref 2))
-  (define set-delayed-element-render! (make-struct-field-mutator delayed-element-set! 0))
-  (define set-delayed-element-sizer! (make-struct-field-mutator delayed-element-set! 1))
-  (define set-delayed-element-plain! (make-struct-field-mutator delayed-element-set! 2))
+  (define-struct delayed-element (resolve sizer plain)
+    #:property 
+    prop:serializable 
+    (make-serialize-info
+     (lambda (d)
+       (let ([ri (current-serialize-resolve-info)])
+         (unless ri
+           (error 'serialize-delayed-element
+                  "current-serialize-resolve-info not set"))
+         (with-handlers ([exn:fail:contract?
+                          (lambda (exn)
+                            (error 'serialize-delayed-element
+                                   "serialization failed (wrong resolve info?); ~a"
+                                   (exn-message exn)))])
+           (vector
+            (make-element #f (delayed-element-content d ri))))))
+     #'deserialize-delayed-element
+     #f
+     (or (current-load-relative-directory) (current-directory))))
+
   (provide/contract
-   (struct delayed-element ([render (any/c part? any/c . -> . list?)]
+   (struct delayed-element ([resolve (any/c part? resolve-info? . -> . list?)]
                             [sizer (-> any)]
                             [plain (-> any)])))
   
@@ -136,12 +171,90 @@
   (define deserialize-delayed-element
     (make-deserialize-info values values))
   
-  (provide force-delayed-element)
-  (define (force-delayed-element d renderer sec ht)
-    (or (delayed-element-ref d 3)
-        (let ([v ((delayed-element-ref d 0) renderer sec ht)])
-          (delayed-element-set! d 3 v)
-          v)))
+  (provide delayed-element-content)
+  (define (delayed-element-content e ri)
+    (hash-table-get (resolve-info-delays ri) e))
+
+  (provide delayed-flow-element-flow-elements)
+  (define (delayed-flow-element-flow-elements p ri)
+    (hash-table-get (resolve-info-delays ri) p))
+
+  (provide current-serialize-resolve-info)
+  (define current-serialize-resolve-info (make-parameter #f))
+
+  ;; ----------------------------------------
+
+  (define-struct (collect-element element) (collect)
+    #:property 
+    prop:serializable 
+    (make-serialize-info
+     (lambda (d)
+       (vector (collect-element-collect d)))
+     #'deserialize-collect-element
+     #f
+     (or (current-load-relative-directory) (current-directory))))
+    
+  (provide deserialize-collect-element)
+  (define deserialize-collect-element
+    (make-deserialize-info values values))
+
+  (provide/contract
+   [struct collect-element ([style any/c]
+                            [content list?]
+                            [collect (collect-info? . -> . any)])])
+
+  ;; ----------------------------------------
+
+  (define-struct generated-tag ()
+    #:property
+    prop:serializable 
+    (make-serialize-info
+     (lambda (g)
+       (let ([ri (current-serialize-resolve-info)])
+         (unless ri
+           (error 'serialize-generated-tag
+                  "current-serialize-resolve-info not set"))
+         (let ([t (hash-table-get (collect-info-tags
+                                   (resolve-info-ci ri))
+                                  g
+                                  #f)])
+           (if t
+               (vector t)
+               (error 'serialize-generated-tag
+                      "serialization failed (wrong resolve info?)")))))
+     #'deserialize-generated-tag
+     #f
+     (or (current-load-relative-directory) (current-directory))))
+
+  (provide
+   (struct generated-tag ()))
+
+  (provide deserialize-generated-tag)
+  (define deserialize-generated-tag
+    (make-deserialize-info values values))
+
+  (provide generate-tag tag-key)
+
+  (define (generate-tag tg ci)
+    (if (generated-tag? (cadr tg))
+        (let ([t (cadr tg)])
+          (list (car tg)
+                (let ([tags (collect-info-tags ci)])
+                  (or (hash-table-get tags t #f)
+                      (let ([key (format "gentag:~a~a" 
+                                         (collect-info-gen-prefix ci)
+                                         (hash-table-count tags))])
+                        (hash-table-put! tags t key)
+                        key)))))
+        tg))
+
+  (define (tag-key tg ri)
+    (if (generated-tag? (cadr tg))
+        (list (car tg)
+              (hash-table-get (collect-info-tags
+                               (resolve-info-ci ri))
+                              (cadr tg)))
+        tg))
 
   ;; ----------------------------------------
 
@@ -151,8 +264,8 @@
   (define content->string
     (case-lambda
      [(c) (c->s c element->string)]
-     [(c renderer sec ht) (c->s c (lambda (e)
-                                    (element->string e renderer sec ht)))]))
+     [(c renderer sec ri) (c->s c (lambda (e)
+                                    (element->string e renderer sec ri)))]))
 
   (define (c->s c do-elem)
     (apply string-append
@@ -171,12 +284,12 @@
                [(rsquo) "'"]
                [(rarr) "->"]
                [else (format "~s" c)])])]
-     [(c renderer sec ht)
+     [(c renderer sec ri)
       (cond
-       [(element? c) (content->string (element-content c) renderer sec ht)]
+       [(element? c) (content->string (element-content c) renderer sec ri)]
        [(delayed-element? c) 
-        (content->string (force-delayed-element c renderer sec ht)
-                         renderer sec ht)]
+        (content->string (delayed-element-content c ri)
+                         renderer sec ri)]
        [else (element->string c)])]))
 
   ;; ----------------------------------------
@@ -223,6 +336,15 @@
 
   (define (blockquote-width p)
     (+ 4 (apply max 0 (map paragraph-width (blockquote-paragraphs p)))))
+
+  ;; ----------------------------------------
+
+  (provide part-style?)
+
+  (define (part-style? p s)
+    (let ([st (part-style p)])
+      (or (eq? s st)
+          (and (list? st) (memq s st)))))
 
   ;; ----------------------------------------
 

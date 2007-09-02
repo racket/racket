@@ -25,6 +25,12 @@ Returns @scheme[#t] if @scheme[v] is @scheme[#t] or @scheme[#f],
 @scheme[#f] otherwise.}
 
 
+@defproc[(not [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is @scheme[#f], @scheme[#f] otherwise.
+}
+
+
 @defproc[(equal? [v1 any/c] [v2 any/c]) boolean?]{
 
 Two values are @scheme[equal?] if and only if they are @scheme[eqv?],
@@ -46,7 +52,7 @@ The number and character datatypes are the only ones for which
 @defproc[(eq? [v1 any/c] [v2 any/c]) boolean?]{
 
 Return @scheme[#t] if @scheme[v1] and @scheme[v2] refer to the same
-object, @scheme[#f] otherwise. See also @secref["mz:model-eq"].}
+object, @scheme[#f] otherwise. See also @secref["model-eq"].}
 
 
 @; ------------------------------------------------------------
@@ -62,9 +68,9 @@ object, @scheme[#f] otherwise. See also @secref["mz:model-eq"].}
 @include-section["chars.scrbl"]
 
 @; ------------------------------------------------------------
-@section[#:tag "mz:symbols"]{Symbols}
+@section[#:tag "symbols"]{Symbols}
 
-@guideintro["guide:symbols"]{symbols}
+@guideintro["symbols"]{symbols}
 
 @section-index["symbols" "generating"]
 @section-index["symbols" "unique"]
@@ -72,7 +78,7 @@ object, @scheme[#f] otherwise. See also @secref["mz:model-eq"].}
 A symbol is like an immutable string, but symbols are normally
 @deftech{interned}, so that two symbols with the same character
 content are normally @scheme[eq?]. All symbols produced by the default
-reader (see @secref["mz:parse-symbol"]) are interned.
+reader (see @secref["parse-symbol"]) are interned.
 
 The two procedures @scheme[string->uninterned-symbol] and
 @scheme[gensym] generate @deftech{uninterned} symbols, i.e., symbols
@@ -82,9 +88,9 @@ other symbol, although they may print the same as other symbols.
 Regular (interned) symbols are only weakly held by the internal symbol
 table. This weakness can never affect the result of an @scheme[eq?],
 @scheme[eqv?], or @scheme[equal?] test, but a symbol may disappear
-when placed into a weak box (see @secref["mz:weakbox"]) used as the key
-in a weak hash table (see @secref["mz:hashtables"]), or used as an
-ephemeron key (see @secref["mz:ephemerons"]).
+when placed into a weak box (see @secref["weakbox"]) used as the key
+in a weak hash table (see @secref["hashtables"]), or used as an
+ephemeron key (see @secref["ephemerons"]).
 
 @defproc[(symbol? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
  a symbol, @scheme[#f] otherwise.}
@@ -124,9 +130,9 @@ ephemeron key (see @secref["mz:ephemerons"]).
 @include-section["regexps.scrbl"]
 
 @; ------------------------------------------------------------
-@section[#:tag "mz:keywords"]{Keywords}
+@section[#:tag "keywords"]{Keywords}
 
-@guideintro["guide:keywords"]{keywords}
+@guideintro["keywords"]{keywords}
 
 A keyword is like an @tech{interned} symbol, but its printed form
 starts with @litchar{#:}, and a keyword cannot be used as an
@@ -137,10 +143,11 @@ expression that produces the symbol.
 Two keywords are @scheme[eq?] if and only if they print the same.
 
 Like symbols, keywords are only weakly held by the internal keyword
-table; see @secref["mz:symbols"] for more information.
+table; see @secref["symbols"] for more information.
 
-@item{@defproc[(keyword? [v any/c]) any] returns @scheme[#t] if @scheme[v] is a
-keyword, @scheme[#f] otherwise.}
+@defproc[(keyword? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a keyword, @scheme[#f] otherwise.}
 
 @defproc[(keyword->string [keyword keyword?]) string?]{
 
@@ -159,111 +166,10 @@ for each pair of keywords is the same as using
 @scheme[keyword->string] and @scheme[string<?].}
 
 @; ----------------------------------------------------------------------
-@section[#:tag "mz:pairs"]{Pairs and Lists}
-
-A list can be used as a single-valued sequence (see
-@secref["mz:sequences"]). The elements of the list serve as elements
-of the sequence. See also @scheme[in-list].
-
-@; ----------------------------------------
-@subsection{Pair Constructors, Selectors, and Mutators}
-
-@defproc[(pair? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
-a pair, @scheme[#f] otherwise.}
-
-@defproc[(cons? [v any/c]) boolean?]{The same as @scheme[(pair? v)].}
-
-@defproc[(null? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
-the empty list, @scheme[#f] otherwise.}
-
-@defproc[(empty? [v any/c]) boolean?]{The same as @scheme[(null? v)].}
-
-@defproc[(cons [a any/c] [d any/c]) pair?]{Returns a pair whose first
-element is @scheme[a] and second element is @scheme[d].}
-
-@defproc[(car [p pair?]) any/c]{Returns the first element of the
-pair @scheme[p].}
-
-@defproc[(cdr [p pair?]) any/c]{Returns the second element of the
-pair @scheme[p].}
-
-@defproc[(first [p pair?]) any/c]{The same as @scheme[(car p)].}
-
-@defproc[(rest [p pair?]) any/c]{The same as @scheme[(cdr p)].}
-
-@defthing[null null?]{The empty list.}
-
-@defthing[empty null?]{The empty list.}
-
-@defproc[(list [v any/c] ...) list?]{Returns a newly allocated list
-containing the @scheme[v]s as its elements.}
-
-@defproc[(map [proc procedure?] [lst (listof any/c)] ...+) (listof
- any/c)]{Applies @scheme[proc] to the elements of the @scheme[lst]s from the
- first elements to the last, returning @scheme[#f] as soon as any
- application returns @scheme[#f]. The @scheme[proc] argument must accept
- the same number of arguments as the number of supplied @scheme[lst]s,
- and all @scheme[lst]s must have the same number of elements.
- The result is a list containing each result of @scheme[proc].}
-
-@defproc[(andmap [proc procedure?] [lst (listof any/c)] ...+)
- any]{Similar to @scheme[map], except that
-
-@itemize{
-
- @item{the result is @scheme[#f] if any application of @scheme[proc] produces
-       @scheme[#f], in which case @scheme[proc] is not applied to later
-       elements of the @scheme[lst]s; or}
-
- @item{the result is that of @scheme[proc] applied to the last elements
-       of the @scheme[lsts]s; more specifically, the application of
-       @scheme[proc] to the last elements in the @scheme[lst]s is in tail
-       position with respect to the @scheme[andmap] call.}
-
-}
-
-If the @scheme[lst]s are empty, then @scheme[#t] is returned.}
-
-@examples[
-(andmap positive? '(1 2 3))
-(andmap positive? '(1 2 a))
-(andmap positive? '(1 -2 a))
-(andmap + '(1 2 3) '(4 5 6))
-]
-
-@defproc[(ormap [proc procedure?] [lst (listof any/c)] ...+)
-any]{Similar to @scheme[map], except that
-
-@itemize{
-
- @item{the result is @scheme[#f] if every application of @scheme[proc] produces
-       @scheme[#f]; or}
-
- @item{the result of the first applciation of @scheme[proc] to produces a
-       value other than @scheme[#f], in which case @scheme[proc] is not
-       applied to later elements of the @scheme[lst]s; more specifically,
-       the application of @scheme[proc] to the last elements in the
-       @scheme[lst]s is in tail position with respect to the
-       @scheme[andmap] call.}
-
-}
-
-If the @scheme[lst]s are empty, then @scheme[#f] is returned.}
-
-@examples[
-(ormap eq? '(a b c) '(a b c))
-(ormap positive? '(1 2 a))
-(ormap + '(1 2 3) '(4 5 6))
-]
-
-@defproc[(for-each [proc procedure?] [lst (listof any/c)] ...+)
- void?]{Similar to @scheme[map], but @scheme[proc] is called only for
- its effect, and its result (which can be any number of values) is
- ignored.}
-
+@include-section["pairs-scrbl.scrbl"]
 
 @; ------------------------------------------------------------
-@section[#:tag "mz:vectors"]{Vectors}
+@section[#:tag "vectors"]{Vectors}
 
 A vector is a fixed-length array with constant-time access and update
 of the vector slots, which are numbered from @scheme[0] to one less
@@ -276,10 +182,10 @@ the values in corresponding slots of the the vectors are
 A vector can be @defterm{mutable} or @defterm{immutable}. When an
 immutable vector is provided to a procedure like @scheme[vector-set!],
 the @exnraise[exn:fail:contract]. Vectors generated by the default
-reader (see @secref["mz:parse-string"]) are immutable.
+reader (see @secref["parse-string"]) are immutable.
 
 A vector can be used as a single-valued sequence (see
-@secref["mz:sequences"]). The elements of the vector serve as elements
+@secref["sequences"]). The elements of the vector serve as elements
 of the sequence. See also @scheme[in-vector].
 
 @defproc[(vector? [v any/c]) boolean?]{
@@ -369,7 +275,7 @@ the elements of @scheme[vec] from @scheme[start-pos] (inclusive) to
 @exnraise[exn:fail:contract].}
 
 @; ------------------------------------------------------------
-@section[#:tag "mz:boxes"]{Boxes}
+@section[#:tag "boxes"]{Boxes}
 
 @defproc[(box? [v any/c]) boolean?]{
 
@@ -399,10 +305,10 @@ Sets the content of @scheme[box] to @scheme[v].}
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "mz:hashtables"]{Hash Tables}
+@section[#:tag "hashtables"]{Hash Tables}
 
 A hash table can be used as a two-valued sequence (see
-@secref["mz:sequences"]). The keys and values of the hash table serve
+@secref["sequences"]). The keys and values of the hash table serve
 as elements of the sequence (i.e., each element is a key and its
 associated value). If a mapping is added to or removed from the hash
 table during iteration, then an iteration step may fail with
@@ -469,7 +375,7 @@ must one of the following:
  @itemize{
 
   @item{@indexed-scheme['weak] --- creates a hash table with weakly-held
-   keys (see @secref["mz:weakbox"]).}
+   keys (see @secref["weakbox"]).}
 
   @item{@indexed-scheme['equal] --- creates a hash table that compares
    keys using @scheme[equal?] instead of @scheme[eq?] (needed, for
@@ -638,7 +544,7 @@ indefinitely.}
 @include-section["procedures.scrbl"]
 
 @; ----------------------------------------------------------------------
-@section[#:tag "mz:void"]{Void and Undefined}
+@section[#:tag "void"]{Void and Undefined}
 
 The constant @|void-const| is returned by most forms and procedures
 that have a side-effect and no useful result. The constant

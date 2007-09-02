@@ -2,7 +2,7 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["common.ss"]
 
-@title[#:tag "mr:editor-overview"]{Editor}
+@title[#:tag "editor-overview"]{Editor}
 
 The editor toolbox provides a foundation for two common kinds of
  applications:
@@ -154,7 +154,7 @@ Applications that use the editor classes typically derive new versions
     (super-new)))
 ]
 
-@section[#:tag "mr:tb:miaoverview"]{Editor Structure and Terminology}
+@section[#:tag "tb:miaoverview"]{Editor Structure and Terminology}
 
 MrEd supports extensible and nestable editors by decomposing an editor
  assembly into three functional parts:
@@ -221,7 +221,7 @@ When an editor is drawn into a display, each snip and position has a
  displayed.
 
 
-@subsection[#:tag "mr:editoradministrators"]{Administrators}
+@subsection[#:tag "editoradministrators"]{Administrators}
 
 Two extra layers of administration manage the @techlink{display}-editor and
  editor-snip connections. An editor never communicates directly with
@@ -259,7 +259,7 @@ When an editor is displayed by multiple canvases, one of the canvases'
  editor's @method[editor<%> get-admin] method thus depends on the
  context of the call.
 
-@subsection[#:tag "mr:editorstyles"]{Styles}
+@subsection[#:tag "editorstyles"]{Styles}
 
 A @deftech{style}, an instance of the @scheme[style<%>] interface,
  parameterizes high-level display information that is common to all
@@ -336,7 +336,7 @@ See @xmethod[text% get-styles-sticky] for more information about the
  style of inserted text.
 
 
-@section[#:tag "mr:editorfileformat"]{File Format}
+@section[#:tag "editorfileformat"]{File Format}
 
 To allow editor content to be saved to a file, the editor classes
  implement a special file format. (The format is used when cutting and
@@ -412,7 +412,7 @@ Snip classes, snip data, and snip data classes solve problems related
  for saving files or cut-and-paste, these issues can be safely
  ignored.
 
-@subsubsection[#:tag "mr:editorsnipclasses"]{Snip Classes}
+@subsubsection[#:tag "editorsnipclasses"]{Snip Classes}
 
 Each snip can be associated to a @deftech{snip class}. This ``class''
  is not a class description in the programmer's language; it is an
@@ -435,7 +435,7 @@ If a snip class's name is of the form @scheme["(lib ...)"], then the
  it is inserted into the current eventspace's snip class list, and
  loading or saving continues using the new class.
 
-@subsubsection[#:tag "mr:editordata"]{Editor Data}
+@subsubsection[#:tag "editordata"]{Editor Data}
 
 While a snip belongs to an editor, the editor may store extra
  information about a snip in some specialized way. When the snip is to
@@ -475,7 +475,7 @@ To store and load information about a snip or region in an editor:
 } 
 
 
-@subsection[#:tag "mr:globaleditordata"]{Global Data: Headers and Footers}
+@subsection[#:tag "globaleditordata"]{Global Data: Headers and Footers}
 
 The editor file format provides for adding extra global data in
  special header and footer sections. To save and load special header
@@ -517,7 +517,7 @@ See also @method[editor<%> write-headers-to-file] and
  @method[editor<%> write-headers-to-file].
 
 
-@section[#:tag "mr:editoreol"]{End of Line Ambiguity}
+@section[#:tag "editoreol"]{End of Line Ambiguity}
 
 Because an editor can force a line break even when there is no
  carriage return item, a @techlink{position} alone does not always
@@ -539,7 +539,7 @@ For this reason, @techlink{position}-setting and
  is filled with @scheme[#t] if the position is ambiguous and it came
  from a right-side location, or @scheme[#f] otherwise.
 
-@section[#:tag "mr:editorflattened"]{Flattened Text}
+@section[#:tag "editorflattened"]{Flattened Text}
 
 In plain text editors, there is a simple correlation between
  @techlink{position}s and characters. In an @scheme[editor<%>] object,
@@ -568,7 +568,7 @@ Text can be extracted from an editor in either of two forms:
 
 }
 
-@section[#:tag "mr:drawcaretinfo"]{Caret Ownership}
+@section[#:tag "drawcaretinfo"]{Caret Ownership}
 
 Within a frame, only one object can contain the keyboard focus. This
  property must be maintained when a frame contains multiple editors in
@@ -609,7 +609,7 @@ The @scheme['show-inactive-caret] display mode is useful for showing
  its selection.
 
 
-@section[#:tag "mr:editorcutandpastetime"]{Cut and Paste Time Stamps}
+@section[#:tag "editorcutandpastetime"]{Cut and Paste Time Stamps}
 
 Methods of @scheme[editor<%>] that use the clipboard --- including
  @method[editor<%> copy], @method[editor<%> cut], @method[editor<%>
@@ -627,7 +627,7 @@ If the time stamp is 0, it defaults to the current time. Using 0 as the
  under X.
 
 
-@section[#:tag "mr:editorclickback"]{Clickbacks}
+@section[#:tag "editorclickback"]{Clickbacks}
 
 @deftech{Clickbacks} in a @scheme[text%] editor facilitate the
  creation of simple interactive objects, such as hypertext. A
@@ -647,7 +647,7 @@ Note that there is no attempt to save clickback information when a
  file is saved, since a clickback will have an arbitrary procedure
  associated with it.
 
-@section[#:tag "mr:lockinfo"]{Internal Editor Locks}
+@section[#:tag "lockinfo"]{Internal Editor Locks}
 
 Instances of @scheme[editor<%>] have three levels of internal
  locking:
@@ -693,7 +693,7 @@ Methods that report @techlink{location}-independent information about an
  that modifies the editor in any way, even setting the selection
  position, can trigger a read lock, flow lock, or write lock.
 
-@section[#:tag "mr:editorthreads"]{Editors and Threads}
+@section[#:tag "editorthreads"]{Editors and Threads}
 
 An editor is not tied to any particular thread or eventspace, except
  to the degree that it is displayed in a canvas (which has an

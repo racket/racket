@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:encodings"]{Encodings and Locales}
+@title[#:tag "encodings"]{Encodings and Locales}
 
 When a port is provided to a character-based operation, such as
 @scheme[read-char] or @scheme[read], the port's bytes are read and
@@ -26,7 +26,7 @@ sequence of bytes as characters, a minimal set of bytes are changed to
 63 (which is the value that @scheme[(char->integer #\?)] produces) so
 that the entire sequence of bytes is a valid UTF-8 encoding.
 
-See @secref["mz:bytestrings"] for procedures that facilitate
+See @secref["bytestrings"] for procedures that facilitate
 conversions using UTF-8 or other encodings. See also
 @scheme[reencode-input-port] and @scheme[reencode-output-port] for
 obtaining a UTF-8-based port from one that uses a different encoding
@@ -38,9 +38,9 @@ culture-specific interpretation of character sequences. In particular,
 a locale determines how strings are ``alphabetized,'' how a lowercase
 character is converted to an uppercase character, and how strings are
 compared without regard to case. String operations such as
-@scheme[string-ci?] are @italic{not} sensitive to the current locale,
-but operations such as @scheme[string-locale-ci?] (see
-@secref["mz:strings"]) produce results consistent with the current
+@scheme[string-ci=?] are @italic{not} sensitive to the current locale,
+but operations such as @scheme[string-locale-ci=?] (see
+@secref["strings"]) produce results consistent with the current
 locale.
 
 A locale also designates a particular encoding of code-point sequences
@@ -73,3 +73,23 @@ environment-specified locale, if desired.) Setting the current locale
 to @scheme[#f] makes locale-sensitive operations locale-insensitive,
 which means using the Unicode mapping for case operations and using
 UTF-8 for encoding.
+
+@defparam[current-locale locale (or/c string? false/c)]{
+
+A parameter that determines the current @deftech{locale} for
+procedures such as @scheme[string-locale-ci=?].
+
+When locale sensitivity is disabled by setting the parameter to
+@scheme[#f], strings are compared (etc.) in a fully portable manner,
+which is the same as the standard procedures. Otherwise, strings are
+interpreted according to a locale setting (in the sense of the C
+library's @tt{setlocale}). The @scheme[""] locale is always a synonym
+for the current machine's default locale, and it is the default.  The
+@scheme["C"] locale is also always available; setting the locale to
+@scheme["C"] is the same as disabling locale sensitivity with
+@scheme[#f] only when string operations are restricted to the first
+128 characters. Other locale names are platform-specific.
+
+String or character printing with @scheme[write] is not affected by
+the parameter, and neither are symbol case or regular expressions (see
+@secref["regexp"]).}

@@ -67,9 +67,11 @@ static Scheme_Object *free_eq(int argc, Scheme_Object **argv);
 static Scheme_Object *module_eq(int argc, Scheme_Object **argv);
 static Scheme_Object *module_trans_eq(int argc, Scheme_Object **argv);
 static Scheme_Object *module_templ_eq(int argc, Scheme_Object **argv);
+static Scheme_Object *module_label_eq(int argc, Scheme_Object **argv);
 static Scheme_Object *module_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_trans_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_templ_binding(int argc, Scheme_Object **argv);
+static Scheme_Object *module_label_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_binding_pos(int argc, Scheme_Object **argv);
 static Scheme_Object *module_trans_binding_pos(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv);
@@ -451,6 +453,11 @@ void scheme_init_stx(Scheme_Env *env)
 						    "module-template-identifier=?",
 						    2, 2),
 			     env);
+  scheme_add_global_constant("module-label-identifier=?", 
+			     scheme_make_noncm_prim(module_label_eq,
+						    "module-label-identifier=?",
+						    2, 2),
+			     env);
 
   scheme_add_global_constant("identifier-binding", 
 			     scheme_make_noncm_prim(module_binding,
@@ -460,11 +467,16 @@ void scheme_init_stx(Scheme_Env *env)
   scheme_add_global_constant("identifier-transformer-binding", 
 			     scheme_make_noncm_prim(module_trans_binding,
 						    "identifier-transformer-binding",
-						    1, 1),
+						    1, 2),
 			     env);
   scheme_add_global_constant("identifier-template-binding", 
 			     scheme_make_noncm_prim(module_templ_binding,
 						    "identifier-template-binding",
+						    1, 1),
+			     env);
+  scheme_add_global_constant("identifier-label-binding", 
+			     scheme_make_noncm_prim(module_label_binding,
+						    "identifier-label-binding",
 						    1, 1),
 			     env);
 
@@ -2419,6 +2431,7 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp, Sch
       Scheme_Object *key;
 
       if (STX_KEY(stx) & STX_GRAPH_FLAG) {
+        /* FIXME: this is wrong */
 	if (!*ht) {
 	  GC_CAN_IGNORE Scheme_Hash_Table *htv;
 	  htv = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -4840,9 +4853,17 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 	  if (!(SCHEME_SYMBOLP(p)
 		|| SAME_TYPE(SCHEME_TYPE(p), scheme_module_index_type)))
 	    return_NULL;
-
 	  mli = SCHEME_CDR(mli);
 	  if (!SCHEME_PAIRP(mli)) return_NULL;
+
+          /* A phase/dimension index (temporarily optional) */
+          p = SCHEME_CAR(mli);
+          if ((SCHEME_INT_VAL(p) < 0)
+              || (SCHEME_INT_VAL(p) > 2))
+            return_NULL;
+          mli = SCHEME_CDR(mli);
+          if (!SCHEME_PAIRP(mli)) return_NULL;
+
 	  /* A list of symbols: */
 	  p = SCHEME_CAR(mli);
 	  while (SCHEME_PAIRP(p)) {
@@ -5435,7 +5456,7 @@ static void simplify_syntax_inner(Scheme_Object *o,
   SCHEME_USE_FUEL(1);
 
   if (STX_KEY(stx) & STX_GRAPH_FLAG) {
-    /* Instead of potentially losing graph sructure
+    /* Instead of potentially losing graph structure
        (or looping!), give up on simplifying. */
     return;
   }
@@ -6013,9 +6034,11 @@ static Scheme_Object *do_module_eq(const char *who, int delta, int argc, Scheme_
     scheme_wrong_type(who, "identifier syntax", 1, argc, argv);
 
   return (scheme_stx_module_eq(argv[0], argv[1],
-			       delta + (p->current_local_env
-					? p->current_local_env->genv->phase
-					: 0))
+                               ((delta == MZ_LABEL_PHASE)
+                                ? MZ_LABEL_PHASE
+                                : (delta + (p->current_local_env
+                                            ? p->current_local_env->genv->phase
+                                            : 0))))
 	  ? scheme_true
 	  : scheme_false);
 }
@@ -6035,6 +6058,11 @@ static Scheme_Object *module_templ_eq(int argc, Scheme_Object **argv)
   return do_module_eq("module-template-identifier=?", -1, argc, argv);
 }
 
+static Scheme_Object *module_label_eq(int argc, Scheme_Object **argv)
+{
+  return do_module_eq("module-label-identifier=?", MZ_LABEL_PHASE, argc, argv);
+}
+
 static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **argv, 
 					int dphase, int get_position)
 {
@@ -6047,9 +6075,12 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
   if (!SCHEME_STXP(a) || !SCHEME_STX_SYMBOLP(a))
     scheme_wrong_type(name, "identifier syntax", 0, argc, argv);
 
-  m = scheme_stx_module_name(&a, dphase + (p->current_local_env
+  m = scheme_stx_module_name(&a, 
+                             ((dphase == MZ_LABEL_PHASE)
+                              ? MZ_LABEL_PHASE
+                              : (dphase + (p->current_local_env
 					   ? p->current_local_env->genv->phase
-					   : 0),
+					   : 0))),
 			     &nom_mod, &nom_a,
 			     &mod_phase);
 
@@ -6100,6 +6131,11 @@ static Scheme_Object *module_trans_binding(int argc, Scheme_Object **argv)
 static Scheme_Object *module_templ_binding(int argc, Scheme_Object **argv)
 {
   return do_module_binding("identifier-template-binding", argc, argv, -1, 0);
+}
+
+static Scheme_Object *module_label_binding(int argc, Scheme_Object **argv)
+{
+  return do_module_binding("identifier-label-binding", argc, argv, MZ_LABEL_PHASE, 0);
 }
 
 static Scheme_Object *module_binding_pos(int argc, Scheme_Object **argv)

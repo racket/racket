@@ -67,6 +67,8 @@ static Scheme_Object *require_for_syntax_syntax(Scheme_Object *form, Scheme_Comp
 static Scheme_Object *require_for_syntax_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *require_for_template_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *require_for_template_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
+static Scheme_Object *require_for_label_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
+static Scheme_Object *require_for_label_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *provide_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *provide_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 
@@ -138,7 +140,10 @@ static Scheme_Object *define_for_syntaxes_stx;
 static Scheme_Object *require_stx;
 static Scheme_Object *require_for_syntax_stx;
 static Scheme_Object *require_for_template_stx;
+static Scheme_Object *require_for_label_stx;
 static Scheme_Object *provide_stx;
+static Scheme_Object *provide_for_syntax_stx;
+static Scheme_Object *provide_for_label_stx;
 static Scheme_Object *set_stx;
 static Scheme_Object *app_stx;
 Scheme_Object *scheme_top_stx;
@@ -181,10 +186,27 @@ static Scheme_Object *parse_requires(Scheme_Object *form,
 				     Scheme_Object *base_modidx,
 				     Scheme_Env *env,
 				     Scheme_Object *rn, Scheme_Object *post_ex_rn,
-				     Check_Func ck, void *data,
+				     Scheme_Object *et_rn, Scheme_Object *et_post_ex_rn,
+				     Scheme_Object *dt_rn, Scheme_Object *dt_post_ex_rn,
+				     Check_Func ck, void *data, void *et_data, void *dt_data,
 				     int start, int expstart, Scheme_Object *redef_modname,
 				     int unpack_kern, int copy_vars, int can_save_marshal,
 				     int *all_simple);
+static Scheme_Object *parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
+                                     Scheme_Hash_Table *provided, Scheme_Object *reprovided,
+                                     Scheme_Object *self_modidx,
+                                     Scheme_Object **_all_defs_out);
+static int compute_reprovides(Scheme_Hash_Table *provided, Scheme_Object *reprovided, 
+                              Scheme_Object *requires, Scheme_Hash_Table *required, 
+                              Scheme_Env *genv, Scheme_Object *all_defs, Scheme_Object *all_defs_out, 
+                              Scheme_Object **_exclude_hint,
+                              const char *matching_form);
+static char *compute_provide_arrays(Scheme_Hash_Table *provided, Scheme_Hash_Table *required,
+                                    Scheme_Module_Phase_Exports *pt,
+                                    Scheme_Env *genv, int def_phase,
+                                    int reprovide_kernel,
+                                    Scheme_Object *form,
+                                    const char *def_way);
 static void start_module(Scheme_Module *m, Scheme_Env *env, int restart, Scheme_Object *syntax_idx, int delay_exptime, int with_tt, Scheme_Object *cycle_list);
 static void expstart_module(Scheme_Module *m, Scheme_Env *env, int restart, Scheme_Object *syntax_idx, int delay_exptime, int with_tt, Scheme_Object *cycle_list);
 static void finish_expstart_module(Scheme_Env *menv, Scheme_Env *env, int with_tt, Scheme_Object *cycle_list);
@@ -245,7 +267,19 @@ void scheme_init_module(Scheme_Env *env)
 			    scheme_make_compiled_syntax(require_for_template_syntax, 
 							require_for_template_expand), 
 			    env);
+  scheme_add_global_keyword("require-for-label", 
+			    scheme_make_compiled_syntax(require_for_label_syntax, 
+							require_for_label_expand), 
+			    env);
   scheme_add_global_keyword("provide", 
+			    scheme_make_compiled_syntax(provide_syntax, 
+							provide_expand), 
+			    env);
+  scheme_add_global_keyword("provide-for-syntax", 
+			    scheme_make_compiled_syntax(provide_syntax, 
+							provide_expand), 
+			    env);
+  scheme_add_global_keyword("provide-for-label", 
 			    scheme_make_compiled_syntax(provide_syntax, 
 							provide_expand), 
 			    env);
@@ -404,6 +438,7 @@ void scheme_finish_kernel(Scheme_Env *env)
   kernel->requires = scheme_null;
   kernel->et_requires = scheme_null;
   kernel->tt_requires = scheme_null;
+  kernel->dt_requires = scheme_null;
 
   kernel->insp = insp;
   
@@ -452,18 +487,18 @@ void scheme_finish_kernel(Scheme_Env *env)
     kernel->me = me;
   }
 
-  kernel->me->provides = exs;
-  kernel->me->provide_srcs = NULL;
-  kernel->me->provide_src_names = exs;
-  kernel->me->num_provides = count;
-  kernel->me->num_var_provides = syntax_start;
+  kernel->me->rt->provides = exs;
+  kernel->me->rt->provide_srcs = NULL;
+  kernel->me->rt->provide_src_names = exs;
+  kernel->me->rt->num_provides = count;
+  kernel->me->rt->num_var_provides = syntax_start;
 
   scheme_initial_env->running = 1;
   scheme_initial_env->et_running = 1;
   scheme_initial_env->attached = 1;
 
   rn = scheme_make_module_rename(0, mzMOD_RENAME_NORMAL, NULL);
-  for (i = kernel->me->num_provides; i--; ) {
+  for (i = kernel->me->rt->num_provides; i--; ) {
     scheme_extend_module_rename(rn, kernel_symbol, exs[i], exs[i], kernel_symbol, exs[i], 0, 0);
   }
 
@@ -477,7 +512,10 @@ void scheme_finish_kernel(Scheme_Env *env)
   REGISTER_SO(require_stx);
   REGISTER_SO(require_for_syntax_stx);
   REGISTER_SO(require_for_template_stx);
+  REGISTER_SO(require_for_label_stx);
   REGISTER_SO(provide_stx);
+  REGISTER_SO(provide_for_syntax_stx);
+  REGISTER_SO(provide_for_label_stx);
   REGISTER_SO(set_stx);
   REGISTER_SO(app_stx);
   REGISTER_SO(scheme_top_stx);
@@ -502,7 +540,10 @@ void scheme_finish_kernel(Scheme_Env *env)
   require_stx = scheme_datum_to_syntax(scheme_intern_symbol("require"), scheme_false, w, 0, 0);
   require_for_syntax_stx = scheme_datum_to_syntax(scheme_intern_symbol("require-for-syntax"), scheme_false, w, 0, 0);
   require_for_template_stx = scheme_datum_to_syntax(scheme_intern_symbol("require-for-template"), scheme_false, w, 0, 0);
+  require_for_label_stx = scheme_datum_to_syntax(scheme_intern_symbol("require-for-label"), scheme_false, w, 0, 0);
   provide_stx = scheme_datum_to_syntax(scheme_intern_symbol("provide"), scheme_false, w, 0, 0);
+  provide_for_syntax_stx = scheme_datum_to_syntax(scheme_intern_symbol("provide-for-syntax"), scheme_false, w, 0, 0);
+  provide_for_label_stx = scheme_datum_to_syntax(scheme_intern_symbol("provide-for-label"), scheme_false, w, 0, 0);
   set_stx = scheme_datum_to_syntax(scheme_intern_symbol("set!"), scheme_false, w, 0, 0);
   app_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%app"), scheme_false, w, 0, 0);
   scheme_top_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%top"), scheme_false, w, 0, 0);
@@ -560,9 +601,9 @@ void scheme_require_from_original_env(Scheme_Env *env, int syntax_only)
     env->rename = rn;
   }
 
-  exs = kernel->me->provides;
-  c = kernel->me->num_provides;
-  i = (syntax_only ? kernel->me->num_var_provides : 0);
+  exs = kernel->me->rt->provides;
+  c = kernel->me->rt->num_provides;
+  i = (syntax_only ? kernel->me->rt->num_var_provides : 0);
   for (; i < c; i++) {
     scheme_extend_module_rename(rn, kernel_symbol, exs[i], exs[i], kernel_symbol, exs[i], 0, 0);
   }
@@ -827,25 +868,25 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
     try_again:
     
       /* Before starting, check whether the name is provided */
-      count = srcm->me->num_provides;
+      count = srcm->me->rt->num_provides;
       if (position >= 0) {
-	if (position < srcm->me->num_var_provides) {
+	if (position < srcm->me->rt->num_var_provides) {
 	  i = position;
-	  if ((SCHEME_SYM_LEN(name) == SCHEME_SYM_LEN(srcm->me->provide_src_names[i]))
-	      && !memcmp(SCHEME_SYM_VAL(name), SCHEME_SYM_VAL(srcm->me->provide_src_names[i]), SCHEME_SYM_LEN(name))) {
-	    name = srcm->me->provides[i];
+	  if ((SCHEME_SYM_LEN(name) == SCHEME_SYM_LEN(srcm->me->rt->provide_src_names[i]))
+	      && !memcmp(SCHEME_SYM_VAL(name), SCHEME_SYM_VAL(srcm->me->rt->provide_src_names[i]), SCHEME_SYM_LEN(name))) {
+	    name = srcm->me->rt->provides[i];
 	  } else {
 	    i = count; /* not found */
 	    indirect_ok = 0; /* don't look further */
 	  }
 	} else {
-	  position -= srcm->me->num_var_provides;
+	  position -= srcm->me->rt->num_var_provides;
 	  i = count;
 	}
       } else {
 	for (i = 0; i < count; i++) {
-	  if (SAME_OBJ(name, srcm->me->provides[i])) {
-	    if (i < srcm->me->num_var_provides) {
+	  if (SAME_OBJ(name, srcm->me->rt->provides[i])) {
+	    if (i < srcm->me->rt->num_var_provides) {
 	      break;
 	    } else {
 	      if (fail_with_error) {
@@ -881,17 +922,17 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
       if (i < count) {
 	if (srcm->provide_protects)
 	  protected = srcm->provide_protects[i];
-	srcmname = (srcm->me->provide_srcs ? srcm->me->provide_srcs[i] : scheme_false);
+	srcmname = (srcm->me->rt->provide_srcs ? srcm->me->rt->provide_srcs[i] : scheme_false);
 	if (SCHEME_FALSEP(srcmname))
 	  srcmname = srcm->modname;
 	else {
 	  srcmname = scheme_modidx_shift(srcmname, srcm->me->src_modidx, srcm->self_modidx);
 	  srcmname = scheme_module_resolve(srcmname, 1);
 	}
-	srcname = srcm->me->provide_src_names[i];
+	srcname = srcm->me->rt->provide_src_names[i];
       }
 
-      if ((position < 0) && (i == count) && srcm->me->reprovide_kernel) {
+      if ((position < 0) && (i == count) && srcm->me->rt->reprovide_kernel) {
 	/* Check kernel. */
 	srcm = kernel;
 	goto try_again;
@@ -1006,7 +1047,7 @@ static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Obj
   
   rn = scheme_make_module_rename(for_exp, mzMOD_RENAME_TOPLEVEL, NULL);
 
-  (void)parse_requires(form, scheme_false, env, rn, rn,
+  (void)parse_requires(form, scheme_false, env, rn, rn, NULL, NULL, NULL, NULL, NULL, NULL,
 		       NULL, NULL, !etonly, etonly, NULL, 1, copy, 0, NULL);
 
   brn = env->rename;
@@ -1039,7 +1080,13 @@ static Scheme_Object *namespace_require_etonly(int argc, Scheme_Object *argv[])
 {
   return do_namespace_require(NULL, argc, argv, 0, 0, 1);
 }
-	
+
+/* I think we don't need to copy phaseless modules for an
+   attach. (If we do try to copy, there's a problem in that the 
+   transitive requirements of a for-label import are not 
+   necessarily loaded, yet.) */
+#define NEED_COPY_NOPHASE 0
+
 static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 {
   Scheme_Env *from_env, *to_env, *menv, *menv2;
@@ -1049,6 +1096,10 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   Scheme_Hash_Table *checked, *next_checked, *prev_checked;
   Scheme_Object *past_checkeds, *future_checkeds, *future_todos, *past_to_modchains;
   Scheme_Module *m2;
+# if NEED_COPY_NOPHASE
+  Scheme_Object *nophase_todo;
+  Scheme_Hash_Table *nophase_checked;
+# endif
   int same_namespace, set_env_for_notify = 0, phase;
 
   if (!SCHEME_NAMESPACEP(argv[0]))
@@ -1073,6 +1124,9 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   todo = scheme_make_pair(name, scheme_null);
   next_phase_todo = scheme_null;
   prev_phase_todo = scheme_null;
+# if NEED_COPY_NOPHASE
+  nophase_todo = scheme_null;
+# endif
   from_modchain = from_env->modchain;
   to_modchain = to_env->modchain;
   phase = 0;
@@ -1085,6 +1139,10 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   future_checkeds = scheme_null;
   future_todos = scheme_null;
   past_to_modchains = scheme_null;
+
+# if NEED_COPY_NOPHASE
+  nophase_checked = scheme_make_hash_table(SCHEME_hash_ptr);
+# endif
 
   /* Check whether todo, or anything it needs, is already declared
      incompatibly. Successive iterations of the outer loop explore
@@ -1167,7 +1225,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	  while (!SCHEME_NULLP(l)) {
 	    name = scheme_module_resolve(SCHEME_CAR(l), 0);
 	    if (!scheme_hash_get(checked, name)) {
-	      /* printf("Add %d %s (%p)\n", phase, SCHEME_SYM_VAL(name), checked); */
+              /* printf("Add %d %s (%p)\n", phase, SCHEME_SYM_VAL(name), checked); */
 	      todo = scheme_make_pair(name, todo);
 	      scheme_hash_set(checked, name, scheme_true);
 	    }
@@ -1189,26 +1247,117 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	    l = SCHEME_CDR(l);
 	  }
 
-	  if (phase > 0) {
-	    l = menv->tt_require_names;
-	    if (l) {
-	      while (!SCHEME_NULLP(l)) {
-		if (!prev_checked)
-		  prev_checked = scheme_make_hash_table(SCHEME_hash_ptr);
-		
-		name = scheme_module_resolve(SCHEME_CAR(l), 0);
-		if (!scheme_hash_get(prev_checked, name)) {
-		  /* printf("Add -%d %s (%p)\n", phase-1, SCHEME_SYM_VAL(name), prev_checked); */
-		  prev_phase_todo = scheme_make_pair(name, prev_phase_todo);
-		  scheme_hash_set(prev_checked, name, scheme_true);
-		}
-		l = SCHEME_CDR(l);
-	      }
-	    }
+          l = menv->tt_require_names;
+          if (l) {
+            while (!SCHEME_NULLP(l)) {
+              name = scheme_module_resolve(SCHEME_CAR(l), 0);
+              if (phase > 0) {
+                if (!prev_checked)
+                  prev_checked = scheme_make_hash_table(SCHEME_hash_ptr);
+                if (!scheme_hash_get(prev_checked, name)) {
+                  /* printf("Add -%d %s (%p)\n", phase-1, SCHEME_SYM_VAL(name), prev_checked); */
+                  prev_phase_todo = scheme_make_pair(name, prev_phase_todo);
+                  scheme_hash_set(prev_checked, name, scheme_true);
+                }
+              } else {
+#               if NEED_COPY_NOPHASE
+                /* Need (phaseless) declaration, only */
+                if (!same_namespace) {
+                  if (!scheme_hash_get(nophase_checked, name)) {
+                    /* printf("Add -* %s\n", SCHEME_SYM_VAL(name)); */
+                    nophase_todo = scheme_make_pair(name, nophase_todo);
+                    scheme_hash_set(nophase_checked, name, scheme_true);
+                  }
+                }
+#               endif
+              }
+              l = SCHEME_CDR(l);
+            }
 	  }
-	}
+
+#         if NEED_COPY_NOPHASE
+          if (!same_namespace) {
+            l = menv->dt_require_names;
+            if (l) {
+              /* Need (phaseless) declaration, only */
+              while (!SCHEME_NULLP(l)) {
+                name = scheme_module_resolve(SCHEME_CAR(l), 0);
+              
+                if (!scheme_hash_get(nophase_checked, name)) {
+                  /* printf("Add * %s\n", SCHEME_SYM_VAL(name)); */
+                  nophase_todo = scheme_make_pair(name, nophase_todo);
+                  scheme_hash_set(nophase_checked, name, scheme_true);
+                }
+                l = SCHEME_CDR(l);
+              }
+            }
+          }
+#         endif
+        }
       }
     }
+
+#   if NEED_COPY_NOPHASE
+    while (!SCHEME_NULLP(nophase_todo)) {
+      name = SCHEME_CAR(nophase_todo);
+      nophase_todo = SCHEME_CDR(nophase_todo);
+
+      if (!SAME_OBJ(name, kernel_symbol)) {
+        if (!scheme_hash_get(to_env->module_registry, name)) {
+          Scheme_Object *m1;
+          int step;
+
+          m1 = (Scheme_Module *)scheme_hash_get(from_env->module_registry, name);
+
+          if (!m1) {
+            /* This shouldn't happen! */
+            scheme_arg_mismatch("namespace-attach-module",
+				"unknown module (in the source namespace, for no-phase): ",
+				name);
+          }
+
+          m2 = (Scheme_Module *)scheme_hash_get(from_env->module_registry, name);
+
+          if (m2 && !SAME_OBJ(m1, m2)) {
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+			     "namespace-attach-module: "
+			     "a different module with the same name is already "
+			     "in the destination namespace, for name: %S",
+			     name);
+          }
+
+          /* Need transitive declarations for all phases 
+             (but not neecssarily instantiations): */
+          for (step = 0; step < 4; step++) {
+            switch (step) {
+            case 0:
+              l = m2->requires;
+              break;
+            case 1:
+              l = m2->et_requires;
+              break;
+            case 2:
+              l = m2->tt_requires;
+              break;
+            case 3:
+            default:
+              l = m2->dt_requires;
+              break;
+            }
+
+            while (!SCHEME_NULLP(l)) {
+              name = scheme_module_resolve(SCHEME_CAR(l), 0);
+              if (!scheme_hash_get(nophase_checked, name)) {
+                nophase_todo = scheme_make_pair(name, nophase_todo);
+                scheme_hash_set(nophase_checked, name, scheme_true);
+              }
+              l = SCHEME_CDR(l);
+            }
+	  }
+        }
+      }
+    }
+#   endif
     
     do {
       if (SCHEME_PAIRP(prev_phase_todo)) {
@@ -1286,7 +1435,26 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   /* Now all the modules to check are in the future_checkeds
      list of hash tables. */
 
-  /* Go through that list, this time tranferring modules */
+# if NEED_COPY_NOPHASE
+  /* Before we transfer instances, we can transfer modules for which we
+     just need declarations. */
+  {
+    int i;
+    for (i = nophase_checked->size; i--; ) {
+      if (nophase_checked->vals[i]) {
+        name = nophase_checked->keys[i];
+        
+        if (!SAME_OBJ(name, kernel_symbol)) {
+          
+          m2 = (Scheme_Module *)scheme_hash_get(from_env->module_registry, name);
+          scheme_hash_set(to_env->module_registry, name, (Scheme_Object *)m2);
+        }
+      }
+    }
+  }
+# endif
+
+  /* Go through that list, this time tranferring module instances */
   from_modchain = from_env->modchain;
   to_modchain = to_env->modchain;
 
@@ -1409,35 +1577,100 @@ static Scheme_Object *namespace_unprotect_module(int argc, Scheme_Object *argv[]
   return scheme_void;
 }
 
-static int add_require_renames(Scheme_Object *rn, Scheme_Module *im, Scheme_Object *idx)
+static int do_add_require_renames(Scheme_Object *rn, 
+                                  Scheme_Hash_Table *required, Scheme_Object *orig_src,
+                                  Scheme_Module *im, Scheme_Module_Phase_Exports *pt,
+                                  Scheme_Object *idx,
+                                  int marshal_k)
 {
-  int i, saw_mb;
-  Scheme_Object **exs, **exss, **exsns, *midx, *info;
+  int i, saw_mb, numvals;
+  Scheme_Object **exs, **exss, **exsns, *midx, *info, *vec, *nml;
+  char *exets;
 
   saw_mb = 0;
 
-  exs = im->me->provides;
-  exsns = im->me->provide_src_names;
-  exss = im->me->provide_srcs;
-  for (i = im->me->num_provides; i--; ) {
+  exs = pt->provides;
+  exsns = pt->provide_src_names;
+  exss = pt->provide_srcs;
+  exets = pt->provide_src_phases;
+  numvals = pt->num_var_provides;
+  for (i = pt->num_provides; i--; ) {
     if (exss && !SCHEME_FALSEP(exss[i]))
       midx = scheme_modidx_shift(exss[i], im->me->src_modidx, idx);
     else
       midx = idx;
-    scheme_extend_module_rename(rn, midx, exs[i], exsns[i], idx, exs[i], 0, 1);
+    scheme_extend_module_rename(rn, midx, exs[i], exsns[i], idx, exs[i], 
+                                exets ? exets[i] : 0, 1);
     if (SAME_OBJ(exs[i], module_begin_symbol))
       saw_mb = 1;
+
+    if (required) {
+      vec = scheme_make_vector(6, NULL);
+      nml = scheme_make_pair(idx, scheme_null);
+      SCHEME_VEC_ELS(vec)[0] = nml;
+      SCHEME_VEC_ELS(vec)[1] = midx;
+      SCHEME_VEC_ELS(vec)[2] = exsns[i];
+      SCHEME_VEC_ELS(vec)[3] = ((i < numvals) ? scheme_true : scheme_false);
+      SCHEME_VEC_ELS(vec)[4] = exs[i];
+      SCHEME_VEC_ELS(vec)[5] = orig_src;
+      scheme_hash_set(required, exs[i], vec);
+    }
   }
   
-  if (im->me->reprovide_kernel) {
+  if (pt->reprovide_kernel) {
     scheme_extend_module_rename_with_kernel(rn, idx);
     saw_mb = 1;
+
+    if (required) {
+      exs = kernel->me->rt->provides;
+      numvals = kernel->me->rt->num_var_provides;
+      for (i = kernel->me->rt->num_provides; i--; ) {
+        if (!SAME_OBJ(pt->kernel_exclusion, exs[i])) {
+          vec = scheme_make_vector(6, NULL);
+          nml = scheme_make_pair(idx, scheme_null);
+          SCHEME_VEC_ELS(vec)[0] = nml;
+          SCHEME_VEC_ELS(vec)[1] = kernel_symbol;
+          SCHEME_VEC_ELS(vec)[2] = exs[i];
+          SCHEME_VEC_ELS(vec)[3] = ((i < numvals) ? scheme_true : scheme_false);
+          SCHEME_VEC_ELS(vec)[4] = exs[i];
+          SCHEME_VEC_ELS(vec)[5] = orig_src;
+          scheme_hash_set(required, exs[i], vec);
+        }
+      }
+    }
   }
 
-  info = cons(idx, cons(scheme_null, scheme_false));
+  info = cons(idx, cons(scheme_make_integer(marshal_k), 
+                        cons(scheme_null, scheme_false)));
   scheme_save_module_rename_unmarshal(rn, info);
 
   return saw_mb;
+}
+
+static int add_initial_require_renames(Scheme_Object *orig_src,
+                                       Scheme_Object *rn, Scheme_Hash_Table *rn_required,
+                                       Scheme_Object *et_rn, Scheme_Hash_Table *et_required,
+                                       Scheme_Object *dt_rn, Scheme_Hash_Table *dt_required,
+                                       Scheme_Module *im, Scheme_Object *idx)
+{
+  int saw_mb;
+
+  if (rn)
+    saw_mb = do_add_require_renames(rn, rn_required, orig_src, im, im->me->rt, idx, 0);
+  else
+    saw_mb = 0;
+  if (et_rn && im->me->et)
+    do_add_require_renames(et_rn, et_required, orig_src, im, im->me->et, idx, 1);
+  if (dt_rn && im->me->dt)
+    do_add_require_renames(dt_rn, dt_required, orig_src, im, im->me->dt, idx, 2);
+
+  return saw_mb;
+}
+
+static int add_require_renames(Scheme_Object *rn, Scheme_Object *et_rn, Scheme_Object *dt_rn, 
+                               Scheme_Module *im, Scheme_Object *idx)
+{
+  return add_initial_require_renames(NULL, rn, NULL, et_rn, NULL, dt_rn, NULL, im, idx);
 }
 
 static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
@@ -1494,9 +1727,9 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
 	rn = scheme_make_module_rename(0, mzMOD_RENAME_NORMAL, mn_ht);
 
 	/* Local, provided: */
-	for (i = 0; i < m->me->num_provides; i++) {
-	  if (SCHEME_FALSEP(m->me->provide_srcs[i])) {
-	    name = m->me->provides[i];
+	for (i = 0; i < m->me->rt->num_provides; i++) {
+	  if (SCHEME_FALSEP(m->me->rt->provide_srcs[i])) {
+	    name = m->me->rt->provides[i];
 	    scheme_extend_module_rename(rn, m->self_modidx, name, name, m->self_modidx, name, 0, 0);
 	  }
 	}
@@ -1516,11 +1749,11 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
 	  else
 	    im = (Scheme_Module *)scheme_hash_get(menv->module_registry, name);
 
-	  add_require_renames(rn, im, idx);
+	  add_require_renames(rn, NULL, NULL, im, idx);
 	}
 	
 	rn = scheme_rename_to_stx(rn);
-	menv->module->rn_stx = rn;
+	m->rn_stx = rn;
       } else if (SCHEME_PAIRP(m->rn_stx)) {
 	/* Delayed shift: */
 	Scheme_Object *rn_stx, *rn, *midx;
@@ -1532,7 +1765,7 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
 	m->rn_stx = rn_stx;
       }
 
-      v = scheme_stx_to_rename(menv->module->rn_stx);
+      v = scheme_stx_to_rename(m->rn_stx);
       rn = scheme_make_module_rename(0, mzMOD_RENAME_NORMAL, NULL);
       scheme_append_module_rename(v, rn);
       menv->rename = rn;
@@ -1554,7 +1787,7 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
     if (m->et_rn_stx) {
       Scheme_Object *v, *rn;
 
-      if (SAME_OBJ(scheme_true, menv->module->et_rn_stx)) {
+      if (SAME_OBJ(scheme_true, m->et_rn_stx)) {
 	/* Reconstruct renames based on defns and requires */
 	Scheme_Module *im;
 	Scheme_Object *l, *idx;
@@ -1575,7 +1808,19 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
 	  name = scheme_module_resolve(idx, 0);
 	  im = (Scheme_Module *)scheme_hash_get(menv->module_registry, name);
 	 
-	  add_require_renames(rn, im, idx);
+	  add_require_renames(rn, NULL, NULL, im, idx);
+	}
+	/* Required, maybe has for-syntax exports: */
+	for (l = menv->require_names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+	  idx = SCHEME_CAR(l);
+	  name = scheme_module_resolve(idx, 0);
+
+	  if (SAME_OBJ(name, kernel_symbol))
+	    im = kernel;
+	  else
+	    im = (Scheme_Module *)scheme_hash_get(menv->module_registry, name);
+
+	  add_require_renames(NULL, rn, NULL, im, idx);
 	}
 
 	rn = scheme_rename_to_stx(rn);
@@ -1591,7 +1836,7 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
 	m->et_rn_stx = et_rn_stx;
       }
 
-      v = scheme_stx_to_rename(menv->module->et_rn_stx);
+      v = scheme_stx_to_rename(m->et_rn_stx);
       rn = scheme_make_module_rename(1, mzMOD_RENAME_NORMAL, NULL);
       scheme_append_module_rename(v, rn);
       menv->exp_env->rename = rn;
@@ -1599,6 +1844,73 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
 	Scheme_Hash_Table *mn;
 	mn = scheme_module_rename_marked_names(rn);
 	menv->exp_env->marked_names = mn;
+      }
+    }
+  }
+
+  if (!menv->dt_rename) {
+    Scheme_Module *m = menv->module;
+
+    if (m->dt_rn_stx) {
+      Scheme_Object *v, *rn;
+
+      if (SAME_OBJ(scheme_true, m->dt_rn_stx)) {
+	/* Reconstruct renames based on requires */
+	Scheme_Module *im;
+	Scheme_Object *l, *idx;
+	Scheme_Hash_Table *mn_ht;
+
+	if (menv->marked_names)
+	  mn_ht = menv->marked_names;
+	else {
+	  mn_ht = scheme_make_hash_table(SCHEME_hash_ptr);
+	  menv->marked_names = mn_ht;
+	}
+
+	rn = scheme_make_module_rename(MZ_LABEL_PHASE, mzMOD_RENAME_NORMAL, mn_ht);
+
+	/* Required for label: */
+	for (l = menv->dt_require_names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+	  idx = SCHEME_CAR(l);
+	  name = scheme_module_resolve(idx, 0);
+	  im = (Scheme_Module *)scheme_hash_get(menv->module_registry, name);
+	 
+	  add_require_renames(rn, NULL, NULL, im, idx);
+	}
+	/* Required, maybe has for-label exports: */
+	for (l = menv->require_names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+	  idx = SCHEME_CAR(l);
+	  name = scheme_module_resolve(idx, 0);
+
+	  if (SAME_OBJ(name, kernel_symbol))
+	    im = kernel;
+	  else
+	    im = (Scheme_Module *)scheme_hash_get(menv->module_registry, name);
+
+	  add_require_renames(NULL, NULL, rn, im, idx);
+	}
+
+	rn = scheme_rename_to_stx(rn);
+	m->dt_rn_stx = rn;
+      } else if (SCHEME_PAIRP(m->dt_rn_stx)) {
+	/* Delayed shift: */
+	Scheme_Object *dt_rn_stx, *rn, *midx;
+	dt_rn_stx = SCHEME_CAR(m->dt_rn_stx);
+	midx = SCHEME_CDR(m->dt_rn_stx);
+	rn = scheme_stx_to_rename(dt_rn_stx);
+	rn = scheme_stx_shift_rename(rn, midx, m->self_modidx);
+	dt_rn_stx = scheme_rename_to_stx(rn);
+	m->dt_rn_stx = dt_rn_stx;
+      }
+
+      v = scheme_stx_to_rename(m->dt_rn_stx);
+      rn = scheme_make_module_rename(MZ_LABEL_PHASE, mzMOD_RENAME_NORMAL, NULL);
+      scheme_append_module_rename(v, rn);
+      menv->dt_rename = rn;
+      if (!menv->marked_names) {
+	Scheme_Hash_Table *mn;
+	mn = scheme_module_rename_marked_names(rn);
+	menv->marked_names = mn;
       }
     }
   }
@@ -1632,8 +1944,8 @@ static Scheme_Object *module_compiled_name(int argc, Scheme_Object *argv[])
 static Scheme_Object *module_compiled_imports(int argc, Scheme_Object *argv[])
 {
   Scheme_Module *m;
-  Scheme_Object *a[3];
-      
+  Scheme_Object *a[4];
+
   m = scheme_extract_compiled_module(argv[0]);
 
   if (m) {
@@ -1641,12 +1953,14 @@ static Scheme_Object *module_compiled_imports(int argc, Scheme_Object *argv[])
     scheme_make_list_immutable(m->requires);
     scheme_make_list_immutable(m->et_requires);
     scheme_make_list_immutable(m->tt_requires);
+    scheme_make_list_immutable(m->dt_requires);
     
     a[0] = m->requires;
     a[1] = m->et_requires;
     a[2] = m->tt_requires;
+    a[3] = m->dt_requires;
     
-    return scheme_values(3, a);
+    return scheme_values(4, a);
   }
 
   scheme_wrong_type("module-compiled-imports", "compiled module declaration", 0, argc, argv);
@@ -1656,27 +1970,46 @@ static Scheme_Object *module_compiled_imports(int argc, Scheme_Object *argv[])
 static Scheme_Object *module_compiled_exports(int argc, Scheme_Object *argv[])
 {
   Scheme_Module *m;
-  Scheme_Object *a[2], *ml = scheme_null, *vl = scheme_null;
-  int i, n;
-      
+  Scheme_Object *a[6];
+  Scheme_Object *ml, *vl;
+  Scheme_Module_Phase_Exports *pt;
+  int i, n, k;
+
   m = scheme_extract_compiled_module(argv[0]);
 
   if (m) {
-    n = m->me->num_var_provides;
-    for (i = m->me->num_provides - 1; i >= n; --i) {
-      ml = scheme_make_immutable_pair(m->me->provides[i], ml);
-    }
-    for (; i >= 0; --i) {
-      vl = scheme_make_immutable_pair(m->me->provides[i], vl);
-    }
+    for (k = 0; k < 3; k++) {
+      switch(k) {
+      case 0:
+        pt = m->me->rt;
+        break;
+      case 1:
+        pt = m->me->et;
+        break;
+      case 2:
+      default:
+        pt = m->me->dt;
+        break;
+      }
 
-    a[0] = vl;
-    a[1] = ml;
+      ml = scheme_null;
+      vl = scheme_null;
+      n = pt->num_var_provides;
+      for (i = pt->num_provides - 1; i >= n; --i) {
+        ml = scheme_make_immutable_pair(pt->provides[i], ml);
+      }
+      for (; i >= 0; --i) {
+        vl = scheme_make_immutable_pair(pt->provides[i], vl);
+      }
+      
+      a[2 * k] = vl;
+      a[(2 * k) + 1] = ml;
+    }
     
-    return scheme_values(2, a);
+    return scheme_values(6, a);
   }
 
-  scheme_wrong_type("module-compiled-imports", "compiled module declaration", 0, argc, argv);
+  scheme_wrong_type("module-compiled-exports", "compiled module declaration", 0, argc, argv);
   return NULL;
 }
 
@@ -1755,9 +2088,9 @@ static Scheme_Object *module_export_protected_p(int argc, Scheme_Object **argv)
 
   m = (Scheme_Module *)mv;
 
-  count = m->me->num_provides;
+  count = m->me->rt->num_provides;
   for (i = 0; i < count; i++) {
-    if (SAME_OBJ(name, m->me->provides[i])) {
+    if (SAME_OBJ(name, m->me->rt->provides[i])) {
       if (m->provide_protects && m->provide_protects[i])
 	return scheme_true;
       else
@@ -2020,10 +2353,10 @@ static void setup_accessible_table(Scheme_Module *m)
     int i, count, nvp;
 
     ht = scheme_make_hash_table(SCHEME_hash_ptr);
-    nvp = m->me->num_var_provides;
+    nvp = m->me->rt->num_var_provides;
     for (i = 0; i < nvp; i++) {
-      if (SCHEME_FALSEP(m->me->provide_srcs[i])) {
-	scheme_hash_set(ht, m->me->provide_src_names[i], scheme_make_integer(i));
+      if (SCHEME_FALSEP(m->me->rt->provide_srcs[i])) {
+	scheme_hash_set(ht, m->me->rt->provide_src_names[i], scheme_make_integer(i));
       }
     }
 
@@ -2034,10 +2367,10 @@ static void setup_accessible_table(Scheme_Module *m)
     m->accessible = ht;
     
     /* Add syntax as negative ids: */
-    count = m->me->num_provides;
+    count = m->me->rt->num_provides;
     for (i = nvp; i < count; i++) {
-      if (SCHEME_FALSEP(m->me->provide_srcs[i])) {
-	scheme_hash_set(ht, m->me->provide_src_names[i], scheme_make_integer(-(i+1)));
+      if (SCHEME_FALSEP(m->me->rt->provide_srcs[i])) {
+	scheme_hash_set(ht, m->me->rt->provide_src_names[i], scheme_make_integer(-(i+1)));
       }
     }
   }
@@ -2147,14 +2480,14 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
     Scheme_Object *isym;
     int need_cert = 0;
 
-    if (position < env->module->me->num_var_provides) {
-      if (!env->module->me->provide_srcs
-          || SCHEME_FALSEP(env->module->me->provide_srcs[position]))
-	isym = env->module->me->provide_src_names[position];
+    if (position < env->module->me->rt->num_var_provides) {
+      if (!env->module->me->rt->provide_srcs
+          || SCHEME_FALSEP(env->module->me->rt->provide_srcs[position]))
+	isym = env->module->me->rt->provide_src_names[position];
       else
 	isym = NULL;
     } else {
-      int ipos = position - env->module->me->num_var_provides;
+      int ipos = position - env->module->me->rt->num_var_provides;
       if (ipos < env->module->num_indirect_provides) {
 	isym = env->module->indirect_provides[ipos];
 	need_cert = 1;
@@ -2169,7 +2502,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
 	  || (SCHEME_SYM_LEN(isym) == SCHEME_SYM_LEN(symbol)
 	      && !memcmp(SCHEME_SYM_VAL(isym), SCHEME_SYM_VAL(symbol), SCHEME_SYM_LEN(isym)))) {
 	
-	if ((position < env->module->me->num_var_provides)
+	if ((position < env->module->me->rt->num_var_provides)
 	    && scheme_module_protected_wrt(env->insp, prot_insp)
 	    && env->module->provide_protects
 	    && env->module->provide_protects[position]) {
@@ -2207,7 +2540,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
 
     if (pos) {
       if (env->module->provide_protects
-	  && (SCHEME_INT_VAL(pos) < env->module->me->num_provides)
+	  && (SCHEME_INT_VAL(pos) < env->module->me->rt->num_provides)
 	  && env->module->provide_protects[SCHEME_INT_VAL(pos)]) {
 	if (_protected)
 	  *_protected = 1;
@@ -2215,7 +2548,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
       }
 
       if ((position >= -1) 
-	  && (SCHEME_INT_VAL(pos) >= env->module->me->num_var_provides)) {
+	  && (SCHEME_INT_VAL(pos) >= env->module->me->rt->num_var_provides)) {
 	/* unexported var -- need cert */
 	if (_protected)
 	  *_protected = 1;
@@ -2402,6 +2735,7 @@ static void expstart_module(Scheme_Module *m, Scheme_Env *env, int restart,
     menv->require_names = scheme_null;
     menv->et_require_names = scheme_null;
     menv->tt_require_names = scheme_null;
+    menv->dt_require_names = scheme_null;
     return;
   }
 
@@ -2419,6 +2753,7 @@ static void expstart_module(Scheme_Module *m, Scheme_Env *env, int restart,
       menv->require_names = scheme_null;
       menv->et_require_names = scheme_null;
       menv->tt_require_names = scheme_null;
+      menv->dt_require_names = scheme_null;
 
       menv->phase = env->phase;
       menv->link_midx = syntax_idx;
@@ -2437,9 +2772,9 @@ static void expstart_module(Scheme_Module *m, Scheme_Env *env, int restart,
       Scheme_Object **exss, **exsns;
       int i, count;
 
-      exsns = m->me->provide_src_names;
-      exss = m->me->provide_srcs;
-      count = m->me->num_var_provides;
+      exsns = m->me->rt->provide_src_names;
+      exss = m->me->rt->provide_srcs;
+      count = m->me->rt->num_var_provides;
 
       for (i = 0; i < count; i++) {
 	if (SCHEME_FALSEP(exss[i]))
@@ -2480,6 +2815,19 @@ static void expstart_module(Scheme_Module *m, Scheme_Env *env, int restart,
   menv->et_running = 1;
   if (scheme_starting_up)
     menv->attached = 1; /* protect initial modules from redefinition, etc. */
+
+  np = scheme_null;
+  for (l = m->dt_requires; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    if (syntax_idx)
+      midx = scheme_modidx_shift(SCHEME_CAR(l), m->me->src_modidx, syntax_idx);
+    else
+      midx = scheme_modidx_shift(SCHEME_CAR(l), m->me->src_modidx, m->self_modidx);
+
+    np = cons(midx, np);
+
+    im = module_load(scheme_module_resolve(midx, 1), env, NULL);
+  }
+  menv->dt_require_names = np;
 
   if (m->prim_et_body || !SCHEME_NULLP(m->et_body) || !SCHEME_NULLP(m->et_requires)) {
     if (delay_exptime) {
@@ -2749,6 +3097,7 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
   m->requires = scheme_null;
   m->et_requires = scheme_null;
   m->tt_requires = scheme_null;
+  m->dt_requires = scheme_null;
   m->primitive = env;
   m->insp = insp;
 
@@ -2799,11 +3148,11 @@ void scheme_finish_primitive_module(Scheme_Env *env)
   m->et_functional = 1;
   m->tt_functional = 1;
 
-  m->me->provides = exs;
-  m->me->provide_srcs = NULL;
-  m->me->provide_src_names = exs;
-  m->me->num_provides = count;
-  m->me->num_var_provides = count;
+  m->me->rt->provides = exs;
+  m->me->rt->provide_srcs = NULL;
+  m->me->rt->provide_src_names = exs;
+  m->me->rt->num_provides = count;
+  m->me->rt->num_var_provides = count;
 
   qsort_provides(exs, NULL, NULL, NULL, 0, count, 1);
 
@@ -2819,25 +3168,25 @@ void scheme_protect_primitive_provide(Scheme_Env *env, Scheme_Object *name)
     Scheme_Hash_Table *ht;
     char *exps;
     ht = scheme_make_hash_table(SCHEME_hash_ptr);
-    exps = MALLOC_N_ATOMIC(char, m->me->num_provides);
-    for (i = m->me->num_provides; i--; ) {
+    exps = MALLOC_N_ATOMIC(char, m->me->rt->num_provides);
+    for (i = m->me->rt->num_provides; i--; ) {
       exps[i] = 0;
-      scheme_hash_set(ht, m->me->provides[i], scheme_make_integer(i));
+      scheme_hash_set(ht, m->me->rt->provides[i], scheme_make_integer(i));
     }
     m->provide_protects = exps;
     m->accessible = ht;
   }
 
   if (name) {
-    for (i = m->me->num_provides; i--; ) {
-      if (SAME_OBJ(name, m->me->provides[i])) {
+    for (i = m->me->rt->num_provides; i--; ) {
+      if (SAME_OBJ(name, m->me->rt->provides[i])) {
 	m->provide_protects[i] = 1;
 	break;
       }
     }
   } else {
     /* Protect all */
-    for (i = m->me->num_provides; i--; ) {
+    for (i = m->me->rt->num_provides; i--; ) {
       m->provide_protects[i] = 1;
     }
   }
@@ -2888,10 +3237,23 @@ Scheme_Module *scheme_extract_compiled_module(Scheme_Object *o)
 static Scheme_Module_Exports *make_module_exports()
 {
   Scheme_Module_Exports *me;
+  Scheme_Module_Phase_Exports *pt;
+
   me = MALLOC_ONE_RT(Scheme_Module_Exports);
-#ifdef MZTAG_REQUIRED
-  me->type = scheme_rt_module_exports;
-#endif
+  SET_REQUIRED_TAG(me->type = scheme_rt_module_exports);
+
+  pt = MALLOC_ONE_RT(Scheme_Module_Phase_Exports);
+  SET_REQUIRED_TAG(pt->type = scheme_rt_module_phase_exports);
+  me->rt = pt;
+
+  pt = MALLOC_ONE_RT(Scheme_Module_Phase_Exports);
+  SET_REQUIRED_TAG(pt->type = scheme_rt_module_phase_exports);
+  me->et = pt;
+
+  pt = MALLOC_ONE_RT(Scheme_Module_Phase_Exports);
+  SET_REQUIRED_TAG(pt->type = scheme_rt_module_phase_exports);
+  me->dt = pt;
+
   return me;
 }
 
@@ -3073,6 +3435,12 @@ module_execute(Scheme_Object *data)
 	  Scheme_Object *v;
 	  v = scheme_make_pair(m->et_rn_stx, (Scheme_Object *)midx);
 	  m->et_rn_stx = v;
+	}
+	if (m->dt_rn_stx && !SAME_OBJ(scheme_true, m->dt_rn_stx)) {
+	  /* Delay the shift: */
+	  Scheme_Object *v;
+	  v = scheme_make_pair(m->dt_rn_stx, (Scheme_Object *)midx);
+	  m->dt_rn_stx = v;
 	}
       }
     }
@@ -3465,13 +3833,13 @@ module_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
 static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env, 
 				Scheme_Compile_Expand_Info *rec, int drec)
 {
-  Scheme_Object *fm, *nm, *ii, *rn, *et_rn, *tt_rn, *iidx, *self_modidx;
+  Scheme_Object *fm, *nm, *ii, *rn, *et_rn, *tt_rn, *dt_rn, *iidx, *self_modidx;
   Scheme_Module *iim;
   Scheme_Env *menv;
   Scheme_Comp_Env *benv;
   Scheme_Module *m;
   Scheme_Object *mbval;
-  Scheme_Hash_Table *mn_ht, *et_mn_ht, *tt_mn_ht;
+  Scheme_Hash_Table *mn_ht, *et_mn_ht, *tt_mn_ht, *dt_mn_ht;
   int saw_mb, check_mb = 0;
   int restore_confusing_name = 0;
 
@@ -3532,11 +3900,13 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     m->requires = ins;
     m->et_requires = scheme_null;
     m->tt_requires = scheme_null;
+    m->dt_requires = scheme_null;
   }
 
   mn_ht = scheme_make_hash_table(SCHEME_hash_ptr);
   et_mn_ht = scheme_make_hash_table(SCHEME_hash_ptr);
   tt_mn_ht = scheme_make_hash_table(SCHEME_hash_ptr);
+  dt_mn_ht = mn_ht;
 
   annote_marked_names_nonempty(mn_ht);
   annote_marked_names_nonempty(et_mn_ht);
@@ -3545,10 +3915,12 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   rn = scheme_make_module_rename(0, mzMOD_RENAME_NORMAL, mn_ht);
   et_rn = scheme_make_module_rename(1, mzMOD_RENAME_NORMAL, et_mn_ht);
   tt_rn = scheme_make_module_rename(-1, mzMOD_RENAME_NORMAL, tt_mn_ht);
+  dt_rn = scheme_make_module_rename(MZ_LABEL_PHASE, mzMOD_RENAME_NORMAL, dt_mn_ht);
 
   menv->rename = rn;
   menv->et_rename = et_rn;
   menv->tt_rename = tt_rn;
+  menv->dt_rename = dt_rn;
 
   {
     Scheme_Object *insp;
@@ -3562,12 +3934,12 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   scheme_prepare_template_env(menv);
   menv->template_env->marked_names = tt_mn_ht;
 
-  /* For each (direct) provide in iim, add a module rename to fm */
+  /* For each provide in iim, add a module rename to fm */
   if (SAME_OBJ(iim, kernel)) {
     scheme_extend_module_rename_with_kernel(rn, kernel_symbol);
     saw_mb = 1;
   } else {
-    saw_mb = add_require_renames(rn, iim, iidx);
+    saw_mb = add_require_renames(rn, et_rn, dt_rn, iim, iidx);
   }
 
   if (rec[drec].comp)
@@ -3602,6 +3974,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   fm = scheme_add_rename(fm, rn);
   fm = scheme_add_rename(fm, et_rn);
   fm = scheme_add_rename(fm, tt_rn);
+  fm = scheme_add_rename(fm, dt_rn);
 
   if (!check_mb) {
     
@@ -3622,6 +3995,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       fm = scheme_add_rename(fm, rn);
       fm = scheme_add_rename(fm, et_rn);
       fm = scheme_add_rename(fm, tt_rn);
+      fm = scheme_add_rename(fm, dt_rn);
       check_mb = 1;
     }
   }
@@ -3905,26 +4279,32 @@ static void flush_definitions(Scheme_Env *genv)
 static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env, 
 				      Scheme_Compile_Expand_Info *rec, int drec)
 {
-  Scheme_Object *fm, *first, *last, *p, *rn, *exp_body, *et_rn, *tt_rn, *self_modidx, *prev_p;
+  Scheme_Object *fm, *first, *last, *p, *rn, *exp_body, *et_rn, *tt_rn, *dt_rn, *self_modidx, *prev_p;
   Scheme_Comp_Env *xenv, *cenv, *rhs_env;
   Scheme_Hash_Table *et_required; /* just to avoid duplicates */
   Scheme_Hash_Table *tt_required; /* just to avoid duplicates */
+  Scheme_Hash_Table *dt_required; /* just to avoid duplicates */
   Scheme_Hash_Table *required;    /* name -> (vector nominal-modidx-list modidx srcname var? prntname) */
   /**/                            /*   first nominal-modidx goes with modidx, rest are for re-provides */
   Scheme_Hash_Table *provided;    /* exname -> (cons locname-stx-or-sym protected?) */
   Scheme_Object *reprovided;      /* list of (list modidx syntax except-name ...) */
   Scheme_Object *all_defs_out;    /* list of (cons protected? (stx-list except-name ...)) */
+  Scheme_Object *all_et_defs_out;
+  Scheme_Hash_Table *et_provided, *dt_provided;
+  Scheme_Object *et_reprovided, *dt_reprovided;
   Scheme_Object *all_defs;        /* list of stxid; this is almost redundant to the syntax and toplevel
 				     tables, but it preserves the original name for exporting */
-  Scheme_Object *post_ex_rn, *post_ex_et_rn, *post_ex_tt_rn; /* renames for ids introduced by expansion */
-  void *tables[3], *et_tables[3], *tt_tables[3];
-  Scheme_Object **exs, **exsns, **exss, **exis, *exclude_hint = scheme_false, *lift_data;
+  Scheme_Object *all_et_defs;
+  Scheme_Object *post_ex_rn, *post_ex_et_rn, *post_ex_tt_rn, *post_ex_dt_rn; /* renames for ids introduced by expansion */
+  void *tables[3], *et_tables[3], *tt_tables[3], *dt_tables[3];
+  Scheme_Object *exclude_hint = scheme_false, *lift_data;
   Scheme_Hash_Table *et_mn;
+  Scheme_Object **exis;
+  int exicount;
   char *exps;
-  int excount, exvcount, exicount;
-  int reprovide_kernel;
-  int all_simple_renames = 1, et_all_simple_renames = 1, tt_all_simple_renames = 1;
+  int all_simple_renames = 1, et_all_simple_renames = 1, tt_all_simple_renames = 1, dt_all_simple_renames = 1;
   int maybe_has_lifts = 0;
+  int reprovide_kernel;
   Scheme_Object *redef_modname;
   Scheme_Object *observer;
 
@@ -3951,7 +4331,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   {
     Scheme_Object *stop;
     stop = scheme_get_stop_expander();
-    scheme_add_local_syntax(22, xenv);
+    scheme_add_local_syntax(25, xenv);
     scheme_set_local_syntax(0, scheme_begin_stx, stop, xenv);
     scheme_set_local_syntax(1, scheme_define_values_stx, stop, xenv);
     scheme_set_local_syntax(2, scheme_define_syntaxes_stx, stop, xenv);
@@ -3959,32 +4339,42 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     scheme_set_local_syntax(4, require_stx, stop, xenv);
     scheme_set_local_syntax(5, require_for_syntax_stx, stop, xenv);
     scheme_set_local_syntax(6, require_for_template_stx, stop, xenv);
-    scheme_set_local_syntax(7, provide_stx, stop, xenv);
-    scheme_set_local_syntax(8, set_stx, stop, xenv);
-    scheme_set_local_syntax(9, app_stx, stop, xenv);
-    scheme_set_local_syntax(10, scheme_top_stx, stop, xenv);
-    scheme_set_local_syntax(11, lambda_stx, stop, xenv);
-    scheme_set_local_syntax(12, case_lambda_stx, stop, xenv);
-    scheme_set_local_syntax(13, let_values_stx, stop, xenv);
-    scheme_set_local_syntax(14, letrec_values_stx, stop, xenv);
-    scheme_set_local_syntax(15, if_stx, stop, xenv);
-    scheme_set_local_syntax(16, begin0_stx, stop, xenv);
-    scheme_set_local_syntax(17, set_stx, stop, xenv);
-    scheme_set_local_syntax(18, with_continuation_mark_stx, stop, xenv);
-    scheme_set_local_syntax(19, letrec_syntaxes_stx, stop, xenv);
-    scheme_set_local_syntax(20, var_ref_stx, stop, xenv);
-    scheme_set_local_syntax(21, expression_stx, stop, xenv);
+    scheme_set_local_syntax(7, require_for_label_stx, stop, xenv);
+    scheme_set_local_syntax(8, provide_stx, stop, xenv);
+    scheme_set_local_syntax(9, provide_for_syntax_stx, stop, xenv);
+    scheme_set_local_syntax(10, provide_for_label_stx, stop, xenv);
+    scheme_set_local_syntax(11, set_stx, stop, xenv);
+    scheme_set_local_syntax(12, app_stx, stop, xenv);
+    scheme_set_local_syntax(13, scheme_top_stx, stop, xenv);
+    scheme_set_local_syntax(14, lambda_stx, stop, xenv);
+    scheme_set_local_syntax(15, case_lambda_stx, stop, xenv);
+    scheme_set_local_syntax(16, let_values_stx, stop, xenv);
+    scheme_set_local_syntax(17, letrec_values_stx, stop, xenv);
+    scheme_set_local_syntax(18, if_stx, stop, xenv);
+    scheme_set_local_syntax(19, begin0_stx, stop, xenv);
+    scheme_set_local_syntax(20, set_stx, stop, xenv);
+    scheme_set_local_syntax(21, with_continuation_mark_stx, stop, xenv);
+    scheme_set_local_syntax(22, letrec_syntaxes_stx, stop, xenv);
+    scheme_set_local_syntax(23, var_ref_stx, stop, xenv);
+    scheme_set_local_syntax(24, expression_stx, stop, xenv);
   }
 
   first = scheme_null;
   last = NULL;
 
+  rn = env->genv->rename;
+  et_rn = env->genv->et_rename;
+  tt_rn = env->genv->tt_rename;
+  dt_rn = env->genv->dt_rename;
+
   required = scheme_make_hash_table(SCHEME_hash_ptr);
+  et_required = scheme_make_hash_table(SCHEME_hash_ptr);
+  dt_required = scheme_make_hash_table(SCHEME_hash_ptr);
+
   /* Put initial requires into the table: */
   {
-    int i, numvals;
     Scheme_Module *iim;
-    Scheme_Object *midx, *nmidx, *vec, *nml, *orig_src;
+    Scheme_Object *nmidx, *orig_src;
 
     /* stx src of original import: */
     orig_src = env->genv->module->ii_src;
@@ -3995,51 +4385,13 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     
     nmidx = SCHEME_CAR(env->genv->module->requires);
     iim = module_load(scheme_module_resolve(nmidx, 1), env->genv, NULL);
-    exs = iim->me->provides;
-    exsns = iim->me->provide_src_names;
-    exss = iim->me->provide_srcs;
-    numvals = iim->me->num_var_provides;
-    for (i = iim->me->num_provides; i--; ) {
-      if (exss) {
-	midx = exss[i];
-	if (SCHEME_FALSEP(midx))
-	  midx = nmidx;
-	else
-	  midx = scheme_modidx_shift(midx, iim->me->src_modidx, nmidx);
-      } else
-	midx = nmidx;
-      vec = scheme_make_vector(6, NULL);
-      nml = scheme_make_pair(nmidx, scheme_null);
-      SCHEME_VEC_ELS(vec)[0] = nml;
-      SCHEME_VEC_ELS(vec)[1] = midx;
-      SCHEME_VEC_ELS(vec)[2] = exsns[i];
-      SCHEME_VEC_ELS(vec)[3] = ((i < numvals) ? scheme_true : scheme_false);
-      SCHEME_VEC_ELS(vec)[4] = exs[i];
-      SCHEME_VEC_ELS(vec)[5] = orig_src;
-      scheme_hash_set(required, exs[i], vec);
-    }
 
-    if (iim->me->reprovide_kernel) {
-      exs = kernel->me->provides;
-      numvals = kernel->me->num_var_provides;
-      for (i = kernel->me->num_provides; i--; ) {
-	if (!SAME_OBJ(iim->me->kernel_exclusion, exs[i])) {
-	  vec = scheme_make_vector(6, NULL);
-	  nml = scheme_make_pair(nmidx, scheme_null);
-	  SCHEME_VEC_ELS(vec)[0] = nml;
-	  SCHEME_VEC_ELS(vec)[1] = kernel_symbol;
-	  SCHEME_VEC_ELS(vec)[2] = exs[i];
-	  SCHEME_VEC_ELS(vec)[3] = ((i < numvals) ? scheme_true : scheme_false);
-	  SCHEME_VEC_ELS(vec)[4] = exs[i];
-	  SCHEME_VEC_ELS(vec)[5] = orig_src;
-	  scheme_hash_set(required, exs[i], vec);
-	}
-      } 
-    }
+    add_initial_require_renames(orig_src, 
+                                rn, required, 
+                                et_rn, et_required, 
+                                dt_rn, dt_required,
+                                iim, nmidx);
   }
-  rn = env->genv->rename;
-  et_rn = env->genv->et_rename;
-  tt_rn = env->genv->tt_rename;
 
   if (rec[drec].comp || (rec[drec].depth != -2)) {
     /* rename tables no longer needed; NULL them out */
@@ -4056,13 +4408,14 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     env->genv->module->et_rn_stx = v;
     v = scheme_rename_to_stx(tt_rn);
     env->genv->module->tt_rn_stx = v;
+    v = scheme_rename_to_stx(dt_rn);
+    env->genv->module->dt_rn_stx = v;
   }
 
   tables[0] = env->genv->toplevel;
   tables[1] = required;
   tables[2] = env->genv->syntax;
 
-  et_required = scheme_make_hash_table(SCHEME_hash_ptr);
   et_tables[0] = NULL;
   et_tables[1] = et_required;
   et_tables[2] = NULL;
@@ -4072,11 +4425,22 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   tt_tables[1] = tt_required;
   tt_tables[2] = NULL;
 
+  dt_tables[0] = NULL;
+  dt_tables[1] = dt_required;
+  dt_tables[2] = NULL;
+
   provided = scheme_make_hash_table(SCHEME_hash_ptr);
   reprovided = scheme_null;
+  et_provided = scheme_make_hash_table(SCHEME_hash_ptr);
+  et_reprovided = scheme_null;
+  dt_provided = scheme_make_hash_table(SCHEME_hash_ptr);
+  dt_reprovided = scheme_null;
 
   all_defs_out = scheme_null;
+  all_et_defs_out = scheme_null;
+
   all_defs = scheme_null;
+  all_et_defs = scheme_null;
 
   exp_body = scheme_null;
 
@@ -4085,6 +4449,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   post_ex_rn = scheme_make_module_rename(0, mzMOD_RENAME_MARKED, env->genv->marked_names);
   post_ex_et_rn = scheme_make_module_rename(1, mzMOD_RENAME_MARKED, env->genv->exp_env->marked_names);
   post_ex_tt_rn = scheme_make_module_rename(-1, mzMOD_RENAME_MARKED, env->genv->template_env->marked_names);
+  post_ex_dt_rn = scheme_make_module_rename(MZ_LABEL_PHASE, mzMOD_RENAME_MARKED, env->genv->template_env->marked_names);
 
   /* For syntax-local-context, etc., in a d-s RHS: */
   rhs_env = scheme_new_comp_env(env->genv, env->insp, SCHEME_TOPLEVEL_FRAME);
@@ -4096,6 +4461,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   form = scheme_add_rename(form, post_ex_rn);
   form = scheme_add_rename(form, post_ex_et_rn);
   form = scheme_add_rename(form, post_ex_tt_rn);
+  form = scheme_add_rename(form, post_ex_dt_rn);
 
   maybe_has_lifts = 0;
   
@@ -4140,9 +4506,11 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
         e = scheme_add_rename(e, post_ex_rn);
         e = scheme_add_rename(e, post_ex_et_rn);
         e = scheme_add_rename(e, post_ex_tt_rn);
+        e = scheme_add_rename(e, post_ex_dt_rn);
         fm = scheme_named_map_1(NULL, add_a_rename, fm, post_ex_rn);
         fm = scheme_named_map_1(NULL, add_a_rename, fm, post_ex_et_rn);
         fm = scheme_named_map_1(NULL, add_a_rename, fm, post_ex_tt_rn);
+        fm = scheme_named_map_1(NULL, add_a_rename, fm, post_ex_dt_rn);
 	fm = scheme_append(fst, scheme_make_pair(e, fm));
         SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(observer, fst);
       } else {
@@ -4157,6 +4525,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  e = scheme_add_rename(e, post_ex_rn);
 	  e = scheme_add_rename(e, post_ex_et_rn);
 	  e = scheme_add_rename(e, post_ex_tt_rn);
+	  e = scheme_add_rename(e, post_ex_dt_rn);
 	  fm = scheme_flatten_begin(e, fm);
 	  SCHEME_EXPAND_OBSERVE_SPLICE(observer, fm);
 	  if (SCHEME_STX_NULLP(fm)) {
@@ -4178,6 +4547,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     e = scheme_add_rename(e, post_ex_rn);
     e = scheme_add_rename(e, post_ex_et_rn);
     e = scheme_add_rename(e, post_ex_tt_rn);
+    e = scheme_add_rename(e, post_ex_dt_rn);
     
     if (SCHEME_STX_PAIRP(e)) {
       Scheme_Object *fst;
@@ -4281,6 +4651,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
             /* Remember the original: */
 	    if (!for_stx)
 	      all_defs = scheme_make_pair(name, all_defs);
+            else
+              all_et_defs = scheme_make_pair(name, all_et_defs);
 	    
 	    name = scheme_tl_id_sym(oenv->genv, name, NULL, 2);
 	    
@@ -4389,7 +4761,10 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	  /* Add requires to renaming: */
 	  imods = parse_requires(e, self_modidx, env->genv, 
-				 rn, post_ex_rn, check_require_name, tables, 0, 1,
+				 rn, post_ex_rn, 
+                                 et_rn, post_ex_et_rn,
+                                 dt_rn, post_ex_dt_rn,
+                                 check_require_name, tables, et_tables, dt_tables, 0, 1,
 				 redef_modname, 0, 0, 1,
 				 &all_simple_renames);
 	
@@ -4412,7 +4787,10 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	  /* Add requires to renaming: */
 	  imods = parse_requires(e, self_modidx, env->genv->exp_env,
-				 et_rn, post_ex_et_rn, check_require_name, et_tables, 1, 0,
+				 et_rn, post_ex_et_rn, 
+                                 NULL, NULL,
+                                 NULL, NULL,
+                                 check_require_name, et_tables, NULL, NULL, 1, 0,
 				 redef_modname, 0, 0, 1,
 				 &et_all_simple_renames);
 
@@ -4439,7 +4817,10 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	  /* Add requires to renaming: */
 	  imods = parse_requires(e, self_modidx, env->genv->template_env,
-				 tt_rn, post_ex_tt_rn, check_require_name, tt_tables, 0, 0,
+				 tt_rn, post_ex_tt_rn,
+                                 NULL, NULL,
+                                 NULL, NULL,
+                                 check_require_name, tt_tables, NULL, NULL, 0, 0,
 				 redef_modname, 0, 0, 1,
 				 &tt_all_simple_renames);
 
@@ -4455,260 +4836,81 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
 	  kind = 0;
+	} else if (scheme_stx_module_eq(require_for_label_stx, fst, 0)) {	
+	  /************ require-for-label *************/
+	  Scheme_Object *imods;
+
+          SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
+          SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE_FOR_TEMPLATE(observer); /* FIXME! */
+
+	  scheme_prepare_template_env(env->genv);
+
+	  /* Add requires to renaming: */
+	  imods = parse_requires(e, self_modidx, env->genv->template_env,
+				 dt_rn, post_ex_dt_rn, 
+                                 NULL, NULL,
+                                 NULL, NULL,
+                                 check_require_name, dt_tables, NULL, NULL, 0, 0,
+				 redef_modname, 0, 0, 1,
+				 &dt_all_simple_renames);
+
+	  /* Add required modules to dt_requires list: */
+	  {
+	    Scheme_Object *reqs;
+	    reqs = add_req(imods, env->genv->module->dt_requires);
+	    env->genv->module->dt_requires = reqs;
+	  }
+
+	  if (rec[drec].comp)
+	    e = NULL;
+
+          SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
+	  kind = 0;
 	} else if (scheme_stx_module_eq(provide_stx, fst, 0)) {
 	  /************ provide *************/
 	  /* Add provides to table: */
-	  Scheme_Object *l;
-	  int protect_cnt = 0;
 
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
           SCHEME_EXPAND_OBSERVE_PRIM_PROVIDE(observer);
 
-	  if (scheme_stx_proper_list_length(e) < 0)
-	    scheme_wrong_syntax(NULL, e, form, "bad syntax (" IMPROPER_LIST_FORM ")");
+          reprovided = parse_provides(form, fst, e, 
+                                      provided, reprovided,
+                                      self_modidx,
+                                      &all_defs_out);
 
-	  for (l = SCHEME_STX_CDR(e); !SCHEME_STX_NULLP(l); l = SCHEME_STX_CDR(l)) {
-	    Scheme_Object *a, *midx, *name;
+	  if (rec[drec].comp)
+	    e = NULL;
 
-	    a = SCHEME_STX_CAR(l);
+          SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
+	  kind = 0;
+	} else if (scheme_stx_module_eq(provide_for_syntax_stx, fst, 0)) {
+	  /************ provide-for-syntax *************/
+	  /* Add provides to table: */
 
-	    if (SCHEME_STX_PAIRP(a) && (scheme_stx_proper_list_length(a) > 0)) {
-	      fst = SCHEME_STX_CAR(a);
-	      if (SCHEME_STX_SYMBOLP(fst)
-		  && (SAME_OBJ(protect_symbol, SCHEME_STX_VAL(fst)))) {
-		if (protect_cnt)
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax (nested protect)");
-		a = SCHEME_STX_CDR(a);
-		a = scheme_flatten_syntax_list(a, NULL);
-		l = SCHEME_STX_CDR(l);
-		l = scheme_append(a, l);
-		protect_cnt = scheme_list_length(a);
+          SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
+          SCHEME_EXPAND_OBSERVE_PRIM_PROVIDE(observer); /* FIXME! */
 
-		/* In case a provide ends with an empty protect: */
-		if (SCHEME_STX_NULLP(l))
-		  break;
+          et_reprovided = parse_provides(form, fst, e, 
+                                         et_provided, et_reprovided,
+                                         self_modidx,
+                                         &all_et_defs_out);
 
-		a = SCHEME_STX_CAR(l);
-	      }
-	    }
+	  if (rec[drec].comp)
+	    e = NULL;
 
-	    if (SCHEME_STX_SYMBOLP(a)) {
-	      /* <id> */
-	      name = SCHEME_STX_VAL(a);
-	      if (scheme_hash_get(provided, name))
-		scheme_wrong_syntax("module", a, form, "identifier already provided");
-	      /* Provide a: */
-	      scheme_hash_set(provided, name, scheme_make_pair(a, protect_cnt ? scheme_true : scheme_false));
-	    } else if (SCHEME_STX_PAIRP(a)) {
-	      Scheme_Object *rest;
+          SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
+	  kind = 0;
+	} else if (scheme_stx_module_eq(provide_for_label_stx, fst, 0)) {
+	  /************ provide-for-label *************/
+	  /* Add provides to table: */
 
-	      fst = SCHEME_STX_CAR(a);
-	      rest = SCHEME_STX_CDR(a);
+          SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
+          SCHEME_EXPAND_OBSERVE_PRIM_PROVIDE(observer); /* FIXME! */
 
-	      if (SAME_OBJ(rename_symbol, SCHEME_STX_VAL(fst))) {
-		/* (rename <id> <id>) */
-		Scheme_Object *inm, *enm;
-
-		if (!SCHEME_STX_PAIRP(rest)
-		    || !SCHEME_STX_PAIRP(SCHEME_STX_CDR(rest)))
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax");
-		inm = SCHEME_STX_CAR(rest);
-		rest = SCHEME_STX_CDR(rest);
-		enm = SCHEME_STX_CAR(rest);
-		if (!SCHEME_STX_SYMBOLP(inm))
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax (internal name is not an identifier)");
-		if (!SCHEME_STX_SYMBOLP(enm))
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax (external name is not an identifier)");
-		rest = SCHEME_STX_CDR(rest);
-		if (!SCHEME_STX_NULLP(rest))
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax (data following external name)");
-		
-		enm = SCHEME_STX_VAL(enm);
-		
-		if (scheme_hash_get(provided, enm))
-		  scheme_wrong_syntax("module", enm, a, "identifier already provided");
-		/* Provide enm: */
-		scheme_hash_set(provided, enm, scheme_make_pair(inm, protect_cnt ? scheme_true : scheme_false));
-	      } else if (SAME_OBJ(all_from_symbol, SCHEME_STX_VAL(fst))) {
-		/* (all-from <modname>) */
-		if (protect_cnt)
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax (not allowed as protected)");
-		if (!SCHEME_STX_PAIRP(rest))
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax");
-		if (!SCHEME_STX_NULLP(SCHEME_STX_CDR(rest)))
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax (data following `all-from')");
-		
-		midx = SCHEME_STX_CAR(rest);
-		midx = scheme_make_modidx(scheme_syntax_to_datum(midx, 0, NULL),
-					  self_modidx,
-					  scheme_false);
-		
-		reprovided = scheme_make_pair(scheme_make_pair(midx, scheme_make_pair(e, scheme_null)), 
-					      reprovided);
-	      } else if (SAME_OBJ(all_from_except_symbol, SCHEME_STX_VAL(fst))) {
-		/* (all-from-except <modname> <id> ...) */
-		Scheme_Object *exns, *el;
-		int len;
-		
-		if (protect_cnt)
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax (not allowed as protected)");
-		
-		len = scheme_stx_proper_list_length(a);
-
-		if (len < 0)
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax (" IMPROPER_LIST_FORM ")");
-		else if (len == 1)
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax (missing module name)");
-		
-		midx = SCHEME_STX_CAR(rest);
-		midx = scheme_make_modidx(scheme_syntax_to_datum(midx, 0, NULL),
-					  self_modidx,
-					  scheme_false);
-		exns = SCHEME_STX_CDR(rest);
-		
-		/* Check all exclusions are identifiers: */
-		for (el = exns; SCHEME_STX_PAIRP(el); el = SCHEME_STX_CDR(el)) {
-		  p = SCHEME_STX_CAR(el);
-		  if (!SCHEME_STX_SYMBOLP(p)) {
-		    scheme_wrong_syntax(NULL, p, e,
-					"bad syntax (excluded name is not an identifier)");
-		  }
-		}
-		
-		reprovided = scheme_make_pair(scheme_make_pair(midx, scheme_make_pair(e, exns)), 
-					      reprovided);
-	      } else if (SAME_OBJ(struct_symbol, SCHEME_STX_VAL(fst))) {
-		/* (struct <id> (<id> ...)) */
-		int len, i;
-		Scheme_Object *prnt_base, *base, *fields, *el, **names;
-		
-		len = scheme_stx_proper_list_length(rest);
-		if (len != 2) {
-		  if (len < 0)
-		    scheme_wrong_syntax(NULL, a, e, "bad syntax (" IMPROPER_LIST_FORM ")");
-		  else
-		    scheme_wrong_syntax(NULL, a, e, "bad syntax "
-					"(not a struct identifier followed by "
-					"a sequence of field identifiers)");
-		}
-
-		base = SCHEME_STX_CAR(rest);
-		fields = SCHEME_STX_CDR(rest);
-		fields = SCHEME_STX_CAR(fields);
-		
-		if (!SCHEME_STX_SYMBOLP(base))
-		  scheme_wrong_syntax(NULL, base, e,
-				      "bad syntax (struct name is not an identifier)");
-
-		/* Check all field names are identifiers: */
-		for (el = fields; SCHEME_STX_PAIRP(el); el = SCHEME_STX_CDR(el)) {
-		  p = SCHEME_STX_CAR(el);
-		  if (!SCHEME_STX_SYMBOLP(p)) {
-		    scheme_wrong_syntax(NULL, p, e,
-					"bad syntax (field name is not an identifier)");
-		  }
-		}
-		if (!SCHEME_STX_NULLP(el))
-		  scheme_wrong_syntax(NULL, fields, e,
-				      "bad syntax (" IMPROPER_LIST_FORM ")");
-		
-		prnt_base = base;
-		base = SCHEME_STX_VAL(base);
-		fields = scheme_syntax_to_datum(fields, 0, NULL);
-
-		names = scheme_make_struct_names(base, fields, SCHEME_STRUCT_EXPTIME, &len);
-
-		for (i = 0; i < len; i++) {
-		  if (scheme_hash_get(provided, names[i]))
-		    scheme_wrong_syntax("module", names[i], e, "identifier already provided");
-		  /* Wrap local name with prnt_base in case there are marks that 
-		     trigger "gensym"ing */
-		  scheme_hash_set(provided, names[i], 
-				  scheme_make_pair(scheme_datum_to_syntax(names[i], scheme_false, prnt_base, 0, 0),
-						   protect_cnt ? scheme_true : scheme_false));
-		}
-	      } else if (SAME_OBJ(all_defined_symbol, SCHEME_STX_VAL(fst))) {
-		/* (all-defined) */
-		if (!SCHEME_STX_NULLP(rest))
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax");
-		
-		all_defs_out = scheme_make_pair(scheme_make_pair(scheme_make_pair(e, 
-										  scheme_make_pair(scheme_null, 
-												   scheme_false)),
-								 protect_cnt ? scheme_true : scheme_false),
-						all_defs_out);
-	      } else if (SAME_OBJ(prefix_all_defined_symbol, SCHEME_STX_VAL(fst))) {
-		/* (prefix-all-defined <prefix>) */
-		Scheme_Object *prefix;
-
-		if (!SCHEME_STX_PAIRP(rest))
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax");
-		prefix = SCHEME_STX_CAR(rest);
-		rest = SCHEME_STX_CDR(rest);
-		if (!SCHEME_STX_NULLP(rest))
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax");
-		
-		if (!SCHEME_STX_SYMBOLP(prefix)) {
-		  scheme_wrong_syntax(NULL, a, e,
-				      "bad syntax (prefix is not an identifier)");
-		}
-		prefix = SCHEME_STX_VAL(prefix);
-
-		all_defs_out = scheme_make_pair(scheme_make_pair(scheme_make_pair(e, 
-										  scheme_make_pair(scheme_null, 
-												   prefix)),
-								 protect_cnt ? scheme_true : scheme_false),
-						all_defs_out);
-	      } else if (SAME_OBJ(all_defined_except_symbol, SCHEME_STX_VAL(fst))
-			 || SAME_OBJ(prefix_all_defined_except_symbol, SCHEME_STX_VAL(fst))) {
-		/* ([prefix-]all-defined-except <id> ...) */
-		Scheme_Object *exns, *el, *prefix = scheme_false;
-		int len, is_prefix;
-		
-		is_prefix = SAME_OBJ(prefix_all_defined_except_symbol, SCHEME_STX_VAL(fst));
-
-		len = scheme_stx_proper_list_length(a);
-
-		if (len < 0)
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax (" IMPROPER_LIST_FORM ")");
-		
-		if (is_prefix && (len < 2))
-		  scheme_wrong_syntax(NULL, a, e, "bad syntax (missing prefix)");
-
-		if (is_prefix) {
-		  prefix = SCHEME_STX_CAR(rest);
-		  if (!SCHEME_STX_SYMBOLP(prefix))
-		    scheme_wrong_syntax(NULL, a, e, "bad syntax (prefix is not an identifier)");
-		  prefix = SCHEME_STX_VAL(prefix);
-		  rest = SCHEME_STX_CDR(rest);
-		}
-
-		exns = rest;
-		
-		/* Check all exclusions are identifiers: */
-		for (el = exns; SCHEME_STX_PAIRP(el); el = SCHEME_STX_CDR(el)) {
-		  p = SCHEME_STX_CAR(el);
-		  if (!SCHEME_STX_SYMBOLP(p)) {
-		    scheme_wrong_syntax(NULL, p, e,
-					"bad syntax (excluded name is not an identifier)");
-		  }
-		}
-		
-		all_defs_out = scheme_make_pair(scheme_make_pair(scheme_make_pair(e, 
-										  scheme_make_pair(exns,
-												   prefix)),
-								 protect_cnt ? scheme_true : scheme_false),
-						all_defs_out);
-	      } else {
-		scheme_wrong_syntax(NULL, a, e, NULL);
-	      }
-	    } else {
-	      scheme_wrong_syntax(NULL, a, e, NULL);
-	    }
-
-	    if (protect_cnt)
-	      --protect_cnt;
-	  }
+          dt_reprovided = parse_provides(form, fst, e, 
+                                         dt_provided, dt_reprovided,
+                                         self_modidx,
+                                         NULL);
 
 	  if (rec[drec].comp)
 	    e = NULL;
@@ -4847,10 +5049,6 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
   et_mn = env->genv->exp_env->marked_names;
 
-  if (rec[drec].comp || (rec[drec].depth != -2)) {
-    scheme_clean_dead_env(env->genv);
-  }
-
   /* If compiling, drop expressions that are constants: */
   if (rec[drec].comp) {
     Scheme_Object *prev = NULL, *next;
@@ -4867,178 +5065,25 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   }
 
   /* Compute provides for re-provides and all-defs-out: */
-  {
-    int i;
-    Scheme_Object *rx;
-
-    reprovide_kernel = 0;
-
-    /* First, check the sanity of the re-provide specifications: */
-    for (rx = reprovided; !SCHEME_NULLP(rx); rx = SCHEME_CDR(rx)) {
-      Scheme_Object *midx = SCHEME_CAR(SCHEME_CAR(rx)), *l, *exns;
-	
-      for (l = env->genv->module->requires; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-	if (same_modidx(midx, SCHEME_CAR(l)))
-	  break;
-      }
-      if (SCHEME_NULLP(l)) {
-	/* Didn't require the named module */
-	Scheme_Object *name;
-	name = SCHEME_CAR(rx);
-	name = SCHEME_STX_CDR(name);
-	name = SCHEME_STX_CAR(name);
-	scheme_wrong_syntax("module", 
-			    SCHEME_SYMBOLP(midx) ? midx : ((Scheme_Modidx *)midx)->path, 
-			    name,
-			    "cannot provide from a module without a matching `require'");
-      }
-
-      exns = SCHEME_CDR(SCHEME_CDR(SCHEME_CAR(rx)));
-      for (l = exns; !SCHEME_STX_NULLP(l); l = SCHEME_STX_CDR(l)) {
-	/* Make sure excluded name was required: */
-	Scheme_Object *a, *vec;
-	a = SCHEME_STX_VAL(SCHEME_STX_CAR(l));
-	vec = scheme_hash_get(required, a);
-	if (vec) {
-	  /* Check for nominal modidx in list */
-	  Scheme_Object *nml;
-	  nml = SCHEME_VEC_ELS(vec)[0];
-	  for (; SCHEME_PAIRP(nml); nml = SCHEME_CDR(nml)) {
-	    if (same_modidx(SCHEME_CAR(SCHEME_CAR(rx)), SCHEME_CAR(nml)))
-	      break;
-	  }
-	  if (!SCHEME_PAIRP(nml))
-	    vec = NULL; /* So it was provided, but not from the indicated module */
-	}
-	if (!vec) {
-	  a = SCHEME_STX_CAR(l);
-	  scheme_wrong_syntax("module", a, SCHEME_CADR(SCHEME_CAR(rx)),
-			      "excluded name was not required from the module");
-	}
-      }
-    }
-
-    /* Walk through requires, check for re-providing: */
-    for (i = required->size; i--; ) {
-      if (required->vals[i]) {
-	Scheme_Object *nominal_modidx, *name, *modidx, *srcname, *outname, *nml, *orig_nml;
-	int break_outer = 0;
-	
-	name = required->keys[i];
-	orig_nml = SCHEME_VEC_ELS(required->vals[i])[0];
-	modidx = SCHEME_VEC_ELS(required->vals[i])[1];
-	srcname = SCHEME_VEC_ELS(required->vals[i])[2];
-	outname = SCHEME_VEC_ELS(required->vals[i])[4];
-
-	for (rx = reprovided; !SCHEME_NULLP(rx); rx = SCHEME_CDR(rx)) {
-	  for (nml = orig_nml; SCHEME_PAIRP(nml); nml = SCHEME_CDR(nml)) {
-	    nominal_modidx = SCHEME_CAR(nml);
-	    if (same_modidx(SCHEME_CAR(SCHEME_CAR(rx)), nominal_modidx)) {
-	      Scheme_Object *exns, *ree;
-	      
-	      break_outer = 1;
-	      
-	      ree = SCHEME_CDR(SCHEME_CAR(rx));
-
-	      exns = SCHEME_CDR(ree);
-	      if (SAME_OBJ(modidx, kernel_symbol))
-		if (!SCHEME_STX_NULLP(exns))
-		  exclude_hint = exns;
-	    
-	      for (; !SCHEME_STX_NULLP(exns); exns = SCHEME_STX_CDR(exns)) {
-		/* Was this name exluded? */
-		Scheme_Object *a;
-		a = SCHEME_STX_VAL(SCHEME_STX_CAR(exns));
-		if (SAME_OBJ(a, name))
-		  break;
-	      }
-
-	      if (SCHEME_STX_NULLP(exns)) {
-		/* Not excluded, so provide it. */
-		if (scheme_hash_get(provided, outname))
-		  scheme_wrong_syntax("module", outname, SCHEME_CAR(ree), "identifier already provided");
-	      
-		scheme_hash_set(provided, outname, scheme_make_pair(name, scheme_false));
-
-		if (SAME_OBJ(modidx, kernel_symbol) && SAME_OBJ(outname, srcname))
-		  reprovide_kernel++;
-	      }
-	    }
-	  }
-	  if (break_outer) break;
-	}
-      }
-    }
-
-    /* Do all-defined provides */
-    for (; !SCHEME_NULLP(all_defs_out); all_defs_out = SCHEME_CDR(all_defs_out)) {
-      Scheme_Object *exns, *ree, *ree_kw, *exl, *name, *a, *adl, *exname, *pfx;
-      int protected;
-	    
-      ree = SCHEME_CAR(all_defs_out);
-      protected = SCHEME_TRUEP(SCHEME_CDR(ree));
-      ree = SCHEME_CAR(ree);
-      ree_kw = SCHEME_CAR(ree);
-      ree = SCHEME_CDR(ree);
-      exl = SCHEME_CAR(ree);
-      pfx = SCHEME_CDR(ree);
-
-      /* Make sure each excluded name was defined: */
-      for (exns = exl; !SCHEME_STX_NULLP(exns); exns = SCHEME_STX_CDR(exns)) {
-	a = SCHEME_STX_CAR(exns);
-	name = scheme_tl_id_sym(env->genv, a, NULL, 0);
-	if (!scheme_lookup_in_table(env->genv->toplevel, (const char *)name)
-	    && !scheme_lookup_in_table(env->genv->syntax, (const char *)name)) {
-	  scheme_wrong_syntax("module", a, ree_kw, "excluded identifier was not defined");
-	}
-      }
-
-      for (adl = all_defs; SCHEME_PAIRP(adl); adl = SCHEME_CDR(adl)) {
-	name = SCHEME_CAR(adl);
-	exname = SCHEME_STX_SYM(name);
-	name = scheme_tl_id_sym(env->genv, name, NULL, 0);
-	
-	/* Was this one excluded? */
-	for (exns = exl; !SCHEME_STX_NULLP(exns); exns = SCHEME_STX_CDR(exns)) {
-	  a = SCHEME_STX_CAR(exns);
-	  a = scheme_tl_id_sym(env->genv, a, NULL, 0);
-	  if (SAME_OBJ(a, name))
-	    break;
-	}
-
-	if (SCHEME_STX_NULLP(exns)) {
-	  /* not excluded */
-	  
-	  /* But don't export uninterned: */
-	  if (!SCHEME_SYM_UNINTERNEDP(name)) {
-	    /* Also, check that ree_kw and the identifier have the same
-	       introduction (in case one or the other was introduced by
-	       a macro). We perform this check by getting exname's tl_id
-	       as if it had ree_kw's context, then comparing that result
-	       to the actual tl_id. */
-	    a = scheme_datum_to_syntax(exname, scheme_false, ree_kw, 0, 0);
-	    a = scheme_tl_id_sym(env->genv, a, NULL, 0);
-	    
-	    if (SAME_OBJ(a, name)) {
-	      /* Add prefix, if any */
-	      if (SCHEME_TRUEP(pfx)) {
-		exname = scheme_symbol_append(pfx, exname);
-	      }
-	      if (scheme_hash_get(provided, exname))
-		scheme_wrong_syntax("module", exname, ree_kw, "identifier already provided");
-	      
-	      scheme_hash_set(provided, exname, 
-			      scheme_make_pair(name, protected ? scheme_true : scheme_false));
-	    }
-	  }
-	}
-      }
-    }
-  }
+  reprovide_kernel = compute_reprovides(provided, reprovided, 
+                                        env->genv->module->requires, required,
+                                        env->genv, all_defs, all_defs_out, 
+                                        &exclude_hint,
+                                        "require");
+  (void)compute_reprovides(et_provided, et_reprovided, 
+                           env->genv->module->et_requires, et_required,
+                           env->genv->exp_env, all_et_defs, all_et_defs_out, 
+                           NULL,
+                           "require-for-syntax");
+  (void)compute_reprovides(dt_provided, dt_reprovided, 
+                           env->genv->module->dt_requires, dt_required,
+                           NULL, NULL, NULL,
+                           NULL,
+                           "require-for-label");
 
   /* Ad hoc optimization: mzscheme is everything from kernel except
      #%module_begin */
-  if ((reprovide_kernel == (kernel->me->num_provides - 1))
+  if ((reprovide_kernel == (kernel->me->rt->num_provides - 1))
       && SCHEME_FALSEP(exclude_hint)) {
     exclude_hint = scheme_make_pair(module_begin_symbol, scheme_null);
     exclude_hint = scheme_datum_to_syntax(exclude_hint, scheme_false, scheme_top_stx, 0, 0);
@@ -5046,7 +5091,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
   /* Re-providing all of the kernel without prefixing? */
   if (reprovide_kernel) {
-    if ((reprovide_kernel == (kernel->me->num_provides - 1))
+    if ((reprovide_kernel == (kernel->me->rt->num_provides - 1))
 	&& SCHEME_TRUEP(exclude_hint)) {
       if (SCHEME_STX_PAIRP(exclude_hint) && SCHEME_NULLP(SCHEME_STX_CDR(exclude_hint))) {
 	Scheme_Object *n;
@@ -5068,7 +5113,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  reprovide_kernel = 0;
       } else
 	reprovide_kernel = 0;
-    } else if (reprovide_kernel != kernel->me->num_provides)
+    } else if (reprovide_kernel != kernel->me->rt->num_provides)
       reprovide_kernel = 0;
     else
       exclude_hint = scheme_false;
@@ -5076,124 +5121,35 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   /* If reprovide_kernel is non-zero, we re-provide all of it */
 
   /* Compute provide arrays */
-  {
-    int i, count;
-    
-    for (count = 0, i = provided->size; i--; ) {
-      if (provided->vals[i])
-	count++;
-    }
-    
-    count -= reprovide_kernel;
-
-    exs = MALLOC_N(Scheme_Object *, count);
-    exsns = MALLOC_N(Scheme_Object *, count);
-    exss = MALLOC_N(Scheme_Object *, count);
-    exps = MALLOC_N_ATOMIC(char, count);
-
-    /* Do non-syntax first. */
-    for (count = 0, i = provided->size; i--; ) {
-      if (provided->vals[i]) {
-	Scheme_Object *name, *prnt_name, *v;
-	int protected;
-	
-	v = provided->vals[i];
-	name = SCHEME_CAR(v);
-	protected = SCHEME_TRUEP(SCHEME_CDR(v));
-
-        prnt_name = name;
-	if (SCHEME_STXP(name))
-	  name = scheme_tl_id_sym(env->genv, name, NULL, 0);
-
-	if (scheme_lookup_in_table(env->genv->toplevel, (const char *)name)) {
-	  /* Defined locally */
-	  exs[count] = provided->keys[i];
-	  exsns[count] = name;
-	  exss[count] = scheme_false; /* means "self" */
-	  exps[count] = protected;
-	  count++;
-	} else if (scheme_lookup_in_table(env->genv->syntax, (const char *)name)) {
-	  /* Skip for now. */
-	} else if ((v = scheme_hash_get(required, name))) {
-	  /* Required */
-	  if (protected) {
-	    name = SCHEME_CAR(provided->vals[i]);
-	    scheme_wrong_syntax("module", NULL, name, "cannot protect imported identifier with re-provide"); 
-	  }
-	  if (SCHEME_TRUEP(SCHEME_VEC_ELS(v)[3])) {
-	    /* If this is a kernel re-provide, don't provide after all. */
-	    if (reprovide_kernel
-		&& SAME_OBJ(SCHEME_VEC_ELS(v)[1], kernel_symbol)
-		&& SAME_OBJ(provided->keys[i], SCHEME_VEC_ELS(v)[2])) {
-	      /* skip */
-	    } else {
-	      exs[count] = provided->keys[i];
-	      exsns[count] = SCHEME_VEC_ELS(v)[2];
-	      exss[count] = SCHEME_VEC_ELS(v)[1];
-	      exps[count] = protected;
-	      count++;
-	    }
-	  }
-	} else {
-	  /* Not defined! */
-	  scheme_wrong_syntax("module", prnt_name, form, "provided identifier not defined or imported");
-	}
-      }
-    }
-
-    exvcount = count;
-
-    for (i = provided->size; i--; ) {
-      if (provided->vals[i]) {
-	Scheme_Object *name, *v;
-	int protected;
-	  
-	v = provided->vals[i];
-	name = SCHEME_CAR(v);
-	protected = SCHEME_TRUEP(SCHEME_CDR(v));
-
-	if (SCHEME_STXP(name))
-	  name = scheme_tl_id_sym(env->genv, name, NULL, 0);
-
-	if (scheme_lookup_in_table(env->genv->syntax, (const char *)name)) {
-	  /* Defined locally */
-	  exs[count] = provided->keys[i];
-	  exsns[count] = name;
-	  exss[count] = scheme_false; /* means "self" */
-	  exps[count] = protected;
-	  count++;
-	} else if ((v = scheme_hash_get(required, name))) {
-	  /* Required */
-	  if (SCHEME_FALSEP(SCHEME_VEC_ELS(v)[3])) {
-	    /* If this is a kernel re-provide, don't provide after all. */
-	    if (reprovide_kernel
-		&& SAME_OBJ(SCHEME_VEC_ELS(v)[1], kernel_symbol)
-		&& SAME_OBJ(provided->keys[i], SCHEME_VEC_ELS(v)[2])) {
-	      /* skip */
-	    } else {
-	      exs[count] = provided->keys[i];
-	      exsns[count] = SCHEME_VEC_ELS(v)[2];
-	      exss[count] = SCHEME_VEC_ELS(v)[1];
-	      exps[count] = protected;
-	      count++;
-	    }
-	  }
-	}
-      }
-    }
-
-    excount = count;
-
-    /* Sort provide array for variables: interned followed by
-       uninterned, alphabetical within each. This is important for
-       having a consistent provide arrays. */
-    qsort_provides(exs, exsns, exss, exps, 0, exvcount, 1);
+  exps = compute_provide_arrays(provided, required,
+                                env->genv->module->me->rt,
+                                env->genv, 0,
+                                reprovide_kernel,
+                                form,
+                                "provided identifier not defined or imported");
+  (void)compute_provide_arrays(et_provided, et_required,
+                               env->genv->module->me->et,
+                               env->genv->exp_env, 1,
+                               0,
+                               form,
+                               "for-syntax provided identifier not defined for syntax or imported for syntax");
+  (void)compute_provide_arrays(dt_provided, dt_required,
+                               env->genv->module->me->dt,
+                               NULL, 0,
+                               0,
+                               form,
+                               "for-label provided identifier not imported for label");
+  
+  if (rec[drec].comp || (rec[drec].depth != -2)) {
+    scheme_clean_dead_env(env->genv);
   }
 
   /* Compute indirect provides (which is everything at the top-level): */
   {
     int i, count, j;
     Scheme_Bucket **bs, *b;
+    Scheme_Object **exsns = env->genv->module->me->rt->provide_src_names;
+    int exvcount = env->genv->module->me->rt->num_var_provides;
     
     bs = env->genv->toplevel->buckets;
     for (count = 0, i = env->genv->toplevel->size; i--; ) {
@@ -5228,6 +5184,13 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   }
 
   if (!rec[drec].comp) {
+    Scheme_Module_Phase_Exports *rt = env->genv->module->me->rt;
+    int excount = rt->num_provides;
+    int exvcount = rt->num_var_provides;
+    Scheme_Object **exsns = rt->provide_src_names;
+    Scheme_Object **exs = rt->provides;
+    Scheme_Object **exss = rt->provide_srcs;
+
     /* Produce annotations (in the form of properties)
        for module information:
          'module-variable-provides = '(item ...)
@@ -5271,16 +5234,16 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
       if (reprovide_kernel) {
 	if (!j) {
-	  i = kernel->me->num_var_provides;
-	  top = kernel->me->num_provides;
+	  i = kernel->me->rt->num_var_provides;
+	  top = kernel->me->rt->num_provides;
 	} else {
 	  i = 0;
-	  top = kernel->me->num_var_provides;
+	  top = kernel->me->rt->num_var_provides;
 	}
 
 	for (; i < top; i++) {
-	  if (!SAME_OBJ(kernel->me->provides[i], exclude_hint)) {
-	    a = scheme_make_immutable_pair(kernel->me->provides[i], kernel->me->provides[i]);
+	  if (!SAME_OBJ(kernel->me->rt->provides[i], exclude_hint)) {
+	    a = scheme_make_immutable_pair(kernel->me->rt->provides[i], kernel->me->rt->provides[i]);
 	    a = scheme_make_immutable_pair(kernel_symbol, a);
 	    e = scheme_make_immutable_pair(a, e);
 	  }
@@ -5326,16 +5289,10 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     env->genv->module->body = first;
     env->genv->module->et_body = exp_body_r;
 
-    /* Install final provides: */
-    env->genv->module->me->num_provides = excount;
-    env->genv->module->me->num_var_provides = exvcount;
-    env->genv->module->me->provides = exs;
-    env->genv->module->me->provide_src_names = exsns;
-    env->genv->module->me->provide_srcs = exss;
     env->genv->module->provide_protects = exps;
 
-    env->genv->module->me->reprovide_kernel = reprovide_kernel;
-    env->genv->module->me->kernel_exclusion = exclude_hint;
+    env->genv->module->me->rt->reprovide_kernel = reprovide_kernel;
+    env->genv->module->me->rt->kernel_exclusion = exclude_hint;
 
     env->genv->module->indirect_provides = exis;
     env->genv->module->num_indirect_provides = exicount;
@@ -5347,11 +5304,16 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
       env->genv->module->rn_stx = scheme_true;
     }
     if (et_all_simple_renames 
+        && all_simple_renames
 	&& (et_mn->count == 1 /* just the false mapping */)) {
       env->genv->module->et_rn_stx = scheme_true;
     }
     if (tt_all_simple_renames) {
       env->genv->module->tt_rn_stx = scheme_true;
+    }
+    if (dt_all_simple_renames
+        && all_simple_renames) {
+      env->genv->module->dt_rn_stx = scheme_true;
     }
 
     return (Scheme_Object *)env->genv->module;
@@ -5379,6 +5341,343 @@ module_begin_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Inf
 {
   SCHEME_EXPAND_OBSERVE_PRIM_MODULE_BEGIN(erec[drec].observer);
   return do_module_begin(form, env, erec, drec);
+}
+
+int compute_reprovides(Scheme_Hash_Table *provided, Scheme_Object *reprovided, 
+                       Scheme_Object *requires, Scheme_Hash_Table *required, 
+                       Scheme_Env *genv, Scheme_Object *all_defs, Scheme_Object *all_defs_out, 
+                       Scheme_Object **_exclude_hint,
+                       const char *matching_form)
+{
+  int i;
+  Scheme_Object *rx;
+  int reprovide_kernel = 0;
+
+  /* First, check the sanity of the re-provide specifications: */
+  for (rx = reprovided; !SCHEME_NULLP(rx); rx = SCHEME_CDR(rx)) {
+    Scheme_Object *midx = SCHEME_CAR(SCHEME_CAR(rx)), *l, *exns;
+	
+    for (l = requires; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+      if (same_modidx(midx, SCHEME_CAR(l)))
+        break;
+    }
+    if (SCHEME_NULLP(l)) {
+      /* Didn't require the named module */
+      Scheme_Object *name;
+      name = SCHEME_CAR(rx);
+      name = SCHEME_STX_CDR(name);
+      name = SCHEME_STX_CAR(name);
+      scheme_wrong_syntax("module", 
+                          SCHEME_SYMBOLP(midx) ? midx : ((Scheme_Modidx *)midx)->path, 
+                          name,
+                          "cannot provide from a module without a matching `%s'",
+                          matching_form);
+    }
+
+    exns = SCHEME_CDR(SCHEME_CDR(SCHEME_CAR(rx)));
+    for (l = exns; !SCHEME_STX_NULLP(l); l = SCHEME_STX_CDR(l)) {
+      /* Make sure excluded name was required: */
+      Scheme_Object *a, *vec;
+      a = SCHEME_STX_VAL(SCHEME_STX_CAR(l));
+      vec = scheme_hash_get(required, a);
+      if (vec) {
+        /* Check for nominal modidx in list */
+        Scheme_Object *nml;
+        nml = SCHEME_VEC_ELS(vec)[0];
+        for (; SCHEME_PAIRP(nml); nml = SCHEME_CDR(nml)) {
+          if (same_modidx(SCHEME_CAR(SCHEME_CAR(rx)), SCHEME_CAR(nml)))
+            break;
+        }
+        if (!SCHEME_PAIRP(nml))
+          vec = NULL; /* So it was provided, but not from the indicated module */
+      }
+      if (!vec) {
+        a = SCHEME_STX_CAR(l);
+        scheme_wrong_syntax("module", a, SCHEME_CADR(SCHEME_CAR(rx)),
+                            "excluded name was not required from the module");
+      }
+    }
+  }
+
+  /* Walk through requires, check for re-providing: */
+  for (i = required->size; i--; ) {
+    if (required->vals[i]) {
+      Scheme_Object *nominal_modidx, *name, *modidx, *srcname, *outname, *nml, *orig_nml;
+      int break_outer = 0;
+	
+      name = required->keys[i];
+      orig_nml = SCHEME_VEC_ELS(required->vals[i])[0];
+      modidx = SCHEME_VEC_ELS(required->vals[i])[1];
+      srcname = SCHEME_VEC_ELS(required->vals[i])[2];
+      outname = SCHEME_VEC_ELS(required->vals[i])[4];
+
+      for (rx = reprovided; !SCHEME_NULLP(rx); rx = SCHEME_CDR(rx)) {
+        for (nml = orig_nml; SCHEME_PAIRP(nml); nml = SCHEME_CDR(nml)) {
+          nominal_modidx = SCHEME_CAR(nml);
+          if (same_modidx(SCHEME_CAR(SCHEME_CAR(rx)), nominal_modidx)) {
+            Scheme_Object *exns, *ree;
+	      
+            break_outer = 1;
+	      
+            ree = SCHEME_CDR(SCHEME_CAR(rx));
+
+            exns = SCHEME_CDR(ree);
+            if (SAME_OBJ(modidx, kernel_symbol))
+              if (!SCHEME_STX_NULLP(exns)) {
+                if (_exclude_hint)
+                  *_exclude_hint = exns;
+              }
+	    
+            for (; !SCHEME_STX_NULLP(exns); exns = SCHEME_STX_CDR(exns)) {
+              /* Was this name exluded? */
+              Scheme_Object *a;
+              a = SCHEME_STX_VAL(SCHEME_STX_CAR(exns));
+              if (SAME_OBJ(a, name))
+                break;
+            }
+
+            if (SCHEME_STX_NULLP(exns)) {
+              /* Not excluded, so provide it. */
+              if (scheme_hash_get(provided, outname))
+                scheme_wrong_syntax("module", outname, SCHEME_CAR(ree), "identifier already provided");
+	      
+              scheme_hash_set(provided, outname, scheme_make_pair(name, scheme_false));
+
+              if (SAME_OBJ(modidx, kernel_symbol) && SAME_OBJ(outname, srcname))
+                reprovide_kernel++;
+            }
+          }
+        }
+        if (break_outer) break;
+      }
+    }
+  }
+
+  /* Do all-defined provides */
+  if (all_defs_out) {
+    for (; !SCHEME_NULLP(all_defs_out); all_defs_out = SCHEME_CDR(all_defs_out)) {
+      Scheme_Object *exns, *ree, *ree_kw, *exl, *name, *a, *adl, *exname, *pfx;
+      int protected;
+	    
+      ree = SCHEME_CAR(all_defs_out);
+      protected = SCHEME_TRUEP(SCHEME_CDR(ree));
+      ree = SCHEME_CAR(ree);
+      ree_kw = SCHEME_CAR(ree);
+      ree = SCHEME_CDR(ree);
+      exl = SCHEME_CAR(ree);
+      pfx = SCHEME_CDR(ree);
+
+      /* Make sure each excluded name was defined: */
+      for (exns = exl; !SCHEME_STX_NULLP(exns); exns = SCHEME_STX_CDR(exns)) {
+        a = SCHEME_STX_CAR(exns);
+        name = scheme_tl_id_sym(genv, a, NULL, 0);
+        if (!scheme_lookup_in_table(genv->toplevel, (const char *)name)
+            && !scheme_lookup_in_table(genv->syntax, (const char *)name)) {
+          scheme_wrong_syntax("module", a, ree_kw, "excluded identifier was not defined");
+        }
+      }
+
+      for (adl = all_defs; SCHEME_PAIRP(adl); adl = SCHEME_CDR(adl)) {
+        name = SCHEME_CAR(adl);
+        exname = SCHEME_STX_SYM(name);
+        name = scheme_tl_id_sym(genv, name, NULL, 0);
+	
+        /* Was this one excluded? */
+        for (exns = exl; !SCHEME_STX_NULLP(exns); exns = SCHEME_STX_CDR(exns)) {
+          a = SCHEME_STX_CAR(exns);
+          a = scheme_tl_id_sym(genv, a, NULL, 0);
+          if (SAME_OBJ(a, name))
+            break;
+        }
+
+        if (SCHEME_STX_NULLP(exns)) {
+          /* not excluded */
+	  
+          /* But don't export uninterned: */
+          if (!SCHEME_SYM_UNINTERNEDP(name)) {
+            /* Also, check that ree_kw and the identifier have the same
+               introduction (in case one or the other was introduced by
+               a macro). We perform this check by getting exname's tl_id
+               as if it had ree_kw's context, then comparing that result
+               to the actual tl_id. */
+            a = scheme_datum_to_syntax(exname, scheme_false, ree_kw, 0, 0);
+            a = scheme_tl_id_sym(genv, a, NULL, 0);
+	    
+            if (SAME_OBJ(a, name)) {
+              /* Add prefix, if any */
+              if (SCHEME_TRUEP(pfx)) {
+                exname = scheme_symbol_append(pfx, exname);
+              }
+              if (scheme_hash_get(provided, exname))
+                scheme_wrong_syntax("module", exname, ree_kw, "identifier already provided");
+	      
+              scheme_hash_set(provided, exname, 
+                              scheme_make_pair(name, protected ? scheme_true : scheme_false));
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return reprovide_kernel;
+}
+
+char *compute_provide_arrays(Scheme_Hash_Table *provided, Scheme_Hash_Table *required,
+                             Scheme_Module_Phase_Exports *pt,
+                             Scheme_Env *genv, int def_phase,
+                             int reprovide_kernel,
+                             Scheme_Object *form,
+                             const char *def_way)
+{
+  int i, count;
+  Scheme_Object **exs, **exsns, **exss;
+  char *exps, *exets;
+  int excount, exvcount;
+    
+  for (count = 0, i = provided->size; i--; ) {
+    if (provided->vals[i])
+      count++;
+  }
+    
+  count -= reprovide_kernel;
+
+  exs = MALLOC_N(Scheme_Object *, count);
+  exsns = MALLOC_N(Scheme_Object *, count);
+  exss = MALLOC_N(Scheme_Object *, count);
+  exps = MALLOC_N_ATOMIC(char, count);
+  if (def_phase)
+    exets = MALLOC_N_ATOMIC(char, count);
+  else
+    exets = NULL;
+
+  /* Do non-syntax first. */
+  for (count = 0, i = provided->size; i--; ) {
+    if (provided->vals[i]) {
+      Scheme_Object *name, *prnt_name, *v;
+      int protected;
+	
+      v = provided->vals[i];
+      name = SCHEME_CAR(v);
+      protected = SCHEME_TRUEP(SCHEME_CDR(v));
+
+      prnt_name = name;
+      if (SCHEME_STXP(name)) {
+        if (genv)
+          name = scheme_tl_id_sym(genv, name, NULL, 0);
+        else
+          name = SCHEME_STX_VAL(name); /* shouldn't get here; no `define-for-label' */
+      }
+
+      if (genv && scheme_lookup_in_table(genv->toplevel, (const char *)name)) {
+        /* Defined locally */
+        exs[count] = provided->keys[i];
+        exsns[count] = name;
+        exss[count] = scheme_false; /* means "self" */
+        exps[count] = protected;
+        if (exets)
+          exets[count] = def_phase;
+        count++;
+      } else if (genv && scheme_lookup_in_table(genv->syntax, (const char *)name)) {
+        /* Skip for now. */
+      } else if ((v = scheme_hash_get(required, name))) {
+        /* Required */
+        if (protected) {
+          name = SCHEME_CAR(provided->vals[i]);
+          scheme_wrong_syntax("module", NULL, name, "cannot protect imported identifier with re-provide"); 
+        }
+        if (SCHEME_TRUEP(SCHEME_VEC_ELS(v)[3])) {
+          /* If this is a kernel re-provide, don't provide after all. */
+          if (reprovide_kernel
+              && SAME_OBJ(SCHEME_VEC_ELS(v)[1], kernel_symbol)
+              && SAME_OBJ(provided->keys[i], SCHEME_VEC_ELS(v)[2])) {
+            /* skip */
+          } else {
+            exs[count] = provided->keys[i];
+            exsns[count] = SCHEME_VEC_ELS(v)[2];
+            exss[count] = SCHEME_VEC_ELS(v)[1];
+            exps[count] = protected;
+            count++;
+          }
+        }
+      } else {
+        /* Not defined! */
+        scheme_wrong_syntax("module", prnt_name, form, def_way);
+      }
+    }
+  }
+
+  exvcount = count;
+
+  for (i = provided->size; i--; ) {
+    if (provided->vals[i]) {
+      Scheme_Object *name, *v;
+      int protected;
+	  
+      v = provided->vals[i];
+      name = SCHEME_CAR(v);
+      protected = SCHEME_TRUEP(SCHEME_CDR(v));
+
+      if (SCHEME_STXP(name)) {
+        if (genv)
+          name = scheme_tl_id_sym(genv, name, NULL, 0);
+        else {
+          name = SCHEME_STX_VAL(name); /* shouldn't get here; no `define-for-label' */
+        }
+      }
+
+      if (genv && scheme_lookup_in_table(genv->syntax, (const char *)name)) {
+        /* Defined locally */
+        exs[count] = provided->keys[i];
+        exsns[count] = name;
+        exss[count] = scheme_false; /* means "self" */
+        exps[count] = protected;
+        if (exets)
+          exets[count] = def_phase;
+        count++;
+      } else if ((v = scheme_hash_get(required, name))) {
+        /* Required */
+        if (SCHEME_FALSEP(SCHEME_VEC_ELS(v)[3])) {
+          /* If this is a kernel re-provide, don't provide after all. */
+          if (reprovide_kernel
+              && SAME_OBJ(SCHEME_VEC_ELS(v)[1], kernel_symbol)
+              && SAME_OBJ(provided->keys[i], SCHEME_VEC_ELS(v)[2])) {
+            /* skip */
+          } else {
+            exs[count] = provided->keys[i];
+            exsns[count] = SCHEME_VEC_ELS(v)[2];
+            exss[count] = SCHEME_VEC_ELS(v)[1];
+            exps[count] = protected;
+            count++;
+          }
+        }
+      }
+    }
+  }
+
+  excount = count;
+
+  /* Sort provide array for variables: interned followed by
+     uninterned, alphabetical within each. This is important for
+     having a consistent provide arrays. */
+  qsort_provides(exs, exsns, exss, exps, 0, exvcount, 1);
+
+  pt->num_provides = excount;
+  pt->num_var_provides = exvcount;
+  pt->provides = exs;
+  pt->provide_src_names = exsns;
+  pt->provide_srcs = exss;
+  if (exets) {
+    for (i = 0; i < excount; i++) {
+      if (exets[i])
+        break;
+    }
+    if (i < excount)
+      exets = NULL;
+  }
+  pt->provide_src_phases = exets;
+
+  return exps;
 }
 
 /* Helper: */
@@ -5476,33 +5775,302 @@ static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Ob
   }
 }
 
+Scheme_Object *parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e, 
+                              Scheme_Hash_Table *provided, Scheme_Object *reprovided,
+                              Scheme_Object *self_modidx, Scheme_Object **_all_defs_out)
+{
+  Scheme_Object *l;
+  int protect_cnt = 0;
+  Scheme_Object *all_defs_out  = (_all_defs_out ? *_all_defs_out : NULL);
+
+  if (scheme_stx_proper_list_length(e) < 0)
+    scheme_wrong_syntax(NULL, e, form, "bad syntax (" IMPROPER_LIST_FORM ")");
+  
+  for (l = SCHEME_STX_CDR(e); !SCHEME_STX_NULLP(l); l = SCHEME_STX_CDR(l)) {
+    Scheme_Object *a, *midx, *name;
+
+    a = SCHEME_STX_CAR(l);
+
+    if (SCHEME_STX_PAIRP(a) && (scheme_stx_proper_list_length(a) > 0)) {
+      fst = SCHEME_STX_CAR(a);
+      if (SCHEME_STX_SYMBOLP(fst)
+          && (SAME_OBJ(protect_symbol, SCHEME_STX_VAL(fst)))) {
+        if (protect_cnt)
+          scheme_wrong_syntax(NULL, a, e, "bad syntax (nested protect)");
+        a = SCHEME_STX_CDR(a);
+        a = scheme_flatten_syntax_list(a, NULL);
+        l = SCHEME_STX_CDR(l);
+        l = scheme_append(a, l);
+        protect_cnt = scheme_list_length(a);
+
+        /* In case a provide ends with an empty protect: */
+        if (SCHEME_STX_NULLP(l))
+          break;
+
+        a = SCHEME_STX_CAR(l);
+      }
+    }
+
+    if (SCHEME_STX_SYMBOLP(a)) {
+      /* <id> */
+      name = SCHEME_STX_VAL(a);
+      if (scheme_hash_get(provided, name))
+        scheme_wrong_syntax("module", a, form, "identifier already provided");
+      /* Provide a: */
+      scheme_hash_set(provided, name, scheme_make_pair(a, protect_cnt ? scheme_true : scheme_false));
+    } else if (SCHEME_STX_PAIRP(a)) {
+      Scheme_Object *rest;
+
+      fst = SCHEME_STX_CAR(a);
+      rest = SCHEME_STX_CDR(a);
+
+      if (SAME_OBJ(rename_symbol, SCHEME_STX_VAL(fst))) {
+        /* (rename <id> <id>) */
+        Scheme_Object *inm, *enm;
+
+        if (!SCHEME_STX_PAIRP(rest)
+            || !SCHEME_STX_PAIRP(SCHEME_STX_CDR(rest)))
+          scheme_wrong_syntax(NULL, a, e, "bad syntax");
+        inm = SCHEME_STX_CAR(rest);
+        rest = SCHEME_STX_CDR(rest);
+        enm = SCHEME_STX_CAR(rest);
+        if (!SCHEME_STX_SYMBOLP(inm))
+          scheme_wrong_syntax(NULL, a, e, "bad syntax (internal name is not an identifier)");
+        if (!SCHEME_STX_SYMBOLP(enm))
+          scheme_wrong_syntax(NULL, a, e, "bad syntax (external name is not an identifier)");
+        rest = SCHEME_STX_CDR(rest);
+        if (!SCHEME_STX_NULLP(rest))
+          scheme_wrong_syntax(NULL, a, e, "bad syntax (data following external name)");
+		
+        enm = SCHEME_STX_VAL(enm);
+		
+        if (scheme_hash_get(provided, enm))
+          scheme_wrong_syntax("module", enm, a, "identifier already provided");
+        /* Provide enm: */
+        scheme_hash_set(provided, enm, scheme_make_pair(inm, protect_cnt ? scheme_true : scheme_false));
+      } else if (SAME_OBJ(all_from_symbol, SCHEME_STX_VAL(fst))) {
+        /* (all-from <modname>) */
+        if (protect_cnt)
+          scheme_wrong_syntax(NULL, a, e, "bad syntax (not allowed as protected)");
+        if (!SCHEME_STX_PAIRP(rest))
+          scheme_wrong_syntax(NULL, a, e, "bad syntax");
+        if (!SCHEME_STX_NULLP(SCHEME_STX_CDR(rest)))
+          scheme_wrong_syntax(NULL, a, e, "bad syntax (data following `all-from')");
+		
+        midx = SCHEME_STX_CAR(rest);
+        midx = scheme_make_modidx(scheme_syntax_to_datum(midx, 0, NULL),
+                                  self_modidx,
+                                  scheme_false);
+		
+        reprovided = scheme_make_pair(scheme_make_pair(midx, scheme_make_pair(e, scheme_null)), 
+                                      reprovided);
+      } else if (SAME_OBJ(all_from_except_symbol, SCHEME_STX_VAL(fst))) {
+        /* (all-from-except <modname> <id> ...) */
+        Scheme_Object *exns, *el, *p;
+        int len;
+		
+        if (protect_cnt)
+          scheme_wrong_syntax(NULL, a, e, "bad syntax (not allowed as protected)");
+		
+        len = scheme_stx_proper_list_length(a);
+
+        if (len < 0)
+          scheme_wrong_syntax(NULL, a, e, "bad syntax (" IMPROPER_LIST_FORM ")");
+        else if (len == 1)
+          scheme_wrong_syntax(NULL, a, e, "bad syntax (missing module name)");
+		
+        midx = SCHEME_STX_CAR(rest);
+        midx = scheme_make_modidx(scheme_syntax_to_datum(midx, 0, NULL),
+                                  self_modidx,
+                                  scheme_false);
+        exns = SCHEME_STX_CDR(rest);
+		
+        /* Check all exclusions are identifiers: */
+        for (el = exns; SCHEME_STX_PAIRP(el); el = SCHEME_STX_CDR(el)) {
+          p = SCHEME_STX_CAR(el);
+          if (!SCHEME_STX_SYMBOLP(p)) {
+            scheme_wrong_syntax(NULL, p, e,
+                                "bad syntax (excluded name is not an identifier)");
+          }
+        }
+		
+        reprovided = scheme_make_pair(scheme_make_pair(midx, scheme_make_pair(e, exns)), 
+                                      reprovided);
+      } else if (SAME_OBJ(struct_symbol, SCHEME_STX_VAL(fst))) {
+        /* (struct <id> (<id> ...)) */
+        int len, i;
+        Scheme_Object *prnt_base, *base, *fields, *el, **names, *p;
+		
+        len = scheme_stx_proper_list_length(rest);
+        if (len != 2) {
+          if (len < 0)
+            scheme_wrong_syntax(NULL, a, e, "bad syntax (" IMPROPER_LIST_FORM ")");
+          else
+            scheme_wrong_syntax(NULL, a, e, "bad syntax "
+                                "(not a struct identifier followed by "
+                                "a sequence of field identifiers)");
+        }
+
+        base = SCHEME_STX_CAR(rest);
+        fields = SCHEME_STX_CDR(rest);
+        fields = SCHEME_STX_CAR(fields);
+		
+        if (!SCHEME_STX_SYMBOLP(base))
+          scheme_wrong_syntax(NULL, base, e,
+                              "bad syntax (struct name is not an identifier)");
+
+        /* Check all field names are identifiers: */
+        for (el = fields; SCHEME_STX_PAIRP(el); el = SCHEME_STX_CDR(el)) {
+          p = SCHEME_STX_CAR(el);
+          if (!SCHEME_STX_SYMBOLP(p)) {
+            scheme_wrong_syntax(NULL, p, e,
+                                "bad syntax (field name is not an identifier)");
+          }
+        }
+        if (!SCHEME_STX_NULLP(el))
+          scheme_wrong_syntax(NULL, fields, e,
+                              "bad syntax (" IMPROPER_LIST_FORM ")");
+		
+        prnt_base = base;
+        base = SCHEME_STX_VAL(base);
+        fields = scheme_syntax_to_datum(fields, 0, NULL);
+
+        names = scheme_make_struct_names(base, fields, SCHEME_STRUCT_EXPTIME, &len);
+
+        for (i = 0; i < len; i++) {
+          if (scheme_hash_get(provided, names[i]))
+            scheme_wrong_syntax("module", names[i], e, "identifier already provided");
+          /* Wrap local name with prnt_base in case there are marks that 
+             trigger "gensym"ing */
+          scheme_hash_set(provided, names[i], 
+                          scheme_make_pair(scheme_datum_to_syntax(names[i], scheme_false, prnt_base, 0, 0),
+                                           protect_cnt ? scheme_true : scheme_false));
+        }
+      } else if (SAME_OBJ(all_defined_symbol, SCHEME_STX_VAL(fst))) {
+        /* (all-defined) */
+        if (!SCHEME_STX_NULLP(rest))
+          scheme_wrong_syntax(NULL, a, e, "bad syntax");
+		
+        all_defs_out = scheme_make_pair(scheme_make_pair(scheme_make_pair(e, 
+                                                                          scheme_make_pair(scheme_null, 
+                                                                                           scheme_false)),
+                                                         protect_cnt ? scheme_true : scheme_false),
+                                        all_defs_out);
+      } else if (SAME_OBJ(prefix_all_defined_symbol, SCHEME_STX_VAL(fst))) {
+        /* (prefix-all-defined <prefix>) */
+        Scheme_Object *prefix;
+
+        if (!SCHEME_STX_PAIRP(rest))
+          scheme_wrong_syntax(NULL, a, e, "bad syntax");
+        prefix = SCHEME_STX_CAR(rest);
+        rest = SCHEME_STX_CDR(rest);
+        if (!SCHEME_STX_NULLP(rest))
+          scheme_wrong_syntax(NULL, a, e, "bad syntax");
+		
+        if (!SCHEME_STX_SYMBOLP(prefix)) {
+          scheme_wrong_syntax(NULL, a, e,
+                              "bad syntax (prefix is not an identifier)");
+        }
+        prefix = SCHEME_STX_VAL(prefix);
+
+        all_defs_out = scheme_make_pair(scheme_make_pair(scheme_make_pair(e, 
+                                                                          scheme_make_pair(scheme_null, 
+                                                                                           prefix)),
+                                                         protect_cnt ? scheme_true : scheme_false),
+                                        all_defs_out);
+      } else if (SAME_OBJ(all_defined_except_symbol, SCHEME_STX_VAL(fst))
+                 || SAME_OBJ(prefix_all_defined_except_symbol, SCHEME_STX_VAL(fst))) {
+        /* ([prefix-]all-defined-except <id> ...) */
+        Scheme_Object *exns, *el, *prefix = scheme_false, *p;
+        int len, is_prefix;
+		
+        is_prefix = SAME_OBJ(prefix_all_defined_except_symbol, SCHEME_STX_VAL(fst));
+
+        len = scheme_stx_proper_list_length(a);
+
+        if (len < 0)
+          scheme_wrong_syntax(NULL, a, e, "bad syntax (" IMPROPER_LIST_FORM ")");
+		
+        if (is_prefix && (len < 2))
+          scheme_wrong_syntax(NULL, a, e, "bad syntax (missing prefix)");
+
+        if (is_prefix) {
+          prefix = SCHEME_STX_CAR(rest);
+          if (!SCHEME_STX_SYMBOLP(prefix))
+            scheme_wrong_syntax(NULL, a, e, "bad syntax (prefix is not an identifier)");
+          prefix = SCHEME_STX_VAL(prefix);
+          rest = SCHEME_STX_CDR(rest);
+        }
+
+        exns = rest;
+		
+        /* Check all exclusions are identifiers: */
+        for (el = exns; SCHEME_STX_PAIRP(el); el = SCHEME_STX_CDR(el)) {
+          p = SCHEME_STX_CAR(el);
+          if (!SCHEME_STX_SYMBOLP(p)) {
+            scheme_wrong_syntax(NULL, p, e,
+                                "bad syntax (excluded name is not an identifier)");
+          }
+        }
+		
+        all_defs_out = scheme_make_pair(scheme_make_pair(scheme_make_pair(e, 
+                                                                          scheme_make_pair(exns,
+                                                                                           prefix)),
+                                                         protect_cnt ? scheme_true : scheme_false),
+                                        all_defs_out);
+      } else {
+        scheme_wrong_syntax(NULL, a, e, NULL);
+      }
+    } else {
+      scheme_wrong_syntax(NULL, a, e, NULL);
+    }
+
+    if (protect_cnt)
+      --protect_cnt;
+  }
+
+  if (_all_defs_out)
+    *_all_defs_out = all_defs_out;
+
+  return reprovided;
+}
+
 /**********************************************************************/
-/*                         top-level require                           */
+/*                         top-level require                          */
 /**********************************************************************/
 
 void add_single_require(Scheme_Module_Exports *me, /* from module */
+                        int base_k, /* [0, 1, 2] => start with [rt, et, dt] */
 			Scheme_Object *idx, /* from module's idx; may be saved for unmarshalling */
-			Scheme_Env *env, /* env for mark_src or copy_vars */
-			Scheme_Object *rn, /* add requires to this rename when no mark_src */
-			Scheme_Object *post_ex_rn, /* add requires to this rename when mark_src */
+			Scheme_Env *orig_env, /* env for mark_src or copy_vars */
+			Scheme_Object *rt_rn, /* add requires to this rename when no mark_src */
+			Scheme_Object *post_ex_rt_rn, /* add requires to this rename when mark_src */
+			Scheme_Object *et_rn, Scheme_Object *post_ex_et_rn,
+			Scheme_Object *dt_rn, Scheme_Object *post_ex_dt_rn,
 			Scheme_Object *exns, /* NULL or [syntax] list of [syntax] symbols not to import */
-			Scheme_Hash_Table *onlys, /* NULL or hash table of names to import */
+			Scheme_Hash_Table *onlys, /* NULL or hash table of names to import; the hash table is mutated */
 			Scheme_Object *prefix, /* NULL or prefix symbol */
 			Scheme_Object *iname, /* NULL or symbol for a single import */
-			Scheme_Object *ename, /* NULL or symbol for a single import */
+			Scheme_Object *orig_ename, /* NULL or symbol for a single import */
 			Scheme_Object *mark_src, /* default mark_src; if onlys, each is also mark_src */
 			int unpack_kern, int copy_vars, int for_unmarshal,
 			int can_save_marshal,
 			int *all_simple,
 			Check_Func ck, /* NULL or called for each addition */
-			void *data, Scheme_Object *form, Scheme_Object *err_src, Scheme_Object *cki /* ck args */
+			void *rt_data, void *et_data, void *dt_data, 
+                        Scheme_Object *form, Scheme_Object *err_src, Scheme_Object *cki /* ck args */
 			)
 {
   int j, var_count;
   Scheme_Object *orig_idx = idx;
   Scheme_Object **exs, **exsns, **exss;
+  char *exets;
+  void *data;
   int is_kern, has_context, save_marshal_info = 0;
-  Scheme_Object *nominal_modidx, *one_exn, *prnt_iname, *name;
+  Scheme_Object *nominal_modidx, *one_exn, *prnt_iname, *name, *rn, *post_ex_rn, *ename = orig_ename;
+  Scheme_Hash_Table *orig_onlys;
+  Scheme_Env *env;
+  int k;
   
   if (mark_src) {
     /* Check whether there's context for this import (which
@@ -5519,164 +6087,213 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
 
   if (iname || ename || onlys || for_unmarshal || unpack_kern || has_context)
     can_save_marshal = 0;
+  
+  if (onlys)
+    orig_onlys = scheme_clone_hash_table(onlys);
+  else
+    orig_onlys = NULL;
     
-  is_kern = (SAME_OBJ(idx, kernel_symbol)
-	     && !exns
-	     && !onlys
-	     && !prefix
-	     && !iname
-	     && !unpack_kern
-	     && !has_context);
+  for (k = 0; k < (et_rn ? 3 : 1); k++) {
+    Scheme_Module_Phase_Exports *pt;
 
-  one_exn = NULL;
-
-  nominal_modidx = idx;
-
-  while (1) { /* loop to handle kernel re-provides... */
-    int break_if_iname_null = !!iname;
-
-    exs = me->provides;
-    exsns = me->provide_src_names;
-    exss = me->provide_srcs;
-    var_count = me->num_var_provides;
-
-    for (j = me->num_provides; j--; ) {
-      Scheme_Object *modidx;
-	
-      if (ename) {
-	if (!SAME_OBJ(SCHEME_STX_VAL(ename), exs[j]))
-	  continue;  /* we don't want this one. */
-      } else if (onlys) {
-	name = scheme_hash_get(onlys, exs[j]);
-	if (!name)
-	  continue;  /* we don't want this one. */
-	mark_src = name;
-	{
-	  Scheme_Object *l;
-	  l = scheme_stx_extract_marks(mark_src);
-	  has_context = !SCHEME_NULLP(l);
-	}
-	/* Remove to indicate that it's been imported: */
-	scheme_hash_set(onlys, exs[j], NULL);
-      } else {
-	if (exns) {
-	  Scheme_Object *l, *a;
-	  for (l = exns; SCHEME_STX_PAIRP(l); l = SCHEME_STX_CDR(l)) {
-	    a = SCHEME_STX_CAR(l);
-	    if (SCHEME_STXP(a)) 
-	      a = SCHEME_STX_VAL(a);
-	    if (SAME_OBJ(a, exs[j]))
-	      break;
-	  }
-	  if (!SCHEME_STX_NULLP(l))
-	    continue; /* we don't want this one. */
-	}
-
-	if (one_exn) {
-	  if (SAME_OBJ(one_exn, exs[j]))
-	    continue; /* we don't want this one. */
-	}
+    switch(k) {
+    case 0:
+      switch(base_k) {
+      case 0:
+        pt = me->rt;
+        break;
+      case 1:
+        pt = me->et;
+        break;
+      case 2:
+      default:
+        pt = me->dt;
+        break;
       }
+      env = orig_env;
+      rn = rt_rn;
+      post_ex_rn = post_ex_rt_rn;
+      data = rt_data;
+      break;
+    case 1:
+      pt = me->et;
+      env = orig_env->exp_env;
+      rn = et_rn;
+      post_ex_rn = post_ex_et_rn;
+      data = et_data;
+      break;
+    case 2:
+    default:
+      pt = me->dt;
+      env = orig_env; /* using run-time rename is consistent with dt_mn_ht = mn_ht */
+      rn = dt_rn;
+      post_ex_rn = post_ex_dt_rn;
+      data = dt_data;
+      break;
+    }
+
+    is_kern = (SAME_OBJ(idx, kernel_symbol)
+               && !exns
+               && !onlys
+               && !prefix
+               && !iname
+               && !unpack_kern
+               && !has_context);
+    
+    one_exn = NULL;
+    
+    nominal_modidx = idx;
+
+    while (1) { /* loop to handle kernel re-provides... */
+      int break_if_iname_null = !!iname;
+
+      exs = pt->provides;
+      exsns = pt->provide_src_names;
+      exss = pt->provide_srcs;
+      exets = pt->provide_src_phases;
+      var_count = pt->num_var_provides;
+
+      for (j = pt->num_provides; j--; ) {
+        Scheme_Object *modidx;
 	
-      modidx = ((exss && !SCHEME_FALSEP(exss[j])) 
-		? scheme_modidx_shift(exss[j], me->src_modidx, idx)
-		: idx);
+        if (orig_ename) {
+          if (!SAME_OBJ(SCHEME_STX_VAL(orig_ename), exs[j]))
+            continue;  /* we don't want this one. */
+        } else if (onlys) {
+          name = scheme_hash_get(orig_onlys, exs[j]);
+          if (!name)
+            continue;  /* we don't want this one. */
+          mark_src = name;
+          {
+            Scheme_Object *l;
+            l = scheme_stx_extract_marks(mark_src);
+            has_context = !SCHEME_NULLP(l);
+          }
+          /* Remove to indicate that it's been imported: */
+          scheme_hash_set(onlys, exs[j], NULL);
+        } else {
+          if (exns) {
+            Scheme_Object *l, *a;
+            for (l = exns; SCHEME_STX_PAIRP(l); l = SCHEME_STX_CDR(l)) {
+              a = SCHEME_STX_CAR(l);
+              if (SCHEME_STXP(a)) 
+                a = SCHEME_STX_VAL(a);
+              if (SAME_OBJ(a, exs[j]))
+                break;
+            }
+            if (!SCHEME_STX_NULLP(l))
+              continue; /* we don't want this one. */
+          }
+
+          if (one_exn) {
+            if (SAME_OBJ(one_exn, exs[j]))
+              continue; /* we don't want this one. */
+          }
+        }
+	
+        modidx = ((exss && !SCHEME_FALSEP(exss[j])) 
+                  ? scheme_modidx_shift(exss[j], me->src_modidx, idx)
+                  : idx);
       
-      if (!iname)
-	iname = exs[j];
+        if (!iname)
+          iname = exs[j];
 
-      if (SCHEME_SYM_WEIRDP(iname)) {
-	/* This shouldn't happen. In case it does, don't import a
-	   gensym or parallel symbol. The former is useless. The
-	   latter is supposed to be module-specific, and it could
-	   collide with local module-specific ids. */
-	iname = NULL;
-	continue;
-      }
+        if (SCHEME_SYM_WEIRDP(iname)) {
+          /* This shouldn't happen. In case it does, don't import a
+             gensym or parallel symbol. The former is useless. The
+             latter is supposed to be module-specific, and it could
+             collide with local module-specific ids. */
+          iname = NULL;
+          continue;
+        }
 
-      if (prefix)
-	iname = scheme_symbol_append(prefix, iname);
+        if (prefix)
+          iname = scheme_symbol_append(prefix, iname);
 
-      prnt_iname = iname;
-      if (has_context) {
-	/* The `require' expression has a set of marks in its
-	   context, which means that we need to generate a name. */
-	iname = scheme_datum_to_syntax(iname, scheme_false, mark_src, 0, 0);
-	iname = scheme_tl_id_sym(env, iname, scheme_false, 2);
-      }
+        prnt_iname = iname;
+        if (has_context) {
+          /* The `require' expression has a set of marks in its
+             context, which means that we need to generate a name. */
+          iname = scheme_datum_to_syntax(iname, scheme_false, mark_src, 0, 0);
+          iname = scheme_tl_id_sym(env, iname, scheme_false, 2);
+        }
 
-      if (ck)
-	ck(prnt_iname, iname, nominal_modidx, modidx, exsns[j], (j < var_count), data, cki, form, err_src);
+        if (ck)
+          ck(prnt_iname, iname, nominal_modidx, modidx, exsns[j], (j < var_count), data, cki, form, err_src);
 	
-      if (!is_kern) {
-	if (copy_vars && (j < var_count) && !env->module && !env->phase) {
-	  Scheme_Env *menv;
-	  Scheme_Object *val;
-	  modidx = scheme_module_resolve(modidx, 1);
-	  menv = scheme_module_access(modidx, env, 0);
-	  val = scheme_lookup_in_table(menv->toplevel, (char *)exsns[j]);
-	  scheme_add_global_symbol(iname, val, env);
-          scheme_shadow(env, iname, 1);
-	} else if (!for_unmarshal || !has_context) {
-	  if (!save_marshal_info && !has_context && can_save_marshal)
-	    save_marshal_info = 1;
-	  scheme_extend_module_rename((has_context ? post_ex_rn : rn), 
-				      modidx, iname, exsns[j], nominal_modidx, exs[j], 0,
-				      for_unmarshal || (!has_context && can_save_marshal));
-	}
+        if (!is_kern) {
+          if (copy_vars && (j < var_count) && !env->module && !env->phase && !k) {
+            Scheme_Env *menv;
+            Scheme_Object *val;
+            modidx = scheme_module_resolve(modidx, 1);
+            menv = scheme_module_access(modidx, env, 0);
+            val = scheme_lookup_in_table(menv->toplevel, (char *)exsns[j]);
+            scheme_add_global_symbol(iname, val, env);
+            scheme_shadow(env, iname, 1);
+          } else if (!for_unmarshal || !has_context) {
+            if (!save_marshal_info && !has_context && can_save_marshal)
+              save_marshal_info = 1;
+            scheme_extend_module_rename((has_context ? post_ex_rn : rn), 
+                                        modidx, iname, exsns[j], nominal_modidx, exs[j], 
+                                        exets ? exets[j] : 0,
+                                        for_unmarshal || (!has_context && can_save_marshal));
+          }
+        }
+
+        iname = NULL;
+	
+        if (ename) {
+          ename = NULL;
+          break;
+        }
       }
 
-      iname = NULL;
-	
-      if (ename) {
-	ename = NULL;
-	break;
-      }
+      if (is_kern)
+        scheme_extend_module_rename_with_kernel(rn, nominal_modidx);
+
+      if (break_if_iname_null && !iname)
+        break;
+
+      if (pt->reprovide_kernel) {
+        idx = kernel_symbol;
+        one_exn = pt->kernel_exclusion;
+        me = kernel->me;
+        pt = kernel->me->rt;
+        is_kern = !prefix && !unpack_kern && !ename && !has_context && !onlys;
+      } else
+        break;
     }
 
-    if (ename) {
-      if (!me->reprovide_kernel) {
-	scheme_wrong_syntax(NULL, ename, form, "no such provided variable");
-	return;
-      }
+    if (save_marshal_info) {
+      Scheme_Object *info, *a;
+
+      if (exns) {
+        /* Convert to a list of symbols: */
+        info = scheme_null;
+        for (; SCHEME_STX_PAIRP(exns); exns = SCHEME_STX_CDR(exns)) {
+          a = SCHEME_STX_CAR(exns);
+          if (SCHEME_STXP(a))
+            a = SCHEME_STX_VAL(a);
+          info = cons(a, info);
+        }
+        exns = info;
+      } else
+        exns = scheme_null;
+
+      /* The format of this data is checked in stxobj for unmarshaling
+         a Module_Renames. Also the idx must be first, to support shifting. */
+      info = cons(orig_idx, cons(scheme_make_integer(k+base_k),
+                                 cons(exns, prefix ? prefix : scheme_false)));
+
+      scheme_save_module_rename_unmarshal(rn, info);
+
+      save_marshal_info = 0;
     }
-
-    if (is_kern)
-      scheme_extend_module_rename_with_kernel(rn, nominal_modidx);
-
-    if (break_if_iname_null && !iname)
-      break;
-
-    if (me->reprovide_kernel) {
-      idx = kernel_symbol;
-      one_exn = me->kernel_exclusion;
-      me = kernel->me;
-      is_kern = !prefix && !unpack_kern && !ename && !has_context && !onlys;
-    } else
-      break;
   }
 
-  if (save_marshal_info) {
-    Scheme_Object *info, *a;
-
-    if (exns) {
-      /* Convert to a list of symbols: */
-      info = scheme_null;
-      for (; SCHEME_STX_PAIRP(exns); exns = SCHEME_STX_CDR(exns)) {
-	a = SCHEME_STX_CAR(exns);
-	if (SCHEME_STXP(a))
-	  a = SCHEME_STX_VAL(a);
-	info = cons(a, info);
-      }
-      exns = info;
-    } else
-      exns = scheme_null;
-
-    /* The format of this data is checked in stxobj for unmarshaling
-       a Module_Renames. Also the idx must be first, to support shifting. */
-    info = cons(orig_idx, cons(exns, prefix ? prefix : scheme_false));
-
-    scheme_save_module_rename_unmarshal(rn, info);
+  if (ename) {
+    scheme_wrong_syntax(NULL, ename, form, "no such provided variable");
+    return;
   }
 }
 
@@ -5684,12 +6301,14 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
 				       Scheme_Object *modidx_shift_from, Scheme_Object *modidx_shift_to,
 				       Scheme_Hash_Table *export_registry)
 {
-  Scheme_Object *orig_idx, *exns, *prefix, *idx, *name;
+  Scheme_Object *orig_idx, *exns, *prefix, *idx, *name, *kv;
   Scheme_Module_Exports *me;
   Scheme_Env *env;
 
   idx = SCHEME_CAR(info);
   orig_idx = idx;
+  info = SCHEME_CDR(info);
+  kv = SCHEME_CAR(info);
   info = SCHEME_CDR(info);
   exns = SCHEME_CAR(info);
   prefix = SCHEME_CDR(info);
@@ -5698,7 +6317,7 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
     prefix = NULL;
   if (SCHEME_NULLP(exns))
     exns = NULL;
-  
+
   if (modidx_shift_from)
     idx = scheme_modidx_shift(idx,
 			      modidx_shift_from,
@@ -5724,21 +6343,26 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
     }
   }
 
-  add_single_require(me, orig_idx, NULL,
-		     rn, NULL,
+  add_single_require(me, SCHEME_INT_VAL(kv), orig_idx, NULL,
+		     rn, NULL, 
+                     NULL, NULL,
+                     NULL, NULL,
 		     exns, NULL, prefix, NULL, NULL,
 		     NULL,
 		     0, 0, 1, 0,
 		     NULL,
-		     NULL,
-		     NULL, NULL, NULL, NULL);
+		     NULL, 
+                     NULL, NULL, NULL, 
+                     NULL, NULL, NULL);
 }
 
 Scheme_Object *parse_requires(Scheme_Object *form, 
 			      Scheme_Object *base_modidx,
 			      Scheme_Env *env,
 			      Scheme_Object *rn, Scheme_Object *post_ex_rn,
-			      Check_Func ck, void *data,
+			      Scheme_Object *et_rn, Scheme_Object *post_ex_et_rn,
+			      Scheme_Object *dt_rn, Scheme_Object *post_ex_dt_rn,
+			      Check_Func ck, void *data, void *et_data, void *dt_data,
 			      int start, int expstart, Scheme_Object *redef_modname,
 			      int unpack_kern, int copy_vars, int can_save_marshal,
 			      int *all_simple) 
@@ -5962,12 +6586,17 @@ Scheme_Object *parse_requires(Scheme_Object *form,
       }
     }
     
-    add_single_require(m->me, idx, env, rn, post_ex_rn,
+    add_single_require(m->me, 0, idx, env, 
+                       rn, post_ex_rn,
+                       et_rn, post_ex_et_rn,
+                       dt_rn, post_ex_dt_rn,
 		       exns, onlys, prefix, iname, ename,
 		       mark_src, 
 		       unpack_kern, copy_vars && start, 0, can_save_marshal,
 		       all_simple,
-		       ck, data, form, err_src, i);
+		       ck, 
+                       data, et_data, dt_data, 
+                       form, err_src, i);
 
     if (onlys && onlys->count) {
       /* Something required in `only' wasn't provided by the module */
@@ -6003,8 +6632,8 @@ static void check_dup_require(Scheme_Object *prnt_name, Scheme_Object *name, Sch
 static Scheme_Object *
 top_level_require_execute(Scheme_Object *data)
 {
-  Scheme_Hash_Table *ht;
-  Scheme_Object *rn, *modidx;
+  Scheme_Hash_Table *ht, *et_ht, *dt_ht;
+  Scheme_Object *rn, *et_rn, *dt_rn, *modidx;
   Scheme_Object *form = SCHEME_CDDR(data), *rest, *brn;
   int for_phase = SCHEME_INT_VAL(SCHEME_CADR(data));
   Scheme_Env *env;
@@ -6041,18 +6670,57 @@ top_level_require_execute(Scheme_Object *data)
     ht = NULL;
 
   rn = scheme_make_module_rename(for_phase, mzMOD_RENAME_TOPLEVEL, NULL);
+  if (!for_phase) {
+    scheme_prepare_exp_env(env);
+    et_rn = scheme_make_module_rename(1, mzMOD_RENAME_TOPLEVEL, NULL);
+    dt_rn = scheme_make_module_rename(MZ_LABEL_PHASE, mzMOD_RENAME_TOPLEVEL, NULL);
+    if (rest) {
+      et_ht = scheme_make_hash_table(SCHEME_hash_ptr);
+      dt_ht = scheme_make_hash_table(SCHEME_hash_ptr);
+    } else {
+      et_ht = NULL;
+      dt_ht = NULL;
+    }
+  } else {
+    et_rn = NULL;
+    dt_rn = NULL;
+    et_ht = NULL;
+    dt_ht = NULL;
+  }
 
-  (void)parse_requires(form, modidx, env, rn, rn,
-		       check_dup_require, ht, (for_phase > -1), (for_phase == 0), NULL,
+  (void)parse_requires(form, modidx, env, 
+                       rn, rn,
+                       et_rn, et_rn,
+                       dt_rn, dt_rn,
+		       check_dup_require, ht, et_ht, dt_ht, (for_phase > -1), (for_phase == 0), NULL,
 		       !env->module, 0, 0, NULL);
 
-  brn = env->rename;
+  brn = ((for_phase == MZ_LABEL_PHASE) ? env->dt_rename : env->rename);
   if (!brn) {
     brn = scheme_make_module_rename(for_phase, mzMOD_RENAME_TOPLEVEL, NULL);
-    env->rename = brn;
+    if (for_phase == MZ_LABEL_PHASE)
+      env->dt_rename = brn;
+    else
+      env->rename = brn;
   }
 
   scheme_append_module_rename(rn, brn);
+  
+  if (!for_phase) {
+    brn = env->exp_env->rename;
+    if (!brn) {
+      brn = scheme_make_module_rename(1, mzMOD_RENAME_TOPLEVEL, NULL);
+      env->exp_env->rename = brn;
+    }
+    scheme_append_module_rename(et_rn, brn);
+
+    brn = env->dt_rename;
+    if (!brn) {
+      brn = scheme_make_module_rename(MZ_LABEL_PHASE, mzMOD_RENAME_TOPLEVEL, NULL);
+      env->dt_rename = brn;
+    }
+    scheme_append_module_rename(dt_rn, brn);
+  }
 
   return scheme_void;
 }
@@ -6090,8 +6758,8 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
 				 Scheme_Compile_Expand_Info *rec, int drec,
 				 int for_phase)
 {
-  Scheme_Hash_Table *ht;
-  Scheme_Object *rn, *dummy, *modidx;
+  Scheme_Hash_Table *ht, *et_ht, *dt_ht;
+  Scheme_Object *rn, *et_rn, *dt_rn, *dummy, *modidx;
   Scheme_Env *genv;
 
   if (!scheme_is_toplevel(env))
@@ -6103,6 +6771,17 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
   ht = scheme_make_hash_table(SCHEME_hash_ptr);
 
   rn = scheme_make_module_rename(for_phase, mzMOD_RENAME_TOPLEVEL, NULL);
+  if (!for_phase) {
+    et_rn = scheme_make_module_rename(1, mzMOD_RENAME_TOPLEVEL, NULL);
+    dt_rn = scheme_make_module_rename(MZ_LABEL_PHASE, mzMOD_RENAME_TOPLEVEL, NULL);
+    et_ht = scheme_make_hash_table(SCHEME_hash_ptr);
+    dt_ht = scheme_make_hash_table(SCHEME_hash_ptr);
+  } else {
+    et_rn = NULL;
+    dt_rn = NULL;
+    et_ht = NULL;
+    dt_ht = NULL;
+  }
 
   genv = env->genv;
 
@@ -6119,8 +6798,11 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
     genv = genv->template_env;
   }
 
-  (void)parse_requires(form, modidx, genv, rn, rn,
-		       check_dup_require, ht, 0, 0, 
+  (void)parse_requires(form, modidx, genv, 
+                       rn, rn,
+                       et_rn, et_rn,
+                       dt_rn, dt_rn,
+		       check_dup_require, ht, et_ht, dt_ht, 0, 0, 
 		       NULL, 0, 0, 0, NULL);
 
   if (rec[drec].comp) {
@@ -6176,6 +6858,19 @@ require_for_template_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Ex
   return do_require(form, env, erec, drec, -1);
 }
 
+static Scheme_Object *
+require_for_label_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
+{
+  return do_require(form, env, rec, drec, MZ_LABEL_PHASE);
+}
+
+static Scheme_Object *
+require_for_label_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
+{
+  SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE_FOR_TEMPLATE(erec[drec].observer);
+  return do_require(form, env, erec, drec, MZ_LABEL_PHASE);
+}
+
 /**********************************************************************/
 /*                            dummy forms                             */
 /**********************************************************************/
@@ -6207,38 +6902,66 @@ XFORM_NONGCING static Scheme_Object *wrap_mod_stx(Scheme_Object *stx)
 static Scheme_Object *write_module(Scheme_Object *obj)
 {
   Scheme_Module *m = (Scheme_Module *)obj;
+  Scheme_Module_Phase_Exports *pt;
   Scheme_Object *l, *v;
-  int i, count;
+  int i, k, count;
 
-  l = m->tt_requires;
+  l = m->dt_requires;
+  l = cons(m->tt_requires, l);
   l = cons(m->et_requires, l);
   l = cons(m->requires, l);
 
   l = cons(m->body, l);
   l = cons(m->et_body, l);
 
-  l = cons(scheme_make_integer(m->me->num_provides), l);
-  l = cons(scheme_make_integer(m->me->num_var_provides), l);
+  for (k = 0; k < 3; k++) {
+    switch (k) {
+    case 2:
+      pt = m->me->dt;
+      break;
+    case 1:
+      pt = m->me->et;
+      break;
+    case 0:
+    default:
+      pt = m->me->rt;
+      break;
+    }
+    
+    l = cons(scheme_make_integer(pt->num_provides), l);
+    l = cons(scheme_make_integer(pt->num_var_provides), l);
 
-  count = m->me->num_provides;
+    count = pt->num_provides;
 
-  v = scheme_make_vector(count, NULL);
-  for (i = 0; i < count; i++) {
-    SCHEME_VEC_ELS(v)[i] = m->me->provides[i];
-  }
-  l = cons(v, l);
+    v = scheme_make_vector(count, NULL);
+    for (i = 0; i < count; i++) {
+      SCHEME_VEC_ELS(v)[i] = pt->provides[i];
+    }
+    l = cons(v, l);
   
-  v = scheme_make_vector(count, NULL);
-  for (i = 0; i < count; i++) {
-    SCHEME_VEC_ELS(v)[i] = m->me->provide_srcs[i];
+    v = scheme_make_vector(count, NULL);
+    for (i = 0; i < count; i++) {
+      SCHEME_VEC_ELS(v)[i] = pt->provide_srcs[i];
+    }
+    l = cons(v, l);
+    
+    v = scheme_make_vector(count, NULL);
+    for (i = 0; i < count; i++) {
+      SCHEME_VEC_ELS(v)[i] = pt->provide_src_names[i];
+    }
+    l = cons(v, l);
+
+    if (pt->provide_src_phases) {
+      v = scheme_make_vector(count, NULL);
+      for (i = 0; i < count; i++) {
+        SCHEME_VEC_ELS(v)[i] = (pt->provide_src_phases[i] ? scheme_true : scheme_false);
+      } 
+    } else
+      v = scheme_false;
+    l = cons(v, l);
   }
-  l = cons(v, l);
-  
-  v = scheme_make_vector(count, NULL);
-  for (i = 0; i < count; i++) {
-    SCHEME_VEC_ELS(v)[i] = m->me->provide_src_names[i];
-  }
-  l = cons(v, l);
+
+  count = m->me->rt->num_provides;
 
   if (m->provide_protects) {
     for (i = 0; i < count; i++) {
@@ -6266,14 +6989,15 @@ static Scheme_Object *write_module(Scheme_Object *obj)
   }
   l = cons(v, l);
 
-  l = cons(m->me->reprovide_kernel ? scheme_true : scheme_false, l);
-  l = cons(m->me->kernel_exclusion, l);
+  l = cons(m->me->rt->reprovide_kernel ? scheme_true : scheme_false, l);
+  l = cons(m->me->rt->kernel_exclusion, l);
 
   l = cons((Scheme_Object *)m->prefix, l);
   l = cons(m->dummy, l);
 
   l = cons(scheme_make_integer(m->max_let_depth), l);
 
+  l = cons(wrap_mod_stx(m->dt_rn_stx), l);
   l = cons(wrap_mod_stx(m->tt_rn_stx), l);
   l = cons(wrap_mod_stx(m->et_rn_stx), l);
   l = cons(wrap_mod_stx(m->rn_stx), l);
@@ -6296,14 +7020,17 @@ static int check_requires_ok(Scheme_Object *l)
   return 1;
 }
 
+#define return_NULL() return (printf("%d\n", __LINE__), NULL)
+
 static Scheme_Object *read_module(Scheme_Object *obj)
 {
   Scheme_Module *m;
   Scheme_Object *ie, *nie;
-  Scheme_Object *esp, *esn, *es, *e, *nve, *ne, **v;
+  Scheme_Object *esp, *esn, *esph, *es, *e, *nve, *ne, **v;
   Scheme_Module_Exports *me;
-  char *ps;
-  int i, count;
+  Scheme_Module_Phase_Exports *pt;
+  char *ps, *sps;
+  int i, k, count;
 
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   m->so.type = scheme_module_type;
@@ -6311,64 +7038,70 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   me = make_module_exports();
   m->me = me;
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
   m->modname = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
   me->src_modidx = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
   ((Scheme_Modidx *)m->me->src_modidx)->resolved = m->modname;
   m->self_modidx = m->me->src_modidx;
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
   m->rn_stx = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
   if (SCHEME_FALSEP(m->rn_stx))
     m->rn_stx = NULL;
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
   m->et_rn_stx = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
   if (SCHEME_FALSEP(m->et_rn_stx))
     m->et_rn_stx = NULL;
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
   m->tt_rn_stx = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
   if (SCHEME_FALSEP(m->tt_rn_stx))
     m->tt_rn_stx = NULL;
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  m->dt_rn_stx = SCHEME_CAR(obj);
+  obj = SCHEME_CDR(obj);
+  if (SCHEME_FALSEP(m->dt_rn_stx))
+    m->dt_rn_stx = NULL;
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
   m->max_let_depth = SCHEME_INT_VAL(SCHEME_CAR(obj));
   obj = SCHEME_CDR(obj);
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
   m->dummy = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
   m->prefix = (Resolve_Prefix *)SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
-  me->kernel_exclusion = SCHEME_CAR(obj);
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  me->rt->kernel_exclusion = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
-  if (!SCHEME_PAIRP(obj)) return NULL;
-  me->reprovide_kernel = SCHEME_TRUEP(SCHEME_CAR(obj));
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  me->rt->reprovide_kernel = SCHEME_TRUEP(SCHEME_CAR(obj));
   obj = SCHEME_CDR(obj);
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
   ie = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
   nie = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
   
   count = SCHEME_INT_VAL(nie);
 
-  if (!SCHEME_VECTORP(ie) || (SCHEME_VEC_SIZE(ie) != count)) return NULL;
+  if (!SCHEME_VECTORP(ie) || (SCHEME_VEC_SIZE(ie) != count)) return_NULL();
   v = MALLOC_N(Scheme_Object *, count);
   for (i = 0; i < count; i++) {
     v[i] = SCHEME_VEC_ELS(ie)[i];
@@ -6376,59 +7109,89 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   m->indirect_provides = v;
   m->num_indirect_provides = count;
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
   esp = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
-  esn = SCHEME_CAR(obj);
-  obj = SCHEME_CDR(obj);
+  for (k = 0; k < 3; k++) {
+    switch (k) {
+    case 0:
+      pt = me->dt;
+      break;
+    case 1:
+      pt = me->et;
+      break;
+    case 2:
+    default:
+      pt = me->rt;
+      break;
+    }
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
-  es = SCHEME_CAR(obj);
-  obj = SCHEME_CDR(obj);
+    if (!SCHEME_PAIRP(obj)) return_NULL();
+    esph = SCHEME_CAR(obj);
+    obj = SCHEME_CDR(obj);
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
-  e = SCHEME_CAR(obj);
-  obj = SCHEME_CDR(obj);
+    if (!SCHEME_PAIRP(obj)) return_NULL();
+    esn = SCHEME_CAR(obj);
+    obj = SCHEME_CDR(obj);
+
+    if (!SCHEME_PAIRP(obj)) return_NULL();
+    es = SCHEME_CAR(obj);
+    obj = SCHEME_CDR(obj);
+
+    if (!SCHEME_PAIRP(obj)) return_NULL();
+    e = SCHEME_CAR(obj);
+    obj = SCHEME_CDR(obj);
   
-  if (!SCHEME_PAIRP(obj)) return NULL;
-  nve = SCHEME_CAR(obj);
-  obj = SCHEME_CDR(obj);
+    if (!SCHEME_PAIRP(obj)) return_NULL();
+    nve = SCHEME_CAR(obj);
+    obj = SCHEME_CDR(obj);
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
-  ne = SCHEME_CAR(obj);
-  obj = SCHEME_CDR(obj);
+    if (!SCHEME_PAIRP(obj)) return_NULL();
+    ne = SCHEME_CAR(obj);
+    obj = SCHEME_CDR(obj);
 
-  count = SCHEME_INT_VAL(ne);
-  me->num_provides = count;
-  me->num_var_provides = SCHEME_INT_VAL(nve);
+    count = SCHEME_INT_VAL(ne);
+    pt->num_provides = count;
+    pt->num_var_provides = SCHEME_INT_VAL(nve);
 
-  if (!SCHEME_VECTORP(e) || (SCHEME_VEC_SIZE(e) != count)) return NULL;
-  v = MALLOC_N(Scheme_Object *, count);
-  for (i = 0; i < count; i++) {
-    v[i] = SCHEME_VEC_ELS(e)[i];
+    if (!SCHEME_VECTORP(e) || (SCHEME_VEC_SIZE(e) != count)) return_NULL();
+    v = MALLOC_N(Scheme_Object *, count);
+    for (i = 0; i < count; i++) {
+      v[i] = SCHEME_VEC_ELS(e)[i];
+    }
+    pt->provides = v;
+
+    if (!SCHEME_VECTORP(es) || (SCHEME_VEC_SIZE(es) != count)) return_NULL();
+    v = MALLOC_N(Scheme_Object *, count);
+    for (i = 0; i < count; i++) {
+      v[i] = SCHEME_VEC_ELS(es)[i];
+    }
+    pt->provide_srcs = v;
+
+    if (!SCHEME_VECTORP(esn) || (SCHEME_VEC_SIZE(esn) != count)) return_NULL();
+    v = MALLOC_N(Scheme_Object *, count);
+    for (i = 0; i < count; i++) {
+      v[i] = SCHEME_VEC_ELS(esn)[i];
+    }
+    pt->provide_src_names = v;
+
+    if (SCHEME_FALSEP(esph))
+      sps = NULL;
+    else {
+      if (!SCHEME_VECTORP(esph) || (SCHEME_VEC_SIZE(esph) != count)) return_NULL();
+      sps = MALLOC_N_ATOMIC(char, count);
+      for (i = 0; i < count; i++) {
+        sps[i] = SCHEME_TRUEP(SCHEME_VEC_ELS(esph)[i]);
+      }
+    }
+    pt->provide_src_phases = sps;
   }
-  me->provides = v;
-
-  if (!SCHEME_VECTORP(es) || (SCHEME_VEC_SIZE(es) != count)) return NULL;
-  v = MALLOC_N(Scheme_Object *, count);
-  for (i = 0; i < count; i++) {
-    v[i] = SCHEME_VEC_ELS(es)[i];
-  }
-  me->provide_srcs = v;
-
-  if (!SCHEME_VECTORP(esn) || (SCHEME_VEC_SIZE(esn) != count)) return NULL;
-  v = MALLOC_N(Scheme_Object *, count);
-  for (i = 0; i < count; i++) {
-    v[i] = SCHEME_VEC_ELS(esn)[i];
-  }
-  me->provide_src_names = v;
 
   if (SCHEME_FALSEP(esp)) {
     m->provide_protects = NULL;
   } else {
-    if (!SCHEME_VECTORP(esp) || (SCHEME_VEC_SIZE(esp) != count)) return NULL;
+    if (!SCHEME_VECTORP(esp) || (SCHEME_VEC_SIZE(esp) != count)) return_NULL();
     ps = MALLOC_N_ATOMIC(char, count);
     for (i = 0; i < count; i++) {
       ps[i] = SCHEME_TRUEP(SCHEME_VEC_ELS(esp)[i]);
@@ -6436,36 +7199,43 @@ static Scheme_Object *read_module(Scheme_Object *obj)
     m->provide_protects = ps;
   }
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
-  if (scheme_proper_list_length(SCHEME_CAR(obj)) < 0) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  if (scheme_proper_list_length(SCHEME_CAR(obj)) < 0) return_NULL();
   e = scheme_copy_list(SCHEME_CAR(obj));
   m->et_body = e;
   obj = SCHEME_CDR(obj);
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
-  if (scheme_proper_list_length(SCHEME_CAR(obj)) < 0) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  if (scheme_proper_list_length(SCHEME_CAR(obj)) < 0) return_NULL();
   e = scheme_copy_list(SCHEME_CAR(obj));
   m->body = e;
   obj = SCHEME_CDR(obj);
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
-  if (scheme_proper_list_length(SCHEME_CAR(obj)) < 0) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  if (scheme_proper_list_length(SCHEME_CAR(obj)) < 0) return_NULL();
   e = scheme_copy_list(SCHEME_CAR(obj));
   m->requires = e;
-  if (!check_requires_ok(e)) return NULL;
+  if (!check_requires_ok(e)) return_NULL();
   obj = SCHEME_CDR(obj);
 
-  if (!SCHEME_PAIRP(obj)) return NULL;
-  if (scheme_proper_list_length(SCHEME_CAR(obj)) < 0) return NULL;
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  if (scheme_proper_list_length(SCHEME_CAR(obj)) < 0) return_NULL();
   e = scheme_copy_list(SCHEME_CAR(obj));
   m->et_requires = e;
-  if (!check_requires_ok(e)) return NULL;
+  if (!check_requires_ok(e)) return_NULL();
   obj = SCHEME_CDR(obj);
 
-  if (scheme_proper_list_length(obj) < 0) return NULL;
-  e = scheme_copy_list(obj);
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  if (scheme_proper_list_length(SCHEME_CAR(obj)) < 0) return_NULL();
+  e = scheme_copy_list(SCHEME_CAR(obj));
   m->tt_requires = e;
-  if (!check_requires_ok(e)) return NULL;
+  if (!check_requires_ok(e)) return_NULL();
+  obj = SCHEME_CDR(obj);
+
+  if (scheme_proper_list_length(obj) < 0) return_NULL();
+  e = scheme_copy_list(obj);
+  m->dt_requires = e;
+  if (!check_requires_ok(e)) return_NULL();
   
   return (Scheme_Object *)m;
 }

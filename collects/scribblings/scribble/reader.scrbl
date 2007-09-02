@@ -721,9 +721,19 @@ an example of this.
 @;--------------------------------------------------------------------
 @section{Interface}
 
-The @file{reader.ss} module provides very little functionality for
-advanced needs.
+The @file{reader.ss} module provides functionality for advanced needs.
 
+@; The `with-scribble-read' trick below shadows `read' and
+@;  `read-syntax' with for-label bindings from the Scribble reader
+
+@define-syntax[with-scribble-read
+ (syntax-rules ()
+  [(_)
+   (...
+    (begin
+     (require-for-label (lib "reader.ss" "scribble"))
+
+@; *** Start reader-import section ***
 @defproc[(read [in input-port? (current-input-port)]) any]{}
 @defproc[(read-syntax [source-name any/c (object-name in)]
                       [in input-port? (current-input-port)])
@@ -807,3 +817,8 @@ Installs the Scribble readtable as the default.  Useful for REPL
 experimentation.  (Note: enables line and column tracking.)  The given
 keyword arguments are used with `make-at-readtable'.
 }
+
+@; *** End reader-import section ***
+))])]
+@with-scribble-read[]
+ 

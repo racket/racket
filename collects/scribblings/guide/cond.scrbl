@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:conditionals"]{Conditionals}
+@title[#:tag "conditionals"]{Conditionals}
 
 Most functions used for branching, such as @scheme[<] and
 @scheme[string?], produce either @scheme[#t] or @scheme[#f]. Scheme's
@@ -35,7 +35,7 @@ list:
 @;------------------------------------------------------------------------
 @section{Simple Branching: @scheme[if]}
 
-@refalso["mz:if"]{@scheme[if]}
+@refalso["if"]{@scheme[if]}
 
 In an @scheme[if] form,
 
@@ -48,12 +48,12 @@ evaluated. Otherwise, @scheme[_else-expr] is evaluated.
 An @scheme[if] form must have both an @scheme[_then-expr] and an
 @scheme[_else-expr]; the latter is not optional. To perform (or skip)
 side-effects based on a @scheme[_test-expr], use @scheme[when] or
-@scheme[unless], which we describe later in @secref["guide:begin"].
+@scheme[unless], which we describe later in @secref["begin"].
 
 @;------------------------------------------------------------------------
-@section[#:tag "guide:and+or"]{Combining Tests: @scheme[and] and @scheme[or]}
+@section[#:tag "and+or"]{Combining Tests: @scheme[and] and @scheme[or]}
 
-@refalso["mz:if"]{@scheme[and] and @scheme[or]}
+@refalso["if"]{@scheme[and] and @scheme[or]}
 
 Scheme's @scheme[and] and @scheme[or] are syntactic forms, rather than
 functions. Unlike a function, the @scheme[and] and @scheme[or] forms
@@ -90,16 +90,16 @@ the @scheme[and] or @scheme[or] result. Therefore, the last
 @scheme[expr] is in tail position, which means that the above
 @scheme[got-milk?] function runs in constant space.
 
-@guideother{@secref["guide:tail-recursion"] introduces tail calls and tail positions.}
+@guideother{@secref["tail-recursion"] introduces tail calls and tail positions.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "guide:cond"]{Chaining Tests: @scheme[cond]}
+@section[#:tag "cond"]{Chaining Tests: @scheme[cond]}
 
 The @scheme[cond] form chains a series of tests to select a result
 expression. To a first approximation, the syntax of @scheme[cond] is
 as follows:
 
-@refalso["mz:if"]{@scheme[cond]}
+@refalso["if"]{@scheme[cond]}
 
 @specform[(cond [test-expr expr ...+]
                 ...)]

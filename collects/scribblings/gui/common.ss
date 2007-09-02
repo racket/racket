@@ -11,6 +11,12 @@
            (all-from (lib "class.ss"))
            (all-from (lib "contract.ss"))
            (all-from "blurbs.ss")
-           (all-from "../reference/mz.ss")))
+           (all-from "../reference/mz.ss"))
 
+  (require-for-label (lib "mred.ss" "mred")
+                     (lib "class.ss")
+                     (lib "lang.ss" "big"))
+  (provide-for-label (all-from (lib "mred.ss" "mred"))
+                     (all-from (lib "class.ss"))
+                     (all-from (lib "lang.ss" "big"))))
 

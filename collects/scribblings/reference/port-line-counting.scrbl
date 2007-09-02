@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:linecol"]{Counting Positions, Lines, and Columns}
+@title[#:tag "linecol"]{Counting Positions, Lines, and Columns}
 
 @section-index["line numbers"]
 @section-index["column numbers"]
@@ -27,7 +27,7 @@ before the next multiple of @math{8}. When a sequence of bytes in the
 range 128 to 253 forms a UTF-8 encoding of a character, the
 position/column is incremented is incremented once for each byte, and
 then decremented appropriately when a complete encoding sequence is
-discovered. See also @secref["mz:ports"] for more information on UTF-8
+discovered. See also @secref["ports"] for more information on UTF-8
 decoding for ports.
 
 A position is known for any port as long as its value can be expressed

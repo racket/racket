@@ -1228,7 +1228,7 @@ If the line starts with invisible @techlink{item}s and @scheme[visible?] is not
 To calculate lines, if the following are true:
 @itemize{
 
- @item{the editor is not displayed (see @secref["mr:tb:miaoverview"]),}
+ @item{the editor is not displayed (see @secref["tb:miaoverview"]),}
 
  @item{a maximum width is set for the editor, and} 
 

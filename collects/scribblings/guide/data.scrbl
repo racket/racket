@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:datatypes" #:style 'toc]{Built-In Datatypes}
+@title[#:tag "datatypes" #:style 'toc]{Built-In Datatypes}
 
 The @seclink["to-scheme"]{previous chapter} introduced some of
 Scheme's built-in datatype: numbers, booleans, strings, lists, and

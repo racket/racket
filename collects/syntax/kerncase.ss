@@ -20,6 +20,8 @@
                                           define-values define-syntaxes define-values-for-syntax
                                           module #%plain-module-begin require provide 
                                           require-for-syntax require-for-template
+                                          require-for-label
+                                          provide-for-syntax provide-for-label
                                           #%variable-reference)))
                         (if trans? module-transformer-identifier=? module-identifier=?)
 	    clause ...))])))

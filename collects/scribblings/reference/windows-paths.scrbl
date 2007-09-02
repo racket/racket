@@ -4,7 +4,7 @@
 
 @define[MzAdd (italic "Scheme-specific:")]
 
-@title[#:tag "mz:windowspaths"]{Windows Path Conventions}
+@title[#:tag "windowspaths"]{Windows Path Conventions}
 
 In general, a Windows pathname consists of an optional drive specifier
 and a drive-specific path. A Windows path can be @defterm{absolute}

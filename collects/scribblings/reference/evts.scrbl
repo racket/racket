@@ -7,7 +7,7 @@
                       (tech "synchronization result")
                       " of " x " is " x " itself"))]
 
-@title[#:tag "mz:sync"]{Events}
+@title[#:tag "sync"]{Events}
 
 @section-index["select"]
 @section-index["poll"]
@@ -120,7 +120,7 @@ types can generate events (see @scheme[prop:evt]).
  ready. The event's result is obtained by a tail call to @scheme[proc] on
  the result of @scheme[evt].}
 
- @item{@elemtag["mz:guard-evt"]{@scheme[guard]} --- an event returned by @scheme[guard-evt] applied
+ @item{@elemtag["guard-evt"]{@scheme[guard]} --- an event returned by @scheme[guard-evt] applied
  to @scheme[thunk] generates a new event every time that @scheme[guard] is
  used with @scheme[sync] (or whenever it is part of a choice event
  used with @scheme[sync], etc.); the generated event is the result of
@@ -128,7 +128,7 @@ types can generate events (see @scheme[prop:evt]).
  returns a non-event, then @scheme[thunk]'s result is replaced with an
  event that is ready and whose result is @scheme[guard].}
 
- @item{@elemtag["mz:nack-guard-evt"]{@scheme[nack-guard]} --- an event
+ @item{@elemtag["nack-guard-evt"]{@scheme[nack-guard]} --- an event
  returned by @scheme[nack-guard-evt] applied to @scheme[proc]
  generates a new event every time that @scheme[nack-guard] is used
  with @scheme[sync] (or whenever it is part of a choice event used
@@ -147,7 +147,7 @@ types can generate events (see @scheme[prop:evt]).
  has not yet returned a value). If the event returned by @scheme[proc] is
  chosen, then the NACK event never becomes ready.}
 
- @item{@elemtag["mz:poll-guard-evt"]{@scheme[poll-guard]} --- an event
+ @item{@elemtag["poll-guard-evt"]{@scheme[poll-guard]} --- an event
  returned by @scheme[poll-guard-evt] applied to @scheme[proc]
  generates a new event every time that @scheme[poll-guard] is used
  with @scheme[sync] (or whenever it is part of a choice event used
@@ -169,7 +169,7 @@ types can generate events (see @scheme[prop:evt]).
 
  @item{@scheme[never-evt] --- a constant event that is never ready.}
 
- @item{@elemtag["mz:system-idle-evt"]{@scheme[idle]} --- an event
+ @item{@elemtag["system-idle-evt"]{@scheme[idle]} --- an event
    produced by @scheme[system-idle-evt] is ready when, if this event
    were replaced by @scheme[never-evt], no thread in the system would
    be available to run.  In other words, all threads must be suspended
@@ -217,7 +217,7 @@ See also @scheme[alarm-evt] for an alternative timeout mechanism.}
 @defproc[(sync/enable-break [evt evt?] ...+) any]{
 
 Like @scheme[sync], but breaking is enabled (see
-@secref["mz:breakhandler"]) while waiting on the @scheme[evt]s. If
+@secref["breakhandler"]) while waiting on the @scheme[evt]s. If
 breaking is disabled when @scheme[sync/enable-break] is called, then
 either all @scheme[evt]s remain unchosen or the @scheme[exn:break]
 exception is raised, but not both.}
@@ -261,7 +261,7 @@ breaks explicitly disabled.}
 @defproc[(guard-evt [generator (-> evt?)]) evt?]{
 
 Creates a value that behaves as an event, but that is actually an
-event generator. For details, see @elemref["mz:guard-evt"]{the
+event generator. For details, see @elemref["guard-evt"]{the
 overview}.}
 
 @defproc[(nack-guard-evt [generator (evt? . -> . evt?)]) evt?]{
@@ -270,14 +270,14 @@ Creates a value that behaves as an event, but that is actually an
 event generator; the generator procedure receives an event that
 becomes ready with a @|void-const| value if the generated event was
 not ultimately chosen. For details, see
-@elemref["mz:nack-guard-evt"]{the overview}.}
+@elemref["nack-guard-evt"]{the overview}.}
 
 @defproc[(poll-guard-evt [generator (boolean? . -> . evt?)]) evt?]{
 
 Creates a value that behaves as an event, but that is actually an
 event generator; the generator procedure receives a boolean indicating
 whether the event is used for polling. For details, see
-@elemref["mz:poll-guard-evt"]{the overview}.}
+@elemref["poll-guard-evt"]{the overview}.}
 
 @defthing[always-evt evt?]{A constant event that is always ready, with
 itself as its result.}
@@ -286,7 +286,7 @@ itself as its result.}
 
 
 @defproc[(system-idle-evt) evt?]{Returns an event that is ready when
-the system is otherwise idle; see @elemref["mz:system-idle-evt"]{the
+the system is otherwise idle; see @elemref["system-idle-evt"]{the
 overview} for more information. The result of the
 @scheme[system-idle-evt] procedure is always the same event.}
 
@@ -366,3 +366,9 @@ and the @scheme[prop:input-port] property takes precedence over
 (sync/timeout 0 my-wt)
 (sync/timeout 0 my-wt)
 ]}
+
+
+@defparam[current-evt-pseudo-random-generator generator pseudo-random-generator?]{
+
+A parameter that determines the pseudo-random number generator used by
+@scheme[sync] for events created by @scheme[choice-evt].}

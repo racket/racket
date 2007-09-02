@@ -57,7 +57,7 @@ produces
 ]
 
 The @scheme[unsyntax] form is regonized via
-@scheme[module-identifier=?], so if you want to typeset code that
+@scheme[free-identifier=?], so if you want to typeset code that
 includes @scheme[unsyntax], you can simply hide the usual binding:
 
 @SCHEMEBLOCK[
@@ -68,8 +68,7 @@ includes @scheme[unsyntax], you can simply hide the usual binding:
 ]
 
 Or use @scheme[SCHEMEBLOCK], whose escape form is @scheme[UNSYNTAX]
-instead of @scheme[unsyntax]. See also @scheme[define-code] from
-@file{scheme.ss}.
+instead of @scheme[unsyntax].
 
 A few other escapes are recognized symbolically:
 
@@ -546,5 +545,5 @@ centered table with the @scheme[pre-flow] parsed by
 @defproc[(commandline [pre-content any/c] ...) paragraph?]{Produces
 an inset command-line example (e.g., in typewriter font).}
 
-@defproc[(margin-code [pre-content any/c] ...) paragraph?]{Produces
+@defproc[(margin-note [pre-content any/c] ...) paragraph?]{Produces
 a paragraph to be typeset in the margin instead of inlined.}

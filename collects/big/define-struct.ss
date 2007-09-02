@@ -379,7 +379,7 @@
                                      (c (quote-syntax #,make-))
                                      (c (quote-syntax #,?))
                                      (list-immutable
-                                      #,@(map protect sels)
+                                      #,@(map protect (reverse sels))
                                       #,@(if super-info
                                              (map protect (list-ref super-info 3))
                                              (if super-expr

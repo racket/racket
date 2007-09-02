@@ -3,7 +3,7 @@
 
 @require[(lib "list.ss")]
 
-@title[#:tag "mz:customport"]{Custom Ports}
+@title[#:tag "customport"]{Custom Ports}
 
 The @scheme[make-input-port] and @scheme[make-output-port] procedures
 create custom ports with arbitrary control procedures (much like
@@ -69,7 +69,7 @@ The arguments implement the port as follows:
       but a procedure result is allowed only when
       @scheme[peek] is not @scheme[#f]; or}
 
-      @item{a @tech{synchronizable event} (see @secref["mz:sync"])
+      @item{a @tech{synchronizable event} (see @secref["sync"])
       that becomes ready when the read is complete (roughly): the
       event's value can one of the above three results or another
       event like itself; in the last case, a reading process loops
@@ -281,7 +281,7 @@ The arguments implement the port as follows:
     positive number or @scheme[#f]), the column number for the next
     item in the port's stream (a non-negative number or @scheme[#f]),
     and the position for the next item in the port's stream (a
-    positive number or @scheme[#f]). See also @secref["mz:linecol"].  
+    positive number or @scheme[#f]). See also @secref["linecol"].  
 
     This procedure is only called if line counting is enabled for the
     port via @scheme[port-count-lines!] (in which case
@@ -308,7 +308,7 @@ The arguments implement the port as follows:
     @scheme['none]) to set the buffer mode, and it is called with zero
     arguments to get the current buffer mode. In the latter case, the
     result must be @scheme['block], @scheme['none], or @scheme[#f]
-    (unknown). See @secref["mz:port-buffers"] for more information on
+    (unknown). See @secref["port-buffers"] for more information on
     buffer modes.}
 
  }
@@ -339,7 +339,7 @@ The arguments implement the port as follows:
 
  The special-value procedure can return an arbitrary value, and it
  will be called zero or one times (not necessarily before further
- reads or peeks from the port). See @secref["mz:reader-procs"] for
+ reads or peeks from the port). See @secref["reader-procs"] for
  more details on the procedure's result.
 
  If @scheme[read-in] or @scheme[peek] returns a special
@@ -686,7 +686,7 @@ procedures.
 
    @item{@scheme[name] --- the name for the output port.}
 
-   @item{@scheme[evt] --- a synchronization event (see @secref["mz:sync"];
+   @item{@scheme[evt] --- a synchronization event (see @secref["sync"];
     e.g., a semaphore or another port). The event is used in place of
     the output port when the port is supplied to synchronization
     procedures like @scheme[sync].  Thus, the event should be
@@ -734,7 +734,7 @@ procedures.
      @item{@scheme[#f] if no bytes could be written, perhaps because
      the internal buffer could not be completely flushed;}
 
-     @item{a synchronizable event (see @secref["mz:sync"]) that acts like
+     @item{a synchronizable event (see @secref["sync"]) that acts like
      the result of @scheme[write-bytes-avail-evt] to complete the
      write.}
 
@@ -824,7 +824,7 @@ procedures.
      @item{@scheme[#f] if the special could not be written, perhaps
      because an internal buffer could not be completely flushed;}
 
-     @item{a synchronizable event (see @secref["mz:sync"]) that acts like
+     @item{a synchronizable event (see @secref["sync"]) that acts like
      the result of @scheme[get-write-special-evt] to complete the write.}
 
      }
@@ -857,7 +857,7 @@ procedures.
 
      }
 
-    The result is a synchronizable event (see @secref["mz:sync"]) to act as
+    The result is a synchronizable event (see @secref["sync"]) to act as
     the result of @scheme[write-bytes-avail-evt] for the port (i.e.,
     to complete a write or flush), which becomes available only as
     data is committed to the port's underlying device, and whose
@@ -914,7 +914,7 @@ procedures.
     the next item written to port's stream (a non-negative number or
     @scheme[#f]), and the position for the next item written to port's
     stream (a positive number or @scheme[#f]). See also
-    @secref["mz:linecol"].
+    @secref["linecol"].
 
     This procedure is only called if line counting is enabled for the
     port via @scheme[port-count-lines!] (in which case
@@ -937,7 +937,7 @@ procedures.
     @scheme['line], or @scheme['none]) to set the buffer mode, and it is
     called with zero arguments to get the current buffer mode. In the
     latter case, the result must be @scheme['block], @scheme['line],
-    @scheme['none], or @scheme[#f] (unknown). See @secref["mz:port-buffers"]
+    @scheme['none], or @scheme[#f] (unknown). See @secref["port-buffers"]
     for more information on buffer modes.}
 
  }

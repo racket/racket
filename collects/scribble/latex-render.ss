@@ -18,13 +18,12 @@
                render-flow-element
                render-content
                install-file
-               format-number
-               lookup)
+               format-number)
 
       (define (define-color s s2)
         (printf "\\newcommand{\\~a}[1]{{\\mytexttt{\\color{~a}{#1}}}}\n" s s2))
 
-      (define/override (render-one d ht fn)
+      (define/override (render-one d ri fn)
         (printf "\\documentclass{article}\n")
         (printf "\\parskip=10pt%\n")
         (printf "\\parindent=0pt%\n")
@@ -75,17 +74,16 @@
         (printf "\\begin{document}\n\\sloppy\n")
         (when (part-title-content d)
           (printf "\\title{")
-          (render-content (part-title-content d) d ht)
+          (render-content (part-title-content d) d ri)
           (printf "}\\maketitle\n"))
-        (render-part d ht)
+        (render-part d ri)
         (printf "\\end{document}\n"))
 
-      (define/override (render-part d ht)
-        (let ([number (collected-info-number (part-collected-info d))])
+      (define/override (render-part d ri)
+        (let ([number (collected-info-number (part-collected-info d ri))])
           (when (and (part-title-content d)
                      (pair? number))
-            (when (and (styled-part? d)
-                       (eq? 'index (styled-part-style d)))
+            (when (part-style? d 'index)
               (printf "\\twocolumn\n\\parskip=0pt\n\\addcontentsline{toc}{section}{Index}\n"))
             (printf "\\~a~a{"
                     (case (length number)
@@ -97,20 +95,19 @@
                              (not (car number)))
                         "*"
                         ""))
-            (render-content (part-title-content d) d ht)
+            (render-content (part-title-content d) d ri)
             (printf "}")
-            (when (and (styled-part? d)
-                       (eq? 'index (styled-part-style d)))
+            (when (part-style? d 'index)
               (printf "\n\n")))
           (for-each (lambda (t)
-                      (printf "\\label{t:~a}" (t-encode `(part ,t))))
+                      (printf "\\label{t:~a}" (t-encode (tag-key t ri))))
                     (part-tags d))
-          (render-flow (part-flow d) d ht)
-          (for-each (lambda (sec) (render-part sec ht))
+          (render-flow (part-flow d) d ri)
+          (for-each (lambda (sec) (render-part sec ri))
                     (part-parts d))
           null))
       
-      (define/override (render-paragraph p part ht)
+      (define/override (render-paragraph p part ri)
         (printf "\n\n")
         (let ([margin? (and (styled-paragraph? p)
                             (equal? "refpara" (styled-paragraph-style p)))])
@@ -118,28 +115,35 @@
             (printf "\\marginpar{\\footnotesize "))
           (if (toc-paragraph? p)
               (printf "\\newpage \\tableofcontents \\newpage")
-              (super render-paragraph p part ht))
+              (super render-paragraph p part ri))
           (when margin?
             (printf "}")))
         (printf "\n\n")
         null)
 
-      (define/override (render-element e part ht)
+      (define/override (render-element e part ri)
         (let ([part-label? (and (link-element? e)
                                 (pair? (link-element-tag e))
                                 (eq? 'part (car (link-element-tag e)))
                                 (null? (element-content e)))])
           (parameterize ([show-link-page-numbers #f])
             (when (target-element? e)
-              (printf "\\label{t:~a}" (t-encode (target-element-tag e))))
+              (printf "\\label{t:~a}" (t-encode (tag-key (target-element-tag e) ri))))
             (when part-label?
               (printf "\\S")
-              (render-content (let ([dest (lookup part ht (link-element-tag e))])
+              (render-content (let ([dest (resolve-get part ri (link-element-tag e))])
                                 (if dest
-                                    (format-number (cadr dest) null)
+                                    (if (list? (cadr dest))
+                                        (format-number (cadr dest) null)
+                                        (begin
+                                          (fprintf (current-error-port)
+                                                   "Internal tag error: ~s -> ~s\n"
+                                                   (link-element-tag e)
+                                                   dest)
+                                          '("!!!")))
                                     (list "???")))
                               part
-                              ht)
+                              ri)
               (printf " ``"))
             (let ([style (and (element? e)
                               (element-style e))]
@@ -147,7 +151,7 @@
                           (printf "{\\~a{" s)
                           (parameterize ([rendering-tt (or tt?
                                                            (rendering-tt))])
-                            (super render-element e part ht))
+                            (super render-element e part ri))
                           (printf "}}"))])
               (cond
                [(symbol? style)
@@ -155,6 +159,7 @@
                   [(italic) (wrap e "textit" #f)]
                   [(bold) (wrap e "textbf" #f)]
                   [(tt) (wrap e "mytexttt" #t)]
+                  [(nobreak) (super render-element e part ri)]
                   [(sf) (wrap e "textsf" #f)]
                   [(subscript) (wrap e "textsub" #f)]
                   [(superscript) (wrap e "textsuper" #f)]
@@ -170,12 +175,12 @@
                [(image-file? style) 
                 (let ([fn (install-file (image-file-path style))])
                   (printf "\\includegraphics{~a}" fn))]
-               [else (super render-element e part ht)])))
+               [else (super render-element e part ri)])))
           (when part-label?
             (printf "''"))
           (when (and (link-element? e)
                      (show-link-page-numbers))
-            (printf ", \\pageref{t:~a}" (t-encode (link-element-tag e))))
+            (printf ", \\pageref{t:~a}" (t-encode (tag-key (link-element-tag e) ri))))
           null))
 
       (define/private (t-encode s)
@@ -192,7 +197,7 @@
                   (format "x~x" (char->integer c))]))
               (string->list (format "~s" s)))))
 
-      (define/override (render-table t part ht)
+      (define/override (render-table t part ri)
         (let* ([boxed? (eq? 'boxed (table-style t))]
                [index? (eq? 'index (table-style t))]
                [inline? (and (not boxed?)
@@ -262,7 +267,7 @@
                                       [else n]))])
                           (unless (= cnt 1)
                             (printf "\\multicolumn{~a}{l}{" cnt))
-                          (render-flow (car flows) part ht)
+                          (render-flow (car flows) part ri)
                           (unless (= cnt 1)
                             (printf "}"))
                           (unless (null? (list-tail flows cnt))
@@ -284,25 +289,25 @@
                             ""))))))
         null)
 
-      (define/override (render-itemization t part ht)
+      (define/override (render-itemization t part ri)
         (printf "\n\n\\begin{itemize}\n")
         (for-each (lambda (flow)
                     (printf "\n\n\\item ")
-                    (render-flow flow part ht))
+                    (render-flow flow part ri))
                   (itemization-flows t))
         (printf "\n\n\\end{itemize}\n")
         null)
 
-      (define/override (render-blockquote t part ht)
+      (define/override (render-blockquote t part ri)
         (printf "\n\n\\begin{quote}\n")
         (parameterize ([current-table-mode (list "blockquote" t)])
           (for-each (lambda (e)
-                      (render-flow-element e part ht))
+                      (render-flow-element e part ri))
                     (blockquote-paragraphs t)))
         (printf "\n\n\\end{quote}\n")
         null)
 
-      (define/override (render-other i part ht)
+      (define/override (render-other i part ri)
         (cond
          [(string? i) (display-protected i)]
          [(symbol? i) (display
@@ -362,11 +367,11 @@
                   
       ;; ----------------------------------------
 
-      (define/override (table-of-contents sec ht)
+      (define/override (table-of-contents sec ri)
         ;; FIXME: isn't local to the section
         (make-toc-paragraph null))
 
-      (define/override (local-table-of-contents part ht)
+      (define/override (local-table-of-contents part ri)
         (make-paragraph null))
 
       ;; ----------------------------------------

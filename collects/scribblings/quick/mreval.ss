@@ -34,7 +34,7 @@
 
   ;; This one needs to be relative, because it ends up in the
   ;;  exprs.dat file:
-  (define img-dir "quick/images") ; relative to scribbles dir
+  (define img-dir "images") ; relative to src dir
 
   ;; This one can be absolute:
   (define exprs-dat-file (build-path (collection-path "scribblings")

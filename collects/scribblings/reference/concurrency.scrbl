@@ -2,7 +2,7 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["mz.ss"]
 
-@title[#:tag "mz:concurrency" #:style 'toc]{Concurrency}
+@title[#:tag "concurrency" #:style 'toc]{Concurrency}
 
 PLT Scheme supports multiple threads of control within a
 program. Threads run concurrently, in the sense that one thread can

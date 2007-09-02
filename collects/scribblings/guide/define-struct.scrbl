@@ -4,9 +4,9 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:define-struct"]{Programmer-Defined Datatypes}
+@title[#:tag "define-struct"]{Programmer-Defined Datatypes}
 
-@refalso["mz:structures"]{structure types}
+@refalso["structures"]{structure types}
 
 New datatypes are normally created with the @scheme[define-struct]
 form, which is the topic of this chapter. The class-based object
@@ -17,7 +17,7 @@ implemented in terms of structure types.
 @; ------------------------------------------------------------
 @section{Simple Structure Types: @scheme[define-struct]}
 
-@refalso["mz:define-struct"]{@scheme[define-struct]}
+@refalso["define-struct"]{@scheme[define-struct]}
 
 To a first approximation, the syntax of @scheme[define-struct] is
 
@@ -35,7 +35,7 @@ posn
 ]
 
 We explain one use of the @scheme[_struct-id] binding in the next
-section, @secref["guide:struct-subtypes"].
+section, @secref["struct-subtypes"].
 
 Meanwhile, in addition to defining @scheme[_struct-id],
 @scheme[define-struct] also defines a number of identifiers that are
@@ -78,7 +78,7 @@ built from @scheme[_struct-id] and the @scheme[_field-id]s:
        @deftech{structure type descriptor}, which is a value that
        represents the structure type as a first-class value (with
        @scheme[#:super], as discussed later in
-       @secref["guide:struct-options"]).}
+       @secref["struct-options"]).}
 
 }
 
@@ -89,10 +89,10 @@ instance of @scheme[posn], even though @scheme["apple"] and
 @scheme[#f] are not valid coordinates for the obvious uses of
 @scheme[posn] instances. Enforcing constraints on field values, such
 as requiring them to be numbers, is normally the job of a contract, as
-discussed later in @secref["guide:contracts"].
+discussed later in @secref["contracts"].
 
 @; ------------------------------------------------------------
-@section[#:tag "guide:struct-subtypes"]{Structure Subtypes}
+@section[#:tag "struct-subtypes"]{Structure Subtypes}
 
 An extended form of @scheme[define-struct] can be used to define a
 @defterm{structure subtype}, which is a structure type that extends an
@@ -126,7 +126,7 @@ p
 ]
 
 @; ------------------------------------------------------------
-@section[#:tag "guide:trans-struct"]{Opaque versus Transparent Stucture Types}
+@section[#:tag "trans-struct"]{Opaque versus Transparent Stucture Types}
 
 With a structure type definition like
 
@@ -164,7 +164,7 @@ library cannot manipulate the data in the structure except as allowed
 by the library.
 
 @; ------------------------------------------------------------
-@section[#:tag "guide:struct-options"]{More Structure Type Options}
+@section[#:tag "struct-options"]{More Structure Type Options}
 
 The full syntax of @scheme[define-struct] supports many options, both
 at the structure-type level and at the level of individual fields:
@@ -198,7 +198,7 @@ A @scheme[_struct-option] always starts with a keyword:
 
  @specspecsubform[(code:line #:inspector inspector-expr)]{
   Controls reflective access to structure instances, as discussed
-  in the previous section (@secref["guide:trans-struct"]).
+  in the previous section (@secref["trans-struct"]).
  }
 
  @specspecsubform[(code:line #:auto-value auto-expr)]{
@@ -327,4 +327,4 @@ times.
 (add-bigger-fish (add-bigger-fish null))
 ]
 
-@refdetails["mz:structures"]{structure types}
+@refdetails["structures"]{structure types}

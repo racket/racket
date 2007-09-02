@@ -16,7 +16,7 @@ expression. Also, a vector as an expression implicitly quotes the
 forms for its content, which means that identifiers and parenthesized
 forms in a vector constant represent symbols and lists.
 
-@refdetails/gory["mz:parse-vector"]{the syntax of vectors}
+@refdetails/gory["parse-vector"]{the syntax of vectors}
 
 @examples[
 (eval:alts #, @schemevalfont{#("a" "b" "c")} #("a" "b" "c"))
@@ -55,4 +55,4 @@ well as lists.
                    (vector->list #("three" "blind" "mice"))))
 ]
 
-@refdetails["mz:vectors"]{vectors and vector procedures}
+@refdetails["vectors"]{vectors and vector procedures}

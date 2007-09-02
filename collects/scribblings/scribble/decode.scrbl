@@ -5,7 +5,7 @@
 @title[#:tag "decode"]{Text Decoder}
 
 The @file{decode.ss} library helps you write document content in a
-natural way---more like plain text, except for @elem["@"] escapes.
+natural way---more like plain text, except for @litchar["@"] escapes.
 Roughly, it processes a stream of strings to produces instances of the
 @file{struct.ss} datatypes (see @secref["struct"]).
 
@@ -34,24 +34,26 @@ special text conversions:
 Decodes a document, producing a part. In @scheme[lst], instances of
 @scheme[splice] are inlined into the list. An instance of
 @scheme[title-decl] supplies the title for the part. Instances of
-@scheme[index-section-decl] (that preceed any sub-part) add index
-entries that point to the section. Instances of @scheme[part-start] at
-level 0 trigger sub-part parsing. Instances of @scheme[section]
-trigger are used as-is as subsections, and instances of
-@scheme[paragraph] and other flow-element datatypes are used as-is in
-the enclosing flow.
+@scheme[part-index-decl] (that precede any sub-part) add index entries
+that point to the section. Instances of @scheme[part-collect-decl] add
+elements to the part that are used only during the @techlink{collect
+pass}. Instances of @scheme[part-start] at level 0 trigger sub-part
+parsing. Instances of @scheme[section] trigger are used as-is as
+subsections, and instances of @scheme[paragraph] and other
+flow-element datatypes are used as-is in the enclosing flow.
 
 }
 
 @defproc[(decode-part [lst list?]
-                      [tag string?]
+                      [tags (listof string?)]
                       [title (or/c false/c list?)]
                       [depth excat-nonnegative-integer?])
          part?]{
 
-Like @scheme[decode], but given a tag for the section, a title (if
-@scheme[#f], then a @scheme[title-decl] instance is used if found),
-and a depth for @scheme[part-start]s to trigger sub-part parsing.
+Like @scheme[decode], but given a list of tag string for the part, a
+title (if @scheme[#f], then a @scheme[title-decl] instance is used if
+found), and a depth for @scheme[part-start]s to trigger sub-part
+parsing.
 
 }
 
@@ -90,25 +92,38 @@ otherwise.
 
 }
 
-@defstruct[title-decl ([tag any/c]
+@defstruct[title-decl ([tag-prefix (or/c false/c string?)]
+                       [tags (listof string?)]
+                       [style any/c]
                        [content list?])]{
 
-See @scheme[decode] and @scheme[decode-part].
+See @scheme[decode] and @scheme[decode-part]. The @scheme[tag-prefix]
+and @scheme[style] fields are propagated to the resulting
+@scheme[part].
 
 }
 
 @defstruct[part-start ([depth integer?]
-                       [tag (or/c false/c string?)]
+                       [tag-prefix (or/c false/c string?)]
+                       [tags (listof string?)]
+                       [style any/c]
                        [title list?])]{
 
-See @scheme[decode] and @scheme[decode-part].
+Like @scheme[title-decl], but for a sub-part.  See @scheme[decode] and
+@scheme[decode-part].
 
 }
 
 @defstruct[part-index-decl ([plain-seq (listof string?)]
-                            [content-seq list?])]{
+                            [entry-seq list?])]{
 
 See @scheme[decode]. The two fields are as for @scheme[index-element].
+
+}
+
+@defstruct[part-collect-decl ([element element?])]{
+
+See @scheme[decode].
 
 }
 

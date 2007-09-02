@@ -220,9 +220,15 @@
                (lambda ()
                  (parameterize ([current-load-relative-directory dir])
                    ;; Compile the collection files via make-collection
-                   (let ([sses (filter
-                                extract-base-filename/ss
-                                (directory-list))])
+                   (let ([sses (append
+                                ;; Find all .ss/.scm files:
+                                (filter
+                                 extract-base-filename/ss
+                                 (directory-list))
+                                ;; Add specified doc sources:
+                                (map car (info
+                                          'scribblings
+                                          (lambda () null))))])
                      (let ([filtered-sses
                             (remove*
                              (map string->path

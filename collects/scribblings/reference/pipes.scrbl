@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:pipeports"]{Pipes}
+@title[#:tag "pipeports"]{Pipes}
 
 A Scheme @deftech{pipe} is internal to Scheme, and not related to
 OS-level pipes (which are @tech{file-stream ports}) for communicating

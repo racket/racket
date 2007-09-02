@@ -144,4 +144,7 @@ extern Scheme_Object *scheme_get_expand_observe();
 #define SCHEME_EXPAND_OBSERVE_EXIT_LOCAL_EXPR(obs,stx,opaque) \
         _SCHEME_EXPOBS(obs,140,scheme_make_pair(stx,opaque))
 
+#define SCHEME_EXPAND_OBSERVE_START_EXPAND(obs) \
+        _SCHEME_EXPOBS(obs,141,scheme_false)
+
 #endif

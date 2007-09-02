@@ -1,9 +1,9 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "mz:numbers"]{Numbers}
+@title[#:tag "numbers"]{Numbers}
 
-@guideintro["guide:numbers"]{numbers}
+@guideintro["numbers"]{numbers}
 
 All numbers are @deftech{complex numbers}. Some of them are
 @deftech{real numbers}, and all of the real numbers that can be
@@ -621,7 +621,7 @@ one of the last three integers must be non-zero.}
 
 @defproc[(string->number [s string?] [radix (exact-integer-in/c 2 16)
  10]) (or/c number? false/c)]{ Reads and returns a number datum from
- @scheme[s] (see @secref["mz:parse-number"]), returning @scheme[#f] if
+ @scheme[s] (see @secref["parse-number"]), returning @scheme[#f] if
  @scheme[s] does not parse exactly as a number datum (with no
  whitespace). The optional @scheme[radix] argument specifies the default
  base for the number, which can be overriden by @litchar{#b},

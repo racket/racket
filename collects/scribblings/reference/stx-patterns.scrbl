@@ -278,7 +278,7 @@ Template forms produce a syntax object as follows:
 
 A @scheme[(#,(schemekeywordfont "syntax") template)] form is normally
 abbreviated as @scheme[#'template]; see also
-@secref["mz:parse-quote"]. If @scheme[template] contains no pattern
+@secref["parse-quote"]. If @scheme[template] contains no pattern
 variables, then @scheme[#'template] is equivalent to
 @scheme[(quote-syntax template)].}
 
@@ -302,7 +302,7 @@ as nested @scheme[quasiquote]s.
 Also analogous @scheme[quasiquote], the reader converts @litchar{#`}
 to @scheme[quasisyntax], @litchar{#,} to @scheme[unsyntax], and
 @litchar["#,@"] to @scheme[unsyntax-splicing]. See also
-@secref["mz:parse-quote"].}
+@secref["parse-quote"].}
 
 
 

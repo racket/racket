@@ -2,9 +2,9 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["mz.ss"]
 
-@title[#:tag "mz:exns"]{Exceptions}
+@title[#:tag "exns"]{Exceptions}
 
-See @secref["mz:exn-model"] for information on the PLT Scheme
+See @secref["exn-model"] for information on the PLT Scheme
 exception model. It is based on @cite[#:key "friedman-exns" #:title
 "Exception system proposal" #:author "Daniel P. Friedman and
 C. T. Haynes and R. Kent Dybvig" #:location
@@ -26,7 +26,7 @@ particular required arity (e.g., @scheme[call-with-input-file],
 @scheme[exn:fail:contract] if the arity is incorrect.
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:errorproc"]{Raising Exceptions}
+@section[#:tag "errorproc"]{Raising Exceptions}
 
 @defproc[(raise [v any/c]) any]{
 
@@ -35,7 +35,7 @@ raised. The @scheme[v] argument can be anything; it is passed to the
 current @deftech{exception handler}.  Breaks are disabled from the
 time the exception is raised until the exception handler obtains
 control, and the handler itself is @scheme[parameterize-break]ed to
-disable breaks initially; see @secref["mz:breakhandler"] for more
+disable breaks initially; see @secref["breakhandler"] for more
 information on breaks.}
 
 
@@ -77,7 +77,7 @@ In all cases, the constructed message string is passed to
 Like @scheme[error], but constructs an exception with
 @scheme[make-exn:fail:user] instead of @scheme[make-exn:fail]. The
 default error display handler does not show a ``stack trace'' for
-@scheme[exn:fail:user] exceptions (see @secref["mz:contmarks"]), so
+@scheme[exn:fail:user] exceptions (see @secref["contmarks"]), so
 @scheme[raise-user-error] should be used for errors that are intended
 for end users.}
 
@@ -190,7 +190,7 @@ exception is raised during the evaluation of @scheme[thunk] (in an
 extension of the current continuation that does not have its own
 exception handler), then @scheme[f] is applied to the @scheme[raise]d
 value in the continuation of the @scheme[raise] call (but extended
-with a @tech{continuation barrier}; see @secref["mz:prompt-model"]).
+with a @tech{continuation barrier}; see @secref["prompt-model"]).
 
 Any procedure that takes one argument can be an exception handler.  If
 the exception handler returns a value when invoked by @scheme[raise],
@@ -258,7 +258,7 @@ Before any predicate or handler procedure is invoked, the continuation
 of the entire @scheme[with-handlers] expression is restored, but also
 @scheme[parameterize-break]ed to disable breaks. Thus, breaks are
 disabled by default during the predicate and handler procedures (see
-@secref["mz:breakhandler"]), and the exception handler is the one from
+@secref["breakhandler"]), and the exception handler is the one from
 the continuation of the @scheme[with-handlers] expression.
 
 The @scheme[exn:fail?] procedure is useful as a handler predicate to
@@ -518,7 +518,7 @@ The fields of an @scheme[srcloc] instance are as follows:
 @itemize{
 
  @item{@scheme[source] --- An arbitrary value identifying the source,
- often a path (see @secref["mz:pathutils"]).}
+ often a path (see @secref["pathutils"]).}
 
  @item{@scheme[line] --- The line number (counts from 1) or
  @scheme[#f] (unknown).}

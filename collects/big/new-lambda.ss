@@ -488,8 +488,8 @@
   ;; cannot be used to compute the default).
   (define-syntax let-maybe
     (syntax-rules (required)
-      [(_ () () () () () () body)
-       (let () body)]
+      [(_ () () () () () () . body)
+       (let () . body)]
       [(_ ([id ignore #:plain] . more) kw-args kw-arg?s opt-args opt-arg?s (req-id . req-ids) . body)
        (let ([id req-id])
          (let-maybe more kw-args kw-arg?s opt-args opt-arg?s req-ids . body))]

@@ -2,7 +2,7 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["mz.ss"]
 
-@title[#:tag "mz:securityguards"]{Security Guards}
+@title[#:tag "securityguards"]{Security Guards}
 
 @defproc[(security-guard? [v any/c]) boolean?]{
 
@@ -18,7 +18,7 @@ current security guard is consulted to check whether the thread is
 allowed read access to the file. If access is granted, the thread
 receives a port that it may use indefinitely, regardless of changes to
 the security guard (although the port's custodian could shut down the
-port; see @secref["mz:custodians"]).
+port; see @secref["custodians"]).
 
 A thread's current security guard is determined by the
 @scheme[current-security-guard] parameter. Every security guard has a
@@ -52,7 +52,7 @@ The @scheme[file-guard] procedure must accept three arguments:
   @item{a symbol for the primitive procedure that triggered the access
   check, which is useful for raising an exception to deny access.}
 
-  @item{a path (see @secref["mz:pathutils"]) or @scheme[#f] for
+  @item{a path (see @secref["pathutils"]) or @scheme[#f] for
   pathless queries, such as @scheme[(current-directory)],
   @scheme[(filesystem-root-list)], and @scheme[(find-system-path
   symbol)]. A path provided to @scheme[file-guard] is not expanded or
@@ -121,7 +121,7 @@ three arguments:
   @item{a symbol for the primitive procedure that triggered the access
   check, which is useful for raising an exception to deny access.}
 
-  @item{a complete path (see @secref["mz:pathutils"]) representing the
+  @item{a complete path (see @secref["pathutils"]) representing the
   file to create as link.}
 
   @item{a path representing the content of the link, which may be
@@ -143,9 +143,9 @@ security guards.
 The @scheme[file-guard], @scheme[network-guard], and
 @scheme[link-guard] procedures are invoked in the thread that called
 the access-checked primitive. Breaks may or may not be enabled (see
-@secref["mz:breakhandler"]). Full continuation jumps are blocked going
+@secref["breakhandler"]). Full continuation jumps are blocked going
 into or out of the @scheme[file-guard] or @scheme[network-guard] call
-(see @secref["mz:prompt-model"]).}
+(see @secref["prompt-model"]).}
 
 
 @defparam[current-security-guard guard security-guard?]{

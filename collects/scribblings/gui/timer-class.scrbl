@@ -18,7 +18,7 @@ Timers have a relatively high priority in the event queue. Thus, if
  within the @method[timer% notify] procedure to allow guaranteed event
  processing.
 
-See @secref["mr:eventspaceinfo"] for more information about event
+See @secref["eventspaceinfo"] for more information about event
  priorities.
 
 

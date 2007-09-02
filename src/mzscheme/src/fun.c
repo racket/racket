@@ -133,6 +133,7 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv);
 static Scheme_Object *object_name(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity_includes(int argc, Scheme_Object *argv[]);
+static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_closure_p(int argc, Scheme_Object *argv[]);
@@ -464,6 +465,11 @@ scheme_init_fun (Scheme_Env *env)
 			     scheme_make_folding_prim(procedure_arity_includes,
 						      "procedure-arity-includes?",
 						      2, 2, 1),
+			     env);
+  scheme_add_global_constant("procedure-reduce-arity",
+			     scheme_make_prim_w_arity(procedure_reduce_arity,
+						      "procedure-reduce_arity",
+						      2, 2),
 			     env);
   scheme_add_global_constant("procedure-closure-contents-eq?",
 			     scheme_make_folding_prim(procedure_equal_closure_p,
@@ -3102,6 +3108,14 @@ static Scheme_Object *procedure_arity_includes(int argc, Scheme_Object *argv[])
   n = scheme_extract_index("procedure-arity-includes?", 1, argc, argv, -2, 0);
 
   return scheme_get_or_check_arity(argv[0], n);
+}
+
+static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_PROCP(argv[0]))
+    scheme_wrong_type("procedure-reduce-arity", "procedure", 0, argc, argv);
+
+  return argv[0];
 }
 
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])

@@ -1,3 +1,8 @@
+Version 371.2
+Added require-for-label, provide-for-syntax, provide-for-label,
+ identifier-label-binding, module-label-identifier=?
+
+
 Version 371, August 2007
 Added hash-table-iterate-{first,next,key,value}
 Added keyword<?

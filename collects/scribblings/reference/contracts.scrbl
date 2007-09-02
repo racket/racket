@@ -3,6 +3,8 @@
 
 @title[#:tag "mzlib:contract" #:style 'toc]{Contracts}
 
+@declare-exporting[big (lib "big/contract")]
+
 A @defterm{contract} controls the flow of values to ensure that the
 expectations of one party are met by another party.  The
 @scheme[provide/contract] form is the primary mechanism for
@@ -361,7 +363,7 @@ produces a contract on functions of two arguments. The first argument
 must be an integer, and the second argument must be a boolean. The
 function must produce an integer. (This example uses Scheme's infix
 notation so that the @scheme[->] appears in a suggestive place; see
-@secref["mz:parse-pair"]).
+@secref["parse-pair"]).
 
 If @scheme[any] is used as the last argument to @scheme[->], no
 contract checking is performed on the result of the function, and
@@ -854,7 +856,7 @@ Here is the first of those two projections, rewritten for
 use in the contract system:
 
 @schemeblock[
-(define (int-proj pos neg src-info contract-name)
+(define (int-proj pos neg src-info name)
   (lambda (x)
     (if (integer? x)
         x
@@ -862,7 +864,7 @@ use in the contract system:
          val
          src-info
          pos
-         contract-name
+         name
          "expected <integer>, given: ~e"
          val))))
 ]
@@ -883,9 +885,9 @@ to @scheme[raise-contract-error]).
 Compare that to the projection for our function contract:
 
 @schemeblock[
-(define (int->int-proj pos neg src-info contract-name)
-  (let ([dom (int-proj neg pos src-info contract-name)]
-        [rng (int-proj pos neg src-info contract-name)])
+(define (int->int-proj pos neg src-info name)
+  (let ([dom (int-proj neg pos src-info name)]
+        [rng (int-proj pos neg src-info name)])
     (lambda (f)
       (if (and (procedure? f)
                (procedure-arity-includes? f 1))
@@ -895,7 +897,7 @@ Compare that to the projection for our function contract:
            val
            src-info
            pos
-           contract-name
+           name
            "expected a procedure of one argument, given: ~e"
            val)))))
 ]
@@ -940,9 +942,9 @@ returns a contract for functions between them.
 
 @schemeblock[
 (define (make-simple-function-contract dom-proj range-proj)
-  (lambda (pos neg src-info contract-name)
-    (let ([dom (dom-proj neg pos src-info contract-name)]
-          [rng (range-proj pos neg src-info contract-name)])
+  (lambda (pos neg src-info name)
+    (let ([dom (dom-proj neg pos src-info name)]
+          [rng (range-proj pos neg src-info name)])
       (lambda (f)
         (if (and (procedure? f)
                  (procedure-arity-includes? f 1))
@@ -952,7 +954,7 @@ returns a contract for functions between them.
              val
              src-info
              pos
-             contract-name
+             name
              "expected a procedure of one argument, given: ~e"
              val))))))
 ]
@@ -1131,7 +1133,7 @@ For example,
 
 (define-opt/c (bst-between/c lo hi)
   (or/c null?
-        (bt/c [val (between/c lo hi)]
+        (bt/c [val (real-in lo hi)]
               [left (val) (bst-between/c lo val)]
               [right (val) (bst-between/c val hi)])))
 

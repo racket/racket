@@ -110,7 +110,7 @@ list loops.
 Scheme provides a general @defterm{list compherension} form
 @scheme[for/list], which builds a list by iterating through
 @defterm{sequences}. List comprehensions and related iteration forms
-are described in see @secref["guide:for"].
+are described in see @secref["for"].
 
 @;------------------------------------------------------------------------
 @section{List Iteration from Scratch}
@@ -183,7 +183,7 @@ consider reading @|HtDP|. If you are merely suspicious of the use
 of recursive calls instead of a looping construct, then read on.
 
 @;------------------------------------------------------------------------
-@section[#:tag "guide:tail-recursion"]{Tail Recursion}
+@section[#:tag "tail-recursion"]{Tail Recursion}
 
 Both the @scheme[my-length] and @scheme[my-map] functions run in
 @math{O(n)} time for a list of length @math{n}. This is easy to see by

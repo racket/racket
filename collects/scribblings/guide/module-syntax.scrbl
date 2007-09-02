@@ -38,7 +38,7 @@ supplies most of the bindings described in this guide, including
 @scheme[require], @scheme[define], and @scheme[provide].
 
 For example, the @file{cake.ss} example of the
-@seclink["guide:module-basics"]{previous section} could be written as
+@seclink["module-basics"]{previous section} could be written as
 
 @schemeblock[
 (module cake (lib "big/lang.ss")

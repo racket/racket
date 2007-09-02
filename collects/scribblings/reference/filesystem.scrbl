@@ -4,7 +4,7 @@
 @title{Filesystem}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:findpaths"]{Locating Paths}
+@section[#:tag "findpaths"]{Locating Paths}
 
 @defproc[(find-system-path [kind symbol?]) path?]{
 
@@ -113,7 +113,7 @@ by @scheme[kind], which must be one of the following:
   bound initially to @scheme[program].}
 
  @item{@indexed-scheme['collects-dir] --- a path to the main
- collection of libraries (see @secref["mz:collects"]). If this path is
+ collection of libraries (see @secref["collects"]). If this path is
  relative, it's relative to the directory of @scheme[(find-system-path
  'exec-file)].  This path is normally embedded in the @exec{mzscheme}
  executable, but it can be overridden by the @DFlag{collects} or
@@ -153,7 +153,7 @@ directory as the executable. The result is then the full path for the
 found @scheme[related-sub], instead of the path for the executable.
  
 This procedure is used by the @exec{mzscheme} executable to find the
-standard library collection directory (see @secref["mz:collects"]).  In
+standard library collection directory (see @secref["collects"]).  In
 this case, @scheme[program] is the name used to start MzScheme and
 @scheme[related] is @scheme["collects"].  The @scheme[related-sub]
 argument is used because, under @|AllUnix|, @scheme[program-sub] may
@@ -185,7 +185,7 @@ current directory is always implicitly the first item in
 directory first under Windows.)}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:fileutils"]{Files}
+@section[#:tag "fileutils"]{Files}
 
 @defproc[(file-exists? [path path-string?]) boolean?]{
 
@@ -249,7 +249,7 @@ existing @scheme[new].}
          any]{
 
 Returns the file or directory's last modification date as
-platform-specific seconds (see also @secref["mz:time"]) when
+platform-specific seconds (see also @secref["time"]) when
 @scheme[secs-n] is not provided or is @scheme[#f]. (For FAT
 filesystems under Windows, directories do not have modification
 dates. Therefore, the creation date is returned for a directory (but
@@ -298,7 +298,7 @@ successfully,the @exnraise[exn:fail:filesystem]. Under Windows, the
 @exnraise[exn:fail:unsupported] always.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:directories"]{Directories}
+@section[#:tag "directories"]{Directories}
 
 See also: @scheme[rename-file-or-directory],
 @scheme[file-or-directory-modify-seconds],

@@ -3,7 +3,7 @@
 
 @define[cvt (schemefont "CVT")]
 
-@title[#:tag "mz:syntax" #:style 'toc]{Core Syntactic Forms}
+@title[#:tag "syntax" #:style 'toc]{Core Syntactic Forms}
 
 This section describes the core syntax forms that apear in a fully
 expanded expression, plus a many closely-related non-core forms.
@@ -46,14 +46,14 @@ Within such specifications,
         @item{A meta-identifier that ends with @scheme[_body] stands
               for a sub-form that is expanded in an
               internal-definition context (see
-              @secref["mz:intdef-body"]).}
+              @secref["intdef-body"]).}
 
               }} }
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:quote"]{Literals: @scheme[quote] and @scheme[#%datum]}
+@section[#:tag "quote"]{Literals: @scheme[quote] and @scheme[#%datum]}
 
-@guideintro["guide:quote"]{@scheme[quote]}
+@guideintro["quote"]{@scheme[quote]}
 
 @defform[(quote datum)]{
 
@@ -70,7 +70,7 @@ actual representation of the program fragment) without its
 
 @defform[(#%datum . datum)]{
 
-Expands to @scheme[(#,(schemekeywordfont "quote") datum)]. See also @secref["mz:expand-steps"]
+Expands to @scheme[(#,(schemekeywordfont "quote") datum)]. See also @secref["expand-steps"]
 for information on how the expander introduces @schemeidfont{#%datum}
 identifiers.
 
@@ -81,7 +81,7 @@ identifiers.
 }
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:#%expression"]{Expression Wrapper: @scheme[#%expression]}
+@section[#:tag "#%expression"]{Expression Wrapper: @scheme[#%expression]}
 
 @defform[(#%expression expr)]{
 
@@ -95,12 +95,12 @@ expression.
 ]}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:#%top"]{Variable References and @scheme[#%top]}
+@section[#:tag "#%top"]{Variable References and @scheme[#%top]}
 
 @defform/none[id]{
 
 Refers to a module-level or local binding, when @scheme[id] is
-not bound as a transformer (see @secref["mz:expansion"]). At run-time,
+not bound as a transformer (see @secref["expansion"]). At run-time,
 the reference evaluates to the value in the location associated with
 the binding.
 
@@ -108,7 +108,7 @@ When the expander encounters an @scheme[id] that is not bound by a
 module-level or local binding, it converts the expression to @scheme[(#,
 @schemeidfont{#%top} . id)] giving @schemeidfont{#%top} the lexical
 context of the @scheme[id]; typically, that context refers to
-@scheme[#%top]. See also @secref["mz:expand-steps"].
+@scheme[#%top]. See also @secref["expand-steps"].
 
 @examples[
 (define x 10)
@@ -122,7 +122,7 @@ x
 Refers to a top-level definition that could bind @scheme[id], even if
 @scheme[id] has a local binding in its context. Such references are
 disallowed anywhere within a @scheme[module] form.  See also
-@secref["mz:expand-steps"] for information on how the expander
+@secref["expand-steps"] for information on how the expander
 introduces @schemeidfont{#%top} identifiers.
 
 @examples[
@@ -145,17 +145,17 @@ The result is useful only to low-level extensions; see
 @secref["inside-mzscheme"].}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:application"]{Procedure Applications and @scheme[#%app]}
+@section[#:tag "application"]{Procedure Applications and @scheme[#%app]}
 
 @section-index{evaluation order}
 
-@guideintro["guide:application"]{procedure applications}
+@guideintro["application"]{procedure applications}
 
 @defform/none[(proc-expr arg ...)]{
 
 Applies a procedure, when @scheme[proc-expr] is not an
 identifier that has a transformer binding (see
-@secref["mz:expansion"]).
+@secref["expansion"]).
 
 More precisely, the expander converts this form to @scheme[(#,
 @schemeidfont{#%app} proc-expr arg ...)], giving @schemeidfont{#%app}
@@ -163,7 +163,7 @@ the lexical context that is associated with the original form (i.e.,
 the pair that combines @scheme[proc-expr] and its
 arguments). Typically, the lexical context of the pair indicates the
 procedure-application @scheme[#%app] that is described next. See also
-@secref["mz:expand-steps"].
+@secref["expand-steps"].
 
 @examples[
 (+ 1 2)
@@ -201,7 +201,7 @@ the @scheme[_keyword]s, and not their positions. The other
 @scheme[_arg-expr] values, in contrast, are associated with variables
 according to their order in the application form.
 
-See also @secref["mz:expand-steps"] for information on how the
+See also @secref["expand-steps"] for information on how the
 expander introduces @schemeidfont{#%app} identifiers.
 
 @examples[
@@ -215,9 +215,9 @@ Like @scheme[#%app], but without support for keyword arguments.
 }
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:lambda"]{Procedure Expressions: @scheme[lambda] and @scheme[case-lambda]}
+@section[#:tag "lambda"]{Procedure Expressions: @scheme[lambda] and @scheme[case-lambda]}
 
-@guideintro["guide:lambda"]{procedure expressions}
+@guideintro["lambda"]{procedure expressions}
 
 @defform/subs[(lambda gen-formals body ...+)
               ([formals (id ...)
@@ -328,7 +328,7 @@ the procedure body.
 
 When compiling a @scheme[lambda] or @scheme[case-lambda] expression,
 Scheme looks for a @indexed-scheme['method-arity-error] property
-attached to the expression (see @secref["mz:stxprops"]). If it is
+attached to the expression (see @secref["stxprops"]). If it is
 present with a true value, and if no case of the procedure accepts
 zero arguments, then the procedure is marked so that an
 @scheme[exn:fail:contract:arity] exception involving the procedure
@@ -371,9 +371,9 @@ Like @scheme[lambda], but without support for keyword or optional arguments.
 }
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:let"]{Local Binding: @scheme[let], @scheme[let*], @scheme[letrec], ...}
+@section[#:tag "let"]{Local Binding: @scheme[let], @scheme[let*], @scheme[letrec], ...}
 
-@guideintro["guide:let"]{local binding}
+@guideintro["let"]{local binding}
 
 @defform*[[(let ([id val-expr] ...) body ...+)
            (let proc-id ([id init-expr] ...) body ...+)]]{
@@ -479,10 +479,45 @@ and in the @scheme[body]s.
   (is-odd? 11))
 ]}
 
-@;------------------------------------------------------------------------
-@section[#:tag "mz:if"]{Conditionals: @scheme[if], @scheme[cond], @scheme[and], and @scheme[or]}
+@defform[(let-syntax ([id trans-expr] ...) body ...+)]{
 
-@guideintro["guide:conditionals"]{conditionals}
+Creates a @tech{transformer binding} (see
+@secref["transformer-model"]) of each @scheme[id] with the value of
+@scheme[trans-expr], which is an expression at @tech{phase level} 1
+relative to the surrounding context. (See @secref["id-model"] for
+information on @tech{phase levels}.)
+
+Each @scheme[id] is bound in the @scheme[body]s, and not in other
+@scheme[trans-expr]s.}
+
+@defform[(letrec-syntax ([id trans-expr] ...) body ...+)]{
+
+Like @scheme[let-syntax], except that each @scheme[id] is also bound
+within all @scheme[trans-expr]s.}
+
+@defform[(let-syntaxes ([(id ...) trans-expr] ...) body ...+)]{
+
+Like @scheme[let-syntax], but each @scheme[trans-expr] must produce as
+many values as corresponding @scheme[id]s, each of which is bound to
+the corresponding value.}
+
+@defform[(letrec-syntaxes ([(id ...) trans-expr] ...) body ...+)]{
+
+Like @scheme[let-syntax], except that each @scheme[id] is also bound
+within all @scheme[trans-expr]s.}
+
+@defform[(letrec-syntaxes+values ([(trans-id ...) trans-expr] ...)
+                                 ([(val-id ...) val-expr] ...)
+            body ...+)]{
+
+Combines @scheme[letrec-syntaxes] with @scheme[letrec-values]: each
+@scheme[trans-id] and @scheme[val-id] is bound in all
+@scheme[trans-expr]s and @scheme[val-expr]s.}
+
+@;------------------------------------------------------------------------
+@section[#:tag "if"]{Conditionals: @scheme[if], @scheme[cond], @scheme[and], and @scheme[or]}
+
+@guideintro["conditionals"]{conditionals}
 
 @defform[(if test-expr then-expr else-expr)]{
 
@@ -505,7 +540,7 @@ position with respect to the @scheme[if] form.
                             [test-expr => proc-expr]
                             [test-expr]])]{
 
-@guideintro["guide:cond"]{@scheme[cond]}
+@guideintro["cond"]{@scheme[cond]}
 
 A @scheme[cond-clause] that starts with @scheme[else] must be the last
 @scheme[cond-clause].
@@ -516,7 +551,7 @@ If only a @scheme[[else then-expr ...+]] is present, then the
 @scheme[then-expr]s are evaluated. The results from all but the last
 @scheme[then-expr] are ignored. The results of the last
 @scheme[then-expr], which is in tail position with respect to the
-@scheme[cond] form, provides the result for the whole @scheme[cond]
+@scheme[cond] form, are the results for the whole @scheme[cond]
 form.
 
 Otherwise, the first @scheme[test-expr] is evaluated. If it produces
@@ -556,9 +591,16 @@ returned as the result of the @scheme[cond] form. The
  [(member 2 '(1 2 3))])
 ]}
 
+
+@defidform[else]{
+
+Recognized special ly withing forms like @scheme[cond]. An
+@scheme[else] form as an expression is a syntax error.}
+
+
 @defform[(and expr ...)]{
 
-@guideintro["guide:and+or"]{@scheme[and]}
+@guideintro["and+or"]{@scheme[and]}
 
 If no @scheme[expr]s are provided, then result is @scheme[#f].
 
@@ -582,7 +624,7 @@ respect to the original @scheme[and] form.
 
 @defform[(or expr ...)]{
 
-@guideintro["guide:and+or"]{@scheme[or]}
+@guideintro["and+or"]{@scheme[or]}
 
 If no @scheme[expr]s are provided, then result is @scheme[#t].
 
@@ -605,9 +647,51 @@ position with respect to the original @scheme[or] form.
 ]}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:define"]{Definitions: @scheme[define], @scheme[define-syntax], ...}
+@section[#:tag "case"]{Dispatch: @scheme[case]}
 
-@guideintro["guide:define"]{definitions}
+@defform/subs[#:literals (else)
+              (case val-expr case-clause ...)
+              ([case-clause [(datum ...) then-expr ...+]
+                            [else then-expr ...+]])]{
+
+Evaluates @scheme[val-expr] and uses the result to select a
+@scheme[case-clause]. The selected clause is the first one with a
+@scheme[datum] whose @scheme[quote]d form is @scheme[eqv?] to the
+result of @scheme[val-expr]. If no such @scheme[datum] is present, the
+@scheme[else] @scheme[case-clause] is selected; if no @scheme[else]
+@scheme[case-clause] is present, either, then the result of the
+@scheme[case] form is @|void-const|.
+
+For the selected @scheme[case-clause], the results of the last
+@scheme[then-expr], which is in tail position with respect to the
+@scheme[cond] form, are the results for the whole @scheme[cond] form.
+
+A @scheme[case-clause] that starts with @scheme[else] must be the last
+@scheme[case-clause].
+
+@examples[
+(case (+ 7 5)
+ [(1 2 3) 'small]
+ [(10 11 12) 'big])
+(case (- 7 5)
+ [(1 2 3) 'small]
+ [(10 11 12) 'big])
+]
+@def+int[
+(define (classify c)
+  (case (char-general-category c)
+   [(ll lu lt ln lo) "letter"]
+   [(nd nl no) "number"]
+   [else "other"]))
+(classify #\A)
+(classify #\1)
+(classify #\!)
+]}
+
+@;------------------------------------------------------------------------
+@section[#:tag "define"]{Definitions: @scheme[define], @scheme[define-syntax], ...}
+
+@guideintro["define"]{definitions}
 
 @defform*/subs[[(define id expr)
                 (define (head args) body ...+)]
@@ -680,9 +764,9 @@ z
            (define-syntax (head args) body ...+)]]{
 
 The first form creates a @tech{transformer binding} (see
-@secref["mz:transformer-model"]) of @scheme[id] with the value of
+@secref["transformer-model"]) of @scheme[id] with the value of
 @scheme[expr], which is an expression at @tech{phase level} 1 relative
-to the surrounding context. (See @secref["mz:id-model"] for
+to the surrounding context. (See @secref["id-model"] for
 information on @tech{phase levels}.)
 
 The second form is a shorthand the same as for @scheme[define]; it
@@ -704,7 +788,7 @@ as @scheme[id]s, and each value is bound to the corresponding
 Like @scheme[define], except that the binding is at @tech{phase level}
 1 instead of @tech{phase level} 0 relative to its context. The
 expression for the binding is also at @tech{phase level} 1. (See
-@secref["mz:id-model"] for information on @tech{phase levels}.)}
+@secref["id-model"] for information on @tech{phase levels}.)}
 
 @defform[(define-values-for-syntax (id ...) expr)]{
 
@@ -713,9 +797,9 @@ many value as supplied @scheme[id]s, and all of the @scheme[id]s are
 bound (at @tech{phase level} 1).}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:begin"]{Sequencing: @scheme[begin], @scheme[begin0], and @scheme[begin-for-syntax]}
+@section[#:tag "begin"]{Sequencing: @scheme[begin], @scheme[begin0], and @scheme[begin-for-syntax]}
 
-@guideintro["guide:begin"]{@scheme[begin] and @scheme[begin0]}
+@guideintro["begin"]{@scheme[begin] and @scheme[begin0]}
 
 @defform*[[(begin form ...)
            (begin expr ...+)]]{
@@ -762,7 +846,7 @@ in tail position only if no @scheme[body]s are present.
 
 Allowed only in a @tech{top-level context} or @tech{module context}.
 Each @scheme[form] is partially expanded (see
-@secref["mz:partial-expansion"]) to determine one of the following
+@secref["partial-expansion"]) to determine one of the following
 classifications:
 
 @itemize{
@@ -787,9 +871,9 @@ classifications:
 }
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:when+unless"]{Guarded Evaluation: @scheme[when] and @scheme[unless]}
+@section[#:tag "when+unless"]{Guarded Evaluation: @scheme[when] and @scheme[unless]}
 
-@guideintro["guide:when+unless"]{@scheme[when] and @scheme[unless]}
+@guideintro["when+unless"]{@scheme[when] and @scheme[unless]}
 
 @defform[(when test-expr expr ...)]{
 
@@ -819,9 +903,9 @@ Equivalent to @scheme[(when (not test-expr) expr ...)].
 ]}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:set!"]{Assignment: @scheme[set!] and @scheme[set!-values]}
+@section[#:tag "set!"]{Assignment: @scheme[set!] and @scheme[set!-values]}
 
-@guideintro["guide:set!"]{@scheme[set!]}
+@guideintro["set!"]{@scheme[set!]}
 
 @defform[(set! id expr)]{
 
@@ -880,7 +964,7 @@ binding to an @tech{assignment transformer}.}
 @include-section["for.scrbl"]
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:wcm"]{Continuation Marks: @scheme[with-continuation-mark]}
+@section[#:tag "wcm"]{Continuation Marks: @scheme[with-continuation-mark]}
 
 @defform[(with-continuation-mark key-expr val-expr result-expr)]{
 
@@ -897,10 +981,10 @@ result of the @scheme[resultbody-expr] is the result of the
 is in tail position for the @scheme[with-continuation-mark]
 expression).
 
-@moreref["mz:contmarks"]{continuation marks}}
+@moreref["contmarks"]{continuation marks}}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:quasiquote"]{Quasiquoting: @scheme[quasiquote], @scheme[unquote], and @scheme[unquote-splicing]}
+@section[#:tag "quasiquote"]{Quasiquoting: @scheme[quasiquote], @scheme[unquote], and @scheme[unquote-splicing]}
 
 @defform[(quasiquote datum)]{
 
@@ -922,7 +1006,7 @@ must appear as the @scheme[car] or a quoted pair.
 
 A @scheme[quasiquote], @scheme[unquote], or @scheme[unquote-splicing]
 form is typically abbreviated with @litchar{`}, @litchar{,}, or
-@litchar[",@"], respectively. See also @secref["mz:parse-quote"].
+@litchar[",@"], respectively. See also @secref["parse-quote"].
 
 @examples[
 `(0 1 2)
@@ -980,7 +1064,7 @@ information} and source-location information attached to
 }
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:module"]{Modules: @scheme[module], ...}
+@section[#:tag "module"]{Modules: @scheme[module], ...}
 
 @defform[(module id require-spec form ...)]{
 
@@ -1010,11 +1094,11 @@ multiple @scheme[form]s are provided, they are wrapped with
 After such wrapping, if any, and before any expansion, an
 @indexed-scheme['enclosing-module-name] property is attached to the
 @schemeidfont{#%module-begin} syntax object (see
-@secref["mz:stxprops"]); the property's value is a symbol
+@secref["stxprops"]); the property's value is a symbol
 corresponding to @scheme[id].
 
 Each @scheme[form] is partially expanded (see
-@secref["mz:partial-expansion"]) in a @tech{module context}. Further
+@secref["partial-expansion"]) in a @tech{module context}. Further
 action depends on the shape of the form:
 
 @itemize{
@@ -1076,7 +1160,7 @@ are evaluated in order as they appear within the module; accessing a
 @tech{module-level variable} before it is defined signals a run-time
 error, just like accessing an undefined global variable.
 
-See also @secref["mz:module-eval-model"] and @secref["mz:mod-parse"].}
+See also @secref["module-eval-model"] and @secref["mod-parse"].}
 
 @defform[(#%module-begin form ...)]{
 
@@ -1084,7 +1168,7 @@ Legal only in a @tech{module begin context}, and handled by the
 @scheme[module] form.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "mz:require"]{Importing: @scheme[require], @scheme[require-for-syntax], @scheme[require-for-template]}
+@section[#:tag "require"]{Importing: @scheme[require], @scheme[require-for-syntax], @scheme[require-for-template]}
 
 @section-index["modules" "imports"]
 
@@ -1109,12 +1193,12 @@ Legal only in a @tech{module begin context}, and handled by the
                      (- nat)])]{
 
 In a @tech{top-level context}, @scheme[require] instantiates modules
-(see @secref["mz:module-eval-model"]). In a @tech{module context},
-@scheme[require] visits modules (see @secref["mz:mod-parse"]). In both
-contexts, @scheme[require] introduces bindings into a @tech{namespace}
-or a module (see @secref["mz:intro-binding"]). A @scheme[require] form
-in a @tech{expression context} or @tech{internal-definition context}
-is a syntax error.
+(see @secref["module-eval-model"]). In a @tech{module context},
+@scheme[require] @tech{visits} modules (see @secref["mod-parse"]). In
+both contexts, @scheme[require] introduces bindings into a
+@tech{namespace} or a module (see @secref["intro-binding"]). A
+@scheme[require] form in a @tech{expression context} or
+@tech{internal-definition context} is a syntax error.
 
 A @scheme[require-spec] designates a particular set of identifiers to
 be bound in the importing context. Each identifier is mapped to a
@@ -1123,7 +1207,7 @@ be different from the symbolic name of the originally exported
 identifier.
 
  @specsubform[module-path]{ Imports all exported bindings from the
-  named module, using the export identifier as the local identifiers.
+  named module, using the export identifiers as the local identifiers.
   (See below for information on @scheme[module-path].)}
 
  @specsubform[#:literals (only) (only require-spec id-maybe-renamed ...)]{
@@ -1176,7 +1260,7 @@ corresponds to the default @tech{module name resolver}.
  least two path elements. All path elements up to the last one form a
  @tech{collection} path, which is used to locate the relevant
  directory (not relative to the containing source), and the last path
- element refers to a file. See @secref["mz:collects"] for more
+ element refers to a file. See @secref["collects"] for more
  information.}
 
  @specsubform[#:literals (file) (file string)]{Similar to the plain
@@ -1187,27 +1271,35 @@ corresponds to the default @tech{module name resolver}.
               (planet rel-string (user-string pkg-string vers ...))]{
  Specifies a library available via the @PLaneT server.}
 
-No identifier can be bound multiple times by an import, unless all of
-the bindings refer to the same original definition in the same module.
-In a @tech{module context}, an identifier can be either imported or
-defined for a given @tech{phase level}, but not both.}
+No identifier can be bound multiple times in a given @tech{phase
+level} by an import, unless all of the bindings refer to the same
+original definition in the same module.  In a @tech{module context},
+an identifier can be either imported or defined for a given
+@tech{phase level}, but not both.}
 
 @defform[(require-for-syntax require-spec ...)]{
 Like @scheme[require], but @tech{instantiate}s a module at phase 1
-(see @secref["mz:module-eval-model"]) in a @tech{top-level context} or
+(see @secref["module-eval-model"]) in a @tech{top-level context} or
 @tech{module context}, and introduces bindings at phase level 1 (see
-@secref["mz:intro-binding"] and @secref["mz:mod-parse"]).
+@secref["intro-binding"] and @secref["mod-parse"]).
 }
 
 @defform[(require-for-template require-spec ...)]{ Like
 @scheme[require], but without @tech{instantiation} (see
-@secref["mz:module-eval-model"]) in a @tech{top-level context}, and
-introduces bindings at phase level -1 (see @secref["mz:intro-binding"]
-and @secref["mz:mod-parse"]).
+@secref["module-eval-model"]) in a @tech{top-level context}, and
+introduces bindings at phase level -1 (see @secref["intro-binding"]
+and @secref["mod-parse"]).
 }
 
+@defform[(require-for-label require-spec ...)]{ Like @scheme[require],
+but without implying @tech{instantiation} (see
+@secref["module-eval-model"]) at all, and introducing bindings only in
+the @tech{label phase level}. Such bindings are accessible via
+@scheme[identifier-label-binding] and
+@scheme[free-label-identifier=?].}
+
 @;------------------------------------------------------------------------
-@section[#:tag "mz:provide"]{Exporting: @scheme[provide] and @scheme[provide-for-syntax]}
+@section[#:tag "provide"]{Exporting: @scheme[provide] and @scheme[provide-for-syntax]}
 
 @section-index["modules" "exports"]
 
@@ -1244,7 +1336,7 @@ the symbolic form of the identifier bound within the module:
  @specsubform[#:literals (all-from) (all-from module-path)]{ Exports
  all identifiers that are imported into the exporting module at
  @tech{phase level} 0 using a @scheme[require-spec] built on
- @scheme[module-path] (see @secref["mz:require"]). The symbolic name
+ @scheme[module-path] (see @secref["require"]). The symbolic name
  for export is derived from the name that is bound within the module,
  as opposed to the symbolic name of the export from
  @scheme[module-path].}
@@ -1265,7 +1357,7 @@ the symbolic form of the identifier bound within the module:
 
 If @scheme[provide] wraps a @scheme[provide-spec], then the exports of
 the @scheme[provide-spec] are protected; see
-@secref["mz:modprotect"]. The @scheme[provide-spec] must
+@secref["modprotect"]. The @scheme[provide-spec] must
 specify only bindings that are defined within the exporting module.
 
 Each export specified within a module must have a distinct symbolic
@@ -1273,5 +1365,7 @@ export name, though the same binding can be specified with the
 multiple symbolic names.}
 
 @defform[(provide-for-syntax protected-provide-spec ...)]{Like
-@scheme[provide], but exports at @tech{phase level} 1 bindings within
-the module at @tech{phase level} 1.}
+@scheme[provide], but for @tech{phase level} 1.}
+
+@defform[(provide-for-label protected-provide-spec ...)]{Like
+@scheme[provide], but for the @tech{label phase level}.}

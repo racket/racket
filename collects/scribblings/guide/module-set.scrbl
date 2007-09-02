@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:module-set"]{Assignment and Redefinition}
+@title[#:tag "module-set"]{Assignment and Redefinition}
 
 The use of @scheme[set!] on variables defined within a module is
 limited to the body of the defining module. That is, a module is

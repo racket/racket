@@ -3,7 +3,7 @@
 @require["mz.ss"]
 
 
-@title[#:tag "mz:channel"]{Channels}
+@title[#:tag "channel"]{Channels}
 
 A @deftech{channel} both synchronizes a pair of threads and passes a
 value from one to the other. Channels are synchronous; both the sender
@@ -15,13 +15,13 @@ Channel synchronization is @defterm{fair}: if a thread is blocked on a
 channel and transaction opportunities for the channel occur infinitely
 often, then the thread eventually participates in a transaction.
 
-For buffered asynchronous channels, see @secref["mz:async-channel"].
+For buffered asynchronous channels, see @secref["async-channel"].
 
 @defproc[(make-channel) channel?]{
 
 Creates and returns a new channel. The channel can be used with
 @scheme[channel-get], with @scheme[channel-try-get], or as a
-@tech{synchronizable event} (see @secref["mz:sync"]) to receive a value
+@tech{synchronizable event} (see @secref["sync"]) to receive a value
 through the channel. The channel can be used with @scheme[channel-put]
 or through the result of @scheme[channel-put-evt] to send a value
 through the channel.}

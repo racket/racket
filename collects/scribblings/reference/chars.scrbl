@@ -3,9 +3,9 @@
 
 @define[(UCat x) x]
 
-@title[#:tag "mz:characters"]{Characters}
+@title[#:tag "characters"]{Characters}
 
-@guideintro["guide:characters"]{characters}
+@guideintro["characters"]{characters}
 
 MzScheme characters range over Unicode scalar values, which includes
 characters whose values range from @schemevalfont{#x0} to
@@ -202,7 +202,7 @@ Return @scheme[#t] if @scheme[char] is between @scheme[#\u0000] and
 @scheme[#\u001F] inclusive or @scheme[#\u007F] and @scheme[#\u009F]
 inclusive.}
 
-@defproc[(char-general-category [char char?]) boolean?]{
+@defproc[(char-general-category [char char?]) symbol?]{
 
 Returns a symbol representing the character's Unicode general
 category, which is @indexed-scheme['lu], @indexed-scheme['ll],
