@@ -35,11 +35,10 @@ because that's the way it is idented the use of @scheme[schemeblock].
 
 Furthermore, @scheme[define] is typeset as a keyword (bold and black)
 and as a hyperlink to @scheme[define]'s definition in the reference
-manual, because this document was built using information about the
-reference manual, and because the lexical binding of @scheme[define]
-(in the source) matches the lexical binding of the definition in the
-reference manual. Similarly, @scheme[not] is a hyperlink to the its
-definition in the reference manual.
+manual, because this document was built using a for-label binding of
+@scheme[define] (in the source) that match the for-label binding of
+the definition in the reference manual. Similarly, @scheme[not] is a
+hyperlink to the its definition in the reference manual.
 
 Use @scheme[unsyntax] to escape back to an expression that produces an
 @scheme[element]. For example,
@@ -175,8 +174,10 @@ in a form definition.}
 Produces a sequence of flow elements (encaptured in a @scheme[splice])
 to document a procedure named @scheme[id]. The @scheme[id] is indexed,
 and it also registered so that @scheme[scheme]-typeset uses of the
-identifier (with the same lexical binding) are hyperlinked to this
-documentation.
+identifier (with the same for-label binding) are hyperlinked to this
+documentation. The @scheme[id] should have a for-label binding (as
+introduced by @scheme[require-for-label]) that determines the module
+binding being defined.
 
 Each @scheme[arg-spec] must have one of the following forms:
 
@@ -230,8 +231,11 @@ Like @scheme[defproc], but for multiple cases with the same
 Produces a a sequence of flow elements (encaptured in a
 @scheme[splice]) to document a syntatic form named by @scheme[id]. The
 @scheme[id] is indexed, and it is also registered so that
-@scheme[scheme]-typeset uses of the identifier (with the same lexical
-binding) are hyperlinked to this documentation.
+@scheme[scheme]-typeset uses of the identifier (with the same
+for-label binding) are hyperlinked to this documentation.  The
+@scheme[id] should have a for-label binding (as introduced by
+@scheme[require-for-label]) that determines the module binding being
+defined.
 
 The @scheme[pre-flow]s list is parsed as a flow that documents the
 procedure. In this description, a reference to any identifier in
