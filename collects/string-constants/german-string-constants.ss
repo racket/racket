@@ -198,7 +198,7 @@
  (plt:hd:help-desk-about-string
   "Das Hilfezentrum ist die primäre Quelle für Information über die PLT-Software,insbesondere DrScheme, MzScheme und MrEd.\n\nVersion ~a\nCopyright (c) ~a-~a PLT")
  (plt:hd:help-on-help "Hilfe zur Hilfe")
- (plt:hd:help-on-help-details "Hilfe zum Hilfezentrum finden Sie auf der Hilfezentrum-Hompage unter 'Help Desk'. (Um auf diese Homepage zu gelangen, drücken Sie den 'Home'-Knopf oben im Hilfezentrum.)")
+ (plt:hd:help-on-help-details "Hilfe zum Hilfezentrum befindet sich auf der Homepage des Hilfezentrums unter `Help Desk'.   (Die Homepage des Hilfezentrums ist über den `Home'-Knopf zu erreichen.)")
   (reload "Aktualisieren") ;; refresh the page in a web browser
   (plt:hd:ask-about-separate-browser
    "Sie haben einen Link selektiert, der ins Web zeigt. Wollen Sie die Seite im Hilfe-Browser oder im externen Browser anzeigen?")
