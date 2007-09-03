@@ -170,6 +170,8 @@ static Scheme_Prompt *available_prompt, *available_cws_prompt, *available_regula
 static Scheme_Dynamic_Wind *available_prompt_dw;
 static Scheme_Meta_Continuation *available_prompt_mc;
 
+static Scheme_Object *reduced_procedure_struct;
+
 typedef void (*DW_PrePost_Proc)(void *);
 
 #define CONS(a,b) scheme_make_pair(a,b)
@@ -468,7 +470,7 @@ scheme_init_fun (Scheme_Env *env)
 			     env);
   scheme_add_global_constant("procedure-reduce-arity",
 			     scheme_make_prim_w_arity(procedure_reduce_arity,
-						      "procedure-reduce_arity",
+						      "procedure-reduce-arity",
 						      2, 2),
 			     env);
   scheme_add_global_constant("procedure-closure-contents-eq?",
@@ -2524,9 +2526,27 @@ Scheme_Object *scheme_make_arity(mzshort mina, mzshort maxa)
   }
 }
 
-Scheme_Object *scheme_get_or_check_arity(Scheme_Object *p, long a)
+static Scheme_Object *clone_arity(Scheme_Object *a)
+{
+  if (SCHEME_PAIRP(a)) {
+    Scheme_Object *m, *l;
+    m = scheme_copy_list(a);
+    for (l = m; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+      a = clone_arity(SCHEME_CAR(l));
+      SCHEME_CAR(l) = a;
+    }
+    return m;
+  } else if (SCHEME_STRUCTP(a)) {
+    Scheme_Object *p[1];
+    p[0] = ((Scheme_Structure *)a)->slots[0];
+    return scheme_make_struct_instance(scheme_arity_at_least, 1, p);
+  } else
+    return a;
+}
+
+static Scheme_Object *get_or_check_arity(Scheme_Object *p, long a, Scheme_Object *bign)
 /* a == -1 => get arity
-   a == -2 => check for allowing varargs */
+   a == -2 => check for allowing bignum */
 {
   Scheme_Type type;
   mzshort mina, maxa;
@@ -2602,11 +2622,49 @@ Scheme_Object *scheme_get_or_check_arity(Scheme_Object *p, long a)
     return first;
   } else if (type == scheme_proc_struct_type) {
     int is_method;
-    p = scheme_extract_struct_procedure(p, -1, NULL, &is_method);
-    if (!SCHEME_PROCP(p))
-      return scheme_null;
-    if (is_method)
-      drop++;
+    if (reduced_procedure_struct
+        && scheme_is_struct_instance(reduced_procedure_struct, p)) {
+      if (a >= 0)
+        bign = scheme_make_integer(a);
+      if (a == -1)
+        return clone_arity(((Scheme_Structure *)p)->slots[1]);
+      else {
+        /* Check arity (or for varargs) */
+        Scheme_Object *v;
+        v = ((Scheme_Structure *)p)->slots[1];
+        if (SCHEME_STRUCTP(v)) {
+          v = ((Scheme_Structure *)v)->slots[0];
+          return (scheme_bin_lt_eq(v, bign)
+                  ? scheme_true
+                  : scheme_false);
+        } else if (SCHEME_PAIRP(v)) {
+          Scheme_Object *x;
+          while (!SCHEME_NULLP(v)) {
+            x = SCHEME_CAR(v);
+            if (SCHEME_STRUCTP(x)) {
+              x = ((Scheme_Structure *)x)->slots[0];  
+              if (scheme_bin_lt_eq(x, bign))
+                return scheme_true;
+            } else {
+              if (scheme_bin_eq(x, bign))
+                return scheme_true;
+            }
+            v = SCHEME_CDR(v);
+          }
+          return scheme_false;
+        } else {
+          return (scheme_bin_eq(v, bign)
+                  ? scheme_true
+                  : scheme_false);
+        }
+      }
+    } else {
+      p = scheme_extract_struct_procedure(p, -1, NULL, &is_method);
+      if (!SCHEME_PROCP(p))
+        return scheme_null;
+      if (is_method)
+        drop++;
+    }
     SCHEME_USE_FUEL(1);
     goto top;
 #ifdef MZ_USE_JIT
@@ -2800,6 +2858,11 @@ Scheme_Object *scheme_get_or_check_arity(Scheme_Object *p, long a)
   return scheme_true;
 }
 
+Scheme_Object *scheme_get_or_check_arity(Scheme_Object *p, long a)
+{
+  return get_or_check_arity(p, a, NULL);
+}
+
 int scheme_check_proc_arity2(const char *where, int a,
 			     int which, int argc, Scheme_Object **argv,
 			     int false_ok)
@@ -2814,7 +2877,7 @@ int scheme_check_proc_arity2(const char *where, int a,
   if (false_ok && SCHEME_FALSEP(p))
     return 1;
 
-  if (!SCHEME_PROCP(p) || SCHEME_FALSEP(scheme_get_or_check_arity(p, a))) {
+  if (!SCHEME_PROCP(p) || SCHEME_FALSEP(get_or_check_arity(p, a, NULL))) {
     if (where) {
       char buffer[60];
 
@@ -3087,7 +3150,7 @@ static Scheme_Object *object_name(int argc, Scheme_Object **argv)
 
 Scheme_Object *scheme_arity(Scheme_Object *p)
 {
-  return scheme_get_or_check_arity(p, -1);
+  return get_or_check_arity(p, -1, NULL);
 }
 
 static Scheme_Object *procedure_arity(int argc, Scheme_Object *argv[])
@@ -3095,7 +3158,7 @@ static Scheme_Object *procedure_arity(int argc, Scheme_Object *argv[])
   if (!SCHEME_PROCP(argv[0]))
     scheme_wrong_type("procedure-arity", "procedure", 0, argc, argv);
 
-  return scheme_get_or_check_arity(argv[0], -1);
+  return get_or_check_arity(argv[0], -1, NULL);
 }
 
 static Scheme_Object *procedure_arity_includes(int argc, Scheme_Object *argv[])
@@ -3106,16 +3169,202 @@ static Scheme_Object *procedure_arity_includes(int argc, Scheme_Object *argv[])
     scheme_wrong_type("procedure-arity-includes?", "procedure", 0, argc, argv);
 
   n = scheme_extract_index("procedure-arity-includes?", 1, argc, argv, -2, 0);
+  /* -2 means a bignum */
 
-  return scheme_get_or_check_arity(argv[0], n);
+  return get_or_check_arity(argv[0], n, argv[1]);
+}
+
+static int is_arity(Scheme_Object *a, int at_least_ok, int list_ok)
+{
+  if (SCHEME_INTP(a)) {
+    return (SCHEME_INT_VAL(a) >= 0);
+  } else if (SCHEME_BIGNUMP(a)) {
+    return SCHEME_BIGPOS(a);
+  } else if (at_least_ok
+             && SCHEME_STRUCTP(a)
+             && scheme_is_struct_instance(scheme_arity_at_least, a)) {
+    a = ((Scheme_Structure *)a)->slots[0];
+    return is_arity(a, 0, 0);
+  }
+
+  if (!list_ok)
+    return 0;
+
+  while (SCHEME_PAIRP(a)) {
+    if (!is_arity(SCHEME_CAR(a), 1, 0))
+      return 0;
+    a = SCHEME_CDR(a);
+  }
+
+  if (SCHEME_NULLP(a))
+    return 1;
+  return 0;
 }
 
 static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
 {
+  Scheme_Object *orig, *req, *oa, *ra, *ol, *lra, *ara, *prev, *pr, *tmp, *a[3];
+
   if (!SCHEME_PROCP(argv[0]))
     scheme_wrong_type("procedure-reduce-arity", "procedure", 0, argc, argv);
 
-  return argv[0];
+  if (!is_arity(argv[1], 1, 1)) {
+    scheme_wrong_type("procedure-reduce-arity", "arity", 1, argc, argv);
+  }
+
+  if (!reduced_procedure_struct) {
+    REGISTER_SO(reduced_procedure_struct);
+    pr = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
+    while (((Scheme_Inspector *)pr)->superior->superior) {
+      pr = (Scheme_Object *)((Scheme_Inspector *)pr)->superior;
+    }
+    orig = scheme_builtin_value("prop:procedure");
+    reduced_procedure_struct = scheme_make_proc_struct_type(NULL,
+                                                            NULL,
+                                                            pr,
+                                                            2, 0,
+                                                            scheme_false,
+                                                            scheme_make_integer(0),
+                                                            NULL);
+  }
+
+  /* Check whether current arity covers the requested arity.  This is
+     a bit complicated, because both the source and target can be
+     lists that include arity-at-least records. */
+
+  orig = get_or_check_arity(argv[0], -1, NULL);
+  req = argv[1];
+
+  if (!SCHEME_PAIRP(orig) && !SCHEME_NULLP(orig))
+    orig = scheme_make_pair(orig, scheme_null);
+  if (!SCHEME_PAIRP(req) && !SCHEME_NULLP(req))
+    req = scheme_make_pair(req, scheme_null);
+
+  while (!SCHEME_NULLP(req)) {
+    ra = SCHEME_CAR(req);
+    if (SCHEME_STRUCTP(ra)
+        && scheme_is_struct_instance(scheme_arity_at_least, ra)) {
+      /* Convert to a sequence of range pairs, where the
+         last one can be (min, #f); we'll iterate through the 
+         original arity to knock out ranges until (if it matches)
+         we end up with an empty list of ranges. */
+      ra = scheme_make_pair(scheme_make_pair(((Scheme_Structure *)ra)->slots[0],
+                                             scheme_false),
+                            scheme_null);
+    }
+
+    for (ol = orig; !SCHEME_NULLP(ol); ol = SCHEME_CDR(ol)) {
+      oa = SCHEME_CAR(ol);
+      if (SCHEME_INTP(ra) || SCHEME_BIGNUMP(ra)) {
+        if (SCHEME_INTP(oa) || SCHEME_BIGNUMP(oa)) {
+          if (scheme_equal(ra, oa))
+            break;
+        } else {
+          /* orig is arity-at-least */
+          oa = ((Scheme_Structure *)oa)->slots[0];
+          if (scheme_bin_lt_eq(oa, ra))
+            break;
+        }
+      } else {
+        /* requested is arity-at-least */
+        int at_least;
+        if (SCHEME_INTP(oa) || SCHEME_BIGNUMP(oa)) {
+          at_least = 0;
+        } else {
+          /* orig is arity-at-least */
+          at_least = 1;
+          oa = ((Scheme_Structure *)oa)->slots[0];
+        }
+
+        lra = ra;
+        prev = NULL;
+        while (!SCHEME_NULLP(lra)) {
+          /* check [lo, hi] vs oa: */
+          ara = SCHEME_CAR(lra);
+          if (SCHEME_FALSEP(SCHEME_CDR(ara))
+              || scheme_bin_lt_eq(oa, SCHEME_CDR(ara))) {
+            if (scheme_bin_gt_eq(oa, SCHEME_CAR(ara))) {
+              /* oa is in the range [lo, hi]: */
+              if (scheme_equal(oa, SCHEME_CAR(ara))) {
+                /* the range is [oa, hi] */
+                if (at_least) {
+                  /* oa is arity-at least, so drop from here */
+                  if (prev)
+                    SCHEME_CDR(prev) = scheme_null;
+                  else
+                    ra = scheme_null;
+                } else {
+                  if (scheme_equal(oa, SCHEME_CDR(ara))) {
+                    /* the range is [oa, oa], so drop it */
+                    if (prev)
+                      SCHEME_CDR(prev) = SCHEME_CDR(lra);
+                    else
+                      ra = SCHEME_CDR(lra);
+                  } else {
+                    /* change range to [ao+1, hi] */
+                    tmp = scheme_bin_plus(oa, scheme_make_integer(1));
+                    SCHEME_CAR(ara) = tmp;
+                  }
+                }
+              } else if (scheme_equal(oa, SCHEME_CAR(ara))) {
+                /* the range is [lo, oa], where lo < oa */
+                tmp = scheme_bin_minus(oa, scheme_make_integer(1));
+                SCHEME_CDR(ara) = tmp;
+                if (at_least) 
+                  SCHEME_CDR(lra) = scheme_null;
+              } else {
+                /* split the range */
+                if (at_least) {
+                  tmp = scheme_bin_minus(oa, scheme_make_integer(1));
+                  SCHEME_CDR(ara) = tmp;
+                  SCHEME_CDR(lra) = scheme_null;
+                } else {
+                  pr = scheme_make_pair(scheme_make_pair(scheme_bin_plus(oa, scheme_make_integer(1)),
+                                                         SCHEME_CDR(ara)),
+                                        SCHEME_CDR(lra));
+                  tmp = scheme_bin_minus(oa, scheme_make_integer(1));
+                  SCHEME_CDR(ara) = tmp;
+                  SCHEME_CDR(lra) = pr;
+                }
+              }
+              break;
+            } else if (at_least) {
+              /* oa is less than lo, so truncate */
+              if (prev)
+                SCHEME_CDR(prev) = scheme_null;
+              else
+                ra = scheme_null;
+              break;
+            }
+          }
+          prev = lra;
+          lra = SCHEME_CDR(lra);
+        }
+        if (SCHEME_NULLP(ra))
+          break;
+      }
+    }
+
+    if (SCHEME_NULLP(ol)) {
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
+                       "procedure-reduce-arity: arity of procedre: %V"
+                       " does not include requested arity: %V : %V",
+                       argv[0],
+                       argv[1],
+                       ra);
+      return NULL;
+    }
+
+    req = SCHEME_CDR(req);
+  }
+
+  /* Construct a procedure that has the given arity. */
+
+  a[0] = argv[0];
+  pr = clone_arity(argv[1]);
+  a[1] = pr;
+
+  return scheme_make_struct_instance(reduced_procedure_struct, 2, a);
 }
 
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
@@ -7397,7 +7646,7 @@ static Scheme_Object *time_apply(int argc, Scheme_Object *argv[])
     num_rands++;
   }
 
-  if (SCHEME_FALSEP(scheme_get_or_check_arity(argv[0], num_rands))) {
+  if (SCHEME_FALSEP(get_or_check_arity(argv[0], num_rands, NULL))) {
     char *s;
     long aelen;
 

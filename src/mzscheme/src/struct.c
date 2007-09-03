@@ -2765,6 +2765,22 @@ Scheme_Object *scheme_make_struct_type(Scheme_Object *base,
 			   guard);
 }
 
+Scheme_Object *scheme_make_proc_struct_type(Scheme_Object *base,
+                                            Scheme_Object *parent,
+                                            Scheme_Object *inspector,
+                                            int num_fields, int num_uninit,
+                                            Scheme_Object *uninit_val,
+                                            Scheme_Object *proc_attr,
+                                            Scheme_Object *guard)
+{
+  return _make_struct_type(base, NULL, 0,
+			   parent, inspector, 
+			   num_fields, num_uninit,
+			   uninit_val, scheme_null, 
+			   proc_attr, scheme_null,
+			   guard);
+}
+
 Scheme_Object *scheme_make_struct_type_from_string(const char *base,
 						   Scheme_Object *parent,
 						   int num_fields,

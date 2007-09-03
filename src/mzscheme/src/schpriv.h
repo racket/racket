@@ -541,6 +541,13 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *base,
 						   Scheme_Object *props,
 						   Scheme_Object *guard,
 						   int immutable);
+Scheme_Object *scheme_make_proc_struct_type(Scheme_Object *base,
+                                            Scheme_Object *parent,
+                                            Scheme_Object *inspector,
+                                            int num_fields, int num_uninit,
+                                            Scheme_Object *uninit_val,
+                                            Scheme_Object *proc_attr,
+                                            Scheme_Object *guard);
 
 Scheme_Object *scheme_struct_to_vector(Scheme_Object *_s, Scheme_Object *unknown_val, Scheme_Object *insp);
 
