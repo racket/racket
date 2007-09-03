@@ -422,8 +422,8 @@
       (cond
         [else?
          (choose ((sequence (ifT O_PAREN expression C_PAREN stmt elseT stmt) id)
-                  (sequence (ifT O_PAREN expression C_PAREN stmt) id)) "if")]
-        [else (sequence (ifT O_PAREN expression C_PAREN stmt elseT stmt) id "if")]))
+                  (sequence (ifT O_PAREN expression C_PAREN stmt) id)) "if statement")]
+        [else (sequence (ifT O_PAREN expression C_PAREN stmt elseT stmt) id "if statement")]))
     
     (define (return-s opt?)
       (cond
@@ -662,7 +662,7 @@
       (sequence (unique-base (repeat-greedy unique-end)) id "expression"))
     
     (define statement
-      (choose ((if-s (block #f) #f) (return-s #f)) "statement"))
+      (choose ((return-s #f) (if-s (block #f) #f)) "statement"))
     
     (define field (make-field #f (value+name-type prim-type) expression #f))
     
@@ -731,15 +731,15 @@
     
     (define (statement-c interact?)
       (if interact?
-          (choose ((if-s (block #t) #f)
-                   (return-s #t)
+          (choose ((return-s #t)
+                   (if-s (block #t) #f)
                    (assignment 
                     (choose (identifier
                              (sequence (unique-base (repeat unique-end) field-access-end) id))
                             "assignee") EQUAL)
                     (block #t)) "statement")
-          (choose ((if-s (block #t) #f)
-                   (return-s #t)
+          (choose ((return-s #t)
+                   (if-s (block #t) #f)
                    (block #t)
                    (variable-declaration (value+name-type prim-type) expression #f "local variable")                   
                    (sequence (stmt-expr SEMI_COLON) id)) "statement")))
@@ -780,8 +780,8 @@
     
     (define interact
       (choose (field 
-               (if-s (block #t) #f)
                (return-s #t)
+               (if-s (block #t) #f)
                (assignment 
                 (choose (identifier
                          (sequence (unique-base (repeat unique-end) field-access-end) id))
@@ -833,13 +833,13 @@
     
     (define (statement-c interact?)
       (if (not interact?)
-          (choose ((if-s (block #t) #f)
-                   (return-s #t)
+          (choose ((return-s #t)
+                   (if-s (block #t) #f)
                    (variable-declaration (value+name-type prim-type) expression #f "local variable")
                    (block #t)
                    (sequence (stmt-expr SEMI_COLON) id)) "statement")
-          (choose ((if-s (block #t) #f)
-                   (return-s #t)
+          (choose ((return-s #t)
+                   (if-s (block #t) #f)
                    (assignment 
                     (choose (identifier
                              (sequence (unique-base (repeat unique-end) field-access-end) id))
@@ -938,8 +938,8 @@
     
     (define (statement-c interact?)
       (if interact?
-          (choose ((if-s #t (eta statement))
-                   (return-s #t)
+          (choose ((return-s #t)
+                   (if-s #t (eta statement))
                    (block #t)
                    (for-l (choose ((variable-declaration (array-type (value+name-type prim-type)) expression #t "for loop variable")
                                    (comma-sep stmt-expr "initializations")) "for loop initialization") 
@@ -956,8 +956,8 @@
                             "asignee")
                     assignment-ops)
                    ) "statement")
-          (choose ((if-s #t (eta statement))
-                   (return-s #t)
+          (choose ((return-s #t)
+                   (if-s #t (eta statement))
                    (variable-declaration (array-type (value+name-type prim-type)) expression #t "local variable")
                    (block #t)
                    (sequence (stmt-expr SEMI_COLON) id)

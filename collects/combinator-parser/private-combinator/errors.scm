@@ -120,7 +120,7 @@
                         (> (length winners) max-choice-depth))
                    (collapse-message 
                     (add-to-message
-                     (msg (format "An error occurred in this ~a. Program resembles one of: ~a.~n"
+                     (msg (format "An error occurred in this ~a. Program resembles these: ~a.~n"
                                   name (nice-list non-dup-tops)))
                      name #f message-to-date))]
                   [(and (> (length winners) 1)
@@ -158,7 +158,7 @@
                       (> (length winners) 1))
                  (collapse-message 
                   (add-to-message
-                   (msg (format "Expected a ~a, possible options are ~a." name
+                   (msg (format "Expected a ~a, possible options include ~a." name
                                 (nice-list (first-n max-choice-depth no-dup-names))))
                    name #f message-to-date))]
                 [(and (<= (choice-fail-options fail-type) max-choice-depth)
@@ -167,7 +167,7 @@
                       (equal? top-names no-dup-names))
                  (collapse-message 
                   (add-to-message
-                   (msg (format "An error occured in this ~a, expected one of: ~a."
+                   (msg (format "An error occured in this ~a; expected ~a instead."
                                 name (nice-list no-dup-names)))
                    name #f message-to-date))]
                 [(and (<= (choice-fail-options fail-type) max-choice-depth)
@@ -179,13 +179,13 @@
                       (collapse-message
                        (add-to-message (car messages) #f #f
                                        (add-to-message
-                                        (msg (format "An error occured in this ~a, expected one of: ~a."
+                                        (msg (format "An error occured in this ~a, expected ~a instead."
                                                      name (nice-list no-dup-names))
                                              name #f message-to-date))))]
                      [else
                       (collapse-message 
                        (add-to-message
-                        (msg (format "An error occured in this ~a, expected one of: ~a. Possible errors were:~n~a"
+                        (msg (format "An error occured in this ~a; expected ~a instead. Possible errors were:~n~a"
                                      name (nice-list no-dup-names) 
                                      (alternate-error-list (map err-msg messages))))
                         name #f message-to-date))]))]
@@ -193,7 +193,7 @@
                       (> (length winners) 1))
                  (collapse-message 
                   (add-to-message
-                   (msg (format "An error occured in this ~a. Possible options are ~a.~n"
+                   (msg (format "An error occured in this ~a. Possible options include ~a.~n"
                                 name (nice-list 
                                       (first-n max-choice-depth no-dup-names))))
                    name #f message-to-date))]
@@ -203,7 +203,7 @@
                   (add-to-message
                    (msg (format "An error occured in this ~a~a.~a~n"
                                 name 
-                                (if (equal? name top-name) "" (format ", it is likely that you intended ~a ~a here"
+                                (if (equal? name top-name) "" (format ", it is possible you intended ~a ~a here"
                                                                       (a/an top-name) top-name))
                                 (if show-options " To see all options click here." "")))
                    name #f message-to-date))]))])))
