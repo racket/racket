@@ -2216,6 +2216,72 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; procedure-reduce-arity
+(let ([check-ok
+       (lambda (proc ar inc not-inc)
+         (for-each
+          (lambda (proc)
+            (let ([a (procedure-reduce-arity proc ar)])
+              (test #t procedure? a)
+              (test ar procedure-arity a)
+              (map (lambda (i)
+                     (test #t procedure-arity-includes? a i)
+                     (when (i . < . 100)
+                       (test i apply a (let loop ([i i])
+                                         (if (zero? i) 
+                                             null
+                                             (cons 1 (loop (sub1 i))))))))
+                   inc)
+              (map (lambda (i)
+                     (test #f procedure-arity-includes? a i)
+                     (err/rt-test (procedure-reduce-arity a i))
+                     (err/rt-test (procedure-reduce-arity a (make-arity-at-least i)))
+                     (err/rt-test (procedure-reduce-arity a (list 0 i)))
+                     (err/rt-test (procedure-reduce-arity a (list 0 (make-arity-at-least i))))
+                     (err/rt-test (procedure-reduce-arity a (make-arity-at-least 0)))
+                     (when (i . < . 100)
+                       (err/rt-test (apply a (let loop ([i i])
+                                               (if (zero? i) 
+                                                   null
+                                                   (cons 1 (loop (sub1 i))))))
+                                    exn:fail:contract?)))
+                   not-inc)))
+          (list proc (procedure-reduce-arity proc ar))))])
+  (let ([check-all-but-one
+         (lambda (+)
+           (check-ok + 0 '(0) '(1))
+           (check-ok + 2 '(2) '(0 1 3 4))
+           (check-ok + 10 '(10) (list 0 11 (expt 2 70)))
+           (check-ok + (expt 2 70) (list (expt 2 70)) (list 0 10  (add1 (expt 2 70))))
+           (check-ok + (make-arity-at-least 2) (list 2 5 (expt 2 70)) (list 0 1))
+           (check-ok + (list 2 4) '(2 4) '(0 3))
+           (check-ok + (list 4 2) '(4 2) '(0 3))
+           (check-ok + (list 0 (make-arity-at-least 2)) (list 0 2 5 (expt 2 70)) (list 1))
+           (check-ok + (list 4 (make-arity-at-least 2)) '(2 3 4 10) '(0 1))
+           (check-ok + (list 2 (make-arity-at-least 4)) '(2 4 10) '(0 1 3)))])
+    (check-all-but-one +)
+    (check-all-but-one (lambda args (apply + args)))
+    (check-all-but-one (case-lambda
+                        [() 0]
+                        [(a b . args) (apply + a b args)]))
+    (check-all-but-one (case-lambda
+                        [(b . args) (apply + b args)]
+                        [() 0]))
+    (check-all-but-one (case-lambda
+                        [(a b c) (+ a b c)]
+                        [(a b) (+ a b)]
+                        [(a b c d) (+ a b c d)]
+                        [() 0]
+                        [(a b c d . e) (apply + a b c d e)]))
+    (check-all-but-one (case-lambda
+                        [(a b) (+ a b)]
+                        [(a b c d) (+ a b c d)]
+                        [(a b c) (+ a b c)]
+                        [() 0]
+                        [(a b c d . e) (apply + a b c d e)]))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
 
 "last item in file"
