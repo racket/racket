@@ -29,4 +29,6 @@
   (define empty? #f)
   (define empty #f)
 
+  (define arity? #f)
+
   (provide (all-defined)))
