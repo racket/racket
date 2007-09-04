@@ -684,7 +684,8 @@
             (new menu-item%
               [label (format "Manage ~a Handin Account..." handin-name)]
               [parent file-menu]
-              [callback (lambda (m e) (manage-handin-account this))])
+              [callback (lambda (m e)
+                          (new manage-handin-dialog% [parent this]))])
             (when multifile?
               (new menu-item%
                 [label (format "Submit multiple ~a Files..." handin-name)]
