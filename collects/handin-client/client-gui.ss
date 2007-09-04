@@ -268,13 +268,16 @@
       (center)
       (show #t)))
 
+  (provide manage-handin-dialog%)
   (define manage-handin-dialog%
-    (class dialog% (init [parent #f] [user-fields #f])
+    (class dialog% (init [parent #f])
 
       (inherit show is-shown? center)
       (super-new [label manage-dialog-name]
                  [alignment '(left center)]
                  [parent parent])
+
+      (define user-fields (get-user-fields parent))
 
       (define status
         (new message%
@@ -568,13 +571,50 @@
       (center)
       (show #t)))
 
-  (provide manage-handin-account)
-  (define (manage-handin-account parent)
-    (new manage-handin-dialog%
-         [parent parent]
-         [user-fields (cond [(with-handlers ([void (lambda (_) #f)]) (connect))
-                             => retrieve-user-fields]
-                            [else #f])]))
+  ;; A simple dialog during connection, with an option to cancel (used
+  ;; by `get-user-fields' below, since its value is needed to
+  ;; construct the above dialog).
+  (define connection-dialog%
+    (class dialog% (init receiver [parent #f])
+      (inherit show is-shown? center)
+      (super-new [label manage-dialog-name]
+                 [alignment '(right center)]
+                 [parent parent])
+      (define status
+        (new message% [label "Connecting to server..."]
+                      [parent this]
+                      [stretchable-width #t]))
+      (define comm-cust (make-custodian))
+      (define/augment (on-close)
+        (inner (void) on-close)
+        (custodian-shutdown-all comm-cust))
+      (define button
+        (new button% [label "Cancel"] [parent this]
+                     [callback (lambda (b e)
+                                 (custodian-shutdown-all comm-cust)
+                                 (show #f))]
+                     [style '(border)]))
+      (send button focus)
+      (parameterize ([current-custodian comm-cust])
+        (thread
+         (lambda ()
+           (unless (with-handlers ([void (lambda (_) #f)])
+                     (receiver (connect)) #t)
+             (begin (send status set-label "Connection failure!")
+                    ;; (send button enable #f)
+                    (sleep 5)))
+           (queue-callback (lambda () (show #f))))))
+      (center)
+      (show #t)))
+
+  (define cached-user-fields #f)
+  (define (get-user-fields parent)
+    (unless cached-user-fields
+      (new connection-dialog%
+           [receiver (lambda (h)
+                       (set! cached-user-fields (retrieve-user-fields h)))]
+           [parent parent]))
+    cached-user-fields)
 
   (define (scale-by-half file)
     (let* ([bm (make-object bitmap% file 'unknown/mask)]

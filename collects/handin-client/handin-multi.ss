@@ -116,7 +116,7 @@
                            [stretchable-width #t] [callback callback]))])
         (button "&Submit"   (lambda _ (do-submit)))
         (button "&Retrieve" (lambda _ (do-retrieve)))
-        (button "A&ccount"  (lambda _ (manage-handin-account this)))
+        (button "A&ccount"  (lambda _ (new manage-handin-dialog% [parent this])))
         (when update (button "&Update" (lambda _ (update this #t))))
         (button "C&lose"    (lambda _ (close))))
 
