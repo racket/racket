@@ -105,8 +105,6 @@ wxPrinterDC::wxPrinterDC(wxPrintData *printData, Bool interactive) : wxCanvasDC(
 //-----------------------------------------------------------------------------
 wxPrinterDC::~wxPrinterDC(void)
 {
-  if (current_phase == 1)
-    EndDoc();
   if (current_phase == 2)
     EndPage();
   if (current_phase == 1)
@@ -121,7 +119,7 @@ Bool wxPrinterDC::StartDoc(char *message)
   if (current_phase != 0)
    return FALSE;
 
-  rlt = PMSessionBeginDocument(cPrintData->cPrintSession, cPrintData->cPrintSettings,cPrintData->cPageFormat);
+  rlt = PMSessionBeginDocumentNoDialog(cPrintData->cPrintSession, cPrintData->cPrintSettings,cPrintData->cPageFormat);
   if (rlt != noErr) {
     ok = false;
     return FALSE;
