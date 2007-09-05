@@ -182,6 +182,7 @@
                                before)
                  (equal? err-msg (before-error-result-err-msg actual))))]
       [`(finished-stepping) (finished-stepping? actual)]
+      [`(ignore) (warn 'compare-steps "ignoring one step")]
       [else (begin (warn 'compare-steps
                          "unexpected expected step type: ~v" expected)
                    #f)]))
@@ -307,7 +308,7 @@
   (define (run-test name)
     (let ([maybe-test (assq name list-of-tests)])
       (if maybe-test
-          (run-one-test (cadr maybe-test))
+          (run-one-test maybe-test)
           (error 'run-test "test not found: ~e" name))))
 
   (define (run-tests names)
@@ -1330,6 +1331,16 @@
                                     ;))
                                      ; (custodian-shutdown-all new-custodian))
       ))
+  
+  (t1 check-expect
+      (test-teachpack-sequence
+       `((lib "testing.ss" "htdp"))
+       "(check-expect (+ 3 4) (+ 8 9))"
+       `((before-after ((check-expect (+ 3 4) (hilite (+ 8 9))))
+                       ((check-expect (+ 3 4) (hilite 17))))
+         (ignore)
+         (before-after ((check-expect (hilite (+ 3 4)) 17))
+                       ((check-expect (hilite 7) 17))))))
 
 
   ; uses set-render-settings!
@@ -1510,6 +1521,13 @@
         (before-after ((hilite (+ 9 8)))
                       ((hilite 17)))
         (finished-stepping))))
+  
+  (t begin-let-bug test-advanced-sequence
+     (let ([x 3]) (begin 3 4))
+     :: {(let ([x 3]) (begin 3 4))}
+     -> {(define x_0 3)} {(begin 3 4)}
+     :: (define x_0 3) {(begin 3 4)}
+     -> (define x_0 3) 4)
 
   (t1 empty-begin
      (test-advanced-sequence "(begin)"
@@ -1540,26 +1558,24 @@
                             ((hilite 7)))
          (finished-stepping))))
   
-  (t1 begin0-onlyvalues
-     (test-advanced-sequence "(begin0 3 4 5)"
-      `((before-after ((hilite (begin0 3 4 5)))
-                           ((hilite (begin0 3 5))))
-        (before-after ((hilite (begin0 3 5)))
-                           ((hilite 3)))
-        (finished-stepping))))
+  (t begin0-onlyvalues test-advanced-sequence
+     (begin0 3 4 5)
+     :: {(begin0 3 4 5)}
+     -> {(begin0 3 5)}
+     -> {3})
   
-  (t1 begin0
-      (test-advanced-sequence "(begin0 (+ 3 4) (+ 4 5) (+ 6 7))"
-       `((before-after ((begin0 (hilite (+ 3 4)) (+ 4 5) (+ 6 7)))
-                            ((begin0 (hilite 7) (+ 4 5) (+ 6 7))))
-         (before-after ((begin0 7 (hilite (+ 4 5)) (+ 6 7)))
-                            ((begin0 7 (hilite 9) (+ 6 7))))
-         (before-after ((hilite (begin0 7 9 (+ 6 7))))
-                            ((hilite (begin0 7 (+ 6 7)))))
-         (before-after ((begin0 7 (hilite (+ 6 7))))
-                            ((begin0 7 (hilite 13))))
-         (before-after ((hilite (begin0 7 13)))
-                            ((hilite 7))))))
+  (t begin0 test-advanced-sequence
+     (begin0 (+ 3 4) (+ 4 5) (+ 6 7))
+     :: (begin0 {(+ 3 4)} (+ 4 5) (+ 6 7))
+     -> (begin0 {7} (+ 4 5) (+ 6 7))
+     :: (begin0 7 {(+ 4 5)} (+ 6 7))
+     -> (begin0 7 {9} (+ 6 7))
+     :: {(begin0 7 9 (+ 6 7))}
+     -> {(begin0 7 (+ 6 7))}
+     :: (begin0 7 {(+ 6 7)})
+     -> (begin0 7 {13})
+     :: {(begin0 7 13)}
+     -> {7})
   
 
   ;; LAZY.SS:
@@ -1595,7 +1611,7 @@
 
   ;; make sure to leave these off when saving, or the nightly tests will run these too...
   #;(run-all-tests)
-  #;(run-tests '(mz1 empty-begin empty-begin0))
+  #;(run-tests '(check-expect))
   #;(parameterize ([display-only-errors #t])
     (run-all-tests-except '(prims qq-splice time set! local-set! lazy1 lazy2 lazy3)))
   
