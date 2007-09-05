@@ -1,4 +1,4 @@
- (module macro-unwind mzscheme
+(module macro-unwind mzscheme
   (require (prefix kernel: (lib "kerncase.ss" "syntax"))
            (lib "etc.ss")
            (lib "contract.ss")
@@ -117,44 +117,51 @@
                                      (error 'reconstruct
                                             "reconstruct fails on multiple-values define: ~v\n"
                                             (syntax-object->datum stx)))
-                                   (let* ([printed-name
-                                           (or (stepper-syntax-property #`name 'stepper-lifted-name)
-                                               (stepper-syntax-property #'name 'stepper-orig-name)
-                                               #'name)]
-                                          [unwound-body (unwind #'body settings)]
-                                          ;; see notes in internal-docs.txt
-                                          [define-type (stepper-syntax-property
-                                                        unwound-body 'stepper-define-type)])
-                                     (if define-type
-                                         (kernel:kernel-syntax-case unwound-body #f
-                                                                    [(lambda arglist lam-body ...)
-                                                                     (case define-type
-                                                                       [(shortened-proc-define)
-                                                                        (let ([proc-define-name
-                                                                               (stepper-syntax-property
-                                                                                unwound-body
-                                                                                'stepper-proc-define-name)])
-                                                                          (if (or (module-identifier=? proc-define-name
-                                                                                                       #'name)
-                                                                                  (and (stepper-syntax-property #'name
-                                                                                                        'stepper-orig-name)
-                                                                                       (module-identifier=?
-                                                                                        proc-define-name
-                                                                                        (stepper-syntax-property
-                                                                                         #'name 'stepper-orig-name))))
-                                                                              #`(define (#,printed-name . arglist)
-                                                                                  lam-body ...)
-                                                                              #`(define #,printed-name
-                                                                                  #,unwound-body)))]
-                                                                       [(lambda-define)
-                                                                        #`(define #,printed-name #,unwound-body)]
-                                                                       [else (error 'unwind-define
-                                                                                    "unknown value for syntax property 'stepper-define-type: ~e"
-                                                                                    define-type)])]
-                                                                    [else (error 'unwind-define
-                                                                                 "expr with stepper-define-type is not a lambda: ~e"
-                                                                                 (syntax-object->datum unwound-body))])
-                                         #`(define #,printed-name #,unwound-body))))]
+                                   (if (eq? (stepper-syntax-property #`body 'stepper-hint) 'comes-from-check-expect)
+                                       (kernel:kernel-syntax-case
+                                        (unwind #`body settings) #f
+                                        [(c-e (lambda () a1) a2 a3)
+                                         #`(check-expect a1 a2)]
+                                        [else #`(c-e body)])
+                                       (let* ([printed-name
+                                               (or (stepper-syntax-property #`name 'stepper-lifted-name)
+                                                   (stepper-syntax-property #'name 'stepper-orig-name)
+                                                   #'name)]
+                                              [unwound-body (unwind #'body settings)]
+                                              ;; see notes in internal-docs.txt
+                                              [define-type (stepper-syntax-property
+                                                            unwound-body 'stepper-define-type)])
+                                         (if define-type
+                                             (kernel:kernel-syntax-case 
+                                              unwound-body #f
+                                              [(lambda arglist lam-body ...)
+                                               (case define-type
+                                                 [(shortened-proc-define)
+                                                  (let ([proc-define-name
+                                                         (stepper-syntax-property
+                                                          unwound-body
+                                                          'stepper-proc-define-name)])
+                                                    (if (or (module-identifier=? proc-define-name
+                                                                                 #'name)
+                                                            (and (stepper-syntax-property #'name
+                                                                                          'stepper-orig-name)
+                                                                 (module-identifier=?
+                                                                  proc-define-name
+                                                                  (stepper-syntax-property
+                                                                   #'name 'stepper-orig-name))))
+                                                        #`(define (#,printed-name . arglist)
+                                                            lam-body ...)
+                                                        #`(define #,printed-name
+                                                            #,unwound-body)))]
+                                                 [(lambda-define)
+                                                  #`(define #,printed-name #,unwound-body)]
+                                                 [else (error 'unwind-define
+                                                              "unknown value for syntax property 'stepper-define-type: ~e"
+                                                              define-type)])]
+                                              [else (error 'unwind-define
+                                                           "expr with stepper-define-type is not a lambda: ~e"
+                                                           (syntax-object->datum unwound-body))])
+                                             #`(define #,printed-name #,unwound-body)))))]
                                 [else (error 'unwind-define
                                              "expression is not a define-values: ~e"
                                              (syntax-object->datum stx))]))
