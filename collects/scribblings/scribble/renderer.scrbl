@@ -46,6 +46,7 @@ Creates a renderer whose output goes to @scheme[dest-dir].
                     [dests (listof path-string?)])
            collect-info?]{
 
+Performs the @techlink{collect pass}.
 
 }
 
@@ -54,6 +55,7 @@ Creates a renderer whose output goes to @scheme[dest-dir].
                     [ci collect-info?])
            resolve-info?]{
 
+Performs the @techlink{resolve pass}.
 
 }
 
@@ -62,6 +64,7 @@ Creates a renderer whose output goes to @scheme[dest-dir].
                    [ri resolve-info?])
            void?]{
 
+Produces the final output.
 
 }
 
@@ -81,5 +84,3 @@ Adds the deserialized form of @scheme[v] to @scheme[ci].
 }
 
 }
-
-@include-class[render%]

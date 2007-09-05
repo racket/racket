@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["panel-class.scrbl"]
 
-@defclass[vertical-panel% panel% ()]{
+@define-class-doc[vertical-panel% panel% ()]{
 
 A vertical panel arranges its subwindows in a single column. See
  also @scheme[panel%].

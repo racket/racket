@@ -5,7 +5,7 @@
 @define[lbnumnote @elem{List box items are indexed from @scheme[0].}]
 
 
-@defclass[list-box% object% (list-control<%>)]{
+@define-class-doc[list-box% object% (list-control<%>)]{
 
 A list box allows the user to select one or more string items from a
  scrolling list. A list box is either a single-selection control (if

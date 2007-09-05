@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["canvas-intf.scrbl"]
 
-@defclass[canvas% object% (canvas<%>)]{
+@define-class-doc[canvas% object% (canvas<%>)]{
 
 A @scheme[canvas%] object is a general-purpose window for drawing
  and handling events.

@@ -3,7 +3,7 @@
 @require["labelled-menu-item-intf.scrbl"]
 @require["menu-item-container-intf.scrbl"]
 
-@defclass[menu% object% (menu-item-container<%> labelled-menu-item<%>)]{
+@define-class-doc[menu% object% (menu-item-container<%> labelled-menu-item<%>)]{
 
 A @scheme[menu%] object is a submenu within a @scheme[menu%] or
  @scheme[popup-menu%], or as a top-level menu in a

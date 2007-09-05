@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["event-class.scrbl"]
 
-@defclass[mouse-event% event% ()]{
+@define-class-doc[mouse-event% event% ()]{
 
 A @scheme[mouse-event%] object encapsulates a mouse event.
  Mouse events are primarily processed by

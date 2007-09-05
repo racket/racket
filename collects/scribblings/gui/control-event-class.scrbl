@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["event-class.scrbl"]
 
-@defclass[control-event% event% ()]{
+@define-class-doc[control-event% event% ()]{
 
 A @scheme[control-event%] object contains information about a
  control event. An instance of @scheme[control-event%] is always

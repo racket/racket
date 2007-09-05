@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["top-level-window-intf.scrbl"]
 
-@defclass[dialog% object% (top-level-window<%>)]{
+@define-class-doc[dialog% object% (top-level-window<%>)]{
 
 A dialog is a top-level window that is @defterm{modal}: while the
  dialog is shown, all other top-level windows in the dialog's

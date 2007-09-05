@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@definterface[editor<%> ()]{
+@define-interface-doc[editor<%> ()]{
 
 The @scheme[editor<%>] interface is implemented by @scheme[text%] and
  @scheme[pasteboard%].

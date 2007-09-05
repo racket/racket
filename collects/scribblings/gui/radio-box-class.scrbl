@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["control-intf.scrbl"]
 
-@defclass[radio-box% object% (control<%>)]{
+@define-class-doc[radio-box% object% (control<%>)]{
 
 
 A @scheme[radio-box%] control allows the user to select one of

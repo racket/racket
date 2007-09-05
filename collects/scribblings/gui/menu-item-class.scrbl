@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["selectable-menu-item-intf.scrbl"]
 
-@defclass[menu-item% object% (selectable-menu-item<%>)]{
+@define-class-doc[menu-item% object% (selectable-menu-item<%>)]{
 
 A @scheme[menu-item%] is a plain string-labelled menu item. Its
  parent must be a @scheme[menu%] or @scheme[popup-menu%]. When the

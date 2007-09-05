@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@defclass[editor-data% object% ()]{
+@define-class-doc[editor-data% object% ()]{
 
 An @scheme[editor-data%] object contains extra data associated to a
 snip or region in an editor. See also @|editordatadiscuss|.

@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@defclass[pen-list% object% ()]{
+@define-class-doc[pen-list% object% ()]{
 
 A @scheme[pen-list%] object maintains a list of @scheme[pen%]
  objects to avoid repeatedly creating pen objects. A @scheme[pen%]

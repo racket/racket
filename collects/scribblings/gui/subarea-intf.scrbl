@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["area-intf.scrbl"]
 
-@definterface[subarea<%> (area<%>)]{
+@define-interface-doc[subarea<%> (area<%>)]{
 
 A @scheme[subarea<%>] is a containee @scheme[area<%>].
 

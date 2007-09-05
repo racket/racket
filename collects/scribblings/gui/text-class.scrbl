@@ -3,7 +3,7 @@
 
 @require["editor-intf.scrbl"]
 
-@defclass[text% object% (editor<%>)]{
+@define-class-doc[text% object% (editor<%>)]{
 
 A @scheme[text%] object is a standard text editor. A text editor is
  displayed on the screen through an @scheme[editor-canvas%] object or

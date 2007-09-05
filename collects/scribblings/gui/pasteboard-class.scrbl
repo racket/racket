@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["editor-intf.scrbl"]
 
-@defclass[pasteboard% object% (editor<%>)]{
+@define-class-doc[pasteboard% object% (editor<%>)]{
 
 A @scheme[pasteboard%] object is an editor for displaying snips with
  arbitrary @techlink{location}s.

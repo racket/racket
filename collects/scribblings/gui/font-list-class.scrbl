@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@defclass[font-list% object% ()]{
+@define-class-doc[font-list% object% ()]{
 
 A @scheme[font-list%] object maintains a list of @scheme[font%]
  objects to avoid repeatedly creating fonts.

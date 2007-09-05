@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@definterface[area<%> ()]{
+@define-interface-doc[area<%> ()]{
 
 An @scheme[area<%>] object is either a window or a windowless
  container for managing the position and size of other areas. An

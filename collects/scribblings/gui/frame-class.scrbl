@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["top-level-window-intf.scrbl"]
 
-@defclass[frame% object% (top-level-window<%>)]{
+@define-class-doc[frame% object% (top-level-window<%>)]{
 
 A frame is a top-level container window. It has a title bar (which
  displays the frame's label), an optional menu bar, and an optional

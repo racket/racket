@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["area-intf.scrbl"]
 
-@definterface[window<%> (area<%>)]{
+@define-interface-doc[window<%> (area<%>)]{
 
 A @scheme[window<%>] object is an @scheme[area<%>] with a graphical
  representation that can respond to events.

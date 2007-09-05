@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["event-class.scrbl"]
 
-@defclass[key-event% event% ()]{
+@define-class-doc[key-event% event% ()]{
 
 A @scheme[key-event%] object contains information about a key press
  or release event. Key events are primarily processed by

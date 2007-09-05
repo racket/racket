@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@defclass[gl-config% object% ()]{
+@define-class-doc[gl-config% object% ()]{
 
 A @scheme[gl-config%] object encapsulates configuration information
  for an OpenGL drawing context. Use a @scheme[gl-config%] object as an

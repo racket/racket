@@ -159,7 +159,7 @@
                   [(italic) (wrap e "textit" #f)]
                   [(bold) (wrap e "textbf" #f)]
                   [(tt) (wrap e "mytexttt" #t)]
-                  [(nobreak) (super render-element e part ri)]
+                  [(no-break) (super render-element e part ri)]
                   [(sf) (wrap e "textsf" #f)]
                   [(subscript) (wrap e "textsub" #f)]
                   [(superscript) (wrap e "textsuper" #f)]

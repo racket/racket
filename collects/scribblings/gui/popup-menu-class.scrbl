@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["menu-item-container-intf.scrbl"]
 
-@defclass[popup-menu% object% (menu-item-container<%>)]{
+@define-class-doc[popup-menu% object% (menu-item-container<%>)]{
 
 A @scheme[popup-menu%] object is created without a parent. Dynamically
  display a @scheme[popup-menu%] with @xmethod[window<%> popup-menu]

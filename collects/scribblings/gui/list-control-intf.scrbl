@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["control-intf.scrbl"]
 
-@definterface[list-control<%> (control<%>)]{
+@define-interface-doc[list-control<%> (control<%>)]{
 
 A list control gives the user a list of string items to choose from.
  There are two built-in classes that implement

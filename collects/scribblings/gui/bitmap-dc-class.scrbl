@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["dc-intf.scrbl"]
 
-@defclass[bitmap-dc% object% (dc<%>)]{
+@define-class-doc[bitmap-dc% object% (dc<%>)]{
 
 A @scheme[bitmap-dc%] object allows drawing directly into a bitmap.  A
  @scheme[bitmap%] object must be supplied at initialization or

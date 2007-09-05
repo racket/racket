@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["control-intf.scrbl"]
 
-@defclass[message% object% (control<%>)]{
+@define-class-doc[message% object% (control<%>)]{
 
 A message control is a static line of text or a static bitmap. The
  text or bitmap corresponds to the message's label (see

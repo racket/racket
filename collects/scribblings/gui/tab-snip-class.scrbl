@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["string-snip-class.scrbl"]
 
-@defclass[tab-snip% string-snip% ()]{
+@define-class-doc[tab-snip% string-snip% ()]{
 
 An instance of @scheme[tab-snip%] is created automatically when a
  tab is inserted into an editor.

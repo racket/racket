@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["menu-item-container-intf.scrbl"]
 
-@defclass[menu-bar% object% (menu-item-container<%>)]{
+@define-class-doc[menu-bar% object% (menu-item-container<%>)]{
 
 A @scheme[menu-bar%] object is created for a particular
  @scheme[frame%] object. A frame can have at most one menu bar;

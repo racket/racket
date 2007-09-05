@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["pane-class.scrbl"]
 
-@defclass[grow-box-spacer-pane% pane% ()]{
+@define-class-doc[grow-box-spacer-pane% pane% ()]{
 
 A @scheme[grow-box-spacer-pane%] object is intended for use as a
  lightweight spacer in the bottom-right corner of a frame, rather than

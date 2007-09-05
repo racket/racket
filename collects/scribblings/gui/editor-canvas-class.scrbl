@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["canvas-intf.scrbl"]
 
-@defclass[editor-canvas% object% (canvas<%>)]{
+@define-class-doc[editor-canvas% object% (canvas<%>)]{
 
 An @scheme[editor-canvas%] object manages and displays a
  @scheme[text%] or @scheme[pasteboard%] object.

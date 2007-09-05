@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["control-intf.scrbl"]
 
-@defclass[slider% object% (control<%>)]{
+@define-class-doc[slider% object% (control<%>)]{
 
 A @scheme[slider] object is a panel item with a handle that the user can
  drag to change the control's value. Each slider has a fixed minimum

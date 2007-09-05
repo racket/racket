@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@defclass[editor-wordbreak-map% object% ()]{
+@define-class-doc[editor-wordbreak-map% object% ()]{
 
 An @scheme[editor-wordbreak-map%] objects is used with a
  @scheme[text%] objects to specify word-breaking criteria for the

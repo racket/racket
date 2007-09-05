@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@defclass[dc-path% object% ()]{
+@define-class-doc[dc-path% object% ()]{
 
 A path is a set of figures defined by curves. A path can be used with
 the @method[dc<%> draw-path] method of a @scheme[dc<%>] object to draw

@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["editor-stream-in-base-class.scrbl"]
 
-@defclass[editor-stream-in-bytes-base% editor-stream-in-base% ()]{
+@define-class-doc[editor-stream-in-bytes-base% editor-stream-in-base% ()]{
 
 An @scheme[editor-stream-in-bytes-base%] object can be used to
 read editor data from a byte string.

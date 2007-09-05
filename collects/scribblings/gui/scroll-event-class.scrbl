@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["event-class.scrbl"]
 
-@defclass[scroll-event% event% ()]{
+@define-class-doc[scroll-event% event% ()]{
 
 A @scheme[scroll-event%] object contains information about a scroll
  event. An instance of @scheme[scroll-event%] is always provided to

@@ -3,7 +3,7 @@
 @require["window-intf.scrbl"]
 @require["subarea-intf.scrbl"]
 
-@definterface[subwindow<%> (subarea<%> window<%>)]{
+@define-interface-doc[subwindow<%> (subarea<%> window<%>)]{
 
 A @scheme[subwindow<%>] is a containee window.
 

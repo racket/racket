@@ -3,7 +3,7 @@
 @require["subwindow-intf.scrbl"]
 @require["area-container-window-intf.scrbl"]
 
-@defclass[panel% object% (area-container-window<%> subwindow<%>)]{
+@define-class-doc[panel% object% (area-container-window<%> subwindow<%>)]{
 
 A panel is a both a container and a containee window. It serves mainly
  as a geometry management device, but the @scheme['border] creates a

@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["dc-intf.scrbl"]
 
-@defclass[printer-dc% object% (dc<%>)]{
+@define-class-doc[printer-dc% object% (dc<%>)]{
 
 A @scheme[printer-dc%] object is a Windows or Mac OS X printer
  device context. The class cannot be instantiated under X (an

@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@definterface[editor-snip-editor-admin<%> ()]{
+@define-interface-doc[editor-snip-editor-admin<%> ()]{
 
 An instance of this administrator interface is created with each
  @scheme[editor-snip%] object; new instances cannot be

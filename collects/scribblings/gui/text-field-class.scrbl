@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["control-intf.scrbl"]
 
-@defclass[text-field% object% (control<%>)]{
+@define-class-doc[text-field% object% (control<%>)]{
 
 A @scheme[text-field%] object is an editable text field with an
  optional label displayed in front of it. There are two text field

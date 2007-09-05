@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["text-field-class.scrbl"]
 
-@defclass[combo-field% text-field% ()]{
+@define-class-doc[combo-field% text-field% ()]{
 
 A @scheme[combo-field%] object is a @scheme[text-field%]
  object that also resembles a @scheme[choice%] object, because it

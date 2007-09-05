@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@definterface[add-color<%> ()]{
+@define-interface-doc[add-color<%> ()]{
 
 An @scheme[add-color<%>] object is used to additively change the RGB
  values of a @scheme[color%] object. An @scheme[add-color<%>] object

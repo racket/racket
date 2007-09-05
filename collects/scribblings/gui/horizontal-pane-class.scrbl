@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["pane-class.scrbl"]
 
-@defclass[horizontal-pane% pane% ()]{
+@define-class-doc[horizontal-pane% pane% ()]{
 
 A horizontal pane arranges its subwindows in a single row. See also
  @scheme[pane%].

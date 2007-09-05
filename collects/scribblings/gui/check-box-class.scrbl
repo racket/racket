@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["control-intf.scrbl"]
 
-@defclass[check-box% object% (control<%>)]{
+@define-class-doc[check-box% object% (control<%>)]{
 
 A check box is a labeled box which is either checked or unchecked.
 

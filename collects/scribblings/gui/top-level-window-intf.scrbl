@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["area-container-window-intf.scrbl"]
 
-@definterface[top-level-window<%> (area-container-window<%>)]{
+@define-interface-doc[top-level-window<%> (area-container-window<%>)]{
 
 A top-level window is either a @scheme[frame%] or @scheme[dialog%]
  object.

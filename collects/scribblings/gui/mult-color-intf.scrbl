@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@definterface[mult-color<%> ()]{
+@define-interface-doc[mult-color<%> ()]{
 
 A @scheme[mult-color<%>] object is used to scale the RGB values of a
  @scheme[color%] object. A @scheme[mult-color<%>] object exist only

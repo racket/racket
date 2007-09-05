@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@defclass[editor-admin% object% ()]{
+@define-class-doc[editor-admin% object% ()]{
 
 See @|admindiscuss| for information about the role of administrators.
  The @scheme[editor-admin%] class is never instantiated directly. It

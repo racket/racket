@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["menu-item-intf.scrbl"]
 
-@definterface[labelled-menu-item<%> (menu-item<%>)]{
+@define-interface-doc[labelled-menu-item<%> (menu-item<%>)]{
 
 A @scheme[labelled-menu-item<%>] object is a @scheme[menu-item<%>] with
  a string label (i.e., any menu item other than a separator).  More

@@ -1322,7 +1322,9 @@
   ;; ----------------------------------------
 
   (provide defclass
+           define-class-doc
            definterface
+           define-interface-doc
            defconstructor
            defconstructor/make
            defconstructor*/make
@@ -1332,6 +1334,7 @@
            methspec
            methimpl
            this-obj
+           include-class-section
            include-class)
 
   (define-syntax-parameter current-class #f)
@@ -1426,7 +1429,7 @@
                                             ht))
                  ht)))
 
-  (define (*include-class decl)
+  (define (*include-class-section decl)
     (make-splice
      (cons (section #:style 'hidden (to-element (decl-name decl)))
            (map (lambda (i)
@@ -1439,11 +1442,32 @@
                  ((decl-mk-head decl) #t)
                  (decl-body decl))))))
 
+  (define (*include-class decl)
+    (make-splice
+     (append
+      ((decl-mk-head decl) #f)
+      (list
+       (make-blockquote 
+        "leftindent"
+        (flow-paragraphs
+         (decode-flow
+          (map (lambda (i)
+                 (cond
+                  [(constructor? i) ((constructor-def i))]
+                  [(meth? i)
+                   ((meth-def i) (meth-desc i))]
+                  [else i]))
+               (decl-body decl)))))))))
+
+  (define-syntax include-class-section
+    (syntax-rules ()
+      [(_ id) (*include-class-section (class-doc-info id))]))
+
   (define-syntax include-class
     (syntax-rules ()
       [(_ id) (*include-class (class-doc-info id))]))
 
-  (define (*defclass stx-id super intfs whole-page?)
+  (define (*define-class-doc stx-id super intfs whole-page?)
     (let ([spacer (hspace 1)])
       (make-table
        'boxed
@@ -1497,7 +1521,7 @@
                                           (make-flow (list (make-paragraph (list (to-element i)))))))
                                   (cdr intfs)))))))))))))
 
-  (define-syntax defclass
+  (define-syntax define-class-doc
     (syntax-rules ()
       [(_ name super (intf ...) body ...)
        (define-class-doc-info name
@@ -1507,13 +1531,20 @@
                            (list (class-doc-info intf) ...)
                            (lambda (whole-page?)
                              (list
-                              (*defclass (quote-syntax/loc name)
-                                         (quote-syntax super)
-                                         (list (quote-syntax intf) ...)
-                                         whole-page?)))
+                              (*define-class-doc (quote-syntax/loc name)
+                                                 (quote-syntax super)
+                                                 (list (quote-syntax intf) ...)
+                                                 whole-page?)))
                            (list body ...))))]))
 
-  (define-syntax definterface
+  (define-syntax defclass
+    (syntax-rules ()
+      [(_ name . rest)
+       (begin
+         (define-class-doc name . rest)
+         (include-class name))]))
+
+  (define-syntax define-interface-doc
     (syntax-rules ()
       [(_ name (intf ...) body ...)
        (define-class-doc-info name
@@ -1523,11 +1554,18 @@
                            (list (class-doc-info intf) ...)
                            (lambda (whole-page?)
                              (list
-                              (*defclass (quote-syntax/loc name)
-                                         #f
-                                         (list (quote-syntax intf) ...)
-                                         whole-page?)))
+                              (*define-class-doc (quote-syntax/loc name)
+                                                 #f
+                                                 (list (quote-syntax intf) ...)
+                                                 whole-page?)))
                            (list body ...))))]))
+
+  (define-syntax definterface
+    (syntax-rules ()
+      [(_ name . rest)
+       (begin
+         (define-interface-doc name . rest)
+         (include-class name))]))
 
   (define-syntax (defconstructor*/* stx)
     (syntax-case stx ()

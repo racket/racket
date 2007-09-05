@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["subwindow-intf.scrbl"]
 
-@definterface[control<%> (subwindow<%>)]{
+@define-interface-doc[control<%> (subwindow<%>)]{
 
 The @scheme[control<%>] interface is implemented by the built-in
  control window classes:

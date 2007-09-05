@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@definterface[color-database<%> ()]{
+@define-interface-doc[color-database<%> ()]{
 
 The global @indexed-scheme[the-color-database] object is an instance of
  @scheme[color-database<%>]. It maintains a database of standard RGB

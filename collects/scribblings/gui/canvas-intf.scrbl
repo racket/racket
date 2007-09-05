@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["subwindow-intf.scrbl"]
 
-@definterface[canvas<%> (subwindow<%>)]{
+@define-interface-doc[canvas<%> (subwindow<%>)]{
 
 A canvas is a subwindow onto which graphics and text can be drawn. Canvases also
  receive mouse and keyboard events.

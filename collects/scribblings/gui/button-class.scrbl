@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["control-intf.scrbl"]
 
-@defclass[button% object% (control<%>)]{
+@define-class-doc[button% object% (control<%>)]{
 
 Whenever a button is clicked by the user, the buttons's callback
  procedure is invoked. A callback procedure is provided as an

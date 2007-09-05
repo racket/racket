@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@definterface[menu-item-container<%> ()]{
+@define-interface-doc[menu-item-container<%> ()]{
 
 A @scheme[menu-item-container<%>] object is a @scheme[menu%],
  @scheme[popup-menu%], or @scheme[menu-bar%].

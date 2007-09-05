@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["vertical-panel-class.scrbl"]
 
-@defclass[tab-panel% vertical-panel% ()]{
+@define-class-doc[tab-panel% vertical-panel% ()]{
 
 A tab panel arranges its subwindows in a single column, but also
  includes a horizontal row of tabs at the top of the panel. See

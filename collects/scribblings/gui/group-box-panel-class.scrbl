@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["vertical-panel-class.scrbl"]
 
-@defclass[group-box-panel% vertical-panel% ()]{
+@define-class-doc[group-box-panel% vertical-panel% ()]{
 
 A group-box panel arranges its subwindows in a single column, but also
  draws an optional label at the top of the panel and a border around

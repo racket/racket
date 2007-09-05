@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["control-intf.scrbl"]
 
-@defclass[gauge% object% (control<%>)]{
+@define-class-doc[gauge% object% (control<%>)]{
 
 A gauge is a horizontal or vertical bar for displaying the output
 value of a bounded integer quantity. Each gauge has an adjustable

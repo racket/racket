@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["snip-class.scrbl"]
 
-@defclass[editor-snip% snip% ()]{
+@define-class-doc[editor-snip% snip% ()]{
 
 An @scheme[editor-snip%] object is a @scheme[snip%] object that
  contains and displays an @scheme[editor<%>] object. This snip class

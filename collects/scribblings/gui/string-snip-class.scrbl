@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["snip-class.scrbl"]
 
-@defclass[string-snip% snip% ()]{
+@define-class-doc[string-snip% snip% ()]{
 
 An instance of @scheme[string-snip%] is created automatically when
  text is inserted into a text editor. See also @xmethod[text%

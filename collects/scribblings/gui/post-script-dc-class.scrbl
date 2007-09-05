@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["dc-intf.scrbl"]
 
-@defclass[post-script-dc% object% (dc<%>)]{
+@define-class-doc[post-script-dc% object% (dc<%>)]{
 
 A @scheme[post-script-dc%] object is a PostScript device context, that
  can write PostScript files on any platform. See also

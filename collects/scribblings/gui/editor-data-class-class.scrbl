@@ -1,7 +1,7 @@
 #reader(lib "defreader.ss" "scribble")
 @require["common.ss"]
 
-@defclass[editor-data-class% object% ()]{
+@define-class-doc[editor-data-class% object% ()]{
 
 An @scheme[editor-data-class%] object defines a type for
 @scheme[editor-data%] objects. See also @|editordatadiscuss|.

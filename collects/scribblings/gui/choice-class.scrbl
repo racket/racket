@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["list-control-intf.scrbl"]
 
-@defclass[choice% object% (list-control<%>)]{
+@define-class-doc[choice% object% (list-control<%>)]{
 
 A choice item allows the user to select one string item from a pop-up
  list of items. Unlike a list box, only the currently selection is

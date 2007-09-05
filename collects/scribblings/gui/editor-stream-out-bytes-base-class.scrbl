@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["editor-stream-out-base-class.scrbl"]
 
-@defclass[editor-stream-out-bytes-base% editor-stream-out-base% ()]{
+@define-class-doc[editor-stream-out-bytes-base% editor-stream-out-base% ()]{
 
 An @scheme[editor-stream-out-bytes-base%] object can be used to write
  editor data into a byte string.

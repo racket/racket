@@ -353,7 +353,7 @@ definition.}
 @defform/subs[(schemegrammar maybe-literals id clause-datum ...+)
               ([maybe-literals code:blank
                                (code:line #:literals (literal-id ...))])]{
-
+ 
 Creates a table to define the grammar of @scheme[id]. Each identifier
 mentioned in a @scheme[clause-datum] is typeset as a non-terminal,
 except for the identifiers listed as @scheme[literal-id]s, which are
@@ -364,6 +364,60 @@ typeset as with @scheme[scheme].}
 
 Like @scheme[schemegrammar], but for typesetting multiple productions
 at once, aligned around the @litchar{=} and @litchar{|}.}
+
+@; ------------------------------------------------------------------------
+@section{Classes and Interfaces}
+
+@defform[(define-class-doc id super-id (intf-id ...) pre-flow ...)]{
+
+Binds @schemeidfont{class-doc-info:}@scheme[id] to documentation for
+the class @scheme[id]. If @scheme[super-id] is not @scheme[object%],
+then @schemeidfont{class-doc-info:}@scheme[super-id] must be bound to
+documentation for the superclass (so that links can be created to
+inherited methods, etc.). Similarly,
+@schemeidfont{class-doc-info:}@scheme[intf-id] must be bound to
+documentation for interfaces implemented by the class. At the same
+time, @scheme[id], @scheme[super-id], and the @scheme[int-id]s must
+have for-label bindings that are used for hyperlinks in the usual way.
+
+The decoding of the @scheme[pre-flow] sequence should start with
+general documentation about the class, followed by constructor
+definition (see @scheme[defconstructor]), and then field and method
+definitions (see @scheme[defmethod]).
+
+A @scheme[define-class-doc] form is a Scheme-level definition. It does
+not produce documentation directly. Instead, @scheme[(include-class
+id)] or @scheme[(include-class-section id)] should be used later to
+produce the documentation.}
+
+@defform[(include-class id)]{
+
+Generates inline documentation based on the information bound to
+@schemeidfont{class-doc-info:}@scheme[id]. Constructor and method
+specification are indented to visually group them under the class
+definition.}
+
+@defform[(include-class-section id)]{
+
+Generates documentation based on the information bound to
+@schemeidfont{class-doc-info:}@scheme[id] as a new section. The
+@scheme[id] is used as the section title, but the title is not
+rendered in HTML output, as the definition box serves as a title. With
+the expectation that the section will have its own page, constructor
+and method specifications are not indented (unlike the result of
+@scheme[include-class]).}
+
+@defform[(defclass id super-id (intf-id ...) pre-flow ...)]{
+
+Combines @scheme[define-class-doc] and @scheme[include-class].}
+
+@defform[(defconstructor)]{
+
+TBD.}
+
+@defform[(defmethod)]{
+
+TBD.}
 
 @; ------------------------------------------------------------------------
 @section{Various String Forms}

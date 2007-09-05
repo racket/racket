@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["area-intf.scrbl"]
 
-@definterface[area-container<%> (area<%>)]{
+@define-interface-doc[area-container<%> (area<%>)]{
 
 An @scheme[area-container<%>] is a container @scheme[area<%>].
 

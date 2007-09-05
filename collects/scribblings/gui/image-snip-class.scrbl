@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["snip-class.scrbl"]
 
-@defclass[image-snip% snip% ()]{
+@define-class-doc[image-snip% snip% ()]{
 
 An @scheme[image-snip%] is a snip that can display bitmap images
  (usually loaded from a file). When the image file cannot be found, a

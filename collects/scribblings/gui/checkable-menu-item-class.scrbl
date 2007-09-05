@@ -2,7 +2,7 @@
 @require["common.ss"]
 @require["selectable-menu-item-intf.scrbl"]
 
-@defclass[checkable-menu-item% object% (selectable-menu-item<%>)]{
+@define-class-doc[checkable-menu-item% object% (selectable-menu-item<%>)]{
 
 A @scheme[checkable-menu-item%] is a string-labelled menu item that
  maintains a check mark. Its parent must be a @scheme[menu%] or

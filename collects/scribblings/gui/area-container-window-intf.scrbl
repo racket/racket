@@ -3,7 +3,7 @@
 @require["area-container-intf.scrbl"]
 @require["window-intf.scrbl"]
 
-@definterface[area-container-window<%> (area-container<%> window<%>)]{
+@define-interface-doc[area-container-window<%> (area-container<%> window<%>)]{
 
 Combines two interfaces.
 

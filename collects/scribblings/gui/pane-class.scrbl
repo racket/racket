@@ -3,7 +3,7 @@
 @require["area-container-intf.scrbl"]
 @require["subarea-intf.scrbl"]
 
-@defclass[pane% object% (area-container<%> subarea<%>)]{
+@define-class-doc[pane% object% (area-container<%> subarea<%>)]{
 
 A pane is a both a container and a containee area. It serves only
  as a geometry management device. A @scheme[pane%]
