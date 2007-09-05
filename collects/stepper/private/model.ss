@@ -49,7 +49,8 @@
            "macro-unwind.ss"
            "lifting.ss"
            ;; for breakpoint display
-           "display-break-stuff.ss")
+           ;; (commented out to allow nightly testing)
+           #;"display-break-stuff.ss")
 
   (define program-expander-contract
     ((-> void?) ; init
@@ -154,7 +155,8 @@
 
         (set! steps-received (+ steps-received 1))
         ;; have to be careful else this won't be looked up right away:
-        (when (getenv "PLTSTEPPERUNSAFE")
+        ;; (commented out to allow nightly tests to proceed, 2007-09-04
+        #;(when (getenv "PLTSTEPPERUNSAFE")
           (let ([steps-received/current steps-received])
             (run-on-drscheme-side
              (lambda ()
