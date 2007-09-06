@@ -36,6 +36,21 @@
           p
           (main-collects-relative->path p))))
 
+  ;; HTML anchors are case-insenstive. To make them
+  ;;  distinct, add a "^" in front of capital letters.
+  (define (anchor-name v)
+    (let loop ([s (format "~a" v)])
+      (cond
+       [(regexp-match-positions #rx"[A-Z:]" s)
+        => (lambda (m)
+             (string-append
+              (substring s 0 (caar m))
+              ":"
+              (substring s (caar m) (cdar m))
+              (loop (substring s (cdar m)))))]
+       [else s])))
+                                
+
   ;; ----------------------------------------
   ;;  main mixin
 
@@ -134,7 +149,7 @@
                                                               "#")
                                                           (if (caddr dest)
                                                               ""
-                                                              (cadddr dest)))))
+                                                              (anchor-name (cadddr dest))))))
                                          (class ,(if (eq? p mine)
                                                      "tocviewselflink"
                                                      "tocviewlink")))
@@ -240,8 +255,8 @@
                                                                        '((tt nbsp)))))
                                               '(""))
                                         (a ((href ,(if (part? p)
-                                                       (format "#~a" (tag-key (car (part-tags p)) ri))
-                                                       (format "#~a" (tag-key (target-element-tag p) ri))))
+                                                       (format "#~a" (anchor-name (tag-key (car (part-tags p)) ri)))
+                                                       (format "#~a" (anchor-name (tag-key (target-element-tag p) ri)))))
                                             (class ,(if (part? p)
                                                         "tocsubseclink"
                                                         "tocsublink")))
@@ -279,7 +294,7 @@
                   null
                   (if (part-style? d 'hidden)
                       (map (lambda (t)
-                              `(a ((name ,(format "~a" (tag-key t ri))))))
+                              `(a ((name ,(format "~a" (anchor-name (tag-key t ri)))))))
                            (part-tags d))
                       `((,(case (length number)
                             [(0) 'h2]
@@ -288,7 +303,7 @@
                             [else 'h5])
                          ,@(format-number number '((tt nbsp)))
                          ,@(map (lambda (t)
-                                  `(a ((name ,(format "~a" (tag-key t ri))))))
+                                  `(a ((name ,(format "~a" (anchor-name (tag-key t ri)))))))
                                 (part-tags d))
                          ,@(if (part-title-content d)
                                (render-content (part-title-content d) d ri)
@@ -331,7 +346,7 @@
          [(hover-element? e)
           `((span ((title ,(hover-element-text e))) ,@(render-plain-element e part ri)))]
          [(target-element? e)
-          `((a ((name ,(format "~a" (tag-key (target-element-tag e) ri)))))
+          `((a ((name ,(format "~a" (anchor-name (tag-key (target-element-tag e) ri))))))
             ,@(render-plain-element e part ri))]
          [(and (link-element? e)
                (not (current-no-links)))
@@ -346,7 +361,7 @@
                                            "#")
                                        (if (caddr dest)
                                            ""
-                                           (cadddr dest))))
+                                           (anchor-name (cadddr dest)))))
                         ,@(if (string? (element-style e))
                               `((class ,(element-style e)))
                               null))
@@ -483,7 +498,7 @@
       (define/override (render-other i part ri)
         (cond
          [(string? i) (let ([m (and (extra-breaking?)
-                                    (regexp-match-positions #rx":" i))])
+                                    (regexp-match-positions #rx"[:/]" i))])
                         (if m
                             (list* (substring i 0 (cdar m))
                                    `(span ((class "mywbr")) " ")

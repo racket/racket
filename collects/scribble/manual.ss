@@ -1143,7 +1143,7 @@
                                                                                    form)
                                                                                kw-id))))])
                             (if tag
-                                (make-toc-target-element
+                                (make-target-element
                                  #f
                                  (list
                                   (make-toc-target-element
@@ -1155,8 +1155,8 @@
                                                                  (list (symbol->string (syntax-e kw-id)))
                                                                  content))
                                        content)
-                                   tag))
-                                 stag)
+                                   stag))
+                                 tag)
                                 (car content)))))))))
                forms form-procs)
           (if (null? sub-procs)
