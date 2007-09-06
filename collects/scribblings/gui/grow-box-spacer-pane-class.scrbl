@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["pane-class.scrbl"]
 
-@define-class-doc[grow-box-spacer-pane% pane% ()]{
+@defclass/title[grow-box-spacer-pane% pane% ()]{
 
 A @scheme[grow-box-spacer-pane%] object is intended for use as a
  lightweight spacer in the bottom-right corner of a frame, rather than

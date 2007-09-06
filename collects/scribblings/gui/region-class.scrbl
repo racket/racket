@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[region% object% ()]{
+@defclass/title[region% object% ()]{
 
 A @scheme[region%] object specifies a portion of a drawing area
  (possibly discontinuous). It is normally used for clipping drawing

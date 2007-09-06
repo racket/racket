@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["canvas-intf.scrbl"]
 
-@define-class-doc[editor-canvas% object% (canvas<%>)]{
+@defclass/title[editor-canvas% object% (canvas<%>)]{
 
 An @scheme[editor-canvas%] object manages and displays a
  @scheme[text%] or @scheme[pasteboard%] object.

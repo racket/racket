@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[style-delta% object% ()]{
+@defclass/title[style-delta% object% ()]{
 
 A @scheme[style-delta%] object encapsulates a style change. The changes expressible
 by a delta include:

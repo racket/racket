@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["editor-intf.scrbl"]
 
-@define-class-doc[pasteboard% object% (editor<%>)]{
+@defclass/title[pasteboard% object% (editor<%>)]{
 
 A @scheme[pasteboard%] object is an editor for displaying snips with
  arbitrary @techlink{location}s.

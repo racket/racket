@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["event-class.scrbl"]
 
-@define-class-doc[scroll-event% event% ()]{
+@defclass/title[scroll-event% event% ()]{
 
 A @scheme[scroll-event%] object contains information about a scroll
  event. An instance of @scheme[scroll-event%] is always provided to

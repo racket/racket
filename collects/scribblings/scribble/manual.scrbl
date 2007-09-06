@@ -167,9 +167,13 @@ in a form definition.}
 @; ------------------------------------------------------------------------
 @section{Definition Reference}
 
-@defform[(defproc (id arg-spec ...)
-                  result-contract-expr-datum
-                  pre-flow ...)]{
+@defform/subs[(defproc (id arg-spec ...)
+                       result-contract-expr-datum
+                       pre-flow ...)
+              ([arg-spec (arg-id contract-expr-datum)
+                         (arg-id contract-expr-datum default-expr)
+                         (keyword arg-id contract-expr-datum)
+                         (keyword arg-id contract-expr-datum default-expr)])]{
 
 Produces a sequence of flow elements (encaptured in a @scheme[splice])
 to document a procedure named @scheme[id]. The @scheme[id] is indexed,
@@ -368,56 +372,73 @@ at once, aligned around the @litchar{=} and @litchar{|}.}
 @; ------------------------------------------------------------------------
 @section{Classes and Interfaces}
 
-@defform[(define-class-doc id super-id (intf-id ...) pre-flow ...)]{
+@defform[(defclass id super-id (intf-id ...) pre-flow ...)]{
 
-Binds @schemeidfont{class-doc-info:}@scheme[id] to documentation for
-the class @scheme[id]. If @scheme[super-id] is not @scheme[object%],
-then @schemeidfont{class-doc-info:}@scheme[super-id] must be bound to
-documentation for the superclass (so that links can be created to
-inherited methods, etc.). Similarly,
-@schemeidfont{class-doc-info:}@scheme[intf-id] must be bound to
-documentation for interfaces implemented by the class. At the same
-time, @scheme[id], @scheme[super-id], and the @scheme[int-id]s must
-have for-label bindings that are used for hyperlinks in the usual way.
+Creates documentation for a class @scheme[id] that is a subclass of
+@scheme[super-id] and implements each interface @scheme[intf-id]. Each
+@scheme[super-id] (except @scheme[object%]) and @scheme[intf-id] must
+be documented somewhere via @scheme[defclass] or @scheme[definterface].
 
 The decoding of the @scheme[pre-flow] sequence should start with
 general documentation about the class, followed by constructor
 definition (see @scheme[defconstructor]), and then field and method
-definitions (see @scheme[defmethod]).
+definitions (see @scheme[defmethod]). In rendered form, the
+constructor and method specification are indented to visually group
+them under the class definition.}
 
-A @scheme[define-class-doc] form is a Scheme-level definition. It does
-not produce documentation directly. Instead, @scheme[(include-class
-id)] or @scheme[(include-class-section id)] should be used later to
-produce the documentation.}
+@defform[(defclass/title id super-id (intf-id ...) pre-flow ...)]{
 
-@defform[(include-class id)]{
+Like @scheme[defclass], also includes a @scheme[title] declaration
+with the style @scheme['hidden]. In addition, the constructor and
+methods are not left-indented.
 
-Generates inline documentation based on the information bound to
-@schemeidfont{class-doc-info:}@scheme[id]. Constructor and method
-specification are indented to visually group them under the class
-definition.}
+This form is normally used to create a section to be rendered on its
+own HTML. The @scheme['hidden] style is used because the definition
+box serves as a title.}
 
-@defform[(include-class-section id)]{
+@defform[(definterface id (intf-id ...) pre-flow ...)]{
 
-Generates documentation based on the information bound to
-@schemeidfont{class-doc-info:}@scheme[id] as a new section. The
-@scheme[id] is used as the section title, but the title is not
-rendered in HTML output, as the definition box serves as a title. With
-the expectation that the section will have its own page, constructor
-and method specifications are not indented (unlike the result of
-@scheme[include-class]).}
+Like @scheme[defclass], but for an interfaces. Naturally,
+@scheme[pre-flow] should not generate a constructor declaration.}
 
-@defform[(defclass id super-id (intf-id ...) pre-flow ...)]{
+@defform[(definterface/title id (intf-id ...) pre-flow ...)]{
 
-Combines @scheme[define-class-doc] and @scheme[include-class].}
+Like @scheme[definterface], but for single-page rendering as in
+@scheme[defclass/title].}
 
-@defform[(defconstructor)]{
+@defform/subs[(defconstructor (arg-spec ...) pre-flow ...)
+              ([arg-spec (arg-id contract-expr-datum)
+                         (arg-id contract-expr-datum default-expr)])]{
 
-TBD.}
+Like @scheme[defproc], but for a constructor declaration in the body
+of @scheme[defclass], so no return contract is specified. Also, the
+@scheme[new]-style keyword for each @scheme[arg-spec] is implicit from
+the @scheme[arg-id].}
 
-@defform[(defmethod)]{
+@defform[(defconstructor/make (arg-spec ...) pre-flow ...)]{
 
-TBD.}
+Like @scheme[defconstructor], but specifying by-position
+initialization arguments (for use with @scheme[make-object]) instead
+of by-name arguments (for use with @scheme[new]).}
+
+@defform[(defconstructor*/make [(arg-spec ...) ...] pre-flow ...)]{
+
+Like @scheme[defconstructor/make], but with multiple constructor
+patterns analogous @scheme[defproc*].}
+
+@defform[(defmethod (id arg-spec ...)
+                    result-contract-expr-datum
+                    pre-flow ...)]{
+
+Like @scheme[defproc], but for a method within a @scheme[defclass] or
+@scheme[definterface] body.}
+
+@defform[(defmethod* ([(id arg-spec ...)
+                       result-contract-expr-datum] ...)
+                     pre-flow ...)]{
+
+Like @scheme[defproc*], but for a method within a @scheme[defclass] or
+@scheme[definterface] body.}
 
 @; ------------------------------------------------------------------------
 @section{Various String Forms}

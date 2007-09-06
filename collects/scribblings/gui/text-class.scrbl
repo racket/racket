@@ -1,9 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@require["editor-intf.scrbl"]
-
-@define-class-doc[text% object% (editor<%>)]{
+@defclass/title[text% object% (editor<%>)]{
 
 A @scheme[text%] object is a standard text editor. A text editor is
  displayed on the screen through an @scheme[editor-canvas%] object or

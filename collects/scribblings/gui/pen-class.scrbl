@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[pen% object% ()]{
+@defclass/title[pen% object% ()]{
 
 A pen is a drawing tool with a color, width, and style. A pen draws
  lines and outlines, such as the outline of a rectangle. On a

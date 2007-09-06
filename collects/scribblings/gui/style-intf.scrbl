@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-interface-doc[style<%> ()]{
+@definterface/title[style<%> ()]{
 
 A @scheme[style<%>] object encapsulates drawing information (font,
  color, alignment, etc.) in a hierarchical manner. A @scheme[style<%>]

@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-interface-doc[dc<%> ()]{
+@definterface/title[dc<%> ()]{
 
 A @scheme[dc<%>] object is a drawing context for drawing graphics and
  text.  It represents output devices in a generic way; e.g., a canvas

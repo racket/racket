@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[cursor% object% ()]{
+@defclass/title[cursor% object% ()]{
 
 A cursor is a small icon that indicates the location of the mouse
  pointer.  The bitmap image typically indicates the current mode or

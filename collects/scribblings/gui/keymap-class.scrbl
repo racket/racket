@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[keymap% object% ()]{
+@defclass/title[keymap% object% ()]{
 
 A @scheme[keymap%] object is used by @scheme[editor<%>] objects to
  map keyboard and mouse sequences to arbitrary functions in an

@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["text-field-class.scrbl"]
 
-@define-class-doc[combo-field% text-field% ()]{
+@defclass/title[combo-field% text-field% ()]{
 
 A @scheme[combo-field%] object is a @scheme[text-field%]
  object that also resembles a @scheme[choice%] object, because it

@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["area-container-window-intf.scrbl"]
 
-@define-interface-doc[top-level-window<%> (area-container-window<%>)]{
+@definterface/title[top-level-window<%> (area-container-window<%>)]{
 
 A top-level window is either a @scheme[frame%] or @scheme[dialog%]
  object.

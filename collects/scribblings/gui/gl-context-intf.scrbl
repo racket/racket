@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-interface-doc[gl-context<%> ()]{
+@definterface/title[gl-context<%> ()]{
 
 A @scheme[gl-context<%>] object represents a context for drawing with
  @as-index{OpenGL} to a specific @scheme[dc<%>] instance. To obtain a

@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[clipboard-client% object% ()]{
+@defclass/title[clipboard-client% object% ()]{
 
 A @scheme[clipboard-client%] object allows a program to take over
  the clipboard and service requests for clipboard data. See

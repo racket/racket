@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[brush% object% ()]{
+@defclass/title[brush% object% ()]{
 
 A brush is a drawing tool with a color and a style that is used for
  filling in areas, such as the interior of a rectangle or ellipse.  On

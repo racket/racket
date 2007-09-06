@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["dc-intf.scrbl"]
 
-@define-class-doc[post-script-dc% object% (dc<%>)]{
+@defclass/title[post-script-dc% object% (dc<%>)]{
 
 A @scheme[post-script-dc%] object is a PostScript device context, that
  can write PostScript files on any platform. See also

@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["control-intf.scrbl"]
 
-@define-class-doc[message% object% (control<%>)]{
+@defclass/title[message% object% (control<%>)]{
 
 A message control is a static line of text or a static bitmap. The
  text or bitmap corresponds to the message's label (see

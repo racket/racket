@@ -78,7 +78,7 @@
                           (lambda (renderer sec ri)
                             (let* ([vtag `(def ,tag)]
                                    [stag `(form ,tag)]
-                                   [sd (resolve-get sec ri stag)])
+                                   [sd (resolve-get/tentative sec ri stag)])
                               (list
                                (cond
                                 [sd 
@@ -541,11 +541,15 @@
                       (car b))
                   (cadr b)))))
 
+  (define (register-scheme/invent stx warn-if-no-label?)
+    (or (register-scheme stx warn-if-no-label?)
+        (format ":UNKNOWN:~a" (syntax-e stx))))
+
   (define (register-scheme-definition stx [warn-if-no-label? #f])
-    `(def ,(register-scheme stx warn-if-no-label?)))
+    `(def ,(register-scheme/invent stx warn-if-no-label?)))
 
   (define (register-scheme-form-definition stx [warn-if-no-label? #f])
-    `(form ,(register-scheme stx warn-if-no-label?)))
+    `(form ,(register-scheme/invent stx warn-if-no-label?)))
 
   (define syntax-ize-hook (make-parameter (lambda (v col) #f)))
 

@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["control-intf.scrbl"]
 
-@define-class-doc[check-box% object% (control<%>)]{
+@defclass/title[check-box% object% (control<%>)]{
 
 A check box is a labeled box which is either checked or unchecked.
 

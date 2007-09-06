@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[color% object% ()]{
+@defclass/title[color% object% ()]{
 
 A color is an object representing a red-green-blue (RGB) combination
  of primary colors, and is used to determine drawing colors. Each red,

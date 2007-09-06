@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["area-intf.scrbl"]
 
-@define-interface-doc[subarea<%> (area<%>)]{
+@definterface/title[subarea<%> (area<%>)]{
 
 A @scheme[subarea<%>] is a containee @scheme[area<%>].
 

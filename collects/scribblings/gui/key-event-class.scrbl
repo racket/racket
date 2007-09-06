@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["event-class.scrbl"]
 
-@define-class-doc[key-event% event% ()]{
+@defclass/title[key-event% event% ()]{
 
 A @scheme[key-event%] object contains information about a key press
  or release event. Key events are primarily processed by

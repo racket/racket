@@ -278,11 +278,7 @@
          [(element? i)
           (cond
            [(link-element? i)
-            (let-values ([(dest ext?) (resolve-get/where d ri (link-element-tag i))])
-              (when ext?
-                (hash-table-put! (resolve-info-undef ri)
-                                 (tag-key (link-element-tag i) ri)
-                                 #t)))])
+            (resolve-get d ri (link-element-tag i))])
           (for-each (lambda (e)
                       (resolve-element e d ri))
                     (element-content i))]))

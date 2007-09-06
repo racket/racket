@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["area-intf.scrbl"]
 
-@define-interface-doc[window<%> (area<%>)]{
+@definterface/title[window<%> (area<%>)]{
 
 A @scheme[window<%>] object is an @scheme[area<%>] with a graphical
  representation that can respond to events.

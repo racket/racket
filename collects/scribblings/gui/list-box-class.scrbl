@@ -1,11 +1,10 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["list-control-intf.scrbl"]
 
 @define[lbnumnote @elem{List box items are indexed from @scheme[0].}]
 
 
-@define-class-doc[list-box% object% (list-control<%>)]{
+@defclass/title[list-box% object% (list-control<%>)]{
 
 A list box allows the user to select one or more string items from a
  scrolling list. A list box is either a single-selection control (if

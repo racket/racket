@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["canvas-intf.scrbl"]
 
-@define-class-doc[canvas% object% (canvas<%>)]{
+@defclass/title[canvas% object% (canvas<%>)]{
 
 A @scheme[canvas%] object is a general-purpose window for drawing
  and handling events.

@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["pane-class.scrbl"]
 
-@define-class-doc[vertical-pane% pane% ()]{
+@defclass/title[vertical-pane% pane% ()]{
 
 A vertical pane arranges its subwindows in a single column. See also @scheme[pane%].
 

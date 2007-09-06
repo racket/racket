@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-interface-doc[clipboard<%> ()]{
+@definterface/title[clipboard<%> ()]{
 
 A single @scheme[clipboard<%>] object, @indexed-scheme[the-clipboard],
  manages the content of the system-wide clipboard for cut and paste.

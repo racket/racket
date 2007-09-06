@@ -1,9 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["labelled-menu-item-intf.scrbl"]
-@require["menu-item-container-intf.scrbl"]
 
-@define-class-doc[menu% object% (menu-item-container<%> labelled-menu-item<%>)]{
+@defclass/title[menu% object% (menu-item-container<%> labelled-menu-item<%>)]{
 
 A @scheme[menu%] object is a submenu within a @scheme[menu%] or
  @scheme[popup-menu%], or as a top-level menu in a

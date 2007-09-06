@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[ps-setup% object% ()]{
+@defclass/title[ps-setup% object% ()]{
 
 A @scheme[ps-setup%] object contains configuration information for
  producing PostScript files using a @scheme[post-script-dc%] object.

@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["vertical-panel-class.scrbl"]
 
-@define-class-doc[group-box-panel% vertical-panel% ()]{
+@defclass/title[group-box-panel% vertical-panel% ()]{
 
 A group-box panel arranges its subwindows in a single column, but also
  draws an optional label at the top of the panel and a border around

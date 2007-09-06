@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["control-intf.scrbl"]
 
-@define-class-doc[text-field% object% (control<%>)]{
+@defclass/title[text-field% object% (control<%>)]{
 
 A @scheme[text-field%] object is an editable text field with an
  optional label displayed in front of it. There are two text field

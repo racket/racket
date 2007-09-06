@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["dc-intf.scrbl"]
 
-@define-class-doc[bitmap-dc% object% (dc<%>)]{
+@defclass/title[bitmap-dc% object% (dc<%>)]{
 
 A @scheme[bitmap-dc%] object allows drawing directly into a bitmap.  A
  @scheme[bitmap%] object must be supplied at initialization or

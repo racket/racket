@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[timer% object% ()]{
+@defclass/title[timer% object% ()]{
 
 A @scheme[timer%] object encapsulates an event-based alarm. To use a
  timer, either instantiate it with a @scheme[timer-callback] thunk to

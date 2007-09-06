@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["subwindow-intf.scrbl"]
 
-@define-interface-doc[control<%> (subwindow<%>)]{
+@definterface/title[control<%> (subwindow<%>)]{
 
 The @scheme[control<%>] interface is implemented by the built-in
  control window classes:

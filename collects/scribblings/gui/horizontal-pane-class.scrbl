@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["pane-class.scrbl"]
 
-@define-class-doc[horizontal-pane% pane% ()]{
+@defclass/title[horizontal-pane% pane% ()]{
 
 A horizontal pane arranges its subwindows in a single row. See also
  @scheme[pane%].

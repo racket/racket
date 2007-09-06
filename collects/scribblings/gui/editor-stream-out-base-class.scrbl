@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[editor-stream-out-base% object% ()]{
+@defclass/title[editor-stream-out-base% object% ()]{
 
 An @scheme[editor-stream-out-base%] object is used by an
  @scheme[editor-stream-out%] object to perform low-level writing of

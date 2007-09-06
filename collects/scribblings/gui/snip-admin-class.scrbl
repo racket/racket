@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[snip-admin% object% ()]{
+@defclass/title[snip-admin% object% ()]{
 
 See @|admindiscuss| for information about the role of administrators.
  The @scheme[snip-admin%] class is never instantiated directly. It

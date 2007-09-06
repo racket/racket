@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["subwindow-intf.scrbl"]
 
-@define-interface-doc[canvas<%> (subwindow<%>)]{
+@definterface/title[canvas<%> (subwindow<%>)]{
 
 A canvas is a subwindow onto which graphics and text can be drawn. Canvases also
  receive mouse and keyboard events.

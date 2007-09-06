@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["control-intf.scrbl"]
 
-@define-class-doc[radio-box% object% (control<%>)]{
+@defclass/title[radio-box% object% (control<%>)]{
 
 
 A @scheme[radio-box%] control allows the user to select one of

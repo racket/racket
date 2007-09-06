@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["snip-class.scrbl"]
 
-@define-class-doc[editor-snip% snip% ()]{
+@defclass/title[editor-snip% snip% ()]{
 
 An @scheme[editor-snip%] object is a @scheme[snip%] object that
  contains and displays an @scheme[editor<%>] object. This snip class

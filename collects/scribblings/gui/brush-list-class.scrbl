@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[brush-list% object% ()]{
+@defclass/title[brush-list% object% ()]{
 
 A @scheme[brush-list%] object maintains a list of @scheme[brush%]
  objects to avoid creating brushes repeatedly. A @scheme[brush%]

@@ -1,9 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["subwindow-intf.scrbl"]
-@require["area-container-window-intf.scrbl"]
 
-@define-class-doc[panel% object% (area-container-window<%> subwindow<%>)]{
+@defclass/title[panel% object% (area-container-window<%> subwindow<%>)]{
 
 A panel is a both a container and a containee window. It serves mainly
  as a geometry management device, but the @scheme['border] creates a

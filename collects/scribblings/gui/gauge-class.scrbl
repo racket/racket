@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["control-intf.scrbl"]
 
-@define-class-doc[gauge% object% (control<%>)]{
+@defclass/title[gauge% object% (control<%>)]{
 
 A gauge is a horizontal or vertical bar for displaying the output
 value of a bounded integer quantity. Each gauge has an adjustable

@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[snip% object% ()]{
+@defclass/title[snip% object% ()]{
 
 A direct instance of @scheme[snip%] is uninteresting. Useful snips are
  defined by instantiating derived subclasses, but this class defines

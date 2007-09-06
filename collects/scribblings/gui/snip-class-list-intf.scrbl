@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-interface-doc[snip-class-list<%> ()]{
+@definterface/title[snip-class-list<%> ()]{
 
 Each eventspace has its own instance of @scheme[snip-class-list<%>],
  obtained with @scheme[(get-the-snip-class-list)]. New instances

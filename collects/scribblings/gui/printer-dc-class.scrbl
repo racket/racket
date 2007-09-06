@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["dc-intf.scrbl"]
 
-@define-class-doc[printer-dc% object% (dc<%>)]{
+@defclass/title[printer-dc% object% (dc<%>)]{
 
 A @scheme[printer-dc%] object is a Windows or Mac OS X printer
  device context. The class cannot be instantiated under X (an

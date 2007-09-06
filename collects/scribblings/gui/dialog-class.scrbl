@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["top-level-window-intf.scrbl"]
 
-@define-class-doc[dialog% object% (top-level-window<%>)]{
+@defclass/title[dialog% object% (top-level-window<%>)]{
 
 A dialog is a top-level window that is @defterm{modal}: while the
  dialog is shown, all other top-level windows in the dialog's

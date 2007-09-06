@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["string-snip-class.scrbl"]
 
-@define-class-doc[tab-snip% string-snip% ()]{
+@defclass/title[tab-snip% string-snip% ()]{
 
 An instance of @scheme[tab-snip%] is created automatically when a
  tab is inserted into an editor.

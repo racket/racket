@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["snip-class.scrbl"]
 
-@define-class-doc[image-snip% snip% ()]{
+@defclass/title[image-snip% snip% ()]{
 
 An @scheme[image-snip%] is a snip that can display bitmap images
  (usually loaded from a file). When the image file cannot be found, a

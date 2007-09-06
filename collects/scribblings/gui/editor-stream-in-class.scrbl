@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[editor-stream-in% object% ()]{
+@defclass/title[editor-stream-in% object% ()]{
 
 An @scheme[editor-stream-in%] object is used to read editor
  information from a file or other input stream (such as the

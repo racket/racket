@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["selectable-menu-item-intf.scrbl"]
 
-@define-class-doc[checkable-menu-item% object% (selectable-menu-item<%>)]{
+@defclass/title[checkable-menu-item% object% (selectable-menu-item<%>)]{
 
 A @scheme[checkable-menu-item%] is a string-labelled menu item that
  maintains a check mark. Its parent must be a @scheme[menu%] or

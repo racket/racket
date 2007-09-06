@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[font% object% ()]{
+@defclass/title[font% object% ()]{
 
 A @defterm{font} is an object which determines the appearance of text,
  primarily when drawing text to a device context. A font is determined

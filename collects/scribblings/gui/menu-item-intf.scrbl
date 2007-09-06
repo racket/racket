@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-interface-doc[menu-item<%> ()]{
+@definterface/title[menu-item<%> ()]{
 
 A @scheme[menu-item<%>] object is an element within a @scheme[menu%],
  @scheme[popup-menu%], or @scheme[menu-bar%]. Operations that affect

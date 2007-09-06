@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["panel-class.scrbl"]
 
-@define-class-doc[vertical-panel% panel% ()]{
+@defclass/title[vertical-panel% panel% ()]{
 
 A vertical panel arranges its subwindows in a single column. See
  also @scheme[panel%].

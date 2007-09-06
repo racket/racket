@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-class-doc[event% object% ()]{
+@defclass/title[event% object% ()]{
 
 An @scheme[event%] object contains information about a control,
 keyboard, mouse, or scroll event. See also

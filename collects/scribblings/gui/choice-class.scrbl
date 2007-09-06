@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["list-control-intf.scrbl"]
 
-@define-class-doc[choice% object% (list-control<%>)]{
+@defclass/title[choice% object% (list-control<%>)]{
 
 A choice item allows the user to select one string item from a pop-up
  list of items. Unlike a list box, only the currently selection is

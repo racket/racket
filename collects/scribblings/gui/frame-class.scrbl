@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["top-level-window-intf.scrbl"]
 
-@define-class-doc[frame% object% (top-level-window<%>)]{
+@defclass/title[frame% object% (top-level-window<%>)]{
 
 A frame is a top-level container window. It has a title bar (which
  displays the frame's label), an optional menu bar, and an optional

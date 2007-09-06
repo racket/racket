@@ -39,6 +39,14 @@
 
   (define (resolve-get part ri key)
     (let-values ([(v ext?) (resolve-get/where part ri key)])
+      (when ext?
+        (hash-table-put! (resolve-info-undef ri)
+                         (tag-key key ri)
+                         #t))
+      v))
+
+  (define (resolve-get/tentative part ri key)
+    (let-values ([(v ext?) (resolve-get/where part ri key)])
       v))
 
   (provide 
@@ -47,7 +55,7 @@
    part-collected-info
    collect-put!
    resolve-get
-   resolve-get/where)
+   resolve-get/tentative)
 
   ;; ----------------------------------------
 

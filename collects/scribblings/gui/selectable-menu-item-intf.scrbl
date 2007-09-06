@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["labelled-menu-item-intf.scrbl"]
 
-@define-interface-doc[selectable-menu-item<%> (labelled-menu-item<%>)]{
+@definterface/title[selectable-menu-item<%> (labelled-menu-item<%>)]{
 
 A @scheme[selectable-menu-item<%>] object is a
  @scheme[labelled-menu-item<%>] that the user can select. It may also

@@ -1,8 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["menu-item-container-intf.scrbl"]
 
-@define-class-doc[menu-bar% object% (menu-item-container<%>)]{
+@defclass/title[menu-bar% object% (menu-item-container<%>)]{
 
 A @scheme[menu-bar%] object is created for a particular
  @scheme[frame%] object. A frame can have at most one menu bar;

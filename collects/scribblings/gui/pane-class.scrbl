@@ -1,9 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
-@require["area-container-intf.scrbl"]
-@require["subarea-intf.scrbl"]
 
-@define-class-doc[pane% object% (area-container<%> subarea<%>)]{
+@defclass/title[pane% object% (area-container<%> subarea<%>)]{
 
 A pane is a both a container and a containee area. It serves only
  as a geometry management device. A @scheme[pane%]

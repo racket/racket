@@ -1,8 +1,8 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 @require[(lib "bnf.ss" "scribble")]
 
-@define-interface-doc[font-name-directory<%> ()]{
+@definterface/title[font-name-directory<%> ()]{
 
 There is one @scheme[font-name-directory<%>] object:
  @scheme[the-font-name-directory]. It implements the mapping from font

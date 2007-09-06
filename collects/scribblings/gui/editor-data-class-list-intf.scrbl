@@ -1,7 +1,7 @@
-#reader(lib "defreader.ss" "scribble")
+#reader(lib "docreader.ss" "scribble")
 @require["common.ss"]
 
-@define-interface-doc[editor-data-class-list<%> ()]{
+@definterface/title[editor-data-class-list<%> ()]{
 
 Each eventspace has an instance of @scheme[editor-data-class-list<%>],
  obtained with @scheme[(get-the-editor-data-class-list)]. New
