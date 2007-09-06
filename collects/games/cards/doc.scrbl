@@ -207,41 +207,24 @@ Removes @scheme[card] from the table.}
  moved at once.}
 
 
-@defmethod[(flip-card [card (is-a?/c card<%>)]) void?]{
+@defmethod*[([(flip-card [card (is-a?/c card<%>)]) void?]
+             [(flip-cards [cards (listof (is-a?/c card<%>))]) void?])]{
 
- Flips @scheme[card] over with animation.}
+ Flips @scheme[card] or all @scheme[cards] over (at once) with
+ animation.}
 
-@defmethod[(flip-cards [cards (listof (is-a?/c card<%>))]) void?]{
+@defmethod*[([(card-face-up [card (is-a?/c card<%>)]) void?]
+             [(cards-face-up [cards (listof (is-a?/c card<%>))]) void?]
+             [(card-face-down [card (is-a?/c card<%>)]) void?]
+             [(cards-face-down [cards (listof (is-a?/c card<%>))]) void?])]{
+             
+ Like @method[table<%> flip-cards], but only for @scheme[card] or
+ elements of @scheme[cards] that are currently face down/up.}
 
- Flips all @scheme[cards] over (at once) with animation.}
+@defmethod*[([(card-to-front [card (is-a?/c card<%>)]) void?]
+             [(card-to-back [card (is-a?/c card<%>)]) void?])]{
 
-@defmethod[(card-face-down [card (is-a?/c card<%>)]) void?]{
-
- Like @method[table<%> flip-card], but only if @scheme[card] is
- currently face up.}
-
-@defmethod[(cards-face-down [cards (listof (is-a?/c card<%>))]) void?]{
-
- Like @method[table<%> flip-cards], but only for elements of
- @scheme[cards] that are currently face up.}
-
-@defmethod[(card-face-up [card (is-a?/c card<%>)]) void?]{
-
- Like @method[table<%> flip-card], but only if @scheme[card] is
- currently face down.}
-
-@defmethod[(cards-face-up [cards (listof (is-a?/c card<%>))]) void?]{
-
- Like @method[table<%> flip-cards], but only for elements of
- @scheme[cards] that are currently face down.}
-
-@defmethod[(card-to-front [card (is-a?/c card<%>)]) void?]{
-
- Moves @scheme[card] in front of all other cards.}
-
-@defmethod[(card-to-back [card (is-a?/c card<%>)]) void?]{
-
- Moves @scheme[card] behind of all other cards.}
+ Moves @scheme[card] before/behind of all other cards.}
 
 @defmethod[(stack-cards [cards (listof (is-a?/c card<%>))]) void?]{
 
@@ -262,23 +245,17 @@ Removes @scheme[card] from the table.}
  Returns a list of all cards on the table in stacking order from front
  to back.}
 
-@defmethod[(table-width) nonnegative-exact-integer?]{
+@defmethod*[([(table-width) nonnegative-exact-integer?]
+             [(table-height) nonnegative-exact-integer?])]{
 
- Returns the width of the table in pixels.}
+ Returns the width/height of the table in pixels.}
 
-@defmethod[(table-height) nonnegative-exact-integer?]{
+@defmethod*[([(begin-card-sequence) void?]
+             [(end-card-sequence) void?])]{
 
- Returns the height of the table in pixels.}
-
-@defmethod[(begin-card-sequence) void?]{
-
- Starts a sequence of card or region changes that won't be animated or
- updated until the end of the sequence.}
-
-@defmethod[(end-card-sequence) void?]{
-
- Ends a sequence; @schemeidfont{begin-}/@schemeidfont{end-} pairs can
- be nested.}
+ Starts/ends a sequence of card or region changes that won't be
+ animated or updated until the end of the sequence. Sequences can be
+ nested via matching @schemeidfont{begin-}/@schemeidfont{end-} pairs.}
    
 @defmethod[(add-region [r region?]) void]{
 
@@ -290,13 +267,10 @@ Removes @scheme[card] from the table.}
 
  Removes the region @scheme[r] from the table.}
 
-@defmethod[(hilite-region [r region?]) void?]{
+@defmethod*[([(hilite-region [r region?]) void?]
+             [(unhilite-region [r region?]) void?])]{
 
- Manual hilite (usually for animation).}
-
-@defmethod[(unhilite-region [r region?]) void?]{
-
- Manual unhilite (usually for animation).}
+ Manual (un)hilite, usually for animation.}
 
 @defmethod[(set-button-action [which (one-of/c 'left 'middle 'right)]
                               [action symbol?])

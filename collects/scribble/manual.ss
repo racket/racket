@@ -858,7 +858,14 @@
              prototypes
              arg-contractss
              result-contracts
-             (cons #t (map (lambda (x) #f) (cdr prototypes))))))
+             (let loop ([ps prototypes][accum null])
+               (cond
+                [(null? ps) null]
+                [(ormap (lambda (a) (eq? (caar ps) a)) accum)
+                 (cons #f (loop (cdr ps) accum))]
+                [else
+                 (cons #t (loop (cdr ps)
+                                (cons (caar ps) accum)))])))))
           (content-thunk))))))
 
   (define (make-target-element* inner-make-target-element stx-id content wrappers)

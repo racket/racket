@@ -225,7 +225,13 @@ source layout.}
                    pre-flow ...)]{
 
 Like @scheme[defproc], but for multiple cases with the same
-@scheme[id].  }
+@scheme[id]. 
+
+When an @scheme[id] has multiple calling cases, they must be defined
+with a single @scheme[defproc*], so that a single definition point
+exists for the @scheme[id]. However, multiple distinct @scheme[id]s
+can also be defined by a single @scheme[defproc*], for the case that
+it's best to document a related group of procedures at once.}
 
 
 @defform/subs[(defform maybe-literals (id . datum) pre-flow ...)
