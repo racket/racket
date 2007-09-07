@@ -89,7 +89,7 @@
                [nh (string->number h)])
            (unless (and nw (< 0 nw 10000))
              (die 'slideshow "bad width: ~e" w))
-           (unless (and nw (< 0 nh 10000))
+           (unless (and nh (< 0 nh 10000))
              (die 'slideshow "bad height: ~e" h))
            (set! actual-screen-w nw)
            (set! actual-screen-h nh)))
