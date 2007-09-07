@@ -50,12 +50,14 @@
       (current-security-guard
        (make-security-guard (current-security-guard)
 			    (lambda (who what mode)
-			      (when (memq 'write mode)
-				(unless (sub-path? (normal-path what)
-						   (normal-path (find-system-path 'temp-dir)))
-				  (error 'slideshow
-					 "slide program attempted to write to filesystem: ~e"
-					 what)))
+                              (when (memq 'write mode)
+                                (unless (or (sub-path? (normal-path what)
+                                                       (normal-path (find-system-path 'temp-dir)))
+                                            (sub-path? (normal-path what)
+                                                       (normal-path (find-system-path 'pref-dir))))
+                                  (error 'slideshow
+                                         "slide program attempted to write to filesystem: ~e"
+                                         what)))
 			      (when (memq 'execute mode)
 				(error 'slideshow
 				       "slide program attempted to execute external code: ~e"
