@@ -1339,6 +1339,7 @@ static Scheme_Object *SetPSProcs(int, Scheme_Object *a[])
   wxREGGLOB(ps_draw_text);
   wxREGGLOB(ps_get_text_extent);
   wxREGGLOB(ps_expand_name);
+  wxREGGLOB(ps_glyph_exists);
   ps_draw_text = a[0];
   ps_get_text_extent = a[1];
   ps_expand_name = a[2];
