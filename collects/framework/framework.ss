@@ -61,8 +61,32 @@
      
   
   (define-values/invoke-unit/infer framework+mred@)
-    
+
   (provide/contract/docs
+   
+   (text:autocomplete-append-after
+    (parameter/c string?)
+    ()
+    "A string that is inserted after a completions is inserted by a"
+    "@ilink text:autocomplete<%>"
+    "instance."
+    ""
+    "Defaults to \"\"")
+   (text:autocomplete-limit
+    (parameter/c (and/c integer? exact? positive?))
+    ()
+    "Controls the number of completions visible at a time in the menu"
+    "produced by"
+    "@ilink text:autocomplete<%>"
+    "instances."
+    ""
+    "Defaults to 15.")
+   (text:get-completions/manuals
+    (-> (listof string?) (listof string?))
+    (manuals)
+    "Returns the list of keywords for the manuals from \\var{manuals}"
+    "by reading them from the \\texttt{keywords}"
+    "files in the corresponding manuals' directories")
    
    (number-snip:make-repeating-decimal-snip
     (number? boolean? . -> . (is-a?/c snip%))

@@ -170,6 +170,7 @@
      clever-file-format<%>
      ports<%>
      input-box<%>
+     autocomplete<%>
      
      basic% 
      hide-caret/selection%
@@ -201,9 +202,12 @@
      file-mixin
      clever-file-format-mixin
      ports-mixin
-     input-box-mixin))
+     input-box-mixin
+     autocomplete-mixin))
   (define-signature text^ extends text-class^
-    ())
+    (autocomplete-append-after
+     autocomplete-limit
+     get-completions/manuals))
   
   (define-signature canvas-class^
     (basic<%>
