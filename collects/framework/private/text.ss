@@ -2163,6 +2163,7 @@ designates the character that triggers autocompletion
 
   (define autocomplete<%>
     (interface ((class->interface text%))
+      auto-complete
       get-autocomplete-border-color
       get-autocomplete-background-color
       get-autocomplete-selected-color
@@ -2191,8 +2192,13 @@ designates the character that triggers autocompletion
       (define/public (get-autocomplete-selected-color) "orange")
       
       (define/public (completion-mode-key-event? key-event)
-        (and (eq? (send key-event get-key-code) #\.)
-             (send key-event get-control-down)))
+        (cond
+          [(and (eq? (send key-event get-key-code) #\.)
+                (send key-event get-control-down))
+           (or (eq? (system-type) 'macosx)
+               (not (preferences:get 'framework:menu-bindings)))]
+          [else
+           #f]))
 
       (define/public (get-all-words)
         (get-completions/manuals
@@ -2220,15 +2226,16 @@ designates the character that triggers autocompletion
 
       ;; (-> void)
       ;; Check for possible completions of the current word and give the user a menu for them.
-      (define/private (auto-complete)
-        (let* ([end-pos (get-end-position)]
-               [word (get-word-at end-pos)]
-               [completion-cursor (get-completions word)])
-          (when (not (send completion-cursor empty?))
-            (let ([start-pos (- end-pos (string-length word))])
-              (set! word-start-pos start-pos)
-              (set! word-end-pos end-pos)
-              (show-options word start-pos end-pos completion-cursor)))))
+      (define/public-final (auto-complete)
+        (when (equal? (get-start-position) (get-end-position))
+          (let* ([end-pos (get-end-position)]
+                 [word (get-word-at end-pos)]
+                 [completion-cursor (get-completions word)])
+            (when (not (send completion-cursor empty?))
+              (let ([start-pos (- end-pos (string-length word))])
+                (set! word-start-pos start-pos)
+                (set! word-end-pos end-pos)
+                (show-options word start-pos end-pos completion-cursor))))))
       
       ;; Number -> String
       ;; The word that ends at the current positon of the editor
@@ -2279,8 +2286,7 @@ designates the character that triggers autocompletion
                [else
                 (destroy-completions-box)
                 (super on-char key-event)]))]
-          [(and (completion-mode-key-event? key-event)
-                (equal? (get-start-position) (get-end-position)))
+          [(completion-mode-key-event? key-event)
            (auto-complete)]
           [else 
            (super on-char key-event)]))

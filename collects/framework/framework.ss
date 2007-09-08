@@ -68,7 +68,7 @@
     (parameter/c string?)
     ()
     "A string that is inserted after a completions is inserted by a"
-    "@ilink text:autocomplete<%>"
+    "@ilink text:autocomplete"
     "instance."
     ""
     "Defaults to \"\"")
@@ -77,7 +77,7 @@
     ()
     "Controls the number of completions visible at a time in the menu"
     "produced by"
-    "@ilink text:autocomplete<%>"
+    "@ilink text:autocomplete"
     "instances."
     ""
     "Defaults to 15.")
