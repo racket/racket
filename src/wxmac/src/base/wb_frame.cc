@@ -137,6 +137,9 @@ void wxbFrame::Centre(int direction, wxWindow *parent)
 {
   int display_width, display_height, width, height, x, y, offset_x, offset_y;
 
+  if (parent && wxSubType(parent->__type, wxTYPE_DIALOG_BOX))
+    parent = parent->GetParent();
+
   if (parent) {
     parent->GetSize(&display_width, &display_height);
     parent->GetPosition(&offset_x, &offset_y);
