@@ -19,20 +19,12 @@ memory and more time to build the initial data structure.
 
 ===
 
-autocomplete-mixin: mixin (editor<%> -> editor<%>)
-
-The autocomplete-text mixin produces a class that implements
-editor<%> and provides the following extra public methods:
+autocomplete<%>
 
 =new methods=
 
-get-completions : string -> autocompletion-cursor<%>
-
-given a word, produces a cursor that describes
-all possible completions. The default implementation
-returns all strings in the parameter autocomplete-word-list (below)
-that have the given string as a prefix; it performs a 
-linear-search at every narrow/widen.
+get-all-words : -> (listof string)
+returns a list of all of the possible words that the completion should choose from
 
 get-autocomplete-border-color : -> color string
 returns the color for the border of the autocompletion menu
@@ -42,6 +34,13 @@ returns the background color for the autocompletion menu
 
 get-autocomplete-selected-color : -> color string
 returns the selected color for the autocompletion menu
+
+===
+
+autocomplete-mixin: mixin (editor<%> -> editor<%>)
+
+The autocomplete-text mixin produces a class that implements
+editor<%> and provides the following extra public methods:
 
 =overridden methods=
 
@@ -108,14 +107,10 @@ configuration parameters
 These configuration parameters customize autocompletion behavior.
 
 autocomplete-append-after : string parameter
-designates text to insert after a completion. Default " "
+designates text to insert after a completion. Default: ""
 
 autocomplete-limit : positive int parameter
 designates the maximum number of completions to show at a time. Default: 15
-
-autocomplete-word-list : (listof string) parameter
-designates the list of valid completions used by the default implementation of
-autocompletion-cursor<%>.
 
 completion-mode-key : character parameter
 designates the character that triggers autocompletion
@@ -131,18 +126,26 @@ designates the character that triggers autocompletion
    (prefix srfi1: (lib "1.ss" "srfi")))
   
   (provide autocomplete-mixin
+           autocomplete<%>
+
            autocompletion-cursor<%>
            autocompletion-cursor%
-           
            autocomplete-append-after
-           autocomplete-limit
-           autocomplete-word-list)
+           autocomplete-limit)
+
+  (define autocomplete<%>
+    (interface ((class->interface text%))
+      get-autocomplete-border-color
+      get-autocomplete-background-color
+      get-autocomplete-selected-color
+      completion-mode-key-event?
+      get-all-words))
   
   ;; ============================================================
   ;; auto-complete-text (mixin) implementation
   
   (define autocomplete-mixin
-    (mixin ((class->interface text%)) ((class->interface text%))
+    (mixin ((class->interface text%)) (autocomplete<%>)
       
       (inherit invalidate-bitmap-cache get-dc get-start-position get-end-position
                find-wordbreak get-text position-location insert dc-location-to-editor-location)
@@ -160,17 +163,28 @@ designates the character that triggers autocompletion
       (define/public (get-autocomplete-selected-color) "orange")
       
       (define/public (completion-mode-key-event? key-event)
-        (eq? (send key-event get-key-code) #\tab))
+        (and (eq? (send key-event get-key-code) #\.)
+             (send key-event get-control-down)))
 
+      (define/public (get-all-words)
+        (get-completions/manuals
+         '("framework" "foreign" "scribble" "mzlib" "mrlib" "mzscheme" "mred" "r5rs")))
       
       (define completions-box #f) ; completions-box% or #f if no completions box is active right now
       (define word-start-pos #f)  ; start pos of that word, or #f if no autocompletion
       (define word-end-pos #f)    ; end pos of that word, or #f if none
 
       ; string -> scrolling-cursor<%>       given a prefix, returns the possible completions
-      (define/public (get-completions word) 
-        (new autocompletion-cursor% [word word]))
-
+      ; given a word, produces a cursor that describes
+      ; all possible completions. The default implementation of autocompletion-cursor%
+      ; returns all strings from the get-all-words method (below)
+      ; that have the given string as a prefix; it performs a 
+      ; linear-search at every narrow/widen.
+      (define/private (get-completions word) 
+        (new autocompletion-cursor% 
+             [word word] 
+             [all-words (get-all-words)]))
+      
       (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
         (super on-paint before? dc left top right bottom dx dy draw-caret)
         (when (and completions-box (not before?))
@@ -206,7 +220,7 @@ designates the character that triggers autocompletion
                                      [completions (new scroll-manager% [cursor cursor])]
                                      [menu-x (unbox x)]
                                      [menu-y (+ (unbox y) 2)]
-                                     [parent this]))
+                                     [editor this]))
           (send completions-box redraw)))
       
       ;; on-char must handle inputs for two modes: normal text mode and in-the-middle-of-autocompleting mode
@@ -323,25 +337,28 @@ designates the character that triggers autocompletion
   (define autocompletion-cursor%
     (class* object% (autocompletion-cursor<%>)
       
-      (init-field word)
-      (init [manuals '("framework" "foreign" "scribble" "mzlib" "mrlib" "mzscheme" "mred" "r5rs")])
+      (init-field word all-words)
       
       (define/private (starts-with prefix)
         (let ([re (regexp (string-append "^" (regexp-quote prefix)))])
           (λ (w) (regexp-match re w))))
       
-      (define all-completions (filter (starts-with word) (get-completions/manuals manuals)))
+      (define all-completions (filter (starts-with word) all-words))
       (define all-completions-length (length all-completions))
 
       (define/public (narrow c)
-        (new autocompletion-cursor% [word (string-append word (list->string (list c)))]))
+        (new autocompletion-cursor%
+             [word (string-append word (list->string (list c)))]
+             [all-words all-words]))
       
       (define/public (widen)
         (let ([strlen (string-length word)])
           (cond
             [(< strlen 2) #f]
             [else 
-             (new autocompletion-cursor% [word (substring word 0 (- (string-length word) 1))])])))
+             (new autocompletion-cursor%
+                  [word (substring word 0 (- (string-length word) 1))]
+                  [all-words all-words])])))
       
       (define/public (get-completions) all-completions)
       (define/public (get-length) all-completions-length)
@@ -445,7 +462,7 @@ designates the character that triggers autocompletion
       (init-field completions       ; scroll-manager%       the possible completions (all of which have base-word as a prefix)
                   menu-x            ; int                   the menu's top-left x coordinate
                   menu-y            ; int                   the menu's top-left y coordinate
-                  parent            ; editor<%>             the owner of this completion box
+                  editor            ; editor<%>             the owner of this completion box
                   )
       
       (define/private (compute-geometry)
@@ -470,16 +487,20 @@ designates the character that triggers autocompletion
                (set! vec v))]))
         
         (define-values (editor-width editor-height)
-          (let* ([canvas (send parent get-active-canvas)]
-                 [w (- (send canvas get-width) 
-                       (* (send canvas horizontal-inset) 2))]
-                 [h (send canvas get-height)])
-            (values w h)))
+          (let* ([wb (box 0)]
+                 [hb (box 0)]
+                 [admin (send editor get-admin)])
+            (if admin
+                (begin
+                  (send admin get-view #f #f wb hb)
+                  (values (unbox wb)
+                          (unbox hb)))
+                (values 10 10))))
         
         (let* ([num-completions (send completions get-length)]
                [shown-completions (send completions get-visible-completions)]) 
           (define-values (w h)
-            (let ([dc (send parent get-dc)])
+            (let ([dc (send editor get-dc)])
               (let loop ([pc shown-completions]
                          [w 0]
                          [h 0]
@@ -526,8 +547,8 @@ designates the character that triggers autocompletion
       (define/public (draw dc dx dy)
         (let ([old-pen (send dc get-pen)]
               [old-brush (send dc get-brush)])
-          (send dc set-pen (send parent get-autocomplete-border-color) 1 'solid)
-          (send dc set-brush (send parent get-autocomplete-background-color) 'solid)
+          (send dc set-pen (send editor get-autocomplete-border-color) 1 'solid)
+          (send dc set-brush (send editor get-autocomplete-background-color) 'solid)
           (let-values ([(mx my tw th) (get-menu-coordinates)])
             (send dc draw-rectangle (+ mx dx) (+ my dy) tw th)
             (let loop ([item-number 0] [y my] [pc (send completions get-visible-completions)])
@@ -544,7 +565,7 @@ designates the character that triggers autocompletion
                    (let-values ([(w h d a) (send dc get-text-extent c)])
                      (when (= item-number highlighted-menu-item)
                        (send dc set-pen "black" 1 'transparent)
-                       (send dc set-brush (send parent get-autocomplete-selected-color) 'solid)
+                       (send dc set-brush (send editor get-autocomplete-selected-color) 'solid)
                        (send dc draw-rectangle (+ mx dx 1) (+ dy y menu-padding-y 1) (- tw 2) (- h 1)))
                      (send dc draw-text c (+ mx dx menu-padding-x) (+ menu-padding-y y dy))
                      (loop (add1 item-number) (+ y h) (cdr pc))))])))
@@ -555,7 +576,7 @@ designates the character that triggers autocompletion
       ;; tells the parent to refresh enough of itself to redraw this menu
       (define/public (redraw)
         (let-values ([(x y w h) (get-menu-coordinates)])
-          (send parent invalidate-bitmap-cache x y w h)))
+          (send editor invalidate-bitmap-cache x y w h)))
       
       ;; get-menu-coordinates : -> (values int int int int)
       ;; get the menu's x, y, w, h coordinates with respect to its parent
@@ -605,7 +626,7 @@ designates the character that triggers autocompletion
                   [composite-y1 (min old-y1 new-y1)]
                   [composite-x2 (max old-x2 new-x2)]
                   [composite-y2 (max old-y2 new-y2)])
-              (send parent invalidate-bitmap-cache 
+              (send editor invalidate-bitmap-cache 
                     composite-x1
                     composite-y1
                     (- composite-x2 composite-x1)
@@ -676,12 +697,10 @@ designates the character that triggers autocompletion
                    (format "parameter ~a: expected ~a, given: ~e" name description v))))]))))
   
   (define autocomplete-append-after
-    (make-guarded-parameter 'append-after "string" " " string?))
+    (make-guarded-parameter 'append-after "string" "" string?))
   (define autocomplete-limit
     (make-guarded-parameter 'limit "positive integer" 15 (λ (x) (and (integer? x) (> x 0)))))
-  (define autocomplete-word-list
-    (make-guarded-parameter 'word-list "list of strings" '() (λ (x) (or (pair? x) (null? x)))))
-  
+
   ;; ============================================================
   ;; read keywords from manuals
   
@@ -709,11 +728,11 @@ designates the character that triggers autocompletion
   ;; ============================================================
   ;; testing code
   
+  #;
   (begin
     (define all-words (get-completions/manuals 
                        '("framework" "foreign" "scribble" "mzlib" "mrlib" "mzscheme" "mred" "r5rs")))
     
-    (autocomplete-word-list all-words)
     (let* ([f (new frame% (label "Test") (height 400) (width 400))]
            [e (new (autocomplete-mixin text%))]
            [c (new editor-canvas% (editor e) (parent f))])
