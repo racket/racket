@@ -12,6 +12,7 @@ WARNING: printf is rebound in the body of the unit to always
            "sig.ss"
            "../gui-utils.ss"
            "../preferences.ss"
+           "auto-complete.ss"
            (lib "mred-sig.ss" "mred")
            (lib "interactive-value-port.ss" "mrlib")
            (lib "list.ss")
