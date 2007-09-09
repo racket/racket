@@ -67,24 +67,20 @@
   
   ;; build-src-loc-string : syntax -> (union #f string)
   (define (build-src-loc-string stx)
-    (let ([source (syntax-source stx)]
-          [line (syntax-line stx)]
-          [col (syntax-column stx)]
-          [pos (syntax-position stx)])
-      (cond
-        [(and (path? source) line col)
-         (format "~a:~a:~a" (path->string source) line col)]
-        [(and (string? source) line col)
-         (format "~a:~a:~a" source line col)]
-        [(and line col)
-         (format "~a:~a" line col)]
-        [(and (string? source) pos)
-         (format "~a:~a" source pos)]
-        [(and (path? source) pos)
-         (format "~a:~a" (path->string source) pos)]
-        [pos
-         (format "~a" pos)]
-        [else #f])))
+    (let* ([source (syntax-source stx)]
+           [source (cond [(path? source)   (path->string source)]
+                         [(string? source) source]
+                         [(bytes? source)  (bytes->string/utf-8 source)]
+                         [else #f])]
+           [line (syntax-line stx)]
+           [col (syntax-column stx)]
+           [pos (syntax-position stx)]
+           [location (cond [(and line col) (format "~a:~a" line col)]
+                           [pos (format "~a" pos)]
+                           [else #f])])
+      (if (and source location)
+        (string-append source ":" location)
+        (or location source))))
   
   (define o (current-output-port))
   
