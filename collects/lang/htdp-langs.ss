@@ -347,8 +347,7 @@
           ;(define/override (get-one-line-summary) one-line-summary)
           (define/public (get-htdp-style-delta) style-delta)
           
-          (super-instantiate ()
-            (language-url "http://www.htdp.org/"))))
+          (super-new [language-url "http://www.htdp.org/"])))
       
       (define (language-extension %)
         (class %
@@ -391,8 +390,10 @@
               (go "." (drscheme:rep:get-welcome-delta))
               (newline port)))
  
+          (define/private (htdp-manuals) (list (get-manual) #"teachpack" #"drscheme" #"help"))
+          
           (define/override (order-manuals x) 
-            (values (list (get-manual) #"teachpack" #"drscheme" #"help") #f))
+            (values (htdp-manuals) #f))
           
           (inherit get-module get-transformer-module get-init-code
                    use-namespace-require/copy?)
@@ -561,8 +562,13 @@
                              (cadr x))])
               (format "the teachpack '~a' was not found" name)))
 
+          (define keywords #f)
           (define/augment (capability-value key)
             (case key
+              [(drscheme:autocomplete-words)
+               (unless keywords 
+                 (set! keywords (text:get-completions/manuals (map bytes->string/utf-8 (htdp-manuals)))))
+               keywords]
               [(drscheme:teachpack-menu-items) htdp-teachpack-callbacks]
               [(drscheme:special:insert-lambda) #f]
               [else (inner (drscheme:language:get-capability-default key) 

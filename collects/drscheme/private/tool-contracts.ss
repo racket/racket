@@ -955,6 +955,8 @@
    " --- determines if the insert text box menu item in the special menu is visible"
    "\\item \\scheme|(drscheme:language:register-capability 'drscheme:special:xml-menus (flat-contract boolean?) #t)|"
    " --- determines if the insert scheme box, insert scheme splice box, and the insert xml box menu item ins the special menu are visible"
+   "\\item \\scheme|(drscheme:language:register-capability 'drscheme:autocomplete-words (listof string?) '()|"
+   " --- determines the list of words that are used when completing words in this language"
    
    "\\end{itemize}")
   (drscheme:language:capability-registered? 

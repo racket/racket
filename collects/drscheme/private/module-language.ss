@@ -49,6 +49,12 @@
         (define/override (use-namespace-require/copy?) #t)
         (field [iteration-number 0])
         
+        (define/augment (capability-value key)
+          (cond
+            [(eq? key 'drscheme:autocomplete-words) 
+             (drscheme:language-configuration:get-all-scheme-manual-keywords)]
+            [else (drscheme:language:get-capability-default key)]))
+        
         ;; config-panel : as in super class
         ;; uses drscheme:language:simple-module-based-language-config-panel
         ;; and adds a collection paths configuration to it.

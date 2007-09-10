@@ -1786,7 +1786,15 @@ TODO
                     (send file get-definitions-text)
                     position)))))
     
-    
+    (define drs-autocomplete-mixin
+      (λ (get-defs x)
+        (class (text:autocomplete-mixin x)
+          (define/override (get-all-words)
+            (let* ([definitions-text (get-defs this)]
+                   [settings (send definitions-text get-next-settings)]
+                   [language (drscheme:language-configuration:language-settings-language settings)])
+              (send language capability-value 'drscheme:autocomplete-words)))
+          (super-new))))
     
     (define -text% 
       (drs-bindings-keymap-mixin
@@ -1798,5 +1806,7 @@ TODO
             (editor:info-mixin
              (text:searching-mixin
               (mode:host-text-mixin
-               (text:foreground-color-mixin
-                text:clever-file-format%)))))))))))))
+               (drs-autocomplete-mixin 
+                (λ (txt) (send txt get-definitions-text))
+                (text:foreground-color-mixin
+                 text:clever-file-format%))))))))))))))

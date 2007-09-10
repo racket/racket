@@ -2173,6 +2173,8 @@ designates the character that triggers autocompletion
   ;; ============================================================
   ;; auto-complete-text (mixin) implementation
   
+  (define selected-color (make-object color% 204 153 255))
+  
   (define autocomplete-mixin
     (mixin ((class->interface text%)) (autocomplete<%>)
       
@@ -2189,7 +2191,7 @@ designates the character that triggers autocompletion
       
       ; get-autocomplete-selected-color : -> string
       ; selected option background color in the autocomplete menu
-      (define/public (get-autocomplete-selected-color) "orange")
+      (define/public (get-autocomplete-selected-color) selected-color)
       
       (define/public (completion-mode-key-event? key-event)
         (cond

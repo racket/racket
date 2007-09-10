@@ -102,7 +102,7 @@
     (add-info-specified-languages
      get-default-language-settings
      settings-preferences-symbol
-     
+     get-all-scheme-manual-keywords
      add-built-in-languages))
   
   (define-signature drscheme:tools^
@@ -177,6 +177,7 @@
      error-delta
      get-welcome-delta 
      get-dark-green-delta
+     drs-autocomplete-mixin
      text%
      text<%>
      context<%>))

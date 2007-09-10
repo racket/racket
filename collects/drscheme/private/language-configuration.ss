@@ -1310,15 +1310,39 @@
            #f))
         (super-new)))
     
+    (define get-all-scheme-manual-keywords
+      (let ([words #f])
+        (λ ()
+          (unless words
+            (set! words (text:get-completions/manuals 
+                         (list "gui"
+                               "guide"
+                               "help"
+                               "mzscheme"
+                               "mred"
+                               "quick"
+                               "r5rs"
+                               "reference"
+                               "scribble"
+                               "web-server-guide"
+                               "web-server-reference"))))
+          words)))
+    
     ;; add-built-in-languages : -> void
     (define (add-built-in-languages)
-      (let* ([extras-mixin
+      (let* ([words #f]
+             [extras-mixin
               (λ (mred-launcher? one-line-summary)
                 (λ (%)
                   (class* % (drscheme:language:language<%>)
                     (define/override (get-one-line-summary) one-line-summary)
                     (define/override (use-namespace-require/copy?) #t)
                     (inherit get-module get-transformer-module get-init-code)
+                    (define/augment (capability-value key)
+                      (cond
+                        [(eq? key 'drscheme:autocomplete-words) 
+                         (get-all-scheme-manual-keywords)]
+                        [else (drscheme:language:get-capability-default key)]))
                     (define/override (create-executable setting parent program-filename)
                       (let ([executable-fn
                              (drscheme:language:put-executable

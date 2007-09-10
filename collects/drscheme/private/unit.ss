@@ -389,7 +389,9 @@ module browser threading seems wrong.
                    (mode:host-text-mixin
                     (text:delegate-mixin
                      (text:foreground-color-mixin
-                      text:info%))))))))])
+                      (drscheme:rep:drs-autocomplete-mixin
+                       (λ (x) x)
+                       text:info%)))))))))])
         (class* definitions-super% (definitions-text<%>)
           (inherit get-top-level-window)
           
@@ -2717,6 +2719,18 @@ module browser threading seems wrong.
         
         (define/override (edit-menu:between-find-and-preferences edit-menu)
           (super edit-menu:between-find-and-preferences edit-menu)
+          (new menu-item%
+               [label (string-constant complete-word)]
+               [shortcut #\/]
+               [parent edit-menu]
+               [demand-callback
+                (λ (mi)
+                  (send mi enable
+                        (let ([ed (get-edit-target-object)])
+                          (and ed
+                               (is-a? ed text:autocomplete<%>)))))]
+               [callback (λ (x y)
+                           (send (get-edit-target-object) auto-complete))])
           (add-modes-submenu edit-menu))
         
         ;; capability-menu-items : hash-table[menu -o> (listof (list menu-item number key)))

@@ -287,6 +287,7 @@
   (install-help-browser-preference-panel)
   (drscheme:tools:add-prefs-panel)
   
+  (drscheme:language:register-capability 'drscheme:autocomplete-words (listof string?) '())
   (drscheme:language:register-capability 'drscheme:define-popup
                                          (or/c (cons/c string? string?) false/c)
                                          (cons "(define" "(define ...)"))
