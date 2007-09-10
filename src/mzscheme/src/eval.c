@@ -2293,6 +2293,22 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
       return le;
   }
 
+  if (SAME_OBJ(scheme_procedure_p_proc, app->rator)) {
+    if (SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(app->rand))) {
+      info->preserves_marks = 1;
+      info->single_result = 1;
+      return scheme_true;
+    }
+    if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)) {
+      int offset;
+      if (scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(app->rand), &offset)) {
+        info->preserves_marks = 1;
+        info->single_result = 1;
+        return scheme_true;
+      }
+    }
+  }
+
   if (SAME_OBJ(scheme_values_func, app->rator)
       && scheme_omittable_expr(app->rand, 1)) {
     info->preserves_marks = 1;

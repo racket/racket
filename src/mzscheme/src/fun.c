@@ -79,6 +79,7 @@ int scheme_defining_primitives; /* set to 1 during start-up */
 
 Scheme_Object scheme_void[1]; /* the void constant */
 Scheme_Object *scheme_values_func; /* the function bound to `values' */
+Scheme_Object *scheme_procedure_p_proc;
 Scheme_Object *scheme_void_proc;
 Scheme_Object *scheme_call_with_values_proc; /* the function bound to `call-with-values' */
 
@@ -217,10 +218,13 @@ scheme_init_fun (Scheme_Env *env)
   REGISTER_SO(cached_beg_stx);
   REGISTER_SO(cached_dv_stx);
   REGISTER_SO(cached_ds_stx);
+  REGISTER_SO(scheme_procedure_p_proc);
 
   o = scheme_make_folding_prim(procedure_p, "procedure?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(o) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("procedure?", o, env);
+
+  scheme_procedure_p_proc = o;
 
   scheme_add_global_constant("apply",
 			     scheme_make_prim_w_arity2(apply,

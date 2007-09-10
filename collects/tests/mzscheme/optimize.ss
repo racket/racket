@@ -519,6 +519,17 @@
               15)
            15)
 
+(test-comp '(procedure? add1)
+           #t)
+(test-comp '(procedure? (lambda (x) x))
+           #t)
+(test-comp '(let ([f (lambda (x) x)])
+              (if (procedure? f)
+                  (list f)
+                  88))
+           '(let ([f (lambda (x) x)])
+              (list f)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 
