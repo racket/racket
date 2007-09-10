@@ -7,6 +7,8 @@
            add-name-prop
            all-but-last)
 
+  (require (lib "main-collects.ss" "setup"))
+
   (define (add-name-prop name stx)
     (cond
       [(identifier? name)
@@ -64,14 +66,22 @@
       [(null? (cdr l)) null]
       [(pair? (cdr l)) (cons (car l) (all-but-last (cdr l)))]
       [else (list (car l))]))
-  
+
+  ;; helper for build-src-loc-string
+  (define (source->name src)
+    (let* ([bs (cond [(bytes? src)  src]
+                     [(path? src)   (path->bytes src)]
+                     [(string? src) (string->bytes/locale src)]
+                     [else #f])]
+           [r (and bs (path->main-collects-relative bs))])
+      (and bs
+           (bytes->string/locale (if (and (pair? r) (eq? 'collects (car r)))
+                                   (bytes-append #"<collects>/" (cdr r))
+                                   bs)))))
+
   ;; build-src-loc-string : syntax -> (union #f string)
   (define (build-src-loc-string stx)
-    (let* ([source (syntax-source stx)]
-           [source (cond [(path? source)   (path->string source)]
-                         [(string? source) source]
-                         [(bytes? source)  (bytes->string/utf-8 source)]
-                         [else #f])]
+    (let* ([source (source->name (syntax-source stx))]
            [line (syntax-line stx)]
            [col (syntax-column stx)]
            [pos (syntax-position stx)]
