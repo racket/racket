@@ -2718,7 +2718,6 @@ module browser threading seems wrong.
           (super file-menu:between-print-and-close file-menu))
         
         (define/override (edit-menu:between-find-and-preferences edit-menu)
-          (super edit-menu:between-find-and-preferences edit-menu)
           (new menu-item%
                [label (string-constant complete-word)]
                [shortcut #\/]
@@ -2731,6 +2730,7 @@ module browser threading seems wrong.
                                (is-a? ed text:autocomplete<%>)))))]
                [callback (λ (x y)
                            (send (get-edit-target-object) auto-complete))])
+          (super edit-menu:between-find-and-preferences edit-menu)
           (add-modes-submenu edit-menu))
         
         ;; capability-menu-items : hash-table[menu -o> (listof (list menu-item number key)))

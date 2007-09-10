@@ -640,7 +640,7 @@ please adhere to these guidelines:
  (replace-and-find-again-info "Replace the current text and search for the same string as before")
  (replace-and-find-again-menu-item "Replace && Find Again")
 
-  (complete-word "Complete word") ; the complete word menu item in the edit menu
+  (complete-word "Complete Word") ; the complete word menu item in the edit menu
   
  (preferences-info "Configure your preferences")
  (preferences-menu-item "Preferences...")
