@@ -377,8 +377,9 @@
 		    (cond
 		     ((or (null? reversed-digits)
 			  (null? (cdr reversed-digits))
-			  (null? (cdr (cdr reversed-digits))))
-		      (list (apply string-append reversed-digits)))
+			  (null? (cdr (cdr reversed-digits)))
+                          (null? (cdr (cdr (cdr reversed-digits)))))
+		      (list (apply string-append (reverse reversed-digits))))
 		     (else (cons (apply string-append
 					(list " "
 					      (caddr reversed-digits)
