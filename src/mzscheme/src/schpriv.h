@@ -2565,6 +2565,12 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure);
 /*                         filesystem utilities                           */
 /*========================================================================*/
 
+#ifdef USE_TRANSITIONAL_64_FILE_OPS
+# define BIG_OFF_T_IZE(n) n ## 64
+#else
+# define BIG_OFF_T_IZE(n) n
+#endif
+
 int scheme_is_relative_path(const char *s, long len, int kind);
 int scheme_is_complete_path(const char *s, long len, int kind);
 

@@ -87,7 +87,6 @@ extern int osk_not_console; /* set by cmd-line flag */
 
 #define mzAssert(x) /* if (!(x)) abort() */
 
-
 /******************** Generic FILEs ********************/
 
 typedef struct {
@@ -4128,26 +4127,25 @@ scheme_file_position(int argc, Scheme_Object *argv[])
 		     scheme_make_provided_string(argv[0], 2, NULL),
 		     scheme_make_provided_string(argv[1], 2, NULL));
 
-  if ((argc > 1) && SCHEME_BIGNUMP(argv[1]))
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "file-position: new position is too large: %s for port: %s",
-		     scheme_make_provided_string(argv[1], 2, NULL),
-		     scheme_make_provided_string(argv[0], 2, NULL));
-
   if (argc > 1) {
-    long n;
+    mzlonglong nll;
     int whence;
 
-    if (SCHEME_INTP(argv[1])) {
-      n = SCHEME_INT_VAL(argv[1]);
+    if (SCHEME_EOFP(argv[1])) {
+      nll = 0;
+      whence = SEEK_END;
+    } else if (scheme_get_long_long_val(argv[1], &nll)) {
       whence = SEEK_SET;
     } else {
-      n = 0;
-      whence = SEEK_END;
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                       "file-position: new position is too large: %s for port: %s",
+                       scheme_make_provided_string(argv[1], 2, NULL),
+                       scheme_make_provided_string(argv[0], 2, NULL));
+      return NULL;
     }
       
     if (f) {
-      if (fseek(f, n, whence)) {
+      if (BIG_OFF_T_IZE(fseeko)(f, nll, whence)) {
 	scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
 			 "file-position: position change failed on file (%e)",
 			 errno);
@@ -4161,20 +4159,14 @@ scheme_file_position(int argc, Scheme_Object *argv[])
       }
       
 # ifdef WINDOWS_FILE_HANDLES
-      lv = SetFilePointer((HANDLE)fd, n, NULL, 
-			  ((whence == SEEK_SET) ? FILE_BEGIN : FILE_END));
-# else
-#  ifdef MAC_FILE_HANDLES
-			  {
-	errno = SetFPos(fd, ((whence == SEEK_SET) ? fsFromStart : fsFromLEOF), n);
-	if (errno == noErr)
-	  lv = 0;
-	else
-	  lv = -1;
+      {
+        
+        if (!SetFilePointerEx((HANDLE)fd, nll, NULL, 
+                              ((whence == SEEK_SET) ? FILE_BEGIN : FILE_END)))
+          lv = -1;
       }
-#  else
-      lv = lseek(fd, n, whence);
-#  endif
+# else
+      lv = BIG_OFF_T_IZE(lseek)(fd, nll, whence);
 # endif
 
       if (lv < 0) {
@@ -4201,6 +4193,16 @@ scheme_file_position(int argc, Scheme_Object *argv[])
       }
 #endif
     } else {
+      long n;
+
+      if (whence == SEEK_SET) {
+        if (!scheme_get_int_val(argv[1], &n)) {
+          scheme_raise_out_of_memory(NULL, NULL);
+        }
+      } else {
+        n = 0;
+      }
+
       if (whence == SEEK_END) {
         if (wis)
           n = is->u.hot;
@@ -4251,64 +4253,59 @@ scheme_file_position(int argc, Scheme_Object *argv[])
 
     return scheme_void;
   } else {
-    long p;
+    mzlonglong pll;
     if (f) {
-      p = ftell(f);
+      pll = BIG_OFF_T_IZE(ftello)(f);
 #ifdef MZ_FDS
     } else if (had_fd) {
 # ifdef WINDOWS_FILE_HANDLES
-      p = SetFilePointer((HANDLE)fd, 0, NULL, FILE_CURRENT);
-# else
-#  ifdef MAC_FILE_HANDLES
       {
-	SInt32 pos;
-	errno = GetFPos(fd, &pos);
-	if (errno == noErr)
-	  p = pos;
-	else
-	  p = -1;
+        LARGE_INTEGER li;
+        if (!SetFilePointerEx((HANDLE)fd, 0, &li, FILE_CURRENT))
+          pll = -1;
+        else
+          pll = li;
       }
-#  else
-      p = lseek(fd, 0, 1);
-#  endif
+# else
+      pll = BIG_OFF_T_IZE(lseek)(fd, 0, 1);
 # endif
-      if (p < 0) {
+      if (pll < 0) {
 	if (SCHEME_INPUT_PORTP(argv[0])) {
-	  p = scheme_tell(argv[0]);
+	  pll = scheme_tell(argv[0]);
 	} else {
-	  p = scheme_output_tell(argv[0]);
+	  pll = scheme_output_tell(argv[0]);
 	}
       } else {
 	if (SCHEME_INPUT_PORTP(argv[0])) {          
           Scheme_Input_Port *ip;
           ip = scheme_input_port_record(argv[0]);
-	  p -= ((Scheme_FD *)ip->port_data)->bufcount;
+	  pll -= ((Scheme_FD *)ip->port_data)->bufcount;
 	} else {
           Scheme_Output_Port *op;
           op = scheme_output_port_record(argv[0]);
-	  p += ((Scheme_FD *)op->port_data)->bufcount;
+	  pll += ((Scheme_FD *)op->port_data)->bufcount;
 	}
       }
 #endif
     } else if (wis)
-      p = is->index;
+      pll = is->index;
     else {
       /* u.pos > index implies we previously moved past the end with file-position */
       if (is->u.pos > is->index)
-	p = is->u.pos;
+	pll = is->u.pos;
       else
-	p = is->index;
+	pll = is->index;
     }
 
     /* Back up for un-gotten & peeked chars: */
     if (SCHEME_INPUT_PORTP(argv[0])) {
       Scheme_Input_Port *ip;
       ip = scheme_input_port_record(argv[0]);
-      p -= ip->ungotten_count;
-      p -= pipe_char_count(ip->peeked_read);
+      pll -= ip->ungotten_count;
+      pll -= pipe_char_count(ip->peeked_read);
     }
 
-    return scheme_make_integer(p);
+    return scheme_make_integer_value_from_long_long(pll);
   }
 }
 

@@ -5366,7 +5366,7 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
 static Scheme_Object *file_size(int argc, Scheme_Object *argv[])
 {
   char *filename;
-  unsigned long len = 0;
+  mzlonglong len = 0;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
     scheme_wrong_type("file-size", SCHEME_PATH_STRING_STR, 0, argc, argv);
@@ -5378,17 +5378,16 @@ static Scheme_Object *file_size(int argc, Scheme_Object *argv[])
 
 #ifdef DOS_FILE_SYSTEM
  {
-   mzlonglong filesize;
-   if (UNC_stat(filename, strlen(filename), NULL, NULL, NULL, &filesize)) {
-     return scheme_make_integer_value_from_long_long(filesize);
+   if (UNC_stat(filename, strlen(filename), NULL, NULL, NULL, &len)) {
+     return scheme_make_integer_value_from_long_long(len);
    }
  }
 #else
   {
-    struct MSC_IZE(stat) buf;
+    struct MSC_IZE(BIG_OFF_T_IZE(stat)) buf;
 
     while (1) {
-      if (!MSC_W_IZE(stat)(MSC_WIDE_PATH(filename), &buf))
+      if (!MSC_W_IZE(BIG_OFF_T_IZE(stat))(MSC_WIDE_PATH(filename), &buf))
 	break;
       else if (errno != EINTR)
 	goto failed;
@@ -5400,7 +5399,7 @@ static Scheme_Object *file_size(int argc, Scheme_Object *argv[])
     len = buf.st_size;
   }
 
-  return scheme_make_integer_value_from_unsigned(len);
+  return scheme_make_integer_value_from_long_long(len);
 
  failed:
 #endif
