@@ -1370,29 +1370,33 @@
 	      (when (compiler:option:verbose) (printf " [compiling native code to \"~a\"]~n"
 						      obj-output-path))
 	      
-	      ;; Compile
-	      (let ([compile-thunk
-		     (lambda ()
-		       (with-handlers
-			   ([void (lambda (exn)
-				    (compiler:fatal-error
-				     #f
-				     (string-append
-				      " C compiler did not complete successfully"
-				      (string #\newline)
-				      (exn-message exn)))
-				    (compiler:report-messages! #t))])
-			 (compile-extension (not (compiler:option:verbose)) 
-					    (or c3m-output-path c-output-path) obj-output-path
-					    (list (collection-path "compiler")))))])
-		(verbose-time compile-thunk))
-	      
-	      ;; clean-up
-	      (when (and (compiler:option:clean-intermediate-files)
-			 input-path)
-		(if c3m-output-path
-		    (delete-file c3m-output-path)
-		    (delete-file c-output-path)))
+              (let ([clean-up
+                     (lambda ()
+                       (when (and (compiler:option:clean-intermediate-files)
+                                  input-path)
+                         (if c3m-output-path
+                             (delete-file c3m-output-path)
+                             (delete-file c-output-path))))])
+
+                ;; Compile
+                (let ([compile-thunk
+                       (lambda ()
+                         (with-handlers
+                             ([void (lambda (exn)
+                                      (clean-up)
+                                      (compiler:fatal-error
+                                       #f
+                                       (string-append
+                                        " C compiler did not complete successfully"
+                                        (string #\newline)
+                                        (exn-message exn)))
+                                      (compiler:report-messages! #t))])
+                           (compile-extension (not (compiler:option:verbose)) 
+                                              (or c3m-output-path c-output-path) obj-output-path
+                                              (list (collection-path "compiler")))))])
+                  (verbose-time compile-thunk))
+
+                (clean-up))
 	      
 	      (if multi-o?
 		  (printf " [output to \"~a\"]~n" obj-output-path)
