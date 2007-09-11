@@ -110,8 +110,6 @@
 # define USE_ON_EXIT_FOR_ATEXIT
 # endif
 
-#define USE_TRANSITIONAL_64_FILE_OPS
-
 # ifndef i386
 #  define FLUSH_SPARC_REGISTER_WINDOWS
 # endif
@@ -204,10 +202,6 @@
 # define USE_TIMEZONE_VAR_W_DLS
 
 # define MZ_TCP_LISTEN_IPV6_ONLY_SOCKOPT
-
-#if !defined(__x86_64__)
-# define USE_TRANSITIONAL_64_FILE_OPS
-#endif
 
 # define FLAGS_ALREADY_SET
 
@@ -1030,8 +1024,8 @@
     are reset to blocking mode before exiting. */
 
  /* USE_TRANSITIONAL_64_FILE_OPS uses fseeko64, lseek64, stat64,
-    etc. for file operations involving sizes (that can requires
-    64-bit arithmetic). Use this when off_t is only 32 bits wide. */
+    etc. for file operations involving sizes (that can require
+    64-bit arithmetic). */
 
  /* USE_ULIMIT uses ulimit instead of getdtablesize (Unix). */
 
