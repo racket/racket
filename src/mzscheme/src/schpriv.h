@@ -2567,8 +2567,14 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure);
 
 #ifdef USE_TRANSITIONAL_64_FILE_OPS
 # define BIG_OFF_T_IZE(n) n ## 64
+# define mz_off_t off64_t
 #else
 # define BIG_OFF_T_IZE(n) n
+# if defined(DOS_FILE_SYSTEM)
+#  define mz_off_t mzlonglong
+# else
+#  define mz_off_t off_t
+# endif
 #endif
 
 int scheme_is_relative_path(const char *s, long len, int kind);

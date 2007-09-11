@@ -246,6 +246,7 @@ typedef struct Scheme_FD {
 # define ftello _ftelli64
 #endif
 
+
 /******************** Globals and Prototypes ********************/
 
 /* globals */
@@ -4141,7 +4142,14 @@ scheme_file_position(int argc, Scheme_Object *argv[])
       whence = SEEK_END;
     } else if (scheme_get_long_long_val(argv[1], &nll)) {
       whence = SEEK_SET;
+      if ((mzlonglong)(mz_off_t)nll != nll) {
+	nll = -1;
+      }
     } else {
+      nll = -1;
+    }
+
+    if (nll < 0) {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                        "file-position: new position is too large: %s for port: %s",
                        scheme_make_provided_string(argv[1], 2, NULL),
