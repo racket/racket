@@ -5283,7 +5283,7 @@ Scheme_Object *scheme_unmarshal_wrap_get(Scheme_Unmarshal_Tables *ut,
   long l;
   l = SCHEME_INT_VAL(wraps_key);
 
-  if ((l < 0) || (l >= ut->rp->symtab_size))
+  if ((l < 0) || ((unsigned long)l >= ut->rp->symtab_size))
     scheme_ill_formed_code(ut->rp);
 
   if (!ut->rp->symtab[l]) {

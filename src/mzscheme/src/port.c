@@ -241,6 +241,11 @@ typedef struct Scheme_FD {
 # define FILENAME_EXN_E "%e"
 #endif
 
+#if defined(DOS_FILE_SYSTEM)
+# define fseeko _fseeki64
+# define ftello _ftelli64
+#endif
+
 /******************** Globals and Prototypes ********************/
 
 /* globals */
@@ -4160,10 +4165,17 @@ scheme_file_position(int argc, Scheme_Object *argv[])
       
 # ifdef WINDOWS_FILE_HANDLES
       {
-        
-        if (!SetFilePointerEx((HANDLE)fd, nll, NULL, 
-                              ((whence == SEEK_SET) ? FILE_BEGIN : FILE_END)))
+	DWORD r;
+	LONG lo_w, hi_w;
+	lo_w = (LONG)(nll & 0xFFFFFFFF);
+	hi_w = (LONG)(nll >> 32);
+        r = SetFilePointer((HANDLE)fd, lo_w, &hi_w,
+			   ((whence == SEEK_SET) ? FILE_BEGIN : FILE_END));
+	if ((r == INVALID_SET_FILE_POINTER)
+	    && GetLastError() != NO_ERROR)
           lv = -1;
+	else
+	  lv = 0;
       }
 # else
       lv = BIG_OFF_T_IZE(lseek)(fd, nll, whence);
@@ -4260,11 +4272,14 @@ scheme_file_position(int argc, Scheme_Object *argv[])
     } else if (had_fd) {
 # ifdef WINDOWS_FILE_HANDLES
       {
-        LARGE_INTEGER li;
-        if (!SetFilePointerEx((HANDLE)fd, 0, &li, FILE_CURRENT))
+	DWORD lo_w, hi_w;
+	hi_w = 0;
+        lo_w = SetFilePointer((HANDLE)fd, 0, &hi_w, FILE_CURRENT);
+	if ((lo_w == INVALID_SET_FILE_POINTER)
+	    && GetLastError() != NO_ERROR)
           pll = -1;
         else
-          pll = li;
+          pll = ((mzlonglong)hi_w << 32) | lo_w;
       }
 # else
       pll = BIG_OFF_T_IZE(lseek)(fd, 0, 1);

@@ -7340,7 +7340,7 @@ long scheme_get_milliseconds(void)
 # ifdef USE_FTIME
   struct MSC_IZE(timeb) now;
   MSC_IZE(ftime)(&now);
-  return now.time * 1000 + now.millitm;
+  return (long)(now.time * 1000 + now.millitm);
 # else
 #  ifdef PALMOS_STUFF
   /* FIXME */
@@ -7439,7 +7439,7 @@ long scheme_get_seconds(void)
 #  ifdef USE_FTIME
   struct MSC_IZE(timeb) now;
   MSC_IZE(ftime)(&now);
-  return now.time;
+  return (long)now.time;
 #  else
 #   ifdef USE_PLAIN_TIME
   time_t now;

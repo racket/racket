@@ -5384,10 +5384,10 @@ static Scheme_Object *file_size(int argc, Scheme_Object *argv[])
  }
 #else
   {
-    struct MSC_IZE(BIG_OFF_T_IZE(stat)) buf;
+    struct BIG_OFF_T_IZE(stat) buf;
 
     while (1) {
-      if (!MSC_W_IZE(BIG_OFF_T_IZE(stat))(MSC_WIDE_PATH(filename), &buf))
+      if (!BIG_OFF_T_IZE(stat)(MSC_WIDE_PATH(filename), &buf))
 	break;
       else if (errno != EINTR)
 	goto failed;
