@@ -38,4 +38,8 @@
 	;  one of the two possible values, though:
 	(test-find 0 30 1 27 10 1996)))
 
+;; bug fixes
+(test "JD 12" julian/scalinger->string 12)
+(test "JD 123" julian/scalinger->string 123)
+
 (report-errs)
