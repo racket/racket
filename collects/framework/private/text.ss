@@ -2240,7 +2240,7 @@ designates the character that triggers autocompletion
       
       ;; Number -> String
       ;; The word that ends at the current positon of the editor
-      (define/private (get-word-at current-pos)
+      (define/public (get-word-at current-pos)
         (let ([start-pos (box current-pos)]) 
           (find-wordbreak start-pos #f 'caret)
           (get-text (unbox start-pos) current-pos)))
