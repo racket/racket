@@ -98,7 +98,8 @@
    skipto/first
    skipto/second
    skipto/third
-   skipto/fourth)
+   skipto/fourth
+   skipto/firstarg)
   
     
   ;; stepper-syntax-property : like syntax property, but adds properties to an association
@@ -444,22 +445,22 @@
             [else (let ([down (down-mapping (car fn-list))])
                     (up val (update (cdr fn-list) (down val) fn traversal)))]))))
   
-  ;; commonly used patterns:
+
+    #;(display (equal? (update '(cdr cdr car both-l (car) (cdr))
+                           `(a . (b ((1) c . 2) d))
+                           (lambda (x) (+ x 1))
+                           'rebuild)
+                   `(a . (b ((2) c . 3) d))))
+  
+  ;; commonly used values for stepper-syntax-property:
   (define skipto/cdr `(syntax-e cdr))
   (define skipto/cddr `(syntax-e cdr cdr))
   (define skipto/first `(syntax-e car))
   (define skipto/second `(syntax-e cdr car))
   (define skipto/third `(syntax-e cdr cdr car))
   (define skipto/fourth `(syntax-e cdr cdr cdr car))
+  (define skipto/firstarg (append skipto/cdr skipto/second))
   
-  #;(display (equal? (update '(cdr cdr car both-l (car) (cdr))
-                           `(a . (b ((1) c . 2) d))
-                           (lambda (x) (+ x 1))
-                           'rebuild)
-                   `(a . (b ((2) c . 3) d))))
-  
-
-
   ;; skipto/auto : syntax-object?
   ;;               (symbols 'rebuild 'discard)
   ;;               (syntax-object? . -> . syntax-object?)
