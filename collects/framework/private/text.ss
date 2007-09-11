@@ -2233,11 +2233,10 @@ designates the character that triggers autocompletion
           (let* ([end-pos (get-end-position)]
                  [word (get-word-at end-pos)]
                  [completion-cursor (get-completions word)])
-            (when (not (send completion-cursor empty?))
-              (let ([start-pos (- end-pos (string-length word))])
-                (set! word-start-pos start-pos)
-                (set! word-end-pos end-pos)
-                (show-options word start-pos end-pos completion-cursor))))))
+            (let ([start-pos (- end-pos (string-length word))])
+              (set! word-start-pos start-pos)
+              (set! word-end-pos end-pos)
+              (show-options word start-pos end-pos completion-cursor)))))
       
       ;; Number -> String
       ;; The word that ends at the current positon of the editor
@@ -2265,26 +2264,29 @@ designates the character that triggers autocompletion
       (define/override (on-char key-event)
         (cond
           [completions-box
-           (let ([kevt (send key-event get-key-code)])
+           (let ([code (send key-event get-key-code)]
+                 [full? (not (send completions-box empty?))])
              (cond
-               [(memq kevt '(up wheel-up)) ;; why is on-char not even getting mouse-wheel events?
+               [(and full? (memq code '(up wheel-up)))
                 (send completions-box prev-item)]
-               [(or (memq kevt '(down wheel-down))
-                    (completion-mode-key-event? key-event))
+               [(and full? 
+                     (or (memq code '(down wheel-down))
+                         (completion-mode-key-event? key-event)))
                 (send completions-box next-item)]
-               [(eq? kevt 'prior) (send completions-box scroll-display-up)]
-               [(eq? kevt 'next)  (send completions-box scroll-display-down)]
-               [(eq? kevt 'release)
+               [(and full? (eq? code 'prior)) (send completions-box scroll-display-up)]
+               [(and full? (eq? code 'next))  (send completions-box scroll-display-down)]
+               [(eq? code 'release)
                 (void)]
-               [(eq? kevt #\backspace)
+               [(eq? code #\backspace)
                 (widen-possible-completions)
                 (super on-char key-event)]
-               [(eq? kevt #\return)
-                (insert-currently-selected-string)
+               [(eq? code #\return)
+                (when full?
+                  (insert-currently-selected-string))
                 (destroy-completions-box)]
-               [(and (char? kevt) (char-graphic? kevt))
+               [(and (char? code) (char-graphic? code))
                 (super on-char key-event)
-                (constrict-possible-completions kevt)]
+                (constrict-possible-completions code)]
                [else
                 (destroy-completions-box)
                 (super on-char key-event)]))]
@@ -2300,7 +2302,8 @@ designates the character that triggers autocompletion
            (let*-values ([(x) (send mouse-event get-x)]
                          [(y) (send mouse-event get-y)]
                          [(mouse-x mouse-y) (dc-location-to-editor-location x y)])
-             (if (send completions-box point-inside-menu? mouse-x mouse-y)
+             (if (and (send completions-box point-inside-menu? mouse-x mouse-y)
+                      (not (send completions-box empty?)))
                  (cond
                    [(send mouse-event moving?)
                     (send completions-box handle-mouse-movement mouse-x mouse-y)
@@ -2316,14 +2319,9 @@ designates the character that triggers autocompletion
       (define/private (constrict-possible-completions char)
         (set! word-end-pos (add1 word-end-pos))
         (let-values ([(x0 y0 x1 y1) (send completions-box get-menu-coordinates)])
-          (let ([box-still-has-elements? (send completions-box narrow char)])
-            (cond
-              [box-still-has-elements?
-               (let-values ([(_ __ x1p y1p) (send completions-box get-menu-coordinates)])
-                 (invalidate-bitmap-cache x0 y0 (max x1 x1p) (max y1 y1p)))]
-              [else
-               (set! completions-box #f)
-               (invalidate-bitmap-cache x0 y0 x1 y1)]))))
+          (send completions-box narrow char)
+          (let-values ([(_ __ x1p y1p) (send completions-box get-menu-coordinates)])
+            (invalidate-bitmap-cache x0 y0 (max x1 x1p) (max y1 y1p)))))
       
       (define/private (widen-possible-completions)
         (let-values ([(x0 y0 x1 y1) (send completions-box get-menu-coordinates)])
@@ -2335,7 +2333,7 @@ designates the character that triggers autocompletion
               [else
                (set! completions-box #f)
                (invalidate-bitmap-cache x0 y0 x1 y1)]))))
-      
+          
       ;; destroy-completions-box : -> void
       ;; eliminates the active completions box
       (define/private (destroy-completions-box)
@@ -2482,7 +2480,7 @@ designates the character that triggers autocompletion
       get-current-selection  ; -> string
       narrow                 ; char -> boolean
       widen                  ;      -> boolean
-      ))
+      empty?))               ; -> boolean
   
   
   (define hidden-completions-text "⋮")
@@ -2500,6 +2498,8 @@ designates the character that triggers autocompletion
                   menu-y            ; int                   the menu's top-left y coordinate
                   editor            ; editor<%>             the owner of this completion box
                   )
+      
+      (define/public (empty?) (send completions empty?))
       
       (define/private (compute-geometry)
         
@@ -2534,33 +2534,40 @@ designates the character that triggers autocompletion
                 (values 10 10))))
         
         (let* ([num-completions (send completions get-length)]
-               [shown-completions (send completions get-visible-completions)]) 
+               [shown-completions (send completions get-visible-completions)])
           (define-values (w h)
             (let ([dc (send editor get-dc)])
-              (let loop ([pc shown-completions]
-                         [w 0]
-                         [h 0]
-                         [coord-map '()]
-                         [n 0])
-                (cond
-                  [(null? pc)
-                   (let-values ([(hidden?) (send completions items-are-hidden?)] 
-                                [(tw th _1 _2) (send dc get-text-extent hidden-completions-text)])
-                     (let ([w (if hidden? (max tw w) w)]
-                           [h (if hidden? (+ th h) h)])
-                       (initialize-mouse-offset-map! coord-map)
-                       (let ([offset-h menu-padding-y]
-                             [offset-w (* menu-padding-x 2)])
-                         (values (+ offset-w w)
-                                 (+ offset-h h)))))]
-                  [else 
-                   (let ([c (car pc)])
-                     (let-values ([(tw th _1 _2) (send dc get-text-extent c)])
-                       (loop (cdr pc)
-                             (max tw w)
-                             (+ th h)
-                             (cons (list (inexact->exact h) (inexact->exact (+ h th)) n) coord-map)
-                             (add1 n))))]))))
+              (cond
+                [(zero? num-completions)
+                 (let-values ([(tw th _1 _2) (send dc get-text-extent (string-constant no-completions) 
+                                                   (get-mt-font dc))])
+                   (values (+ menu-padding-x tw menu-padding-x)
+                           (+ menu-padding-y th menu-padding-y)))]
+                [else
+                 (let loop ([pc shown-completions]
+                            [w 0]
+                            [h 0]
+                            [coord-map '()]
+                            [n 0])
+                   (cond
+                     [(null? pc)
+                      (let-values ([(hidden?) (send completions items-are-hidden?)] 
+                                   [(tw th _1 _2) (send dc get-text-extent hidden-completions-text)])
+                        (let ([w (if hidden? (max tw w) w)]
+                              [h (if hidden? (+ th h) h)])
+                          (initialize-mouse-offset-map! coord-map)
+                          (let ([offset-h menu-padding-y]
+                                [offset-w (* menu-padding-x 2)])
+                            (values (+ offset-w w)
+                                    (+ offset-h h)))))]
+                     [else 
+                      (let ([c (car pc)])
+                        (let-values ([(tw th _1 _2) (send dc get-text-extent c)])
+                          (loop (cdr pc)
+                                (max tw w)
+                                (+ th h)
+                                (cons (list (inexact->exact h) (inexact->exact (+ h th)) n) coord-map)
+                                (add1 n))))]))])))
           
           (let ([final-x (cond
                            [(< (+ menu-x w) editor-width)
@@ -2587,26 +2594,43 @@ designates the character that triggers autocompletion
           (send dc set-brush (send editor get-autocomplete-background-color) 'solid)
           (let-values ([(mx my tw th) (get-menu-coordinates)])
             (send dc draw-rectangle (+ mx dx) (+ my dy) tw th)
-            (let loop ([item-number 0] [y my] [pc (send completions get-visible-completions)])
-              (cond
-                [(null? pc) 
-                 (when (send completions items-are-hidden?)
-                   (let-values ([(hw _1 _2 _3) (send dc get-text-extent hidden-completions-text)])
-                     (send dc draw-text 
-                           hidden-completions-text 
-                           (+ mx dx (- (/ tw 2) (/ hw 2)))
-                           (+ menu-padding-y y dy))))]
-                [else
-                 (let ([c (car pc)])
-                   (let-values ([(w h d a) (send dc get-text-extent c)])
-                     (when (= item-number highlighted-menu-item)
-                       (send dc set-pen "black" 1 'transparent)
-                       (send dc set-brush (send editor get-autocomplete-selected-color) 'solid)
-                       (send dc draw-rectangle (+ mx dx 1) (+ dy y menu-padding-y 1) (- tw 2) (- h 1)))
-                     (send dc draw-text c (+ mx dx menu-padding-x) (+ menu-padding-y y dy))
-                     (loop (add1 item-number) (+ y h) (cdr pc))))])))
+            (cond
+              [(send completions empty?)
+               (let ([font (send dc get-font)])
+                 (send dc set-font (get-mt-font dc))
+                 (send dc draw-text (string-constant no-completions) (+ mx dx menu-padding-x) (+ menu-padding-y my dy))
+                 (send dc set-font font))]
+              [else
+               (let loop ([item-number 0] [y my] [pc (send completions get-visible-completions)])
+                 (cond
+                   [(null? pc) 
+                    (when (send completions items-are-hidden?)
+                      (let-values ([(hw _1 _2 _3) (send dc get-text-extent hidden-completions-text)])
+                        (send dc draw-text 
+                              hidden-completions-text 
+                              (+ mx dx (- (/ tw 2) (/ hw 2)))
+                              (+ menu-padding-y y dy))))]
+                   [else
+                    (let ([c (car pc)])
+                      (let-values ([(w h d a) (send dc get-text-extent c)])
+                        (when (= item-number highlighted-menu-item)
+                          (send dc set-pen "black" 1 'transparent)
+                          (send dc set-brush (send editor get-autocomplete-selected-color) 'solid)
+                          (send dc draw-rectangle (+ mx dx 1) (+ dy y menu-padding-y 1) (- tw 2) (- h 1)))
+                        (send dc draw-text c (+ mx dx menu-padding-x) (+ menu-padding-y y dy))
+                        (loop (add1 item-number) (+ y h) (cdr pc))))]))]))
           (send dc set-pen old-pen)
           (send dc set-brush old-brush)))
+      
+      (define/private (get-mt-font dc)
+        (let ([font (send dc get-font)])
+          (send the-font-list find-or-create-font
+                (send font get-point-size)
+                (send font get-family)
+                'italic
+                (send font get-weight)
+                (send font get-underlined)
+                (send font get-smoothing))))
       
       ;; redraw : -> void
       ;; tells the parent to refresh enough of itself to redraw this menu

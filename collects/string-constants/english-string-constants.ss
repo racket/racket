@@ -641,6 +641,7 @@ please adhere to these guidelines:
  (replace-and-find-again-menu-item "Replace && Find Again")
 
   (complete-word "Complete Word") ; the complete word menu item in the edit menu
+  (no-completions "... no completions available") ; shows up in the completions menu when there are no completions (in italics)
   
  (preferences-info "Configure your preferences")
  (preferences-menu-item "Preferences...")
