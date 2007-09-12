@@ -8,7 +8,7 @@
   (provide combinator-parser-tools@)
   
   (define-unit main-parser@
-    (import error^ out^ error-format-parameters^ language-format-parameters^)
+    (import error^ out^ error-format-parameters^ language-format-parameters^ ranking-parameters^)
     (export parser^)
     
     (define (sort-used reses)
@@ -73,8 +73,22 @@
                               (!!! (car (repeat-res-stop 
                                          (sort-repeats possible-repeat-errors))))))]
                        [(and (choice-res? result) (fail-type? (choice-res-errors result)))
-                        (!!! (fail-type->message
-                              (choice-res-errors result)))]
+                        (cond
+                          [(and (null? possible-repeat-errors)
+                                (null? possible-errors)) (!!! (fail-type->message (choice-res-errors result)))]
+                          [(or #;(not (null? possible-repeat-errors))
+                               (not (null? possible-errors)))
+                           (let ([fails (cons (choice-res-errors result) 
+                                              (map res-possible-error possible-errors))])
+                             #;(printf "we are gonna call fail-type->message ~a ~n" fails)
+                             ;uncomment printf, stop the loop, get the error... wtf
+                             (!!! (fail-type->message
+                                   (make-options-fail (rank-choice (map fail-type-chance fails))
+                                                      #f
+                                                      (choice-res-name result)
+                                                      (rank-choice (map fail-type-used fails))
+                                                      (rank-choice (map fail-type-may-use fails))
+                                                      fails))))])]
                        [(not (null? possible-errors))
                         ;(printf "choice or pair fail~n")
                         (!!! (fail-type->message

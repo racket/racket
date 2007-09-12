@@ -602,7 +602,7 @@
     (export top-forms^)
   
     (define (top-member mems)
-      (choice mems "program body"))
+      (choice mems "class or interface"))
     
     ;Note -- should enfore name to be identifier.identifier instead of name
     (define import-dec
@@ -613,12 +613,12 @@
         (sequence (import name SEMI_COLON) id)) "import declaration")))
     
     (define (make-program package import body)
-      (let ([p&i (sequence (package import body) id "program")]
-            [p (sequence (package body) id "program")]
+      (let ([p&i (sequence (package import body) id "package program")]
+            [p (sequence (package body) id "package program")]
             [i (sequence (import body) id "program")])
         (cond
           [(and package import)
-           (choice (list p&i p i body) "program")]
+           (choice (list p&i i ) "program")]
           [package
            (choice (list p body) "program")]
           [import
@@ -837,14 +837,14 @@
                    (if-s (block #t) #f)
                    (variable-declaration (value+name-type prim-type) expression #f "local variable")
                    (block #t)
-                   (sequence (stmt-expr SEMI_COLON) id)) "statement")
-          (choose ((return-s #t)
-                   (if-s (block #t) #f)
                    (assignment 
                     (choose (identifier
                              (sequence (unique-base (repeat unique-end) field-access-end) id))
                             "assignee")
                     EQUAL)
+                   (sequence (stmt-expr SEMI_COLON) id)) "statement")
+          (choose ((return-s #t)
+                   (if-s (block #t) #f)
                    (block #t)) "statement")))
     
     (define statement (statement-c #f))
@@ -1007,8 +1007,8 @@
     
     (define program
       (make-program (sequence (tok:package name SEMI_COLON) id "package specification")
-               (repeat-greedy import-dec)
-               (repeat-greedy (top-member (list class interface)))))
+                    (repeat-greedy import-dec)
+                    (repeat-greedy (top-member (list class interface)))))
     
     (define interact 
       (choose (field expression (statement-c #t)) "interactive program"))
