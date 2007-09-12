@@ -108,6 +108,9 @@ Client Customization:
          of the name, since "Handin" is always added for button and
          menu names.
 
+       * Uncomment the definitions of 'tools', 'tool-names', and
+         'tool-icons'.
+
        * For `server:port', uncomment the line, and use the hostname
          and port where the server will be running to accept handin
          submissions.
