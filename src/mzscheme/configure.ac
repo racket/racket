@@ -282,7 +282,7 @@ show_explicitly_enabled "${enable_gcov}" "gcov"
 show_explicitly_enabled "${enable_noopt}" "No-optimization"
 
 show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
-show_explicitly_enabled "${enable_libfw}" "Frameworks-to-user"
+show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"
 
 ###### Some defaults #######
 
@@ -623,12 +623,15 @@ case $OS in
       if test "${enable_libfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=/Library/Frameworks
         FRAMEWORK_REL_INSTALL=no
+        FRAMEWORK_PREFIX=''
       elif test "${enable_userfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
         FRAMEWORK_REL_INSTALL=no
+        FRAMEWORK_PREFIX=''
       else
         FRAMEWORK_INSTALL_DIR='${libdir}'
         FRAMEWORK_REL_INSTALL=yes
+        FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
       fi
     else
       PREFLAGS="$PREFLAGS -DXONX "
@@ -1275,6 +1278,7 @@ AC_SUBST(OSX)
 AC_SUBST(NOT_OSX)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
 AC_SUBST(FRAMEWORK_REL_INSTALL)
+AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(INSTALL_ORIG_TREE)
 AC_SUBST(EXE_SUFFIX)
 

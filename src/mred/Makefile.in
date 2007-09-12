@@ -331,6 +331,7 @@ install-wx_xt-post-collects:
 # Mac OS X ----------------------------------------
 
 MRFWDIR = @FRAMEWORK_INSTALL_DIR@/PLT_MrEd.framework
+FRAMEWORK_REL_PREFIX="@executable_path/../../../lib/"
 
 install-wx_mac:
 	rm -rf $(MRFWDIR)/Versions/$(FWVERSION)
@@ -348,7 +349,7 @@ install-wx_mac-cgc:
 	$(MZSCHEME) -qr "$(srcdir)/../mac/rename-app.ss" "$(prefix)/MrEd@CGC_CAP_INSTALLED@.app" "MrEd@CGC@" "MrEd@CGC_CAP_INSTALLED@"
 	$(ICP) PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd $(MRFWDIR)/Versions/$(FWVERSION)/PLT_MrEd
 	$(ICP) -r PLT_MrEd.framework/Versions/$(FWVERSION)/Resources $(MRFWDIR)/Versions/$(FWVERSION)/Resources
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "@executable_path/../../../lib/PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "$(prefix)/MrEd@CGC_CAP_INSTALLED@.app/Contents/MacOS/MrEd@CGC_CAP_INSTALLED@" ; fi
+	/usr/bin/install_name_tool -change "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "@FRAMEWORK_PREFIX@PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "$(prefix)/MrEd@CGC_CAP_INSTALLED@.app/Contents/MacOS/MrEd@CGC_CAP_INSTALLED@"
 	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/MrEd@CGC_CAP_INSTALLED@.app/Contents/MacOS/MrEd@CGC_CAP_INSTALLED@" ../../../collects
 
 install-wx_mac-cgc-final:
@@ -361,7 +362,7 @@ install-wx_mac-3m:
 	$(MZSCHEME) -qr "$(srcdir)/../mac/rename-app.ss" "$(prefix)/MrEd@MMM_CAP_INSTALLED@.app" "MrEd@MMM@" "MrEd@MMM_CAP_INSTALLED@"
 	$(ICP) "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "$(MRFWDIR)/Versions/$(FWVERSION)_3m/PLT_MrEd"
 	$(ICP) -r "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources" "$(MRFWDIR)/Versions/$(FWVERSION)_3m/Resources"
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@executable_path/../../../lib/PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "$(prefix)/MrEd@MMM_CAP_INSTALLED@.app/Contents/MacOS/MrEd@MMM_CAP_INSTALLED@" ; fi
+	/usr/bin/install_name_tool -change "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@FRAMEWORK_PREFIX@PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "$(prefix)/MrEd@MMM_CAP_INSTALLED@.app/Contents/MacOS/MrEd@MMM_CAP_INSTALLED@"
 	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/MrEd@MMM_CAP_INSTALLED@.app/Contents/MacOS/MrEd@MMM_CAP_INSTALLED@" "../../../collects"
 
 install-wx_mac-3m-final:

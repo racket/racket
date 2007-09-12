@@ -297,6 +297,7 @@ unix-install-3m-final:
 
 MZFWDIR = @FRAMEWORK_INSTALL_DIR@/PLT_MzScheme.framework
 MZFWMMM = PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
+FRAMEWORK_REL_PREFIX = "@executable_path/../lib/"
 
 osx-install:
 	$(MAKE) unix-install
@@ -310,7 +311,7 @@ osx-install-cgc:
 	$(MAKE) unix-install-cgc
 	mkdir -p "$(MZFWDIR)/Versions/$(FWVERSION)"
 	cp $(MZFW) $(MZFWDIR)/Versions/$(FWVERSION)/
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "@executable_path/../lib/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "$(bindir)/mzscheme@CGC_INSTALLED@" ; fi
+	/usr/bin/install_name_tool -change "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "@FRAMEWORK_PREFIX@PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "$(bindir)/mzscheme@CGC_INSTALLED@"
 
 osx-install-cgc-final:
 	$(MAKE) unix-install-cgc-final
@@ -320,7 +321,7 @@ osx-install-3m:
 	$(MAKE) unix-install-3m
 	mkdir -p "$(MZFWDIR)/Versions/$(FWVERSION)_3m"
 	cp $(MZFWMMM) $(MZFWDIR)/Versions/$(FWVERSION)_3m/
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/../lib/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "$(bindir)/mzscheme@MMM_INSTALLED@" ; fi
+	/usr/bin/install_name_tool -change "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@FRAMEWORK_PREFIX@PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "$(bindir)/mzscheme@MMM_INSTALLED@"
 
 osx-install-3m-final:
 	$(MAKE) unix-install-3m-final
