@@ -11,34 +11,19 @@
            random-source-randomize!
            random-source-pseudo-randomize!)
   
-  (define positive-integer/c
-    (and/c integer? positive? exact?))
+  (define integer/c
+    (and/c integer? exact? positive?))
   
   (define-struct random-source (generator))
   
-  (provide/contract
-   (random-integer (-> random-source? any))
-   (random-source-make-integers (-> random-source? any))
-   (random-source-make-reals (case-> (-> random-source? any)
-                                     (-> random-source? (and/c (>/c 0) (</c 1)) any))))
-  
-  (define (random-integer n)
-    (if (<= n 2147483647)
-        (random n)
-        (+ (* (random-integer (quotient n 1073741824)) 1073741824)
-           (random 1073741824))))
-  
-  (define (random-real)
-    (random))
-  
-  (define-syntax default-random-source
-    (syntax-id-rules (set!)
-      ((set! default-random-source expr)
-       (current-pseudo-random-generator (random-source-generator expr)))
-      ((default-random-source expr ...)
-       ((make-random-source (current-pseudo-random-generator)) expr ...))
-      (default-random-source
-        (make-random-source (current-pseudo-random-generator)))))
+  (provide/contract (random-integer
+                     (-> integer/c any))
+                    (random-source-make-integers
+                     (-> random-source? (-> integer/c any)))
+                    (random-source-make-reals
+                     (case->
+                      (-> random-source? any)
+                      (-> random-source? (and/c (>/c 0) (</c 1)) any))))
   
   (define (s:make-random-source)
     (let ((old (current-pseudo-random-generator))
@@ -48,39 +33,44 @@
       (begin0 (make-random-source new)
               (current-pseudo-random-generator old))))
   
+  (define my-default-random-source
+    (s:make-random-source))
+  
+  (define-syntax default-random-source
+    (syntax-id-rules (set!)
+      ((set! default-random-source expr)
+       (set-random-source-generator! default-random-source
+                                     (random-source-generator expr)))
+      ((default-random-source expr ...)
+       (my-default-random-source expr ...))
+      (default-random-source
+        my-default-random-source)))
+  
   (define (random-source-state-ref s)
     (pseudo-random-generator->vector (random-source-generator s)))
   
-  (define-syntax random-source-state-set!
-    (syntax-rules (default-random-source)
-      ((_ default-random-source state)
-       (current-pseudo-random-generator (vector->pseudo-random-generator state)))
-      ((_ s state)
-       (set-random-source-generator! s
-                                     (vector->pseudo-random-generator state)))))
+  (define (random-source-state-set! s state)
+    (set-random-source-generator! s (vector->pseudo-random-generator state)))
   
-  (define-syntax random-source-randomize!
-    (syntax-rules (default-random-source)
-      ((_ default-random-source)
-       (current-pseudo-random-generator (make-pseudo-random-generator)))
-      ((_ s)
-       (set-random-source-generator! s
-                                     (make-pseudo-random-generator)))))
+  (define (random-source-randomize! s)
+    (set-random-source-generator! s (make-pseudo-random-generator)))
   
-  (define-syntax random-source-pseudo-randomize!
-    (syntax-rules (default-random-source)
-      ((_ default-random-source ij ...)
-       (random-seed (modulo (equal-hash-code (list ij ...)) 2147483648)))
-      ((_ s ij ...)
-       (parameterize ((current-pseudo-random-generator
-                       (random-source-generator s)))
-         (random-seed (modulo (equal-hash-code (list ij ...)) 2147483648))))))
+  (define (random-source-pseudo-randomize! s . ij)
+    (parameterize ((current-pseudo-random-generator
+                    (random-source-generator s)))
+      (random-seed (modulo (equal-hash-code ij) 2147483648))))
+  
+  (define (my-random-integer n)
+    (if (<= n 2147483647)
+        (random n)
+        (+ (* (my-random-integer (quotient n 1073741824)) 1073741824)
+           (random 1073741824))))
   
   (define (random-source-make-integers s)
     (lambda (n)
       (parameterize ((current-pseudo-random-generator
                       (random-source-generator s)))
-        (random-integer n))))
+        (my-random-integer n))))
   
   (define random-source-make-reals
     (case-lambda
@@ -94,6 +84,11 @@
          (lambda ()
            (parameterize ((current-pseudo-random-generator
                            (random-source-generator s)))
-             (* (add1 (random n)) unit)))))))
+             (* (add1 (my-random-integer n)) unit)))))))
   
-  (random-seed 0))
+  (define random-integer
+    (random-source-make-integers my-default-random-source))
+  
+  (define random-real
+    (random-source-make-reals my-default-random-source))
+  )
