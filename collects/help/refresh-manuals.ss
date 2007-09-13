@@ -12,7 +12,9 @@
            (lib "port.ss")
            (lib "thread.ss"))
   
-  (provide refresh-manuals)
+  (provide refresh-manuals 
+           bytes-to-path)
+  
   
   (define sc-refreshing-manuals (string-constant plt:hd:refreshing-manuals))
   (define sc-refresh-downloading... (string-constant plt:hd:refresh-downloading...))
@@ -75,6 +77,9 @@
             (unless success?
               (delete-local-plt-files tmp-directory))
             (kill-thread thd))))]))
+  
+  ; needed in "../private/manuals.ss" due to links with > getting mangled
+  (define bytes-to-path bytes->path)
       
   (define (make-local-doc-filename tmp-dir stub)
     (build-path tmp-dir (format "~a-doc.plt" stub)))

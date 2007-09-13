@@ -255,12 +255,11 @@
                               (list
                                "[" 
                                `(a ((mzscheme
-                                     ; TODO: The path->bytes is rewritten as path-&gt;bytes
-                                     ;       by xexpr->string (somewehere in the web-server)
-                                     ;       Figure out how to avoid it.
                                      ,(to-string/escape-quotes 
                                        `((dynamic-require '(lib "refresh-manuals.ss" "help") 'refresh-manuals)
-                                         (list (cons (bytes->path ,(path->bytes manual-name)) ,name))))))
+                                         (list (cons ((dynamic-require '(lib "refresh-manuals.ss" "help") 'bytes-to-path)
+                                                      ,(path->bytes manual-name)) 
+                                                     ,name))))))
                                    ,(string-constant plt:hd:refresh))
                                "]" 'nbsp)
                               (list))))]
