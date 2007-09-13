@@ -370,8 +370,14 @@
   
   (define init-wordbreak-map
     (λ (map)
-      (send map set-map  #\- '(line selection))
-      (send map set-map  #\: '(line selection))))
+      (send map set-map  #\< '(line selection))  ; interfaces e.g.the canvas<%> interface
+      (send map set-map  #\> '(line selection))  ; interfaces, casts e.g. string->path
+      (send map set-map  #\% '(line selection))  ; intefraces, classes
+      (send map set-map  #\? '(line selection))  ; predicates
+      (send map set-map  #\' '(line selection))  ; literal symbols
+      (send map set-map  #\! '(line selection))  ; assignments e.g. set
+      (send map set-map  #\- '(line selection))  ; hyphens
+      (send map set-map  #\: '(line selection)))); valid identifiers with colons
 
   (define wordbreak-map (make-object editor-wordbreak-map%))
   (define (get-wordbreak-map) wordbreak-map)
