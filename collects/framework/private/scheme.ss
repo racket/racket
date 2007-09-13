@@ -370,10 +370,9 @@
   
   (define init-wordbreak-map
     (λ (map)
-      (let ([v (send map get-map #\-)])
-        (send map set-map 
-              #\-
-              '(line)))))
+      (send map set-map  #\- '(line selection))
+      (send map set-map  #\: '(line selection))))
+
   (define wordbreak-map (make-object editor-wordbreak-map%))
   (define (get-wordbreak-map) wordbreak-map)
   (init-wordbreak-map wordbreak-map)
