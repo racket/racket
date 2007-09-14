@@ -257,7 +257,7 @@
 		 (let ([t (make-object text%)])
 		   (send t insert-port p 'standard)
 		   (close-input-port p)
-		   (open-input-text-editor t))]
+		   (open-input-text-editor t 0 'end values filename))]
 		[else p])])
 	(port-count-lines! p) ; in case it's new
 	(values p filename))))
