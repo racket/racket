@@ -358,6 +358,7 @@
         ((eq? clock-type time-utc) 10000)
         ((eq? clock-type time-monotonic) 10000)
         ((eq? clock-type time-thread) 10000)
+        ((eq? clock-type time-process) 10000)
         ((eq? clock-type time-gc) 10000)
         (else (tm:time-error 'time-resolution 'invalid-clock-type clock-type)))))
   
@@ -1087,7 +1088,7 @@
 		 (newline port)))
      (cons #\N (lambda (date pad-with port)
 		 (display (tm:padding (date-nanosecond date)
-				      pad-with 7)
+				      pad-with 9)
 			  port)))
      (cons #\p (lambda (date pad-with port)
 		 (display (tm:locale-am/pm (srfi:date-hour date)) port)))
