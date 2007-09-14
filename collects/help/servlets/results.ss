@@ -64,7 +64,7 @@ is stored in a module top-level and that's namespace-specific.
               [html-for-top (case (helpdesk-platform)
                               [(internal-browser) '()]
                               [(internal-browser-simple) '()]
-                              [else               (html-top request)])])
+                              [else (html-top request)])])
          ;; doc subcollection name -> boolean
          (define (search-type->search-level st)
            (let loop ([n 0] [lst (map car search-types)])
@@ -229,7 +229,7 @@ is stored in a module top-level and that's namespace-specific.
            (let-values ([(string-finds finds)
                          (build-string-finds/finds search-string regexp? exact?)])
              (html-page
-              #:title "PLT Help Desk search results"
+              #:title (format "PLT Scheme HelpDesk: ~a" search-string)
               #:top   html-for-top
               #:bodies 
               `((h1 "Search Results")
@@ -310,7 +310,7 @@ is stored in a module top-level and that's namespace-specific.
            (cond
              [flush
               (doc-collections-changed)
-              (html-page #:title "flush"
+              (html-page #:title "Flushed documentation cache"
                          #:top   (html-top initial-request)
                          #:body  '(h2 "Flushed documentation cache"))]
              [else
