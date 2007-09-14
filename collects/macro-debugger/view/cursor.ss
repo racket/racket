@@ -18,6 +18,7 @@
            cursor:move-prev
            cursor:move-to-start
            cursor:move-to-end
+           cursor:skip-to
 
            cursor->list
            cursor:prefix->list
@@ -116,6 +117,11 @@
       (cursor:move-next c)
       (cursor:move-to-end c)))
 
+  (define (cursor:skip-to c i)
+    (unless (or (eq? (cursor:next c) i) (cursor:at-end? c))
+      (cursor:move-next c)
+      (cursor:skip-to c i)))
+  
   (define (cursor->list c)
     (append (cursor:prefix->list c)
             (cursor:suffix->list c)))

@@ -13,9 +13,9 @@
     (macro-stepper-frame-mixin
      (frame:standard-menus-mixin
       (frame:basic-mixin frame%))))
-  
+
   ;; Main entry points
-  
+
   (define (make-macro-stepper)
     (let ([f (new macro-stepper-frame%
                   (config (new macro-stepper-config/prefs%)))])
@@ -24,8 +24,9 @@
 
   (define (go stx)
     (let ([stepper (make-macro-stepper)])
-      (send stepper add-deriv (trace stx))))
-  
+      (send stepper add-deriv (trace stx))
+      stepper))
+
   (define (go/deriv deriv)
     (let* ([f (new macro-stepper-frame%)]
            [w (send f get-widget)])

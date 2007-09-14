@@ -38,7 +38,27 @@ This module provides a single procedure:
 > (expand/step syntax-or-sexpr)
 
 Expands the syntax (or S-expression) and opens a macro stepper frame
-for stepping through the expansion. 
+for stepping through the expansion. Returns an object of
+macro-stepper<%> with the following methods:
+
+>   (send a-macro-stepper at-start?) -> boolean
+>   (send a-macro-stepper at-end?) -> boolean
+>   (send a-macro-stepper navigate-to-start) -> void
+>   (send a-macro-stepper navigate-to-end) -> void
+>   (send a-macro-stepper navigate-previous) -> void
+>   (send a-macro-stepper navigate-next) -> void
+>   (send a-macro-stepper navigate-forward/count n) -> void
+>   (send a-macro-stepper navigate-forward/pred pred) -> void
+      pred : syntax -> boolean
+      Navigate forward to an expansion with redex (focus) matching pred.
+
+>   (send a-macro-stepper at-top?) -> boolean
+>   (send a-macro-stepper at-bottom?) -> boolean
+>   (send a-macro-stepper navigate-up) -> void
+>   (send a-macro-stepper navigate-down) -> void
+>   (send a-macro-stepper navigate-down/pred pred) -> void
+      pred : syntax -> boolean
+      Navigate down to an expansion with initial syntax satisfying pred.
 
 _expand.ss_
 ===========

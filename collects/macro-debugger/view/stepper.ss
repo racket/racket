@@ -216,25 +216,66 @@
 
       ;; Navigate
 
-      (define/private (navigate-to-start)
+      (define/public-final (at-start?)
+        (cursor:at-start? (focused-steps)))
+      (define/public-final (at-end?)
+        (cursor:at-end? (focused-steps)))
+
+      (define/public-final (navigate-to-start)
         (cursor:move-to-start (focused-steps))
         (update/save-position))
-      (define/private (navigate-to-end)
+      (define/public-final (navigate-to-end)
         (cursor:move-to-end (focused-steps))
         (update/save-position))
-      (define/private (navigate-previous)
+      (define/public-final (navigate-previous)
         (cursor:move-prev (focused-steps))
         (update/save-position))
-      (define/private (navigate-next)
+      (define/public-final (navigate-next)
         (cursor:move-next (focused-steps))
         (update/save-position))
 
-      (define/private (navigate-up)
+      (define/public-final (navigate-forward/count n)
+        (unless (integer? n)
+          (raise-type-error 'navigate-forward/count "integer" n))
+        (cond [(zero? n)
+               (update/save-position)]
+              [(positive? n)
+               (cursor:move-next (focused-steps))
+               (navigate-forward/count (sub1 n))]
+              [(negative? n)
+               (cursor:move-prev (focused-steps))
+               (navigate-forward/count (add1 n))]))
+
+      (define/public-final (navigate-forward/pred p)
+        (let* ([cursor (focused-steps)]
+               [steps (and cursor (cursor:suffix->list cursor))]
+               [pred (lambda (s)
+                       (and (rewrite-step? s)
+                            (ormap p (step-foci1 s))
+                            s))]
+               [step (ormap pred steps)])
+          (unless step
+            (error 'navigate-forward/pred "no step matching predicate"))
+          (cursor:skip-to cursor step)
+          (update/save-position)))
+
+      (define/public-final (navigate-up)
         (cursor:move-prev terms)
         (refresh/move))
-      (define/private (navigate-down)
+      (define/public-final (navigate-down)
         (cursor:move-next terms)
         (refresh/move))
+
+      (define/public-final (navigate-down/pred p)
+        (let* ([termlist (cursor:suffix->list terms)]
+               [pred (lambda (trec)
+                       (and (p (lift/deriv-e1 (trec-deriv trec)))
+                            trec))]
+               [term (ormap pred termlist)])
+          (unless term
+            (error 'navigate-down/pred "no term matching predicate"))
+          (cursor:skip-to terms term)
+          (refresh/move)))
 
       ;; insert-step-separator : string -> void
       (define/private (insert-step-separator text)
