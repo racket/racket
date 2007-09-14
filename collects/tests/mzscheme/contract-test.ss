@@ -5151,6 +5151,20 @@ so that propagation occurs.
               [struct s ([a number?]
                          [b symbol?])]))))
   
+  (test/spec-passed
+   'provide/contract21
+   '(begin
+      (eval '(module provide/contract21a mzscheme
+               (require (lib "contract.ss"))
+               (provide/contract [f integer?])
+               (define f 1)))
+      (eval '(module provide/contract21b mzscheme
+               (require-for-syntax provide/contract21a) 
+               (define-syntax (unit-body stx)
+                 f f
+                 #'1)))))
+
+  
   (contract-error-test
    #'(begin
        (eval '(module pce1-bug mzscheme

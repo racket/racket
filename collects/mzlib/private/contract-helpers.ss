@@ -5,10 +5,18 @@
            build-struct-names
            nums-up-to
            add-name-prop
-           all-but-last)
+           all-but-last
+           known-good-contract?)
 
   (require (lib "main-collects.ss" "setup"))
 
+  (define (known-good-contract? id)
+    (and (identifier? id)
+         (ormap (λ (x) (module-identifier=? x id))
+                (list #'integer?
+                      #'boolean?
+                      #'number?))))
+  
   (define (add-name-prop name stx)
     (cond
       [(identifier? name)

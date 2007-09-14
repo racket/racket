@@ -142,7 +142,7 @@ it around flattened out.
                (make-struct-type 'opt-wrap-name
                                  #f  ;; super struct
                                  2   ;; field count
-                                 field-count   ;; auto-field-k
+                                 (+ 1 field-count)   ;; auto-field-k
                                  #f ;; auto-field-v
                                  '() ;; prop-value-list
                                  inspector))

@@ -85,33 +85,67 @@ improve method arity mismatch contract violation error messages?
     (make-set!-transformer
      (λ (stx)
        (with-syntax ([contract-id contract-id]
-		     [id id]
-		     [pos-module-source pos-module-source])
-	 (syntax-case stx (set!)
-	   [(set! id body) (raise-syntax-error
-			   #f 
-			   "cannot set! provide/contract identifier"
-			   stx
-			   (syntax id))]
-	   [(name arg ...)
-	    (syntax/loc stx
-	     ((begin-lifted
-                (-contract contract-id
-                           id
-                           pos-module-source
-                           (module-source-as-symbol #'name)
-                           (quote-syntax name)))
-	      arg
-	      ...))]
-	   [name
-	    (identifier? (syntax name))
-	    (syntax 
-	     (begin-lifted
+                     [id id]
+                     [pos-module-source pos-module-source])
+         (syntax-case stx (set!)
+           [(set! id body) (raise-syntax-error
+                            #f 
+                            "cannot set! provide/contract identifier"
+                            stx
+                            (syntax id))]
+           [(name arg ...)
+            (syntax/loc stx
+              ((begin-lifted
+                 (-contract contract-id
+                            id
+                            pos-module-source
+                            (module-source-as-symbol #'name)
+                            (quote-syntax name)))
+               arg
+               ...))]
+           [name
+            (identifier? (syntax name))
+            (syntax 
+             (begin-lifted
                (-contract contract-id
                           id  
                           pos-module-source 
                           (module-source-as-symbol #'name)
                           (quote-syntax name))))])))))
+  
+  #;
+  (define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
+    (make-set!-transformer
+     (let ([saved-id #f])
+       (λ (stx)
+         (unless saved-id
+           (with-syntax ([contract-id contract-id]
+                         [id id]
+                         [pos-module-source pos-module-source])
+             (set! saved-id
+                   (syntax-local-introduce
+                    (syntax-local-lift-expression
+                     #'(-contract contract-id
+                                  id
+                                  pos-module-source
+                                  (module-source-as-symbol #'name)
+                                  (quote-syntax name)))))))
+         
+         (with-syntax ([saved-id (syntax-local-introduce saved-id)])
+           (syntax-case stx (set!)
+             [(set! id body) (raise-syntax-error
+                              #f 
+                              "cannot set! provide/contract identifier"
+                              stx
+                              (syntax id))]
+             [(name arg ...)
+              (syntax/loc stx
+                (saved-id
+                 arg
+                 ...))]
+             [name
+              (identifier? (syntax name))
+              (syntax saved-id)]))))))
   
   ;; (define/contract id contract expr)
   ;; defines `id' with `contract'; initially binding
@@ -286,12 +320,15 @@ improve method arity mismatch contract violation error messages?
                                              (if (null? pp)
                                                  #f
                                                  (car (car pp)))))]
-                  [field-contract-ids (map (λ (field-name) 
-                                             (a:mangle-id provide-stx
-                                                          "provide/contract-field-contract"
-                                                          field-name
-                                                          struct-name))
-                                           field-names)]
+                  [field-contract-ids (map (λ (field-name field-contract) 
+                                             (if (a:known-good-contract? field-contract)
+                                                 field-contract
+                                                 (a:mangle-id provide-stx
+                                                              "provide/contract-field-contract"
+                                                              field-name
+                                                              struct-name)))
+                                           field-names
+                                           field-contracts)]
                   [struct:struct-name
                    (datum->syntax-object
                     struct-name
@@ -464,8 +501,19 @@ improve method arity mismatch contract violation error messages?
                                                          predicate-id)
                              #f
                              #t)]
+                           
+                           [(field-contract-id-definitions ...)
+                            (filter values (map (λ (field-contract-id field-contract)
+                                                  (if (a:known-good-contract? field-contract)
+                                                      #f
+                                                      (with-syntax ([field-contract-id field-contract-id]
+                                                                    [field-contract field-contract])
+                                                        #'(define field-contract-id (verify-contract field-contract)))))
+                                                field-contract-ids
+                                                field-contracts))]
                            [(field-contracts ...) field-contracts]
                            [(field-contract-ids ...) field-contract-ids])
+               
                (with-syntax ([(rev-selector-new-names ...) (reverse (syntax->list (syntax (selector-new-names ...))))]
                              [(rev-mutator-new-names ...) (reverse (syntax->list (syntax (mutator-new-names ...))))])
                  (with-syntax ([struct-code 
@@ -496,7 +544,7 @@ improve method arity mismatch contract violation error messages?
                    (syntax/loc stx
                      (begin
                        struct-code
-                       (define field-contract-ids (verify-contract field-contracts)) ...
+                       field-contract-id-definitions ...
                        selector-codes ...
                        mutator-codes ...
                        predicate-code
@@ -634,49 +682,59 @@ improve method arity mismatch contract violation error messages?
          ;; the first syntax object is used for source locations
          (define code-for-one-id/new-name
            (opt-lambda (stx id ctrct user-rename-id [mangle-for-maker? #f])
-             (with-syntax ([id-rename ((if mangle-for-maker? 
-                                           a:mangle-id-for-maker
-                                           a:mangle-id)
-                                       provide-stx
-                                       "provide/contract-id" 
-                                       (or user-rename-id id))]
-                           [contract-id (a:mangle-id provide-stx
-                                                     "provide/contract-contract-id" 
-                                                     (or user-rename-id id))]
-                           [pos-module-source (a:mangle-id provide-stx 
-                                                           "provide/contract-pos-module-source"
-                                                           (or user-rename-id id))]
-                           [pos-stx (datum->syntax-object id 'here)]
-                           [id id]
-                           [ctrct (syntax-property ctrct 'inferred-name id)]
-                           [external-name (or user-rename-id id)]
-                           [where-stx stx])
-               (with-syntax ([code
-                              (syntax/loc stx
-                                (begin
-                                  (provide (rename id-rename external-name))
-                                  
-                                  (define pos-module-source (module-source-as-symbol #'pos-stx))
-                                  (define contract-id (verify-contract ctrct))
-                                  
-                                  (define-syntax id-rename
-                                    (make-provide/contract-transformer (quote-syntax contract-id)
-                                                                       (quote-syntax id)
-                                                                       (quote-syntax pos-module-source)))))])
-                 
-                 (syntax-local-lift-module-end-declaration
-                  #'(begin 
-                      (-contract contract-id id pos-module-source 'ignored #'id)
-                      (void)))
-                 
-                 (syntax (code id-rename))))))
+             (let ([no-need-to-check-ctrct? (a:known-good-contract? ctrct)])
+               (with-syntax ([id-rename ((if mangle-for-maker? 
+                                             a:mangle-id-for-maker
+                                             a:mangle-id)
+                                         provide-stx
+                                         "provide/contract-id" 
+                                         (or user-rename-id id))]
+                             [contract-id (if no-need-to-check-ctrct?
+                                              ctrct
+                                              (a:mangle-id provide-stx
+                                                           "provide/contract-contract-id" 
+                                                           (or user-rename-id id)))]
+                             [pos-module-source (a:mangle-id provide-stx 
+                                                             "provide/contract-pos-module-source"
+                                                             (or user-rename-id id))]
+                             [pos-stx (datum->syntax-object id 'here)]
+                             [id id]
+                             [ctrct (syntax-property ctrct 'inferred-name id)]
+                             [external-name (or user-rename-id id)]
+                             [where-stx stx])
+                 (with-syntax ([code
+                                (quasisyntax/loc stx
+                                  (begin
+                                    (provide (rename id-rename external-name))
+                                    
+                                    (define pos-module-source (module-source-as-symbol #'pos-stx))
+                                    #,@(if no-need-to-check-ctrct?
+                                           (list)
+                                           (list #'(define contract-id (verify-contract ctrct))))
+                                    
+                                    (define-syntax id-rename
+                                      (make-provide/contract-transformer (quote-syntax contract-id)
+                                                                         (quote-syntax id)
+                                                                         (quote-syntax pos-module-source)))))])
+                   
+                   (syntax-local-lift-module-end-declaration
+                    #'(begin 
+                        (-contract contract-id id pos-module-source 'ignored #'id)
+                        (void)))
+                   
+                   (syntax (code id-rename)))))))
          
          (with-syntax ([(bodies ...) (code-for-each-clause (syntax->list (syntax (p/c-ele ...))))])
            (syntax 
             (begin
               bodies ...))))]))
   
-  (define (verify-contract x)
+  (define-syntax (verify-contract stx)
+    (syntax-case stx ()
+      [(_ x) (a:known-good-contract? #'x) #'x]
+      [(_ x) #'(verify-contract/proc x)]))
+  
+  (define (verify-contract/proc x)
     (unless (or (contract? x)
                 (and (procedure? x)
                      (procedure-arity-includes? x 1)))
