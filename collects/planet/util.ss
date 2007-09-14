@@ -13,7 +13,8 @@
            (lib "list.ss")
            (lib "pack.ss" "setup")
            (lib "plt-single-installer.ss" "setup")
-           (lib "getinfo.ss" "setup"))
+           (lib "getinfo.ss" "setup")
+           (lib "unpack.ss" "setup"))
 
   #| The util collection provides a number of useful functions for interacting with the PLaneT system. |#
   
@@ -22,6 +23,7 @@
    current-cache-contents
    current-linkage
    make-planet-archive
+   unpack-planet-archive
    force-package-building?
    get-installed-planet-archives
    get-hard-linked-packages
@@ -259,7 +261,11 @@
             (reverse warnings)))
          
          (normalize-path archive-name))]))
- 
+  
+  (define (unpack-planet-archive plt-file target)
+    (parameterize ([current-directory target])
+      (unpack plt-file)))
+  
   ;; check-info.ss-sanity : path (string -> void) (string -> void) (string -> void) -> void
   ;; gets all the info.ss fields that planet will use (using the info.ss file
   ;; from the current directory) and calls the announce, warn, and fail functions with strings

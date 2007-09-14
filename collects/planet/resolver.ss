@@ -265,8 +265,8 @@ an appropriate subdirectory.
                 (for-each
                  (lambda (already-loaded-pkg-record)
                    (let* ([already-loaded-pkg (car already-loaded-pkg-record)]
-                          [stx (cadr already-loaded-pkg-record)]
-                          [stx-origin-string (stx->origin-string stx)])
+                          [prior-stx (cadr already-loaded-pkg-record)]
+                          [prior-stx-origin-string (stx->origin-string prior-stx)])
                      (unless (can-be-loaded-together? pkg already-loaded-pkg)
                        (set!
                         all-violations
@@ -283,7 +283,7 @@ an appropriate subdirectory.
                            (pkg-min pkg)
                            (pkg-maj already-loaded-pkg)
                            (pkg-min already-loaded-pkg)
-                           stx-origin-string)
+                           prior-stx-origin-string)
                           (current-continuation-marks)))
                          all-violations)))))
                  loaded-packages)])
