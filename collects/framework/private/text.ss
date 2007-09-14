@@ -2168,7 +2168,8 @@ designates the character that triggers autocompletion
       get-autocomplete-background-color
       get-autocomplete-selected-color
       completion-mode-key-event?
-      get-all-words))
+      get-all-words
+      get-word-at))
   
   ;; ============================================================
   ;; auto-complete-text (mixin) implementation
