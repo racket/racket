@@ -2,7 +2,14 @@
   (include "head.tinc") }
 
 
-This <code>idraw</code> package provides stateful classes and imperative methods
+<p>Add 
+<pre><code>
+  import idraw.*
+</code></pre>
+at the top of your Definitions Window to import this library. 
+</p>
+
+<p>This <code>idraw</code> package provides stateful classes and imperative methods
 for a visual world. Here is its class diagram of public fields and methods:
 
 <pre>
@@ -26,6 +33,7 @@ import geometry.*;
                                             +------------------------------------+
 </code>
 </pre>
+</p>
 
 <p>The abstract <code>World</code> class in <code>idraw</code> provides the same
 methods as the <code>World</code> class in <a href="./draw.html#world">the

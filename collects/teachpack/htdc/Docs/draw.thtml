@@ -1,6 +1,14 @@
 { (define LIBNAME "A Functional Drawing Library (HtDC)")
   (include "head.tinc") }
 
+<p>Add 
+<pre><code>
+  import draw.*
+</code></pre>
+at the top of your Definitions Window to import this library. 
+</p>
+
+<p>
 This <code>draw</code> package provides classes and methods for a visual
 world. Here is its class diagram of public fields and methods: 
 <pre>
@@ -24,6 +32,7 @@ import geometry.*;
  +-----------------------------------+       +---------------------------------------+
 </code>
 </pre>
+<p>
 
 <a name="world" />
 <p>The abstract <code>World</code> class exports the following methods: 

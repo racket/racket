@@ -1,7 +1,15 @@
 { (define LIBNAME "A Colors Library (HtDC)")
   (include "head.tinc") }
 
-This <code>draw</code> package provides classes for representing colors: 
+<p>Add 
+<pre><code>
+  import colors.*
+</code></pre>
+at the top of your Definitions Window to import this library. 
+</p>
+
+
+<p>This <code>draw</code> package provides classes for representing colors: 
 <pre>
 <code>
                               +--------+
@@ -18,6 +26,7 @@ This <code>draw</code> package provides classes for representing colors:
          +-------+  +-------+ +-------+ +-------+ +-------+  +-------+ 
 </code>
 </pre>
+</p>
 
 <p>The <code>AColor</code> class is abstract. Its variants (subclasses) are
 created with no arguments. 

@@ -1,7 +1,14 @@
 { (define LIBNAME "A Geometry Library (HtDC)")
   (include "head.tinc") }
 
-This <code>geometry</code> package provides a class for representing
+<p>Add 
+<pre><code>
+  import geometry.*
+</code></pre>
+at the top of your Definitions Window to import this library. 
+</p>
+
+<p>This <code>geometry</code> package provides a class for representing
 positions in a Cartesian world:
 <pre>
 <code>
@@ -13,6 +20,7 @@ positions in a Cartesian world:
                       +----------+
 </code>
 </pre>
+</p>
 
 <p>To create an instance of the <code>Posn</code> class, a program must supply
 two <code>int</code> values: one for its x coordinate of the canvas and the
