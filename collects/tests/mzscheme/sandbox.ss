@@ -245,13 +245,14 @@
           (directory-list "/tmp") =err> "file access denied"
           --top--
           ;; should work also for module evaluators
-          (set! ev (make-evaluator `(module foo mzscheme
-                                      (require (file ,test-lib)))))
-          --eval--
-          x => 123
-          (length (with-input-from-file ,test-lib read)) => 5
-          ;; the directory is still not kosher
-          (directory-list "/tmp") =err> "file access denied"
+          ;; --> NO!  Shouldn't make user code require whatever it wants
+          ;; (set! ev (make-evaluator `(module foo mzscheme
+          ;;                             (require (file ,test-lib)))))
+          ;; --eval--
+          ;; x => 123
+          ;; (length (with-input-from-file ,test-lib read)) => 5
+          ;; ;; the directory is still not kosher
+          ;; (directory-list "/tmp") =err> "file access denied"
           --top--
           ;; explicitly allow access to /tmp
           (set! ev (let ([rx (if (eq? 'windows (system-type))
