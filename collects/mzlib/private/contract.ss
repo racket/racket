@@ -529,14 +529,15 @@ improve method arity mismatch contract violation error messages?
                                   (syntax (begin
                                             (provide (rename id-rename struct-name))
                                             (define-syntax id-rename
-                                              (list-immutable ((syntax-local-certifier) #'-struct:struct-name)
-                                                              ((syntax-local-certifier) #'constructor-new-name)
-                                                              ((syntax-local-certifier) #'predicate-new-name)
-                                                              (list-immutable ((syntax-local-certifier) #'rev-selector-new-names) ...
-                                                                              ((syntax-local-certifier) #'rev-selector-old-names) ...)
-                                                              (list-immutable ((syntax-local-certifier) #'rev-mutator-new-names) ...
-                                                                              ((syntax-local-certifier) #'rev-mutator-old-names) ...)
-                                                              super-id)))))]
+                                              (let ([slc (syntax-local-certifier)])
+                                                (list-immutable (slc #'-struct:struct-name)
+                                                                (slc #'constructor-new-name)
+                                                                (slc #'predicate-new-name)
+                                                                (list-immutable (slc #'rev-selector-new-names) ...
+                                                                                (slc #'rev-selector-old-names) ...)
+                                                                (list-immutable (slc #'rev-mutator-new-names) ...
+                                                                                (slc #'rev-mutator-old-names) ...)
+                                                                super-id))))))]
                                [struct:struct-name struct:struct-name]
                                [-struct:struct-name -struct:struct-name]
                                [struct-name struct-name]
@@ -644,29 +645,24 @@ improve method arity mismatch contract violation error messages?
            (with-syntax ([(field-contract-ids ...) field-contract-ids]
                          [predicate-id predicate-id])
              (syntax/loc stx
-               (field-contract-ids 
-                ...
-                . -> . 
-                (let ([predicate-id (λ (x) (predicate-id x))]) predicate-id)))))
+               (-> field-contract-ids ...
+                   predicate-id))))
          
          ;; build-selector-contract : syntax syntax -> syntax
          ;; constructs the contract for a selector
          (define (build-selector-contract struct-name predicate-id field-contract-id)
            (with-syntax ([field-contract-id field-contract-id]
                          [predicate-id predicate-id])
-             (syntax ((let ([predicate-id (λ (x) (predicate-id x))]) predicate-id)
-                      . -> .
-                      field-contract-id))))
+             (syntax (-> predicate-id field-contract-id))))
          
          ;; build-mutator-contract : syntax syntax -> syntax
          ;; constructs the contract for a selector
          (define (build-mutator-contract struct-name predicate-id field-contract-id)
            (with-syntax ([field-contract-id field-contract-id]
                          [predicate-id predicate-id])
-             (syntax ((let ([predicate-id (λ (x) (predicate-id x))]) predicate-id)
-                      field-contract-id
-                      . -> .
-                      void?))))
+             (syntax (-> predicate-id
+                         field-contract-id
+                         void?))))
          
          ;; code-for-one-id : syntax syntax syntax (union syntax #f) -> syntax
          ;; given the syntax for an identifier and a contract,

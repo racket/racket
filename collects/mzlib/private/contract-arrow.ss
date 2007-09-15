@@ -138,6 +138,30 @@
                 [else (apply build-compound-type-name 'values rngs)])])
          (apply build-compound-type-name '-> (append doms/c (list rng-name))))]))
   
+  (define arity-one-wrapper
+    (lambda (chk a3 c5) (lambda (val) (chk val) (lambda (a1) (c5 (val (a3 a1)))))))
+  
+  (define arity-two-wrapper
+    (lambda (chk a3 b4 c5) (lambda (val) (chk val) (lambda (a1 b2) (c5 (val (a3 a1) (b4 b2)))))))
+  
+  (define arity-three-wrapper
+    (lambda (chk a9 b10 c11 r12) (lambda (val) (chk val) (lambda (a6 b7 c8) (r12 (val (a9 a6) (b10 b7) (c11 c8)))))))
+  
+  (define arity-four-wrapper
+    (lambda (chk a17 b18 c19 d20 r21) (lambda (val) (chk val) (lambda (a13 b14 c15 d16) (r21 (val (a17 a13) (b18 b14) (c19 c15) (d20 d16)))))))
+  
+  (define arity-five-wrapper
+      (lambda (chk a27 b28 c29 d30 e31 r32)
+        (lambda (val) (chk val) (lambda (a22 b23 c24 d25 e26) (r32 (val (a27 a22) (b28 b23) (c29 c24) (d30 d25) (e31 e26)))))))
+  
+  (define arity-six-wrapper
+    (lambda (chk a39 b40 c41 d42 e43 f44 r45)
+      (lambda (val) (chk val) (lambda (a33 b34 c35 d36 e37 f38) (r45 (val (a39 a33) (b40 b34) (c41 c35) (d42 d36) (e43 e37) (f44 f38)))))))
+  
+  (define arity-seven-wrapper
+    (lambda (chk a53 b54 c55 d56 e57 f58 g59 r60)
+      (lambda (val) (chk val) (lambda (a46 b47 c48 d49 e50 f51 g52) (r60 (val (a53 a46) (b54 b47) (c55 c48) (d56 d49) (e57 e50) (f58 f51) (g59 g52)))))))
+    
   (define-syntax-set (-> ->*)
     (define (->/proc stx) 
       (let-values ([(stx _1 _2) (->/proc/main stx)])
@@ -157,11 +181,26 @@
                           (syntax (lambda args body)))]
                         [use-any? use-any?])
             (with-syntax ([outer-lambda
-                           (syntax
-                            (lambda (chk dom-names ... rng-names ...)
-                              (lambda (val)
-                                (chk val)
-                                inner-lambda)))])
+                           (let* ([lst (syntax->list #'args)]
+                                  [len (and lst (length lst))])
+                             (if (and lst
+                                      (not (syntax-e #'use-any?))
+                                      (= len (length (syntax->list #'(dom-names ...))))
+                                      (= 1 (length (syntax->list #'(rng-names ...))))
+                                      (<= 1 len 7))
+                                 (case len
+                                   [(1) #'arity-one-wrapper]
+                                   [(2) #'arity-two-wrapper]
+                                   [(3) #'arity-three-wrapper]
+                                   [(4) #'arity-four-wrapper]
+                                   [(5) #'arity-five-wrapper]
+                                   [(6) #'arity-six-wrapper]
+                                   [(7) #'arity-seven-wrapper])
+                                 (syntax
+                                  (lambda (chk dom-names ... rng-names ...)
+                                    (lambda (val)
+                                      (chk val)
+                                      inner-lambda)))))])
               (values
                (syntax (build--> '->
                                  (list dom-ctcs ...)

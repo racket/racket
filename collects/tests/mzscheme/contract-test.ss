@@ -464,6 +464,12 @@
    'contract-arrow1
    '(contract (integer? . -> . integer?) (lambda (x) x) 'pos 'neg))
   
+  ;; make sure we skip the optimizations
+  (test/spec-passed
+   'contract-arrow1b
+   '(contract (integer? integer? integer? integer? integer? integer? integer? integer? integer? integer? . -> . integer?) 
+              (lambda (x1 x2 x3 x4 x5 x6 x7 x8 x9 x10) x1) 'pos 'neg))
+  
   (test/pos-blame
    'contract-arrow2
    '(contract (integer? . -> . integer?) (lambda (x y) x) 'pos 'neg))
