@@ -170,6 +170,8 @@
          (make-object string-snip% "<undefined>")
          )
          ]
+      [(event? beh)
+       (make-object value-snip% beh)]
       [(or (behavior? beh) (any-nested-reactivity? beh))
        (make-object dynamic-snip% (raise-reactivity beh) super-render-fun)]
       [(signal? beh)

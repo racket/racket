@@ -150,7 +150,8 @@
                result)))]
       ; won't work in the presence of super structs or immutable fields
       [(struct? obj)
-       (let*-values ([(info skipped) (struct-info obj)]
+       obj
+       #;(let*-values ([(info skipped) (struct-info obj)]
                      [(name init-k auto-k acc mut! immut sup skipped?) (struct-type-info info)]
                      [(ctor) (struct-type-make-constructor info)]
                      [(indices) (build-list init-k identity)]
