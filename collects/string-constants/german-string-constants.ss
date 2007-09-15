@@ -537,6 +537,10 @@
  (replace-and-find-again-info "Ersetze den aktuellen Text und suche dann das gleiche nochmal")
  (replace-and-find-again-menu-item "Ersetzen && nochmal suchen")
 
+ (complete-word "Wort vervollständigen") ; the complete word menu item in the edit menu
+ (no-completions "... keine Vervollständigungen verfügbar") ; shows up in the completions menu when there are no completions (in italics)
+  
+
  (preferences-info "Konfiguriere die Einstellungen")
  (preferences-menu-item "Einstellungen...")
 
@@ -1080,7 +1084,7 @@
 
  (stepper-name "Stepper")
  (stepper-language-level-message
-  "Die aktuelle Sprachebene ist \"~a\". Der Stepper funktioniert bisher nur für die Ebenen\"~a\" bis \"~a\".")
+  "Der Stepper unterstützt die Sprachebene \"~a\" nicht.")
  (stepper-button-label "Stepper")
  (stepper-home "Anfang")
  (stepper-previous-application "|< Applikation")
