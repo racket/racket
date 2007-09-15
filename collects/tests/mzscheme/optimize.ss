@@ -530,6 +530,16 @@
            '(let ([f (lambda (x) x)])
               (list f)))
 
+(test-comp '(procedure-arity-includes? integer? 1)
+           #t)
+
+(test-comp '(module m mzscheme
+              (define foo integer?)
+              (display (procedure-arity-includes? foo 1)))
+           '(module m mzscheme
+              (define foo integer?)
+              (display #t)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 

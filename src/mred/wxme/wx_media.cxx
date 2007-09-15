@@ -2622,6 +2622,9 @@ wxchar *wxMediaEdit::GetText(long start, long end, Bool flatt, Bool forceCR, lon
   if (end < start)
     end = start;
 
+  if (end > len)
+    end = len;
+
   count = end - start;
 
   if (!flatt) {
@@ -2903,7 +2906,9 @@ void StandardWordbreak(wxMediaEdit *win, long *startp, long *endp,
       if (lstart < 0)
 	lstart = 0;
     }
-    lend = start + 1;
+    lend = win->LastPosition();
+    if (start + 1 < lend)
+      lend = start + 1;
 
     if (start - lstart > MAX_DIST_TRY)
       tstart = start - MAX_DIST_TRY;

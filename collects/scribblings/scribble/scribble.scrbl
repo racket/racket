@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require[(lib "manual.ss" "scribble")]
 @require[(lib "bnf.ss" "scribble")]
 @require["utils.ss"]

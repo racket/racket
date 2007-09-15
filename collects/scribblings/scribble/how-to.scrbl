@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require[(lib "manual.ss" "scribble")
          (lib "bnf.ss" "scribble")]
 @require["utils.ss"]
@@ -18,7 +18,7 @@ To document a collection or @|PLaneT| package:
 
  @item{Start @file{manual.scrbl} like this:
 @verbatim[#<<EOS
-  #reader(lib "docreader.ss" "scribble")
+  #lang scribble/doc
   @begin[(require (lib "manual.ss" "scribble"))]
 
   @title{My Library}
@@ -125,7 +125,7 @@ means
 For more information on the syntax of @litchar["@"], see
 @secref["reader"].
 
-In a document that starts @tt{#reader(lib "docreader.ss" "scribble")},
+In a document that starts @tt{#lang scribble/doc},
 the top level is a text-mode sequence. The parsed sequence is further
 decoded to turn it into a hierarchy of sections and paragraphs. For
 example, a linear sequence of @scheme[section] declarations with
@@ -161,7 +161,7 @@ document. Such links require no information about where and how a
 binding is documented elsewhere:
 
 @verbatim[#<<EOS
-  #reader(lib "docreader.ss" "scribble")
+  #lang scribble/doc
   @begin[(require (lib "manual.ss" "scribble"))
          (require-for-label (lib "lang.ss" "big"))]
 
@@ -177,7 +177,7 @@ so it ignores the source formatting of the expression. The
 and it preserves the expression's formatting from the document source.
 
 @verbatim[#<<EOS
-  #reader(lib "docreader.ss" "scribble")
+  #lang scribble/doc
   @begin[(require (lib "manual.ss" "scribble"))
          (require-for-label (lib "lang.ss" "big"))]
 
@@ -208,7 +208,7 @@ hyperlink with text other than the section title.
 The following example illustrates section hyperlinks:
 
 @verbatim[#<<EOS
-  #reader(lib "docreader.ss" "scribble")
+  #lang scribble/doc
   @begin[(require (lib "manual.ss" "scribble"))
          (require-for-label (lib "lang.ss" "big"))]
 
@@ -248,7 +248,7 @@ following example links to a section in the PLT Scheme reference
 manual:
 
 @verbatim[#<<EOS
-  #reader(lib "docreader.ss" "scribble")
+  #lang scribble/doc
   @begin[(require (lib "manual.ss" "scribble"))
          (require-for-label (lib "lang.ss" "big"))
          (define ref-src
@@ -281,7 +281,7 @@ of @file{helper.ss}. Then use @scheme[defproc] to document the
 procedure:
 
 @verbatim[#<<EOS
-  #reader(lib "docreader.ss" "scribble")
+  #lang scribble/doc
   @begin[(require (lib "manual.ss" "scribble"))
          (require-for-label (lib "lang.ss" "big")
                             "helper.ss")]
@@ -349,7 +349,7 @@ from the previous section, then @file{helper.ss} must be imported both
 via @scheme[require-for-label] and @scheme[require]:
 
 @verbatim[#<<EOS
-  #reader(lib "docreader.ss" "scribble")
+  #lang scribble/doc
   @begin[(require (lib "manual.ss" "scribble")
                   (lib "eval.ss" "scribble")  ; <--- added
                   "helper.ss")                ; <--- added
@@ -383,7 +383,7 @@ as a sub-part of the enclosing part.
 In @file{manual.scrbl}:
 
 @verbatim[#<<EOS
-  #reader(lib "docreader.ss" "scribble")
+  #lang scribble/doc
   @begin[(require (lib "manual.ss" "scribble"))]
 
   @title{My Library}
@@ -396,7 +396,7 @@ EOS
 In @file{cows.scrbl}:
 
 @verbatim[#<<EOS
-  #reader(lib "docreader.ss" "scribble")
+  #lang scribble/doc
   @begin[(require (lib "manual.ss" "scribble"))]
 
   @title{Cows}
@@ -408,7 +408,7 @@ EOS
 In @file{aardvarks.scrbl}:
 
 @verbatim[#<<EOS
-  #reader(lib "docreader.ss" "scribble")
+  #lang scribble/doc
   @begin[(require (lib "manual.ss" "scribble"))
          (require-for-label (lib "lang.ss" "big")
                             "helper.ss")]
@@ -440,7 +440,7 @@ sub-sections.
 Revising @file{cows.scrbl} from the previous section:
 
 @verbatim[#<<EOS
-  #reader(lib "docreader.ss" "scribble")
+  #lang scribble/doc
   @begin[(require (lib "manual.ss" "scribble"))]
 
   @title[#:style '(toc)]{Cows}

@@ -914,12 +914,15 @@
 ;; lifting expressions
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define prev-ctx #f)
+
 (define-syntax (@@foo stx)
   (syntax-case stx ()
     [(_ n)
      (if (zero? (syntax-e #'n))
 	 #'0
 	 (with-syntax ([m (sub1 (syntax-e #'n))])
+           (eval `(set! prev-ctx ',(syntax-local-lift-context)))
 	   (syntax-local-lift-expression #'(add1 (@@foo m)))))]))
 
 (define lifted-output #f) 
@@ -931,6 +934,7 @@
        #'(list lifted-output id))]))
 
 (test 2 '@@foo (@@foo 2))
+(test #t values prev-ctx)
 (test 2 eval (expand-once #'(@@foo 2)))
 (test 2 eval (expand #'(@@foo 2)))
 (test 2 eval (expand-to-top-form #'(@@foo 2)))
@@ -990,6 +994,8 @@
 (require @@p)
 (test 10 '@@goo (@@goo))
 
+(set! prev-ctx #f)
+
 (module @@m mzscheme
   (define-syntax (@@foo stx)
     (syntax-case stx ()
@@ -997,6 +1003,11 @@
        (if (zero? (syntax-e #'n))
 	   #'0
 	   (with-syntax ([m (sub1 (syntax-e #'n))])
+             (let ([prev (eval 'prev-ctx)])
+               (if prev
+                   (unless (eq? prev (syntax-local-lift-context))
+                     (error "context mismatch!"))
+                   (eval `(set! prev-ctx ',(syntax-local-lift-context)))))
 	     (syntax-local-lift-expression #'(add1 (@@foo m)))))]))
   (define @@local #f)
   (define (set-local v)
@@ -1006,18 +1017,24 @@
 
 (require @@m)
 (test 2 '@@local @@local)
+(test #t symbol? prev-ctx)
 
+(set! prev-ctx #f)
 (define-syntax (@@local-top stx)
   (syntax-case stx ()
     [(_ expr)
      (local-expand/capture-lifts #'expr
 				 (list (gensym))
-				 (list #'begin #'#%top))]))
+				 (list #'begin #'#%top)
+                                 #f
+                                 'the-key)]))
 
 (test 1 'let-foo (let ([x 5]) (@@foo 1)))
 (test 1 eval (expand #'(let ([x 5]) (@@foo 1))))
 (test 1 'local-foo (let ([x 5]) (@@local-top (@@foo 1))))
+(test 'the-key values prev-ctx)
 (test 1 eval (expand #'(let ([x 5]) (@@local-top (@@foo 1)))))
+(test 'the-key values prev-ctx)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check interaction of macro-introduced/lifted names and

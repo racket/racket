@@ -1172,7 +1172,7 @@ Legal only in a @tech{module begin context}, and handled by the
 
 @section-index["modules" "imports"]
 
-@defform/subs[#:literals (only only-rename prefix all-except prefix-all-except rename lib file planet)
+@defform/subs[#:literals (only only-rename prefix except rename lib file planet)
               (require require-spec ...)
               ([require-spec module-path
                              (only require-spec id-maybe-renamed ...)

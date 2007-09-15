@@ -4300,6 +4300,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Object *exclude_hint = scheme_false, *lift_data;
   Scheme_Hash_Table *et_mn;
   Scheme_Object **exis;
+  Scheme_Object *lift_ctx;
   int exicount;
   char *exps;
   int all_simple_renames = 1, et_all_simple_renames = 1, tt_all_simple_renames = 1, dt_all_simple_renames = 1;
@@ -4464,6 +4465,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   form = scheme_add_rename(form, post_ex_dt_rn);
 
   maybe_has_lifts = 0;
+  lift_ctx = scheme_generate_lifts_key();
   
   /* Pass 1 */
 
@@ -4485,7 +4487,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
       p = (maybe_has_lifts 
            ? scheme_frame_get_end_statement_lifts(xenv) 
            : scheme_null);
-      scheme_frame_captures_lifts(xenv, scheme_make_lifted_defn, scheme_sys_wraps(xenv), p);
+      scheme_frame_captures_lifts(xenv, scheme_make_lifted_defn, scheme_sys_wraps(xenv), p, lift_ctx);
       maybe_has_lifts = 1;
 
       {
@@ -4980,7 +4982,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
       l = (maybe_has_lifts 
            ? scheme_frame_get_end_statement_lifts(cenv) 
            : scheme_null);
-      scheme_frame_captures_lifts(cenv, add_lifted_defn, lift_data, l);
+      scheme_frame_captures_lifts(cenv, add_lifted_defn, lift_data, l, lift_ctx);
       maybe_has_lifts = 1;
 
       if (kind == 2)

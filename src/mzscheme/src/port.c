@@ -4146,6 +4146,7 @@ scheme_file_position(int argc, Scheme_Object *argv[])
 	nll = -1;
       }
     } else {
+      whence = SEEK_SET; /* not used */
       nll = -1;
     }
 

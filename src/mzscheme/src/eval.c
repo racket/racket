@@ -402,7 +402,7 @@ scheme_init_eval (Scheme_Env *env)
   scheme_add_global_constant("local-expand/capture-lifts", 
 			     scheme_make_prim_w_arity(local_expand_catch_lifts, 
 						      "local-expand/capture-lifts",
-						      3, 4), 
+						      3, 5), 
 			     env);
   scheme_add_global_constant("local-transformer-expand", 
 			     scheme_make_prim_w_arity(local_transformer_expand, 
@@ -412,7 +412,7 @@ scheme_init_eval (Scheme_Env *env)
   scheme_add_global_constant("local-transformer-expand/capture-lifts", 
 			     scheme_make_prim_w_arity(local_transformer_expand_catch_lifts, 
 						      "local-transformer-expand/capture-lifts",
-						      3, 4), 
+						      3, 5), 
 			     env);
   scheme_add_global_constant("expand-once", 
 			     scheme_make_prim_w_arity(expand_once, 
@@ -3772,7 +3772,7 @@ static void *compile_k(void)
 	 find one, break it up to eval first expression
 	 before the rest. */
       while (1) {
-	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), scheme_false);
+	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), scheme_false, scheme_true);
 	form = scheme_check_immediate_macro(form, 
 					    cenv, &rec, 0,
 					    0, &gval, NULL, NULL);
@@ -3809,7 +3809,7 @@ static void *compile_k(void)
       Scheme_Object *l, *prev_o = NULL;
 
       while (1) {
-	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), scheme_false);
+	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), scheme_false, scheme_true);
 
 	scheme_init_compile_recs(&rec, 0, &rec2, 1);
 
@@ -4843,7 +4843,7 @@ compile_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
 				Scheme_Expand_Info *rec, int drec)
 {
   Scheme_Expand_Info recs[2];
-  Scheme_Object *l, *orig_form = form;
+  Scheme_Object *l, *orig_form = form, *context_key;
   Scheme_Comp_Env *inserted, **ip;
 
   /* This function only works when `env' has no lexical bindings,
@@ -4897,7 +4897,9 @@ compile_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
   ip = MALLOC_N(Scheme_Comp_Env *, 1);
   *ip = inserted;
 
-  scheme_frame_captures_lifts(inserted, pair_lifted, (Scheme_Object *)ip, scheme_false);
+  context_key = scheme_generate_lifts_key();
+  
+  scheme_frame_captures_lifts(inserted, pair_lifted, (Scheme_Object *)ip, scheme_false, context_key);
 
   if (rec[drec].comp) {
     scheme_init_compile_recs(rec, drec, recs, 2);
@@ -7443,22 +7445,23 @@ Scheme_Object *scheme_eval_compiled_stx_string(Scheme_Object *expr, Scheme_Env *
 static void *expand_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object *obj, *certs, *observer;
+  Scheme_Object *obj, *certs, *observer, *catch_lifts_key;
   Scheme_Comp_Env *env;
   Scheme_Expand_Info erec1;
-  int depth, rename, just_to_top, catch_lifts;
+  int depth, rename, just_to_top;
 
   obj = (Scheme_Object *)p->ku.k.p1;
   env = (Scheme_Comp_Env *)p->ku.k.p2;
   depth = p->ku.k.i1;
   rename = p->ku.k.i2;
   just_to_top = p->ku.k.i3;
-  catch_lifts = p->ku.k.i4;
+  catch_lifts_key = p->ku.k.p4;
   certs = (Scheme_Object *)p->ku.k.p3;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
+  p->ku.k.p4 = NULL;
 
   if (!SCHEME_STXP(obj))
     obj = scheme_datum_to_syntax(obj, scheme_false, scheme_false, 1, 0);
@@ -7479,8 +7482,8 @@ static void *expand_k(void)
     erec1.certs = certs;
     erec1.observer = observer;
 
-    if (catch_lifts)
-      scheme_frame_captures_lifts(env, scheme_make_lifted_defn, scheme_sys_wraps(env), scheme_false);
+    if (catch_lifts_key)
+      scheme_frame_captures_lifts(env, scheme_make_lifted_defn, scheme_sys_wraps(env), scheme_false, catch_lifts_key);
   
     if (just_to_top) {
       Scheme_Object *gval;
@@ -7488,7 +7491,7 @@ static void *expand_k(void)
     } else
       obj = scheme_expand_expr(obj, env, &erec1, 0);
 
-    if (catch_lifts) {
+    if (catch_lifts_key) {
       Scheme_Object *l;
       l = scheme_frame_get_lifts(env);
       if (SCHEME_PAIRP(l)) {
@@ -7514,7 +7517,7 @@ static void *expand_k(void)
 
 static Scheme_Object *_expand(Scheme_Object *obj, Scheme_Comp_Env *env, 
 			      int depth, int rename, int just_to_top, 
-			      int catch_lifts, int eb,
+			      Scheme_Object *catch_lifts_key, int eb,
 			      Scheme_Object *certs)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -7524,7 +7527,7 @@ static Scheme_Object *_expand(Scheme_Object *obj, Scheme_Comp_Env *env,
   p->ku.k.i1 = depth;
   p->ku.k.i2 = rename;
   p->ku.k.i3 = just_to_top;
-  p->ku.k.i4 = catch_lifts;
+  p->ku.k.p4 = catch_lifts_key;
   p->ku.k.p3 = certs;
 
   return (Scheme_Object *)scheme_top_level_do(expand_k, eb);
@@ -7533,7 +7536,7 @@ static Scheme_Object *_expand(Scheme_Object *obj, Scheme_Comp_Env *env,
 Scheme_Object *scheme_expand(Scheme_Object *obj, Scheme_Env *env)
 {
   return _expand(obj, scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-		 -1, 1, 0, 1, -1, NULL);
+		 -1, 1, 0, scheme_true, -1, NULL);
 }
 
 Scheme_Object *scheme_tail_eval_expr(Scheme_Object *obj)
@@ -7701,7 +7704,8 @@ static Scheme_Object *expand(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
 
-  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), -1, 1, 0, 1, 0, NULL);
+  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+                 -1, 1, 0, scheme_true, 0, NULL);
 }
 
 static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
@@ -7712,8 +7716,9 @@ static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
     scheme_wrong_type("expand-syntax", "syntax", 0, argc, argv);
 
   env = scheme_get_env(NULL);
-
-  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), -1, -1, 0, 1, 0, NULL);
+  
+  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+                 -1, -1, 0, scheme_true, 0, NULL);
 }
 
 static Scheme_Object *stop_syntax(Scheme_Object *form, Scheme_Comp_Env *env, 
@@ -7740,6 +7745,14 @@ Scheme_Object *scheme_get_stop_expander(void)
   return stop_expander;
 }
 
+Scheme_Object *scheme_generate_lifts_key(void)
+{
+  static int cnt = 0;
+  char buf[20];
+  sprintf(buf, "lifts%d", cnt++);
+  return scheme_make_symbol(buf); /* uninterned */
+}
+
 Scheme_Object *
 scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **_id, Scheme_Object *expr, Scheme_Comp_Env *env)
 {
@@ -7763,7 +7776,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   Scheme_Object *l, *local_mark, *renaming = NULL, *orig_l, *exp_expr = NULL;
   int cnt, pos, kind;
   int bad_sub_env = 0;
-  Scheme_Object *observer;
+  Scheme_Object *observer, *catch_lifts_key = NULL;
 
   env = scheme_current_thread->current_local_env;
   orig_env = env;
@@ -7806,7 +7819,15 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
 	env = stx_env;
       }
     }
+
+    if (argc > 4) {
+      /* catch_lifts */
+      catch_lifts_key = argv[4];
+    }
   }
+
+  if (catch_lifts && !catch_lifts_key)
+    catch_lifts_key = scheme_generate_lifts_key();
 
   /* For each given stop-point identifier, shadow any potential syntax
      in the environment with an identity-expanding syntax expander. */
@@ -7911,7 +7932,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   } else {
     /* Expand the expression. depth = -2 means expand all the way, but
        preserve letrec-syntax. */
-    l = _expand(l, env, -2, 0, 0, catch_lifts, 0, scheme_current_thread->current_local_certs);
+    l = _expand(l, env, -2, 0, 0, catch_lifts_key, 0, scheme_current_thread->current_local_certs);
   }
 
   SCHEME_EXPAND_OBSERVE_LOCAL_POST(observer, l);
@@ -7991,7 +8012,8 @@ expand_once(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
 
-  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 1, 1, 0, 1, 0, NULL);
+  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+                 1, 1, 0, scheme_true, 0, NULL);
 }
 
 static Scheme_Object *
@@ -8004,7 +8026,8 @@ expand_stx_once(int argc, Scheme_Object **argv)
   
   env = scheme_get_env(NULL);
 
-  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 1, -1, 0, 1, 0, NULL);
+  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+                 1, -1, 0, scheme_true, 0, NULL);
 }
 
 static Scheme_Object *
@@ -8014,7 +8037,8 @@ expand_to_top_form(int argc, Scheme_Object **argv)
 
   env = scheme_get_env(NULL);
 
-  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 1, 1, 1, 1, 0, NULL);
+  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+                 1, 1, 1, scheme_true, 0, NULL);
 }
 
 static Scheme_Object *
@@ -8027,7 +8051,8 @@ expand_stx_to_top_form(int argc, Scheme_Object **argv)
   
   env = scheme_get_env(NULL);
 
-  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 1, -1, 1, 1, 0, NULL);
+  return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
+                 1, -1, 1, scheme_true, 0, NULL);
 }
 
 static Scheme_Object *do_eval_string_all(const char *str, Scheme_Env *env, int cont, int w_prompt)

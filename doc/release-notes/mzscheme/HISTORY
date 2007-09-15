@@ -1,3 +1,7 @@
+Version 371.3
+Added syntax-local-lift-context
+Added #lang
+
 Version 371.2
 Added require-for-label, provide-for-syntax, provide-for-label,
  identifier-label-binding, module-label-identifier=?

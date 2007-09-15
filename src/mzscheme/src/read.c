@@ -213,6 +213,11 @@ static Scheme_Object *read_reader(Scheme_Object *port, Scheme_Object *stxsrc,
 				  Scheme_Hash_Table **ht,
 				  Scheme_Object *indentation,
 				  ReadParams *params);
+static Scheme_Object *read_lang(Scheme_Object *port, Scheme_Object *stxsrc,
+                                long line, long col, long pos,
+                                Scheme_Hash_Table **ht,
+                                Scheme_Object *indentation,
+                                ReadParams *params);
 static Scheme_Object *read_compiled(Scheme_Object *port, Scheme_Object *stxsrc,
 				    long line, long col, long pos,
 				    Scheme_Hash_Table **ht,
@@ -1305,6 +1310,46 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	    }
 	  }
 	  break;
+        case 'l':
+          {
+            mzchar found[5];
+            int fl = 1;
+            found[0] = 'l';
+            ch = scheme_getc_special_ok(port);
+            found[fl] = ch;
+	    if (ch == 'a') {
+              ch = scheme_getc_special_ok(port);
+              found[fl++] = ch;
+              if (ch == 'n') {
+                ch = scheme_getc_special_ok(port);
+                found[fl++] = ch;
+                if (ch == 'g') {
+                  ch = scheme_getc_special_ok(port);
+                  found[fl++] = ch;
+                  if (ch == ' ') {
+                    /* #lang */
+                    Scheme_Object *v;
+                    if (!params->can_read_reader) {
+                      scheme_read_err(port, stxsrc, line, col, pos, 6, 0, indentation,
+                                      "read: #lang expressions not currently enabled");
+                      return NULL;
+                    }
+                    v = read_lang(port, stxsrc, line, col, pos, ht, indentation, params);
+                    if (!v) {
+                      if (comment_mode & RETURN_FOR_SPECIAL_COMMENT)
+                        return NULL;
+                      goto start_over;
+                    }
+                    return v;
+                  }
+                }
+              }
+            }
+            scheme_read_err(port, stxsrc, line, col, pos, fl, ch, indentation,
+                            "read: bad input: `%u'",
+                            found, fl);
+          }
+          break;
 	case 'r':
 	case 'p':
 	  if (!params->honu_mode) {
@@ -5731,21 +5776,13 @@ static Scheme_Object *current_reader_guard(int argc, Scheme_Object **argv)
 			     1, NULL, NULL, 0);
 }
 
-/* "#reader" has been read */
-static Scheme_Object *read_reader(Scheme_Object *port,
-				  Scheme_Object *stxsrc, long line, long col, long pos,
-				  Scheme_Hash_Table **ht,
-				  Scheme_Object *indentation, ReadParams *params)
+static Scheme_Object *do_reader(Scheme_Object *modpath,
+                                Scheme_Object *port,
+                                Scheme_Object *stxsrc, long line, long col, long pos,
+                                Scheme_Hash_Table **ht,
+                                Scheme_Object *indentation, ReadParams *params)
 {
-  Scheme_Object *modpath, *name, *a[2], *proc, *v;
-
-  modpath = scheme_read(port);
-
-  if (SCHEME_EOFP(modpath)) {
-    scheme_read_err(port, stxsrc, line, col, pos, 1, EOF, indentation, 
-		    "read: expected a datum after #reader, found end-of-file");
-    return NULL;
-  }
+  Scheme_Object *name, *a[2], *proc, *v;
 
   proc = scheme_get_param(scheme_current_config(), MZCONFIG_READER_GUARD);
 
@@ -5777,6 +5814,96 @@ static Scheme_Object *read_reader(Scheme_Object *port,
     return NULL;
   else
     return v;
+}
+
+/* "#reader" has been read */
+static Scheme_Object *read_reader(Scheme_Object *port,
+				  Scheme_Object *stxsrc, long line, long col, long pos,
+				  Scheme_Hash_Table **ht,
+				  Scheme_Object *indentation, ReadParams *params)
+{
+  Scheme_Object *modpath;
+
+  modpath = scheme_read(port);
+
+  if (SCHEME_EOFP(modpath)) {
+    scheme_read_err(port, stxsrc, line, col, pos, 1, EOF, indentation, 
+		    "read: expected a datum after #reader, found end-of-file");
+    return NULL;
+  }
+
+  return do_reader(modpath, port, stxsrc, line, col, pos, ht, indentation, params);
+}
+
+/* "#lang" has been read */
+static Scheme_Object *read_lang(Scheme_Object *port,
+                                Scheme_Object *stxsrc, long line, long col, long pos,
+                                Scheme_Hash_Table **ht,
+                                Scheme_Object *indentation, ReadParams *params)
+{
+  int size, len;
+  mzchar *buf, *naya, ch;
+  Scheme_Object *modpath;
+
+  size = 32;
+  buf = MALLOC_N_ATOMIC(mzchar, size);
+  len = 0;
+
+  while (1) {
+    ch = scheme_getc_special_ok(port);
+    if (ch == EOF) {
+      break;
+    } else if (ch == SCHEME_SPECIAL) {
+      scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation, 
+                      "read: found non-character while reading `#lang'");
+    } else if (scheme_isspace(ch)) {
+      break;
+    } else {
+      if ((ch < 128)
+          && (scheme_isalpha(ch)
+              || scheme_isdigit(ch)
+              || (ch == '-')
+              || (ch == '+')
+              || (ch == '_')
+              || (ch == '/'))) {
+        if (len + 1 >= size) {
+          size *= 2;
+          naya = MALLOC_N_ATOMIC(mzchar, size);
+          memcpy(naya, buf, len);
+          buf = naya;
+        }
+        buf[len++] = ch;
+      } else {
+        scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation, 
+                        "read: expected alphanumberic, `-', `+', `_', or `/' for `#lang', found %c",
+                        ch);
+        return NULL;
+      }
+    }
+  }
+
+  if (!len) {
+    scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation, 
+                    "read: a non-empty sequence of alphanumberic, `-', `+', `_', or `/' after `#lang '");
+    return NULL;
+  }
+  if (buf[0] == '/') {
+    scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation, 
+                    "read: a name that does not start `/' after `#lang'");
+    return NULL;
+  }
+  if (buf[len - 1] == '/') {
+    scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation, 
+                    "read: a name that does not end `/' after `#lang'");
+    return NULL;
+  }
+
+  modpath = scheme_make_pair(scheme_intern_symbol("lib"),
+                             scheme_make_pair(scheme_make_utf8_string("lang/reader.ss"),
+                                              scheme_make_pair(scheme_make_sized_char_string(buf, len, 0),
+                                                               scheme_null)));
+
+  return do_reader(modpath, port, stxsrc, line, col, pos, ht, indentation, params);
 }
 
 static int is_placeholder(Scheme_Object *a, Scheme_Object *src)
