@@ -18,17 +18,10 @@
            "stepper-language-interface.ss"
            "xml-sig.ss")
 
-  ;; hidden invariant: this list should be a sublist of the language-level
-  ;; dialog (i.e., same order):
-  (define stepper-works-for
-    (list (string-constant beginning-student)
-          (string-constant beginning-student/abbrev)
-          (string-constant intermediate-student)
-          (string-constant intermediate-student/lambda)
-          #;(string-constant advanced-student)
-          ))
-
-  (provide stepper-tool@)
+  (provide stepper-tool@
+	   make-print-convert-hook
+	   set-print-settings
+	   simple-module-based-language-convert-value)
 
   (define-unit stepper-tool@
     (import drscheme:tool^ xml^)
@@ -42,8 +35,23 @@
          stepper-language<%>
          (lambda (superclass)
            (class* superclass (stepper-language<%>)
+	           (public stepper:supported?)
+		   (define (stepper:supported?) #f)
                    (public stepper:enable-let-lifting?)
                    (define (stepper:enable-let-lifting?) #f)
+		   (public stepper:render-to-sexp)
+		   (define (stepper:render-to-sexp val settings language-level)
+		     (parameterize ([current-print-convert-hook
+				     (make-print-convert-hook settings)])
+		       (set-print-settings
+			language-level
+			settings
+			(lambda ()
+			  (simple-module-based-language-convert-value
+			   val
+			   (drscheme:language:simple-settings-printing-style settings)
+			   (drscheme:language:simple-settings-show-sharing settings))))))
+
                    (super-instantiate ())))))
       
       (define (phase2) (void))
@@ -63,9 +71,9 @@
       (define (settings->language-level settings)
         (drscheme:language-configuration:language-settings-language settings))
       
-      (define (stepper-works-for? language-level-name)
-        (or (member language-level-name stepper-works-for)
-            (getenv "PLTSTEPPERUNSAFE")))
+      (define (stepper-works-for? language-level)
+	(or (send language-level stepper:supported?)
+	    (getenv "PLTSTEPPERUNSAFE")))
 
       ;; the stepper's frame:
       (define stepper-frame%
@@ -173,49 +181,9 @@
             (send language-level render-value val simple-settings string-port)
             (get-output-string string-port)))
 
-        ;; WE REALLY WANT TO GET RID OF THIS STUFF (2005-07-01, JBC)
-
-        ;; make-print-convert-hook:
-        ;;   simple-settings -> (TST (TST -> TST) (TST -> TST) -> TST)
-        ;; this code copied from various locations in language.ss and rep.ss
-        (define (make-print-convert-hook simple-settings)
-          (lambda (exp basic-convert sub-convert)
-            (cond
-              [(is-a? exp snip%)
-               (send exp copy)]
-              #;
-              [((drscheme:rep:use-number-snip) exp)
-               (let ([number-snip-type
-                      (drscheme:language:simple-settings-fraction-style
-                       simple-settings)])
-                 (cond
-                   [(eq? number-snip-type 'repeating-decimal)
-                    (drscheme:number-snip:make-repeating-decimal-snip exp #f)]
-                   [(eq? number-snip-type 'repeating-decimal-e)
-                    (drscheme:number-snip:make-repeating-decimal-snip exp #t)]
-                   [(eq? number-snip-type 'mixed-fraction)
-                    (drscheme:number-snip:make-fraction-snip exp #f)]
-                   [(eq? number-snip-type 'mixed-fraction-e)
-                    (drscheme:number-snip:make-fraction-snip exp #t)]
-                   [else
-                    (error 'which-number-snip
-                           "expected either 'repeating-decimal, 'repeating-decimal-e, 'mixed-fraction, or 'mixed-fraction-e got : ~e"
-                           number-snip-type)]))]
-              [else (basic-convert exp)])))
-
         ;; render-to-sexp : TST -> sexp
         (define (render-to-sexp val)
-          (cond
-            [(string=? language-level-name "ACL2 Beginner (beta 8)")
-             (simple-module-based-language-convert-value val simple-settings)]
-            [else (parameterize ([current-print-convert-hook
-                                  (make-print-convert-hook simple-settings)])
-                    (set-print-settings
-                     language-level
-                     simple-settings
-                     (lambda ()
-                       (simple-module-based-language-convert-value
-                        val simple-settings))))]))
+	  (send language-level stepper:render-to-sexp val simple-settings language-level))
 
         ;; channel for incoming views
         (define view-channel (make-async-channel))
@@ -564,18 +532,16 @@
               (lambda (button evt)
                 (if stepper-frame
                   (send stepper-frame show #t)
-                  (let ([language-level-name
-                         (language-level->name
-                          (extract-language-level (get-definitions-text)))])
-                    (if (stepper-works-for? language-level-name)
+                  (let* ([language-level
+			  (extract-language-level (get-definitions-text))]
+			 [language-level-name (language-level->name language-level)])
+                    (if (stepper-works-for? language-level)
                       (set! stepper-frame
                             (view-controller-go this program-expander))
                       (message-box
                        (string-constant stepper-name)
                        (format (string-constant stepper-language-level-message)
-                               language-level-name
-                               (car stepper-works-for)
-                               (car (reverse stepper-works-for))))))))))
+                               language-level-name))))))))
 
           (define/augment (enable-evaluation)
             (send stepper-button enable #t)
@@ -596,8 +562,7 @@
 
           (define/public (check-current-language-for-stepper)
             (if (stepper-works-for?
-                 (language-level->name 
-                  (extract-language-level (get-definitions-text))))
+		 (extract-language-level (get-definitions-text)))
                 (unless (send stepper-button is-shown?)
                   (send (send stepper-button get-parent)
                         add-child stepper-button))
@@ -642,54 +607,84 @@
 
           (super-new)))
 
-      ;; COPIED FROM drscheme/private/language.ss
-      ;; simple-module-based-language-convert-value : TST settings -> TST
-      (define (simple-module-based-language-convert-value value settings)
-        (define ((leave-snips-alone-hook sh) expr basic-convert sub-convert)
-          (if (or (is-a? expr snip%)
-                  ;; FIXME: internal in language.ss (to-snip-value? expr)
-                  )
-            expr
-            (sh expr basic-convert sub-convert)))
-        ;; mflatt: MINOR HACK - work around temporary
-        ;;         print-convert problems
-        (define (stepper-print-convert v)
-          (or (and (procedure? v) (object-name v))
-              (print-convert v)))
-
-        (case (drscheme:language:simple-settings-printing-style settings)
-          [(write) value]
-          [(current-print) value]
-          [(constructor)
-           (parameterize
-               ([constructor-style-printing #t]
-                [show-sharing
-                 (drscheme:language:simple-settings-show-sharing settings)]
-                [current-print-convert-hook
-                 (leave-snips-alone-hook (current-print-convert-hook))])
-             (stepper-print-convert value))]
-          [(quasiquote)
-           (parameterize
-               ([constructor-style-printing #f]
-                [show-sharing
-                 (drscheme:language:simple-settings-show-sharing settings)]
-                [current-print-convert-hook
-                 (leave-snips-alone-hook (current-print-convert-hook))])
-             (stepper-print-convert value))]
-          [else (error "Internal stepper error: time to resync with simple-module-based-language-convert-value")]))
-
-      ;; set-print-settings ; settings ( -> TST) -> TST
-      (define (set-print-settings language simple-settings thunk)
-        (if (method-in-interface? 'set-printing-parameters (object-interface language))
-          (send language set-printing-parameters simple-settings thunk)
-          ;; assume that the current print-convert context is fine
-          ;; (error 'stepper-tool "language object does not contain set-printing-parameters method")
-          (thunk)))
-
       ;; apply the mixins dynamically to the drscheme unit frame and
       ;; definitions text:
       (drscheme:get/extend:extend-unit-frame stepper-unit-frame-mixin)
       (drscheme:get/extend:extend-definitions-text
        stepper-definitions-text-mixin)
       
-      ))
+      )
+
+  ;; COPIED FROM drscheme/private/language.ss
+  ;; simple-module-based-language-convert-value : TST STYLE boolean -> TST
+  (define (simple-module-based-language-convert-value value style show-sharing?)
+    (define ((leave-snips-alone-hook sh) expr basic-convert sub-convert)
+      (if (or (is-a? expr snip%)
+	      ;; FIXME: internal in language.ss (to-snip-value? expr)
+	      )
+	  expr
+	  (sh expr basic-convert sub-convert)))
+    ;; mflatt: MINOR HACK - work around temporary
+    ;;         print-convert problems
+    (define (stepper-print-convert v)
+      (or (and (procedure? v) (object-name v))
+	  (print-convert v)))
+
+    (case style
+      [(write) value]
+      [(current-print) value]
+      [(constructor)
+       (parameterize
+	   ([constructor-style-printing #t]
+	    [show-sharing show-sharing?]
+	    [current-print-convert-hook
+	     (leave-snips-alone-hook (current-print-convert-hook))])
+	 (stepper-print-convert value))]
+      [(quasiquote)
+       (parameterize
+	   ([constructor-style-printing #f]
+	    [show-sharing show-sharing?]
+	    [current-print-convert-hook
+	     (leave-snips-alone-hook (current-print-convert-hook))])
+	 (stepper-print-convert value))]
+      [else (error "Internal stepper error: time to resync with simple-module-based-language-convert-value")]))
+
+  ;; set-print-settings ; settings ( -> TST) -> TST
+  (define (set-print-settings language simple-settings thunk)
+    (if (method-in-interface? 'set-printing-parameters (object-interface language))
+	(send language set-printing-parameters simple-settings thunk)
+	;; assume that the current print-convert context is fine
+	;; (error 'stepper-tool "language object does not contain set-printing-parameters method")
+	(thunk)))
+
+  ;; WE REALLY WANT TO GET RID OF THIS STUFF (2005-07-01, JBC)
+  
+  ;; make-print-convert-hook:
+  ;;   simple-settings -> (TST (TST -> TST) (TST -> TST) -> TST)
+  ;; this code copied from various locations in language.ss and rep.ss
+  (define (make-print-convert-hook simple-settings)
+    (lambda (exp basic-convert sub-convert)
+      (cond
+       [(is-a? exp snip%)
+	(send exp copy)]
+       #;
+       [((drscheme:rep:use-number-snip) exp)
+	(let ([number-snip-type
+	       (drscheme:language:simple-settings-fraction-style
+		simple-settings)])
+	  (cond
+	   [(eq? number-snip-type 'repeating-decimal)
+	    (drscheme:number-snip:make-repeating-decimal-snip exp #f)]
+	   [(eq? number-snip-type 'repeating-decimal-e)
+	    (drscheme:number-snip:make-repeating-decimal-snip exp #t)]
+	   [(eq? number-snip-type 'mixed-fraction)
+	    (drscheme:number-snip:make-fraction-snip exp #f)]
+	   [(eq? number-snip-type 'mixed-fraction-e)
+	    (drscheme:number-snip:make-fraction-snip exp #t)]
+	   [else
+	    (error 'which-number-snip
+		   "expected either 'repeating-decimal, 'repeating-decimal-e, 'mixed-fraction, or 'mixed-fraction-e got : ~e"
+		   number-snip-type)]))]
+       [else (basic-convert exp)])))
+
+)

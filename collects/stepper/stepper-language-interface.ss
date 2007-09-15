@@ -4,4 +4,6 @@
   (provide stepper-language<%>)
     
   (define stepper-language<%>
-    (interface () stepper:enable-let-lifting?)))
+    (interface ()
+      stepper:supported?
+      stepper:enable-let-lifting?)))

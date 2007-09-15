@@ -876,9 +876,14 @@
       
       (define (stepper-settings-language %)
         (class* % (stepper-language<%>)
+	  (init-field stepper:supported)
           (init-field stepper:enable-let-lifting)
-          (inherit [dontcare stepper:enable-let-lifting?])
+          (inherit [dontcare1 stepper:enable-let-lifting?]
+		   [dontcare2 stepper:supported?]
+		   [dontcare3 debugger:supported?])
+          (define/override (stepper:supported?) stepper:supported)
           (define/override (stepper:enable-let-lifting?) stepper:enable-let-lifting)
+	  (define/override (debugger:supported?) #f)
           (super-new)))
 
       ;; rewrite-module : settings syntax -> syntax
@@ -1375,7 +1380,8 @@
            (abbreviate-cons-as-list #t)
            (allow-sharing? #t)
            (reader-module '(lib "htdp-advanced-reader.ss" "lang"))
-           (stepper:enable-let-lifting #t)))
+	   (stepper:supported #f)
+	   (stepper:enable-let-lifting #t)))
         
         (add-htdp-language
          (instantiate htdp-language% ()
@@ -1401,6 +1407,7 @@
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
            (reader-module '(lib "htdp-intermediate-lambda-reader.ss" "lang"))
+	   (stepper:supported #t)
            (stepper:enable-let-lifting #t)))
         
         (add-htdp-language
@@ -1419,6 +1426,7 @@
            (allow-sharing? #f)
            (use-function-output-syntax? #t)
            (reader-module '(lib "htdp-intermediate-reader.ss" "lang"))
+	   (stepper:supported #t)
            (stepper:enable-let-lifting #t)))
         
         (add-htdp-language
@@ -1436,6 +1444,7 @@
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
            (reader-module '(lib "htdp-beginner-abbr-reader.ss" "lang"))
+	   (stepper:supported #t)
            (stepper:enable-let-lifting #t)))
         
         (add-htdp-language
@@ -1454,6 +1463,7 @@
            (allow-sharing? #f)
            (accept-quasiquote? #f)
            (reader-module '(lib "htdp-beginner-reader.ss" "lang"))
+	   (stepper:supported #t)
            (stepper:enable-let-lifting #t)))
         
         (drscheme:get/extend:extend-unit-frame frame-tracing-mixin)

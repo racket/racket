@@ -1189,8 +1189,7 @@ please adhere to these guidelines:
  (stepper-program-window-closed "WARNING: The program window is gone.")
 
  (stepper-name "Stepper")
- (stepper-language-level-message
-  "The language level is set to \"~a\". Currently, the stepper works only for the \"~a\" through the \"~a\" language levels.")
+ (stepper-language-level-message "The stepper does not work for language \"~a\".")
  (stepper-button-label "Step")
  (stepper-home "Home")
  (stepper-previous-application "|< Application")
