@@ -10,7 +10,10 @@
            (lib "contract.ss")
 	   (lib "dirs.ss" "setup"))
   
-  (provide doc-collections-changed)
+  (provide doc-collections-changed
+           reset-doc-lists
+           extract-doc-txt
+           load-txt-keywords-into-hash-table)
   (provide/contract
    [do-search
     (string?
@@ -189,10 +192,14 @@
   
   (define re:keyword-line (regexp "\n>"))
   (define text-keywords (make-hash-table 'equal))
+  
   (define (load-txt-keywords doc)
+    (load-txt-keywords-into-hash-table text-keywords doc))
+  
+  (define (load-txt-keywords-into-hash-table ht doc)
     (parse-txt-file
      (apply build-path doc)
-     text-keywords
+     ht
      (λ (p)
        (port-count-lines! p)
        (let loop ()
