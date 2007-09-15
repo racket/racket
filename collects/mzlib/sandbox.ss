@@ -586,11 +586,7 @@
                     "got more than a single expression")))
          (syntax-case* (car prog) (module) literal-identifier=?
            [(module modname lang body ...)
-            (make-evaluator*
-             void
-             (require-perms (syntax-object->datum #'lang)
-                            (cons 'begin (syntax->list #'(body ...))))
-             (car prog))]
+            (make-evaluator* void '() (car prog))]
            [_else (error 'make-evaluator "expecting a `module' program; got ~e"
                          (syntax-object->datum (car prog)))]))]))
 
