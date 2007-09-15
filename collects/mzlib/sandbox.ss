@@ -142,6 +142,8 @@
             (map (lambda (b) `(read ,(build-path b "compiled"))) bases)
             (map (lambda (b) `(exists ,b)) bases)))
 
+  (require (only (lib "modhelp.ss" "syntax" "private") module-path-v?))
+
   ;; takes a module-spec list and returns all module paths that are needed
   ;; ==> ignores (lib ...) modules
   (define (module-specs->non-lib-paths mods)
@@ -149,12 +151,22 @@
       (if (module-path-index? x)
         (let-values ([(m base) (module-path-index-split x)]) (lib? m))
         (and (pair? x) (eq? 'lib (car x)))))
-    (let loop ([todo (filter values
-                             (map (lambda (mod)
-                                    (and (not (lib? mod))
-                                         (simplify-path*
-                                          (resolve-module-path mod #f))))
-                                  mods))]
+    ;; turns a module spec to a simple one (except for lib specs)
+    (define (simple-modspec mod)
+      (cond [(and (pair? mod) (eq? 'lib (car mod))) #f]
+            [(module-path-v? mod)
+             (simplify-path* (resolve-module-path mod #f))]
+            [(not (and (pair? mod) (pair? (cdr mod))))
+             ;; don't know what this is, leave as is
+             #f]
+            [(eq? 'only (car mod))
+             (simple-modspec (cadr mod))]
+            [(eq? 'rename (car mod))
+             (simple-modspec (cadr mod))]
+            [(and (eq? 'prefix (car mod)) (pair? (cddr mod)))
+             (simple-modspec (caddr mod))]
+            [else #f]))
+    (let loop ([todo (filter values (map simple-modspec mods))]
                [r '()])
       (cond
         [(null? todo) r]
