@@ -41,6 +41,8 @@
    [digit10 digit]
    [digit16 (:/ "af" "AF" "09")]
 
+   [langchar (:or (:/ "az" "AZ" "09") "+" "-" "_")]
+
    [scheme-whitespace (:or #\newline #\return #\tab #\space #\vtab #\page)]
    [line-comment (:: ";" (:* (:~ #\newline)))]
 
@@ -287,6 +289,14 @@
       (ret lexeme 'constant #f start-pos end-pos)]
      [(:or sharing reader-command "." "," ",@" "#," "#,@")
       (ret lexeme 'other #f start-pos end-pos)]
+
+     [(:: "#lang " 
+          (:or langchar
+               (:: langchar (:* (:or langchar "/")) langchar)))
+      (ret lexeme 'other #f start-pos end-pos)]
+     [(:: "#lang " (:* (:& any-char (complement whitespace))))
+      (ret lexeme 'error #f start-pos end-pos)]
+     
      [identifier
       (ret lexeme 'symbol #f start-pos end-pos)]
      ["#<<"
