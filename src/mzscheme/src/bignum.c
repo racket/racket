@@ -390,7 +390,7 @@ int scheme_bignum_get_unsigned_int_val(const Scheme_Object *o, unsigned long *v)
   }
 }
 
-#ifdef USE_LONG_LONG_FOR_BIGDIG
+#if defined(USE_LONG_LONG_FOR_BIGDIG) || defined(SIXTY_FOUR_BIT_INTEGERS)
 # define MAX_BN_SIZE_FOR_LL 1
 #else
 # define MAX_BN_SIZE_FOR_LL 2
