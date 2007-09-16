@@ -1316,7 +1316,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
             int fl = 1;
             found[0] = 'l';
             ch = scheme_getc_special_ok(port);
-            found[fl] = ch;
+            found[fl++] = ch;
 	    if (ch == 'a') {
               ch = scheme_getc_special_ok(port);
               found[fl++] = ch;
@@ -1341,13 +1341,19 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
                       goto start_over;
                     }
                     return v;
+                  } else {
+                    scheme_read_err(port, stxsrc, line, col, pos, 6, ch, indentation,
+                                    "read: expected a single space after `#lang'",
+                                    found, fl);
+                    return NULL;
                   }
                 }
               }
             }
             scheme_read_err(port, stxsrc, line, col, pos, fl, ch, indentation,
-                            "read: bad input: `%u'",
+                            "read: bad input: `#%u'",
                             found, fl);
+            return NULL;
           }
           break;
 	case 'r':
@@ -5842,7 +5848,7 @@ static Scheme_Object *read_lang(Scheme_Object *port,
                                 Scheme_Object *indentation, ReadParams *params)
 {
   int size, len;
-  mzchar *buf, *naya, ch;
+  mzchar *buf, *naya, ch = 0;
   Scheme_Object *modpath;
 
   size = 32;
@@ -5875,7 +5881,8 @@ static Scheme_Object *read_lang(Scheme_Object *port,
         buf[len++] = ch;
       } else {
         scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation, 
-                        "read: expected alphanumberic, `-', `+', `_', or `/' for `#lang', found %c",
+                        "read: expected only alphanumberic, `-', `+', `_', or `/'"
+                        " characters for `#lang', found %c",
                         ch);
         return NULL;
       }
@@ -5884,7 +5891,9 @@ static Scheme_Object *read_lang(Scheme_Object *port,
 
   if (!len) {
     scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation, 
-                    "read: a non-empty sequence of alphanumberic, `-', `+', `_', or `/' after `#lang '");
+                    ((ch == ' ')
+                     ? "read: expected a single space after `#lang'"
+                     : "read: expected a non-empty sequence of alphanumberic, `-', `+', `_', or `/' after `#lang '"));
     return NULL;
   }
   if (buf[0] == '/') {
