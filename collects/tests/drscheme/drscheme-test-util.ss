@@ -358,7 +358,10 @@
             (fw:test:button-push "OK")
             (let ([new-frame (wait-for-new-frame language-dialog)])
               (unless (eq? new-frame drs-frame)
-                (error 'set-language-level! "didn't get drscheme frame back, got: ~s\n" new-frame)))))))) 
+                (error 'set-language-level! 
+                       "didn't get drscheme frame back, got: ~s (drs-frame ~s)\n"
+                       new-frame
+                       drs-frame)))))))) 
 
   (provide/contract [check-language-level ((or/c string? regexp?) . -> . void?)])
   ;; checks that the language in the drscheme window is set to the given one.
