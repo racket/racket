@@ -112,7 +112,7 @@
 			[else (let ([p (new horizontal-pane% [parent f] [alignment '(center top)])])
 				(let ([icon-msg (make-object message% icon-id p)]
 				      [msg-pnl (new vertical-pane% [parent p])])
-				  (values (if single?
+				  (values (if (= 1 (length strings))
 					      (new horizontal-pane% 
 						   [parent msg-pnl]
 						   [alignment '(center top)]
