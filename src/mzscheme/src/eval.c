@@ -5451,8 +5451,8 @@ static MZ_MARK_STACK_TYPE clone_meta_cont_set_mark(Scheme_Meta_Continuation *mc,
 
   naya = MALLOC_ONE_RT(Scheme_Meta_Continuation);
   memcpy(naya, mc, sizeof(Scheme_Meta_Continuation));
-  cp = MALLOC_N(Scheme_Cont_Mark, naya->cont_mark_shareable);
-  memcpy(cp, mc->cont_mark_stack_copied, naya->cont_mark_shareable * sizeof(Scheme_Cont_Mark));
+  cp = MALLOC_N(Scheme_Cont_Mark, naya->cont_mark_total);
+  memcpy(cp, mc->cont_mark_stack_copied, naya->cont_mark_total * sizeof(Scheme_Cont_Mark));
   naya->cont_mark_stack_copied = cp;
   naya->copy_after_captured = scheme_cont_capture_count;
   mc = naya;
@@ -5530,7 +5530,7 @@ MZ_MARK_STACK_TYPE scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
           if (key != scheme_stack_dump_key) {
             /* Check the end of the meta-continuation's stack */
             Scheme_Meta_Continuation *mc = p->meta_continuation;
-            for (findpos = (long)mc->cont_mark_shareable; findpos--; ) {
+            for (findpos = (long)mc->cont_mark_total; findpos--; ) {
               if (mc->cont_mark_stack_copied[findpos].pos != mc->cont_mark_pos)
                 break;
               if (mc->cont_mark_stack_copied[findpos].key == key) {

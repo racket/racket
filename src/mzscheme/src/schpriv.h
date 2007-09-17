@@ -1033,7 +1033,9 @@ typedef struct Scheme_Cont {
   Scheme_Thread **runstack_owner;
   Scheme_Cont_Mark *cont_mark_stack_copied;
   Scheme_Thread **cont_mark_stack_owner;
-  long cont_mark_shareable, cont_mark_offset;
+  long cont_mark_total; /* size of the copied array plus cont_mark_offset */
+  long cont_mark_offset; /* after the array, the original mark stack had this much */
+  long cont_mark_nonshare; /* amount to skip for sub-cont sharing */
   void *stack_start;
   Scheme_Object *prompt_id; /* allows direct-jump optimization */
   Scheme_Config *init_config;
@@ -1123,7 +1125,7 @@ typedef struct Scheme_Meta_Continuation {
   /* Cont mark info: */
   MZ_MARK_STACK_TYPE cont_mark_stack;
   MZ_MARK_POS_TYPE cont_mark_pos;
-  long cont_mark_shareable, cont_mark_offset;
+  long cont_mark_total, cont_mark_offset;
   Scheme_Cont_Mark *cont_mark_stack_copied;
   /* Next: */
   struct Scheme_Meta_Continuation *next;

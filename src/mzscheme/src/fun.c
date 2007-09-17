@@ -3934,7 +3934,9 @@ static Scheme_Cont_Mark *copy_out_mark_stack(Scheme_Thread *p,
 
   if (sub_cont) {
     /* Rely on copy of marks in a tail of this continuation. */
-    sub_count = sub_cont->cont_mark_shareable;
+    sub_count = sub_cont->cont_mark_total - sub_cont->cont_mark_nonshare;
+    if (sub_count < 0)
+      sub_count = 0;
   } else if (effective_prompt) {
     /* Copy only marks since the prompt. */
     sub_count = effective_prompt->mark_boundary;
@@ -4048,7 +4050,7 @@ static void copy_in_mark_stack(Scheme_Thread *p, Scheme_Cont_Mark *cont_mark_sta
     cmoffset = base_cmcount - copied_offset;
 
     if (sub_cont) {
-      while (base_cmcount >= sub_cont->cont_mark_shareable) {
+      while (base_cmcount >= (sub_cont->cont_mark_total - sub_cont->cont_mark_nonshare)) {
 	*_sub_conts = SCHEME_CDR(*_sub_conts);
 	if (*_sub_conts) {
 	  sub_cont = (Scheme_Cont *)SCHEME_CAR(*_sub_conts);
@@ -4194,14 +4196,14 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
       long delta;
       delta = prompt->mark_boundary - naya->cont_mark_offset;
       if (delta) {
-        naya->cont_mark_shareable -= delta;
+        naya->cont_mark_total -= delta;
         naya->cont_mark_offset += delta;
-        if (naya->cont_mark_shareable) {
+        if (naya->cont_mark_total) {
           Scheme_Cont_Mark *cp;
-          cp = MALLOC_N(Scheme_Cont_Mark, naya->cont_mark_shareable);
-          memcpy(cp, mc->cont_mark_stack_copied + delta, naya->cont_mark_shareable * sizeof(Scheme_Cont_Mark));
+          cp = MALLOC_N(Scheme_Cont_Mark, naya->cont_mark_total);
+          memcpy(cp, mc->cont_mark_stack_copied + delta, naya->cont_mark_total * sizeof(Scheme_Cont_Mark));
           if (mc->cm_caches) {
-            clear_cm_copy_caches(cp, naya->cont_mark_shareable);
+            clear_cm_copy_caches(cp, naya->cont_mark_total);
           }
           naya->cont_mark_stack_copied = cp;
           naya->cm_caches = 0;
@@ -4216,9 +4218,9 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
         naya->cm_shared = 1;
       } else {
         Scheme_Cont_Mark *cp;
-        cp = MALLOC_N(Scheme_Cont_Mark, naya->cont_mark_shareable);
-        memcpy(cp, mc->cont_mark_stack_copied, naya->cont_mark_shareable * sizeof(Scheme_Cont_Mark));
-        clear_cm_copy_caches(cp, naya->cont_mark_shareable);
+        cp = MALLOC_N(Scheme_Cont_Mark, naya->cont_mark_total);
+        memcpy(cp, mc->cont_mark_stack_copied, naya->cont_mark_total * sizeof(Scheme_Cont_Mark));
+        clear_cm_copy_caches(cp, naya->cont_mark_total);
         naya->cont_mark_stack_copied = cp;
         naya->cm_caches = 0;
         naya->cm_shared = 0;
@@ -4255,7 +4257,7 @@ void prune_cont_marks(Scheme_Meta_Continuation *resume_mc, Scheme_Cont *cont, Sc
   long pos, num_overlap, num_coverlap, new_overlap, base, i;
   Scheme_Cont_Mark *cp;
   
-  for (pos = resume_mc->cont_mark_shareable, num_overlap = 0;
+  for (pos = resume_mc->cont_mark_total, num_overlap = 0;
        pos--;
        num_overlap++) {
     if (resume_mc->cont_mark_stack_copied[pos].pos != resume_mc->cont_mark_pos)
@@ -4267,7 +4269,7 @@ void prune_cont_marks(Scheme_Meta_Continuation *resume_mc, Scheme_Cont *cont, Sc
     return;
   }
 
-  for (pos = cont->cont_mark_shareable, num_coverlap = 0;
+  for (pos = cont->cont_mark_total, num_coverlap = 0;
        pos--;
        num_coverlap++) {
     if (cont->cont_mark_stack_copied[pos].pos != (cont->cont_mark_pos_bottom + 2))
@@ -4282,7 +4284,7 @@ void prune_cont_marks(Scheme_Meta_Continuation *resume_mc, Scheme_Cont *cont, Sc
   /* Compute the new set to have in the meta-continuation. */
   ht = scheme_make_hash_table(SCHEME_hash_ptr);
   
-  for (pos = resume_mc->cont_mark_shareable - 1, i = 0; i < num_overlap; i++, pos--) {
+  for (pos = resume_mc->cont_mark_total - 1, i = 0; i < num_overlap; i++, pos--) {
     val = resume_mc->cont_mark_stack_copied[pos].val;
     if (!val)
       val = cont_key;
@@ -4298,7 +4300,7 @@ void prune_cont_marks(Scheme_Meta_Continuation *resume_mc, Scheme_Cont *cont, Sc
       scheme_hash_set(ht, SCHEME_VEC_ELS(extra_marks)[i], val);
     }
   }
-  for (pos = cont->cont_mark_shareable - 1, i = 0; i < num_coverlap; i++, pos--) {
+  for (pos = cont->cont_mark_total - 1, i = 0; i < num_coverlap; i++, pos--) {
     scheme_hash_set(ht, 
                     cont->cont_mark_stack_copied[pos].key,
                     NULL);
@@ -4307,11 +4309,11 @@ void prune_cont_marks(Scheme_Meta_Continuation *resume_mc, Scheme_Cont *cont, Sc
   new_overlap = ht->count;
 
   /* Install changes: */
-  base = resume_mc->cont_mark_shareable - num_overlap;
+  base = resume_mc->cont_mark_total - num_overlap;
   cp = MALLOC_N(Scheme_Cont_Mark, base + new_overlap);
   memcpy(cp, resume_mc->cont_mark_stack_copied, base * sizeof(Scheme_Cont_Mark));
   resume_mc->cont_mark_stack_copied = cp;
-  resume_mc->cont_mark_shareable = base + new_overlap;
+  resume_mc->cont_mark_total = base + new_overlap;
   resume_mc->cm_shared = 0;
   resume_mc->cont_mark_stack += (new_overlap - num_overlap);
   for (i = 0; i < ht->size; i++) {
@@ -4542,10 +4544,12 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
   }
 
   {
+    Scheme_Prompt *effective_prompt;
     Scheme_Cont_Mark *msaved;
     long offset;
+    effective_prompt = (for_prompt ? p->meta_prompt : prompt);
     msaved = copy_out_mark_stack(p, cont->ss.cont_mark_stack, sub_cont, &offset, 
-                                 (for_prompt ? p->meta_prompt : prompt),
+                                 effective_prompt,
                                  /* If there's a prompt, then clear caches in the mark stack,
                                     since any cached values are wrong for the delimited
                                     continuation. Otherwise, leave the cache in place
@@ -4555,22 +4559,19 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
                                  !!prompt);
     cont->cont_mark_stack_copied = msaved;
     cont->cont_mark_offset = offset;
-    if (sub_cont)
-      offset = find_shareable_marks();
+    if (effective_prompt)
+      cont->cont_mark_total = cont->ss.cont_mark_stack - effective_prompt->mark_boundary;
     else
-      offset = (long)cont->ss.cont_mark_stack - offset;
-    cont->cont_mark_shareable = offset;
+      cont->cont_mark_total = cont->ss.cont_mark_stack;
+    offset = find_shareable_marks();
+    cont->cont_mark_nonshare = cont->ss.cont_mark_stack - offset;
     /* Need to remember the pos key for the bottom, 
        at least for composable continuations, so 
        we can splice the captured continuation marks
        with a meta continuation's marks. */
-    cont->cont_mark_pos_bottom = (for_prompt
-                                  ? (p->meta_prompt
-                                     ? p->meta_prompt->boundary_mark_pos
-                                     : 1)
-                                  : (prompt
-                                     ? prompt->boundary_mark_pos
-                                     : 1));
+    cont->cont_mark_pos_bottom = (effective_prompt
+                                  ? effective_prompt->boundary_mark_pos
+                                  : 1);
   }
 
   cont->runstack_owner = p->runstack_owner;
@@ -4644,7 +4645,7 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
       } else {
         resume_mc->cont_mark_stack = cm_cont->ss.cont_mark_stack;
         resume_mc->cont_mark_pos = cm_cont->ss.cont_mark_pos;
-        resume_mc->cont_mark_shareable = cm_cont->cont_mark_shareable;
+        resume_mc->cont_mark_total = cm_cont->cont_mark_total;
         resume_mc->cont_mark_offset = cm_cont->cont_mark_offset;
         resume_mc->cont_mark_pos_bottom = cm_cont->cont_mark_pos_bottom;
         resume_mc->cont_mark_stack_copied = cm_cont->cont_mark_stack_copied;
@@ -4989,7 +4990,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
 #endif    
     /* Old cont is the same as this one, except that it may
        have different marks (not counting cont_key). */
-    if ((sub_cont->cont_mark_shareable == (long)sub_cont->ss.cont_mark_stack)
+    if (!sub_cont->cont_mark_nonshare
 	&& (find_shareable_marks() == MZ_CONT_MARK_STACK)
 #ifdef MZ_USE_JIT
 	&& (SAME_OBJ(ret, sub_cont->native_trace)
@@ -5019,8 +5020,9 @@ internal_call_cc (int argc, Scheme_Object *argv[])
       msaved = copy_out_mark_stack(p, cont->ss.cont_mark_stack, sub_cont, &offset, NULL, 0);
       cont->cont_mark_stack_copied = msaved;
       cont->cont_mark_offset = offset;
+      cont->cont_mark_total = cont->ss.cont_mark_stack;
       offset = find_shareable_marks();
-      cont->cont_mark_shareable = offset;
+      cont->cont_mark_nonshare = cont->ss.cont_mark_stack - offset;
 #ifdef MZ_USE_JIT
       cont->native_trace = ret;
 #endif
@@ -5960,7 +5962,7 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
       count++;
     }
     mcount = 0;
-    for (findpos = (long)mc->cont_mark_shareable; findpos--; ) {
+    for (findpos = (long)mc->cont_mark_total; findpos--; ) {
       if (mc->cont_mark_stack_copied[findpos].pos != mc->cont_mark_pos)
         break;
       mcount++;
@@ -5975,7 +5977,7 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
       SCHEME_VEC_ELS(cm_info)[2*i] = seg[pos].key;
       SCHEME_VEC_ELS(cm_info)[(2*i)+1] = seg[pos].val;
     }
-    for (findpos = (long)mc->cont_mark_shareable - 1, i = 0; i < mcount; findpos--, i++) {
+    for (findpos = (long)mc->cont_mark_total - 1, i = 0; i < mcount; findpos--, i++) {
       SCHEME_VEC_ELS(cm_info)[2*(count + i)] = mc->cont_mark_stack_copied[findpos].key;
       SCHEME_VEC_ELS(cm_info)[(2*(count + i))+1] = mc->cont_mark_stack_copied[findpos].val;
     }
@@ -6236,8 +6238,8 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
         if (mc) {
           if (mc->cm_shared) {
             Scheme_Cont_Mark *cp;
-            cp = MALLOC_N(Scheme_Cont_Mark, mc->cont_mark_shareable);
-            memcpy(cp, mc->cont_mark_stack_copied, mc->cont_mark_shareable * sizeof(Scheme_Cont_Mark));
+            cp = MALLOC_N(Scheme_Cont_Mark, mc->cont_mark_total);
+            memcpy(cp, mc->cont_mark_stack_copied, mc->cont_mark_total * sizeof(Scheme_Cont_Mark));
             mc->cont_mark_stack_copied = cp;
             find = cp;
             mc->cm_shared = 0;
@@ -6664,7 +6666,7 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
 
     do {
       if (mc) {
-        startpos = mc->cont_mark_shareable;
+        startpos = mc->cont_mark_total;
         bottom = 0;
       } else {
         startpos = (long)MZ_CONT_MARK_STACK;
@@ -7269,7 +7271,7 @@ void scheme_apply_dw_in_meta(Scheme_Dynamic_Wind *dw, int post_part, int meta_de
   /* strip the marks of the first actual_depth-1 meta continuations */
   rest = mc;
   for (i = 0; i < actual_depth - 1; i++) {
-    rest->cont_mark_shareable = 0;
+    rest->cont_mark_total = 0;
     rest->cont_mark_offset = 0;
     rest->cont_mark_stack_copied = NULL;
     rest = rest->next;
@@ -7278,12 +7280,12 @@ void scheme_apply_dw_in_meta(Scheme_Dynamic_Wind *dw, int post_part, int meta_de
   /* prune the actual_depth's meta continuation's marks. */
   delta = rest->cont_mark_stack - dw->envss.cont_mark_stack;
   if (delta) {
-    rest->cont_mark_shareable -= delta;
+    rest->cont_mark_total -= delta;
     rest->cont_mark_stack -= delta;
-    if (rest->cont_mark_shareable) {
+    if (rest->cont_mark_total) {
       Scheme_Cont_Mark *cp;
-      cp = MALLOC_N(Scheme_Cont_Mark, rest->cont_mark_shareable);
-      memcpy(cp, rest->cont_mark_stack_copied, rest->cont_mark_shareable * sizeof(Scheme_Cont_Mark));
+      cp = MALLOC_N(Scheme_Cont_Mark, rest->cont_mark_total);
+      memcpy(cp, rest->cont_mark_stack_copied, rest->cont_mark_total * sizeof(Scheme_Cont_Mark));
       rest->cont_mark_stack_copied = cp;
     } else
       rest->cont_mark_stack_copied = NULL;
