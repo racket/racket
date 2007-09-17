@@ -75,6 +75,9 @@
   ;  - Cleaned up a lot, removed Larceny-isms
   ;  - Heavy optimization: not consing anything throughout the loop
 
+  ; 17-9-2007 / Eli
+  ;  - making raw output possible
+
 
   ;;; Word aritmetic (32 bit)
   ;; Terminology
@@ -91,13 +94,13 @@
   ;; can create a new word, compute one at compile-time etc
   (define-syntax (word stx)
     (syntax-case stx ()
-      ;; normal version
+      ;; normal version (checks, allocates)
       [(word #:new c)
        #'(let ([n c])
            (if (<= 0 n 4294967296)
              (cons (quotient n 65536) (remainder n 65536))
              (error 'word "out of range: ~e" n)))]
-      ;; use when the number is known to be in range
+      ;; use when the number is known to be in range (allocates, no check)
       [(word #:new+safe c)
        #'(let ([n c]) (cons (quotient n 65536) (remainder n 65536)))]
       ;; default form: compute at compile-time if possible
@@ -217,16 +220,20 @@
 
 
   ;; MD5
-  ;; The algorithm consists of five steps.
+  ;; The algorithm consists of four steps an encoding the result.
   ;; All we need to do, is to call them in order.
-  ;; md5 : string -> string
+  ;; md5 : string [bool] -> string
 
-  (define (md5 a-thing)
-    (let ([a-port
-           (cond [(bytes? a-thing) (open-input-bytes a-thing)]
-                 [(input-port? a-thing) a-thing]
-                 [else (raise-type-error 'md5 "input-port or bytes" a-thing)])])
-      (step5 (step4 a-port))))
+  (define md5
+    (case-lambda
+      [(a-thing) (md5 a-thing #t)]
+      [(a-thing hex-encode?)
+       (let ([a-port
+              (cond [(bytes? a-thing) (open-input-bytes a-thing)]
+                    [(input-port? a-thing) a-thing]
+                    [else (raise-type-error 'md5 "input-port or bytes"
+                                            a-thing)])])
+         (encode (step4 a-port) hex-encode?))]))
 
   ;; Step 1  -  Append Padding Bits
   ;; The message is padded so the length (in bits) becomes 448 modulo 512.
@@ -421,22 +428,26 @@
       (bitwise-and (bitwise-xor y (bitwise-ior x (bitwise-not z)))
                    65535)))
 
-  ;; Step 5  -  Output
+  ;; Step 5  -  Encoding
   ;; To finish up, we convert the word to hexadecimal string
   ;; - and make sure they end up in order.
-  ;; step5 : (list word word word word) -> string
+  ;; encode : (list word word word word) bool -> byte-string
 
-  (define (step5 l)
-    (define hex #(48 49 50 51 52 53 54 55 56 57 97 98 99 100 101 102))
-    ;; word->bytesl : word -> (list byte),
-    ;; returns a little endian result, but each byte is hi half and then lo half
-    (define (word->bytesl w)
-      (let ([byte (lambda (n b) (bitwise-and (arithmetic-shift n (- b)) 15))]
-            [lo (cdr w)] [hi (car w)])
-        (list (byte lo 4) (byte lo 0) (byte lo 12) (byte lo 8)
-              (byte hi 4) (byte hi 0) (byte hi 12) (byte hi 8))))
-    (apply bytes (map (lambda (n) (vector-ref hex n))
-                      (apply append (map word->bytesl l)))))
+  (define hex-digits #(48 49 50 51 52 53 54 55 56 57 97 98 99 100 101 102))
+  ;; word->digits : word -> bytes-string,
+  ;; returns a little endian result, but each byte is hi half and then lo half
+  (define (word->digits w)
+    (let ([digit (lambda (n b)
+                   (vector-ref hex-digits
+                               (bitwise-and (arithmetic-shift n (- b)) 15)))]
+          [lo (cdr w)] [hi (car w)])
+      (bytes (digit lo 4) (digit lo 0) (digit lo 12) (digit lo 8)
+             (digit hi 4) (digit hi 0) (digit hi 12) (digit hi 8))))
+  (define (word->bytes w)
+    (bytes-append (integer->integer-bytes (cdr w) 2 #f)
+                  (integer->integer-bytes (car w) 2 #f)))
+  (define (encode l hex-encode?)
+    (apply bytes-append (map (if hex-encode? word->digits word->bytes) l)))
 
 ;(define (md5-test)
 ;  (if (and (equal? (md5 "")
