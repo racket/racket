@@ -53,16 +53,13 @@
 			    (lambda (who what mode)
                               (when (memq 'write mode)
                                 (unless (let ([np-what (normal-path what)])
-                                          (or (sub-path? np-what
-                                                         (normal-path (find-system-path 'temp-dir)))
-                                              (sub-path? np-what
-                                                         (normal-path (find-system-path 'pref-dir)))
+                                          (or (sub-path? np-what (normal-path (find-system-path 'temp-dir)))
                                               (equal? np-what (normal-path (LINKAGE-FILE)))))
                                   (error 'slideshow
                                          "slide program attempted to write to filesystem: ~e"
                                          what)))
 			      (when (memq 'execute mode)
-				(error 'slideshow
+                                (error 'slideshow
 				       "slide program attempted to execute external code: ~e"
 				       what)))
 			    (lambda (who where-name where-port-num mode)
