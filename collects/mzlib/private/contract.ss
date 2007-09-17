@@ -82,68 +82,30 @@ improve method arity mismatch contract violation error messages?
   
   (define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
     (make-set!-transformer
-     (λ (stx)
-       (with-syntax ([contract-id contract-id]
-                     [id id]
-                     [pos-module-source pos-module-source])
-         (syntax-case stx (set!)
-           [(set! id body) (raise-syntax-error
-                            #f 
-                            "cannot set! provide/contract identifier"
-                            stx
-                            (syntax id))]
-           [(name arg ...)
-            (syntax/loc stx
-              ((begin-lifted
-                 (-contract contract-id
-                            id
-                            pos-module-source
-                            (module-source-as-symbol #'name)
-                            (quote-syntax name)))
-               arg
-               ...))]
-           [name
-            (identifier? (syntax name))
-            (syntax 
-             (begin-lifted
-               (-contract contract-id
-                          id  
-                          pos-module-source 
-                          (module-source-as-symbol #'name)
-                          (quote-syntax name))))])))))
-  
-  #;
-  (define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
-    (make-set!-transformer
      (let ([saved-id-table (make-hash-table)])
        (λ (stx)
-         (let ([key (syntax-local-lift-context)])
-           (unless (hash-table-get saved-id-table key #f)
-             (with-syntax ([contract-id contract-id]
-                           [id id]
-                           [pos-module-source pos-module-source])
-               (hash-table-put!
-                saved-id-table
-                key
-                (syntax-local-introduce
-                 (syntax-local-lift-expression
-                  #'(-contract contract-id
-                               id
-                               pos-module-source
-                               (module-source-as-symbol #'name)
-                               (quote-syntax id)))))))
-           
-           (with-syntax ([saved-id (syntax-local-introduce (hash-table-get saved-id-table key))])
-             (syntax-case stx (set!)
-               [(set! id body) (raise-syntax-error
-                                #f 
-                                "cannot set! provide/contract identifier"
-                                stx
-                                (syntax id))]
-               [(name arg ...) (syntax/loc stx (saved-id arg ...))]
-               [name
-                (identifier? (syntax name))
-                (syntax saved-id)])))))))
+          (let ([key (syntax-local-lift-context)])
+            (unless (hash-table-get saved-id-table key #f)
+              (with-syntax ([contract-id contract-id]
+                            [id id]
+                            [name (datum->syntax-object #f (syntax-object->datum id) id)]
+                            [pos-module-source pos-module-source])
+                (hash-table-put!
+                 saved-id-table
+                 key
+                 (syntax-local-introduce
+                  (syntax-local-lift-expression
+                   #'(-contract contract-id
+                                id
+                                pos-module-source
+                                (module-source-as-symbol #'name)
+                                (quote-syntax name)))))))
+            (with-syntax ([saved-id (syntax-local-introduce (hash-table-get saved-id-table key))])
+              (syntax-case stx (set!)
+                [(name arg ...) (syntax/loc stx (saved-id arg ...))]
+                [name
+                 (identifier? (syntax name))
+                 (syntax saved-id)])))))))
   
   ;; (define/contract id contract expr)
   ;; defines `id' with `contract'; initially binding
