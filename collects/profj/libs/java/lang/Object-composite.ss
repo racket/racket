@@ -109,7 +109,7 @@
     (if (string? obj)
         (make-java-string string)
         (begin
-          (c:contract (object-contract
+          (c:contract (c:object-contract
                        (clone (c:-> c:any/c))
                        (equals-java.lang.Object (c:-> c:any/c c:any/c))
                        (finalize (c:-> c:any/c))
@@ -1019,7 +1019,7 @@
            guard-convert-Throwable static-Throwable/c)
   
   (define (wrap-convert-assert-Throwable obj p n s c)
-    (c:contract (object-contract
+    (c:contract (c:object-contract
                  (init-cause (c:-> c:any/c c:any/c))
                  (get-message (c:-> c:any/c))
                  (get-cause (c:-> c:any/c))

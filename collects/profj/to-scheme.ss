@@ -992,7 +992,7 @@
     
   ;methods->contract: (list method-record) -> sexp
   (define (methods->contract methods)
-    `(object-contract ,@(map (lambda (m)
+    `(c:object-contract ,@(map (lambda (m)
                                `(,(build-identifier (mangle-method-name (method-record-name m)
                                                                         (method-record-atypes m)))
                                  (c:-> ,@(map (lambda (a) 'c:any/c) (method-record-atypes m)) c:any/c)))
@@ -2116,22 +2116,22 @@
          ((string String) 
           (if from-dynamic?
               `string?
-              `(is-a?/c ,(if (send (types) require-prefix? '("String" "java" "lang") (lambda () #f))
+              `(c:is-a?/c ,(if (send (types) require-prefix? '("String" "java" "lang") (lambda () #f))
                                'java.lang.String 'String))))
          ((dynamic void) 'c:any/c)))
       ((ref-type? type)
        (if (equal? type string-type)
            (type->contract 'string from-dynamic?)
-           `(c:or/c (is-a?/c object%) string?)))
+           `(c:or/c (c:is-a?/c object%) string?)))
       ((unknown-ref? type)
        (if (not (null? stop?))
-           `(c:or/c (is-a?/c object%) string?)
+           `(c:or/c (c:is-a?/c object%) string?)
            (cond
              ((method-contract? (unknown-ref-access type))
-              `(object-contract (,(string->symbol (java-name->scheme (method-contract-name (unknown-ref-access type))))
+              `(c:object-contract (,(string->symbol (java-name->scheme (method-contract-name (unknown-ref-access type))))
                                  ,(type->contract (unknown-ref-access type) from-dynamic?))))
              ((field-contract? (unknown-ref-access type))
-              `(object-contract (field ,(build-identifier (string-append (field-contract-name (unknown-ref-access type)) "~f"))
+              `(c:object-contract (field ,(build-identifier (string-append (field-contract-name (unknown-ref-access type)) "~f"))
                                        ,(type->contract (field-contract-type (unknown-ref-access type)) from-dynamic?)))))))
       ((method-contract? type)
        `(c:-> ,@(map (lambda (a) (type->contract a from-dynamic?)) (method-contract-args type))
