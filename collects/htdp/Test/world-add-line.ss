@@ -1,3 +1,5 @@
+(require (lib "world.ss" "htdp"))
+
 (define plain (empty-scene 100 100))
 
 (add-line plain .5 10.3 -20 80 'red)
@@ -7,8 +9,11 @@
 (equal? (add-line plain 110 90 110 80 'red) plain)
 (equal? (add-line plain +10 90 +10 80 'red) 
         (add-line plain +10 90 +10 80 'red))
+#;
 (equal? (add-line plain +10 900000 +10 80 'red) 
         (add-line plain +10 100 +10 80 'red))
+;; can't make image of this size 
+
 (equal? (add-line plain +10 -10 +10 80 'red) 
         (add-line plain +10 0 +10 80 'red))
 
@@ -17,8 +22,10 @@
 (equal? (add-line plain 20 110 30 110 'red) plain)
 (equal? (add-line plain 20 +10 30 +10 'red) 
         (add-line plain 20 +10 30 +10 'red))
+#;
 (equal? (add-line plain 20 +10 30000 +10 'red) 
         (add-line plain 20 +10 100 +10 'red))
+;; can't make image of this size 
 
 'inside-outside
 (equal? (add-line plain 10 10 -10 -10 'red) ; upper-left

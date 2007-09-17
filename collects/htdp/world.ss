@@ -23,6 +23,7 @@ ones.)
 Matthew
 |#
 
+;; Mon Sep 17 09:40:39 EDT 2007: run-simulation now allows recordings, too
 ;; Mon Aug  6 19:50:30 EDT 2007: exporting both add-line from image.ss and scene+line 
 ;; Fri May  4 18:05:33 EDT 2007: define-run-time-path 
 ;; Thu May  3 22:06:16 EDT 2007: scene # image; pasteboard% for text%
@@ -88,7 +89,7 @@ Matthew
   ;; world manipulation functions: 
   ;; =============================
   (provide      ;; forall(World):
-   big-bang	;; Number Number Number World -> true
+   big-bang	;; Number Number Number World [Boolean] -> true
    end-of-time  ;; String u Symbol -> World
    )
   
@@ -296,14 +297,33 @@ Matthew
 	   (sleep/yield .05)
 	   (run-movie (cdr movie))]))))
   
-  (define (run-simulation width height rate f)
-    (check-pos 'run-simulation width "first")
-    (check-pos 'run-simulation height "second")
-    (check-arg 'run-simulation (number? rate) 'number "third" rate)
-    (check-proc 'run-simulation f 1 "fourth" "one argument")
-    (big-bang width height rate 1)
-    (on-redraw f)
-    (on-tick-event add1))
+  (define run-simulation 
+    (lambda x 
+      (define args (length x))
+      (if (or (= args 5) (= args 4))
+          (apply run-simulation0 x) 
+          (error 'run-simulation msg-run-simulation))))
+  (define msg-run-simulation
+    (string-append
+     "consumes 4 or 5 arguments:\n"
+     "-- (run-simulation <width> <height> <rate> <world-to-world-function>)\n"
+     "-- (run-simulation <width> <height> <rate> <world-to-world-function> <create-animated-gif?>)\n"
+     "see Help Desk."))
+
+
+  (define run-simulation0
+    (case-lambda
+      [(width height rate f record?)
+       (check-pos 'run-simulation width "first")
+       (check-pos 'run-simulation height "second")
+       (check-arg 'run-simulation (number? rate) 'number "third" rate)
+       (check-proc 'run-simulation f 1 "fourth" "one argument")
+       (check-arg 'run-simulation (boolean? record?) 'number "fifth [and optional]" record?)
+       (big-bang width height rate 1 record?)
+       (on-redraw f)
+       (on-tick-event add1)]
+      [(width height rate f)
+       (run-simulation width height rate f #f)]))
   
   ;; ---------------------------------------------------------------------------
   
