@@ -2109,23 +2109,23 @@
       ((symbol? type)
        (case type
          ((int short long byte) 'integer?)
-         ((double float) '(c:and/c number? (c:union inexact? integer?)))
+         ((double float) '(c:and/c number? (c:or/c inexact? integer?)))
          ((boolean) 'boolean?)
          ((char) 'char?)
          ((null) 'null?)
          ((string String) 
           (if from-dynamic?
               `string?
-              `(c:is-a?/c ,(if (send (types) require-prefix? '("String" "java" "lang") (lambda () #f))
+              `(is-a?/c ,(if (send (types) require-prefix? '("String" "java" "lang") (lambda () #f))
                                'java.lang.String 'String))))
          ((dynamic void) 'c:any/c)))
       ((ref-type? type)
        (if (equal? type string-type)
            (type->contract 'string from-dynamic?)
-           `(c:union (c:is-a?/c object%) string?)))
+           `(c:or/c (is-a?/c object%) string?)))
       ((unknown-ref? type)
        (if (not (null? stop?))
-           `(c:union (c:is-a?/c object%) string?)
+           `(c:or/c (is-a?/c object%) string?)
            (cond
              ((method-contract? (unknown-ref-access type))
               `(object-contract (,(string->symbol (java-name->scheme (method-contract-name (unknown-ref-access type))))
