@@ -2,6 +2,7 @@
 (module mrpict mzscheme
   (require (lib "unit.ss")
            (lib "contract.ss")
+           (lib "class.ss")
            (lib "mred.ss" "mred"))
 
   (require (lib "mred-sig.ss" "mred")

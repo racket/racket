@@ -45,8 +45,11 @@
            
            ;; for opters
            check-flat-contract
-           check-flat-named-contract)
+           check-flat-named-contract
+           any)
   
+  (define-syntax (any stx)
+    (raise-syntax-error 'any "use of 'any' outside of an arrow contract" stx))
 
   ;; define-struct/prop is a define-struct-like macro that
   ;; also allows properties to be defined

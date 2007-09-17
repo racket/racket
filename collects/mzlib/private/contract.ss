@@ -22,7 +22,6 @@ improve method arity mismatch contract violation error messages?
   (require (lib "etc.ss")
            (lib "list.ss")
            (lib "pretty.ss")
-           (lib "pconvert.ss")
            "contract-arrow.ss"
            "contract-guts.ss"
            "contract-opt.ss"
@@ -116,36 +115,35 @@ improve method arity mismatch contract violation error messages?
   #;
   (define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
     (make-set!-transformer
-     (let ([saved-id #f])
+     (let ([saved-id-table (make-hash-table)])
        (λ (stx)
-         (unless saved-id
-           (with-syntax ([contract-id contract-id]
-                         [id id]
-                         [pos-module-source pos-module-source])
-             (set! saved-id
-                   (syntax-local-introduce
-                    (syntax-local-lift-expression
-                     #'(-contract contract-id
-                                  id
-                                  pos-module-source
-                                  (module-source-as-symbol #'name)
-                                  (quote-syntax name)))))))
-         
-         (with-syntax ([saved-id (syntax-local-introduce saved-id)])
-           (syntax-case stx (set!)
-             [(set! id body) (raise-syntax-error
-                              #f 
-                              "cannot set! provide/contract identifier"
-                              stx
-                              (syntax id))]
-             [(name arg ...)
-              (syntax/loc stx
-                (saved-id
-                 arg
-                 ...))]
-             [name
-              (identifier? (syntax name))
-              (syntax saved-id)]))))))
+         (let ([key (syntax-local-lift-context)])
+           (unless (hash-table-get saved-id-table key #f)
+             (with-syntax ([contract-id contract-id]
+                           [id id]
+                           [pos-module-source pos-module-source])
+               (hash-table-put!
+                saved-id-table
+                key
+                (syntax-local-introduce
+                 (syntax-local-lift-expression
+                  #'(-contract contract-id
+                               id
+                               pos-module-source
+                               (module-source-as-symbol #'name)
+                               (quote-syntax id)))))))
+           
+           (with-syntax ([saved-id (syntax-local-introduce (hash-table-get saved-id-table key))])
+             (syntax-case stx (set!)
+               [(set! id body) (raise-syntax-error
+                                #f 
+                                "cannot set! provide/contract identifier"
+                                stx
+                                (syntax id))]
+               [(name arg ...) (syntax/loc stx (saved-id arg ...))]
+               [name
+                (identifier? (syntax name))
+                (syntax saved-id)])))))))
   
   ;; (define/contract id contract expr)
   ;; defines `id' with `contract'; initially binding
@@ -1285,6 +1283,24 @@ improve method arity mismatch contract violation error messages?
       (error 'one-of/c "expected chars, symbols, booleans, null, keywords, numbers, void, or undefined, got ~e"
              elems))
     (make-one-of/c elems))
+
+  (define (one-of-pc x)
+    (cond
+      [(symbol? x)
+       `',x]
+      [(null? x)
+       ''()]
+      [(void? x)
+       '(void)]
+      [(or (char? x) 
+           (boolean? x)
+           (keyword? x)
+           (number? x))
+       x]
+      [(eq? x (letrec ([x x]) x))
+       '(letrec ([x x]) x)]
+      [else (error 'one-of-pc "undef ~s" x)]))
+
   
   (define-struct/prop one-of/c (elems)
     ((proj-prop flat-proj)
@@ -1295,7 +1311,7 @@ improve method arity mismatch contract violation error messages?
                           'symbols]
                          [else
                           'one-of/c])
-                       ,@(map print-convert elems)))))
+                      ,@(map one-of-pc elems)))))
      (stronger-prop
       (λ (this that)
         (and (one-of/c? that)

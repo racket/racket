@@ -8,7 +8,8 @@
    "private/standard-urls.ss"
    
    "private/link.ss"
-   (lib "contract.ss"))
+   (lib "contract.ss")
+   (lib "class.ss"))
   
   (helpdesk-platform 'internal-browser-simple)
   

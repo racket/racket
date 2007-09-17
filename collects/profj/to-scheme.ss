@@ -992,10 +992,10 @@
     
   ;methods->contract: (list method-record) -> sexp
   (define (methods->contract methods)
-    `(c:object-contract ,@(map (lambda (m)
+    `(object-contract ,@(map (lambda (m)
                                `(,(build-identifier (mangle-method-name (method-record-name m)
                                                                         (method-record-atypes m)))
-                                  (c:-> ,@(map (lambda (a) 'c:any/c) (method-record-atypes m)) c:any/c)))
+                                 (c:-> ,@(map (lambda (a) 'c:any/c) (method-record-atypes m)) c:any/c)))
                              methods)))
   
   ;method->check/error: method-record -> sexp
@@ -2128,11 +2128,11 @@
            `(c:union (c:is-a?/c object%) string?)
            (cond
              ((method-contract? (unknown-ref-access type))
-              `(c:object-contract (,(string->symbol (java-name->scheme (method-contract-name (unknown-ref-access type))))
-                                    ,(type->contract (unknown-ref-access type) from-dynamic?))))
+              `(object-contract (,(string->symbol (java-name->scheme (method-contract-name (unknown-ref-access type))))
+                                 ,(type->contract (unknown-ref-access type) from-dynamic?))))
              ((field-contract? (unknown-ref-access type))
-              `(c:object-contract (field ,(build-identifier (string-append (field-contract-name (unknown-ref-access type)) "~f"))
-                                         ,(type->contract (field-contract-type (unknown-ref-access type)) from-dynamic?)))))))
+              `(object-contract (field ,(build-identifier (string-append (field-contract-name (unknown-ref-access type)) "~f"))
+                                       ,(type->contract (field-contract-type (unknown-ref-access type)) from-dynamic?)))))))
       ((method-contract? type)
        `(c:-> ,@(map (lambda (a) (type->contract a from-dynamic?)) (method-contract-args type))
               ,(type->contract (method-contract-return type) from-dynamic? #t)))

@@ -21,7 +21,8 @@
   
   ;; from contract-guts.ss
   
-  (provide and/c
+  (provide any
+           and/c
            any/c
            none/c
            make-none/c 

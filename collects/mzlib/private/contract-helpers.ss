@@ -1,5 +1,5 @@
 (module contract-helpers mzscheme
-
+  
   (provide module-source-as-symbol build-src-loc-string 
            mangle-id mangle-id-for-maker
            build-struct-names
@@ -7,15 +7,9 @@
            add-name-prop
            all-but-last
            known-good-contract?)
-
+  
   (require (lib "main-collects.ss" "setup"))
-
-  (define (known-good-contract? id)
-    (and (identifier? id)
-         (ormap (λ (x) (module-identifier=? x id))
-                (list #'integer?
-                      #'boolean?
-                      #'number?))))
+  (require-for-template mzscheme)
   
   (define (add-name-prop name stx)
     (cond
@@ -74,7 +68,7 @@
       [(null? (cdr l)) null]
       [(pair? (cdr l)) (cons (car l) (all-but-last (cdr l)))]
       [else (list (car l))]))
-
+  
   ;; helper for build-src-loc-string
   (define (source->name src)
     (let* ([bs (cond [(bytes? src)  src]
@@ -84,9 +78,9 @@
            [r (and bs (path->main-collects-relative bs))])
       (and bs
            (bytes->string/locale (if (and (pair? r) (eq? 'collects (car r)))
-                                   (bytes-append #"<collects>/" (cdr r))
-                                   bs)))))
-
+                                     (bytes-append #"<collects>/" (cdr r))
+                                     bs)))))
+  
   ;; build-src-loc-string : syntax -> (union #f string)
   (define (build-src-loc-string stx)
     (let* ([source (source->name (syntax-source stx))]
@@ -97,8 +91,8 @@
                            [pos (format "~a" pos)]
                            [else #f])])
       (if (and source location)
-        (string-append source ":" location)
-        (or location source))))
+          (string-append source ":" location)
+          (or location source))))
   
   (define o (current-output-port))
   
@@ -148,4 +142,139 @@
     (let loop ([i 0])
       (cond
         [(= i n) '()]
-        [else (cons i (loop (+ i 1)))]))))
+        [else (cons i (loop (+ i 1)))])))
+  
+  (define known-good-ids
+    (list #'absolute-path?
+          #'bound-identifier=?
+          #'box?
+          #'byte-pregexp?
+          #'byte-regexp?
+          #'byte?
+          #'bytes-converter?
+          #'bytes=?
+          #'bytes?
+          #'channel?
+          #'char-alphabetic?
+          #'char-blank?
+          #'char-graphic?
+          #'char-iso-control?
+          #'char-lower-case?
+          #'char-numeric?
+          #'char-punctuation?
+          #'char-symbolic?
+          #'char-title-case?
+          #'char-upper-case?
+          #'char-whitespace?
+          #'compiled-expression?
+          #'compiled-module-expression?
+          #'complete-path?
+          #'continuation-mark-set?
+          #'continuation-prompt-available?
+          #'custodian-box?
+          #'custodian-memory-accounting-available?
+          #'custodian?
+          #'directory-exists?
+          #'ephemeron?
+          #'evt?
+          #'exn:break?
+          #'exn:fail:contract:arity?
+          #'exn:fail:contract:continuation?
+          #'exn:fail:contract:divide-by-zero?
+          #'exn:fail:contract:variable?
+          #'exn:fail:contract?
+          #'exn:fail:filesystem:exists?
+          #'exn:fail:filesystem:version?
+          #'exn:fail:filesystem?
+          #'exn:fail:network?
+          #'exn:fail:out-of-memory?
+          #'exn:fail:read:eof?
+          #'exn:fail:read:non-char?
+          #'exn:fail:read?
+          #'exn:fail:syntax?
+          #'exn:fail:unsupported?
+          #'exn:fail:user?
+          #'exn:fail?
+          #'exn?
+          #'file-exists?
+          #'file-stream-port?
+          #'free-identifier=?
+          #'handle-evt?
+          #'hash-table?
+          #'identifier?
+          #'immutable?
+          #'inspector?
+          #'keyword?
+          #'link-exists?
+          #'module-identifier=?
+          #'module-path-index?
+          #'module-provide-protected?
+          #'module-template-identifier=?
+          #'module-transformer-identifier=?
+          #'namespace?
+          #'parameter-procedure=?
+          #'parameter?
+          #'parameterization?
+          #'path-for-some-system?
+          #'path-string?
+          #'path?
+          #'port-closed?
+          #'port-provides-progress-evts?
+          #'port-writes-atomic?
+          #'port-writes-special?
+          #'port?
+          #'pregexp?
+          #'primitive-closure?
+          #'primitive?
+          #'procedure-arity-includes?
+          #'procedure-closure-contents-eq?
+          #'procedure-struct-type?
+          #'promise?
+          #'pseudo-random-generator?
+          #'regexp-match?
+          #'regexp?
+          #'relative-path?
+          #'rename-transformer?
+          #'security-guard?
+          #'semaphore-try-wait?
+          #'semaphore?
+          #'set!-transformer?
+          #'special-comment?
+          #'string-locale-ci=?
+          #'string-locale=?
+          #'struct-accessor-procedure?
+          #'struct-constructor-procedure?
+          #'struct-mutator-procedure?
+          #'struct-predicate-procedure?
+          #'struct-type-property?
+          #'struct-type?
+          #'struct?
+          #'subprocess?
+          #'syntax-graph?
+          #'syntax-original?
+          #'syntax-transforming?
+          #'syntax?
+          #'system-big-endian?
+          #'tcp-accept-ready?
+          #'tcp-listener?
+          #'tcp-port?
+          #'terminal-port?
+          #'thread-cell?
+          #'thread-dead?
+          #'thread-group?
+          #'thread-running?
+          #'thread?
+          #'udp-bound?
+          #'udp-connected?
+          #'udp?
+          #'void?
+          #'weak-box?
+          #'will-executor?
+          #'arity-at-least?
+          #'exn:srclocs?
+          #'srcloc?))
+  
+  (define (known-good-contract? id)
+    (and (identifier? id)
+         (ormap (λ (x) (module-identifier=? x id))
+                known-good-ids))))

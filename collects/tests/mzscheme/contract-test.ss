@@ -4366,6 +4366,8 @@ so that propagation occurs.
   (test-name 'printable/c printable/c)
   (test-name '(symbols 'a 'b 'c) (symbols 'a 'b 'c))
   (test-name '(one-of/c 1 2 3) (one-of/c 1 2 3))
+  (test-name '(one-of/c '() 'x 1 #f #\a (void) (letrec ([x x]) x)) 
+             (one-of/c '() 'x 1 #f #\a (void) (letrec ([x x]) x)))
   
   (test-name '(subclass?/c class:c%) 
              (let ([c% (class object% (super-new))]) (subclass?/c c%)))
@@ -5169,7 +5171,22 @@ so that propagation occurs.
                (define-syntax (unit-body stx)
                  f f
                  #'1)))))
-
+  
+  (test/spec-passed
+   'provide/contract22
+   '(begin
+      (eval '(module provide/contract22a mzscheme
+               (require (lib "contract.ss"))
+               (provide/contract [make-bound-identifier-mapping integer?])
+               (define make-bound-identifier-mapping 1)))
+      (eval '(module provide/contract22b mzscheme
+               (require-for-syntax provide/contract22a)
+               
+               (define-syntax (unit-body stx)
+                 make-bound-identifier-mapping)
+               
+               (define-syntax (f stx)
+                 make-bound-identifier-mapping)))))
   
   (contract-error-test
    #'(begin
