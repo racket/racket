@@ -15,6 +15,12 @@ students to simulate a small world of animated drawings and games:
   <code>create-image</code> generates. The result is a simple animation. 
 </p>
 
+<p>Optional: the function consumes an optional fifth argument, a
+boolean. If this argument is <code>false</code> or missing,
+<code>run-simulation</code> acts as described; if it is present and
+<code>true</code>, the function can create an animated GIF of the
+simulation after you stop it.</p>
+
 <p><b>Example:</b>
 <pre>
 <code>
