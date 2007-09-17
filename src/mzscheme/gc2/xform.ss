@@ -51,9 +51,28 @@
 			   (with-input-from-file "xform-collects/version.ss" read))
 		   (>= (file-or-directory-modify-seconds (build-path "xform-collects/xform/xform-mod.ss"))
 		       (file-or-directory-modify-seconds (build-path (current-load-relative-directory) "xform-mod.ss"))))
-		      
-	(load-relative "setup.ss"))
-      
+        ;; In case multiple xforms run in parallel, use a lock file
+        ;;  so that only one is building.
+        (let ([lock-file "XFORM-LOCK"])
+          (with-handlers ([exn:fail:filesystem:exists?
+                           (lambda (x)
+                             (printf "Lock file exists: ~a\n"
+                                     (path->complete-path lock-file))
+                             (printf " (If this isn't a parallel make, then delete it.)\n")
+                             (printf " Waiting until the lock file disappears...\n")
+                             (let loop ()
+                               (sleep 0.1)
+                               (if (file-exists? lock-file)
+                                   (loop)
+                                   (printf " ... continuing\n"))))])
+            (dynamic-wind
+                (lambda ()
+                  (close-output-port (open-output-file lock-file 'error)))
+                (lambda ()
+                  (load-relative "setup.ss"))
+                (lambda ()
+                  (delete-file lock-file))))))
+    
       (current-library-collection-paths (list (build-path (current-directory) "xform-collects")))
       
       (error-print-width 100)
