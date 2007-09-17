@@ -1,4 +1,4 @@
-(module run-nightly-tests mzscheme
+(module automatic-tests mzscheme
   (require "through-tests.ss")
   
   (parameterize ([display-only-errors #t])
