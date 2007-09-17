@@ -1,5 +1,10 @@
 
 (module contract mzscheme
+
+  ;; povide contracts for objects
+  (require "private/contract-object.ss")
+  (provide (all-from "private/contract-object.ss"))
+   
   (require "private/contract.ss"
            "private/contract-arrow.ss"
            "private/contract-guts.ss"
