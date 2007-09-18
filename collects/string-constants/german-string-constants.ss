@@ -295,7 +295,7 @@
  (backup-files "Backup-Dateien")
  (map-delete-to-backspace "Entf löscht rückwärts")
  (verify-exit "Bei Verlassen nachfragen")
- (ask-before-changing-format "For Formatänderung beim Speichern nachfragen")
+ (ask-before-changing-format "Vor Formatänderung beim Speichern nachfragen")
  (wrap-words-in-editor-buffers "Worte in Editor-Puffern umbrechen")
  (show-status-line "Status-Zeile anzeigen")
  (count-columns-from-one "Spaltennummern fangen mit 1 an")
