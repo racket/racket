@@ -185,9 +185,9 @@ This directory contains the following files and sub-directories:
       'port-number : the port for the main handin server; the default
          is 7979
 
-      'https-port-number : the port for the handin-status HTTPS
-         server; the default is one more than the main server's port
-         (so the transitive default is 7980)
+      'https-port-number : the port number for the handin-status HTTPS
+         server; the default is #f which indicates that no HTTPS
+         server is started
 
       'session-timeout : number of seconds before the session
          times-out -- the client is given this many seconds for the

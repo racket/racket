@@ -626,7 +626,9 @@
   (log-line "server started ------------------------------")
   (hook 'server-start `([port ,(get-conf 'port-number)]))
 
-  (define stop-status (serve-status (get-conf 'https-port-number)))
+  (define stop-status
+    (cond [(get-conf 'https-port-number) => (serve-status p)]
+          [else #f]))
 
   (define session-count 0)
 
