@@ -171,7 +171,8 @@
             (with-syntax ([outer-lambda
                            (let* ([lst (syntax->list #'args)]
                                   [len (and lst (length lst))])
-                             (if (and lst
+                             (if (and #f ;; this optimization disables the names so is turned off for now
+				      lst
                                       (not (syntax-e #'use-any?))
                                       (= len (length (syntax->list #'(dom-names ...))))
                                       (= 1 (length (syntax->list #'(rng-names ...))))
