@@ -183,6 +183,16 @@
 	(if detail
 	    (raise-syntax-error form msg stx detail)
 	    (raise-syntax-error form msg stx))))
+
+    (define (teach-syntax-error* form stx details msg . args)
+      (let ([exn (with-handlers ([exn:fail:syntax?
+                                  (lambda (x) x)])
+                   (apply teach-syntax-error form stx #f msg args))])
+        (raise
+         (make-exn:fail:syntax
+          (exn-message exn)
+          (exn-continuation-marks exn)
+          (apply list-immutable details)))))
     
     (define (binding-in-this-module? b)
       (and (list? b)
@@ -985,10 +995,10 @@
 			     (unless (null? (cdr parts))
 			       (local-expand-for-error (cadr parts) 'expression null))
 			     ;; question and answer (if any) are ok, raise a count-based exception:
-			     (teach-syntax-error
+			     (teach-syntax-error*
 			      'cond
 			      stx
-			      clause
+			      parts
 			      "expected a clause with one question and one answer, but found a clause with ~a parts"
 			      (length parts)))]
 			  [_else
