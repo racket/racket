@@ -444,8 +444,8 @@
       (bytes (digit lo 4) (digit lo 0) (digit lo 12) (digit lo 8)
              (digit hi 4) (digit hi 0) (digit hi 12) (digit hi 8))))
   (define (word->bytes w)
-    (bytes-append (integer->integer-bytes (cdr w) 2 #f)
-                  (integer->integer-bytes (car w) 2 #f)))
+    (bytes-append (integer->integer-bytes (cdr w) 2 #f #f)
+                  (integer->integer-bytes (car w) 2 #f #f)))
   (define (encode l hex-encode?)
     (apply bytes-append (map (if hex-encode? word->digits word->bytes) l)))
 
