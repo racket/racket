@@ -698,7 +698,9 @@
                [ifaces (consolidate-lists sorted-ifaces)])
           #;(printf "iface-depth ~a ~a ~a ~n" elt 
                     iface-trees (map (lambda (i-list) (depth elt 0 i-list)) iface-trees))
-          (apply min (map (lambda (i-list) (depth elt 0 i-list)) ifaces)))))
+          (if (null? ifaces)
+              0
+              (apply min (map (lambda (i-list) (depth elt 0 i-list)) ifaces))))))
   
   ;conversion-steps: type type -> int
   (define (conversion-steps from to type-recs)

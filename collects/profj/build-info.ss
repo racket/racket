@@ -831,7 +831,9 @@
                            #f
                            #t
                            (apply append (cons f (map class-record-fields super-records)))
-                           (apply append (cons m (map class-record-methods super-records)))
+                           (if (null? super-records)
+                               object-methods
+                               (apply append (cons m (map class-record-methods super-records))))
                            (apply append (cons i (map class-record-inners super-records)))
                            (apply append (cons (map class-record-name super-records) 
                                                (map class-record-parents super-records)))
