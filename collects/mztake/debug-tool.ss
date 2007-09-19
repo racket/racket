@@ -17,7 +17,7 @@
            "load-sandbox.ss"
            (lib "framework.ss" "framework")
            (lib "string-constant.ss" "string-constants")
-           )
+           "debugger-language-interface.ss")
   
   (provide tool@)
   
@@ -29,9 +29,6 @@
     (unit 
       (import drscheme:tool^)
       (export drscheme:tool-exports^) 
-
-      (define debugger-language<%>
-	(interface () debugger:supported?))
 
       (define (phase1)
 	(drscheme:language:extend-language-interface

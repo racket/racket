@@ -33,7 +33,8 @@
            ;; and the user's namespace in the teaching languages
            "private/set-result.ss"
            
-           (lib "stepper-language-interface.ss" "stepper"))
+           (lib "stepper-language-interface.ss" "stepper")
+           (lib "debugger-language-interface.ss" "mztake"))
   
   (provide tool@)
   
@@ -873,18 +874,26 @@
         
         (send dlg show #t)
         answer)
-      
+
       (define (stepper-settings-language %)
-        (class* % (stepper-language<%>)
-	  (init-field stepper:supported)
-          (init-field stepper:enable-let-lifting)
-          (inherit [dontcare1 stepper:enable-let-lifting?]
-		   [dontcare2 stepper:supported?]
-		   [dontcare3 debugger:supported?])
-          (define/override (stepper:supported?) stepper:supported)
-          (define/override (stepper:enable-let-lifting?) stepper:enable-let-lifting)
-	  (define/override (debugger:supported?) #f)
-          (super-new)))
+        (if (implementation? % stepper-language<%>)
+            (class* % (stepper-language<%>)
+              (init-field stepper:supported)
+              (init-field stepper:enable-let-lifting)
+              (define/override (stepper:supported?) stepper:supported)
+              (define/override (stepper:enable-let-lifting?) stepper:enable-let-lifting)
+              (super-new))
+            (class* % ()
+              (init stepper:supported)
+              (init stepper:enable-let-lifting)
+              (super-new))))
+
+      (define (debugger-settings-language %)
+        (if (implementation? % debugger-language<%>)
+            (class* % (debugger-language<%>)
+              (define/override (debugger:supported?) #f)
+              (super-new))
+            %))
 
       ;; rewrite-module : settings syntax -> syntax
       ;; rewrites te module to print out results of non-definitions
@@ -1358,12 +1367,13 @@
       (define (phase2)
         (define htdp-language%
           (stepper-settings-language
-           ((drscheme:language:get-default-mixin)
-            (language-extension
-             (drscheme:language:module-based-language->language-mixin
-              (module-based-language-extension
-               (drscheme:language:simple-module-based-language->module-based-language-mixin
-                simple-htdp-language%)))))))
+           (debugger-settings-language
+            ((drscheme:language:get-default-mixin)
+             (language-extension
+              (drscheme:language:module-based-language->language-mixin
+               (module-based-language-extension
+                (drscheme:language:simple-module-based-language->module-based-language-mixin
+                 simple-htdp-language%))))))))
         
         (add-htdp-language
          (instantiate htdp-language% ()
