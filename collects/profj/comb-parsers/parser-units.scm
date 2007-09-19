@@ -218,10 +218,10 @@
       (choose (public private protected) "access modifier"))
     
     (define (global-mods base-mods)
-      (choice (list base-mods static) "modifier"))
+      (choose (base-mods static) "modifier"))
     
     (define (method-mods base-mods)
-      (choice (list base-mods abstract) "modifier"))
+      (choose (base-mods abstract) "modifier"))
  
     )
     
@@ -354,11 +354,11 @@
     (define (array-init-maker contents)
       (sequence (O_BRACE (comma-sep contents "array elements") C_BRACE) id "array initializations"))
     
-    (define (array-init type-name)
-      (letrec ([base-init (array-init-maker expression)]
+    (define array-init 
+      (letrec ([base-init (array-init-maker (eta expression))]
                [simple-init (array-init-maker (choose (expression base-init (eta init)) "array initializations"))]
-               [init (array-init-maker (choose (expression simple-init) "array initializations"))])
-        (sequence (new type-name init) "array initialization")))
+               [init (array-init-maker (choose (expression simple-init) "array initialization"))])
+        init #;(sequence (new type-name init) "array initialization")))
     
     (define (binary-expression-end op)
       (sequence (op expression) id "binary expression"))
@@ -506,9 +506,10 @@
                         id "field definition")]
         [else (variable-declaration type expr share-types? "field")]))  
     
-    (define arg (sequence ((value+name-type prim-type) identifier) id "argument"))
+    (define (arg type)
+      (sequence (type identifier) id "argument"))
     
-    (define args (comma-sep arg "parameters"))
+    (define (args type) (comma-sep (arg type) "parameters"))
     
     ;method-signature: {U parser #f} [U parser #f] [U parser #f] bool bool parser -> parser
     (define (method-signature m ret a t? n)
@@ -532,10 +533,10 @@
     (define (make-method signature statement)
       (sequence ((^ signature) O_BRACE statement C_BRACE) id "method definition"))
     
-    (define (make-constructor mod body)
+    (define (make-constructor mod body type)
       (let ([ctor (choose
                    ((sequence ((^ identifier) O_PAREN C_PAREN O_BRACE body C_BRACE) id)
-                    (sequence ((^ identifier) O_PAREN args C_PAREN O_BRACE body C_BRACE) id))
+                    (sequence ((^ identifier) O_PAREN (args type) C_PAREN O_BRACE body C_BRACE) id))
                    "constructor definition")])
         (cond 
           [mod (sequence ((repeat mod) ctor) id "constructor definition")]
@@ -667,11 +668,11 @@
     (define field (make-field #f (value+name-type prim-type) expression #f))
     
     (define method-sig
-      (method-signature #f (value+name-type prim-type) args #f identifier))
+      (method-signature #f (value+name-type prim-type) (args (value+name-type prim-type)) #f identifier))
     
     (define method (make-method method-sig statement))
     
-    (define constructor (make-constructor #f (repeat-greedy init)))
+    (define constructor (make-constructor #f (repeat-greedy init) (value+name-type prim-type)))
     
     (define interface (interface-def #f #f 
                                      (repeat-greedy 
@@ -749,9 +750,11 @@
     (define field (make-field #f (value+name-type prim-type) expression #t))
     
     (define method-sig-no-abs
-      (method-signature #f (method-type (value+name-type prim-type)) args #f identifier))
+      (method-signature #f (method-type (value+name-type prim-type)) 
+                        (args (value+name-type prim-type)) #f identifier))
     (define method-sig-abs
-      (method-signature tok:abstract (method-type (value+name-type prim-type)) args #f identifier))
+      (method-signature tok:abstract (method-type (value+name-type prim-type)) 
+                        (args (value+name-type prim-type)) #f identifier))
     
     (define method
       (choose ((make-method method-sig-no-abs (repeat-greedy statement))
@@ -760,7 +763,8 @@
     (define constructor
       (make-constructor #f
                         (choose ((sequence (super-ctor-call (repeat-greedy statement)) id)
-                                 (repeat-greedy statement)) "constructor body")))
+                                 (repeat-greedy statement)) "constructor body")
+                        (value+name-type prim-type)))
     
     (define interface 
       (interface-def
@@ -852,10 +856,12 @@
     (define field (make-field access-mods (value+name-type prim-type) expression #t))
         
     (define method-sig-no-abs
-      (method-signature access-mods (method-type (value+name-type prim-type)) args #f identifier))
+      (method-signature access-mods (method-type (value+name-type prim-type)) 
+                        (args (value+name-type prim-type)) #f identifier))
     (define method-sig-abs
       (method-signature (method-mods access-mods) 
-                        (method-type (value+name-type prim-type)) args #f identifier))
+                        (method-type (value+name-type prim-type)) 
+                        (args (value+name-type prim-type)) #f identifier))
         
     (define method
       (choose ((make-method method-sig-no-abs statement)
@@ -865,7 +871,8 @@
       (make-constructor access-mods
                         (choose ((sequence (super-ctor-call (repeat-greedy statement)) id)
                                  (sequence (this-call (repeat-greedy statement)) id)
-                                 (repeat-greedy statement)) "constructor body")))
+                                 (repeat-greedy statement)) "constructor body")
+                        (value+name-type prim-type)))
     
     (define interface 
       (interface-def
@@ -958,7 +965,8 @@
                    ) "statement")
           (choose ((return-s #t)
                    (if-s #t (eta statement))
-                   (variable-declaration (array-type (value+name-type prim-type)) expression #t "local variable")
+                   (variable-declaration (array-type (value+name-type prim-type)) 
+                                         (choose (expression array-init) "variable initialization") #t "local variable")
                    (block #t)
                    (sequence (stmt-expr SEMI_COLON) id)
                    (for-l (choose ((variable-declaration (array-type (value+name-type prim-type)) expression #t "for loop variable")
@@ -972,14 +980,18 @@
     
     (define statement (statement-c #f))
     
-    (define field (make-field (global-mods access-mods) (array-type (value+name-type prim-type)) expression #t))
+    (define field (make-field (global-mods access-mods) 
+                              (array-type (value+name-type prim-type)) 
+                              (choose (expression array-init) "field initializer") #t))
     
     (define method-sig-no-abs
       (method-signature (global-mods access-mods) 
-                        (method-type (array-type (value+name-type prim-type))) args #f IDENTIFIER))
+                        (method-type (array-type (value+name-type prim-type))) 
+                        (args (array-type (value+name-type prim-type))) #f IDENTIFIER))
     (define method-sig-abs
-      (method-signature (method-mods (global-mods access-mods)) 
-                        (method-type (array-type (value+name-type prim-type))) args #f IDENTIFIER))
+      (method-signature (method-mods access-mods)
+                        (method-type (array-type (value+name-type prim-type))) 
+                        (args (array-type (value+name-type prim-type))) #f IDENTIFIER))
     
     (define method
       (choose ((make-method method-sig-no-abs statement)
@@ -989,14 +1001,16 @@
       (make-constructor access-mods
                    (choose ((sequence (super-ctor-call (repeat-greedy statement)) id)
                             (sequence (this-call (repeat-greedy statement)) id)
-                            (repeat-greedy statement)) "constructor body")))
+                            (repeat-greedy statement)) "constructor body")
+                   (array-type (value+name-type prim-type))))
     
     (define interface 
       (interface-def
        #f
        (sequence (tok:extends (comma-sep IDENTIFIER "interfaces")) id "extends")
        (repeat-greedy (choose ((sequence (method-sig-no-abs SEMI_COLON) id "method header")
-                         (make-field (global-mods access-mods) (value+name-type prim-type) expression #t))
+                         (make-field (global-mods access-mods) 
+                                     (array-type (value+name-type prim-type)) expression #t))
                        "interface member definition"))))
     
     (define class
