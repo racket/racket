@@ -540,7 +540,7 @@
                                      (make-repeat-res
                                       (make-res (append a (res-a r)) (res-rest r) repeat-name #f 
                                                 (+ (res-used curr-ans) (res-used r)) 
-                                                #f (res-first-tok curr-ans))
+                                                #f (res-first-tok r))
                                       (repeat-res-stop rest-ans))]
                                     [else
                                      (error 'parser-internal-error9 (format "~a" r))]))])

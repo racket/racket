@@ -995,8 +995,8 @@
       (interface-def
        #f
        (sequence (tok:extends (comma-sep IDENTIFIER "interfaces")) id "extends")
-       (repeat-greedy (choose (method-sig-no-abs
-                        (make-field (global-mods access-mods) (value+name-type prim-type) expression #t))
+       (repeat-greedy (choose ((sequence (method-sig-no-abs SEMI_COLON) id "method header")
+                         (make-field (global-mods access-mods) (value+name-type prim-type) expression #t))
                        "interface member definition"))))
     
     (define class
