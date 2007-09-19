@@ -193,7 +193,7 @@
          nbsp nbsp
          (a ([href "http://www.plt-scheme.org/software/mysterx/"])
             "http://www.plt-scheme.org/software/mysterx/"))
-        (p ,(collection-doc-link "mysterx" "The MysterX collection"))))
+        #;(p ,(collection-doc-link "mysterx" "The MysterX collection"))))
       ;;
       ("batch" "How to write Windows batch files"
        ((p "You can put MzScheme code in a Windows batch file, that is, a "
