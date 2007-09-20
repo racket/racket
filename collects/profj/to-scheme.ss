@@ -1418,8 +1418,11 @@
                       ,@(create-static-fields static-field-names (members-field members))
                       ,@(append (generate-wrappers (class-name)
                                                    "Object"
-                                                   (class-record-methods 
-                                                    (send type-recs get-class-record (list (class-name))))
+                                                   (append
+                                                    (class-record-methods 
+                                                     (send type-recs get-class-record (list (class-name))))
+                                                    (class-record-methods
+                                                     (send type-recs get-class-record (list "Object" "java" "lang"))))
                                                    null)
                                 (generate-contract-defs (class-name)))
                       )
