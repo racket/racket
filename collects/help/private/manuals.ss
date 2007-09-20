@@ -171,7 +171,8 @@
                                     (a ((mzscheme 
                                          ,(to-string/escape-quotes 
                                            `((dynamic-require '(lib "refresh-manuals.ss" "help") 'refresh-manuals)
-                                             (list (cons (bytes->path ,(path->bytes manual))
+                                             (list (cons ((dynamic-require '(lib "refresh-manuals.ss" "help") 'bytes-to-path)
+                                                          ,(path->bytes manual))
                                                          ,name))))))
                                        ,name)
                                     ,(if (and manual-path
