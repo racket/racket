@@ -285,6 +285,7 @@
                                       seq-name (length seen) lst)
                               (cond
                                 [(null? correct-rsts)
+                                 #;(printf "correct-rsts null for ~a ~a ~n" seq-name (length seen))
                                  (let ([fails 
                                         (map 
                                          (lambda (rst)
@@ -442,12 +443,13 @@
                            (printf "look-back choice: ~a vs ~a : ~a > ~a~n"
                                    (choice-res-name look-back)
                                    (fail-type-name (res-msg old-res))
-                                   (when (choice-res-errors look-back)
-                                     (fail-type-chance (choice-res-errors look-back)))
+                                   (and (choice-res-errors look-back)
+                                        (fail-type-chance (choice-res-errors look-back)))
                                    (fail-type-chance (res-msg old-res)))
                            (printf "look-back choice and useds: ~a vs ~a -- ~a ~n"
                                    used (and (res? look-back-ref) (res-used look-back-ref))
-                                             (fail-type-used (choice-res-errors look-back))))
+                                        (and (choice-res-errors look-back)
+                                             (fail-type-used (choice-res-errors look-back)))))
                          #;(when (pair? look-back)
                              (printf "look-back is a pair~n"))
                          #;(when (res? look-back)

@@ -265,18 +265,6 @@
     (define (comma-sep term name)
       (sequence (term (repeat (sequence (COMMA term) id))) id (string-append "a list of " name)))
     
-    (define (variable-declaration type expr share-type? name)
-      (let* ([f (choose (IDENTIFIER (sequence ((^ IDENTIFIER) EQUAL expr) id)) (string-append name " declaration"))]
-             [s&e (sequence (type (comma-sep f name) SEMI_COLON) id (string-append name " definition"))]
-             [s (sequence (type (comma-sep IDENTIFIER name) SEMI_COLON) id (string-append name " definition"))]
-             [e (sequence (type (^ IDENTIFIER) EQUAL expr SEMI_COLON) id (string-append name " definition"))]
-             [base (sequence (type (^ IDENTIFIER) SEMI_COLON) id (string-append name " definition"))])
-        (cond
-          [(and expr share-type?) s&e]
-          [share-type? s]
-          [expr (choose (e base) (string-append name " definition"))]
-          [else base])))
-    
     (define name
       (sequence (IDENTIFIER (repeat (sequence (PERIOD IDENTIFIER) id))) id "name"))
     
@@ -289,17 +277,23 @@
     (define name IDENTIFIER)
     (define identifier IDENTIFIER)
     
-    (define (variable-declaration type expr share-type? name)
-      (let* ([f (choose (identifier (sequence ((^ identifier) EQUAL expr) id)) (string-append name " declaration"))]
-             [s&e (sequence (type (comma-sep f name) SEMI_COLON) id (string-append name " definition"))]
-             [s (sequence (type (comma-sep identifier name) SEMI_COLON) id (string-append name " definition"))]
-             [e (sequence (type (^ identifier) EQUAL expr SEMI_COLON) id (string-append name " definition"))]
-             [base (sequence (type (^ identifier) SEMI_COLON) id (string-append name " definition"))])
+    (define (variable-declaration type expr share-type? end? name)
+      (let* ([var-name (string-append name " declaration")]
+             [init (sequence ((^ identifier) EQUAL expr) id var-name)]
+             [f (choose (identifier init) var-name)]
+             [s&e (sequence (type (comma-sep f name)) id var-name)]
+             [s (sequence (type (comma-sep identifier name)) id var-name)]
+             [e (sequence (type init) id var-name)]
+             [base (sequence (type (^ identifier)) id var-name)]
+             [decl
+              (cond
+                [(and expr share-type?) (choose (s&e e base) var-name)]
+                [share-type? s]
+                [expr (choose (e base) var-name)]
+                [else base])])
         (cond
-          [(and expr share-type?) s&e]
-          [share-type? s]
-          [expr (choose (e base) (string-append name " definition"))]
-          [else base])))
+          [end? (sequence (decl SEMI_COLON) id (string-append name " definition"))]
+          [else decl])))
     )
   
   (define-unit expressions@ 
@@ -502,9 +496,9 @@
 
     (define (make-field mods type expr share-types?)
       (cond 
-        [mods (sequence ((repeat-greedy mods) (variable-declaration type expr share-types? "field"))
+        [mods (sequence ((repeat-greedy mods) (variable-declaration type expr share-types? #t "field"))
                         id "field definition")]
-        [else (variable-declaration type expr share-types? "field")]))  
+        [else (variable-declaration type expr share-types? #t "field")]))  
     
     (define (arg type)
       (sequence (type identifier) id "argument"))
@@ -742,7 +736,7 @@
           (choose ((return-s #t)
                    (if-s (block #t) #f)
                    (block #t)
-                   (variable-declaration (value+name-type prim-type) expression #f "local variable")                   
+                   (variable-declaration (value+name-type prim-type) expression #f #t "local variable")                   
                    (sequence (stmt-expr SEMI_COLON) id)) "statement")))
     
     (define statement (statement-c #f))
@@ -839,7 +833,7 @@
       (if (not interact?)
           (choose ((return-s #t)
                    (if-s (block #t) #f)
-                   (variable-declaration (value+name-type prim-type) expression #f "local variable")
+                   (variable-declaration (value+name-type prim-type) expression #f #t "local variable")
                    (block #t)
                    (assignment 
                     (choose (identifier
@@ -864,7 +858,7 @@
                         (args (value+name-type prim-type)) #f identifier))
         
     (define method
-      (choose ((make-method method-sig-no-abs statement)
+      (choose ((make-method method-sig-no-abs (repeat-greedy statement))
                (method-header method-sig-abs)) "method definition"))
 
     (define constructor
@@ -948,9 +942,9 @@
           (choose ((return-s #t)
                    (if-s #t (eta statement))
                    (block #t)
-                   (for-l (choose ((variable-declaration (array-type (value+name-type prim-type)) expression #t "for loop variable")
+                   (for-l (choose ((variable-declaration (array-type (value+name-type prim-type)) expression #t #f "for loop variable")
                                    (comma-sep stmt-expr "initializations")) "for loop initialization") 
-                          #t #t
+                          #t #f
                           (comma-sep stmt-expr "for loop increments") #t (block #t))
                    (while-l (block #t))
                    (do-while (block #t))
@@ -966,12 +960,12 @@
           (choose ((return-s #t)
                    (if-s #t (eta statement))
                    (variable-declaration (array-type (value+name-type prim-type)) 
-                                         (choose (expression array-init) "variable initialization") #t "local variable")
+                                         (choose (expression array-init) "variable initialization") #t #t "local variable")
                    (block #t)
                    (sequence (stmt-expr SEMI_COLON) id)
-                   (for-l (choose ((variable-declaration (array-type (value+name-type prim-type)) expression #t "for loop variable")
+                   (for-l (choose ((variable-declaration (array-type (value+name-type prim-type)) expression #t #f "for loop variable")
                                    (comma-sep stmt-expr "initializations")) "for loop initialization") 
-                          #t #t
+                          #t #f
                           (comma-sep stmt-expr "for loop increments") #t (block #t))
                    (while-l (block #t))
                    (do-while (block #t))
@@ -994,7 +988,7 @@
                         (args (array-type (value+name-type prim-type))) #f IDENTIFIER))
     
     (define method
-      (choose ((make-method method-sig-no-abs statement)
+      (choose ((make-method method-sig-no-abs (repeat-greedy statement))
                (method-header method-sig-abs)) "method definition"))
     
     (define constructor

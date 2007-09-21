@@ -99,10 +99,10 @@
                 (let ([sorted-opts (sort (options-fail-opts (sequence-fail-found fail-type))
                                          (lambda (a b) (>= (fail-type-chance a) (fail-type-chance b))))])
                   (if (null? show-sequence)
-                      (fail-type->message (car sorted-opts)
+                      (fail-type->message (sequence-fail-found fail-type) #;(car sorted-opts)
                                           (add-to-message (msg (format "This ~a did not begin as expected." id-name))
                                                           name (sequence-fail-id fail-type) message-to-date))
-                      (fail-type->message (car sorted-opts)
+                      (fail-type->message (sequence-fail-found fail-type) #;(car sorted-opts)
                                           (add-to-message
                                            (msg (format "There is an error in this ~a after ~a, the program resembles a(n) ~a here.~n"
                                                         id-name (car (reverse show-sequence)) 
