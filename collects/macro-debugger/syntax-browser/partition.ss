@@ -28,7 +28,7 @@
     (class* object% (partition<%>)
       (init relation)
 
-      (define related? relation)
+      (define related? (or relation (lambda (a b) #f)))
       (field (rep=>num (make-hash-table)))
       (field (obj=>rep (make-hash-table 'weak)))
       (field (reps null))

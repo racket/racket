@@ -138,11 +138,29 @@
         (when (and (identifier? stx)
                    (uninterned? (syntax-e stx)))
           (display "Uninterned symbol!\n\n" key-sd))
-        (display-binding-info stx))
+        (display-binding-info stx)
+        (display-indirect-binding-info stx))
 
       ;; display-binding-info : syntax -> void
       (define/private (display-binding-info stx)
         (display "Apparent identifier binding\n" key-sd)
+        (display-bindings stx))
+
+      ;; display-indirect-binding-info : syntax -> void
+      (define/private (display-indirect-binding-info stx)
+        (cond
+         [(identifier? stx)
+          (display "Binding if used for #%top\n" key-sd)
+          (display-bindings (datum->syntax-object stx '#%top))]
+         [(and (syntax? stx) (pair? (syntax-e stx)))
+          (display "Binding if used for #%app\n" key-sd)
+          (display-bindings (datum->syntax-object stx '#%app))]
+         [else
+          (display "Binding if used for #%datum\n" key-sd)
+          (display-bindings (datum->syntax-object stx '#%datum))]))
+
+      ;; display-bindings : syntax -> void
+      (define/private (display-bindings stx)
         (unless (identifier? stx)
           (display "Not applicable\n\n" n/a-sd))
         (when (identifier? stx)

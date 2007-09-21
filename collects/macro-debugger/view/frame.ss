@@ -130,9 +130,7 @@
                                 (callback
                                  (lambda _ 
                                    (send (send widget get-controller)
-                                         on-update-identifier=?
-                                         (car p)
-                                         (cdr p)))))])
+                                         set-identifier=? p))))])
                       (send (send widget get-controller)
                             listen-identifier=?
                             (lambda (name+func)

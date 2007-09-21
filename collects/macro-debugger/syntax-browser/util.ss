@@ -47,13 +47,14 @@
 
   ;; mpi->list : module-path-index -> (list-of module-spec)
   (define (mpi->list mpi)
-    (if mpi
-        (let-values ([(path rel) (module-path-index-split mpi)])
-          (cond [(and (pair? path) (memq (car path) '(file lib planet)))
-                 (cons path null)]
-                [path
-                 (cons path (mpi->list rel))]
-                [else '()]))
-        '()))
-
+    (cond [(module-path-index? mpi)
+           (let-values ([(path rel) (module-path-index-split mpi)])
+             (cond [(and (pair? path) (memq (car path) '(file lib planet)))
+                    (cons path null)]
+                   [path
+                    (cons path (mpi->list rel))]
+                   [else '()]))]
+          [(not mpi)
+           '()]
+          [else (list mpi)]))
   )
