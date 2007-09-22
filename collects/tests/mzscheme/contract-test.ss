@@ -5188,6 +5188,21 @@ so that propagation occurs.
                (define-syntax (f stx)
                  make-bound-identifier-mapping)))))
   
+  (test/spec-passed
+   'provide/contract23
+   '(begin
+      (eval '(module m mzscheme
+               (require (lib "contract.ss"))
+               (provide/contract [f integer?])
+               (define f 3)))
+      
+      (eval '(module n mzscheme
+               (require m)
+               (#%expression f)
+               f))
+      
+      (eval '(require n))))
+  
   (contract-error-test
    #'(begin
        (eval '(module pce1-bug mzscheme
