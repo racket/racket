@@ -4997,6 +4997,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
 	    /* Maybe a single-function loop, where we re-allocated the
 	       last pair in the trace, but it's the same name: */
 	    || (SCHEME_PAIRP(ret)
+                && sub_cont->native_trace
 		&& SCHEME_PAIRP(sub_cont->native_trace)
 		&& SAME_OBJ(SCHEME_CAR(ret), SCHEME_CAR(sub_cont->native_trace))
 		&& SAME_OBJ(SCHEME_CDR(ret), SCHEME_CDR(sub_cont->native_trace))))
