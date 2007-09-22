@@ -196,6 +196,8 @@ class wxDC: public wxbDC
   double SmoothingXFormYB(double y);
   double SmoothingXFormWL(double w, double x);
   double SmoothingXFormHL(double h, double y);
+
+  void SetAlpha(double d);
 };
 
 // This class specific to Windows 3.1

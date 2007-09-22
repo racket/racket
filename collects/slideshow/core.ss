@@ -23,7 +23,8 @@
 				   page          ; int
 				   page-count    ; int
 				   inset         ; sinset
-				   transitions)) ; canvas% bitmap% -> 'went or delay-msecs
+				   transitions   ; canvas% bitmap% -> 'went or delay-msecs
+                                   timeout))     ; msecs
   (define/provide-struct just-a-comment (content)) ; content is list of strings and picts
   (define/provide-struct sinset (l t r b))
   (define/provide-struct click-region (left top right bottom thunk show-click?))
@@ -204,7 +205,7 @@
 	      (ht-append 2 p t))
 	    p))
 
-      (define (add-slide! pict title comment page-count inset)
+      (define (add-slide! pict title comment page-count inset timeout)
 	(viewer:add-talk-slide! 
 	 (make-sliderec (make-pict-drawer (add-commentary pict
 							  comment))
@@ -213,7 +214,8 @@
 			page-number
 			page-count
 			inset
-			null))
+			null
+                        timeout))
 	(set! page-number (+ page-number page-count)))
 
       (define (skip-slides n)
@@ -232,7 +234,7 @@
 	       (- (sinset-r sinset))
 	       (- (sinset-b sinset))))
 
-      (define (do-add-slide! content title comment page-count inset)
+      (define (do-add-slide! content title comment page-count inset timeout)
 	(add-slide!
 	 (ct-superimpose
 	  (apply-slide-inset inset full-page)
@@ -240,7 +242,8 @@
 	 title
 	 comment
 	 page-count
-	 inset))
+	 inset
+         timeout))
 
       (define default-slide-assembler
 	(lambda (s v-sep p)
@@ -254,7 +257,7 @@
 
       (define-struct name-only (title))
 
-      (define (one-slide/title/inset do-add-slide! use-assem? process v-sep skipped-pages s inset . x) 
+      (define (one-slide/title/inset do-add-slide! use-assem? process v-sep skipped-pages s inset timeout . x) 
 	(let-values ([(x c)
 		      (let loop ([x x][c #f][r null])
 			(cond
@@ -276,7 +279,8 @@
 	     (if (name-only? s) (name-only-title s) s)
 	     c
 	     (+ 1 skipped-pages)
-	     inset))))
+	     inset
+             timeout))))
 
       (define (slide-error nested string . args)
 	(apply error
@@ -287,7 +291,7 @@
 	       string
 	       args))
 
-      (define (do-slide/title/tall/inset do-add-slide! use-assem? skip-ok? process v-sep s inset . x)
+      (define (do-slide/title/tall/inset do-add-slide! use-assem? skip-ok? process v-sep s inset timeout . x)
 	;; Check slides:
 	(let loop ([l x][nested null])
 	  (or (null? l)
@@ -319,7 +323,7 @@
 	    (if skip-all?
 		(add1 skipped)
 		(begin
-		  (apply one-slide/title/inset do-add-slide! use-assem? process v-sep skipped s inset (reverse r))
+		  (apply one-slide/title/inset do-add-slide! use-assem? process v-sep skipped s inset timeout (reverse r))
 		  0))]
 	   [(memq (car l) '(nothing))
 	    (loop (cdr l) r comment skip-all? skipped)]
@@ -328,7 +332,7 @@
 	      (let ([skipped (if skip?
 				 (add1 skipped)
 				 (begin
-				   (apply one-slide/title/inset do-add-slide! use-assem? process v-sep skipped s inset (reverse r))
+				   (apply one-slide/title/inset do-add-slide! use-assem? process v-sep skipped s inset timeout (reverse r))
 				   0))])
 		(loop (cdr l) r comment skip-all? skipped)))]
 	   [(memq (car l) '(alts alts~)) 
@@ -349,7 +353,7 @@
 	(make-sinset l t r b))
 
       (define (slide/title/tall/inset/gap v-sep s inset . x)
-	(apply do-slide/title/tall/inset do-add-slide! #t #t values v-sep s inset x))
+	(apply do-slide/title/tall/inset do-add-slide! #t #t values v-sep s inset #f x))
 
       (define (slide/title/tall/inset s inset . x)
 	(apply slide/title/tall/inset/gap gap-size s inset x))
@@ -358,7 +362,7 @@
 	(apply slide/title/tall/inset (make-name-only s) inset x))
 
       (define (slide/title/tall/gap v-sep s . x)
-	(apply do-slide/title/tall/inset do-add-slide! #t #t values v-sep s zero-inset x))
+	(apply do-slide/title/tall/inset do-add-slide! #t #t values v-sep s zero-inset #f x))
 
       (define (slide/title/tall s . x)
 	(apply slide/title/tall/gap gap-size s x))
@@ -379,6 +383,9 @@
 	(apply slide/title/inset (make-name-only s) inset x))
 
       (define (slide/title/center/inset s inset . x)
+        (apply slide/title/center/inset/timeout s inset #f x))
+
+      (define (slide/title/center/inset/timeout s inset timeout . x)
 	(let ([max-width 0]
 	      [max-height 0]
 	      [combine (lambda (x)
@@ -388,13 +395,13 @@
 				 x)))])
 	  ;; Run through all the slides once to measure (don't actually create slides):
 	  (apply do-slide/title/tall/inset
-		 (lambda (content title comment page-count inset)
+		 (lambda (content title comment page-count inset timeout)
 		   (set! max-width (max max-width (pict-width content)))
 		   (set! max-height (max max-height (pict-height content))))
 		 #f
 		 #f
 		 (lambda (x) (list (combine x)))
-		 0 #f inset x)
+		 0 #f inset timeout x)
 	  (apply do-slide/title/tall/inset
 		 do-add-slide!
 		 #t
@@ -408,7 +415,7 @@
 		     (ct-superimpose
 		      (blank max-width max-height)
 		      (combine x)))))
-		 0 s inset x)))
+		 0 s inset timeout x)))
 
       (define (slide/name/center/inset s inset . x)
 	(apply slide/title/center/inset (make-name-only s) inset x))
@@ -424,6 +431,9 @@
 
       (define (slide/center . x) (apply slide/title/center #f x))
       (define (slide/center/inset inset . x) (apply slide/title/center/inset #f inset x))
+
+      (define (slide/center/timeout t . x)
+        (apply slide/title/center/inset/timeout #f zero-inset t x))
 
       (define most-recent-slide
 	(case-lambda
@@ -458,7 +468,8 @@
 	    page-number
 	    1
 	    (sliderec-inset s)
-	    null))
+	    null
+            (sliderec-timeout s)))
 	  (set! page-number (+ page-number 1))))
 
       (define (start-at-recent-slide)

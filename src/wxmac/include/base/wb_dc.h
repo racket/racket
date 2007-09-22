@@ -67,6 +67,8 @@ class wxbDC: public wxObject
   double user_scale_x;
   double user_scale_y;
 
+  double current_alpha;
+
   int mapping_mode;
 
   double min_x;          // bounding box
@@ -213,6 +215,8 @@ class wxbDC: public wxObject
   int GetAntiAlias();
   virtual void SetAntiAlias(int v);
 
+  virtual void SetAlpha(double d);
+  double GetAlpha();
 };
 
 // Conversion

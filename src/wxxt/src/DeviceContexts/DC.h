@@ -226,11 +226,15 @@ public:
 #endif
 
     int GetAntiAlias();
-    virtual void SetAntiAlias(int v);
-  
+    virtual void SetAntiAlias(int v);  
+
+    virtual void SetAlpha(double d);
+    double GetAlpha();
+
     // public data members
     Bool  Colour;
     int   device;
+    double current_alpha;
 protected:
     Bool  auto_setting, optimize, ok;
     // everything needed for sizing

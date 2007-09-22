@@ -373,6 +373,8 @@
     on-event
     on-paint)
   (define-private-class dc% dc<%> object% #f
+    get-alpha
+    set-alpha
     glyph-exists?
     end-page
     end-doc

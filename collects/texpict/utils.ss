@@ -55,6 +55,8 @@
            scale-color
 	   scale
 	   scale/improve-new-text
+           
+           cellophane
 
 	   inset/clip
            clip
@@ -925,6 +927,29 @@
 		     (list (make-child p 0 0 x-factor y-factor))
 		     #f)))]
      [(p factor) (scale p factor factor)]))
+
+  (define cellophane
+    (case-lambda
+     [(p alpha-factor)
+      (let ([drawer (make-pict-drawer p)])
+	(let ([new
+	       (dc
+		(lambda (dc x y)
+		  (let ([a (send dc get-alpha)])
+		    (send dc set-alpha (* a alpha-factor))
+		    (drawer dc x y)
+		    (send dc set-alpha a)))
+		(pict-width p)
+		(pict-height p)
+		(pict-ascent p)
+		(pict-descent p))])
+	  (make-pict (pict-draw new)
+		     (pict-width new)
+		     (pict-height new)
+		     (pict-ascent new)
+		     (pict-descent new)
+		     (list (make-child p 0 0 1 1))
+		     #f)))]))
 
   (define inset/clip
     (case-lambda

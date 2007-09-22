@@ -649,4 +649,38 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module m-wcm_ mzscheme
+  (provide m-wcm-go)
+  (define (m-wcm-go test)
+    (let ([v #f])
+
+      (test
+       (with-continuation-mark
+           'x 'y
+         (with-continuation-mark
+             'x2 'y
+             (let/cc k
+           (with-continuation-mark
+               'x3 'y
+           (with-continuation-mark
+               'x4 'y
+           (with-continuation-mark
+               'x5 'y
+               (with-continuation-mark
+                   'x 'y3
+                 (list
+                  ((let/cc k2
+                     (set! v k2)
+                     (lambda () '(y3)))))))))))))
+       
+      (v (lambda () 
+           (set! v void)
+           (continuation-mark-set->list
+            (current-continuation-marks)
+            'x))))))
+(require m-wcm_)
+(m-wcm-go (lambda (a) (test '((y3)) values a)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

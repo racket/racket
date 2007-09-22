@@ -48,11 +48,11 @@ _url struct_
 For example, this url:
 
   http://sky@www.cs.brown.edu:801/cgi-bin/finger;xyz?name=shriram;host=nw#top
-  {-1}   {2} {----3---------} {4}{---5-------------}{----7-------------} {8}
+  {-1}   {2} {----3---------} {4}{---5-------------} {----7-------------} {8}
                                                  {6}
 
   1 = scheme, 2 = user, 3 = host, 4 = port,
-  5 = path,  6 = param (or last path segment),
+  5 = path (two elements),  6 = param (of second path element),
   7 = query, 8 = fragment
 
   The strings inside the fields user, path, query, and fragment are

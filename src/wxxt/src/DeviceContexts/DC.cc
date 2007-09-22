@@ -247,6 +247,17 @@ void wxDC::SetAntiAlias(int v)
     anti_alias = v;
 }
 
+void wxDC::SetAlpha(double a)
+{
+  current_alpha = a;
+}
+
+double wxDC::GetAlpha()
+{
+  return current_alpha;
+}
+
+
 //-----------------------------------------------------------------------------
 // wxDC::DrawOpenSpline(wxList *pts), may be virtually overridden by any child
 //-----------------------------------------------------------------------------

@@ -204,6 +204,8 @@
        [hp2 hp]
        [hp2.5 hp0]
        [hp3 hp]
+       [hp4 (new horizontal-panel% [parent vp]
+                 [stretchable-height #f])]
        [bb (make-object bitmap% (sys-path "bb.gif") 'gif)]
        [return (let* ([bm (make-object bitmap% (sys-path "return.xbm") 'xbm)]
 		      [dc (make-object bitmap-dc% bm)])
@@ -220,7 +222,8 @@
        [smoothing 'unsmoothed]
        [save-filename #f]
        [save-file-format #f]
-       [clip 'none])
+       [clip 'none]
+       [current-alpha 1.0])
   (send hp0 stretchable-height #f)
   (send hp stretchable-height #f)
   (send hp2.5 stretchable-height #f)
@@ -936,8 +939,12 @@
 				      mem-dc)
 				    (get-dc)))])
 		    (when dc
+                      (send dc clear)
+
 		      (send dc start-doc "Draw Test")
 		      (send dc start-page)
+
+                      (send dc set-alpha current-alpha)
 
 		      (if clip-pre-scale?
 			  (begin
@@ -1205,7 +1212,14 @@
 			     (set! clock-start #f)
 			     (set! clock-end #f)
 			     (send canvas refresh))))])
-      (make-object button% "Clip Clock" hp3 (lambda (b e) (clock #t)))))
+      (make-object button% "Clip Clock" hp3 (lambda (b e) (clock #t)))
+      (make-object slider% "Alpha" 0 10 hp4
+                   (lambda (s e)
+                     (let ([a (/ (send s get-value) 10.0)])
+                       (unless (= a current-alpha)
+                         (set! current-alpha a)
+                         (send canvas refresh))))
+                   10 '(horizontal plain))))
 
   (send f show #t))
 

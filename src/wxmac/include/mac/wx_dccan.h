@@ -188,6 +188,7 @@ class wxCanvasDC: public wxbCanvasDC
   void DrawTabBase(double x, double y, double w, double h, int state);
   void DrawTab(char *str, double x, double y, double w, double h, int state);
 
+  virtual void SetAlpha(double d);
 };
 
 long wxTextFontInfo(int font, int size, int face, FontInfo *finfo, char *str, int d = 0, int len = -1);
@@ -196,7 +197,7 @@ double wxDrawUnicodeText(const char *text, int d, int len = -1, int ucs4 = FALSE
 			 double scale_x = 1.0, double scale_y = 1.0,
 			 int use_start = 0, double start_x = 0.0, double start_y = 0.0,
 			 double device_dx = 0.0, double device_dy = 0.0,
-			 int is_sym = 0);
+			 int is_sym = 0, double current_alpha = 1.0);
 void wxGetUnicodeTextWidth(const char *text, int d, int theStrlen, 
 			   short txFont, short txSize, short txFace,
 			   int ucs4, double scale_y,

@@ -990,12 +990,26 @@ CGContextRef wxCanvasDC::GetCG()
     CGContextScaleCTM(cg, user_scale_x, user_scale_y);
   }
 
+  CGContextSetAlpha(cg, current_alpha);
+
   return cg;
 }
 
 Bool wxCanvasDC::AlignSmoothing()
 {
   return (anti_alias == 2);
+}
+
+void wxCanvasDC::SetAlpha(double a)
+{
+  CGContextRef cg;
+
+  wxbDC::SetAlpha(a);
+  
+  cg = cMacDC->GetCG(TRUE);
+  
+  if (cg)
+    CGContextSetAlpha(cg, current_alpha);
 }
 
 double wxCanvasDC::GetPenSmoothingOffset()

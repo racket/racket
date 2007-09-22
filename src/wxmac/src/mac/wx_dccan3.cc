@@ -82,7 +82,8 @@ static double DrawMeasUnicodeText(const char *text, int d, int theStrlen, int uc
 				  double angle, int sym_map,
 				  double scale_x, double scale_y,
 				  double pen_delta_x, int with_delta,
-				  double pen_start_x, double pen_start_y, double ddx, double ddy, int with_start);
+				  double pen_start_x, double pen_start_y, double ddx, double ddy, int with_start,
+                                  double current_alpha);
 
 #ifndef DoubleToFixed
 # define DoubleToFixed(a) ((Fixed)((double) (a) * fixed1)) 
@@ -341,7 +342,8 @@ void wxCanvasDC::DrawText(const char* text, double x, double y, Bool combine, Bo
 			  y + (fontInfo.ascent * cos(angle)) - logical_origin_y, 
 			  device_origin_x + SetOriginX,
 			  device_origin_y + SetOriginY,
-			  font->GetFamily());
+			  font->GetFamily(),
+                          current_alpha);
   }
   
   ReleaseCurrentDC();
@@ -426,7 +428,7 @@ void wxCheckATSUCapability()
 
 double wxDrawUnicodeText(const char *text, int d, int theStrlen, int ucs4, Bool qd_spacing, int smoothing, double angle,
 			 double scale_x, double scale_y, int use_start, double start_x, double start_y, double ddx, double ddy,
-			 int is_sym)
+			 int is_sym, double current_alpha)
 {
   int i;
   int again = 0;
@@ -507,7 +509,8 @@ double wxDrawUnicodeText(const char *text, int d, int theStrlen, int ucs4, Bool 
 				       qd_spacing, smoothing, angle, is_sym,
 				       scale_x, scale_y,
 				       pen_delta, move_pen_at_end || use_start,
-				       start_x, start_y, ddx, ddy, use_start);
+				       start_x, start_y, ddx, ddy, use_start,
+                                       current_alpha);
 	  
       d += amt;
       theStrlen -= amt;
@@ -587,7 +590,7 @@ void wxGetUnicodeTextWidth(const char *text, int d, int theStrlen,
 			       txFont, txSize, txFace,
 			       0, qd_spacing, wxSMOOTHING_DEFAULT, 0.0, is_sym,
 			       scale_x, scale_y,
-			       0.0, 0, 0.0, 0.0, 0.0, 0.0, 0);
+			       0.0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0.0);
       *x = dx;
     } else {
       /* Need to split the string into parts */
@@ -624,7 +627,7 @@ void wxGetUnicodeTextWidth(const char *text, int d, int theStrlen,
 				      again, qd_spacing,
 				      wxSMOOTHING_DEFAULT, 0.0, is_sym,
 				      scale_x, scale_y, 
-				      0.0, 0, 0.0, 0.0, 0.0, 0.0, 0);
+				      0.0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0.0);
 	  d += amt;
 	  theStrlen -= amt;
 	  again = 1;
@@ -697,7 +700,8 @@ static double DrawMeasUnicodeText(const char *text, int d, int theStrlen, int uc
 				  double angle, int is_sym,
 				  double scale_x, double scale_y,
 				  double pen_delta, int use_pen_delta,
-				  double start_x, double start_y, double ddx, double ddy, int with_start)
+				  double start_x, double start_y, double ddx, double ddy, int with_start,
+                                  double current_alpha)
 {
   ATSUTextLayout layout = NULL, *layouts;
   UniCharCount ulen, one_ulen, delta;
@@ -989,6 +993,9 @@ static double DrawMeasUnicodeText(const char *text, int d, int theStrlen, int uc
 			     (double)textColor.green / 65535.0,
 			     (double)textColor.blue / 65535.0,
 			     1.0);
+
+    /* set alpha */
+    CGContextSetAlpha(cgctx, current_alpha);
   }
 
   END_TIME(ctx);

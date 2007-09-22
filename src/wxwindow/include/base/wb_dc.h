@@ -59,6 +59,8 @@ class wxbDC: public wxObject
   double logical_scale_x;
   double logical_scale_y;
 
+  double current_alpha;
+
   int mapping_mode;
   int scaling_mode;
 
@@ -206,6 +208,9 @@ class wxbDC: public wxObject
  
   Bool GetAntiAlias();
   virtual void SetAntiAlias(Bool v);
+
+  virtual void SetAlpha(double d);
+  double GetAlpha();
 };
 
 /*

@@ -208,6 +208,8 @@ public:
 
   void SetAntiAlias(int v);
 
+  void SetAlpha(double d);
+
   Bool AlignSmoothing();
   double GetPenSmoothingOffset();
   double SmoothingXFormX(double x);

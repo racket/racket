@@ -25,6 +25,7 @@ wxbDC::wxbDC(void)
   autoSetting = TRUE;
   dcOptimize = TRUE;
   current_bk_mode = wxTRANSPARENT;
+  current_alpha = 1.0;
 }
 
 wxbDC::~wxbDC(void)
@@ -159,6 +160,16 @@ Bool wxbDC::GetAntiAlias()
 void wxbDC::SetAntiAlias(Bool v)
 {
   anti_alias = v;
+}
+
+void wxbDC::SetAlpha(double a)
+{
+  current_alpha = a;
+}
+
+double wxbDC::GetAlpha()
+{
+  return current_alpha;
 }
 
 wxbMemoryDC::wxbMemoryDC(void) { }

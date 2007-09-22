@@ -2847,6 +2847,11 @@ void wxDC::GetSizeMM(double *width, double *height)
   DoneDC(dc);
 }
 
+void wxDC::SetAlpha(double a)
+{
+  wxbDC:::SetAlpha(a);
+}
+
 wxCanvasDC::wxCanvasDC(void)
 {
   __type = wxTYPE_DC_CANVAS;
