@@ -599,13 +599,13 @@
         (cond [(null? list) list]
               [(not (pair? list))
                (error name "not a proper list: ~e" list)]
-              [(= item (car list)) (cdr list)]
+              [(!*app = item (car list)) (cdr list)]
               [else (cons (car list) (~ (loop (! (cdr list)))))]))))
   (define* remove
     (case-lambda [(item list  ) (do-remove 'remove item list ~equal?)]
                  [(item list =) (do-remove 'remove item list =)]))
-  (define* (remq item list)      (do-remove 'remq   item list ~eq?))
-  (define* (remv item list)      (do-remove 'remv   item list ~eqv?))
+  (define* (remq item list)     (do-remove 'remq   item list ~eq?))
+  (define* (remv item list)     (do-remove 'remv   item list ~eqv?))
 
   (define (do-remove* name items list =)
     (let ([= (! =)] [items (!list items)])
@@ -613,22 +613,23 @@
         (cond [(null? list) list]
               [(not (pair? list))
                (error name "not a proper list: ~e" list)]
-              [else (let ([xs (~ (loop (! (cdr list))))])
-                      (if (memf (lambda (item) (= item (car list))) items)
-                        xs
-                        (cons (car list) xs)))]))))
+              [else
+               (let ([xs (~ (loop (! (cdr list))))])
+                 (if (memf (lambda (item) (!*app = item (car list))) items)
+                   xs
+                   (cons (car list) xs)))]))))
   (define* remove*
     (case-lambda [(items list  ) (do-remove* 'remove* items list ~equal?)]
                  [(items list =) (do-remove* 'remove* items list =)]))
-  (define* (remq* items list)     (do-remove* 'remq*   items list ~eq?))
-  (define* (remv* items list)     (do-remove* 'remv*   items list ~eqv?))
+  (define* (remq* items list)    (do-remove* 'remq*   items list ~eq?))
+  (define* (remv* items list)    (do-remove* 'remv*   items list ~eqv?))
 
   (define* (memf pred list)
     (let ([pred (! pred)])
       (let loop ([list (! list)])
         (cond [(null? list) #f]
               [(not (pair? list)) (error 'memf "not a proper list: ~e" list)]
-              [(pred (! (car list))) list]
+              [(!*app pred (car list)) list]
               [else (loop (! (cdr list)))]))))
 
   (define* (assf pred alist)
@@ -639,20 +640,23 @@
               [else (let ([cell (! (car alist))])
                       (cond [(not (pair? cell))
                              (error 'assf "non-pair found in list: ~e" cell)]
-                            [(pred (! (car cell))) cell]
+                            [(!*app pred (car cell)) cell]
                             [else (loop (! (cdr alist)))]))]))))
 
   (define* (filter pred list)
-    (let loop ([list (! list)])
-      (cond ([null? list] list)
-            ([pair? list]
-             (let ([x (! (car list))] [xs (~ (loop (! (cdr list))))])
-               (if (! (pred x)) (cons x xs) xs)))
-            (else (error 'filter "not a proper list: ~e" list)))))
+    (let ([pred (! pred)])
+      (let loop ([list (! list)])
+        (cond [(null? list) list]
+              [(pair? list)
+               (let ([x (car list)]
+                     [xs (~ (loop (! (cdr list))))])
+                 (if (!*app pred x) (cons x xs) xs))]
+              [else (error 'filter "not a proper list: ~e" list)]))))
 
   (require (rename (lib "list.ss") !sort sort))
-  (define* (sort list less-than)
-    (!sort (!list list) (! less-than)))
+  (define* (sort list less?)
+    (let ([less? (! less?)])
+      (!sort (!list list) (lambda (x y) (! (!*app less? x y))))))
 
   ;; --------------------------------------------------------------------------
   ;; (lib "etc.ss") functionality
