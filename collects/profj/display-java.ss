@@ -105,10 +105,10 @@
              (make-partial-string
               (lambda (idx first-test second-test)
                 (cond
-                  ((first-test idx) "")
+                  ((first-test idx) (list ""))
                   ((second-test idx)
                    (append (internal-format (send value access idx) full-print? style already-printed nl? nt)
-                           (list (make-partial-string (add1 idx) first-test second-test))))
+                           (make-partial-string (add1 idx) first-test second-test)))
                   (else
                    (append (internal-format (send value access idx) full-print? style already-printed nl? nt)
                            (if nl? (list "\n") (list " "))
