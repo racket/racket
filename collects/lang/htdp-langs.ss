@@ -33,8 +33,8 @@
            ;; and the user's namespace in the teaching languages
            "private/set-result.ss"
            
-           (lib "stepper-language-interface.ss" "stepper")
-           (lib "debugger-language-interface.ss" "mztake"))
+           "stepper-language-interface.ss"
+           "debugger-language-interface.ss")
   
   (provide tool@)
   

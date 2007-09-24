@@ -17,7 +17,7 @@
            "load-sandbox.ss"
            (lib "framework.ss" "framework")
            (lib "string-constant.ss" "string-constants")
-           "debugger-language-interface.ss")
+           (lib "debugger-language-interface.ss" "lang"))
   
   (provide tool@)
   

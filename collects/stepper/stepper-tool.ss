@@ -15,7 +15,7 @@
            (prefix x: "private/mred-extensions.ss")
            "private/shared.ss"
            "private/model-settings.ss"
-           "stepper-language-interface.ss"
+           (lib "stepper-language-interface.ss" "lang")
            "xml-sig.ss")
 
   (provide stepper-tool@
