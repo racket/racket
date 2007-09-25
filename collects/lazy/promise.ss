@@ -80,7 +80,7 @@
   ;; force iterates on lazy promises (forbid dependency cycles)
   ;; * (force X) = X for non promises
   ;; * does not deal with multiple values, since they're not used by the lazy
-  ;;   language (but would be easy to add them)
+  ;;   language (but see below)
 
   #; ; this version cannot handle multiple values
   (define (force promise)
