@@ -1,6 +1,7 @@
 (module lazy mzscheme
 
   (require-for-syntax (lib "shared.ss" "stepper" "private"))
+
   ;; ~ = lazy (or delayed)
   ;; ! = strict (or forced)
   ;; (See below for app-related names)
@@ -48,26 +49,11 @@
 
   (provide ~)
 
-  ;; the exposed `!' must be a special form
-  (provide (rename special-form-! !))
-  (defsubst special-form-! !)
-  ;; hack to see if it solves a certificate problem:
-  (provide (rename ! crazythingthatwillneverbereferredto))
-
-  ;; These things are useful too, to write strict functions (with various
-  ;; levels of strictness) -- need to provide them as special forms.
-  (provide (rename special-form-!! !!))
-  (defsubst special-form-!! !!)
-  (provide (rename special-form-!!! !!!))
-  (defsubst special-form-!!! !!!)
-  (provide (rename special-form-!list !list))
-  (defsubst special-form-!list !list)
-  (provide (rename special-form-!!list !!list))
-  (defsubst special-form-!!list !!list)
-  (provide (rename special-form-!values !values))
-  (defsubst special-form-!values !values)
-  (provide (rename special-form-!!values !!values))
-  (defsubst special-form-!!values !!values)
+  ;; the exposed `!' (and other similar !s) must be a special form in the lazy
+  ;; language -- but this is achieved through the lazy #%app (~!%app below)
+  ;; that treats it (and the others) specially: uses mzscheme's application
+  (define-for-syntax strict-forms
+    (syntax->list #'(! !! !!! !list !!list !values !!values)))
 
   ;; --------------------------------------------------------------------------
   ;; Determine laziness
@@ -191,11 +177,8 @@
 
   (define-syntax (hidden-! stx)
     (syntax-case stx (!)
-      [(_ arg) (stepper-syntax-property 
-                #'(! arg)
-                'stepper-skipto 
-                (append skipto/cdr
-                        skipto/second))]))
+      [(_ arg) (stepper-syntax-property #'(! arg) 'stepper-skipto
+                                        (append skipto/cdr skipto/second))]))
 
   (define-syntax (!*app stx)
     (syntax-case stx ()
@@ -229,6 +212,10 @@
     (memq (syntax-local-context)
           '(top-level module module-begin))) ; not sure about module-begin
 
+  ;; What happens when encoutering a toplevel non-definition expression?
+  (provide toplevel-forcer)
+  (define toplevel-forcer (make-parameter !))
+
   (provide (rename ~!%app #%app)) ; all applications are delayed
   (define-syntax (~!%app stx) ; provided as #%app
     (define (unwinder stx rec)
@@ -240,22 +227,21 @@
       (let* ([stx (stepper-syntax-property stx 'stepper-hint unwinder)]
              [stx (stepper-syntax-property stx 'stepper-skip-double-break #t)])
         stx))
-    (syntax-case stx (~ ! !! !list !!list !values !!values)
+    (syntax-case stx (~)
       ;; the usual () shorthand for null
       [(_) #'null]
-      ;; do not treat these as normal applications
-      [(_ ~ x)        (syntax/loc stx (~ x))]
-      [(_ ! x)        (syntax/loc stx (! x))]
-      [(_ !! x)       (syntax/loc stx (!! x))]
-      [(_ !list x)    (syntax/loc stx (!list x))]
-      [(_ !!list x)   (syntax/loc stx (!!list x))]
-      [(_ !values x)  (syntax/loc stx (!values x))]
-      [(_ !!values x) (syntax/loc stx (!!values x))]
+      [(_ ~ x) (syntax/loc stx (~ x))] ; not really needed
       [(_ f x ...)
-       (if (toplevel?)
-         ;; toplevel expressions are always forced
-         (syntax/loc stx (! (!app f x ...)))
-         (stepper-annotate (syntax/loc stx (~!app f x ...))))]))
+       (cond [(let ([f #'f])
+               (and (identifier? f)
+                    (ormap (lambda (s) (module-identifier=? f s))
+                           strict-forms)))
+              ;; strict function => special forms => use plain application
+              (syntax/loc stx (f x ...))]
+             [(toplevel?)
+              ;; toplevel expressions are always forced
+              (syntax/loc stx ((toplevel-forcer) (!app f x ...)))]
+             [else (syntax/loc stx (~!app f x ...))])]))
 
   (define (!*apply f . xs)
     (let ([xs (!list (apply list* xs))])
@@ -364,37 +350,39 @@
     (or (apply eqv? (!list args)) (apply eqv? (!!list args))))
 
   ;; for `equal?' we must do a recursive scan
+  (define (equal2? x y)
+    (cond [(pair? x) (and (pair? y)
+                          (~equal? (car x) (car y))
+                          (~equal? (cdr x) (cdr y)))]
+          [(vector? x)
+           (let ([k (vector-length x)])
+             (and (vector? y)
+                  (= k (vector-length y))
+                  (let loop ([i 0])
+                    (or (= i k)
+                        (and (~equal? (vector-ref x i) (vector-ref y i))
+                             (loop (add1 i)))))))]
+          [(struct? x)
+           (and (struct? y)
+                (let-values ([(xtype xskipped?) (struct-info x)]
+                             [(ytype yskipped?) (struct-info y)])
+                  (and xtype ytype (not xskipped?) (not yskipped?)
+                       (eq? xtype ytype)
+                       (let*-values ([(name initk autok ref set imms spr skp?)
+                                      (struct-type-info xtype)]
+                                     [(k) (+ initk autok)])
+                         (let loop ([i 0])
+                           (or (= i k) (and (~equal? (ref x i) (ref y i))
+                                            (loop (add1 i)))))))))]
+          [(box? x) (and (box? y) (~equal? (unbox x) (unbox y)))]
+          [else #f]))
   (define* (~equal? x y . args)
     (let ([args (!list args)])
       (if (pair? args)
         (and (~equal? x y) (apply ~equal? x (cdr args)))
         (or (equal? x y)
             (let ([x (! x)] [y (! y)])
-              (or (equal? x y)
-                  (cond
-                    [(pair? x) (and (pair? y)
-                                    (~equal? (car x) (car y))
-                                    (~equal? (cdr x) (cdr y)))]
-                    [(vector? x) (and (vector? y)
-                                      (andmap ~equal?
-                                              (vector->list x)
-                                              (vector->list y)))]
-                    [(box? x) (and (box? y) (~equal? (unbox x) (unbox y)))]
-                    [(struct? x)
-                     (and (struct? y)
-                          (let-values ([(xtype xskipped?) (struct-info x)]
-                                       [(ytype yskipped?) (struct-info y)])
-                            (and xtype ytype (not xskipped?) (not yskipped?)
-                                 (eq? xtype ytype)
-                                 (let*-values
-                                     ([(name initk autok ref set imms spr skp?)
-                                       (struct-type-info xtype)]
-                                      [(k) (+ initk autok)])
-                                   (let loop ([i 0])
-                                     (or (= i k)
-                                         (and (~equal? (ref x i) (ref y i))
-                                              (loop (add1 i)))))))))]
-                    [else #f])))))))
+              (or (equal? x y) (equal2? x y)))))))
 
   ;; --------------------------------------------------------------------------
   ;; List functions
@@ -692,6 +680,10 @@
 
   ;; --------------------------------------------------------------------------
   ;; Provide everything except some renamed stuff
+
+  (define-syntax (provide-strict-forms stx)
+    #`(provide #,@strict-forms))
+  (provide-strict-forms)
 
   (define-syntax (renaming-provide stx)
     (syntax-case stx ()
