@@ -710,13 +710,13 @@ runstack_val {
   a = (void **)s + 4;
   b = (void **)s + 4 + s[2];
   while (a < b) {
-    *a = NULL;
+    *a = RUNSTACK_ZERO_VAL;
     a++;
   }
   a = (void **)s + 4 + s[3];
   b = (void **)s + 4 + (s[1] - 4);
   while (a < b) {
-    *a = NULL;
+    *a = RUNSTACK_ZERO_VAL;
     a++;
   }
  size:

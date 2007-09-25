@@ -454,6 +454,8 @@ static void FIXUP_jmpup(Scheme_Jumpup_Buf *buf)
                             new_stack);
 }
 
+#define RUNSTACK_ZERO_VAL NULL
+
 #define MARKS_FOR_TYPE_C
 #include "mzmark.c"
 

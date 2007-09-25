@@ -600,6 +600,30 @@ static Scheme_Object *tail_call_with_values_from_multiple_result(Scheme_Object *
       JIT_UPDATE_THREAD_RSPTR(); \
     }
 
+#if 0
+/* Debugging: checking for runstack overflow. A CHECK_RUNSTACK_OVERFLOW() should
+   be included after each decrement of JIT_RUNTACK. Failure is "reported" by
+   going into an immediate loop. */
+static void *top;
+static void *cr_tmp;
+# define CHECK_RUNSTACK_OVERFLOW_NOCL() \
+     jit_sti_l(&cr_tmp, JIT_R0); jit_ldi_l(JIT_R0, &scheme_current_runstack_start); \
+  top = (_jit.x.pc); (void)jit_bltr_ul(top, JIT_RUNSTACK, JIT_R0); jit_ldi_l(JIT_R0, &cr_tmp)
+# define CHECK_RUNSTACK_OVERFLOW() \
+     CHECK_LIMIT(); CHECK_RUNSTACK_OVERFLOW_NOCL()
+#else
+# define CHECK_RUNSTACK_OVERFLOW() /* empty */
+# define CHECK_RUNSTACK_OVERFLOW_NOCL() /* empty */
+#endif
+
+#if 0
+/* Debugging: ... */
+static void *top4;
+# define VALIDATE_RESULT(reg) top4 = (_jit.x.pc); (void)jit_beqi_ul(top4, reg, 0)
+#else
+# define VALIDATE_RESULT(reg) /* empty */
+#endif
+
 static void new_mapping(mz_jit_state *jitter)
 {
   jitter->num_mappings++;
@@ -630,6 +654,7 @@ static void mz_pushr_p_it(mz_jit_state *jitter, int reg)
   jitter->mappings[jitter->num_mappings] = ((v << 1) | 0x1);
   
   jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+  CHECK_RUNSTACK_OVERFLOW_NOCL();
   jit_str_p(JIT_RUNSTACK, reg);
 
   jitter->need_set_rs = 1;
@@ -810,9 +835,25 @@ static int mz_is_closure(mz_jit_state *jitter, int i, int arity, int *_flags)
 #define mz_pushr_p(x) mz_pushr_p_it(jitter, x)
 #define mz_popr_p(x) mz_popr_p_it(jitter, x)
 
+#if 0
+/* Debugging: at each _finish(), double-check that the runstack register has been
+   copied into scheme_current_runstack. This code assumes that mz_finishr() is not
+   used with JIT_R0.  Failure is "reported" by going into an immediate loop, but
+   check_location is set to the source line number to help indicate where the
+   problem originated. */
+static void *top;
+int check_location;
+# define CONFIRM_RUNSTACK() (jit_movi_l(JIT_R0, __LINE__), jit_sti_l(&check_location, JIT_R0), \
+                             jit_ldi_p(JIT_R0, &MZ_RUNSTACK), top = (_jit.x.pc), jit_bner_p(top, JIT_RUNSTACK, JIT_R0))
+#else
+# define CONFIRM_RUNSTACK() 0
+#endif
+
 #define mz_prepare(x) jit_prepare(x)
-#define mz_finish(x) jit_finish(x)
-#define mz_finishr(x) jit_finishr(x)
+#define mz_finish(x) ((void)CONFIRM_RUNSTACK(), jit_finish(x))
+#define mz_finishr(x) ((void)CONFIRM_RUNSTACK(), jit_finishr(x))
+
+#define mz_nonrs_finish(x) jit_finish(x)
 
 #define mz_retain(x) mz_retain_it(jitter, x)
 #define mz_remap(x) mz_remap_it(jitter, x)
@@ -1240,6 +1281,7 @@ static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
      have the argument. */
   if (num_rands == 1) {
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    CHECK_RUNSTACK_OVERFLOW();
     jit_str_p(JIT_RUNSTACK, JIT_R0);
     JIT_UPDATE_THREAD_RSPTR();
   }
@@ -1304,6 +1346,7 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
     /* Fixed argc: */
     if (num_rands) {
       jit_subi_p(JIT_R2, JIT_RUNSTACK_BASE, WORDS_TO_BYTES(num_rands)); 
+      CHECK_RUNSTACK_OVERFLOW();
       for (i = num_rands; i--; ) {
         jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(i));
         jit_stxi_p(WORDS_TO_BYTES(i), JIT_R2, JIT_R1);
@@ -1317,6 +1360,7 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
       mz_get_local_p(JIT_R1, JIT_LOCAL2);
       jit_lshi_l(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
       jit_subr_p(JIT_RUNSTACK, JIT_RUNSTACK, JIT_R1);
+      CHECK_RUNSTACK_OVERFLOW();
     }
   } else {
     /* Variable argc (in LOCAL2):
@@ -1418,6 +1462,7 @@ static int generate_direct_prim_non_tail_call(mz_jit_state *jitter, int num_rand
 
   if (num_rands == 1) {
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    CHECK_RUNSTACK_OVERFLOW();
     jit_str_p(JIT_RUNSTACK, JIT_R0);
     JIT_UPDATE_THREAD_RSPTR();
   }
@@ -1430,11 +1475,13 @@ static int generate_direct_prim_non_tail_call(mz_jit_state *jitter, int num_rand
   mz_finishr(JIT_V1);
   CHECK_LIMIT();
   jit_retval(JIT_R0);
+  VALIDATE_RESULT(JIT_R0);
   /* No need to check for multi values or tail-call, because
      we only use this for noncm primitives. */
 
   if (num_rands == 1) {
     jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    jitter->need_set_rs = 1;
   }
 
   if (pop_and_jump) {
@@ -1473,6 +1520,7 @@ static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok
 
   /* Yes, there's enough room. Adjust the runstack. */
   jit_subr_l(JIT_RUNSTACK, JIT_RUNSTACK, JIT_R2);
+  CHECK_RUNSTACK_OVERFLOW();
 
   /* Copy argument to runstack, then jump to reftop. */
   jit_ldxi_l(JIT_R2, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_num_rands);
@@ -1597,6 +1645,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   }
   CHECK_LIMIT();
   jit_retval(JIT_R0);
+  VALIDATE_RESULT(JIT_R0);
   if (!multi_ok) {
     jit_insn *refm;
     __END_SHORT_JUMPS__(1);
@@ -1647,6 +1696,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     (void)mz_finishr(JIT_R1);
     CHECK_LIMIT();
     jit_retval(JIT_R0);
+    VALIDATE_RESULT(JIT_R0);
     if (!multi_ok) {
       jit_insn *refm;
       __END_SHORT_JUMPS__(1);
@@ -1705,6 +1755,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     mz_patch_ucbranch(ref8);
   }
   jit_retval(JIT_R0);
+  VALIDATE_RESULT(JIT_R0);
   mz_patch_branch(ref6);
   if (!direct_native) {
     mz_patch_branch(ref10);
@@ -2002,6 +2053,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   if (num_rands) {
     if (!direct_prim || (num_rands > 1)) {
       jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(num_rands));
+      CHECK_RUNSTACK_OVERFLOW();
       mz_runstack_pushed(jitter, num_rands);
     } else {
       mz_runstack_skipped(jitter, 1);
@@ -2141,8 +2193,12 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       (void)jit_calli(code);
 
       /* Whether we call a prim, a native, or something else,
-	 scheme_current_runstack is up-to-date. */
-      jitter->need_set_rs = 0;
+	 scheme_current_runstack is up-to-date --- unless
+         it was a direct-prim call with 1 argument. */
+      if (direct_prim && (num_rands == 1))
+        jitter->need_set_rs = 1;
+      else
+        jitter->need_set_rs = 0;
     }
   }
 
@@ -2282,6 +2338,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
   if (rand2 && !simple_rand) {
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    CHECK_RUNSTACK_OVERFLOW();
     mz_runstack_pushed(jitter, 1);
     generate_non_tail(rand, jitter, 0, 1);
     CHECK_LIMIT();
@@ -2676,6 +2733,7 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
     mz_runstack_unskipped(jitter, 1);
 
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    CHECK_RUNSTACK_OVERFLOW();
     mz_runstack_pushed(jitter, 1);
     jit_str_p(JIT_RUNSTACK, JIT_R0);
     CHECK_LIMIT();
@@ -2846,6 +2904,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         } else {
           (void)jit_ldxi_p(JIT_R0, JIT_R0, &((Scheme_Simple_Object *)0x0)->u.pair_val.cdr);
         }
+        VALIDATE_RESULT(JIT_R0);
         CHECK_LIMIT();
       }
       __END_SHORT_JUMPS__(1);
@@ -2943,6 +3002,7 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
       mz_runstack_unskipped(jitter, 2);
     } else {
       jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      CHECK_RUNSTACK_OVERFLOW();
       mz_runstack_pushed(jitter, 1);
       mz_runstack_skipped(jitter, 1);
 
@@ -3220,6 +3280,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       if (!simple) {
 	jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+        CHECK_RUNSTACK_OVERFLOW();
 	mz_runstack_pushed(jitter, 1);
       }
 
@@ -3380,6 +3441,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
       if (pushed) {
 	jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(pushed));
+        CHECK_RUNSTACK_OVERFLOW();
 	mz_runstack_pushed(jitter, pushed);
       }
 
@@ -3823,6 +3885,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       LOG_IT(("local\n"));
       pos = mz_remap(SCHEME_LOCAL_POS(obj));
       jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+      VALIDATE_RESULT(JIT_R0);
       END_JIT_DATA(2);
       return 1;
     }
@@ -3835,6 +3898,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       pos = mz_remap(SCHEME_LOCAL_POS(obj));
       jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
       jit_ldr_p(JIT_R0, JIT_R0);
+      VALIDATE_RESULT(JIT_R0);
 
       END_JIT_DATA(3);
       return 1;
@@ -4008,6 +4072,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           } else {
             jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
           }
+          CHECK_RUNSTACK_OVERFLOW();
           jit_str_p(JIT_RUNSTACK, JIT_R0);
           jit_movi_l(JIT_R0, 1);
           ref2 = jit_jmpi(jit_forward());
@@ -4052,6 +4117,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           } else {
             jit_subr_ul(JIT_RUNSTACK, JIT_RUNSTACK, JIT_R2);
           }
+          CHECK_RUNSTACK_OVERFLOW();
           /* Copy args: */
           jit_ldxi_l(JIT_R1, JIT_R1, &((Scheme_Thread *)0x0)->ku.multiple.array);
           refloop = _jit.x.pc;
@@ -4142,6 +4208,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  (void)mz_finish(scheme_syntax_executers[pos]);
 	  CHECK_LIMIT();
 	  jit_retval(JIT_R0);
+          VALIDATE_RESULT(JIT_R0);
 	}
       }
       return 1;
@@ -4437,6 +4504,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       LOG_IT(("letv...\n"));
 
       jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(c));
+      CHECK_RUNSTACK_OVERFLOW();
       mz_runstack_pushed(jitter, c);
 
       if (SCHEME_LET_AUTOBOX(lv)) {
@@ -4521,6 +4589,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       LOG_IT(("leto...\n"));
 
       jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      CHECK_RUNSTACK_OVERFLOW();
       mz_runstack_pushed(jitter, 1);
 
       PAUSE_JIT_DATA();
@@ -4693,6 +4762,7 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
   if (cnt) {
     CHECK_LIMIT();
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(cnt));
+    CHECK_RUNSTACK_OVERFLOW();
     if (has_rest)
       --cnt;
   }
@@ -4845,6 +4915,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       break;
     }
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    CHECK_RUNSTACK_OVERFLOW();
     if (i < 2) {
       jit_str_p(JIT_RUNSTACK, JIT_R0);
     } else {
@@ -4891,6 +4962,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       break;
     }
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+    CHECK_RUNSTACK_OVERFLOW();
     jit_str_p(JIT_RUNSTACK, JIT_R0);
     jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
     JIT_UPDATE_THREAD_RSPTR();
@@ -4943,6 +5015,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	argc = 2;
       }
       jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(argc));
+      CHECK_RUNSTACK_OVERFLOW();
       if (i == 2) {
 	jit_str_p(JIT_RUNSTACK, JIT_R0);
 	jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
@@ -4960,6 +5033,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       (void)mz_finishr(JIT_R2);
       CHECK_LIMIT();
       jit_retval(JIT_R0);
+      VALIDATE_RESULT(JIT_R0);
       jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(argc));
       JIT_UPDATE_THREAD_RSPTR();
       if (!j) {
@@ -4996,6 +5070,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   mz_set_local_p(JIT_RUNSTACK, JIT_LOCAL1);
   on_demand_jit_arity_code = jit_get_ip().ptr; /* <<<- arity variant starts here */
   jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(3));
+  CHECK_RUNSTACK_OVERFLOW();
   jit_str_p(JIT_RUNSTACK, JIT_R0);
   jit_lshi_ul(JIT_R1, JIT_R1, 0x1);
   jit_ori_ul(JIT_R1, JIT_R1, 0x1);
@@ -5036,6 +5111,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   mz_patch_branch(ref);
   mz_patch_branch(ref2);
   CHECK_LIMIT();
+  JIT_UPDATE_THREAD_RSPTR();
   mz_prepare(3);
   jit_pusharg_p(JIT_R2);
   jit_pusharg_p(JIT_R1);
@@ -5056,6 +5132,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_pusharg_p(JIT_V1);
   (void)mz_finish(tail_call_with_values_from_multiple_result);
   jit_retval(JIT_R0);
+  VALIDATE_RESULT(JIT_R0);
   /* Pop saved runstack val and return: */
   mz_get_local_p(JIT_NOT_RET, JIT_LOCAL1);
   jit_sti_p(&scheme_current_runstack, JIT_NOT_RET);
@@ -5141,6 +5218,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       (void)mz_finish(call_with_values_from_multiple_result);
     }
     jit_retval(JIT_R0);
+    VALIDATE_RESULT(JIT_R0);
     mz_epilog(JIT_R1);
     CHECK_LIMIT();
   }
@@ -5232,6 +5310,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	  jit_ori_ul(JIT_R1, JIT_R1, 0x1);
 	}
 	jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+        CHECK_RUNSTACK_OVERFLOW();
 	jit_str_p(JIT_RUNSTACK, JIT_R0);
 	jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
 	if (!iii) {
@@ -5366,6 +5445,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 
     reffail = _jit.x.pc;
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    CHECK_RUNSTACK_OVERFLOW();
     jit_str_p(JIT_RUNSTACK, JIT_R0);
     jit_movi_i(JIT_R1, 1);
     JIT_UPDATE_THREAD_RSPTR();
@@ -5449,6 +5529,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	 bad for a getter. */
       refslow = _jit.x.pc;
       jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      CHECK_RUNSTACK_OVERFLOW();
       JIT_UPDATE_THREAD_RSPTR();
       jit_str_p(JIT_RUNSTACK, JIT_R0);
       jit_movi_i(JIT_V1, 1);
@@ -5458,6 +5539,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       jit_pusharg_p(JIT_R1);
       (void)mz_finish(_scheme_apply_from_native);
       jit_retval(JIT_R0);
+      VALIDATE_RESULT(JIT_R0);
       jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
       JIT_UPDATE_THREAD_RSPTR();
       if (!for_branch) {
@@ -5642,6 +5724,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
     ref3 = jit_bgti_p(jit_forward(), JIT_R1, cnt);
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(cnt+1));
+    CHECK_RUNSTACK_OVERFLOW();
     for (i = cnt; i--; ) {
       jit_ldxi_p(JIT_V1, JIT_R2, WORDS_TO_BYTES(i));
       jit_stxi_p(WORDS_TO_BYTES(i), JIT_RUNSTACK, JIT_V1);
@@ -5694,6 +5777,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   cnt = data->closure_size;
   if (cnt) {
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(cnt));
+    CHECK_RUNSTACK_OVERFLOW();
     
     for (i = cnt; i--; ) {
       int pos;
@@ -5938,7 +6022,7 @@ static int generate_simple_arity_check(mz_jit_state *jitter, int num_params, int
   jit_pusharg_p(JIT_R1);
   jit_pusharg_p(JIT_R0);
   CHECK_LIMIT();
-  (void)mz_finish(wrong_argument_count);
+  (void)mz_nonrs_finish(wrong_argument_count);
   CHECK_LIMIT();
 
   /* Arity check or reporting. If argv is NULL, it's a reporting request */
@@ -5971,7 +6055,7 @@ static int generate_simple_arity_check(mz_jit_state *jitter, int num_params, int
   if (is_method) {
     mz_prepare(1);
     jit_pusharg_p(JIT_R0);
-    (void)mz_finish(scheme_box);
+    (void)mz_nonrs_finish(scheme_box);
     mz_pop_locals();
     jit_ret();
   } else {

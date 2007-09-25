@@ -708,9 +708,11 @@ void *scheme_enlarge_runstack(long size, void *(*k)())
   if (size) {
     /* If we keep growing the stack, then probably it
        needs to be much larger, so at least double the 
-       stack size each time: */
+       stack size, to a point: */
     long min_size;
     min_size = 2 * (p->runstack_size);
+    if (min_size > 128000)
+      min_size = 128000;
     if (size < min_size)
       size = min_size;
   } else {
@@ -5612,9 +5614,9 @@ static Scheme_Object *do_apply_known_k(void)
   if ((v != SCHEME_MULTIPLE_VALUES) \
       && (v != SCHEME_TAIL_CALL_WAITING) \
       && (v != SCHEME_EVAL_WAITING) \
-      && (SCHEME_TYPE(v) > (_scheme_last_type_ + 5))) \
+      && (SCHEME_TYPE(v) > (_scheme_last_type_ + 25))) \
   { Scheme_Object *o = *(Scheme_Object **)(v); \
-    if (SCHEME_TYPE(o) > (_scheme_last_type_ + 5))\
+    if (SCHEME_TYPE(o) > (_scheme_last_type_ + 25))\
        scheme_signal_error("bad type"); }
 #else
 # define DEBUG_CHECK_TYPE(v) /**/
@@ -6512,7 +6514,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 #ifdef MZ_USE_JIT
     } else if (type == scheme_native_closure_type) {
       GC_CAN_IGNORE Scheme_Native_Closure_Data *data;
-      
+
       VACATE_TAIL_BUFFER_USE_RUNSTACK();
 
       UPDATE_THREAD_RSPTR();
@@ -6554,41 +6556,51 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       return NULL;
     } else if (type == scheme_proc_struct_type) {
       int is_method;
+      int check_rands = num_rands;
 
-      UPDATE_THREAD_RSPTR_FOR_ERROR(); /* in case */
+      do {
+        VACATE_TAIL_BUFFER_USE_RUNSTACK();
 
-      v = obj;
-      obj = scheme_extract_struct_procedure(obj, num_rands, rands, &is_method);
-      if (is_method) {
-	/* Have to add an extra argument to the front of rands */
-	if ((rands == RUNSTACK) && (RUNSTACK != RUNSTACK_START)){
-	  /* Common case: we can just push self onto the front: */
-	  rands = PUSH_RUNSTACK(p, RUNSTACK, 1);
-	  rands[0] = v;
-	} else {
-	  int i;
-	  Scheme_Object **a;
+        UPDATE_THREAD_RSPTR_FOR_ERROR(); /* in case */
 
-	  if (p->tail_buffer && (num_rands < p->tail_buffer_size)) {
-	    /* Use tail-call buffer. Shift in such a way that this works if
-	       rands == p->tail_buffer */
-	    a = p->tail_buffer;
-	  } else {
-	    /* Uncommon general case --- allocate an array */
-	    UPDATE_THREAD_RSPTR_FOR_GC();
-	    a = MALLOC_N(Scheme_Object *, num_rands + 1);
-	  }
+        v = obj;
+        obj = scheme_extract_struct_procedure(obj, check_rands, rands, &is_method);
+        if (is_method) {
+          /* Have to add an extra argument to the front of rands */
+          if ((rands == RUNSTACK) && (RUNSTACK != RUNSTACK_START)){
+            /* Common case: we can just push self onto the front: */
+            rands = PUSH_RUNSTACK(p, RUNSTACK, 1);
+            rands[0] = v;
+          } else {
+            int i;
+            Scheme_Object **a;
 
-	  for (i = num_rands; i--; ) {
-	    a[i + 1] = rands[i];
-	  }
-	  a[0] = v;
-	  rands = a;
-	}
-	num_rands++;
-      }
+            if (p->tail_buffer && (num_rands < p->tail_buffer_size)) {
+              /* Use tail-call buffer. Shift in such a way that this works if
+                 rands == p->tail_buffer */
+              a = p->tail_buffer;
+            } else {
+              /* Uncommon general case --- allocate an array */
+              UPDATE_THREAD_RSPTR_FOR_GC();
+              a = MALLOC_N(Scheme_Object *, num_rands + 1);
+            }
 
-      DO_CHECK_FOR_BREAK(p, UPDATE_THREAD_RSPTR_FOR_GC(); if (rands == p->tail_buffer) make_tail_buffer_safe(););
+            for (i = num_rands; i--; ) {
+              a[i + 1] = rands[i];
+            }
+            a[0] = v;
+            rands = a;
+          }
+          num_rands++;
+        }
+
+        /* After we check arity once, no need to check again
+           (which would lead to O(n^2) checking for nested
+           struct procs): */
+        check_rands = -1;
+
+        DO_CHECK_FOR_BREAK(p, UPDATE_THREAD_RSPTR_FOR_GC(); if (rands == p->tail_buffer) make_tail_buffer_safe(););
+      } while (SAME_TYPE(scheme_proc_struct_type, SCHEME_TYPE(obj)));
 
       goto apply_top;
     } else if (type == scheme_closed_prim_type) {

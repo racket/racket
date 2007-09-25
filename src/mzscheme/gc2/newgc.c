@@ -2971,7 +2971,8 @@ static void garbage_collect(int force_full)
   TIME_STEP("cleaned heap");
   reset_nursery();
   TIME_STEP("reset nursurey");
-  do_btc_accounting();
+  if (gc_full)
+    do_btc_accounting();
   TIME_STEP("accounted");
   if (generations_available)
     protect_old_pages();
