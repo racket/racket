@@ -167,14 +167,15 @@
                        [else #f])
                  (loop base (cdr elts)))))))
     (define file (build-path server-dir tag))
-    (with-handlers ([exn:fail? (lambda (exn)
-                                 (log-line "Status exception: ~s"  exn)
-                                 (make-page "Error" "Illegal file access"))])
+    (with-handlers ([exn:fail?
+                     (lambda (exn)
+                       (log-line "Status exception: ~a" (exn-message exn))
+                       (make-page "Error" "Illegal file access"))])
       ;; Make sure the user is allowed to read the requested file:
       (or (check file `(,who *) #t)
           (check file `(#rx"^solution") #f)
           (check file `(#rx"^solution" *) #f)
-          (error "Boom!"))
+          (error 'download "bad file access for ~s: ~a" who file))
       (log-line "Status file-get: ~s ~a" who file)
       (hook 'status-file-get `([username ,(string->symbol who)] [file ,file]))
       ;; Return the downloaded file
