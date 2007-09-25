@@ -367,34 +367,34 @@
   (define* (~equal? x y . args)
     (let ([args (!list args)])
       (if (pair? args)
-        (and (~equal? x y) (apply ~equal? y (cdr args)))
+        (and (~equal? x y) (apply ~equal? x (cdr args)))
         (or (equal? x y)
             (let ([x (! x)] [y (! y)])
               (or (equal? x y)
                   (cond
-                   [(pair? x) (and (pair? y)
-                                   (~equal? (car x) (car y))
-                                   (~equal? (cdr x) (cdr y)))]
-                   [(vector? x) (and (vector? y)
-                                     (andmap ~equal?
-                                             (vector->list x)
-                                             (vector->list y)))]
-                   [(box? x) (and (box? y) (~equal? (unbox x) (unbox y)))]
-                   [(struct? x)
-                    (and (struct? y)
-                         (let-values ([(xtype xskipped?) (struct-info x)]
-                                      [(ytype yskipped?) (struct-info y)])
-                           (and xtype ytype (not xskipped?) (not yskipped?)
-                                (eq? xtype ytype)
-                                (let*-values
-                                    ([(name initk autok ref set imms spr skp?)
-                                      (struct-type-info xtype)]
-                                     [(k) (+ initk autok)])
-                                  (let loop ([i 0])
-                                    (or (= i k)
-                                        (and (~equal? (ref x i) (ref y i))
-                                             (loop (add1 i)))))))))]
-                   [else #f])))))))
+                    [(pair? x) (and (pair? y)
+                                    (~equal? (car x) (car y))
+                                    (~equal? (cdr x) (cdr y)))]
+                    [(vector? x) (and (vector? y)
+                                      (andmap ~equal?
+                                              (vector->list x)
+                                              (vector->list y)))]
+                    [(box? x) (and (box? y) (~equal? (unbox x) (unbox y)))]
+                    [(struct? x)
+                     (and (struct? y)
+                          (let-values ([(xtype xskipped?) (struct-info x)]
+                                       [(ytype yskipped?) (struct-info y)])
+                            (and xtype ytype (not xskipped?) (not yskipped?)
+                                 (eq? xtype ytype)
+                                 (let*-values
+                                     ([(name initk autok ref set imms spr skp?)
+                                       (struct-type-info xtype)]
+                                      [(k) (+ initk autok)])
+                                   (let loop ([i 0])
+                                     (or (= i k)
+                                         (and (~equal? (ref x i) (ref y i))
+                                              (loop (add1 i)))))))))]
+                    [else #f])))))))
 
   ;; --------------------------------------------------------------------------
   ;; List functions
@@ -463,7 +463,7 @@
                         ls
                         (cons (car l) (~ (loop (! (cdr l))))))))])))
 
-  ;; useful utility for many list functions
+  ;; useful utility for many list functions below
   (define (!cdr l) (! (cdr l)))
 
   (define-syntax (deflistiter stx)
