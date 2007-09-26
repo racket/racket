@@ -50,6 +50,7 @@
      slide/name/tall/inset
      slide/name/center/inset
      slide/center/timeout
+     slide/title/center/timeout
      
      most-recent-slide retract-most-recent-slide re-slide start-at-recent-slide
      scroll-transition pause-transition

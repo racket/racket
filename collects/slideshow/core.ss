@@ -435,6 +435,9 @@
       (define (slide/center/timeout t . x)
         (apply slide/title/center/inset/timeout #f zero-inset t x))
 
+      (define (slide/title/center/timeout s t . x)
+        (apply slide/title/center/inset/timeout s zero-inset t x))
+
       (define most-recent-slide
 	(case-lambda
 	 [() (most-recent-slide 0)]
