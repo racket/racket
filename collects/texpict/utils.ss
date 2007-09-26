@@ -935,10 +935,11 @@
 	(let ([new
 	       (dc
 		(lambda (dc x y)
-		  (let ([a (send dc get-alpha)])
-		    (send dc set-alpha (* a alpha-factor))
-		    (drawer dc x y)
-		    (send dc set-alpha a)))
+                  (unless (zero? alpha-factor)
+                    (let ([a (send dc get-alpha)])
+                      (send dc set-alpha (* a alpha-factor))
+                      (drawer dc x y)
+                      (send dc set-alpha a))))
 		(pict-width p)
 		(pict-height p)
 		(pict-ascent p)
