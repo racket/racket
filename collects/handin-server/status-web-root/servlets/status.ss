@@ -28,9 +28,7 @@
            (body ([bgcolor "white"]) (h1 ((align "center")) ,title) ,@body)))
 
   (define (relativize-path p)
-    (path->string
-     (find-relative-path (normalize-path server-dir)
-                         (normalize-path p))))
+    (path->string (find-relative-path (normalize-path server-dir) p)))
 
   (define (make-k k tag)
     (format "~a~atag=~a" k (if (regexp-match? #rx"^[^#]*[?]" k) "&" "?")
@@ -82,6 +80,7 @@
     (let ([soln (and (member (assignment<->dir hi) (get-conf 'inactive-dirs))
                      (find-handin-entry hi #rx"^solution"))]
           [none `((i "---"))])
+      (log-line ">>>> ~s" soln)
       (cond [(not soln) none]
             [(file-exists? soln)
              `((a ((href ,(make-k k (relativize-path soln)))) "Solution"))]
@@ -94,7 +93,8 @@
                    none
                    (apply append
                           (map (lambda (f)
-                                 `((a ([href ,(make-k k (relativize-path (build-path soln f)))])
+                                 `((a ([href ,(make-k k (relativize-path
+                                                         (build-path soln f)))])
                                      (tt ,f))
                                    (br)))
                                files)))))]
