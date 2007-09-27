@@ -80,7 +80,6 @@
     (let ([soln (and (member (assignment<->dir hi) (get-conf 'inactive-dirs))
                      (find-handin-entry hi #rx"^solution"))]
           [none `((i "---"))])
-      (log-line ">>>> ~s" soln)
       (cond [(not soln) none]
             [(file-exists? soln)
              `((a ((href ,(make-k k (relativize-path soln)))) "Solution"))]
