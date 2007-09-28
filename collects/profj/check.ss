@@ -1609,7 +1609,7 @@
           (bin-op-equality-error 'prim op l r src))))
       ((& ^ or &= ^= or=)      ;; 15.22
        (cond
-         ((and (prim-numeric-type? l) (prim-numeric-type? r)) (binary-promotion l r))
+         ((and (prim-integral-type? l) (prim-integral-type? r)) (binary-promotion l r))
          ((and (eq? 'boolean l) (eq? 'boolean r)) 'boolean)
          (else (bin-op-bitwise-error op l r src))))
       ((&& oror)      ;; 15.23, 15.24
@@ -2966,15 +2966,15 @@
   (define (bin-op-bitwise-error op left right src)
     (let ((lt (type->ext-name left))
           (rt (type->ext-name right))
-          (prim-list "double, float, long, int, short, byte or char")
+          (prim-list "long, int, short, byte or char")
           (op (if (eq? op 'or) (symbol->string "|") op)))
       (raise-error 
        op 
        (cond
-         ((prim-numeric-type? left) 
+         ((prim-integral-type? left) 
           (format "~a expects the right hand side to be a ~a when the left is ~a. Given ~a"
                   op prim-list lt rt))
-         ((prim-numeric-type? right)
+         ((prim-integral-type? right)
           (format "~a expects the left hand side to be a ~a when the left is ~a. Given ~a"
                   op prim-list rt lt))
          ((eq? left 'boolean)
