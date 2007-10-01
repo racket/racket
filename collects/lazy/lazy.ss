@@ -638,7 +638,7 @@
               [(pair? list)
                (let ([x (car list)]
                      [xs (~ (loop (! (cdr list))))])
-                 (if (!*app pred x) (cons x xs) xs))]
+                 (if (! (!*app pred x)) (cons x xs) xs))]
               [else (error 'filter "not a proper list: ~e" list)]))))
 
   (require (rename (lib "list.ss") !sort sort))
