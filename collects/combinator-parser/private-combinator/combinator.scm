@@ -395,6 +395,7 @@
              (map (lambda (r) (repeat->res r look-back)) (flatten old-res))]
             [else
              #;(printf "There actually was an error for ~a~n" name)
+             #;(printf "length seen ~a length rest ~a~n" (length seen) (length (res-rest old-res)))
              (fail-res (res-rest old-res)
                        (let*-values ([(fail) (res-msg old-res)]
                                      [(possible-fail)
@@ -481,6 +482,7 @@
                                                                (res? look-back-ref))
                                                           (- used (res-used look-back-ref)) used)))]
                                 [opt-fails (list seq-fail pos-fail)])
+                           #;(printf "pos-fail? ~a~n" (and pos-fail #t))
                            #;(printf "seq-fail ~a~n" seq-fail)
                            #;(when pos-fail 
                              (printf "used ~a look-back-ref used ~a ~n"
@@ -538,7 +540,7 @@
                                 (lambda (r)
                                   (cond
                                     [(res? r)
-                                     #;(printf "rest is a res for ~a~n" repeat-name)
+                                     #;(printf "rest is a res for ~a, res-a is ~a ~n" a repeat-name)
                                      (make-repeat-res
                                       (make-res (append a (res-a r)) (res-rest r) repeat-name #f 
                                                 (+ (res-used curr-ans) (res-used r)) 
@@ -578,6 +580,8 @@
                         [(null? curr-input) 
                          #;(printf "out of input for ~a~n" repeat-name)
                          (make-repeat-res (make-res null null repeat-name "" 0 #f #f) 'out-of-input)]
+                        #;[(weak-map-get memo-table curr-input #f)
+                         (weak-map-get memo-table curr-input)]
                         [else
                          (let ([this-res (sub curr-input curr-src)])
                            #;(printf "Repeat of ~a called it's repeated entity ~n" repeat-name)
@@ -596,8 +600,10 @@
                                         [(options-fail? (res-msg this-res)) 'options]
                                         [else 'terminal])
                                       (fail-type-chance (res-msg this-res)))
-                              (make-repeat-res (make-res null curr-input repeat-name "" 0 #f #f)
-                                               (res-msg this-res))]
+                              (let ([fail (make-repeat-res (make-res null curr-input repeat-name "" 0 #f #f)
+                                                           (res-msg this-res))])
+                                #;(weak-map-put! memo-table curr-input fail)
+                                fail)]
                              [(repeat-res? this-res)
                               #;(printf "repeat-res case of ~a~n" repeat-name)
                               (process-rest (repeat-res-a this-res)
@@ -608,14 +614,17 @@
                                 #;(printf "repeat call of ~a, choice-res ~a~n" 
                                         repeat-name
                                         (and (choice-res? this-res) 
-                                             (length (choice-res-matches this-res))))
+                                             (length list-of-answer)))
                                 (cond 
                                   [(null? (cdr list-of-answer))
-                                   (process-rest (car list-of-answer) (loop (res-rest (car list-of-answer))
-                                                                            (update-src (res-rest (car list-of-answer))
-                                                                                        curr-src)))]
+                                   (process-rest (car list-of-answer) 
+                                                 (loop (res-rest (car list-of-answer))
+                                                       (update-src (res-rest (car list-of-answer))
+                                                                   curr-src)))]
                                   [else
                                    (map (lambda (match) 
+                                          #;(printf "calling repeat loop again, res-rest match ~a~n" 
+                                                  (length (res-rest match)))
                                           (process-rest match 
                                                         (loop (res-rest match)
                                                               (update-src (res-rest match) curr-src))))

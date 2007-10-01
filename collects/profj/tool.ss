@@ -1,6 +1,7 @@
 (module tool mzscheme
   (require (lib "tool.ss" "drscheme") (lib "contract.ss")
            (lib "mred.ss" "mred") (lib "framework.ss" "framework")
+           (lib "errortrace-lib.ss" "errortrace")
            (prefix u: (lib "unit.ss")) 
            (lib "file.ss")
            (lib "include-bitmap.ss" "mrlib") (lib "etc.ss")
@@ -826,8 +827,9 @@
                                      (else 
                                       (let-values (((name syn) (get-module-name (expand (car mods)))))
                                         (set! name-to-require name)
-                                        (syntax-as-top (eval (compile syn))
-                                         #;(old-current-eval (compile syn)))
+                                        (syntax-as-top #;(eval (annotate-top (compile syn)))
+                                         (old-current-eval 
+                                          (errortrace-annotate syn)))
                                         (loop (cdr mods) extras #t)))))))))
                           ((parse-java-interactions ex loc)
                            (let ((exp (syntax-object->datum (syntax ex))))

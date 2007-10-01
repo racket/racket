@@ -45,9 +45,11 @@
                    #;(printf "choice-res or pair? ~a~n" (choice-res? result))
                    (let* ([options (if (choice-res? result) (choice-res-matches result) result)]
                           [finished-options (filter (lambda (o) 
-                                                      (cond [(res? o) (null? (res-rest o))]
-                                                            [(repeat-res? o) 
-                                                             (eq? (repeat-res-stop o) 'out-of-input)]))
+                                                      (!!! (cond [(res? o) 
+                                                                  (and (not (null? (res-a o)))
+                                                                       (null? (res-rest o)))]
+                                                                 [(repeat-res? o) 
+                                                                  (eq? (repeat-res-stop o) 'out-of-input)])))
                                                     options)]
                           [possible-repeat-errors
                            (filter (lambda (r) (and (repeat-res? r)
@@ -57,8 +59,10 @@
                            (filter res-possible-error 
                                    (map (lambda (a) (if (repeat-res? a) (repeat-res-a a) a))
                                         options))])
+                     #;(printf "length finished-options ~a~n" finished-options)
                      (cond 
-                       [(not (null? finished-options)) 
+                       [(not (null? finished-options))
+                        #;(printf "finished an option~n")
                         (let ([first-fo (!!! (car finished-options))])
                           (car (cond 
                                  [(res? first-fo) (res-a first-fo)]
@@ -69,10 +73,12 @@
                                   (error 'parser-internal-errorcp 
                                          (format "~a" first-fo))])))]
                        #;[(not (null? possible-repeat-errors))
+                        (printf "possible-repeat error~n")
                         (!!! (fail-type->message 
                               (!!! (car (repeat-res-stop 
                                          (sort-repeats possible-repeat-errors))))))]
                        [(and (choice-res? result) (fail-type? (choice-res-errors result)))
+                        #;(printf "choice res and choice res errors ~n")
                         (cond
                           [(and (null? possible-repeat-errors)
                                 (null? possible-errors)) (!!! (fail-type->message (choice-res-errors result)))]
@@ -117,7 +123,6 @@
                                                (!!! result)))])])
           (cond
             [(err? out)
-             #;(printf "returning error")
              (make-err (!!! (err-msg out))
                        (if (err-src out)
                            (list (!!! file) 
