@@ -811,7 +811,9 @@
 		      (cond
 		       [(and (number? dx) (number? dy))
 			(values dx (- (pict-height base) dy))]
-		       [(and (pict? dx) (procedure? dy)
+		       [(and (or (pict? dx) 
+                                 (and (list? dx) (andmap pict? dx)))
+                             (procedure? dy)
 			     (procedure-arity-includes? dy 2))
 			(if flip?
 			    (let-values ([(dx dy) (dy base dx)])

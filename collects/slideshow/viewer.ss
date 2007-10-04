@@ -319,7 +319,7 @@
 		    [y (send background-f get-y)])
 		(send background-f move (+ x dx) (+ y dy)))))
 	  
-	  (define/private (prev)
+	  (define/public (prev)
 	    (stop-transition)
 	    (set! current-page 
                   (let loop ([pos (max (sub1 current-page) 0)])
@@ -504,9 +504,11 @@
       (send (new (class editor-canvas% 
 		   (define/override (on-event e)
 		     (super on-event e)
-		     (when (and click-to-advance?
-				(send e button-up?))
-		       (send f next)))
+		     (when click-to-advance?
+                       (when (send e button-up? 'left)
+                         (send f next))
+                       (when (send e button-up? 'right)
+                         (send f prev))))
 		   (super-new))
 		 [parent c-frame] 
 		 [editor commentary] 
@@ -638,9 +640,12 @@
 		(set! clicking #f)
 		(when hit?
 		  ((click-region-thunk c))))]
-	     [(send e button-up?)
+	     [(send e button-up? 'left)
 	      (when click-to-advance?
 		(send (get-top-level-window) next))]
+	     [(send e button-up? 'right)
+	      (when click-to-advance?
+		(send (get-top-level-window) prev))]
 	     [else 
 	      (when (and clicking clicking-hit?)
 		(invert-clicking! #f))

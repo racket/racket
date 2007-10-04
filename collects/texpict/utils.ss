@@ -931,26 +931,31 @@
   (define cellophane
     (case-lambda
      [(p alpha-factor)
-      (let ([drawer (make-pict-drawer p)])
-	(let ([new
-	       (dc
-		(lambda (dc x y)
-                  (unless (zero? alpha-factor)
+      (cond
+       [(= 1.0 alpha-factor)
+        (inset p 0)]
+       [(zero? alpha-factor)
+        (ghost p)]
+       [else
+        (let ([drawer (make-pict-drawer p)])
+          (let ([new
+                 (dc
+                  (lambda (dc x y)
                     (let ([a (send dc get-alpha)])
                       (send dc set-alpha (* a alpha-factor))
                       (drawer dc x y)
-                      (send dc set-alpha a))))
-		(pict-width p)
-		(pict-height p)
-		(pict-ascent p)
-		(pict-descent p))])
-	  (make-pict (pict-draw new)
-		     (pict-width new)
-		     (pict-height new)
-		     (pict-ascent new)
-		     (pict-descent new)
-		     (list (make-child p 0 0 1 1))
-		     #f)))]))
+                      (send dc set-alpha a)))
+                  (pict-width p)
+                  (pict-height p)
+                  (pict-ascent p)
+                  (pict-descent p))])
+            (make-pict (pict-draw new)
+                       (pict-width new)
+                       (pict-height new)
+                       (pict-ascent new)
+                       (pict-descent new)
+                       (list (make-child p 0 0 1 1))
+                       #f)))])]))
 
   (define inset/clip
     (case-lambda
