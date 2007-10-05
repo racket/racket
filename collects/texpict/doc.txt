@@ -489,6 +489,13 @@ Drawing Adjusters:
    red, green, and blue components of the color.
       [MrEd only]
 
+>  (cellophane pict opacity) -> pict
+
+   Makes the given pict semi-transparent, where an opacity of 0.0 is
+   fully transparent, and an opacity of 1.0 is fully opaque.  See
+   `set-alpha' of dc<%> for information about the contexts and cases
+   when semi-transparent drawing works.
+
 >  (clip pict)
 
    Clips a pict to its bounding box.

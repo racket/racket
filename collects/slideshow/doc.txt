@@ -348,6 +348,14 @@ Procedure Reference
   the top of the slide. The content area is therefore the same size as
   `client-page'.
 
+> (slide/timeout secs element ...)
+> (slide/center/timeout secs element ...)
+> (slide/title/timeout title-string secs element ...)
+> (slide/title/center/timeout title-string secs element ...)
+  Like the versions without `/timeout', but if the slide is not
+  advanced before `secs' seconds, it advances automatically.
+  Also, manual advances (forward or backward) skip the slide.
+
 > (make-slide-inset left-inset top-inset right-inset bottom-inset) -
   Creates a slide inset, which describes a number of pixels to inset
   a slide on each side. Each inset must be an exact, non-negative

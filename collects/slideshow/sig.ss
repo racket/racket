@@ -49,6 +49,8 @@
      slide/name/inset
      slide/name/tall/inset
      slide/name/center/inset
+     slide/timeout
+     slide/title/timeout
      slide/center/timeout
      slide/title/center/timeout
      

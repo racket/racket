@@ -101,6 +101,8 @@
 	   title-h get-title-h set-title-h! current-slide-assembler
 	   current-page-number-font current-page-number-color 
 	   set-page-numbers-visible! done-making-slides
+           slide/timeout
+           slide/title/timeout
            slide/center/timeout
            slide/title/center/timeout)
   (provide/contract [clickback 

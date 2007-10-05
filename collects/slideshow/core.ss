@@ -361,17 +361,20 @@
       (define (slide/name/tall/inset s inset . x)
 	(apply slide/title/tall/inset (make-name-only s) inset x))
 
-      (define (slide/title/tall/gap v-sep s . x)
-	(apply do-slide/title/tall/inset do-add-slide! #t #t values v-sep s zero-inset #f x))
+      (define (slide/title/tall/gap v-sep s timeout . x)
+	(apply do-slide/title/tall/inset do-add-slide! #t #t values v-sep s zero-inset timeout x))
 
       (define (slide/title/tall s . x)
-	(apply slide/title/tall/gap gap-size s x))
+	(apply slide/title/tall/gap gap-size s #f x))
 
       (define (slide/name/tall s . x)
 	(apply slide/title/tall (make-name-only s) x))
 
       (define (slide/title s . x)
-	(apply slide/title/tall/gap (* 2 gap-size) s x))
+	(apply slide/title/tall/gap (* 2 gap-size) s #f x))
+
+      (define (slide/title/timeout s timeout . x)
+	(apply slide/title/tall/gap (* 2 gap-size) s timeout x))
 
       (define (slide/name s . x)
 	(apply slide/title (make-name-only s) x))
@@ -427,6 +430,7 @@
 	(apply slide/title/center (make-name-only s) x))
 
       (define (slide . x) (apply slide/title #f x))
+      (define (slide/timeout timeout . x) (apply slide/title/timeout #f timeout x))
       (define (slide/inset inset . x) (apply slide/title/inset #f inset x))
 
       (define (slide/center . x) (apply slide/title/center #f x))
