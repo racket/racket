@@ -62,6 +62,12 @@
 
 (define common-cpp-defs " /D _CRT_SECURE_NO_DEPRECATE ")
 
+(define (check-timestamp t2 dep)
+  (when (t2 . > . (current-seconds))
+    (fprintf (current-error-port)
+	     "WARNING: timestamp is in the future: ~e\n" 
+	     dep)))
+
 (define (try src deps dest objdest includes use-precomp extra-compile-flags expand-extra-flags msvc-pch indirect?)
   (when (or (not re:only) (regexp-match re:only dest))
     (unless (and (file-exists? dest)
@@ -71,7 +77,9 @@
 		      (let ([dep (cond
 				  [(bytes? dep) (bytes->path dep)]
 				  [else dep])])
-			(> t (file-or-directory-modify-seconds dep))))
+			(let ([t2 (file-or-directory-modify-seconds dep)])
+			  (check-timestamp t2 dep)
+			  (> t t2))))
 		    (append deps
 			    (if use-precomp (list use-precomp) null)
 			    (let ([deps (path-replace-suffix dest #".sdep")])
@@ -122,7 +130,9 @@
 		 (and (>= t (file-or-directory-modify-seconds c))
 		      (andmap
 		       (lambda (f)
-			 (>= t (file-or-directory-modify-seconds f)))
+			 (let ([t2 (file-or-directory-modify-seconds f)])
+			   (check-timestamp t2 f)
+			   (>= t t2)))
 		       deps))))
     (unless (system- (format "cl.exe ~a /MT /Zi ~a /c ~a /Fdxsrc/ /Fo~a" flags opt-flags c o))
       (error "failed compile"))))

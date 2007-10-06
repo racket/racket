@@ -720,7 +720,8 @@ void wxDC::DrawLine(double x1, double y1, double x2, double y2)
       xx2 = SmoothingXFormX(x2);
       yy2 = SmoothingXFormY(y2);
 
-      wxGDrawLine(g, current_pen->GraphicsPen(AlignSmoothing(), user_scale_x), xx1, yy1, xx2, yy2);
+      wxGDrawLine(g, current_pen->GraphicsPen(AlignSmoothing(), user_scale_x, current_alpha), 
+		  xx1, yy1, xx2, yy2);
     }
     DoneDC(dc);
     return;
@@ -877,7 +878,7 @@ void wxDC::DrawArc(double x, double y, double w, double h, double start, double 
       ww = SmoothingXFormW(w, x);
       hh = SmoothingXFormH(h, y);
 
-      wxGFillPie(g, current_brush->GraphicsBrush(), xx, yy, ww, hh, init, span);
+      wxGFillPie(g, current_brush->GraphicsBrush(current_alpha), xx, yy, ww, hh, init, span);
     }
 
     if (current_pen && (current_pen->GetStyle() != wxTRANSPARENT)) {
@@ -888,7 +889,8 @@ void wxDC::DrawArc(double x, double y, double w, double h, double start, double 
       ww = SmoothingXFormWL(w, x);
       hh = SmoothingXFormHL(h, y);
       
-      wxGDrawArc(g, current_pen->GraphicsPen(AlignSmoothing(), user_scale_x), xx, yy, ww, hh, init, span);
+      wxGDrawArc(g, current_pen->GraphicsPen(AlignSmoothing(), user_scale_x, current_alpha), 
+		 xx, yy, ww, hh, init, span);
     }
 
     DoneDC(dc);
@@ -1058,12 +1060,13 @@ void wxDC::DrawPolygon(int n, wxPoint points[], double xoffset, double yoffset,i
     }
 
     if (current_brush && (current_brush->GetStyle() != wxTRANSPARENT)) {
-      wxGFillPolygon(g, current_brush->GraphicsBrush(), pts, n, 
+      wxGFillPolygon(g, current_brush->GraphicsBrush(current_alpha), pts, n, 
 		     (fillStyle == wxODDEVEN_RULE) ? FillModeAlternate : FillModeWinding);
     }
 
     if (current_pen && (current_pen->GetStyle() != wxTRANSPARENT)) {
-      wxGDrawPolygon(g, current_pen->GraphicsPen(AlignSmoothing(), user_scale_x), pts, n);
+      wxGDrawPolygon(g, current_pen->GraphicsPen(AlignSmoothing(), user_scale_x, current_alpha),
+		     pts, n);
     }
 
 	DoneDC(dc);
@@ -1138,11 +1141,11 @@ void wxDC::DrawPath(wxPath *p, double xoffset, double yoffset,int fillStyle)
     }
 
     if (current_brush && (current_brush->GetStyle() != wxTRANSPARENT)) {
-      wxGFillPath(g, current_brush->GraphicsBrush(), gp);
+      wxGFillPath(g, current_brush->GraphicsBrush(current_alpha), gp);
     }
 
     if (current_pen && (current_pen->GetStyle() != wxTRANSPARENT)) {    
-      wxGDrawPath(g, current_pen->GraphicsPen(AlignSmoothing(), user_scale_x), gp);
+      wxGDrawPath(g, current_pen->GraphicsPen(AlignSmoothing(), user_scale_x, current_alpha), gp);
     }
 
     wxGPathRelease(gp);
@@ -1266,7 +1269,7 @@ void wxDC::DrawLines(int n, wxPoint points[], double xoffset, double yoffset)
       }
 
       
-      wxGDrawLines(g, current_pen->GraphicsPen(AlignSmoothing(), user_scale_x), pts, n);
+      wxGDrawLines(g, current_pen->GraphicsPen(AlignSmoothing(), user_scale_x, current_alpha), pts, n);
     }
 
     DoneDC(dc);
@@ -1317,7 +1320,7 @@ void wxDC::DrawRectangle(double x, double y, double width, double height)
       ww = SmoothingXFormW(width, x);
       hh = SmoothingXFormH(height, y);
 
-      wxGFillRectangle(g, current_brush->GraphicsBrush(), xx, yy, ww, hh);
+      wxGFillRectangle(g, current_brush->GraphicsBrush(current_alpha), xx, yy, ww, hh);
     }
 
     if (current_pen && (current_pen->GetStyle() != wxTRANSPARENT)) {
@@ -1328,7 +1331,7 @@ void wxDC::DrawRectangle(double x, double y, double width, double height)
       ww = SmoothingXFormWL(width, x);
       hh = SmoothingXFormHL(height, y);
 
-      wxGDrawRectangle(g, current_pen->GraphicsPen(AlignSmoothing(), user_scale_x), xx, yy, ww, hh);
+      wxGDrawRectangle(g, current_pen->GraphicsPen(AlignSmoothing(), user_scale_x, current_alpha), xx, yy, ww, hh);
     }
     
     DoneDC(dc);
@@ -1412,7 +1415,7 @@ void wxDC::DrawRoundedRectangle(double x, double y, double width, double height,
       wxGPathAddLine(gp, xx + ww - rr, yy + hh, xx + rr, yy + hh);
       wxGPathAddArc(gp, xx, yy + hh - 2 * rr, 2 * rr, 2 * rr, 90, 90);
       wxGPathCloseFigure(gp);
-      wxGFillPath(g, current_brush->GraphicsBrush(), gp);
+      wxGFillPath(g, current_brush->GraphicsBrush(current_alpha), gp);
       wxGPathRelease(gp);
     }
 
@@ -1438,7 +1441,7 @@ void wxDC::DrawRoundedRectangle(double x, double y, double width, double height,
       wxGPathAddLine(gp, xx + ww - rr, yy + hh, xx + rr, yy + hh);
       wxGPathAddArc(gp, xx, yy + hh - 2 * rr, 2 * rr, 2 * rr, 90, 90);
       wxGPathCloseFigure(gp);
-      wxGDrawPath(g, current_pen->GraphicsPen(AlignSmoothing(), user_scale_x), gp);
+      wxGDrawPath(g, current_pen->GraphicsPen(AlignSmoothing(), user_scale_x, current_alpha), gp);
       wxGPathRelease(gp);
     }
 
@@ -1871,6 +1874,25 @@ void wxDC::DrawText(const char *text, double x, double y, Bool combine, Bool ucs
 		 : OPAQUE));
   SetRop(dc, wxSOLID);
   SetScaleMode(wxWINDOWS_SCALE, dc);
+
+  if (current_alpha != 1.0) {
+    /* Approximate alpha blending... */
+    UINT c;
+    int r, gr, b;
+    
+    if (current_text_foreground->Ok())
+      c = current_text_foreground->pixel;
+    else
+      c = RGB(0, 0, 0);
+
+    r = 255 - (int)((255 - GetRValue(c)) * current_alpha);
+    gr = 255 - (int)((255 - GetGValue(c)) * current_alpha);
+    b = 255 - (int)((255 - GetBValue(c)) * current_alpha);
+    
+    SetTextColor(dc, RGB(r, gr, b));
+
+    SetROP2(dc, R2_MASKPEN);
+  }
   
   w = 0;
   h = 0;
@@ -1906,6 +1928,10 @@ void wxDC::DrawText(const char *text, double x, double y, Bool combine, Bool ucs
   }
 
   SetDeviceOrigin(oox, ooy);
+
+  if (current_alpha != 1.0) {
+    SetROP2(dc, R2_COPYPEN);
+  }
 
   if (current_text_background->Ok())
     (void)SetBkColor(dc, old_background);

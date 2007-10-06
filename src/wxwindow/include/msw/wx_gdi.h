@@ -78,6 +78,7 @@ class wxPen: public wxbPen
   wxBitmap *old_stipple;
   COLORREF old_color;
   Pen *g_p, *a_g_p;
+  double g_alpha, a_g_alpha;
   Bool use_const;
   wxPen *const_pen;
 
@@ -92,7 +93,7 @@ class wxPen: public wxbPen
   void ChangePen();
   HPEN SelectPen(HDC dc, double scale = 1.0);
 
-  Pen *GraphicsPen(Bool align, double sx);
+  Pen *GraphicsPen(Bool align, double sx, double alpha);
   void ReleaseGraphics();
 };
 
@@ -108,6 +109,7 @@ class wxBrush: public wxbBrush
   wxBitmap *old_stipple;
   COLORREF old_color;
   Brush *g_b;
+  double g_alpha;
   Bool use_const;
   wxBrush *const_brush;
 
@@ -119,7 +121,7 @@ class wxBrush: public wxbBrush
   void ChangeBrush();
   HBRUSH SelectBrush(HDC dc);
 
-  Brush *GraphicsBrush();
+  Brush *GraphicsBrush(double alpha);
   void ReleaseGraphics();
 };
 

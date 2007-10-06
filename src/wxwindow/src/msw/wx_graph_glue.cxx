@@ -19,9 +19,11 @@ typedef int GpMatrixOrder;
 #define UnitWorld 0
 #define MatrixOrderPrepend 0
 
-static inline UINT32 COLORREF_ARGB(UINT c) 
+static inline UINT32 COLORREF_ARGB(UINT c, double alpha) 
 {
-  return (0xFF000000
+  UINT32 a = ((UINT32)(255 * alpha)) << 24;
+
+  return (a
 	  | GetRValue(c) << 16
 	  | GetGValue(c) << 8
 	  | GetBValue(c));
@@ -137,7 +139,7 @@ void wxGDrawLines(Graphics *g, Pen *p, PointF *pts, int n)
 void wxGFillRectangleColor(Graphics *g, COLORREF c, double x, double y, double w, double h)
 {
   Brush *b;
-  ck(pGdipCreateSolidFill(COLORREF_ARGB(c), &b));
+  ck(pGdipCreateSolidFill(COLORREF_ARGB(c, 1.0), &b));
   ck(pGdipFillRectangle(g, b, (REAL)x, (REAL)y, (REAL)w, (REAL)h));
   ck(pGdipDeleteBrush(b));
 }
@@ -253,10 +255,10 @@ void wxGMatrixScale(Matrix *m, double x, double y)
   pGdipScaleMatrix(m, (REAL)x, (REAL)y, MatrixOrderPrepend);
 }
 
-Brush *wxGBrushNew(COLORREF c)
+Brush *wxGBrushNew(COLORREF c, double alpha)
 {
   Brush *b;
-  pGdipCreateSolidFill(COLORREF_ARGB(c), &b);
+  pGdipCreateSolidFill(COLORREF_ARGB(c, alpha), &b);
   return b;
 }
 
@@ -265,11 +267,11 @@ void wxGBrushRelease(Brush *b)
   pGdipDeleteBrush(b);
 }
 
-Pen *wxGPenNew(COLORREF c, double pw, LineCap cap, LineJoin join, int ndash, REAL *dashes, REAL offset)
+Pen *wxGPenNew(COLORREF c, double alpha, double pw, LineCap cap, LineJoin join, int ndash, REAL *dashes, REAL offset)
 {
   Pen *p;
 
-  pGdipCreatePen1(COLORREF_ARGB(c), pw, UnitWorld, &p);
+  pGdipCreatePen1(COLORREF_ARGB(c, alpha), pw, UnitWorld, &p);
   
   pGdipSetPenEndCap(p, cap);
   pGdipSetPenLineJoin(p, join);

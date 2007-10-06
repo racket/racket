@@ -787,10 +787,22 @@ static REAL gp_short_dashed[] = {4, 4, /* offset */ 2};
 static REAL gp_long_dashed[] = {4, 8, /* offset */ 2};
 static REAL gp_dotted_dashed[] = {6, 6, 2, 6, /* offset */ 4};
 
-Pen *wxPen::GraphicsPen(Bool align, double xs)
+Pen *wxPen::GraphicsPen(Bool align, double xs, double alpha)
 {
   if (const_pen)
-    return const_pen->GraphicsPen(align, xs);
+    return const_pen->GraphicsPen(align, xs, alpha);
+
+  if (!align) {
+    if (g_p && (g_alpha != alpha)) {
+      wxGPenRelease(g_p);
+      g_p = NULL;
+    }
+  } else {
+    if (a_g_p && (a_g_alpha != alpha)) {
+      wxGPenRelease(g_p);
+      a_g_p = NULL;
+    }
+  }
 
   if ((!align && !g_p)
       || (align && !a_g_p)) {
@@ -798,6 +810,7 @@ Pen *wxPen::GraphicsPen(Bool align, double xs)
     double pw;
     REAL offset, *dashes;
     int ndash;
+    COLORREF px;
     
     switch (style) {
     case wxDOT:
@@ -836,14 +849,17 @@ Pen *wxPen::GraphicsPen(Bool align, double xs)
     } else
       pw = width;
 
-    p = wxGPenNew(colour->pixel, pw, 
+    p = wxGPenNew(colour->pixel, alpha, pw, 
 		  graphics_caps[cap - wxCAP_ROUND],
 		  graphics_joins[join - wxJOIN_BEVEL],
 		  ndash, dashes, offset);
-    if (align)
+    if (align) {
       a_g_p = p;
-    else
+      a_g_alpha = alpha;
+    } else {
       g_p = p;
+      g_alpha = alpha;
+    }
   }
   return (align ? a_g_p : g_p);
 }
@@ -1129,15 +1145,20 @@ wxBrush::wxBrush(wxColour *col, int Style, Bool _use_const)
   ChangeBrush();
 }
 
-Brush *wxBrush::GraphicsBrush()
+Brush *wxBrush::GraphicsBrush(double alpha)
 {
   if (const_brush)
-    return const_brush->GraphicsBrush();
+    return const_brush->GraphicsBrush(alpha);
+
+  if (g_b && (g_alpha != alpha)) {
+    ReleaseGraphics();
+  }
 
   if (!g_b) {
     Brush *b;
-    b = wxGBrushNew(colour->pixel);
+    b = wxGBrushNew(colour->pixel, alpha);
     g_b = b;
+    g_alpha = alpha;
   }
   return g_b;
 }

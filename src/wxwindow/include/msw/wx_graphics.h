@@ -57,10 +57,10 @@ WX_GRAPHICS_EXPORT void WX_GPROC(wxGMatrixRelease)(Matrix *m);
 WX_GRAPHICS_EXPORT void WX_GPROC(wxGMatrixTranslate)(Matrix *m, double x, double y);
 WX_GRAPHICS_EXPORT void WX_GPROC(wxGMatrixScale)(Matrix *m, double x, double y);
 
-WX_GRAPHICS_EXPORT Brush *WX_GPROC(wxGBrushNew)(COLORREF c);
+WX_GRAPHICS_EXPORT Brush *WX_GPROC(wxGBrushNew)(COLORREF c, double alpha);
 WX_GRAPHICS_EXPORT void WX_GPROC(wxGBrushRelease)(Brush *b);
 
-WX_GRAPHICS_EXPORT Pen *WX_GPROC(wxGPenNew)(COLORREF c, double pw, LineCap cap, LineJoin join, int ndash, REAL *dashes, REAL offset);
+WX_GRAPHICS_EXPORT Pen *WX_GPROC(wxGPenNew)(COLORREF c, double alpha, double pw, LineCap cap, LineJoin join, int ndash, REAL *dashes, REAL offset);
 WX_GRAPHICS_EXPORT void WX_GPROC(wxGPenRelease)(Pen *b);
 
 WX_GRAPHICS_EXPORT Font *WX_GPROC(wxGFontNew)(HDC dc);
