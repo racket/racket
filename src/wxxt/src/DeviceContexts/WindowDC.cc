@@ -153,7 +153,7 @@ wxWindowDC::wxWindowDC(void) : wxDC()
     }
 
     current_background_color->CopyFrom(wxWHITE);
-    current_brush = wxTRANSPARENT_BRUSH;
+    current_brush = wxWHITE_BRUSH;
     current_brush->Lock(1);
     current_pen = wxBLACK_PEN;
     current_pen->Lock(1);
@@ -2320,12 +2320,17 @@ void wxWindowDC::DrawText(char *orig_text, double x, double y,
     int xasc;
     int v;
     XftColor col;
+    /* Note: Xft wants colors with pre-multiplied alpha,
+       according to my experiments. */
     col.pixel = current_text_fg->GetPixel();
     v = current_text_fg->Red();
+    v = v * current_alpha;
     col.color.red = (v << 8) | v;
     v = current_text_fg->Green();
+    v = v * current_alpha;
     col.color.green = (v << 8) | v;
     v = current_text_fg->Blue();
+    v = v * current_alpha;
     col.color.blue = (v << 8) | v;
     col.color.alpha = (int)(current_alpha * 0xFFFF);
 
@@ -2337,10 +2342,13 @@ void wxWindowDC::DrawText(char *orig_text, double x, double y,
 	XftColor bg;
 	bg.pixel = current_text_bg->GetPixel();
 	v = current_text_bg->Red();
+	v = v * current_alpha;
 	bg.color.red = (v << 8) | v;
 	v = current_text_bg->Green();
+	v = v * current_alpha;
 	bg.color.green = (v << 8) | v;
 	v = current_text_bg->Blue();
+	v = v * current_alpha;
 	bg.color.blue = (v << 8) | v;
 	bg.color.alpha = (int)(current_alpha * 0xFFFF);
 	XftDrawRect(XFTDRAW, &bg, dev_x, dev_y, rw, xfontinfo->ascent + xfontinfo->descent);
