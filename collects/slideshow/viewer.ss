@@ -741,7 +741,11 @@
                        [notify-callback 
                         (lambda ()
                           (when (eq? current-timeout-key key)
-                            (send c-frame next-one)))])))
+			    ;; run as low priority:
+			    (queue-callback
+			     (lambda ()
+			       (send c-frame next-one))
+			     #f)))])))
 	      (cond
 	       [config:use-offscreen?
 		(let-values ([(cw ch) (get-client-size)])
