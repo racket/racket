@@ -720,7 +720,7 @@ START_XFORM_SKIP;
 
 @ "glyph-exists?" : bool GlyphAvailable(mzchar,wxFont^=NULL) : : /CheckOk[METHODNAME("dc<%>","glyph-exists?")]
 
-@ "set-alpha" : void SetAlpha(double);
+@ "set-alpha" : void SetAlpha(rdouble[0|1]);
 @ "get-alpha" : double GetAlpha();
 
 @END

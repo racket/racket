@@ -1167,7 +1167,7 @@ static Scheme_Object *os_wxDCSetAlpha(int n,  Scheme_Object *p[])
   VAR_STACK_PUSH(0, p);
 
   
-  x0 = WITH_VAR_STACK(objscheme_unbundle_double(p[POFFSET+0], "set-alpha in dc<%>"));
+  x0 = WITH_VAR_STACK(objscheme_unbundle_double_in(p[POFFSET+0], 0, 1, "set-alpha in dc<%>"));
 
   
   WITH_VAR_STACK(((wxDC *)((Scheme_Class_Object *)p[0])->primdata)->SetAlpha(x0));
