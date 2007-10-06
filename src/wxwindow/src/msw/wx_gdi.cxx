@@ -792,7 +792,8 @@ Pen *wxPen::GraphicsPen(Bool align, double xs)
   if (const_pen)
     return const_pen->GraphicsPen(align, xs);
 
-  if (align || !g_p) {
+  if ((!align && !g_p)
+      || (align && !a_g_p)) {
     Pen *p;
     double pw;
     REAL offset, *dashes;

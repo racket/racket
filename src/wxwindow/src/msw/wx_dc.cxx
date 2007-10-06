@@ -2849,7 +2849,7 @@ void wxDC::GetSizeMM(double *width, double *height)
 
 void wxDC::SetAlpha(double a)
 {
-  wxbDC:::SetAlpha(a);
+  wxbDC::SetAlpha(a);
 }
 
 wxCanvasDC::wxCanvasDC(void)
