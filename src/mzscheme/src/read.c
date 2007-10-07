@@ -2602,7 +2602,7 @@ read_list(Scheme_Object *port,
     if ((effective_ch == closer) && !params->honu_mode) {
       if (shape == mz_shape_hash_elem) {
 	scheme_read_err(port, stxsrc, startline, startcol, start, SPAN(port, start), ch, indentation,
-			"read: expected %s and value for hash before '%c'",
+			"read: expected %s and value for hash before `%c'",
                         dot_name(params),
 			ch);
 	return NULL;
@@ -4129,7 +4129,7 @@ static void unexpected_closer(int ch,
     }
   }
 
-  scheme_read_err(port, stxsrc, line, col, pos, 1, 0, indentation, "read: %s '%c'%s",
+  scheme_read_err(port, stxsrc, line, col, pos, 1, 0, indentation, "read: %s `%c'%s",
 		  found, ch, suggestion);
 }
 
