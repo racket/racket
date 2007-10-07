@@ -55,6 +55,20 @@
    x => 1
    (id 1) => 1
    (id (plus1 x)) => 1
+   (define id2 id)
+   (id2 (id x)) => 1
+   blah =err> "before its definition"
+   ;; using a string for an input
+   "1" => 1
+   "(+ 1 2) x (define y 9) y (set! y 99) y" => 99
+   "bad\"string" =err> "expected a closing"
+   "bad(string" =err> "expected a .\\)."
+   "bad)string" =err> "unexpected .\\)."
+   "(set! y 999) (string" =err> "expected a .\\)."
+   y => 99
+   "(set! y 999) (if)" =err> "if: bad syntax"
+   y => 999
+   ;; test limits
    (loop) =err> "out of time"
    --top--
    (when (custodian-memory-accounting-available?)

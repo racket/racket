@@ -431,16 +431,16 @@
       (let loop ([n 1])
         (let ([expr (channel-get input-ch)])
           (when (eof-object? expr) (channel-put result-ch expr) (user-kill))
-          (let ([code (input->code (list expr) 'eval n)])
-            (with-handlers ([void (lambda (exn)
-                                    (channel-put result-ch (cons 'exn exn)))])
-              (let* ([sec (and limits (car limits))]
-                     [mb  (and limits (cadr limits))]
-                     [run (if (or sec mb)
-                            (lambda () (with-limits sec mb (eval* code)))
-                            (lambda () (eval* code)))])
-                (channel-put result-ch
-                             (cons 'vals (call-with-values run list))))))
+          (with-handlers ([void (lambda (exn)
+                                  (channel-put result-ch (cons 'exn exn)))])
+            (let* ([code (input->code (list expr) 'eval n)]
+                   [sec (and limits (car limits))]
+                   [mb  (and limits (cadr limits))]
+                   [run (if (or sec mb)
+                          (lambda () (with-limits sec mb (eval* code)))
+                          (lambda () (eval* code)))])
+              (channel-put result-ch
+                           (cons 'vals (call-with-values run list)))))
           (loop (add1 n)))))
     (define (user-eval expr)
       (let ([r (if user-thread
