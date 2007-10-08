@@ -1148,7 +1148,8 @@
            [lam-reg (cadddr pref)])
       (hash-table-get 
        ht
-       (string->symbol text)
+       (with-handlers ((exn:fail:read? (λ (x) #f)))
+         (read (open-input-string text)))
        (λ () 
          (cond
            [(and beg-reg (regexp-match beg-reg text)) 'begin]
@@ -1648,7 +1649,7 @@
                              (cond
                                [(null? in) (sort out string<=?)]
                                [else (if (eq? wanted (cadr (car in))) 
-                                         (pick-out wanted (cdr in) (cons (symbol->string (car (car in))) out))
+                                         (pick-out wanted (cdr in) (cons (format "~s" (car (car in))) out))
                                          (pick-out wanted (cdr in) out))]))])
           (values  (pick-out 'begin all-keywords null)
                    (pick-out 'define all-keywords null)
@@ -1687,7 +1688,7 @@
       (λ (list-box)
         (λ (button command)
           (let* ([selections (send list-box get-selections)]
-                 [symbols (map (λ (x) (string->symbol (send list-box get-string x))) selections)])
+                 [symbols (map (λ (x) (read (open-input-string (send list-box get-string x)))) selections)])
             (for-each (λ (x) (send list-box delete x)) (reverse selections))
             (let* ([pref (preferences:get 'framework:tabify)]
                    [ht (car pref)])
@@ -1750,16 +1751,15 @@
                    'lambda
                    lambda-keywords
                    (λ (x) (update-pref cdddr x))))
-    (define update-list-boxes
-      (λ (hash-table)
-        (let-values ([(begin-keywords define-keywords lambda-keywords) (get-keywords hash-table)]
-                     [(reset) (λ (list-box keywords)
-                                (send list-box clear)
-                                (for-each (λ (x) (send list-box append x)) keywords))])
-          (reset begin-list-box begin-keywords)
-          (reset define-list-box define-keywords)
-          (reset lambda-list-box lambda-keywords)
-          #t)))
+    (define (update-list-boxes hash-table)
+      (let-values ([(begin-keywords define-keywords lambda-keywords) (get-keywords hash-table)]
+                   [(reset) (λ (list-box keywords)
+                              (send list-box clear)
+                              (for-each (λ (x) (send list-box append x)) keywords))])
+        (reset begin-list-box begin-keywords)
+        (reset define-list-box define-keywords)
+        (reset lambda-list-box lambda-keywords)
+        #t))
     (define update-gui
       (λ (pref)
         (update-list-boxes (car pref))
