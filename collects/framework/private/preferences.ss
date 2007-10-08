@@ -42,23 +42,30 @@ the state transitions / contracts are:
           [prefix frame: framework:frame^])
   (export framework:preferences^)
   
+  (define successful-last-time? #t)
   (define (put-preferences/gui ps vs)
+    (define failed? #f)
     (define (fail-func path)
-      (let ([mb-ans
-             (message-box/custom
-              (string-constant error-saving-preferences-title)
-              (format (string-constant prefs-file-locked)
-                      (path->string path))
-              (string-constant try-again)
-              (string-constant cancel)
-              #f
-              #f ;;parent
-              '(default=2 caution))])
-        (case mb-ans
-          [(2 #f) (void)]
-          [(1) 
-           (put-preferences ps vs second-fail-func)])))
+      (cond
+        [successful-last-time?
+         (let ([mb-ans
+                (message-box/custom
+                 (string-constant error-saving-preferences-title)
+                 (format (string-constant prefs-file-locked)
+                         (path->string path))
+                 (string-constant try-again)
+                 (string-constant cancel)
+                 #f
+                 #f ;;parent
+                 '(default=1 caution))])
+           (case mb-ans
+             [(2 #f) (void)]
+             [(1) 
+              (put-preferences ps vs second-fail-func)]))]
+        [else 
+         (set! failed? #t)]))
     (define (second-fail-func path)
+      (set! failed? #t)
       (message-box
        (string-constant error-saving-preferences-title)
        (format (string-constant prefs-file-still-locked)
@@ -71,10 +78,12 @@ the state transitions / contracts are:
                         (string-constant drscheme)
                         (format (string-constant error-saving-preferences)
                                 (exn-message x))))))
-      (put-preferences 
-       ps
-       vs
-       fail-func)))
+      (begin0
+        (put-preferences 
+         ps
+         vs
+         fail-func)
+        (set! successful-last-time? (not failed?)))))
   
   ;; ppanel-tree = 
   ;;  (union (make-ppanel-leaf string (union #f panel) (panel -> panel))
