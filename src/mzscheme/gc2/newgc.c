@@ -1544,7 +1544,7 @@ inline static unsigned long custodian_usage(void *custodian)
   if(!really_doing_accounting) {
     park[0] = custodian;
     really_doing_accounting = 1;
-    garbage_collect(0);
+    garbage_collect(1);
     custodian = park[0]; 
     park[0] = NULL;
   }
@@ -1757,7 +1757,7 @@ inline static void add_account_hook(int type,void *c1,void *c2,unsigned long b)
   if(!really_doing_accounting) {
     park[0] = c1; park[1] = c2;
     really_doing_accounting = 1;
-    garbage_collect(0);
+    garbage_collect(1);
     c1 = park[0]; c2 = park[1];
     park[0] = park[1] = NULL;
   }
@@ -2982,7 +2982,7 @@ static void garbage_collect(int force_full)
 
   TIME_STEP("reset");
 
-  /* new we do want the allocator freaking if we go over half */
+  /* now we do want the allocator freaking if we go over half */
   in_unsafe_allocation_mode = 0;
 
   /* If we have too many idle pages, flush: */

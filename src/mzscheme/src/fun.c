@@ -2664,8 +2664,12 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, long a, Scheme_Object
       }
     } else {
       p = scheme_extract_struct_procedure(p, -1, NULL, &is_method);
-      if (!SCHEME_PROCP(p))
-        return scheme_null;
+      if (!SCHEME_PROCP(p)) {
+        if (a == -1)
+          return scheme_null;
+        else
+          return scheme_false;
+      }
       if (is_method)
         drop++;
     }
