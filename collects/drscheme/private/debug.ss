@@ -1190,14 +1190,6 @@ profile todo:
          infos)
         max-value))
     
-    ;; extract-total-time : (listof prof-info) -> number
-    (define (extract-total-time infos)
-      (let ([sum 0])
-        (for-each
-         (λ (val) (set! sum (+ sum (prof-info-time val))))
-         infos)
-        sum))
-    
     ;; profile-definitions-mixin : mixin
     (define profile-definitions-text-mixin
       (mixin ((class->interface text%) drscheme:unit:definitions-text<%>) ()
@@ -1559,7 +1551,6 @@ profile todo:
                  [in-edit-sequence (make-hash-table)]
                  [clear-highlight void]
                  [max-value (extract-maximum infos)]
-                 [total-time (extract-total-time infos)]
                  [show-highlight
                   (λ (info)
                     (let* ([expr (prof-info-expr info)]
@@ -1624,16 +1615,6 @@ profile todo:
                                        (send expr-src set-caret-owner #f 'global))))]
                             [else (void)])))
                       
-                      (when newline? (send percentage-editor insert "\n"))
-                      (when highlight-line? (small-blank-line percentage-editor))
-                      (send percentage-editor insert (format-percentage 
-                                                      (if (= total-time 0)
-                                                          1
-                                                          (/ time total-time))))
-                      (send percentage-editor set-paragraph-alignment
-                            (send percentage-editor last-paragraph)
-                            'right)
-                      
                       (when newline? (send time-editor insert "\n"))
                       (when highlight-line? (small-blank-line time-editor))
                       (send time-editor insert (format "~a" time))
@@ -1678,7 +1659,6 @@ profile todo:
                  (loop (cdr infos) #t (modulo (+ highlight-counter 1) 2))]))
             (cleanup-editor count-editor)
             (cleanup-editor time-editor)
-            (cleanup-editor percentage-editor)
             (cleanup-editor src-loc-editor)
             
             (hash-table-for-each
@@ -1712,30 +1692,24 @@ profile todo:
               [else (cons (car lst) (loop (- n 1) (cdr lst)))])))
         
         (field (src-loc-editor #f)
-               (percentage-editor #f)
                (time-editor #f)
                (count-editor #f))
         (define/private (clear-editors)
           (set! src-loc-editor #f)
-          (set! percentage-editor #f)
           (set! time-editor #f)
           (set! count-editor #f))
         (define/private (initialize-editors)
           (set! src-loc-editor (instantiate text% ()))
-          (set! percentage-editor (instantiate text% ()))
           (set! time-editor (instantiate text% ()))
           (set! count-editor (instantiate text% ()))
           (send src-loc-editor set-styles-sticky #f)            
-          (send percentage-editor set-styles-sticky #f)
           (send time-editor set-styles-sticky #f)
           (send count-editor set-styles-sticky #f)
-          (insert (instantiate editor-snip% (percentage-editor)))
           (insert (instantiate editor-snip% (time-editor)))
           (insert (instantiate editor-snip% (count-editor)))
           (insert (instantiate editor-snip% (src-loc-editor)))
           (insert-title (string-constant profiling-col-function) src-loc-editor)
           (insert-title (string-constant profiling-col-time-in-msec) time-editor)
-          (insert-title (string-constant profiling-col-percent-time) percentage-editor)
           (insert-title (string-constant profiling-col-calls) count-editor))
         
         (define/private (insert-title str txt)
