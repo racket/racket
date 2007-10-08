@@ -140,8 +140,12 @@
                              #,(anormal-term #'be))))
                        #'me)))
            #'ke)]
-         [(#%expression . d)
-          (ctxt stx)]
+         [(#%expression d)
+          (anormal
+           (compose ctxt
+                    (lambda (d)
+                       (quasisyntax/loc stx (#%expression #,d))))
+           #'d)]
          [(#%app fe e ...)
           (anormal
            (lambda (val0)

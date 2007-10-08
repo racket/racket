@@ -1,7 +1,7 @@
 (module info (lib "infotab.ss" "setup")
   (define name "Web Server")  
-  ; XXX Uncomment and change doc-installer
-  #;(define post-install-collection "docs/doc-installer.ss")
+  ; Name clash
+  #;(define scribblings '(("docs/reference/reference.scrbl" (multi-page main-doc))))
   
   (define mzscheme-launcher-libraries
     (list "private/launch-text.ss"))

@@ -88,8 +88,8 @@
                   the-save-cm-key 
                 (#%app current-saved-continuation-marks-and #,ke-prime #,me-prime)
                 #,be-prime)))))]
-      [(#%expression . d)
-       stx]
+      [(#%expression d)
+       (markit (quasisyntax/loc stx (#%expression #,(elim-callcc #'d))))]
       [(#%app call/cc w)
        (let-values ([(cm ref-to-cm) (generate-formal 'current-marks)]
                     [(x ref-to-x) (generate-formal 'x)])

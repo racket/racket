@@ -114,8 +114,8 @@
                       [be ((elim-letrec ids) #'be)])
           (syntax/loc stx
             (with-continuation-mark ke me be)))]
-       [(#%expression . d)
-        stx]
+       [(#%expression d)
+        (quasisyntax/loc stx (#%expression #,((elim-letrec ids) #'d)))]
        [(#%app e ...)
         (with-syntax ([(e ...) (map (elim-letrec ids) (syntax->list #'(e ...)))])
           (syntax/loc stx

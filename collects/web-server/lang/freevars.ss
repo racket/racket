@@ -67,11 +67,12 @@
                          (apply append (map syntax->list (syntax->list #'((vv ...) ...))))))]
       [(with-continuation-mark ke me be)
        (free-vars* (syntax->list #'(ke me be)))]
-      [(#%expression . d)
-       empty]
+      [(#%expression d)
+       (free-vars #'d)]
       [(#%app e ...)
        (free-vars* (syntax->list #'(e ...)))]
       [(#%top . v)
+       #;(printf "Not including top ~S in freevars~n" (syntax-object->datum #'v))
        empty]
       [(#%datum . d)
        empty]
@@ -81,6 +82,7 @@
            [(eqv? 'lexical (identifier-binding #'id))
             (list #'id)]
            [else 
+            #;(printf "Not including var-reference ~S with binding ~S in freevars~n" (syntax-object->datum #'id) i-bdg)
             empty]))]
       [id (identifier? #'id)
           (let ([i-bdg (identifier-binding #'id)])

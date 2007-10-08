@@ -112,9 +112,10 @@
           (let-values ([(es defs) (defun* (list #'ke #'me #'be))])
             (values (quasisyntax/loc stx (with-continuation-mark #,@es))
                     defs))]
-         [(#%expression . d)
-          (values stx 
-                  empty)]
+         [(#%expression d)
+          (let-values ([(nd d-defs) (defun #'d)])
+            (values (quasisyntax/loc stx (#%expression #,nd))
+                    d-defs))]
          [(#%app e ...)
           (let-values ([(es defs) (defun* (syntax->list #'(e ...)))])
             (values (quasisyntax/loc stx (#%app #,@es))
