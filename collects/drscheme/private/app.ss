@@ -337,6 +337,10 @@
         (scroll-to-position 0)
         (lock #t))
       
+      (when (eq? (system-type) 'macosx)
+        ;; otherwise, the focus is the tour button, as above
+        (send editor-canvas focus))
+      
       (send f show #t)
       f))
   

@@ -365,4 +365,4 @@
     (send f show #t))
   
   #;(edit-points waiting-points)
-  #;(edit-points running-points/2))
+  #;(edit-points running-points))

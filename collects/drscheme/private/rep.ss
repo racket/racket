@@ -282,28 +282,6 @@ TODO
                          (and (equal? (path-element->bytes name) (car pieces))
                               (loop base (cdr pieces))))]))))))
     
-    ;; drscheme-error-value->string-handler : TST number -> string
-    (define (drscheme-error-value->string-handler x n)
-      (let ([port (open-output-string)])
-        
-        ;; using a string port here means no snips allowed,
-        ;; even though this string may eventually end up
-        ;; displayed in a place where snips are allowed.
-        (print x port)
-        
-        (let* ([long-string (get-output-string port)])
-          (close-output-port port)
-          (if (<= (string-length long-string) n)
-              long-string
-              (let ([short-string (substring long-string 0 n)]
-                    [trim 3])
-                (unless (n . <= . trim)
-                  (let loop ([i trim])
-                    (unless (i . <= . 0)
-                      (string-set! short-string (- n i) #\.)
-                      (loop (sub1 i)))))
-                short-string)))))
-    
     (define drs-bindings-keymap (make-object keymap:aug-keymap%))
     
     (send drs-bindings-keymap add-function
@@ -1364,7 +1342,6 @@ TODO
         (define/private (initialize-parameters snip-classes) ; =User=
           
           (current-language-settings user-language-settings)
-          (error-value->string-handler drscheme-error-value->string-handler)
           (error-print-source-location #f)
           (error-display-handler drscheme-error-display-handler)
           (current-load-relative-directory #f)
