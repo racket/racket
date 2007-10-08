@@ -1031,6 +1031,23 @@
                      (change-style matching-parenthesis-style pos (+ pos 1))
                      (change-style matching-parenthesis-style (- end 1) end)])))))))
       
+      ;; get-snips/rev: start end -> (listof snip)
+      ;; Returns a list of the snips in reverse order between
+      ;; start and end.
+      (define/private (get-snips/rev start end)
+        (split-snip start)
+        (split-snip end)
+        (let loop ([snips/rev '()]
+                   [a-snip (find-snip start 'after-or-none)])
+          (cond
+            [(or (not a-snip)
+                 (>= (get-snip-position a-snip)
+                     end))
+             snips/rev]
+            [else
+             (loop (cons (send a-snip copy) snips/rev)
+                   (send a-snip next))])))
+
       (define/public (transpose-sexp pos)
         (let ([start-1 (get-backward-sexp pos)])
           (if (not start-1)
@@ -1045,13 +1062,13 @@
                             (if (or (not start-2)
                                     (< start-2 end-1))
                                 (bell)
-                                (let ([text-1 
-                                       (get-text start-1 end-1)]
-                                      [text-2 
-                                       (get-text start-2 end-2)])
+                                (let ([snips-1/rev (get-snips/rev start-1 end-1)]
+                                      [snips-2/rev (get-snips/rev start-2 end-2)])
                                   (begin-edit-sequence)
-                                  (insert text-1 start-2 end-2)
-                                  (insert text-2 start-1 end-1)
+                                  (delete start-2 end-2)
+                                  (for-each (λ (s) (insert s start-2)) snips-1/rev)
+                                  (delete start-1 end-1)
+                                  (for-each (λ (s) (insert s start-1)) snips-2/rev)
                                   (set-position end-2)
                                   (end-edit-sequence)))))))))))
       [define tab-size 8]
