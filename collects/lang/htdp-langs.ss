@@ -158,11 +158,21 @@
                  (namespace-attach-module drs-namespace 'drscheme-secrets)
                  (namespace-attach-module drs-namespace set-result-module-name)
                  (error-display-handler teaching-languages-error-display-handler)
+                 (error-value->string-handler (λ (x y) (teaching-languages-error-value->string settings x y)))
                  (current-eval (add-annotation (htdp-lang-settings-tracing? settings) (current-eval)))
                  (error-print-source-location #f)
                  (read-decimal-as-inexact #f)
                  (read-accept-dot (get-read-accept-dot)))))
             (super on-execute settings run-in-user-thread))
+          
+          (define/private (teaching-languages-error-value->string settings v len)
+            (let ([sp (open-output-string)])
+              (set-printing-parameters settings (λ () (print v sp)))
+              (flush-output sp)
+              (let ([s (get-output-string sp)])
+                (cond
+                  [(<= (string-length s) len) s]
+                  [else (string-append (substring s 0 (- len 3)) "...")]))))
 
 	  ;; set-printing-parameters : settings ( -> TST) -> TST
 	  ;; is implicitly exposed to the stepper.  watch out!  --  john
