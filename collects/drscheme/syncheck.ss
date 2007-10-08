@@ -2082,7 +2082,7 @@ If the namespace does not, they are colored the unbound color.
       
       ;; extract-provided-vars : syntax -> (listof syntax[identifier])
       (define (extract-provided-vars stx)
-        (syntax-case* stx (rename struct all-from all-from-except) symbolic-compare?
+        (syntax-case* stx (rename struct all-from all-from-except all-defined-except) symbolic-compare?
           [identifier
            (identifier? (syntax identifier))
            (list (syntax identifier))]
@@ -2095,8 +2095,10 @@ If the namespace does not, they are colored the unbound color.
            null]
           
           [(all-from module-name) null] 
-          [(all-from-except module-name identifer ...)
+          [(all-from-except module-name identifier ...)
            null]
+          [(all-defined-except identifier ...)
+           (syntax->list #'(identifier ...))]
           [_ 
            null]))
           

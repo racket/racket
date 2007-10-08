@@ -739,6 +739,22 @@
                  (list '((10 18) (20 33) (46 52) (59 66))
                        '((53 54) (75 76))))
      
+     (build-test "(module m mzscheme (define X 1) (provide (all-defined-except X)))"
+                 '(("("                     default-color)
+                   ("module"                imported)
+                   (" m mzscheme ("         default-color)
+                   ("define"                imported)
+                   (" "                     default-color)
+                   ("X"                     lexically-bound)
+                   (" 1) ("                 default-color)
+                   ("provide"               imported)
+                   (" (all-defined-except " default-color)
+                   ("X"                     lexically-bound)
+                   (")))"                   default-color))
+                 
+                 (list '((10 18) (20 26) (33 40))
+                       '((27 28) (61 62))))     
+     
      (build-test "(module m mzscheme (require-for-syntax mzscheme) (require-for-template mzscheme) (quote-syntax +))"
                  '(("("                    default-color)
                    ("module"               imported)
