@@ -23,7 +23,7 @@
        (list (string-constant font-prefs-panel-title)
              (string-constant drscheme))
        (λ (panel)
-         (let* ([main (make-object vertical-panel% panel)]
+         (letrec ([main (make-object vertical-panel% panel)]
                 [min-size 1]
                 [max-size 72]
                 [options-panel (make-object horizontal-panel% main)]
@@ -62,15 +62,37 @@
                               (min max-size (max min-size (chng old-size)))))))
                         (label label)))]
                 [size-sub1 (mk-size-button "-1" sub1)]
-                [size-sub1 (mk-size-button "+1" add1)]
+                [size-add1 (mk-size-button "+1" add1)]
                 
-                [choice-panel (new vertical-panel% (parent options-panel))]
+                [mono-list 'mono-list-not-yet-computed]
+                [choice-panel (new (class vertical-panel%
+                                     (define/private (force-cache receiver)
+                                       (when (eq? receiver font-name-control)
+                                         (when (symbol? mono-list)
+                                           (begin-busy-cursor)
+                                           (set! mono-list (get-face-list 'mono))
+                                           (send font-name-control clear)
+                                           (for-each
+                                            (λ (x) (send font-name-control append x))
+                                            (append mono-list (list (string-constant other...))))
+                                           (send font-name-control set-string-selection
+                                                 (preferences:get 'framework:standard-style-list:font-name))
+                                           (end-busy-cursor))))
+                                     (define/override (on-subwindow-event receiver evt)
+                                       (unless (or (send evt moving?)
+                                                   (send evt entering?)
+                                                   (send evt leaving?))
+                                         (force-cache receiver))
+                                       (super on-subwindow-event receiver evt))
+                                     (define/override (on-subwindow-char receiver evt)
+                                       (force-cache receiver)
+                                       (super on-subwindow-char receiver evt))
+                                     (super-new [parent options-panel])))]
                 [font-name-control
-                 (let* ([mono-list (get-face-list 'mono)]
-                        [choice
+                 (let* ([choice
                          (new choice%
                               (label (string-constant font-name))
-                              (choices (append mono-list (list (string-constant other...))))
+                              (choices (list (preferences:get 'framework:standard-style-list:font-name)))
                               (parent choice-panel)
                               (stretchable-width #t)
                               (callback
