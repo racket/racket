@@ -698,9 +698,9 @@ static void ScaleSection(wxMemoryDC *dest, wxBitmap *src,
 	b = (b * (1 - a)) + ((double)s2[p+3] * a);
       }
 
-      s2[p+1] = (int)r;
-      s2[p+2] = (int)g;
-      s2[p+3] = (int)b;
+      s2[p+1] = (int)round(r);
+      s2[p+2] = (int)round(g);
+      s2[p+3] = (int)round(b);
     }
   }
 
