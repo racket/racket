@@ -204,9 +204,9 @@ Each selectable entity in an editor is an @deftech{item}. In a
  @deftech{count}.
 
 Each place where the insertion point can appear in a text editor is a
- @deftech{position}. A text editor with $n$ items contains $n+1$
- positions: one position before each item, and one position after the
- last item.
+ @deftech{position}. A text editor with @math{n} items contains
+ @math{n+1} positions: one position before each item, and one position
+ after the last item.
 
 The order of snips within a pasteboard determines each snip's drawing
  plane. When two snips overlap within the pasteboard, the snip that is

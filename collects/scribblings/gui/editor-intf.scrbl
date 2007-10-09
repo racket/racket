@@ -1853,11 +1853,11 @@ See also @method[editor<%> add-undo].
            void?]{
 
 Repaints a region of the editor, generally called by an editor
- administrator. See @secref["editorthreads"] for information about
- edit sequences and refresh requests.
-  
-The @scheme[x], @scheme[y], @scheme[width], and @scheme[height] arguments specify
- the area that needs repainting in editor coordinates.
+ administrator. The @scheme[x], @scheme[y], @scheme[width], and
+ @scheme[height] arguments specify the area that needs repainting in
+ editor coordinates. The @method[editor-admin% get-dc] method of the
+ editor's administrator (as returned by @method[editor<%> get-admin])
+ supplies the target @scheme[dc<%>] object and offset for drawing.
 
 See @|drawcaretdiscuss| for information about @scheme[draw-caret].
 
@@ -1866,6 +1866,9 @@ The @scheme[background] color corresponds to the background of the
  An editor should use the given background color as its own
  background (or not paint the background of @scheme[background] is
  @scheme[#f]).
+
+See @secref["editorthreads"] for information about edit sequences and
+ refresh requests.
 
 }
 
