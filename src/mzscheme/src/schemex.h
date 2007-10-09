@@ -708,6 +708,7 @@ void (*scheme_getnameinfo)(void *sa, int salen,
 				  char *host, int hostlen,
 				  char *serv, int servlen);
 int (*scheme_get_port_file_descriptor)(Scheme_Object *p, long *_fd);
+long (*scheme_get_port_fd)(Scheme_Object *p);
 int (*scheme_get_port_socket)(Scheme_Object *p, long *_s);
 void (*scheme_socket_to_ports)(long s, const char *name, int takeover,
                                       Scheme_Object **_inp, Scheme_Object **_outp);

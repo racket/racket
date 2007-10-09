@@ -485,6 +485,7 @@
   scheme_extension_table->scheme_host_address_strerror = scheme_host_address_strerror;
   scheme_extension_table->scheme_getnameinfo = scheme_getnameinfo;
   scheme_extension_table->scheme_get_port_file_descriptor = scheme_get_port_file_descriptor;
+  scheme_extension_table->scheme_get_port_fd = scheme_get_port_fd;
   scheme_extension_table->scheme_get_port_socket = scheme_get_port_socket;
   scheme_extension_table->scheme_socket_to_ports = scheme_socket_to_ports;
   scheme_extension_table->scheme_set_type_printer = scheme_set_type_printer;

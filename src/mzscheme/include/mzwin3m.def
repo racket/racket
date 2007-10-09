@@ -435,6 +435,7 @@ EXPORTS
  scheme_host_address_strerror
  scheme_getnameinfo
  scheme_get_port_file_descriptor
+ scheme_get_port_fd
  scheme_get_port_socket
  scheme_socket_to_ports
  scheme_set_type_printer

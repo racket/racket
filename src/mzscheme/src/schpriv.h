@@ -745,7 +745,7 @@ Scheme_Object *scheme_delayed_rename(Scheme_Object **o, long i);
 
 typedef struct {
   Scheme_Object so;
-  mzshort num_args;
+  mzshort num_args; /* doesn't include rator, so arguments are at args[1]...args[num_args] */
   Scheme_Object *args[1];
   /* After array of f & args, array of chars for eval type */
 } Scheme_App_Rec;
@@ -872,12 +872,6 @@ typedef struct Scheme_Letrec {
   Scheme_Object **procs;
   Scheme_Object *body;
 } Scheme_Letrec;
-
-typedef struct {
-  Scheme_Object so;
-  mzshort num_bindings;
-  Scheme_Object *body;
-} Scheme_Let_Frame_Data;
 
 typedef struct {
   Scheme_Object so;
@@ -1783,7 +1777,7 @@ typedef struct Scheme_Closure_Data
   mzshort num_params; /* includes collecting arg if has_rest */
   mzshort max_let_depth;
   mzshort closure_size;
-  mzshort *closure_map; /* actually a Closure_Info* until resolved; if CLOS_HASH_REF_ARGS, followed by bit array */
+  mzshort *closure_map; /* actually a Closure_Info* until resolved; if CLOS_HAS_REF_ARGS, followed by bit array */
   Scheme_Object *code;
   Scheme_Object *name;
 #ifdef MZ_USE_JIT

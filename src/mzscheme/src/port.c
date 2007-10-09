@@ -3369,6 +3369,16 @@ int scheme_get_port_file_descriptor(Scheme_Object *p, long *_fd)
   return 1;
 }
 
+long scheme_get_port_fd(Scheme_Object *p)
+{
+  long fd;
+
+  if (scheme_get_port_file_descriptor(p, &fd))
+    return fd;
+  else
+    return -1;
+}
+
 Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[])
 {
   long fd = 0;
