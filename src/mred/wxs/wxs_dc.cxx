@@ -557,6 +557,19 @@ static inline double approx_dist(double x, double y)
   return ((x < y) ? y : x);
 }
 
+static double my_round(double f)
+/* doesn't have to deal with negtive numbers */
+{
+  double d, frac;
+  
+  frac = modf(f, &d);
+
+  if (frac >= 0.5)  
+    d += 1.0;
+
+  return d;
+}
+
 static void ScaleSection(wxMemoryDC *dest, wxBitmap *src, 
 			 double tx, double ty, double ww2, double hh2,
 			 double fx, double fy, double ww, double hh,
@@ -698,9 +711,9 @@ static void ScaleSection(wxMemoryDC *dest, wxBitmap *src,
 	b = (b * (1 - a)) + ((double)s2[p+3] * a);
       }
 
-      s2[p+1] = (int)round(r);
-      s2[p+2] = (int)round(g);
-      s2[p+3] = (int)round(b);
+      s2[p+1] = (int)my_round(r);
+      s2[p+2] = (int)my_round(g);
+      s2[p+3] = (int)my_round(b);
     }
   }
 
