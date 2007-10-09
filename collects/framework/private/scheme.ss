@@ -394,7 +394,7 @@
       (send style-list find-named-style "Matching Parenthesis Style")))
   
   (define text-mixin
-    (mixin (text:basic<%> mode:host-text<%> color:text<%>) (-text<%>)
+    (mixin (text:basic<%> mode:host-text<%> color:text<%> text:autocomplete<%>) (-text<%>)
       (inherit begin-edit-sequence
                delete
                end-edit-sequence
@@ -433,12 +433,34 @@
       (inherit has-focus? find-snip split-snip
                position-location get-dc)
       
+      (define/override (get-word-at current-pos)
+        (let ([no-word ""])
+          (cond
+            [(or (is-stopped?) (is-frozen?))
+             no-word]
+            [else
+             (let ([type (classify-position current-pos)])
+               (cond
+                 [(eq? 'symbol type) 
+                  (get-text (look-for-non-symbol current-pos)
+                            current-pos)]
+                 [else no-word]))])))
+      
+      (define/private (look-for-non-symbol start)
+        (let loop ([i start])
+          (cond
+            [(< i 0) 0]
+            [(eq? (classify-position i) 'symbol)
+             (loop (- i 1))]
+            [else (+ i 1)])))
+
       (public tabify-on-return? tabify
               tabify-all insert-return calc-last-para 
               box-comment-out-selection comment-out-selection uncomment-selection
               flash-forward-sexp 
               flash-backward-sexp backward-sexp find-up-sexp up-sexp find-down-sexp down-sexp
               remove-parens-forward)
+      
       (define/public (get-limit pos) 0)
       
       (define/public (balance-parens key-event)
@@ -1165,8 +1187,9 @@
   
   (define -text% (set-mode-mixin
                   (text-mixin
-                   (mode:host-text-mixin
-                    color:text%))))
+                   (text:autocomplete-mixin
+                    (mode:host-text-mixin
+                     color:text%)))))
   
   (define text-mode% (text-mode-mixin color:text-mode%))
   
