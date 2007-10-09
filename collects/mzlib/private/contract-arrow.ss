@@ -303,20 +303,27 @@
                          inner-args/body
                          (syntax (dom-x ... rst-x)))))))])))
   
-  #;
-  (define-syntax-set (->/real ->*/real)
-    (define (->/real/proc stx) (make-/proc #f ->/h stx))
-    (define (->*/real/proc stx) (make-/proc #f ->*/h stx)))
+  (define-for-syntax (select/h stx err-name ctxt-stx)
+    (syntax-case stx (-> ->* ->d ->d* ->r ->pp ->pp-rest)
+      [(-> . args) ->/h]
+      [(->* . args) ->*/h]
+      [(->d . args) ->d/h]
+      [(->d* . args) ->d*/h]
+      [(->r . args) ->r/h]
+      [(->pp . args) ->pp/h]
+      [(->pp-rest . args) ->pp-rest/h]
+      [(xxx . args) (raise-syntax-error err-name "unknown arrow constructor" ctxt-stx (syntax xxx))]
+      [_ (raise-syntax-error err-name "malformed arrow clause" ctxt-stx stx)]))
   
   (define-syntax (->d stx) (make-/proc #f ->d/h stx))
   (define-syntax (->d* stx) (make-/proc #f ->d*/h stx))
   (define-syntax (->r stx) (make-/proc #f ->r/h stx))
   (define-syntax (->pp stx) (make-/proc #f ->pp/h stx))
   (define-syntax (->pp-rest stx) (make-/proc #f ->pp-rest/h stx))
-  (define-syntax (case-> stx) (make-case->/proc #f stx stx))
-  (define-syntax (opt-> stx) (make-opt->/proc #f stx))
-  (define-syntax (opt->* stx) (make-opt->*/proc #f stx stx))
-  
+  (define-syntax (case-> stx) (make-case->/proc #f stx stx select/h))
+  (define-syntax (opt-> stx) (make-opt->/proc #f stx select/h #'case-> #'->))
+  (define-syntax (opt->* stx) (make-opt->*/proc #f stx stx select/h #'case-> #'->))
+
   ;;
   ;; arrow opter
   ;;

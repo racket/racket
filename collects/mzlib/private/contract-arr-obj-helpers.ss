@@ -45,7 +45,7 @@
                       proj-code)
                     first-order-check))))))))))
   
-  (define (make-case->/proc method-proc? stx inferred-name-stx)
+  (define (make-case->/proc method-proc? stx inferred-name-stx select/h)
     (syntax-case stx ()
       
       ;; if there are no cases, this contract should only accept the "empty" case-lambda.
@@ -56,7 +56,7 @@
       
       [(_ cases ...)
        (let-values ([(arguments-check build-projs check-val first-order-check wrapper) 
-                     (case->/h method-proc? stx (syntax->list (syntax (cases ...))))])
+                     (case->/h method-proc? stx (syntax->list (syntax (cases ...))) select/h)])
          (let ([outer-args (syntax (val pos-blame neg-blame src-info orig-str name-id))])
            (with-syntax ([(inner-check ...) (check-val outer-args)]
                          [(val pos-blame neg-blame src-info orig-str name-id) outer-args]
@@ -81,14 +81,14 @@
                          proj-code)
                        first-order-check)))))))))]))
   
-  (define (make-opt->/proc method-proc? stx)
+  (define (make-opt->/proc method-proc? stx select/h case-arr-stx arr-stx)
     (syntax-case stx (any)
       [(_ (reqs ...) (opts ...) any)
-       (make-opt->*/proc method-proc? (syntax (opt->* (reqs ...) (opts ...) any)) stx)]
+       (make-opt->*/proc method-proc? (syntax (opt->* (reqs ...) (opts ...) any)) stx select/h case-arr-stx arr-stx)]
       [(_ (reqs ...) (opts ...) res)
-       (make-opt->*/proc method-proc? (syntax (opt->* (reqs ...) (opts ...) (res))) stx)]))
+       (make-opt->*/proc method-proc? (syntax (opt->* (reqs ...) (opts ...) (res))) stx select/h case-arr-stx arr-stx)]))
   
-  (define (make-opt->*/proc method-proc? stx inferred-name-stx)
+  (define (make-opt->*/proc method-proc? stx inferred-name-stx select/h case-arr-stx arr-stx)
     (syntax-case stx (any)
       [(_ (reqs ...) (opts ...) any)
        (let* ([req-vs (generate-temporaries (syntax->list (syntax (reqs ...))))]
@@ -106,8 +106,11 @@
            (with-syntax ([expanded-case->
                           (make-case->/proc
                            method-proc?
-                           (syntax (case-> (-> case-doms ... any) ...))
-                           inferred-name-stx)])
+                           (with-syntax ([case-> case-arr-stx]
+                                         [-> arr-stx])
+                             (syntax (case-> (-> case-doms ... any) ...)))
+                           inferred-name-stx
+                           select/h)])
              (syntax/loc stx
                (let ([req-vs reqs] ...
                      [opt-vs opts] ...)
@@ -140,8 +143,11 @@
              (with-syntax ([expanded-case->
                             (make-case->/proc
                              method-proc?
-                             (syntax (case-> (-> case-doms ... single-case-result) ...))
-                             inferred-name-stx)])
+                             (with-syntax ([case-> case-arr-stx]
+                                           [-> arr-stx])
+                               (syntax (case-> (-> case-doms ... single-case-result) ...)))
+                             inferred-name-stx
+                             select/h)])
                (set-inferred-name-from
                 stx
                 (syntax/loc stx
@@ -210,6 +216,7 @@
   ;; case->/h : boolean
   ;;            syntax
   ;;            (listof syntax) 
+  ;;            select/h
   ;;         -> (values (syntax -> syntax)
   ;;                    (syntax -> syntax)
   ;;                    (syntax -> syntax)
@@ -218,7 +225,7 @@
   ;;                    (syntax -> syntax))
   ;; like the other /h functions, but composes the wrapper functions
   ;; together and combines the cases of the case-lambda into a single list.
-  (define (case->/h method-proc? orig-stx cases)
+  (define (case->/h method-proc? orig-stx cases select/h)
     (let loop ([cases cases]
                [name-ids '()])
       (cond
@@ -1079,20 +1086,6 @@
                   (syntax->list (syntax (x ...)))))]
       [(_ x dom rest-x rest-dom rng . result-stuff)
        (raise-syntax-error name "expected list of identifiers and expression pairs" stx (syntax x))]))
-  
-  ;; select/h : syntax -> /h-function
-  (define (select/h stx err-name ctxt-stx)
-    (syntax-case* stx (-> ->* ->d ->d* ->r ->pp ->pp-rest) (λ (x y) (eq? (syntax-e x) (syntax-e y)))
-      [(-> . args) ->/h]
-      [(->* . args) ->*/h]
-      [(->d . args) ->d/h]
-      [(->d* . args) ->d*/h]
-      [(->r . args) ->r/h]
-      [(->pp . args) ->pp/h]
-      [(->pp-rest . args) ->pp-rest/h]
-      [(xxx . args) (raise-syntax-error err-name "unknown arrow constructor" ctxt-stx (syntax xxx))]
-      [_ (raise-syntax-error err-name "malformed arrow clause" ctxt-stx stx)]))
-  
   
   ;; set-inferred-name-from : syntax syntax -> syntax
   (define (set-inferred-name-from with-name to-be-named)
