@@ -525,17 +525,18 @@
               (send dc draw-spline (+ dx s2x) (+ dy s2y) (+ dx b23x) (+ dy b23y) (+ dx s3x) (+ dy s3y))
               (send dc draw-line (+ dx s3x) (+ dy s3y) (+ dx s6x) (+ dy s6y))
               
-              (let* ((textlen (get-text-length (link-label the-link)))
-                     (linelen (- s6x s3x))
-                     (offset (* 1/2 (- linelen textlen))))
-                (when #t (> sw textlen)
-                  (send dc draw-text 
-                        (link-label the-link)
-                        (+ dx s3x offset)
-                        (+ dy s3y)
-                        #f
-                        0
-                        0)))
+              (when (link-label the-link)
+                (let* ((textlen (get-text-length (link-label the-link)))
+                       (linelen (- s6x s3x))
+                       (offset (* 1/2 (- linelen textlen))))
+                  (when (or #t (> sw textlen))
+                    (send dc draw-text 
+                          (link-label the-link)
+                          (+ dx s3x offset)
+                          (+ dy s3y)
+                          #f
+                          0
+                          0))))
               
               (send dc draw-spline (+ dx s4x) (+ dy s4y) (+ dx b45x) (+ dy b45y) (+ dx s5x) (+ dy s5y))
               (send dc draw-spline (+ dx s5x) (+ dy s5y) (+ dx b56x) (+ dy b56y) (+ dx s6x) (+ dy s6y))
