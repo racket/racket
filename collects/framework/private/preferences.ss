@@ -71,7 +71,7 @@ the state transitions / contracts are:
                  (string-constant error-saving-preferences-title)
                  (format (string-constant prefs-file-locked)
                          (path->string path))
-                 "Steal the lock && retry" ;(string-constant steal-the-lock)
+                 (string-constant steal-the-lock-and-retry)
                  (string-constant cancel)
                  #f
                  #f ;;parent

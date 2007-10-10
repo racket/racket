@@ -383,6 +383,7 @@ please adhere to these guidelines:
  (preferences "Preferences")
  (error-saving-preferences "Error saving preferences: ~a")
  (error-saving-preferences-title "Error saving preferences")
+ (steal-the-lock-and-retry "Steal the lock && retry") ;; in the preferences error dialog; this happens when the lockfile exists (after 3 pref writes). 
  (error-reading-preferences "Error reading preferences")
  (prefs-file-locked "The preferences file is locked (because the file ~a exists), so your preference change could not be saved. Cancel preference change?")
  (try-again "Try again") ;; button label
