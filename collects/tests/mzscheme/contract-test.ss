@@ -5191,17 +5191,25 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract23
    '(begin
-      (eval '(module m mzscheme
+      (eval '(module provide/contract23a mzscheme
                (require (lib "contract.ss"))
                (provide/contract [f integer?])
                (define f 3)))
       
-      (eval '(module n mzscheme
-               (require m)
+      (eval '(module provide/contract23b mzscheme
+               (require provide/contract23a)
                (#%expression f)
                f))
       
-      (eval '(require n))))
+      (eval '(require provide/contract23b))))
+  
+  (test/spec-passed
+   'provide/contract24
+   '(begin
+      (eval '(module provide/contract24 mzscheme
+               (require (prefix c: (lib "contract.ss")))
+               (c:case-> (c:-> integer? integer?)
+                         (c:-> integer? integer? integer?))))))
   
   (contract-error-test
    #'(begin
