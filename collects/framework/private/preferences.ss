@@ -42,30 +42,58 @@ the state transitions / contracts are:
           [prefix frame: framework:frame^])
   (export framework:preferences^)
   
-  (define successful-last-time? #t)
-  (define (put-preferences/gui ps vs)
-    (define failed? #f)
+  (define past-failure-ps '())
+  (define past-failure-vs '())
+  (define number-of-consecutive-failures 0)
+
+  (define (put-preferences/gui new-ps new-vs)
+    
+    ;; NOTE: old ones must come first in the list, 
+    ;; or else multiple sets to the same preference
+    ;; will save old values, instead of new ones.
+    (define ps (begin0 (append past-failure-ps new-ps)
+                       (set! past-failure-ps '())))
+    (define vs (begin0 (append past-failure-vs new-vs)
+                       (set! past-failure-vs '())))
+    
+    (define failed #f)
+    (define (record-actual-failure)
+      (set! number-of-consecutive-failures (+ number-of-consecutive-failures 1))
+      (set! past-failure-ps ps)
+      (set! past-failure-vs vs)
+      (set! failed #t))
     (define (fail-func path)
       (cond
-        [successful-last-time?
+        [(= number-of-consecutive-failures 3)
+         (set! number-of-consecutive-failures 0)
          (let ([mb-ans
                 (message-box/custom
                  (string-constant error-saving-preferences-title)
                  (format (string-constant prefs-file-locked)
                          (path->string path))
-                 (string-constant try-again)
+                 "Steal the lock && retry" ;(string-constant steal-the-lock)
                  (string-constant cancel)
                  #f
                  #f ;;parent
-                 '(default=1 caution))])
+                 '(default=2 caution))])
            (case mb-ans
-             [(2 #f) (void)]
+             [(2 #f) (record-actual-failure)]
              [(1) 
-              (put-preferences ps vs second-fail-func)]))]
+              (let ([delete-failed #f])
+                (with-handlers ((exn:fail:filesystem? (λ (x) (set! delete-failed x))))
+                  (delete-file path))
+                (cond
+                  [delete-failed
+                   (record-actual-failure)
+                   (message-box 
+                    (string-constant error-saving-preferences-title)
+                    (exn-message delete-failed))]
+                  [else
+                   (put-preferences ps vs second-fail-func)]))]))]
         [else 
-         (set! failed? #t)]))
+         (record-actual-failure)]))
     (define (second-fail-func path)
-      (set! failed? #t)
+      (record-actual-failure)
       (message-box
        (string-constant error-saving-preferences-title)
        (format (string-constant prefs-file-still-locked)
@@ -79,11 +107,9 @@ the state transitions / contracts are:
                         (format (string-constant error-saving-preferences)
                                 (exn-message x))))))
       (begin0
-        (put-preferences 
-         ps
-         vs
-         fail-func)
-        (set! successful-last-time? (not failed?)))))
+        (put-preferences ps vs fail-func)
+        (unless failed
+          (set! number-of-consecutive-failures 0)))))
   
   ;; ppanel-tree = 
   ;;  (union (make-ppanel-leaf string (union #f panel) (panel -> panel))

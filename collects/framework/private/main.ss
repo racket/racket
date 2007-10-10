@@ -281,7 +281,8 @@
   ;; groups
   
   (preferences:set-default 'framework:exit-when-no-frames #t boolean?)
-  (preferences:set 'framework:exit-when-no-frames #t)
+  (unless (preferences:get 'framework:exit-when-no-frames)
+    (preferences:set 'framework:exit-when-no-frames #t))
   
   (exit:insert-can?-callback
    (λ ()
