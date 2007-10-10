@@ -147,9 +147,16 @@
         (listof any/c)
         any)
     (name-list val-list)
-    "Like \\scheme{put-preferences}, but passes along"
-    "a \\var{locked-proc} that asks the user if they want to"
-    "try again.")
+    "Like \\scheme{put-preferences}, but has more sophisticated"
+    "error handling. In particular, it"
+    "\\begin{itemize}"
+    "\\item waits for three consecutive failures before informing the user"
+    "\\item gives the user the opportunity to ``steal'' the lockfile after the"
+    "third failure, and"
+    "\\item when failures occur, it remembers what its arguments were and"
+    "if any preference save eventually succeeds, all of the past failures are"
+    "also written at that point.")
+
    (preferences:add-panel
     ((or/c string? (cons/c string? (listof string?)))
      ((is-a?/c area-container-window<%>) 
