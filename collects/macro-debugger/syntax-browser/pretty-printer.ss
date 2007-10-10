@@ -23,7 +23,7 @@
     (define identifier-list
       (filter identifier? (hash-table-map ht:stx=>flat (lambda (k v) k))))
     (define (flat=>stx obj)
-      (hash-table-get ht:flat=>stx obj))
+      (hash-table-get ht:flat=>stx obj #f))
     (define (stx=>flat stx)
       (hash-table-get ht:stx=>flat stx))
     (define (current-position)
