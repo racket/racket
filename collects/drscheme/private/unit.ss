@@ -2077,18 +2077,23 @@ module browser threading seems wrong.
           (preferences:set 'drscheme:unit-window-max? (is-maximized?))
           (super on-size w h))
         
-        (define on-move-callback-waiting #f)
+        (define on-move-timer-args #f)
+        (define on-move-timer #f)
         (define/override (on-move x y)
           (cond
-            [on-move-callback-waiting
-             (set! on-move-callback-waiting (cons x y))]
+            [on-move-timer
+             (set! on-move-timer-args (cons x y))]
             [else
-             (set! on-move-callback-waiting (cons x y))
-             (queue-callback
-              (λ ()
-                (preferences:set 'drscheme:frame:initial-position on-move-callback-waiting)
-                (set! on-move-callback-waiting #f))
-              #f)]))
+             (set! on-move-timer-args (cons x y))
+             (set! on-move-timer 
+                   (new timer% 
+                        [notify-callback
+                         (λ () 
+                           (set! on-move-timer #f)
+                           (set! on-move-timer-args #f)
+                           (preferences:set 'drscheme:frame:initial-position on-move-timer-args))]
+                        [interval 1000]
+                        [just-once? #t]))]))
         
         (define/override (get-editor) definitions-text)
         (define/override (get-canvas)
