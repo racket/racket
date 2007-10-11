@@ -536,6 +536,8 @@
                        (current-library-collection-paths))
                   require-perms
                   (sandbox-path-permissions))]
+         ;; general info
+         [current-command-line-arguments '#()]
          ;; restrict the sandbox context from this point
          [current-security-guard (sandbox-security-guard)]
          [exit-handler (lambda x (error 'exit "user code cannot exit"))]
