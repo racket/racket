@@ -33,11 +33,11 @@
 
   ;; TermRecords
 
-  (define-struct trec (deriv synth-deriv estx raw-steps steps definites) #f)
+  (define-struct trec (deriv synth-deriv estx raw-steps steps definites warnings) #f)
 
   (define (new-trec deriv)
-    (make-trec deriv #f #f #f #f #f))
-
+    (make-trec deriv #f #f #f #f #f null))
+  
   ;; trec:invalidate-synth! : TermRecord -> void
   ;; Invalidates cached parts that depend on macro-hiding policy
   (define (trec:invalidate-synth! trec)
@@ -45,6 +45,7 @@
     (set-trec-estx! trec #f)
     (set-trec-raw-steps! trec #f)
     (set-trec-definites! trec #f)
+    (set-trec-warnings! trec null)
     (trec:invalidate-steps! trec))
 
   ;; trec:invalidate-steps! : TermRecord -> void
@@ -130,7 +131,9 @@
              (stretchable-height #f)
              (alignment '(left center))
              (style '(deleted))))
-
+      
+      (define warnings (new stepper-warnings% (parent area)))
+      
       (define sbview (new stepper-syntax-widget% 
                           (parent area)
                           (macro-stepper this)))
@@ -142,8 +145,6 @@
              (parent control-pane)
              (stepper this)
              (config config)))
-
-      (define warnings-frame #f)
 
       (send config listen-show-syntax-properties?
             (lambda (show?) (send sbview show-props show?)))
@@ -314,6 +315,34 @@
         (update)
         (send text scroll-to-position (unbox start-box) #f (unbox end-box)))
       
+      ;; update/save-position : -> void
+      (define/private (update/save-position)
+        (save-position)
+        (update))
+
+      ;; update : -> void
+      ;; Updates the terms in the syntax browser to the current step
+      (define/private (update)
+        (define text (send sbview get-text))
+        (define position-of-interest 0)
+        (define multiple-terms? (> (length (cursor->list terms)) 1))
+        (send text begin-edit-sequence)
+        (send sbview erase-all)
+        
+        (update:show-prefix)
+        (when multiple-terms? (send sbview add-separator))
+        (set! position-of-interest (send text last-position))
+        (update:show-current-step)
+        (when multiple-terms? (send sbview add-separator))
+        (update:show-suffix)
+        (send text end-edit-sequence)
+        (send text scroll-to-position
+              position-of-interest
+              #f
+              (send text last-position)
+              'start)
+        (enable/disable-buttons))
+      
       ;; update:show-prefix : -> void
       (define/private (update:show-prefix)
         ;; Show the final terms from the cached synth'd derivs
@@ -458,34 +487,6 @@
                               #:alpha-table alpha-table))
                       (cdr suffix0)))))
 
-      ;; update/save-position : -> void
-      (define/private (update/save-position)
-        (save-position)
-        (update))
-
-      ;; update : -> void
-      ;; Updates the terms in the syntax browser to the current step
-      (define/private (update)
-        (define text (send sbview get-text))
-        (define position-of-interest 0)
-        (define multiple-terms? (> (length (cursor->list terms)) 1))
-        (send text begin-edit-sequence)
-        (send sbview erase-all)
-
-        (update:show-prefix)
-        (when multiple-terms? (send sbview add-separator))
-        (set! position-of-interest (send text last-position))
-        (update:show-current-step)
-        (when multiple-terms? (send sbview add-separator))
-        (update:show-suffix)
-        (send text end-edit-sequence)
-        (send text scroll-to-position
-              position-of-interest
-              #f
-              (send text last-position)
-              'start)
-        (enable/disable-buttons))
-
       ;; insert-syntax/color : syntax syntaxes identifiers syntaxes string -> void
       (define/private (insert-syntax/color stx foci definites frontier hi-color)
         (send sbview add-syntax stx
@@ -515,41 +516,52 @@
         (send nav:down enable (cursor:has-next? terms)))
 
       ;; --
-
+      
       ;; refresh/resynth : -> void
       ;; Macro hiding policy has changed; invalidate cached parts of trec
       (define/public (refresh/resynth)
         (for-each trec:invalidate-synth! (cursor->list terms))
         (refresh))
-
+      
       ;; refresh/re-reduce : -> void
       ;; Reduction config has changed; invalidate cached parts of trec
       (define/private (refresh/re-reduce)
         (for-each trec:invalidate-steps! (cursor->list terms))
         (refresh))
-
+      
       ;; refresh/move : -> void
       ;; Moving between terms; clear the saved position
       (define/private (refresh/move)
         (clear-saved-position)
         (refresh))
-
+      
       ;; refresh : -> void
       (define/public (refresh)
         (restore-position)
+        (display-warnings (focused-term))
         (update))
-
+      
+      ;; display-warnings : TermRecord -> void
+      (define/private (display-warnings trec)
+        (send warnings clear)
+        (when trec
+          (unless (send config get-suppress-warnings?)
+            (for-each (lambda (tag+message)
+                        (let ([tag (car tag+message)]
+                              [message (cdr tag+message)])
+                          (send warnings add-warning tag message)))
+                      (trec-warnings trec)))))
+      
       ;; recache : TermRecord -> void
       (define/private (recache trec)
         (unless (trec-synth-deriv trec)
+          (set-trec-warnings! trec null)
           (with-handlers ([(lambda (e) #t)
                            (lambda (e)
                              (handle-recache-error e 'macro-hiding)
                              (set-trec-synth-deriv! trec 'error)
                              (set-trec-estx! trec (lift/deriv-e2 (trec-deriv trec))))])
-            (let-values ([(synth-deriv estx) (synthesize (trec-deriv trec))])
-              (set-trec-synth-deriv! trec synth-deriv)
-              (set-trec-estx! trec estx))))
+            (recache-synth trec)))
         (unless (trec-raw-steps trec)
           (with-handlers ([(lambda (e) #t)
                            (lambda (e)
@@ -656,22 +668,25 @@
            seq]
           [else #f]))
 
-      ;; synthesize : Derivation -> Derivation Syntax
-      (define/private (synthesize deriv)
-        (let ([show-macro? (get-show-macro?)])
-          (if show-macro?
-              (parameterize ((current-hiding-warning-handler
-                              (lambda (tag message)
-                                (unless (send config get-suppress-warnings?)
-                                  (unless warnings-frame
-                                    (set! warnings-frame (new warnings-frame%)))
-                                  (send warnings-frame add-warning tag message)
-                                  (send warnings-frame show #t))))
-                             (force-letrec-transformation
-                              (send config get-force-letrec-transformation?)))
-                (hide/policy deriv show-macro?))
-              (values deriv (lift/deriv-e2 deriv)))))
-
+      ;; recache-synth : TermRecord -> void
+      (define/private (recache-synth trec)
+        (define deriv (trec-deriv trec))
+        (define-values (synth-deriv estx)
+          (let ([show-macro? (get-show-macro?)])
+            (if show-macro?
+                (parameterize ((current-hiding-warning-handler
+                                (lambda (tag message)
+                                  (set-trec-warnings!
+                                   trec
+                                   (cons (cons tag message)
+                                         (trec-warnings trec)))))
+                               (force-letrec-transformation
+                                (send config get-force-letrec-transformation?)))
+                  (hide/policy deriv show-macro?))
+                (values deriv (lift/deriv-e2 deriv)))))
+        (set-trec-synth-deriv! trec synth-deriv)
+        (set-trec-estx! trec estx))
+      
       (define/private (reduce:one-by-one rs)
         (let loop ([rs rs])
           (match rs
@@ -685,19 +700,14 @@
                     (loop rs))]
             ['()
              null])))
-
+      
       (define/private (foci x) (if (list? x) x (list x)))
-
+      
       ;; Hiding policy
-
+      
       (define/private (get-show-macro?)
         (send macro-hiding-prefs get-policy))
-
-      ;; --
-
-      (define/public (shutdown)
-        (when warnings-frame (send warnings-frame show #f)))
-
+      
       ;; Initialization
       
       (super-new)

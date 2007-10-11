@@ -57,10 +57,6 @@
         (send config set-height h)
         (send widget update/preserve-view))
 
-      (define/augment (on-close)
-        (send widget shutdown)
-        (inner (void) on-close))
-
       (override/return-false file-menu:create-new?
                              file-menu:create-open?
                              file-menu:create-open-recent?
