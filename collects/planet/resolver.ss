@@ -212,7 +212,7 @@ an appropriate subdirectory.
         [`none (lambda (_) #f)]
         [`all (lambda (_) #t)]
         [`(all-except ,vspec ...)
-          (let ((bounders (map version->bounds vspec)))
+          (let ((bounders (map (λ (x) (version->bounds x (λ (_) #f))) vspec)))
             (if (andmap (lambda (x) x) bounders)
                 (lambda (v)
                   (not 
@@ -222,7 +222,7 @@ an appropriate subdirectory.
                     bounders)))
                 #f))]
         [`(only ,vspec ...)
-          (let ((bounders (map version->bounds vspec)))
+          (let ((bounders (map (λ (x) (version->bounds x (λ (_) #f))) vspec)))
             (if (andmap (lambda (x) x) bounders)
                 (lambda (v)
                   (andmap
@@ -386,25 +386,34 @@ an appropriate subdirectory.
                   (cons post-updater post-install-updaters)
                   (cons error-reporter error-reporters))))])))
   
+  (define (o f g) (λ (x) (f (g x))))
+  (define (o/and . es) (λ (x) (andmap (λ (f) (f x)) es)))
+  (define (o/or . es) (λ (x) (ormap (λ (f) (f x)) es)))
+  
   ; pkg-spec->full-pkg-spec : PKG-SPEC syntax -> FULL-PKG-SPEC
   (define (pkg-spec->full-pkg-spec spec stx)
     (define (pkg name maj lo hi path) (make-pkg-spec name maj lo hi path stx (version)))
+    (define (fail* msg)
+      (raise-syntax-error 'require (string->immutable-string msg) stx))
     (define (fail)
-      (raise-syntax-error 'require (format "Invalid PLaneT package specifier: ~e" spec) stx))
+      (fail* (format "Invalid PLaneT package specifier: ~e" spec)))
+    
     
     (match spec
-      [((? string? path) ... ver-spec ...)
-       (match (version->bounds ver-spec)
-         [(maj min-lo min-hi)
-          (pkg (last path) maj min-lo min-hi (drop-last path))]
-         [#f (fail)])]
+      [((? string? owner) (? string? package) ver-spec ...)
+       (match-let ([(maj min-lo min-hi) (version->bounds ver-spec fail*)])
+         (pkg package maj min-lo min-hi (list owner)))]
+      [((? (o not string?) owner) _ ...)
+       (fail* (format "Expected string [package owner] in first position, received: ~e" owner))]
+      [(_ (? (o not string?) pkg) _ ...)
+       (fail* (format "Expected string [package name] in second position, received: ~e" pkg))]
       [_ (fail)]))
   
   ;; version->bounds : VER-SPEC -> (list (number | #f) number (number | #f)) | #f
   ;; determines the bounds for a given version-specifier
   ;; [technically this handles a slightly extended version of VER-SPEC where MAJ may
   ;;  be in a list by itself, because that's slightly more convenient for the above fn]
-  (define (version->bounds spec-list)
+  (define (version->bounds spec-list fail)
     (match spec-list
       [() (list #f 0 #f)]
       [(? number? maj) (version->bounds (list maj))]
@@ -416,9 +425,29 @@ an appropriate subdirectory.
            [((? number? lo) (? number? hi)) (pkg lo  hi)]
            [('= (? number? min))            (pkg min min)]
            [('+ (? number? min))            (pkg min #f)]
-           [('- (? number? min))            (pkg 0   min)]))]
-      [_ #f]))
-  
+           [('- (? number? min))            (pkg 0   min)]
+           
+           ;; failure cases
+           [(? (o/and (o not number?) 
+                      (o/or (o not list?)
+                            (λ (x) (not (= (length x) 2))))))
+            (fail (format "Expected number or version range specifier for minor version specification, received: ~e" min-spec))]
+           [((? (λ (x) 
+                  (and (not (number? x))
+                       (not (memq x '(= + -)))))
+                range)
+             _)
+            (fail (format "Illegal range specifier in minor version specification. Legal range specifiers are numbers, =, +, -; given: ~e" range))]
+           [(_ (? (o not number?) bnd))
+            (fail (format "Expected number as range bound in minor version specification, given: ~e" bnd))]
+           [_ (fail (format "Illegal minor version specification: ~e" min-spec))]))]
+
+      ;; failure cases
+      [(? (o/and (o not number?) (o not list?)) v)
+       (fail (format "Version specification expected number or sequence, received: ~e" v))]
+      [((? (o not number?) maj) _ ...)
+       (fail (format "Version specification expected number for major version, received: ~e" maj))]
+      [_  (fail "Invalid version specification")]))
   
   ; ==========================================================================================
   ; PHASE 2: CACHE SEARCH
