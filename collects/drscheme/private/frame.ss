@@ -49,12 +49,36 @@
                                  [(#\;) "semicolon"]
                                  [(#\:) "colon"]
                                  [(#\space) "space"]
-                                 [else
-                                  (string short-cut)]))))])
+                                 [else (string short-cut)]))))])
                        (hash-table-put! name-ht keyname (send item get-plain-label))))))
                (when (is-a? item menu-item-container<%>)
                  (loop item)))
              (send menu-container get-items)))
+          (when (eq? (system-type) 'windows)
+            (for-each (λ (top-level-menu) 
+                        (when (is-a? top-level-menu menu%)
+                          (let ([amp-key
+                                 (let loop ([str (send top-level-menu get-label)])
+                                   (cond
+                                     [(regexp-match #rx"[^&]*[&](.)(.*)" str)
+                                      =>
+                                      (λ (m)
+                                        (let ([this-amp (list-ref m 1)]
+                                              [rest (list-ref m 2)])
+                                          (cond
+                                            [(equal? this-amp "&")
+                                             (loop rest)]
+                                            [else 
+                                             (string-downcase this-amp)])))]
+                                     [else #f]))])
+                            (when amp-key
+                              (hash-table-put! name-ht 
+                                               (format "m:~a" amp-key)
+                                               (format "~a menu" (send top-level-menu get-plain-label)))
+                              (hash-table-put! name-ht 
+                                               (format "m:s:~a" amp-key)
+                                               (format "~a menu" (send top-level-menu get-plain-label)))))))
+                      (send (get-menu-bar) get-items)))
           name-ht))
       
       (define/private (menu-item->prefix-string item)
@@ -87,24 +111,23 @@
                  (let ([keymap (send edit-object get-keymap)])
                    (is-a? keymap keymap:aug-keymap<%>)))))]
       
-      [define/private show-keybindings
-        (λ ()
-          (if (can-show-keybindings?)
-              (let ([edit-object (get-edit-target-object)])
-                (let ([keymap (send edit-object get-keymap)])
-                  (let* ([menu-names (get-menu-bindings)]
-                         [table (send keymap get-map-function-table)]
-                         [bindings (hash-table-map table list)]
-                         [w/menus 
-                          (append (hash-table-map menu-names list)
-                                  (filter (λ (binding) (not (bound-by-menu? binding menu-names)))
-                                          bindings))]
-                         [structured-list
-                          (mzlib:list:sort
-                           w/menus
-                           (λ (x y) (string-ci<=? (cadr x) (cadr y))))])
-                    (show-keybindings-to-user structured-list this))))
-              (bell)))]
+      [define/private (show-keybindings)
+        (if (can-show-keybindings?)
+            (let* ([edit-object (get-edit-target-object)]
+                   [keymap (send edit-object get-keymap)]
+                   [menu-names (get-menu-bindings)]
+                   [table (send keymap get-map-function-table)]
+                   [bindings (hash-table-map table list)]
+                   [w/menus 
+                    (append (hash-table-map menu-names list)
+                            (filter (λ (binding) (not (bound-by-menu? binding menu-names)))
+                                    bindings))]
+                   [structured-list
+                    (mzlib:list:sort
+                     w/menus
+                     (λ (x y) (string-ci<=? (cadr x) (cadr y))))])
+              (show-keybindings-to-user structured-list this))
+            (bell))]
       
       (define/private (bound-by-menu? binding menu-table)
         (ormap (λ (constituent)

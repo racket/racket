@@ -128,21 +128,47 @@
          function-table
          (λ (keyname fname)
            (unless (hash-table-get table keyname (λ () #f))
-             (cond
-               [(and (eq? (system-type) 'windows)
-                     (let ([cs (canonicalize-keybinding-string (format "~a" keyname))])
-                       (or (regexp-match #rx"a:c" cs)
-                           (regexp-match #rx"c:m" cs))))
-                (void) ;; don't show these keybindigns -- they don't work
-                ]
-               [else
-                (hash-table-put! table keyname fname)]))))
+             (let ([cs (canonicalize-keybinding-string (format "~a" keyname))])
+               (when (on-this-platform? cs)
+                 (hash-table-put! table keyname fname))))))
         (for-each
          (λ (chained-keymap)
            (when (is-a? chained-keymap aug-keymap<%>)
              (send chained-keymap get-map-function-table/ht table)))
          chained-keymaps)
         table)
+      
+      (define/private (on-this-platform? cs)
+        (let* ([splits (map (λ (x) (all-but-last (split-out #\: x))) (split-out #\; (string->list cs)))]
+               [has-key? (λ (k) (ormap (λ (x) (member (list k) x)) splits))])
+          (cond
+            [(eq? (system-type) 'windows)
+             (cond
+               [(or (regexp-match #rx"a:c" cs)
+                    (regexp-match #rx"c:m" cs))
+                #f]
+               [(or (has-key? #\a) (has-key? #\d))
+                #f]
+               [else #t])]
+            [(eq? (system-type) 'macosx)
+             (cond
+               [(has-key? #\m)
+                #f]
+               [else #t])]
+            [(eq? (system-type) 'unix)
+             (cond
+               [(or (has-key? #\a) (has-key? #\d))
+                #f]
+               [else #t])]
+            [else 
+             ;; just in case new platforms come along .... 
+             #t])))
+      
+      (define/private (all-but-last l)
+        (cond
+          [(null? l) l]
+          [(null? (cdr l)) l]
+          [else (cons (car l) (all-but-last (cdr l)))]))
       
       (super-new)))
   
@@ -1020,6 +1046,10 @@
                                   (integer->char
                                    (+ (char->integer #\a) i))])
                              (map (format "a:g;~a~a" 
+                                          (if shift? "s:" "")
+                                          roman-char)
+                                  (format "insert ~a" greek-char))
+                             (map (format "m:x;c:g;~a~a" 
                                           (if shift? "s:" "")
                                           roman-char)
                                   (format "insert ~a" greek-char))
