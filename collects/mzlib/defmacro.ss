@@ -63,7 +63,7 @@
 		       stx
 		       (dm-subst
 			ht
-			(apply proc (cdr (dm-syntax->datum stx ht))))
+			(apply p (cdr (dm-syntax->datum stx ht))))
 		       stx))))))))])))
 
   (define-syntax defmacro
