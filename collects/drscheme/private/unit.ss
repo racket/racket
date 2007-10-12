@@ -2181,7 +2181,6 @@ module browser threading seems wrong.
             (for-each (λ (ints-canvas) (send ints-canvas set-editor interactions-text))
                       interactions-canvases)
             
-            (restore-visible-tab-regions)
             (update-save-message)
             (update-save-button)
             (language-changed)
@@ -2190,7 +2189,10 @@ module browser threading seems wrong.
             (send definitions-text set-delegate old-delegate)
             (update-running (send current-tab is-running?))
             (on-tab-change old-tab current-tab)
-            (end-container-sequence)))
+            (end-container-sequence)
+            ;; restore-visible-tab-regions has to be outside the container sequence
+            ;; or else things get moved again during the container sequence end
+            (restore-visible-tab-regions))) 
         
         (define/pubment (on-tab-change from-tab to-tab)
           (let ([old-enabled (send from-tab get-enabled)]
@@ -2253,22 +2255,22 @@ module browser threading seems wrong.
           (change-to-tab (list-ref tabs n)))
         
         (define/private (save-visible-tab-regions)
-          (define (get-visible-regions txt)
-            (map (λ (canvas) 
-                   (let-values ([(x y w h _) (get-visible-region canvas)])
-                     (list x y w h)))
-                 (send txt get-canvases)))
-          
           (send current-tab set-visible-ints
-                (get-visible-regions interactions-text)
+                (get-tab-visible-regions interactions-text)
                 interactions-shown?)
           (send current-tab set-visible-defs 
-                (get-visible-regions definitions-text)
+                (get-tab-visible-regions definitions-text)
                 definitions-shown?)
           (send current-tab set-focus-d/i
                 (if (ormap (λ (x) (send x has-focus?)) interactions-canvases)
                     'ints
                     'defs)))
+        
+        (define/private (get-tab-visible-regions txt)
+          (map (λ (canvas) 
+                 (let-values ([(x y w h _) (get-visible-region canvas)])
+                   (list x y w h)))
+               (send txt get-canvases)))
         
         (define/private (restore-visible-tab-regions)
           (define (set-visible-regions txt regions ints?)
@@ -2297,10 +2299,11 @@ module browser threading seems wrong.
                            (split-definitions (car canvases)))
                        (loop (- i 1) 
                              (cdr canvases))))]))
-              (for-each (λ (c r) (set-visible-region txt c r)) 
+              (for-each (λ (c r)
+                          (set-visible-tab-region txt c r)) 
                         (send txt get-canvases)
                         regions)))
-          (define (set-visible-region txt canvas region)
+          (define (set-visible-tab-region txt canvas region)
             (let ([admin (send txt get-admin)])
               (send admin scroll-to 
                     (first region)
