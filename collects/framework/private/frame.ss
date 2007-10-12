@@ -707,7 +707,7 @@
           (update-memory-text)
           (set! memory-cleanup
                 (λ ()
-                  (remq ec memory-canvases)))
+                  (set! memory-canvases (remq ec memory-canvases))))
           (send panel stretchable-width #f)))
       
       [define lock-canvas (make-object lock-canvas% (get-info-panel))]
@@ -2228,6 +2228,7 @@
              (hide-search)))))
       (define/augment (on-close)
         (remove-callback)
+        (remove-sensitive-pref-callback)
         (let ([close-canvas
                (λ (canvas edit)
                  (send canvas set-editor #f))])
@@ -2358,6 +2359,7 @@
           (send find-edit search #t beep?)))
       
       (define sensitive-check-box #f)
+      (define remove-sensitive-pref-callback void)
       (define search-panel #f)
       (define search-gui-built? #f)
       (define dir-radio #f)
@@ -2440,6 +2442,10 @@
                                             (string-constant find-case-sensitive)
                                             middle-right-panel 
                                             (λ (x y) (send find-edit toggle-case-sensitive))))
+                (set! remove-sensitive-pref-callback
+                      (preferences:add-callback 'framework:case-sensitive-search?
+                                                (λ (k v)
+                                                  (send sensitive-check-box set-value v))))
                 (send sensitive-check-box set-value (get-field case-sensitive? find-edit))))
             
             
