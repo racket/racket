@@ -34,6 +34,9 @@
   ;(define selection-default ; suffixes to auto-choose (string or string-list)
   ;  '("*.scm;*.ss" "*.scm;*.ss;*.txt"))
 
+  ;; Client configuration
+  ;(define password-keep-minutes 5) ; client remembers entered password 5 mins
+
   (define requires '(("mred") ("openssl")))
 
   )
