@@ -1,11 +1,19 @@
 (module response-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+           (planet "util.ss" ("schematics" "schemeunit.plt" 2))
            (lib "xml.ss" "xml")
            (lib "file.ss")
            (lib "response.ss" "web-server" "private")
            (lib "request-structs.ss" "web-server" "private")
            (lib "response-structs.ss" "web-server" "private")
            "../util.ss")
+  
+  (require/expose (lib "response.ss" "web-server" "private")
+                  (convert-http-ranges
+                   make-content-length-header
+                   make-content-range-header
+                   output-file/boundary))
+  
   (provide response-tests)
     
   (define (output f . any)
@@ -19,6 +27,7 @@
      
      (test-suite
       "output-response"
+      
       (test-suite 
        "response/full"
        (test-equal? "response/full" 
@@ -217,37 +226,89 @@
              `(html (head (title "A title"))
                     (body "Here's some content!")))))
          'truncate/replace)
+       
+      (test-equal?
+       "convert-http-ranges"
+       (convert-http-ranges 
+        '((10 . #f) (20 . 30) (#f . 40) (40 . 60) (49 . 60))
+        50)
+       '((10 . 50) (20 . 31) (10 . 50) (40 . 50)))
+
        (test-suite
         "output-file"
-        (test-equal? "(get) whole-file"
-                     (output output-file tmp-file 'get #"text/html"
-                             0 +inf.0)
-                     #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 81\r\nContent-Range: bytes 0-81/81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
-        (test-equal? "(get) end early"
-                     (output output-file tmp-file 'get #"text/html"
-                             0 10)
-                     #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 10\r\nContent-Range: bytes 0-10/81\r\n\r\n<html><hea")
-        (test-equal? "(get) start late"
-                     (output output-file tmp-file 'get #"text/html"
-                             10 +inf.0)
-                     #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 71\r\nContent-Range: bytes 10-81/81\r\n\r\nd><title>A title</title></head><body>Here's some content!</body></html>")
-        (test-equal? "(get) start late and end early"
-                     (output output-file tmp-file 'get #"text/html"
-                             5 10)
-                     #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 5\r\nContent-Range: bytes 5-10/81\r\n\r\n><head><ti")
-        (test-equal? "(head) whole-file"
-                     (output output-file tmp-file 'head #"text/html"
-                             0 +inf.0)
-                     #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 81\r\nContent-Range: bytes 0-81/81\r\n\r\n")
-        (test-equal? "(head) end early"
-                     (output output-file tmp-file 'head #"text/html"
-                             0 10)
-                     #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 10\r\nContent-Range: bytes 0-10/81\r\n\r\n")
-        (test-equal? "(head) start late"
-                     (output output-file tmp-file 'head #"text/html"
-                             10 +inf.0)
-                     #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 71\r\nContent-Range: bytes 10-81/81\r\n\r\n")
-        (test-equal? "(head) start late and end early"
-                     (output output-file tmp-file 'head #"text/html"
-                             1 10)
-                     #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 9\r\nContent-Range: bytes 1-10/81\r\n\r\n"))))))
+        
+        (test-equal? "(get) whole file - no Range header"
+                     (output output-file tmp-file 'get #"text/html" #f)
+                     #"HTTP/1.1 200 OK\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
+
+        (test-equal? "(get) whole file - Range header present"
+                     (output output-file tmp-file 'get #"text/html" '((0 . 80)))
+                     #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\nContent-Range: bytes 0-80/81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
+
+        (test-equal? "(get) single range - suffix range larger than file"
+                     (output output-file tmp-file 'get #"text/html" '((#f . 90)))
+                     #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\nContent-Range: bytes 0-80/81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
+        
+        (test-equal? "(get) single range - 10 bytes from the start"
+                     (output output-file tmp-file 'get #"text/html" '((0 . 9)))
+                     #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nAccept-Ranges: bytes\r\nContent-Length: 10\r\nContent-Range: bytes 0-9/81\r\n\r\n<html><hea")
+        
+        (test-equal? "(get) single range - 10 bytes from the end"
+                     (output output-file tmp-file 'get #"text/html" '((71 . #f)))
+                     #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nAccept-Ranges: bytes\r\nContent-Length: 10\r\nContent-Range: bytes 71-80/81\r\n\r\ndy></html>")
+        
+        (test-equal? "(get) single range - 10 bytes from past the end"
+                     (output output-file tmp-file 'get #"text/html" '((76 . 86)))
+                     #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nAccept-Ranges: bytes\r\nContent-Length: 5\r\nContent-Range: bytes 76-80/81\r\n\r\nhtml>")
+        
+        (test-equal? "(get) single range - 10 bytes from the middle"
+                     (output output-file tmp-file 'get #"text/html" '((10 . 19)))
+                     #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nAccept-Ranges: bytes\r\nContent-Length: 10\r\nContent-Range: bytes 10-19/81\r\n\r\nd><title>A")
+        
+        (test-equal? "(get) multiple ranges"
+                     (output output-file/boundary tmp-file 'get #"text/html" '((10 . 19) (30 . 39) (50 . 59)) #"BOUNDARY")
+                     #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: multipart/byteranges; boundary=BOUNDARY\r\nAccept-Ranges: bytes\r\nContent-Length: 260\r\n\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 10-19/81\r\n\r\nd><title>A\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 30-39/81\r\n\r\ntle></head\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 50-59/81\r\n\r\ne's some c\r\n--BOUNDARY--\r\n")
+        
+        (test-equal? "(get) some bad ranges"
+                     (output output-file/boundary tmp-file 'get #"text/html" '((10 . 19) (1000 . 1050) (30 . 39) (50 . 49)) #"BOUNDARY")
+                     #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: multipart/byteranges; boundary=BOUNDARY\r\nAccept-Ranges: bytes\r\nContent-Length: 178\r\n\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 10-19/81\r\n\r\nd><title>A\r\n--BOUNDARY\r\nContent-Type: text/html\r\nContent-Range: bytes 30-39/81\r\n\r\ntle></head\r\n--BOUNDARY--\r\n")
+        
+        (test-equal? "(get) all bad ranges"
+                     (output output-file/boundary tmp-file 'get #"text/html" '((-10 . -5) (1000 . 1050) (50 . 49)) #"BOUNDARY")
+                     #"HTTP/1.1 416 Invalid range request\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\n\r\n")
+        
+        (test-equal? "(head) whole file - no Range header"
+                     (output output-file tmp-file 'head #"text/html" #f)
+                     #"HTTP/1.1 200 OK\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\n\r\n")
+        
+        (test-equal? "(head) whole file - Range header present"
+                     (output output-file tmp-file 'head #"text/html" '((0 . 80)))
+                     #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\nContent-Range: bytes 0-80/81\r\n\r\n")
+
+        (test-equal? "(head) single range - 10 bytes from the start"
+                     (output output-file tmp-file 'head #"text/html" '((0 . 9)))
+                     #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nAccept-Ranges: bytes\r\nContent-Length: 10\r\nContent-Range: bytes 0-9/81\r\n\r\n")
+        
+        (test-equal? "(head) single range - 10 bytes from the end"
+                     (output output-file tmp-file 'head #"text/html" '((71 . #f)))
+                     #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nAccept-Ranges: bytes\r\nContent-Length: 10\r\nContent-Range: bytes 71-80/81\r\n\r\n")
+        
+        (test-equal? "(head) single range - 10 bytes from the middle"
+                     (output output-file tmp-file 'head #"text/html" '((10 . 19)))
+                     #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nAccept-Ranges: bytes\r\nContent-Length: 10\r\nContent-Range: bytes 10-19/81\r\n\r\n")
+        
+        (test-equal? "(head) multiple ranges"
+                     (output output-file/boundary tmp-file 'head #"text/html" '((10 . 19) (30 . 39) (50 . 59)) #"BOUNDARY")
+                     #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: multipart/byteranges; boundary=BOUNDARY\r\nAccept-Ranges: bytes\r\nContent-Length: 260\r\n\r\n")
+        
+        (test-equal? "(head) some bad ranges"
+                     (output output-file/boundary tmp-file 'head #"text/html" '((10 . 19) (1000 . 1050) (30 . 39) (50 . 49)) #"BOUNDARY")
+                     #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: multipart/byteranges; boundary=BOUNDARY\r\nAccept-Ranges: bytes\r\nContent-Length: 178\r\n\r\n")
+        
+        (test-equal? "(head) all bad ranges"
+                     (output output-file/boundary tmp-file 'head #"text/html" '((-10 . -5) (1000 . 1050) (50 . 49)) #"BOUNDARY")
+                     #"HTTP/1.1 416 Invalid range request\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\n\r\n")
+        
+        ))))
+  
+  )
