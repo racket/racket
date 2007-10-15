@@ -15,9 +15,9 @@
 Data definition: 
 <pre>
 <code>
-(define-struct color (red blue green))
+(define-struct color (red green blue))
 ;; A CS is a structure: (make-color N N N)
-;; where N is between 0 and 255. 
+;; where N is between 0 and 255 (inclusive).
 
 ;; <em>{(idx Color)}</em> is one of:
 ;; -- a color symbol, e.g., 'blue
