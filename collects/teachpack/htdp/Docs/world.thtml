@@ -111,7 +111,7 @@ simulation after you stop it.</p>
    then displayed in the teachpack's canvas 
 
 <li><code>{(idx end-of-time)} : String u Symbol -> World</code><br> When DrScheme
-   evaluates <code>(end-of-time)</code>, it stops the clock and displays the
+   evaluates <code>(end-of-time "the end")</code>, it stops the clock and displays the
    given string or symbol; no further tick events, key events, or redraw events
    take place until the world is created again.  </menu></p>
 
