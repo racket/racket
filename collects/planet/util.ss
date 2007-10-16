@@ -14,7 +14,8 @@
            (lib "pack.ss" "setup")
            (lib "plt-single-installer.ss" "setup")
            (lib "getinfo.ss" "setup")
-           (lib "unpack.ss" "setup"))
+           (lib "unpack.ss" "setup")
+           (lib "etc.ss"))
 
   #| The util collection provides a number of useful functions for interacting with the PLaneT system. |#
   
@@ -436,4 +437,73 @@
      (lambda (row) 
        (let ([p (row->package row)])
          (when p
-           (erase-metadata p)))))))
+           (erase-metadata p))))))
+  
+  ;; ============================================================
+  ;; VERSION INFO
+  
+  (provide this-package-version
+           this-package-version-name
+           this-package-version-owner
+           this-package-version-maj
+           this-package-version-min)
+  
+  (define-syntax (this-package-version stx)
+    (syntax-case stx ()
+      [(_)
+       #`(this-package-version/proc 
+          #,(datum->syntax-object stx `(,#'this-expression-source-directory)))]))
+  
+  (define-syntax define-getters
+    (syntax-rules ()
+      [(define-getters (name position) ...)
+       (begin
+         (define-syntax (name stx)
+           (syntax-case stx ()
+             [(name)
+              #`(let ([p #,(datum->syntax-object stx `(,#'this-package-version))])
+                  (and p (position p)))]))
+         ...)]))
+  
+  (define-getters
+    (this-package-version-name pd->name)
+    (this-package-version-owner pd->owner)
+    (this-package-version-maj pd->maj)
+    (this-package-version-min pd->min))
+  
+  ;; ----------------------------------------
+  
+  (define (this-package-version/proc srcdir)
+    (let* ([package-roots (get-all-planet-packages)]
+           [thepkg (ormap (predicate->projection (contains-dir? srcdir))
+                          package-roots)])
+      (and thepkg (archive-retval->simple-retval thepkg))))
+
+  ;; predicate->projection : #f \not\in X ==> (X -> boolean) -> (X -> X)
+  (define (predicate->projection pred) (λ (x) (if (pred x) x #f)))
+  
+  ;; contains-dir? : path -> pkg -> boolean
+  (define ((contains-dir? srcdir) alleged-superdir-pkg)
+    (let* ([nsrcdir (normalize-path srcdir)]
+           [nsuperdir (normalize-path (car alleged-superdir-pkg))]
+           [nsrclist (explode-path nsrcdir)]
+           [nsuperlist (explode-path nsuperdir)])
+      (list-prefix? nsuperlist nsrclist)))
+  
+  (define (list-prefix? sup sub)
+    (let loop ([sub sub]
+               [sup sup])
+      (cond
+        [(null? sup) #t]
+        [(equal? (car sup) (car sub))
+         (loop (cdr sub) (cdr sup))]
+        [else #f])))
+  
+  (define (archive-retval->simple-retval p)
+    (list-refs p '(1 2 4 5)))
+      
+  (define-values (pd->owner pd->name pd->maj pd->min)
+    (apply values (map (λ (n) (λ (l) (list-ref l n))) '(0 1 2 3))))
+  
+  (define (list-refs p ns)
+    (map (λ (n) (list-ref p n)) ns)))

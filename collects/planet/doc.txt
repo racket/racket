@@ -209,6 +209,23 @@ planet require specification. This function downloads and installs the
 specified package if necessary, but does not verify that the actual
 file within it actually exists. 
 
+> (this-package-version)       :: SYNTAX
+> (this-package-version-name)  :: SYNTAX
+> (this-package-version-owner) :: SYNTAX
+> (this-package-version-maj)   :: SYNTAX
+> (this-package-version-min)   :: SYNTAX
+
+Macros that expand into expressions that evaluate to information about
+the name, owner, and version number of the package in which they 
+appear. this-package-version returns a list consisting of a string
+naming the package's owner, a string naming the package, a number
+indicating the package major version and a number indicating the
+package minor version, or #f if the expression appears outside the
+context of a package. The others are just convenience macros that
+select out the relevant field, or return #f if the expression
+appears outside the context of a PLaneT package.
+
+
 _The PLaneT search order_
 -------------------------
 
