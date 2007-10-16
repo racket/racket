@@ -483,7 +483,20 @@
                             [(html) (with-handlers ([exn:fail:filesystem? (lambda (x) null)]) 
                                       (map (lambda (x) (build-path doc x)) 
                                            (filter
-                                            (lambda (x) (file-exists? (build-path doc x)))
+                                            (lambda (x) 
+                                              (let ([str (path->string x)])
+                                                (cond
+                                                  [(or (regexp-match "--h\\.idx$" str)
+                                                       (regexp-match "--h\\.ind$" str)
+                                                       (regexp-match "Z-A\\.scm$" str)
+                                                       (regexp-match "Z-L\\.scm$" str)
+                                                       (regexp-match "gif$" str)
+                                                       (regexp-match "png$" str)
+                                                       (regexp-match "hdindex$" str)
+                                                       (regexp-match "keywords$" str))
+                                                   #f]
+                                                  [else 
+                                                   (file-exists? (build-path doc x))])))
                                             (directory-list doc))))]
                             [(text) (list (apply build-path doc))]
                             [else null])])
