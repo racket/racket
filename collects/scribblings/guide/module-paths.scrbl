@@ -99,9 +99,14 @@ _end-nat)] matches any number in the range @scheme[_start-nat] to
 @scheme[nat]. A @scheme[(- nat)] matches @scheme[nat] or lower.
 
 @examples[
-(module m (lib "big/lang.ss")
-  (require (planet "random.ss" ("schematics" "random.plt" 1 0)))
-  (display (random-gaussian)))
+(eval:alts
+ (module m (lib "big/lang.ss")
+   (require (planet "random.ss" ("schematics" "random.plt" 1 0)))
+   (display (random-gaussian)))
+ (void))
+(eval:alts
+ (require m)
+ (display 0.9050686838895684))
 ]
 }
 
