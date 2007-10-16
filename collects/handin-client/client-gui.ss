@@ -62,7 +62,7 @@
         [(new)
          (protect (lambda ()
                     (when (and password-keep-minutes
-                               (not (equal? 0) password-keep-minutes)
+                               (not (equal? 0 password-keep-minutes))
                                (not (equal? passwd new)))
                       (when timer (kill-thread timer))
                       (set! passwd new)
