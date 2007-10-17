@@ -68,7 +68,7 @@
                       (set! passwd new)
                       (set! timer (thread
                                    (lambda ()
-                                     (sleep password-keep-minutes)
+                                     (sleep (* 60 password-keep-minutes))
                                      (protect (lambda ()
                                                 (set! passwd #f)
                                                 (set! timer #f)))))))))])))
