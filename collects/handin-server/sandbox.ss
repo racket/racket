@@ -7,6 +7,9 @@
   (sandbox-output       #f)
   (sandbox-error-output #f)
 
+  ;; no limits -- the handin server uses per-session limits
+  (sandbox-eval-limits #f)
+
   ;; share these with evaluators
   (sandbox-namespace-specs
    (let ([specs (sandbox-namespace-specs)])

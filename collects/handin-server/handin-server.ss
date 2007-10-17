@@ -13,7 +13,12 @@
            "private/run-status.ss"
            "private/reloadable.ss"
            "private/hooker.ss"
-           "web-status-server.ss")
+           "web-status-server.ss"
+           ;; this sets some global parameter values, and this needs
+           ;; to be done in the main thread, rather than later in a
+           ;; user session thread (that will make the global changes
+           ;; not to be global.)
+           "sandbox.ss")
 
   (install-logger-port)
 
