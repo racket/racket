@@ -218,7 +218,7 @@ static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Obj
 
 static Scheme_Object *default_module_resolver(int argc, Scheme_Object **argv);
 
-static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Object **exss, char *exps,
+static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Object **exss, char *exps, char *exets,
 			   int start, int count, int do_uninterned);
 
 #define MODCHAIN_TABLE(p) ((Scheme_Hash_Table *)(SCHEME_VEC_ELS(p)[0]))
@@ -3154,7 +3154,7 @@ void scheme_finish_primitive_module(Scheme_Env *env)
   m->me->rt->num_provides = count;
   m->me->rt->num_var_provides = count;
 
-  qsort_provides(exs, NULL, NULL, NULL, 0, count, 1);
+  qsort_provides(exs, NULL, NULL, NULL, NULL, 0, count, 1);
 
   env->running = 1;
 }
@@ -5182,7 +5182,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
     exicount = count;
 
-    qsort_provides(exis, NULL, NULL, NULL, 0, exicount, 1);
+    qsort_provides(exis, NULL, NULL, NULL, NULL, 0, exicount, 1);
   }
 
   if (!rec[drec].comp) {
@@ -5548,9 +5548,10 @@ char *compute_provide_arrays(Scheme_Hash_Table *provided, Scheme_Hash_Table *req
   exsns = MALLOC_N(Scheme_Object *, count);
   exss = MALLOC_N(Scheme_Object *, count);
   exps = MALLOC_N_ATOMIC(char, count);
-  if (def_phase)
+  if (def_phase) {
     exets = MALLOC_N_ATOMIC(char, count);
-  else
+    memset(exets, 0, count);
+  } else
     exets = NULL;
 
   /* Do non-syntax first. */
@@ -5662,7 +5663,7 @@ char *compute_provide_arrays(Scheme_Hash_Table *provided, Scheme_Hash_Table *req
   /* Sort provide array for variables: interned followed by
      uninterned, alphabetical within each. This is important for
      having a consistent provide arrays. */
-  qsort_provides(exs, exsns, exss, exps, 0, exvcount, 1);
+  qsort_provides(exs, exsns, exss, exps, exets, 0, exvcount, 1);
 
   pt->num_provides = excount;
   pt->num_var_provides = exvcount;
@@ -5674,7 +5675,7 @@ char *compute_provide_arrays(Scheme_Hash_Table *provided, Scheme_Hash_Table *req
       if (exets[i])
         break;
     }
-    if (i < excount)
+    if (i >= excount)
       exets = NULL;
   }
   pt->provide_src_phases = exets;
@@ -5683,12 +5684,12 @@ char *compute_provide_arrays(Scheme_Hash_Table *provided, Scheme_Hash_Table *req
 }
 
 /* Helper: */
-static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Object **exss, char *exps,
+static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Object **exss, char *exps, char *exets,
 			   int start, int count, int do_uninterned)
 {
   int i, j;
   Scheme_Object *tmp_ex, *tmp_exsn, *tmp_exs, *pivot;
-  char tmp_exp;
+  char tmp_exp, tmp_exet;
 
   if (do_uninterned) {
     /* Look for uninterned and move to end: */
@@ -5717,6 +5718,11 @@ static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Ob
 	  exss[j] = tmp_exs;
 	  exps[j] = tmp_exp;
 	}
+        if (exets) {
+          tmp_exet = exets[i];
+          exets[i] = exets[j];
+          exets[j] = tmp_exet;
+        }
 
 	j--;
 	/* Skip over uninterns already at the end: */
@@ -5730,8 +5736,8 @@ static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Ob
     }
 
     /* Sort interned and uninterned separately: */
-    qsort_provides(exs, exsns, exss, exps, 0, j + 1, 0);
-    qsort_provides(exs, exsns, exss, exps, j + 1, count - j - 1, 0);
+    qsort_provides(exs, exsns, exss, exps, exets, 0, j + 1, 0);
+    qsort_provides(exs, exsns, exss, exps, exets, j + 1, count - j - 1, 0);
   } else {
     j = start;
     while (count > 1) {
@@ -5758,6 +5764,11 @@ static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Ob
 	    exss[j] = tmp_exs;
 	    exps[j] = tmp_exp;
 	  }
+          if (exets) {
+            tmp_exet = exets[k];
+            exets[k] = exets[j];
+            exets[j] = tmp_exet;
+          }
 	  
 	  j++;
 	}
@@ -5771,8 +5782,8 @@ static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Ob
     }
 
     if (count > 1) {
-      qsort_provides(exs, exsns, exss, exps, start, j - start, 0);
-      qsort_provides(exs, exsns, exss, exps, j, count - (j - start), 0);
+      qsort_provides(exs, exsns, exss, exps, exets, start, j - start, 0);
+      qsort_provides(exs, exsns, exss, exps, exets, j, count - (j - start), 0);
     }
   }
 }

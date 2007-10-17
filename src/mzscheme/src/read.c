@@ -5875,7 +5875,7 @@ static Scheme_Object *read_lang(Scheme_Object *port,
         if (len + 1 >= size) {
           size *= 2;
           naya = MALLOC_N_ATOMIC(mzchar, size);
-          memcpy(naya, buf, len);
+          memcpy(naya, buf, len * sizeof(mzchar));
           buf = naya;
         }
         buf[len++] = ch;
