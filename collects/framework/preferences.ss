@@ -156,7 +156,6 @@ the state transitions / contracts are:
            p
            value)]))
      ps values)
-    
     ((preferences:low-level-put-preferences)
      (map add-pref-prefix ps) 
      (map (λ (p value) (marshall-pref p value))

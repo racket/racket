@@ -185,7 +185,7 @@ the state transitions / contracts are:
   
   (define (hide-dialog)
     (when preferences-dialog
-      (send preferences-dialog show #f)))
+      (send preferences-dialog close)))
   
   (define (show-dialog)
     (if preferences-dialog
@@ -207,18 +207,23 @@ the state transitions / contracts are:
   
   (define (make-preferences-dialog)
     (letrec ([stashed-prefs (preferences:get-prefs-snapshot)]
+             [cancelled? #t]
              [frame-stashed-prefs%
               (class frame:basic%
+                (inherit close)
                 (define/override (on-subwindow-char receiver event)
                   (cond
                     [(eq? 'escape (send event get-key-code))
-                     (cancel-callback)]
+                     (close)]
                     [else 
                      (super on-subwindow-char receiver event)]))
                 (define/augment (on-close)
-                  (cancel-callback))
+                  (when cancelled?
+                    (preferences:restore-prefs-snapshot stashed-prefs)))
                 (define/override (show on?)
                   (when on?
+                    ;; reset the flag and save new prefs when the window becomes visible
+                    (set! cancelled? #t)
                     (set! stashed-prefs (preferences:get-prefs-snapshot)))
                   (super show on?))
                 (super-new))]
@@ -275,10 +280,9 @@ the state transitions / contracts are:
                               (for-each
                                (λ (f) (f))
                                on-close-dialog-callbacks)
-                              (hide-dialog)))]
-             [cancel-callback (λ ()
-                                (hide-dialog)
-                                (preferences:restore-prefs-snapshot stashed-prefs))])
+                              (set! cancelled? #f)
+                              (send frame close)))]
+             [cancel-callback (λ () (send frame close))])
       (new button%
            [label (string-constant revert-to-defaults)]
            [callback
