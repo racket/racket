@@ -1,10 +1,12 @@
 { (define LIBNAME "Animated Images, Simulating Worlds")
   (include "head.tinc") }
 
-<p>The teachpack provides two kinds of functions. The first five allow
-students to simulate a small world of animated drawings and games: 
-<menu>
-<li><code>{(idx run-simulation)} : Nat Nat Number [Nat -> Scene] -> true</code><br>
+<p>The teachpack provides the tools to write simple animations and
+ interactive games. The first and simplest approach is to set up a
+ simulation: 
+
+<blockquote>
+<code>{(idx run-simulation)} : Nat Nat Number [Nat -> Scene] -> true</code><br>
  <code>(run-simulation width height r create-image)</code>
    creates and shows a <code>width</code> x <code>height</code> canvas, 
    starts a clock, ticking every <code>r</code> (usually fractional) seconds, 
@@ -12,14 +14,13 @@ students to simulate a small world of animated drawings and games:
     the number of ticks passed since this function call. 
 
 <p>In addition, the function pops up a frame and displays the pictures that
-  <code>create-image</code> generates. The result is a simple animation. 
-</p>
+  <code>create-image</code> generates. The result is a simple animation.</p>
 
 <p>Optional: the function consumes an optional fifth argument, a
-boolean. If this argument is <code>false</code> or missing,
-<code>run-simulation</code> acts as described; if it is present and
-<code>true</code>, the function can create an animated GIF of the
-simulation after you stop it.</p>
+ boolean. If this argument is <code>false</code> or missing,
+ <code>run-simulation</code> acts as described; if it is present and
+ <code>true</code>, the function can create an animated GIF of the
+ simulation after you stop it.</p>
 
 <p><b>Example:</b>
 <pre>
@@ -33,20 +34,26 @@ simulation after you stop it.</p>
 </code>
 </pre>
 </p>
+</blockquote>
 
-<p>The teachpack assumes two basic kinds of data: 
+<p>For animated worlds and games, using the teachpack requires that you
+ provide a data definition for <code>World</code>. In principle, there are
+ no constraints on this data definition. </p>
+
+<p>The teachpack works with two basic forms of data for visualizing the world: 
 <ul>
-<li><code>World</code>, which is something you must define; 
-</li>
 <li><code>Image</code>, which are either inserted into DrScheme via the
-  "Special" menu or constructed from the functions below; and 
-</li>
-<li><code>Scene</code>, which are created from <code>Image</code>s. Indeed,
-  they are just special images. 
-</li>
+  "Special" menu or constructed from the functions below; and </li>
+<li><code>Scene</code>, which are created from <code>Image</code>s. 
+ Specifically, a scene is an image whose pinhole is at position (0,0).</li>
 </ul>
 </p>
 
+Given a data definition for worlds, the following functions create worlds,
+visualize it, make the clock tick, and provide feedback about the mouse and
+keyboard actions that the program's users perform:
+
+<ol>
 <li><code>{(idx big-bang)} : Nat Nat Number World -> true</code><br>
     <code>(big-bang width height n w)</code>
    creates and shows a <code>width</code> x <code>height</code> canvas,
@@ -113,10 +120,13 @@ simulation after you stop it.</p>
 <li><code>{(idx end-of-time)} : String u Symbol -> World</code><br> When DrScheme
    evaluates <code>(end-of-time "the end")</code>, it stops the clock and displays the
    given string or symbol; no further tick events, key events, or redraw events
-   take place until the world is created again.  </menu></p>
+   take place until the world is created again.  
+</ol></p>
 
-<p>The rest are functions for creating scenes:
-<menu>
+
+<p>For the creation of scenes from the world, use the following functions
+plus the functions on images below: 
+<ol>
 <li><code>{(idx nw:rectangle)}   : Nat Nat Mode Color -> Image</code><br>
    <code>(nw:rectangle width height mode color)</code>
    creates a width x height rectangle, solid or outlined, 
@@ -143,7 +153,7 @@ simulation after you stop it.</p>
    <code>(run-movie loi)</code>
    shows the list of images in loi in a time-delayed manner; 
    assume: all images are of the same size 
-</menu></p>
+</ol></p>
 
 <hr />
 
