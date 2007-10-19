@@ -877,7 +877,12 @@
         (call-with-output-file bootstrap-tmp-filename
           (λ (port)
             (write `(let () ;; cannot use begin, since it gets flattened to top-level (and re-compiled!)
-                      (,(if use-copy? 'namespace-require/copy 'namespace-require) ',module-language-spec)
+                      ,@(if use-copy?
+                            (list 
+                             `(namespace-require ',module-language-spec)
+                             `(namespace-require/copy ',module-language-spec))
+                            (list
+                             `(namespace-require ',module-language-spec)))
                       ,@(if transformer-module-language-spec
                             (list `(namespace-transformer-require ',transformer-module-language-spec))
                             (list))
@@ -1110,9 +1115,12 @@
                         (λ (x)
                           (display (exn-message x))
                           (newline))])
-         (if use-copy?
-             (namespace-require/copy module-spec)
-             (namespace-require module-spec))
+         (namespace-require module-spec)
+         ;; we always do a require to get the provide-for-syntax bindings
+         ;; if copy semantics is wanted, we do a copy next to clobber (some of)
+         ;; the bindings
+         (when use-copy?
+           (namespace-require/copy module-spec))
          (when transformer-module-spec
            (namespace-transformer-require transformer-module-spec))))))
   
