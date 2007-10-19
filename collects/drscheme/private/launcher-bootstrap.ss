@@ -41,7 +41,8 @@
   (current-command-line-arguments program-argv)
   ((if use-require/copy? namespace-require/copy namespace-require)
    language-module-spec)
-  (namespace-transformer-require transformer-module-spec)
+  (when transformer-module-spec
+    (namespace-transformer-require transformer-module-spec))
   
   (init-code-proc)
   

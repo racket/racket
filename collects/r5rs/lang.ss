@@ -92,6 +92,8 @@
 	   (rename require #%require)
 	   (rename provide #%provide))
 
+  (provide-for-syntax syntax-rules)
+  
   (define-syntax synrule-in-stx-module-begin
     (lambda (stx)
       (datum->syntax-object

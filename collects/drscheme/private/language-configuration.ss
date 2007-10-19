@@ -1302,6 +1302,7 @@
              (read-curly-brace-as-paren #f)
              (read-accept-infix-dot #f)
              (print-vector-length #f))))
+        (define/override (get-transformer-module) #f)
         (define/override (default-settings) 
           (drscheme:language:make-simple-settings #f 'write 'mixed-fraction-e #f #t 'debug))
         (define/override (order-manuals x)

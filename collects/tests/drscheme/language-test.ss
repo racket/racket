@@ -122,7 +122,9 @@ the settings above should match r5rs
       (test-expression "(list 1)" "(1)")
       (test-expression "(car (list))" "{bug09.png} car: expects argument of type <pair>; given ()")
 
-      (test-expression "argv" "#0()")))
+      (test-expression "argv" "#0()")
+      
+      (test-expression "(define-syntax app syntax-case)" "syntax-case: bad syntax in: syntax-case")))
 
 
                                                         
@@ -219,7 +221,8 @@ the settings above should match r5rs
       (test-expression "(list 1)" "(1)")
       (test-expression "(car (list))" "{bug09.png} car: expects argument of type <pair>; given ()")
       
-      (test-expression "argv" "#0()")))
+      (test-expression "argv" "#0()")
+      (test-expression "(define-syntax app syntax-case)" "syntax-case: bad syntax in: syntax-case")))
 
   
   
@@ -323,7 +326,9 @@ the settings above should match r5rs
       (test-expression "(car (list))"
                        "{bug09.png} car: expects argument of type <pair>; given ()")
 
-      (test-expression "argv" "{bug09.png} reference to undefined identifier: argv")))
+      (test-expression "argv" "{bug09.png} reference to undefined identifier: argv")
+      (test-expression "(define-syntax app syntax-case)" 
+                       "compile: bad syntax; reference to top-level identifier is not allowed, because no #%top syntax transformer is bound in: syntax-case")))
                                                         
 ;;                      ;                               
  ;                                                      
@@ -444,7 +449,8 @@ the settings above should match r5rs
 
       (test-expression "argv" 
                        "argv: name is not defined, not a parameter, and not a primitive name"
-                       "reference to an identifier before its definition: argv")))
+                       "reference to an identifier before its definition: argv")
+      (test-expression "(define-syntax app syntax-case)" "")))
   
 
                                                                
@@ -567,7 +573,10 @@ the settings above should match r5rs
 
       (test-expression "argv" 
                        "argv: name is not defined, not a parameter, and not a primitive name"
-                       "reference to an identifier before its definition: argv")))
+                       "reference to an identifier before its definition: argv")
+      
+      (test-expression "(define-syntax app syntax-case)" 
+                       "define-syntax: name is not defined, not a parameter, and not a primitive name")))
 
 
                                                                                     
@@ -680,7 +689,9 @@ the settings above should match r5rs
       (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
       (test-expression "argv" 
                        "argv: name is not defined, not a parameter, and not a primitive name"
-                       "reference to an identifier before its definition: argv")))
+                       "reference to an identifier before its definition: argv")
+      (test-expression "(define-syntax app syntax-case)" 
+                       "define-syntax: name is not defined, not a parameter, and not a primitive name")))
 
 
                                                                       
@@ -793,7 +804,9 @@ the settings above should match r5rs
       (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
       (test-expression "argv" 
                        "argv: name is not defined, not a parameter, and not a primitive name"
-                       "reference to an identifier before its definition: argv")))
+                       "reference to an identifier before its definition: argv")
+      (test-expression "(define-syntax app syntax-case)" 
+                       "define-syntax: name is not defined, not a parameter, and not a primitive name")))
   
 
                                                         
@@ -904,7 +917,9 @@ the settings above should match r5rs
       (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
       (test-expression "argv"
                        "argv: name is not defined, not a parameter, and not a primitive name"
-                       "reference to an identifier before its definition: argv")))
+                       "reference to an identifier before its definition: argv")
+      (test-expression "(define-syntax app syntax-case)" 
+                       "define-syntax: name is not defined, not a parameter, and not a primitive name")))
 
                                                  
                                                  

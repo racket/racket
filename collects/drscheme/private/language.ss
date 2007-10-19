@@ -878,7 +878,9 @@
           (λ (port)
             (write `(let () ;; cannot use begin, since it gets flattened to top-level (and re-compiled!)
                       (,(if use-copy? 'namespace-require/copy 'namespace-require) ',module-language-spec)
-                      (namespace-transformer-require ',transformer-module-language-spec)
+                      ,@(if transformer-module-language-spec
+                            (list `(namespace-transformer-require ',transformer-module-language-spec))
+                            (list))
                       ((dynamic-require ',init-code-mod-name 'init-code)))
                    port))
           'truncate
@@ -895,7 +897,8 @@
             'truncate 'text)))
       
       (let* ([pre-to-be-embedded-module-specs0
-              (if (equal? module-language-spec transformer-module-language-spec)
+              (if (or (not transformer-module-language-spec)
+                      (equal? module-language-spec transformer-module-language-spec))
                   (list module-language-spec)
                   (list module-language-spec
                         transformer-module-language-spec))]
@@ -1110,7 +1113,8 @@
          (if use-copy?
              (namespace-require/copy module-spec)
              (namespace-require module-spec))
-         (namespace-transformer-require transformer-module-spec)))))
+         (when transformer-module-spec
+           (namespace-transformer-require transformer-module-spec))))))
   
   ;; module-based-language-front-end : (port reader -> (-> (union sexp syntax eof)))
   ;; type reader = type-spec-of-read-syntax (see mz manual for details)
