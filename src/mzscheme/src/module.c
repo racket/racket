@@ -1032,7 +1032,7 @@ static Scheme_Object *dynamic_require_for_syntax(int argc, Scheme_Object *argv[]
 static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Object *argv[], 
                                            int for_exp, int copy, int etonly)
 {
-  Scheme_Object *form, *rn, *brn;
+  Scheme_Object *form, *rn, *brn, *et_rn, *dt_rn;
 
   if (!env)
     env = scheme_get_env(NULL);
@@ -1047,7 +1047,31 @@ static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Obj
   
   rn = scheme_make_module_rename(for_exp, mzMOD_RENAME_TOPLEVEL, NULL);
 
-  (void)parse_requires(form, scheme_false, env, rn, rn, NULL, NULL, NULL, NULL, NULL, NULL,
+
+  if (!for_exp && !etonly && !copy) {
+    scheme_prepare_exp_env(env);
+
+    et_rn = env->exp_env->rename;
+    if (!et_rn) {
+      et_rn = scheme_make_module_rename(1, mzMOD_RENAME_TOPLEVEL, NULL);
+      env->exp_env->rename = et_rn;
+    }
+
+    dt_rn = env->dt_rename;
+    if (!dt_rn) {
+      dt_rn = scheme_make_module_rename(MZ_LABEL_PHASE, mzMOD_RENAME_TOPLEVEL, NULL);
+      env->dt_rename = dt_rn;
+    }
+  } else {
+    et_rn = NULL;
+    dt_rn = NULL;
+  }
+
+  (void)parse_requires(form, scheme_false, env, 
+                       rn, rn, 
+                       et_rn, et_rn,
+                       dt_rn, dt_rn,
+                       NULL, NULL,
 		       NULL, NULL, !etonly, etonly, NULL, 1, copy, 0, NULL);
 
   brn = env->rename;
