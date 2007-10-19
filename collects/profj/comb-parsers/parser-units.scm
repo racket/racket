@@ -718,6 +718,7 @@
     (define stmt-expr
       (choose (#;new-class
                super-call
+               simple-method-call
                (sequence (unique-base (repeat unique-end) method-call-end) id "method call")
                (assignment 
                 (choose (identifier
@@ -823,6 +824,7 @@
     (define stmt-expr
       (choose (#;new-class
                super-call
+               simple-method-call
                (sequence (unique-base (repeat unique-end) method-call-end) id "method call")
                (assignment 
                 (choose (identifier
@@ -926,6 +928,7 @@
     (define stmt-expr
       (choose (new-class
                super-call
+               simple-method-call
                (sequence (unique-base (repeat unique-end) method-call-end) id "method call")
                (assignment 
                 (choose (identifier
