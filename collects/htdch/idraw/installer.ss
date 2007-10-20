@@ -12,15 +12,4 @@
                                (build-path draw-path file)
                                #f #f)))))
         (javac "Canvas.java")
-        (javac "World.java")
-	#|
-        (javac "Posn.java")
-        (javac "AColor.java")
-        (javac "Red.java")
-        (javac "White.java")
-        (javac "Blue.java")
-        (javac "Black.java")
-        (javac "Green.java")
-        (javac "Yellow.java")
-	|#
-        ))))
+        (javac "World.java")))))

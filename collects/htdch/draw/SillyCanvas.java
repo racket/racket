@@ -17,19 +17,19 @@ public class SillyCanvas extends Canvas {
 	    throw new RuntimeException("SillyCanvas: bad size");
     }
 
-    public boolean drawCircle(Posn p, int r, AColor c) {
+    public boolean drawCircle(Posn p, int r, IColor c) {
 	return super.drawCircle(p,r,c) && warning(); 
     }
 
-    public boolean drawDisk(Posn p, int r, AColor c) {
+    public boolean drawDisk(Posn p, int r, IColor c) {
 	return super.drawDisk(p,r,c) && warning(); 
     }
 
-    public boolean drawRect(Posn p, int width, int height, AColor c) {
+    public boolean drawRect(Posn p, int width, int height, IColor c) {
 	return super.drawRect(p,width,height,c) && warning(); 
     }
 
-    public boolean drawLine(Posn p0, Posn p1, AColor c) {
+    public boolean drawLine(Posn p0, Posn p1, IColor c) {
 	return super.drawLine(p0,p1,c) && warning();
     }
 

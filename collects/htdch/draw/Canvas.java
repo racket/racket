@@ -60,7 +60,7 @@ public class Canvas {
      *@param c its outline color 
      *@return true, if it can draw the circle into this canvas 
      */
-    public native boolean drawCircle(Posn p, int r, AColor c);
+    public native boolean drawCircle(Posn p, int r, IColor c);
 
     /** 
      *@param p the center of the disk 
@@ -68,7 +68,7 @@ public class Canvas {
      *@param c its fill and outline color 
      *@return true, if it can draw the disk into this canvas 
      */
-    public native boolean drawDisk(Posn p, int r, AColor c);
+    public native boolean drawDisk(Posn p, int r, IColor c);
 
     /** 
      *@param p the upper left of the rectangle 
@@ -77,7 +77,7 @@ public class Canvas {
      *@param c its outline color 
      *@return true, if it can draw the rectangle into this canvas 
      */
-    public native boolean drawRect(Posn p, int width, int height, AColor c);
+    public native boolean drawRect(Posn p, int width, int height, IColor c);
 
     /** 
      *@param p0 the first point on the line 
@@ -85,7 +85,7 @@ public class Canvas {
      *@param c its color 
      *@return true, if it can draw the line into this canvas 
      */
-    public native boolean drawLine(Posn p0, Posn p1, AColor c);
+    public native boolean drawLine(Posn p0, Posn p1, IColor c);
 
     /** 
      *@param p the position of the baseline of the string 

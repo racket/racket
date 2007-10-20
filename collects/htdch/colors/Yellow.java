@@ -1,3 +1,3 @@
 package colors;
 
-public class Yellow extends AColor { }
+public class Yellow implements IColor { }

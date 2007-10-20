@@ -21,10 +21,10 @@
      xclose-native
      stop-native
      copy-native
-     drawCircle-geometry.Posn-int-colors.AColor-native
-     drawDisk-geometry.Posn-int-colors.AColor-native
-     drawRect-geometry.Posn-int-int-colors.AColor-native
-     drawLine-geometry.Posn-geometry.Posn-colors.AColor-native
+     drawCircle-geometry.Posn-int-colors.IColor-native
+     drawDisk-geometry.Posn-int-colors.IColor-native
+     drawRect-geometry.Posn-int-int-colors.IColor-native
+     drawLine-geometry.Posn-geometry.Posn-colors.IColor-native
      drawString-geometry.Posn-java.lang.String-native
      ))
   
@@ -117,23 +117,23 @@
       (define (copy-native this accs gets privates)
 	(wrap-start-check ([hash-table-get privates 'copy])))
       
-      (define (drawCircle-geometry.Posn-int-colors.AColor-native this accs gets privates posn r c)
+      (define (drawCircle-geometry.Posn-int-colors.IColor-native this accs gets privates posn r c)
 	(wrap-start-check
-         (check-arg r "drawCircle(Posn, int, AColor)" "second")
+         (check-arg r "drawCircle(Posn, int, IColor)" "second")
          ([hash-table-get privates '%draw-circle] (build-posn posn) r (color->symbol c))))
       
-      (define (drawDisk-geometry.Posn-int-colors.AColor-native this accs gets privates posn r c)
+      (define (drawDisk-geometry.Posn-int-colors.IColor-native this accs gets privates posn r c)
 	(wrap-start-check
-         (check-arg r "drawDisk(Posn, int, AColor)" "second")
+         (check-arg r "drawDisk(Posn, int, IColor)" "second")
          ([hash-table-get privates '%draw-solid-disk] (build-posn posn) r (color->symbol c))))
       
-      (define (drawRect-geometry.Posn-int-int-colors.AColor-native this accs gets privates posn w h c)
+      (define (drawRect-geometry.Posn-int-int-colors.IColor-native this accs gets privates posn w h c)
 	(wrap-start-check 
-         (check-arg w "drawRect(Posn, int, int, AColor)" "second")
-         (check-arg h "drawRect(Posn, int, int, AColor)" "third")
+         (check-arg w "drawRect(Posn, int, int, IColor)" "second")
+         (check-arg h "drawRect(Posn, int, int, IColor)" "third")
          ([hash-table-get privates '%draw-solid-rect] (build-posn posn) w h (color->symbol c))))
       
-      (define (drawLine-geometry.Posn-geometry.Posn-colors.AColor-native this accs gets privates p0 p1 c)
+      (define (drawLine-geometry.Posn-geometry.Posn-colors.IColor-native this accs gets privates p0 p1 c)
 	(wrap-start-check 
          ([hash-table-get privates '%draw-solid-line] (build-posn p0) (build-posn p1) (color->symbol c))))
       
@@ -144,26 +144,26 @@
          ([hash-table-get privates '%draw-string] (build-posn p) s*)))
       
       #;
-      (define (clearCircle-geometry.Posn-int-colors.AColor-native this accs gets privates p r c)
+      (define (clearCircle-geometry.Posn-int-colors.IColor-native this accs gets privates p r c)
 	(wrap-start-check 
-         (check-arg r "clearCircle(Posn, int, AColor)" "second")
+         (check-arg r "clearCircle(Posn, int, IColor)" "second")
          ([hash-table-get privates '%clear-circle] (build-posn p) r (color->symbol c))))
 
       #;
-      (define (clearDisk-geometry.Posn-int-colors.AColor-native this accs gets privates p r c)
+      (define (clearDisk-geometry.Posn-int-colors.IColor-native this accs gets privates p r c)
 	(wrap-start-check 
-         (check-arg r "clearDisk(Posn, int, AColor)" "second")
+         (check-arg r "clearDisk(Posn, int, IColor)" "second")
          ([hash-table-get privates '%clear-solid-disk] (build-posn p) r (color->symbol c))))
       
       #;
-      (define (clearRect-geometry.Posn-int-int-colors.AColor-native this accs gets privates p w h c)
+      (define (clearRect-geometry.Posn-int-int-colors.IColor-native this accs gets privates p w h c)
 	(wrap-start-check 
-         (check-arg w "clearRect(Posn, int, int, AColor)" "second")
-         (check-arg h "clearRect(Posn, int, int, AColor)" "third")
+         (check-arg w "clearRect(Posn, int, int, IColor)" "second")
+         (check-arg h "clearRect(Posn, int, int, IColor)" "third")
          ([hash-table-get privates '%clear-solid-rect] (build-posn p) w h (color->symbol c))))
       
       #;
-      (define (clearLine-geometry.Posn-geometry.Posn-colors.AColor-native this accs gets privates p0 p1 c)
+      (define (clearLine-geometry.Posn-geometry.Posn-colors.IColor-native this accs gets privates p0 p1 c)
 	(wrap-start-check 
          ([hash-table-get privates '%clear-solid-line] (build-posn p0) (build-posn p1) (color->symbol c))))
       )

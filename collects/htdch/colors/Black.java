@@ -1,3 +1,3 @@
 package colors;
 
-public class Black extends AColor { }
+public class Black implements IColor { }

@@ -14,7 +14,7 @@
                  (compile-java 'file 'file 'full
                                (build-path draw-path file)
                                #f #f)))))
-        (javac "AColor.java")
+        (javac "IColor.java")
         (javac "Red.java")
         (javac "White.java")
         (javac "Blue.java")
