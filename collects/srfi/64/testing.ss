@@ -28,10 +28,11 @@
   (provide
    test-begin ;; must be listed first, since in Kawa (at least) it is "magic".
    test-end test-assert test-eqv test-eq test-equal
-   test-approximate #;test-assert test-error test-apply test-with-runner
+   test-approximate test-error test-apply test-with-runner
    test-match-nth test-match-all test-match-any test-match-name
    test-skip test-expect-fail test-read-eval-string
-   test-runner-group-path test-group-with-cleanup
+   test-runner-group-path
+   test-group test-group-with-cleanup
    test-result-ref test-result-set! test-result-clear test-result-remove
    test-result-kind test-passed?
    test-log-to-file
@@ -59,8 +60,7 @@
    ;; but can be called to construct more complex ones.
    test-on-group-begin-simple test-on-group-end-simple
    test-on-bad-count-simple test-on-bad-end-name-simple
-   test-on-final-simple test-on-test-end-simple
-   #;test-on-final-simple)
+   test-on-final-simple test-on-test-end-simple)
   
   (define-syntax %test-record-define
     (syntax-rules ()
