@@ -42,7 +42,7 @@
   (close "關閉") ;; as in, close an open window. must match close-menu-item
   ;; in the sense that, when the &s have been stripped from
   ;; close-menu-item, it must be the same string as this.
-  (stop "停止")   
+  (stop "停止")
   (&stop "停止(&S)") ;; for use in button and menu item labels, with short cut.
   (are-you-sure-delete? "確定要刪除~a嗎？") ;; ~a is a filename or directory name
   (ignore "忽略")
@@ -224,7 +224,7 @@
   (plt:hd:help-desk-about-string
    "Help Desk是PLT軟體的信息來源，其中包含了DrScheme，MzScheme和MrEd的全部信息。\n\n版本~a\n版權所有(c)~a-~a PLT")
   (plt:hd:help-on-help "關於幫助的幫助")
-  (plt:hd:help-on-help-details "如果你需要使用Help Desk的幫助，請在Help Desk的主頁中點擊連結「How to use Help Desk」。（要進入Help Desk的主頁，請單擊Help Desk窗口上方的「主頁」按鈕。）")
+  (plt:hd:help-on-help-details "關於使用Help Desk的幫助，請參見Help Desk主頁中的第一個連結「Help Desk」。（要進入Help Desk的主頁，請單擊Help Desk窗口上方的「主頁」按鈕。）")
   (reload "刷新") ;; refresh the page in a web browser
   (plt:hd:ask-about-separate-browser
    "你選擇了一個指向全球資訊網的連結。請問您是要在Help Desk中打開該頁面，還是想使用瀏覽器程序瀏覽網頁？")
@@ -309,6 +309,7 @@
   (preferences "參數設置")
   (error-saving-preferences "保存參數時出錯:~a")
   (error-saving-preferences-title "保存參數時出錯")
+  (steal-the-lock-and-retry "取消鎖定並重試") ;; in the preferences error dialog; this happens when the lockfile exists (after 3 pref writes).
   (error-reading-preferences "讀取參數設置時出錯")
   (prefs-file-locked "存儲參數的文件被鎖定了（由於文件~a的存在），所以這些參數無法被保存。放棄修改？")
   (try-again "重試") ;; button label
@@ -565,6 +566,9 @@
   
   (replace-and-find-again-info "替換當前文本，然後繼續查找原字元串")
   (replace-and-find-again-menu-item "替換並查找下一個")
+  
+  (complete-word "自動完成") ; the complete word menu item in the edit menu
+  (no-completions "... 無") ; shows up in the completions menu when there are no completions (in italics)
   
   (preferences-info "設置控制參數")
   (preferences-menu-item "參數設置...")
@@ -844,8 +848,10 @@
   (compiling-teachpack "編譯教學包~a...")
   (teachpack-pre-installed "自帶的教學包")
   (teachpack-user-installed "用戶安裝的教學包")
-  (install-teachpack... "安裝教學包...")
+  (add-teachpack-to-list... "添加教學包...")
   (teachpack-already-installed "已經存在一個名為'~a'的教學包。是否覆蓋？")
+  ; ~a is filled with a list of language names. Each name is separated by a newline and is indented two spaces (no commas, no 'and')
+  (teachpacks-only-in-languages "教學抱僅在下列語言中有效：~a")
   
   ;;; Language dialog
   (introduction-to-language-dialog
@@ -1097,8 +1103,7 @@
   (stepper-program-window-closed "注意：程序窗口已關閉。")
   
   (stepper-name "單步執行器")
-  (stepper-language-level-message
-   "您選擇的語言是「~a」。目前，單步執行只支持「~a」和「~a」之間的語言。")
+  (stepper-language-level-message "單步執行不支持語言「~a」。")
   (stepper-button-label "單步執行")
   (stepper-home "源程序")
   (stepper-previous-application "|< 調用")
