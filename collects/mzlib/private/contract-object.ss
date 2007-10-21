@@ -1,19 +1,13 @@
 (module contract-object mzscheme
   (require (lib "etc.ss")
-           (lib "list.ss")
            "contract-arrow.ss"
            "contract-guts.ss"
-           "contract-opt.ss"
-           "contract-opt-guts.ss"
            "class-internal.ss"
            "contract-arr-checks.ss")
   
-  (require-for-syntax "contract-opt-guts.ss"
-                      "contract-helpers.ss"
+  (require-for-syntax "contract-helpers.ss"
                       "contract-arr-obj-helpers.ss"
-                      (lib "list.ss")
-                      (lib "stx.ss" "syntax")
-                      (lib "name.ss" "syntax"))
+                      (lib "list.ss"))
   
   (provide mixin-contract
            make-mixin-contract

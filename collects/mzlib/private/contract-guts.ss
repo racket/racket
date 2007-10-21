@@ -1,7 +1,6 @@
 (module contract-guts mzscheme
   (require "contract-helpers.ss"
-           (lib "pretty.ss")
-           (lib "list.ss"))
+           (lib "pretty.ss"))
 
   (require-for-syntax "contract-helpers.ss")
   

@@ -1,8 +1,5 @@
 (module contract-arr-obj-helpers mzscheme
-  (require "contract-opt-guts.ss"
-           "contract-helpers.ss"
-           (lib "list.ss")
-           (lib "stx.ss" "syntax")
+  (require (lib "stx.ss" "syntax")
            (lib "name.ss" "syntax"))
   
   (require-for-template mzscheme

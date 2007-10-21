@@ -1,7 +1,6 @@
 (module contract-opt-guts mzscheme
   (require (lib "private/boundmap.ss" "syntax")
-           (lib "list.ss")
-           "contract-guts.ss")
+           (lib "list.ss"))
   (require-for-template mzscheme)
   
   (provide get-opter reg-opter! opter

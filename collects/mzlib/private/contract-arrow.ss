@@ -1,14 +1,11 @@
 (module contract-arrow mzscheme
   (require (lib "etc.ss")
-           (lib "list.ss")
            "contract-guts.ss"
            "contract-arr-checks.ss"
-           "contract-opt.ss"
-           "contract-opt-guts.ss")
+           "contract-opt.ss")
   (require-for-syntax "contract-opt-guts.ss"
                       "contract-helpers.ss"
                       "contract-arr-obj-helpers.ss"
-                      (lib "list.ss")
                       (lib "stx.ss" "syntax")
                       (lib "name.ss" "syntax"))
 

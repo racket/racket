@@ -15,17 +15,11 @@ improve method arity mismatch contract violation error messages?
   (require-for-syntax mzscheme
                       "contract-opt-guts.ss"
                       (lib "list.ss")
-                      (lib "stx.ss" "syntax")
-                      (lib "etc.ss")
-                      (lib "name.ss" "syntax"))
+                      (lib "etc.ss"))
   
-  (require (lib "etc.ss")
-           (lib "list.ss")
-           (lib "pretty.ss")
-           "contract-arrow.ss"
+  (require "contract-arrow.ss"
            "contract-guts.ss"
-           "contract-opt.ss"
-           "contract-opt-guts.ss")
+           "contract-opt.ss")
   
   (require "contract-helpers.ss")
   (require-for-syntax (prefix a: "contract-helpers.ss"))
