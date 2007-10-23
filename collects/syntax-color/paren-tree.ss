@@ -21,6 +21,9 @@
                   (hash-table-put! close-matches-table (cadr x) (car x)))
                 matches)
       
+      (define back-cache (make-hash-table))
+      (define (reset-cache) (set! back-cache (make-hash-table)))
+      
       (define/private (is-open? x)
         (hash-table-get open-matches-table x (lambda () #f)))
       
@@ -55,6 +58,7 @@
       ;; Everything at and after pos is marked as invalid.
       ;; pos must not be a position inside of a token.
       (define/public (split-tree pos)
+        (reset-cache)
         (let-values (((l r) (split tree pos)))
           (set! tree l)
           (set! invalid-tree r)))
@@ -63,6 +67,7 @@
       ;; Makes the num-to-keep last positions that have been marked
       ;; invalid valid again.
       (define/public (merge-tree num-to-keep)
+        (reset-cache)
         (send invalid-tree search-max!)
         (let*-values (((bad good) (split invalid-tree (- (send invalid-tree get-root-end-position)
                                                          num-to-keep)))
@@ -78,6 +83,7 @@
       ;; add-token: symbol * natural-number ->
       ;; Adds the token to the end of the valid part of the tree.
       (define/public (add-token type length)
+        (reset-cache)
         (cond
           ((or (send tree is-empty?) (is-open? type) (is-close? type))
            ; Big performance increase using the -spec version.
@@ -90,6 +96,7 @@
       ;; truncate: natural-number ->
       ;; removes the tokens after pos
       (define/public (truncate pos)
+        (reset-cache)
         (let-values (((l r) (split tree pos)))
           (set! tree l)))
         
@@ -138,6 +145,53 @@
       ;; If all three return #f, then there was no tree to search, or 
       ;; the position did not immediately follow a close.
       (define/public (match-backward pos)
+        (define (not-found)
+          (send tree search! pos)
+          (values (- pos (cdr (send tree get-root-data))) pos #t))
+        (define already (hash-table-get back-cache pos (lambda () 'todo)))
+        (cond
+          [(not (eq? 'todo already)) (values already pos #f)]
+          [else
+           (send tree search! (max 0 (sub1 pos)))
+           (let ([type (send tree get-root-data)])
+             (cond
+               [(and (not (send tree is-empty?))
+                     (is-close? (car type))
+                     (= (+ (cdr (send tree get-root-data))
+                           (send tree get-root-start-position))
+                        pos))
+                (let loop ()
+                  (let ([p (send tree get-root-start-position)])
+                    (cond
+                      [(= 0 p) (not-found)]
+                      [else
+                       (send tree search! (sub1 p))
+                       (let ([prev-type (car (send tree get-root-data))]
+                             [prev-start-pos (send tree get-root-start-position)])
+                         (cond
+                           [(and (is-open? prev-type) (matches? prev-type (car type)))
+                            (hash-table-put! back-cache pos prev-start-pos)
+                            (values prev-start-pos pos #f)]
+                           [(is-close? prev-type)
+                            (let-values ([(new-start new-end new-err)
+                                          (match-backward (+ prev-start-pos 
+                                                             (cdr (send tree get-root-data))))])
+                              (cond
+                                [new-err
+                                 (not-found)]
+                                [(and (not new-start) (not new-end) (not new-err))
+                                 (error 'colorer-internal)]
+                                [else
+                                 (send tree search! new-start)
+                                 (loop)]))]
+                           [(is-open? prev-type)
+                            (not-found)]
+                           [else 
+                            (loop)]))])))]
+               [else
+                (values #f #f #f)]))]))
+
+      #;(define/public (match-backward pos)
         (send tree search! (if (> pos 0) (sub1 pos) pos))
         (cond
           ((and (not (send tree is-empty?))
@@ -201,6 +255,7 @@
                   (escape loc)))
                (else
                 (do-match-forward (node-right node) (+ start (node-token-length node)) new-stack escape)))))))
+      
       
       (define/private (do-match-backward node top-offset stack escape)
         (cond
