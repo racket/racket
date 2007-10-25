@@ -75,6 +75,14 @@ extern FILE *popen();
 #define bzero(b, len) memset(b, 0, len)
 #endif
 
+/* PLTSCHEME hack: */
+#include "mzconfig.h"
+#ifdef SIZEOF_LONG
+# if SIZEOF_LONG == 8
+#  define LONG64
+# endif
+#endif
+
 /* the following is defined in X11R6 but not in previous versions */
 #ifdef __alpha
 #ifndef LONG64

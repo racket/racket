@@ -55,7 +55,8 @@ LDFLAGS = $(XLIB)
 
 XPMCC = $(CC)
 
-XPM_CC = $(XPMCC) $(CFLAGS) -c
+# Extra -I to get mzconfig.h:
+XPM_CC = $(XPMCC) $(CFLAGS) -I../../../../mzscheme -c
 
 OBJS= data.@LTO@ create.@LTO@ misc.@LTO@ rgb.@LTO@ \
       scan.@LTO@ parse.@LTO@ hashtab.@LTO@ \
