@@ -13,7 +13,7 @@ at the top of your Definitions Window to import this library.
 <pre>
 <code>
                               +--------+
-                              | AColor |
+                              | IColor |
                               +--------+
                                   |
                                  / \
@@ -28,7 +28,7 @@ at the top of your Definitions Window to import this library.
 </pre>
 </p>
 
-<p>The <code>AColor</code> class is abstract. Its variants (subclasses) are
+<p>The <code>IColor</code> class is abstract. Its variants (subclasses) are
 created with no arguments. 
 </p>
 

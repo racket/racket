@@ -24,10 +24,10 @@ import geometry.*;
  | boolean bigBang(int,int,double)   |       +---------------------------------------+
  | boolean endOfTime(String)         |       | boolean show()                        |
  | World endOfWorld(String)          |       | boolean close()                       |
- |                                   |       | boolean drawCircle(Posn,int,AColor)   |
- |                                   |       | boolean drawDisk(Posn,int,AColor)     |
- | abstract World onTick()           |       | boolean drawRect(Posn,int,int,AColor) |
- | abstract World onKeyEvent(String) |       | boolean drawLine(Posn,Posn,AColor)    |
+ |                                   |       | boolean drawCircle(Posn,int,IColor)   |
+ |                                   |       | boolean drawDisk(Posn,int,IColor)     |
+ | abstract World onTick()           |       | boolean drawRect(Posn,int,int,IColor) |
+ | abstract World onKeyEvent(String) |       | boolean drawLine(Posn,Posn,IColor)    |
  | abstract boolean draw()           |       | boolean drawString(Posn,String)       |
  +-----------------------------------+       +---------------------------------------+
 </code>

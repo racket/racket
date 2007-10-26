@@ -25,10 +25,10 @@ import geometry.*;
   | void bigBang(int,int,double)    |       +------------------------------------+
   | World endOfTime(String)         |       | void show()                        |
   | World endOfWorld(String)        |       | void close()                       |
-  | abstract void onTick()          |       | void drawCircle(Posn,int,AColor)   |
-  | abstract void onKeyEvent(String)|       | void drawDisk(Posn,int,AColor)     |
-  | abstract void draw()            |       | void drawRect(Posn,int,int,AColor) |
-  +---------------------------------+       | void drawLine(Posn,Posn,AColor)    |
+  | abstract void onTick()          |       | void drawCircle(Posn,int,IColor)   |
+  | abstract void onKeyEvent(String)|       | void drawDisk(Posn,int,IColor)     |
+  | abstract void draw()            |       | void drawRect(Posn,int,int,IColor) |
+  +---------------------------------+       | void drawLine(Posn,Posn,IColor)    |
                                             | void drawString(Posn,String)       |
                                             +------------------------------------+
 </code>
