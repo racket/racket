@@ -33,6 +33,17 @@
   (define comparable-type (make-ref-type "Comparable" `("java" "lang")))
   (define cloneable-type (make-ref-type "Cloneable" `("java" "lang")))
   
+  (define (object-method? m-rec)
+    (or 
+     (and (equal? (method-record-name m-rec) "equals")
+          (eq? (method-record-rtype m-rec) 'boolean)
+          (= 1 (length (method-record-atypes m-rec)))
+          (type=? object-type (car (method-record-atypes m-rec))))
+     (and (equal? (method-record-name m-rec) "hashcode")
+          (eq? (method-record-rtype m-rec) 'int)
+          (= 0 (length (method-record-atypes m-rec))))
+     ))
+  
 ;                                                                                                          
 ;                                                                                                          
 ;                                                   ;                       ;         ;                    

@@ -868,7 +868,8 @@
                    ,@(generate-wrapper-fields fields from-dynamic?)
                    
                    ,@(generate-wrapper-methods
-                      (filter (lambda (m) (not (eq? (method-record-rtype m) 'ctor)))
+                      (filter (lambda (m) (and (not (eq? (method-record-rtype m) 'ctor))
+                                               (not (object-method? m))))
                               wrapped-methods) #f from-dynamic?)
                    ,@extra-methods
                    ))))
