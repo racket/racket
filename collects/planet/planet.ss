@@ -179,16 +179,16 @@ PLANNED FEATURES:
           (min (string->number minstr)))
       (unless (and (integer? maj) (integer? min) (> maj 0) (>= min 0))
         (fail "Invalid major/minor version"))
-      (unless (remove-pkg owner pkg maj min)
-        (fail "Could not find package"))))
+      (with-handlers ([exn:fail:planet? (λ (e) (fail (exn-message e)))]) 
+        (remove-pkg owner pkg maj min))))
   
   (define (erase owner pkg majstr minstr)
     (let ((maj (string->number majstr))
           (min (string->number minstr)))
       (unless (and (integer? maj) (integer? min) (> maj 0) (>= min 0))
         (fail "Invalid major/minor version"))
-      (unless (erase-pkg owner pkg maj min)
-        (fail "Could not find package"))))
+      (with-handlers ([exn:fail:planet? (λ (e) (fail (exn-message e)))])
+        (erase-pkg owner pkg maj min))))
         
   (define (show-installed-packages)
     (let ([normal-packages (get-installed-planet-archives)]

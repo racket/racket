@@ -36,14 +36,21 @@ Various common pieces of code that both the client and server need to access
      core-version   ; string
      )
     (make-inspector))
-  ; PKG : string (listof string) Nat Nat path
-  (define-struct pkg (name route maj min path))
+  ; PKG : string (listof string) Nat Nat path ORIGIN
+  (define-struct pkg (name route maj min path origin))
   ; UNINSTALLED-PKG : path FULL-PKG-SPEC Nat Nat
   (define-struct uninstalled-pkg (path spec maj min))
   ; PKG-PROMISE : PKG | UNINSTALLED-PKG
+  ; ORIGIN : 'normal | 'development-link
   
   (define (pkg-promise? p) (or (pkg? p) (uninstalled-pkg? p)))
 
+  (define (normally-installed-pkg? p)
+    (eq? (pkg-origin p) 'normal))
+  
+  (define (development-link-pkg? p)
+    (eq? (pkg-origin p) 'development-link))
+  
   ; ==========================================================================================
   ; CACHE LOGIC
   ; Handles checking the cache for an appropriate module
@@ -140,7 +147,8 @@ Various common pieces of code that both the client and server need to access
                (pkg-spec-path pkg)
                maj min
                the-path
-               min-core-version))
+               min-core-version
+               'normal))
             #f)))
     
     (if (directory-exists? path)
@@ -176,7 +184,7 @@ Various common pieces of code that both the client and server need to access
   (define (get-hard-link-table)
     (verify-well-formed-hard-link-parameter!)
     (if (file-exists? (HARD-LINK-FILE))
-        (map (lambda (item) (update-element 4 bytes->path item))
+        (map (lambda (item) (update/create-element 6 (λ (_) 'development-link) (update-element 4 bytes->path item)))
              (with-input-from-file (HARD-LINK-FILE) read-all))
         '()))
   
@@ -217,7 +225,7 @@ Various common pieces of code that both the client and server need to access
     (let ([complete-dir (path->complete-path dir)])
       (let* ([original-table (get-hard-link-table)]
              [new-table (cons
-                         (make-assoc-table-row name path maj min complete-dir #f)
+                         (make-assoc-table-row name path maj min complete-dir #f 'development-link)
                          (filter
                           (lambda (row) (not (points-to? row name path maj min)))
                           original-table))])
@@ -239,6 +247,17 @@ Various common pieces of code that both the client and server need to access
       [(zero? n) (cons (f (car l)) (cdr l))]
       [else (cons (car l) (update-element (sub1 n) f (cdr l)))]))
   
+  (define (update/create-element n f l)
+    (cond
+      [(and (null? l) (zero? n))
+       (list (f #f))]
+      [(and (null? l) (not (zero? n)))
+       (error 'update/create-element "Index too large")]
+      [(and (not (null? l)) (zero? n))
+       (cons (f (car l)) (cdr l))]
+      [else (cons (car l) (update/create-element (sub1 n) f (cdr l)))]))
+       
+  
   ; add-to-table assoc-table (listof assoc-table-row) -> assoc-table
   (define add-to-table append) 
   
@@ -258,11 +277,12 @@ Various common pieces of code that both the client and server need to access
                   assoc-table-row->maj
                   assoc-table-row->min
                   assoc-table-row->dir
-                  assoc-table-row->required-version)
-    (first-n-list-selectors 6))
+                  assoc-table-row->required-version
+                  assoc-table-row->type)
+    (first-n-list-selectors 7))
   
-  (define (make-assoc-table-row name path maj min dir required-version)
-    (list name path maj min dir required-version))
+  (define (make-assoc-table-row name path maj min dir required-version type)
+    (list name path maj min dir required-version type))
   
   (define-struct mz-version (major minor))
   
@@ -342,7 +362,8 @@ Various common pieces of code that both the client and server need to access
                  (pkg-spec-path spec)
                  (assoc-table-row->maj best-row)
                  (assoc-table-row->min best-row)
-                 (assoc-table-row->dir best-row)))))))
+                 (assoc-table-row->dir best-row)
+                 (assoc-table-row->type best-row)))))))
   
    
   ;; get-installed-package : string string nat nat -> PKG | #f

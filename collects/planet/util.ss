@@ -28,11 +28,10 @@
    force-package-building?
    get-installed-planet-archives
    get-hard-linked-packages
-   remove-pkg
    unlink-all
    lookup-package-by-keys
-   
-   resolve-planet-path)
+   resolve-planet-path
+   (struct exn:fail:planet ()))
   
   (provide/contract
    [download/install-pkg
@@ -41,8 +40,10 @@
     (-> string? string? natural-number/c natural-number/c path? void?)]
    [remove-hard-link 
     (-> string? string? natural-number/c natural-number/c void?)]
+   [remove-pkg
+    (-> string? string? natural-number/c natural-number/c void?)]
    [erase-pkg
-    (-> string? string? natural-number/c natural-number/c boolean?)])
+    (-> string? string? natural-number/c natural-number/c void?)])
 
   ;; download/install-pkg : string string nat nat -> pkg | #f
   (define (download/install-pkg owner name maj min)
@@ -66,20 +67,27 @@
   ;;   -- remove relevant infodomain cache entries
   ;;   -- delete files from cache directory
   ;;   -- remove any existing linkage for package
-  ;; returns #t if the removal worked; #f if no package existed.
+  ;; returns void if the removal worked; raises an exception if no package existed.
+  
+  (define-struct (exn:fail:planet exn:fail) ())
+  
   (define (remove-pkg owner name maj min)
     (let ((p (get-installed-package owner name maj min)))
-      (and p
-           (let ((path (pkg-path p)))
-             (with-logging 
-              (LOG-FILE)
-              (lambda () 
-                (printf "\n============= Removing ~a =============\n" (list owner name maj min))
-                (clean-planet-package path (list owner name '() maj min))))
-             (erase-metadata p)
-             (delete-directory/files path)
-             (trim-directory (CACHE-DIR) path)
-             #t))))
+      (unless p
+        (raise (make-exn:fail:planet "Could not find package" (current-continuation-marks))))
+      (unless (normally-installed-pkg? p)
+        (raise (make-exn:fail:planet "Not a normally-installed package, can't remove" (current-continuation-marks))))
+
+      (let ((path (pkg-path p)))
+        (with-logging 
+         (LOG-FILE)
+         (lambda () 
+           (printf "\n============= Removing ~a =============\n" (list owner name maj min))
+           (clean-planet-package path (list owner name '() maj min))))
+        (erase-metadata p)
+        (delete-directory/files path)
+        (trim-directory (CACHE-DIR) path)
+        (void))))
   
   ;; erase-metadata : pkg -> void
   ;; clears out any references to the given package in planet's metadata files
@@ -135,16 +143,17 @@
   (define (erase-pkg owner name maj min)
     (let* ([uninstalled-pkg-dir
             (build-path (UNINSTALLED-PACKAGE-CACHE) owner name (number->string maj) (number->string min))]
-           [uninstalled-pkg-file (build-path uninstalled-pkg-dir name)])
-      (let ([removed-something? (remove-pkg owner name maj min)]
-            [erased-something?
-             (if (file-exists? uninstalled-pkg-file)
-                 (begin
-                   (delete-file uninstalled-pkg-file)
-                   (trim-directory (UNINSTALLED-PACKAGE-CACHE) uninstalled-pkg-dir)
-                   #t)
-                 #f)])
-        (or removed-something? erased-something?))))
+           [uninstalled-pkg-file (build-path uninstalled-pkg-dir name)]
+           [uninstalled-file-exists? (file-exists? uninstalled-pkg-file)])
+      (when uninstalled-file-exists?
+        (delete-file uninstalled-pkg-file)
+        (trim-directory (UNINSTALLED-PACKAGE-CACHE) uninstalled-pkg-dir))
+      (with-handlers ([exn:fail:planet? 
+                       (λ (e) (if uninstalled-file-exists? 
+                                  ;; not really a failure, just return
+                                  (void)
+                                  (raise e)))])
+        (remove-pkg owner name maj min))))
 
   ;; listof X * listof X -> nonempty listof X
   ;; returns de-prefixed version of l2 if l1 is a proper prefix of l2; 

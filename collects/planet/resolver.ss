@@ -599,7 +599,7 @@ an appropriate subdirectory.
                (parameterize ((current-namespace (make-namespace)))
                  (let ([ipp (dynamic-require '(lib "plt-single-installer.ss" "setup") 'install-planet-package)])
                    (ipp path the-dir (list owner (pkg-spec-name pkg) extra-path maj min))))))
-            (make-pkg (pkg-spec-name pkg) (pkg-spec-path pkg) maj min the-dir)))))
+            (make-pkg (pkg-spec-name pkg) (pkg-spec-path pkg) maj min the-dir 'normal)))))
   
   ; download-package : FULL-PKG-SPEC -> RESPONSE
   ; RESPONSE ::= (list #f string) | (list #t path[file] Nat Nat)
