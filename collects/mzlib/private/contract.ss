@@ -100,10 +100,12 @@ improve method arity mismatch contract violation error messages?
                 ;; Expand to a use of the lifted expression:
                 (with-syntax ([saved-id (syntax-local-introduce (hash-table-get saved-id-table key))])
                   (syntax-case stx (set!)
-                    [(name arg ...) (syntax/loc stx (saved-id arg ...))]
                     [name
                      (identifier? (syntax name))
-                     (syntax saved-id)])))
+                     (syntax saved-id)]
+                    [(name . more)
+                     (with-syntax ([app (datum->syntax-object stx '#%app)])
+                       (syntax/loc stx (app saved-id . more)))])))
               ;; In case of partial expansion for module-level and internal-defn contexts,
               ;; delay expansion until it's a good time to lift expressions:
               (quasisyntax/loc stx (#%expression #,stx)))))))

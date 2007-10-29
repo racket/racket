@@ -5211,6 +5211,22 @@ so that propagation occurs.
                (c:case-> (c:-> integer? integer?)
                          (c:-> integer? integer? integer?))))))
   
+  ;; tests that contracts pick up the #%app from the context
+  ;; instead of always using the mzscheme #%app.
+  (test/spec-passed
+   'provide/contract25
+   '(begin
+      (eval '(module provide/contract25a mzscheme
+               (require (lib "contract.ss"))
+               (provide/contract [seventeen integer?])
+               (define seventeen 17)))
+      (eval '(module provide/contract25b mzscheme
+               (require provide/contract25a)
+               (let-syntax ([#%app (syntax-rules ()
+                                     [(#%app e ...) (list e ...)])])
+                 (seventeen 18))))
+      (eval '(require provide/contract25b))))
+
   (contract-error-test
    #'(begin
        (eval '(module pce1-bug mzscheme
