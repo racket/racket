@@ -28,7 +28,7 @@
       (list?)
       . opt->* .
       (any/c))                       ; procedure for runtime break
-     boolean?                        ; track-inferred-name?
+     boolean?                        ; show-lambdas-as-lambdas?
      (union any/c (symbols 'testing)); language-level
      . -> .
      syntax?)]                       ; results
@@ -40,7 +40,7 @@
       (list?)
       . opt->* .
       (any/c))                       ; procedure for runtime break
-     boolean?                        ; track-inferred-name?
+     boolean?                        ; show-lambdas-as-lambdas?
      (union any/c (symbols 'testing)); language-level
      . -> .
      syntax?)]                       ; results
@@ -270,7 +270,7 @@
   
   
   
-  (define ((annotate/master input-is-top-level?) main-exp break track-inferred-names? language-level)
+  (define ((annotate/master input-is-top-level?) main-exp break show-lambdas-as-lambdas? language-level)
     #;(define _ (>>> (syntax-object->datum main-exp)))
 
     (define binding-indexer
@@ -495,11 +495,12 @@
                      (lambda (annotated-lambda free-varrefs)
                        (let*-2vals
                         ([closure-info (make-debug-info-app 'all free-varrefs 'none)]
-                         [closure-name (if track-inferred-names?
+                         ;; if we manually disable the storage of names, lambdas get rendered as lambdas.
+                         [closure-name (if show-lambdas-as-lambdas?
+                                           #f
                                            (cond [(syntax? procedure-name-info) procedure-name-info]
                                                  [(pair? procedure-name-info) (car procedure-name-info)]
-                                                 [else #f])
-                                           #f)]
+                                                 [else #f]))]
                          [closure-storing-proc
                           (opt-lambda (closure debug-info [lifted-index #f])
                             (closure-table-put! closure (make-closure-record 

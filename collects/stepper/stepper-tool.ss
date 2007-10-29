@@ -464,9 +464,11 @@
          program-expander-prime receive-result
          (get-render-settings render-to-string render-to-sexp 
                               (send language-level stepper:enable-let-lifting?))
-         (not (member language-level-name
-                      (list (string-constant intermediate-student/lambda)
-                            (string-constant advanced-student))))
+         ;; coerce to boolean to satisfy contract checker:
+         (if (member language-level-name
+                     (list (string-constant intermediate-student/lambda)
+                           (string-constant advanced-student)))
+             #t #f)
          language-level
          run-on-drscheme-side)
         (send s-frame show #t)
@@ -607,13 +609,12 @@
 
           (super-new)))
 
-      ;; apply the mixins dynamically to the drscheme unit frame and
-      ;; definitions text:
-      (drscheme:get/extend:extend-unit-frame stepper-unit-frame-mixin)
-      (drscheme:get/extend:extend-definitions-text
-       stepper-definitions-text-mixin)
+    ;; apply the mixins dynamically to the drscheme unit frame and
+    ;; definitions text:
+    (drscheme:get/extend:extend-unit-frame stepper-unit-frame-mixin)
+    (drscheme:get/extend:extend-definitions-text stepper-definitions-text-mixin)
       
-      )
+    )
 
   ;; COPIED FROM drscheme/private/language.ss
   ;; simple-module-based-language-convert-value : TST STYLE boolean -> TST

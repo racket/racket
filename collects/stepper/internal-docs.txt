@@ -224,6 +224,10 @@ stepper-fake-exp :
   this expression does not occur directly in the source; reconstruct specially.
   used for begin.
 
+args-of-call [ADDED BY RECONSTRUCTOR] :
+  this reconstructed (...) expression is the result of a call with these args.
+  used by the check-expect unwinder to figure out the expected values.
+
 STEPPER-HINT COLLISIONS
 
  The major concern with the stepper-hint is that two of them may
@@ -249,3 +253,4 @@ collision can occur.
 2) the intermediate let* expands into the beginner let; both add a
 stepper-hint.  To resolve this, the expansion of let allows an existing
 stepper-hint to stand.
+

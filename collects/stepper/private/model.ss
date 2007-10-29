@@ -72,7 +72,7 @@
   ; go starts a stepper instance
   ; see provide stmt for contract
   (define (go program-expander receive-result render-settings
-              track-inferred-names? language-level run-on-drscheme-side)
+              show-lambdas-as-lambdas? language-level run-on-drscheme-side)
 
     ;; finished-exps:
     ;;   (listof (list/c syntax-object? (or/c number? false?)( -> any)))
@@ -295,7 +295,7 @@
           (lambda (stx dont-care) (list stx))))
 
     (define (step-through-expression expanded expand-next-expression)
-      (let* ([annotated (a:annotate expanded break track-inferred-names?
+      (let* ([annotated (a:annotate expanded break show-lambdas-as-lambdas?
                                     language-level)])
         (eval-syntax annotated)
         (expand-next-expression)))
