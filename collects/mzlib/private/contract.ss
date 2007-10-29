@@ -14,8 +14,7 @@ improve method arity mismatch contract violation error messages?
 
   (require-for-syntax mzscheme
                       "contract-opt-guts.ss"
-                      (lib "list.ss")
-                      (lib "etc.ss"))
+                      (lib "list.ss"))
   
   (require "contract-arrow.ss"
            "contract-guts.ss"
@@ -639,48 +638,51 @@ improve method arity mismatch contract violation error messages?
          ;; builds a begin expression for the entire contract and provide
          ;; the first syntax object is used for source locations
          (define code-for-one-id/new-name
-           (opt-lambda (stx id ctrct user-rename-id [mangle-for-maker? #f])
-             (let ([no-need-to-check-ctrct? (a:known-good-contract? ctrct)])
-               (with-syntax ([id-rename ((if mangle-for-maker? 
-                                             a:mangle-id-for-maker
-                                             a:mangle-id)
-                                         provide-stx
-                                         "provide/contract-id" 
-                                         (or user-rename-id id))]
-                             [contract-id (if no-need-to-check-ctrct?
-                                              ctrct
-                                              (a:mangle-id provide-stx
-                                                           "provide/contract-contract-id" 
-                                                           (or user-rename-id id)))]
-                             [pos-module-source (a:mangle-id provide-stx 
-                                                             "provide/contract-pos-module-source"
-                                                             (or user-rename-id id))]
-                             [pos-stx (datum->syntax-object id 'here)]
-                             [id id]
-                             [ctrct (syntax-property ctrct 'inferred-name id)]
-                             [external-name (or user-rename-id id)]
-                             [where-stx stx])
-                 (with-syntax ([code
-                                (quasisyntax/loc stx
-                                  (begin
-                                    (provide (rename id-rename external-name))
-                                    
-                                    (define pos-module-source (module-source-as-symbol #'pos-stx))
-                                    #,@(if no-need-to-check-ctrct?
-                                           (list)
-                                           (list #'(define contract-id (verify-contract ctrct))))
-                                    
-                                    (define-syntax id-rename
-                                      (make-provide/contract-transformer (quote-syntax contract-id)
-                                                                         (quote-syntax id)
-                                                                         (quote-syntax pos-module-source)))))])
-                   
-                   (syntax-local-lift-module-end-declaration
-                    #'(begin 
-                        (-contract contract-id id pos-module-source 'ignored #'id)
-                        (void)))
-                   
-                   (syntax (code id-rename)))))))
+           (case-lambda
+             [(stx id ctrct user-rename-id) 
+              (code-for-one-id/new-name stx id ctrct user-rename-id #f)]
+             [(stx id ctrct user-rename-id mangle-for-maker?)
+              (let ([no-need-to-check-ctrct? (a:known-good-contract? ctrct)])
+                (with-syntax ([id-rename ((if mangle-for-maker? 
+                                              a:mangle-id-for-maker
+                                              a:mangle-id)
+                                          provide-stx
+                                          "provide/contract-id" 
+                                          (or user-rename-id id))]
+                              [contract-id (if no-need-to-check-ctrct?
+                                               ctrct
+                                               (a:mangle-id provide-stx
+                                                            "provide/contract-contract-id" 
+                                                            (or user-rename-id id)))]
+                              [pos-module-source (a:mangle-id provide-stx 
+                                                              "provide/contract-pos-module-source"
+                                                              (or user-rename-id id))]
+                              [pos-stx (datum->syntax-object id 'here)]
+                              [id id]
+                              [ctrct (syntax-property ctrct 'inferred-name id)]
+                              [external-name (or user-rename-id id)]
+                              [where-stx stx])
+                  (with-syntax ([code
+                                 (quasisyntax/loc stx
+                                   (begin
+                                     (define pos-module-source (module-source-as-symbol #'pos-stx))
+                                     
+                                     #,@(if no-need-to-check-ctrct?
+                                            (list)
+                                            (list #'(define contract-id (verify-contract ctrct))))
+                                     (define-syntax id-rename
+                                       (make-provide/contract-transformer (quote-syntax contract-id)
+                                                                          (quote-syntax id)
+                                                                          (quote-syntax pos-module-source)))
+                                     
+                                     (provide (rename id-rename external-name))))])
+                    
+                    (syntax-local-lift-module-end-declaration
+                     #'(begin 
+                         (-contract contract-id id pos-module-source 'ignored #'id)
+                         (void)))
+                    
+                    (syntax (code id-rename)))))]))
          
          (with-syntax ([(bodies ...) (code-for-each-clause (syntax->list (syntax (p/c-ele ...))))])
            (syntax 
