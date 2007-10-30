@@ -313,13 +313,26 @@
         (define end-box (box 0))
         (send text get-visible-position-range start-box end-box)
         (update)
-        (send text scroll-to-position (unbox start-box) #f (unbox end-box)))
-      
+        (send text scroll-to-position (unbox start-box) #f (unbox end-box) 'start))
+
       ;; update/save-position : -> void
       (define/private (update/save-position)
         (save-position)
-        (update))
+        (update/preserve-lines-view))
 
+      ;; update/preserve-lines-view : -> void
+      (define/public (update/preserve-lines-view)
+        (define text (send sbview get-text))
+        (define start-box (box 0))
+        (define end-box (box 0))
+        (send text get-visible-line-range start-box end-box)
+        (update)
+        (send text scroll-to-position
+              (send text line-start-position (unbox start-box))
+              #f
+              (send text line-start-position (unbox end-box))
+              'start))
+      
       ;; update : -> void
       ;; Updates the terms in the syntax browser to the current step
       (define/private (update)
