@@ -298,7 +298,7 @@
   (plt:hd:help-desk-about-string
    "L'Aide est une source complète d'information à propos des logiciels du PLT, y compris DrScheme, MzScheme et MrEd.\n\nVersion ~a\nCopyright (c) ~a-~a PLT.")
   (plt:hd:help-on-help "Aide de l'Aide")
-  (plt:hd:help-on-help-details "Pour obtenir de l'aide sur comment utiliser l'Aide, suivez le lien `How to use Help Desk' à partir de la page principale de l'Aide (pour trouver la page principale, si vous n'y êtes pas déjà, cliquez sur le boutton `Home' qui apparaît en haut de la fenêtre de l'Aide).")
+  (plt:hd:help-on-help-details "Pour obtenir de l'aide sur comment utiliser l'Aide, suivez le premier lien `Help Desk' à partir de la page principale de l'Aide (pour trouver la page principale, si vous n'y êtes pas déjà, cliquez sur le boutton `Maison' qui apparaît en haut de la fenêtre de l'Aide).")
   (reload "Rafraîchir")
   (plt:hd:ask-about-separate-browser
    "Vous avez sélectionné un lien vers une page sur le world-wide web. Voulez-vous voir cette page en utilisant le navigateur de l'Aide ou voulez-vous utiliser un navigateur séparé ?")
@@ -383,6 +383,7 @@
   (preferences "Préférences")
   (error-saving-preferences "Erreur durant la sauvegarde des préférences : ~a.")
   (error-saving-preferences-title "Erreur durant la sauvegarde des préférences")
+  (steal-the-lock-and-retry "Casser le verrou et réessayer") ;; in the preferences error dialog; this happens when the lockfile exists (after 3 pref writes). 
   (error-reading-preferences "Erreur durant la lecture des préférences.")
   (prefs-file-locked "Le fichier de préférences est verrouillé (car le fichier ~a existe), donc vos préférences n'ont pu être sauvegardées.  Annuler le changement des préférences ?")
   (try-again "Essayer à nouveau") ;; button label
@@ -417,6 +418,7 @@
   (open-files-in-tabs "Ouvrir les fichiers dans de nouveaux onglets (pas dans de nouvelles fenêtres)")
   (show-interactions-on-execute "Automatiquement montrer la fenêtre d'interaction lors de l'exécution d'un programme")
   (switch-to-module-language-automatically "Automatiquement utiliser le langage \"module\" lors de l'ouverture d'un fichier contenant un module")
+  (interactions-beside-definitions "Mettre la fenêtre d'interaction à côté de la fenêtre de définition") ;; in preferences, below the checkbox one line above this one
   (limit-interactions-size "Limiter la taille de la fenêtre d'interaction")
   (background-color "Couleur d'arrière-plan")
   (default-text-color "Couleur du texte") ;; used for configuring colors, but doesn't need the word "color"
@@ -638,6 +640,9 @@
   
   (replace-and-find-again-info "Remplacer le texte sélectionné et rechercher à nouveau le même texte.")
   (replace-and-find-again-menu-item "Remplacer && rechercher à nouveau")
+  
+  (complete-word "Compléter le mot") ; the complete word menu item in the edit menu
+  (no-completions "... pas de complétion connue") ; shows up in the completions menu when there are no completions (in italics)
   
   (preferences-info "Configurer vos préférences.")
   (preferences-menu-item "Préférences...")
@@ -917,8 +922,11 @@
   (compiling-teachpack "Compilation du teachpack ~a...")
   (teachpack-pre-installed "Teachpacks préinstallés")
   (teachpack-user-installed "Teachpacks installés par l'utilisateur")
-  (install-teachpack... "Installer le teachpack...")
+  (add-teachpack-to-list... "Ajouter un teachpack à la liste...")
   (teachpack-already-installed "Un teachpack nommé '~a' a déjà été installé.  Voulez-vous l'écraser ?")
+  ; ~a is filled with a list of language names. Each name is separated by a newline and is indented two spaces (no commas, no 'and')
+  (teachpacks-only-in-languages "Les teachpacks ne sont disponibles que dans les langages suivants : ~a")
+
   
   ;;; Language dialog
   (introduction-to-language-dialog
@@ -1182,8 +1190,7 @@
   (stepper-program-window-closed "Avertissement : la fenêtre du programme a disparu.")
   
   (stepper-name "Pas à Pas")
-  (stepper-language-level-message
-   "Le langage actuellement utilisé est \"~a\". Le Pas à Pas ne fonctionne pour l'instant que pour les langages de \"~a\" à \"~a\"")
+  (stepper-language-level-message "Le Pas à Pas n'est pas disponible pour le langage \"~a\".")
   (stepper-button-label "Pas")
   (stepper-home "Début")
   (stepper-previous-application "|< Application")
