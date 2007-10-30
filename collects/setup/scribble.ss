@@ -363,6 +363,8 @@
                   (set-info-time! info (/ (current-inexact-milliseconds) 1000))
                   (void)))))))))
 
+  (define orig-namespace (current-namespace))
+
   (define (dynamic-require-doc path)
     ;; Use a separate namespace so that we don't end up with all the documentation
     ;;  loaded at once.
@@ -372,11 +374,11 @@
           [c (make-custodian)]
           [ch (make-channel)])
       (parameterize ([current-custodian c])
-        (namespace-attach-module (current-namespace) '(lib "base-render.ss" "scribble") p)
-        (namespace-attach-module (current-namespace) '(lib "html-render.ss" "scribble") p)
+        (namespace-attach-module orig-namespace '(lib "base-render.ss" "scribble") p)
+        (namespace-attach-module orig-namespace '(lib "html-render.ss" "scribble") p)
         ;; This is here for de-serialization; we need a better repair than
         ;;  hard-wiring the "manual.ss" library:
-        (namespace-attach-module (current-namespace) '(lib "manual.ss" "scribble") p)
+        (namespace-attach-module orig-namespace '(lib "manual.ss" "scribble") p)
         (parameterize ([current-namespace p])
           (call-in-nested-thread
            (lambda () 
