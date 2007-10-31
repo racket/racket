@@ -39,6 +39,8 @@
 		   (define (stepper:supported?) #f)
                    (public stepper:enable-let-lifting?)
                    (define (stepper:enable-let-lifting?) #f)
+		   (public stepper:show-lambdas-as-lambdas?)
+		   (define (stepper:show-lambdas-as-lambdas?) #t)
 		   (public stepper:render-to-sexp)
 		   (define (stepper:render-to-sexp val settings language-level)
 		     (parameterize ([current-print-convert-hook
@@ -464,11 +466,7 @@
          program-expander-prime receive-result
          (get-render-settings render-to-string render-to-sexp 
                               (send language-level stepper:enable-let-lifting?))
-         ;; coerce to boolean to satisfy contract checker:
-         (if (member language-level-name
-                     (list (string-constant intermediate-student/lambda)
-                           (string-constant advanced-student)))
-             #t #f)
+	 (send language-level stepper:show-lambdas-as-lambdas?)
          language-level
          run-on-drscheme-side)
         (send s-frame show #t)

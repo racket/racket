@@ -890,12 +890,15 @@
             (class* % (stepper-language<%>)
               (init-field stepper:supported)
               (init-field stepper:enable-let-lifting)
+	      (init-field stepper:show-lambdas-as-lambdas)
               (define/override (stepper:supported?) stepper:supported)
               (define/override (stepper:enable-let-lifting?) stepper:enable-let-lifting)
+              (define/override (stepper:show-lambdas-as-lambdas?) stepper:show-lambdas-as-lambdas)
               (super-new))
             (class* % ()
               (init stepper:supported)
               (init stepper:enable-let-lifting)
+              (init stepper:show-lambdas-as-lambdas)
               (super-new))))
 
       (define (debugger-settings-language %)
@@ -1401,7 +1404,8 @@
            (allow-sharing? #t)
            (reader-module '(lib "htdp-advanced-reader.ss" "lang"))
 	   (stepper:supported #f)
-	   (stepper:enable-let-lifting #t)))
+	   (stepper:enable-let-lifting #t)
+	   (stepper:show-lambdas-as-lambdas #t)))
         
         (add-htdp-language
          (instantiate htdp-language% ()
@@ -1428,9 +1432,10 @@
            (allow-sharing? #f)
            (reader-module '(lib "htdp-intermediate-lambda-reader.ss" "lang"))
 	   (stepper:supported #t)
-           (stepper:enable-let-lifting #t)))
+           (stepper:enable-let-lifting #t)
+	   (stepper:show-lambdas-as-lambdas #t)))
         
-        (add-htdp-language
+	(add-htdp-language
          (instantiate htdp-language% ()
            (one-line-summary (string-constant intermediate-one-line-summary))
            (module '(lib "htdp-intermediate.ss" "lang"))
@@ -1447,7 +1452,8 @@
            (use-function-output-syntax? #t)
            (reader-module '(lib "htdp-intermediate-reader.ss" "lang"))
 	   (stepper:supported #t)
-           (stepper:enable-let-lifting #t)))
+           (stepper:enable-let-lifting #t)
+	   (stepper:show-lambdas-as-lambdas #f)))
         
         (add-htdp-language
          (instantiate htdp-language% ()
@@ -1465,7 +1471,8 @@
            (allow-sharing? #f)
            (reader-module '(lib "htdp-beginner-abbr-reader.ss" "lang"))
 	   (stepper:supported #t)
-           (stepper:enable-let-lifting #t)))
+           (stepper:enable-let-lifting #t)
+	   (stepper:show-lambdas-as-lambdas #f)))
         
         (add-htdp-language
          (instantiate htdp-language% ()
@@ -1484,7 +1491,8 @@
            (accept-quasiquote? #f)
            (reader-module '(lib "htdp-beginner-reader.ss" "lang"))
 	   (stepper:supported #t)
-           (stepper:enable-let-lifting #t)))
+           (stepper:enable-let-lifting #t)
+	   (stepper:show-lambdas-as-lambdas #f)))
         
         (drscheme:get/extend:extend-unit-frame frame-tracing-mixin)
         (drscheme:get/extend:extend-tab tab-tracing-mixin)))))
