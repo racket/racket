@@ -231,6 +231,7 @@
    (define pretty-display (make-pretty-print #t))
 
    (define-struct mark (str def))
+   (define-struct hide (val))
 
    (define (make-tentative-output-port pport width esc)
      (let* ([content null]
@@ -641,8 +642,11 @@
 			     (out ")")]))))))))
 	     (out "()")))
 
-       (pre-print pport obj)
-       (if (and depth (negative? depth))
+       (unless (hide? obj)
+         (pre-print pport obj))
+       (if (and depth 
+                (negative? depth)
+                (not (hide? obj)))
 	   (out "...")
 	   
 	   (cond 
@@ -702,9 +706,13 @@
 		    (out (if (hash-table? obj 'equal)
                              "#hash"
                              "#hasheq"))
-		    (wr-lst (hash-table-map obj cons) #f depth)))
+		    (wr-lst (hash-table-map obj (lambda (k v)
+                                                  (cons k (make-hide v))))
+                            #f depth)))
 		 (parameterize ([print-hash-table #f])
 		   ((if display? orig-display orig-write) obj pport)))]
+            [(hide? obj)
+             (wr* pport (hide-val obj) depth display?)]
 	    [(boolean? obj)
 	     (out (if obj "#t" "#f"))]
 	    [(number? obj)
@@ -720,7 +728,8 @@
 	     (out ".")]
 	    [else
 	     ((if display? orig-display orig-write) obj pport)]))
-       (post-print pport obj))
+       (unless (hide? obj)
+         (post-print pport obj)))
 
      ;; ------------------------------------------------------------
      ;; pp: write on (potentially) multiple lines
