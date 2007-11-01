@@ -148,11 +148,12 @@
 		     (begin
 		       (or (not load?)
 			   (on-load-file file (-format-filter format)))
-		       (let ([port (open-input-file file)]
+		       (let ([port #f]
 			     [finished? #f])
 			 (dynamic-wind
 			     void
 			     (lambda ()
+			       (set! port (open-input-file file))
 			       (wx:begin-busy-cursor)
 			       (super-begin-edit-sequence)
 			       (dynamic-wind
@@ -188,7 +189,7 @@
 			       #t)
 			     (lambda ()
 			       ;; In case it wasn't closed before:
-			       (close-input-port port)
+			       (if port (close-input-port port))
 			       (when load?
 				 (after-load-file finished?))))))))))])
 	    (public*
@@ -222,18 +223,19 @@
 						 (-get-file-format)
 						 f-format)]
 			      [text? (memq actual-format '(text text-force-cr))])
-			 (let ([port (open-output-file file (if text? 'text 'binary) 'truncate/replace)]
+			 (let ([port #f]
 			       [finished? #f])
 			   (dynamic-wind
 			       void
 			       (lambda ()
+				 (set! port (open-output-file file (if text? 'text 'binary) 'truncate/replace))
 				 (wx:file-creator-and-type file #"mReD" (if text? #"TEXT" #"WXME"))
 				 (wx:begin-busy-cursor)
 				 (dynamic-wind
 				     void
 				     (lambda ()
 				       (super-save-port port format #t)
-				       (close-output-port port) ; close as soon as possible
+				       (close-output-port port)	; close as soon as possible
 				       (unless (or (eq? format 'copy)
 						   (and (not (unbox temp-filename?-box))
 							(equal? file old-filename)))
@@ -248,7 +250,7 @@
 				 #t)
 			       (lambda ()
 				 ;; In case it wasn't closed before:
-				 (close-output-port port)
+				 (if port (close-output-port port))
 				 (after-save-file finished?))))))))))])
 
 	    (public*
