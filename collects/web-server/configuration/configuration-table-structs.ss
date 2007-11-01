@@ -51,7 +51,7 @@
    [struct responders
            ([servlet (url? any/c . -> . response?)]
             [servlet-loading (url? any/c . -> . response?)]
-            [authentication (url? (cons/c symbol? string?) . -> . response?)]
+            [authentication (url? header? . -> . response?)]
             [servlets-refreshed (-> response?)]
             [passwords-refreshed (-> response?)]
             [file-not-found (request? . -> . response?)]

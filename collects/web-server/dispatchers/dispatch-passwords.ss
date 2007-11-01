@@ -122,5 +122,5 @@
      conn
      (authentication-responder
       uri 
-      `(WWW-Authenticate . ,(format " Basic realm=\"~a\"" realm)))
+      (make-header #"WWW-Authenticate" (string->bytes/utf-8 (format " Basic realm=\"~a\"" realm))))
      method)))
