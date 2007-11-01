@@ -985,7 +985,7 @@
 
        (define (pp-let expr extra depth)
 	 (let* ((rest (cdr expr))
-		(named? (and (pair? rest) (symbol? (car rest)))))
+		(named? (and (pair? rest) (symbol? (do-remap (car rest))))))
 	   (pp-general expr extra named? pp-expr-list #f pp-expr depth)))
 
        (define (pp-begin expr extra depth)
@@ -1001,7 +1001,7 @@
        (define max-call-head-width 5)
 
        (define (style head)
-	 (case (look-in-style-table head)
+         (case (look-in-style-table head)
 	   ((lambda λ define define-macro define-syntax
 		    syntax-rules
 		    shared
@@ -1049,17 +1049,19 @@
        ((printing-port-print-line pport) #f col width)))
   
   (define (look-in-style-table raw-head)
-    (let ([head 
-           (cond
-             [((pretty-print-remap-stylable) raw-head)
-              => 
-              values]
-             [else raw-head])])
+    (let ([head (do-remap raw-head)])
       (or (hash-table-get (pretty-print-style-table-hash
                            (pretty-print-current-style-table))
                           head
                           #f)
           head)))
+  
+  (define (do-remap raw-head)
+    (cond
+      [((pretty-print-remap-stylable) raw-head)
+       => 
+       values]
+      [else raw-head]))
    
    (define (read-macro? l)
      (define (length1? l) (and (pair? l) (null? (cdr l))))
