@@ -615,9 +615,9 @@ scheme_init_string (Scheme_Env *env)
 			     env);
 
   scheme_add_global_constant("format",
-			     scheme_make_folding_prim(format,
-						      "format",
-						      1, -1, 1),
+			     scheme_make_noncm_prim(format,
+                                                    "format",
+                                                    1, -1),
 			     env);
   scheme_add_global_constant("printf",
 			     scheme_make_noncm_prim(sch_printf,

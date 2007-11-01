@@ -5361,6 +5361,10 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	}
 	jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
 	(void)jit_bnei_i(reffail, JIT_R2, ty);
+        if (iii) {
+          jit_ldxi_s(JIT_R2, JIT_R0, &(MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)0x0)));
+          (void)jit_bmsi_ul(reffail, JIT_R2, 0x1);
+        }
 	jit_ldxi_i(JIT_R2, JIT_R0, count_offset);
 	if (i) {
 	  /* index from expression: */
