@@ -1744,10 +1744,10 @@ user_write_bytes(Scheme_Output_Port *port, const char *str, long offset, long le
 
     val = scheme_apply(uop->write_proc, 5, p);
 
+    scheme_pop_break_enable(&cframe, 1); /* might break */
+
     n = user_write_result("user port write", port,
 			  1, val, rarely_block, enable_break, len);
-
-    scheme_pop_break_enable(&cframe, 1);
 
     if (!n && !rarely_block) {
       /* Try blocking write/flush again */
