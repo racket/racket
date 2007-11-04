@@ -27,13 +27,14 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
 /*  As of 2007/06/29, this is a guess for NetBSD!  */
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 # include <signal.h>
+# include <sys/param.h>
 void fault_handler(int sn, siginfo_t *si, void *ctx)
 {
   if (!designate_modified(si->si_addr))
     abort();
 }
 #  define NEED_SIGACTION
-#  if defined(__FreeBSD__)
+#  if defined(__FreeBSD__) && (__FreeBSD_version < 700000)
 #    define USE_SIGACTON_SIGNAL_KIND SIGBUS
 #  else
 #    define USE_SIGACTON_SIGNAL_KIND SIGSEGV
