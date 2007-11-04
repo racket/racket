@@ -512,14 +512,20 @@ static long GetCode(wxchar *keyseq, int *_kp, int *fullset)
     if (i >= MAX_BUF - 1)
       return 0;
     buffer[i] = keyseq[kp];
-    if (buffer[i] < 128)
-      buffer[i] = tolower(buffer[i]);
+    if (buffer[i] < 128) {
+      wxchar t;
+      t = tolower(buffer[i]);
+      buffer[i] = t;
+    }
   }
   buffer[i] = 0;
   code = 0;
   if (buffer[1]) {
-    if (buffer[0] < 128)
-      buffer[0] = tolower(buffer[0]);
+    if (buffer[0] < 128) {
+      wxchar t;
+      t = tolower(buffer[0]);
+      buffer[0] = t;
+    }
     for (i = 0; keylist[i].str; i++) {
       if (!wx_c_strcmp(buffer, keylist[i].str)) {
 	code = keylist[i].code;
