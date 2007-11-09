@@ -78,136 +78,136 @@ MREDLDFLAGS = -L$(WXBDIR)/utils/image/src -L$(WXBDIR)/contrib/xpm/lib $(LDFLAGS)
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
 
 xsrc/Window.cc: $(WXDIR)/src/Windows/Window.cc $(XFORMDEP)
-	$(XFORM) xsrc/Window.cc $(WXDIR)/src/Windows/Window.cc
+	$(XFORMXX) xsrc/Window.cc $(WXDIR)/src/Windows/Window.cc
 xsrc/Button.cc: $(WXDIR)/src/Windows/Button.cc $(XFORMDEP)
-	$(XFORM) xsrc/Button.cc $(WXDIR)/src/Windows/Button.cc
+	$(XFORMXX) xsrc/Button.cc $(WXDIR)/src/Windows/Button.cc
 xsrc/Frame.cc: $(WXDIR)/src/Windows/Frame.cc $(XFORMDEP)
-	$(XFORM) xsrc/Frame.cc $(WXDIR)/src/Windows/Frame.cc
+	$(XFORMXX) xsrc/Frame.cc $(WXDIR)/src/Windows/Frame.cc
 xsrc/Layout.cc: $(WXDIR)/src/Windows/Layout.cc $(XFORMDEP)
-	$(XFORM) xsrc/Layout.cc $(WXDIR)/src/Windows/Layout.cc
+	$(XFORMXX) xsrc/Layout.cc $(WXDIR)/src/Windows/Layout.cc
 xsrc/MenuBar.cc: $(WXDIR)/src/Windows/MenuBar.cc $(XFORMDEP)
-	$(XFORM) xsrc/MenuBar.cc $(WXDIR)/src/Windows/MenuBar.cc
+	$(XFORMXX) xsrc/MenuBar.cc $(WXDIR)/src/Windows/MenuBar.cc
 xsrc/RadioBox.cc: $(WXDIR)/src/Windows/RadioBox.cc $(XFORMDEP)
-	$(XFORM) xsrc/RadioBox.cc $(WXDIR)/src/Windows/RadioBox.cc 
+	$(XFORMXX) xsrc/RadioBox.cc $(WXDIR)/src/Windows/RadioBox.cc 
 xsrc/CheckBox.cc: $(WXDIR)/src/Windows/CheckBox.cc $(XFORMDEP)
-	$(XFORM) xsrc/CheckBox.cc $(WXDIR)/src/Windows/CheckBox.cc 
+	$(XFORMXX) xsrc/CheckBox.cc $(WXDIR)/src/Windows/CheckBox.cc 
 xsrc/Choice.cc: $(WXDIR)/src/Windows/Choice.cc $(XFORMDEP)
-	$(XFORM) xsrc/Choice.cc $(WXDIR)/src/Windows/Choice.cc
+	$(XFORMXX) xsrc/Choice.cc $(WXDIR)/src/Windows/Choice.cc
 xsrc/Gauge.cc: $(WXDIR)/src/Windows/Gauge.cc $(XFORMDEP)
-	$(XFORM) xsrc/Gauge.cc $(WXDIR)/src/Windows/Gauge.cc  
+	$(XFORMXX) xsrc/Gauge.cc $(WXDIR)/src/Windows/Gauge.cc  
 xsrc/ListBox.cc: $(WXDIR)/src/Windows/ListBox.cc $(XFORMDEP)
-	$(XFORM) xsrc/ListBox.cc $(WXDIR)/src/Windows/ListBox.cc
+	$(XFORMXX) xsrc/ListBox.cc $(WXDIR)/src/Windows/ListBox.cc
 xsrc/Message.cc: $(WXDIR)/src/Windows/Message.cc $(XFORMDEP)
-	$(XFORM) xsrc/Message.cc $(WXDIR)/src/Windows/Message.cc
+	$(XFORMXX) xsrc/Message.cc $(WXDIR)/src/Windows/Message.cc
 xsrc/Slider.cc: $(WXDIR)/src/Windows/Slider.cc $(XFORMDEP)
-	$(XFORM) xsrc/Slider.cc $(WXDIR)/src/Windows/Slider.cc
+	$(XFORMXX) xsrc/Slider.cc $(WXDIR)/src/Windows/Slider.cc
 xsrc/Canvas.cc: $(WXDIR)/src/Windows/Canvas.cc $(XFORMDEP)
-	$(XFORM) xsrc/Canvas.cc $(WXDIR)/src/Windows/Canvas.cc
+	$(XFORMXX) xsrc/Canvas.cc $(WXDIR)/src/Windows/Canvas.cc
 xsrc/DialogBox.cc: $(WXDIR)/src/Windows/DialogBox.cc $(XFORMDEP)
-	$(XFORM) xsrc/DialogBox.cc $(WXDIR)/src/Windows/DialogBox.cc 
+	$(XFORMXX) xsrc/DialogBox.cc $(WXDIR)/src/Windows/DialogBox.cc 
 xsrc/Item.cc: $(WXDIR)/src/Windows/Item.cc $(XFORMDEP)
-	$(XFORM) xsrc/Item.cc $(WXDIR)/src/Windows/Item.cc
+	$(XFORMXX) xsrc/Item.cc $(WXDIR)/src/Windows/Item.cc
 xsrc/Menu.cc: $(WXDIR)/src/Windows/Menu.cc $(XFORMDEP)
-	$(XFORM) xsrc/Menu.cc $(WXDIR)/src/Windows/Menu.cc
+	$(XFORMXX) xsrc/Menu.cc $(WXDIR)/src/Windows/Menu.cc
 xsrc/Panel.cc: $(WXDIR)/src/Windows/Panel.cc $(XFORMDEP)
-	$(XFORM) xsrc/Panel.cc $(WXDIR)/src/Windows/Panel.cc
+	$(XFORMXX) xsrc/Panel.cc $(WXDIR)/src/Windows/Panel.cc
 
 xsrc/DC.cc: $(WXDIR)/src/DeviceContexts/DC.cc $(XFORMDEP)
-	$(XFORM) xsrc/DC.cc $(WXDIR)/src/DeviceContexts/DC.cc
+	$(XFORMXX) xsrc/DC.cc $(WXDIR)/src/DeviceContexts/DC.cc
 xsrc/WindowDC.cc: $(WXDIR)/src/DeviceContexts/WindowDC.cc $(XFORMDEP)
-	$(XFORM) xsrc/WindowDC.cc $(WXDIR)/src/DeviceContexts/WindowDC.cc
+	$(XFORMXX) xsrc/WindowDC.cc $(WXDIR)/src/DeviceContexts/WindowDC.cc
 xsrc/MemoryDC.cc: $(WXDIR)/src/DeviceContexts/MemoryDC.cc $(XFORMDEP)
-	$(XFORM) xsrc/MemoryDC.cc $(WXDIR)/src/DeviceContexts/MemoryDC.cc
+	$(XFORMXX) xsrc/MemoryDC.cc $(WXDIR)/src/DeviceContexts/MemoryDC.cc
 xsrc/PSDC.cc: $(WXDIR)/src/DeviceContexts/PSDC.cc $(XFORMDEP)
-	$(XFORM) xsrc/PSDC.cc $(WXDIR)/src/DeviceContexts/PSDC.cc
+	$(XFORMXX) xsrc/PSDC.cc $(WXDIR)/src/DeviceContexts/PSDC.cc
 
 xsrc/Object.cc: $(WXDIR)/src/DataStructures/Object.cc $(XFORMDEP)
-	$(XFORM) xsrc/Object.cc $(WXDIR)/src/DataStructures/Object.cc
+	$(XFORMXX) xsrc/Object.cc $(WXDIR)/src/DataStructures/Object.cc
 xsrc/TypeTree.cc: $(WXDIR)/src/DataStructures/TypeTree.cc $(XFORMDEP)
-	$(XFORM) xsrc/TypeTree.cc $(WXDIR)/src/DataStructures/TypeTree.cc
+	$(XFORMXX) xsrc/TypeTree.cc $(WXDIR)/src/DataStructures/TypeTree.cc
 xsrc/wb_list.cc: $(WXDIR)/src/DataStructures/wb_list.cc $(XFORMDEP)
-	$(XFORM) xsrc/wb_list.cc $(WXDIR)/src/DataStructures/wb_list.cc
+	$(XFORMXX) xsrc/wb_list.cc $(WXDIR)/src/DataStructures/wb_list.cc
 xsrc/wb_hash.cc: $(WXDIR)/src/DataStructures/wb_hash.cc $(XFORMDEP)
-	$(XFORM) xsrc/wb_hash.cc $(WXDIR)/src/DataStructures/wb_hash.cc
+	$(XFORMXX) xsrc/wb_hash.cc $(WXDIR)/src/DataStructures/wb_hash.cc
 
 xsrc/AppMain.cc: $(WXDIR)/src/Application/AppMain.cc $(XFORMDEP)
-	$(XFORM) xsrc/AppMain.cc $(WXDIR)/src/Application/AppMain.cc
+	$(XFORMXX) xsrc/AppMain.cc $(WXDIR)/src/Application/AppMain.cc
 xsrc/GlobalData.cc: $(WXDIR)/src/Application/GlobalData.cc $(XFORMDEP)
-	$(XFORM) xsrc/GlobalData.cc $(WXDIR)/src/Application/GlobalData.cc
+	$(XFORMXX) xsrc/GlobalData.cc $(WXDIR)/src/Application/GlobalData.cc
 
 xsrc/FileDialog.cc: $(WXDIR)/src/Dialogs/FileDialog.cc $(XFORMDEP)
-	$(XFORM) xsrc/FileDialog.cc $(WXDIR)/src/Dialogs/FileDialog.cc
+	$(XFORMXX) xsrc/FileDialog.cc $(WXDIR)/src/Dialogs/FileDialog.cc
 xsrc/MessageBox.cc: $(WXDIR)/src/Dialogs/MessageBox.cc $(XFORMDEP)
-	$(XFORM) xsrc/MessageBox.cc $(WXDIR)/src/Dialogs/MessageBox.cc
+	$(XFORMXX) xsrc/MessageBox.cc $(WXDIR)/src/Dialogs/MessageBox.cc
 
 xsrc/EvtHandler.cc: $(WXDIR)/src/EventHandling/EvtHandler.cc $(XFORMDEP)
-	$(XFORM) xsrc/EvtHandler.cc $(WXDIR)/src/EventHandling/EvtHandler.cc
+	$(XFORMXX) xsrc/EvtHandler.cc $(WXDIR)/src/EventHandling/EvtHandler.cc
 xsrc/wb_sysev.cc: $(WXDIR)/src/EventHandling/wb_sysev.cc $(XFORMDEP)
-	$(XFORM) xsrc/wb_sysev.cc $(WXDIR)/src/EventHandling/wb_sysev.cc
+	$(XFORMXX) xsrc/wb_sysev.cc $(WXDIR)/src/EventHandling/wb_sysev.cc
 xsrc/wb_stdev.cc: $(WXDIR)/src/EventHandling/wb_stdev.cc $(XFORMDEP)
-	$(XFORM) xsrc/wb_stdev.cc $(WXDIR)/src/EventHandling/wb_stdev.cc
+	$(XFORMXX) xsrc/wb_stdev.cc $(WXDIR)/src/EventHandling/wb_stdev.cc
 
 xsrc/Bitmap.cc: $(WXDIR)/src/GDI-Classes/Bitmap.cc $(XFORMDEP)
-	$(XFORM) xsrc/Bitmap.cc $(WXDIR)/src/GDI-Classes/Bitmap.cc
+	$(XFORMXX) xsrc/Bitmap.cc $(WXDIR)/src/GDI-Classes/Bitmap.cc
 xsrc/Colour.cc: $(WXDIR)/src/GDI-Classes/Colour.cc $(XFORMDEP)
-	$(XFORM) xsrc/Colour.cc $(WXDIR)/src/GDI-Classes/Colour.cc
+	$(XFORMXX) xsrc/Colour.cc $(WXDIR)/src/GDI-Classes/Colour.cc
 xsrc/Font.cc: $(WXDIR)/src/GDI-Classes/Font.cc $(XFORMDEP)
-	$(XFORM) xsrc/Font.cc $(WXDIR)/src/GDI-Classes/Font.cc
+	$(XFORMXX) xsrc/Font.cc $(WXDIR)/src/GDI-Classes/Font.cc
 xsrc/FontDirectory.cc: $(WXDIR)/src/GDI-Classes/FontDirectory.cc $(XFORMDEP)
-	$(XFORM) xsrc/FontDirectory.cc $(WXDIR)/src/GDI-Classes/FontDirectory.cc
+	$(XFORMXX) xsrc/FontDirectory.cc $(WXDIR)/src/GDI-Classes/FontDirectory.cc
 xsrc/Pen+Brush.cc: $(WXDIR)/src/GDI-Classes/Pen+Brush.cc $(XFORMDEP)
-	$(XFORM) xsrc/Pen+Brush.cc $(WXDIR)/src/GDI-Classes/Pen+Brush.cc
+	$(XFORMXX) xsrc/Pen+Brush.cc $(WXDIR)/src/GDI-Classes/Pen+Brush.cc
 
 xsrc/Clipboard.cc: $(WXDIR)/src/Misc/Clipboard.cc $(XFORMDEP)
-	$(XFORM) xsrc/Clipboard.cc $(WXDIR)/src/Misc/Clipboard.cc
+	$(XFORMXX) xsrc/Clipboard.cc $(WXDIR)/src/Misc/Clipboard.cc
 xsrc/Timer.cc: $(WXDIR)/src/Misc/Timer.cc $(XFORMDEP)
-	$(XFORM) xsrc/Timer.cc $(WXDIR)/src/Misc/Timer.cc
+	$(XFORMXX) xsrc/Timer.cc $(WXDIR)/src/Misc/Timer.cc
 
 xsrc/Application.cc: $(WXDIR)/src/Utilities/Application.cc $(XFORMDEP)
-	$(XFORM) xsrc/Application.cc $(WXDIR)/src/Utilities/Application.cc
+	$(XFORMXX) xsrc/Application.cc $(WXDIR)/src/Utilities/Application.cc
 xsrc/Assert.cc: $(WXDIR)/src/Utilities/Assert.cc $(XFORMDEP)
-	$(XFORM) xsrc/Assert.cc $(WXDIR)/src/Utilities/Assert.cc
+	$(XFORMXX) xsrc/Assert.cc $(WXDIR)/src/Utilities/Assert.cc
 xsrc/BusyCursor.cc: $(WXDIR)/src/Utilities/BusyCursor.cc $(XFORMDEP)
-	$(XFORM) xsrc/BusyCursor.cc $(WXDIR)/src/Utilities/BusyCursor.cc
+	$(XFORMXX) xsrc/BusyCursor.cc $(WXDIR)/src/Utilities/BusyCursor.cc
 xsrc/Date+Time.cc: $(WXDIR)/src/Utilities/Date+Time.cc $(XFORMDEP)
-	$(XFORM) xsrc/Date+Time.cc $(WXDIR)/src/Utilities/Date+Time.cc
+	$(XFORMXX) xsrc/Date+Time.cc $(WXDIR)/src/Utilities/Date+Time.cc
 xsrc/Directory.cc: $(WXDIR)/src/Utilities/Directory.cc $(XFORMDEP)
-	$(XFORM) xsrc/Directory.cc $(WXDIR)/src/Utilities/Directory.cc
+	$(XFORMXX) xsrc/Directory.cc $(WXDIR)/src/Utilities/Directory.cc
 xsrc/Error.cc: $(WXDIR)/src/Utilities/Error.cc $(XFORMDEP)
-	$(XFORM) xsrc/Error.cc $(WXDIR)/src/Utilities/Error.cc
+	$(XFORMXX) xsrc/Error.cc $(WXDIR)/src/Utilities/Error.cc
 xsrc/GDI.cc: $(WXDIR)/src/Utilities/GDI.cc $(XFORMDEP)
-	$(XFORM) xsrc/GDI.cc $(WXDIR)/src/Utilities/GDI.cc
+	$(XFORMXX) xsrc/GDI.cc $(WXDIR)/src/Utilities/GDI.cc
 xsrc/Home.cc: $(WXDIR)/src/Utilities/Home.cc $(XFORMDEP)
-	$(XFORM) xsrc/Home.cc $(WXDIR)/src/Utilities/Home.cc
+	$(XFORMXX) xsrc/Home.cc $(WXDIR)/src/Utilities/Home.cc
 xsrc/Misc.cc: $(WXDIR)/src/Utilities/Misc.cc $(XFORMDEP)
-	$(XFORM) xsrc/Misc.cc $(WXDIR)/src/Utilities/Misc.cc
+	$(XFORMXX) xsrc/Misc.cc $(WXDIR)/src/Utilities/Misc.cc
 xsrc/Net.c: $(WXDIR)/src/Utilities/Net.c $(XFORMDEP)
 	$(XFORM) xsrc/Net.c $(WXDIR)/src/Utilities/Net.c
 xsrc/Path.cc: $(WXDIR)/src/Utilities/Path.cc $(XFORMDEP)
-	$(XFORM) xsrc/Path.cc $(WXDIR)/src/Utilities/Path.cc
+	$(XFORMXX) xsrc/Path.cc $(WXDIR)/src/Utilities/Path.cc
 xsrc/Resources.cc: $(WXDIR)/src/Utilities/Resources.cc $(XFORMDEP)
-	$(XFORM) xsrc/Resources.cc $(WXDIR)/src/Utilities/Resources.cc
+	$(XFORMXX) xsrc/Resources.cc $(WXDIR)/src/Utilities/Resources.cc
 xsrc/String.cc: $(WXDIR)/src/Utilities/String.cc $(XFORMDEP)
-	$(XFORM) xsrc/String.cc $(WXDIR)/src/Utilities/String.cc
+	$(XFORMXX) xsrc/String.cc $(WXDIR)/src/Utilities/String.cc
 xsrc/TempFile.cc: $(WXDIR)/src/Utilities/TempFile.cc $(XFORMDEP)
-	$(XFORM) xsrc/TempFile.cc $(WXDIR)/src/Utilities/TempFile.cc
+	$(XFORMXX) xsrc/TempFile.cc $(WXDIR)/src/Utilities/TempFile.cc
 
 xsrc/wx_image.cc: $(WXDIR)/utils/image/src/wx_image.cc $(XFORMDEP)
-	$(XFORM) xsrc/wx_image.cc $(WXDIR)/utils/image/src/wx_image.cc
+	$(XFORMXX) xsrc/wx_image.cc $(WXDIR)/utils/image/src/wx_image.cc
 xsrc/wx_img.cc: $(WXDIR)/utils/image/src/wx_img.cc $(XFORMDEP)
-	$(XFORM) xsrc/wx_img.cc $(WXDIR)/utils/image/src/wx_img.cc
+	$(XFORMXX) xsrc/wx_img.cc $(WXDIR)/utils/image/src/wx_img.cc
 xsrc/wx_24to8.cc: $(WXDIR)/utils/image/src/wx_24to8.cc $(XFORMDEP)
-	$(XFORM) xsrc/wx_24to8.cc $(WXDIR)/utils/image/src/wx_24to8.cc
+	$(XFORMXX) xsrc/wx_24to8.cc $(WXDIR)/utils/image/src/wx_24to8.cc
 xsrc/wx_bmp.cc: $(WXDIR)/utils/image/src/wx_bmp.cc $(XFORMDEP)
-	$(XFORM) xsrc/wx_bmp.cc $(WXDIR)/utils/image/src/wx_bmp.cc
+	$(XFORMXX) xsrc/wx_bmp.cc $(WXDIR)/utils/image/src/wx_bmp.cc
 xsrc/wx_gam.cc: $(WXDIR)/utils/image/src/wx_gam.cc $(XFORMDEP)
-	$(XFORM) xsrc/wx_gam.cc $(WXDIR)/utils/image/src/wx_gam.cc
+	$(XFORMXX) xsrc/wx_gam.cc $(WXDIR)/utils/image/src/wx_gam.cc
 xsrc/wx_gif.cc: $(WXDIR)/utils/image/src/wx_gif.cc $(XFORMDEP)
-	$(XFORM) xsrc/wx_gif.cc $(WXDIR)/utils/image/src/wx_gif.cc
+	$(XFORMXX) xsrc/wx_gif.cc $(WXDIR)/utils/image/src/wx_gif.cc
 xsrc/wx_gifwr.cc: $(WXDIR)/utils/image/src/wx_gifwr.cc $(XFORMDEP)
-	$(XFORM) xsrc/wx_gifwr.cc $(WXDIR)/utils/image/src/wx_gifwr.cc
+	$(XFORMXX) xsrc/wx_gifwr.cc $(WXDIR)/utils/image/src/wx_gifwr.cc
 xsrc/wx_xbm.cc: $(WXDIR)/utils/image/src/wx_xbm.cc $(XFORMDEP)
-	$(XFORM) xsrc/wx_xbm.cc $(WXDIR)/utils/image/src/wx_xbm.cc
+	$(XFORMXX) xsrc/wx_xbm.cc $(WXDIR)/utils/image/src/wx_xbm.cc
 
 MACXPRECOMP = macxsrc/xform_precomp.h
 
@@ -305,7 +305,7 @@ macxsrc/wx_rbut.cc: $(WXMACDIR)/mac/wx_rbut.cc $(XFORMDEP) $(MACXPRECOMP)
 macxsrc/wx_sbar.cc: $(WXMACDIR)/mac/wx_sbar.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_sbar.cc $(WXMACDIR)/mac/wx_sbar.cc
 macxsrc/wxMargin.cc: $(WXMACDIR)/mac/wxMargin.cc $(XFORMDEP) $(MACXPRECOMP)
-	$(XFORM) macxsrc/wxMargin.cc $(WXMACDIR)/mac/wxMargin.cc
+	$(XFORMXX) macxsrc/wxMargin.cc $(WXMACDIR)/mac/wxMargin.cc
 macxsrc/wx_dialg.cc: $(WXMACDIR)/mac/wx_dialg.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_dialg.cc $(WXMACDIR)/mac/wx_dialg.cc
 macxsrc/wx_screen.cc: $(WXMACDIR)/mac/wx_screen.cc $(XFORMDEP) $(MACXPRECOMP)
@@ -323,7 +323,7 @@ macxsrc/wxScrollArea.cc: $(WXMACDIR)/mac/wxScrollArea.cc $(XFORMDEP) $(MACXPRECO
 macxsrc/wx_gauge.cc: $(WXMACDIR)/mac/wx_gauge.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_gauge.cc $(WXMACDIR)/mac/wx_gauge.cc
 macxsrc/wxScrollData.cc: $(WXMACDIR)/mac/wxScrollData.cc $(XFORMDEP) $(MACXPRECOMP)
-	$(XFORM) macxsrc/wxScrollData.cc $(WXMACDIR)/mac/wxScrollData.cc
+	$(XFORMXX) macxsrc/wxScrollData.cc $(WXMACDIR)/mac/wxScrollData.cc
 macxsrc/wx_gdi.cc: $(WXMACDIR)/mac/wx_gdi.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_gdi.cc $(WXMACDIR)/mac/wx_gdi.cc
 macxsrc/wx_app.cc: $(WXMACDIR)/mac/wx_app.cc $(XFORMDEP) $(MACXPRECOMP)
@@ -362,7 +362,7 @@ macxsrc/wx_image.cc: $(WXMACDIR)/../utils/image/src/wx_image.cc $(XFORMDEP) $(MA
 macxsrc/wx_xbm.cc: $(WXMACDIR)/../utils/image/src/wx_xbm.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_xbm.cc $(WXMACDIR)/../utils/image/src/wx_xbm.cc
 macxsrc/simpledrop.cc: $(srcdir)/../../mac/mzscheme/simpledrop.cpp $(XFORMDEP)
-	$(XFORM) macxsrc/simpledrop.cc $(srcdir)/../../mac/mzscheme/simpledrop.cpp
+	$(XFORMXX) macxsrc/simpledrop.cc $(srcdir)/../../mac/mzscheme/simpledrop.cpp
 
 wx_xt_XFORMPRECOMP = 
 wx_mac_XFORMPRECOMP = $(MACXPRECOMP)
