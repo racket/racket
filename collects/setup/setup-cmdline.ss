@@ -39,7 +39,7 @@
 		      (call-install #f)
 		      (make-launchers #f)
 		      (make-info-domain #f)
-                      (make-doc #f)))]
+                      (make-docs #f)))]
 	[("-n" "--no-zo") "Do not produce .zo files"
 	 (add-flags '((make-zo #f)))]
 	[("-x" "--no-launcher") "Do not produce launcher programs"
