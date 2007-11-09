@@ -1830,7 +1830,10 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
 	for (l = menv->et_require_names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
 	  idx = SCHEME_CAR(l);
 	  name = scheme_module_resolve(idx, 0);
-	  im = (Scheme_Module *)scheme_hash_get(menv->module_registry, name);
+          if (SAME_OBJ(name, kernel_symbol))
+	    im = kernel;
+	  else
+            im = (Scheme_Module *)scheme_hash_get(menv->module_registry, name);
 	 
 	  add_require_renames(rn, NULL, NULL, im, idx);
 	}
@@ -1897,7 +1900,10 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
 	for (l = menv->dt_require_names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
 	  idx = SCHEME_CAR(l);
 	  name = scheme_module_resolve(idx, 0);
-	  im = (Scheme_Module *)scheme_hash_get(menv->module_registry, name);
+          if (SAME_OBJ(name, kernel_symbol))
+	    im = kernel;
+	  else
+            im = (Scheme_Module *)scheme_hash_get(menv->module_registry, name);
 	 
 	  add_require_renames(rn, NULL, NULL, im, idx);
 	}
