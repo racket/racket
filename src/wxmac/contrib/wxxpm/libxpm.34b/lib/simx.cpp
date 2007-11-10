@@ -39,7 +39,7 @@
 #include "xpm34p.h"			/* for XpmMalloc */
 #ifdef FOR_MAC
 #  include <stdlib.h>
-#  include <Memory.h>
+#  include <memory.h>
 #  ifdef __cplusplus
      extern  int xpmGetRGBfromName(char *inname, int *r, int *g, int *b);
 #  endif

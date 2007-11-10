@@ -67,7 +67,7 @@ extern char **wxGetCompleteFaceList(int *_len, int mono_only);
 #ifdef wx_mac
 # ifdef WX_CARBON
 #  ifdef OS_X
-#   include <Quicktime/Movies.h>
+#   include <QuickTime/Movies.h>
 #  else
 #   include <Movies.h>
 #  endif
