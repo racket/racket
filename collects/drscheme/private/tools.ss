@@ -178,10 +178,12 @@
            [rest-parts (cdr parts)])
       (case (car key)
         ((lib)
-         `(lib ,(substring (append string-append
-                                   (map (lambda (s)
-                                          (string-append "/" s))
-                                        (append (cdr key) rest-parts (list file)))))))
+         `(lib ,(string-append
+                 (apply string-append
+                        (map (lambda (s)
+                               (string-append s "/"))
+                             (append (cdr key) rest-parts)))
+                 file)))
         ((planet)
          `(planet ,file (,@(cdr key) ,maj ,min) ,@rest-parts)))))
 
