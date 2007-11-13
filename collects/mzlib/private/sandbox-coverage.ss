@@ -7,12 +7,13 @@
   (define test-coverage-enabled (make-parameter #t))
   (define test-coverage-info (make-hash-table))
   (define (initialize-test-coverage-point key expr)
-    (hash-table-put! test-coverage-info key (cons expr #f)))
+    (hash-table-put! test-coverage-info key (mcons expr #f)))
   (define (test-covered key)
-    (set-cdr! (hash-table-get test-coverage-info key) #t))
+    (set-mcdr! (hash-table-get test-coverage-info key) #t))
 
   (define (get-uncovered-expressions)
-    (let* ([xs (hash-table-map test-coverage-info (lambda (k v) v))]
+    (let* ([xs (hash-table-map test-coverage-info (lambda (k v) 
+                                                    (cons (mcar v) (mcdr v))))]
            [xs (filter (lambda (x) (syntax-position (car x))) xs)]
            [xs (sort xs (lambda (x1 x2)
                           (let ([p1 (syntax-position (car x1))]
@@ -21,7 +22,7 @@
                                 (and (= p1 p2)
                                      (> (syntax-span (car x1)) ; wider first
                                         (syntax-span (car x2))))))))]
-           [xs (reverse! xs)])
+           [xs (reverse xs)])
       (if (null? xs)
         xs
         (let loop ([xs (cdr xs)] [r (list (car xs))])
