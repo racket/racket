@@ -1,33 +1,34 @@
 
-(module launcher-sig (lib "a-signature.ss")
-     make-mred-launcher
-     make-mzscheme-launcher
+#lang scheme/signature
 
-     make-mred-program-launcher
-     make-mzscheme-program-launcher
+make-mred-launcher
+make-mzscheme-launcher
 
-     mred-program-launcher-path
-     mzscheme-program-launcher-path
+make-mred-program-launcher
+make-mzscheme-program-launcher
 
-     install-mred-program-launcher
-     install-mzscheme-program-launcher
+mred-program-launcher-path
+mzscheme-program-launcher-path
 
-     mred-launcher-up-to-date?
-     mzscheme-launcher-up-to-date?
+install-mred-program-launcher
+install-mzscheme-program-launcher
 
-     mred-launcher-is-directory?
-     mzscheme-launcher-is-directory?
+mred-launcher-up-to-date?
+mzscheme-launcher-up-to-date?
 
-     mred-launcher-is-actually-directory?
-     mzscheme-launcher-is-actually-directory?
+mred-launcher-is-directory?
+mzscheme-launcher-is-directory?
 
-     mred-launcher-add-suffix
-     mzscheme-launcher-add-suffix
+mred-launcher-is-actually-directory?
+mzscheme-launcher-is-actually-directory?
 
-     mred-launcher-put-file-extension+style+filters
-     mzscheme-launcher-put-file-extension+style+filters
+mred-launcher-add-suffix
+mzscheme-launcher-add-suffix
 
-     build-aux-from-path
-     current-launcher-variant
-     available-mred-variants
-     available-mzscheme-variants)
+mred-launcher-put-file-extension+style+filters
+mzscheme-launcher-put-file-extension+style+filters
+
+build-aux-from-path
+current-launcher-variant
+available-mred-variants
+available-mzscheme-variants

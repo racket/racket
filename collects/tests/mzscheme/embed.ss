@@ -54,11 +54,12 @@
     (parameterize ([current-directory (find-system-path 'temp-dir)])
       (when (file-exists? "stdout")
 	(delete-file "stdout"))
-      (system* (if (and mred? (eq? 'macosx (system-type)))
-		   (let-values ([(base name dir?) (split-path exe)])
-		     (build-path exe "Contents" "MacOS"
-				 (path-replace-suffix name #"")))
-		   exe)))
+      (test #t
+            system* (if (and mred? (eq? 'macosx (system-type)))
+                        (let-values ([(base name dir?) (split-path exe)])
+                          (build-path exe "Contents" "MacOS"
+                                      (path-replace-suffix name #"")))
+                        exe)))
     (when plthome
       (putenv "PLTHOME" plthome))
     (when collects
@@ -73,6 +74,7 @@
    [(exe expect mred? dist-hook . collects)
     (try-one-exe exe expect mred?)
     ;; Build a distirbution directory, and try that, too:
+    (printf " ... from distribution ...\n")
     (when (directory-exists? dist-dir)
       (delete-directory/files dist-dir))
     (assemble-distribution dist-dir (list exe) #:copy-collects collects)
@@ -87,7 +89,7 @@
 (define (mz-tests mred?)
   (define dest (if mred? mr-dest mz-dest))
   (define (flags s)
-    (string-append "-" (if mred? "Z" "") "mvq" s))
+    (string-append "-" s))
   (define (one-mz-test filename expect)
     ;; Try simple mode: one module, launched from cmd line:
     (prepare dest filename)
@@ -96,59 +98,66 @@
      `((#t (lib ,filename "tests" "mzscheme")))
      null
      null
-     `(,(flags "L") ,filename "tests/mzscheme"))
+     `(,(flags "l") ,(string-append "tests/mzscheme/" filename)))
     (try-exe dest expect mred?)
 
     ;; Try explicit prefix:
+    (printf ">>>explicit prefix\n")
     (let ([w/prefix
 	   (lambda (pfx)
 	     (prepare dest filename)
 	     (make-embedding-executable 
 	      dest mred? #f
-	      `((,pfx (lib ,filename "tests" "mzscheme")))
+	      `((,pfx (lib ,filename "tests" "mzscheme"))
+                (#t (lib "scheme/init")))
 	      null
 	      null
-	      `(,(flags "e") ,(format "(require ~a~a)" 
-				      (or pfx "")
-				      (regexp-replace #rx"[.].*$" filename ""))))
+	      `(,(flags "ne") 
+                ,(format "(#%require '~a~a)" 
+                         (or pfx "")
+                         (regexp-replace #rx"[.].*$" filename ""))))
 	     (try-exe dest expect mred?))])
       (w/prefix #f)
       (w/prefix 'before:))
 
     ;; Try full path, and use literal S-exp to start
+    (printf ">>>literal sexp\n")
     (prepare dest filename)
     (let ([path (build-path (collection-path "tests" "mzscheme") filename)])
       (make-embedding-executable 
        dest mred? #f
        `((#t ,path))
        null
-       `(require (file ,(path->string path)))
+       `(#%require (file ,(path->string path)))
        `(,(flags ""))))
     (try-exe dest expect mred?)
 
     ;; Use `file' form:
+    (printf ">>>file\n")
     (prepare dest filename)
     (let ([path (build-path (collection-path "tests" "mzscheme") filename)])
       (make-embedding-executable 
        dest mred? #f
        `((#t (file ,(path->string path))))
        null
-       `(require (file ,(path->string path)))
+       `(#%require (file ,(path->string path)))
        `(,(flags ""))))
     (try-exe dest expect mred?)
 
     ;; Use relative path
+    (printf ">>>relative path\n")
     (prepare dest filename)
     (parameterize ([current-directory (collection-path "tests" "mzscheme")])
       (make-embedding-executable 
        dest mred? #f
        `((#f ,filename))
        null
-       `(require ,(string->symbol (regexp-replace #rx"[.].*$" filename "")))
+       `(#%require ',(string->symbol (regexp-replace #rx"[.].*$" filename "")))
        `(,(flags ""))))
     (try-exe dest expect mred?)
 
     ;; Try multiple modules
+    (printf ">>>multiple\n")
     (prepare dest filename)
     (make-embedding-executable 
      dest mred? #f
@@ -156,12 +165,13 @@
        (#t (lib "embed-me3.ss" "tests" "mzscheme")))
      null
      `(begin
-	(require (lib "embed-me3.ss" "tests" "mzscheme"))
-	(require (lib ,filename "tests" "mzscheme")))
+	(#%require (lib "embed-me3.ss" "tests" "mzscheme"))
+	(#%require (lib ,filename "tests" "mzscheme")))
      `(,(flags "")))
     (try-exe dest (string-append "3 is here, too? #t\n" expect) mred?)
 
     ;; Try a literal file
+    (printf ">>>literal\n")
     (prepare dest filename)
     (make-embedding-executable 
      dest mred? #f
@@ -170,7 +180,7 @@
      `(with-output-to-file "stdout"
 	(lambda () (display "... and more!\n"))
 	'append)
-     `(,(flags "L") ,filename "tests/mzscheme"))
+     `(,(flags "l") ,(string-append "tests/mzscheme/" filename)))
     (try-exe dest (string-append 
 		      "This is the literal expression 4.\n" 
 		      "... and more!\n"
@@ -184,15 +194,16 @@
   (prepare dest "unicode")
   (make-embedding-executable 
    dest mred? #f
-   null
+   '((#t scheme/base))
    null
    `(begin 
+      (#%require scheme/base)
       (define (out s)
 	(with-output-to-file "stdout"
 	  (lambda () (printf s))
-	  'append))
+	  #:exists 'append))
       (out "\uA9, \u7238, and \U1D670\n"))
-   `(,(flags "e") "(out \"\u7237...\U1D671\n\")"))
+   `(,(flags "ne") "(out \"\u7237...\U1D671\n\")"))
   (try-exe dest "\uA9, \u7238, and \U1D670\n\u7237...\U1D671\n" mred?))
 
 (mz-tests #f)
@@ -205,8 +216,8 @@
    `((#t (lib "embed-me5.ss" "tests" "mzscheme")))
    null
    null
-   `("-ZmvqL" "embed-me5.ss" "tests/mzscheme"))
-  (try-exe mr-dest "This is 5: #<struct:class:button%>\n" #t))
+   `("-l" "tests/mzscheme/embed-me5.ss"))
+  (try-exe mr-dest "This is 5: #<class:button%>\n" #t))
 
 ;; Try the mzc interface:
 (require (lib "dirs.ss" "setup")
@@ -225,6 +236,7 @@
     (try-exe (mk-dest mred?) "This is 1\n" mred?)
 
     ;; Check that etc.ss isn't found if it's not included:
+    (printf ">>not included\n")
     (system* mzc 
 	     (if mred? "--gui-exe" "--exe")
 	     (path->string (mk-dest mred?))
@@ -232,14 +244,16 @@
     (try-exe (mk-dest mred?) "This is 6\nno etc.ss\n" mred?)
 
     ;; And it is found if it is included:
+    (printf ">>included\n")
     (system* mzc 
 	     (if mred? "--gui-exe" "--exe")
 	     (path->string (mk-dest mred?))
-	     "++lib" "etc.ss" "mzlib"
+	     "++lib" "mzlib/etc.ss"
 	     (path->string (build-path (collection-path "tests" "mzscheme") "embed-me6.ss")))
     (try-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
 
     ;; Or, it's found if we set the collection path:
+    (printf ">>set coll path\n")
     (system* mzc 
 	     (if mred? "--gui-exe" "--exe")
 	     (path->string (mk-dest mred?))
@@ -250,21 +264,24 @@
     (try-one-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
 
     ;; Try --collects-dest mode
+    (printf ">>--collects-dest\n")
     (system* mzc 
 	     (if mred? "--gui-exe" "--exe")
 	     (path->string (mk-dest mred?))
-	     "++lib" "etc.ss" "mzlib"
+	     "++lib" "mzlib/etc.ss"
 	     "--collects-dest" "cts"
 	     "--collects-path" "cts"
 	     (path->string (build-path (collection-path "tests" "mzscheme") "embed-me6.ss")))
     (try-exe (mk-dest mred?) "This is 6\n#t\n" mred? void "cts") ; <- cts copied to distribution
     (delete-directory/files "cts")
-    (try-exe (mk-dest mred?) "This is 6\nno etc.ss\n" mred?)
+    (test #f system* (mk-dest mred?))
 
     (void)))
 
-(mzc-tests #t)
+#| REMOVEME
 (mzc-tests #f)
+(mzc-tests #t)
+|#
 
 (require (lib "file.ss" "dynext"))
 (define (extension-test mred?)
@@ -283,7 +300,7 @@
                   (system-library-subpath)))
 
     (define ext-file
-      (build-path ext-dir (append-extension-suffix "embed-me8")))
+      (build-path ext-dir (append-extension-suffix "embed-me8_ss")))
 
     (define ss-file
       (build-path (find-system-path 'temp-dir) "embed-me9.ss"))
@@ -330,16 +347,17 @@
 	   "--gui-exe"
 	   (path->string (mk-dest #t))
 	   (path->string (build-path (collection-path "tests" "mzscheme") "embed-me5.ss")))
-  (try-exe (mk-dest #t) "This is 5: #<struct:class:button%>\n" #t))
+  (try-exe (mk-dest #t) "This is 5: #<class:button%>\n" #t))
 
 ;; Another MrEd-specific: try embedding plot, which has extra DLLs and font files:
 (parameterize ([current-directory (find-system-path 'temp-dir)])
   (define direct (build-path (find-system-path 'temp-dir) "direct.ps"))
 
-  (system* (build-path (find-console-bin-dir) "mred")
-           "-qu"
-           (path->string (build-path (collection-path "tests" "mzscheme") "embed-me7.ss"))
-           (path->string direct))
+  (test #t
+        system* (build-path (find-console-bin-dir) "mred")
+        "-qu"
+        (path->string (build-path (collection-path "tests" "mzscheme") "embed-me7.ss"))
+        (path->string direct))
 
   (system* mzc 
            "--gui-exe"
@@ -353,12 +371,12 @@
   (define dest (mk-dest mred?))
   (define filename "embed-me11.ss")
   (define (flags s)
-    (string-append "-" (if mred? "Z" "") "mvq" s))
+    (string-append "-" s))
 
   (create-embedding-executable 
    dest
    #:modules `((#t (lib ,filename "tests" "mzscheme")))
-   #:cmdline `(,(flags "L") ,filename "tests/mzscheme")
+   #:cmdline `(,(flags "l") ,(string-append "tests/mzscheme/" filename))
    #:src-filter (lambda (f)
                   (let-values ([(base name dir?) (split-path f)])
                     (equal? name (string->path filename))))
