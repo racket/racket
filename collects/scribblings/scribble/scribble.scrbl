@@ -4,7 +4,7 @@
 @require["utils.ss"]
 
 @title[#:tag-prefix '(lib "scribblings/scribble/scribble.scrbl") 
-       #:tag "top"]{PLT Scribble}
+       #:tag "top"]{Scribble}
 
 The @filepath{scribble} collection provides libraries that can be used to
 create documents from Scheme.
