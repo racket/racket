@@ -76,7 +76,7 @@
                                 (loop rest (cons prefix unquoted) (cons (format "\"~a\"" inside) quoted)))
                               ;; No closing quote!
                               (loop "" (cons prefix unquoted) (cons (format "\"~a" rest) quoted)))))
-                        (values (reverse! (cons str unquoted)) (reverse! quoted)))))])
+                        (values (reverse (cons str unquoted)) (reverse quoted)))))])
       ;; Put the pieces back together, stripping spaces for unquoted parts:
       (apply
        string-append
