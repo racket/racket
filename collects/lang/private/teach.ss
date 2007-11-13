@@ -192,7 +192,7 @@
          (make-exn:fail:syntax
           (exn-message exn)
           (exn-continuation-marks exn)
-          (apply list-immutable details)))))
+          details))))
     
     (define (binding-in-this-module? b)
       (and (list? b)
@@ -1269,7 +1269,7 @@
 			     (local-expand
 			      d
 			      int-def-ctx
-			      (kernel-form-identifier-list (quote-syntax here))))
+			      (kernel-form-identifier-list)))
 			   defns)]
 		     [flattened-defns
 		      (let loop ([l partly-expanded-defns][origs defns])

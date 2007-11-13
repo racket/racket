@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "scheme-forms" #:style 'toc]{Expressions and Definitions}
@@ -54,7 +54,7 @@ syntactic form.
 A @schememetafont{...} indicates zero or more repetitions of the
 preceding form, and @schememetafont{...+} indicates one or more
 repetitions of the preceding datum. Otherwise, non-italicized
-identifiers stand form themselves.
+identifiers stand for themselves.
 
 Based on the above grammar, then, here are a few conforming uses of
 @schemekeywordfont{something}:

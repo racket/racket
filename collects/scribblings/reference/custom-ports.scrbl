@@ -1,7 +1,5 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
-
-@require[(lib "list.ss")]
 
 @title[#:tag "customport"]{Custom Ports}
 
@@ -350,7 +348,7 @@ The arguments implement the port as follows:
  @scheme[peek-byte-or-special], then the @exnraise[exn:fail:contract].}
 
 @begin[
-#reader(lib "comment-reader.ss" "scribble")
+#readerscribble/comment-reader
 [examples
 ;; A port with no input...
 ;; Easy: @scheme[(open-input-bytes #"")]
@@ -944,7 +942,7 @@ procedures.
 }
 
 @begin[
-#reader(lib "comment-reader.ss" "scribble")
+#readerscribble/comment-reader
 [examples
 ;; A port that writes anything to nowhere:
 (define /dev/null-out

@@ -1,42 +1,44 @@
 
-(module htdp-intermediate mzscheme
+(module htdp-intermediate scheme/base
   (require "private/teach.ss"
            "private/teachprims.ss"
 	   "private/contract-forms.ss"
-	   (lib "etc.ss")
-	   (lib "list.ss")
-	   (lib "docprovide.ss" "syntax"))
+	   mzlib/etc
+	   mzlib/list
+	   syntax/docprovide)
 
   ;; syntax:
-  (provide (rename intermediate-define define)
-	   (rename intermediate-define-struct define-struct)
-	   (rename beginner-lambda lambda)
-	   (rename intermediate-app #%app)
-	   (rename beginner-top #%top)
-	   (rename intermediate-local local)
-	   (rename intermediate-let let)
-	   (rename intermediate-let* let*)
-	   (rename intermediate-letrec letrec)
-	   ; (rename intermediate-recur recur)
-	   (rename beginner-cond cond)
-	   (rename beginner-else else)
-	   (rename beginner-if if)
-	   (rename beginner-and and)
-	   (rename beginner-or or)
-           (rename beginner-require require)
-           (rename beginner-dots ..)
-           (rename beginner-dots ...)
-           (rename beginner-dots ....)
-           (rename beginner-dots .....)
-           (rename beginner-dots ......)
-	   (rename intermediate-quote quote)
-	   (rename intermediate-quasiquote quasiquote)
-	   (rename intermediate-unquote unquote)
-	   (rename intermediate-unquote-splicing unquote-splicing)
-	   (rename intermediate-time time)
-	   (rename intermediate-module-begin #%module-begin)
-	   ;; (rename intermediate-contract contract)
-	   ;; (rename intermediate-define-data define-data)
+  (provide (rename-out 
+            [intermediate-define define]
+            [intermediate-define-struct define-struct]
+            [beginner-lambda lambda]
+            [intermediate-app #%app]
+            [beginner-top #%top]
+            [intermediate-local local]
+            [intermediate-let let]
+            [intermediate-let* let*]
+            [intermediate-letrec letrec]
+            ;; [intermediate-recur recur]
+            [beginner-cond cond]
+            [beginner-else else]
+            [beginner-if if]
+            [beginner-and and]
+            [beginner-or or]
+            [beginner-require require]
+            [beginner-dots ..]
+            [beginner-dots ...]
+            [beginner-dots ....]
+            [beginner-dots .....]
+            [beginner-dots ......]
+            [intermediate-quote quote]
+            [intermediate-quasiquote quasiquote]
+            [intermediate-unquote unquote]
+            [intermediate-unquote-splicing unquote-splicing]
+            [intermediate-time time]
+            [intermediate-module-begin #%module-begin]
+            ;; [intermediate-contract contract]
+            ;; [intermediate-define-data define-data]
+            )
 	   #%datum
            #%top-interaction
 	   empty true false)
@@ -44,7 +46,7 @@
   ;; procedures:
   (provide-and-document
    procedures
-   (all-from beginner: (lib "beginner-funs.ss" "lang" "private") procedures)
+   (all-from beginner: lang/private/beginner-funs procedures)
 
    ("Higher-Order Functions"
     (map ((X ... -> Z) (listof X) ... -> (listof Z))

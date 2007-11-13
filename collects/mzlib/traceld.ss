@@ -1,5 +1,5 @@
 
-(module traceld mzscheme
+(module traceld scheme/base
 
  (let ([load (current-load)]
        [load-extension (current-load-extension)]

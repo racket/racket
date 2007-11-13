@@ -1,7 +1,7 @@
 ;; originally by Dan Grossman
 ;; 6/30/95
 
-(module scheme (lib "a-unit.ss")
+#lang scheme/unit
   (require "collapsed-snipclass-helpers.ss"
            (lib "string-constant.ss" "string-constants")
            (lib "class.ss")
@@ -1757,23 +1757,27 @@
         (send text change-style sd 0 (send text last-position))))
     (define (update-pref sel x)
       (let ([pref (preferences:get 'framework:tabify)])
-        (set-car! (sel pref) x)
-        (preferences:set 'framework:tabify pref)))
+        (let ([pref
+               (let loop ([pref pref][sel sel])
+                 (if (zero? sel)
+                     (cons sel (cdr pref))
+                     (cons (car pref) (loop (cdr pref) (sub1 sel)))))])
+          (preferences:set 'framework:tabify pref))))
     (define-values (begin-list-box begin-regexp-text) 
       (make-column "Begin"
                    'begin
                    begin-keywords
-                   (λ (x) (update-pref cdr x))))
+                   (λ (x) (update-pref 1 x))))
     (define-values (define-list-box define-regexp-text) 
       (make-column "Define" 
                    'define 
                    define-keywords
-                   (λ (x) (update-pref cddr x))))
+                   (λ (x) (update-pref 2 x))))
     (define-values (lambda-list-box lambda-regexp-text)
       (make-column "Lambda"
                    'lambda
                    lambda-keywords
-                   (λ (x) (update-pref cdddr x))))
+                   (λ (x) (update-pref 3 x))))
     (define (update-list-boxes hash-table)
       (let-values ([(begin-keywords define-keywords lambda-keywords) (get-keywords hash-table)]
                    [(reset) (λ (list-box keywords)
@@ -1792,6 +1796,4 @@
     (preferences:add-callback 'framework:tabify (λ (p v) (update-gui v)))
     (update-gui (preferences:get 'framework:tabify))
     main-panel)
-  
-  )
 

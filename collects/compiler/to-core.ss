@@ -145,14 +145,12 @@
                   (filter (lambda (x) (not (is-run-time? x))) decls))]
             [rt-converted
              (map (lambda (stx)
-		    (syntax-case stx (define-values provide require require-for-syntax require-for-template)
-		      [(provide . _)
+		    (syntax-case stx (define-values 
+                                       #%provide
+                                       #%require)
+		      [(#%provide . _)
 		       #'void]
-		      [(require . _)
-		       #'void]
-		      [(require-for-syntax . _)
-		       #'void]
-		      [(require-for-template . _)
+		      [(#%require . _)
 		       #'void]
 		      [(define-values ids rhs)
 		       (let ([converted (convert #'rhs #f
@@ -197,12 +195,10 @@
                                             decls)))]
             [just-one-rt? (>= 1 (apply +
                                        (map (lambda (decl)
-                                              (syntax-case decl (define-values provide require 
-                                                                  require-for-syntax require-for-template
+                                              (syntax-case decl (define-values #%provide #%require 
                                                                   define-syntaxes define-values-for-syntax)
-                                                [(provide . _) 0]
-                                                [(require . _) 0]
-                                                [(require-for-syntax . _) 0]
+                                                [(#%provide . _) 0]
+                                                [(#%require . _) 0]
                                                 [(define-values-for-syntax . _) 0]
                                                 [(define-syntaxes . _) 0]
                                                 [_else 1]))
@@ -217,9 +213,8 @@
          #`(;; Lift require and require-for-syntaxes to the front, so they're ready for
 	    ;;  variable references
 	    #,@(filter (lambda (decl)
-			 (syntax-case decl (require require-for-syntax)
-			   [(require . _) #t]
-			   [(require-for-syntax . _) #t]
+			 (syntax-case decl (#%require)
+			   [(#%require . _) #t]
 			   [_else #f]))
 		       decls)
 	    ;; Lift define-for-values binding to front, so they can be referenced
@@ -246,15 +241,11 @@
                  (cond
                    [(null? decls) null]
                    [(is-run-time? (car decls))
-                    (cons (syntax-case (car decls) (define-values provide require require-for-syntax require-for-template)
-                            [(provide . _)
+                    (cons (syntax-case (car decls) (define-values #%provide #%require)
+                            [(#%provide . _)
                              (car decls)]
-                            [(require . _)
+                            [(#%require . _)
                              #'(void)]
-                            [(require-for-syntax . _)
-                             #'(void)]
-                            [(require-for-template . _)
-                             (car decls)]
                             [(define-values (id ...) rhs)
 			     #`(define-values (id ...)
 				 #,(let ([lookup #`(vector-ref #,(if just-one-rt? rt-rhs run-time) #,rt-pos)])
@@ -353,12 +344,12 @@
 	       (identifier? stx)
 	       (or (simple-identifier stx trans?)
 		   (add-identifier (apply-certs certs stx) li trans? lookup-stx id))]
-	      [(provide . _)
+	      [(#%provide . _)
 	       stx]
-	      [(lambda formals e ...)
+	      [(#%plain-lambda formals e ...)
 	       (quasisyntax/loc+props 
 		stx
-		(lambda formals #,@(map loop (syntax->list #'(e ...)))))]
+		(#%plain-lambda formals #,@(map loop (syntax->list #'(e ...)))))]
 	      [(case-lambda [formals e ...] ...)
 	       (with-syntax ([((e ...) ...)
 			      (map (lambda (l)
@@ -396,10 +387,6 @@
 				   #`(#%top . tid)
 				   #'tid))])
 		 (add-identifier (apply-certs certs target) li trans? lookup-stx id))]
-	      [(#%datum . e)
-	       (if (simple-constant? #'e)
-		   #'(#%datum . e)
-		   (add-literal stx li safe-vector-ref-stx id))]
 	      [(set! x e)
 	       (if (local-identifier? #'x trans?)
 		   (quasisyntax/loc+props stx (set! x #,(loop #'e)))
@@ -424,10 +411,10 @@
 	       (quasisyntax/loc+props 
 		stx
 		(with-continuation-mark #,@(map loop (syntax->list #'(e ...)))))]
-	      [(#%app e ...)
+	      [(#%plain-app e ...)
 	       (quasisyntax/loc+props 
 		stx
-		(#%app #,@(map loop (syntax->list #'(e ...)))))]))))
+		(#%plain-app #,@(map loop (syntax->list #'(e ...)))))]))))
     ((loop #'certs) stx))
   
   (define (apply-certs from to)

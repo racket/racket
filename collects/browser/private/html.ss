@@ -1,4 +1,5 @@
-(module html (lib "a-unit.ss")
+#lang scheme/unit
+
   (require "sig.ss"
            (lib "mred-sig.ss" "mred")
            (lib "file.ss")
@@ -891,7 +892,7 @@
                                                                  (cons fl (cons f (cdr p)))))
                                                              (cons forced-lines null)
                                                              (cddr e))]
-                                                   [l (reverse! (cdr p))])
+                                                   [l (reverse (cdr p))])
                                               (values (lambda ()
                                                         (map (lambda (f) (f)) l))
                                                       (car p))))]
@@ -1258,4 +1259,4 @@
                   (f))
                 (send a-text add-tag "top" 0)
                 (update-image-maps image-map-snips image-maps)
-                (send a-text set-position 0)))))))
+                (send a-text set-position 0))))))

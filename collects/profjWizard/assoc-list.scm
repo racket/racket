@@ -40,7 +40,7 @@
       
       ;; -> (Listof Y)
       ;; extract all y in the order in which they were entered
-      (define/public (list) (reverse! (map (lambda (f) (cdr f)) fields)))
+      (define/public (list) (reverse (map (lambda (f) (cdr f)) fields)))
       
       ;; X -> Y
       (define/public (lookup to-edit)        

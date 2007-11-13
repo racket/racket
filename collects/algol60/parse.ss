@@ -100,7 +100,7 @@
         ["!" (token NEGATE '!)]
         ["&" (token AND '&)]
         ["|" (token OR '\|)]
-        ["=>" (token IMPLIES '=>)]
+        ["=>" (token IMPLIES '==>)]
         ["==" (token EQUIV '==)]
         [":=" (ttoken ASSIGN)]
         ["," (ttoken COMMA)]

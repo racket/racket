@@ -27,6 +27,7 @@
      (make-test "(module m mzscheme) 1" 
                 #f 
                 (regexp "module-language: there can only be one expression in the definitions window"))
+     (make-test "#lang mzscheme\n(define x 1)" "x" "1")
      (make-test "(module m mzscheme (provide x) (define x 1))" "x" "1")
      (make-test "(module m mzscheme (define x 1))" "x" "1")
      (make-test "(module m mzscheme (define x 1) (define y 1) (provide y))" "x" "1")
@@ -46,11 +47,11 @@
                 "foldl"
                 ". reference to an identifier before its definition: foldl")
      
-     (make-test "(module m mzscheme (require (prefix mz: mzscheme)))" "mz:+" #rx"primitive:+")
+     (make-test "(module m mzscheme (require (prefix mz: mzscheme)))" "mz:+" #rx"procedure:+")
      
      (make-test "(module n mzscheme (provide (all-from-except mzscheme +)))"
                 "+"
-                #rx"primitive:+")
+                #rx"procedure:+")
      
      (make-test "(module m mzscheme (require (prefix x: (lib \"list.ss\")) (lib \"list.ss\")))" 
                 "foldl"
@@ -103,7 +104,7 @@
                       (provide s)
                       (define-syntax (s stx) e)))
       (format "~s ~s" '(require m) 's)
-      #rx"module-lang-test-tmp2.ss:1:70: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1$")
+      #rx"module-lang-test-tmp2.ss:1:[67][90]: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1$")
     
      (make-test (format "~s"
                         '(module tmp mzscheme

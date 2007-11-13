@@ -1,5 +1,5 @@
 
-(module finder (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "string-constant.ss" "string-constants")
            "sig.ss"
            "../preferences.ss"
@@ -100,4 +100,4 @@
       (apply (case (preferences:get 'framework:file-dialogs)
                [(std) std-get-file]
                [(common) common-get-file])
-             args))))
+             args)))

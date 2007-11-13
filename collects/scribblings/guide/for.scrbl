@@ -1,8 +1,7 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
-@require[(lib "for.ss")]
 
 @title[#:tag "for"]{Iterations and Comprehensions}
 
@@ -12,7 +11,7 @@ ports, and hash tables can all be used as sequences, and constructors
 like @scheme[in-range] offer even more kinds of sequences.
 
 Variants of @scheme[for] accumulate iteration results in different
-ways, but they all have the same syntactic shape. Simplifying, for
+ways, but they all have the same syntactic shape. Simplifying for
 now, the syntax of @scheme[for] is
 
 @specform[
@@ -45,7 +44,7 @@ comprehension}.
   i)
 ]
 
-The full syntax of @scheme[for] accomodates multiple sequences to
+The full syntax of @scheme[for] accommodates multiple sequences to
 iterate in parallel, and the @scheme[for*] variant nests the
 iterations instead of running them in parallel. More variants of
 @scheme[for] and @scheme[for*] accumulate @scheme[_body] results
@@ -174,7 +173,7 @@ when the @scheme[_boolean-expr] produces a true value:
 
 A @scheme[_boolean-expr] with @scheme[#:when] can refer to any of the
 preceding iteration bindings. In a @scheme[for] form, this scoping
-makes sense only if the test is nested in the interation of the
+makes sense only if the test is nested in the iteration of the
 preceding bindings; thus, bindings separated by @scheme[#:when] are
 mutually nested, instead of in parallel, even with @scheme[for].
 
@@ -263,7 +262,7 @@ This form is most useful with a @scheme[#:when] clause.
   chapter)
 ]
 
-If the @scheme[_body]s are evaluated zero time, then the result
+If the @scheme[_body]s are evaluated zero times, then the result
 is @scheme[#f].
 
 The @scheme[for/last] form runs all iterations, returning the value of
@@ -292,7 +291,7 @@ the same facility with nested iterations:
 
 @section[#:tag "for/fold"]{@scheme[for/fold] and @scheme[for*/fold]}
 
-The @scheme[for/fold] form generalizes the way to combine iteration
+The @scheme[for/fold] form is a very general way to combine iteration
 results. Its syntax is slightly different than the syntax of
 @scheme[for], because accumulation variables must be declared at the
 beginning:
@@ -307,9 +306,9 @@ In the simple case, only one @scheme[[_accum-id _init-expr]] is
 provided, and the result of the @scheme[for/fold] is the final value
 for @scheme[_accum-id], which starts out with the value of
 @scheme[_init-expr]. In the @scheme[_clause]s and
-@scheme[_body]s, @scheme[_accum-id] can be referenced to gets its
+@scheme[_body]s, @scheme[_accum-id] can be referenced to get its
 current value, and the last @scheme[_body] provides the value of
-@scheme[_accum-id] for the netx iteration.
+@scheme[_accum-id] for the next iteration.
 
 @examples[
 (for/fold ([len 0])
@@ -373,7 +372,7 @@ list, and also works with multiple-valued sequences:
 @section[#:tag "for-performance"]{Iteration Performance}
 
 Ideally, a @scheme[for] iteration should run as fast as a loop that
-your write by hand as a recursive-function invocation. A hand-written
+you write by hand as a recursive-function invocation. A hand-written
 loop, however, is normally specific to a particular kind of data, such
 as lists. In that case, the hand-written loop uses selectors like
 @scheme[car] and @scheme[cdr] directly, instead of handling all forms

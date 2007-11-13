@@ -1,4 +1,4 @@
-(module color-model (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "class.ss")
            "sig.ss"
            (lib "mred-sig.ss" "mred")
@@ -265,4 +265,3 @@
   ;; (print-struct #t)
   ;; (xyz->luv (make-xyz 95.0 100.0 141.0))
   ;; (xyz->luv (make-xyz 60.0 80.0 20.0))
-  )

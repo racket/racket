@@ -1,4 +1,5 @@
-(module turtle-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "mred-sig.ss" "mred")
 	   (lib "class.ss")
 	   (lib "class100.ss")
@@ -462,4 +463,4 @@
              (send dc end-doc))]
           [else
            (mred:message-box "Turtles"
-                             "Printing is not supported on this platform")])))
+                             "Printing is not supported on this platform")]))

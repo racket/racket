@@ -1,4 +1,4 @@
-(module list (lib "frtime.ss" "frtime")
+(module list "frtime.ss"
   
   (require (lifted (lib "list.ss") sort
                    fifth sixth seventh eighth

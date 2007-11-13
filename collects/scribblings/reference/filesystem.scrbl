@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title{Filesystem}
+
+@declare-exporting[(lib "scheme/file")]
 
 @;------------------------------------------------------------------------
 @section[#:tag "findpaths"]{Locating Paths}
@@ -17,7 +19,7 @@ by @scheme[kind], which must be one of the following:
  directory.
 
  Under Unix and Mac OS X, this directory is determined by expanding
- the path @file{~}, which is expanded by first checking for a
+ the path @filepath{~}, which is expanded by first checking for a
  @indexed-envvar{HOME} environment variable. If none is defined, the
  @indexed-envvar{USER} and @indexed-envvar{LOGNAME} environment
  variables are consulted (in that order) to find a user name, and then
@@ -36,18 +38,18 @@ by @scheme[kind], which must be one of the following:
 
  @item{@indexed-scheme['pref-dir] --- the standard directory for
  storing the current user's preferences. Under Unix, the directory is
- @file{.plt-scheme} in the user's home directory.  Under Windows, it
- is @file{PLT Scheme} in the user's application-data folder as
+ @filepath{.plt-scheme} in the user's home directory.  Under Windows, it
+ is @filepath{PLT Scheme} in the user's application-data folder as
  specified by the Windows registry; the application-data folder is
- usually @file{Application Data} in the user's profile
- directory. Under Mac OS X, it is @file{Library/Preferences} in the
+ usually @filepath{Application Data} in the user's profile
+ directory. Under Mac OS X, it is @filepath{Library/Preferences} in the
  user's home directory. This directory might not exist.}
 
  @item{@indexed-scheme['pref-file] --- a file that contains a
  symbol-keyed association list of preference values. The file's
  directory path always matches the result returned for
- @scheme['pref-dir]. The file name is @file{plt-prefs.ss} under Unix
- and Windows, and it is @file{org.plt-scheme.prefs.ss} under Mac OS
+ @scheme['pref-dir]. The file name is @filepath{plt-prefs.ss} under Unix
+ and Windows, and it is @filepath{org.plt-scheme.prefs.ss} under Mac OS
  X. The file's directory might not exist. See also
  @scheme[get-preference].}
 
@@ -75,21 +77,23 @@ by @scheme[kind], which must be one of the following:
 
  @item{@indexed-scheme['addon-dir] --- a directory for installing PLT Scheme
  extensions. It's the same as @scheme['pref-dir], except under Mac OS
- X, where it is @file{Library/PLT Scheme} in the user's home
+ X, where it is @filepath{Library/PLT Scheme} in the user's home
  directory. This directory might not exist.}
 
- @item{@indexed-scheme['doc-dir] --- the standard directory for storing the
- current user's documents. It's the same as @scheme['home-dir] under
- @|AllUnix|. Under Windows, it is the user's documents folder as
- specified by the Windows registry; the documents folder is usually
- @file{My Documents} in the user's home directory.}
+ @item{@indexed-scheme['doc-dir] --- the standard directory for
+ storing the current user's documents. Under Unix, it's the same as
+ @scheme['home-dir]. Under Mac OS X, it's the
+ @filepath{Documents} directory in the user's home directory. Under
+ Windows, it is the user's documents folder as specified by the
+ Windows registry; the documents folder is usually @filepath{My Documents}
+ in the user's home directory.}
 
  @item{@indexed-scheme['desk-dir] --- the directory for the current user's
  desktop. Under Unix, it's the same as @scheme['home-dir]. Under
  Windows, it is the user's desktop folder as specified by the Windows
- registry; the documents folder is usually @file{Desktop} in the
+ registry; the documents folder is usually @filepath{Desktop} in the
  user's home directory. Under Mac OS X, it is the desktop directory,
- which is specifically @file{~/Desktop} under Mac OS X.}
+ which is specifically @filepath{~/Desktop} under Mac OS X.}
 
  @item{@indexed-scheme['sys-dir] --- the directory containing the
  operating system for Windows. Under @|AllUnix|, the

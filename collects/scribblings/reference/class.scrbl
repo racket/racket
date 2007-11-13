@@ -1,8 +1,7 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
-@require[(lib "class.ss")]
-@require-for-syntax[mzscheme]
-@require-for-label[(lib "class.ss")]
+@require[scheme/class]
+@require[(for-syntax scheme/base)]
 
 @begin[
 
@@ -30,13 +29,13 @@
                            (let ([s (symbol->string (syntax-e #'form))])
                              (substring s 0 (sub1 (string-length s)))))]
                    [tmpl (let ([s #'(... (thing (id expr) ...))])
-                           (datum->syntax-object s
-                                                 (cons (datum->syntax-object
-                                                        #'form
-                                                        (syntax-e #'form)
-                                                        (car (syntax-e s)))
-                                                       (cdr (syntax-e s)))
-                                                 s))])
+                           (datum->syntax s
+                                          (cons (datum->syntax
+                                                 #'form
+                                                 (syntax-e #'form)
+                                                 (car (syntax-e s)))
+                                                (cdr (syntax-e s)))
+                                          s))])
        #'(...
           (defform tmpl
             "Shorthand for " (scheme (begin (#,(scheme name) id) ... (define id _expr) ...)) ".")))]
@@ -50,13 +49,13 @@
                           (let ([s (symbol->string (syntax-e #'form))])
                             (string-append "define/" s)))])
        (with-syntax ([tmpl1 (let ([s #'(define id expr)])
-                              (datum->syntax-object s
-                                                    (cons (datum->syntax-object
-                                                           #'form
-                                                           (syntax-e #'name)
-                                                           (car (syntax-e s)))
-                                                          (cdr (syntax-e s)))
-                                                    s))])
+                              (datum->syntax s
+                                             (cons (datum->syntax
+                                                    #'form
+                                                    (syntax-e #'name)
+                                                    (car (syntax-e s)))
+                                                   (cdr (syntax-e s)))
+                                             s))])
          #'(...
             (defform* [tmpl1 (#,(scheme name) (id . formals) body ...+)]
               "Shorthand for "
@@ -72,7 +71,7 @@
 
 @title[#:tag "mzlib:class" #:style 'toc]{Classes and Objects}
 
-@declare-exporting[big (lib "big/class")]
+@declare-exporting[scheme/class]
 
 @local-table-of-contents[]
 

@@ -1,5 +1,5 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "struct.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/struct]
 @require["mz.ss"]
 
 @define[(ResultItself x)
@@ -349,7 +349,7 @@ and the @scheme[prop:input-port] property takes precedence over
 @scheme[prop:output-port] for synchronization.
 
 @examples[
-(define-struct wt ([base #:immutable] val)
+(define-struct wt (base val)
                #:property prop:evt (struct-field-index base))
 
 (define sema (make-semaphore))

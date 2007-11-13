@@ -1,7 +1,8 @@
-(module stacktrace mzscheme
-  (require (lib "unit.ss")
+(module stacktrace scheme/base
+  (require (lib "unit.ss" "mzlib")
            (lib "kerncase.ss" "syntax")
-           (lib "stx.ss" "syntax"))
+           (lib "stx.ss" "syntax")
+           (for-syntax scheme/base)) ; for matching
 
   (provide stacktrace@ stacktrace^ stacktrace-imports^)
 
@@ -43,7 +44,7 @@
          [(pair? v)
           (cond
             [(zero? depth) '(....)]
-            [(memq (syntax-e (car v)) '(#%datum #%app #%top))
+            [(memq (syntax-e (car v)) '(#%app #%top))
              (short-version (cdr v) depth)]
             [else
              (cons (short-version (car v) (sub1 depth))
@@ -68,7 +69,7 @@
                     #,(syntax-position stx)
                     #,(syntax-span stx))))
       (define (st-mark-source src)
-        (datum->syntax-object #f (car src) (cdr src) #f))
+        (datum->syntax #f (car src) (cdr src) #f))
 
       (define (st-mark-bindings x) null)
 
@@ -85,7 +86,7 @@
         (if (test-coverage-enabled)
             (let ([key (gensym 'test-coverage-point)])
               (initialize-test-coverage-point key expr)
-              (with-syntax ([key (datum->syntax-object
+              (with-syntax ([key (datum->syntax
                                   #f key (quote-syntax here))]
                             [body body]
                             [test-covered test-covered])
@@ -110,10 +111,10 @@
       (define (profile-point bodies name expr trans?)
         (let ([key (gensym 'profile-point)])
           (initialize-profile-point key name expr)
-          (with-syntax ([key (datum->syntax-object #f key (quote-syntax here))]
-                        [start (datum->syntax-object
+          (with-syntax ([key (datum->syntax #f key (quote-syntax here))]
+                        [start (datum->syntax
                                 #f (gensym) (quote-syntax here))]
-                        [profile-key (datum->syntax-object
+                        [profile-key (datum->syntax
                                       #f profile-key (quote-syntax here))]
                         [register-profile-start register-profile-start]
                         [register-profile-done register-profile-done])
@@ -150,12 +151,11 @@
              (syntax (begin e expr))]
             [(quote _) (syntax (begin e expr))]
             [(quote-syntax _) (syntax (begin e expr))]
-            [(#%datum . d) (syntax (begin e expr))]
             [(#%top . d) (syntax (begin e expr))]
             [(#%variable-reference . d) (syntax (begin e expr))]
 
             ;; No tail effect, and we want to account for the time
-            [(lambda . _) (syntax (begin0 expr e))]
+            [(#%plain-lambda . _) (syntax (begin0 expr e))]
             [(case-lambda . _) (syntax (begin0 expr e))]
             [(set! . _) (syntax (begin0 expr e))]
 
@@ -172,15 +172,8 @@
             [(begin0 body ...)
              (certify sexpr (syntax (begin0 body ... e)))]
 
-            [(if test then)
-             (certify
-              sexpr
-              (append-rebuild
-               (rebuild sexpr (list (cons #'then (insert-at-tail
-                                                  se (syntax then) trans?))))
-               #'(begin e (void))))]
             [(if test then else)
-             ;; WARNING: e inserted twice!
+             ;; WARNING: se inserted twice!
              (certify
               sexpr
               (rebuild
@@ -189,7 +182,7 @@
                 (cons #'then (insert-at-tail se (syntax then) trans?))
                 (cons #'else (insert-at-tail se (syntax else) trans?)))))]
 
-            [(#%app . rest)
+            [(#%plain-app . rest)
              (if (stx-null? (syntax rest))
                  ;; null constant
                  (syntax (begin e expr))
@@ -199,7 +192,7 @@
             [_else
              (error 'errortrace
                     "unrecognized (non-top-level) expression form: ~e"
-                    (syntax-object->datum sexpr))])))
+                    (syntax->datum sexpr))])))
 
       (define (profile-annotate-lambda name expr clause bodys-stx trans?)
         (let* ([bodys (stx->list bodys-stx)]
@@ -298,7 +291,7 @@
                                            same-k
                                            (lambda (x)
                                              (diff-k
-                                              (datum->syntax-object
+                                              (datum->syntax
                                                expr
                                                x
                                                expr)))))]
@@ -307,7 +300,7 @@
       (define (append-rebuild expr end)
         (cond
          [(syntax? expr)
-          (datum->syntax-object expr
+          (datum->syntax expr
                                 (append-rebuild (syntax-e expr) end)
                                 expr)]
          [(pair? expr)
@@ -347,10 +340,7 @@
              [(#%top . id)
               ;; might be undefined/uninitialized
               (with-mark expr expr)]
-             [(#%datum . _)
-              ;; no error possible
-              expr]
-	     [(#%variable-reference . _)
+             [(#%variable-reference . _)
               ;; no error possible
               expr]
 
@@ -417,14 +407,10 @@
               (certify expr #`(#%expression #,(annotate (syntax e) trans?)))]
 		   
              ;; No way to wrap
-             [(require i ...) expr]
-             [(require-for-syntax i ...) expr]
-             [(require-for-template i ...) expr]
-             [(require-for-label i ...) expr]
+             [(#%require i ...) expr]
              ;; No error possible (and no way to wrap)
-             [(provide i ...) expr]
-             [(provide-for-syntax i ...) expr]
-             [(provide-for-label i ...) expr]
+             [(#%provide i ...) expr]
+             
 
              ;; No error possible
              [(quote _)
@@ -433,7 +419,7 @@
               expr]
 
              ;; Wrap body, also a profile point
-             [(lambda args . body)
+             [(#%plain-lambda args . body)
               (certify
                expr
                (keep-lambda-properties
@@ -528,16 +514,16 @@
                                         annotate trans?)))]
 
              ;; Wrap whole application, plus subexpressions
-             [(#%app . body)
+             [(#%plain-app . body)
               (cond
                [(stx-null? (syntax body))
                 ;; It's a null:
                 expr]
-               [(syntax-case* expr (#%app void)
+               [(syntax-case* expr (#%plain-app void)
                               (if trans?
-                                module-transformer-identifier=?
-                                module-identifier=?)
-                  [(#%app void) #t]
+                                free-transformer-identifier=?
+                                free-identifier=?)
+                  [(#%plain-app void) #t]
                   [_else #f])
                 ;; It's (void):
                 expr]
@@ -550,7 +536,7 @@
              [_else
               (error 'errortrace "unrecognized expression form~a: ~e"
                      (if top? " at top-level" "")
-                     (syntax-object->datum expr))])
+                     (syntax->datum expr))])
            expr)))
 
       (define annotate (make-annotate #f #f))

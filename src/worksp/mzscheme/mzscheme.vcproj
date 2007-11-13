@@ -95,7 +95,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -qr ..\..\mzscheme\mkincludes.ss &quot;$(TargetDir)/include/&quot; ..\..\mzscheme ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;cd ..\..\mzscheme\dynsrc&#x0D;&#x0A;mkmzdynd.bat&#x0D;&#x0A;cd ..\..\worksp\mzscheme&#x0D;&#x0A;&#x0D;&#x0A;"
+				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\mzscheme\mkincludes.ss &quot;$(TargetDir)/include/&quot; ..\..\mzscheme ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;cd ..\..\mzscheme\dynsrc&#x0D;&#x0A;mkmzdynd.bat&#x0D;&#x0A;cd ..\..\worksp\mzscheme&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -184,7 +184,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -qr ..\..\mzscheme\mkincludes.ss &quot;$(TargetDir)/include/&quot; ..\..\mzscheme ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;cd ..\..\mzscheme\dynsrc&#x0D;&#x0A;mkmzdyn.bat&#x0D;&#x0A;cd ..\..\worksp\mzscheme&#x0D;&#x0A;&#x0D;&#x0A;"
+				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\mzscheme\mkincludes.ss &quot;$(TargetDir)/include/&quot; ..\..\mzscheme ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;cd ..\..\mzscheme\dynsrc&#x0D;&#x0A;mkmzdyn.bat&#x0D;&#x0A;cd ..\..\worksp\mzscheme&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>

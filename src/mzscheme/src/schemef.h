@@ -463,7 +463,7 @@ MZ_EXTERN Scheme_Object *scheme_make_closed_prim_w_everything(Scheme_Closed_Prim
 MZ_EXTERN void scheme_prim_is_method(Scheme_Object *o);
 
 MZ_EXTERN Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr);
-MZ_EXTERN Scheme_Object *scheme_make_immutable_pair(Scheme_Object *car, Scheme_Object *cdr);
+MZ_EXTERN Scheme_Object *scheme_make_mutable_pair(Scheme_Object *car, Scheme_Object *cdr);
 
 MZ_EXTERN Scheme_Object *scheme_make_raw_pair(Scheme_Object *, Scheme_Object *);
 
@@ -800,6 +800,7 @@ MZ_EXTERN long scheme_set_file_position(Scheme_Object *port, long pos);
 MZ_EXTERN int scheme_file_exists(char *filename);
 MZ_EXTERN int scheme_directory_exists(char *dirname);
 MZ_EXTERN char *scheme_expand_filename(char* filename, int ilen, const char *errorin, int *ex, int guards);
+MZ_EXTERN char *scheme_expand_user_filename(char* filename, int ilen, const char *errorin, int *ex, int guards);
 MZ_EXTERN char *scheme_expand_string_filename(Scheme_Object *f, const char *errorin, int *ex, int guards);
 
 MZ_EXTERN char *scheme_os_getcwd(char *buf, int buflen, int *actlen, int noexn);
@@ -897,6 +898,9 @@ MZ_EXTERN Scheme_Object *scheme_make_modidx(Scheme_Object *path,
 MZ_EXTERN Scheme_Object *scheme_apply_for_syntax_in_env(Scheme_Object *proc, Scheme_Env *env);
 
 MZ_EXTERN Scheme_Object *scheme_dynamic_require(int argc, Scheme_Object *argv[]);
+MZ_EXTERN Scheme_Object *scheme_namespace_require(Scheme_Object *);
+
+MZ_EXTERN int scheme_is_module_path(Scheme_Object *);
 
 /*========================================================================*/
 /*                                symbols                                 */
@@ -980,8 +984,8 @@ MZ_EXTERN void scheme_set_type_equality(Scheme_Type type,
 
 MZ_EXTERN Scheme_Object *scheme_build_list(int argc, Scheme_Object **argv);
 MZ_EXTERN Scheme_Object *scheme_build_list_offset(int argc, Scheme_Object **argv, int delta);
-MZ_EXTERN void scheme_make_list_immutable(Scheme_Object *l);
 
+MZ_EXTERN int scheme_is_list(Scheme_Object *obj1);
 MZ_EXTERN int scheme_list_length(Scheme_Object *list);
 MZ_EXTERN int scheme_proper_list_length(Scheme_Object *list);
 

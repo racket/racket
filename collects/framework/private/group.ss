@@ -1,5 +1,5 @@
 
-(module group (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "string-constant.ss" "string-constants")
            (lib "class.ss")
            "sig.ss"
@@ -341,4 +341,4 @@
       (internal-get-the-frame-group)))
   
   (define (get-the-frame-group)
-    (internal-get-the-frame-group)))
+    (internal-get-the-frame-group))

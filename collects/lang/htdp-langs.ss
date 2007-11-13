@@ -151,11 +151,11 @@
           (define/override (on-execute settings run-in-user-thread)
             (let ([drs-namespace (current-namespace)]
                   [set-result-module-name 
-                   ((current-module-name-resolver) '(lib "set-result.ss" "lang" "private") #f #f)])
+                   ((current-module-name-resolver) '(lib "lang/private/set-result.ss") #f #f)])
               (run-in-user-thread
                (lambda ()
                  (read-accept-quasiquote (get-accept-quasiquote?))
-                 (namespace-attach-module drs-namespace 'drscheme-secrets)
+                 (namespace-attach-module drs-namespace ''drscheme-secrets)
                  (namespace-attach-module drs-namespace set-result-module-name)
                  (error-display-handler teaching-languages-error-display-handler)
                  (error-value->string-handler (λ (x y) (teaching-languages-error-value->string settings x y)))
@@ -436,8 +436,8 @@
                              (let-values ([(snip-class-names data-class-names)
                                            (extract-used-classes port)])
                                (list*
-                                '(lib "read.ss" "wxme")
-                                '(lib "mred.ss" "mred")
+                                '(lib "wxme/read.ss")
+                                '(lib "mred/mred.ss")
                                 reader-module
                                 (filter
                                  values
@@ -553,12 +553,12 @@
                       (dynamic-wind
                        void
                        (lambda () 
-                         ;(dynamic-require '#%htdp #f)
-                         (eval #'(require #%htdp)))  ;; work around a bug in dynamic-require
+                         ;(dynamic-require ''#%htdp #f)
+                         (eval #'(require '#%htdp)))  ;; work around a bug in dynamic-require
                        (lambda () 
                          (unless done-already?
                            (set! done-already? #t)
-                           (current-namespace (module->namespace '#%htdp)))))))]
+                           (current-namespace (module->namespace ''#%htdp)))))))]
                   [(done-or-exn)
                    (cond
                      [saved-exn
@@ -998,7 +998,7 @@
       (eval `(module drscheme-secrets mzscheme
                (provide drscheme-inspector)
                (define drscheme-inspector ,drscheme-inspector)))
-      (namespace-require 'drscheme-secrets)
+      (namespace-require ''drscheme-secrets)
       
       
       
@@ -1133,13 +1133,13 @@
                       #f)))))
         (let ([ht (thread-cell-ref current-test-coverage-info)])
           (when ht
-            (hash-table-put! ht key (list #f expr)))))
+            (hash-table-put! ht key (mcons #f expr)))))
       
       (define (test-covered key)
         (let ([ht (thread-cell-ref current-test-coverage-info)])
           (when ht
             (let ([v (hash-table-get ht key)])
-              (set-car! v #t)))))
+              (set-mcar! v #t)))))
       
       (define-values/invoke-unit et:stacktrace@
         (import et:stacktrace-imports^) (export (prefix et: et:stacktrace^)))
@@ -1391,7 +1391,7 @@
         (add-htdp-language
          (instantiate htdp-language% ()
            (one-line-summary (string-constant advanced-one-line-summary))
-           (module '(lib "htdp-advanced.ss" "lang"))
+           (module '(lib "lang/htdp-advanced.ss"))
            (manual #"advanced")
            (language-position
             (list (string-constant teaching-languages)
@@ -1402,7 +1402,7 @@
            (sharing-printing #t)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #t)
-           (reader-module '(lib "htdp-advanced-reader.ss" "lang"))
+           (reader-module '(lib "lang/htdp-advanced-reader.ss"))
 	   (stepper:supported #f)
 	   (stepper:enable-let-lifting #t)
 	   (stepper:show-lambdas-as-lambdas #t)))
@@ -1410,7 +1410,7 @@
         (add-htdp-language
          (instantiate htdp-language% ()
            (one-line-summary (string-constant intermediate/lambda-one-line-summary))
-           (module '(lib "htdp-intermediate-lambda.ss" "lang"))
+           (module '(lib "lang/htdp-intermediate-lambda.ss"))
            (manual #"intermediate-lambda")
            (language-position
             (list (string-constant teaching-languages)
@@ -1430,7 +1430,7 @@
            (sharing-printing #f)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
-           (reader-module '(lib "htdp-intermediate-lambda-reader.ss" "lang"))
+           (reader-module '(lib "lang/htdp-intermediate-lambda-reader.ss"))
 	   (stepper:supported #t)
            (stepper:enable-let-lifting #t)
 	   (stepper:show-lambdas-as-lambdas #t)))
@@ -1438,7 +1438,7 @@
 	(add-htdp-language
          (instantiate htdp-language% ()
            (one-line-summary (string-constant intermediate-one-line-summary))
-           (module '(lib "htdp-intermediate.ss" "lang"))
+           (module '(lib "lang/htdp-intermediate.ss"))
            (manual #"intermediate")
            (language-position
             (list (string-constant teaching-languages)
@@ -1450,7 +1450,7 @@
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
            (use-function-output-syntax? #t)
-           (reader-module '(lib "htdp-intermediate-reader.ss" "lang"))
+           (reader-module '(lib "lang/htdp-intermediate-reader.ss"))
 	   (stepper:supported #t)
            (stepper:enable-let-lifting #t)
 	   (stepper:show-lambdas-as-lambdas #f)))
@@ -1458,7 +1458,7 @@
         (add-htdp-language
          (instantiate htdp-language% ()
            (one-line-summary (string-constant beginning/abbrev-one-line-summary))
-           (module '(lib "htdp-beginner-abbr.ss" "lang"))
+           (module '(lib "lang/htdp-beginner-abbr.ss"))
            (manual #"beginning-abbr")
            (language-position
             (list (string-constant teaching-languages)
@@ -1469,7 +1469,7 @@
            (sharing-printing #f)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
-           (reader-module '(lib "htdp-beginner-abbr-reader.ss" "lang"))
+           (reader-module '(lib "lang/htdp-beginner-abbr-reader.ss"))
 	   (stepper:supported #t)
            (stepper:enable-let-lifting #t)
 	   (stepper:show-lambdas-as-lambdas #f)))
@@ -1477,7 +1477,7 @@
         (add-htdp-language
          (instantiate htdp-language% ()
            (one-line-summary (string-constant beginning-one-line-summary))
-           (module '(lib "htdp-beginner.ss" "lang"))
+           (module '(lib "lang/htdp-beginner.ss"))
            (manual #"beginning")
            (language-position
             (list (string-constant teaching-languages)
@@ -1489,7 +1489,7 @@
            (abbreviate-cons-as-list #f)
            (allow-sharing? #f)
            (accept-quasiquote? #f)
-           (reader-module '(lib "htdp-beginner-reader.ss" "lang"))
+           (reader-module '(lib "lang/htdp-beginner-reader.ss"))
 	   (stepper:supported #t)
            (stepper:enable-let-lifting #t)
 	   (stepper:show-lambdas-as-lambdas #f)))

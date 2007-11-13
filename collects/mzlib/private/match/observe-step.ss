@@ -1,8 +1,8 @@
 (module observe-step mzscheme
   (provide observe-step)
   
-    (define current-expand-observe
-    (dynamic-require '#%expobs 'current-expand-observe))
+  (define current-expand-observe
+    (dynamic-require ''#%expobs 'current-expand-observe))
   
   (define (observe-step pre mpre mpost post)
     (define (call-obs ev . args) 

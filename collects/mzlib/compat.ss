@@ -37,7 +37,7 @@
 	(if al
 	    (let ([v (assq prop al)])
 	      (if v
-		  (cdr v)
+		  (unbox (cdr v))
 		  def))
 	    def))]))
   (define putprop
@@ -45,8 +45,8 @@
       (let ([al (hash-table-get table k (lambda () '()))])
 	(let ([v (assq prop al)])
 	  (if v
-	      (set-cdr! v nv)
-	      (hash-table-put! table k (cons (cons prop nv) al)))))))
+	      (set-box! (cdr v) nv)
+	      (hash-table-put! table k (cons (cons prop (box nv)) al)))))))
 
   ;; Chez's new-cafe
   (define new-cafe 

@@ -1,9 +1,9 @@
 (module delndups mzscheme
   (require "vector-util.scm")
   (provide list-delete-neighbor-dups
-           list-delete-neighbor-dups!
+           #;list-delete-neighbor-dups!
            vector-delete-neighbor-dups
-           vector-delete-neighbor-dups!)
+           #;vector-delete-neighbor-dups!)
   
   ;;; The sort package -- delete neighboring duplicate elts
   ;;; Copyright (c) 1998 by Olin Shivers.
@@ -89,6 +89,7 @@
   ;;; This code runs in constant list space, constant stack, and also
   ;;; does only the minimum SET-CDR!'s necessary.
   
+  #;
   (define (list-delete-neighbor-dups! = lis)
     (if (pair? lis)
         (let lp1 ((prev lis) (prev-elt (car lis)) (lis (cdr lis)))
@@ -137,6 +138,7 @@
   
   ;;; Packs the surviving elements to the left, in range [start,end'),
   ;;; and returns END'.
+  #;
   (define (vector-delete-neighbor-dups! elt= v . maybe-start+end)
     (call-with-values
      (lambda () (vector-start+end v maybe-start+end))

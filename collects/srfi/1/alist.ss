@@ -45,7 +45,7 @@
 		   alist-cons
 		   alist-copy
 		   alist-delete
-		   alist-delete!)
+		   #;alist-delete!)
 
   
   ;; Extended from R4RS to take an optional comparison argument.
@@ -65,6 +65,7 @@
 	  (let ((= maybe-=))
 		(filter (lambda (elt) (not (= key (car elt)))) alist))))
 
+  #;
   (define alist-delete!
 	(opt-lambda (key alist (maybe-= equal?))
 	  (let ((= maybe-=))

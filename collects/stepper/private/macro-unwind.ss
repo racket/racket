@@ -1,9 +1,10 @@
-(module macro-unwind mzscheme
-  (require (prefix kernel: (lib "kerncase.ss" "syntax"))
+(module macro-unwind scheme/base
+  (require (prefix-in kernel: (lib "kerncase.ss" "syntax"))
            (lib "etc.ss")
            (lib "contract.ss")
 	   "model-settings.ss"
-           "shared.ss")
+           "shared.ss"
+           (for-syntax scheme/base))
 
   (provide/contract [unwind (syntax? render-settings? . -> . syntax?)])
                                                                                ;
@@ -44,7 +45,7 @@
 
   (define (recur-on-pieces stx settings)
      (if (pair? (syntax-e stx))
-         (datum->syntax-object
+         (datum->syntax
           stx (syntax-pair-map (syntax-e stx) (lambda (stx) (unwind stx settings))) stx stx)
          stx))
    
@@ -56,10 +57,8 @@
                                      stx)]
                                 [(define-values dc ...)
                                  (unwind-define stx settings)]
-                                [(#%app exp ...)
+                                [(#%plain-app exp ...)
                                  (recur-on-pieces #'(exp ...) settings)]
-                                [(#%datum . datum)
-                                 #'datum]
                                 [(let-values . rest)
                                  (unwind-mz-let stx settings)]
                                 [(letrec-values . rest)
@@ -102,7 +101,7 @@
            (syntax-case unwound (letrec lambda)
              [(letrec ([loop-name (lambda (argname ...) . bodies)])
                 loop-name-2)
-              (unless (module-identifier=? #`loop-name #`loop-name-2)
+              (unless (free-identifier=? #`loop-name #`loop-name-2)
                 (error "unexpected syntax for 'recur': ~v" stx))
               (transfer-highlight
                unwound
@@ -116,7 +115,7 @@
                                    (unless (null? (syntax-e #'others))
                                      (error 'reconstruct
                                             "reconstruct fails on multiple-values define: ~v\n"
-                                            (syntax-object->datum stx)))
+                                            (syntax->datum stx)))
                                    (if (eq? (stepper-syntax-property #`body 'stepper-hint) 'comes-from-check-expect)
                                        (kernel:kernel-syntax-case
                                         (unwind #`body settings) #f
@@ -134,18 +133,18 @@
                                          (if define-type
                                              (kernel:kernel-syntax-case 
                                               unwound-body #f
-                                              [(lambda arglist lam-body ...)
+                                              [(#%plain-lambda arglist lam-body ...)
                                                (case define-type
                                                  [(shortened-proc-define)
                                                   (let ([proc-define-name
                                                          (stepper-syntax-property
                                                           unwound-body
                                                           'stepper-proc-define-name)])
-                                                    (if (or (module-identifier=? proc-define-name
-                                                                                 #'name)
+                                                    (if (or (free-identifier=? proc-define-name
+                                                                               #'name)
                                                             (and (stepper-syntax-property #'name
                                                                                           'stepper-orig-name)
-                                                                 (module-identifier=?
+                                                                 (free-identifier=?
                                                                   proc-define-name
                                                                   (stepper-syntax-property
                                                                    #'name 'stepper-orig-name))))
@@ -160,11 +159,11 @@
                                                               define-type)])]
                                               [else (error 'unwind-define
                                                            "expr with stepper-define-type is not a lambda: ~e"
-                                                           (syntax-object->datum unwound-body))])
+                                                           (syntax->datum unwound-body))])
                                              #`(define #,printed-name #,unwound-body)))))]
                                 [else (error 'unwind-define
                                              "expression is not a define-values: ~e"
-                                             (syntax-object->datum stx))]))
+                                             (syntax->datum stx))]))
    
    (define (unwind-mz-let stx settings)
      (with-syntax ([(label ([(var) rhs] ...) . bodies) stx])
@@ -208,7 +207,7 @@
                                    #`(local defns #,(unwind #'body settings)))]
                                 [else (error 'unwind-local
                                              "expected a letrec-values, given: ~e"
-                                             (syntax-object->datum stx))]))
+                                             (syntax->datum stx))]))
    
    ;(define (unwind-quasiquote-the-cons-application stx settings)
    ;  (syntax-case (recur-on-pieces stx settings) ()
@@ -235,11 +234,9 @@
                              (syntax-property stx 'user-source))
                         (eq? user-position
                              (syntax-property stx 'user-position)))
-                   (syntax-case stx (if begin #%app)
+                   (syntax-case stx (if begin)
                      ;; the else clause disappears when it's a
                      ;; language-inserted else clause
-                     [(if test result)
-                      (list (unwind-cond-clause stx #`test #`result settings))]
                      [(if test result else-clause)
                       (cons (unwind-cond-clause stx #`test #`result settings)
                             (loop (syntax else-clause)))]
@@ -249,10 +246,10 @@
                      [else-stx
                       (error 'unwind-cond
                              "expected an if, got: ~e"
-                             (syntax-object->datum (syntax else-stx)))])
+                             (syntax->datum (syntax else-stx)))])
                    (error 'unwind-cond
                           "expected a cond clause expansion, got: ~e"
-                          (syntax-object->datum stx))))])
+                          (syntax->datum stx))))])
          (syntax (cond . clauses)))))
    
   ;; unused: the fake-exp begin takes care of this for us...
@@ -281,7 +278,7 @@
                              (syntax-property stx 'user-source))
                         (eq? user-position
                              (syntax-property stx 'user-position)))
-                   (syntax-case stx (if let-values #%datum)
+                   (syntax-case stx (if)
                      [(if part-1 part-2 part-3)
                       (cons (unwind (syntax part-1) settings)
                             (case label
@@ -292,7 +289,7 @@
                      [else
                       (error 'unwind-and/or
                              "syntax: ~a does not match and/or patterns"
-                             (syntax-object->datum stx))])
+                             (syntax->datum stx))])
                    null)))])
         #`(#,label . clauses))))
 )

@@ -42,12 +42,16 @@
   (define (entry.copier entry)     (vector-ref entry 7))
 
   (define (register name entry)
-    (cond ((s1:assoc name reg free-identifier=?)
-           => (lambda (pair)
-                (set-cdr! pair entry)))
-          (else
-           (set! reg (cons (cons name entry)
-                           reg)))))
+    (set! reg
+          (let loop ([reg reg])
+            (cond
+             [(null? reg) 
+              (list (cons name entry))]
+             [(free-identifier=? name (caar reg))
+              (cons (cons name entry)
+                    (cdr reg))]
+             [else (cons (car reg)
+                         (loop (cdr reg)))]))))
 
   (define (lookup-entry name)
     (s1:assoc name reg free-identifier=?))

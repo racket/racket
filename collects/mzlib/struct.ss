@@ -17,7 +17,7 @@
   ;;  effectively declares the form to be an expression.)
   (define-syntax (copy-struct stx)
     (syntax-case stx ()
-      [_ #'(begin0 (do-copy-struct _))]))
+      [frm #'(begin0 (do-copy-struct frm))]))
   
   (define-syntax (do-copy-struct dstx)
     (syntax-case dstx ()
@@ -46,9 +46,10 @@
 			      (let ([v (syntax-local-value #'info (lambda () #f))])
 				(unless (struct-declaration-info? v)
 				  (raise-syntax-error #f "identifier is not bound to a structure type" stx #'info))
-				(values (cadr v)
-					(caddr v)
-					(cadddr v)))]
+                                (let ([v (extract-struct-info v)])
+                                  (values (cadr v)
+                                          (caddr v)
+                                          (cadddr v))))]
 			     [(as) (map (lambda (an) (stx-car an)) ans)])
 		  (let ([dests
 			 (map
@@ -179,7 +180,7 @@
          (if (struct-declaration-info? info)
              (with-syntax ([(accessor ...)
                             (reverse
-                             (filter identifier? (list-ref info 3)))])
+                             (filter identifier? (list-ref (extract-struct-info info) 3)))])
                (syntax
                 (λ (s)
                   (vector (accessor s) ...))))

@@ -4,7 +4,8 @@
 ;
 ; modified by Gregory Cooper to support FrTime
 
-(module graphics-posn-less-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "mred-sig.ss" "mred")
 	   (lib "class.ss")
 	   (lib "class100.ss")
@@ -1119,5 +1120,3 @@
   (define (andp . preds)
     (lambda (TST)
       (andmap (lambda (p) (p TST)) preds)))
-  )
-

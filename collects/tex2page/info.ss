@@ -1,5 +1,5 @@
 
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "tex2page")
 
   (define mzscheme-launcher-libraries (list "start.ss"))

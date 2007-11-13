@@ -12,7 +12,7 @@
 	   (struct s (field1 field2))
 	   (rename n m)))
 
-(require n)
+(require 'n)
 (test 'n 'required-n n)
 (test 'n 'required-n m)
 
@@ -58,9 +58,9 @@
 (syntax-test #'(module m mzscheme (define x 10) (provide 1)))
 (syntax-test #'(module m mzscheme (define x 10) (provide "bad")))
 (syntax-test #'(module m mzscheme (define x 10) (provide not-here)))
-(syntax-test #'(module m mzscheme (define x 10) (define y 11) (provide x x)))
+(syntax-test #'(module m mzscheme (define x 10) (define y 11) (provide x (rename y x))))
 (syntax-test #'(module m mzscheme (define x 10) (define y 11) (provide x z)))
-(syntax-test #'(module m mzscheme (define x 10) (define y 11) (provide x y x)))
+(syntax-test #'(module m mzscheme (define x 10) (define y 11) (provide x y (rename x y))))
 (syntax-test #'(module m mzscheme (define x 10) (define y 11) (provide (rename))))
 (syntax-test #'(module m mzscheme (define x 10) (define y 11) (provide (rename x))))
 (syntax-test #'(module m mzscheme (define x 10) (define y 11) (provide (rename x y z))))
@@ -75,7 +75,7 @@
 (syntax-test #'(module m mzscheme (define-struct x (y)) (provide (struct 1 ()))))
 (syntax-test #'(module m mzscheme (define-struct x (y)) (provide (struct x (1)))))
 (syntax-test #'(module m mzscheme (define-struct x (y)) (provide (struct x (y . 1)))))
-(syntax-test #'(module m mzscheme (define-struct x (y)) (provide (struct x (y y)))))
+;; (syntax-test #'(module m mzscheme (define-struct x (y)) (provide (struct x (y y)))))
 (syntax-test #'(module m mzscheme (define x 10) (define y 11) (provide (all-from))))
 (syntax-test #'(module m mzscheme (define x 10) (define y 11) (provide (all-from . mzscheme))))
 (syntax-test #'(module m mzscheme (define x 10) (define y 11) (provide (all-from 1))))
@@ -137,48 +137,51 @@
        [l null]
        [here (lambda (v)
 	       (set! l (cons v l)))])
+  (namespace-attach-module (current-namespace) 'scheme/base n)
+  (namespace-attach-module (current-namespace) 'mzscheme n)
   (parameterize ([current-namespace n])
+    (namespace-require 'mzscheme)
     (eval `(module a mzscheme
 	     (define a 1)
 	     (,here 'a)
 	     (provide a)))
     (test null values l)
     (eval `(module b mzscheme
-	     (require-for-template a)
+	     (require-for-template 'a)
 	     (define b 1)
 	     (,here 'b)
 	     (provide b)))
     (test null values l)
     (eval `(module c mzscheme
-	     (require-for-template b)
+	     (require-for-template 'b)
 	     (define c 1)
 	     (,here 'c)
 	     (provide c)))
     (test null values l)
     (eval `(module d mzscheme
-	     (require-for-syntax c)
+	     (require-for-syntax 'c)
 	     (define d 1)
 	     (,here 'd)
 	     (provide d)))
     (test '(c) values l)
     (eval `(module e mzscheme
-	     (require-for-syntax d)
+	     (require-for-syntax 'd)
 	     (define e 1)
 	     (,here 'e)
 	     (provide e)))
     (test '(d c b c) values l)
     (eval `(module f mzscheme
 	     (,here 'f)
-	     (require b e)))
+	     (require 'b 'e)))
     (test '(d c b d c b c) values l)
-    (eval `(require f))
-    (let ([finished '(f b e  d c b a  d c b d c b c)])
+    (eval `(require 'f))
+    (let ([finished '(f b e  a d c b  d c b d c b c)])
       (test finished values l)
       (let ([n2 (make-namespace)])
-	(namespace-attach-module n 'f)
+	(namespace-attach-module n ''f)
 	(test finished values l)
-	(eval `(require a))
-	(eval `(require f))
+	(eval `(require 'a))
+	(eval `(require 'f))
 	(test finished values l)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -192,35 +195,35 @@
   (define w_cr 18))
 
 (syntax-test #'(module n_cr mzscheme
-		 (require m_cr)
-		 (provide (all-from-except m_cr no-such-var))))
+		 (require 'm_cr)
+		 (provide (all-from-except 'm_cr no-such-var))))
 (syntax-test #'(module n_cr mzscheme
-		 (require m_cr)
-		 (provide (all-from-except m_cr cons))))
+		 (require 'm_cr)
+		 (provide (all-from-except 'm_cr cons))))
 
 (module n_cr mzscheme
-  (require m_cr)
-  (provide (all-from-except m_cr x_cr)))
+  (require 'm_cr)
+  (provide (all-from-except 'm_cr x_cr)))
 
 (module p_cr mzscheme
-  (require n_cr m_cr)
-  (provide (all-from m_cr)))
+  (require 'n_cr 'm_cr)
+  (provide (all-from 'm_cr)))
 
-(require p_cr)
+(require 'p_cr)
 (test 14 values y_cr)
 
 (module p2_cr mzscheme
-  (require m_cr n_cr)
-  (provide (all-from m_cr)))
+  (require 'm_cr 'n_cr)
+  (provide (all-from 'm_cr)))
 
-(require p2_cr)
+(require 'p2_cr)
 (test 16 values z_cr)
 
 (module p3_cr mzscheme
-  (require m_cr n_cr)
-  (provide (all-from n_cr)))
+  (require 'm_cr 'n_cr)
+  (provide (all-from 'n_cr)))
 
-(require p3_cr)
+(require 'p3_cr)
 (test 18 values w_cr)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -237,7 +240,7 @@
 		      #`(#%plain-module-begin 
 			 #,(datum->syntax-object stx '(require-for-syntax mzscheme))
 			 . forms)])))
-	 (module m mod_beg2
+	 (module m 'mod_beg2
 		 3)))
 
 
@@ -252,7 +255,7 @@
 		      #`(#%plain-module-begin 
 			 #,(datum->syntax-object stx '(require-for-syntax mzscheme))
 			 . forms)])))
-	 (module m mod_beg2
+	 (module m 'mod_beg2
 		 3 4)))
 
 (test (void) eval
@@ -266,7 +269,7 @@
 		      #`(#%plain-module-begin 
 			 #,(datum->syntax-object #'mb '(require-for-syntax mzscheme))
 			 . forms)])))
-	 (module m mod_beg2
+	 (module m 'mod_beg2
 		 3)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -277,13 +280,13 @@
                          (and (exn:fail? exn)
                               (regexp-match? #rx"cycle" (exn-message exn))))])
   (with-output-to-file f1
+    #:exists 'truncate/replace
     (lambda ()
-      (write `(module tmp1 mzscheme (require ,f2))))
-    'truncate/replace)
+      (write `(module tmp1 mzscheme (require ,f2)))))
   (with-output-to-file f2
+    #:exists 'truncate/replace
     (lambda ()
-      (write `(module tmp2 mzscheme (require ,f1))))
-    'truncate/replace)
+      (write `(module tmp2 mzscheme (require ,f1)))))
   (err/rt-test (dynamic-require (build-path (current-directory) f1) #f) exn:fail-cycle?)
   (err/rt-test (dynamic-require (build-path (current-directory) f2) #f) exn:fail-cycle?)
   (delete-file f1)

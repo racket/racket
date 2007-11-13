@@ -64,7 +64,11 @@
 						 (let ([v (user-item (list-ref items pos))])
 						   (when v
 						     (send items-list set-string pos v)
-						     (set-car! (list-tail items pos) v)
+                                                     (set! items (let loop ([items items][pos pos])
+                                                                   (if (zero? pos)
+                                                                       (cons v (cdr items))
+                                                                       (cons (car items)
+                                                                             (loop (cdr items) (sub1 pos))))))
 						     (gb-need-recalc-size))))))))]
 		[item-buttons-panel (let ([v (make-object mred:horizontal-panel% items-panel)])
 				      (send v stretchable-width #f)

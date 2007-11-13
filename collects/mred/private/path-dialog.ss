@@ -245,7 +245,7 @@
                               (directory-list))]
                      [pnames '()])
             (if (null? paths)
-              (let ([ps (sort! pnames pname<?)])
+              (let ([ps (sort pnames pname<?)])
                 (if (root? dir) ps (cons up-dir-pname ps)))
               (let* ([path   (car paths)]
                      [paths  (cdr paths)]

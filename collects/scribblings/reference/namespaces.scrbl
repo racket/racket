@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title{Namespaces}
+
+@declare-exporting[(lib "scheme/namespace")]
 
 See @secref["namespace-model"] for basic information on the
 namespace model.
@@ -121,29 +123,22 @@ and imports in @scheme[namespace] for @tech{phase level} 0.}
 
 
 
-@defproc[(namespace-require [quoted-require-spec any/c])
+@defproc[(namespace-require [quoted-raw-require-spec any/c])
          void?]{
 
-Performs the import corresponding to @scheme[quoted-require-spec] in
+Performs the import corresponding to @scheme[quoted-raw-require-spec] in
 the top-level environment of the current namespace, like a top-level
-@scheme[require]. The @scheme[quoted-require-spec] argument must be a
-datum that corresponds to a quoted @scheme[_require-spec] for
-@scheme[require].
+@scheme[#%require]. The @scheme[quoted-raw-require-spec] argument must be a
+datum that corresponds to a quoted @scheme[_raw-require-spec] for
+@scheme[#%require], which includes module paths.
 
-Module paths in @scheme[quoted-require-spec] are resolved with respect
+Module paths in @scheme[quoted-raw-require-spec] are resolved with respect
 to @scheme[current-load-relative-directory] or
 @scheme[current-directory] (if the former is @scheme[#f]), even if the
 current namespace corresponds to a module body.}
 
 
-@defproc[(namespace-transformer-require [quoted-require-spec any/c])
-         void?]{
-
-Like @scheme[namespace-require], but analogous to a top-level
-@scheme[require-for-syntax].}
-
-
-@defproc[(namespace-require/copy [quoted-require-spec any/c])
+@defproc[(namespace-require/copy [quoted-raw-require-spec any/c])
          void?]{
 
 Like @scheme[namespace-require] for syntax exported from the module,
@@ -151,7 +146,7 @@ but exported variables are treated differently: the export's current
 value is copied to a top-level variable in the current namespace.}
 
 
-@defproc[(namespace-require/expansion-time [quoted-require-spec any/c])
+@defproc[(namespace-require/expansion-time [quoted-raw-require-spec any/c])
          void?]{
 
 Like @scheme[namespace-require], but only the transformer part of the

@@ -1,4 +1,4 @@
-(module mzscheme-utils (lib "mzscheme-core.ss" "frtime") 
+(module mzscheme-utils "mzscheme-core.ss"
   
   (require (all-except mzscheme
                        module
@@ -34,13 +34,14 @@
                        and
                        or
                        cond when unless ;case
+                       else =>
                        map ormap andmap assoc member)
            (rename mzscheme mzscheme:if if)
-           (rename (lib "lang-ext.ss" "frtime") lift lift)
-           (rename (lib "frp-core.ss" "frtime") super-lift super-lift)
-           (rename (lib "frp-core.ss" "frtime") behavior? behavior?)
-           (rename (lib "lang-ext.ss" "frtime") undefined undefined)
-           (rename (lib "lang-ext.ss" "frtime") undefined? undefined?)
+           (rename "lang-ext.ss" lift lift)
+           (rename "frp-core.ss" super-lift super-lift)
+           (rename "frp-core.ss" behavior? behavior?)
+           (rename "lang-ext.ss" undefined undefined)
+           (rename "lang-ext.ss" undefined? undefined?)
 	   (lib "class.ss"))
   (require (lib "list.ss"))  
   
@@ -393,6 +394,6 @@
            )
   
   ; from core
-  (provide (all-from (lib "mzscheme-core.ss" "frtime")))
+  (provide (all-from "mzscheme-core.ss"))
            
   )

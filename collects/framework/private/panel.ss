@@ -1,5 +1,5 @@
 
-(module panel (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "class.ss")
            "sig.ss"
            (lib "mred-sig.ss" "mred")
@@ -267,10 +267,10 @@
                 [(and gap (send evt button-down? 'left))
                  (set! resizing-dim (event-get-dim evt))
                  (set! resizing-gap gap)]
-                [(and resizing-dim (send evt button-up?))
+                [(send evt button-up? 'left)
                  (set! resizing-dim #f)
                  (set! resizing-gap #f)]
-                [(and resizing-dim (send evt moving?))
+                [(and resizing-dim resizing-gap (send evt moving?))
                  (let-values ([(width height) (get-client-size)])
                    (let* ([before-percentage (gap-before-percentage resizing-gap)]
                           [orig-before (percentage-% before-percentage)]
@@ -419,5 +419,5 @@
   
   (define vertical-dragable% (vertical-dragable-mixin (dragable-mixin vertical-panel%)))
   
-  (define horizontal-dragable% (horizontal-dragable-mixin (dragable-mixin horizontal-panel%))))
+  (define horizontal-dragable% (horizontal-dragable-mixin (dragable-mixin horizontal-panel%)))
 

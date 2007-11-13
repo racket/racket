@@ -14,10 +14,10 @@
   (define-syntax lazy
     (syntax-rules ()
       ((_ exp)
-       (make-srfi-45-promise (cons #f (lambda () exp))))))
+       (make-srfi-45-promise (mcons #f (lambda () exp))))))
   
   (define (eager x)
-    (make-srfi-45-promise (cons #t x)))
+    (make-srfi-45-promise (mcons #t x)))
   
   (define-syntax s:delay
     (syntax-rules ()
@@ -26,13 +26,13 @@
   (define (s:force promise)
     (if (srfi-45-promise? promise)
         (let ((content (srfi-45-promise-content promise)))
-          (if (car content)
-              (cdr content)
-              (let* ((promise* ((cdr content)))
+          (if (mcar content)
+              (mcdr content)
+              (let* ((promise* ((mcdr content)))
                      (content (srfi-45-promise-content promise)))
                 (unless (car content)
-                  (set-car! content (car (srfi-45-promise-content promise*)))
-                  (set-cdr! content (cdr (srfi-45-promise-content promise*)))
+                  (set-mcar! content (mcar (srfi-45-promise-content promise*)))
+                  (set-mcdr! content (mcdr (srfi-45-promise-content promise*)))
                   (set-srfi-45-promise-content! promise* content))
                 (s:force promise))))
         (raise-type-error 'force "srfi-45-promise" promise))))

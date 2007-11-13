@@ -1,4 +1,4 @@
-(module modes (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "string-constant.ss" "string-constants")
            (lib "class.ss")
            (lib "list.ss")
@@ -43,4 +43,4 @@
      (λ (l) 
        (and l
             (or (not-a-language-language? l)
-                (ormap (λ (x) (regexp-match #rx"Algol" x)) l)))))))
+                (ormap (λ (x) (regexp-match #rx"Algol" x)) l))))))

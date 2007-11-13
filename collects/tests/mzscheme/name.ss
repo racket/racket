@@ -3,8 +3,8 @@
 
 (load-relative "loadtest.ss")
 
-(require (lib "class.ss"))
-(require (lib "unit200.ss"))
+(require scheme/class)
+(require scheme/unit)
 
 (Section 'names)
 
@@ -82,16 +82,18 @@
 
 ; Test unit stuff ok when name
 (test 'unit:u1 object-name (let ([u1 (unit (import) (export))]) u1))
-(test 'unit:u2 object-name (let ([u2 (compound-unit (import) (link) (export))]) u2))
+(test 'unit:u2 object-name (let ([u2 (compound-unit (import) (export) (link))]) u2))
 
 (test 'x object-name (invoke-unit
 		       (unit (import) (export) (define x (lambda () 0)) x)))
+(define-signature x2^ (x2))
 (test 'x2 object-name (invoke-unit
-		        (unit (import) (export x2) (define x2 (lambda () 0)) x2)))
+		        (unit (import) (export x2^) (define x2 (lambda () 0)) x2)))
 
 ;; Use external name instead?:
+(define-signature x3^ (x3))
 (test 'x object-name (invoke-unit
-		       (unit (import) (export (x x3)) (define x (lambda () 0)) x)))
+		       (unit (import) (export (rename x3^ [x x3])) (define x (lambda () 0)) x)))
 
 ; Test case sensitivity
 (parameterize ([read-case-sensitive #t])
@@ -100,6 +102,6 @@
 	(eval (read (open-input-string "(let ([Capital (lambda () 10)]) Capital)"))))
   (test (string->symbol "make-CP")
 	object-name
-	(eval (read (open-input-string "(let-struct CP (a) make-CP)")))))
+	(eval (read (open-input-string "(let () (define-struct CP (a)) make-CP)")))))
 
 (report-errs)

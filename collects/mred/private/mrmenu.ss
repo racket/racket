@@ -110,7 +110,7 @@
 		    (lambda (l)
 		      (check-label-string '(method labelled-menu-item<%> set-label) l)
 		      (set! label (string->immutable-string l))
-		      (set-car! (send wx get-menu-data) l)  ; for meta-shortcuts
+		      (set-mcar! (send wx get-menu-data) l)  ; for meta-shortcuts
 		      (set! plain-label (string->immutable-string (wx:label->plain-label l)))
 		      (when shown?
 			(if in-menu?
@@ -152,7 +152,7 @@
 	 (lambda ()
 	   (when help-string
 	     (set! help-string (string->immutable-string help-string)))
-	   (set! wx (set-wx (make-object wx-menu-item% this (cons label #f) #t)))
+	   (set! wx (set-wx (make-object wx-menu-item% this (mcons label #f) #t)))
 	   (set! wx-parent (send (mred->wx parent) get-container))
 	   (super-init wx)
 	   (when keymap (send wx set-keymap keymap))))
@@ -212,9 +212,9 @@
 
   (define default-prefix
     (case (system-type)
-      [(unix) (list-immutable default-x-prefix)]
-      [(windows) (list-immutable 'ctl)]
-      [(macosx) (list-immutable 'cmd)]))
+      [(unix) (list default-x-prefix)]
+      [(windows) (list 'ctl)]
+      [(macosx) (list 'cmd)]))
 
   (define (get-default-shortcut-prefix)
     default-prefix)
@@ -238,7 +238,7 @@
 		   (check-instance '(method selectable-menu-item<%> command) wx:control-event% 'control-event% #f e)
 		   (void (callback this e)))])
       (private-field
-        [prefix (apply list-immutable shrtcut-prefix)])
+        [prefix shrtcut-prefix])
       (private
 	[calc-labels (lambda (label)
 		       (let* ([new-label (if shortcut
@@ -392,7 +392,7 @@
 	   (set! wx-menu (make-object wx-menu% this #f void #f))
 	   (super-init parent label help-string wx-menu #f (send wx-menu get-keymap) (lambda (x) x) void)
 	   (let ([wx-item (mred->wx this)])
-	     (set-cdr! (send wx-item get-menu-data) wx-menu) ; for meta-shortcuts
+	     (set-mcdr! (send wx-item get-menu-data) wx-menu) ; for meta-shortcuts
 	     (send wx-item set-wx-menu wx-menu)))))))
 
   (define menu-bar%

@@ -9,11 +9,11 @@
   ;;  the library compiles with setup-plt in mzscheme.
   
   (define kernel:initialize-primitive-object
-    (dynamic-require '#%mred-kernel 'initialize-primitive-object))
+    (dynamic-require ''#%mred-kernel 'initialize-primitive-object))
   (define kernel:primitive-class-find-method
-    (dynamic-require '#%mred-kernel 'primitive-class-find-method))
+    (dynamic-require ''#%mred-kernel 'primitive-class-find-method))
   (define kernel:primitive-class-prepare-struct-type!
-    (dynamic-require '#%mred-kernel 'primitive-class-prepare-struct-type!))
+    (dynamic-require ''#%mred-kernel 'primitive-class-prepare-struct-type!))
 
   (define-syntax define-constant
     (lambda (stx)
@@ -28,7 +28,7 @@
 				     #f)])
 	   (syntax
 	    (begin
-	      (define kernel:name (dynamic-require '#%mred-kernel 'name))
+	      (define kernel:name (dynamic-require ''#%mred-kernel 'name))
 	      (provide (protect (rename kernel:name name))))))])))
 
   (define-syntax define-function
@@ -76,7 +76,7 @@
 		 (with-syntax ([(old ...) (datum->syntax-object #f old #f)]
 			       [(new ...) (datum->syntax-object #f new #f)])
 		   (syntax
-		    (define name (let ([c (dynamic-require '#%mred-kernel 'name)])
+		    (define name (let ([c (dynamic-require ''#%mred-kernel 'name)])
 				   (make-primitive-class
 				    (lambda (class prop:object preparer dispatcher)
 				      (kernel:primitive-class-prepare-struct-type! 

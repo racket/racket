@@ -1,5 +1,6 @@
 
-(module number-snip (lib "a-unit.ss")
+#lang scheme/unit
+
   (require "sig.ss"
            (lib "mred-sig.ss" "mred")
            (lib "class.ss")
@@ -515,4 +516,4 @@
   (define (hash-table-bound? ht key)
     (let/ec k
       (hash-table-get ht key (λ () (k #f)))
-      #t)))
+      #t))

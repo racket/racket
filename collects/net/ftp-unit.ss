@@ -1,4 +1,5 @@
-(module ftp-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   ;; Version 0.2
   ;;   Version 0.1a
   ;;   Micah Flatt
@@ -214,4 +215,4 @@
       (rename-file-or-directory tmpfile (build-path folder filename) #t)))
 
   ;; (printf "FTP Client Installed...\n")
-  )
+

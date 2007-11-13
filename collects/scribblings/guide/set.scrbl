@@ -1,9 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
-@interaction-eval[(require (lib "for.ss"))]
+@interaction-eval[(require (lib "mzlib/for.ss"))]
 
 @title[#:tag "set!"]{Assignment: @scheme[set!]}
 
@@ -76,6 +76,7 @@ guidelines may help explain when using @scheme[set!] is appropriate.
         (greet "Anna")
       ]]}
 
+@;-- FIXME: explain more _why_ it's inferior
  @item{A sequence of assignments to a local variable is far inferior
        to nested bindings.
 
@@ -158,7 +159,7 @@ resulting code is significantly more readable or if it implements a
 significantly better algorithm.
 
 The use of mutable values, such as vectors and hash tables, raises
-fewer suspicions about the style of a program that using @scheme[set!]
+fewer suspicions about the style of a program than using @scheme[set!]
 directly. Nevertheless, simply replacing @scheme[set!]s in a program
 with a @scheme[vector-set!]s obviously does not improve the style of
 the program.
@@ -174,7 +175,7 @@ given an expression that produces an appropriate number of values:
 @specform[(set!-values (id ...) expr)]
 
 This form is equivalent to using @scheme[let-values] to receive
-multiple results from @scheme[_expr], and then assign the results
+multiple results from @scheme[_expr], and then assigning the results
 individually to the @scheme[_id]s using @scheme[set!].
 
 @defexamples[

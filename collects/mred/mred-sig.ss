@@ -1,206 +1,205 @@
 
-(module mred-sig (lib "a-signature.ss")
-     add-color<%>
-     add-editor-keymap-functions
-     add-pasteboard-keymap-functions
-     add-text-keymap-functions
-     append-editor-font-menu-items
-     append-editor-operation-menu-items
-     application-about-handler
-     application-file-handler
-     application-preferences-handler
-     application-quit-handler
-     area-container-window<%>
-     area-container<%>
-     area<%>
-     begin-busy-cursor
-     bell
-     bitmap%
-     bitmap-dc%
-     brush%
-     brush-list%
-     button%
-     can-get-page-setup-from-user?
-     canvas%
-     canvas<%>
-     check-box%
-     check-for-break
-     checkable-menu-item%
-     choice%
-     clipboard-client%
-     clipboard<%>
-     color%
-     color-database<%>
-     combo-field%
-     control-event%
-     control<%>
-     current-eventspace
-     current-eventspace-has-menu-root?
-     current-eventspace-has-standard-menus?
-     current-ps-afm-file-paths
-     current-ps-cmap-file-paths
-     current-ps-setup
-     current-text-keymap-initializer
-     cursor%
-     dc<%>
-     dc-path%
-     dialog%
-     editor-admin%
-     editor-canvas%
-     editor-data%
-     editor-data-class%
-     editor-data-class-list<%>
-     editor-set-x-selection-mode
-     editor-snip%
-     editor-snip-editor-admin<%>
-     editor-stream-in%
-     editor-stream-in-base%
-     editor-stream-in-bytes-base%
-     editor-stream-out%
-     editor-stream-out-base%
-     editor-stream-out-bytes-base%
-     editor-wordbreak-map%
-     editor<%>
-     end-busy-cursor
-     event%
-     event-dispatch-handler
-     eventspace-handler-thread
-     eventspace-shutdown?
-     eventspace?
-     file-creator-and-type
-     find-graphical-system-path
-     flush-display
-     font%
-     font-list%
-     font-name-directory<%>
-     frame%
-     gauge%
-     get-choices-from-user
-     get-color-from-user
-     get-default-shortcut-prefix
-     get-directory
-     get-display-depth
-     get-display-left-top-inset
-     get-display-size
-     get-face-list
-     get-family-builtin-face
-     get-file
-     get-file-list
-     get-font-from-user
-     get-page-setup-from-user
-     get-panel-background
-     get-ps-setup-from-user
-     get-resource
-     get-text-from-user
-     get-the-editor-data-class-list
-     get-the-snip-class-list
-     get-top-level-edit-target-window
-     get-top-level-focus-window
-     get-top-level-windows
-     get-window-text-extent
-     gl-config%
-     gl-context<%>
-     graphical-read-eval-print-loop
-     group-box-panel%
-     grow-box-spacer-pane%
-     hide-cursor-until-moved
-     horizontal-pane%
-     horizontal-panel%
-     tab-panel%
-     image-snip%
-     is-busy?
-     is-color-display?
-     key-event%
-     keymap%
-     label->plain-label
-     labelled-menu-item<%>
-     list-box%
-     list-control<%>
-     make-eventspace
-     make-namespace-with-mred
-     map-command-as-meta-key
-     menu%
-     menu-bar%
-     menu-control-font
-     menu-item%
-     menu-item-container<%>
-     menu-item<%>
-     message%
-     message-box
-     message+check-box
-     message-box/custom
-     message+check-box/custom
-     mouse-event%
-     mult-color<%>
-     normal-control-font
-     open-input-graphical-file
-     open-input-text-editor
-     open-output-text-editor
-     pane%
-     panel%
-     pasteboard%
-     pen%
-     pen-list%
-     play-sound
-     point%
-     popup-menu%
-     post-script-dc%
-     printer-dc%
-     ps-setup%
-     put-file
-     queue-callback
-     radio-box%
-     readable-snip<%>
-     read-editor-global-footer
-     read-editor-global-header
-     read-editor-version
-     region%
-     register-collecting-blit
-     scroll-event%
-     selectable-menu-item<%>
-     send-event
-     send-message-to-window
-     separator-menu-item%
-     sleep/yield
-     slider%
-     small-control-font
-     snip%
-     snip-admin%
-     snip-class%
-     snip-class-list<%>
-     special-control-key
-     special-option-key
-     string-snip%
-     style-delta%
-     style-list%
-     style<%>
-     subarea<%>
-     subwindow<%>
-     tab-snip%
-     text%
-     text-editor-load-handler
-     text-field%
-     the-brush-list
-     the-clipboard
-     the-color-database
-     the-editor-wordbreak-map
-     the-font-list
-     the-font-name-directory
-     the-pen-list
-     the-style-list
-     the-x-selection-clipboard
-     timer%
-     tiny-control-font
-     top-level-window<%>
-     unregister-collecting-blit
-     vertical-pane%
-     vertical-panel%
-     view-control-font
-     window<%>
-     write-editor-global-footer
-     write-editor-global-header
-     write-editor-version
-     write-resource
-     yield
-     )
+#lang scheme/signature
 
+add-color<%>
+add-editor-keymap-functions
+add-pasteboard-keymap-functions
+add-text-keymap-functions
+append-editor-font-menu-items
+append-editor-operation-menu-items
+application-about-handler
+application-file-handler
+application-preferences-handler
+application-quit-handler
+area-container-window<%>
+area-container<%>
+area<%>
+begin-busy-cursor
+bell
+bitmap%
+bitmap-dc%
+brush%
+brush-list%
+button%
+can-get-page-setup-from-user?
+canvas%
+canvas<%>
+check-box%
+check-for-break
+checkable-menu-item%
+choice%
+clipboard-client%
+clipboard<%>
+color%
+color-database<%>
+combo-field%
+control-event%
+control<%>
+current-eventspace
+current-eventspace-has-menu-root?
+current-eventspace-has-standard-menus?
+current-ps-afm-file-paths
+current-ps-cmap-file-paths
+current-ps-setup
+current-text-keymap-initializer
+cursor%
+dc<%>
+dc-path%
+dialog%
+editor-admin%
+editor-canvas%
+editor-data%
+editor-data-class%
+editor-data-class-list<%>
+editor-set-x-selection-mode
+editor-snip%
+editor-snip-editor-admin<%>
+editor-stream-in%
+editor-stream-in-base%
+editor-stream-in-bytes-base%
+editor-stream-out%
+editor-stream-out-base%
+editor-stream-out-bytes-base%
+editor-wordbreak-map%
+editor<%>
+end-busy-cursor
+event%
+event-dispatch-handler
+eventspace-handler-thread
+eventspace-shutdown?
+eventspace?
+file-creator-and-type
+find-graphical-system-path
+flush-display
+font%
+font-list%
+font-name-directory<%>
+frame%
+gauge%
+get-choices-from-user
+get-color-from-user
+get-default-shortcut-prefix
+get-directory
+get-display-depth
+get-display-left-top-inset
+get-display-size
+get-face-list
+get-family-builtin-face
+get-file
+get-file-list
+get-font-from-user
+get-page-setup-from-user
+get-panel-background
+get-ps-setup-from-user
+get-resource
+get-text-from-user
+get-the-editor-data-class-list
+get-the-snip-class-list
+get-top-level-edit-target-window
+get-top-level-focus-window
+get-top-level-windows
+get-window-text-extent
+gl-config%
+gl-context<%>
+graphical-read-eval-print-loop
+group-box-panel%
+grow-box-spacer-pane%
+hide-cursor-until-moved
+horizontal-pane%
+horizontal-panel%
+tab-panel%
+image-snip%
+is-busy?
+is-color-display?
+key-event%
+keymap%
+label->plain-label
+labelled-menu-item<%>
+list-box%
+list-control<%>
+make-eventspace
+make-namespace-with-mred
+map-command-as-meta-key
+menu%
+menu-bar%
+menu-control-font
+menu-item%
+menu-item-container<%>
+menu-item<%>
+message%
+message-box
+message+check-box
+message-box/custom
+message+check-box/custom
+mouse-event%
+mult-color<%>
+normal-control-font
+open-input-graphical-file
+open-input-text-editor
+open-output-text-editor
+pane%
+panel%
+pasteboard%
+pen%
+pen-list%
+play-sound
+point%
+popup-menu%
+post-script-dc%
+printer-dc%
+ps-setup%
+put-file
+queue-callback
+radio-box%
+readable-snip<%>
+read-editor-global-footer
+read-editor-global-header
+read-editor-version
+region%
+register-collecting-blit
+scroll-event%
+selectable-menu-item<%>
+send-event
+send-message-to-window
+separator-menu-item%
+sleep/yield
+slider%
+small-control-font
+snip%
+snip-admin%
+snip-class%
+snip-class-list<%>
+special-control-key
+special-option-key
+string-snip%
+style-delta%
+style-list%
+style<%>
+subarea<%>
+subwindow<%>
+tab-snip%
+text%
+text-editor-load-handler
+text-field%
+the-brush-list
+the-clipboard
+the-color-database
+the-editor-wordbreak-map
+the-font-list
+the-font-name-directory
+the-pen-list
+the-style-list
+the-x-selection-clipboard
+timer%
+tiny-control-font
+top-level-window<%>
+unregister-collecting-blit
+vertical-pane%
+vertical-panel%
+view-control-font
+window<%>
+write-editor-global-footer
+write-editor-global-header
+write-editor-version
+write-resource
+yield

@@ -1,5 +1,6 @@
 
-(module comment-box (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "class.ss")
            (lib "etc.ss")
            (lib "mred.ss" "mred")
@@ -121,4 +122,4 @@
         (make-special-comment "comment"))
       (super-instantiate ())
       (inherit set-snipclass)
-      (set-snipclass snipclass))))
+      (set-snipclass snipclass)))

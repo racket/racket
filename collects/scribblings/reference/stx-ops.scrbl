@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "stxops"]{Syntax Object Content}
@@ -130,12 +130,6 @@ Returns a datum by stripping the lexical and source-location
 information from @scheme[stx]. Graph structure is preserved by the
 conversion.}
 
-@defproc[(syntax-object->datum [stx syntax?]) any]{
-
-FIXME: this entry is a temporary target for references that should be
-to @scheme[syntax->datum]. }
-
-
 @defproc[(datum->syntax [ctxt (or/c syntax? false/c)]
                         [v any/c]
                         [srcloc (or/c syntax? false/c
@@ -181,27 +175,6 @@ syntax object, but graph structure that is distributed among distinct
 syntax objects in @scheme[v] may be hidden from future applications of
 @scheme[syntax->datum] and @scheme[syntax-graph?] to the new
 syntax object.}
-
-@defproc[(datum->syntax-object ...) any]{
-
-FIXME: this entry is a temporary target for references that should be
-to @scheme[datum->syntax]. }
-
-
-@defproc[(syntax-graph? [stx syntax?]) boolean?]{
-
-Returns @scheme[#t] if @scheme[stx] might be preservably shared within
-a syntax object created by @scheme[read-syntax],
-@scheme[read-honu-syntax], or @scheme[datum->syntax]. In general,
-sharing detection is approximate---@scheme[datum->syntax] can
-construct syntax objects with sharing that is hidden from
-@scheme[syntax-graph?]---but @scheme[syntax-graph?] reliably returns
-@scheme[#t] for at least one syntax object in a cyclic
-structure. Meanwhile, deconstructing a syntax object with procedures
-such as @scheme[syntax-e] and comparing the results with @scheme[eq?]
-can also fail to detect sharing (even cycles), due to the way lexical
-information is lazily propagated; only @scheme[syntax->datum] reliably
-exposes sharing in a way that can be detected with @scheme[eq?].}
 
 @defproc[(identifier? [v any/c]) boolean?]{
 

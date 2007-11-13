@@ -17,7 +17,7 @@
            (all-from "reductions.ss"))
 
   (define current-expand-observe
-    (dynamic-require '#%expobs 'current-expand-observe))
+    (dynamic-require ''#%expobs 'current-expand-observe))
 
   (define trace-verbose? (make-parameter #f))
 

@@ -1,4 +1,4 @@
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "Minesweeper")
   (define game-set "Puzzle Games")
   (define game "mines.ss"))

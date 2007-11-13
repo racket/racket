@@ -27,7 +27,8 @@
 ;; Commentary: MIME support for PLT Scheme: an implementation of
 ;; rfc2045, rfc2046, rfc2047, rfc2048, and rfc2049.
 
-(module mime-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require "mime-sig.ss"
            "qp-sig.ss"
            "base64-sig.ss"
@@ -740,5 +741,3 @@
   ;;                ; numeric timezones (+HHMM or -HHMM) MUST be used
 
   (define disp-quoted-data-time date-time)
-
-  )

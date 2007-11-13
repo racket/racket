@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["common.ss"]
 
 @defclass/title[editor-stream-out-bytes-base% editor-stream-out-base% ()]{

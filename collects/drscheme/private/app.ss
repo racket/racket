@@ -1,5 +1,5 @@
 
-(module app (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "class.ss")
            (lib "list.ss")
            (lib "file.ss")
@@ -298,9 +298,9 @@
                       (loop (cons action actions1) actions2 (cdr tools))
                       (loop actions1 (cons action actions2) (cdr tools))))
                 (begin (send e insert "\nInstalled tools:\n")
-                       (for-each (λ (act) (act)) (reverse! actions1))
+                       (for-each (λ (act) (act)) (reverse actions1))
                        ;; (send e insert "Installed anonymous tools:\n")
-                       (for-each (λ (act) (act)) (reverse! actions2)))))))
+                       (for-each (λ (act) (act)) (reverse actions2)))))))
       
       (send e insert "\n")
       (send e insert (get-translating-acks))
@@ -504,4 +504,4 @@
                           (cdr strs)
                           (cons lang good-langs)
                           (cons str good-strs))
-                    (loop (cdr langs) (cdr strs) good-langs good-strs)))]))))
+                    (loop (cdr langs) (cdr strs) good-langs good-strs)))])))

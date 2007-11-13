@@ -28,6 +28,7 @@
 #endif
 
 #include "schpriv.h"
+#include "schvers.h"
 #include "schgc.h"
 
 #ifdef UNIX_DYNAMIC_LOAD

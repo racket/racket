@@ -1,4 +1,4 @@
-(module menu (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "class.ss")
            "sig.ss"
            "../preferences.ss"
@@ -45,4 +45,4 @@
   
   (define can-restore-menu-item% (can-restore-mixin menu-item%))
   (define can-restore-checkable-menu-item% (can-restore-mixin checkable-menu-item%))
-  (define can-restore-underscore-menu% (can-restore-underscore-mixin menu%)))
+  (define can-restore-underscore-menu% (can-restore-underscore-mixin menu%))

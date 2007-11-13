@@ -60,10 +60,10 @@
   (define (split-by-keywords xs)
     (let loop ([xs (if (syntax? xs) (formals->list xs) xs)] [cur '()] [r '()])
       (if (null? xs)
-        (reverse! (cons (reverse! cur) r))
+        (reverse (cons (reverse cur) r))
         (let ([x (car xs)])
           (if (keyword? (syntax-e* x))
-            (loop (cdr xs) (list x) (cons (reverse! cur) r))
+            (loop (cdr xs) (list x) (cons (reverse cur) r))
             (loop (cdr xs) (cons x cur) r))))))
   ;; --------------------------------------------------------------------------
   ;; process an optional argument spec, returns (<id> <default-expr>)
@@ -165,7 +165,7 @@
             (let loop ([ks (append keys0 flags)]  [r '()]
                        [known-vars (append vars (map car opts))])
               (if (null? ks)
-                (reverse! r)
+                (reverse r)
                 (let ([k (car ks)])
                   (loop (cdr ks)
                         (cons (list (car k)
@@ -209,9 +209,9 @@
                [k     (and k-stx (syntax-e* k-stx))])
           (when (and k (eq? k last)) (serror k-stx "two ~s sections" k))
           (case k
-            [(#:key) (set! keys (append! keys (cdar formals)))
+            [(#:key) (set! keys (append keys (cdar formals)))
              (set! formals (cdr formals)) (loop k)]
-            [(#:flag) (set! flags (append! flags (cdar formals)))
+            [(#:flag) (set! flags (append flags (cdar formals)))
              (set! formals (cdr formals)) (loop k)]
             #| else continue below |#)))
       ;; now get all rest-like vars and modes
@@ -353,17 +353,17 @@
              [expr
               (if (or all-keys others?)
                 #`(let* (#,@(if all-keys
-                              #'([all-keys* (reverse! all-keys*)])
+                              #'([all-keys* (reverse all-keys*)])
                               '())
                          #,@(if others?
-                              #'([other-keys* (reverse! other-keys*)])
+                              #'([other-keys* (reverse other-keys*)])
                               '())
                          #,@(cond [(and other-keys other-keys+body)
                                    #'([other-keys+body*
                                        (append other-keys* body*)])]
                                   [other-keys+body ; can destroy other-keys
                                    #'([other-keys+body*
-                                       (append! other-keys* body*)])]
+                                       (append other-keys* body*)])]
                                   [else '()]))
                     expr)
                 #'expr)])
@@ -401,14 +401,19 @@
     (define (make-flags-body) ; called only when there are flags
       (with-syntax ([flags flags] [rest* rest*])
         #'(let loop ([xs rest*])
-            (when (and (pair? xs) (keyword? (car xs)))
-              (if (memq (car xs) 'flags)
-                (if (null? (cdr xs))
-                  (set-cdr! xs (list true))
-                  (begin (unless (eq? true (cadr xs))
-                           (set-cdr! xs (cons true (cdr xs))))
-                         (loop (cddr xs))))
-                (when (pair? (cdr xs)) (loop (cddr xs))))))))
+            (if (and (pair? xs) (keyword? (car xs)))
+                (if (memq (car xs) 'flags)
+                    (if (null? (cdr xs))
+                        (list (car xs) true)
+                        (list* (car xs)
+                               true
+                               (loop (cddr xs))))
+                    (if (pair? (cdr xs))
+                        (list* (car xs)
+                               (cadr xs)
+                               (loop (cddr xs)))
+                        xs))
+                sx))))
     ;; ------------------------------------------------------------------------
     ;; generates the part of the body that deals with rest-related stuff
     (define (make-keys-body expr)
@@ -416,8 +421,8 @@
                   #'(let* keys body))])
         (if (null? flags)
           kb
-          (with-syntax ([keys-body kb] [flag-tweaks (make-flags-body)])
-            #'(begin flag-tweaks keys-body)))))
+          (with-syntax ([keys-body kb] [flag-tweaks (make-flags-body)] [rest* rest*])
+            #'(let ([rest* flag-tweaks]) keys-body)))))
     ;; ------------------------------------------------------------------------
     ;; more sanity tests (see commented code above -- search for "(*)")
     (when (null? keys)
@@ -508,8 +513,8 @@
 (define-syntax (define/kw stx)
   (syntax-case stx ()
     [(_ name val) (identifier? #'name) #'(define name val)]
-    [(_ (name . args) body0 body ...)
-     (syntax/loc stx (_ name (lambda/kw args body0 body ...)))]))
+    [(d/kw (name . args) body0 body ...)
+     (syntax/loc stx (d/kw name (lambda/kw args body0 body ...)))]))
 
 ;; raise an appropriate exception
 (define (error* who fmt . args)

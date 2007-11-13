@@ -1,4 +1,4 @@
-(module color-prefs (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "class.ss")
            (lib "etc.ss")
            (lib "mred.ss" "mred")
@@ -482,4 +482,4 @@
                     [(is-a? old style-delta%)
                      (send old set-delta-foreground color)
                      (preferences:set p old)])))
-              color-scheme-colors)))
+              color-scheme-colors))

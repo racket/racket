@@ -1,7 +1,7 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
+@require[scribble/bnf]
 @require["guide-utils.ss"]
 
 @title[#:tag "define-struct"]{Programmer-Defined Datatypes}
@@ -64,16 +64,6 @@ built from @scheme[_struct-id] and the @scheme[_field-id]s:
 
        @examples[(posn-x (make-posn 1 2)) (posn-y (make-posn 1 2))]}
 
- @item{@schemeidfont{set-}@scheme[_struct-id]@schemeidfont{-}@scheme[_field-id]@schemeidfont{!} : for
-       each @scheme[_field-id], a @deftech{mutator} that sets
-       the value of the corresponding field in an instance of the
-       structure type.
-
-       @examples[(define p (make-posn 1 2))
-                 (posn-x p)
-                 (set-posn-x! p 10)
-                 (posn-x p)]}
-
  @item{@schemeidfont{struct:}@scheme[_struct-id] : a
        @deftech{structure type descriptor}, which is a value that
        represents the structure type as a first-class value (with
@@ -114,7 +104,7 @@ an expression).
 A structure subtype inherits the fields of its supertype, and the
 subtype constructor accepts the values for the subtype fields after
 values for the supertype fields. An instance of a structure subtype
-can be used with the predicate, accessor, and mutator fields of the
+can be used with the predicate and accessors of the
 supertype.
 
 @examples[
@@ -178,20 +168,26 @@ at the structure-type level and at the level of individual fields:
 
 A @scheme[_struct-option] always starts with a keyword:
 
- @specspecsubform[#:immutable]{
+ @specspecsubform[#:mutable]{
 
-   Causes all fields of the structure type to be immutable, and
-   supresses the definition of @tech{mutator} procedures.
+    Causes all fields of the structure to be mutable, and introduces
+    for each @scheme[_field-id] a @deftech{mutator}
+     @schemeidfont{set-}@scheme[_struct-id]@schemeidfont{-}@scheme[_field-id]@schemeidfont{!}
+    that sets the value of the corresponding field in an instance of
+    the structure type.
 
-   @defexamples[(define-struct fixed-posn (x y) #:immutable)
-                (set-fixed-posn-x! (make-fixed-posn 1 2) 0)]
+     @defexamples[(define-struct dot (x y) #:mutable)]
+                  (define d (make-dot 1 2))
+                  (dot-x d)
+                  (set-dot-x! d 10)
+                  (dot-x d)]
 
-   Th @scheme[#:immutable] option can also be used as a
+   The @scheme[#:mutable] option can also be used as a
    @scheme[_field-option], in which case it makes an individual field
-   immutable.
-
+   mutable.
+       
    @defexamples[
-   (define-struct person ([name #:immutable] age))
+   (define-struct person (name [age #:mutable]))
    (define friend (make-person "Barney" 5))
    (set-person-age! friend 6)
    (set-person-name! friend "Mary")]}
@@ -215,6 +211,9 @@ A @scheme[_struct-option] always starts with a keyword:
     (make-posn 1 2)
   ]}
 
+@;-- FIXME:
+@;-- Explain when to use guards instead of contracts, and vice-versa
+
  @specspecsubform[(code:line #:guard guard-expr)]{
   Specifies a guard procedure to be called whenever an instance of
   the structure type is created. The guard takes as many arguments
@@ -236,10 +235,10 @@ A @scheme[_struct-option] always starts with a keyword:
    (make-thing 1/2)
    (make-thing #f)]
 
-  Unlike the constructor for a procedure type, the guard is called even when
-  subtype instances are created. In that case, only the fields accepted by
-  the constructor are provided to the guard (but the subtype's guard gets
-  both the original fields and fields added by the subtype).
+  The guard is called even when subtype instances are created. In that
+  case, only the fields accepted by the constructor are provided to
+  the guard (but the subtype's guard gets both the original fields and
+  fields added by the subtype).
 
  @defexamples[
   (define-struct (person thing) (age)
@@ -252,7 +251,7 @@ A @scheme[_struct-option] always starts with a keyword:
   (make-person "Mary" -1)
   (make-person #f 10)]}
 
- @specspecsubform[(code:line #:property prop-expr val-exr)]{
+ @specspecsubform[(code:line #:property prop-expr val-expr)]{
    Associates a property and value with the structure type.  For
    example, the @scheme[prop:procedure] property allows a structure
    instance to be used as a function; the property value determines

@@ -1,8 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title{Evaluation and Compilation}
 
+@declare-exporting[(lib "scheme/eval")]
 
 @defparam[current-eval proc (any/c . -> . any)]{
 
@@ -166,8 +167,8 @@ handler}.
 
 An @tech{extension-load handler} takes the same arguments as a
 @tech{load handler}, but the file should be a platform-specific
-@deftech{dynamic extension}, typically with the file suffix @file{.so}
-(Unix), @file{.dll} (Windows), or @file{.dylib} (Mac OS X).  The file
+@deftech{dynamic extension}, typically with the file suffix @filepath{.so}
+(Unix), @filepath{.dll} (Windows), or @filepath{.dylib} (Mac OS X).  The file
 is loaded using internal, OS-specific primitives. See
 @secref["inside-mzscheme"] for more information on @tech{dynamic
 extensions}.}
@@ -195,37 +196,37 @@ The protocol for a @tech{compiled-load handler} is the same as for the
 @scheme{load handler} (see @scheme[current-load]), except that a
 @tech{compiled-load handler} is expected to set
 @scheme[current-load-relative-directory] itself. The default
-@tech{compiled-load handler}, however, checks for @file{.zo} files
-(usually produced with @scheme[compile-file]) and @file{.so} (Unix),
-@file{.dll} (Windows), or @file{.dylib} (Mac OS X) files.
+@tech{compiled-load handler}, however, checks for @filepath{.zo} files
+(usually produced with @scheme[compile-file]) and @filepath{.so} (Unix),
+@filepath{.dll} (Windows), or @filepath{.dylib} (Mac OS X) files.
 
 The check for a compiled file occurs whenever the given path
-@scheme[_file] ends with any extension (e.g., @file{.ss} or
-@file{.scm}), and the check consults the subdirectories indicated by
+@scheme[_file] ends with any extension (e.g., @filepath{.ss} or
+@filepath{.scm}), and the check consults the subdirectories indicated by
 the @scheme[use-compiled-file-paths] parameter relative to
-@scheme[_file].  The subdirectories are checked in order. A @file{.zo}
+@scheme[_file].  The subdirectories are checked in order. A @filepath{.zo}
 version of the file is loaded if it exists directly in one of the
-indicated subdirectories, or a @file{.so}/@file{.dll}/@file{.dylib}
-version of the file is loaded if it exists within a @file{native}
+indicated subdirectories, or a @filepath{.so}/@filepath{.dll}/@filepath{.dylib}
+version of the file is loaded if it exists within a @filepath{native}
 subdirectory of a @scheme[use-compiled-file-paths] directory, in an
 even deeper subdirectory as named by
 @scheme[system-library-subpath]. A compiled file is loaded only if its
 modification date is not older than the date for @scheme[_file]. If
-both @file{.zo} and @file{.so}/@file{.dll}/@file{.dylib} files are
-available, the @file{.so}/@file{.dll}/@file{.dylib} file is used.
+both @filepath{.zo} and @filepath{.so}/@filepath{.dll}/@filepath{.dylib} files are
+available, the @filepath{.so}/@filepath{.dll}/@filepath{.dylib} file is used.
 
 Multiple files can be combined into a single
-@file{.so}/@file{.dll}/@file{.dylib} file by creating a special file
+@filepath{.so}/@filepath{.dll}/@filepath{.dylib} file by creating a special file
 @indexed-file{_loader.so}, @indexed-file{_loader.dll}, or
 @indexed-file{_loader.dylib}. When such a file is present where a
-normal @file{.so}/@file{.dll}/@file{.dylib} would be loaded, then the
-@file{_loader} file is first loaded via @scheme[load-extension]. The
-result returned by @file{_loader} must be a procedure that accepts a
+normal @filepath{.so}/@filepath{.dll}/@filepath{.dylib} would be loaded, then the
+@filepath{_loader} file is first loaded via @scheme[load-extension]. The
+result returned by @filepath{_loader} must be a procedure that accepts a
 symbol. This procedure will be called with a symbol matching the base
 part of @scheme[_file] (without the directory path part of the name
 and without the filename extension), and the result must be two
 values; if @scheme[#f] is returned as the first result, then
-@scheme[load/use-compiled] ignores @file{_loader} for @scheme[_file]
+@scheme[load/use-compiled] ignores @filepath{_loader} for @scheme[_file]
 and continues as normal. Otherwise, the first return value is yet
 another procedure. When this procedure is applied to no arguments, it
 should have the same effect as loading @scheme[_file]. The second
@@ -234,12 +235,12 @@ that calling the returned procedure has the effect of declaring the
 module named by the symbol (which is potentially useful information to
 a @tech{load handler}).
 
-While a @file{.zo}, @file{.so}, @file{.dll}, or @file{.dylib} file is
-loaded (or while a thunk returned by @file{_loader} is invoked), the
+While a @filepath{.zo}, @filepath{.so}, @filepath{.dll}, or @filepath{.dylib} file is
+loaded (or while a thunk returned by @filepath{_loader} is invoked), the
 current @scheme[load-relative] directory is set to the directory of
 the original @scheme[_file].
 
-If the original @scheme[_file] is loaded or a @file{.zo} variant is
+If the original @scheme[_file] is loaded or a @filepath{.zo} variant is
 loaded, the @tech{load handler} is called to load the file. If any
 other kind of file is loaded, the @tech{extension-load handler} is
 called.}

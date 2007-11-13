@@ -1,9 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
-@title[#:tag-prefix '(lib "guide.scrbl" "scribblings" "guide") 
+@title[#:tag-prefix '(lib "scribblings/guide/guide.scrbl") 
        #:tag "top"]{A Guide to PLT Scheme}
 
 This guide is intended for programmers who are new to Scheme, new to PLT
@@ -113,7 +113,7 @@ printed output.
 
 Every definition or expression is compiled to an internal bytecode
 format. Standard optimizations are applied when compiling the
-bytecode. For example, in an environment where when @scheme[+] has its
+bytecode. For example, in an environment where @scheme[+] has its
 usual binding, the expression @scheme[(let ([x 1][y (lambda () 4)]) (+
 1 (y)))] is compiled the same as the constant @scheme[5] due to
 constant propagation, constant folding, and inlining optimizations.

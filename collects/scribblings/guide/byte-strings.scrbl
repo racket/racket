@@ -1,11 +1,11 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "bytestrings"]{Bytes and Byte Strings}
 
-A @defterm{byte} is an inexact integer between @scheme[0] and
+A @defterm{byte} is an exact integer between @scheme[0] and
 @scheme[255], inclusive. The @scheme[byte?] predicate recognizes
 numbers that represent bytes.
 
@@ -17,7 +17,7 @@ numbers that represent bytes.
 A @defterm{byte string} is similar to a string---see
 @secref["strings"]---but its content is a sequence of bytes
 instead of characters. Byte strings can be used in applications that
-process pure ASCII instead of Unicode text. The printed and form of a
+process pure ASCII instead of Unicode text. The printed form of a
 byte string supports such uses in particular, because a byte string
 prints like the ASCII decoding of the byte string, but prefixed with a
 @litchar{#}. Unprintable ASCII characters or non-ASCII bytes in the

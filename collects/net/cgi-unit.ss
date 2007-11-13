@@ -1,4 +1,5 @@
-(module cgi-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "etc.ss")
            "cgi-sig.ss"
            "uri-codec.ss")
@@ -210,5 +211,3 @@
   ;; generate-link-text : string x html-string -> html-string
   (define (generate-link-text url anchor-text)
     (string-append "<a href=\"" url "\">" anchor-text "</a>"))
-
-  )

@@ -91,10 +91,11 @@
 	(compose cadr zodiac:begin0-form-bodies))
       (define zodiac:set-begin0-form-first!
 	(lambda (ast v)
-	  (set-car! (zodiac:begin0-form-bodies ast) v)))
+          (zodiac:set-begin0-form-bodies! ast (cons v (cdr (zodiac:begin0-form-bodies ast))))))
       (define zodiac:set-begin0-form-rest!
 	(lambda (ast v)
-	  (set-car! (cdr (zodiac:begin0-form-bodies ast)) v)))
+          (zodiac:set-begin0-form-bodies! ast (cons (car (zodiac:begin0-form-bodies ast))
+                                                    v))))
       
       ;;----------------------------------------------------------------------------
       ;; SPECIAL CONSTANTS

@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "struct.ss" "scribble")]
-@require-for-syntax[mzscheme]
+#lang scribble/doc
+@require[scribble/struct]
+@require[(for-syntax mzscheme)]
 @require["mz.ss"]
 
 @;------------------------------------------------------------------------
@@ -175,35 +175,28 @@ A complete expansion produces a @tech{syntax object} matching the
 following grammar:
 
 @schemegrammar*[
-#:literals (#%expression module #%module-begin begin provide
-            provide-for-syntax provide-for-label
+#:literals (#%expression module #%plain-module-begin begin #%provide
             define-values define-syntaxes define-values-for-syntax
-            require require-for-syntax require-for-template require-for-label
+            #%require
             #%plain-lambda case-lambda if begin begin0 let-values letrec-values
             set! quote-syntax quote with-continuation-mark
-            #%plain-app #%datum #%top #%variable-reference)
+            #%plain-app #%top #%variable-reference)
 [top-level-form general-top-level-form
                 (#%expression expr)
                 (module id name-id
-                  (#%module-begin
+                  (#%plain-module-begin
                    module-level-form ...))
                 (begin top-level-form ...)]
 [module-level-form general-top-level-form
-                   (provide provide-spec ...)
-                   (provide-for-syntax provide-spec ...)
-                   (provide-for-label provide-spec ...)]
+                   (#%provide raw-provide-spec ...)]
 [general-top-level-form expr
                         (define-values (id ...) expr)
                         (define-syntaxes (id ...) expr)
                         (define-values-for-syntax (id ...) expr)
-                        (require require-spec ...)
-                        (require-for-syntax require-spec ...)
-                        (require-for-template require-spec ...)
-                        (require-for-label require-spec ...)]
+                        (#%require raw-require-spec ...)]
 [expr id
       (#%plain-lambda formals expr ...+)
       (case-lambda (formals expr ...+) ...)
-      (if expr expr)
       (if expr expr expr)
       (begin expr ...+)
       (begin0 expr expr ...)
@@ -381,26 +374,25 @@ core syntactic forms are encountered:
  @item{When a @scheme[require] form is encountered at the top level or
        module level, all lexical information derived from the top
        level or the specific module's level are extended with bindings
-       from the specified modules, and at the @tech{phase level}s
-       specified by the exporting modules: @tech{phase level} 0 for
-       each @scheme[provide], @tech{phase level} 1 for each
-       @scheme[provide-for-syntax], and the @tech{label phase level}
-       for each @scheme[provide-for-label].}
+       from the specified modules. If not otherwise indicated in the
+       @scheme[require] form, bindings are introduced at the
+       @tech{phase level}s specified by the exporting modules:
+       @tech{phase level} 0 for each normal @scheme[provide],
+       @tech{phase level} 1 for each @scheme[for-syntax]
+       @scheme[provide], and the @tech{label phase level} for each
+       @scheme[for-label] @scheme[provide].
 
- @item{When a @scheme[require-for-syntax] form is encountered at the
-       top level or module level, it is treated like @scheme[require],
-       except that only @tech{phase level} 0 exports are imported,
-       and the resulting bindings are for @tech{phase level} 1.}
+       A @scheme[for-syntax] sub-form within @scheme[require] imports
+       only @tech{phase level} 0 exports from the specified modules,
+       but the resulting bindings are for @tech{phase level} 1.
 
- @item{When a @scheme[require-for-template] form is encountered at the
-       top level or module level, it is treated like @scheme[require],
-       except that only @tech{phase level} 0 exports are imported,
-       and the resulting bindings are for @tech{phase level} -1.}
+       A @scheme[for-template] sub-form within @scheme[require] imports
+       only @tech{phase level} 0 exports from the specified modules,
+       but the resulting bindings are for @tech{phase level} -1.
 
- @item{When a @scheme[require-for-label] form is encountered at the
-       top level or module level, it is treated like @scheme[require],
-       except that only @tech{phase level} 0 exports are imported, and
-       the resulting bindings are for the @tech{label phase level}.}
+       A @scheme[for-label] sub-form within @scheme[require] imports
+       only @tech{phase level} 0 exports from the specified modules,
+       but the resulting bindings are for the @tech{label phase level}.}
 
  @item{When a @scheme[define], @scheme[define-values],
        @scheme[define-syntax], or @scheme[define-syntaxes] form is

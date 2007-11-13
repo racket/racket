@@ -373,12 +373,15 @@
 	[-append-list-string (lambda (i)
 			       (set! content (append content (list i))))]
 	[-set-list-string (lambda (i s)
-			    (set-car! (list-tail content i) (string->immutable-string s)))]
+                            (set! content (let loop ([content content][i i])
+                                            (if (zero? i)
+                                                (cons (string->immutable-string s) (cdr content))
+                                                (cons (car content) (loop (cdr content) (sub1 i)))))))]
 	[-delete-list-item (lambda (pos)
-			     (if (zero? pos)
-				 (set! content (cdr content))
-				 (set-cdr! (list-tail content (sub1 pos)) 
-					   (list-tail content (add1 pos)))))]
+                             (set! content (let loop ([content content][pos pos])
+                                            (if (zero? pos)
+                                                (cdr content)
+                                                (cons (car content) (loop (cdr content) (sub1 pos)))))))]
 	[-set-list-strings (lambda (l)
 			     (set! content (map string->immutable-string l)))])
       (private-field

@@ -31,7 +31,7 @@
 
   (define mred?
     (with-handlers ([void (lambda (_) #f)])
-      (dynamic-require '#%mred-kernel #f)
+      (dynamic-require ''#%mred-kernel #f)
       #t))
   (define-syntax mz/mr ; use a value for mzscheme, or pull a mred binding
     (syntax-rules ()
@@ -56,7 +56,7 @@
     (let loop ([l '()])
       (let ([expr (read-syntax source)])
         (if (eof-object? expr)
-          (reverse! l)
+          (reverse l)
           (loop (cons expr l))))))
 
   (define sandbox-reader (make-parameter default-sandbox-reader))
@@ -133,7 +133,7 @@
     (define bases
       (let loop ([paths paths] [bases '()])
         (if (null? paths)
-          (reverse! bases)
+          (reverse bases)
           (let-values ([(base name dir?) (split-path (car paths))])
             (let ([base (simplify-path* base)])
               (loop (cdr paths)
@@ -299,7 +299,7 @@
               [p (error 'input->code "ambiguous inputs: ~e" inps)]
               [else (let loop ([inps inps] [n n] [r '()])
                       (if (null? inps)
-                        (reverse! r)
+                        (reverse r)
                         (loop (cdr inps) (and n (add1 n))
                               ;; 1st at line#1, pos#1, 2nd at line#2, pos#2 etc
                               ;; (starting from the `n' argument)

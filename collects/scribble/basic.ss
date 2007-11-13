@@ -1,12 +1,13 @@
 
-(module basic (lib "lang.ss" "big")
+(module basic scheme/base
   (require "decode.ss"
            "struct.ss"
            "config.ss"
-           (lib "list.ss")
-           (lib "class.ss")
-           (lib "main-collects.ss" "setup")
-           (lib "modresolve.ss" "syntax"))
+           mzlib/list
+           mzlib/class
+           setup/main-collects
+           syntax/modresolve
+           (for-syntax scheme/base))
   
   (provide title 
            section
@@ -26,17 +27,22 @@
              p
              (module-path-prefix->string p))))
 
+  (define (convert-tag tag content)
+    (if (list? tag)
+        (apply append (map (lambda (t) (convert-tag t content)) tag))
+        `((part ,(or tag (gen-tag content))))))
+  
   (define (title #:tag [tag #f] #:tag-prefix [prefix #f] #:style [style #f] . str)
     (let ([content (decode-content str)])
       (make-title-decl (prefix->string prefix)
-                       `((part ,(or tag (gen-tag content)))) 
+                       (convert-tag tag content)
                        style
                        content)))
   
   (define (section #:tag [tag #f] #:tag-prefix [prefix #f] #:style [style #f] . str)
     (let ([content (decode-content str)])
       (make-part-start 0 (prefix->string prefix)
-                       `((part ,(or tag (gen-tag content)))) 
+                       (convert-tag tag content)
                        style
                        content)))
 
@@ -44,7 +50,7 @@
     (let ([content (decode-content str)])
       (make-part-start 1 
                        (prefix->string prefix)
-                       `((part ,(or tag (gen-tag content))))
+                       (convert-tag tag content)
                        #f 
                        content)))
 
@@ -52,7 +58,7 @@
     (let ([content (decode-content str)])
       (make-part-start 2 
                        (prefix->string prefix)
-                       `((part ,(or tag (gen-tag content))))
+                       (convert-tag tag content)
                        #f
                        content)))
 
@@ -60,12 +66,13 @@
     (let ([content (decode-content str)])
       (make-paragraph (list (make-element 'bold content)))))
 
-  (define-syntax include-section 
-    (syntax-rules ()
+  (define-syntax (include-section stx)
+    (syntax-case stx ()
       [(_ mod)
-       (begin
-         (require (only mod doc))
-         doc)]))
+       (with-syntax ([mod (syntax-local-introduce #'mod)])
+         #'(begin
+             (require (only-in mod doc))
+             doc))]))
 
   ;; ----------------------------------------
 
@@ -201,9 +208,9 @@
                                (part-collected-info sec ri))
                               ri))
                             (lambda (k v)
-                              (if (and (pair? k)
-                                       (eq? 'index-entry (car k)))
-                                  (set! l (cons (cons (cadr k) v) l)))))
+                              (when (and (pair? k)
+                                         (eq? 'index-entry (car k)))
+                                (set! l (cons (cons (cadr k) v) l)))))
                            (let ([l (sort 
                                      l
                                      (lambda (a b)

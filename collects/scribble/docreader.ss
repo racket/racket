@@ -1,15 +1,14 @@
 
-(module docreader mzscheme
-  (require (prefix scribble: "reader.ss")
-           (lib "kw.ss"))
+(module docreader scheme/base
+  (require (prefix-in scribble: "reader.ss"))
 
-  (provide (rename *read read)
-           (rename *read-syntax read-syntax))
+  (provide (rename-out [*read read])
+           (rename-out [*read-syntax read-syntax]))
 
-  (define/kw (*read #:optional [inp (current-input-port)])
+  (define (*read [inp (current-input-port)])
     (wrap inp (scribble:read-inside inp)))
 
-  (define/kw (*read-syntax #:optional src [port (current-input-port)])
+  (define (*read-syntax [src #f] [port (current-input-port)])
     (wrap port (scribble:read-inside-syntax src port)))
 
   (define (wrap port body)
@@ -19,7 +18,7 @@
 		       (string->symbol (path->string (path-replace-suffix name #""))))
 		     'page)]
            [id 'doc])
-      `(module ,name (lib "doclang.ss" "scribble")
+      `(module ,name scribble/doclang
          (#%module-begin
           ,id ()
           . ,body)))))

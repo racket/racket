@@ -1,5 +1,5 @@
 
-(module tools (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "getinfo.ss" "setup")
            (lib "mred.ss" "mred")
            (lib "class.ss")
@@ -178,7 +178,10 @@
            [rest-parts (cdr parts)])
       (case (car key)
         ((lib)
-         `(lib ,file ,@(cdr key) ,@rest-parts))
+         `(lib ,(substring (append string-append
+                                   (map (lambda (s)
+                                          (string-append "/" s))
+                                        (append (cdr key) rest-parts (list file)))))))
         ((planet)
          `(planet ,file (,@(cdr key) ,maj ,min) ,@rest-parts)))))
 
@@ -305,9 +308,9 @@
         (unless (and (is-a? bitmap bitmap%)
                      (send bitmap ok?))
           (k #f))
-        (let ([splash-eventspace ((dynamic-require '(lib "splash.ss" "framework") 'get-splash-eventspace))]
-              [splash-bitmap ((dynamic-require '(lib "splash.ss" "framework") 'get-splash-bitmap))]
-              [splash-canvas ((dynamic-require '(lib "splash.ss" "framework") 'get-splash-canvas))])
+        (let ([splash-eventspace ((dynamic-require '(lib "framework/splash.ss") 'get-splash-eventspace))]
+              [splash-bitmap ((dynamic-require '(lib "framework/splash.ss") 'get-splash-bitmap))]
+              [splash-canvas ((dynamic-require '(lib "framework/splash.ss") 'get-splash-canvas))])
           
           (unless (and (eventspace? splash-eventspace)
                        (is-a? splash-bitmap bitmap%)
@@ -342,7 +345,7 @@
                      (send bdc set-bitmap #f)
                      (set! bitmap new-b)))
                  
-                 ((dynamic-require '(lib "splash.ss" "framework") 'add-splash-icon)
+                 ((dynamic-require '(lib "framework/splash.ss") 'add-splash-icon)
                   bitmap tool-bitmap-x translated-tool-bitmap-y)
                  (set! tool-bitmap-x (+ tool-bitmap-x tool-bitmap-size tool-bitmap-gap))
                  (when ((+ tool-bitmap-x tool-bitmap-gap tool-bitmap-size) . > . (send splash-bitmap get-width))
@@ -534,4 +537,4 @@
            (and index (send listing get-data index))))
        (populate-listing!)
        (send location-editor lock #t)
-       main))))
+       main)))

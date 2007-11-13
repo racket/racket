@@ -33,7 +33,8 @@
   ;; The core unit's exports, which are the functions used by a 
   ;; Slideshow program:
   (define-signature core^
-    (slide
+    (slide/kw
+     slide
      slide/title
      slide/title/tall
      slide/center
@@ -57,11 +58,11 @@
      most-recent-slide retract-most-recent-slide re-slide start-at-recent-slide
      scroll-transition pause-transition
      comment make-outline
-     item item* page-item page-item*
+     item/kw item item* page-item page-item*
      item/bullet item*/bullet page-item/bullet page-item*/bullet
-     subitem subitem* page-subitem page-subitem*
+     subitem/kw subitem subitem* page-subitem page-subitem*
      itemize itemize* page-itemize page-itemize*
-     para para* page-para page-para*
+     para/kw para para* page-para page-para*
      para/c para/r para*/c para*/r page-para/c page-para/r page-para*/c page-para*/r
      font-size gap-size current-font-size current-line-sep line-sep title-size 
      main-font current-main-font with-font current-title-color
@@ -75,6 +76,7 @@
      enable-click-advance!
      get-title-h set-title-h! current-slide-assembler
      current-page-number-font current-page-number-color
+     current-titlet current-para-width
      set-page-numbers-visible! done-making-slides
      clickback 
      make-slide-inset

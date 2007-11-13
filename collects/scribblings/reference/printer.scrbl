@@ -1,5 +1,5 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/bnf]
 @require["mz.ss"]
 
 @title[#:tag "printing" #:style 'quiet]{The Printer}
@@ -119,6 +119,18 @@ of its @scheme[car]. The rest of the printed form depends on the
 The printed form of a pair is the same in both @scheme[write] and
 @scheme[display] modes, except as the printed form of the pair's
 @scheme[car]and @scheme[cdr] vary with the mode.
+
+By default, mutable pairs (as created with @scheme[mcons]) print the
+same as pairs, except that @litchar["{"] and @litchar["}"] are used
+instead of @litchar["("] and @litchar[")"]. Note that the reader
+treats @litchar["{"]...@litchar["}"] and @litchar["("]...@litchar[")"]
+equivalently on input, creating immutable pairs in both cases.
+
+If the @scheme[print-pair-curly-braces] parameter is set to
+@scheme[#t], then immutable pairs print using @litchar["{"] and
+@litchar["}"].  If the @scheme[print-mpair-curly-braces] parameter is
+set to @scheme[#f], then mutable pairs print using @litchar["("] and
+@litchar[")"].
 
 @section{Printing Strings}
 

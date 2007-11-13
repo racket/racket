@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["common.ss"]
 
 @defclass/title[panel% object% (area-container-window<%> subwindow<%>)]{

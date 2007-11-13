@@ -1,7 +1,7 @@
-(module xml-box mzscheme
+(module xml-box scheme/base
   (require (lib "contract.ss")
            "shared.ss"
-           (prefix kernel: (lib "kerncase.ss" "syntax")))
+           (prefix-in kernel: (lib "kerncase.ss" "syntax")))
   
   (provide/contract [rewrite-xml-box (syntax?                  ; stx to rewrite
                                       (syntax? . -> . syntax?) ; rewriter for non-xml-box subcomponents
@@ -24,11 +24,9 @@
         (kernel:kernel-syntax-case stx #f
           [var-stx (identifier? (syntax var-stx)) (rewrite-xml-error)]
           
-          [(lambda . clause) (rewrite-xml-error)]
+          [(#%plain-lambda . clause) (rewrite-xml-error)]
           
           [(case-lambda . clauses) (rewrite-xml-error)]
-          
-          [(if test then) (rewrite-xml-error)]
           
           [(if test then else) (rewrite-xml-error)]
           
@@ -48,10 +46,8 @@
           
           [(with-continuation-mark key mark body) (rewrite-xml-error)]
           
-          [(#%app . exprs)
+          [(#%plain-app . exprs)
            (rebuild-stx (map recur (syntax->list #`exprs)) stx)]
-          
-          [(#%datum . _) stx]
           
           [(#%top . var) (rewrite-xml-error)]
           

@@ -78,24 +78,24 @@
 
   (define (cursor:prev c)
     (let ([prefix (cursor-prefix c)])
-      (if (pair? prefix)
-          (car prefix)
+      (if (mpair? prefix)
+          (mcar prefix)
           #f)))
 
   (define (cursor:move-prev c)
-    (when (pair? (cursor-prefix c))
+    (when (mpair? (cursor-prefix c))
       (let ([old-prefix-cell (cursor-prefix c)])
-        (set-cursor-prefix! c (cdr old-prefix-cell))
-        (set-cdr! old-prefix-cell (cursor-suffixp c))
+        (set-cursor-prefix! c (mcdr old-prefix-cell))
+        (set-mcdr! old-prefix-cell (cursor-suffixp c))
         (set-cursor-suffixp! c old-prefix-cell))))
   
   (define (cursor:move-next c)
     (when (cursor:has-next? c)
       (let* ([old-suffixp (cursor-suffixp c)]
              [old-suffix-pair
-              (if (pair? old-suffixp) old-suffixp (force old-suffixp))])
-        (set-cursor-suffixp! c (cdr old-suffix-pair))
-        (set-cdr! old-suffix-pair (cursor-prefix c))
+              (if (mpair? old-suffixp) old-suffixp (force old-suffixp))])
+        (set-cursor-suffixp! c (mcdr old-suffix-pair))
+        (set-mcdr! old-suffix-pair (cursor-prefix c))
         (set-cursor-prefix! c old-suffix-pair))))
 
   (define (cursor:at-start? c)

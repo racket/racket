@@ -29,6 +29,7 @@ Scheme_Object *scheme_make_arity_at_least;
 Scheme_Object *scheme_source_property;
 Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
 Scheme_Object *scheme_make_struct_type_proc;
+Scheme_Object *scheme_current_inspector_proc;
 
 /* locals */
 
@@ -117,6 +118,8 @@ Scheme_Object *make_special_comment(int argc, Scheme_Object **argv);
 Scheme_Object *special_comment_value(int argc, Scheme_Object **argv);
 Scheme_Object *special_comment_p(int argc, Scheme_Object **argv);
 
+static Scheme_Object *check_arity_at_least_fields(int argc, Scheme_Object **argv);
+static Scheme_Object *check_date_fields(int argc, Scheme_Object **argv);
 static Scheme_Object *check_location_fields(int argc, Scheme_Object **argv);
 
 static Scheme_Object *check_exn_source_property_value_ok(int argc, Scheme_Object *argv[]);
@@ -128,10 +131,10 @@ static void register_traversers(void);
 #endif
 
 #define cons scheme_make_pair
-#define icons scheme_make_immutable_pair
+#define icons scheme_make_pair
 #define _intern scheme_intern_symbol
 
-#define BUILTIN_STRUCT_FLAGS SCHEME_STRUCT_EXPTIME
+#define BUILTIN_STRUCT_FLAGS SCHEME_STRUCT_EXPTIME | SCHEME_STRUCT_NO_SET
 #define LOC_STRUCT_FLAGS BUILTIN_STRUCT_FLAGS | SCHEME_STRUCT_NO_SET
 
 static Scheme_Object *ellipses_symbol;
@@ -180,7 +183,8 @@ scheme_init_struct (Scheme_Env *env)
   /* Add arity structure */
   REGISTER_SO(scheme_arity_at_least);
   REGISTER_SO(scheme_make_arity_at_least);
-  scheme_arity_at_least = scheme_make_struct_type_from_string("arity-at-least", NULL, 1, NULL, NULL, 0);
+  scheme_arity_at_least = scheme_make_struct_type_from_string("arity-at-least", NULL, 1, NULL, 
+                                                              scheme_make_prim(check_arity_at_least_fields), 1);
   as_names = scheme_make_struct_names_from_array("arity-at-least",
 						 1, arity_fields,
 						 BUILTIN_STRUCT_FLAGS, 
@@ -199,7 +203,8 @@ scheme_init_struct (Scheme_Env *env)
 #ifdef TIME_SYNTAX
   /* Add date structure: */
   REGISTER_SO(scheme_date);
-  scheme_date = scheme_make_struct_type_from_string("date", NULL, 10, NULL, NULL, 0);
+  scheme_date = scheme_make_struct_type_from_string("date", NULL, 10, NULL,
+                                                    scheme_make_prim(check_date_fields), 1);
   
   ts_names = scheme_make_struct_names_from_array("date",
 						 10, date_fields,
@@ -218,7 +223,8 @@ scheme_init_struct (Scheme_Env *env)
 
   /* Add location structure: */
   REGISTER_SO(location_struct);
-  location_struct = scheme_make_struct_type_from_string("srcloc", NULL, 5, NULL, scheme_make_prim(check_location_fields), 1);
+  location_struct = scheme_make_struct_type_from_string("srcloc", NULL, 5, NULL, 
+                                                        scheme_make_prim(check_location_fields), 1);
   
   loc_names = scheme_make_struct_names_from_array("srcloc",
 						  5, location_fields,
@@ -466,10 +472,13 @@ scheme_init_struct (Scheme_Env *env)
 						      "inspector?",
 						      1, 1),
 			     env);
+  
+  REGISTER_SO(scheme_current_inspector_proc);
+  scheme_current_inspector_proc = scheme_register_parameter(current_inspector,
+                                                            "current-inspector",
+                                                            MZCONFIG_INSPECTOR);
   scheme_add_global_constant("current-inspector", 
-			     scheme_register_parameter(current_inspector,
-						       "current-inspector",
-						       MZCONFIG_INSPECTOR),
+			     scheme_current_inspector_proc,
 			     env);
   scheme_add_global_constant("current-code-inspector", 
 			     scheme_register_parameter(current_code_inspector,
@@ -2361,30 +2370,30 @@ static Scheme_Object *get_phase_ids(Scheme_Object *_v, int phase)
     for (i = 3; i < count - 1; i++) {
       n = names[i];
       n = scheme_datum_to_syntax(n, scheme_false, w, 0, 0);
-      gets = scheme_make_immutable_pair(n, gets);
+      gets = scheme_make_pair(n, gets);
 
       if (!(flags & SCHEME_STRUCT_NO_SET)) {
 	i++;
 	n = names[i];
 	n = scheme_datum_to_syntax(n, scheme_false, w, 0, 0);
-	sets = scheme_make_immutable_pair(n, sets);
+	sets = scheme_make_pair(n, sets);
       } else
-	sets = scheme_make_immutable_pair(scheme_false, sets);
+	sets = scheme_make_pair(scheme_false, sets);
     }
 
-    l = scheme_make_pair(gets, scheme_make_immutable_pair(sets, l));
+    l = scheme_make_pair(gets, scheme_make_pair(sets, l));
   } else {
     if (super_exptime)
       l = icons(SCHEME_CAR(super_exptime),
 		icons(SCHEME_CADR(super_exptime),
 		      l));
     else
-      l = scheme_make_immutable_pair(scheme_null, scheme_make_immutable_pair(scheme_null, l));
+      l = scheme_make_pair(scheme_null, scheme_make_pair(scheme_null, l));
   }
 
-  l = scheme_make_immutable_pair(prd, l);
-  l = scheme_make_immutable_pair(cns, l);
-  l = scheme_make_immutable_pair(tp, l);
+  l = scheme_make_pair(prd, l);
+  l = scheme_make_pair(cns, l);
+  l = scheme_make_pair(tp, l);
 
   macro = scheme_alloc_small_object();
   macro->type = scheme_macro_type;
@@ -3027,6 +3036,67 @@ static Scheme_Object *check_location_fields(int argc, Scheme_Object **argv)
     scheme_wrong_field_type(argv[5], "exact non-negative integer or #f", argv[4]);
   
   return scheme_values(5, argv);
+}
+
+/*========================================================================*/
+/*                        date and arity checkers                         */
+/*========================================================================*/
+
+static Scheme_Object *check_arity_at_least_fields(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *a;
+
+  a = argv[0];
+  if (SCHEME_INTP(a)) {
+    if (SCHEME_INT_VAL(a) >= 0)
+      return a;
+  } else if (SCHEME_BIGNUMP(a)) {
+    if (SCHEME_BIGPOS(a))
+      return a;
+  }
+
+  scheme_wrong_field_type(argv[1], "exact non-negative integer", a);
+  return NULL;
+}
+
+static Scheme_Object *check_date_fields(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *a, *args[10];
+
+  a = argv[0];
+  if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 61))
+    scheme_wrong_field_type(argv[10], "integer in [0, 61]", a);
+  a = argv[1];
+  if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 59))
+    scheme_wrong_field_type(argv[10], "integer in [0, 59]", a);
+  a = argv[2];
+  if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 23))
+    scheme_wrong_field_type(argv[10], "integer in [0, 23]", a);
+  a = argv[3];
+  if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 1) || (SCHEME_INT_VAL(a) > 31))
+    scheme_wrong_field_type(argv[10], "integer in [1, 31]", a);
+  a = argv[4];
+  if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 1) || (SCHEME_INT_VAL(a) > 12))
+    scheme_wrong_field_type(argv[10], "integer in [1, 12]", a);
+  a = argv[5];
+  if ((!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0))
+      && (!SCHEME_BIGNUMP(a) || !SCHEME_BIGPOS(a)))
+    scheme_wrong_field_type(argv[10], "nonnegative exact integer", a);
+  a = argv[6];
+  if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 6))
+    scheme_wrong_field_type(argv[10], "integer in [0, 6]", a);
+  a = argv[7];
+  if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 365))
+    scheme_wrong_field_type(argv[10], "integer in [0, 365]", a);
+  a = argv[9];
+  if (!SCHEME_INTP(a) && !SCHEME_BIGNUMP(a))
+    scheme_wrong_field_type(argv[10], "exact integer", a);
+
+  /* Normalize dst? boolean: */  
+  memcpy(args, argv, sizeof(Scheme_Object *) * 10);
+  args[8] = (SCHEME_TRUEP(argv[8]) ? scheme_true : scheme_false);
+
+  return scheme_values(10, args);
 }
 
 /*========================================================================*/

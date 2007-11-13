@@ -1,7 +1,5 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
-
-@require-for-syntax[mzscheme]
 
 @title[#:tag "stxcerts"]{Syntax Certificates}
 

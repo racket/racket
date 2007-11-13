@@ -1,5 +1,5 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/bnf]
 @require["mz.ss"]
 
 @define[MzAdd (italic "Scheme-specific:")]
@@ -22,21 +22,21 @@ colon, a UNC path of the form
 paths are described further below.)
 
 Scheme fails to implement the usual Windows path syntax in one
-way. Outside of Scheme, a pathname @file{C:rant.txt} can be a
-drive-specific relative path. That is, it names a file @file{rant.txt}
-on drive @file{C:}, but the complete path to the file is determined by
-the current working directory for drive @file{C:}. Scheme does not
+way. Outside of Scheme, a pathname @filepath{C:rant.txt} can be a
+drive-specific relative path. That is, it names a file @filepath{rant.txt}
+on drive @filepath{C:}, but the complete path to the file is determined by
+the current working directory for drive @filepath{C:}. Scheme does not
 support drive-specific working directories (only a working directory
 across all drives, as reflected by the @scheme[current-directory]
 parameter). Consequently, Scheme implicitly converts a path like
-@file{C:rant.txt} into @file["C:\\rant.txt"].
+@filepath{C:rant.txt} into @filepath["C:\\rant.txt"].
 
 @itemize{
 
  @item{@|MzAdd| Whenever a path starts with a drive specifier
        @nonterm{letter}@litchar{:} that is not followed by a
        @litchar{/} or @litchar["\\"], a @litchar["\\"] is inserted as
-       the path is expanded.}
+       the path is @tech{cleanse}d.}
 
 }
 
@@ -235,7 +235,7 @@ directory.  In addition, a path syntactcially refers to a directory if
 its last element is a same-directory or up-directory indicator (not
 quoted by a @litchar["\\\\?\\"] form), or if it refers to a root.
 
-Windows paths are expanded as follows: In paths that start
+Windows paths are @techlink{cleanse}d as follows: In paths that start
 @litchar["\\\\?\\"], redundant @litchar["\\"]s are removed, an extra
 @litchar["\\"] is added in a @litchar["\\\\?\\REL"] if an extra one is
 not already present to separate up-directory indicators from literal
@@ -301,4 +301,4 @@ not start with @litchar["\\\\?\\"] can produce parts that start with
 produces @litchar["\\\\?\\C:\\x~\\"] and @litchar["\\\\?\\REL\\\\aux"];
 the @litchar["\\\\?\\"] is needed in these cases to preserve a
 trailing space after @litchar{x} and to avoid referring to the AUX
-device instead of an @file{aux} file.
+device instead of an @filepath{aux} file.

@@ -256,10 +256,8 @@ fun.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../includ
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/schmap.inc
 hash.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
         $(srcdir)/../src/stypes.h  
-image.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
-        $(srcdir)/../src/stypes.h  $(srcdir)/schvers.h
 jit.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
-        $(srcdir)/../src/stypes.h  $(srcdir)/schvers.h $(srcdir)/codetab.inc $(srcdir)/mzmark.c \
+        $(srcdir)/../src/stypes.h $(srcdir)/codetab.inc $(srcdir)/mzmark.c \
         $(srcdir)/lightning/i386/core.h $(srcdir)/lightning/i386/core-common.h \
         $(srcdir)/lightning/i386/asm.h $(srcdir)/lightning/i386/asm-common.h \
         $(srcdir)/lightning/ppc/core.h $(srcdir)/lightning/ppc/core-common.h \

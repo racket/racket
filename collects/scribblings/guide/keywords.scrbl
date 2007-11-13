@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "keywords"]{Keywords}
@@ -31,7 +31,7 @@ not-a-symbol-expression
 ]
 
 Despite their similarities, keywords are used in a different way than
-identifiers or symbols. Keywords are intented for use (unquoted) as
+identifiers or symbols. Keywords are intended for use (unquoted) as
 special markers in argument lists and in certain syntactic forms.
 
 @italic{Need some examples here, once we have more keyword-based
@@ -39,6 +39,9 @@ procedures and syntax in place...}
 
 Keywords should not be used simply as another kind of symbol. Use
 symbols, instead of keywords, for run-time flags and enumerations.
+
+@; FIXME: explain more, especially since keywords are used in just 
+@;        this way in Common Lisp
 
 @examples[
 (code:line (bytes->path #"/usr/tmp" 'unix) (code:comment #, @t{@scheme['unix], not @scheme['#:unix]}))

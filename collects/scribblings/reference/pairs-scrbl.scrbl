@@ -1,7 +1,7 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
-@require[(lib "scheme.ss" "scribble")]
-@require-for-syntax[mzscheme]
+@require[scribble/scheme]
+@require[(for-syntax scheme/base)]
 
 @define-syntax[(defc_r stx)
   (syntax-case stx ()
@@ -28,15 +28,15 @@
                                        (let* ([a (loop (car c) (add1 pos))]
                                               [b (loop (cdr c) (+ 1 pos (syntax-span a)))]
                                               [span (+ 1 (syntax-span a) (syntax-span b))])
-                                         (datum->syntax-object #'here
-                                                               (cons a b)
-                                                               (list (syntax-source stx)
-                                                                     1
-                                                                     pos
-                                                                     (add1 pos)
-                                                                     span)))
-                                       (datum->syntax-object #'here c 
-                                                             (list (syntax-source stx) 1 pos (add1 pos) 1))))]
+                                         (datum->syntax #'here
+                                                        (cons a b)
+                                                        (list (syntax-source stx)
+                                                              1
+                                                              pos
+                                                              (add1 pos)
+                                                              span)))
+                                       (datum->syntax #'here c 
+                                                      (list (syntax-source stx) 1 pos (add1 pos) 1))))]
                        [equiv equiv])
            #'(defproc (name [v contract]) any/c
                "Returns " (to-element 'equiv)))))])]
@@ -48,7 +48,7 @@ A list can be used as a single-valued sequence (see
 of the sequence. See also @scheme[in-list].
 
 @; ----------------------------------------
-@section{Pair Constructors, Selectors, and Mutators}
+@section{Pair Constructors and Selectors}
 
 @defproc[(pair? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
 a pair, @scheme[#f] otherwise.}
@@ -91,28 +91,53 @@ Like @scheme[list], but the last argument is used as the tail of
 the result, insteda of the final element. The result is a list
 only if the last argument is a list.}
 
+@defproc[(build-list [n exact-nonnegative-integer?]
+                     [proc (exact-nonnegative-integer? . -> . any)])
+         list?]{
 
-@defproc[(set-car! [p mutable-pair?] [v any/v]) 
+Creates a list of @scheme[n] elements by applying @scheme[proc] to the
+integers from @scheme[0] to @scheme[(sub1 n)] in order. If
+@scheme[_lst] is the resulting list, then @scheme[(list-ref _lst _i)]
+is the value produced by @scheme[(proc _i)].
+
+@examples[
+(build-list 10 values)
+(build-list 5 (lambda (x) (* x x)))
+]}
+
+@; ----------------------------------------
+@section{Mutable Pair Operations}
+
+@defproc[(mpair? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
+a mutable pair, @scheme[#f] otherwise.}
+
+@defproc[(mcons [a any/c] [d any/c]) pair?]{Returns a mutable pair whose first
+element is @scheme[a] and second element is @scheme[d].}
+
+@defproc[(mcar [p mpair?]) any/c]{Returns the first element of the
+mutable pair @scheme[p].}
+
+@defproc[(mcdr [p mpair?]) any/c]{Returns the second element of the
+mutable pair @scheme[p].}
+
+
+@defproc[(set-mcar! [p mpair?] [v any/v]) 
          void?]{
 
 Changes the mutable pair @scheme[p] so that its first element is
 @scheme[v].}
 
-
-@defproc[(set-cdr! [p mutable-pair?] [v any/v]) 
+@defproc[(set-mcdr! [p mpair?] [v any/v]) 
          void?]{
 
 Changes the mutable pair @scheme[p] so that its second element is
 @scheme[v].}
 
 
-@defproc[(immutable? [v any/c]) boolean?]{
-
-Returns @scheme[#t] if @scheme[v] is a mutable pair, string, byte
-string, vector, or box, @scheme[#f] otherwise.}
-
 @; ----------------------------------------
 @section{List Operations}
+
+@declare-exporting[(lib "scheme/list")]
 
 @defproc[(length [lst list?])
          nonnegative-exact-integer?]{
@@ -155,6 +180,8 @@ reverse order.}
 
 @; ----------------------------------------
 @section{List Iteration}
+
+@declare-exporting[(lib "scheme/list")]
 
 @defproc[(map [proc procedure?] [lst list?] ...+) 
          list?]{
@@ -232,6 +259,112 @@ Similar to @scheme[map], but @scheme[proc] is called only for its
  ignored.}
 
 
+@defproc[(foldl [proc procedure?] [init any/c] [lst list?] ...+)
+         list?]{
+
+Like @scheme[map], @scheme[foldl] applies a procedure to the
+ elements of one or more lists. Whereas @scheme[map] combines the return
+ values into a list, @scheme[foldl] combines the return values in an
+ arbitrary way that is determined by @scheme[proc].  
+
+If @scheme[foldl] is called with @math{n} lists, then @scheme[proc]
+ must take @math{n+1} arguments. The extra argument is the combined
+ return values so far. The @scheme[proc] is initially invoked with the
+ first item of each list, and the final argument is @scheme[init].  In
+ subsequent invocations of @scheme[proc], the last argument is the
+ return value from the previous invocation of @scheme[proc]. The input
+ @scheme[lst]s are traversed from left to right, and the result of the
+ whole @scheme[foldl] application is the result of the last
+ application of @scheme[proc]. If the @scheme[lst]s are empty, the
+ result is @scheme[init].
+
+Unlike @scheme[foldr], @scheme[foldl] processes the @scheme[lst]s in
+ constant space (plus the space for each call to @scheme[proc]).
+
+@examples[
+(foldl cons '() '(1 2 3 4))
+(foldl + 0 '(1 2 3 4))
+]}
+
+@defproc[(foldr [proc procedure?] [init any/c] [lst list?] ...+)
+         list?]{
+
+Like @scheme[foldl], but the lists are traversed from right to left.
+ Unlike @scheme[foldl], @scheme[foldr] processes the @scheme[lst]s in
+ space proportional to the length of @scheme[lst]s (plus the space for
+ each call to @scheme[proc]).
+
+@examples[
+(foldr cons '() '(1 2 3 4))
+(foldr (lambda (v l) (cons (add1 v) l)) '() '(1 2 3 4))
+]}
+
+@; ----------------------------------------
+@section{List Filtering}
+
+@defproc[(filter [proc procedure?] [lst list?])
+         list?]{
+
+Returns a list with the elements of @scheme[lst] for which
+ @scheme[proc] produces a true value. The predicate @scheme[proc]
+ is applied to each element from first to last.}
+
+
+@defproc[(remove [v any/c] [lst list?] [proc procedure? equal?])
+         list?]{
+
+Returns a list that is like @scheme[lst], omitting the first element
+ of @scheme[lst] that is equal to @scheme[v] using the comparison
+ procedure @scheme[proc] (which must accept two arguments).}
+
+
+@defproc[(remq [v any/c] [lst list?])
+         list?]{
+
+Returns @scheme[(remove v lst eq?)].}
+
+
+@defproc[(remv [v any/c] [lst list?])
+         list?]{
+
+Returns @scheme[(remove v lst eqv?)].}
+
+
+@defproc[(remove* [v-lst list?] [lst list?] [proc procedure? equal?])
+         list?]{
+
+Like @scheme[remove], but removes from @scheme[lst] every instance of
+every element of @scheme[v-lst].}
+
+
+@defproc[(remq* [v any/c] [lst list?])
+         list?]{
+
+Returns @scheme[(remove* v lst eq?)].}
+
+
+@defproc[(remv* [v any/c] [lst list?])
+         list?]{
+
+Returns @scheme[(remove* v lst eqv?)].}
+
+
+@defproc[(sort [lst list?] [less-than procedure?])
+         list?]{
+
+Returns a list sorted according to the @scheme[less-than] procedure,
+ which takes two elements of @scheme[lst] and returns a true value if
+ the first is less than (i.e., should be sorted earlier) than the
+ second.
+
+The sort is stable: if two elements of @scheme[lst] are ``equal''
+ (i.e., @scheme[proc] does not return a true value when given the pair
+ in either order), then the elements preserve their relative order
+ from @scheme[lst] in the output list.}
+
+@; ----------------------------------------
+@section{List Searching}
+
 @defproc[(member [v any/c] [lst list?])
          (or/c list? false/c)]{
 
@@ -253,6 +386,20 @@ Like @scheme[member], but finds an element using @scheme[eqv?].}
 Like @scheme[member], but finds an element using @scheme[eq?].}
 
 
+@defproc[(memf [proc procedure?] [lst list?])
+         (or/c list? false/c)]{
+
+Like @scheme[member], but finds an element using the predicate
+ @scheme[proc]; an element is found when @scheme[proc] applied to the
+ element returns a true value.}
+
+
+@defproc[(findf [proc procedure?] [lst list?]) any/c]{
+
+Like @scheme[memf], but returns the element or @scheme[#f]
+ instead of a tail of @scheme[lst] or @scheme[#f].}
+
+
 @defproc[(assoc [v any/c] [lst (listof pair?)])
          (or/c pair? false/c)]{
 
@@ -272,6 +419,15 @@ Like @scheme[assoc], but finds an element using @scheme[eqv?].}
          (or/c pair? false/c)]{
 
 Like @scheme[assoc], but finds an element using @scheme[eq?].}
+
+
+@defproc[(assf [proc procedure?] [lst list?])
+         (or/c list? false/c)]{
+
+Like @scheme[assoc], but finds an element using the predicate
+ @scheme[proc]; an element is found when @scheme[proc] applied to the
+ @scheme[car] of an @scheme[lst] element returns a true value.}
+
 
 
 @; ----------------------------------------

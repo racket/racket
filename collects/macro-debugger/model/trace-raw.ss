@@ -8,7 +8,7 @@
   (provide (all-defined))
 
   (define current-expand-observe
-    (dynamic-require '#%expobs 'current-expand-observe))
+    (dynamic-require ''#%expobs 'current-expand-observe))
 
   (define (go-trace sexpr)
     (define events null)

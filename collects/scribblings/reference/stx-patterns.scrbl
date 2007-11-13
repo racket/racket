@@ -1,6 +1,7 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
-@require["ellipses.ss"]
+
+@define[ellipses (scheme ...)]
 
 @title{Pattern-Based Syntax Matching}
 
@@ -23,7 +24,7 @@
                              (stat-pattern ...+ . stat-pattern)
                              (code:line #,(tt "#")(stat-pattern ...))
                              const]
-               [ellipses #,ellipses-id])]{
+               [ellipses #,ellipses])]{
 
 Finds the first @scheme[pattern] that matches the syntax object
 produced by @scheme[stx-expr], and for which the corresponding
@@ -42,7 +43,7 @@ A syntax object matches a @scheme[pattern] as follows:
  @specsubform[id]{
 
  An @scheme[id] matches any syntax object when it is not bound to
- @|ellipses-id| or @scheme[_] and does not have the same binding as
+ @scheme[...] or @scheme[_] and does not have the same binding as
  any @scheme[literal-id]. The @scheme[id] is further bound as
  @deftech{pattern variable} for the corresponding @scheme[fender-expr]
  (if any) and @scheme[result-expr]. A pattern-variable binding is a
@@ -69,9 +70,9 @@ A syntax object matches a @scheme[pattern] as follows:
 
  @specsubform[(pattern ...+ . pattern)]{
 
- The last @scheme[pattern] must not be a @scheme[(pattern ...)],
- @scheme[(pattern ...+ . pattern)], @scheme[(pattern ... pattern
- ellipses pattern ...)], or @scheme[(pattern ... pattern ellipses
+ The last @scheme[pattern] must not be a @scheme/form[(pattern ...)],
+ @scheme/form[(pattern ...+ . pattern)], @scheme/form[(pattern ... pattern
+ ellipses pattern ...)], or @scheme/form[(pattern ... pattern ellipses
  pattern ... . pattern)] form.
 
  Like the previous kind of pattern, but matches syntax objects that
@@ -187,7 +188,7 @@ the individual @scheme[stx-expr].}
                               (stat-template ... . stat-template)
                               (code:line #,(tt "#")(stat-template ...))
                               const]
-               [ellipses #,ellipses-id])]{
+               [ellipses #,ellipses])]{
 
 Constructs a syntax object based on a @scheme[template],which can
 inlude @tech{pattern variables} bound by @scheme[syntax-case] or
@@ -267,7 +268,7 @@ Template forms produce a syntax object as follows:
  @specsubform[(ellipses stat-template)]{
 
   Produces the same result as @scheme[stat-template], which is like a
-  @scheme[template], but @|ellipses-id| is treated like a @scheme[id]
+  @scheme[template], but @scheme[...] is treated like a @scheme[id]
   (with no pattern binding).}
 
  @specsubform[const]{
@@ -337,7 +338,7 @@ Like @scheme[quasisyntax], but with source-location assignment like
 
 Equivalent to
 
-@schemeblock[
+@schemeblock/form[
 (lambda (stx)
   (syntax-case stx (literal-id ...)
     [(_generated-id . pattern) (syntax template)] ...))
@@ -360,11 +361,11 @@ Equivalent to
 ]}
 
 
-@ellipses-defn{
+@defidform[...]{
 
-The @|ellipses-id| transformer binding prohibits @|ellipses-id| from being
-used as an expression. This binding useful only in syntax patterns and
-templates, where it indicates repetitions of a pattern or
+The @scheme[...] transformer binding prohibits @scheme[...] from
+being used as an expression. This binding useful only in syntax
+patterns and templates, where it indicates repetitions of a pattern or
 template. See @scheme[syntax-case] and @scheme[syntax].}
 
 @defidform[_]{

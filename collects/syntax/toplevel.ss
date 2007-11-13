@@ -60,7 +60,7 @@
                             (when compile?
                               compiled)))])
       (kernel-syntax-case stx #f
-        [(require req ...)
+        [(#%require req ...)
 	 (begin0
 	  (when compile? (compile-syntax stx))
 	  (for-each (lambda (req) (namespace-require/expansion-time (syntax-object->datum req)))
@@ -70,8 +70,6 @@
         [(define-syntaxes . _)
          (eval/compile stx)]
         [(define-values-for-syntax . _)
-         (eval/compile stx)]
-        [(require-for-syntax . _)
          (eval/compile stx)]
         [(define-values (id ...) . _)
 	 (begin0

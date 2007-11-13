@@ -22,7 +22,7 @@ gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la:
 foreign.@LTO@: $(srcdir)/foreign.c \
            $(srcdir)/../mzscheme/include/scheme.h \
            $(srcdir)/../mzscheme/src/schemef.h \
-           $(srcdir)/../mzscheme/src/schvers.h
+           $(srcdir)/../mzscheme/src/schpriv.h
 	$(CC) $(CFLAGS) -c $(srcdir)/foreign.c -o foreign.@LTO@
 
 clean:

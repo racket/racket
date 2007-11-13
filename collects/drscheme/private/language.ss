@@ -3,7 +3,7 @@
 ;;          user's io ports, to aid any debugging printouts.
 ;;          (esp. useful when debugging the users's io)
 
-(module language (lib "a-unit.ss")
+#lang scheme/unit
   (require "drsig.ss"
            (lib "string-constant.ss" "string-constants")
            (lib "pconvert.ss")
@@ -884,7 +884,7 @@
                             (list
                              `(namespace-require ',module-language-spec)))
                       ,@(if transformer-module-language-spec
-                            (list `(namespace-transformer-require ',transformer-module-language-spec))
+                            (list `(namespace-require `(for-syntax ,transformer-module-language-spec)))
                             (list))
                       ((dynamic-require ',init-code-mod-name 'init-code)))
                    port))
@@ -909,7 +909,7 @@
                         transformer-module-language-spec))]
              [pre-to-be-embedded-module-specs1
               (if gui?
-                  (cons '(lib "mred.ss" "mred")
+                  (cons '(lib "mred/mred.ss")
                         pre-to-be-embedded-module-specs0)
                   pre-to-be-embedded-module-specs0)]
              [pre-to-be-embedded-module-specs2
@@ -1098,7 +1098,7 @@
         (format "~s" transformer-module-language-spec)
         (format "~s" use-copy?)
         (format "~s" (if gui?  
-                         (list 'mzscheme '(lib "mred.ss" "mred"))
+                         (list 'mzscheme '(lib "mred/mred.ss"))
                          (list 'mzscheme))))
        (if (path? executable-filename)
            (path->string executable-filename)
@@ -1122,7 +1122,7 @@
          (when use-copy?
            (namespace-require/copy module-spec))
          (when transformer-module-spec
-           (namespace-transformer-require transformer-module-spec))))))
+           (namespace-require `(for-syntax ,transformer-module-spec)))))))
   
   ;; module-based-language-front-end : (port reader -> (-> (union sexp syntax eof)))
   ;; type reader = type-spec-of-read-syntax (see mz manual for details)
@@ -1210,5 +1210,4 @@
      'drscheme:language:extend-language-interface
      'phase1)
     (set! default-mixin (compose default-impl default-mixin))
-    (set! language-extensions (cons extension<%> language-extensions))))
-
+    (set! language-extensions (cons extension<%> language-extensions)))

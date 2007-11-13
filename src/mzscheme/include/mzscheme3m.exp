@@ -225,7 +225,7 @@ scheme_make_folding_closed_prim
 scheme_make_closed_prim_w_everything
 scheme_prim_is_method
 scheme_make_pair
-scheme_make_immutable_pair
+scheme_make_mutable_pair
 scheme_make_raw_pair
 scheme_make_byte_string
 scheme_make_sized_byte_string
@@ -413,6 +413,7 @@ scheme_set_file_position
 scheme_file_exists
 scheme_directory_exists
 scheme_expand_filename
+scheme_expand_user_filename
 scheme_expand_string_filename
 scheme_os_getcwd
 scheme_os_setcwd
@@ -471,6 +472,8 @@ scheme_protect_primitive_provide
 scheme_make_modidx
 scheme_apply_for_syntax_in_env
 scheme_dynamic_require
+scheme_namespace_require
+scheme_is_module_path
 scheme_intern_symbol
 scheme_intern_exact_symbol
 scheme_intern_exact_char_symbol
@@ -506,7 +509,7 @@ scheme_equal_hash_key2
 scheme_set_type_equality
 scheme_build_list
 scheme_build_list_offset
-scheme_make_list_immutable
+scheme_is_list
 scheme_list_length
 scheme_proper_list_length
 scheme_alloc_list

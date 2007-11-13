@@ -18,7 +18,7 @@
     (interface ()
       enable-macro-stepper?))
 
-  (define current-expand-observe (dynamic-require '#%expobs 'current-expand-observe))
+  (define current-expand-observe (dynamic-require ''#%expobs 'current-expand-observe))
 
   (define tool@
     (unit (import drscheme:tool^)
@@ -188,7 +188,7 @@
         (let ([main-group (car lang)]
               [second (and (pair? (cdr lang)) (cadr lang))]
               [third (and (pair? (cdr lang)) (pair? (cddr lang)) (caddr lang))])
-          (and (equal? main-group (string-constant professional-languages))
+          (and (equal? main-group (string-constant legacy-languages))
                (or (member second 
                            (list (string-constant r5rs-lang-name)
                                  "(module ...)"

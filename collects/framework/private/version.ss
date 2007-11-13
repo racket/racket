@@ -1,4 +1,5 @@
-(module version (lib "a-unit.ss")
+#lang scheme/unit
+
   (require "sig.ss"
            (lib "mred-sig.ss" "mred")
            (lib "string.ss")
@@ -19,4 +20,4 @@
   
   (define (add-spec sep num)
     (set! specs (cons (list (expr->string sep) (format "~a" num))
-                      specs))))
+                      specs)))

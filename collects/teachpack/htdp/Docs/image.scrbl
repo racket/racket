@@ -1,11 +1,10 @@
 #lang scribble/doc
 
-@begin[(require
-	 (lib "manual.ss" "scribble"))
+@begin[(require scribble/manual)
        
-       (require-for-label 
-	 (lib "lang.ss" "big")
-	 "../image.ss")]
+       (require (for-label 
+                 scheme/base
+                 "../image.ss"))]
 
 @title[#:tag "image"]{Manipulating Images: image.ss}
 
@@ -13,37 +12,35 @@ The  teachpack provides primitives for constructing and manipulating
 images. Basic images are created as outlines or solid shapes. Additional
 primitives allow for the composition of images.
 
-;; {Mode} is one of the following two symbols or strings: 
-
-;; -- @scheme['solid]
-
-;; -- @scheme['outline]
-
-;; -- @scheme["solid"]
-
-;; -- @scheme["outline"]
+@schemeblock[
+(code:comment #, @t{@scheme[Mode] is one of the following two symbols or strings:})
+(code:comment #, @t{ -- @scheme['solid]})
+(code:comment #, @t{ -- @scheme['outline]})
+(code:comment #, @t{ -- @scheme["solid"]})
+(code:comment #, @t{ -- @scheme["outline"]})
+]
 
 Interpretation: @scheme['solid] is used for creating solid basic
   shapes; @scheme['outline] is used for creating outlines of basic
   shapes. Strings are used in an analogous manner. 
 
-@scheme[(define-struct color (red blue green))]
+@begin[
+#reader scribble/comment-reader
+(schemeblock
+(define-struct color (red blue green))
 
-;; A [CS] is a structure: @scheme[(make-color N N N)]
+;; A CS is a structure: @scheme[(make-color _N _N _N)]
+;; where @scheme[_N] is between 0 and 255. 
 
-;; where N is between 0 and 255. 
-
-;; [Color] is one of:
-
+;; @scheme[Color] is one of:
 ;; -- a color symbol, e.g., @scheme['blue]
-
 ;; -- a color string, e.g., @scheme["blue"]
-
 ;; -- a CS, e.g., @scheme[(make-color 0 0 255)], which also denotes blue. 
 
 ;; Interpretation: @scheme[Color] arguments are used to paint the shapes
-
-;; or their outlines. See below for more information about color structs.
+;; or their outlines. See below for more information about color
+;; structs.
+)]
 
 The following predicate specifies what a valid image color is: 
 

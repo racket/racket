@@ -1,5 +1,6 @@
 
-(module make-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require "make-sig.ss")
 
       (import)
@@ -163,4 +164,4 @@
       (define make/proc
 	(case-lambda
 	 [(spec) (make/proc/helper spec #())]
-	 [(spec argv) (make/proc/helper spec argv)])))
+	 [(spec argv) (make/proc/helper spec argv)]))

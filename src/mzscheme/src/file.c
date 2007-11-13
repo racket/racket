@@ -31,10 +31,6 @@
    this representation is that all of the operations must manipulate
    strings.
 
-   A minor complication is that paths starting "~" are treated as a
-   absolute under Unix, so that "~" as a realtive path must be encoded
-   as "./~".
-
    A major complication is the complex syntax of Windows paths. Again,
    since all the operations work on the string, the code in this file
    parses and re-parses constantly.
@@ -143,6 +139,14 @@ void scheme_set_ignore_user_paths(int v) { scheme_ignore_user_paths = v; }
 extern int scheme_stupid_windows_machine;
 #endif
 
+/* Define TILDE_IS_ABSOLUTE to get pre-v4.0 handling of "~". */
+
+#ifdef TILDE_IS_ABSOLUTE
+# define WHEN_TILDE_IS_ABSOLUTE(x) (x)
+#else
+# define WHEN_TILDE_IS_ABSOLUTE(x) 0
+#endif
+
 static int check_dos_slashslash_drive(const char *next, int delta, int len, 
 				      int *drive_end, int exact, int no_fw);
 static int check_dos_slashslash_qm(const char *next, int len, int *drive_end, 
@@ -186,7 +190,8 @@ static Scheme_Object *complete_path_p(int argc, Scheme_Object **argv);
 static Scheme_Object *path_to_complete_path(int argc, Scheme_Object **argv);
 static Scheme_Object *resolve_path(int argc, Scheme_Object *argv[]);
 static Scheme_Object *simplify_path(int argc, Scheme_Object *argv[]);
-static Scheme_Object *expand_path(int argc, Scheme_Object *argv[]);
+static Scheme_Object *cleanse_path(int argc, Scheme_Object *argv[]);
+static Scheme_Object *expand_user_path(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_drive(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_modify_seconds(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[]);
@@ -424,9 +429,14 @@ void scheme_init_file(Scheme_Env *env)
 						      "simplify-path",
 						      1, 2), 
 			     env);
-  scheme_add_global_constant("expand-path",
-			     scheme_make_prim_w_arity(expand_path,
-						      "expand-path",
+  scheme_add_global_constant("cleanse-path",
+			     scheme_make_prim_w_arity(cleanse_path,
+						      "cleanse-path",
+						      1, 1), 
+			     env);
+  scheme_add_global_constant("expand-user-path",
+			     scheme_make_prim_w_arity(expand_user_path,
+						      "expand-user-path",
 						      1, 1), 
 			     env);
   scheme_add_global_constant("directory-list",
@@ -585,6 +595,7 @@ static Scheme_Object *make_protected_sized_offset_path(int protect, char *chars,
       }
     }
   } else {
+#ifdef TILDE_IS_ABSOLUTE
     if (protect) {
       if (chars[d] == '~') {
         char *nm;
@@ -598,6 +609,7 @@ static Scheme_Object *make_protected_sized_offset_path(int protect, char *chars,
         return scheme_make_sized_offset_kind_path(nm, 0, len + 2, 0, kind);
       }
     }
+#endif
   }
 
   if (just_check)
@@ -845,6 +857,7 @@ static Scheme_Object *do_path_element_to_bytes(const char *name, int argc, Schem
   kind = SCHEME_PATH_KIND(p);
 
   if (kind == SCHEME_UNIX_PATH_KIND) {
+#ifdef TILDE_IS_ABSOLUTE
     /* Drop ./ of ./~ prefix */
     if ((SCHEME_PATH_VAL(p)[0] == '.')
         && (SCHEME_PATH_VAL(p)[1] == '/')
@@ -854,6 +867,7 @@ static Scheme_Object *do_path_element_to_bytes(const char *name, int argc, Schem
                                                SCHEME_PATH_LEN(p) - 2, 
                                                1);
     }
+#endif
   }
   if (kind == SCHEME_WINDOWS_PATH_KIND) {
     p = drop_rel_prefix(p);
@@ -1698,7 +1712,7 @@ static char *remove_redundant_slashes(char *filename, int *l, int delta, int *ex
 static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, const char *errorin, 
 				int *expanded,
 				int report_bad_user, int fullpath,
-				int guards, int kind)
+				int guards, int kind, int expand_user)
 {
   if (expanded)
     *expanded = 0;
@@ -1727,7 +1741,7 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
     /* User home lookup strategy taken from wxWindows: */
 
 #ifdef UNIX_FILE_SYSTEM
-    if (filename[0] == '~') {
+    if (expand_user && (filename[0] == '~')) {
       char user[256], *home = NULL, *naya;
       struct passwd *who = NULL;
       int u, f, len, flen;
@@ -1943,12 +1957,17 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
 
 char *scheme_expand_filename(char* filename, int ilen, const char *errorin, int *expanded, int guards)
 {
-  return do_expand_filename(NULL, filename, ilen, errorin, expanded, 1, 1, guards, SCHEME_PLATFORM_PATH_KIND);
+  return do_expand_filename(NULL, filename, ilen, errorin, expanded, 1, 1, guards, SCHEME_PLATFORM_PATH_KIND, 0);
+}
+
+char *scheme_expand_user_filename(char* filename, int ilen, const char *errorin, int *expanded, int guards)
+{
+  return do_expand_filename(NULL, filename, ilen, errorin, expanded, 1, 1, guards, SCHEME_PLATFORM_PATH_KIND, 1);
 }
 
 char *scheme_expand_string_filename(Scheme_Object *o, const char *errorin, int *expanded, int guards)
 {
-  return do_expand_filename(o, NULL, 0, errorin, expanded, 1, 1, guards, SCHEME_PLATFORM_PATH_KIND);
+  return do_expand_filename(o, NULL, 0, errorin, expanded, 1, 1, guards, SCHEME_PLATFORM_PATH_KIND, 0);
 }
 
 #ifdef DOS_FILE_SYSTEM
@@ -2206,7 +2225,8 @@ static Scheme_Object *file_exists(int argc, Scheme_Object **argv)
 			 NULL,
 			 0, 1,
 			 SCHEME_GUARD_FILE_EXISTS,
-                         SCHEME_PLATFORM_PATH_KIND);
+                         SCHEME_PLATFORM_PATH_KIND,
+                         0);
 
   return (f && scheme_file_exists(f)) ? scheme_true : scheme_false;
 }
@@ -2225,7 +2245,8 @@ static Scheme_Object *directory_exists(int argc, Scheme_Object **argv)
 			 NULL,
 			 0, 1,
 			 SCHEME_GUARD_FILE_EXISTS,
-                         SCHEME_PLATFORM_PATH_KIND);
+                         SCHEME_PLATFORM_PATH_KIND,
+                         0);
 
   return (f && scheme_directory_exists(f)) ? scheme_true : scheme_false;
 }
@@ -2267,7 +2288,8 @@ static Scheme_Object *link_exists(int argc, Scheme_Object **argv)
 				  NULL,
 				  0, 1,
 				  SCHEME_GUARD_FILE_EXISTS, 
-                                  SCHEME_PLATFORM_PATH_KIND);
+                                  SCHEME_PLATFORM_PATH_KIND,
+                                  0);
     while (1) {
       if (!MSC_W_IZE(lstat)(MSC_WIDE_PATH(filename), &buf))
 	break;
@@ -2373,6 +2395,7 @@ static int path_is_simple_dir_without_sep(Scheme_Object *path)
     }
   }
 
+#ifdef TILDE_IS_ABSOLUTE
   if (SCHEME_PATH_KIND(path) == SCHEME_UNIX_PATH_KIND) {
     if (SCHEME_PATH_VAL(path)[0] == '~') {
       int i;
@@ -2384,6 +2407,7 @@ static int path_is_simple_dir_without_sep(Scheme_Object *path)
         return 1;
     }
   }
+#endif
 
   if (SCHEME_PATH_KIND(path) == SCHEME_WINDOWS_PATH_KIND) {
     int drive_end;
@@ -2470,6 +2494,7 @@ static Scheme_Object *do_path_to_directory_path(char *s, long offset, long len, 
           || ((len == 2) && (s[offset] == '.') && (s[offset + 1] == '.'))))
     return p;
   
+# ifdef TILDE_IS_ABSOLUTE
   if (kind == SCHEME_UNIX_PATH_KIND) {
     if (s[offset] == '~') {
       long i;
@@ -2481,6 +2506,7 @@ static Scheme_Object *do_path_to_directory_path(char *s, long offset, long len, 
         return p;
     }
   }
+# endif
 #endif
 
   if (just_check)
@@ -2659,11 +2685,13 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
           }
         } else {
           rel = 1;
+#ifdef TILDE_IS_ABSOLUTE
           if (i && (next[0] == '.') && (next[1] == '/') && (next[2] == '~')) {
             /* Strip the "./" prefix */
             next_off += 2;
             len -= 2;
           }
+#endif
         }
       } else {
         /* SCHEME_WINDOWS_PATH_KIND: */
@@ -3267,6 +3295,7 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
   }
   
   if (kind == SCHEME_UNIX_PATH_KIND) {
+#ifdef TILDE_IS_ABSOLUTE
     /* "./~..." can't be split at the beginning. */
     if ((p == 1)
         && s[0] == '.'
@@ -3274,6 +3303,7 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
       not_same = 1;
       p -= 2;
     } else
+#endif
       not_same = 0;
   } else
     not_same = 0;
@@ -3287,6 +3317,7 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
     if (kind == SCHEME_UNIX_PATH_KIND) {
       if (s[0] == '/')
         return MAKE_SPLIT(scheme_false, scheme_make_sized_offset_kind_path(s, 0, len, 1, kind), 1);
+#ifdef TILDE_IS_ABSOLUTE
       if (s[0] == '~') {
         /* Strip ending slashes, if any. */
         while (IS_A_UNIX_SEP(s[len - 1])) {
@@ -3294,6 +3325,7 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
         }
         return MAKE_SPLIT(scheme_false, scheme_make_sized_offset_kind_path(s, 0, len, 1, kind), 1);
       }
+#endif
     } else {
       if (IS_A_DOS_SEP(s[0]) || drive_end)
         return MAKE_SPLIT(scheme_false, scheme_make_sized_offset_kind_path(s, 0, len, 1, kind), 1);
@@ -3405,7 +3437,7 @@ int scheme_is_relative_path(const char *s, long len, int kind)
     return 0;
 
   if (kind == SCHEME_UNIX_PATH_KIND) {
-    return !((s[0] == '/') || (s[0] == '~'));
+    return !((s[0] == '/') || WHEN_TILDE_IS_ABSOLUTE(s[0] == '~'));
   } else {
     int dlen;
     if (check_dos_slashslash_qm(s, len, &dlen, NULL, NULL)
@@ -3596,7 +3628,8 @@ static char *filename_for_error(Scheme_Object *p)
 			    NULL,
 			    NULL,
 			    1, 1,
-			    0, SCHEME_PLATFORM_PATH_KIND);
+			    0, SCHEME_PLATFORM_PATH_KIND,
+                            0);
 }
 
 static Scheme_Object *delete_file(int argc, Scheme_Object **argv)
@@ -3899,7 +3932,8 @@ static Scheme_Object *resolve_path(int argc, Scheme_Object *argv[])
 				&expanded,
 				1, 0,
 				SCHEME_GUARD_FILE_EXISTS,
-                                SCHEME_PLATFORM_PATH_KIND);
+                                SCHEME_PLATFORM_PATH_KIND,
+                                0);
 
 #ifndef NO_READLINK
   {
@@ -4127,20 +4161,20 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
                                        int kind)
      /* When !use_filesystem, the result can be #f for an empty relative
 	path, and it can contain leading ".."s, or ".."s after an initial
-        "~" path.
+        "~" path with "~" paths are absolute.
 	When force_rel_up under Windows, "\\?\REL\.." from split-path is
 	treated like 'up. */
 {
   int isdir, cleaned_slashes = 0, must_be_dir = 0, last_was_dir = 0, did_first = 0;
   Scheme_Object *file = scheme_false, *base;
 
-  /* For Windows, expand-path doesn't actually touch the
-     filesystem. Always start with that, to get things basically tidy. */
+  /* cleanse-path doesn't touch the filesystem. Always start with
+     that, to get things basically tidy. */
   if (kind == SCHEME_WINDOWS_PATH_KIND) {
     char *s;
     int expanded, add_sep = 0;
     s = do_expand_filename(path, SCHEME_PATH_VAL(path), SCHEME_PATH_LEN(path),
-                           NULL, &expanded, 0, 0, 0, kind);
+                           NULL, &expanded, 0, 0, 0, kind, 0);
     {
       int slen;
       if (expanded)
@@ -4438,6 +4472,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	      a[0] = result;
 	      a[1] = up_symbol;
 	      result = do_build_path(2, a, 0, 1, kind);
+#ifdef TILDE_IS_ABSOLUTE
 	    } else if ((kind == SCHEME_UNIX_PATH_KIND)
                        && SCHEME_FALSEP(next)
                        && SCHEME_GENERAL_PATHP(to_go)
@@ -4447,6 +4482,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	      a[0] = result;
 	      a[1] = up_symbol;
 	      result = do_build_path(2, a, 0, 1, kind);
+#endif
 	    } else if (!SCHEME_GENERAL_PATH_STRINGP(next)) {
 	      if (SCHEME_FALSEP(next)) {
 		/* Result is already a root, so we just drop the .. */
@@ -4534,22 +4570,47 @@ static Scheme_Object *current_drive(int argc, Scheme_Object *argv[])
 #endif
 }
 
-static Scheme_Object *expand_path(int argc, Scheme_Object *argv[])
+static Scheme_Object *cleanse_path(int argc, Scheme_Object *argv[])
 {
   char *filename;
   int expanded;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("expand-path", SCHEME_PATH_STRING_STR, 0, argc, argv);
+    scheme_wrong_type("cleanse-path", SCHEME_PATH_STRING_STR, 0, argc, argv);
 
   filename = do_expand_filename(argv[0],
 				NULL,
 				0,
-				"expand-path",
+				"cleanse-path",
 				&expanded,
 				1, 0,
 				SCHEME_GUARD_FILE_EXISTS, 
-                                SCHEME_PLATFORM_PATH_KIND);
+                                SCHEME_PLATFORM_PATH_KIND,
+                                0);
+  
+  if (!expanded && SCHEME_PATHP(argv[0]))
+    return argv[0];
+  else
+    return scheme_make_sized_path(filename, strlen(filename), 1);
+}
+
+static Scheme_Object *expand_user_path(int argc, Scheme_Object *argv[])
+{
+  char *filename;
+  int expanded;
+
+  if (!SCHEME_PATH_STRINGP(argv[0]))
+    scheme_wrong_type("expand-user-path", SCHEME_PATH_STRING_STR, 0, argc, argv);
+
+  filename = do_expand_filename(argv[0],
+				NULL,
+				0,
+				"expand-user-path",
+				&expanded,
+				1, 0,
+				SCHEME_GUARD_FILE_EXISTS, 
+                                SCHEME_PLATFORM_PATH_KIND,
+                                1);
 
   if (!expanded && SCHEME_PATHP(argv[0]))
     return argv[0];
@@ -4599,7 +4660,8 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
 				    break_ok ? "directory-list" : NULL, 
 				    NULL, 1, 259 - 4 /* leave room for \*.* in Windows */, 
 				    break_ok ? SCHEME_GUARD_FILE_READ : 0, 
-                                    SCHEME_PLATFORM_PATH_KIND);
+                                    SCHEME_PLATFORM_PATH_KIND,
+                                    0);
       if (!filename)
 	return NULL;
 # ifdef USE_FINDFIRST
@@ -5479,7 +5541,7 @@ static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel)
   if (!SCHEME_NULLP(v))
     return NULL;
 
-  /* Convert to immutable list of paths: */
+  /* Convert to list of paths: */
   {
     Scheme_Object *last = NULL, *first = NULL, *p, *s;
     v = argv[0];
@@ -5488,7 +5550,6 @@ static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel)
       s = TO_PATH(s);
       
       p = scheme_make_pair(s, scheme_null);
-      SCHEME_SET_PAIR_IMMUTABLE(p);
       if (!first)
 	first = p;
       else
@@ -5636,6 +5697,7 @@ find_system_path(int argc, Scheme_Object **argv)
   {
     /* Everything else is in ~: */
     Scheme_Object *home;
+    char *home_str, *ex_home;
     int ends_in_slash;
 
     if ((which == id_pref_dir) 
@@ -5643,20 +5705,35 @@ find_system_path(int argc, Scheme_Object **argv)
 	|| (which == id_addon_dir)) {
 #if defined(OS_X) && !defined(XONX)
       if (which == id_addon_dir)
-	home = scheme_make_path(scheme_expand_filename("~/Library/PLT Scheme/", -1, NULL, NULL, 0));
+	home_str = "~/Library/PLT Scheme/";
       else
-	home = scheme_make_path(scheme_expand_filename("~/Library/Preferences/", -1, NULL, NULL, 0));
+	home_str = "~/Library/Preferences/";
 #else
-      home = scheme_make_path(scheme_expand_filename("~/.plt-scheme/", -1, NULL, NULL, 0));
+      home_str = "~/.plt-scheme/";
 #endif 
     } else {
 #if defined(OS_X) && !defined(XONX)
       if (which == id_desk_dir)
-	home = scheme_make_path(scheme_expand_filename("~/Desktop/", 10, NULL, NULL, 0));
+	home_str = "~/Desktop/";
+      else if (which == id_doc_dir)
+	home_str = "~/Documents/";
       else
 #endif
-	home = scheme_make_path(scheme_expand_filename("~/", 2, NULL, NULL, 0));
+        home_str = "~/";
     }
+    
+    ex_home = do_expand_filename(NULL, home_str, strlen(home_str), NULL,
+                                 NULL,
+                                 0, 1,
+                                 0, SCHEME_UNIX_PATH_KIND, 
+                                 1);
+
+    if (!ex_home) {
+      /* Something went wrong with the user lookup. Just drop "~'. */
+      home = scheme_make_sized_offset_path(home_str, 1, -1, 1);
+    } else
+      home = scheme_make_path(ex_home);
+
     
     if ((which == id_pref_dir) || (which == id_init_dir) 
 	|| (which == id_home_dir) || (which == id_addon_dir)

@@ -1,7 +1,6 @@
 
-(module modcode mzscheme
+(module modcode scheme/base
   (require (lib "port.ss")
-           (lib "kw.ss")
            (lib "contract.ss")
            "modread.ss")
 
@@ -38,7 +37,7 @@
                        (file-or-directory-modify-seconds a))])
              (or (and (not bm) am) (and am bm (>= am bm))))))
 
-  (define (read-one path src?)
+  (define (read-one orig-path path src?)
     (let ([p ((moddep-current-open-input-file) path)])
       (when src? (port-count-lines! p))
       (dynamic-wind
@@ -49,7 +48,7 @@
             (when (eof-object? v)
               (error 'read-one
                      "empty file; expected a module declaration in: ~a" path))
-            (let* ([name (let-values ([(base name dir?) (split-path path)])
+            (let* ([name (let-values ([(base name dir?) (split-path orig-path)])
                            (string->symbol
                             (bytes->string/utf-8
                              (path->bytes (path-replace-suffix name #""))
@@ -66,11 +65,9 @@
 
   (define-struct (exn:get-module-code exn) (path))
 
-  (define/kw (get-module-code path
-               #:optional
-               [sub-path "compiled"] [compiler compile] [extension-handler #f] 
-               #:key
-               [choose (lambda (src zo so) #f)])
+  (define (get-module-code path
+                           [sub-path "compiled"] [compiler compile] [extension-handler #f] 
+                           #:choose [choose (lambda (src zo so) #f)])
     (unless (path-string? path)
       (raise-type-error 'get-module-code "path or string (sans nul)" path))
     (let*-values ([(path) (resolve path)]
@@ -81,10 +78,9 @@
                        (build-path
                         base sub-path "native"
                         (system-library-subpath)
-                        (path-replace-suffix file (system-type 'so-suffix))))]
-             [zo (build-path base sub-path (path-replace-suffix file #".zo"))]
+                        (path-add-suffix file (system-type 'so-suffix))))]
+             [zo (build-path base sub-path (path-add-suffix file #".zo"))]
              [so (get-so file)]
-             [_loader-so (get-so (string->path "_loader.ss"))]
              [path-d (with-handlers ([exn:fail:filesystem? (lambda (x) #f)])
                        (file-or-directory-modify-seconds path))]
              [with-dir (lambda (t)
@@ -99,7 +95,7 @@
           [(or (eq? prefer 'zo)
                (and (not prefer)
                     (date>=? zo path-d)))
-           (read-one zo #f)]
+           (read-one path zo #f)]
           ;; Maybe there's an .so? Use it only if we don't prefer source.
           [(or (eq? prefer 'so)
                (and (not prefer)
@@ -114,25 +110,7 @@
           ;; Use source if it exists
           [(or (eq? prefer 'src)
                path-d)
-           (with-dir (lambda () (compiler (read-one path #t))))]
-          ;; Or maybe even a _loader.so?
-          [(and (not path-d)
-                (date>=? _loader-so path-d)
-                (let ([getter (load-extension _loader-so)])
-                  (let-values ([(loader modname)
-                                (getter (string->symbol
-                                         (bytes->string/latin-1
-                                          (path->bytes
-                                           (path-replace-suffix file #"")))))])
-                    loader)))
-           => (lambda (loader)
-                (if extension-handler
-                  (extension-handler loader #t)
-                  (raise (make-exn:get-module-code
-                          (format "get-module-code: cannot use _loader file: ~e"
-                                  _loader-so)
-                          (current-continuation-marks)
-                          loader))))]
+           (with-dir (lambda () (compiler (read-one path path #t))))]
           ;; Report a not-there error
           [else (raise (make-exn:get-module-code
                         (format "get-module-code: no such file: ~e" path)

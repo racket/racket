@@ -323,9 +323,11 @@
 
 					; Normal begin
 			    (begin
-			      (begin-map! (lambda (e) (prephase! e in-mod? #f #f))
-					  (lambda (e) (prephase! e in-mod? need-val? name))
-					  bodies)
+                              (let ([b (begin-map (lambda (e) (prephase! e in-mod? #f #f))
+                                                  (lambda (e) (prephase! e in-mod? need-val? name))
+                                                  bodies)])
+                                (set! bodies b)
+                                (zodiac:set-begin-form-bodies! ast b))
 			      (let ([final-bodies
 				     (let loop ([bodies bodies])
 				       (cond
@@ -334,13 +336,13 @@
 					
 					; flatten begins
 					[(zodiac:begin-form? (car bodies))
-					 (loop (append! (zodiac:begin-form-bodies (car bodies))
-							(cdr bodies)))]
+					 (loop (append (zodiac:begin-form-bodies (car bodies))
+                                                       (cdr bodies)))]
 					
 					; flatten begin0s, too
 					[(zodiac:begin0-form? (car bodies))
-					 (loop (append! (zodiac:begin0-form-bodies (car bodies))
-							(cdr bodies)))]
+					 (loop (append (zodiac:begin0-form-bodies (car bodies))
+                                                       (cdr bodies)))]
 					
 					; throw away dead values if possible
 					[(prephase:dead-expression? (car bodies))
@@ -384,13 +386,16 @@
 								  bodies))]
 				       [bodies (zodiac:begin0-form-bodies ast)])
 				   
-					; simplify the first position
-				   (set-car! bodies (prephase! (car bodies) in-mod? need-val? name))
+                                   ;; simplify the first position
+                                   (set! bodies (cons
+                                                 (prephase! (car bodies) in-mod? need-val? name)
+                                                 (cdr bodies)))
+                                   (zodiac:set-begin0-form-bodies! ast bodies)
 				   
-					; then simplify the begin0
+                                   ;; then simplify the begin0
 				   (cond
 				    
-					; (begin0 M) --> M
+                                    ;; (begin0 M) --> M
 				    [(null? (cdr bodies)) (car bodies)]
 				    
 					; (begin0 <push> ...) --> (begin ... <push>))
@@ -403,9 +408,10 @@
 				    
 					; (begin0 M ...) --> (begin0 M (begin ...))
 				    [else
-				     (set-cdr!
-				      (zodiac:begin0-form-bodies ast)
-				      (list (prephase! (make-begin (cdr bodies)) in-mod? #f #f)))
+                                     (zodiac:set-begin0-form-bodies!
+                                      ast
+                                      (cons (car (zodiac:begin0-form-bodies ast))
+                                            (list (prephase! (make-begin (cdr bodies)) in-mod? #f #f))))
 				     ast]
 				    
 				    ))])

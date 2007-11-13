@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "control" #:style 'toc]{Control Flow}

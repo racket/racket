@@ -1,4 +1,5 @@
-(module imap-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "list.ss") "imap-sig.ss" "private/rbtree.ss")
 
   (import)
@@ -74,7 +75,7 @@
     (let loop ([s s]
                [r r]
                [accum null]
-               [eol-k (lambda (accum) (reverse! accum))]
+               [eol-k (lambda (accum) (reverse accum))]
                [eop-k (lambda (s accum) (error 'imap-read "unxpected close parenthesis"))])
       (cond
         [(bytes=? #"" s)
@@ -99,7 +100,7 @@
                            [finish-parens
                             (lambda (s laccum)
                               (loop s r
-                                    (cons (reverse! laccum) accum)
+                                    (cons (reverse laccum) accum)
                                     eol-k eop-k))])
                     (loop (skip s 1) r null next-line finish-parens))]
            [(#\{) (let ([m (regexp-match #rx#"{([0-9]+)}(.*)" s)])
@@ -554,4 +555,4 @@
                                      (bytes=? bytes-name except))
                           (set! sub-folders
                                 (cons (list flags name) sub-folders))))))))
-      (reverse sub-folders))))
+      (reverse sub-folders)))

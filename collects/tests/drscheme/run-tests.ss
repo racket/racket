@@ -22,8 +22,11 @@
                     (kill-thread thread-desc)
                     (printf "t>> killed ~a~n" test))))))))
       
-  (define all-tests (map symbol->string (load (build-path (collection-path "tests" "drscheme")
-                                                          "README"))))
+  (define all-tests 
+    (map symbol->string 
+         (call-with-input-file (build-path (collection-path "tests" "drscheme")
+                                           "README")
+           read)))
   
   (define (make-repl)
     (test-thread

@@ -40,47 +40,73 @@
 ;;   e means a list of tokens, often ending in a '|;| token
 ;;   -e means a reversed list of tokens
 
-(if (string=? "--setup"
-	      (vector-ref (current-command-line-arguments) 0))
+(module xform '#%kernel
+  (#%require '#%min-stx)
 
-    ;; Setup an xform-collects tree for running xform.
-    ;; Delete existing xform-collects tree if it's for an old version
-    (begin
-      (unless (and (file-exists? "xform-collects/version.ss")
-		   (equal? (version)
-			   (with-input-from-file "xform-collects/version.ss" read))
-		   (>= (file-or-directory-modify-seconds (build-path "xform-collects/xform/xform-mod.ss"))
-		       (file-or-directory-modify-seconds (build-path (current-load-relative-directory) "xform-mod.ss"))))
-        ;; In case multiple xforms run in parallel, use a lock file
-        ;;  so that only one is building.
-        (let ([lock-file "XFORM-LOCK"])
-          (with-handlers ([exn:fail:filesystem:exists?
-                           (lambda (x)
-                             (printf "Lock file exists: ~a\n"
-                                     (path->complete-path lock-file))
-                             (printf " (If this isn't a parallel make, then delete it.)\n")
-                             (printf " Waiting until the lock file disappears...\n")
-                             (let loop ()
-                               (sleep 0.1)
-                               (if (file-exists? lock-file)
-                                   (loop)
-                                   (printf " ... continuing\n"))))])
-            (dynamic-wind
-                (lambda ()
-                  (close-output-port (open-output-file lock-file 'error)))
-                (lambda ()
-                  (load-relative "setup.ss"))
-                (lambda ()
-                  (delete-file lock-file))))))
-    
-      (current-library-collection-paths (list (build-path (current-directory) "xform-collects")))
-      
-      (error-print-width 100)
+  (define-values (rel-dir)
+    (if (string=? "--setup" (vector-ref (current-command-line-arguments) 0))
+        (vector-ref (current-command-line-arguments) 1)
+        "."))
 
-      (dynamic-require '(lib "xform-mod.ss" "xform") #f))
+  (define-values (here-dir)
+    (let-values ([(base name dir?)
+                  (split-path
+                   (resolved-module-path-name
+                    (module-path-index-resolve (syntax-source-module (quote-syntax here)))))])
+      (build-path base rel-dir)))
 
-    ;; Otherwise, we assume that it's ok to use the collects
-    (dynamic-require (build-path (current-load-relative-directory)
-				 "xform-mod.ss")
-		     #f))
+  (if (string=? "--setup"
+                (vector-ref (current-command-line-arguments) 0))
 
+      ;; Setup an xform-collects tree for running xform.
+      ;; Delete existing xform-collects tree if it's for an old version
+      (begin
+        (parameterize ([current-directory rel-dir])
+          (unless (and (file-exists? "xform-collects/version.ss")
+                       (equal? (version)
+                               (with-input-from-file "xform-collects/version.ss" read))
+                       (>= (file-or-directory-modify-seconds (build-path "xform-collects/xform/xform-mod.ss"))
+                           (file-or-directory-modify-seconds (build-path here-dir "xform-mod.ss"))))
+            ;; In case multiple xforms run in parallel, use a lock file
+            ;;  so that only one is building.
+            (let ([lock-file "XFORM-LOCK"])
+              ((call/ec
+                (lambda (escape)
+                  (parameterize ([uncaught-exception-handler
+                                  (lambda (exn)
+                                    (escape
+                                     (lambda ()
+                                       (if (exn:fail:filesystem:exists? exn)
+                                           (begin
+                                             (printf "Lock file exists: ~a\n"
+                                                     (path->complete-path lock-file))
+                                             (printf " (If this isn't a parallel make, then delete it.)\n")
+                                             (printf " Waiting until the lock file disappears...\n")
+                                             (let loop ()
+                                               (sleep 0.1)
+                                               (if (file-exists? lock-file)
+                                                   (loop)
+                                                   (printf " ... continuing\n"))))
+                                           (raise exn)))))])
+                    (dynamic-wind
+                        (lambda ()
+                          (close-output-port (open-output-file lock-file 'error)))
+                        (lambda ()
+                          (namespace-require 'scheme/base)
+                          (load (build-path here-dir "setup.ss"))
+                          void)
+                        (lambda ()
+                          (delete-file lock-file))))))))))
+
+        (use-compiled-file-paths '("compiled"))
+        
+        (current-library-collection-paths (list (build-path (build-path (current-directory) rel-dir) "xform-collects")))
+        
+        (error-print-width 100)
+
+        (dynamic-require 'xform/xform-mod #f))
+
+      ;; Otherwise, we assume that it's ok to use the collects
+      (dynamic-require (build-path here-dir
+                                   "xform-mod.ss")
+                       #f)))

@@ -1,5 +1,5 @@
-(module annotate mzscheme
-  (require (prefix kernel: (lib "kerncase.ss" "syntax"))
+(module annotate scheme/base
+  (require (prefix-in kernel: (lib "kerncase.ss" "syntax"))
            (lib "contract.ss")
 	   (lib "list.ss")
            (lib "etc.ss")
@@ -9,7 +9,8 @@
            "my-macros.ss"
            #;"xml-box.ss"
            #;(file "~/clements/scheme-scraps/eli-debug.ss")
-           (prefix beginner-defined: "beginner-defined.ss"))
+           (prefix-in beginner-defined: "beginner-defined.ss")
+           (for-syntax scheme/base))
 
   (define-syntax (where stx)
     (syntax-case stx ()
@@ -86,11 +87,11 @@
   ;                   [elaborated (cadr arg-list)]
   ;                   [eval-result (caddr arg-list)]
   ;                   [collapsed (collapse-let-values (expand stx))])
-  ;              (printf "~a~n~a~n~a~n~a~n" (syntax-object->datum collapsed)
+  ;              (printf "~a~n~a~n~a~n~a~n" (syntax->datum collapsed)
   ;                      elaborated
   ;                      (eval collapsed)
   ;                      eval-result)
-  ;              (and (equal? (syntax-object->datum collapsed) elaborated)
+  ;              (and (equal? (syntax->datum collapsed) elaborated)
   ;                   (equal? (eval collapsed) eval-result))))
   ;          (list (list #'(let ([a 3] [b 9]) (+ a b)) '(let-values ([(a) (#%datum . 3)] [(b) (#%datum . 9)]) (#%app (#%top . +) a b)) 12)
   ;                (list #'(let* ([a 9] [b a] [c b]) c) '(let*-values ([(a) (#%datum . 9)] [(b) a] [(c) b]) c) 9)
@@ -146,7 +147,7 @@
                                            (map recur-regular (syntax->list #'(rhs ...))))]
                              [new-bodies (map (lambda (exp) (recur-with-bindings exp vars-list)) (syntax->list #'bodies))]
                              [new-bindings (map list labelled-vars-list rhs-list)])
-                        (datum->syntax-object stx `(,#'label ,new-bindings ,@new-bodies) stx stx))))]
+                        (datum->syntax stx `(,#'label ,new-bindings ,@new-bodies) stx stx))))]
 
                  ; evaluated at runtime, using 3D code:
                  [put-into-xml-table (lambda (val)
@@ -196,7 +197,7 @@
                         (recur-regular
                          (stepper-syntax-property #`(letrec-values (clause ...) . bodies) 'stepper-hint 'comes-from-local))]
                        [else (error 'top-level-rewrite "expected a letrec-values inside a local, given: ~e" 
-                                    (syntax-object->datum #`expansion-of-local))])]
+                                    (syntax->datum #`expansion-of-local))])]
                     
                     ; let/letrec :
                     [(let-values x ...) (do-let/rec stx #f)]
@@ -489,7 +490,7 @@
                                                        (2vals #`(begin . #,annotated-bodies) (varref-set-union free-var-sets))))]
                                       [new-free-varrefs (varref-set-remove-bindings free-varrefs
                                                                                     (arglist-flatten #'args-stx))])
-                                     (2vals (datum->syntax-object #'here `(,#'args-stx ,annotated-body) #'clause) new-free-varrefs))))]
+                                     (2vals (datum->syntax #'here `(,#'args-stx ,annotated-body) #'clause) new-free-varrefs))))]
                     
                     [outer-lambda-abstraction
                      (lambda (annotated-lambda free-varrefs)
@@ -779,12 +780,12 @@
                  (recertifier
                   (kernel:kernel-syntax-case exp #f
                     
-                    [(lambda . clause)
+                    [(#%plain-lambda . clause)
                      (let*-2vals ([(annotated-clause free-varrefs)
                                    (lambda-clause-abstraction (syntax clause))]
                                   [annotated-lambda
                                    (with-syntax ([annotated-clause annotated-clause])
-                                     (syntax/loc exp (lambda . annotated-clause)))])
+                                     (syntax/loc exp (#%plain-lambda . annotated-clause)))])
                                  (outer-lambda-abstraction annotated-lambda free-varrefs))]
                     
                     [(case-lambda . clauses)
@@ -798,7 +799,6 @@
                     
                     
                     [(if test then else) (if-abstraction (syntax test) (syntax then) (syntax else))]
-                    [(if test then) (if-abstraction (syntax test) (syntax then) #f)]
                     
                     
                     ;                                     
@@ -819,7 +819,7 @@
 
                     [(begin . bodies-stx)
                      (begin
-                       (error 'annotate-inner "nothing expands into begin! : ~v" (syntax-object->datum exp))
+                       (error 'annotate-inner "nothing expands into begin! : ~v" (syntax->datum exp))
                        #;(begin-abstraction (syntax->list #`bodies-stx)))]
                     
                     
@@ -1022,7 +1022,7 @@
                     ;; the call/cc-safe version of this appears to work, and it lives in the definition of let.  I should 
                     ;; transfer that knowledge to here.  -- JBC, 2006-10-11
                     
-                    [(#%app . terms)
+                    [(#%plain-app . terms)
                      (let*-2vals
                       ([(annotated-terms free-varrefs-terms)
                         (2vals-map non-tail-recur (syntax->list (syntax terms)))]
@@ -1064,9 +1064,6 @@
                     ;    $@:@@ -$$-@@  :@@$- :@$-@@@@@@@@@
                     
                     
-                    [(#%datum . _)
-                     (normal-bundle null exp)]
-                    
                     [(#%top . var-stx)
                      (varref-abstraction #`var-stx)]
                     
@@ -1075,7 +1072,7 @@
                      (varref-abstraction #`var-stx)]
                     
                     [else 
-                     (error 'annotate "unexpected syntax for expression: ~v" (syntax-object->datum exp))])))])))
+                     (error 'annotate "unexpected syntax for expression: ~v" (syntax->datum exp))])))])))
     
     (define (stepper-recertify new-stx old-stx)
       (syntax-recertify new-stx old-stx (current-code-inspector) #f))
@@ -1107,13 +1104,13 @@
           [else
            #;
            (error `annotate/top-level "unexpected top-level expression: ~a\n"
-                  (syntax-object->datum exp))
+                  (syntax->datum exp))
            (annotate/module-top-level exp)])))
     
     (define/contract annotate/top-level/acl2
       (syntax? . -> . syntax?)
       (lambda (exp)
-        (syntax-case exp (begin define-values #%app)
+        (syntax-case exp (begin define-values #%plain-app)
           [(begin contract-thingy 
                   (begin body (begin)))
            #`(begin contract-thingy (begin #,(annotate/module-top-level #`body) (begin)))]
@@ -1134,8 +1131,8 @@
           [else (annotate/module-top-level exp)]
           
           #;[else (begin
-                  (fprintf (current-error-port) "~v\n" (syntax-object->datum exp))
-                  (error `annotate/top-level "unexpected top-level expression: ~a\n" (syntax-object->datum exp)))])))
+                  (fprintf (current-error-port) "~v\n" (syntax->datum exp))
+                  (error `annotate/top-level "unexpected top-level expression: ~a\n" (syntax->datum exp)))])))
     
     
     
@@ -1150,7 +1147,8 @@
               [(stepper-syntax-property exp 'stepper-skipto)
                (skipto/auto exp 'rebuild annotate/module-top-level)] 
               [else 
-               (syntax-case exp (#%app call-with-values define-values define-syntaxes require require-for-syntax provide begin lambda)
+               (syntax-case exp (#%plain-app call-with-values define-values define-syntaxes 
+                                             #%require #%provide begin lambda)
                  [(define-values (new-var ...) e)
                   (let* ([name-list (syntax->list #`(new-var ...))]
                          [defined-name (if (and (pair? name-list) (null? (cdr name-list)))
@@ -1163,15 +1161,13 @@
                          (#,exp-finished-break (list (list #,(lambda () exp) #f (lambda () (list new-var ...)))))))]
                  [(define-syntaxes (new-vars ...) e)
                   exp]
-                 [(require specs ...)
+                 [(#%require specs ...)
                   exp]
-                 [(require-for-syntax specs ...)
-                  exp]
-                 [(provide specs ...)
+                 [(#%provide specs ...)
                   exp]
                  [(begin .  bodies)
                   #`(begin #,@(map annotate/module-top-level (syntax->list #`bodies)))]
-                 [(#%app call-with-values (lambda () body) print-values)
+                 [(#%plain-app call-with-values (lambda () body) print-values)
                   #`(call-with-values 
                      (lambda () #,(top-level-annotate/inner (top-level-rewrite #`body) exp #f))
                      (lambda vals
@@ -1186,7 +1182,7 @@
                   (top-level-annotate/inner (top-level-rewrite exp) exp #f)
                   ;; the following check can't be permitted in the presence of things like test-suite cases
                   ;; which produce arbitrary expressions at the top level.
-                  #;(error `annotate/module-top-level "unexpected module-top-level expression to annotate: ~a\n" (syntax-object->datum exp))])])))
+                  #;(error `annotate/module-top-level "unexpected module-top-level expression to annotate: ~a\n" (syntax->datum exp))])])))
     
     ; body of local
     (if input-is-top-level?

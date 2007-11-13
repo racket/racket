@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "parameters"]{Parameters}
+
+@declare-exporting[(lib "scheme/parameter")]
 
 See @secref["parameter-model"] for basic information on the
 parameter model. Parameters correspond to @defterm{preserved thread

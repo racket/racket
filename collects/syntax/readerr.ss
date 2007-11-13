@@ -47,5 +47,5 @@
                        (format "~a: " source-name)])
                 msg)
         (current-continuation-marks)
-	(list-immutable (make-srcloc
-			 source-name line col pos span)))))))
+	(list (make-srcloc
+               source-name line col pos span)))))))

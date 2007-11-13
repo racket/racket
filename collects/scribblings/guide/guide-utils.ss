@@ -1,13 +1,12 @@
-(module guide-utils (lib "lang.ss" "big")
-  (require (lib "manual.ss" "scribble")
-           (lib "struct.ss" "scribble")
-           (lib "decode.ss" "scribble")
-           (lib "kw.ss")
-           (lib "eval.ss" "scribble")
+(module guide-utils scheme/base
+  (require scribble/manual
+           scribble/struct
+           scribble/decode
+           scribble/eval
            "../icons.ss")
 
-  (require-for-label (lib "lang.ss" "big"))
-  (provide-for-label (all-from (lib "lang.ss" "big")))
+  (require (for-label scheme/base))
+  (provide (for-label (all-from-out scheme/base)))
 
   (provide Quick MzScheme HtDP
            tool
@@ -20,7 +19,7 @@
            ext-refsecref)
 
   (define Quick
-    (italic (secref #:doc '(lib "quick.scrbl" "scribblings" "quick") "top")))
+    (italic (secref #:doc '(lib "scribblings/quick/quick.scrbl") "top")))
 
   (define HtDP
     (italic (link "http://www.htdp.org" "How to Design Programs")))
@@ -58,7 +57,7 @@
     (apply refdetails* tag " documents the fine points of " s))
 
   (define (refsecref s)
-    (secref #:doc '(lib "reference.scrbl" "scribblings" "reference") s))
+    (secref #:doc '(lib "scribblings/reference/reference.scrbl") s))
 
   (define (ext-refsecref s)
     (make-element #f (list (refsecref s) " in " MzScheme)))

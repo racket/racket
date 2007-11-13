@@ -1,4 +1,4 @@
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (require (lib "string-constant.ss" "string-constants"))
   (define name "Lazy Scheme")
   (define doc.txt "doc.txt")

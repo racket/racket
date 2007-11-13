@@ -1,5 +1,5 @@
 
-(module handler (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "class.ss")
            (lib "list.ss")
            (lib "hierlist.ss" "hierlist")
@@ -200,14 +200,18 @@
   ;; updates the recent menu preferences 
   ;; with the positions `start' and `end'
   (define (set-recent-position filename start end)
-    (let ([recent-items
-           (filter (λ (x) (string=? (path->string (car x))
-                                    (path->string filename)))
-                   (preferences:get 'framework:recently-opened-files/pos))])
-      (unless (null? recent-items)
-        (let ([recent-item (car recent-items)])
-          (set-car! (cdr recent-item) start)
-          (set-car! (cddr recent-item) end)))))
+    (let* ([recent-items
+            (preferences:get 'framework:recently-opened-files/pos)]
+           [new-recent-items
+            (map (λ (x) 
+                    (if (string=? (path->string (car x))
+                                  (path->string filename))
+                        (list* (car x) start end (cdddr x))
+                        x))
+                 (preferences:get 'framework:recently-opened-files/pos))])
+      (unless (equal? recent-items new-recent-items)
+        (preferences:set 'framework:recently-opened-files/pos
+                         new-recent-items))))
   
   ;; install-recent-items : (is-a?/c menu%) -> void?
   (define (install-recent-items menu)
@@ -389,4 +393,4 @@
         (send *open-directory*
               set-from-file! file))
       (and file
-           (edit-file file)))))
+           (edit-file file))))

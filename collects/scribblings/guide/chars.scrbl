@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "characters"]{Characters}
@@ -9,7 +9,7 @@ A Scheme @defterm{character} corresponds to a Unicode @defterm{scalar
 value}. Roughly, a scalar value is an unsigned integer whose
 representation fits into 21 bits, and that maps to some notion of a
 natural-language character or piece of a character. Technically, a
-scalar value is a simpler notion that the concept called a
+scalar value is a simpler notion than the concept called a
 ``character'' in the Unicode standard, but it's an approximation that
 works well for many purposes. For example, any accented Roman letter
 can be represented as a scalar value, as can any Chinese character.

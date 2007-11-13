@@ -989,7 +989,7 @@ please adhere to these guidelines:
  (r5rs-one-line-summary "R5RS, with no frills")
  (expander "Expander")
  (expander-one-line-summary "Expands, rather than evaluates, expressions")
- (professional-languages "Professional Languages")
+ (legacy-languages "Legacy Languages")
  (teaching-languages "Teaching Languages")
  (experimental-languages "Experimental Languages")
   (initial-language-category "Initial language")

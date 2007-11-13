@@ -1,8 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "threads"]{Threads}
+
+@declare-exporting[(lib "scheme/thread")]
 
 See @secref["thread-model"] for basic information on the PLT Scheme
 thread model.

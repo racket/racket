@@ -1,0 +1,65 @@
+
+(module stxparam '#%kernel
+  (#%require "private/more-scheme.ss"
+             "private/letstx-scheme.ss"
+             "private/define.ss"
+             (for-syntax '#%kernel 
+                         "stxparam-exptime.ss"
+                         "private/stx.ss" "private/stxcase-scheme.ss" 
+                         "private/small-scheme.ss" 
+                         "private/stxloc.ss" "private/stxparamkey.ss"))
+
+  (#%provide define-syntax-parameter
+             syntax-parameterize
+             (for-syntax syntax-parameter-value
+                         make-parameter-rename-transformer))
+  
+  (define-syntax (define-syntax-parameter stx)
+    (syntax-case stx ()
+      [(_ id init-val)
+       (with-syntax ([gen-id (car (generate-temporaries (list #'id)))])
+	 #'(begin
+	     (define-syntax gen-id (convert-renamer init-val))
+	     (define-syntax id 
+	       (let ([gen-id ((syntax-local-certifier) #'gen-id)])
+		 (make-set!-transformer
+		  (make-syntax-parameter 
+		   (lambda (stx)
+		     (let ([v (syntax-parameter-target-value gen-id)])
+		       (apply-transformer v stx #'set!)))
+		   gen-id))))))]))
+
+  (define-syntax (syntax-parameterize stx)
+    (syntax-case stx ()
+      [(_ ([id val] ...) body0 body ...)
+       (let ([ids (syntax->list #'(id ...))])
+	 (with-syntax ([(gen-id ...)
+			(map (lambda (id)
+			       (unless (identifier? id)
+				 (raise-syntax-error
+				  #f
+				  "not an identifier"
+				  stx
+				  id))
+			       (let* ([rt (syntax-local-value id (lambda () #f))]
+				      [sp (if (set!-transformer? rt)
+					      (set!-transformer-procedure rt)
+					      rt)])
+				 (unless (syntax-parameter? sp)
+				   (raise-syntax-error
+				    #f
+				    "not bound as a syntax parameter"
+				    stx
+				    id))
+				 (syntax-local-get-shadower 
+				  (syntax-local-introduce (syntax-parameter-target sp)))))
+			     ids)])
+	   (let ([dup (check-duplicate-identifier ids)])
+	     (when dup
+	       (raise-syntax-error
+		#f
+		"duplicate binding"
+		stx
+		dup)))
+	   #'(let-syntaxes ([(gen-id) (convert-renamer val)] ...)
+	       body0 body ...)))])))

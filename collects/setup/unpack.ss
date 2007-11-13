@@ -143,7 +143,7 @@
             (let* ([n (make-namespace)]
                    [info (let ([orig (current-namespace)])
                            (parameterize ([current-namespace n])
-                             (namespace-require '(lib "unit200.ss"))
+                             (namespace-require '(lib "mzlib/unit200.ss"))
                              (eval (read p))))])
               (unless (and (procedure? info)
                            (procedure-arity-includes? info 2))

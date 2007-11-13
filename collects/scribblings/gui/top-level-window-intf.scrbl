@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["common.ss"]
 
 @definterface/title[top-level-window<%> (area-container-window<%>)]{

@@ -18,7 +18,7 @@
       (append (map (lambda (x) (datum->syntax-object #'here x))
                    `(define-values-ml define-syntaxes-ml))
               (filter (lambda (id) (not (eq? 'begin (syntax-e id))))
-                      (kernel-form-identifier-list #'here))))
+                      (kernel-form-identifier-list))))
 
     (define (stx-assoc id renames)
       (cond

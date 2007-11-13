@@ -61,6 +61,9 @@ static Scheme_Object *complex_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *real_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *rational_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *integer_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *exact_integer_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *exact_nonnegative_integer_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *exact_positive_integer_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *exact_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *even_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_or (int argc, Scheme_Object *argv[]);
@@ -245,6 +248,19 @@ scheme_init_number (Scheme_Env *env)
 						      "integer?",
 						      1, 1, 1),
 			     env);
+
+  p = scheme_make_folding_prim(exact_integer_p, "exact-integer?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("exact-integer?", p, env);
+
+  p = scheme_make_folding_prim(exact_nonnegative_integer_p, "exact-nonnegative-integer?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("exact-nonnegative-integer?", p, env);
+
+  p = scheme_make_folding_prim(exact_positive_integer_p, "exact-positive-integer?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("exact-positive-integer?", p, env);
+
   scheme_add_global_constant("exact?", 
 			     scheme_make_folding_prim(exact_p,
 						      "exact?",
@@ -750,6 +766,42 @@ static Scheme_Object *
 integer_p (int argc, Scheme_Object *argv[])
 {
   return scheme_is_integer(argv[0]) ? scheme_true : scheme_false;
+}
+
+static Scheme_Object *
+exact_integer_p (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *n = argv[0];
+  if (SCHEME_INTP(n))
+    return scheme_true;
+  else if (SCHEME_BIGNUMP(n))
+    return scheme_true;
+  else
+    return scheme_false;
+}
+
+static Scheme_Object *
+exact_nonnegative_integer_p (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *n = argv[0];
+  if (SCHEME_INTP(n))
+    return ((SCHEME_INT_VAL(n) >= 0) ? scheme_true : scheme_false);
+  else if (SCHEME_BIGNUMP(n))
+    return (SCHEME_BIGPOS(n) ? scheme_true : scheme_false);
+  else
+    return scheme_false;
+}
+
+static Scheme_Object *
+exact_positive_integer_p (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *n = argv[0];
+  if (SCHEME_INTP(n))
+    return ((SCHEME_INT_VAL(n) > 0) ? scheme_true : scheme_false);
+  else if (SCHEME_BIGNUMP(n))
+    return (SCHEME_BIGPOS(n) ? scheme_true : scheme_false);
+  else
+    return scheme_false;
 }
 
 int scheme_is_exact(const Scheme_Object *n)

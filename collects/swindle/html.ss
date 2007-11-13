@@ -64,7 +64,7 @@
         (let loop ([r r] [a (list y x)])
           (syntax-case r (:)
             [(: x . xs) (loop #'xs (cons #'x a))]
-            [xs (values (reverse! a) #'xs)])))
+            [xs (values (reverse a) #'xs)])))
       (orig-eval
        (let loop ([expr expr] [q 0])
          (syntax-case expr (: _)
@@ -108,8 +108,8 @@
   (cond [(null? lst) '()]
         [(null? (cdr lst)) (list (f (car lst)))]
         [else (cons (f (car lst))
-                    (apply append! (map (lambda (x) (list sep (f x)))
-                                        (cdr lst))))]))
+                    (apply append (map (lambda (x) (list sep (f x)))
+                                       (cdr lst))))]))
 
 (define* (string-capital str)
   (let ([s (string-copy str)])
@@ -459,7 +459,7 @@
          [(not a) xs]
          [(eq? #\: (string-ref a 0))
           (case k
-            [(::args)      (when v (set-cdr! (cdr xs) (append v (cddr xs))))]
+            ; [(::args)      (when v (set-cdr! (cdr xs) (append v (cddr xs))))] ;; <<< FIXME!!!
             [(::func)      (when (eq? ? func)      (set! func      v))]
             [(::empty?)    (when (eq? ? empty?)    (set! empty?    v))]
             [(::1st-args)  (when (eq? ? 1st-args)  (set! 1st-args  v))]
@@ -489,7 +489,7 @@
               [(pair? as)
                (set! xs (let loop ([xs xs] [as as] [l '()])
                           (cond
-                           [(null? as) (kloop (append! (reverse! l) xs))]
+                           [(null? as) (kloop (append (reverse l) xs))]
                            [(null? xs)
                             (if (pair? (car as))
                               (loop xs (cdr as)
@@ -503,10 +503,10 @@
                                          ((if (pair? (car as)) caar car) as)
                                          l))])))])
         (1st-args-loop))))
-  (set! ks (reverse! ks))
-  (set! as (reverse! as))
-  (set! vs (reverse! vs))
-  (set! ms (reverse! ms))
+  (set! ks (reverse ks))
+  (set! as (reverse as))
+  (set! vs (reverse vs))
+  (set! ms (reverse ms))
   ;; set default meta values
   (when (eq? ? empty?)    (set! empty?    '?)) ; unspec => empty if no body
   (when (eq? ? arg-funcs) (set! arg-funcs (*arg-funcs*)))
@@ -544,7 +544,7 @@
                (output
                 (let loop ([ks ks] [vs vs] [l '()])
                   (if (null? ks)
-                    (let ([body (append! (reverse! fms) ms (reverse! l) xs)])
+                    (let ([body (append (reverse fms) ms (reverse l) xs)])
                       (if (procedure? func)
                         (apply func body)
                         (cons func body))) ; allows using a symbol as alias
@@ -612,7 +612,7 @@
        (cond [(syntax? b+a) (loop (syntax-e b+a) body)]
              [(or (null? b+a) (keyword? (syntax-e (car b+a))))
               (quasisyntax/loc stx
-                (defform name (lambda vars #,@(reverse! body)) #,@b+a))]
+                (defform name (lambda vars #,@(reverse body)) #,@b+a))]
              [else (loop (cdr b+a) (cons (car b+a) body))]))]
     [(_ name . args) (identifier? #'name)
      (let ([str (symbol->string (syntax-object->datum #'name))])
@@ -850,8 +850,8 @@
   (define (splitter args)
     (let loop ([args args] [acc '()])
       (cond
-       [(null? args) (cons (reverse! acc) '())]
-       [(eq? (car args) key) (cons (reverse! acc) (splitter (cdr args)))]
+       [(null? args) (cons (reverse acc) '())]
+       [(eq? (car args) key) (cons (reverse acc) (splitter (cdr args)))]
        [else (loop (cdr args) (cons (car args) acc))])))
   (splitter args))
 
@@ -1114,7 +1114,7 @@
             (and (identifier? #'key) (syntax-keyword? #'key))
             (loop #'r (list* #'val #'key ks))]
            [(b ...)
-            (set! body `(,@(reverse! ks)
+            (set! body `(,@(reverse ks)
                          ,#':contents ,#'(delay (begin b ...))))]))
        #`(let ([html (list #,@body)]) (add-defined-html html) html))]))
 

@@ -130,7 +130,7 @@ libmred.@LIBSFX@: $(WXLIBSNORM)
 MRFW = PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd
 MRFWRES = PLT_MrEd.framework/Versions/$(FWVERSION)/Resources/PLT_MrEd.rsrc
 
-$(MRFW) : $(MZSCHEMEDEPS) $(MREDOBJECTS) $(@WXLIBS@) $(MRSTATIC_STUB)
+$(MRFW) : $(MZSCHEMEDEPS) $(MREDOBJECTS) $(@WXLIBS@) $(MRSTATIC_STUB) $(MRFWRES)
 	$(MREDLINKER) $(MREDLDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names ../mzscheme/libmzscheme.@LIBSFX@ ../mzscheme/libmzgc.@LIBSFX@ $(@WXLIBS@) $(GUILIBS_@WXVARIANT@) @X_EXTRA_LIBS@
 
 MrEd@CGC@.app/Contents/MacOS/MrEd@CGC@: $(MRFWRES) $(MRFW) mrmain.@LTO@ 
@@ -139,7 +139,7 @@ MrEd@CGC@.app/Contents/MacOS/MrEd@CGC@: $(MRFWRES) $(MRFW) mrmain.@LTO@
 
 $(MRFWRES): $(srcdir)/../mac/osx_appl.ss $(srcdir)/../mac/cw/MrEd.r
 	rm -rf PLT_MrEd.framework/Resources PLT_MrEd.framework/PLT_MrEd
-	env BUILDBASE=.. ../mzscheme/mzscheme@CGC@ -qr $(srcdir)/../mac/osx_appl.ss $(srcdir)/.. "@CGC@"
+	env BUILDBASE=.. ../mzscheme/mzscheme@CGC@ -cqu $(srcdir)/../mac/osx_appl.ss $(srcdir)/.. "@CGC@"
 	ln -s Versions/$(FWVERSION)/PLT_MrEd PLT_MrEd.framework/PLT_MrEd
 	ln -s Versions/$(FWVERSION)/Resources PLT_MrEd.framework/Resources
 
@@ -171,7 +171,7 @@ wx_mac-min:
 
 mred.@LTO@ :  $(srcdir)/mred.cxx $(srcdir)/wxme/wx_media.h $(srcdir)/wxme/wx_medad.h \
           $(srcdir)/wxs/wxscheme.h $(srcdir)/mred.h \
-          $(srcdir)/../mzscheme/include/scheme.h $(srcdir)/../mzscheme/src/schvers.h \
+          $(srcdir)/../mzscheme/include/scheme.h \
           $(srcdir)/wxs/wxsmred.h $(WXINCDEP) $(srcdir)/../wxcommon/wxGC.h \
           $(srcdir)/../wxcommon/wx_list.h
 	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c $(srcdir)/mred.cxx -o mred.@LTO@
@@ -180,7 +180,7 @@ DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../collects
 
 mrmain.@LTO@ :  $(srcdir)/mrmain.cxx $(srcdir)/mred.h $(srcdir)/wxs/wxsmred.h \
             $(srcdir)/../mzscheme/cmdline.inc $(srcdir)/../mzscheme/src/stypes.h \
-            $(srcdir)/../mzscheme/include/scheme.h $(srcdir)/../mzscheme/src/schvers.h
+            $(srcdir)/../mzscheme/include/scheme.h
 	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) $(DEF_COLLECTS_DIR) -c $(srcdir)/mrmain.cxx -o mrmain.@LTO@
 
 mrmain_ee.@LTO@ : mred.@LTO@
@@ -306,7 +306,7 @@ install-lib-cgc-wx_xt:
 install-wx_xt-cgc:
 	$(MAKE) @MRLIBINSTALL@-cgc-wx_xt
 	cd ..; $(ICP) mred/mred@CGC@ "$(DESTDIR)$(bindir)/mred@CGC_INSTALLED@"
-	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(DESTDIR)$(bindir)/mred@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	$(MZSCHEME) -cu "$(srcdir)/../mzscheme/collects-path.ss" "$(DESTDIR)$(bindir)/mred@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 install-wx_xt-cgc-final:
 	cd .
@@ -320,7 +320,7 @@ install-lib-3m-wx_xt:
 install-wx_xt-3m:
 	$(MAKE) @MRLIBINSTALL@-3m-wx_xt
 	cd ..; $(ICP) mred/mred@MMM@ "$(DESTDIR)$(bindir)/mred@MMM_INSTALLED@"
-	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(DESTDIR)$(bindir)/mred@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	$(MZSCHEME) -cu "$(srcdir)/../mzscheme/collects-path.ss" "$(DESTDIR)$(bindir)/mred@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 install-wx_xt-3m-final:
 	cd .
@@ -346,11 +346,11 @@ install-wx_mac:
 install-wx_mac-cgc:
 	mkdir -p "$(MRFWDIR)/Versions/$(FWVERSION)"
 	cd ..; $(ICP) -r mred/MrEd@CGC@.app "$(prefix)/MrEd@CGC_CAP_INSTALLED@.app"
-	$(MZSCHEME) -qr "$(srcdir)/../mac/rename-app.ss" "$(prefix)/MrEd@CGC_CAP_INSTALLED@.app" "MrEd@CGC@" "MrEd@CGC_CAP_INSTALLED@"
+	$(MZSCHEME) -cqu "$(srcdir)/../mac/rename-app.ss" "$(prefix)/MrEd@CGC_CAP_INSTALLED@.app" "MrEd@CGC@" "MrEd@CGC_CAP_INSTALLED@"
 	$(ICP) PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd $(MRFWDIR)/Versions/$(FWVERSION)/PLT_MrEd
 	$(ICP) -r PLT_MrEd.framework/Versions/$(FWVERSION)/Resources $(MRFWDIR)/Versions/$(FWVERSION)/Resources
 	/usr/bin/install_name_tool -change "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "@FRAMEWORK_PREFIX@PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "$(prefix)/MrEd@CGC_CAP_INSTALLED@.app/Contents/MacOS/MrEd@CGC_CAP_INSTALLED@"
-	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/MrEd@CGC_CAP_INSTALLED@.app/Contents/MacOS/MrEd@CGC_CAP_INSTALLED@" ../../../collects
+	$(MZSCHEME) -cu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/MrEd@CGC_CAP_INSTALLED@.app/Contents/MacOS/MrEd@CGC_CAP_INSTALLED@" ../../../collects
 
 install-wx_mac-cgc-final:
 	ln -s Versions/$(FWVERSION)/PLT_MrEd $(MRFWDIR)/
@@ -359,11 +359,11 @@ install-wx_mac-cgc-final:
 install-wx_mac-3m:
 	mkdir -p "$(MRFWDIR)/Versions/$(FWVERSION)_3m"
 	cd ..; $(ICP) -r "mred/MrEd@MMM@.app" "$(prefix)/MrEd@MMM_CAP_INSTALLED@.app"
-	$(MZSCHEME) -qr "$(srcdir)/../mac/rename-app.ss" "$(prefix)/MrEd@MMM_CAP_INSTALLED@.app" "MrEd@MMM@" "MrEd@MMM_CAP_INSTALLED@"
+	$(MZSCHEME) -cqu "$(srcdir)/../mac/rename-app.ss" "$(prefix)/MrEd@MMM_CAP_INSTALLED@.app" "MrEd@MMM@" "MrEd@MMM_CAP_INSTALLED@"
 	$(ICP) "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "$(MRFWDIR)/Versions/$(FWVERSION)_3m/PLT_MrEd"
 	$(ICP) -r "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources" "$(MRFWDIR)/Versions/$(FWVERSION)_3m/Resources"
 	/usr/bin/install_name_tool -change "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@FRAMEWORK_PREFIX@PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "$(prefix)/MrEd@MMM_CAP_INSTALLED@.app/Contents/MacOS/MrEd@MMM_CAP_INSTALLED@"
-	$(MZSCHEME) -mvqu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/MrEd@MMM_CAP_INSTALLED@.app/Contents/MacOS/MrEd@MMM_CAP_INSTALLED@" "../../../collects"
+	$(MZSCHEME) -cu "$(srcdir)/../mzscheme/collects-path.ss" "$(prefix)/MrEd@MMM_CAP_INSTALLED@.app/Contents/MacOS/MrEd@MMM_CAP_INSTALLED@" "../../../collects"
 
 install-wx_mac-3m-final:
 	ln -s Versions/$(FWVERSION)_3m/PLT_MrEd $(MRFWDIR)/

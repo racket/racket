@@ -1,8 +1,8 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(all-except "mz.ss" link)]
-@require[(lib "unit.ss")]
-@require-for-syntax[mzscheme]
-@require-for-label[(lib "unit.ss")]
+#lang scribble/doc
+@require[(except-in "mz.ss" link)]
+@require[scheme/unit]
+@require[(for-syntax scheme/base)]
+@require[(for-label scheme/unit)]
 
 @begin[
 (define-syntax defkeywords
@@ -23,7 +23,7 @@
 
 @title[#:tag "mzlib:unit" #:style 'toc]{Units}
 
-@declare-exporting[big (lib "big/unit")]
+@declare-exporting[scheme/unit]
 
 @local-table-of-contents[]
 

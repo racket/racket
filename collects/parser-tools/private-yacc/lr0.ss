@@ -343,7 +343,7 @@
 	  (make-object lr0% 
 		       automaton-term
 		       automaton-non-term		       
-		       (list->vector (reverse! seen-kernels))
+		       (list->vector (reverse seen-kernels))
 		       epsilons))
 	 ((null? old-kernels)
 	  (loop (deq! new-kernels) seen-kernels))
@@ -358,15 +358,15 @@
     (make-q null null))
   (define (enq! q i)
     (if (empty-queue? q)
-	(let ((i (list i)))
+	(let ((i (mcons i null)))
 	  (set-q-l! q i)
 	  (set-q-f! q i))
 	(begin
-	  (set-cdr! (q-l q) (list i))
-	  (set-q-l! q (cdr (q-l q))))))
+	  (set-mcdr! (q-l q) (mcons i null))
+	  (set-q-l! q (mcdr (q-l q))))))
   (define (deq! q)
     (begin0
-     (car (q-f q))
-     (set-q-f! q (cdr (q-f q)))))
+     (mcar (q-f q))
+     (set-q-f! q (mcdr (q-f q)))))
 
 )

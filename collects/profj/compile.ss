@@ -38,7 +38,9 @@
       (cond
         ((and (eq? src 'file) (eq? dest 'file))
          (let-values  (((path-base file dir?) (split-path (path->complete-path (build-path name)))))
-           (let ((compiled-path (build-path path-base "compiled" (path-replace-suffix file ".zo")))
+           (let ((compiled-path (build-path path-base "compiled" (path-add-suffix
+                                                                  (path-replace-suffix file ".ss")
+                                                                  ".zo")))
                  (type-path (build-path path-base "compiled" (path-replace-suffix file ".jinfo"))))
              (unless 
                  (and (file-exists? compiled-path)
@@ -54,7 +56,9 @@
          (compile-to-file port loc level))
         ((eq? src 'file)
          (let-values  (((path-base file dir?) (split-path (path->complete-path (build-path name)))))
-           (let ((compiled-path (build-path path-base "compiled" (path-replace-suffix file ".zo")))
+           (let ((compiled-path (build-path path-base "compiled" (path-add-suffix
+                                                                  (path-replace-suffix file ".ss")
+                                                                  ".zo")))
                  (type-path (build-path path-base "compiled" (path-replace-suffix file ".jinfo"))))
              (unless (or (and (file-exists? compiled-path)
                               (> (file-or-directory-modify-seconds compiled-path)
@@ -104,7 +108,7 @@
                                 (let ((directory (send type-recs get-compilation-location)))
                                   (unless (directory-exists? directory) (make-directory directory))
                                   (call-with-output-zo-file* location
-                                                             (build-path directory (string-append name ".zo"))
+                                                             (build-path directory (string-append name "_ss.zo"))
                                                              (lambda (port) (write (compile code) port))
                                                              'truncate/replace)
                                   (call-with-output-file* (build-path directory (string-append name ".jinfo"))

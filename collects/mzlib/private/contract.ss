@@ -14,7 +14,11 @@ improve method arity mismatch contract violation error messages?
 
   (require-for-syntax mzscheme
                       "contract-opt-guts.ss"
-                      (lib "list.ss"))
+                      (lib "list.ss")
+                      (lib "stx.ss" "syntax")
+                      (lib "etc.ss")
+                      (lib "name.ss" "syntax")
+                      (lib "struct-info.ss" "scheme"))
   
   (require "contract-arrow.ss"
            "contract-guts.ss"
@@ -42,7 +46,19 @@ improve method arity mismatch contract violation error messages?
 ;                                          ;                                                         
 ;                                                                                                    
 
-
+  ;; lookup-struct-info : syntax -> (union #f (list syntax syntax (listof syntax) ...))
+  (define-for-syntax (lookup-struct-info stx provide-stx)
+    (let ([id (syntax-case stx ()
+                [(a b) (syntax a)]
+                [_ stx])])
+      (let ([v (syntax-local-value id (λ () #f))])
+        (if (struct-info? v)
+            (extract-struct-info v)
+            (raise-syntax-error 'provide/contract
+                                "expected a struct name" 
+                                provide-stx
+                                id)))))
+  
   (define-for-syntax (make-define/contract-transformer contract-id id)
     (make-set!-transformer
      (λ (stx)
@@ -271,7 +287,7 @@ improve method arity mismatch contract violation error messages?
                   [super-id (syntax-case struct-name-position ()
                               [(a b) (syntax b)]
                               [else #t])]
-                  [struct-info (extract-struct-info struct-name-position)]
+                  [struct-info (lookup-struct-info struct-name-position provide-stx)]
                   [constructor-id (list-ref struct-info 1)]
                   [predicate-id (list-ref struct-info 2)]
                   [selector-ids (reverse (list-ref struct-info 3))]
@@ -493,14 +509,14 @@ improve method arity mismatch contract violation error messages?
                                             (provide (rename id-rename struct-name))
                                             (define-syntax id-rename
                                               (let ([slc (syntax-local-certifier)])
-                                                (list-immutable (slc #'-struct:struct-name)
-                                                                (slc #'constructor-new-name)
-                                                                (slc #'predicate-new-name)
-                                                                (list-immutable (slc #'rev-selector-new-names) ...
-                                                                                (slc #'rev-selector-old-names) ...)
-                                                                (list-immutable (slc #'rev-mutator-new-names) ...
-                                                                                (slc #'rev-mutator-old-names) ...)
-                                                                super-id))))))]
+                                                (list (slc #'-struct:struct-name)
+                                                      (slc #'constructor-new-name)
+                                                      (slc #'predicate-new-name)
+                                                      (list (slc #'rev-selector-new-names) ...
+                                                            (slc #'rev-selector-old-names) ...)
+                                                      (list (slc #'rev-mutator-new-names) ...
+                                                            (slc #'rev-mutator-old-names) ...)
+                                                      super-id))))))]
                                [struct:struct-name struct:struct-name]
                                [-struct:struct-name -struct:struct-name]
                                [struct-name struct-name]
@@ -547,7 +563,7 @@ improve method arity mismatch contract violation error messages?
            (let loop ([parent-info-id struct-name])
              (let ([parent-info 
                     (and (identifier? parent-info-id)
-                         (syntax-local-value parent-info-id (λ () #f)))])
+                         (lookup-struct-info parent-info-id provide-stx))])
                (cond
                  [(boolean? parent-info) null]
                  [else
@@ -573,35 +589,6 @@ improve method arity mismatch contract violation error messages?
                     [else (raise-syntax-error 'contract.ss
                                               "unable to cope with a struct maker whose name doesn't begin with `make-'"
                                               orig-stx)]))))
-                       
-                  
-         
-         ;; extract-parent-struct-info : syntax -> (union #f (list syntax syntax (listof syntax) ...))
-         (define (extract-parent-struct-info stx)
-           (syntax-case stx ()
-             [(a b)
-              (syntax-local-value 
-               (syntax b)
-               (λ ()
-                 (raise-syntax-error 'provide/contract
-                                     "expected a struct name" 
-                                     provide-stx
-                                     (syntax b))))
-              (syntax b)]
-             [a #f]))
-         
-         ;; extract-struct-info : syntax -> (union #f (list syntax syntax (listof syntax) ...))
-         (define (extract-struct-info stx)
-           (let ([id (syntax-case stx ()
-                       [(a b) (syntax a)]
-                       [_ stx])])
-             (syntax-local-value 
-              id
-              (λ ()
-                (raise-syntax-error 'provide/contract
-                                    "expected a struct name" 
-                                    provide-stx
-                                    id)))))
          
          ;; build-constructor-contract : syntax (listof syntax) syntax -> syntax
          (define (build-constructor-contract stx field-contract-ids predicate-id)
@@ -1585,8 +1572,8 @@ improve method arity mismatch contract violation error messages?
     (let loop ([lst lst])
       (cond
         [(pair? lst)
-         (cons-immutable (f (car lst))
-                         (loop (cdr lst)))]
+         (cons (f (car lst))
+               (loop (cdr lst)))]
         [(null? lst) null])))
   
   (define (immutable-list? val)
@@ -1801,7 +1788,7 @@ improve method arity mismatch contract violation error messages?
                             v)))))
                  #f))))))]))
   
-  (define cons-immutable/c (*-immutable/c pair? cons-immutable (#f car cdr) immutable-cons cons-immutable/c))
+  (define cons-immutable/c (*-immutable/c pair? cons (#f car cdr) immutable-cons cons-immutable/c))
   (define cons-unsafe/c (*-immutable/c pair? cons (#f car cdr) cons cons-unsafe/c #f))
   (define box-immutable/c (*-immutable/c box? box-immutable (#f unbox) immutable-box box-immutable/c))
   (define vector-immutable/c (*-immutable/c vector?
@@ -1831,8 +1818,8 @@ improve method arity mismatch contract violation error messages?
                          (next-hdp next-hdp)
                          (next-tlp next-tlp))
              (syntax (if check
-                         (cons-immutable (let ((val (car val))) next-hdp)
-                                         (let ((val (cdr val))) next-tlp))
+                         (cons (let ((val (car val))) next-hdp)
+                               (let ((val (cdr val))) next-tlp))
                          (raise-contract-error
                           val
                           src-info
@@ -1955,7 +1942,7 @@ improve method arity mismatch contract violation error messages?
     (syntax-case stx ()
       [(_ struct-name args ...)
        (and (identifier? (syntax struct-name))
-            (syntax-local-value (syntax struct-name) (λ () #f)))
+            (struct-info? (syntax-local-value (syntax struct-name) (λ () #f))))
        (with-syntax ([(ctc-x ...) (generate-temporaries (syntax (args ...)))]
                      [(ctc-name-x ...) (generate-temporaries (syntax (args ...)))]
                      [(ctc-pred-x ...) (generate-temporaries (syntax (args ...)))]
@@ -1972,7 +1959,7 @@ improve method arity mismatch contract violation error messages?
                        (rev-selector-id ...)
                        (mutator-id ...)
                        super-id)
-                      (syntax-local-value (syntax struct-name))])
+                      (lookup-struct-info (syntax struct-name) stx)])
          (unless (= (length (syntax->list (syntax (rev-selector-id ...))))
                     (length (syntax->list (syntax (args ...)))))
            (raise-syntax-error 'struct/c 

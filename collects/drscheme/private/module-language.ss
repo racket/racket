@@ -119,29 +119,27 @@
         (define/override (get-one-line-summary)
           (string-constant module-language-one-line-summary))
         
-        (define/override (get-style-delta) module-language-style-delta)
-        
         (inherit get-reader)
         (define/override (front-end/complete-program port settings)
           (let* ([super-thunk (λ () ((get-reader) (object-name port) port))]
-                 [filename (get-filename port)]
+                 [path (get-filename port)]
                  [module-name #f]
-                 [module-name-prefix (get-module-name-prefix filename)]
-                 [get-full-module-name
+                 [module-name-prefix (get-module-name-prefix path)]
+                 
+                 [get-require-module-name
                   (λ ()
                     ;; "clearing out" the module-name via datum->syntax-object ensures
                     ;; that check syntax doesn't think the original module name
                     ;; is being used in this require (so it doesn't get turned red)
-                    (datum->syntax-object #'here 
-                                          (string->symbol
-                                           (format "~a~a"
-                                                   (or module-name-prefix "")
-                                                   (syntax-e module-name)))))])
+                    (datum->syntax-object #'here (syntax-e module-name)))])
             (λ ()
               (set! iteration-number (+ iteration-number 1))
               (cond
                 [(= 1 iteration-number)
-                 #`(current-module-name-prefix '#,module-name-prefix)]
+                 #`(current-module-declare-name
+                    (if #,path
+                        (make-resolved-module-path '#,path)
+                        #f))]
                 [(= 2 iteration-number)
                  (let ([super-result (super-thunk)])
                    (if (eof-object? super-result)
@@ -149,25 +147,35 @@
                         'module-language
                         "the definitions window must contain a module")
                        (let-values ([(name new-module)
-                                     (transform-module filename super-result)])
+                                     (transform-module path super-result)])
                          (set! module-name name)
                          new-module)))]
                 [(= 3 iteration-number)
                  (let ([super-result (super-thunk)])
                    (if (eof-object? super-result)
                        #`(begin 
-                           (current-module-name-prefix #f)
-                           (call-with-continuation-prompt
-                            (λ () (eval '(require #,(get-full-module-name))))))
+                           (current-module-declare-name #f)
+                           #,(if path
+                                 #`(begin
+                                     ((current-module-name-resolver) (make-resolved-module-path #,path))
+                                     (call-with-continuation-prompt
+                                      (λ () (dynamic-require #,path #f))))
+                                 #`(call-with-continuation-prompt
+                                    (λ () (dynamic-require ''#,(get-require-module-name) #f)))))
                        (raise-syntax-error
                         'module-language
                         "there can only be one expression in the definitions window"
                         super-result)))]
                 [(= 4 iteration-number)
-                 #`(#%app current-namespace 
-                          (#%app 
-                           module->namespace
-                           (#%datum . #,(get-full-module-name))))]
+                 (if path
+                     #`(#%app current-namespace 
+                              (#%app 
+                               module->namespace
+                               #,path))
+                     #`(#%app current-namespace 
+                              (#%app 
+                               module->namespace
+                               ''#,(get-require-module-name))))]
                 [else eof]))))
         
         ;; printer settings are just ignored here.
@@ -214,8 +222,8 @@
         
         (super-new
          (module '(lib "plt-mred.ss" "lang"))
-         (language-position (list (string-constant professional-languages) "(module ...)"))
-         (language-numbers (list -1000 1000)))))
+         (language-position (list "Module"))
+         (language-numbers (list -32768)))))
     
     ;; module-language-config-panel : panel -> (case-> (-> settings) (settings -> void))
     (define (module-language-config-panel parent)
@@ -398,9 +406,6 @@
          (install-collection-paths (module-language-settings-collection-paths settings))
          (install-command-line-args (module-language-settings-command-line-args settings))
          (update-buttons)]))
-    
-    ;; module-language-style-delta : (instanceof style-delta%)
-    (define module-language-style-delta (make-object style-delta% 'change-family 'modern))
     
     ;; transform-module : (union #f string) syntax syntax -> (values symbol[name-of-module] syntax[module])
     ;; in addition to exporting everything, the result module's name

@@ -31,17 +31,17 @@
                                             'stepper-prim-name
                                             (quote-syntax name))])
                   (syntax-case stx ()
-                    [(__ . ___)
+                    [(_ . body)
                      ;; HACK: we disable all checks if #%app is not beginner-app
-                     (not (module-identifier=? #'beginner-app (datum->syntax-object stx '#%app)))
-                     (syntax/loc stx (tagged-impl . ___))]
-                    [__
+                     (not (module-identifier=? #'beginner-app (datum->syntax-object stx '#%plain-app)))
+                     (syntax/loc stx (tagged-impl . body))]
+                    [_
                      ;; HACK: see above
-                     (not (module-identifier=? #'beginner-app (datum->syntax-object stx '#%app)))
+                     (not (module-identifier=? #'beginner-app (datum->syntax-object stx '#%plain-app)))
                      (syntax/loc stx tagged-impl)]
                     [(id . args)
-                     (syntax/loc stx (#%app tagged-impl . args))]
-                    [_else
+                     (syntax/loc stx (#%plain-app tagged-impl . args))]
+                    [_
                      (raise-syntax-error
                       #f
                       (string-append
@@ -97,29 +97,29 @@
                                                     'stepper-prim-name
                                                     (quote-syntax name))])
                           (syntax-case s ()
-                            [(__ . ___)
+                            [(_ . body)
                              ;; HACK: see above
-                             (not (module-identifier=? #'beginner-app (datum->syntax-object s '#%app)))
-                             (syntax/loc s (tagged-impl . ___))]
-                            [__
+                             (not (module-identifier=? #'beginner-app (datum->syntax-object s '#%plain-app)))
+                             (syntax/loc s (tagged-impl . body))]
+                            [_
                              ;; HACK: see above
-                             (not (module-identifier=? #'beginner-app (datum->syntax-object s '#%app)))
+                             (not (module-identifier=? #'beginner-app (datum->syntax-object s '#%plain-app)))
                              (syntax/loc s tagged-impl)]
-                            [(__ new-arg ...)
+                            [(_ new-arg ...)
                              (begin
                                checks ...
                                ;; s is a well-formed use of the primitive;
                                ;; generate the primitive implementation
                                (syntax/loc s (tagged-impl wrapped-arg ...))
                                )]
-                            [(__ . rest)
+                            [(_ . rest)
                              (raise-syntax-error
                               #f
                               (format
                                "primitive operator requires ~a arguments"
                                num-arguments)
                               s)]
-                            [_else
+                            [_
                              (raise-syntax-error
                               #f
                               (string-append

@@ -1,4 +1,4 @@
-(module useful-code (lib "frtime.ss" "frtime")
+(module useful-code frtime
   
   (require (lib "string.ss")
            (lib "contract.ss")

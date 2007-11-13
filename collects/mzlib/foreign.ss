@@ -2,7 +2,7 @@
 
 (module foreign mzscheme
 
-(require #%foreign (lib "dirs.ss" "setup"))
+(require '#%foreign (lib "dirs.ss" "setup"))
 (require-for-syntax (lib "stx.ss" "syntax"))
 
 ;; This module is full of unsafe bindings that are not provided to requiring
@@ -33,7 +33,7 @@
                     (loop provides (cons (cons #'from #'to) unsafes) (cdr ps))]
                    [id (identifier? #'id)
                     (loop provides (cons (cons #'id #'id) unsafes) (cdr ps))]
-                   [_else
+                   [_
                     (raise-syntax-error 'provide* "bad unsafe usage"
                                         (car ps) stx)])]
                 [_ (loop (cons (car ps) provides) unsafes (cdr ps))])))]))
@@ -352,15 +352,16 @@
 
   (define (split-by key args)
     (let loop ([args args] [r (list '())])
-      (cond [(null? args) (reverse! (map reverse! r))]
+      (cond [(null? args) (reverse (map reverse r))]
             [(eq? key (car args)) (loop (cdr args) (cons '() r))]
-            [else (set-car! r (cons (car args) (car r)))
-                  (loop (cdr args) r)])))
+            [else (loop (cdr args) 
+                        (cons (cons (car args) (car r))
+                              (cdr r)))])))
 
   (define (filtmap f l)
     (let loop ([l l] [r '()])
       (if (null? l)
-        (reverse! r)
+        (reverse r)
         (let ([x (f (car l))]) (loop (cdr l) (if x (cons x r) r))))))
 
   (define (add-renamer body from to)
@@ -513,9 +514,9 @@
            [inputs #f] [output #f] [bind '()] [pre '()] [post '()]
            [input-names #f] [output-type #f] [output-expr #f]
            [1st-arg #f] [prev-arg #f])
-       (define (bind! x) (set! bind (append! bind (list x))))
-       (define (pre!  x) (set! pre  (append! pre  (list x))))
-       (define (post! x) (set! post (append! post (list x))))
+       (define (bind! x) (set! bind (append bind (list x))))
+       (define (pre!  x) (set! pre  (append pre  (list x))))
+       (define (post! x) (set! post (append post (list x))))
        (define ((t-n-e clause) type name expr)
          (let ([keys (custom-type->keys type err)])
            (define (getkey key) (cond [(assq key keys) => cdr] [else #f]))
@@ -738,14 +739,17 @@
     (if name (string->symbol (format "enum:~a->int" name)) 'enum->int))
   (let loop ([i 0] [symbols symbols])
     (unless (null? symbols)
-      (when (and (pair? (cdr symbols))
-                 (eq? '= (cadr symbols))
-                 (pair? (cddr symbols)))
-        (set! i (caddr symbols))
-        (set-cdr! symbols (cdddr symbols)))
-      (set! sym->int (cons (cons (car symbols) i) sym->int))
-      (set! int->sym (cons (cons i (car symbols)) int->sym))
-      (loop (add1 i) (cdr symbols))))
+      (let-values ([(i rest)
+                    (if (and (pair? (cdr symbols))
+                             (eq? '= (cadr symbols))
+                             (pair? (cddr symbols)))
+                        (values (caddr symbols)
+                                (cdddr symbols))
+                        (values i
+                                (cdr symbols)))])
+        (set! sym->int (cons (cons (car symbols) i) sym->int))
+        (set! int->sym (cons (cons i (car symbols)) int->sym))
+        (loop (add1 i) rest))))
   (make-ctype basetype
     (lambda (x)
       (let ([a (assq x sym->int)])
@@ -771,19 +775,23 @@
 ;; the above with '= -- but the numbers have to be specified in some way.  The
 ;; generated type will convert a list of these symbols into the logical-or of
 ;; their values and back.
-(define (_bitmask* name symbols->integers . base?)
+(define (_bitmask* name orig-symbols->integers . base?)
   (define basetype (if (pair? base?) (car base?) _uint))
   (define s->c
     (if name (string->symbol (format "bitmask:~a->int" name)) 'bitmask->int))
-  (let loop ([s->i symbols->integers])
-    (unless (null? s->i)
-      (when (and (pair? (cdr s->i)) (eq? '= (cadr s->i)) (pair? (cddr s->i)))
-        (set-car! s->i (list (car s->i) (caddr s->i)))
-        (set-cdr! s->i (cdddr s->i)))
-      (unless (and (pair? (car s->i)) (pair? (cdar s->i)) (null? (cddar s->i))
-                   (symbol? (caar s->i)) (integer? (cadar s->i)))
-        (error '_bitmask "bad spec in ~e" symbols->integers))
-      (loop (cdr s->i))))
+  (define symbols->integers
+    (let loop ([s->i orig-symbols->integers])
+      (cond
+       [(null? s->i)
+        null]
+       [(and (pair? (cdr s->i)) (eq? '= (cadr s->i)) (pair? (cddr s->i)))
+        (cons (list (car s->i) (caddr s->i))
+              (loop (cdddr s->i)))]
+       [(and (pair? (car s->i)) (pair? (cdar s->i)) (null? (cddar s->i))
+             (symbol? (caar s->i)) (integer? (cadar s->i)))
+        (cons (car s->i) (loop (cdr s->i)))]
+       [else
+        (error '_bitmask "bad spec in ~e" orig-symbols->integers)])))
   (make-ctype basetype
     (lambda (symbols)
       (if (null? symbols) ; probably common
@@ -799,7 +807,7 @@
         '()
         (let loop ([s->i symbols->integers] [l '()])
           (if (null? s->i)
-            (reverse! l)
+            (reverse l)
             (loop (cdr s->i)
                   (let ([i (cadar s->i)])
                     (if (and (not (= i 0)) (= i (bitwise-and i n)))
@@ -1230,7 +1238,7 @@
 (define-syntax (define-cpointer-type stx)
   (syntax-case stx ()
     [(_ _TYPE) #'(_ _TYPE #f #f #f)]
-    [(_ _TYPE ptr-type) #'(_ _TYPE ptr-type #f #f)]
+    [(frm _TYPE ptr-type) #'(frm _TYPE ptr-type #f #f)]
     [(_ _TYPE ptr-type scheme->c c->scheme)
      (and (identifier? #'_TYPE)
           (regexp-match #rx"^_.+" (symbol->string (syntax-e #'_TYPE))))
@@ -1257,7 +1265,7 @@
 (define (compute-offsets types)
   (let loop ([ts types] [cur 0] [r '()])
     (if (null? ts)
-      (reverse! r)
+      (reverse r)
       (let* ([algn (ctype-alignof (car ts))]
              [pos  (+ cur (modulo (- (modulo cur algn)) algn))])
         (loop (cdr ts)

@@ -1,27 +1,29 @@
 
-(module utils mzscheme
-  (require (lib "struct.ss" "scribble")
-           (lib "manual.ss" "scribble")
-           (prefix scheme: (lib "scheme.ss" "scribble"))
-           (prefix scribble: (lib "reader.ss" "scribble"))
-           (lib "string.ss"))
+(module utils scheme/base
+  (require scribble/struct
+           scribble/manual
+           (prefix-in scheme: scribble/scheme)
+           (prefix-in scribble: scribble/reader))
 
   (define-syntax bounce-for-label
-    (syntax-rules ()
+    (syntax-rules (all-except)
+      [(_ (all-except mod (id ...) (id2 ...)))
+       (begin
+         (require (for-label (except-in mod id ...)))
+         (provide (for-label (except-out (all-from-out mod) id2 ...))))]
       [(_ mod) (begin
-                 (require-for-label mod)
-                 (provide-for-label (all-from mod)))]
+                 (require (for-label mod))
+                 (provide (for-label (all-from-out mod))))]
       [(_ mod ...) (begin (bounce-for-label mod) ...)]))
 
-  (bounce-for-label (lib "lang.ss" "big")
-                    (lib "struct.ss" "scribble")
-                    (lib "base-render.ss" "scribble")
-                    (lib "decode.ss" "scribble")
-                    (lib "basic.ss" "scribble")
-                    (lib "manual.ss" "scribble")
-                    (lib "scheme.ss" "scribble")
-                    (lib "eval.ss" "scribble")
-                    (lib "bnf.ss" "scribble"))
+  (bounce-for-label (all-except scheme (link) ())
+                    scribble/struct
+                    scribble/base-render
+                    scribble/decode
+                    scribble/manual
+                    scribble/scheme
+                    scribble/eval
+                    scribble/bnf)
 
   (provide scribble-examples litchar/lines)
 
@@ -56,7 +58,7 @@
                  [accum null])
         (cond
          [(null? e)
-          (datum->syntax-object
+          (datum->syntax
            p
            (reverse accum)
            (list (syntax-source p)
@@ -77,7 +79,7 @@
                   (or second next-pos)
                   (cons v accum)))]))]
      [else
-      (datum->syntax-object
+      (datum->syntax
        p
        (syntax-e p)
        (list (syntax-source p)
@@ -101,9 +103,9 @@
             (let ([str (substring lines p1 p2)])
               (loop (cons (list str stx) r)
                     (or newlines? (regexp-match? #rx#"\n" str))))
-            (let* ([r (reverse! r)]
+            (let* ([r (reverse r)]
                    [r (if newlines?
-                        (cdr (apply append! (map (lambda (x) (list #f x)) r)))
+                        (cdr (apply append (map (lambda (x) (list #f x)) r)))
                         r)])
               (make-table
                #f

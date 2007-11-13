@@ -56,11 +56,11 @@
     (lambda (plist match-expr)
       (map
        (lambda (x)
-         (if (not (cdr x))
+         (if (not (mcdr x))
              (fprintf
               (current-error-port)
               "Warning: unreachable match clause ~e in ~e~n"
-              (syntax-object->datum (car x))
+              (syntax-object->datum (mcar x))
               (syntax-object->datum match-expr))))
        plist)))
   

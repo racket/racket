@@ -138,43 +138,43 @@ static Scheme_Object *apply_values_resolve(Scheme_Object *data, Resolve_Info *in
 static Scheme_Object *splice_resolve(Scheme_Object *data, Resolve_Info *info);
 
 static void define_values_validate(Scheme_Object *data, Mz_CPort *port, 
-                                   char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                                   char *stack, Validate_TLS tls,
                                    int depth, int letlimit, int delta, 
 				   int num_toplevels, int num_stxes, int num_lifts);
 static void ref_validate(Scheme_Object *data, Mz_CPort *port, 
-                         char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                         char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta, 
 			 int num_toplevels, int num_stxes, int num_lifts);
 static void set_validate(Scheme_Object *data, Mz_CPort *port, 
-                         char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                         char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta, 
 			 int num_toplevels, int num_stxes, int num_lifts);
 static void define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
-                                     char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                                     char *stack, Validate_TLS tls,
                                      int depth, int letlimit, int delta, 
 				     int num_toplevels, int num_stxes, int num_lifts);
 static void define_for_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
-                                         char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                                         char *stack, Validate_TLS tls,
                                          int depth, int letlimit, int delta, 
 					 int num_toplevels, int num_stxes, int num_lifts);
 static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, 
-                                 char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                                 char *stack, Validate_TLS tls,
                                  int depth, int letlimit, int delta, 
 				 int num_toplevels, int num_stxes, int num_lifts);
 static void begin0_validate(Scheme_Object *data, Mz_CPort *port, 
-                            char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                            char *stack, Validate_TLS tls,
                             int depth, int letlimit, int delta,
 			    int num_toplevels, int num_stxes, int num_lifts);
 static void apply_values_validate(Scheme_Object *data, Mz_CPort *port, 
-                                  char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                                  char *stack, Validate_TLS tls,
                                   int depth, int letlimit, int delta,
                                   int num_toplevels, int num_stxes, int num_lifts);
 static void splice_validate(Scheme_Object *data, Mz_CPort *port, 
-                            char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                            char *stack, Validate_TLS tls,
                             int depth, int letlimit, int delta,
                             int num_toplevels, int num_stxes, int num_lifts);
 static void bangboxenv_validate(Scheme_Object *data, Mz_CPort *port, 
-                                char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                                char *stack, Validate_TLS tls,
                                 int depth, int letlimit, int delta,
 				int num_toplevels, int num_stxes, int num_lifts);
 
@@ -217,7 +217,6 @@ static void register_traversers(void);
 #endif
 
 #define cons(a,b) scheme_make_pair(a,b)
-#define icons(a,b) scheme_make_immutable_pair(a,b)
 
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
@@ -573,8 +572,8 @@ lambda_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *ere
 
   fn = SCHEME_STX_CAR(form);
 
-  return scheme_datum_to_syntax(icons(fn,
-				      icons(args,
+  return scheme_datum_to_syntax(cons(fn,
+				      cons(args,
 					    scheme_expand_block(body,
 								newenv,
 								erec, 
@@ -601,7 +600,7 @@ static Scheme_Object *expand_lam(int argc, Scheme_Object **argv)
   fn = scheme_datum_to_syntax(lambda_symbol, fn, scheme_sys_wraps(env), 0, 0);
   
   args = SCHEME_STX_CDR(form);
-  return scheme_datum_to_syntax(icons(fn, args), form, fn, 0, 0);
+  return scheme_datum_to_syntax(cons(fn, args), form, fn, 0, 0);
 }
 
 /**********************************************************************/
@@ -620,7 +619,7 @@ void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
       const char *msg;
 
       if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC)))
-	msg = "%s: cannot %s: %S in module: %S";
+	msg = "%s: cannot %s: %S in module: %D";
       else
 	msg = "%s: cannot %s: %S";
 
@@ -840,7 +839,7 @@ static Scheme_Object *define_values_jit(Scheme_Object *data)
 }
 
 static void define_values_validate(Scheme_Object *data, Mz_CPort *port, 
-				   char *stack,  Scheme_Hash_Table *ht, Scheme_Object **tls,
+				   char *stack,  Validate_TLS tls,
                                    int depth, int letlimit, int delta, 
                                    int num_toplevels, int num_stxes, int num_lifts)
 {
@@ -859,7 +858,7 @@ static void define_values_validate(Scheme_Object *data, Mz_CPort *port,
     only_var = NULL;
     
   for (i = 1; i < size; i++) {
-    scheme_validate_toplevel(SCHEME_VEC_ELS(data)[i], port, stack, ht, tls, depth, delta, 
+    scheme_validate_toplevel(SCHEME_VEC_ELS(data)[i], port, stack, tls, depth, delta, 
                              num_toplevels, num_stxes, num_lifts,
                              1);
   }
@@ -870,25 +869,76 @@ static void define_values_validate(Scheme_Object *data, Mz_CPort *port,
     if (pos >= (num_toplevels + num_stxes + (num_stxes ? 1 : 0))) {
       /* It's a lift. Check whether it needs to take reference arguments
          and/or install reference info. */
-      int tp = pos - (num_stxes + (num_stxes ? 1 : 0));
-      Scheme_Object *vec;
+      Scheme_Object *app_rator;
+      Scheme_Closure_Data *data = NULL;
+      int tp = pos - (num_toplevels + num_stxes + (num_stxes ? 1 : 0));
+      mzshort *a, *new_a = NULL;
 
-      vec = tls[tp];
-      if (vec && !SCHEME_VECTORP(vec) && !SCHEME_FALSEP(vec))
+      /* Make sure that no one has tried to register information. */
+      a = tls[tp];
+      if (a && (a != (mzshort *)0x1) && (a[0] < 1))
         scheme_ill_formed_code(port);
-      
-      if (SCHEME_VECTORP(val) || SCHEME_FALSEP(val))
-        tls[tp] = scheme_true; /* avoid confusion between expression and hopes */
-      else
-        tls[tp] = val;
 
-      if (vec && SCHEME_VECTORP(vec)) {
-        int i;
-        for (i = SCHEME_VEC_SIZE(vec); i--; ) {
-          if (!SCHEME_NULLP(SCHEME_VEC_ELS(vec)[i])) {
-            scheme_validate_rator_wants_box(val, i, 
-                                            SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[i]),
-                                            tls, num_toplevels, num_stxes, num_lifts);
+      /* Convert rator to ref-arg info: */
+      app_rator = val;
+      while (1) {
+        if (SAME_TYPE(SCHEME_TYPE(app_rator), scheme_closure_type)) {
+          data = SCHEME_COMPILED_CLOS_CODE(app_rator);
+          break;
+        } else if (SAME_TYPE(SCHEME_TYPE(app_rator), scheme_unclosed_procedure_type)) {
+          data = (Scheme_Closure_Data *)app_rator;
+          break;
+        } else if (SAME_TYPE(SCHEME_TYPE(app_rator), scheme_toplevel_type)) {
+          /* Record an indirection */
+          data = NULL;
+          new_a = MALLOC_N_ATOMIC(mzshort, 2);
+          new_a[0] = 0;
+          new_a[1] = SCHEME_TOPLEVEL_POS(app_rator);
+          break;
+        } else {
+          /* Not a procedure */
+          data = NULL;
+          new_a = (mzshort *)0x1;
+          break;
+        }
+      }
+      if (data) {
+        if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REF_ARGS) {
+          int sz;
+          sz = data->num_params;
+          a = MALLOC_N_ATOMIC(mzshort, (sz + 1));
+          a[0] = -sz;
+          for (i = 0; i < sz; i++) {
+            int bit = ((mzshort)1 << (i & (BITS_PER_MZSHORT - 1)));
+            if (data->closure_map[data->closure_size + (i / BITS_PER_MZSHORT)] & bit)
+              a[i + 1] = 1;
+            else
+              a[i + 1] = 0;
+          }
+        } else {
+          new_a = (mzshort *)0x1;
+        }
+      }
+
+      /* Install info: */
+      tls[tp] = new_a;
+
+      /* Check old hopes against actual */
+      if (a == (mzshort *)0x1) {
+        if (new_a != (mzshort *)0x1)
+          scheme_ill_formed_code(port);
+      } else if (a) {
+        int cnt = a[0], i;
+
+        for (i = 0; i < cnt; i++) {
+          if (a[i + 1]) {
+            int is;
+            is = scheme_validate_rator_wants_box(val, i, 
+                                                 a[i + 1] == 2,
+                                                 tls, num_toplevels, num_stxes, num_lifts);
+            if ((is && (a[i + 1] == 1))
+                || (!is && (a[i + 1] == 2)))
+              scheme_ill_formed_code(port);
           }
         }
       }
@@ -896,7 +946,7 @@ static void define_values_validate(Scheme_Object *data, Mz_CPort *port,
       only_var = NULL;
   }
 
-  scheme_validate_expr(port, val, stack, ht, tls, 
+  scheme_validate_expr(port, val, stack, tls, 
                        depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
                        NULL, !!only_var);
@@ -1087,9 +1137,9 @@ define_values_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_In
   scheme_rec_add_certs(erec, drec, form);
 
   fn = SCHEME_STX_CAR(form);
-  return scheme_datum_to_syntax(icons(fn,
-				      icons(var,
-					    icons(scheme_expand_expr(val, env, erec, drec), 
+  return scheme_datum_to_syntax(cons(fn,
+				      cons(var,
+					    cons(scheme_expand_expr(val, env, erec, drec), 
 						  scheme_null))),
 				form,
 				form,
@@ -1139,6 +1189,18 @@ quote_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec
 /*                                if                                  */
 /**********************************************************************/
 
+static void check_if_len(Scheme_Object *form, int len)
+{
+  if (len != 4) {
+    if (len == 3) {
+      scheme_wrong_syntax(NULL, NULL, form, 
+                          "bad syntax (must have an \"else\" expression)");
+    } else {
+      bad_form(form, len);
+    }
+  }
+}
+
 static Scheme_Object *
 if_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
@@ -1147,8 +1209,7 @@ if_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
   Scheme_Compile_Info recs[3];
 
   len = check_form(form, form);
-  if (!(((len == 3) || (len == 4))))
-    bad_form(form, len);
+  check_if_len(form, len);
 
   name = rec[drec].value_name;
   scheme_compile_rec_done_local(rec, drec);
@@ -1222,8 +1283,7 @@ if_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, i
 
   len = check_form(form, form);
 
-  if (!(((len == 3) || (len == 4))))
-    bad_form(form, len);
+  check_if_len(form, len);
 
   if (len == 3) {
     SCHEME_EXPAND_OBSERVE_NEXT_GROUP(erec[drec].observer);
@@ -1254,15 +1314,15 @@ if_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, i
     SCHEME_EXPAND_OBSERVE_NEXT(erec[drec].observer);
     elsep = SCHEME_STX_CAR(rest);
     elsep = scheme_expand_expr(elsep, env, recs, 2);
-    rest = icons(elsep, scheme_null);
+    rest = cons(elsep, scheme_null);
   } else {
     rest = scheme_null;
   }
 
-  rest = icons(thenp, rest);
+  rest = cons(thenp, rest);
 
   fn = SCHEME_STX_CAR(form);
-  return scheme_datum_to_syntax(icons(fn, icons(test, rest)),
+  return scheme_datum_to_syntax(cons(fn, cons(test, rest)),
 				form, form, 
 				0, 2);
 }
@@ -1355,10 +1415,10 @@ with_cont_mark_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_I
   expr = scheme_expand_expr(expr, env, recs, 2);
 
   fn = SCHEME_STX_CAR(orig_form);
-  return scheme_datum_to_syntax(icons(fn,
-				      icons(key,
-					    icons(val,
-						  icons(expr, scheme_null)))),
+  return scheme_datum_to_syntax(cons(fn,
+				      cons(key,
+					    cons(val,
+						  cons(expr, scheme_null)))),
 				orig_form,
 				orig_form, 
 				0, 2);
@@ -1407,7 +1467,7 @@ static Scheme_Object *set_jit(Scheme_Object *data)
 }
 
 static void set_validate(Scheme_Object *data, Mz_CPort *port, 
-			 char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+			 char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta, 
                          int num_toplevels, int num_stxes, int num_lifts)
 {
@@ -1421,10 +1481,10 @@ static void set_validate(Scheme_Object *data, Mz_CPort *port,
   tl = SCHEME_CAR(data);
   val = SCHEME_CDR(data);
 
-  scheme_validate_expr(port, val, stack, ht, tls, depth, letlimit, delta, 
+  scheme_validate_expr(port, val, stack, tls, depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
                        NULL, 0);
-  scheme_validate_toplevel(tl, port, stack, ht, tls, depth, delta, 
+  scheme_validate_toplevel(tl, port, stack, tls, depth, delta, 
                            num_toplevels, num_stxes, num_lifts,
                            0);
 }
@@ -1712,9 +1772,9 @@ set_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, 
 
   rhs = scheme_expand_expr(rhs, env, erec, drec);
 
-  return scheme_datum_to_syntax(icons(fn,
-				      icons(find_name,
-					    icons(rhs, scheme_null))),
+  return scheme_datum_to_syntax(cons(fn,
+				      cons(find_name,
+					    cons(rhs, scheme_null))),
 				form,
 				form, 
 				0, 2);
@@ -1746,11 +1806,11 @@ static Scheme_Object *ref_jit(Scheme_Object *data)
 }
 
 static void ref_validate(Scheme_Object *tl, Mz_CPort *port, 
-			 char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+			 char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta, 
                          int num_toplevels, int num_stxes, int num_lifts)
 {
-  scheme_validate_toplevel(tl,  port, stack, ht, tls, depth, delta, 
+  scheme_validate_toplevel(tl,  port, stack, tls, depth, delta, 
                            num_toplevels, num_stxes, num_lifts,
                            0);
 }
@@ -1809,6 +1869,7 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
   }
 
   if (SCHEME_STX_PAIRP(name)) {
+    /* FIXME: when using #%top, need to set mutated flag */
     if (rec[drec].comp)
       var = scheme_compile_expr(name, env, rec, drec);
     else
@@ -1830,8 +1891,29 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
 
     if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
 	|| SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
-      if (rec[drec].comp)
+      /* It must be in the module being compiled/expanded. */
+      if (env->genv->module) {
+        if (SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
+          if (!SAME_OBJ(((Module_Variable *)var)->modidx, env->genv->module->self_modidx))
+            var = NULL;
+        } else
+          var = NULL;
+      } else {
+        if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)) {
+          if (!SAME_OBJ(((Scheme_Bucket_With_Home *)var)->home, env->genv))
+            var = NULL;
+        } else
+          var = NULL;
+      }
+
+      if (!var)
+        scheme_wrong_syntax(NULL, name, form, "identifier cannot refer to an imported binding");
+      
+      if (rec[drec].comp) {
 	var = scheme_register_toplevel_in_prefix(var, env, rec, drec);
+        if (env->genv->module)
+          SCHEME_TOPLEVEL_FLAGS(var) |= SCHEME_TOPLEVEL_MUTATED;
+      }
     } else {
       scheme_wrong_syntax(NULL, name, form, "identifier does not refer to a top-level or module variable");
     }
@@ -1965,7 +2047,7 @@ apply_values_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int del
 }
 
 static void apply_values_validate(Scheme_Object *data, Mz_CPort *port, 
-                                  char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                                  char *stack, Validate_TLS tls,
                                   int depth, int letlimit, int delta, 
                                   int num_toplevels, int num_stxes, int num_lifts)
 {
@@ -1974,11 +2056,11 @@ static void apply_values_validate(Scheme_Object *data, Mz_CPort *port,
   f = SCHEME_CAR(data);
   e = SCHEME_CDR(data);
 
-  scheme_validate_expr(port, f, stack, ht, tls,
+  scheme_validate_expr(port, f, stack, tls,
                        depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
                        NULL, 0);
-  scheme_validate_expr(port, e, stack, ht, tls,
+  scheme_validate_expr(port, e, stack, tls,
                        depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
                        NULL, 0);
@@ -2128,7 +2210,7 @@ static Scheme_Object *case_lambda_jit(Scheme_Object *expr)
   return expr;
 }
 
-static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, char *stack, Validate_TLS tls,
 				 int depth, int letlimit, int delta, 
                                  int num_toplevels, int num_stxes, int num_lifts)
 {
@@ -2136,7 +2218,7 @@ static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, char *stac
   int i;
 
   for (i = 0; i < seq->count; i++) { 
-    scheme_validate_expr(port, seq->array[i], stack, ht, tls, depth, letlimit, delta, 
+    scheme_validate_expr(port, seq->array[i], stack, tls, depth, letlimit, delta, 
                          num_toplevels, num_stxes, num_lifts,
                          NULL, 0);
   }
@@ -2298,7 +2380,7 @@ case_lambda_syntax (Scheme_Object *form, Scheme_Comp_Env *env,
 
     case_lambda_check_line(c, orig_form, env);
 
-    c = icons(scheme_datum_to_syntax(lambda_symbol, scheme_false, scheme_sys_wraps(env), 0, 0),
+    c = cons(scheme_datum_to_syntax(lambda_symbol, scheme_false, scheme_sys_wraps(env), 0, 0),
 	      c);
     c = scheme_datum_to_syntax(c, orig_form, orig_form, 0, 2);
     
@@ -2315,7 +2397,7 @@ case_lambda_syntax (Scheme_Object *form, Scheme_Comp_Env *env,
     clause = SCHEME_STX_CAR(form);
     case_lambda_check_line(clause, orig_form, env);
 
-    c = icons(lambda_symbol, clause);
+    c = cons(lambda_symbol, clause);
 
     c = scheme_datum_to_syntax(c, clause, scheme_sys_wraps(env), 0, 0);
 
@@ -2381,7 +2463,7 @@ case_lambda_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info
   SCHEME_EXPAND_OBSERVE_PRIM_CASE_LAMBDA(erec[drec].observer);
 
   first = SCHEME_STX_CAR(form);
-  first = icons(first, scheme_null);
+  first = cons(first, scheme_null);
   last = first;
   form = SCHEME_STX_CDR(form);
 
@@ -2412,11 +2494,11 @@ case_lambda_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info
       Scheme_Expand_Info erec1;
       scheme_init_expand_recs(erec, drec, &erec1, 1);
       erec1.value_name = scheme_false;
-      new_line = icons(args, scheme_expand_block(body, newenv, &erec1, 0));
+      new_line = cons(args, scheme_expand_block(body, newenv, &erec1, 0));
     }
     new_line = scheme_datum_to_syntax(new_line, line_form, line_form, 0, 1);
 
-    c = icons(new_line, scheme_null);
+    c = cons(new_line, scheme_null);
 
     SCHEME_CDR(last) = c;
     last = c;
@@ -2463,7 +2545,7 @@ static Scheme_Object *bangboxenv_jit(Scheme_Object *data)
 }
 
 static void bangboxenv_validate(Scheme_Object *data, Mz_CPort *port, 
-				char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+				char *stack, Validate_TLS tls,
                                 int depth, int letlimit, int delta, 
                                 int num_toplevels, int num_stxes, int num_lifts)
 {
@@ -2472,7 +2554,7 @@ static void bangboxenv_validate(Scheme_Object *data, Mz_CPort *port,
     
   scheme_validate_boxenv(SCHEME_INT_VAL(SCHEME_CAR(data)), port, stack, depth, delta);
 
-  scheme_validate_expr(port, SCHEME_CDR(data), stack, ht, tls, depth, letlimit, delta, 
+  scheme_validate_expr(port, SCHEME_CDR(data), stack, tls, depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
                        NULL, 0);
 }
@@ -2769,7 +2851,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
        to (let-values ([id e] ...) body) for simple e. */
     if ((pre_body->count != 1)
         && is_values_apply(value)
-        && scheme_omittable_expr(value, pre_body->count)) {
+        && scheme_omittable_expr(value, pre_body->count, -1, 0)) {
       if (!pre_body->count && !i) {
         /* We want to drop the clause entirely, but doing it
            here messes up the loop for letrec. So wait and 
@@ -2969,7 +3051,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
       }
     }
     if (!used
-        && scheme_omittable_expr(pre_body->value, pre_body->count)) {
+        && scheme_omittable_expr(pre_body->value, pre_body->count, -1, 0)) {
       for (j = pre_body->count; j--; ) {
         if (pre_body->flags[j] & SCHEME_WAS_USED) {
           pre_body->flags[j] -= SCHEME_WAS_USED;
@@ -3341,7 +3423,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
         }
         if (j >= 0)
           break;
-        if (!scheme_omittable_expr(clv->value, clv->count))
+        if (!scheme_omittable_expr(clv->value, clv->count, -1, 0))
           break;
       }
       if (i < 0) {
@@ -3943,16 +4025,16 @@ do_let_expand(Scheme_Object *form, Scheme_Comp_Env *origenv, Scheme_Expand_Info 
       } else {
 	last = let_star_values_symbol;
 	last = scheme_datum_to_syntax(last, form, scheme_sys_wraps(origenv), 0, 0);
-	body = icons(icons(last, icons(vr, body)),
+	body = cons(cons(last, cons(vr, body)),
 		     scheme_null);
       }
       
-      body = icons(first,
-		   icons(icons(a, scheme_null),
+      body = cons(first,
+		   cons(cons(a, scheme_null),
 			 body));
     } else {
       first = scheme_datum_to_syntax(let_values_symbol, form, scheme_sys_wraps(origenv), 0, 0);
-      body = icons(first, icons(scheme_null, body));
+      body = cons(first, cons(scheme_null, body));
     }
     
     body = scheme_datum_to_syntax(body, form, form, 0, -1);
@@ -4041,8 +4123,8 @@ do_let_expand(Scheme_Object *form, Scheme_Comp_Env *origenv, Scheme_Expand_Info 
     rhs = SCHEME_STX_CAR(rhs);
     rhs = scheme_add_env_renames(rhs, use_env, origenv);
     
-    v = scheme_datum_to_syntax(icons(name, icons(rhs, scheme_null)), v, v, 0, 1);
-    v = icons(v, scheme_null);
+    v = scheme_datum_to_syntax(cons(name, cons(rhs, scheme_null)), v, v, 0, 1);
+    v = cons(v, scheme_null);
 
     if (!first)
       first = v;
@@ -4085,8 +4167,8 @@ do_let_expand(Scheme_Object *form, Scheme_Comp_Env *origenv, Scheme_Expand_Info 
     erec1.value_name = rhs_name;
     rhs = scheme_expand_expr(rhs, use_env, &erec1, 0);
 
-    v = scheme_datum_to_syntax(icons(name, icons(rhs, scheme_null)), v, v, 0, 1);
-    v = icons(v, scheme_null);
+    v = scheme_datum_to_syntax(cons(name, cons(rhs, scheme_null)), v, v, 0, 1);
+    v = cons(v, scheme_null);
 
     if (!first)
       first = v;
@@ -4114,7 +4196,7 @@ do_let_expand(Scheme_Object *form, Scheme_Comp_Env *origenv, Scheme_Expand_Info 
   body = scheme_expand_block(body, env, &erec1, 0);
   
   v = SCHEME_STX_CAR(form);
-  v = icons(v, icons(first, body));
+  v = cons(v, cons(first, body));
   v = scheme_datum_to_syntax(v, form, form, 0, 2);
 
   return v;
@@ -4191,7 +4273,7 @@ Scheme_Object *scheme_compile_sequence(Scheme_Object *forms,
   } else {
     if (scheme_stx_proper_list_length(forms) < 0) {
       scheme_wrong_syntax(scheme_begin_stx_string, NULL, 
-			  scheme_datum_to_syntax(icons(begin_symbol, forms), forms, forms, 0, 0),
+			  scheme_datum_to_syntax(cons(begin_symbol, forms), forms, forms, 0, 0),
 			  "bad syntax (" IMPROPER_LIST_FORM ")");
       return NULL;
     } else {
@@ -4278,7 +4360,7 @@ static Scheme_Object *begin0_jit(Scheme_Object *data)
 }
 
 static void begin0_validate(Scheme_Object *data, Mz_CPort *port, 
-                            char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                            char *stack, Validate_TLS tls,
 			    int depth, int letlimit, int delta, 
                             int num_toplevels, int num_stxes, int num_lifts)
 {
@@ -4286,7 +4368,7 @@ static void begin0_validate(Scheme_Object *data, Mz_CPort *port,
   int i;
 
   for (i = 0; i < seq->count; i++) { 
-    scheme_validate_expr(port, seq->array[i], stack, ht, tls,
+    scheme_validate_expr(port, seq->array[i], stack, tls,
                          depth, letlimit, delta, 
                          num_toplevels, num_stxes, num_lifts,
                          NULL, 0);
@@ -4402,7 +4484,7 @@ do_begin_syntax(char *name,
       
       scheme_merge_compile_recs(rec, drec, recs, 2);
 
-      body = icons(first, rest);
+      body = cons(first, rest);
     } else {
       Scheme_Object *v;
       v = scheme_check_name_property(form, rec[drec].value_name);
@@ -4490,7 +4572,7 @@ do_begin_expand(char *name,
       SCHEME_EXPAND_OBSERVE_NEXT(erec[drec].observer);
       rest = scheme_expand_list(rest, env, erec, drec);
 
-      form = icons(fst, rest);
+      form = cons(fst, rest);
     } else {
       Scheme_Object *boundname;
       boundname = scheme_check_name_property(form, erec[drec].value_name);
@@ -4511,7 +4593,7 @@ do_begin_expand(char *name,
 			       env, erec, drec);
   }
 
-  return scheme_datum_to_syntax(icons(form_name, form), 
+  return scheme_datum_to_syntax(cons(form_name, form), 
 				orig_form, orig_form, 
 				0, 2);
 }
@@ -4590,11 +4672,11 @@ splice_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, in
 }
 
 static void splice_validate(Scheme_Object *data, Mz_CPort *port, 
-                            char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                            char *stack, Validate_TLS tls,
                             int depth, int letlimit, int delta, 
                             int num_toplevels, int num_stxes, int num_lifts)
 {
-  scheme_validate_expr(port, data, stack, ht, tls,
+  scheme_validate_expr(port, data, stack, tls,
                        depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
                        NULL, 0);
@@ -4647,7 +4729,7 @@ single_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *ere
     return expr;
   }
 
-  return scheme_datum_to_syntax(icons(form_name, icons(expr, scheme_null)), 
+  return scheme_datum_to_syntax(cons(form_name, cons(expr, scheme_null)), 
 				form, form,
 				0, 2);
 }
@@ -4721,7 +4803,7 @@ quote_syntax_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_In
   } else {
     Scheme_Object *fn;
     fn = SCHEME_STX_CAR(form);
-    return scheme_datum_to_syntax(icons(fn, icons(stx, scheme_null)),
+    return scheme_datum_to_syntax(cons(fn, cons(stx, scheme_null)),
 				  form,
 				  form, 
 				  0, 2);
@@ -4828,7 +4910,7 @@ static Scheme_Object *define_for_syntaxes_jit(Scheme_Object *expr)
 }
 
 static void do_define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
-					char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+					char *stack, Validate_TLS tls,
                                         int depth, int letlimit, int delta, 
 					int num_toplevels, int num_stxes, int num_lifts,
 					int for_stx)
@@ -4862,36 +4944,36 @@ static void do_define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port,
     }
   }
 
-  scheme_validate_toplevel(dummy, port, stack, ht, tls, depth, delta, 
+  scheme_validate_toplevel(dummy, port, stack, tls, depth, delta, 
                            num_toplevels, num_stxes, num_lifts,
                            0);
   
   if (!for_stx) {
-    scheme_validate_code(port, SCHEME_VEC_ELS(data)[0], ht, sdepth, rp->num_toplevels, rp->num_stxes, rp->num_lifts);
+    scheme_validate_code(port, SCHEME_VEC_ELS(data)[0], sdepth, rp->num_toplevels, rp->num_stxes, rp->num_lifts, 0);
   } else {
     /* Make a fake `define-values' to check with respect to the exp-time stack */
     val = clone_vector(data, 3);
     SCHEME_VEC_ELS(val)[0] = SCHEME_VEC_ELS(data)[0];
     val = scheme_make_syntax_resolved(DEFINE_VALUES_EXPD, val);
-    scheme_validate_code(port, val, ht, sdepth, rp->num_toplevels, rp->num_stxes, rp->num_lifts);
+    scheme_validate_code(port, val, sdepth, rp->num_toplevels, rp->num_stxes, rp->num_lifts, 0);
   }
 }
 
 static void define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
-				     char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+				     char *stack, Validate_TLS tls,
                                      int depth, int letlimit, int delta, 
 				     int num_toplevels, int num_stxes, int num_lifts)
 {
-  do_define_syntaxes_validate(data, port, stack, ht, tls, depth, letlimit, delta, 
+  do_define_syntaxes_validate(data, port, stack, tls, depth, letlimit, delta, 
                               num_toplevels, num_stxes, num_lifts, 0);
 }
 
 static void define_for_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
-					 char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+					 char *stack, Validate_TLS tls,
                                          int depth, int letlimit, int delta, 
 					 int num_toplevels, int num_stxes, int num_lifts)
 {
-  do_define_syntaxes_validate(data, port, stack, ht, tls, depth, letlimit, delta, 
+  do_define_syntaxes_validate(data, port, stack, tls, depth, letlimit, delta, 
                               num_toplevels, num_stxes, num_lifts, 1);
 }
 
@@ -5069,11 +5151,11 @@ define_syntaxes_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_
   erec[drec].value_name = names;
   fpart = scheme_expand_expr_lift_to_let(code, env, erec, drec);
   
-  code = icons(fpart, scheme_null);
-  code = icons(names, code);
+  code = cons(fpart, scheme_null);
+  code = cons(names, code);
 
   fn = SCHEME_STX_CAR(form);
-  return scheme_datum_to_syntax(icons(fn, code), 
+  return scheme_datum_to_syntax(cons(fn, code), 
 				form, form, 
 				0, 2);
 }
@@ -5133,7 +5215,7 @@ static Scheme_Object *eval_letmacro_rhs(Scheme_Object *a, Scheme_Comp_Env *rhs_e
 
   save_runstack = scheme_push_prefix(NULL, rp, NULL, NULL, phase, phase);
 
-  if (scheme_omittable_expr(a, 1)) {
+  if (scheme_omittable_expr(a, 1, -1, 0)) {
     /* short cut */
     a = _scheme_eval_linked_expr_multi(a);
   } else {
@@ -5413,7 +5495,7 @@ do_letrec_syntaxes(const char *where,
       while (!SCHEME_STX_NULLP(names)) {
         a = SCHEME_STX_CAR(names);
         if (names_to_disappear)
-          names_to_disappear = icons(a, names_to_disappear);
+          names_to_disappear = cons(a, names_to_disappear);
         names = SCHEME_STX_CDR(names);
       }
     }
@@ -5462,7 +5544,7 @@ do_letrec_syntaxes(const char *where,
     if (origenv->flags & SCHEME_FOR_INTDEF) {
       for (l = names_to_disappear; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
         a = SCHEME_CAR(l);
-        a = icons(a, scheme_null);
+        a = cons(a, scheme_null);
         if (pl)
           SCHEME_CDR(pl) = a;
         else
@@ -5495,9 +5577,9 @@ do_letrec_syntaxes(const char *where,
       if ((depth >= 0) || (depth == -2)) {
 	Scheme_Object *formname;
 	formname = SCHEME_STX_CAR(forms);
-	v = icons(formname, icons(bindings, icons(var_bindings, v)));
+	v = cons(formname, cons(bindings, cons(var_bindings, v)));
       } else {
-	v = icons(let_values_symbol, icons(scheme_null, v));
+	v = cons(let_values_symbol, cons(scheme_null, v));
       }
 
       if (SCHEME_PAIRP(v))
@@ -5506,7 +5588,7 @@ do_letrec_syntaxes(const char *where,
     }
   } else {
     /* Construct letrec-values expression: */
-    v = icons(letrec_values_symbol, icons(var_bindings, body));
+    v = cons(letrec_values_symbol, cons(var_bindings, body));
     v = scheme_datum_to_syntax(v, forms, scheme_sys_wraps(origenv), 0, 2);
     
     if (rec[drec].comp) {
@@ -5520,7 +5602,7 @@ do_letrec_syntaxes(const char *where,
 	Scheme_Object *formname;
 	formname = SCHEME_STX_CAR(forms);
 	v = SCHEME_STX_CDR(v);
-	v = icons(formname, icons(bindings, v));
+	v = cons(formname, cons(bindings, v));
 	v = scheme_datum_to_syntax(v, forms, scheme_sys_wraps(origenv), 0, 2);
       }
     }

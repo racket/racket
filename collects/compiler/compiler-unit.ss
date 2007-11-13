@@ -8,29 +8,32 @@
 ;; The Scheme->C compiler is loaded as either sploadr.ss (link in
 ;;  real MrSpidey) or loadr.ss (link in trivial MrSpidey stubs).
 
-(module compiler-unit mzscheme 
-  (require (lib "unit.ss")
+(module compiler-unit scheme/base
+  (require mzlib/unit
 
            "sig.ss"
-           (lib "file-sig.ss" "dynext")
-	   (lib "link-sig.ss" "dynext")
-	   (lib "compile-sig.ss" "dynext")
+           dynext/file-sig
+	   dynext/link-sig
+	   dynext/compile-sig
 	   
-	   (lib "make-sig.ss" "make")
-	   (lib "collection-sig.ss" "make")
+	   make/make-sig
+	   make/collection-sig
 
-	   (lib "toplevel.ss" "syntax")
-	   (lib "moddep.ss" "syntax")
+	   syntax/toplevel
+	   syntax/moddep
 
-           (lib "list.ss")
-	   (lib "file.ss")
-	   (lib "compile.ss") ; gets compile-file
-	   (lib "cm.ss")
-	   (lib "getinfo.ss" "setup"))
+           syntax/namespace-reflect
+
+           mzlib/list
+           scheme/file
+	   mzlib/compile ; gets compile-file
+	   mzlib/cm
+	   setup/getinfo)
 
   (provide compiler@)
 
-  (define orig-namespace (current-namespace))
+  (define-reflection-anchor anchor)
+  (define orig-namespace (reflection-anchor->namespace anchor))
 
   ;; ;;;;;;;; ----- The main compiler unit ------ ;;;;;;;;;;
   (define-unit compiler@
@@ -58,7 +61,7 @@
 	   (get-info cp))))
 
       (define (make-extension-compiler mode prefix)
-	(let ([u (c-dynamic-require `(lib "base.ss" "compiler" "private")
+	(let ([u (c-dynamic-require 'compiler/private/base
 				    'base@)]
 	      [init (unit
 		      (import compiler:inner^)
@@ -118,7 +121,7 @@
 	(make-unprefixed-compiler 'compile-c-extension-part))
 
       (define (link/glue-extension-parts link? compile? source-files destination-directory)
-	(let ([u (c-dynamic-require '(lib "ld-unit.ss" "compiler") 'ld@)]
+	(let ([u (c-dynamic-require 'compiler/ld-unit 'ld@)]
 	      [init (unit
 		      (import compiler:linker^)
                       (export)
@@ -193,8 +196,8 @@
 	       source-files file-bases)))))
 
       (define (compile-directory dir info zos?)
-	(let ([make (c-dynamic-require '(lib "make-unit.ss" "make") 'make@)]
-	      [coll (c-dynamic-require '(lib "collection-unit.ss" "make") 'make:collection@)]
+	(let ([make (c-dynamic-require 'make/make-unit 'make@)]
+	      [coll (c-dynamic-require 'make/collection-unit 'make:collection@)]
 	      [init (unit
                       (import make^ make:collection^)
                       (export)

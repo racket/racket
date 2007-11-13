@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "portstructs"]{Structures as Ports}
+
+@declare-exporting[(lib "scheme/port")]
 
 @defthing[prop:input-port struct-type-property?]
 @defthing[prop:output-port struct-type-property?]

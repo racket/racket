@@ -52,8 +52,8 @@
 	   pair-fold-right
 	   reduce-right
 	   append-map
-	   append-map!
-	   map!
+           (rename append-map append-map!)
+           (rename my-map map!)
 	   pair-for-each
 	   filter-map
 	   map-in-order)
@@ -124,7 +124,7 @@
 		(let recur ((lists (cons lis1 lists)))		; N-ary case
 		  (let ((cdrs (%cdrs lists)))
 			(if (null? cdrs) zero
-				(apply f (append! lists (list (recur cdrs)))))))
+				(apply f (append lists (list (recur cdrs)))))))
 		
 		(let recur ((lis lis1))				; Fast path
 		  (if (null-list? lis) zero (f lis (recur (cdr lis)))))))
@@ -135,7 +135,7 @@
 		(let lp ((lists (cons lis1 lists)) (ans zero))	; N-ary case
 		  (let ((tails (%cdrs lists)))
 			(if (null? tails) ans
-				(lp tails (apply f (append! lists (list ans)))))))
+				(lp tails (apply f (append lists (list ans)))))))
 		
 		(let lp ((lis lis1) (ans zero))
 		  (if (null-list? lis) ans
@@ -166,6 +166,7 @@
   
   (define (append-map f lis1 . lists)
 	(really-append-map append-map  append  f lis1 lists))
+  #;
   (define (append-map! f lis1 . lists) 
 	(really-append-map append-map! append! f lis1 lists))
   
@@ -206,6 +207,7 @@
 				(lp tail))))))
   
   ;; We stop when LIS1 runs out, not when any list runs out.
+  #;
   (define (map! f lis1 . lists)
 	(check-arg procedure? f 'map!)
 	(if (pair? lists)

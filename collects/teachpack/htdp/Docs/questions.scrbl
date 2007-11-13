@@ -1,10 +1,8 @@
 #lang scribble/doc
 
-@begin[(require
-	 (lib "manual.ss" "scribble"))
+@begin[(require scribble/manual)
        
-       (require-for-label 
-	 (lib "lang.ss" "big"))]
+       (require (for-label scheme/base))]
 
 @title[#:tag "questions"]{Questions concerning scribble}
 

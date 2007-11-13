@@ -1,7 +1,7 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
+@require[scribble/bnf]
 @require["guide-utils.ss"]
 
 @title[#:tag "syntax-overview"]{Simple Definitions and Expressions}
@@ -9,15 +9,15 @@
 A program module is written as
 
 @schemeblock[
-#, @BNF-seq[@litchar{#module} @nonterm{langname} @kleenestar{@nonterm{topform}}]
+#, @BNF-seq[@litchar{#lang} @nonterm{langname} @kleenestar{@nonterm{topform}}]
 ]
 
 where a @nonterm{topform} is either a @nonterm{definition} or an
 @nonterm{expr}. The @tech{REPL} also evaluates @nonterm{topform}s.
 
 In syntax specifications, text with a gray background, such as
-@litchar{#module}, represents literal text. Whitespace must appear
-between separate such literals and nonterminals like @nonterm{id},
+@litchar{#lang}, represents literal text. Whitespace must appear
+between such literals and nonterminals like @nonterm{id},
 except that whitespace is not required before or after @litchar{(},
 @litchar{)}, @litchar{[}, or @litchar{]}.  A comment, which starts
 with @litchar{;} and runs until the end of the line, is treated the
@@ -95,6 +95,8 @@ piece
 substring
 ]
 
+@; FIXME: check that everything says "procedure" and not "primitive"
+
 A function definition can include multiple expressions for the
 function's body. In that case, only the value of the last expression
 is returned when the function is called. The other expressions are
@@ -118,7 +120,7 @@ in a definition body, because it explains why the following
 (nogreet "world")
 ]
 
-Withing @scheme[nogreet], there are no parentheses around
+Within @scheme[nogreet], there are no parentheses around
 @scheme[string-append "hello " name], so they are three separate
 expressions instead of one function-call expression. The expressions
 @scheme[string-append] and @scheme["hello "] are evaluated, but the
@@ -129,7 +131,7 @@ the result of the expression @scheme[name].
 @section[#:tag "indentation"]{An Aside on Indenting Code}
 
 Line breaks and indentation are not significant for parsing Scheme
-programs, but most Scheme programmer use a standard set of conventions
+programs, but most Scheme programmers use a standard set of conventions
 to make code more readable. For example, the body of a definition is
 typically indented under the first line of the definition. Identifiers
 are written immediately after an open parenthesis with no extra space,
@@ -207,7 +209,7 @@ function call is
 where the number of @nonterm{expr}s determines the number of
 arguments supplied to the function named by @nonterm{id}.
 
-The @schememodname[big] language pre-defines many function
+The @schememodname[scheme] language pre-defines many function
 identifiers, such as @scheme[substring] and
 @scheme[string-append]. More examples are below.
 
@@ -244,9 +246,9 @@ The next simplest kind of expression is an @scheme[if] conditional:
 
 @moreguide["conditionals"]{conditionals}
 
-The first @nonterm{expr} is always evaluted. If it produces a
+The first @nonterm{expr} is always evaluated. If it produces a
 non-@scheme[#f] value, then the second @nonterm{expr} is
-evaluted for the result of the whole @scheme[if] expression, otherwise
+evaluated for the result of the whole @scheme[if] expression, otherwise
 the third @nonterm{expr} is evaluated for the result.
 
 @examples[
@@ -301,7 +303,7 @@ provides more readable shortcuts through the @scheme[and] and
 ]
 
 The @scheme[and] form short-circuits: it stops and returns @scheme[#f]
-when and expression produces @scheme[#f], otherwise it keeps
+when an expression produces @scheme[#f], otherwise it keeps
 going. The @scheme[or] form similarly short-circuits when it
 encounters a true result.
 

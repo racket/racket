@@ -1286,6 +1286,7 @@ If the namespace does not, they are colored the unbound color.
                [tl-requires (make-hash-table 'equal)]
                [tl-require-for-syntaxes (make-hash-table 'equal)]
                [tl-require-for-templates (make-hash-table 'equal)]
+               [tl-require-for-labels (make-hash-table 'equal)]
                [expanded-expression
                 (λ (user-namespace user-directory sexp jump-to-id)
                   (parameterize ([current-load-relative-directory user-directory])
@@ -1303,11 +1304,12 @@ If the namespace does not, they are colored the unbound color.
                                [templrefs (make-id-set)]
                                [requires (make-hash-table 'equal)]
                                [require-for-syntaxes (make-hash-table 'equal)]
-                               [require-for-templates (make-hash-table 'equal)])
+                               [require-for-templates (make-hash-table 'equal)]
+                               [require-for-labels (make-hash-table 'equal)])
                            (annotate-basic sexp user-namespace user-directory jump-to-id
                                            low-binders high-binders varrefs high-varrefs low-tops high-tops
                                            templrefs
-                                           requires require-for-syntaxes require-for-templates) 
+                                           requires require-for-syntaxes require-for-templates require-for-labels) 
                            (annotate-variables user-namespace
                                                user-directory
                                                low-binders
@@ -1319,7 +1321,8 @@ If the namespace does not, they are colored the unbound color.
                                                templrefs
                                                requires
                                                require-for-syntaxes
-                                               require-for-templates))]
+                                               require-for-templates
+                                               require-for-labels))]
                         [else
                          (annotate-basic sexp user-namespace user-directory jump-to-id
                                          tl-low-binders tl-high-binders
@@ -1328,7 +1331,8 @@ If the namespace does not, they are colored the unbound color.
                                          tl-templrefs
                                          tl-requires
                                          tl-require-for-syntaxes
-                                         tl-require-for-templates)]))))]
+                                         tl-require-for-templates
+                                         tl-require-for-labels)]))))]
                [expansion-completed
                 (λ (user-namespace user-directory)
                   (parameterize ([current-load-relative-directory user-directory])
@@ -1343,7 +1347,8 @@ If the namespace does not, they are colored the unbound color.
                                         tl-templrefs
                                         tl-requires
                                         tl-require-for-syntaxes
-                                        tl-require-for-templates)))])
+                                        tl-require-for-templates
+                                        tl-require-for-labels)))])
           (values expanded-expression expansion-completed)))
       
       
@@ -1362,7 +1367,7 @@ If the namespace does not, they are colored the unbound color.
                               low-varrefs high-varrefs 
                               low-tops high-tops
                               templrefs
-                              requires require-for-syntaxes require-for-templates)
+                              requires require-for-syntaxes require-for-templates require-for-labels)
         (let ([tail-ht (make-hash-table)]
               [maybe-jump
                (λ (vars)
@@ -1389,9 +1394,9 @@ If the namespace does not, they are colored the unbound color.
               (collect-general-info sexp)
               (syntax-case* sexp (lambda case-lambda if begin begin0 let-values letrec-values set!
                                    quote quote-syntax with-continuation-mark 
-                                   #%app #%datum #%top #%plain-module-begin
+                                   #%app #%top #%plain-module-begin
                                    define-values define-syntaxes define-values-for-syntax module
-                                   require require-for-syntax require-for-template provide)
+                                   #%require #%provide)
                 (if high-level? module-transformer-identifier=? module-identifier=?)
                 [(lambda args bodies ...)
                  (begin
@@ -1507,9 +1512,6 @@ If the namespace does not, they are colored the unbound color.
                  (begin
                    (annotate-raw-keyword sexp varrefs)
                    (for-each loop (syntax->list (syntax (pieces ...)))))]
-                [(#%datum . datum)
-                   ;(color-internal-structure (syntax datum) constant-style-name)
-                   (annotate-raw-keyword sexp varrefs)]
                 [(#%top . var)
                  (begin
                    (annotate-raw-keyword sexp varrefs)
@@ -1546,31 +1548,33 @@ If the namespace does not, they are colored the unbound color.
                    (for-each loop (syntax->list (syntax (bodies ...)))))]
                 
                 ; top level or module top level only:
-                [(require require-specs ...)
-                 (let ([new-specs (map trim-require-prefix
-                                       (syntax->list (syntax (require-specs ...))))])
-                   (annotate-raw-keyword sexp varrefs)
-                   (for-each (annotate-require-open user-namespace user-directory) new-specs)
-                   (for-each (add-require-spec requires)
-                             new-specs
-                             (syntax->list (syntax (require-specs ...)))))]
-                [(require-for-syntax require-specs ...)
-                 (let ([new-specs (map trim-require-prefix (syntax->list (syntax (require-specs ...))))])
-                   (annotate-raw-keyword sexp varrefs)
-                   (for-each (annotate-require-open user-namespace user-directory) new-specs)
-                   (for-each (add-require-spec require-for-syntaxes)
-                             new-specs
-                             (syntax->list (syntax (require-specs ...)))))]
-                [(require-for-template require-specs ...)
-                 (let ([new-specs (map trim-require-prefix (syntax->list (syntax (require-specs ...))))])
-                   (annotate-raw-keyword sexp varrefs)
-                   (for-each (annotate-require-open user-namespace user-directory) new-specs)
-                   (for-each (add-require-spec require-for-templates)
-                             new-specs
-                             (syntax->list (syntax (require-specs ...)))))]
+                [(#%require require-specs ...)
+                 (let ([at-phase
+                        (lambda (stx requires)
+                          (syntax-case stx ()
+                            [(_ require-specs ...)
+                             (let ([new-specs (map trim-require-prefix
+                                                   (syntax->list (syntax (require-specs ...))))])
+                               (annotate-raw-keyword sexp varrefs)
+                               (for-each (annotate-require-open user-namespace user-directory) new-specs)
+                               (for-each (add-require-spec requires)
+                                         new-specs
+                                         (syntax->list (syntax (require-specs ...)))))]))])
+                   (for-each (lambda (spec)
+                               (syntax-case* spec (for-syntax for-template for-label) (lambda (a b)
+                                                                                        (eq? (syntax-e a) (syntax-e b)))
+                                 [(for-syntax specs ...)
+                                  (at-phase spec require-for-syntaxes)]
+                                 [(for-template specs ...)
+                                  (at-phase spec require-for-templates)]
+                                 [(for-label specs ...)
+                                  (at-phase spec require-for-labels)]
+                                 [else
+                                  (at-phase (list #f spec) requires)]))
+                             (syntax->list #'(require-specs ...))))]
                 
                 ; module top level only:
-                [(provide provide-specs ...)
+                [(#%provide provide-specs ...)
                  (let ([provided-varss (map extract-provided-vars
                                             (syntax->list (syntax (provide-specs ...))))])
                    (annotate-raw-keyword sexp varrefs)
@@ -1580,6 +1584,7 @@ If the namespace does not, they are colored the unbound color.
                                   (add-id varrefs provided-var))
                                 provided-vars))
                              provided-varss))]
+
                 [id
                  (identifier? (syntax id))
                  (when (syntax-original? sexp)
@@ -1656,7 +1661,8 @@ If the namespace does not, they are colored the unbound color.
                                   templrefs
                                   requires
                                   require-for-syntaxes
-                                  require-for-templates)
+                                  require-for-templates
+                                  require-for-labels)
       
 
       
@@ -1666,8 +1672,10 @@ If the namespace does not, they are colored the unbound color.
               [unused-requires (make-hash-table 'equal)]
               [unused-require-for-syntaxes (make-hash-table 'equal)]
               [unused-require-for-templates (make-hash-table 'equal)]
+              [unused-require-for-labels (make-hash-table 'equal)]
               ;; there is no define-for-template form, thus no for-template binders
               [template-binders (make-id-set)]
+              [label-binders (make-id-set)]
               [id-sets (list low-binders high-binders low-varrefs high-varrefs low-tops high-tops)])
           
           (hash-table-for-each requires
@@ -1676,6 +1684,8 @@ If the namespace does not, they are colored the unbound color.
                                (λ (k v) (hash-table-put! unused-require-for-syntaxes k #t)))
           (hash-table-for-each require-for-templates
                                (lambda (k v) (hash-table-put! unused-require-for-templates k #t)))
+          (hash-table-for-each require-for-labels
+                               (lambda (k v) (hash-table-put! unused-require-for-labels k #t)))
           
           (for-each (λ (vars) 
                       (for-each (λ (var)
@@ -1745,6 +1755,15 @@ If the namespace does not, they are colored the unbound color.
                                                           identifier-template-binding
                                                           user-namespace
                                                           user-directory
+                                                          #f)
+                                      (connect-identifier var
+                                                          rename-ht
+                                                          label-binders ;; dummy; always empty
+                                                          unused-require-for-labels
+                                                          require-for-labels
+                                                          identifier-label-binding
+                                                          user-namespace
+                                                          user-directory
                                                           #f))
                                     vars))
                     (get-idss templrefs))
@@ -1765,6 +1784,7 @@ If the namespace does not, they are colored the unbound color.
               vars))
            (get-idss high-tops))
           
+          (color-unused require-for-labels unused-require-for-labels)
           (color-unused require-for-templates unused-require-for-templates)
           (color-unused require-for-syntaxes unused-require-for-syntaxes)
           (color-unused requires unused-requires)
@@ -2080,6 +2100,7 @@ If the namespace does not, they are colored the unbound color.
                    (add-id id-set ct))]
                 [else (void)])))))
       
+      ;; FIXME: handle for-template and for-label
       ;; extract-provided-vars : syntax -> (listof syntax[identifier])
       (define (extract-provided-vars stx)
         (syntax-case* stx (rename struct all-from all-from-except all-defined-except) symbolic-compare?

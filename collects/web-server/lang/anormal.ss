@@ -100,9 +100,9 @@
          [(letrec-values ([(v ...) ve] ...) be ...)
           (anormal ctxt
                    (elim-letrec-term stx))]
-         [(lambda formals be ...)
+         [(#%plain-lambda formals be ...)
           (with-syntax ([nbe (anormal-term (syntax/loc stx (begin be ...)))])
-            (ctxt (syntax/loc stx (lambda formals nbe))))]
+            (ctxt (syntax/loc stx (#%plain-lambda formals nbe))))]
          [(case-lambda [formals be] ...)
           (with-syntax ([(be ...) (map anormal-term (syntax->list #'(be ...)))])
             (ctxt (syntax/loc stx (case-lambda [formals be] ...))))]
@@ -146,19 +146,17 @@
                     (lambda (d)
                        (quasisyntax/loc stx (#%expression #,d))))
            #'d)]
-         [(#%app fe e ...)
+         [(#%plain-app fe e ...)
           (anormal
            (lambda (val0)
              (anormal*
               (compose ctxt
                        (lambda (rest-vals)
                          (quasisyntax/loc stx 
-                           (#%app #,val0 #,@rest-vals))))
+                           (#%plain-app #,val0 #,@rest-vals))))
               (syntax->list #'(e ...))))
            #'fe)]
          [(#%top . v)
-          (ctxt stx)]
-         [(#%datum . d)
           (ctxt stx)]
          [(#%variable-reference . v)
           (ctxt stx)]

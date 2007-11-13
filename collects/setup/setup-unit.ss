@@ -2,28 +2,34 @@
 ; Expects parameters to be set before invocation.
 ; Calls `exit' when done.
 
-(module setup-unit mzscheme
-  (require (lib "unit.ss")
-	   (lib "file.ss")
-	   (lib "list.ss")
-	   (lib "cm.ss")
-	   (lib "port.ss")
-           (lib "match.ss")
-           (lib "process.ss")
-           (lib "planet-archives.ss" "planet")
-           (lib "planet-shared.ss" "planet" "private")
+(module setup-unit scheme/base
+  (require mzlib/unit
+	   (except-in mzlib/file
+                      call-with-input-file*
+                      call-with-output-file*)
+	   mzlib/list
+	   mzlib/cm
+	   mzlib/port
+           mzlib/match
+           mzlib/process
+           planet/planet-archives
+           planet/private/planet-shared
+           scheme/namespace
+           syntax/namespace-reflect
            
 	   "option-sig.ss"
-	   (lib "sig.ss" "compiler")
-	   (lib "launcher-sig.ss" "launcher")
+	   compiler/sig
+	   launcher/launcher-sig
 
-           (prefix doc: "scribble.ss")
+           (prefix-in doc: "scribble.ss")
            
 	   "unpack.ss"
 	   "getinfo.ss"
 	   "dirs.ss"
 	   "main-collects.ss")
-  
+
+  (define-reflection-anchor anchor)
+
   (provide setup@)
 
   (define-unit setup@
@@ -106,7 +112,8 @@
       ;;              Find Collections                 ;;
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       
-      (define-struct cc (collection path name info root-dir info-path shadowing-policy) (make-inspector))
+      (define-struct cc (collection path name info root-dir info-path shadowing-policy)
+        #:inspector #f)
       
       (define (warning-handler v)
 	(lambda (exn) 
@@ -514,7 +521,7 @@
                         (let ([fn (build-path p "info-domain" "compiled" "cache.ss")])
                           (when (file-exists? fn)
                             (with-handlers ([exn:fail:filesystem? (warning-handler (void))])
-                              (with-output-to-file fn void 'truncate/replace)))))
+                              (with-output-to-file fn void #:exists 'truncate/replace)))))
                       (current-library-collection-paths)))))
       
       (when (or (make-zo) (make-so))
@@ -603,8 +610,6 @@
                     (collect-garbage))
                   ccs-to-compile))
       
-      (define orig-namespace (current-namespace))
-      
       (define (with-specified-mode thunk)
         (if (not (compile-mode))
             (thunk)
@@ -619,8 +624,9 @@
                                                             exn)))])
                                 (dynamic-require `(lib "zo-compile.ss" ,(compile-mode)) 'zo-compile))]
                   [orig-kinds (use-compiled-file-paths)]
-                  [orig-compile (current-compile)])
-              (parameterize ([current-namespace (make-namespace)]
+                  [orig-compile (current-compile)]
+                  [orig-namespace (reflection-anchor->namespace anchor)])
+              (parameterize ([current-namespace (make-base-namespace)]
                              [current-compile zo-compile]
                              [use-compiled-file-paths (list mode-dir)]
                              [current-compiler-dynamic-require-wrapper
@@ -639,7 +645,27 @@
       (when (make-zo) 
         (with-specified-mode
          (lambda ()
-           (make-it ".zos" compile-directory-zos make-namespace))))
+           (make-it ".zos" 
+                    (lambda (dir info)
+                      ;; Clean up bad .zos:
+                      (unless (info 'assume-virtual-sources (lambda () #f))
+                        (let ([c (build-path dir "compiled")])
+                          (when (directory-exists? c)
+                            (let ([ok-zo-files (make-immutable-hash-table
+                                                (map (lambda (p)
+                                                       (cons (path-add-suffix p #".zo") #t))
+                                                     (append (directory-list dir)
+                                                             (info 'virtual-sources (lambda () null))))
+                                                'equal)])
+                              (for-each (lambda (p)
+                                          (when (regexp-match #rx#".zo$" (path-element->bytes p))
+                                            (unless (hash-table-get ok-zo-files p #f)
+                                              (setup-fprintf (current-error-port) " deleting ~a" (build-path c p))
+                                              (delete-file (build-path c p)))))
+                                        (directory-list c))))))
+                      ;; Make .zos
+                      (compile-directory-zos dir info))
+                    make-base-namespace))))
       (when (make-so) (make-it "extensions" compile-directory-extension current-namespace))
 
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -735,10 +761,10 @@
                                        (setup-printf "Updating ~a" p)
                                        (with-handlers ([exn:fail? (warning-handler (void))])
                                          (with-output-to-file p
+                                           #:exists 'truncate/replace
                                            (lambda ()
                                              (write (hash-table-map ht cons))
-                                             (newline))
-                                           'truncate/replace)))))))))
+                                             (newline)))))))))))
       
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;                       Docs                    ;;
@@ -848,8 +874,16 @@
                                       (make-launcher
                                        (or mzlf
                                            (if (cc-collection cc)
-                                             (list "-qmvL-" mzll (path->string (apply build-path (cc-collection cc))))
-                                             (list "-qmvt-" (format "~a" (path->string (build-path (cc-path cc) mzll))))))
+                                             (list "-l-" (string-append
+                                                          (apply string-append
+                                                                 (map (lambda (s)
+                                                                        (string-append (if (path? s)
+                                                                                           (path->string s)
+                                                                                           s)
+                                                                                       "/"))
+                                                                      (cc-collection cc)))
+                                                          mzll))
+                                             (list "-t-" (path->string (build-path (cc-path cc) mzll)))))
                                        p
                                        aux))))
                                 mzlns

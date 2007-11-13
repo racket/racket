@@ -201,7 +201,8 @@ vector_immutable (int argc, Scheme_Object *argv[])
   Scheme_Object *vec;
 
   vec = vector(argc, argv);
-  SCHEME_SET_IMMUTABLE(vec);
+  if (argc)
+    SCHEME_SET_IMMUTABLE(vec);
 
   return vec;
 }
@@ -362,6 +363,8 @@ static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[])
 
   ovec = argv[0];
   len = SCHEME_VEC_SIZE(ovec);
+  if (!len)
+    return vec;
 
   vec = scheme_make_vector(len, NULL);
   for (i = 0; i < len; i++) {

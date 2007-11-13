@@ -45,11 +45,11 @@
 
   (provide length+
 		   concatenate
-		   (rename my-append! append!)
-		   concatenate!
-		   (rename my-reverse! reverse!)
+                   (rename append append!)
+                   (rename concatenate concatenate!)
+                   (rename reverse reverse!)
 		   append-reverse
-		   append-reverse!
+                   (rename append-reverse append-reverse!)
 		   zip
 		   unzip1
 		   unzip2
@@ -143,6 +143,7 @@
   ;; append! append-reverse append-reverse! concatenate concatenate!
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  #;
   (define (my-append! . lists)
 	;; First, scan through lists looking for a non-empty one.
 	(let lp ((lists lists) (prev '()))
@@ -176,6 +177,7 @@
 	  (if (null-list? rev-head) tail
 		  (lp (cdr rev-head) (cons (car rev-head) tail)))))
 
+  #;
   (define (append-reverse! rev-head tail)
 	(let lp ((rev-head rev-head) (tail tail))
 	  (if (null-list? rev-head) tail
@@ -185,13 +187,15 @@
 
 
   (define (concatenate  lists) (reduce-right append  '() lists))
+  #;
   (define (concatenate! lists) (reduce-right my-append! '() lists))
 
+  #;
   (define (my-reverse! lis)
 	(let lp ((lis lis) (ans '()))
 	  (if (null-list? lis) ans
 		  (let ((tail (cdr lis)))
-			(set-cdr! lis ans)
+                    (set-cdr! lis ans)
 			(lp tail lis)))))
 
   )

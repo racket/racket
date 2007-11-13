@@ -51,7 +51,7 @@
                (let loop ([files '()])
                  (let ([f (with-handlers ([void void]) (read))])
                    (if (eof-object? f)
-                     (reverse! files) (loop (cons f files)))))]
+                     (reverse files) (loop (cons f files)))))]
               [overwrite-all? #f])
           (define (write? file)
             (define (del)
@@ -168,7 +168,7 @@
                   (if (memq i selected)
                     (loop (sub1 i) (cons f s) u)
                     (loop (sub1 i) s (cons f u))))
-                (list (reverse! s) (reverse! u)))))
+                (list (reverse s) (reverse u)))))
           '(() ())))
       (define (set-dir dir)
         (let* ([dir (and dir (->string dir))]

@@ -1,15 +1,16 @@
 
-(module scribble mzscheme
-  (require (lib "getinfo.ss" "setup")
-           (lib "dirs.ss" "setup")
-           (lib "class.ss")
-           (lib "file.ss")
-           (lib "main-collects.ss" "setup")
-           (lib "base-render.ss" "scribble")
-           (lib "struct.ss" "scribble")
-           (lib "manual.ss" "scribble") ; really shouldn't be here... see dynamic-require-doc
-           (prefix html: (lib "html-render.ss" "scribble"))
-           (prefix latex: (lib "latex-render.ss" "scribble")))
+(module scribble scheme/base
+  (require "getinfo.ss"
+           "dirs.ss"
+           scheme/class
+           scheme/file
+           setup/main-collects
+           scribble/base-render
+           scribble/struct
+           syntax/namespace-reflect
+           scribble/manual ; really shouldn't be here... see dynamic-require-doc
+           (prefix-in html: scribble/html-render)
+           (prefix-in latex: scribble/latex-render))
 
   (provide setup-scribblings
            verbose)
@@ -20,7 +21,8 @@
   (define-struct info (doc sci provides undef deps 
                            build? time out-time need-run? 
                            need-in-write? need-out-write?
-                           vers rendered?))
+                           vers rendered?)
+    #:mutable)
 
   (define (setup-scribblings only-dirs latex-dest)
     (let* ([dirs (find-relevant-directories '(scribblings))]
@@ -221,7 +223,7 @@
           [info-in-file (build-path (or latex-dest (doc-dest-dir doc)) "xref-in.ss")]
           [out-file (build-path (doc-dest-dir doc) "index.html")]
           [src-zo (let-values ([(base name dir?) (split-path (doc-src-file doc))])
-                    (build-path base "compiled" (path-replace-suffix name ".zo")))]
+                    (build-path base "compiled" (path-add-suffix name ".zo")))]
           [renderer (make-renderer latex-dest doc)]
           [can-run? ((can-build? only-dirs) doc)])
       (let ([my-time (file-or-directory-modify-seconds out-file #f (lambda () -inf.0))]
@@ -363,7 +365,7 @@
                   (set-info-time! info (/ (current-inexact-milliseconds) 1000))
                   (void)))))))))
 
-  (define orig-namespace (current-namespace))
+  (define-reflection-anchor anchor)
 
   (define (dynamic-require-doc path)
     ;; Use a separate namespace so that we don't end up with all the documentation
@@ -372,13 +374,14 @@
     ;;  that may not be entirely clean (e.g., leaves a stuck thread).
     (let ([p (make-namespace)]
           [c (make-custodian)]
-          [ch (make-channel)])
+          [ch (make-channel)]
+          [ns (reflection-anchor->namespace anchor)])
       (parameterize ([current-custodian c])
-        (namespace-attach-module orig-namespace '(lib "base-render.ss" "scribble") p)
-        (namespace-attach-module orig-namespace '(lib "html-render.ss" "scribble") p)
+        (namespace-attach-module ns 'scribble/base-render p)
+        (namespace-attach-module ns 'scribble/html-render p)
         ;; This is here for de-serialization; we need a better repair than
         ;;  hard-wiring the "manual.ss" library:
-        (namespace-attach-module orig-namespace '(lib "manual.ss" "scribble") p)
+        (namespace-attach-module ns 'scribble/manual p)
         (parameterize ([current-namespace p])
           (call-in-nested-thread
            (lambda () 
@@ -390,6 +393,7 @@
       (when (verbose)
         (printf " [Caching ~a]\n" info-file))
       (with-output-to-file info-file
+        #:exists 'truncate/replace
         (lambda ()
           (write ((sel (lambda ()
                         (list (list (info-vers info) (doc-flags doc))
@@ -401,8 +405,7 @@
                          (info-undef info)
                          (map (lambda (i)
                                 (path->string (doc-src-file (info-doc i))))
-                              (info-deps info))))))))
-        'truncate/replace)))
+                              (info-deps info)))))))))))
 
   (define (write-out info)
     (make-directory* (doc-dest-dir (info-doc info)))

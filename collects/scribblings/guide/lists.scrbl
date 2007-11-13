@@ -1,10 +1,8 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
+@require[scribble/bnf]
 @require["guide-utils.ss"]
-@require[(lib "list.ss")]
-@require[(lib "for.ss")]
 
 @define[step @elem{=}]
 

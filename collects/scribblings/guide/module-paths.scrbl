@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "module-paths"]{Module Paths}
@@ -10,20 +10,52 @@ A @deftech{module path} is a reference to a module, as used with
 @scheme[module] form. It can be any of several forms:
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@specsubform[id]{
+@specsubform[#:literals (quote) (#,(scheme quote) id)]{
 
-A @tech{module path} that is just an identifier refers to a non-file
+A @tech{module path} that is a quoted identifier refers to a non-file
 @scheme[module] declaration using the identifier. This form of module
 reference makes the most sense in a @tech{REPL}.
 
 @examples[
-(module m (lib "big/lang.ss")
+(module m scheme
   (provide color)
   (define color "blue"))
-(module n (lib "big/lang.ss")
-  (require m)
+(module n scheme
+  (require 'm)
   (printf "my favorite color is ~a\n" color))
-(require n)
+(require 'n)
+]}
+
+@; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@specsubform[id]{
+
+A @tech{module path} that is an unquoted identifier refers to an
+installed library. The @scheme[id] is constrained to contain only
+ASCII letters, ASCII numbers, @litchar{+}, @litchar{-}, @litchar{_},
+and @litchar{/}, where @litchar{/} separates path elements within the
+identifier. The elements refer to @tech{collection}s and
+sub-@tech{collections}, instead of directories and sub-directories.
+
+An example of this form is @scheme[scheme/date]. It refers to the
+module whose source is the @filepath{date.ss} file in the
+@filepath{scheme} collection, which is installed as part of PLT
+Scheme. The @filepath{.ss} suffix is added automatically.
+
+Another example of this form is @scheme[scheme], which is commonly
+used at the initial import. The path @scheme[scheme] is shorthand for
+@scheme[scheme/main]; when the last element of the path has no suffix,
+then @scheme[/main] is automatically added to the end. Thus,
+@scheme[scheme] or @scheme[scheme/main] refers to the module whose
+source is the @filepath{main.ss} file in the @filepath{scheme}
+collection.
+
+@examples[
+(module m scheme
+  (require scheme/date)
+
+  (printf "Today is ~s\n"
+          (date->string (seconds->date (current-seconds)))))
+(require 'm)
 ]}
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -47,29 +79,27 @@ while loading a file.)
 @specsubform[#:literals (lib)
              (lib rel-string)]{
 
-Like a plain-string @scheme[rel-path], but the elements of
-@scheme[rel-path] refer to @tech{collection}s and
-sub-@tech{collections}, instead of directories and sub-directories. A
-@deftech{collection} is represented by a directory in one of several
-installation-specific locations.
+Like an unquoted-identifier path, but expressed as a string instead of
+an identifier. Also, the @scheme[rel-string] can end with a file
+suffix, in case the relevant suffix is not @filepath{.ss}.
 
-An example of this form is @scheme[(lib "big/lang.ss")], which is
-commonly uses at the initial import. The path @scheme[(lib
-"big/lang.ss")], refers to the module whose source is the
-@file{lang.ss} file in the @file{big} collection, which is installed
-as part of PLT Scheme.
+Example of this form include @scheme[(lib "scheme/date.ss")] and
+@scheme[(lib "scheme/date")], which are equivalent to
+@scheme[scheme/date]. Other examples include @scheme[(lib "scheme")],
+@scheme[(lib "scheme/main")], and @scheme[(lib "scheme/main.ss")],
+which are all equivalent to @scheme[scheme].
 
 @examples[
-(module m (lib "big/lang.ss")
-  (require (lib "mzlib/date.ss"))
+(module m (lib "scheme")
+  (require (lib "scheme/date.ss"))
 
   (printf "Today is ~s\n"
           (date->string (seconds->date (current-seconds)))))
-(require m)
+(require 'm)
 ]}
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@specsubform/subs[#:literals (planet)
+@specsubform/subs[#:literals (planet = + -)
                   (planet rel-string (user-string pkg-string vers ...))
                   ([vers nat
                          (nat nat)
@@ -100,12 +130,12 @@ _end-nat)] matches any number in the range @scheme[_start-nat] to
 
 @examples[
 (eval:alts
- (module m (lib "big/lang.ss")
+ (module m (lib "scheme")
    (require (planet "random.ss" ("schematics" "random.plt" 1 0)))
    (display (random-gaussian)))
  (void))
 (eval:alts
- (require m)
+ (require 'm)
  (display 0.9050686838895684))
 ]
 }

@@ -1,5 +1,5 @@
 
-(module get-extend (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "class.ss")
            "drsig.ss"
            (lib "mred.ss" "mred")
@@ -84,4 +84,4 @@
       (drscheme:unit:get-definitions-text%))))
   
   (define-values (extend-definitions-text get-definitions-text)
-    (make-extender get-base-definitions-text% 'definitions-text%)))
+    (make-extender get-base-definitions-text% 'definitions-text%))

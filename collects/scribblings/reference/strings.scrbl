@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "strings"]{Strings}
@@ -159,6 +159,20 @@ contains the concatenated characters of the given @scheme[str]s. If no
 @examples[(list->string (list #\A #\p #\p #\l #\e))]}
 
 
+@defproc[(build-string [n exact-nonnegative-integer?]
+                       [proc (exact-nonnegative-integer? . -> . char?)])
+         string?]{
+
+Creates a string of @scheme[n] characters by applying @scheme[proc] to
+the integers from @scheme[0] to @scheme[(sub1 n)] in order. If
+@scheme[_str] is the resulting string, then @scheme[(string-ref _str
+_i)] is the character produced by @scheme[(proc _i)].
+
+@examples[
+(build-string 5 (lambda (i) (integer->char (+ i 97))))
+]}
+
+
 @; ----------------------------------------
 @section{String Comparisons}
 
@@ -245,6 +259,8 @@ contains the concatenated characters of the given @scheme[str]s. If no
 @; ----------------------------------------
 @section{String Conversions}
 
+@declare-exporting[(lib "scheme/string")]
+
 @defproc[(string-upcase [str string?]) string?]{ Returns a string
  whose characters are the upcase conversion of the characters in
  @scheme[str]. The conversion uses Unicode's locale-independent
@@ -307,6 +323,8 @@ allocated string).}
 
 @; ----------------------------------------
 @section{Locale-Specific String Operations}
+
+@declare-exporting[(lib "scheme/locale")]
 
 @defproc[(string-locale=? [str1 string?] [str2 string?] ...+)
  boolean?]{  Like @scheme[string=?], but the strings are compared in a

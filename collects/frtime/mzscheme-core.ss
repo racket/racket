@@ -144,10 +144,7 @@
          (if (and (eq? car-val (car obj))
                   (eq? cdr-val (cdr obj)))
              obj
-             (begin
-               (set-car! result car-val)
-               (set-cdr! result cdr-val)
-               result)))]
+             (cons car-val cdr-val)))]
       ; won't work in the presence of super structs or immutable fields
       [(struct? obj)
        obj

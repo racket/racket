@@ -76,6 +76,7 @@ static Scheme_Object *namespace_set_variable_value(int, Scheme_Object *[]);
 static Scheme_Object *namespace_undefine_variable(int, Scheme_Object *[]);
 static Scheme_Object *namespace_mapped_symbols(int, Scheme_Object *[]);
 static Scheme_Object *namespace_module_registry(int, Scheme_Object *[]);
+static Scheme_Object *variable_namespace(int, Scheme_Object *[]);
 static Scheme_Object *now_transforming(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_exp_time_value(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_exp_time_name(int argc, Scheme_Object *argv[]);
@@ -85,6 +86,10 @@ static Scheme_Object *local_introduce(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_introduce(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_get_shadower(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_certify(int argc, Scheme_Object *argv[]);
+static Scheme_Object *local_module_exports(int argc, Scheme_Object *argv[]);
+static Scheme_Object *local_module_definitions(int argc, Scheme_Object *argv[]);
+static Scheme_Object *local_module_imports(int argc, Scheme_Object *argv[]);
+static Scheme_Object *local_module_expanding_provides(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_expr(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_context(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_end_statement(int argc, Scheme_Object *argv[]);
@@ -362,6 +367,9 @@ Scheme_Env *scheme_basic_env()
   scheme_set_param(scheme_current_config(), MZCONFIG_ENV, 
 		   (Scheme_Object *)env); 
   scheme_init_memtrace(env);
+#ifndef NO_TCP_SUPPORT
+  scheme_init_network(env);
+#endif
   scheme_init_parameterization(env);
   scheme_init_expand_observe(env);
 
@@ -372,6 +380,16 @@ Scheme_Env *scheme_basic_env()
 #endif
 
   scheme_add_embedded_builtins(env);
+
+  {
+    Scheme_Object *boot, *a[2];
+    a[0] = scheme_make_pair(scheme_intern_symbol("quote"),
+                            scheme_make_pair(scheme_intern_symbol("#%boot"),
+                                             scheme_null));
+    a[1] = scheme_intern_symbol("boot");
+    boot = scheme_dynamic_require(2, a);
+    scheme_apply(boot, 0, NULL);
+  }
 
   scheme_save_initial_module_set(env);
 
@@ -431,9 +449,6 @@ static void make_init_env(void)
   MZTIMEIT(module, scheme_init_module(env));
   MZTIMEIT(port, scheme_init_port(env));
   MZTIMEIT(portfun, scheme_init_port_fun(env));
-#ifndef NO_TCP_SUPPORT
-  MZTIMEIT(network, scheme_init_network(env));
-#endif
   MZTIMEIT(string, scheme_init_string(env));
   MZTIMEIT(vector, scheme_init_vector(env));
   MZTIMEIT(char, scheme_init_char(env));
@@ -495,6 +510,12 @@ static void make_init_env(void)
 						      1, 1),
 			     env);
 
+  scheme_add_global_constant("variable-reference-namespace",
+			     scheme_make_prim_w_arity(variable_namespace,
+						      "variable-reference-namespace",
+						      1, 1),
+			     env);
+
 
   scheme_add_global_constant("syntax-transforming?", 
 			     scheme_make_prim_w_arity(now_transforming,
@@ -540,6 +561,27 @@ static void make_init_env(void)
 			     scheme_make_prim_w_arity(local_certify,
 						      "syntax-local-certifier",
 						      0, 1),
+			     env);
+
+  scheme_add_global_constant("syntax-local-module-exports", 
+			     scheme_make_prim_w_arity(local_module_exports,
+						      "syntax-local-module-exports",
+						      1, 1),
+			     env);
+  scheme_add_global_constant("syntax-local-module-defined-identifiers", 
+			     scheme_make_prim_w_arity(local_module_definitions,
+						      "syntax-local-module-defined-identifiers",
+						      0, 0),
+			     env);
+  scheme_add_global_constant("syntax-local-module-required-identifiers", 
+			     scheme_make_prim_w_arity(local_module_imports,
+						      "syntax-local-module-required-identifiers",
+						      4, 4),
+			     env);
+  scheme_add_global_constant("syntax-local-transforming-module-provides?", 
+			     scheme_make_prim_w_arity(local_module_expanding_provides,
+						      "syntax-local-transforming-module-provides?",
+						      0, 0),
 			     env);
 
   scheme_add_global_constant("make-set!-transformer", 
@@ -823,6 +865,23 @@ void scheme_prepare_template_env(Scheme_Env *env)
   }
 }
 
+void scheme_prepare_label_env(Scheme_Env *env)
+{
+  if (!env->label_env) {
+    /* Used only for its marked_names table */
+    Scheme_Env *lenv;
+    lenv = make_env(NULL, 1, 7);
+    lenv->phase = MZ_LABEL_PHASE;
+    lenv->mod_phase = MZ_LABEL_PHASE;
+    env->label_env = lenv;
+    lenv->module = env->module;
+    lenv->module_registry = env->module_registry;
+    lenv->export_registry = env->export_registry;
+    lenv->insp = env->insp;
+    lenv->modchain = env->modchain;
+  }
+}
+
 Scheme_Env *scheme_clone_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Object *modchain)
 {
   /* New env should have the same syntax and globals table, but it lives in
@@ -844,6 +903,8 @@ Scheme_Env *scheme_clone_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Obj
   menv2->link_midx = menv->link_midx;
   menv2->running = menv->running;
   menv2->et_running = menv->et_running;
+  menv2->et_ran = menv->et_ran;
+  menv2->ran = menv->ran;
 
   menv2->require_names = menv->require_names;
   menv2->et_require_names = menv->et_require_names;
@@ -2407,7 +2468,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
 	if (!genv) {
 	  scheme_wrong_syntax("require", NULL, src_find_id, 
-			      "broken compiled code (phase %d, defn-phase %d): cannot find module %S",
+			      "broken compiled code (phase %d, defn-phase %d): cannot find module %D",
 			      env->genv->phase, mod_defn_phase, modname);
 	  return NULL;
 	}
@@ -2420,7 +2481,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     if (genv->module && !genv->rename) {
       /* Free variable. Maybe don't continue. */
       if (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) {
-	scheme_wrong_syntax(((flags & SCHEME_SETTING) 
+        scheme_wrong_syntax(((flags & SCHEME_SETTING) 
 			     ? scheme_set_stx_string
 			     : scheme_var_ref_string),
 			    NULL, src_find_id, "unbound variable in module");
@@ -2511,7 +2572,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   /* Used to have `&& !SAME_OBJ(modidx, modname)' below, but that was a bad
      idea, because it causes module instances to be preserved. */
   if (modname && !(flags & SCHEME_RESOLVE_MODIDS) 
-      && (!SAME_OBJ(modidx, kernel_symbol) || (flags & SCHEME_REFERENCING))) {
+      && (!scheme_is_kernel_modname(modname) || (flags & SCHEME_REFERENCING))) {
     /* Create a module variable reference, so that idx is preserved: */
     return scheme_hash_module_variable(env->genv, modidx, find_id, 
 				       genv->module->insp,
@@ -3698,6 +3759,26 @@ static Scheme_Object *namespace_module_registry(int argc, Scheme_Object **argv)
   return (Scheme_Object *)((Scheme_Env *)argv[0])->module_registry;
 }
 
+static Scheme_Object *variable_namespace(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v;
+  Scheme_Env *env;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_global_ref_type))
+    env = NULL;
+  else {
+    v = SCHEME_PTR_VAL(argv[0]);
+    env = ((Scheme_Bucket_With_Home *)v)->home;
+    if (env->phase)
+      env = NULL;
+  }
+
+  if (!env)
+    scheme_wrong_type("variable-reference-namespace", "variable-reference (phase 0)", 0, argc, argv);
+
+  return (Scheme_Object *)env;
+}
+
 static Scheme_Object *
 now_transforming(int argc, Scheme_Object *argv[])
 {
@@ -3818,7 +3899,7 @@ local_context(int argc, Scheme_Object *argv[])
 	else {
 	  sprintf(buf, "internal-define%d", intdef_counter++);
 	  sym = scheme_make_symbol(buf); /* uninterned! */
-	  pr = scheme_make_immutable_pair(sym, scheme_null);
+	  pr = scheme_make_pair(sym, scheme_null);
 	  lenv->intdef_name = pr;
 	  if (prev)
 	    SCHEME_CDR(prev) = pr;
@@ -4113,6 +4194,66 @@ local_certify(int argc, Scheme_Object *argv[])
 					 cert_data,
 					 "certifier",
 					 1, 3);
+}
+
+static Scheme_Object *
+local_module_exports(int argc, Scheme_Object *argv[])
+{
+  Scheme_Comp_Env *env;
+
+  env = scheme_current_thread->current_local_env;
+  
+  if (!env)
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
+		     "syntax-local-module-exports: not currently transforming");
+
+  return scheme_module_exported_list(argv[0], env->genv);
+}
+
+static Scheme_Object *
+local_module_definitions(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *a[2];
+
+  if (!scheme_current_thread->current_local_env
+      || !scheme_current_thread->current_local_bindings)
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
+		     "syntax-local-module-defined-identifiers: not currently transforming module provides");
+  
+  a[0] = SCHEME_CDR(scheme_current_thread->current_local_bindings);
+  a[1] = SCHEME_CDR(a[0]);
+  a[0] = SCHEME_CAR(a[0]);
+
+  return scheme_values(2, a);
+}
+
+static Scheme_Object *
+local_module_imports(int argc, Scheme_Object *argv[])
+{
+  if (!scheme_current_thread->current_local_env
+      || !scheme_current_thread->current_local_bindings)
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
+		     "syntax-local-module-required-identifiers: not currently transforming module provides");
+
+  if (!scheme_is_module_path(argv[0]))
+    scheme_wrong_type("syntax-local-module-required-identifiers", "module-path", 0, argc, argv);
+  
+  return scheme_module_imported_list(scheme_current_thread->current_local_env->genv,
+                                     scheme_current_thread->current_local_bindings,
+                                     argv[0],
+                                     SCHEME_TRUEP(argv[1]),
+                                     SCHEME_TRUEP(argv[2]),
+                                     SCHEME_TRUEP(argv[3]));
+}
+
+static Scheme_Object *
+local_module_expanding_provides(int argc, Scheme_Object *argv[])
+{
+  if (scheme_current_thread->current_local_env
+      && scheme_current_thread->current_local_bindings)
+    return scheme_true;
+  else
+    return scheme_false;
 }
 
 static Scheme_Object *
@@ -4461,6 +4602,13 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
   sv = scheme_make_vector(i, NULL);
   while (i--) {
     if (rp->stxes[i]) {
+      if (SCHEME_INTP(rp->stxes[i])) {
+        /* Need to foce this object, so we can write it.
+           This should only happen if we're writing back 
+           code loaded from bytecode. */
+        scheme_delayed_rename(rp->stxes, i);
+      }
+
       ds = scheme_alloc_small_object();
       ds->type = scheme_delay_syntax_type;
       SCHEME_PTR_VAL(ds) = rp->stxes[i];

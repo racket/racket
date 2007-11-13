@@ -12,35 +12,29 @@
   ;; object.
 
   (define (dm-syntax->datum stx ht)
-    (define cycle-ht #f)
     ;; Easiest to handle cycles by letting `syntax-object->datum'
     ;;  do all the work.
     (let ([v (syntax-object->datum stx)])
       (let loop ([stx stx][v v])
-	(unless (and cycle-ht (hash-table-get cycle-ht v (lambda () #f)))
-	  (when (and (syntax? stx) (syntax-graph? stx))
-	    (unless cycle-ht
-	      (set! cycle-ht (make-hash-table)))
-	    (hash-table-put! cycle-ht v #t))
-	  (let ([already (hash-table-get ht v (lambda () #f))])
-	    (if already
-		(hash-table-put! ht v #t) ;; not stx => don't subst later
-		(hash-table-put! ht v stx))
-	    (cond
-	     [(stx-pair? stx)
-	      (loop (stx-car stx) (car v))
-	      (loop (stx-cdr stx) (cdr v))]
-	     [(stx-null? stx) null]
-	     [(vector? (syntax-e stx))
-	      (for-each
-	       loop
-	       (vector->list
-		(syntax-e stx))
-	       (vector->list v))]
-	     [(box? (syntax-e stx))
-	      (loop (unbox (syntax-e stx))
-		    (unbox v))]
-	     [else (void)]))))
+        (let ([already (hash-table-get ht v (lambda () #f))])
+          (if already
+              (hash-table-put! ht v #t) ;; not stx => don't subst later
+              (hash-table-put! ht v stx))
+          (cond
+           [(stx-pair? stx)
+            (loop (stx-car stx) (car v))
+            (loop (stx-cdr stx) (cdr v))]
+           [(stx-null? stx) null]
+           [(vector? (syntax-e stx))
+            (for-each
+             loop
+             (vector->list
+              (syntax-e stx))
+             (vector->list v))]
+           [(box? (syntax-e stx))
+            (loop (unbox (syntax-e stx))
+                  (unbox v))]
+           [else (void)])))
       v))
   
   (define (dm-subst ht v)

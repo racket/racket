@@ -152,7 +152,7 @@
 	  f)))
 
 (test 5 'rename-with-non-hygiene
-      (let-syntax ([f (lambda (stx) (datum->syntax-object stx 'foo))])
+      (let-syntax ([f (lambda (stx) (datum->syntax stx 'foo))])
 	(let-syntax ([g (make-rename-transformer #'f)])
 	  (let ([foo 5])
 	    g))))
@@ -161,7 +161,7 @@
       (let-syntax ([f (lambda (stx) 
 			   (syntax-case stx ()
 			     [(_ arg)
-			      #`(#,(datum->syntax-object stx 'foo) arg)]))])
+			      #`(#,(datum->syntax stx 'foo) arg)]))])
 	(let-syntax ([g (make-rename-transformer #'f)])
 	  (let ([foo (lambda (x) (sub1 x))])
 	    (g 13)))))
@@ -171,7 +171,7 @@
 			  (lambda (stx) 
 			    (syntax-case stx ()
 			      [(set! _ arg)
-			       #`(set! #,(datum->syntax-object stx 'foo) arg)])))])
+			       #`(set! #,(datum->syntax stx 'foo) arg)])))])
 	(let-syntax ([g (make-rename-transformer #'f)])
 	  (let ([foo 45])
 	    (set! g 43)
@@ -223,7 +223,7 @@
   (syntax-rules () [(a . b) b]))
 (define-syntax (discard-context stx) 
   (syntax-case stx () 
-    [(v . a) (datum->syntax-object #f (syntax-e #'a))]))
+    [(v . a) (datum->syntax #f (syntax-e #'a))]))
 
 (test 6 'plus (keep-context + 1 2 3))
 (test 6 'plus (keep-context . (+ 1 2 3)))
@@ -238,9 +238,11 @@
 
 ;; ----------------------------------------
 
+(require (for-syntax scheme/struct-info))
+
 (define-syntax (et-struct-info stx)
   (syntax-case stx ()
-    [(_ id) #`(quote #,(syntax-local-value #'id))]))
+    [(_ id) #`(quote #,(extract-struct-info (syntax-local-value #'id)))]))
 
 (let ([v (et-struct-info exn)])
   (test '(struct:exn make-exn exn? (exn-continuation-marks exn-message) (#f #f) #t) values v))
@@ -254,15 +256,15 @@
 	values v))
 
 (let ()
-  (define-struct a (x y))
+  (define-struct a (x y) #:mutable)
   (let ([v (et-struct-info a)])
     (test '(struct:a make-a a? (a-y a-x) (set-a-y! set-a-x!) #t) values v)
     (let ()
       (define-struct (b a) (z))
       (let ([v (et-struct-info b)])
-	(test '(struct:b make-b b? (b-z a-y a-x) (set-b-z! set-a-y! set-a-x!) a) values v)))
+	(test '(struct:b make-b b? (b-z a-y a-x) (#f set-a-y! set-a-x!) a) values v)))
     (let ()
-      (define-struct (b exn) (z))
+      (define-struct (b exn) (z) #:mutable)
       (let ([v (et-struct-info b)])
 	(test '(struct:b make-b b? (b-z exn-continuation-marks exn-message) (set-b-z! #f #f) exn) values v)))))
     

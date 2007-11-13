@@ -136,10 +136,10 @@
       [(_ EQUIV-MAP FORM FORMS ...)
        (let ([expanded-form 
               (local-expand #'FORM 'module 
-                            (list #'begin #'begin0 #'provide #'require #'require-for-syntax
+                            (list #'begin #'begin0 #'#%provide #'#%require
                                   #'define-syntaxes #'define-values-for-syntax
                                   #'define-values #'#%app #'unit #'unit/sig))])
-         (syntax-case expanded-form (begin begin0 provide require require-for-syntax
+         (syntax-case expanded-form (begin begin0 #%provide #%require
                                            define-syntaxes define-values-for-syntax
                                            define-values #%app)
            ;; explode top-level begin statements
@@ -147,16 +147,11 @@
             #`(optimize-module EQUIV-MAP MORE-FORMS ... FORMS ...)]
 
            ;; require
-           [(require . __)
+           [(#%require . __)
             #`(optimize-require EQUIV-MAP #,expanded-form FORMS ...)]
            
-           ;; require-for-syntax
-           [(require-for-syntax . __)
-            #`(begin #,expanded-form
-                     (optimize-module EQUIV-MAP FORMS ...))]
-           
            ;; provide
-           [(provide . __)
+           [(#%provide . __)
             ;; TBD: provide lowered equivs as well.
             ;; TBD: support frtime-specific provide specs (lifted, etc)
             #`(begin #,expanded-form
@@ -402,12 +397,10 @@
   ;; Note: this function does not intercept syntax errors due to misused
   ;; certificates.  It's up to the caller to handle that.
   (define-for-syntax (recursively-optimize-expr stx equiv-map lower-lambda)
-    (syntax-case stx (#%datum #%top #%app quote begin begin0 lambda case-lambda 
+    (syntax-case stx (#%top #%app quote begin begin0 lambda case-lambda 
                       let-values letrec-values letrec-syntaxes+values 
                       unit unit/sig if super-lift undefined? undefined rename
                       frp:copy-list frp:->boolean dont-optimize)
-      [(#%datum . _)
-       #`(dip () #,stx)]
       
       [(#%top . X)
        #`(dip (X) X)]

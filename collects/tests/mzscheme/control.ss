@@ -9,7 +9,7 @@
 (Section 'control)
 
 (require (lib "control.ss")
-         (only (lib "etc.ss") rec))
+         (only-in (lib "etc.ss") rec))
 
 ;-----------------------------------------------------------------------
 

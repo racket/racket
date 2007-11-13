@@ -1,4 +1,6 @@
-(module base64-unit (lib "a-unit.ss")
+
+#lang scheme/unit
+
   (require "base64-sig.ss")
 
   (import)
@@ -130,5 +132,4 @@
   (define (base64-encode src)
     (let ([s (open-output-bytes)])
       (base64-encode-stream (open-input-bytes src) s (bytes 13 10))
-      (get-output-bytes s))))
-
+      (get-output-bytes s)))

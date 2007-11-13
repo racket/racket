@@ -1,14 +1,9 @@
 
-(define to-zo? (member "--zo" (vector->list argv)))
+#lang scheme/base
+
+(define to-zo? (member "--zo" (vector->list (current-command-line-arguments))))
 
 (define DIGS-PER-LINE 20)
-
-; (require (lib "src2src.ss" "compiler"))
-
-(require mzscheme)
-
-;; Uncomment to disable src->src optimization:
-; (define (optimize x) x)
 
 (let loop ()
   (let ([expr (read)])
@@ -31,6 +26,3 @@
 	  (printf "0};~n    EVAL_ONE_SIZED_STR((char *)expr, ~a);~n" (bytes-length s))
 	  (printf "  }~n")))
       (loop))))
-
-
-		   

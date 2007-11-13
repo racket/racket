@@ -1,4 +1,4 @@
-(module main (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "class.ss")
            "sig.ss"
            "../preferences.ss"
@@ -298,6 +298,3 @@
   ;(preferences:set 'framework:file-dialogs 'std)
   
   ;; setup the color scheme stuff
-  
-  
-  (void))

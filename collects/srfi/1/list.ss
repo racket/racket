@@ -219,9 +219,7 @@
   (require "cons.ss"
 	   "selector.ss"
 	   "predicate.ss"
-	   (all-except "misc.ss" append! reverse!)
-	   (rename "misc.ss" s:append! append!)
-	   (rename "misc.ss" s:reverse! reverse!)
+	   "misc.ss"
 	   (all-except "fold.ss" map for-each)
 	   (rename "fold.ss" s:map map)
 	   (rename "fold.ss" s:for-each for-each)

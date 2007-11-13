@@ -394,6 +394,11 @@
    (define (generic-write obj display? width pport
 			  print-graph? print-struct? print-hash-table? print-vec-length? print-box?
 			  depth size-hook)
+
+     (define pair-open (if (print-pair-curly-braces) "{" "("))
+     (define pair-close (if (print-pair-curly-braces) "}" ")"))
+     (define mpair-open (if (print-mpair-curly-braces) "{" "("))
+     (define mpair-close (if (print-mpair-curly-braces) "}" ")"))
      
      (define table (make-hash-table)) ; Hash table for looking for loops
 
@@ -435,6 +440,7 @@
 	   (let loop ([obj obj])
 	     (and (or (vector? obj)
 		      (pair? obj)
+		      (mpair? obj)
 		      (and (box? obj)
                            print-box?)
 		      (and (custom-write? obj)
@@ -456,6 +462,9 @@
 				[(pair? obj)
 				 (or (loop (car obj))
 				     (loop (cdr obj)))]
+				[(mpair? obj)
+				 (or (loop (mcar obj))
+				     (loop (mcdr obj)))]
 				[(and (box? obj) print-box?) (loop (unbox obj))]
 				[(and (custom-write? obj)
 				      (not (struct-type? obj)))
@@ -480,6 +489,7 @@
 	 (let loop ([obj obj])
 	   (if (or (vector? obj)
 		   (pair? obj)
+		   (mpair? obj)
 		   (and (box? obj)
                         print-box?)
 		   (and (custom-write? obj)
@@ -502,6 +512,9 @@
 			  [(pair? obj)
 			   (loop (car obj))
 			   (loop (cdr obj))]
+			  [(mpair? obj)
+			   (loop (mcar obj))
+			   (loop (mcdr obj))]
 			  [(and (box? obj) print-box?) (loop (unbox obj))]
 			  [(and (custom-write? obj)
 				(not (struct-type? obj)))
@@ -595,52 +608,58 @@
        (define (wr obj depth)
 	 (wr* pport obj depth display?))
 
-       (define (wr-expr expr depth)
-	 (if (read-macro? expr)
+       (define (wr-expr expr depth pair? car cdr open close)
+	 (if (and (read-macro? expr pair? car cdr)
+                  (equal? open "("))
 	     (begin
-	       (out (read-macro-prefix expr))
-	       (wr (read-macro-body expr) depth))
-	     (wr-lst expr #t depth)))
+	       (out (read-macro-prefix expr car))
+	       (wr (read-macro-body expr car cdr) depth))
+	     (wr-lst expr #t depth pair? car cdr open close)))
 
-       (define (wr-lst l check? depth)
+       (define (wr-lst l check? depth pair? car cdr open close)
 	 (if (pair? l)
 	     (check-expr-found 
 	      l pport check?
 	      #f #f
 	      (lambda ()
 		(if (and depth (zero? depth))
-		    (out "(...)")
 		    (begin
-		      (out "(")
+                      (out open)
+                      (out "...")
+                      (out close))
+		    (begin
+		      (out open)
 		      (wr (car l) (dsub1 depth))
 		      (let loop ([l (cdr l)])
 			(check-expr-found
 			 l pport (and check? (pair? l))
-			 (lambda (s) (out " . ") (out s) (out ")"))
+			 (lambda (s) (out " . ") (out s) (out close))
 			 (lambda ()
 			   (out " . ")
-			   (wr-lst l check? (dsub1 depth))
-			   (out ")"))
+			   (wr-lst l check? (dsub1 depth) pair? car cdr open close)
+			   (out close))
 			 (lambda ()
 			   (cond 
 			    [(pair? l) 
 			     (if (and (eq? (car l) 'unquote)
 				      (pair? (cdr l))
-				      (null? (cddr l)))
+				      (null? (cdr (cdr l))))
 				 (begin
 				   (out " . ,")
-				   (wr (cadr l) (dsub1 depth))
-				   (out ")"))
+				   (wr (car (cdr l)) (dsub1 depth))
+				   (out close))
 				 (begin
 				   (out " ")
 				   (wr (car l) (dsub1 depth))
 				   (loop (cdr l))))]
-			    [(null? l) (out ")")]
+			    [(null? l) (out close)]
 			    [else
 			     (out " . ")
 			     (wr l (dsub1 depth))
-			     (out ")")]))))))))
-	     (out "()")))
+			     (out close)]))))))))
+             (begin
+               (out open)
+               (out close))))
 
        (unless (hide? obj)
          (pre-print pport obj))
@@ -655,9 +674,11 @@
 		  (output-hooked pport obj len display?))]
 	    
 	    [(pair? obj) 
-	     (wr-expr obj depth)]
+	     (wr-expr obj depth pair? car cdr pair-open pair-close)]
+	    [(mpair? obj) 
+	     (wr-expr obj depth mpair? mcar mcdr mpair-open mpair-close)]
 	    [(null? obj)
-	     (wr-lst obj #f depth)]
+	     (wr-lst obj #f depth pair? car cdr "(" ")")]
 	    [(vector? obj)   
 	     (check-expr-found
 	      obj pport #t
@@ -666,7 +687,7 @@
 		(out "#")
 		(when print-vec-length?
 		  (out (number->string (vector-length obj))))
-		(wr-lst (vector->repeatless-list obj) #f depth)))]
+		(wr-lst (vector->repeatless-list obj) #f depth pair? car cdr "(" ")")))]
 	    [(and (box? obj)
                   print-box?)
 	     (check-expr-found
@@ -692,7 +713,7 @@
 		  #f #f
 		  (lambda ()
 		    (out "#")
-		    (wr-lst (vector->list (struct->vector obj)) #f (dsub1 depth))))
+		    (wr-lst (vector->list (struct->vector obj)) #f (dsub1 depth) pair? car cdr "(" ")")))
 		 (parameterize ([print-struct #f])
 		   ((if display? orig-display orig-write) obj pport)))]
 	    [(hash-table? obj)  
@@ -708,7 +729,8 @@
                              "#hasheq"))
 		    (wr-lst (hash-table-map obj (lambda (k v)
                                                   (cons k (make-hide v))))
-                            #f depth)))
+                            #f depth
+                            pair? car cdr "(" ")")))
 		 (parameterize ([print-hash-table #f])
 		   ((if display? orig-display orig-write) obj pport)))]
             [(hide? obj)
@@ -824,10 +846,10 @@
 	       (wr* pport obj depth display?))))
 
        (define (pp-expr expr extra depth)
-	 (if (read-macro? expr)
+	 (if (read-macro? expr pair? car cdr)
 	     (begin
-	       (out (read-macro-prefix expr))
-	       (pr (read-macro-body expr)
+	       (out (read-macro-prefix expr car))
+	       (pr (read-macro-body expr car cdr)
 		   extra
 		   pp-expr
 		   depth))
@@ -1063,7 +1085,7 @@
        values]
       [else raw-head]))
    
-   (define (read-macro? l)
+   (define (read-macro? l pair? car cdr)
      (define (length1? l) (and (pair? l) (null? (cdr l))))
      (and (pretty-print-abbreviate-read-macros)
           (let ((head (car l)) (tail (cdr l)))
@@ -1072,10 +1094,10 @@
                (length1? tail))
               (else #f)))))
    
-   (define (read-macro-body l)
-     (cadr l))
+   (define (read-macro-body l car cdr)
+     (car (cdr l)))
   
-   (define (read-macro-prefix l)
+   (define (read-macro-prefix l car)
      (let ((head (car l)))
        (case head
 	 ((quote)             "'")

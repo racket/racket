@@ -6,6 +6,7 @@
            "erl.ss"
            "heap.ss")
   
+  (require-for-syntax (lib "struct-info.ss" "scheme"))
  
   
   
@@ -88,25 +89,25 @@
                                     'depth 'continuation-marks 'parameterization
                                     'producers)]
           [cert (syntax-local-certifier #t)])
-      (list-immutable
-       (cert #'struct:signal)
-       (cert #'make-signal)
-       (cert #'signal?)
-       (apply list-immutable
-              (map
-               (lambda (fd)
-                 (cert (datum->syntax-object
-                        #'here
-                        (string->symbol (format "signal-~a" fd)))))
-               (reverse field-name-symbols)))
-       (apply list-immutable
-              (map
-               (lambda (fd)
-                 (cert (datum->syntax-object
-                        #'here
-                        (string->symbol (format "set-signal-~a!" fd)))))
-               (reverse field-name-symbols)))
-       #t)))
+      (make-struct-info
+       (lambda ()
+         (list
+          (cert #'struct:signal)
+          (cert #'make-signal)
+          (cert #'signal?)
+          (map
+           (lambda (fd)
+             (cert (datum->syntax-object
+                    #'here
+                    (string->symbol (format "signal-~a" fd)))))
+           (reverse field-name-symbols))
+          (map
+           (lambda (fd)
+             (cert (datum->syntax-object
+                    #'here
+                    (string->symbol (format "set-signal-~a!" fd)))))
+           (reverse field-name-symbols))
+          #t)))))
   
   (define (signal-custodian sig)
     (call-with-parameterization
@@ -384,15 +385,14 @@
                     [('exn e) (raise e)]))]))
   
   
-  
   (define (extract k evs)
-    (if (cons? evs)
-        (let ([ev (first evs)])
+    (if (mpair? evs)
+        (let ([ev (mcar evs)])
           (if (or (eq? ev undefined) (undefined? (erest ev)))
-              (extract k (rest evs))
+              (extract k (mcdr evs))
               (begin
                 (let ([val (efirst (erest ev))])
-                  (set-first! evs (erest ev))
+                  (set-mcar! evs (erest ev))
                   (k val)))))))
   
   
@@ -445,7 +445,7 @@
     (let ([proc (lambda (emit)
                   (lambda (the-event)
                     (for-each (lambda (tid) 
-                                (! tid (list 'remote-evt sym the-event))) (rest f+l))))]
+                                (! tid (list 'remote-evt sym the-event))) (mcdr f+l))))]
           
           [args (list evt)])
       (let* ([out (econs undefined undefined)]
@@ -454,7 +454,11 @@
                            (set-erest! out (econs val undefined))
                            (set! out (erest out))
                            val))]
-             [streams (map signal-value args)]
+             [streams (let loop ([args args])
+                        (if (null? args)
+                            null
+                            (mcons (signal-value (car args))
+                                   (loop (cdr args)))))]
              [thunk (lambda ()
                       (when (ormap undefined? streams)
                         ;(fprintf (current-error-port) "had an undefined stream~n")
@@ -646,7 +650,8 @@
                           (set-box! current (pfun (value-now/no-copy bhvr)))
                           (register rtn (unbox current))
                           ;; keep rtn's producers up-to-date
-                          (set-car! (signal-producers rtn) (unbox current))
+                          (set-signal-producers! rtn (cons (unbox current)
+                                                           (cdr (signal-producers rtn))))
                           (iq-resort)
                           'custodian)
                         bhvr)]
@@ -819,15 +824,15 @@
                            (! rtn-pid x))]
                         
                         [('bind sym evt)
-                         (let ([forwarder+listeners (cons #f empty)])
-                           (set-car! forwarder+listeners
-                                     (event-forwarder sym evt forwarder+listeners))
+                         (let ([forwarder+listeners (mcons #f empty)])
+                           (set-mcar! forwarder+listeners
+                                      (event-forwarder sym evt forwarder+listeners))
                            (hash-table-put! named-providers sym forwarder+listeners))
                          (loop)]
                         [('remote-reg tid sym)
                          (let ([f+l (hash-table-get named-providers sym)])
-                           (when (not (member tid (rest f+l)))
-                             (set-rest! f+l (cons tid (rest f+l)))))
+                           (when (not (member tid (mcdr f+l)))
+                             (set-mcdr! f+l (cons tid (mcdr f+l)))))
                          (loop)]
                         [('remote-evt sym val)
                          (iq-enqueue

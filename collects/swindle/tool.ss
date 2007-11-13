@@ -20,7 +20,7 @@
                          (drscheme:language:simple-module-based-language<%>)
                    (define/public (get-language-numbers) `(-1000 2000 ,num*))
                    (define/public (get-language-position)
-                     (list (string-constant professional-languages)
+                     (list (string-constant legacy-languages)
                            "Swindle" entry-name*))
                    (define/public (get-module) module*)
                    (define/public (get-one-line-summary) one-line*)

@@ -1,5 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
-@require["mz.ss"]
+#lang scribble/doc
+@require["mz.ss"
+         (for-label scheme/struct-info)]
 
 @title[#:tag "structures"]{Structures}
 
@@ -346,6 +347,8 @@ is inaccessible.)}
 @;------------------------------------------------------------------------
 @section[#:tag "structinfo"]{Structure Type Transformer Binding}
 
+@declare-exporting[(lib "scheme/struct-info.ss")]
+
 The @scheme[define-struct] form binds the name of a structure type as
 a @tech{transformer binding} that records the other identifiers bound
 to the structure type, the constructor procedure, the predicate
@@ -365,8 +368,11 @@ transformer to generate information about imported structure types, so
 that @scheme[match] and subtyping @scheme[define-struct] forms work
 within the unit.
 
-The expansion-time information for a structure type is represented as
-a list of six elements:
+The expansion-time information for a structure type is represented
+either as a structure that encapsulates a procedure that takes no
+arguments and returns a list of six element, or it can be represented
+directly as a list of six elements (of the same sort that the
+encapsulated procedure must return):
 
 @itemize{
 
@@ -404,6 +410,11 @@ a list of six elements:
 
 }
 
+Use @scheme[struct-info?] to recognize both forms of information, and
+use @scheme[extract-struct-info] to obtain a list from either
+representation. Use @scheme[make-struct-info] to encapsulate a
+procedure that represents structure type information.
+
 The implementor of a syntactic form can expect users of the form to
 know what kind of information is available about a structure type. For
 example, the @scheme[match] implementation works with structure
@@ -414,3 +425,21 @@ context of the @scheme[match] expression. In particular, the
 imported structure type, in which case the user is expected to know
 the set of fields that are listed in the signature for the structure
 type.
+
+@defproc[(struct-info? [v any/c]) boolean?]{
+
+Returns @scheme[#f] if @scheme[v] is either a six-element list with
+the correct shape for representing structure-type information, or a
+procedure encapsulated by @scheme[make-struct-info].}
+
+@defproc[(make-struct-info [thunk (-> (and/c struct-info? list?))])
+         struct-info?]{
+
+Encapsulates a thunk that returns structure-type information in list
+form.}
+
+@defproc[(extract-struct-info [v struct-info?])
+         (and/c struct-info? list?)]{
+
+Extracts the list form of the structure type information represented
+by @scheme[v].}

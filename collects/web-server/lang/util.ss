@@ -167,10 +167,10 @@
                       [(be ...) (map template (syntax->list #'(be ...)))])
           (syntax/loc stx
             (letrec-values ([(v ...) ve] ...) be ...)))]
-       [(lambda formals be ...)
+       [(#%plain-lambda formals be ...)
         (with-syntax ([(be ...) (map template (syntax->list #'(be ...)))])
           (syntax/loc stx
-            (lambda formals be ...)))]
+            (#%plain-lambda formals be ...)))]
        [(case-lambda [formals be ...] ...)
         (with-syntax ([((be ...) ...) (map template (syntax->list #'((be ...) ...)))])
           (syntax/loc stx
@@ -182,7 +182,7 @@
           (syntax/loc stx
             (if te ce ae)))]
        [(if te ce)
-        (template (syntax/loc stx (if te ce (#%app void))))]
+        (template (syntax/loc stx (if te ce (#%plain-app void))))]
        [(quote datum)
         stx]
        [(quote-syntax datum)
@@ -205,13 +205,11 @@
             (with-continuation-mark ke me be)))]
        [(#%expression . d)
         stx]
-       [(#%app e ...)
+       [(#%plain-app e ...)
         (with-syntax ([(e ...) (map template (syntax->list #'(e ...)))])
           (syntax/loc stx
-            (#%app e ...)))]
+            (#%plain-app e ...)))]
        [(#%top . v)
-        stx]
-       [(#%datum . d)
         stx]
        [(#%variable-reference . v)
         stx]       

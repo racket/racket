@@ -417,10 +417,10 @@ currently exist).
 > (collapse-module-path module-path-v rel-to-module-path-v) - returns
   a "simplified" module path by combining `module-path-v' with
   `rel-to-module-path', where the latter must have the form '(lib
-  <relative-path> <collection>), '(file <string>), a path, or a thunk
-  to generate one of those. The `module-path-v' argument is a quoted
-  module path, as for MzScheme's `dynamic-require' using the default
-  module path resolver.
+  ....), '(file <string>), '(path ....) a path, or a thunk to generate
+  one of those. The `module-path-v' argument is a quoted module path,
+  as for MzScheme's `dynamic-require' using the default module path
+  resolver.
 
   The result can be a path if `module-path-v' contains a path element
   that is needed for the result, or if `rel-to-module-path-v' is a

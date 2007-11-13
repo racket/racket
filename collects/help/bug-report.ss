@@ -481,7 +481,7 @@
            dirs))
 
     (define (split-by-directories dirs split-by)
-      (let ([res (append! (map list (map path->string split-by)) '((*)))]
+      (let ([res (append (map list (map path->string split-by)) '((*)))]
             [dirs (map path->string dirs)])
         (for-each
          (lambda (d)
@@ -493,9 +493,9 @@
                               (and (< l2 l) (equal? d2 (substring d 0 l2))
                                    (member (string-ref d l2) '(#\/ #\\))))))
                            res)])
-             (append! x (list (if (string? (car x))
-                                (substring d (add1 (string-length (car x))))
-                                d)))))
+             (append x (list (if (string? (car x))
+                                 (substring d (add1 (string-length (car x))))
+                                 d)))))
          dirs)
         (filter (lambda (x) (pair? (cdr x))) res)))
 

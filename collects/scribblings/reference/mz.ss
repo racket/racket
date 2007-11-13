@@ -1,20 +1,19 @@
-(module mz (lib "lang.ss" "big")
-  (require (lib "struct.ss" "scribble")
-           (lib "manual.ss" "scribble")
-           (lib "eval.ss" "scribble")
-           (lib "decode.ss" "scribble")
-           (lib "kw.ss")
-           (lib "contract.ss")
+(module mz scheme/base
+  (require scribble/struct
+           scribble/manual
+           scribble/eval
+           scribble/decode
+           scheme/contract
            "../icons.ss")
 
-  (provide (all-from (lib "manual.ss" "scribble"))
-           (all-from (lib "eval.ss" "scribble"))
-           (all-from (lib "contract.ss")))
+  (provide (all-from-out scribble/manual)
+           (all-from-out scribble/eval)
+           (all-from-out scheme/contract))
 
-  (require-for-label (lib "lang.ss" "big")
-                     "to-do.ss")
-  (provide-for-label (all-from (lib "lang.ss" "big"))
-                     (all-from "to-do.ss"))
+  (require (for-label scheme
+                      "to-do.ss"))
+  (provide (for-label (all-from-out scheme)
+                      (all-from-out "to-do.ss")))
 
   (define AllUnix "Unix and Mac OS X")
   (provide AllUnix)
@@ -31,22 +30,22 @@
 
   (provide refalso moreref Guide guideintro guidesecref)
 
-  (define/kw (refalso tag #:body s)
+  (define (refalso tag . s)
     (apply margin-note
            (decode-content (append (list magnify (secref tag) " also provides information on ")
                                    s
                                    (list ".")))))
 
-  (define/kw (moreref tag #:body s)
+  (define (moreref tag . s)
     (apply margin-note
            (decode-content (append (list magnify (secref tag) " provides more information on ")
                                    s
                                    (list ".")))))
-
+  
   (define (guidesecref s)
-    (secref #:doc '(lib "guide.scrbl" "scribblings" "guide") s))
+    (secref #:doc '(lib "scribblings/guide/guide.scrbl") s))
 
-  (define/kw (guideintro tag #:body s)
+  (define (guideintro tag . s)
     (apply margin-note
            (decode-content (append (list finger (guidesecref tag) " in " Guide " introduces ")
                                    s

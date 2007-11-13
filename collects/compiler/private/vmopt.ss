@@ -143,7 +143,7 @@
 		       ;;
 		       [(vm:sequence? ast)
 			(set-vm:sequence-vals! ast
-					       (apply append! 
+					       (apply append
 						      (map process! (vm:sequence-vals ast))))
 			ast]
 		       
@@ -161,7 +161,7 @@
 			(let*-values ([(test) (apply append (map process! (vm:if-test ast)))]
 				      [(test-setup test) (let loop ([l test][acc null])
 							   (if (null? (cdr l))
-							       (values (reverse! acc) (car l))
+							       (values (reverse acc) (car l))
 							       (loop (cdr l) (cons (car l) acc))))])
 			  (append
 			   test-setup

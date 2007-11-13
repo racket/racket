@@ -581,6 +581,14 @@ void *GC_malloc_pair(void *car, void *cdr)
   return retval;
 }
 
+void *GC_malloc_mutable_pair(void *car, void *cdr)
+{
+  void *p;
+  p = GC_malloc_pair(car, cdr);
+  *(short *)p = scheme_mutable_pair_type;
+  return p;
+}
+
 long GC_malloc_stays_put_threshold() { return gcWORDS_TO_BYTES(MAX_OBJECT_SIZEW); }
 
 /* this function resizes generation 0 to the closest it can get (erring high)
@@ -1960,7 +1968,7 @@ void GC_write_barrier(void *p)
 
 #include "sighand.c"
 
-void GC_init_type_tags(int count, int pair, int weakbox, int ephemeron, int weakarray, int custbox)
+void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int ephemeron, int weakarray, int custbox)
 {
   static int initialized = 0;
 
@@ -2375,7 +2383,7 @@ void GC_dump_with_traces(int flags,
       unsigned short tag = *(unsigned short *)(start + 1);
       if (tag < MAX_DUMP_TAG) {
 	counts[tag]++;
-	sizes[tag] += page->size;
+        sizes[tag] += gcBYTES_TO_WORDS(page->size);
       }
       if ((tag == trace_for_tag)
 	  || (tag == -trace_for_tag)) {

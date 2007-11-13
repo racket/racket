@@ -1,6 +1,6 @@
 (module prims mzscheme
   (provide != ! & \|
-           => ==
+           ==> ==
            sign entier
 
 	   a60:sin
@@ -36,7 +36,7 @@
       (raise-type-error '\| "boolean" 1 a b))
     (or a b))
   
-  (define (=> a b)
+  (define (==> a b)
     (unless (boolean? a)
       (raise-type-error '=> "boolean" 0 a b))
     (unless (boolean? b)

@@ -22,6 +22,14 @@
             [prefix drscheme:language: drscheme:language^])
     (export drscheme:eval^)
     
+    (define (editor->port-name txt)
+      (let* ([b (box #f)]
+             [n (send txt get-filename b)])
+        (cond
+          [(or (unbox b) (not n)) 
+           'unknown]
+          [else n])))
+    
     (define (traverse-program/multiple language-settings
                                        init
                                        kill-termination)
@@ -42,7 +50,8 @@
                                    (let* ([text (drscheme:language:text/pos-text input)]
                                           [start (drscheme:language:text/pos-start input)]
                                           [end (drscheme:language:text/pos-end input)]
-                                          [text-port (open-input-text-editor text start end)])
+                                          [text-port (open-input-text-editor text start end values 
+                                                                             (editor->port-name text))])
                                      (port-count-lines! text-port)
                                      (let* ([line (send text position-paragraph start)]
                                             [column (- start (send text paragraph-start-position line))]
@@ -176,10 +185,10 @@
     ;; these module specs are copied over to each new user's namespace 
     (define to-be-copied-module-specs
       (list 'mzscheme
-            '(lib "foreign.ss")
-            '(lib "mred.ss" "mred")
-            '(lib "cache-image-snip.ss" "mrlib")
-            '(lib "pconvert-prop.ss")))
+            '(lib "mzlib/foreign.ss")
+            '(lib "mred/mred.ss")
+            '(lib "mrlib/cache-image-snip.ss")
+            '(lib "mzlib/pconvert-prop.ss")))
     
     ;; ensure that they are all here.
     (for-each (λ (x) (dynamic-require x #f)) to-be-copied-module-specs)

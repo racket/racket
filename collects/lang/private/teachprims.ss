@@ -303,16 +303,6 @@ namespace.
       (check-second/cycle 'cons a b)
       (cons a b)))
   
-  (define-teach advanced set-cdr!
-    (lambda (a b)
-      (check-second/cycle 'set-cdr! a b)
-      (set-cdr! a b)))
-  
-  (define-teach advanced set-rest!
-    (lambda (a b)
-      (check-second/cycle 'set-rest! a b)
-      (set-cdr! a b)))
-  
   (define-teach advanced list*
     (lambda x
       (check-last/cycle 'list* x)
@@ -323,11 +313,6 @@ namespace.
       (check-last/cycle 'append x)
       (apply append x)))
   
-  (define-teach advanced append!
-    (lambda x
-      (check-last/cycle 'append! x)
-      (apply append! x)))
-
   (provide beginner-not
     beginner-+
     beginner-/
@@ -348,9 +333,6 @@ namespace.
     intermediate-foldl
     intermediate-build-string
     advanced-cons
-    advanced-set-cdr!
-    advanced-set-rest!
     advanced-list*
     advanced-append
-    advanced-append!
     cyclic-list?))

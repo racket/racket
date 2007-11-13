@@ -211,7 +211,9 @@
       (dynamic-wind
 	  (lambda () (void))
 	  (lambda ()
-	    (parameterize ([read-accept-compiled #t])
+	    (parameterize ([read-accept-compiled #t]
+                           [read-on-demand-source (and (load-on-demand-enabled)
+                                                       (path->complete-path filename))])
 	      (if expected-module
 		  (with-module-reading-parameterization 
 		   (lambda ()

@@ -8,8 +8,8 @@
   (define (unit-static-signatures name err-stx)
     (parameterize ((error-syntax err-stx))
       (let ((ui (lookup-def-unit name)))
-        (values (apply list-immutable (unit-info-import-sig-ids ui))
-                (apply list-immutable (unit-info-export-sig-ids ui))))))
+        (values (apply list (unit-info-import-sig-ids ui))
+                (apply list (unit-info-export-sig-ids ui))))))
 
   (define (signature-members name err-stx)
     (parameterize ((error-syntax err-stx))
@@ -19,8 +19,8 @@
          (and (pair? (cdr (siginfo-names (signature-siginfo s))))
               (cadr (siginfo-names (signature-siginfo s))))
          ;; vars
-         (apply list-immutable (signature-vars s))
+         (apply list (signature-vars s))
          ;; defined vars
-         (apply list-immutable (apply append (map car (signature-val-defs s))))
+         (apply list (apply append (map car (signature-val-defs s))))
          ;; defined stxs
-         (apply list-immutable (apply append (map car (signature-stx-defs s)))))))))
+         (apply list (apply append (map car (signature-stx-defs s)))))))))

@@ -1,4 +1,4 @@
-(module dispatch-server-unit (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "tcp-sig.ss" "net")
            (lib "thread.ss")
            (lib "contract.ss")
@@ -69,4 +69,4 @@
         (config:dispatch conn req)
         (if (connection-close? conn)
             (kill-connection! conn)
-            (connection-loop))))))
+            (connection-loop)))))

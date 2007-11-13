@@ -17,7 +17,7 @@
 		     "compiled")])
 	  (unless (directory-exists? cdir)
 	    (make-directory cdir))
-	  (compile-file src (build-path cdir (path-replace-suffix name #".zo")))))]
+	  (compile-file src (build-path cdir (path-add-suffix name #".zo")))))]
      [(src dest) (compile-file src dest values)]
      [(src dest filter)
       (let ([in (open-input-file src)])

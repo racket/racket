@@ -209,7 +209,7 @@
       
       (define top-level-exn-handler
 	(lambda (exn)
-	  (set! compiler:messages (reverse! compiler:messages))
+	  (set! compiler:messages (reverse compiler:messages))
 	  (compiler:report-messages! #t)
 	  (raise-user-error "compile failed")))
   
@@ -282,7 +282,7 @@
 				    [children-acc null]
 				    [max-arity 0])
 	    (if (null? sexps)
-		(values (reverse! source-acc)
+		(values (reverse source-acc)
 			(map (lambda (loc glob used cap children)
 			       (let ([c (make-code empty-set
 						   loc
@@ -294,11 +294,11 @@
 						   children)])
 				 (for-each (lambda (child) (set-code-parent! child c)) children)
 				 c))
-			     (reverse! locals-acc)
-			     (reverse! globals-acc)
-			     (reverse! used-acc)
-			     (reverse! captured-acc)
-			     (reverse! children-acc))
+			     (reverse locals-acc)
+			     (reverse globals-acc)
+			     (reverse used-acc)
+			     (reverse captured-acc)
+			     (reverse children-acc))
 			max-arity)
 		(begin
 
@@ -455,7 +455,7 @@
 	(case-lambda
 	 [(ast message)
 	  (set! compiler:messages 
-		(reverse! (cons (make-compiler:internal-error-msg ast message)
+		(reverse (cons (make-compiler:internal-error-msg ast message)
 				compiler:messages)))
 	  (compiler:report-messages! #t)]
 	 [(ast fmt . args)
@@ -467,7 +467,7 @@
 	(lambda (stop-on-errors?)
 	  (let ([error-count 0]
 		[fatal-error-count 0]
-		[msgs (reverse! compiler:messages)])
+		[msgs (reverse compiler:messages)])
 	    (set! compiler:messages null)
 	    (for-each (lambda (message)
 			(when (compiler:error-msg? message) 
@@ -929,30 +929,33 @@
 		     (lambda ()
 		       ; top-level.  The last expression will be in tail position and should
 		       ; return its value
-		       (let loop ([s (block-source s:file-block)]
-				  [l (block-codes s:file-block)]
-				  [m (block-magics s:file-block)])
-			 (unless (null? s)
-			   (let-values ([(vm new-locals)
-					 (vm-phase (car s) 
-						   #t
-						   #f
-						   (if (null? (cdr s))
-						       (lambda (ast)
-							 (make-vm:return 
-							  (zodiac:zodiac-stx ast)
-							  ast
-							  (and (car m) #t)))
-						       (lambda (ast)
-							 (make-vm:void
-							  (zodiac:zodiac-stx ast)
-							  ast
-							  (and (car m) #t))))
-						   (null? (cdr s))
-						   (and (car m) #t))])
-			     (set-car! s vm)
-			     (add-code-local+used-vars! (car l) new-locals))
-			   (loop (cdr s) (cdr l) (cdr m))))
+                       (set-block-source!
+                        s:file-block
+                        (let loop ([s (block-source s:file-block)]
+                                   [l (block-codes s:file-block)]
+                                   [m (block-magics s:file-block)])
+                          (if (null? s)
+                              null
+                              (let-values ([(vm new-locals)
+                                            (vm-phase (car s) 
+                                                      #t
+                                                      #f
+                                                      (if (null? (cdr s))
+                                                          (lambda (ast)
+                                                            (make-vm:return 
+                                                             (zodiac:zodiac-stx ast)
+                                                             ast
+                                                             (and (car m) #t)))
+                                                          (lambda (ast)
+                                                            (make-vm:void
+                                                             (zodiac:zodiac-stx ast)
+                                                             ast
+                                                             (and (car m) #t))))
+                                                      (null? (cdr s))
+                                                      (and (car m) #t))])
+                                (add-code-local+used-vars! (car l) new-locals)
+                                (cons vm
+                                      (loop (cdr s) (cdr l) (cdr m)))))))
 		       ; code-bodies
 		       (for-each 
 			(lambda (L)
@@ -971,7 +974,7 @@
 									  (get-annotation L))]
 							     [vms null])
 						    (if (null? l)
-							(values (reverse! vms) 
+							(values (reverse vms) 
 								; empty: already added via case
 								empty-set) 
 							(let-values ([(vm new-locals)
@@ -1006,30 +1009,35 @@
 	      (let ([vmopt-thunk
 		     (lambda ()
 		       ; top-level
-		       (let loop ([bl (block-source s:file-block)]
-				  [cl (block-codes s:file-block)])
-			 (unless (null? bl)
-			   (let-values ([(b new-locs) ((vm-optimize! #f #f) (car bl))])
-			     (set-car! bl b)
-			     (add-code-local+used-vars! (car cl) new-locs))
-			   (loop (cdr bl) (cdr cl))))
+                       (set-block-source!
+                        s:file-block
+                        (let loop ([bl (block-source s:file-block)]
+                                   [cl (block-codes s:file-block)])
+                          (if (null? bl)
+                              null
+                              (let-values ([(b new-locs) ((vm-optimize! #f #f) (car bl))])
+                                (add-code-local+used-vars! (car cl) new-locs)
+                                (cons b (loop (cdr bl) (cdr cl)))))))
 		       
 		       ; code-bodies
 		       (for-each (lambda (L)
 				   (let ([code (get-annotation L)])
 				     (cond
 				      [(zodiac:case-lambda-form? L)
-				       (let loop ([bodies (zodiac:case-lambda-form-bodies L)]
-						  [case-codes (procedure-code-case-codes code)]
-						  [i 0])
-					 (unless (null? bodies)
-					   (let-values ([(new-body new-locs) ((vm-optimize! L i) (car bodies))])
-					     (set-car! bodies new-body)
-					     (add-code-local+used-vars! (car case-codes)
-									new-locs)
-					     (loop (cdr bodies)
-						   (cdr case-codes)
-						   (add1 i)))))]
+                                       (zodiac:set-case-lambda-form-bodies!
+                                        L
+                                        (let loop ([bodies (zodiac:case-lambda-form-bodies L)]
+                                                   [case-codes (procedure-code-case-codes code)]
+                                                   [i 0])
+                                          (if (null? bodies)
+                                              null
+                                              (let-values ([(new-body new-locs) ((vm-optimize! L i) (car bodies))])
+                                                (add-code-local+used-vars! (car case-codes)
+                                                                           new-locs)
+                                                (cons new-body
+                                                      (loop (cdr bodies)
+                                                            (cdr case-codes)
+                                                            (add1 i)))))))]
 				      [else (compiler:internal-error
 					     L
 					     "vmopt: unknown closure type")])))

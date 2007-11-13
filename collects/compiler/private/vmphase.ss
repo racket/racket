@@ -254,8 +254,8 @@
 		 ;; BEGIN FORM
 		 ;;
 		 [(zodiac:begin-form? ast)
-		  (apply append!
-			 (begin-map!
+		  (apply append
+			 (begin-map
 			  ;; non-tail, not used
 			  (lambda (b) (convert b 
 					       #t
@@ -358,13 +358,13 @@
 		    
 		    (if (not temps-needed?)
 			
-			(append! (convert val
-					  (not (= 1 (length vars)))
-					  (lambda (val) (list (make-vm:set! #f vars val #f)))
-					  #f
-					  #f
-					  #t)
-				 body)
+			(append (convert val
+                                         (not (= 1 (length vars)))
+                                         (lambda (val) (list (make-vm:set! #f vars val #f)))
+                                         #f
+                                         #f
+                                         #t)
+                                body)
 			
 			(let* ([tnames (map (lambda (_) (compiler:gensym)) vars)]
 			       [tbounds (map (lambda (name rep)
@@ -398,7 +398,7 @@
 						  val #f)))
 					 #f #f #t)]
 			       [make-boxes 
-				(apply append!
+				(apply append
 				       (map (lambda (rep var)
 					      (if (rep:pointer? rep)
 						  (list 
@@ -417,7 +417,7 @@
 				     vars
 				     trefs)])
 			  (for-each add-new-local! tbounds)
-			  (append! set-temps make-boxes set-vars body)) 		  
+			  (append set-temps make-boxes set-vars body)) 		  
 			))]
 		 
 		 ;;-----------------------------------------------------------------
@@ -522,7 +522,7 @@
 				 (zodiac:letrec-values-form-vars ast)
 				 (zodiac:letrec-values-form-vals ast))])
 		    (for-each add-new-local! new-bounds)
-		    (append!
+		    (append
 		     nonrec-assigns
 		     (map make-record pointers closure-alloc-reps)
 		     (map (lambda (var pointer vehicle L name closure-rep)
@@ -545,7 +545,7 @@
 			  names
 			  closure-reps)
 		     (apply append (map fill-label pointers codes))
-		     (apply append! (map fill-env pointers codes))
+		     (apply append (map fill-env pointers codes))
 		     (convert (zodiac:letrec-values-form-body ast) multi? leaf tail-pos tail? used?)))]
 		 
 		 
@@ -706,10 +706,10 @@
 			   [else (compiler:internal-error ast "bad define")])])
 		    
 		    (if tail-pos
-			(append! body
-				 (leaf (tail-pos 
-					(make-vm:immediate #f
-							   (zodiac:make-special-constant 'void)))))
+			(append body
+                                (leaf (tail-pos 
+                                       (make-vm:immediate #f
+                                                          (zodiac:make-special-constant 'void)))))
 			(leaf body)))]
 
 		 
@@ -737,11 +737,11 @@
 				   #t)])
 
 		    (if tail-pos
-			(append! body
-				 (leaf (tail-pos 
-					(make-vm:immediate 
-					 #f
-					 (zodiac:make-special-constant 'void)))))
+			(append body
+                                (leaf (tail-pos 
+                                       (make-vm:immediate 
+                                        #f
+                                        (zodiac:make-special-constant 'void)))))
 			(leaf body)))]
 		 
 		 ;;-------------------------------------------------------------------

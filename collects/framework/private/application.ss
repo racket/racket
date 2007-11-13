@@ -1,4 +1,5 @@
-(module application (lib "a-unit.ss")
+#lang scheme/unit
+
   (require "sig.ss")
   
   (import)
@@ -11,4 +12,4 @@
                               (unless (string? x)
                                 (error 'current-app-name
                                        "the app name must be a string"))
-                              x))))
+                              x)))

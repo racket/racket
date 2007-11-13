@@ -78,7 +78,7 @@
                (and (= (length sorted) (length rand))
                     ;; sorted?
                     (andmap <=
-                            (reverse! (cdr (reverse sorted)))
+                            (reverse (cdr (reverse sorted)))
                             (cdr sorted))
                     ;; stable?
                     (equal? rand same)))

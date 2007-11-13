@@ -49,7 +49,7 @@
   ; unless the first argument is #f, associates the pair of the first two arguments 
   ; with the last in the linkage table. Returns the given package-location
   (define (add-linkage! module pkg-spec pkg)
-    (when (and module (current-module-name-prefix))
+    (when (and module (current-module-declare-name))
       (let ((key (get-key module pkg-spec)))
         (hash-table-get 
          (get-linkage-table)

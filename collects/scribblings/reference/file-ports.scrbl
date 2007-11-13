@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "file-ports"]{File Ports}
+
+@declare-exporting[(lib "scheme/port/file")]
 
 A port created by @scheme[open-input-file], @scheme[open-output-file],
 @scheme[subprocess], and related functions is a @deftech{file-stream
@@ -47,7 +49,7 @@ attempting to use @scheme['text] with other kinds of files triggers an
 
 Otherwise, the file specified by @scheme[path] need not be a regular
 file. It might a device that is connected through the filesystem, such
-as @file{aux} under Windows or @file{/dev/null} under Unix. In all
+as @filepath{aux} under Windows or @filepath{/dev/null} under Unix. In all
 cases, the port is buffered by default.
 
 The port produced by @scheme[open-input-port] should be explicitly
@@ -114,7 +116,7 @@ that the file already exists.
 
 The file specified by @scheme[path] need not be a regular file. It
 might a device that is connected through the filesystem, such as
-@file{aux} under Windows or @file{/dev/null} under Unix. The output
+@filepath{aux} under Windows or @filepath{/dev/null} under Unix. The output
 port is block-buffered by default, unless the file corresponds to a
 terminal, in which case is it line buffered bu default.
 
@@ -139,7 +141,7 @@ Like @scheme[open-output-file], but producing two values: an input
 port and an output port. The two ports are connected in that they
 share the underlying file device. This procedure is intended for use
 with special devices that can be opened by only one process, such as
-@file{COM1} in Windows. For regular files, sharing the device can be
+@filepath{COM1} in Windows. For regular files, sharing the device can be
 confusing. For example, using one port does not automatically flush
 the other port's buffer, and reading or writing in one port moves the
 file position (if any) for the other port. For regular files, use

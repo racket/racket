@@ -64,7 +64,7 @@ GC2_EXTERN void GC_add_roots(void *start, void *end);
    Called by MzScheme to install roots. The memory between
    `start' (inclusive) and `end' (exclusive) contains pointers. */
 
-GC2_EXTERN void GC_init_type_tags(int count, int pair, int weakbox, 
+GC2_EXTERN void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, 
                                   int ephemeron, int weakarray, int custbox);
 /*
    Called by MzScheme to indicate the number of different type tags it
@@ -139,6 +139,7 @@ GC2_EXTERN void *GC_malloc_one_small_dirty_tagged(size_t);
    object before a GC can occur. */
 
 GC2_EXTERN void *GC_malloc_pair(void *car, void *cdr);
+GC2_EXTERN void *GC_malloc_mutable_pair(void *car, void *cdr);
 /* 
    Like GC_malloc_one_tagged, but even more streamline. */
 

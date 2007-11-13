@@ -132,14 +132,14 @@
 				   (when (or (env-var-set? (sc-language-name sc1))
 					     (env-var-set? (sc-language-name sc2)))
 				     (cond
-                                       [(memf (lambda (x) (equal? (car x) no-warning-cache-key)) warning-table)
+                                       [(memf (lambda (ent) (equal? (mcar ent) no-warning-cache-key)) warning-table)
                                         =>
                                         (lambda (x)
-                                          (let ([ent (car x)])
-                                            (set-car! (cdr ent) (cons (list constant1 value1) (cadr ent)))))]
+                                          (let ([ent (mcar x)])
+                                            (set-mcdr! ent (cons (list constant1 value1) (mcdr ent)))))]
                                        [else
-                                        (set! warning-table (cons (list no-warning-cache-key
-                                                                        (list (list constant1 value1)))
+                                        (set! warning-table (cons (mcons no-warning-cache-key
+                                                                         (list (list constant1 value1)))
                                                                   warning-table))]))))))
 			   assoc1)))])
                 
@@ -151,8 +151,8 @@
 		(let ([sp (open-output-string)])
 		  (for-each
 		   (lambda (bad)
-		     (let* ([lang-pair (car bad)]
-			    [constants (cadr bad)]
+		     (let* ([lang-pair (mcar bad)]
+			    [constants (mcdr bad)]
 			    [lang1-name (car lang-pair)]
 			    [lang2-name (cdr lang-pair)])
 		       (fprintf sp "WARNING: language ~a had but ~a does not:\n"

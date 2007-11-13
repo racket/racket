@@ -1,5 +1,5 @@
 
-(module etc (lib "frtime.ss" "frtime")
+(module etc "frtime.ss"
   (require (lib "main-collects.ss" "setup"))
   (require-for-syntax (lib "kerncase.ss" "syntax")
 		      (lib "stx.ss" "syntax")
@@ -203,8 +203,7 @@
 			    (let ([d (local-expand
 				      defn
 				      expand-context
-				      (kernel-form-identifier-list 
-				       (quote-syntax here)))]
+				      (kernel-form-identifier-list))]
 				  [check-ids (lambda (ids)
 					       (for-each
 						(lambda (id)

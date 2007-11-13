@@ -3,7 +3,7 @@
 
 (load-relative "loadtest.ss")
 
-(require (lib "class.ss"))
+(require scheme/class)
 
 (Section 'object)
 
@@ -119,7 +119,7 @@
     (syntax-test #`(class #,object% (#,public (x y1) (x y))))
     (syntax-test #`(class #,object% (#,public (x y) (x2 y)))))
 
-  (unless (module-identifier=? public #'private)
+  (unless (free-identifier=? public #'private)
     (if (and (or (not over?) over-ok?)
 	     (or (not aug?) aug-ok?))
 	(begin
@@ -928,7 +928,7 @@
 ;; *do* shadow for definition RHSs
 (let ([mk-syntax-test
        (lambda (mk)
-	 (syntax-test (datum->syntax-object
+	 (syntax-test (datum->syntax
 		       (quote-syntax here)
 		       `(let-syntax ([dont-see-outer (lambda (x) (syntax (lambda () 10)))])
 			  (class object% 
@@ -1144,7 +1144,7 @@
   (teval
    `(module ,class-cert-%%-client mzscheme
       (require (lib "class.ss")
-	       ,class-cert-%%-init)
+	       ',class-cert-%%-init)
       (define cert-error%
 	(class object%
 	  (init-private thing "value")

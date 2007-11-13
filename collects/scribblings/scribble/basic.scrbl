@@ -1,7 +1,7 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
 @require["utils.ss"]
-@require-for-syntax[mzscheme]
+@require[(for-syntax scheme/base)]
 
 @define-syntax[def-section-like
                (syntax-rules ()
@@ -21,7 +21,7 @@
 
 @title[#:tag "basic"]{Basic Document Forms}
 
-The @file{basic.ss} libraryprovides functions and forms that can be
+The @filepath{basic.ss} libraryprovides functions and forms that can be
 used from code written either in Scheme or with @elem["@"]
 expressions. For example, the @scheme[title] and @scheme[italic]
 functions might be called from Scheme as
@@ -40,7 +40,7 @@ EOS
 
 Although the procedures are mostly design to be used from @elem["@"]
 mode, they are easier to document in Scheme mode (partly because we
-have Scribble's @file{scheme.ss} and @file{manual.ss}).
+have Scribble's @filepath{scheme.ss} and @filepath{manual.ss}).
 
 @; ------------------------------------------------------------------------
 

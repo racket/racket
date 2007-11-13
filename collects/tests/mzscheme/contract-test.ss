@@ -1,17 +1,19 @@
 (load-relative "loadtest.ss")
 (Section 'contract)
 
+(require scheme/namespace)
+
 (parameterize ([error-print-width 200])
 (let ()
   
   (define contract-namespace 
-    (let ([n (make-namespace)])
+    (let ([n (make-base-namespace)])
       (parameterize ([current-namespace n])
-        (eval '(require-for-template mzscheme))
-        (eval '(require-for-syntax mzscheme))
-        (eval '(require (lib "contract.ss")
-                        (lib "class.ss")
-                        (lib "etc.ss"))))
+        (namespace-require 'scheme/base)
+        (namespace-require '(for-syntax scheme/base))
+        (namespace-require '(for-template scheme/base))
+        (namespace-require 'scheme/contract)
+        (namespace-require 'scheme/class))
       n))
   
   (define (contract-eval x)
@@ -82,7 +84,7 @@
       (contract-eval
        `(,thunk-error-test 
           (lambda () ,expression)
-          (datum->syntax-object #'here ',expression)
+          (datum->syntax #'here ',expression)
           (lambda (exn)
             (and (exn? exn)
                  (,has-proper-blame? (exn-message exn))))))
@@ -91,7 +93,7 @@
           (contract-eval
            `(,thunk-error-test 
              (lambda () ,rewritten)
-             (datum->syntax-object #'here ',rewritten)
+             (datum->syntax #'here ',rewritten)
              (lambda (exn)
                (and (exn? exn)
                     (,has-proper-blame? (exn-message exn))))))))))
@@ -1610,7 +1612,7 @@
                (require (lib "contract.ss"))
                (define/contract x string? "a")
                x))
-      (eval '(require contract-test-suite-define1))))
+      (eval '(require 'contract-test-suite-define1))))
   
 
   
@@ -1954,7 +1956,7 @@
    '(contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
               (new (class object%
                      (define/public m
-                       (opt-lambda (x [y 'a])
+                       (lambda (x [y 'a])
                          x))
                      (super-new)))
               'pos
@@ -1965,7 +1967,7 @@
    '(contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
               (new (class object%
                      (define/public m
-                       (opt-lambda (x y [z #t])
+                       (lambda (x y [z #t])
                          x))
                      (super-new)))
               'pos
@@ -1976,7 +1978,7 @@
    '(contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
               (new (class object%
                      (define/public m
-                       (opt-lambda (x [y 'a] [z #t])
+                       (lambda (x [y 'a] [z #t])
                          x))
                      (super-new)))
               'pos
@@ -1987,7 +1989,7 @@
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
                     (new (class object%
                            (define/public m
-                             (opt-lambda (x [y 'a] [z #t])
+                             (lambda (x [y 'a] [z #t])
                                x))
                            (super-new)))
                     'pos
@@ -2001,7 +2003,7 @@
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
                     (new (class object%
                            (define/public m
-                             (opt-lambda (x [y 'a] [z #t])
+                             (lambda (x [y 'a] [z #t])
                                x))
                            (super-new)))
                     'pos
@@ -2016,7 +2018,7 @@
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
                     (new (class object%
                            (define/public m
-                             (opt-lambda (x [y 'a] [z #t])
+                             (lambda (x [y 'a] [z #t])
                                x))
                            (super-new)))
                     'pos
@@ -2032,7 +2034,7 @@
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
                     (new (class object%
                            (define/public m
-                             (opt-lambda (x [y 'a] [z #t])
+                             (lambda (x [y 'a] [z #t])
                                x))
                            (super-new)))
                     'pos
@@ -2045,7 +2047,7 @@
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
                     (new (class object%
                            (define/public m
-                             (opt-lambda (x [y 'a] [z #t])
+                             (lambda (x [y 'a] [z #t])
                                x))
                            (super-new)))
                     'pos
@@ -2059,7 +2061,7 @@
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
                     (new (class object%
                            (define/public m
-                             (opt-lambda (x [y 'a] [z #t])
+                             (lambda (x [y 'a] [z #t])
                                x))
                            (super-new)))
                     'pos
@@ -2074,7 +2076,7 @@
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
                     (new (class object%
                            (define/public m
-                             (opt-lambda (x [y 'a] [z #t])
+                             (lambda (x [y 'a] [z #t])
                                'x))
                            (super-new)))
                     'pos
@@ -2090,7 +2092,7 @@
                   (send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number? symbol?))))
                                   (new (class object%
                                          (define/public m
-                                           (opt-lambda (x [y 'a] [z #t])
+                                           (lambda (x [y 'a] [z #t])
                                              (values 1 'x)))
                                          (super-new)))
                                   'pos
@@ -2107,7 +2109,7 @@
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number? symbol?))))
                     (new (class object%
                            (define/public m
-                             (opt-lambda (x [y 'a] [z #t])
+                             (lambda (x [y 'a] [z #t])
                                (values 'x 'x)))
                            (super-new)))
                     'pos
@@ -2122,7 +2124,7 @@
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number? symbol?))))
                     (new (class object%
                            (define/public m
-                             (opt-lambda (x [y 'a] [z #t])
+                             (lambda (x [y 'a] [z #t])
                                (values 1 1)))
                            (super-new)))
                     'pos
@@ -3430,7 +3432,7 @@
                (match (make-foo #t #f)
                  [($ foo bar baz) #t]
                  [_ #f])))
-      (eval '(require d-c-s-match1))))
+      (eval '(require 'd-c-s-match1))))
   
   (test/spec-passed/result
    'd-c-s-match2
@@ -3446,7 +3448,7 @@
                  (match (make-foo 'first 'second)
                    [($ foo bar baz) (list bar baz)]
                    [_ #f]))))
-      (eval '(require d-c-s-match2))
+      (eval '(require 'd-c-s-match2))
       (eval 'd-c-s-match2-f1))
    '(first second))
    
@@ -3458,7 +3460,7 @@
                               (require (lib "contract.ss"))
                               (define-contract-struct couple (hd tl))
                               (contract (couple/c any/c any/c) 1 'pos 'neg)))
-                     (eval '(require d-c-s1))))
+                     (eval '(require 'd-c-s1))))
   
   (test/spec-passed 'd-c-s2
                     '(contract (couple/c any/c any/c) (make-couple 1 2) 'pos 'neg))
@@ -4148,7 +4150,7 @@ so that propagation occurs.
   (test-flat-contract 'printable/c (vector (cons 1 (box #f))) (lambda (x) x))
   (test-flat-contract '(symbols 'a 'b 'c) 'a 'd)
   (test-flat-contract '(one-of/c (expt 2 65)) (expt 2 65) 12)
-  (test-flat-contract '(one-of/c #:x #:z) #:x #:y)
+  (test-flat-contract '(one-of/c '#:x '#:z) '#:x '#:y)
   
   (let ([c% (contract-eval '(class object% (super-new)))])
     (test-flat-contract `(subclass?/c ,c%) c% (contract-eval `object%))
@@ -4268,7 +4270,7 @@ so that propagation occurs.
       (define contract-inferred-name-test7 (case-lambda [(x) (values x x)]
                                                         [(x y) (values y y)]))
       (provide/contract (contract-inferred-name-test7 (opt->* (number?) (number?) (number? number?))))))
-  (contract-eval '(require contract-test-suite-inferred-name1))
+  (contract-eval '(require 'contract-test-suite-inferred-name1))
   ;; (eval '(test 'contract-inferred-name-test object-name contract-inferred-name-test)) ;; this one can't be made to pass, sadly.
   (test 'contract-inferred-name-test2 object-name (contract-eval 'contract-inferred-name-test2))
   (test 'contract-inferred-name-test2b object-name (contract-eval 'contract-inferred-name-test2b))
@@ -4824,7 +4826,7 @@ so that propagation occurs.
                 (require (lib "contract.ss"))
                 (define x 1)
                 (provide/contract (x integer?))))
-      (eval '(require contract-test-suite1))
+      (eval '(require 'contract-test-suite1))
       (eval 'x)))
   
   (test/spec-passed
@@ -4833,7 +4835,7 @@ so that propagation occurs.
       (eval '(module contract-test-suite2 mzscheme
                 (require (lib "contract.ss"))
                 (provide/contract)))
-      (eval '(require contract-test-suite2))))
+      (eval '(require 'contract-test-suite2))))
   
   (test/spec-failed
    'provide/contract3
@@ -4842,7 +4844,7 @@ so that propagation occurs.
                (require (lib "contract.ss"))
                (define x #f)
                (provide/contract (x integer?))))
-      (eval '(require contract-test-suite3))
+      (eval '(require 'contract-test-suite3))
       (eval 'x))
    "contract-test-suite3")
   
@@ -4853,7 +4855,7 @@ so that propagation occurs.
                (require (lib "contract.ss"))
                (define-struct s (a))
                (provide/contract (struct s ((a any/c))))))
-      (eval '(require contract-test-suite4))
+      (eval '(require 'contract-test-suite4))
       (eval '(list (make-s 1)
                    (s-a (make-s 1))
                    (s? (make-s 1))
@@ -4866,7 +4868,7 @@ so that propagation occurs.
                (require (lib "contract.ss"))
                (define-struct s (a b))
                (provide/contract (struct s ((a any/c) (b any/c))))))
-      (eval '(require contract-test-suite4-b))
+      (eval '(require 'contract-test-suite4-b))
       (eval '(let ([an-s (make-s 1 2)])
                (list (s-a an-s)
                      (s-b an-s)
@@ -4886,7 +4888,7 @@ so that propagation occurs.
                (define-struct t (a))
                (provide/contract (struct s ((a any/c)))
                                  (struct t ((a any/c))))))
-      (eval '(require contract-test-suite5))
+      (eval '(require 'contract-test-suite5))
       (eval '(list (make-s 1)
                    (s-a (make-s 1))
                    (s? (make-s 1))
@@ -4903,7 +4905,7 @@ so that propagation occurs.
                (require (lib "contract.ss"))
                (define-struct s (a))
                (provide/contract (struct s ((a any/c))))))
-      (eval '(require contract-test-suite6))
+      (eval '(require 'contract-test-suite6))
       (eval '(define-struct (t s) ()))))
   
   (test/spec-passed
@@ -4915,12 +4917,12 @@ so that propagation occurs.
                (provide/contract (struct s_ ((a any/c))))))
       (eval '(require contract-test-suite6b))
       (eval '(module contract-test-suite6b2 mzscheme
-               (require contract-test-suite6b)
+               (require 'contract-test-suite6b)
                (require (lib "contract.ss"))
                (define-struct (t_ s_) (b))
                (provide s_-a)
                (provide/contract (struct (t_ s_) ((a any/c) (b any/c))))))
-      (eval '(require contract-test-suite6b2))
+      (eval '(require 'contract-test-suite6b2))
       (eval '(define-struct (u_ t_) ()))
       (eval '(s_-a (make-u_ 1 2)))))
   
@@ -4934,7 +4936,7 @@ so that propagation occurs.
                (provide/contract 
                 (struct s ((a any/c) (b any/c)))
                 (struct (t s) ((a any/c) (b any/c) (c any/c) (d any/c))))))
-      (eval '(require contract-test-suite7))
+      (eval '(require 'contract-test-suite7))
       (eval '(let ([x (make-t 1 2 3 4)])
                (s-a x)
                (s-b x)
@@ -4951,7 +4953,7 @@ so that propagation occurs.
                (define (w-f-s? x) #t)
                (provide/contract 
                 (struct i-s ((contents (flat-named-contract "integer-set-list" w-f-s?)))))))
-      (eval '(require contract-test-suite8))
+      (eval '(require 'contract-test-suite8))
       (eval '(i-s-contents (make-i-s 1)))))
    
   (test/spec-passed
@@ -4962,7 +4964,7 @@ so that propagation occurs.
                (define the-internal-name 1)
                (provide/contract (rename the-internal-name the-external-name integer?))
                (+ the-internal-name 1)))
-      (eval '(require contract-test-suite9))
+      (eval '(require 'contract-test-suite9))
       (eval '(+ the-external-name 1))))
   
   (test/spec-passed
@@ -4979,7 +4981,7 @@ so that propagation occurs.
                (copy-struct s 
                             (make-s 1 2)
                             [s-a 3])))
-      (eval '(require pc10-n))))
+      (eval '(require 'pc10-n))))
   
   (test/spec-passed
    'provide/contract11
@@ -4990,9 +4992,9 @@ so that propagation occurs.
                (provide/contract [rename x y integer?]
                                  [rename x z integer?])))
       (eval '(module pc11-n mzscheme
-               (require pc11-m)
+               (require 'pc11-m)
                (+ y z)))
-      (eval '(require pc11-n))))
+      (eval '(require 'pc11-n))))
   
   ;; this test is broken, not sure why
   #|
@@ -5010,7 +5012,7 @@ so that propagation occurs.
                (copy-struct s 
                             (make-s 1 2)
                             [s-a #f])))
-      (eval '(require pc11b-n)))
+      (eval '(require 'pc11b-n)))
    'n)
 |#
   
@@ -5021,7 +5023,7 @@ so that propagation occurs.
                (require (lib "contract.ss"))
                (define-struct (exn2 exn) ())
                (provide/contract (struct (exn2 exn) ((message any/c) (continuation-marks any/c))))))
-      (eval '(require pc12-m))))
+      (eval '(require 'pc12-m))))
   
   (test/spec-passed/result
    'provide/contract13
@@ -5031,7 +5033,7 @@ so that propagation occurs.
                (define-struct register (name type) (make-inspector))
                (provide/contract (struct register ([name any/c] [type any/c])))))
       
-      (eval '(require pc13-common-msg-structs))
+      (eval '(require 'pc13-common-msg-structs))
       (eval '(require (lib "plt-match.ss")))
       (eval '(match (make-register 1 2)
                [(struct register (name type))
@@ -5056,10 +5058,10 @@ so that propagation occurs.
 
       (eval '(module pc14-test2 mzscheme
                (require (lib "plt-match.ss"))
-               (require pc14-test1)
+               (require 'pc14-test1)
                (match (make-type:ptr '() (make-type '()))
                  [(struct type:ptr (flags type)) #f])))
-      (eval '(require pc14-test2))))
+      (eval '(require 'pc14-test2))))
   
   ;; make sure unbound identifier exception is raised.
   (contract-error-test
@@ -5078,7 +5080,7 @@ so that propagation occurs.
                (require (lib "contract.ss"))
                (define i #f)
                (provide/contract [i integer?])))
-      (eval '(require pos))))
+      (eval '(require 'pos))))
   
   ;; this is really a positive violation, but name the module `neg' just for an addl test
   (test/neg-blame
@@ -5088,7 +5090,7 @@ so that propagation occurs.
                (require (lib "contract.ss"))
                (define i #f)
                (provide/contract [i integer?])))
-      (eval '(require neg))))
+      (eval '(require 'neg))))
   
   ;; this test doesn't pass yet ... waiting for support from define-struct
   
@@ -5101,10 +5103,10 @@ so that propagation occurs.
                (define-struct s (a))
                (provide/contract [struct s ((a integer?))])))
       (eval '(module neg mzscheme
-               (require pos)
+               (require 'pos)
                (define-struct (t s) ())
                (make-t #f)))
-      (eval '(require neg))))
+      (eval '(require 'neg))))
   
   (test/spec-passed
    'provide/contract18
@@ -5113,7 +5115,7 @@ so that propagation occurs.
                (require (lib "contract.ss"))
                (define-struct s ())
                (provide/contract [struct s ()])))
-      (eval '(require pc18-pos))
+      (eval '(require 'pc18-pos))
       (eval '(make-s))))
 
   (test/spec-passed/result
@@ -5125,24 +5127,24 @@ so that propagation occurs.
                (provide/contract [struct a ([x number?])])))
 
       (eval '(module pc19-b mzscheme
-               (require pc19-a
+               (require 'pc19-a
                         (lib "contract.ss"))
                (define-struct (b a) (y))
                (provide/contract [struct (b a) ([x number?] [y number?])])))
 
       (eval '(module pc19-c mzscheme
-               (require pc19-b
+               (require 'pc19-b
                         (lib "contract.ss"))
                
                (define-struct (c b) (z))
                (provide/contract [struct (c b) ([x number?] [y number?] [z number?])])))
 
       (eval' (module pc19-d mzscheme
-               (require pc19-a pc19-c)
+               (require 'pc19-a 'pc19-c)
                (define pc19-ans (a-x (make-c 1 2 3)))
                (provide pc19-ans)))
       
-      (eval '(require pc19-d))
+      (eval '(require 'pc19-d))
       (eval 'pc19-ans))
    1)
 
@@ -5197,11 +5199,11 @@ so that propagation occurs.
                (define f 3)))
       
       (eval '(module provide/contract23b mzscheme
-               (require provide/contract23a)
+               (require 'provide/contract23a)
                (#%expression f)
                f))
       
-      (eval '(require provide/contract23b))))
+      (eval '(require 'provide/contract23b))))
   
   (test/spec-passed
    'provide/contract24
@@ -5221,11 +5223,11 @@ so that propagation occurs.
                (provide/contract [seventeen integer?])
                (define seventeen 17)))
       (eval '(module provide/contract25b mzscheme
-               (require provide/contract25a)
+               (require 'provide/contract25a)
                (let-syntax ([#%app (syntax-rules ()
                                      [(#%app e ...) (list e ...)])])
                  (seventeen 18))))
-      (eval '(require provide/contract25b))))
+      (eval '(require 'provide/contract25b))))
 
   (contract-error-test
    #'(begin
@@ -5233,7 +5235,7 @@ so that propagation occurs.
                 (require (lib "contract.ss"))
                 (define the-defined-variable1 'five)
                 (provide/contract [the-defined-variable1 number?])))
-       (eval '(require pce1-bug)))
+       (eval '(require 'pce1-bug)))
    (λ (x)
      (and (exn? x)
           (regexp-match #rx"on the-defined-variable1" (exn-message x)))))
@@ -5244,7 +5246,7 @@ so that propagation occurs.
                 (require (lib "contract.ss"))
                 (define the-defined-variable2 values)
                 (provide/contract [the-defined-variable2 (-> number? any)])))
-       (eval '(require pce2-bug))
+       (eval '(require 'pce2-bug))
        (eval '(the-defined-variable2 #f)))
    (λ (x)
      (and (exn? x)
@@ -5256,7 +5258,7 @@ so that propagation occurs.
                 (require (lib "contract.ss"))
                 (define the-defined-variable3 (λ (x) #f))
                 (provide/contract [the-defined-variable3 (-> any/c number?)])))
-       (eval '(require pce3-bug))
+       (eval '(require 'pce3-bug))
        (eval '(the-defined-variable3 #f)))
    (λ (x)
      (and (exn? x)
@@ -5268,7 +5270,7 @@ so that propagation occurs.
                 (require (lib "contract.ss"))
                 (define the-defined-variable4 (λ (x) #f))
                 (provide/contract [the-defined-variable4 (-> any/c number?)])))
-       (eval '(require pce4-bug))
+       (eval '(require 'pce4-bug))
        (eval '((if #t the-defined-variable4) #f)))
    (λ (x)
      (and (exn? x)
@@ -5283,7 +5285,7 @@ so that propagation occurs.
                 
                 (provide/contract
                  [struct bad ((string? a) (string? b))])))
-       (eval '(require pce5-bug)))
+       (eval '(require 'pce5-bug)))
    (λ (x)
      (and (exn? x)
           (regexp-match #rx"expected field name to be b, but found string?" (exn-message x)))))
@@ -5298,7 +5300,7 @@ so that propagation occurs.
                 
                 (provide/contract
                  [struct bad ((a string?) (string? b))])))
-       (eval '(require pce6-bug)))
+       (eval '(require 'pce6-bug)))
    (λ (x)
      (and (exn? x)
           (regexp-match #rx"expected field name to be b, but found string?" (exn-message x)))))

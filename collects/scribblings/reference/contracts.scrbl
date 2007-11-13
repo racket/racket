@@ -1,9 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "mzlib:contract" #:style 'toc]{Contracts}
 
-@declare-exporting[big (lib "big/contract")]
+@declare-exporting[scheme/contract]
 
 A @defterm{contract} controls the flow of values to ensure that the
 expectations of one party are met by another party.  The
@@ -73,8 +73,6 @@ The @scheme[or/c] result tests any value by applying the contracts in
 order, from left to right, with the exception that it always moves the
 non-@tech{flat contracts} (if any) to the end, checking them last.}
  
-\scmutilsectiono{and/c}{contract}{contract}
-
 @defproc[(and/c [contract (or/c contract? (any/c . -> . any/c))] ...)
          contract?]{
 
@@ -600,7 +598,7 @@ earlier fields.}
 As an example, consider the following module:
 
 @begin[
-#reader(lib "comment-reader.ss" "scribble")
+#readerscribble/comment-reader
 [schemeblock
 (module product mzscheme
   (require (lib "contract.ss"))

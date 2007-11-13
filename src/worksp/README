@@ -44,7 +44,7 @@ Building MzScheme and MrEd
 If you're using MSVC 8.0 (not Express), and if `devenv.exe' is in your
 path, then you can just run 
        plt\src\worksp\build.bat
-from its won directory to perform all steps up to "Versioning",
+from its own directory to perform all steps up to "Versioning",
 including the MzCOM and MysterX steps.
 
 The CGC variants of MzScheme, MzCOM, MrEd, and MysterX can be built
@@ -116,7 +116,7 @@ binaries:
 
  2. Change directories to plt\src\worksp\gc2 and run
 
-      ..\..\..\mzschemecgc.exe -r make.ss
+      ..\..\..\mzschemecgc.exe -cu make.ss
 
 The resulting MzScheme.exe and MrEd.exe will appear in the "plt"
 directory, along with DLLs libmzsch3mxxxxxxx.dll and
@@ -140,7 +140,7 @@ following solutions:
 Then, set up all the other executables (besides MrEd[CGC].exe and
 MzScheme[CGC].exe) by running
 
-   mzscheme.exe -mvqM- setup
+   mzscheme.exe -l- setup
 
 This last step makes the .zo files, too. To skip compiling .zos, add
 -n to the end of the above command.
@@ -164,7 +164,7 @@ be replaced with a specific version.
 
 To replace the "xxxxxxx" with a specific version, run
 
-  mzscheme -mvqL winvers.ss setup
+  mzscheme -l setup/winvers.ss
 
 in a shell.
 
@@ -196,7 +196,7 @@ After building MzCOMCGC, you can build the 3m variant by
 
  1. Change directories to plt\src\worksp\mzcom and run
 
-      ..\..\..\mzschemecgc.exe -r xform.ss
+      ..\..\..\mzschemecgc.exe -cu xform.ss
 
  2. Switch to the "3m" configuration in the MzCOM solution
     (in Visual Studio).
@@ -219,7 +219,7 @@ After building MysterXCGC, you can build the 3m variant by
 
  1. Change directories to plt\src\worksp\libmysterx and run
 
-      ..\..\..\mzschemecgc.exe -r xform.ss
+      ..\..\..\mzschemecgc.exe -cu xform.ss
 
  2. Switch to the "3m" configuration in the libmysterx solution
     (in Visual Studio).

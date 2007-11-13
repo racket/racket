@@ -381,7 +381,7 @@ Scheme_Object *(*scheme_make_closed_prim_w_everything)(Scheme_Closed_Prim *fun,
 							      mzshort minr, mzshort maxr);
 void (*scheme_prim_is_method)(Scheme_Object *o);
 Scheme_Object *(*scheme_make_pair)(Scheme_Object *car, Scheme_Object *cdr);
-Scheme_Object *(*scheme_make_immutable_pair)(Scheme_Object *car, Scheme_Object *cdr);
+Scheme_Object *(*scheme_make_mutable_pair)(Scheme_Object *car, Scheme_Object *cdr);
 Scheme_Object *(*scheme_make_raw_pair)(Scheme_Object *, Scheme_Object *);
 Scheme_Object *(*scheme_make_byte_string)(const char *chars);
 Scheme_Object *(*scheme_make_sized_byte_string)(char *chars, long len, int copy);
@@ -671,6 +671,7 @@ long (*scheme_set_file_position)(Scheme_Object *port, long pos);
 int (*scheme_file_exists)(char *filename);
 int (*scheme_directory_exists)(char *dirname);
 char *(*scheme_expand_filename)(char* filename, int ilen, const char *errorin, int *ex, int guards);
+char *(*scheme_expand_user_filename)(char* filename, int ilen, const char *errorin, int *ex, int guards);
 char *(*scheme_expand_string_filename)(Scheme_Object *f, const char *errorin, int *ex, int guards);
 char *(*scheme_os_getcwd)(char *buf, int buflen, int *actlen, int noexn);
 int (*scheme_os_setcwd)(char *buf, int noexn);
@@ -744,6 +745,8 @@ Scheme_Object *(*scheme_make_modidx)(Scheme_Object *path,
 				  Scheme_Object *resolved);
 Scheme_Object *(*scheme_apply_for_syntax_in_env)(Scheme_Object *proc, Scheme_Env *env);
 Scheme_Object *(*scheme_dynamic_require)(int argc, Scheme_Object *argv[]);
+Scheme_Object *(*scheme_namespace_require)(Scheme_Object *);
+int (*scheme_is_module_path)(Scheme_Object *);
 /*========================================================================*/
 /*                                symbols                                 */
 /*========================================================================*/
@@ -812,7 +815,7 @@ void (*scheme_set_type_equality)(Scheme_Type type,
                                         Scheme_Secondary_Hash_Proc hash2);
 Scheme_Object *(*scheme_build_list)(int argc, Scheme_Object **argv);
 Scheme_Object *(*scheme_build_list_offset)(int argc, Scheme_Object **argv, int delta);
-void (*scheme_make_list_immutable)(Scheme_Object *l);
+int (*scheme_is_list)(Scheme_Object *obj1);
 int (*scheme_list_length)(Scheme_Object *list);
 int (*scheme_proper_list_length)(Scheme_Object *list);
 Scheme_Object *(*scheme_alloc_list)(int size);

@@ -350,7 +350,7 @@ Various common pieces of code that both the client and server need to access
                       (or (not hi) (<= n hi))
                       (compatible-version? x spec))))
                  table)))
-          (if (null? matches)
+        (if (null? matches)
               #f
               (let ((best-row
                      (car 

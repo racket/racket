@@ -159,37 +159,39 @@
 			;;  the uidvalidity value. Otherwise, for backward
 			;;  compatibility, we allow the case that it wasn't
 			;;  recorded.
-			(if (and (pair? l)
-				 (or (not (car l)) (integer? (car l))))
-			    (begin
-			      (set! uid-validity (car l))
-			      (cdr l))
-			    l)))
+			(let ([l (if (and (pair? l)
+                                          (or (not (car l)) (integer? (car l))))
+                                     (begin
+                                       (set! uid-validity (car l))
+                                       (cdr l))
+                                     l)])
+                          ;; Convert each entry to a vector:
+                          (map list->vector l))))
 
       (define mailbox-ht #f)
       (define (rebuild-mailbox-table!)
 	(set! mailbox-ht (make-hash-table 'equal))
-	(for-each (lambda (m) (hash-table-put! mailbox-ht (car m) m))
+	(for-each (lambda (m) (hash-table-put! mailbox-ht (vector-ref m 0) m))
 		  mailbox))
       (rebuild-mailbox-table!)
 
       (define (find-message id)
 	(hash-table-get mailbox-ht id (lambda () #f)))
       
-      (define message-uid car)
-      (define message-position cadr)
-      (define message-downloaded? caddr)
-      (define message-from cadddr)
-      (define message-subject (lambda (m) (list-ref m 4)))
-      (define message-flags (lambda (m) (list-ref m 5)))
-      (define message-size (lambda (m) (let ([l (list-tail m 6)])
-                                         ;; For backward compatibility:
-					 (if (pair? l)
-					     (car l)
-					     #f))))
-      (define set-message-position! (lambda (m v) (set-car! (cdr m) v)))
-      (define set-message-downloaded?! (lambda (m v) (set-car! (cddr m) v)))
-      (define set-message-flags! (lambda (m v) (set-car! (list-tail m 5) v)))
+      (define (message-uid m) (vector-ref m 0))
+      (define (message-position m) (vector-ref m 1))
+      (define (message-downloaded? m) (vector-ref m 2))
+      (define (message-from m) (vector-ref m 3))
+      (define (message-subject m) (vector-ref m 4))
+      (define (message-flags m) (vector-ref m 5))
+      (define (message-size m)
+        ;; For backward compatibility:
+        (if ((vector-length m) . < . 7)
+            #f
+            (vector-ref m 6)))
+      (define (set-message-position! m v) (vector-set! m 1 v))
+      (define (set-message-downloaded?! m v) (vector-set! m 2 v))
+      (define (set-message-flags! m v) (vector-set! m 5 v))
 
       (define (message-marked? m) (memq 'marked (message-flags m)))
       
@@ -197,7 +199,7 @@
 	(status "Saving mailbox information...")
 	(with-output-to-file (build-path mailbox-dir "mailbox")
 	  (lambda ()
-	    (write (cons uid-validity mailbox)))
+	    (write (cons uid-validity (map vector->list mailbox))))
 	  'truncate))
       
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -353,7 +355,7 @@
 					     '(uid))
 			  (break-bad)))]
 		 [uids (map car data)]
-		 [curr-uids (map car mailbox)]
+		 [curr-uids (map (lambda (m) (vector-ref m 0)) mailbox)]
 		 [deleted (if continue?
 			      null
 			      (remove* uids curr-uids))]
@@ -411,26 +413,30 @@
 			   (if continue? mailbox null)
 			   (map
 			    (lambda (uid pos)
-			      (let ([old (assoc uid mailbox)])
-				`(,uid ,pos 
-				       ,(if old
-					    (message-downloaded? old)
-					    #f)
-				       ,(if old
-					    (message-from old)
-					    (extract-field "From" (get-header uid)))
-				       ,(if old
-					    (message-subject old)
-					    (extract-field "Subject" (get-header uid)))
-				       ,(if old
-					    (message-flags old)
-					    null)
-				       ,(if old
-					    (message-size old)
-					    (let ([new (assoc uid new-uid/size-map)])
-					      (if new
-						  (cdr new)
-						  0))))))
+			      (let ([old (ormap (lambda (m)
+                                                  (and (equal? uid (message-uid m))
+                                                       m))
+                                                mailbox)])
+                                (list->vector
+                                 `(,uid ,pos 
+                                        ,(if old
+                                             (message-downloaded? old)
+                                             #f)
+                                        ,(if old
+                                             (message-from old)
+                                             (extract-field "From" (get-header uid)))
+                                        ,(if old
+                                             (message-subject old)
+                                             (extract-field "Subject" (get-header uid)))
+                                        ,(if old
+                                             (message-flags old)
+                                             null)
+                                        ,(if old
+                                             (message-size old)
+                                             (let ([new (assoc uid new-uid/size-map)])
+                                               (if new
+                                                   (cdr new)
+                                                   0)))))))
 			    uids positions)))
 		    (rebuild-mailbox-table!)
 		    (write-mailbox)
@@ -1572,15 +1578,19 @@
 				(set-current-selected #f))
 			  (send header-list delete-item i)))))
 		items)
-	       (for-each
-		(lambda (m)
-		  (unless (assoc (message-uid m) old-mailbox)
-			  (let ([i (add-message m)])
-			    (unless set-selection?
-				    (set! set-selection? #t)
-				    (send i select #t)
-				    (send i scroll-to)))))
-		mailbox)
+               (let ([old-ids (make-hash-table 'equal)])
+                 (for-each (lambda (m)
+                             (hash-table-put! old-ids (message-uid m) #t))
+                           old-mailbox)
+                 (for-each
+                  (lambda (m)
+                    (unless (hash-table-get old-ids (message-uid m) #f)
+                      (let ([i (add-message m)])
+                        (unless set-selection?
+                          (set! set-selection? #t)
+                          (send i select #t)
+                          (send i scroll-to)))))
+                  mailbox))
 	       (send (send header-list get-editor) end-edit-sequence))))))
       
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2513,8 +2523,8 @@
 					      (send t change-style url-delta s e)))
 				    (when (eq? (system-type) 'macosx)
                                       (when fn
-                                        (let ([safer-fn (normalize-path (string-append "~/Desktop/" 
-                                                                                       (regexp-replace* #rx"[/\"|:<>\\]" fn "-")))])
+                                        (let ([safer-fn (normalize-path (build-path (find-system-path 'desk-dir)
+                                                                                    (regexp-replace* #rx"[/\"|:<>\\]" fn "-")))])
 					  (insert " " set-standard-style)
                                           (insert "[save to ~/Desktop/ & open]"
                                                   (lambda (t s e)
@@ -3126,7 +3136,7 @@
                   info)
         (send text end-edit-sequence)
         
-        (set-cdr! (last-pair colors) colors)
+        ; (set-cdr! (last-pair colors) colors) ;; FIXME: need a cyclic list
         (send frame show #t))
       
       (define (make-and-regexp first second)

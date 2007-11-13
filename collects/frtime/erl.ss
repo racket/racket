@@ -11,13 +11,14 @@
     (let ([result (thunk)])
       (semaphore-post s)
       result))
-    
+  
+#|  
   (define free-cons-cells
     (box empty))
   
   (define alloc-sem (make-semaphore 1))
   
-  (define (mcons a d)
+  (define (Mcons a d)
     (with-semaphore
      alloc-sem
      (lambda ()
@@ -33,11 +34,10 @@
   (define (release c)
     (set-cdr! c (unbox free-cons-cells))
     (set-box! free-cons-cells c))
-
-#|  
-  (define mcons cons)
-  (define release void)
 |#
+
+  (define Mcons mcons)
+  (define release void)
   
   ; for thread ids, port is the TCP port number (not to be confused with MzScheme ports)
   (define-values (listener port)
@@ -115,14 +115,14 @@
   (define-struct mailbox (old-head old-last head tail sem-count sem-space lock-enqueue))
   
   (define (try-extract m l)
-    (let loop ([prev l] [cur (rest l)])
-      (if (empty? (rest cur))
+    (let loop ([prev l] [cur (mcdr l)])
+      (if (empty? (mcdr cur))
           match-fail
-          (let ([v (m (first cur))])
+          (let ([v (m (mcar cur))])
             (if (eq? v match-fail)
-                (loop cur (rest cur))
+                (loop cur (mcdr cur))
                 (begin
-                  (set-rest! prev (rest cur))
+                  (set-mcdr! prev (mcdr cur))
                   (release cur)
                   v))))))
   
@@ -142,17 +142,17 @@
                        [val (sync/timeout wait-time (mailbox-sem-count mb))])
                   (if val
                       (let* ([oldhead (mailbox-head mb)]
-                             [msg (first oldhead)]
+                             [msg (mcar oldhead)]
                              [val (begin
-                                    (set-mailbox-head! mb (rest oldhead))
+                                    (set-mailbox-head! mb (mcdr oldhead))
                                     (release oldhead)
                                     (semaphore-post (mailbox-sem-space mb))
                                     (matcher msg))])
                         (if (eq? val match-fail)
-                            (let ([new-last (mcons empty empty)]
+                            (let ([new-last (Mcons empty empty)]
                                   [old-last (mailbox-old-last mb)])
-                              (set-first! old-last msg)
-                              (set-rest! old-last new-last)
+                              (set-mcar! old-last msg)
+                              (set-mcdr! old-last new-last)
                               (set-mailbox-old-last! mb new-last)
                               (loop))
                             (val)))
@@ -204,9 +204,9 @@
       [(_ name expr ...) (spawn/name-help (lambda () expr ...) name)]))
   
   (define (new-mailbox)
-    (let* ([sentinel (mcons empty empty)]
-           [old-sentinel (mcons empty empty)]
-           [old-head (mcons empty old-sentinel)])
+    (let* ([sentinel (Mcons empty empty)]
+           [old-sentinel (Mcons empty empty)]
+           [old-head (Mcons empty old-sentinel)])
       (make-mailbox old-head
                     old-sentinel
                     sentinel
@@ -274,7 +274,7 @@
                  (hash-table-remove! in-ports val)
                  (loop (mk-wait-set))])]
              [else ; val was the mailbox semaphore
-              (match (first (mailbox-head forward-mailbox))
+              (match (mcar (mailbox-head forward-mailbox))
                 ;['quit (void)]
                 [(#('tid ip:port lid) msg)
                  (let inner ([out-p (hash-table-get
@@ -292,7 +292,7 @@
                                           (set! wait-set (mk-wait-set))
                                           (inner res)))])
                        (write (list lid msg) out-p))))
-                 (set-mailbox-head! forward-mailbox (rest (mailbox-head forward-mailbox)))
+                 (set-mailbox-head! forward-mailbox (mcdr (mailbox-head forward-mailbox)))
                  (semaphore-post (mailbox-sem-space forward-mailbox))
                  (loop wait-set)])]))))))
   
@@ -317,10 +317,10 @@
     (with-semaphore
      (mailbox-lock-enqueue mbox)
      (lambda ()
-       (let ([newtail (mcons empty empty)]
+       (let ([newtail (Mcons empty empty)]
              [oldtail (mailbox-tail mbox)])
-         (set-first! oldtail msg)
-         (set-rest! oldtail newtail)
+         (set-mcar! oldtail msg)
+         (set-mcdr! oldtail newtail)
          (set-mailbox-tail! mbox newtail)
          (semaphore-wait (mailbox-sem-space mbox))
          (semaphore-post (mailbox-sem-count mbox))))))
@@ -339,10 +339,10 @@
   (define (!! msg)
     (let ([mb (hash-table-get mailboxes (tid-lid (self)) (lambda () false))])
       (if mb
-          (let ([new-last (mcons empty empty)]
+          (let ([new-last (Mcons empty empty)]
                 [old-last (mailbox-old-last mb)])
-            (set-first! old-last msg)
-            (set-rest! old-last new-last)
+            (set-mcar! old-last msg)
+            (set-mcdr! old-last new-last)
             (set-mailbox-old-last! mb new-last)))))
   
   (define (mybox)

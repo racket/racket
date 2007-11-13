@@ -317,10 +317,15 @@
                                       (zero? (list-ref desc 4))
                                       (zero? (list-ref desc 5)))
                              (let ([bi (bitmapinfo icon)])
-                               (set-car! (list-tail desc 4)
-                                         (list-ref bi 3))
-                               (set-car! (list-tail desc 5)
-                                         (list-ref bi 4))))))
+                               (set-icon-desc! icon
+					       (list*
+                                                (list-ref desc 0)
+                                                (list-ref desc 1)
+                                                (list-ref desc 2)
+                                                (list-ref desc 3)
+                                                (list-ref bi 3)
+                                                (list-ref bi 4)
+                                                (list-tail desc 6)))))))
 		       icons)
 	     icons)))
        (lambda ()
@@ -357,7 +362,7 @@
 		(lambda (n read-one combine)
 		  (let loop ([i n][r null])
 		    (if (= i 0)
-			(reverse! r)
+			(reverse r)
 			(loop (sub1 i)
 			      (combine (read-one p) r)))))]
 	       [read-lines 

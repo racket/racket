@@ -1,15 +1,15 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "binding"]{Identifiers and Binding}
 
 The context of an expression determines the meaning of identifiers
 that appear in the expression. In particular, starting a module with
-the language @schememodname[big], as in
+the language @schememodname[scheme], as in
 
-@schememod[big]
+@schememod[scheme]
 
 means that, within the module, the identifiers described in this guide
 start with the meaning described here: @scheme[cons] refers to the
@@ -29,7 +29,7 @@ bindings in effect for a given expression is the expression's
 For example, in
 
 @schememod[
-big
+scheme
 
 (define f
   (lambda (x)
@@ -46,12 +46,12 @@ module; the scope of the @scheme[x] binding is @scheme[(let ([y 5]) (+
 x y))]; and the scope of the @scheme[y] binding is just @scheme[(+ x
 y)]. The environment of @scheme[(+ x y)] includes bindings for
 @scheme[y], @scheme[x], and @scheme[f], as well as everything in
-@schememodname[big].
+@schememodname[scheme].
 
 A module-level @scheme[define] can bind only identifiers that are not
 already bound within the module. For example, @scheme[(define cons 1)]
-is a syntax error in a @schememodname[big] module, since @scheme[cons]
-is provided by @schememodname[big]. A local @scheme[define] or other
+is a syntax error in a @schememodname[scheme] module, since @scheme[cons]
+is provided by @schememodname[scheme]. A local @scheme[define] or other
 binding forms, however, can give a new local binding for an identifier
 that already has a binding; such a binding @defterm{shadows} the
 existing binding.

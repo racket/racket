@@ -1,4 +1,4 @@
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "Web Server")  
   ; Name clash
   #;(define scribblings '(("docs/reference/reference.scrbl" (multi-page main-doc))))

@@ -1,8 +1,10 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
-@require[(lib "class.ss")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
+@require[scheme/class]
 @require["guide-utils.ss"]
+
+@; FIXME: at some point, discuss classes vs. units vs. modules
 
 @title[#:tag "classes"]{Classes and Objects}
 
@@ -89,7 +91,7 @@ and they can be interleaved with method declarations. The relative
 order of expressions in the class determines the order of evaluation
 during instantiation. For example, if a field's initial value requires
 calling a method that works only after superclass initialization, then
-the field declaration is placed after the @scheme[super-new]
+the field declaration must be placed after the @scheme[super-new]
 call. Ordering field and initialization declarations in this way helps
 avoid imperative assignment. The relative order of method declarations
 makes no difference for evaluation, because methods are fully defined
@@ -243,7 +245,7 @@ first identifier of a bracketed pair in @scheme[new] or
 @scheme[super-new], @scheme[size] is an @defterm{external name} that
 is symbolically matched to an initialization argument in a class. When
 @scheme[size] appears as an expression within
-@scheme[default-10-fish%], @scheme[size] is an \defterm{internal name}
+@scheme[default-10-fish%], @scheme[size] is an @defterm{internal name}
 that is lexically scoped. Similarly, a call to an inherited
 @scheme[eat] method uses @scheme[eat] as an internal name, whereas a
 @scheme[send] of @scheme[eat] uses @scheme[eat] as an external name.
@@ -307,7 +309,7 @@ method.  A final method is declared using @scheme[public-final] or
 new method or an overriding implementation.
 
 Between the extremes of allowing arbitrary overriding and disallowing
-overriding entirely, the {class} system also supports Beta-style
+overriding entirely, the class system also supports Beta-style
 @defterm{augmentable} methods~\cite{beta}. A method
 declared with @scheme[pubment] is like @scheme[public], but the method
 cannot be overridden in subclasses; it can be augmented only. A
@@ -387,14 +389,14 @@ cooperating classes:
 External names are in a namespace that separates them from other Scheme
 names. This separate namespace is implicitly used for the method name in
 @scheme[send], for initialization-argument names in @scheme[new], or for
-the external name in a member definition.  The special
+the external name in a member definition.  The special form
 @scheme[member-name-key] provides access to the binding of an external name
-in an arbitrary expression position: @scheme[(member-name-key id)] form
+in an arbitrary expression position: @scheme[(member-name-key id)]
 produces the member-key binding of @scheme[id] in the current scope.
 
-A member-key value is primarily used on with a
+A member-key value is primarily used with a
 @scheme[define-member-name] form. Normally, then,
 @scheme[(member-name-key id)] captures the method key of @scheme[id]
 so that it can be communicated to a use of @scheme[define-member-name]
 in a different scope. This capability turns out to be useful for
-generalizing mixins (see \SecRef{sec:parammixins}).
+generalizing mixins (see mixins...).

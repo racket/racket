@@ -2554,7 +2554,7 @@
     (kern:kernel-syntax-case
      term #f
      ; lambda and case-lambda are currently both core forms. This might change (dixit Matthew)
-     [(lambda args exps ...)
+     [(#%plain-lambda args exps ...)
       (let (; scheme lists of syntax object lists of syntax objects
             [argss (list (syntax args))]
             [expss (list (syntax (exps ...)))])
@@ -2564,7 +2564,7 @@
             [argss (syntax-e (syntax (args ...)))]
             [expss (syntax-e (syntax ((exps ...) ...)))])
         (create-case-lambda-label sba-state argss expss term gamma))]
-     [(#%app op actual-args ...)
+     [(#%plain-app op actual-args ...)
       (let* ([app-label (create-simple-label sba-state term)]
              [op-term (syntax op)]
              [op-label (create-label-from-term sba-state op-term gamma enclosing-lambda-label)]
@@ -2607,16 +2607,6 @@
                           )))
             (add-edge-and-propagate-set-through-edge op-label edge))
         app-label)]
-     [(#%datum . datum)
-      (let ([label (make-label-cst
-                    #f #f #f #f #f
-                    term
-                    (make-hash-table)
-                    (make-hash-table)
-                    (syntax-object->datum (syntax datum)))])
-        (initialize-label-set-for-value-source label)
-        ((sba-state-register-label-with-gui sba-state) label)
-        label)]
      [(quote sexp)
       (create-label-from-quote (sba-state-register-label-with-gui sba-state)
                                (syntax sexp) (assoc-set-make 'equal))]

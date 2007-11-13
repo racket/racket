@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @define[(UCat x) x]
@@ -137,6 +137,8 @@ otherwise.
 @; ----------------------------------------
 @section{Classifications}
 
+@declare-exporting[(lib "scheme/char")]
+
 @defproc[(char-alphabetic? [char char?]) boolean?]{
 
 Returns @scheme[#t] if @scheme[char]'s Unicode general category is
@@ -238,6 +240,8 @@ Unicode.}
 
 @; ----------------------------------------
 @section{Character Conversions}
+
+@declare-exporting[(lib "scheme/char")]
 
 @defproc[(char-upcase [char char?]) char?]{
 

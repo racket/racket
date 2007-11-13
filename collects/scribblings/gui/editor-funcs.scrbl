@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["common.ss"]
-@require[(lib "bnf.ss" "scribble")]
+@require[scribble/bnf]
 
 @title{Editor Functions}
 

@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "define-struct"]{Defining Structure Types: @scheme[define-struct]}
+
+@declare-exporting[(lib "scheme/define-struct")]
 
 @guideintro["define-struct"]{@scheme[define-struct]}
 
@@ -11,7 +13,7 @@
                                (id super-id)]
                [field field-id
                       [field-id field-option ...]]
-               [struct-option #:immutable
+               [struct-option #:mutable
                               (code:line #:super super-expr)
                               (code:line #:inspector inspector-expr)
                               (code:line #:auto-value auto-expr)
@@ -19,7 +21,7 @@
                               (code:line #:property prop-expr val-exr)
                               #:omit-define-syntaxes
                               #:omit-define-values]
-               [field-option #:immutable
+               [field-option #:mutable
                              #:auto])]{
 
 Creates a new @techlink{structure type}, and binds transformers and
@@ -51,9 +53,9 @@ up to @math{4+2n} names:
        for the corresponding field.}
 
  @item{@schemeidfont{set-}@scheme[id]@schemeidfont{-}@scheme[field-id]@schemeidfont{!},
-       for each @scheme[field] that does not include a
-       @scheme[#:immutable] option, and only when the
-       @scheme[#:immutable] option is not specified as a
+       for each @scheme[field] that includes a
+       @scheme[#:mutable] option, or when the
+       @scheme[#:mutable] option is specified as a
        @scheme[struct-option]; a @deftech{mutator} procedure that
        takes an instance of the @tech{structure type} and a new field
        value. The structure is destructively updated with the new
@@ -77,11 +79,11 @@ must produce a @tech{structure type descriptor}. See
 and supertypes. If both @scheme[super-id] and @scheme[#:super] are
 provided, a syntax error is reported.
 
-If the @scheme[#:immutable] option is specified for an individual
-field, then the field cannot be mutated in instances of the structure
-type, and no @tech{mutator} procedure is bound. Supplying
-@scheme[#:immutable] as a @scheme[struct-option] is the same as
-supplying it for all @scheme[field]s. If @scheme[#:immutable] is
+If the @scheme[#:mutable] option is specified for an individual
+field, then the field can be mutated in instances of the structure
+type, and a @tech{mutator} procedure is bound. Supplying
+@scheme[#:mutable] as a @scheme[struct-option] is the same as
+supplying it for all @scheme[field]s. If @scheme[#:mutable] is
 specified as both a @scheme[field-option] and @scheme[struct-option],
 a syntax error is reported.
 
@@ -123,7 +125,7 @@ error is reported. If any @scheme[field-option] or
 ]
 
 @defs+int[
-[(define-struct (color-posn posn) (hue))
+[(define-struct (color-posn posn) (hue) #:mutable)
  (define cp (make-color-posn 1 2 "blue"))]
 (color-posn-hue cp)
 cp
@@ -138,7 +140,7 @@ This form can only appear as an expression within a
 @scheme[prop:procedure]. The result of
 
 @defexamples[
-(define-struct mood-procedure ([base #:immutable] rating)
+(define-struct mood-procedure ([base] rating)
                #:property prop:procedure (struct-field-index base))
 (define happy+ (make-mood-procedure add1 10))
 (happy+ 2)

@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["common.ss"]
-@require[(lib "struct.ss" "scribble")]
+@require[scribble/struct]
 
 @define[(atable . l)
                (make-table #f (map (lambda (i)
@@ -31,7 +31,7 @@ Plays a sound file. If @scheme[async?] is false, the function does not
  The result is @scheme[#t] if the sound plays successfully, @scheme[#f]
  otherwise.
 
-Under Windows, only @file{.wav} files are supported.
+Under Windows, only @filepath{.wav} files are supported.
 
 Under X, the function invokes an external sound-playing program;
   looking for a few known programs (@exec{aplay}, @exec{play},
@@ -142,11 +142,11 @@ Gets a resource value from the resource database. The resource value
 If @scheme[file] is @scheme[#f], platform-specific resource files
  are read, as determined by @scheme[find-graphical-system-path]
  with @indexed-scheme['setup-file]. (Under X, when @scheme[file] is
- @scheme[#f], the user's @file{.Xdefaults} file is also read, or the
- file specified by the @file{XENVIRONMENT} environment variable.)
+ @scheme[#f], the user's @filepath{.Xdefaults} file is also read, or the
+ file specified by the @filepath{XENVIRONMENT} environment variable.)
 
 The format of a resource entry depends on the platform. Windows
- resources use the standard @file{.ini} format. X and Mac OS X
+ resources use the standard @filepath{.ini} format. X and Mac OS X
  resources use the standard X resource format, where each entry
  consists of a @scheme[section].@scheme[entry] resource name, a colon, and
  the resource value, terminated by a newline.  Section and entry names are
@@ -429,16 +429,16 @@ If the AppleEvent reply contains a value that cannot be
 
 Like @scheme[make-namespace], but the @scheme[(lib "mred.ss"
  "mred")] module of the current namespace is attached. In addition, by
- default, the namespace is initialized by importing the @file{mred.ss}
+ default, the namespace is initialized by importing the @filepath{mred.ss}
  module and MzLib's @indexed-file{class.ss} module into the
  namespace's top-level environment.
 
 
 The @scheme['initial] and @scheme['empty] flags control the namespace
  creation in the same way as for @scheme[make-namespace], except that
- the @file{mred.ss} module is attached to the created namespace (along
+ the @filepath{mred.ss} module is attached to the created namespace (along
  with the transitive closure of its imports). The @scheme['mred] flag
- is like @scheme['initial], but also imports the @file{mred.ss} module
+ is like @scheme['initial], but also imports the @filepath{mred.ss} module
  and MzLib's @indexed-file{class.ss} module into the namespace's
  top-level environment.
 

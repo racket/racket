@@ -1,13 +1,13 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "hash-tables"]{Hash Tables}
 
-A @defterm{hash table} implements a maping from keys to values, where
-both keys can values can be arbitrary Scheme values, and access and
-update to the tabel are normally constant-time operations. Keys are
+A @defterm{hash table} implements a mapping from keys to values, where
+both keys and values can be arbitrary Scheme values, and access and
+update to the table are normally constant-time operations. Keys are
 compared using @scheme[equal?] or @scheme[eq?], depending on whether
 the hash table is created with the @scheme['equal] flag.
 

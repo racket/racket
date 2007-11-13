@@ -1,10 +1,10 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
 @require["utils.ss"]
 
 @title[#:tag "eval"]{Evaluation and Examples}
 
-The @file{eval.ss} library provides utilities for evaluating code at
+The @filepath{eval.ss} library provides utilities for evaluating code at
 document-build time and incorporating the results in the document,
 especially to show example uses of defined procedures and syntax.
 

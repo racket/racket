@@ -15,7 +15,7 @@
       (if (and stamp-collection
                (file-exists? (build-path stamp-collection "stamp.ss")))
           (format "~a-svn~a" mz-version
-                  (dynamic-require '(lib "stamp.ss" "repos-time-stamp") 'stamp))
+                  (dynamic-require '(lib "repos-time-stamp/stamp.ss") 'stamp))
           mz-version)))
 
   (define home-page

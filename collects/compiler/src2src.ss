@@ -1416,7 +1416,7 @@
                       (let loop ([l l][etb et-body][accum null])
                         (cond
                           [(null? etb)
-                           (values (reverse! accum) l)]
+                           (values (reverse accum) l)]
                           [else (loop (cdr l) (cdr etb) (cons (car l)
                                                               accum))]))])
           (set! body body)
@@ -1516,7 +1516,7 @@
                                null
                                (let loop2 ([bindings (car bindingss)][vars vars][accum null])
                                  (if (null? bindings)
-                                     (cons (reverse! accum)
+                                     (cons (reverse accum)
                                            (loop (cdr bindingss) vars))
                                      (loop2 (cdr bindings) (cdr vars) (cons (car vars) accum))))))]
                   [bindings (apply append bindingss)])
@@ -1676,9 +1676,6 @@
 	[(#%top . id)
 	 (make-object global% trans? tables #t (syntax id))]
 	
-	[(#%datum . val)
-	 (make-object constant% (syntax-object->datum (syntax val)) stx)]
-
 	[(#%variable-reference . val)
 	 (make-object constant% (#%variable-reference dummy) stx)]
 
@@ -1721,7 +1718,7 @@
 	[(quote-syntax expr)
 	 (make-object constant% (syntax expr) stx)]
 
-	[(lambda args . body)
+	[(#%plain-lambda args . body)
 	 (let-values ([(env args norm?) (parse-args env (syntax args))])
 	   (make-object lambda%
              (list args)
@@ -1769,7 +1766,7 @@
            (parse (syntax test) env trans? in-module? tables)
            (parse (syntax then) env trans? in-module? tables)
            (if (null? (syntax-e (syntax else)))
-               (parse (quote-syntax (#%app void)) env trans? in-module? tables)
+               (parse (quote-syntax (#%plain-app void)) env trans? in-module? tables)
                (parse (car (syntax-e (syntax else))) env trans? in-module? tables))
            stx)]
 	
@@ -1780,10 +1777,10 @@
            (parse (syntax body) env trans? in-module? tables)
            stx)]
 	
-	[(#%app)
+	[(#%plain-app)
 	 (make-object constant% null stx)]
 	
-	[(#%app func . args)
+	[(#%plain-app func . args)
 	 (make-object app% 
            (parse (syntax func) env trans? in-module? tables)
            (map (lambda (v) (parse v env trans? in-module? tables)) (syntax->list (syntax args)))
@@ -1817,10 +1814,8 @@
                [(m n ir mb) #'mb])
              stx))]
         
-	[(require . i) (make-object require/provide% stx)]
-	[(require-for-syntax . i) (make-object require/provide% stx)]
-	[(require-for-template . i) (make-object require/provide% stx)]
-	[(provide i ...) (make-object require/provide% stx)]
+	[(#%require . i) (make-object require/provide% stx)]
+	[(#%provide i ...) (make-object require/provide% stx)]
 
 	[else (error 'parse "unknown expression: ~a" (syntax-object->datum stx))])))
 

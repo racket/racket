@@ -1,11 +1,12 @@
-(module lifting mzscheme
+(module lifting scheme/base
   (require (lib "etc.ss")
            (lib "contract.ss")
-           (prefix kernel: (lib "kerncase.ss" "syntax"))
+           (prefix-in kernel: (lib "kerncase.ss" "syntax"))
            (lib "match.ss")
            "testing-shared.ss"
            "shared.ss"
-           "my-macros.ss")
+           "my-macros.ss"
+           (for-syntax scheme/base))
 
   (define-struct context-record (stx index kind))
   
@@ -66,7 +67,7 @@
            
            (define (module-level-expr-iterator stx context-so-far)
              (kernel:kernel-syntax-case stx #f
-               [(provide . provide-specs)
+               [(#%provide . provide-specs)
                 (void)]
                [else-stx
                 (general-top-level-expr-iterator stx context-so-far)]))
@@ -83,9 +84,7 @@
                  #;[(begin . top-level-exprs)
                   (try 1 (map (lambda (expr) `(,top-level-expr-iterator ,expr))
                               (syntax->list #'exprs)))]
-                 [(require . require-specs)
-                  (void)]
-                 [(require-for-syntax . require-specs)
+                 [(#%require . require-specs)
                   (void)]
                  [else
                   (expr-iterator stx context-so-far)])))
@@ -107,20 +106,18 @@
                          [else
                           (error 'expr-syntax-object-iterator 
                                  "unexpected let(rec) expression: ~a"
-                                 (syntax-object->datum stx))]))]) 
+                                 (syntax->datum stx))]))]) 
                (kernel:kernel-syntax-case stx #f
                  [var-stx
                   (identifier? (syntax var-stx))
                   (void)]
-                 [(lambda vars . bodies)
+                 [(#%plain-lambda vars . bodies)
                   (try-exprs-offset 2 #'bodies)]
                  [(case-lambda (vars . bodies) ...)
                   (let loop ([count 1] [clauses (syntax->list #'(bodies ...))])
                     (unless (null? clauses)
                       (try-exprs (lambda (index) (list count (+ index 1))) (cdar clauses))
                       (loop (+ count 1) (cdr clauses))))]
-                 [(if test then)
-                  (try-exprs-offset 1 #'(test then))]
                  [(if test then else)
                   (try-exprs-offset 1 #'(test then else))]
                  [(begin . bodies)
@@ -139,18 +136,16 @@
                   (void)]
                  [(with-continuation-mark key mark body)
                   (try-exprs-offset 1 #'(key mark body))]
-                 [(#%app . exprs)
+                 [(#%plain-app . exprs)
                   (try-exprs-offset 1 #'exprs)]
-                 [(#%datum . _)
-                  (void)]
                  [(#%top . var)
                   (void)]
                  [else
                   (error 'expr-iterator "unknown expr: ~a" 
-                         (syntax-object->datum stx))]))))
+                         (syntax->datum stx))]))))
         
         (begin (top-level-expr-iterator stx null)
-               (error 'find-highlight "couldn't find highlight-placeholder in expression: ~v" (syntax-object->datum stx))))))
+               (error 'find-highlight "couldn't find highlight-placeholder in expression: ~v" (syntax->datum stx))))))
 
   ; TESTING:
   
@@ -162,7 +157,7 @@
        ]))
   
   (define (datum-ize-context-record cr)
-     (list (syntax-object->datum (context-record-stx cr))
+     (list (syntax->datum (context-record-stx cr))
                           (context-record-index cr)
                           (context-record-kind cr)))
   
@@ -181,9 +176,9 @@
 
    (define expected (list (list `(#%app a x) '(1) 'expr)
                           (list `(lambda (x) (#%app a x)) '(2) 'expr)
-                          (list `(letrec-values ([(a) (lambda (x) (#%app b (#%app (#%top . -) x (#%datum . 1))))] [(b) (lambda (x) (#%app a x))]) (#%app a x)) '(1 1 1) 'expr)
-                          (list `(lambda (x) (letrec-values ([(a) (lambda (x) (#%app b (#%app (#%top . -) x (#%datum . 1))))] [(b) (lambda (x) (#%app a x))]) (#%app a x))) '(2) 'expr)                 
-                          (list `(define-values (f) (lambda (x) (letrec-values ([(a) (lambda (x) (#%app b (#%app (#%top . -) x (#%datum . 1))))] [(b) (lambda (x) (#%app a x))]) (#%app a x)))) '(2)
+                          (list `(letrec-values ([(a) (lambda (x) (#%app b (#%app (#%top . -) x (quote 1))))] [(b) (lambda (x) (#%app a x))]) (#%app a x)) '(1 1 1) 'expr)
+                          (list `(lambda (x) (letrec-values ([(a) (lambda (x) (#%app b (#%app (#%top . -) x (quote 1))))] [(b) (lambda (x) (#%app a x))]) (#%app a x))) '(2) 'expr)                 
+                          (list `(define-values (f) (lambda (x) (letrec-values ([(a) (lambda (x) (#%app b (#%app (#%top . -) x (quote 1))))] [(b) (lambda (x) (#%app a x))]) (#%app a x)))) '(2)
                                                'general-top-level)))
    
    (let*-2vals ([(context-records highlight) (find-highlight test-datum)])
@@ -207,8 +202,8 @@
         (let* ([opened (syntax->list src)]
                [n (car path)])
           (when (>= n (length opened))
-            (error 'substitute-in-syntax "given an n (~v) which is larger than the length of the source sytax ~v" n (syntax-object->datum src)))
-          (datum->syntax-object
+            (error 'substitute-in-syntax "given an n (~v) which is larger than the length of the source sytax ~v" n (syntax->datum src)))
+          (datum->syntax
            src
            (let loop ([n n] [left opened])
             (if (= n 0) 
@@ -228,7 +223,7 @@
    
    (local
        ((define expected '(let-values ([(a) (lambda (x) 'bar)]) (a)))
-        (define actual (syntax-object->datum (substitute-in-syntax #'(let-values ([(a) (lambda (x) 'foo)]) (a)) '(1 0 1 2 1) #'bar))))
+        (define actual (syntax->datum (substitute-in-syntax #'(let-values ([(a) (lambda (x) 'foo)]) (a)) '(1 0 1 2 1) #'bar))))
      (printf "equal? ~v\n" (equal? expected actual))))
   
   
@@ -277,7 +272,7 @@
                           (lambda (n)
                             (values (append (sublist 0 n defns) so-far-defs (sublist n (length defns) defns))
                                     body))]))]
-                [else (error 'lift-helper "let or letrec does not have expected shape: ~v\n" (syntax-object->datum stx))]))])
+                [else (error 'lift-helper "let or letrec does not have expected shape: ~v\n" (syntax->datum stx))]))])
     (kernel:kernel-syntax-case stx #f
       [(let-values . dc)
        (not (eq? (stepper-syntax-property stx 'stepper-hint) 'comes-from-or))

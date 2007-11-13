@@ -291,9 +291,9 @@ ARFLAGS= @ARFLAGS@
 RANLIB= @RANLIB@
 
 
-OBJS= alloc.@LTO@ reclaim.@LTO@ allchblk.@LTO@ misc.@LTO@ mach_dep.@LTO@ os_dep.@LTO@ mark_rts.@LTO@ headers.@LTO@ mark.@LTO@ obj_map.@LTO@ blacklst.@LTO@ finalize.@LTO@ new_hblk.@LTO@ dbg_mlc.@LTO@ malloc.@LTO@ stubborn.@LTO@ checksums.@LTO@ solaris_threads.@LTO@ pthread_support.@LTO@ pthread_stop_world.@LTO@ darwin_stop_world.@LTO@ typd_mlc.@LTO@ ptr_chck.@LTO@ mallocx.@LTO@ solaris_pthreads.@LTO@ gcj_mlc.@LTO@ specific.@LTO@ gc_dlopen.@LTO@ backgraph.@LTO@ win32_threads.@LTO@
+OBJS= alloc.@LTO@ reclaim.@LTO@ allchblk.@LTO@ misc.@LTO@ mach_dep.@LTO@ mach_dep1.@LTO@ os_dep.@LTO@ mark_rts.@LTO@ headers.@LTO@ mark.@LTO@ obj_map.@LTO@ blacklst.@LTO@ finalize.@LTO@ new_hblk.@LTO@ dbg_mlc.@LTO@ malloc.@LTO@ stubborn.@LTO@ checksums.@LTO@ solaris_threads.@LTO@ pthread_support.@LTO@ pthread_stop_world.@LTO@ darwin_stop_world.@LTO@ typd_mlc.@LTO@ ptr_chck.@LTO@ mallocx.@LTO@ solaris_pthreads.@LTO@ gcj_mlc.@LTO@ specific.@LTO@ gc_dlopen.@LTO@ backgraph.@LTO@ win32_threads.@LTO@
 
-CSRCS= reclaim.c allchblk.c misc.c alloc.c mach_dep.c os_dep.c mark_rts.c headers.c mark.c obj_map.c pcr_interface.c blacklst.c finalize.c new_hblk.c real_malloc.c dyn_load.c dbg_mlc.c malloc.c stubborn.c checksums.c solaris_threads.c pthread_support.c pthread_stop_world.c darwin_stop_world.c typd_mlc.c ptr_chck.c mallocx.c solaris_pthreads.c gcj_mlc.c specific.c gc_dlopen.c backgraph.c win32_threads.c
+CSRCS= reclaim.c allchblk.c misc.c alloc.c mach_dep.c mach_dep1.c os_dep.c mark_rts.c headers.c mark.c obj_map.c pcr_interface.c blacklst.c finalize.c new_hblk.c real_malloc.c dyn_load.c dbg_mlc.c malloc.c stubborn.c checksums.c solaris_threads.c pthread_support.c pthread_stop_world.c darwin_stop_world.c typd_mlc.c ptr_chck.c mallocx.c solaris_pthreads.c gcj_mlc.c specific.c gc_dlopen.c backgraph.c win32_threads.c
 
 CORD_SRCS=  cord/cordbscs.c cord/cordxtra.c cord/cordprnt.c cord/de.c cord/cordtest.c include/cord.h include/ec.h include/private/cord_pos.h cord/de_win.c cord/de_win.h cord/de_cmds.h cord/de_win.ICO cord/de_win.RC
 
@@ -518,10 +518,15 @@ mach_dep.@LTO@: $(srcdir)/mach_dep.c $(srcdir)/mips_sgi_mach_dep.s \
 	./if_mach SPARC SUNOS4 $(AS) -o mach_dep.@LTO@ $(srcdir)/sparc_sunos4_mach_dep.s
 	./if_mach SPARC OPENBSD $(AS) -o mach_dep.@LTO@ $(srcdir)/sparc_sunos4_mach_dep.s
 	./if_mach SPARC NETBSD $(AS) -o mach_dep.@LTO@ $(srcdir)/sparc_netbsd_mach_dep.s
-	./if_mach IA64 "" as $(AS_ABI_FLAG) -o ia64_save_regs_in_stack.@LTO@ $(srcdir)/ia64_save_regs_in_stack.s
-	./if_mach IA64 "" $(CC) -c -o mach_dep1.@LTO@ $(SPECIALCFLAGS) $(srcdir)/mach_dep.c
-	./if_mach IA64 "" ld -r -o mach_dep.@LTO@ mach_dep1.@LTO@ ia64_save_regs_in_stack.@LTO@
 	./if_not_there mach_dep.@LTO@ $(CC) -c $(SPECIALCFLAGS) $(srcdir)/mach_dep.c
+
+# PLTSCHEME: separate mach_dep1 target avoids use of `ld' (which doesn't work well
+#            in shared-lib mode) to create mach_dep for IA64
+
+mach_dep1.@LTO@: $(srcdir)/mach_dep1.c $(srcdir)/ia64_save_regs_in_stack.s $(UTILS)
+	rm -f mach_dep1.@LTO@
+	./if_mach IA64 "" $(AS) -o mach_dep1.@LTO@ $(srcdir)/ia64_save_regs_in_stack.s
+	./if_not_there mach_dep1.@LTO@ $(CC) -c $(SPECIALCFLAGS) $(srcdir)/mach_dep1.c
 
 mark_rts.@LTO@: $(srcdir)/mark_rts.c $(UTILS)
 	rm -f mark_rts.@LTO@

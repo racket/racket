@@ -6,17 +6,11 @@
   (define (reload-module modspec path)
     ;; the path argument is not needed (could use resolve-module-path here),
     ;; but its always known when this function is called
-    (let* ([name ((current-module-name-resolver) modspec #f #f)]
-           [name (symbol->string name)]
-           [name (if (eq? #\, (string-ref name 0))
-                   (substring name 1)
-                   (error 'reload-module
-                          "unexpected module name for ~e: ~e" modspec name))]
-           [prefix (let-values ([(base name dir?) (split-path name)])
-                     (string->symbol (format ",~a" base)))])
+    (let* ([name ((current-module-name-resolver) modspec #f #f)])
       (log-line "(re)loading module from ~a" modspec)
-      (parameterize ([current-module-name-prefix prefix]
+      (parameterize ([current-module-declare-name name]
                      [compile-enforce-module-constants #f])
+        (namespace-require '(only mzscheme module #%top-interaction))
         (load/use-compiled path))))
 
   ;; pulls out a value from a module, reloading the module if its source file

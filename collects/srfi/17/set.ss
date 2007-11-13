@@ -32,14 +32,18 @@
 	  (error (object-name proc) "No setter found"))))
 
   (define (set-setter! proc setter)
-    (let ((probe (assv proc setters)))
-      (if probe
-	  (set-cdr! probe setter)
-	  (set! setters
-		(cons (cons proc setter)
-		      setters)))
-      (void)))
+    (set! setters
+          (let loop ([setters setters])
+            (cond
+             [(null? setters)
+              (list (cons proc setter))]
+             [(eqv? proc (caar setters))
+              (cons (cons proc setter)
+                    (cdr setters))]
+             [else (cons (car setters)
+                         (loop (cdr setters)))]))))
 
+#|
   (define (car-setter proc)
     (lambda (p v)
       (set-car! (proc p) v)))
@@ -47,11 +51,13 @@
   (define (cdr-setter proc)
     (lambda (p v)
       (set-cdr! (proc p) v)))
+|#
 
   (define setters
     (list (cons setter     set-setter!)
 	  (cons vector-ref vector-set!)
 	  (cons string-ref string-set!)
+#|
 	  (cons car        set-car!)
 	  (cons cdr        set-cdr!)
 
@@ -84,5 +90,7 @@
 	  (cons caaddr (car-setter caddr))
 	  (cons cdaddr (cdr-setter caddr))
 	  (cons cadddr (car-setter cdddr))
-	  (cons cddddr (cdr-setter cdddr))))
+	  (cons cddddr (cdr-setter cdddr))
+|#
+          ))
   )

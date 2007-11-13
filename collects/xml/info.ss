@@ -1,4 +1,4 @@
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "XML")
   (define doc.txt "doc.txt")
   ;; the XML tool has been moved to the stepper collection, so that 

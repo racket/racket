@@ -1,8 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
 @require["mz.ss"]
 
 @title{Byte and String Input}
+
+@declare-exporting[(lib "scheme/io")]
 
 @defproc[(read-char [in input-port? (current-input-port)]) 
          (or/c character? eof-object?)]{

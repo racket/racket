@@ -1,8 +1,8 @@
-(module frtime-big (lib "frtime.ss" "frtime")
+(module frtime-big "frtime.ss"
   
   (require (frlibs "list.ss" "etc.ss" "math.ss" "date.ss"))
   
-  (provide (all-from (lib "frtime.ss" "frtime"))
+  (provide (all-from "frtime.ss")
            (all-from (lib "list.ss" "frtime"))
            (all-from (lib "etc.ss" "frtime"))
            (all-from (lib "math.ss" "frtime"))

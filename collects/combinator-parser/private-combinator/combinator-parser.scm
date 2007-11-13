@@ -1,4 +1,4 @@
-(module combinator-parser (lib "lazy.ss" "lazy")
+(module combinator-parser lazy
 
   (require (lib "unit.ss")
            (lib "lex.ss" "parser-tools"))

@@ -597,7 +597,7 @@ an appropriate subdirectory.
                        (current-time))
                ;; oh man is this a bad hack!
                (parameterize ((current-namespace (make-namespace)))
-                 (let ([ipp (dynamic-require '(lib "plt-single-installer.ss" "setup") 'install-planet-package)])
+                 (let ([ipp (dynamic-require '(lib "setup/plt-single-installer.ss") 'install-planet-package)])
                    (ipp path the-dir (list owner (pkg-spec-name pkg) extra-path maj min))))))
             (make-pkg (pkg-spec-name pkg) (pkg-spec-path pkg) maj min the-dir 'normal)))))
   

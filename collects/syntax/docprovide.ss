@@ -1,6 +1,7 @@
 
-(module docprovide mzscheme
-  (require-for-syntax "private/doctable.ss")
+(module docprovide scheme/base
+  (require (for-syntax scheme/base
+                       "private/doctable.ss"))
 
   (define-syntaxes (provide-and-document provide-and-document/wrap)
     (let ()
@@ -48,12 +49,12 @@
 		 stx
 		 label))
 	(when wrap
-	      (unless (identifier? wrap)
-		      (raise-syntax-error
-		       'provide-and-document
-		       "wrap is not an identifier"
-		       stx
-		       wrap)))
+          (unless (identifier? wrap)
+            (raise-syntax-error
+             'provide-and-document
+             "wrap is not an identifier"
+             stx
+             wrap)))
 	(let ([rows (map (lambda (row)
 			   ;; Helper:
 			   (define (get-existing tag path label exceptions)
@@ -83,7 +84,7 @@
 			       (dynamic-require mod (void))
 			       ;; Extract documentation via top-level:
 			       (let ([docs ((dynamic-require-for-syntax 
-					     '(lib "doctable.ss" "syntax" "private") 
+					     'syntax/private/doctable
 					     'lookup-documentation)
 					    mod
 					    (syntax-e label))])
@@ -113,18 +114,18 @@
 									     (syntax->list (syntax (doc-string ...)))))
 								'ok]))
 						(syntax->list (syntax (proc ...))))
-					   (add-prefix #f (list (syntax-object->datum row))))]
+					   (add-prefix #f (list (syntax->datum row))))]
 					[(all-from tag path label)
 					 (eq? 'all-from (syntax-e (syntax all-from)))
 					 (let ([tag (syntax tag)]
 					       [label (syntax label)]
-					       [path (syntax-object->datum (syntax path))])
+					       [path (syntax->datum (syntax path))])
 					   (get-existing tag path label null))]
 					[(all-from-except tag path label exception ...)
 					 (eq? 'all-from-except (syntax-e (syntax all-from-except)))
 					 (let ([tag (syntax tag)]
 					       [label (syntax label)]
-					       [path (syntax-object->datum (syntax path))]
+					       [path (syntax->datum (syntax path))]
 					       [exceptions (syntax->list (syntax (exception ...)))])
 					   (get-existing tag path label exceptions))]))
 			 rows)]
@@ -136,10 +137,10 @@
 					     (string? (syntax-e (syntax header)))
 					     null]
 					    [(all-from/-except tag path label except ...)
-					     (list (with-syntax ([pf (datum->syntax-object
+					     (list (with-syntax ([pf (datum->syntax
 								      stx
 								      (syntax-e
-								       (syntax (prefix tag path))))])
+								       (syntax (prefix-in tag path))))])
 						     (syntax (require pf))))]))
 			     rows))])
 	  ;; Collapse rows for a section name:
@@ -177,48 +178,50 @@
 				  (cond
 				   [(car proc)
 				    ;; Source prefixed:
-				    `(rename ,(string->symbol (format "~a~a" 
-								      (syntax-e (car proc))
-								      (cadr proc)))
-					     ,(cadr proc))]
+				    `(,#'rename-out [,(string->symbol (format "~a~a" 
+                                                                              (syntax-e (car proc))
+                                                                              (cadr proc)))
+                                                     ,(cadr proc)])]
 				   [(eq? (cadr proc) (cddr proc))
 				    ;; Plain
 				    (cadr proc)]
 				   [else
 				    ;; Local renamed:
-				    `(rename ,(cadr proc)
-					     ,(cddr proc))]))
+				    `(,#'rename-out [,(cadr proc)
+                                                     ,(cddr proc)])]))
 				procs)]
 		    [wrapped-name
 		     (lambda (name)
 		       (string->symbol (format "~a>>~a" 
 					       (syntax-e wrap)
 					       (if (pair? name)
-						   (cadr name)
+						   (cadadr name)
 						   name))))])
-		(with-syntax ([procs (if wrap
+		(with-syntax ([procs (datum->syntax
+                                      stx
+                                      (if wrap
 					 (map (lambda (name)
-						`(rename 
-						  ,(wrapped-name name)
-						  ,(if (pair? name)
-						       (caddr name)
-						       name)))
+						`(,#'rename-out 
+						  [,(wrapped-name name)
+                                                   ,(if (pair? name)
+                                                        (cadadr name)
+                                                        name)]))
 					      names)
-					 names)]
+					 names))]
 			      [(wrap ...) (if wrap
 					      (map (lambda (name)
-						     `(,wrap ,(datum->syntax-object
+						     `(,wrap ,(datum->syntax
 							       wrap
 							       (wrapped-name name))
-							     ,(datum->syntax-object
+							     ,(datum->syntax
 							       wrap
 							       (if (pair? name)
-								   (cadr name)
+								   (caadr name)
 								   name))))
 						   names)
 					      null)]
 			      [(import ...) imports]
-			      [src (datum->syntax-object stx 'source)]
+			      [src (datum->syntax stx 'source)]
 			      [rows (remove-prefixes rows)]
 			      [label label])
 		(syntax/loc stx
@@ -253,7 +256,7 @@
     (let ([mod ((current-module-name-resolver) path #f #f)])
       (dynamic-require mod (void))
       ((dynamic-require-for-syntax 
-	'(lib "doctable.ss" "syntax" "private")
+	'syntax/private/doctable
 	'lookup-documentation)
        mod
        label)))
@@ -261,5 +264,3 @@
   (provide provide-and-document
 	   provide-and-document/wrap
 	   lookup-documentation))
-
-			      

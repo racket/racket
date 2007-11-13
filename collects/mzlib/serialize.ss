@@ -418,6 +418,7 @@
 	(bytes? v)
 	(vector? v)
 	(pair? v)
+	(mpair? v)
 	(hash-table? v)
 	(box? v)
 	(void? v)
@@ -478,12 +479,10 @@
 	   id)))))
 
   (define (is-mutable? o)
-    (or (and (or (pair? o)
+    (or (and (or (mpair? o)
 		 (box? o)
 		 (vector? o)
-		 (date? o)
-		 (hash-table? o)
-		 (arity-at-least? o))
+		 (hash-table? o))
 	     (not (immutable? o)))
 	(serializable-struct? o)))
 
@@ -565,6 +564,9 @@
 	   [(pair? v)
 	    (loop (car v)) 
 	    (loop (cdr v))]
+	   [(mpair? v)
+	    (loop (mcar v)) 
+	    (loop (mcdr v))]
 	   [(box? v)
 	    (loop (unbox v))]
 	   [(date? v)
@@ -618,9 +620,14 @@
 	      (map (serial #t) (vector->list v)))]
        [(pair? v)
 	(let ([loop (serial #t)])
-	  (cons (if (immutable? v) 'c 'c!)
+	  (cons 'c
 		(cons (loop (car v)) 
 		      (loop (cdr v)))))]
+       [(mpair? v)
+	(let ([loop (serial #t)])
+	  (cons 'm
+		(cons (loop (mcar v)) 
+		      (loop (mcdr v)))))]
        [(box? v)
 	(cons (if (immutable? v) 'b 'b!)
 	      ((serial #t) (unbox v)))]
@@ -650,18 +657,14 @@
 	(mod-to-id info mod-map mod-map-cache))]
      [(vector? v)
       (cons 'v (vector-length v))]
-     [(pair? v)
-      'c]
+     [(mpair? v)
+      'm]
      [(box? v)
       'b]
      [(hash-table? v)
       (cons 'h (append
 		(if (hash-table? v 'equal) '(equal) null)
-		(if (hash-table? v 'weak) '(weak) null)))]
-     [(date? v)
-      'date]
-     [(arity-at-least? v)
-      'arity-at-least]))
+		(if (hash-table? v 'weak) '(weak) null)))]))
 
   (define (serialize v)
     (let ([mod-map (make-hash-table)]
@@ -693,7 +696,8 @@
 	      [main-serialized (serialize-one v share #t mod-map mod-map-cache)]
 	      [mod-map-l (map car (sort (hash-table-map mod-map cons)
                                         (lambda (a b) (< (cdr a) (cdr b)))))])
-	  (list (hash-table-count mod-map)
+	  (list '(1) ;; serialization-format version
+                (hash-table-count mod-map)
 		mod-map-l
 		(length serializeds)
 		serializeds
@@ -734,8 +738,9 @@
 		  [(bytes? x) (bytes-copy x)]))]
 	  [(p) (bytes->path (cdr v))]
 	  [(p+) (bytes->path (cadr v) (cddr v))]
-	  [(c) (cons-immutable (loop (cadr v)) (loop (cddr v)))]
+	  [(c) (cons (loop (cadr v)) (loop (cddr v)))]
 	  [(c!) (cons (loop (cadr v)) (loop (cddr v)))]
+	  [(m) (mcons (loop (cadr v)) (loop (cddr v)))]
 	  [(v) (apply vector-immutable (map loop (cdr v)))]
 	  [(v!) (list->vector (map loop (cdr v)))]
 	  [(b) (box-immutable (loop (cdr v)))]
@@ -787,11 +792,16 @@
 	   ht0)])]
      [else
       (case v
-	[(c) 
-	 (let ([p0 (cons #f #f)])
+        [(c)
+         (let ([c (cons #f #f)])
 	   (vector-set! fixup n (lambda (p)
-				  (set-car! p0 (car p))
-				  (set-cdr! p0 (cdr p))))
+                                  (error 'deserialize "cannot restore pair in cycle")))
+	   c)]
+	[(m) 
+	 (let ([p0 (mcons #f #f)])
+	   (vector-set! fixup n (lambda (p)
+				  (set-mcar! p0 (mcar p))
+				  (set-mcdr! p0 (mcdr p))))
 	   p0)]
 	[(b)
 	 (let ([b0 (box #f)])
@@ -799,60 +809,49 @@
 				  (set-box! b0 (unbox b))))
 	   b0)]
 	[(date)
-	 (let ([d0 (make-date #f #f #f #f #f #f #f #f #f #f)])
-	   (vector-set! fixup n (lambda (d)
-				  (set-date-second! d0 (date-second d))
-				  (set-date-minute! d0 (date-minute d))
-				  (set-date-hour! d0 (date-hour d))
-				  (set-date-day! d0 (date-day d))
-				  (set-date-month! d0 (date-month d))
-				  (set-date-year! d0 (date-year d))
-				  (set-date-week-day! d0 (date-week-day d))
-				  (set-date-year-day! d0 (date-year-day d))
-				  (set-date-dst?! d0 (date-dst? d))
-				  (set-date-time-zone-offset! d0 (date-time-zone-offset d))))
-	   d0)]
+         (error 'deserialize "cannot restore date in cycle")]
 	[(arity-at-least)
-	 (let ([a0 (make-arity-at-least #f)])
-	   (vector-set! fixup n (lambda (a)
-				  (set-arity-at-least-value! a0 (arity-at-least-value a))))
-	   a0)])]))
+         (error 'deserialize "cannot restore arity-at-least in cycle")])]))
 
   (define (deserialize l)
-    (let ([mod-map (make-vector (list-ref l 0))]
-	  [mod-map-l (list-ref l 1)]
-	  [share-n (list-ref l 2)]
-	  [shares (list-ref l 3)]
-	  [fixups (list-ref l 4)]
-	  [result (list-ref l 5)])
-      ;; Load constructor mapping
-      (let loop ([n 0][l mod-map-l])
-	(unless (null? l)
-	  (let* ([path+name (car l)]
-		 [des (if (car path+name)
-			  (dynamic-require (unprotect-path (car path+name))
-					   (cdr path+name))
-			  (namespace-variable-value (cdr path+name)))])
-	    ;; Register maker and struct type:
-	    (vector-set! mod-map n des))
-	  (loop (add1 n) (cdr l))))
-      ;; Create vector for sharing:
-      (let ([share (make-vector share-n #f)]
-	    [fixup (make-vector share-n #f)])
-	;; Deserialize into sharing array:
-	(let loop ([n 0][l shares])
-	  (unless (= n share-n)
-	    (vector-set! share n
-			 (let ([v (car l)])
-			   (if (box? v)
-			       (deserial-shell (unbox v) mod-map fixup n)
-			       (deserialize-one v share mod-map))))
-	    (loop (add1 n) (cdr l))))
-	;; Fixup shell for graphs
-	(for-each (lambda (n+v)
-		    (let ([v (deserialize-one (cdr n+v) share mod-map)])
-		      ((vector-ref fixup (car n+v)) v)))
-		  fixups)
-	;; Deserialize final result. (If there's no sharing, then
-	;;  all the work is actually here.)
-	(deserialize-one result share mod-map)))))
+    (let-values ([(vers l)
+                  (if (pair? (car l))
+                      (values (caar l) (cdr l))
+                      (values 0 l))])
+      (let ([mod-map (make-vector (list-ref l 0))]
+            [mod-map-l (list-ref l 1)]
+            [share-n (list-ref l 2)]
+            [shares (list-ref l 3)]
+            [fixups (list-ref l 4)]
+            [result (list-ref l 5)])
+        ;; Load constructor mapping
+        (let loop ([n 0][l mod-map-l])
+          (unless (null? l)
+            (let* ([path+name (car l)]
+                   [des (if (car path+name)
+                            (dynamic-require (unprotect-path (car path+name))
+                                             (cdr path+name))
+                            (namespace-variable-value (cdr path+name)))])
+              ;; Register maker and struct type:
+              (vector-set! mod-map n des))
+            (loop (add1 n) (cdr l))))
+        ;; Create vector for sharing:
+        (let ([share (make-vector share-n #f)]
+              [fixup (make-vector share-n #f)])
+          ;; Deserialize into sharing array:
+          (let loop ([n 0][l shares])
+            (unless (= n share-n)
+              (vector-set! share n
+                           (let ([v (car l)])
+                             (if (box? v)
+                                 (deserial-shell (unbox v) mod-map fixup n)
+                                 (deserialize-one v share mod-map))))
+              (loop (add1 n) (cdr l))))
+          ;; Fixup shell for graphs
+          (for-each (lambda (n+v)
+                      (let ([v (deserialize-one (cdr n+v) share mod-map)])
+                        ((vector-ref fixup (car n+v)) v)))
+                    fixups)
+          ;; Deserialize final result. (If there's no sharing, then
+          ;;  all the work is actually here.)
+          (deserialize-one result share mod-map))))))

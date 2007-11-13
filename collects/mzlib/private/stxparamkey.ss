@@ -67,5 +67,3 @@
 	   make-syntax-parameter
 	   syntax-parameter-target
 	   syntax-parameter-target-value))
-	   
-

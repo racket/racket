@@ -1,9 +1,8 @@
-(module diagrams mzscheme
-  (require (lib "string.ss")
-           (lib "struct.ss" "scribble")
-           (lib "scheme.ss" "scribble")
-           (lib "manual.ss" "scribble"))
-  (require-for-label (lib "mred.ss" "mred"))
+(module diagrams scheme/base
+  (require scribble/struct
+           scribble/scheme
+           scribble/manual
+           (for-label mred))
 
   (provide diagram->table
            short-windowing-diagram

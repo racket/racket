@@ -1,9 +1,11 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "memory" #:style 'toc]{Memory Management}
 
 @local-table-of-contents[]
+
+@declare-exporting[(lib "scheme/memory")]
 
 @section[#:tag "weakbox"]{Weak Boxes}
 

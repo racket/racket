@@ -1,8 +1,10 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/bnf]
 @require["mz.ss"]
 
 @title[#:tag "exns"]{Exceptions}
+
+@declare-exporting[(lib "scheme/exn")]
 
 See @secref["exn-model"] for information on the PLT Scheme
 exception model. It is based on @cite[#:key "friedman-exns" #:title
@@ -379,7 +381,6 @@ structure is affected by the parameter. The default is @scheme[#t].}
 
 @defstruct[exn ([message string?]
                 [continuation-marks continuation-mark-set?])
-           #:immutable
            #:inspector #f]{
 
 The base @tech{structure type} for exceptions. The @scheme[message]
@@ -417,14 +418,12 @@ Raised when a continuation is applied where the jump would cross a
 continuation barrier.}
 
 @defstruct[(exn:fail:contract:variable exn:fail:contract) ([id symbol?])
-           #:immutable
            #:inspector #f]{
 
 Raised for a reference to a not-yet-defined @tech{top-level variable}
 or @tech{module-level variable}.}
 
 @defstruct[(exn:fail:syntax exn:fail) ([exprs (listof syntax?)])
-           #:immutable
            #:inspector #f]{
 
 Raised for a syntax error that is not a @scheme[read] error. The
@@ -433,7 +432,6 @@ least-specific to most-specific.}
 
 
 @defstruct[(exn:fail:read exn:fail) ([srclocs (listof srcloc?)])
-           #:immutable
            #:inspector #f]{
 
 Raised for a @scheme[read] error. The @scheme[srclocs] indicate the
@@ -496,7 +494,6 @@ particular, the default error printer does not show the program
 context when printing the error message.}
 
 @defstruct[(exn:break exn) ([continuation continuation?])
-           #:immutable
            #:inspector #f]{
 
 Raised asynchronously (when enabled) in response to a break request.
@@ -510,7 +507,6 @@ interrupted computation.}
                    [column (or/c nonnegative-exact-integer? false/c)]
                    [position (or/c positive-exact-integer? false/c)]
                    [span (or/c nonnegative-exact-integer? false/c)])
-                  #:immutable
                   #:inspector #f]{
 
 The fields of an @scheme[srcloc] instance are as follows:

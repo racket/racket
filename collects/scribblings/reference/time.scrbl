@@ -1,8 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "time"]{Time}
  
+@declare-exporting[(lib "scheme/time")]
 
 @defproc[(current-seconds) exact-integer?]{
 

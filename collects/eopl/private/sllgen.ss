@@ -470,20 +470,20 @@
     (define sllgen:make-initial-table       ; makes table with all entries
                                         ; initialized to empty
       (lambda (symbols)
-	(map list symbols)))
+	(map (lambda (v) (cons v (box null))) symbols)))
 
     (define sllgen:add-value-to-table!
       (lambda (table key value)
 	(let ((pair (assq key table)))
-	  (if (member value (cdr pair))
+	  (if (member value (unbox (cdr pair)))
 	      #f
 	      (begin
-		(set-cdr! pair (cons value (cdr pair)))
+		(set-box! (cdr pair) (cons value (unbox (cdr pair))))
 		#t)))))
 
     (define sllgen:table-lookup
       (lambda (table key)
-	(cdr (assq key table))))
+	(unbox (cdr (assq key table)))))
 
     (define sllgen:uniq
       (lambda (l)
@@ -2070,20 +2070,23 @@
   (define sllgen:unzip-buffer
     (lambda (trees n buf)
       (let ((ans (let consloop ((n n))
-		   (if (zero? n) buf (cons '() (consloop (- n 1)))))))
+		   (if (zero? n) buf (mcons '() (consloop (- n 1)))))))
 	(let loop ((trees trees)
 		   (ptr ans)
 		   (ctr n))
 					;     (eopl:printf "ctr = ~s trees = ~s~%" ctr trees)
 	  (cond
-	   ((null? trees) ans)
+	   ((null? trees) (let loop ([ans ans])
+                            (if (null? ans)
+                                null
+                                (cons (mcar ans) (loop (mcdr ans))))))
 	   ((zero? ctr) (loop trees ans n))
 	   (else
-	    (set-car! ptr (cons (car trees) (car ptr)))
-	    (loop (cdr trees) (cdr ptr) (- ctr 1))))))))
+	    (set-mcar! ptr (cons (car trees) (mcar ptr)))
+	    (loop (cdr trees) (mcdr ptr) (- ctr 1))))))))
   
   (define sllgen:apply-reduction
     (lambda (lhs opcode args)
-      (apply (eval opcode (interaction-environment))
+      (apply (eval opcode)
 	     args)))
   )

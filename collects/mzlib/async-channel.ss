@@ -30,12 +30,13 @@
 
   (define make-async-channel
     (opt-lambda ([limit #f])
-      (let* ([enqueue-ch (make-channel)]  ; for puts
-	     [dequeue-ch (make-channel)]  ; for gets
-	     [empty-ch (make-channel)]    ; for get polls
-	     [full-ch (make-channel)]     ; for put polls
-	     [queue-first (cons #f null)] ; queue head
-	     [queue-last queue-first]     ; queue tail
+      (let* ([enqueue-ch (make-channel)]   ; for puts
+	     [dequeue-ch (make-channel)]   ; for gets
+	     [empty-ch (make-channel)]     ; for get polls
+	     [full-ch (make-channel)]      ; for put polls
+	     [queue-first (mcons #f null)] ; queue head
+	     [queue-last queue-first]      ; queue tail
+             [size 0]                      ; queue size
 	     ;; Events:
 	     [tell-empty 
 	      (channel-put-evt empty-ch (make-semaphore))] ; see poll->ch
@@ -45,17 +46,19 @@
 		       enqueue-ch
 		       (lambda (v)
 			 ;; We received a put; enqueue it:
-			 (let ([p (cons #f null)])
-			   (set-car! queue-last v)
-			   (set-cdr! queue-last p)
-			   (set! queue-last p))))]
+			 (let ([p (mcons #f null)])
+                           (set-mcar! queue-last v)
+			   (set-mcdr! queue-last p)
+			   (set! queue-last p)
+			   (set! size (add1 size)))))]
 	     [mk-dequeue
 	      (lambda ()
 		(handle-evt
-		 (channel-put-evt dequeue-ch (car queue-first))
+		 (channel-put-evt dequeue-ch (mcar queue-first))
 		 (lambda (ignored)
 		   ;; A get succeeded; dequeue it:
-		   (set! queue-first (cdr queue-first)))))]
+                   (set! size (sub1 size))
+		   (set! queue-first (mcdr queue-first)))))]
 	     [manager-thread
 	      ;; This thread is the part that makes the channel asynchronous.
 	      ;; It waits for a combination of gets and puts as appropriate.
@@ -70,10 +73,10 @@
 	       (lambda ()
 		 (let loop ()
 		   (cond
-		    [(= 1 (length queue-first))
+		    [(zero? size)
 		     ;; The queue is currently empty:
 		     (sync enqueue tell-empty)]
-		    [(or (not limit) ((sub1 (length queue-first)) . < . limit))
+		    [(or (not limit) ((sub1 size) . < . limit))
 		     (sync enqueue (mk-dequeue))]
 		    [else
 		     (sync (mk-dequeue) tell-full)])

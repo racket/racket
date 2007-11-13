@@ -2,6 +2,10 @@
 (module etc mzscheme
 
   (require (lib "main-collects.ss" "setup")
+           (only scheme/base 
+                 build-string
+                 build-list
+                 build-vector)
            "kw.ss")
 
   (require-for-syntax (lib "kerncase.ss" "syntax")
@@ -71,47 +75,6 @@
       [(f . more)
        (let ([m (apply compose more)])
          (compose f m))]))
-
-
-  (define (build-string n fcn)
-    (unless (and (integer? n) (exact? n) (>= n 0))
-      (error 'build-string  "~s must be an exact integer >= 0"  n))
-    (unless (procedure? fcn)
-      (error 'build-string  "~s must be a procedure"  fcn))
-      (let ([str (make-string n)])
-        (let loop ((i 0))
-          (if (= i n)
-            str
-            (begin (string-set! str i (fcn i)) (loop (add1 i)))))))
-
-  ;; (build-vector n f) returns a vector 0..n-1 where the ith element is (f i).
-  ;; The eval order is guaranteed to be: 0, 1, 2, ..., n-1.
-  ;; eg: (build-vector 4 (lambda (i) i)) ==> #4(0 1 2 3)
-
-  (define (build-vector n fcn)
-    (unless (and (integer? n) (exact? n) (>= n 0))
-      (error 'build-vector  "~s must be an exact integer >= 0"  n))
-    (unless (procedure? fcn)
-      (error 'build-vector  "~s must be a procedure"  fcn))
-    (let ([vec (make-vector n)])
-      (let loop ((i 0))
-        (if (= i n)
-          vec
-          (begin (vector-set! vec i (fcn i)) (loop (add1 i)))))))
-
-  (define (build-list n fcn)
-    (unless (and (integer? n) (exact? n) (>= n 0))
-      (error 'build-list  "~s must be an exact integer >= 0"  n))
-    (unless (procedure? fcn)
-      (error 'build-list  "~s must be a procedure"  fcn))
-    (if (zero? n)
-      '()
-      (let ([head (list (fcn 0))])
-        (let loop ([i 1] [p head])
-          (if (= i n)
-            head
-            (begin (set-cdr! p (list (fcn i)))
-                   (loop (add1 i) (cdr p))))))))
 
   (define (loop-until start done? next body)
     (let loop ([i start])
@@ -189,8 +152,7 @@
                           (let ([d (local-expand
                                     defn
                                     expand-context
-                                    (kernel-form-identifier-list
-                                     (quote-syntax here)))]
+                                    (kernel-form-identifier-list))]
                                 [check-ids (lambda (ids)
                                              (for-each
                                               (lambda (id)
@@ -386,13 +348,11 @@
                     (if (module-path-index? mpi)
                         (module-path-index-resolve mpi)
                         mpi))])
-      (let ([str (symbol->string srcmod)])
-        (and ((string-length str) . > . 1)
-             (char=? #\, (string-ref str 0))
-             (let ([path (bytes->path (string->bytes/latin-1 (substring str 1)))])
-               (let-values ([(base name dir?) (split-path path)])
-                 (and (path? base)
-                      base)))))))
+      (let ([name (resolved-module-path-name srcmod)])
+        (and (path? name)
+             (let-values ([(base name dir?) (split-path name)])
+               (and (path? base)
+                    base))))))
 
   (define-syntax (this-expression-source-directory stx)
     (syntax-case stx ()
@@ -483,8 +443,7 @@
     ;; at the end if needed.
     (let* ([def-ctx (syntax-local-make-definition-context)]
            [ctx (list (gensym 'intdef))]
-           [kernel-forms (kernel-form-identifier-list
-                          (quote-syntax here))]
+           [kernel-forms (kernel-form-identifier-list)]
            [init-exprs (let ([v (syntax->list stx)])
                          (unless v
                            (raise-syntax-error #f "bad syntax" stx))

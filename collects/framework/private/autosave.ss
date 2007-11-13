@@ -1,5 +1,6 @@
 
-(module autosave (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "class.ss")
            (lib "file.ss")
            "sig.ss"
@@ -312,4 +313,4 @@
                (delete-file autosave-name)
                (when tmp-name
                  (delete-file tmp-name))
-               orig-name))))))
+               orig-name)))))

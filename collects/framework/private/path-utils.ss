@@ -1,4 +1,4 @@
-(module path-utils (lib "a-unit.ss")
+#lang scheme/unit
   (require "sig.ss"
            (lib "mred-sig.ss" "mred"))
   
@@ -54,5 +54,5 @@
             [(eq? (system-type) 'windows)
              (build-path base (bytes->path-element (bytes-append name-bytes #".bak")))]
             [else
-             (build-path base (bytes->path-element (bytes-append name-bytes #"~")))]))))))
+             (build-path base (bytes->path-element (bytes-append name-bytes #"~")))])))))
 

@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "stringport"]{String Ports}
+
+@declare-exporting[(lib "scheme/port/bytes")]
 
 String input and output ports do not need to be explicitly closed. The
 @scheme[file-position] procedure works for string ports in

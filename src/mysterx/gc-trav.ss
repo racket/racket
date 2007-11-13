@@ -1,3 +1,4 @@
+#lang scheme/base
 
 (printf "/* Generated from gc-trav.ss */\n\n")
 

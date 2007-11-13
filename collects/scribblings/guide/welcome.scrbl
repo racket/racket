@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "intro"]{Welcome to PLT Scheme}
@@ -44,21 +44,20 @@ because DrScheme accommodates many different variants of
 Scheme. Assuming that you've never used DrScheme before, start it up,
 type the line
 
-@schememod[big]
+@schememod[scheme]
 
 in DrScheme's top text area, and then click the @onscreen{Run} button
 that's above the text area. DrScheme then understands that you mean to
-work in the @schememodname[big] variant of Scheme (as opposed to
-@schememodname[little], @schememodname[medium], or many other
-possibilities).
+work in the normal variant of Scheme (as opposed to the smaller
+@schememodname[scheme/base], or many other possibilities).
 
 If you've used DrScheme before with something other than a program
-that starts @schemefont{#module}, DrScheme will remember the last language
+that starts @schemefont{#lang}, DrScheme will remember the last language
 that you used, instead of inferring the language from the
-@schemefont{#module} line. In that case, use the @menuitem["Language"
+@schemefont{#lang} line. In that case, use the @menuitem["Language"
 "Choose Language..."]  menu item.  In the the dialog that appears,
 select the first item, which is @onscreen{Module}. Put the
-@schemefont{#module} line above in the top text area, still.
+@schemefont{#lang} line above in the top text area, still.
 
 @; ----------------------------------------------------------------------
 @section{Interacting with Scheme}
@@ -104,10 +103,10 @@ Although you can evaluate the @scheme[define] form in the @tech{REPL},
 definitions are normally a part of a program that you want to keep and
 use later. So, in DrScheme, you'd normally put the definition in the
 top text area---called the @defterm{definitions area}---along with the
-@schemefont{#module} prefix:
+@schemefont{#lang} prefix:
 
 @schememod[
-big
+scheme
 code:blank
 (define (piece str)
   (substring str 0 5))
@@ -122,7 +121,7 @@ above, click @onscreen{Run}, and then evaluate
 in the @tech{REPL}.
 
 With @exec{mzscheme}, you'd save the above text in a file using your
-favorite editor. If you save it as @file{piece.ss}, then after starting
+favorite editor. If you save it as @filepath{piece.ss}, then after starting
 @exec{mzscheme} in the same directory, you'd evaluate the following
 sequence:
 
@@ -146,7 +145,7 @@ tempted to put just
   (substring str 0 5))
 ]
 
-into @file{piece.ss} and run @exec{mzscheme} with
+into @filepath{piece.ss} and run @exec{mzscheme} with
 
 @interaction[
 (eval:alts (load "piece.ss") (void))
@@ -164,5 +163,5 @@ they're fundamental limitations of the traditional top-level
 environment, which Scheme and Lisp implementations have historically
 fought with ad hoc command-line flags, compiler directives, and
 build tools. The module system is to designed to avoid the problems,
-so start with @schemefont{#module}, and you'll be happier with
+so start with @schemefont{#lang}, and you'll be happier with
 PLT Scheme in the long run.

@@ -1634,6 +1634,9 @@ static int thread_val_MARK(void *p) {
   gcMARK(pr->current_local_certs);
   gcMARK(pr->current_local_modidx);
   gcMARK(pr->current_local_menv);
+  gcMARK(pr->current_local_bindings);
+
+  gcMARK(pr->current_mt);
   
   gcMARK(pr->overflow_reply);
 
@@ -1728,6 +1731,9 @@ static int thread_val_FIXUP(void *p) {
   gcFIXUP(pr->current_local_certs);
   gcFIXUP(pr->current_local_modidx);
   gcFIXUP(pr->current_local_menv);
+  gcFIXUP(pr->current_local_bindings);
+
+  gcFIXUP(pr->current_mt);
   
   gcFIXUP(pr->overflow_reply);
 
@@ -2056,6 +2062,7 @@ static int namespace_val_MARK(void *p) {
   gcMARK(e->syntax);
   gcMARK(e->exp_env);
   gcMARK(e->template_env);
+  gcMARK(e->label_env);
 
   gcMARK(e->shadowed_syntax);
 
@@ -2092,6 +2099,7 @@ static int namespace_val_FIXUP(void *p) {
   gcFIXUP(e->syntax);
   gcFIXUP(e->exp_env);
   gcFIXUP(e->template_env);
+  gcFIXUP(e->label_env);
 
   gcFIXUP(e->shadowed_syntax);
 
@@ -2408,12 +2416,17 @@ static int module_phase_exports_val_SIZE(void *p) {
 static int module_phase_exports_val_MARK(void *p) {
   Scheme_Module_Phase_Exports *m = (Scheme_Module_Phase_Exports *)p;
 
+  gcMARK(m->src_modidx);
+
   gcMARK(m->provides);
   gcMARK(m->provide_srcs);
   gcMARK(m->provide_src_names);
   gcMARK(m->provide_src_phases);
 
   gcMARK(m->kernel_exclusion);
+  gcMARK(m->kernel_exclusion2);
+
+  gcMARK(m->ht);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Phase_Exports));
@@ -2422,12 +2435,17 @@ static int module_phase_exports_val_MARK(void *p) {
 static int module_phase_exports_val_FIXUP(void *p) {
   Scheme_Module_Phase_Exports *m = (Scheme_Module_Phase_Exports *)p;
 
+  gcFIXUP(m->src_modidx);
+
   gcFIXUP(m->provides);
   gcFIXUP(m->provide_srcs);
   gcFIXUP(m->provide_src_names);
   gcFIXUP(m->provide_src_phases);
 
   gcFIXUP(m->kernel_exclusion);
+  gcFIXUP(m->kernel_exclusion2);
+
+  gcFIXUP(m->ht);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Phase_Exports));
@@ -3450,9 +3468,12 @@ static int mark_marshal_tables_MARK(void *p) {
   gcMARK(mt->st_ref_stack);
   gcMARK(mt->reverse_map);
   gcMARK(mt->same_map);
+  gcMARK(mt->cert_lists);
+  gcMARK(mt->shift_map);
   gcMARK(mt->top_map);
   gcMARK(mt->key_map);
   gcMARK(mt->delay_map);
+  gcMARK(mt->cdata_map);
   gcMARK(mt->rn_saved);
   gcMARK(mt->shared_offsets);
   gcMARK(mt->sorted_keys);
@@ -3469,9 +3490,12 @@ static int mark_marshal_tables_FIXUP(void *p) {
   gcFIXUP(mt->st_ref_stack);
   gcFIXUP(mt->reverse_map);
   gcFIXUP(mt->same_map);
+  gcFIXUP(mt->cert_lists);
+  gcFIXUP(mt->shift_map);
   gcFIXUP(mt->top_map);
   gcFIXUP(mt->key_map);
   gcFIXUP(mt->delay_map);
+  gcFIXUP(mt->cdata_map);
   gcFIXUP(mt->rn_saved);
   gcFIXUP(mt->shared_offsets);
   gcFIXUP(mt->sorted_keys);
@@ -4587,7 +4611,10 @@ static int mark_delay_load_MARK(void *p) {
   gcMARK(ld->symtab);
   gcMARK(ld->shared_offsets);
   gcMARK(ld->insp);
-  gcMARK(ld->rn_memory);
+  gcMARK(ld->ut);
+  gcMARK(ld->current_rp);
+  gcMARK(ld->cached);
+  gcMARK(ld->cached_port);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Load_Delay));
 }
@@ -4598,7 +4625,10 @@ static int mark_delay_load_FIXUP(void *p) {
   gcFIXUP(ld->symtab);
   gcFIXUP(ld->shared_offsets);
   gcFIXUP(ld->insp);
-  gcFIXUP(ld->rn_memory);
+  gcFIXUP(ld->ut);
+  gcFIXUP(ld->current_rp);
+  gcFIXUP(ld->cached);
+  gcFIXUP(ld->cached_port);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Load_Delay));
 }
@@ -4750,6 +4780,7 @@ static int mark_rename_table_MARK(void *p) {
   gcMARK(rn->ht);
   gcMARK(rn->nomarshal_ht);
   gcMARK(rn->unmarshal_info);
+  gcMARK(rn->shared_pes);
   gcMARK(rn->plus_kernel_nominal_source);
   gcMARK(rn->marked_names);
   return
@@ -4761,6 +4792,7 @@ static int mark_rename_table_FIXUP(void *p) {
   gcFIXUP(rn->ht);
   gcFIXUP(rn->nomarshal_ht);
   gcFIXUP(rn->unmarshal_info);
+  gcFIXUP(rn->shared_pes);
   gcFIXUP(rn->plus_kernel_nominal_source);
   gcFIXUP(rn->marked_names);
   return

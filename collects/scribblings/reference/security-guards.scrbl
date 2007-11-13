@@ -1,8 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "securityguards"]{Security Guards}
+
+@declare-exporting[(lib "scheme/security-guard")]
 
 @defproc[(security-guard? [v any/c]) boolean?]{
 

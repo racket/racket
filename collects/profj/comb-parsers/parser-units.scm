@@ -1,4 +1,4 @@
-(module parser-units (lib "lazy.ss" "lazy")
+(module parser-units lazy
   
   (require (lib "unit.ss"))
   

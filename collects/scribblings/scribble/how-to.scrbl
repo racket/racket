@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require[(lib "manual.ss" "scribble")
-         (lib "bnf.ss" "scribble")]
+@require[scribble/manual
+         scribble/bnf]
 @require["utils.ss"]
 
 @title{How to Scribble Documentation}
@@ -13,13 +13,13 @@ To document a collection or @|PLaneT| package:
 @itemize{
 
  @item{Create a file in your collection or planet package with the
-       file extension @file{.scrbl}. The remainder of these
-       instructions assume that the file is called @file{manual.scrbl}.}
+       file extension @filepath{.scrbl}. The remainder of these
+       instructions assume that the file is called @filepath{manual.scrbl}.}
 
- @item{Start @file{manual.scrbl} like this:
+ @item{Start @filepath{manual.scrbl} like this:
 @verbatim[#<<EOS
   #lang scribble/doc
-  @begin[(require (lib "manual.ss" "scribble"))]
+  @begin[(require scribble/manual)]
 
   @title{My Library}
 
@@ -35,7 +35,7 @@ EOS
         declaration in the text stream.}
 
   @item{Add the following entry to your collect or package's
-        @file{info.ss}:
+        @filepath{info.ss}:
 
         @schemeblock[
           (define scribblings '(("manual.scrbl" ())))
@@ -52,7 +52,7 @@ EOS
         collection name to limit the build process to the collection.}
 
   @item{The generated documentation is
-        @file{compiled/doc/manual/index.html} within the collection or
+        @filepath{compiled/doc/manual/index.html} within the collection or
         @|PLaneT| package directory.}
 
 }
@@ -143,11 +143,11 @@ hyperlinked to the usual definition. To cause @schemeidfont{list} to
 be hyperlinked, add the following to the @tt["@begin"] body:
 
 @schemeblock[
-(require-for-label (lib "big.ss" "lang"))
+(require (for-label (lib "scheme")))
 ]
 
-This @scheme[require-for-label] declaration introduces a document-time
-binding for each export of the @scheme[(lib "big.ss" "lang")]
+This @scheme[require] with @scheme[for-label] declaration introduces a
+document-time binding for each export of the @scheme[(lib "scheme")]
 module. When the document is built, the @scheme[scheme] form detects
 the binding for @scheme[list], and so it generates a reference to the
 specification of @scheme[list]. The setup process detects the
@@ -155,15 +155,15 @@ reference, and it finds the matching specification in the existing
 documentation, and it ultimately directs the hyperlink to that
 specification.
 
-Hyperlinks based on @scheme[require-for-label] and @scheme[scheme] are
-the preferred mechanism for linking to information outside of a single
+Hyperlinks based on @scheme[for-label] and @scheme[scheme] are the
+preferred mechanism for linking to information outside of a single
 document. Such links require no information about where and how a
 binding is documented elsewhere:
 
 @verbatim[#<<EOS
   #lang scribble/doc
-  @begin[(require (lib "manual.ss" "scribble"))
-         (require-for-label (lib "lang.ss" "big"))]
+  @begin[(require scribble/manual
+                  (for-label (lib "scheme")))]
 
   @title{My Library}
 
@@ -178,8 +178,8 @@ and it preserves the expression's formatting from the document source.
 
 @verbatim[#<<EOS
   #lang scribble/doc
-  @begin[(require (lib "manual.ss" "scribble"))
-         (require-for-label (lib "lang.ss" "big"))]
+  @begin[(require scribble/manual
+                  (for-label (lib "scheme"))]
 
   @title{My Library}
 
@@ -209,8 +209,8 @@ The following example illustrates section hyperlinks:
 
 @verbatim[#<<EOS
   #lang scribble/doc
-  @begin[(require (lib "manual.ss" "scribble"))
-         (require-for-label (lib "lang.ss" "big"))]
+  @begin[(require scribble/manual
+                  (for-label (lib "scheme")))]
 
 
   @title{My Library}
@@ -232,7 +232,7 @@ EOS
 ]
 
 Since the page is so short, it the hyperlinks are more effective if
- you change the @file{info.ss} file to add the @scheme['multi-file]
+ you change the @filepath{info.ss} file to add the @scheme['multi-file]
  flag:
 
 @schemeblock[
@@ -249,10 +249,10 @@ manual:
 
 @verbatim[#<<EOS
   #lang scribble/doc
-  @begin[(require (lib "manual.ss" "scribble"))
-         (require-for-label (lib "lang.ss" "big"))
+  @begin[(require scribble/manual
+                  (for-label (lib "scheme")))
          (define ref-src
-           '(lib "reference.scrbl" "scribblings" "reference"))]
+           '(lib "scribblings/reference/reference.scrbl"))]
 
   @title{My Library}
 
@@ -275,16 +275,16 @@ and they declare hyperlink targets for @scheme[scheme]-based
 hyperlinks.
 
 To document a @scheme[my-helper] procedure that is exported by
-@file{helper.ss} in the collection that contains @file{manual.scrbl},
+@filepath{helper.ss} in the collection that contains @filepath{manual.scrbl},
 first use @scheme[require-for-label] to import the binding information
-of @file{helper.ss}. Then use @scheme[defproc] to document the
+of @filepath{helper.ss}. Then use @scheme[defproc] to document the
 procedure:
 
 @verbatim[#<<EOS
   #lang scribble/doc
-  @begin[(require (lib "manual.ss" "scribble"))
-         (require-for-label (lib "lang.ss" "big")
-                            "helper.ss")]
+  @begin[(require scribble/manual
+                  (for-label (lib "scheme")
+                             "helper.ss"))]
 
   @title{My Library}
 
@@ -326,7 +326,7 @@ generates:
 
  @item{If you use @scheme[my-helper] in any documentation now, as long
        as that documentation source also has a
-       @scheme[require-for-label] of @file{my-helper.ss}, then the
+       @scheme[require-for-label] of @filepath{my-helper.ss}, then the
        reference is hyperlinked to the definition above.}
 
 }
@@ -337,7 +337,7 @@ on forms to document Scheme bindings.
 @; ----------------------------------------
 @section{Showing Scheme Examples}
 
-The @scheme[examples] form from @scheme[(lib "eval.ss" "scribble")]
+The @scheme[examples] form from @scheme[scribble/eval]
 helps you generate examples in your documentation. @bold{Warning:} the
 @scheme[examples] form is especially likely to change or be replaced.
 
@@ -345,16 +345,16 @@ To use @scheme[examples], the procedures to document must be suitable
 for use at documentation time; in fact, @scheme[examples] uses
 bindings introduced into the document source by
 @scheme[require]. Thus, to generate examples using @scheme[my-helper]
-from the previous section, then @file{helper.ss} must be imported both
+from the previous section, then @filepath{helper.ss} must be imported both
 via @scheme[require-for-label] and @scheme[require]:
 
 @verbatim[#<<EOS
   #lang scribble/doc
-  @begin[(require (lib "manual.ss" "scribble")
-                  (lib "eval.ss" "scribble")  ; <--- added
-                  "helper.ss")                ; <--- added
-         (require-for-label (lib "lang.ss" "big")
-                            "helper.ss")]
+  @begin[(require scribble/manual
+                  scribble/eval    ; <--- added
+                  "helper.ss"                 ; <--- added
+                  (for-label (lib "scheme")
+                             "helper.ss"))]
 
   @title{My Library}
 
@@ -374,17 +374,17 @@ EOS
 @;----------------------------------------
 @section{Splitting the Document Source}
 
-In general, a @file{.scrbl} file produces a @techlink{part}. A part
+In general, a @filepath{.scrbl} file produces a @techlink{part}. A part
 produced by a document's main source (as specified in the
 @scheme{info.ss} file) represents the whole document. The
 @scheme[include-section] procedure can be used to incorporate a part
 as a sub-part of the enclosing part.
 
-In @file{manual.scrbl}:
+In @filepath{manual.scrbl}:
 
 @verbatim[#<<EOS
   #lang scribble/doc
-  @begin[(require (lib "manual.ss" "scribble"))]
+  @begin[(require scribble/manual)]
 
   @title{My Library}
 
@@ -393,11 +393,11 @@ In @file{manual.scrbl}:
 EOS
 ]
 
-In @file{cows.scrbl}:
+In @filepath{cows.scrbl}:
 
 @verbatim[#<<EOS
   #lang scribble/doc
-  @begin[(require (lib "manual.ss" "scribble"))]
+  @begin[(require scribble/manual)]
 
   @title{Cows}
 
@@ -405,13 +405,13 @@ In @file{cows.scrbl}:
 EOS
 ]
 
-In @file{aardvarks.scrbl}:
+In @filepath{aardvarks.scrbl}:
 
 @verbatim[#<<EOS
   #lang scribble/doc
-  @begin[(require (lib "manual.ss" "scribble"))
-         (require-for-label (lib "lang.ss" "big")
-                            "helper.ss")]
+  @begin[(require scribble/manual
+                  (for-label (lib "scheme")
+                             "helper.ss"))]
 
   @title{Aardvarks}
 
@@ -437,11 +437,11 @@ for the enclosing section (as started by @scheme[title],
 @scheme[local-table-of-contents] to generate hyperlinks to the
 sub-sections.
 
-Revising @file{cows.scrbl} from the previous section:
+Revising @filepath{cows.scrbl} from the previous section:
 
 @verbatim[#<<EOS
   #lang scribble/doc
-  @begin[(require (lib "manual.ss" "scribble"))]
+  @begin[(require scribble/manual)]
 
   @title[#:style '(toc)]{Cows}
 
@@ -455,9 +455,9 @@ Revising @file{cows.scrbl} from the previous section:
 EOS
 ]
 
-To run this example, remember to change @file{info.ss} to add the
+To run this example, remember to change @filepath{info.ss} to add the
 @scheme['multi-page] style. You may also want to add a call to
-@scheme[table-of-contents] in @file{manual.scrbl}.
+@scheme[table-of-contents] in @filepath{manual.scrbl}.
 
 The difference between @scheme[table-of-contents] and
 @scheme[local-table-of-contents] is that the latter is ignored for

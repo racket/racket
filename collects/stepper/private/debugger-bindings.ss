@@ -73,8 +73,7 @@
   ; stolen from MrFlow
   (define (simplify t)
     (kernel:kernel-syntax-case t #f
-      [(#%app . rest) (map simplify (syntax->list #`rest))]
-      [(#%datum . d) #`d]
+      [(#%plain-app . rest) (map simplify (syntax->list #`rest))]
       [(#%top . v) #`v]
       [(a ...) (map simplify (syntax->list #`(a ...)))]
       [x #`x]))
@@ -85,9 +84,9 @@
           (if (list? t)
               (cond
                 [(eq? kw '#%app) (map unexpand (cdr t))]
+                [(eq? kw '#%plain-app) (map unexpand (cdr t))]
                 [else (map unexpand t)])
               (cond
-                [(eq? kw '#%datum) (cdr t)]
                 [(eq? kw '#%top) (cdr t)]
                 [else t])))
         t))

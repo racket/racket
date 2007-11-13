@@ -561,17 +561,14 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
   h2 |= 0x1;
 
   if (table->weak) {
+    int reuse_bucket = 0;
     scheme_hash_request_count++;
     while ((bucket = table->buckets[h])) {
       if (bucket->key) {
 	void *hk = (void *)HT_EXTRACT_WEAK(bucket->key);
 	if (!hk) {
-	  if (add) {
-	    /* Re-use a bucket slot whose key is collected: */
-	    /* DON'T increment counter overall... */
-	    --table->count;
-	    break;
-	  }
+          if (!reuse_bucket)
+            reuse_bucket = h + 1;
 	} else if (SAME_PTR(hk, key))
 	  return bucket;
 	else if (compare && !compare((void *)hk, (void *)key))
@@ -580,6 +577,13 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
 	break;
       scheme_hash_iteration_count++;
       h = (h + h2) & mask;
+    }
+
+    if (reuse_bucket && add) {
+      /* Re-use a bucket slot whose key is collected: */
+      /* DON'T increment counter overall... */
+      h = reuse_bucket - 1;
+      --table->count;
     }
   } else {
     scheme_hash_request_count++;
@@ -938,6 +942,13 @@ static long equal_hash_key(Scheme_Object *o, long k)
       o = SCHEME_CDR(o);
       break;
     }
+  case scheme_mutable_pair_type:
+    {
+#     include "mzhashchk.inc"
+      k += equal_hash_key(SCHEME_CAR(o), 0);
+      o = SCHEME_CDR(o);
+      break;
+    }
   case scheme_vector_type:
   case scheme_wrap_chunk_type:
     {
@@ -1096,6 +1107,13 @@ static long equal_hash_key(Scheme_Object *o, long k)
 	return k + (PTR_TO_LONG(o) >> 4);
     }
 # endif
+  case scheme_resolved_module_path_type:
+    /* Needed for interning */
+    {
+      k += 7;
+      o = SCHEME_PTR_VAL(o);
+    }
+    break;
   default:    
     {
       Scheme_Primary_Hash_Proc h1 = scheme_type_hash1s[t];
@@ -1177,6 +1195,14 @@ long scheme_equal_hash_key2(Scheme_Object *o)
       return v1 + v2;
     }
   case scheme_pair_type:
+    {
+      long v1, v2;
+#     include "mzhashchk.inc"
+      v1 = scheme_equal_hash_key2(SCHEME_CAR(o));
+      v2 = scheme_equal_hash_key2(SCHEME_CDR(o));
+      return v1 + v2;
+    }
+  case scheme_mutable_pair_type:
     {
       long v1, v2;
 #     include "mzhashchk.inc"
@@ -1298,6 +1324,10 @@ long scheme_equal_hash_key2(Scheme_Object *o)
     
       return k;
     }
+  case scheme_resolved_module_path_type:
+    /* Needed for interning */
+    o = SCHEME_PTR_VAL(o);
+    goto top;
   default:
     {
       Scheme_Secondary_Hash_Proc h2 = scheme_type_hash2s[t];

@@ -52,7 +52,7 @@
         (define (module-level-expr-iterator stx)
           (kernel:kernel-syntax-case
            stx #f
-           [(provide . provide-specs)
+           [(#%provide . provide-specs)
             stx]
            [else-stx
             (general-top-level-expr-iterator stx)]))
@@ -69,9 +69,7 @@
             (quasisyntax/loc stx (begin #,@(map (lambda (expr)
                                                   (module-level-expr-iterator expr))
                                                 (syntax->list #'top-level-exprs))))]
-           [(require . require-specs)
-            stx]
-           [(require-for-syntax . require-specs)
+           [(#%require . require-specs)
             stx]
            [else
             (annotate stx '() #f)]))
@@ -95,7 +93,7 @@
                     [(letrec-values . clause) #t]
                     [(set! var val) #t]
                     [(with-continuation-mark key mark body) #t]
-                    [(#%app . exprs) #t]
+                    [(#%plain-app . exprs) #t]
                     [_ #f])
                    (begin
                      (hash-table-put! breakpoints pos #f)
@@ -155,9 +153,9 @@
                              (record-bound-id expr f)))
                          expr)]
               
-              [(lambda . clause)
+              [(#%plain-lambda . clause)
                (quasisyntax/loc expr 
-                 (lambda #,@(lambda-clause-annotator #`clause)))]
+                 (#%plain-lambda #,@(lambda-clause-annotator #`clause)))]
               
               [(case-lambda . clauses)
                (quasisyntax/loc expr
@@ -210,7 +208,7 @@
                                        #,(annotate #`mark bound-vars #f)
                                        #,(annotate #`body bound-vars is-tail?)))]
               
-              [(#%app . exprs)
+              [(#%plain-app . exprs)
                (let ([subexprs (map (lambda (expr) 
                                       (annotate expr bound-vars #f))
                                     (syntax->list #`exprs))])
@@ -218,8 +216,6 @@
                      (quasisyntax/loc expr #,subexprs)
                      (wcm-wrap (make-debug-info expr bound-vars bound-vars 'normal #f)
                                (quasisyntax/loc expr #,subexprs))))]
-              
-              [(#%datum . _) expr]
               
               [(#%top . var) expr]
               

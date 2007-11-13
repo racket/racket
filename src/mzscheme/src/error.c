@@ -79,8 +79,6 @@ static char *init_buf(long *len, long *blen);
 static char *prepared_buf;
 static long prepared_buf_len;
 
-static Scheme_Object *kernel_symbol;
-
 typedef struct {
   int args;
   Scheme_Object *type;
@@ -146,6 +144,7 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
   %q = truncated-to-256 string
   %Q = truncated-to-256 Scheme string
   %V = scheme_value
+  %D = scheme value to display
 
   %L = line number, -1 means no line
   %e = error number for strerror()
@@ -208,6 +207,7 @@ static long sch_vsprintf(char *s, long maxlen, const char *msg, va_list args)
 	break;
       case 'S':
       case 'V':
+      case 'D':
       case 'T':
       case 'Q':
 	ptrs[pp++] = mzVA_ARG(args, Scheme_Object*);
@@ -382,6 +382,15 @@ static long sch_vsprintf(char *s, long maxlen, const char *msg, va_list args)
 	    Scheme_Object *o;
 	    o = (Scheme_Object *)ptrs[pp++];
 	    t = scheme_make_provided_string(o, 1, &tlen);
+	  }
+	  break;
+	case 'D':
+	  {
+	    Scheme_Object *o;
+            long dlen;
+	    o = (Scheme_Object *)ptrs[pp++];
+	    t = scheme_display_to_string(o, &dlen);
+            tlen = dlen;
 	  }
 	  break;
 	case 'T':
@@ -564,9 +573,6 @@ void scheme_init_error(Scheme_Env *env)
   REGISTER_SO(prepared_buf);
   prepared_buf = "";
   prepared_buf = init_buf(NULL, &prepared_buf_len);
-
-  REGISTER_SO(kernel_symbol);
-  kernel_symbol = scheme_intern_symbol("#%kernel");
 
   scheme_init_error_config();
 }
@@ -814,7 +820,7 @@ static char *error_write_to_string_w_max(Scheme_Object *v, int len, int *lenout)
     scheme_push_continuation_frame(&cframe);
     scheme_install_config(config);
     scheme_push_break_enable(&cframe2, 0, 0);
- 
+
     o = _scheme_apply(o, 2, args);
 
     scheme_pop_break_enable(&cframe2, 0);
@@ -1392,7 +1398,7 @@ void scheme_read_err(Scheme_Object *port,
 		    : ((gotc == SCHEME_SPECIAL) 
 		       ? MZEXN_FAIL_READ_NON_CHAR 
 		       : MZEXN_FAIL_READ)),
-		   scheme_make_immutable_pair(loc, scheme_null),
+		   scheme_make_pair(loc, scheme_null),
 		   "%t%s%t%s",
 		   fn, fnlen, ls,
 		   s, slen, suggests);
@@ -1559,7 +1565,7 @@ static void do_wrong_syntax(const char *where,
   if (SCHEME_FALSEP(form))
     form = extra_sources;
   else
-    form = scheme_make_immutable_pair(form, extra_sources);
+    form = scheme_make_pair(form, extra_sources);
 
   scheme_raise_exn(MZEXN_FAIL_SYNTAX, 
 		   form,
@@ -1793,7 +1799,7 @@ void scheme_unbound_global(Scheme_Bucket *b)
     const char *errmsg;
     
     if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC)))
-      errmsg = "reference to an identifier before its definition: %S in module: %S";
+      errmsg = "reference to an identifier before its definition: %S in module: %D";
     else
       errmsg = "reference to an identifier before its definition: %S";
 
@@ -2667,14 +2673,14 @@ static Scheme_Object *syntax_field_check(int argc, Scheme_Object **argv)
   Scheme_Object *l;
 
   l = argv[2];
-  while (SCHEME_IMMUTABLE_PAIRP(l)) {
+  while (SCHEME_PAIRP(l)) {
     if (!SCHEME_STXP(SCHEME_CAR(l)))
       break;
     l = SCHEME_CDR(l);
   }
 
   if (!SCHEME_NULLP(l))
-    scheme_wrong_field_type(argv[3], "immutable list of syntax objects", argv[2]);
+    scheme_wrong_field_type(argv[3], "list of syntax objects", argv[2]);
 
   return scheme_values(3, argv);
 }
@@ -2684,14 +2690,14 @@ static Scheme_Object *read_field_check(int argc, Scheme_Object **argv)
   Scheme_Object *l;
 
   l = argv[2];
-  while (SCHEME_IMMUTABLE_PAIRP(l)) {
+  while (SCHEME_PAIRP(l)) {
     if (!scheme_is_location(SCHEME_CAR(l)))
       break;
     l = SCHEME_CDR(l);
   }
 
   if (!SCHEME_NULLP(l))
-    scheme_wrong_field_type(argv[3], "immutable list of locations", argv[2]);
+    scheme_wrong_field_type(argv[3], "list of locations", argv[2]);
 
   return scheme_values(3, argv);
 }

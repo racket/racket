@@ -51,7 +51,7 @@
       (define (remove-false-2nd l)
         (let loop ([l l] [r '()])
           (if (null? l)
-            (reverse! r)
+            (reverse r)
             (loop (cdr l) (if (cadar l) (cons (car l) r) r)))))
       (let loop (;; tail: listof (cons extended-id, assigned-temp)
                  [tail (map cons (syntax->list stxs) temps)]
@@ -63,7 +63,7 @@
                  ;; vbinds: listof listof listof (vars expr)
                  [vbinds (list (list (list temps expr)))])
         (if (null? tail)
-          (let ([r (reverse! r)])
+          (let ([r (reverse r)])
             (if simple?
               (if (eq? simple? 'first)
                 (values stxs expr)
@@ -188,13 +188,13 @@
              [id (identifier? #'id)
               (loop #'() newvars specials #'id)]
              [() (let ([args (datum->syntax-object
-                              #'vars (append! (reverse! newvars) restarg)
+                              #'vars (append (reverse newvars) restarg)
                               #'vars)])
                    (if (null? specials)
                      (quasisyntax/loc stx (lambda #,args body0 body ...))
                      (quasisyntax/loc stx
                        (lambda #,args
-                         (let~ #,(reverse! specials)
+                         (let~ #,(reverse specials)
                            body0 body ...)))))]))]))
     (values _define-values
             _define

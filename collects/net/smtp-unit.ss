@@ -1,4 +1,4 @@
-(module smtp-unit (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "list.ss") (lib "kw.ss") "base64.ss" "smtp-sig.ss")
 
   (import)
@@ -163,4 +163,4 @@
                               (values (current-input-port) (current-output-port))
                               (tcp-connect server opt-port-no))])
         (smtp-send-message* r w sender recipients header message-lines
-                            auth-user auth-passwd tls-encode)))))
+                            auth-user auth-passwd tls-encode))))

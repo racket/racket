@@ -5,9 +5,11 @@
 ;; 2. The location of the src/mzscheme directory,
 ;; 3. The location of mzconfig.
 
+#lang scheme/base
+
 (define-values (incdir mzsrcdir mzconfdir)
-  (let ([args (vector->list argv)])
-    (define (dir path) (normal-case-path (simplify-path (expand-path path))))
+  (let ([args (vector->list (current-command-line-arguments))])
+    (define (dir path) (normal-case-path (simplify-path (cleanse-path path))))
     (unless (= 3 (length args)) (error 'mkincludes "bad arguments"))
     (apply values (map dir args))))
 

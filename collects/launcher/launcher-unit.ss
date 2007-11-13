@@ -1,5 +1,6 @@
 
-(module launcher-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "file.ss")
 	   (lib "string.ss")
 	   (lib "etc.ss")
@@ -601,7 +602,7 @@
 				 (build-path (collection-path collection)
 					     (strip-suffix file)))))
 
-      (define (unix-sfx file)
+      (define (unix-sfx file mred?)
 	(list->string
 	 (map
 	  (lambda (c)
@@ -610,10 +611,12 @@
 		(char-downcase c)))
 	  (string->list file))))
 
-      (define (sfx file) (case (system-type) 
-			   [(unix) (unix-sfx file)]
-			   [(windows) (string-append file ".exe")]
-			   [else file]))
+      (define (sfx file mred?)
+	(case (system-type) 
+	  [(unix) (unix-sfx file mred?)]
+	  [(windows) (string-append (if mred? file (unix-sfx file mred?))
+				    ".exe")]
+	  [else file]))
 
       (define (program-launcher-path name mred?)
 	(let* ([variant (current-launcher-variant)]
@@ -624,7 +627,7 @@
 		     (if (or mac-script? (not mred?))
 			 (find-console-bin-dir)
 			 (find-gui-bin-dir))
-		     ((if mac-script? unix-sfx sfx) name))
+		     ((if mac-script? unix-sfx sfx) name mred?))
 		    variant
                     mred?)])
 	   (if (and (eq? (system-type) 'macosx) 
@@ -638,7 +641,7 @@
       (define (mzscheme-program-launcher-path name)
 	(case (system-type)
 	  [(macosx) (add-file-suffix 
-		     (build-path (find-console-bin-dir) (unix-sfx name))
+		     (build-path (find-console-bin-dir) (unix-sfx name #f))
 		     (current-launcher-variant)
                      #f)]
 	  [else (program-launcher-path name #f)]))
@@ -706,4 +709,4 @@
 	(make-mred-program-launcher file collection (mred-program-launcher-path name)))
       
       (define (install-mzscheme-program-launcher file collection name)
-	(make-mzscheme-program-launcher file collection (mzscheme-program-launcher-path name))))
+	(make-mzscheme-program-launcher file collection (mzscheme-program-launcher-path name)))

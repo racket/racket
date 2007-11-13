@@ -24,7 +24,9 @@
   (define init-code-tmp-filename (make-temporary-file "drs-launcher-init~a"))
   (define-values (_1 init-code-mod-name _2) (split-path init-code-tmp-filename))
   
-  (set-car! (cdr init-code) (string->symbol (path->string init-code-mod-name)))
+  (set! init-code (cons (car init-code)
+                        (cons (string->symbol (path->string init-code-mod-name))
+                              (cddr init-code))))
   
   (call-with-output-file init-code-tmp-filename
     (λ (port)
@@ -43,7 +45,7 @@
   (when use-require/copy?
     (namespace-require/copy language-module-spec))
   (when transformer-module-spec
-    (namespace-transformer-require transformer-module-spec))
+    (namespace-require `(for-syntax ,transformer-module-spec)))
   
   (init-code-proc)
   

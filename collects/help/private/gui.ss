@@ -1,4 +1,4 @@
-(module gui (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "framework.ss" "framework")
            (lib "mred.ss" "mred")
            
@@ -649,4 +649,4 @@
         (send d center)
         (send t focus)
         (send d show #t)
-        result))
+        result)

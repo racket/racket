@@ -1,5 +1,6 @@
 
-(module keymap (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "string-constant.ss" "string-constants")
            (lib "class.ss")
            (lib "list.ss")
@@ -1404,4 +1405,4 @@
                       (λ (keymap)
                         (send keymap chain-to-keymap global #t)
                         (ctki keymap))])
-        (thunk)))))
+        (thunk))))

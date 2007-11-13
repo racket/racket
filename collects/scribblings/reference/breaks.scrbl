@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "breakhandler"]{Breaks}
+
+@declare-exporting[(lib "scheme/break")]
 
 @section-index["threads" "breaking"]
 

@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "module-require"]{Imports: @scheme[require]}
@@ -37,47 +37,47 @@ by @scheme[require] are determined by @scheme[provide] declarations
 within each module referenced by each @scheme[module-path].
 
 @examples[
-(module m mzscheme
+(module m scheme
   (provide color)
   (define color "blue"))
-(module n mzscheme
+(module n scheme
   (provide size)
   (define size 17))
-(require m n)
+(require 'm 'n)
 (eval:alts (list color size) (eval '(list color size)))
 ]
 
 }
 
 @;------------------------------------------------------------------------
-@specspecsubform/subs[#:literals (only)
-                      (only require-spec id-maybe-renamed ...)
+@specspecsubform/subs[#:literals (only-in)
+                      (only-in require-spec id-maybe-renamed ...)
                       ([id-maybe-renamed id
                                          [orig-id bind-id]])]{
 
-An @scheme[only] form limits the set of bindings would be introduced
-by a base @scheme[require-spec]. Also, @scheme[only] optionally
+An @scheme[only-in] form limits the set of bindings that would be introduced
+by a base @scheme[require-spec]. Also, @scheme[only-in] optionally
 renames each binding that is preserved: in a @scheme[[orig-id
 bind-id]] form, the @scheme[orig-id] refers to a binding implied by
 @scheme[require-spec], and @scheme[bind-id] is the name that will be
 bound in the importing context instead of @scheme[bind-id].
 
 @examples[
-(module m mzscheme
+(module m (lib "scheme")
   (provide tastes-great?
            less-filling?)
   (define tastes-great? #t)
   (define less-filling? #t))
-(require (only m tastes-great?))
+(require (only-in 'm tastes-great?))
 (eval:alts tastes-great? (eval 'tastes-great?))
 less-filling?
-(require (only m [less-filling? lite?]))
+(require (only-in 'm [less-filling? lite?]))
 (eval:alts lite? (eval 'lite?))
 ]}
 
 @;------------------------------------------------------------------------
-@specspecsubform[#:literals (except)
-                 (except require-spec id ...)]{
+@specspecsubform[#:literals (except-in)
+                 (except-in require-spec id ...)]{
 
 This form is the complement of @scheme[only]: it excludes specific
 bindings from the set specified by @scheme[require-spec].
@@ -85,34 +85,34 @@ bindings from the set specified by @scheme[require-spec].
 }
 
 @;------------------------------------------------------------------------
-@specspecsubform[#:literals (rename)
-                 (rename require-spec [orig-id bind-id] ...)]{
+@specspecsubform[#:literals (rename-in)
+                 (rename-in require-spec [orig-id bind-id] ...)]{
 
-The form supports renaming like @scheme[only], but leaving alone
+This form supports renaming like @scheme[only-in], but leaving alone
 identifiers from @scheme[require-spec] that are not mentioned as an
 @scheme[orig-id].  }
 
 @;------------------------------------------------------------------------
-@specspecsubform[#:literals (prefix)
-                 (prefix require-spec prefix-id)]{
+@specspecsubform[#:literals (prefix-in)
+                 (prefix-in prefix-id require-spec)]{
 
 This is a shorthand for renaming, where @scheme[prefix-id] is added to
-the front each identifier specified by @scheme[require-spec].
+the front of each identifier specified by @scheme[require-spec].
 
 }
 
-The @scheme[only], @scheme[except], @scheme[rename], and
-@scheme[prefix] forms can be nested to implement more complex
+The @scheme[only-in], @scheme[except-in], @scheme[rename-in], and
+@scheme[prefix-in] forms can be nested to implement more complex
 manipulations of imported bindings. For example,
 
-@schemeblock[(require (prefix (except m ghost) m:))]
+@schemeblock[(require (prefix-in m: (except-in 'm ghost)))]
 
 imports all bindings that @scheme[m]
 exports, except for the @scheme[ghost] binding, and with local names
 that are prefixed with @scheme[m:].
 
-Equivalently, the @scheme[prefix] could be applied before
-@scheme[except], as long as the omission with @scheme[except] is
+Equivalently, the @scheme[prefix-in] could be applied before
+@scheme[except-in], as long as the omission with @scheme[except-in] is
 specified using the @scheme[m:] prefix:
 
-@schemeblock[(require (except (prefix m m:) m:ghost))]
+@schemeblock[(require (except-in (prefix m: 'm) m:ghost))]

@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title{Reading}
+
+@declare-exporting[(lib "scheme/read")]
 
 @defproc[(read [in input-port? (current-input-port)]) any]{
 
@@ -110,7 +112,7 @@ See @secref["readtables"] for an extended example that uses
 A parameter that controls parsing and printing of symbols. When this
 parameter's value is @scheme[#f], the reader case-folds symbols (e.g.,
 producing @scheme['hi] when the input is any one of \litchar{hi},
-\litchar{Hi}, \litchar{HI}, or \litchar{hI}). The parameter also
+@litchar{Hi}, @litchar{HI}, or @litchar{hI}). The parameter also
 affects the way that @scheme[write] prints symbols containing
 uppercase characters; if the parameter's value is @scheme[#f], then
 symbols are printed with uppercase characters quoted by a

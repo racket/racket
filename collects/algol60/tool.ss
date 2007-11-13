@@ -12,7 +12,7 @@
 
   (provide tool@)
 
-  (define base-importing-stx (dynamic-require '(lib "base.ss" "algol60")
+  (define base-importing-stx (dynamic-require '(lib "algol60/base.ss")
 					     'base-importing-stx))
 
   (define tool@
@@ -90,8 +90,8 @@
           (define/public (get-teachpack-names) null)
           (define/public (marshall-settings x) x)
           (define/public (on-execute settings run-in-user-thread)
-            (dynamic-require '(lib "base.ss" "algol60") #f)
-            (let ([path ((current-module-name-resolver) '(lib "base.ss" "algol60") #f #f)]
+            (dynamic-require '(lib "algol60/base.ss") #f)
+            (let ([path ((current-module-name-resolver) '(lib "algol60/base.ss") #f #f)]
                   [n (current-namespace)])
               (run-in-user-thread
                (lambda ()
@@ -117,10 +117,10 @@
 						base-importing-stx)])
 		  (make-embedding-executable dst-file
 					     #f #f
-					     '((#f (lib "base.ss" "algol60")))
+					     '((#f (lib "algol60/base.ss")))
 					     null
 					     (compile
-					      `(module m (lib "base.ss" "algol60")
+					      `(module m (lib "algol60/base.ss")
 						 ,code))
 					     (list "-mvqe" "(require m)"))))))
 	  (define/public (get-one-line-summary) "Algol 60 (not Scheme at all!)")

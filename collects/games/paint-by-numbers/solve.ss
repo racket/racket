@@ -13,40 +13,6 @@
                                (-> number? void?)          ; setup-progress
                                void)])
   
-  ; filter! : returns a list of all elements in a-list which 
-  ; satisfy the predicate.  
-  ; destructively modifies the input list to produce the output
-  ; ((A -> boolean) (list-of A) -> (list-of A))
-            
-
-  (define (filter! fun a-list)
-    (cond
-     [(null? a-list) a-list]
-     [(fun (car a-list))
-      (let loop ([prev a-list]
-		 [a-list (cdr a-list)])
-	(cond
-	 [(null? a-list) (void)]
-	 [(fun (car a-list))
-	  (loop (cdr prev)
-		(cdr a-list))]
-	 [else (set-cdr! prev (cdr a-list))
-	       (loop prev (cdr a-list))]))
-      a-list]
-     [else (filter! fun (cdr a-list))]))
-
-  '(unless (and (equal? (filter! (lambda (x) #t) '(1 2 3))
-			 '(1 2 3))
-		 (equal? (filter! (lambda (x) (= x 1)) '(1 2 3))
-			 '(1))
-		 (equal? (filter! (lambda (x) (= x 2)) '(1 2 3))
-			 '(2))
-		 (equal? (filter! (lambda (x) (= x 3)) '(1 2 3))
-			 '(3))
-		 (equal? (filter! (lambda (x) #f) '(1 2 3))
-			 '()))
-      (error 'solve.ss "failed filter test"))
-
   (define (solve row-info col-info set-entry setup-progress)
     (local (
 	    (define (pause) '(sleep 1/16))
@@ -521,7 +487,7 @@
 	    (define (batch-try board-line-list try-list-list-list)
 	      (map (lambda (line try-list-list)
                      (if (not (number? try-list-list))
-                         (filter! ; filter-rev
+                         (filter ; filter-rev
                           (let ([f (check-try line)])
                             (lambda (try-list) (f try-list)))
                           try-list-list)

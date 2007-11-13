@@ -442,7 +442,7 @@ static Scheme_Object *char_map_list (int argc, Scheme_Object *argv[])
   int i, bottom, top, uniform;
   Scheme_Object *l = scheme_null;
 
-# define icons scheme_make_immutable_pair
+# define cons scheme_make_pair
 
   for (i = 2 * (NUM_UCHAR_RANGES - 1); i >= 0; i -= 2) {
     bottom = mapped_uchar_ranges[i];
@@ -452,9 +452,9 @@ static Scheme_Object *char_map_list (int argc, Scheme_Object *argv[])
       uniform = 0;
     } else
       uniform = 1;
-    l = icons(icons(scheme_make_integer_value(bottom),
-		    icons(scheme_make_integer_value(top),
-			  icons((uniform ? scheme_true : scheme_false),
+    l = cons(cons(scheme_make_integer_value(bottom),
+		    cons(scheme_make_integer_value(top),
+			  cons((uniform ? scheme_true : scheme_false),
 				scheme_null))),
 	      l);
   }

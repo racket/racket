@@ -1,3 +1,4 @@
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "ProfessorJ: libs java lang")
+  (define assume-virtual-sources #t)
   #;(define install-collection "installer.ss"))

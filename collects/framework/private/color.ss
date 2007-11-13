@@ -1,4 +1,4 @@
-(module color (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "class.ss")
            (lib "thread.ss")
            (lib "mred.ss" "mred")
@@ -724,4 +724,4 @@
       
       (super-new)))
   
-  (define text-mode% (text-mode-mixin mode:surrogate-text%)))
+  (define text-mode% (text-mode-mixin mode:surrogate-text%))

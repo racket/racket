@@ -35,7 +35,7 @@
        [(set! v ve)
         (with-syntax ([ve ((elim-letrec ids) #'ve)])
           (if (bound-identifier-member? #'id ids)
-              (syntax/loc stx (#%app set-box! id ve))
+              (syntax/loc stx (#%plain-app set-box! id ve))
               (syntax/loc stx (set! id ve))))]
        [(let-values ([(v ...) ve] ...) be ...)
         (with-syntax ([(ve ...) (map (elim-letrec ids) (syntax->list #'(ve ...)))]
@@ -46,7 +46,7 @@
         (let ([new-ids (apply append ids (map syntax->list (syntax->list #'((v ...) ...))))])
           (with-syntax ([((nv ...) ...) (map (compose generate-temporaries syntax->list) (syntax->list #'((v ...) ...)))]
                         [((nv-box ...) ...) (map (lambda (nvs)
-                                                   (map (lambda (x) (syntax/loc x (#%app box the-undef)))
+                                                   (map (lambda (x) (syntax/loc x (#%plain-app box the-undef)))
                                                         (syntax->list nvs)))
                                                  (syntax->list #`((v ...) ...)))]
                         [(ve ...) (map (elim-letrec new-ids) (syntax->list #'(ve ...)))]
@@ -54,17 +54,17 @@
             ; XXX Optimize special case of one nv
             (syntax/loc stx
               (let-values ([(v ...)
-                            (#%app values nv-box ...)] ...)
-                (begin (#%app call-with-values
-                              (lambda () ve)
-                              (lambda (nv ...)
-                                (#%app set-box! v nv) ...))
+                            (#%plain-app values nv-box ...)] ...)
+                (begin (#%plain-app call-with-values
+                                    (#%plain-lambda () ve)
+                                    (#%plain-lambda (nv ...)
+                                      (#%plain-app set-box! v nv) ...))
                        ...
                        be ...)))))]
-       [(lambda formals be ...)
+       [(#%plain-lambda formals be ...)
         (with-syntax ([(be ...) (map (elim-letrec ids) (syntax->list #'(be ...)))])
           (syntax/loc stx
-            (lambda formals be ...)))]
+            (#%plain-lambda formals be ...)))]
        [(case-lambda [formals be ...] ...)
         (with-syntax ([((be ...) ...) (map (elim-letrec ids) (syntax->list #'((be ...) ...)))])
           (syntax/loc stx
@@ -78,7 +78,7 @@
        [(if te ce)
         ((elim-letrec ids) 
          (syntax/loc stx
-           (if te ce (#%app (#%top . void)))))]
+           (if te ce (#%plain-app (#%top . void)))))]
        [(quote datum)
         stx]
        [(quote-syntax datum)
@@ -89,7 +89,7 @@
         (let ([new-ids (apply append ids (map syntax->list (syntax->list #'((vv ...) ...))))])
           (with-syntax ([((nvv ...) ...) (map (compose generate-temporaries syntax->list) (syntax->list #'((vv ...) ...)))]
                         [((nvv-box ...) ...) (map (lambda (nvs)
-                                                    (map (lambda (x) (syntax/loc x (#%app box the-undef)))
+                                                    (map (lambda (x) (syntax/loc x (#%plain-app box the-undef)))
                                                          (syntax->list nvs)))
                                                   (syntax->list #`((vv ...) ...)))]
                         [(se ...) (map (elim-letrec new-ids) (syntax->list #'(se ...)))]
@@ -98,14 +98,14 @@
             ; XXX Optimize special case of one nv
             (syntax/loc stx
               (let-values ([(vv ...)
-                            (#%app values nvv-box ...)] ...)
+                            (#%plain-app values nvv-box ...)] ...)
                 ; This is okay, because we've already expanded the syntax.
                 (let-syntaxes 
                  ([(sv ...) se] ...)
-                 (begin (#%app call-with-values
-                               (lambda () ve)
-                               (lambda (nvv ...)
-                                 (#%app set-box! vv nvv) ...))
+                 (begin (#%plain-app call-with-values
+                               (#%plain-lambda () ve)
+                               (#%plain-lambda (nvv ...)
+                                 (#%plain-app set-box! vv nvv) ...))
                         ...
                         be ...))))))]
        [(with-continuation-mark ke me be)
@@ -116,19 +116,17 @@
             (with-continuation-mark ke me be)))]
        [(#%expression d)
         (quasisyntax/loc stx (#%expression #,((elim-letrec ids) #'d)))]
-       [(#%app e ...)
+       [(#%plain-app e ...)
         (with-syntax ([(e ...) (map (elim-letrec ids) (syntax->list #'(e ...)))])
           (syntax/loc stx
-            (#%app e ...)))]
+            (#%plain-app e ...)))]
        [(#%top . v)
-        stx]
-       [(#%datum . d)
         stx]
        [(#%variable-reference . v)
         stx]       
        [id (identifier? #'id)
            (if (bound-identifier-member? #'id ids)
-               (syntax/loc stx (#%app unbox id))
+               (syntax/loc stx (#%plain-app unbox id))
                #'id)]
        [_
         (raise-syntax-error 'elim-letrec "Dropped through:" stx)])))

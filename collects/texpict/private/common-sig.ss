@@ -4,7 +4,7 @@
   (provide texpict-common^)
   (define-signature texpict-common^
     ((struct pict (draw width height ascent descent children panbox))
-     (struct child (pict dx dy))
+     (struct child (pict dx dy sx sy))
 
      black-and-white
 

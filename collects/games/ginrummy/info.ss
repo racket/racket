@@ -1,4 +1,4 @@
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "Rummy")
   (define doc.txt "doc.txt")
   (define game "ginrummy.ss")

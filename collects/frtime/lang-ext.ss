@@ -22,9 +22,7 @@
                  [new-table (cons (list obj result) table)]
                  [car-val (deep-value-now (car obj) new-table)]
                  [cdr-val (deep-value-now (cdr obj) new-table)])
-            (set-car! result car-val)
-            (set-cdr! result cdr-val)
-            result)]
+            (cons car-val cdr-val))]
          [(struct? obj)
           (let*-values ([(info skipped) (struct-info obj)]
                         [(name init-k auto-k acc mut immut sup skipped?) (struct-type-info info)]
@@ -368,11 +366,11 @@
   ; general efficiency fix for delay
   ; signal[a] signal[num] -> signal[a]
   (define (delay-by beh ms-b)
-    (letrec ([last (cons (cons (if (zero? (value-now ms-b))
-                                   (value-now/no-copy beh)
-                                   undefined)
-                               (current-milliseconds))
-                         empty)]
+    (letrec ([last (mcons (cons (if (zero? (value-now ms-b))
+                                    (value-now/no-copy beh)
+                                    undefined)
+                                (current-milliseconds))
+                          empty)]
              [head last]
              [dummy 0]
              [producer (proc->signal
@@ -380,22 +378,22 @@
                           (let* ([now (current-milliseconds)]
                                  [ms (value-now ms-b)])
                             (let loop ()
-                              (if (or (empty? (rest head))
-                                      (< now (+ ms (cdadr head))))
-                                  (caar head)
+                              (if (or (empty? (mcdr head))
+                                      (< now (+ ms (cdar (mcdr head)))))
+                                  (car (mcar head))
                                   (begin
                                     (set! dummy consumer) ;; just to prevent GC
-                                    (set! head (rest head))
+                                    (set! head (mcdr head))
                                     (loop)))))))]
              [consumer (proc->signal
                         (lambda ()
                           (let* ([now (current-milliseconds)]
                                  [new (deep-value-now beh)]
                                  [ms (value-now ms-b)])
-                            (when (not (equal? new (caar last)))
-                              (set-rest! last (cons (cons new now)
-                                                    empty))
-                              (set! last (rest last))
+                            (when (not (equal? new (car (mcar last))))
+                              (set-mcdr! last (mcons (cons new now)
+                                                     empty))
+                              (set! last (mcdr last))
                               (schedule-alarm (+ now ms) producer))))
                         beh ms-b)])
       producer))

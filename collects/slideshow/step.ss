@@ -1,4 +1,4 @@
-#cs
+
 (module step (lib "slideshow.ss" "slideshow")
   (require (lib "list.ss")
 	   (lib "etc.ss"))

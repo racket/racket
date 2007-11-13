@@ -87,6 +87,8 @@ END_XFORM_ARITH;
 Fix me! See use.
 #endif
 
+int scheme_jit_malloced;
+
 #define MAX_SHARED_CALL_RANDS 25
 static void *shared_tail_code[4][MAX_SHARED_CALL_RANDS];
 static void *shared_non_tail_code[3][MAX_SHARED_CALL_RANDS][2];
@@ -108,7 +110,8 @@ static void *call_original_binary_arith_for_branch_code;
 static void *call_original_binary_rev_arith_for_branch_code;
 static void *bad_car_code, *bad_cdr_code;
 static void *bad_caar_code, *bad_cdar_code, *bad_cadr_code, *bad_cddr_code;
-static void *bad_set_car_code, *bad_set_cdr_code;
+static void *bad_mcar_code, *bad_mcdr_code;
+static void *bad_set_mcar_code, *bad_set_mcdr_code;
 static void *bad_unbox_code;
 static void *vector_ref_code, *vector_ref_check_index_code, *vector_set_code, *vector_set_check_index_code;
 static void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
@@ -145,6 +148,7 @@ typedef struct {
   int retained;
   int need_set_rs;
   void **retain_start;
+  int local1_busy;
   int log_depth;
   int self_pos, self_closure_size, self_toplevel_pos;
   void *self_restart_code;
@@ -239,6 +243,16 @@ static Scheme_Object *_scheme_tail_apply_from_native_fixup_args(Scheme_Object *r
   }
 
   return _scheme_tail_apply_from_native(rator, argc + already, base);
+}
+static Scheme_Object *make_global_ref(Scheme_Object *var)
+{
+  GC_CAN_IGNORE Scheme_Object *o;
+
+  o = scheme_alloc_small_object();
+  o->type = scheme_global_ref_type;
+  SCHEME_PTR_VAL(o) = var;
+
+  return o;
 }
 
 /*========================================================================*/
@@ -351,6 +365,7 @@ static void *generate_one(mz_jit_state *old_jitter,
       if (gcable) {
 #ifdef MZ_PRECISE_GC
 	buffer = malloc(size);
+        scheme_jit_malloced += size_pre_retained;
 #else
 	buffer = scheme_malloc(size);
 #endif
@@ -1292,9 +1307,7 @@ static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
   jit_pusharg_i(JIT_R1);
   mz_finishr(JIT_V1);
   CHECK_LIMIT();
-  /* Pop saved runstack val and return: */
-  mz_get_local_p(JIT_NOT_RET, JIT_LOCAL1);
-  jit_sti_p(&scheme_current_runstack, JIT_NOT_RET);
+  /*  Return: */
   mz_pop_locals();
   jit_ret();
 
@@ -1443,9 +1456,7 @@ static int generate_finish_tail_call(mz_jit_state *jitter, int direct_native)
     (void)mz_finish(_scheme_tail_apply_from_native);
   }
   CHECK_LIMIT();
-  /* Pop saved runstack val and return: */
-  mz_get_local_p(JIT_NOT_RET, JIT_LOCAL1);
-  jit_sti_p(&scheme_current_runstack, JIT_NOT_RET);
+  /* Return: */
   mz_pop_locals();
   jit_ret();
 
@@ -1631,7 +1642,6 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     }
     CHECK_LIMIT();
     mz_push_locals();
-    mz_set_local_p(JIT_RUNSTACK, JIT_LOCAL1);
     jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
     if (direct_native) {
       jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->u.tail_code);
@@ -2792,6 +2802,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   } else if (IS_NAMED_PRIM(rator, "pair?")) {
     generate_inlined_type_test(jitter, app, scheme_pair_type, scheme_pair_type, for_branch, branch_short);
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "mpair?")) {
+    generate_inlined_type_test(jitter, app, scheme_mutable_pair_type, scheme_mutable_pair_type, for_branch, branch_short);
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "symbol?")) {
     generate_inlined_type_test(jitter, app, scheme_symbol_type, scheme_symbol_type, for_branch, branch_short);
     return 1;
@@ -2809,6 +2822,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     return 1;
   } else if (IS_NAMED_PRIM(rator, "real?")) {
     generate_inlined_type_test(jitter, app, scheme_integer_type, scheme_complex_izi_type, for_branch, branch_short);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "exact-integer?")) {
+    generate_inlined_type_test(jitter, app, scheme_integer_type, scheme_bignum_type, for_branch, branch_short);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "procedure?")) {
     generate_inlined_type_test(jitter, app, scheme_prim_type, scheme_native_closure_type, for_branch, branch_short);
@@ -2836,6 +2852,66 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     return 1;
   } else if (IS_NAMED_PRIM(rator, "positive?")) {
     generate_arith(jitter, rator, app->rand, NULL, 1, 0, 2, 0, for_branch, branch_short);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "exact-nonnegative-integer?")
+             || IS_NAMED_PRIM(rator, "exact-positive-integer?")) {
+    GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4;
+    
+    LOG_IT(("inlined exact-nonnegative-integer?\n"));
+
+    mz_runstack_skipped(jitter, 1);
+    
+    generate_non_tail(app->rand, jitter, 0, 1);
+    CHECK_LIMIT();
+
+    mz_runstack_unskipped(jitter, 1);
+
+    /* Jump ahead if it's a fixnum: */
+    __START_SHORT_JUMPS__(1);
+    ref = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
+    __END_SHORT_JUMPS__(1);
+
+    /* Check for positive bignum: */
+    __START_SHORT_JUMPS__(branch_short);
+    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+    ref2 = jit_bnei_p(jit_forward(), JIT_R2, scheme_bignum_type);
+    jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
+    ref3 = jit_bmci_ul(jit_forward(), JIT_R2, 0x1);
+    __END_SHORT_JUMPS__(branch_short);
+    /* Ok bignum. Instead of jumping, install the fixnum 1: */
+    jit_movi_p(JIT_R0, scheme_make_integer(1));
+
+    __START_SHORT_JUMPS__(1);
+    mz_patch_branch(ref);
+    __END_SHORT_JUMPS__(1);
+    
+    /* Check whether the fixnum is in range: */
+    __START_SHORT_JUMPS__(branch_short);
+    jit_rshi_l(JIT_R0, JIT_R0, 0x1);
+    if (IS_NAMED_PRIM(rator, "exact-nonnegative-integer?")) {
+      ref4 = jit_blti_l(jit_forward(), JIT_R0, 0);
+    } else {
+      ref4 = jit_blei_l(jit_forward(), JIT_R0, 0);
+    }
+
+    /* Ok --- it's in range */
+    
+    if (for_branch) {
+      for_branch[0] = ref2;
+      for_branch[1] = ref3;
+      for_branch[3] = ref4;
+    } else {
+      (void)jit_movi_p(JIT_R0, scheme_true);
+      ref = jit_jmpi(jit_forward());
+      mz_patch_branch(ref2);
+      mz_patch_branch(ref3);
+      mz_patch_branch(ref4);
+      (void)jit_movi_p(JIT_R0, scheme_false);
+      mz_patch_ucbranch(ref);
+    }
+    
+    __END_SHORT_JUMPS__(branch_short);
+
     return 1;
   } else if (!for_branch) {
     if (IS_NAMED_PRIM(rator, "car")
@@ -2907,6 +2983,44 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         VALIDATE_RESULT(JIT_R0);
         CHECK_LIMIT();
       }
+      __END_SHORT_JUMPS__(1);
+
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "mcar")
+               || IS_NAMED_PRIM(rator, "mcdr")) {
+      GC_CAN_IGNORE jit_insn *reffail = NULL, *ref;
+      const char *name = ((Scheme_Primitive_Proc *)rator)->name;
+
+      LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)rator)->name));
+
+      mz_runstack_skipped(jitter, 1);
+
+      generate_non_tail(app->rand, jitter, 0, 1);
+      CHECK_LIMIT();
+
+      mz_runstack_unskipped(jitter, 1);
+
+      __START_SHORT_JUMPS__(1);
+
+      ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+      reffail = _jit.x.pc;
+      __END_SHORT_JUMPS__(1);
+      if (name[2] == 'a') {
+        (void)jit_jmpi(bad_mcar_code);
+      } else {
+        (void)jit_jmpi(bad_mcdr_code);
+      }
+      __START_SHORT_JUMPS__(1);
+      mz_patch_branch(ref);
+      jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
+      (void)jit_bnei_i(reffail, JIT_R1, scheme_mutable_pair_type);
+      if (name[2] == 'a') {
+        (void)jit_ldxi_p(JIT_R0, JIT_R0, &((Scheme_Simple_Object *)0x0)->u.pair_val.car);
+      } else {
+        (void)jit_ldxi_p(JIT_R0, JIT_R0, &((Scheme_Simple_Object *)0x0)->u.pair_val.cdr);
+      }
+      VALIDATE_RESULT(JIT_R0);
+      CHECK_LIMIT();
       __END_SHORT_JUMPS__(1);
 
       return 1;
@@ -3330,14 +3444,14 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	mz_runstack_unskipped(jitter, 1);
 
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "set-car!")
-               || IS_NAMED_PRIM(rator, "set-cdr!")) {
+    } else if (IS_NAMED_PRIM(rator, "set-mcar!")
+               || IS_NAMED_PRIM(rator, "set-mcdr!")) {
       GC_CAN_IGNORE jit_insn *reffail, *ref;
-      int set_car;
+      int set_mcar;
 
-      set_car = IS_NAMED_PRIM(rator, "set-car!");
+      set_mcar = IS_NAMED_PRIM(rator, "set-mcar!");
 
-      LOG_IT(("inlined set-car!\n"));
+      LOG_IT(("inlined set-mcar!\n"));
 
       generate_two_args(app->rand1, app->rand2, jitter, 1);
       CHECK_LIMIT();
@@ -3346,20 +3460,18 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
       reffail = _jit.x.pc;
       __END_SHORT_JUMPS__(1);
-      if (set_car)
-        (void)jit_jmpi(bad_set_car_code);
+      if (set_mcar)
+        (void)jit_jmpi(bad_set_mcar_code);
       else
-        (void)jit_jmpi(bad_set_cdr_code);
+        (void)jit_jmpi(bad_set_mcdr_code);
       __START_SHORT_JUMPS__(1);
       mz_patch_branch(ref);
       jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-      (void)jit_bnei_i(reffail, JIT_R2, scheme_pair_type);
-      jit_ldxi_s(JIT_R2, JIT_R0, &(MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)0x0)));
-      (void)jit_bmsi_ul(reffail, JIT_R2, 0x1);
+      (void)jit_bnei_i(reffail, JIT_R2, scheme_mutable_pair_type);
       __END_SHORT_JUMPS__(1);
       CHECK_LIMIT();
 
-      if (set_car)
+      if (set_mcar)
         (void)jit_stxi_p(&((Scheme_Simple_Object *)0x0)->u.pair_val.car, JIT_R0, JIT_R1);
       else
         (void)jit_stxi_p(&((Scheme_Simple_Object *)0x0)->u.pair_val.cdr, JIT_R0, JIT_R1);
@@ -3381,6 +3493,24 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       (void)mz_finish(GC_malloc_pair);
 #else
       (void)mz_finish(scheme_make_pair);
+#endif
+      jit_retval(JIT_R0);
+
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "mcons")) {
+      LOG_IT(("inlined mcons\n"));
+
+      generate_two_args(app->rand1, app->rand2, jitter, 1);
+      CHECK_LIMIT();
+
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+      mz_prepare(2);
+      jit_pusharg_p(JIT_R1);
+      jit_pusharg_p(JIT_R0);
+#ifdef MZ_PRECISE_GC
+      (void)mz_finish(GC_malloc_mutable_pair);
+#else
+      (void)mz_finish(scheme_make_mutable_pair);
 #endif
       jit_retval(JIT_R0);
 
@@ -3755,7 +3885,7 @@ static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi
   }
 
   {
-    int amt, need_ends = 1;
+    int amt, need_ends = 1, using_local1 = 0;
     START_JIT_DATA();
 
     /* Might change the stack or marks: */
@@ -3765,10 +3895,16 @@ static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi
       if (mark_pos_ends)
 	generate_non_tail_mark_pos_prefix(jitter);
       jit_ldi_p(JIT_R2, &scheme_current_cont_mark_stack);
-      /* mark stack is an integer... turn it into a pointer */
-      jit_lshi_l(JIT_R2, JIT_R2, 0x1);
-      jit_ori_l(JIT_R2, JIT_R2, 0x1);
-      mz_pushr_p(JIT_R2);
+      if (!jitter->local1_busy) {
+        using_local1 = 1;
+        jitter->local1_busy = 1;
+        mz_set_local_p(JIT_R2, JIT_LOCAL1);
+      } else {
+        /* mark stack is an integer... turn it into a pointer */
+        jit_lshi_l(JIT_R2, JIT_R2, 0x1);
+        jit_ori_l(JIT_R2, JIT_R2, 0x1);
+        mz_pushr_p(JIT_R2);
+      }
       CHECK_LIMIT();
     }
     mz_runstack_saved(jitter);
@@ -3788,8 +3924,13 @@ static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi
       jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(amt));
     }
     if (need_ends) {
-      mz_popr_p(JIT_R2);
-      jit_rshi_l(JIT_R2, JIT_R2, 0x1); /* pointer back to integer */
+      if (using_local1) {
+        mz_get_local_p(JIT_R2, JIT_LOCAL1);
+        jitter->local1_busy = 0;
+      } else {
+        mz_popr_p(JIT_R2);
+        jit_rshi_l(JIT_R2, JIT_R2, 0x1); /* pointer back to integer */
+      }
       jit_sti_p(&scheme_current_cont_mark_stack, JIT_R2);
       if (mark_pos_ends)
 	generate_non_tail_mark_pos_suffix(jitter);
@@ -4192,6 +4333,26 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  END_JIT_DATA(8);
 	}
 	break;
+      case REF_EXPD:
+        {
+          obj = SCHEME_IPTR_VAL(obj);
+      
+          /* Load global array: */
+          pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(obj));
+          jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+          /* Load bucket: */
+          pos = SCHEME_TOPLEVEL_POS(obj);
+          jit_ldxi_p(JIT_R2, JIT_R2, WORDS_TO_BYTES(pos));
+          CHECK_LIMIT();
+
+          mz_prepare(1);
+	  jit_pusharg_p(JIT_R2);
+	  (void)mz_finish(make_global_ref);
+	  CHECK_LIMIT();
+          jit_retval(JIT_R0);
+          VALIDATE_RESULT(JIT_R0);
+        }
+        break;
       case SPLICE_EXPD:
         {
           scheme_signal_error("cannot JIT a top-level splice form");
@@ -4305,9 +4466,10 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       LOG_IT(("if...\n"));
 
+      /* Places to patch for the false branch: */
       refs[0] = NULL;
       refs[1] = NULL;
-      refs[2] = NULL;
+      refs[2] = NULL; /* a movi patch, instead of a branch */
       refs[3] = NULL;
       refs[4] = NULL;
 
@@ -4736,7 +4898,6 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
   int set_ref;
 
   mz_push_locals();
-  mz_set_local_p(JIT_RUNSTACK, JIT_LOCAL1);
 
   /* If rands == runstack and there are no rest args, set runstack
      base to runstack + rands (and don't copy rands), otherwise set
@@ -4891,9 +5052,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   __END_SHORT_JUMPS__(1);
   mz_epilog(JIT_V1);
 
-  /* *** bad_{car,cdr,...}_code *** */
+  /* *** bad_[m]{car,cdr,...}_code *** */
   /* Bad argument is in R0 for car/cdr, R2 otherwise */
-  for (i = 0; i < 6; i++) {
+  for (i = 0; i < 8; i++) {
     switch (i) {
     case 0:
       bad_car_code = jit_get_ip().ptr;
@@ -4913,10 +5074,16 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     case 5:
       bad_cddr_code = jit_get_ip().ptr;      
       break;
+    case 6:
+      bad_mcar_code = jit_get_ip().ptr;
+      break;
+    case 7:
+      bad_mcdr_code = jit_get_ip().ptr;
+      break;
     }
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
     CHECK_RUNSTACK_OVERFLOW();
-    if (i < 2) {
+    if ((i < 2) || (i > 5)) {
       jit_str_p(JIT_RUNSTACK, JIT_R0);
     } else {
       jit_str_p(JIT_RUNSTACK, JIT_R2);
@@ -4946,6 +5113,12 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     case 5:
       (void)mz_finish(scheme_checked_cddr);
       break;
+    case 6:
+      (void)mz_finish(scheme_checked_mcar);
+      break;
+    case 7:
+      (void)mz_finish(scheme_checked_mcdr);
+      break;
     }
     CHECK_LIMIT();
   }
@@ -4955,10 +5128,10 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   for (i = 0; i < 2; i++) {
     switch (i) {
     case 0:
-      bad_set_car_code = jit_get_ip().ptr;
+      bad_set_mcar_code = jit_get_ip().ptr;
       break;
     case 1:
-      bad_set_cdr_code = jit_get_ip().ptr;
+      bad_set_mcdr_code = jit_get_ip().ptr;
       break;
     }
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
@@ -4973,10 +5146,10 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_pusharg_i(JIT_R1);
     switch (i) {
     case 0:
-      (void)mz_finish(scheme_checked_set_car);
+      (void)mz_finish(scheme_checked_set_mcar);
       break;
     case 1:
-      (void)mz_finish(scheme_checked_set_cdr);
+      (void)mz_finish(scheme_checked_set_mcdr);
       break;
     }
     CHECK_LIMIT();
@@ -5067,7 +5240,6 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
   jit_ldi_p(JIT_RUNSTACK, &MZ_RUNSTACK);
   mz_push_locals();
-  mz_set_local_p(JIT_RUNSTACK, JIT_LOCAL1);
   on_demand_jit_arity_code = jit_get_ip().ptr; /* <<<- arity variant starts here */
   jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(3));
   CHECK_RUNSTACK_OVERFLOW();
@@ -5118,7 +5290,6 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_pusharg_p(JIT_R0);
   (void)mz_finish(_scheme_apply_multi_from_native);
   CHECK_LIMIT();
-  mz_get_local_p(JIT_NOT_RET, JIT_LOCAL1);
   mz_pop_locals();
   jit_ret();
   CHECK_LIMIT();
@@ -5133,9 +5304,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   (void)mz_finish(tail_call_with_values_from_multiple_result);
   jit_retval(JIT_R0);
   VALIDATE_RESULT(JIT_R0);
-  /* Pop saved runstack val and return: */
-  mz_get_local_p(JIT_NOT_RET, JIT_LOCAL1);
-  jit_sti_p(&scheme_current_runstack, JIT_NOT_RET);
+  /* Return: */
   mz_pop_locals();
   jit_ret();  
   CHECK_LIMIT();
@@ -5366,6 +5535,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
           (void)jit_bmsi_ul(reffail, JIT_R2, 0x1);
         }
 	jit_ldxi_i(JIT_R2, JIT_R0, count_offset);
+        CHECK_LIMIT();
 	if (i) {
 	  /* index from expression: */
 	  jit_rshi_ul(JIT_V1, JIT_R1, 1);
@@ -5847,8 +6017,6 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 
   /* r == 2 => tail call performed */
   if (r != 2) {
-    mz_get_local_p(JIT_RUNSTACK, JIT_LOCAL1);
-    jit_sti_p(&MZ_RUNSTACK, JIT_RUNSTACK);
     jit_movr_p(JIT_RET, JIT_R0);
     mz_pop_locals();
     jit_ret();
@@ -5879,6 +6047,8 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc)
   
   gdata.data = data;
   gdata.nc = nc;
+
+  scheme_delay_load_closure(data);
 
   generate_one(NULL, do_generate_closure, &gdata, 1, data->name, ndata);
 
@@ -6611,6 +6781,8 @@ static void release_native_code(void *fnlized, void *p)
   Scheme_Object *len;
 
   len = SCHEME_BOX_VAL(fnlized);
+
+  scheme_jit_malloced -= SCHEME_INT_VAL(len);
 
   /* Remove name mapping: */
   add_symbol((unsigned long)p, (unsigned long)p + SCHEME_INT_VAL(len), NULL, 0);

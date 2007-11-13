@@ -200,16 +200,16 @@ mark:
 	$(MAKE) $(srcdir)/src/mzmark.c
 
 headers:
-	./mzscheme@CGC@ -qr $(srcdir)/mkincludes.ss "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
+	./mzscheme@CGC@ -cqu $(srcdir)/mkincludes.ss "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
 
 $(srcdir)/src/schexn.h: $(srcdir)/src/exnsrc.ss $(srcdir)/src/makeexn
 	./mzscheme@CGC@ -gqr $(srcdir)/src/makeexn < $(srcdir)/src/exnsrc.ss > $(srcdir)/src/schexn.h
 
 $(srcdir)/src/$(CSTARTUPDEST): $(srcdir)/src/startup.ss $(srcdir)/src/schvers.h $(srcdir)/src/schminc.h
-	./mzscheme@CGC@ -qr $(srcdir)/src/sstoinc.ss $(CSTARTUPEXTRA) < $(srcdir)/src/startup.ss > $(srcdir)/src/$(CSTARTUPDEST)
+	./mzscheme@CGC@ -cqu $(srcdir)/src/sstoinc.ss $(CSTARTUPEXTRA) < $(srcdir)/src/startup.ss > $(srcdir)/src/$(CSTARTUPDEST)
 
 $(srcdir)/src/mzmark.c: $(srcdir)/src/mzmarksrc.c $(srcdir)/src/mkmark.ss
-	mzscheme -qr $(srcdir)/src/mkmark.ss < $(srcdir)/src/mzmarksrc.c > $(srcdir)/src/mzmark.c
+	mzscheme -cu $(srcdir)/src/mkmark.ss < $(srcdir)/src/mzmarksrc.c > $(srcdir)/src/mzmark.c
 
 cstartup.zo:
 	$(MAKE) startup CSTARTUPEXTRA='zo' CSTARTUPDEST="../cstartup.zo"
@@ -279,7 +279,7 @@ unix-install-cgc:
 	cd ..; $(ICP) mzscheme/libmzscheme.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzscheme.@LIBSFX@"
 	cd ..; $(ICP) mzscheme/mzscheme@CGC@ "$(DESTDIR)$(bindir)/mzscheme@CGC_INSTALLED@"
 	cd ..; cp mzscheme/mzdyn.o "$(DESTDIR)$(libpltdir)/mzdyn.o"
-	./mzscheme@CGC@ -mvqu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	./mzscheme@CGC@ -cu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 unix-install-cgc-final:
 	cd .
@@ -288,7 +288,7 @@ unix-install-3m:
 	cd ..; $(ICP) mzscheme/mzscheme@MMM@ "$(DESTDIR)$(bindir)/mzscheme@MMM_INSTALLED@"
 	cd ..; $(ICP) mzscheme/libmzscheme3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzscheme3m.@LIBSFX@"
 	cd ..; $(ICP) mzscheme/mzdyn3m.o "$(DESTDIR)$(libpltdir)/mzdyn3m.o"
-	./mzscheme@MMM@ -mvqu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	./mzscheme@MMM@ -cu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 unix-install-3m-final:
 	cd .

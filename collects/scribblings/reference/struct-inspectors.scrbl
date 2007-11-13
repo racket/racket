@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "inspectors"]{Structure Inspectors}
+
+@declare-exporting[(lib "scheme/inspector")]
 
 An @deftech{inspector} provides access to structure fields and
 structure type information without the normal field accessors and

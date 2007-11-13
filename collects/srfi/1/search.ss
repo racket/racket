@@ -49,11 +49,11 @@
 		   list-index
 		   take-while
 		   drop-while
-		   take-while!
+		   (rename take-while take-while!)
 		   span
 		   break
-		   span!
-		   break!)
+		   (rename span span!)
+		   (rename break break!))
 
   ;; Extended from R4RS to take an optional comparison argument.
   (define my-member
@@ -92,6 +92,7 @@
 			  (lp (cdr lis))
 			  lis))))
   
+  #;
   (define (take-while! pred lis)
 	(check-arg procedure? pred 'take-while!)
 	(if (or (null-list? lis) (not (pred (car lis)))) '()
@@ -112,6 +113,7 @@
 						 (values (cons x prefix) suffix))
 				(values '() lis))))))
 
+#;
   (define (span! pred lis)
 	(check-arg procedure? pred 'span!)
 	(if (or (null-list? lis) (not (pred (car lis)))) (values '() lis)
@@ -125,6 +127,7 @@
   
   
   (define (break  pred lis) (span  (lambda (x) (not (pred x))) lis))
+  #;
   (define (break! pred lis) (span! (lambda (x) (not (pred x))) lis))
   
   (define (any pred lis1 . lists)

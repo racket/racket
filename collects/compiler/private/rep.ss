@@ -158,34 +158,34 @@
 	(lambda (code)
 	  (let* ([base (gensym)]
 		 [struct (let ([fields
-				(append! (if (vehicle:only-code-in-vehicle? code)
-					     null
-					     (list
-					      (make-rep:struct-field 'label
-								     'label
-								     (make-rep:atomic 'label))))
-					 (map (lambda (bound)
-						(make-rep:struct-field
-						 ;; field-name
-						 #f
-						 (zodiac:binding-var bound)
-						 ;; field-type
-						 (binding-rep (get-annotation bound))))
-					      (set->list (code-free-vars code)))
-					 (map (lambda (global)
-						(make-rep:struct-field
-						 ;; field-name
-						 (if (const:per-load-statics-table? global)
-						     'pls
-						     #f)
-						 (if (const:per-load-statics-table? global)
-						     global
-						     (mod-glob-cname global))
-						 ;; field-type
-						 (if (const:per-load-statics-table? global)
-						     (make-rep:atomic 'scheme-per-load-static)
-						     (make-rep:atomic 'scheme-bucket))))
-					      (set->list (code-global-vars code))))])
+				(append (if (vehicle:only-code-in-vehicle? code)
+                                            null
+                                            (list
+                                             (make-rep:struct-field 'label
+                                                                    'label
+                                                                    (make-rep:atomic 'label))))
+                                        (map (lambda (bound)
+                                               (make-rep:struct-field
+                                                ;; field-name
+                                                #f
+                                                (zodiac:binding-var bound)
+                                                ;; field-type
+                                                (binding-rep (get-annotation bound))))
+                                             (set->list (code-free-vars code)))
+                                        (map (lambda (global)
+                                               (make-rep:struct-field
+                                                ;; field-name
+                                                (if (const:per-load-statics-table? global)
+                                                    'pls
+                                                    #f)
+                                                (if (const:per-load-statics-table? global)
+                                                    global
+                                                    (mod-glob-cname global))
+                                                ;; field-type
+                                                (if (const:per-load-statics-table? global)
+                                                    (make-rep:atomic 'scheme-per-load-static)
+                                                    (make-rep:atomic 'scheme-bucket))))
+                                             (set->list (code-global-vars code))))])
 			   (if (null? fields)
 			       #f ; empty structure - don't use anything
 			       (make-rep:struct 

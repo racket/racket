@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "cont"]{Continuations}
+
+@declare-exporting[(lib "scheme/control")]
 
 See @secref["cont-model"] and @secref["prompt-model"] for
 general information about continuations. PLT Scheme's support for

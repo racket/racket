@@ -1,10 +1,10 @@
- (module frtime (lib "mzscheme-utils.ss" "frtime")
-  (require (lib "lang-ext.ss" "frtime"))
-  (require (lib "frp-snip.ss" "frtime"))
-  (require (lib "ft-qq.ss" "frtime"))
-  (require (as-is:unchecked (lib "frp-core.ss" "frtime")
-	    event-cons? signal-value))
-  
+ (module frtime "mzscheme-utils.ss"
+  (require "lang-ext.ss")
+  (require "frp-snip.ss")
+  (require "ft-qq.ss")
+  (require (as-is:unchecked "frp-core.ss"
+                            event-cons? signal-value))
+
   (define (value-nowable? x)
     (or (not (signal? x))
 	(not (event-cons? (signal-value x)))))
@@ -18,7 +18,7 @@
   ;(provide-for-syntax (rename (lib "mzscheme-utils.ss" "frtime") syntax->list syntax->list))
   
   (provide value-nowable? behaviorof
-	   (all-from (lib "mzscheme-utils.ss" "frtime"))
-           (all-from-except (lib "lang-ext.ss" "frtime") lift)
-           (all-from (lib "frp-snip.ss" "frtime"))
-           (all-from (lib "ft-qq.ss" "frtime"))))
+	   (all-from "mzscheme-utils.ss")
+           (all-from-except "lang-ext.ss" lift)
+           (all-from "frp-snip.ss")
+           (all-from "ft-qq.ss")))

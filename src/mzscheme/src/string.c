@@ -24,6 +24,7 @@
 */
 
 #include "schpriv.h"
+#include "schvers.h"
 #include <string.h>
 #include <ctype.h>
 #ifndef DONT_USE_LOCALE
@@ -621,13 +622,13 @@ scheme_init_string (Scheme_Env *env)
 			     env);
   scheme_add_global_constant("printf",
 			     scheme_make_noncm_prim(sch_printf,
-						    "printf",
-						    1, -1),
+                                                    "printf",
+                                                    1, -1),
 			     env);
   scheme_add_global_constant("fprintf",
 			     scheme_make_noncm_prim(sch_fprintf,
-						    "fprintf",
-						    2, -1),
+                                                    "fprintf",
+                                                    2, -1),
 			     env);
 
   scheme_add_global_constant("byte?",

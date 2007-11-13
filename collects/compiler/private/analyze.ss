@@ -192,11 +192,11 @@
 
       (define (move-over-local-lists)
 	(set! compiler:define-list
-	      (append! compiler:define-list 
-		       (reverse! compiler:local-define-list)))
+	      (append compiler:define-list 
+                      (reverse compiler:local-define-list)))
 	(set! compiler:per-load-define-list
-	      (append! compiler:per-load-define-list 
-		       (reverse! compiler:local-per-load-define-list)))
+	      (append compiler:per-load-define-list 
+                      (reverse compiler:local-per-load-define-list)))
 	
 	(set! compiler:local-define-list null)
 	(set! compiler:local-per-load-define-list null))
@@ -1002,10 +1002,12 @@
 				    [(vars) (car (zodiac:let-values-form-vars ast))]
 				    [(convert-set!-val)
 				     (lambda ()   
-				       (set-car! (zodiac:let-values-form-vals ast)
-						 (zodiac:make-special-constant 
-						  'void))
-				       (zodiac:make-begin-form 	   
+                                       (zodiac:set-let-values-form-vals! 
+                                        ast
+                                        (cons (zodiac:make-special-constant 
+                                               'void)
+                                              (cdr (zodiac:let-values-form-vals ast))))
+				       (zodiac:make-begin-form
 					(zodiac:zodiac-stx ast)
 					(make-empty-box)
 					(list val ast)))])
@@ -1046,9 +1048,12 @@
 
 				    ;; otherwise, process normally
 				    (begin
-				      
-				      (set-car! (car (zodiac:let-values-form-vars ast)) 
-						var)
+				      (zodiac:set-let-values-form-vars!
+                                       ast
+                                       (cons (cons var
+                                                   (cdr (car (zodiac:let-values-form-vars ast))))
+                                             (cdr (zodiac:let-values-form-vars ast)) ))
+
 				      (zodiac:set-let-values-form-body! ast body)
 				      
 				      (if (zodiac:set!-form? val)
@@ -1060,18 +1065,24 @@
 					  
 					  ;; if it's any other expression, we're done.
 					  (begin
-					    (set-car! (zodiac:let-values-form-vals ast)
-						      val)
+                                            (zodiac:set-let-values-form-vals!
+                                             ast
+                                             (cons val
+                                                   (cdr (zodiac:let-values-form-vals ast))))
 					    (values ast body-multi)))))))
 			    
 			    ;; this is a multiple (or zero) value binding let
 			    ;; the values are unknown to simple analysis so skip
 			    ;; that stuff
 			    (begin
-			      (set-car! (zodiac:let-values-form-vars ast) vars)
-					; these are all new bindings
+                              (zodiac:set-let-values-form-vars!
+                               ast
+                               (cons vars
+                                     (cdr (zodiac:let-values-form-vars ast))))
+
+                              ;; these are all new bindings
 			      (for-each add-local-var! vars)
-					; analyze the body
+                              ;; analyze the body
 			      (let-values ([(body body-multi) 
 					    (analyze! (zodiac:let-values-form-body ast)
 						      (append vars env)
@@ -1090,7 +1101,10 @@
 					(values (convert-set!-val) #f)))
 					; if it's any other option, we're done
 				    (begin
-				      (set-car! (zodiac:let-values-form-vals ast) val)
+                                      (zodiac:set-let-values-form-vals!
+                                       ast
+                                       (cons val
+                                             (cdr (zodiac:let-values-form-vals ast))))
 				      (values ast body-multi)))))
 			    
 			    ))]
@@ -1175,11 +1189,11 @@
 			     (let loop ([bodies (zodiac:begin-form-bodies ast)])
 			       (if (null? (cdr bodies))
 				   (let-values ([(e last-multi) (analyze! (car bodies) env inlined tail? wcm-tail?)])
-				     (set-car! bodies e)
-				     last-multi)
-				   (begin
-				     (set-car! bodies (analyze!-ast (car bodies) env inlined))
-				     (loop (cdr bodies)))))])
+				     (values (list e)
+                                             last-multi))
+				   (let-values ([(e) (analyze!-ast (car bodies) env inlined)]
+                                                [(bodies last-multi) (loop (cdr bodies))])
+                                     (values (cons e bodies) last-multi))))])
 
 			(values ast last-multi))]
 		     

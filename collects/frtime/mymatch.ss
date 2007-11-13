@@ -150,17 +150,18 @@
 	      (unless (struct-declaration-info? info)
 		(i (format "$; `~a' is not the name of a structure type"
 			   (syntax-e name))))
-	      (let ([pred (caddr info)]
-		    [sel (reverse
-			  (let loop ([l (list-ref info 3)])
-			    (if (or (null? l) (not (car l)))
-				null
-				(cons (car l) (loop (cdr l))))))])
-		(unless (= (length sel)
-			   (length (syntax->list (syntax (p ...)))))
-		  (i (format "$; wrong number of fields for `~a'"
-			     (syntax-e name))))
-		`($ ,(cons pred sel) ,@(r (syntax (p ...)))))))]
+              (let ([info (extract-struct-info info)])
+                (let ([pred (caddr info)]
+                      [sel (reverse
+                            (let loop ([l (list-ref info 3)])
+                              (if (or (null? l) (not (car l)))
+                                  null
+                                  (cons (car l) (loop (cdr l))))))])
+                  (unless (= (length sel)
+                             (length (syntax->list (syntax (p ...)))))
+                    (i (format "$; wrong number of fields for `~a'"
+                               (syntax-e name))))
+                  `($ ,(cons pred sel) ,@(r (syntax (p ...))))))))]
 	 [($ . _) (i "$")]
 	 [(and p ...)
 	  `(and ,@(r (syntax (p ...))))]

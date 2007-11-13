@@ -1,6 +1,6 @@
 ;; info.ss for mzcom collection
 
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "MzCOM")
   (define doc.txt "doc.txt")
   (define blurb

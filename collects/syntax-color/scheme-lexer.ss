@@ -247,13 +247,13 @@
                   (next-char (peek-char-or-special i)))
              (cond
                ((not (or (char? next-char) (eof-object? next-char))) ;; a special
-                (values (apply string-append (reverse! (cons next-line acc)))
+                (values (apply string-append (reverse (cons next-line acc)))
                         'error #f start-pos (get-offset i)))
                ((equal? next-line ender)  ;; end of string
-                (values (apply string-append (reverse! (cons next-line acc)))
+                (values (apply string-append (reverse (cons next-line acc)))
                         'string #f start-pos (get-offset i)))
                ((eof-object? next-char)
-                (values (apply string-append (reverse! (cons next-line acc)))
+                (values (apply string-append (reverse (cons next-line acc)))
                         'error #f start-pos (get-offset i)))
                (else
                 (read-char i)

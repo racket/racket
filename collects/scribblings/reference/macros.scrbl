@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:style 'toc]{Macros}
+
+@declare-exporting[(lib "scheme/syntax")]
 
 See @secref["syntax-model"] for general information on how programs
 are parsed. In particular, the subsection @secref["expand-steps"]

@@ -1,5 +1,5 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/eval]
 @require["common.ss"]
 @require["diagrams.ss"]
 
@@ -157,11 +157,11 @@ More complex shapes are typically best implemented with
  Scheme logo. It also enables smoothing, so that the logo's curves are
  anti-aliased when smoothing is available. (Smoothing is always
  available under Mac OS X, smoothing is available under Windows XP or
- when @file{gdiplus.dll} is installed, and smoothing is available
+ when @filepath{gdiplus.dll} is installed, and smoothing is available
  under X when Cairo is installed before MrEd is compiled.)
 
 @begin[
-#reader(lib "comment-reader.ss" "scribble")
+#readerscribble/comment-reader
 [schemeblock
 (require (lib "math.ss")) ; for @scheme[pi]
 

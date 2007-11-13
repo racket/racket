@@ -1,9 +1,7 @@
-(module rx (lib "lang.ss" "big")
-  (require (lib "struct.ss" "scribble")
-           (lib "manual.ss" "scribble")
-           (lib "bnf.ss" "scribble")
-           (lib "list.ss")
-           (lib "string.ss"))
+(module rx scheme/base
+  (require scribble/struct
+           scribble/manual
+           scribble/bnf)
 
   (define grammar "
 Regexp   ::= Pieces                   Match Pieces                                                 #co

@@ -1,4 +1,4 @@
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "SSL Driver")
   (define doc.txt "doc.txt")
   (define blurb '("The SSL collection provides a driver for using the OpenSSL "

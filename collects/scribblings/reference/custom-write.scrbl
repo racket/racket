@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title{Printer Extension}
+
+@declare-exporting[(lib "scheme/write")]
 
 @defthing[prop:custom-write struct-type-property?]{
 

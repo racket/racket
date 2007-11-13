@@ -758,25 +758,26 @@ paint by numbers.
            (length col-numbers)))]
       
       [define/private update-col/row
-        (lambda (col/row col/row-numbers calculate-col/row draw-col/row-label)
+        (lambda (col/row col/row-numbers calculate-col/row)
           (let loop ([l col/row-numbers]
                      [n col/row])
             (cond
               [(null? l) (error 'update-col/row "col/row too big: ~a~n" col/row)]
               [(zero? n)
-               (let ([new-col/row (calculate-col/row col/row)])
-                 (set-car! l new-col/row)
-                 (draw-col/row-label col/row))]
+               (cons (calculate-col/row col/row)
+                     (cdr l))]
               [else
-               (loop (cdr l)
-                     (- n 1))])))]
+               (cons (car l)
+                     (loop (cdr l)
+                           (- n 1)))])))]
       
       [define/private update-col
         (lambda (col)
-          (update-col/row col
-                          col-numbers
-                          (lambda (x) (calculate-col x))
-                          (lambda (n) (draw-col-label n)))
+          (set! col-numbers
+                (update-col/row col
+                                col-numbers
+                                (lambda (x) (calculate-col x))))
+          (draw-col-label col)
           (let ([len (length (list-ref col-numbers col))])
             (when (< col-spacing len)
               (set! col-spacing len)
@@ -786,10 +787,11 @@ paint by numbers.
       
       [define/private update-row
         (lambda (row)
-          (update-col/row row
-                          row-numbers
-                          (lambda (x) (calculate-row x))
-                          (lambda (n) (draw-row-label n)))
+          (set! row-numbers
+                (update-col/row row
+                                row-numbers
+                                (lambda (x) (calculate-row x))))
+          (draw-row-label row)
           (let ([len (length (list-ref row-numbers row))])
             (when (< row-spacing len)
               (set! row-spacing len)

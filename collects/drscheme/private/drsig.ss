@@ -103,7 +103,8 @@
      get-default-language-settings
      settings-preferences-symbol
      get-all-scheme-manual-keywords
-     add-built-in-languages))
+     add-built-in-languages
+     not-a-language-language<%>))
   
   (define-signature drscheme:tools^
     ((struct successful-tool (spec bitmap name url))
@@ -154,7 +155,8 @@
     (frame%))
   
   (define-signature drscheme:eval^
-    (expand-program
+    (editor->port-name
+     expand-program
      expand-program/multiple
      traverse-program/multiple
      build-user-eventspace/custodian

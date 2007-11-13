@@ -1,4 +1,4 @@
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "Test Suites")
   (define doc-subcollections (list "tester"))
   (define compile-subcollections '(("tests" "drscheme")

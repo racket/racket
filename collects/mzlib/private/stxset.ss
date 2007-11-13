@@ -31,7 +31,7 @@
 				    (let ([defn (local-expand
 						 defn
 						 expand-context
-						 (kernel-form-identifier-list (quote-syntax here)))])
+						 (kernel-form-identifier-list))])
 				      (syntax-case defn (define-values define-syntaxes begin)
 					[(define-values (id ...) expr)
 					 (andmap identifier? (syntax->list (syntax (id ...))))

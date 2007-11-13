@@ -103,11 +103,11 @@
                 (definition? #'head)
                 (loop #'(expr ...) (cons #'(head . rest) defs))]
                ;; only definitions
-               [() #`(begin #,@(reverse! defs))]
+               [() #`(begin #,@(reverse defs))]
                ;; single expr
-               [(expr) #`(begin #,@(reverse! defs) expr)]
+               [(expr) #`(begin #,@(reverse defs) expr)]
                [(expr ...)
-                #`(begin #,@(reverse! defs) (~ (begin (! expr) ...)))]))]))))
+                #`(begin #,@(reverse defs) (~ (begin (! expr) ...)))]))]))))
 
   ;; redefined to use lazy-proc and ~begin
   (define-syntax (~lambda stx)
@@ -309,8 +309,8 @@
   ;;   (let ([a 1] [b 2]) (set! a (add1 b)) (set! b (add1 a)) a)
   ;; goes into an infinite loop.  (Thanks to Jos Koot)
 
-  (define* (~set-car! pair val) (~ (set-car! (! pair) val)))
-  (define* (~set-cdr! pair val) (~ (set-cdr! (! pair) val)))
+  (define* (~set-mcar! mpair val) (~ (set-mcar! (! mpair) val)))
+  (define* (~set-mcdr! mpair val) (~ (set-mcdr! (! mpair) val)))
   (define* (~vector-set! vec i val) (~ (vector-set! (! vec) (! i) val)))
   (define* (~set-box! box val) (~ (set-box! (! box) val)))
 
@@ -512,12 +512,12 @@
     loop ->
       (~ (loop (! (cdr l)) (~!*app proc (car l) acc)))
       (~ (loop (map !cdr ls)
-               (~!*apply proc (append! (map car ls) (list acc))))))
+               (~!*apply proc (append (map car ls) (list acc))))))
   (deflistiter (foldr proc init l . ls)
     null -> init
     loop ->
       (~!*app proc (car l) (~ (loop (! (cdr l)))))
-      (~!*apply proc (append! (map car ls) (list (~ (loop (map !cdr ls)))))))
+      (~!*apply proc (append (map car ls) (list (~ (loop (map !cdr ls)))))))
 
   (define (do-member name = elt list) ; no currying for procedure names
     ;; `elt', `=', and `name' are always forced values
@@ -702,7 +702,7 @@
    values define-values let-values let*-values letrec-values make-struct-type
    cons list list* vector box
    if and or begin begin0 when unless
-   set! set-car! set-cdr! vector-set! set-box!
+   set! set-mcar! set-mcdr! vector-set! set-box!
    cond case error printf fprintf display write print
    eq? eqv? equal?
    list? length list-ref list-tail append map for-each andmap ormap

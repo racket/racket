@@ -3,19 +3,24 @@
 
 (Section 'optimization)
 
+(require scheme/namespace)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check JIT inlining of primitives:
-(parameterize ([current-namespace (make-namespace)]
+(parameterize ([current-namespace (make-base-namespace)]
 	       [eval-jit-enabled #t])
-  (namespace-require 'mzscheme)
+  (namespace-require 'scheme/base)
   (let* ([check-error-message (lambda (name proc)
 				(unless (memq name '(eq? not null? pair?
 							 real? number? boolean? 
 							 procedure? symbol?
 							 string? bytes?
 							 vector? box?
-							 eof-object?))
+							 eof-object?
+                                                         exact-integer?
+                                                         exact-nonnegative-integer?
+                                                         exact-positive-integer?))
 				  (let ([s (with-handlers ([exn? exn-message])
 					     (proc 'bad))]
 					[name (symbol->string name)])
@@ -133,6 +138,30 @@
     (un #t 'number? 1.0)
     (un #t 'number? 1+2i)
     (un #f 'number? 'apple)
+
+    (un-exact #t 'exact-integer? 0)
+    (un-exact #t 'exact-integer? 10)
+    (un-exact #t 'exact-integer? -10)
+    (un-exact #t 'exact-integer? (expt 2 100))
+    (un-exact #t 'exact-integer? (- (expt 2 100)))
+    (un-exact #f 'exact-integer? 10.0)
+    (un-exact #f 'exact-integer? 1/2)
+
+    (un-exact #t 'exact-nonnegative-integer? 0)
+    (un-exact #t 'exact-nonnegative-integer? 10)
+    (un-exact #f 'exact-nonnegative-integer? -10)
+    (un-exact #t 'exact-nonnegative-integer? (expt 2 100))
+    (un-exact #f 'exact-nonnegative-integer? (- (expt 2 100)))
+    (un-exact #f 'exact-nonnegative-integer? 10.0)
+    (un-exact #f 'exact-nonnegative-integer? 1/2)
+
+    (un-exact #f 'exact-positive-integer? 0)
+    (un-exact #t 'exact-positive-integer? 10)
+    (un-exact #f 'exact-positive-integer? -10)
+    (un-exact #t 'exact-positive-integer? (expt 2 100))
+    (un-exact #f 'exact-positive-integer? (- (expt 2 100)))
+    (un-exact #f 'exact-positive-integer? 10.0)
+    (un-exact #f 'exact-positive-integer? 1/2)
 
     (un #t 'not #f)
     (un #f 'not #t)
@@ -355,7 +384,7 @@
 (test-comp (normalize-depth '(let* ([i (cons 0 1)][g i][h (car g)][m h]) m))
 	   (normalize-depth '(let* ([i (cons 0 1)][h (car i)]) h)))
 
-(require #%kernel) ; 
+; (require #%kernel) ; 
 
 (test-comp (void) '(void))
 (test-comp 3 '(+ 1 2))
@@ -388,7 +417,7 @@
 	   '(letrec ([x (cons 1 1)][y x]) (cons x x)))
 
 (test-comp '(let ([f (lambda (x) x)]) f)
-	   (syntax-property (datum->syntax-object #f '(lambda (x) x)) 'inferred-name 'f))
+	   (syntax-property (datum->syntax #f '(lambda (x) x)) 'inferred-name 'f))
 
 (test-comp '(letrec ([f (lambda (x) x)])
 	      (f 10)
@@ -573,7 +602,7 @@
   (f)
   (define i 9)
   (set! i 10))
-(err/rt-test (dynamic-require 'bad-order #f))
+(err/rt-test (dynamic-require ''bad-order #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -594,7 +623,7 @@
     (call-with-values (lambda () (+ x 3))
       (lambda (y) (+ y 2))))
   (provide cwv-1-f))
-(require cwv-1)
+(require 'cwv-1)
 (test 15 cwv-1-f 10)
 
 ;; known function doesn't expect 1 argument
@@ -603,7 +632,7 @@
     (call-with-values (lambda () (+ x 3))
       (lambda (y z) (+ y 2))))
   (provide cwv-2-f))
-(require cwv-2)
+(require 'cwv-2)
 (err/rt-test (cwv-2-f 10) exn:fail:contract:arity?)
 
 ;; known function, unknown number of results:
@@ -612,7 +641,7 @@
     (call-with-values (lambda () (g))
       (lambda (y) (+ y 2))))
   (provide cwv-3-f))
-(require cwv-3)
+(require 'cwv-3)
 (test 12 cwv-3-f (lambda () 10))
 (err/rt-test (cwv-3-f (lambda () (values 1 2))) exn:fail:contract:arity?)
 
@@ -622,7 +651,7 @@
     (call-with-values (lambda () (g))
       (lambda (y z) (+ y z 2))))
   (provide cwv-4-f))
-(require cwv-4)
+(require 'cwv-4)
 (test 12 cwv-4-f (lambda () (values 4 6)))
 (err/rt-test (cwv-4-f (lambda () 10)) exn:fail:contract:arity?)
 (err/rt-test (cwv-4-f (lambda () (values 1 2 10))) exn:fail:contract:arity?)
@@ -633,7 +662,7 @@
     (call-with-values g
       (lambda (y) (+ y 2))))
   (provide cwv-5-f))
-(require cwv-5)
+(require 'cwv-5)
 (test 12 cwv-5-f (lambda () 10))
 (err/rt-test (cwv-5-f (lambda () (values 1 2))) exn:fail:contract:arity?)
 
@@ -643,7 +672,7 @@
     (call-with-values g
       (lambda (y z) (+ y z 2))))
   (provide cwv-6-f))
-(require cwv-6)
+(require 'cwv-6)
 (test 12 cwv-6-f (lambda () (values 4 6)))
 (err/rt-test (cwv-6-f (lambda () 10)) exn:fail:contract:arity?)
 (err/rt-test (cwv-6-f (lambda () (values 1 2 10))) exn:fail:contract:arity?)
@@ -654,7 +683,7 @@
     (call-with-values (lambda () (+ x 3))
       h))
   (provide cwv-2-1-f))
-(require cwv-2-1)
+(require 'cwv-2-1)
 (test 15 cwv-2-1-f 10 (lambda (y) (+ y 2)))
 
 ;; unknown function doesn't expect 1 argument
@@ -663,7 +692,7 @@
     (call-with-values (lambda () (+ x 3))
       h))
   (provide cwv-2-2-f))
-(require cwv-2-2)
+(require 'cwv-2-2)
 (err/rt-test (cwv-2-2-f 10 (lambda (y z) (+ y 2))) exn:fail:contract:arity?)
 
 ;; known function, unknown number of results:
@@ -672,7 +701,7 @@
     (call-with-values (lambda () (g))
       h))
   (provide cwv-2-3-f))
-(require cwv-2-3)
+(require 'cwv-2-3)
 (test 12 cwv-2-3-f (lambda () 10) (lambda (y) (+ y 2)))
 (test 23 cwv-2-3-f (lambda () (values 10 11)) (lambda (y z) (+ y z 2)))
 (err/rt-test (cwv-2-3-f (lambda () (values 1 2)) (lambda (y) (+ y 2))) exn:fail:contract:arity?)
@@ -684,7 +713,7 @@
   (define (cwv-2-5-f g h)
     (call-with-values g h))
   (provide cwv-2-5-f))
-(require cwv-2-5)
+(require 'cwv-2-5)
 (test 12 cwv-2-5-f (lambda () 10) (lambda (y) (+ y 2)))
 (err/rt-test (cwv-2-5-f (lambda () (values 1 2)) (lambda (y) (+ y 2))) exn:fail:contract:arity?)
 (err/rt-test (cwv-2-5-f (lambda () 1) (lambda (y z) (+ y 2))) exn:fail:contract:arity?)

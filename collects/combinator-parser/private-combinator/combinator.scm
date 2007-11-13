@@ -1,4 +1,4 @@
-(module combinator (lib "lazy.ss" "lazy")
+(module combinator lazy
   
   (require (lib "unit.ss")
            (only (lib "etc.ss") opt-lambda))

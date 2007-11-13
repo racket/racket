@@ -98,36 +98,36 @@
       [(word #:new c)
        #'(let ([n c])
            (if (<= 0 n 4294967296)
-             (cons (quotient n 65536) (remainder n 65536))
+             (mcons (quotient n 65536) (remainder n 65536))
              (error 'word "out of range: ~e" n)))]
       ;; use when the number is known to be in range (allocates, no check)
       [(word #:new+safe c)
-       #'(let ([n c]) (cons (quotient n 65536) (remainder n 65536)))]
+       #'(let ([n c]) (mcons (quotient n 65536) (remainder n 65536)))]
       ;; default form: compute at compile-time if possible
       [(word c)
        (let ([n (syntax-e #'c)])
          (if (integer? n)
            (if (<= 0 n 4294967295)
-             (datum->syntax-object
-              #'c `(quote ,(cons (quotient n 65536) (remainder n 65536))) #'c)
-             (raise-syntax-error #f "constant number out of range" stx))
+               (syntax-local-lift-expression
+                #`(mcons #,(quotient n 65536) #,(remainder n 65536)))
+               (raise-syntax-error #f "constant number out of range" stx))
            #'(word #:new c)))]))
 
   ;; destructive operations to save on consing
 
   ;; destructive cons
   (define (cons! p x y)
-    (set-car! p x)
-    (set-cdr! p y))
+    (set-mcar! p x)
+    (set-mcdr! p y))
 
   ;; a := b
   (define (word=! a b)
-    (cons! a (car b) (cdr b)))
+    (cons! a (mcar b) (mcdr b)))
 
   ;; a := a + b
   (define (word+=! a b)
-    (let ([t1 (+ (car a) (car b))]
-          [t2 (+ (cdr a) (cdr b))])
+    (let ([t1 (+ (mcar a) (mcar b))]
+          [t2 (+ (mcdr a) (mcdr b))])
       (cons! a
              (bitwise-and (+ t1 (arithmetic-shift t2 -16)) 65535)
              (bitwise-and t2 65535))))
@@ -137,8 +137,8 @@
                      #xFFF #x1FFF #x3FFF #x7FFF #xFFFF)])
       (lambda (a s)
         (let-values ([(hi lo s)
-                      (cond [(< s 16) (values (car a) (cdr a) s)]
-                            [(< s 32) (values (cdr a) (car a) (- s 16))]
+                      (cond [(< s 16) (values (mcar a) (mcdr a) s)]
+                            [(< s 32) (values (mcdr a) (mcar a) (- s 16))]
                             [else (error 'word<<< "shift out of range: ~e"
                                          s)])])
           (cons! a
@@ -274,18 +274,18 @@
   (define (step4 a-port)
     ;; X is always a vector of 16 words (it changes in read-block!)
     (define X
-      (vector (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0)
-              (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0)
-              (cons 0 0) (cons 0 0) (cons 0 0) (cons 0 0)))
+      (vector (mcons 0 0) (mcons 0 0) (mcons 0 0) (mcons 0 0) (mcons 0 0) (mcons 0 0)
+              (mcons 0 0) (mcons 0 0) (mcons 0 0) (mcons 0 0) (mcons 0 0) (mcons 0 0)
+              (mcons 0 0) (mcons 0 0) (mcons 0 0) (mcons 0 0)))
     (define A (word #:new+safe #x67452301))
     (define B (word #:new+safe #xefcdab89))
     (define C (word #:new+safe #x98badcfe))
     (define D (word #:new+safe #x10325476))
-    (define AA (cons 0 0))
-    (define BB (cons 0 0))
-    (define CC (cons 0 0))
-    (define DD (cons 0 0))
-    (define tmp (cons 0 0))
+    (define AA (mcons 0 0))
+    (define BB (mcons 0 0))
+    (define CC (mcons 0 0))
+    (define DD (mcons 0 0))
+    (define tmp (mcons 0 0))
     (let loop ([a-port a-port] [done 0])
       (if (not a-port)
         (list A B C D)
@@ -406,7 +406,7 @@
   (define-syntax cons-op!
     (syntax-rules ()
       [(cons-op! t (x ...) body)
-       (cons! t (let ([x (car x)] ...) body) (let ([x (cdr x)] ...) body))]))
+       (cons! t (let ([x (mcar x)] ...) body) (let ([x (mcdr x)] ...) body))]))
 
   (define (F t x y z)
     (cons-op! t (x y z)
@@ -440,12 +440,12 @@
     (let ([digit (lambda (n b)
                    (vector-ref hex-digits
                                (bitwise-and (arithmetic-shift n (- b)) 15)))]
-          [lo (cdr w)] [hi (car w)])
+          [lo (mcdr w)] [hi (mcar w)])
       (bytes (digit lo 4) (digit lo 0) (digit lo 12) (digit lo 8)
              (digit hi 4) (digit hi 0) (digit hi 12) (digit hi 8))))
   (define (word->bytes w)
-    (bytes-append (integer->integer-bytes (cdr w) 2 #f #f)
-                  (integer->integer-bytes (car w) 2 #f #f)))
+    (bytes-append (integer->integer-bytes (mcdr w) 2 #f #f)
+                  (integer->integer-bytes (mcar w) 2 #f #f)))
   (define (encode l hex-encode?)
     (apply bytes-append (map (if hex-encode? word->digits word->bytes) l)))
 

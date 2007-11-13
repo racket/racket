@@ -61,7 +61,7 @@
                      (if (or (null? e) (pair? e))
                        (loop e r)
                        (quasisyntax/loc stx
-                         (#%app apply . #,(reverse! (cons s r))))))]))]))
+                         (#%app apply . #,(reverse (cons s r))))))]))]))
 
 ;; these are defined as normal bindings so code that uses this module can use
 ;; them, but for the syntax level of this module we need them too.
@@ -418,9 +418,9 @@
                     [else (raise-syntax-error #f "bad lambda formals" stx v)])
                   (loop state #'xs))]))]
            [v (loop state #'(&rest v))]))
-       (set! vars (reverse! vars))
-       (set! opts (map process-optional-arg (reverse! opts)))
-       (set! keys (map process-keyword-arg  (reverse! keys)))
+       (set! vars (reverse vars))
+       (set! opts (map process-optional-arg (reverse opts)))
+       (set! keys (map process-keyword-arg  (reverse keys)))
        (when (and (or rest-keys body all-keys other-keys) (not rest))
          (set! rest #'rest))
        (cond
@@ -459,7 +459,7 @@
                              (cond [(or (null? args)
                                         (null? (cdr args))
                                         (not (keyword*? (car args))))
-                                    (values (reverse! keys) args)]
+                                    (values (reverse keys) args)]
                                    [else (loop (cddr args)
                                                (list* (cadr args) (car args)
                                                       keys))]))])]
@@ -478,7 +478,7 @@
                              (cond [(or (null? args)
                                         (null? (cdr args))
                                         (not (keyword*? (car args))))
-                                    (reverse! keys)]
+                                    (reverse keys)]
                                    [else (loop (cddr args)
                                                (list* (cadr args) (car args)
                                                       keys))]))])]
@@ -581,15 +581,15 @@
 (define (keys/args args)
   (let loop ([args args] [keys '()])
     (cond [(or (null? args) (null? (cdr args)) (not (keyword*? (car args))))
-           (values (reverse! keys) args)]
+           (values (reverse keys) args)]
           [else (loop (cddr args) (list* (cadr args) (car args) keys))])))
 ;;>> (filter-out-keys outs args)
 ;;>   The keywords specified in the outs argument, with their matching
 ;;>   values are filtered out of the second arguments.
 (define (filter-out-keys outs args)
   (let loop ([as args] [r '()])
-    (cond [(null? as) (reverse! r)]
-          [(null? (cdr as)) (reverse! (cons (car as) r))]
+    (cond [(null? as) (reverse r)]
+          [(null? (cdr as)) (reverse (cons (car as) r))]
           [else
            (loop (cddr as)
                  (if (memq (car as) outs) r (list* (cadr as) (car as) r)))])))

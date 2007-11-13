@@ -16,9 +16,7 @@
      none-of
      vector-map
      improper-map
-     begin-map!
      begin-map
-     map!
      list-index
      list-last
 

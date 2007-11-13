@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "modprotect"]{Code Inspectors}
+
+@declare-exporting[(lib "scheme/inspector")]
 
 In the same way that inspectors control access to structure fields
 (see @secref["inspectors"]), inspectors also control access to

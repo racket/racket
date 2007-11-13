@@ -271,8 +271,8 @@
       (define (sub n . m) (apply substring str n m))
       (let loop ([pos 0] [posns posns] [r '()])
         (cond [(null? posns)
-               (cons 'list (reverse! (if (= pos (string-length str))
-                                       r (cons (sub pos) r))))]
+               (cons 'list (reverse (if (= pos (string-length str))
+                                        r (cons (sub pos) r))))]
               [(= pos (caar posns))
                (loop (cdar posns) (cdr posns)
                      (cons (string->symbol (sub (caar posns) (cdar posns)))

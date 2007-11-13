@@ -12,7 +12,7 @@
     (lambda (_ message syn-obj src)
       (raise (make-exn:fail:syntax
               message (current-continuation-marks)
-              (list-immutable (make-so syn-obj src parm))))))
+              (list (make-so syn-obj src parm))))))
 
   ;make-so: symbol src (-> location) -> syntax-object
   (define (make-so id src parm)

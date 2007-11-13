@@ -122,6 +122,7 @@ extern void scheme_gmp_tls_restore_snapshot(long *s, long *save, int do_free);
 extern int scheme_num_read_syntax_objects;
 extern int scheme_hash_request_count;
 extern int scheme_hash_iteration_count;
+extern int scheme_jit_malloced;
 
 /*========================================================================*/
 /*                    local variables and prototypes                      */
@@ -165,6 +166,8 @@ static int swap_no_setjmp = 0;
 
 static int thread_swap_count;
 static int did_gc_count;
+
+static int init_load_on_demand = 1;
 
 #ifdef RUNSTACK_IS_GLOBAL
 Scheme_Object **scheme_current_runstack_start;
@@ -238,8 +241,6 @@ typedef struct Thread_Cell {
      cell. */
   Scheme_Bucket_Table *vals;
 } Thread_Cell;
-
-static Scheme_Object *empty_symbol, *initial_symbol;
 
 static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
 static Scheme_Object *client_symbol, *server_symbol;
@@ -457,7 +458,7 @@ void scheme_init_thread(Scheme_Env *env)
   scheme_add_global_constant("make-namespace",
 			     scheme_make_prim_w_arity(scheme_make_namespace,
 						      "make-namespace",
-						      0, 1),
+						      0, 0),
 			     env);
 
   scheme_add_global_constant("thread",
@@ -790,12 +791,6 @@ void scheme_init_thread(Scheme_Env *env)
 
 
   REGISTER_SO(namespace_options);
-
-  REGISTER_SO(empty_symbol);
-  REGISTER_SO(initial_symbol);
-  
-  empty_symbol = scheme_intern_symbol("empty");
-  initial_symbol = scheme_intern_symbol("initial");
 }
 
 void scheme_init_memtrace(Scheme_Env *env)
@@ -6262,15 +6257,17 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_CAN_READ_QUASI, scheme_true);
   init_param(cells, paramz, MZCONFIG_READ_DECIMAL_INEXACT, scheme_true);
   init_param(cells, paramz, MZCONFIG_CAN_READ_READER, scheme_false);
-  init_param(cells, paramz, MZCONFIG_LOAD_DELAY_ENABLED, scheme_false);
+  init_param(cells, paramz, MZCONFIG_LOAD_DELAY_ENABLED, init_load_on_demand ? scheme_true : scheme_false);
   init_param(cells, paramz, MZCONFIG_DELAY_LOAD_INFO, scheme_false);
 
   init_param(cells, paramz, MZCONFIG_PRINT_GRAPH, scheme_false);
   init_param(cells, paramz, MZCONFIG_PRINT_STRUCT, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_BOX, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_VEC_SHORTHAND, scheme_true);
-  init_param(cells, paramz, MZCONFIG_PRINT_HASH_TABLE, scheme_false);
+  init_param(cells, paramz, MZCONFIG_PRINT_HASH_TABLE, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_UNREADABLE, scheme_true);
+  init_param(cells, paramz, MZCONFIG_PRINT_PAIR_CURLY, scheme_false);
+  init_param(cells, paramz, MZCONFIG_PRINT_MPAIR_CURLY, scheme_true);
 
   init_param(cells, paramz, MZCONFIG_HONU_MODE, scheme_false);
 
@@ -6399,6 +6396,11 @@ static void make_initial_config(Scheme_Thread *p)
 	init_param(cells, paramz, i, scheme_false);      
     }
   }
+}
+
+void scheme_set_startup_load_on_demand(int on)
+{
+  init_load_on_demand = on;
 }
 
 Scheme_Object *scheme_register_parameter(Scheme_Prim *function, char *name, int which)
@@ -6574,25 +6576,7 @@ void scheme_add_namespace_option(Scheme_Object *key, void (*f)(Scheme_Env *))
 
 Scheme_Object *scheme_make_namespace(int argc, Scheme_Object *argv[])
 {
-  int empty = 0;
-  Scheme_Env *env;
-
-  if (argc) {
-    if (SAME_OBJ(argv[0], empty_symbol))
-      empty = 1;
-    else if (SAME_OBJ(argv[0], initial_symbol))
-      empty = 0;
-    else
-      scheme_wrong_type("make-namespace", "'empty or 'initial", 0, argc, argv);
-  }
-  
-  env = scheme_make_empty_env();
-  if (!empty) {
-    /* Copy from initial namespace: */
-    scheme_install_initial_module_set(env);
-  }
-
-  return (Scheme_Object *)env;
+  return (Scheme_Object *)scheme_make_empty_env();
 }
 
 static Scheme_Object *namespace_p(int argc, Scheme_Object **argv)
@@ -6676,15 +6660,15 @@ void scheme_security_check_file(const char *who, const char *filename, int guard
     }
 
     if (guards & SCHEME_GUARD_FILE_EXISTS)
-      l = scheme_make_immutable_pair(exists_symbol, l);
+      l = scheme_make_pair(exists_symbol, l);
     if (guards & SCHEME_GUARD_FILE_DELETE)
-      l = scheme_make_immutable_pair(delete_symbol, l);
+      l = scheme_make_pair(delete_symbol, l);
     if (guards & SCHEME_GUARD_FILE_EXECUTE)
-      l = scheme_make_immutable_pair(execute_symbol, l);
+      l = scheme_make_pair(execute_symbol, l);
     if (guards & SCHEME_GUARD_FILE_WRITE)
-      l = scheme_make_immutable_pair(write_symbol, l);
+      l = scheme_make_pair(write_symbol, l);
     if (guards & SCHEME_GUARD_FILE_READ)
-      l = scheme_make_immutable_pair(read_symbol, l);
+      l = scheme_make_pair(read_symbol, l);
 
     a[0] = scheme_intern_symbol(who);
     a[1] = (filename ? scheme_make_sized_path((char *)filename, -1, 1) : scheme_false);
@@ -7062,6 +7046,7 @@ static void get_ready_for_GC()
   scheme_clear_prompt_cache();
   scheme_clear_rx_buffers();
   scheme_clear_bignum_cache();
+  scheme_clear_delayed_load_cache();
 
 #ifdef RUNSTACK_IS_GLOBAL
   if (scheme_current_thread->running) {
@@ -7229,6 +7214,8 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
     
     switch (SCHEME_VEC_SIZE(v)) {
     default:
+    case 11:
+      SCHEME_VEC_ELS(v)[10] = scheme_make_integer(scheme_jit_malloced);
     case 10:
       SCHEME_VEC_ELS(v)[9] = scheme_make_integer(scheme_hash_iteration_count);
     case 9:

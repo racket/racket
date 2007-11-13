@@ -1,6 +1,5 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
-@require-for-syntax[mzscheme]
 
 @define[(transform-time) @t{This procedure must be called during the
 dynamic extent of a @tech{syntax transformer} application by the

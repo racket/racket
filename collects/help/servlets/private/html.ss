@@ -66,7 +66,7 @@
   (define (html-select name descriptions selected-index)
     `(select ([name ,name])
        ,@(let loop ([i 0] [ds descriptions] [xexprs '()])
-           (cond [(null? ds) (reverse! xexprs)]
+           (cond [(null? ds) (reverse xexprs)]
                  [(= i selected-index)
                   (loop (+ i 1) (cdr ds)
                         (list* (car ds) `(option ((selected "selected")))

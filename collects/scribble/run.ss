@@ -91,6 +91,6 @@
               (when (current-info-output-file)
                 (let ([s (send renderer serialize-info r-info)])
                   (with-output-to-file (current-info-output-file)
+                    #:exists 'truncate/replace
                     (lambda ()
-                      (write s))
-                    'truncate/replace))))))))))
+                      (write s))))))))))))

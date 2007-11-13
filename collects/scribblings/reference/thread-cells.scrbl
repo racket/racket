@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "threadcells"]{Thread Cells}
+
+@declare-exporting[(lib "scheme/thread-cell")]
 
 A @deftech{thread cell} contains a thread-specific value; that is, it
 contains a specific value for each thread, but it may contain

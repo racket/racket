@@ -53,6 +53,17 @@ the protocol symbols).
 Closing the resulting output port does not send a shutdown message to
 the server. See also `ports->ssl-ports'.
 
+Beware that the SSL protocol allows reading or writing in only one
+direction at a time. If you request data from the input port, then
+data cannot be written to the output port (i.e., attempting to write
+will block) until the other end of the connection responds to the
+read. Even merely checking for input data --- using `byte-ready?', for
+example --- commits the connection to reading, and the other end must
+respond with a (possibly zero-length) answer. Protocols that work with
+SSL, such as IMAP, have a well-defined communication pattern, where
+theres no question of whether the other end is supposed to be sending
+or reading data.
+
 
 > (ssl-connect/enable-break hostname port-k [client-context-or-protocol-symbol])
 
@@ -118,6 +129,9 @@ Analogous to `tcp-accept'.
 Closing the resulting output port does not send a shutdown message to
 the client. See also `ports->ssl-ports'.
 
+See also `ssl-connect' about the limitations of reading and writing to
+an SSL connection (i.e., one direction at a time).
+
 
 > (ssl-accept/enable-break ssl-listener)
 
@@ -179,6 +193,9 @@ The `error' argument is an error procedure to use for raising
 communication errors. The default is `error', which raises `exn:fail';
 in contrast, `ssl-accept' and `ssl-connect' use an error function that
 raises `exn:fail:network'.
+
+See also `ssl-connect' about the limitations of reading and writing to
+an SSL connection (i.e., one direction at a time).
 
 
 -- Context procedures --------------------------------------------

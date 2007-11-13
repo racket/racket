@@ -1,4 +1,4 @@
-(module aux-mixin-macros (lib "frtime.ss" "frtime")
+(module aux-mixin-macros frtime
   (require "mixin-macros.ss")
   (require (lib "class.ss"))
 

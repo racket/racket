@@ -21,7 +21,7 @@
    "xform"
    (current-command-line-arguments)
    [once-each
-    [("--setup") "ignored; for compatbility with makefile"
+    [("--setup") dir "ignored; for compatbility with makefile"
      (void)]
     [("--precompile") "generate precompiled header; or set XFORM_PRECOMP"
      (set! precompiling-header? #t)]

@@ -1,12 +1,12 @@
-(module module-reader mzscheme
-  (provide provide-module-reader)
+(module module-reader scheme/base
+  (provide (rename-out [provide-module-reader #%module-begin]))
 
   (define-syntax provide-module-reader
     (syntax-rules ()
       [(_ lib)
-       (begin
-         (provide (rename *read read)
-                  (rename *read-syntax read-syntax))
+       (#%module-begin
+         (#%provide (rename *read read)
+                    (rename *read-syntax read-syntax))
          
          (define (*read in)
            (wrap 'lib in read))

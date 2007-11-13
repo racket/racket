@@ -2,7 +2,12 @@
 (load-relative "loadtest.ss")
 
 (Section 'unit)
-(require (lib "unit200.ss"))
+(require (lib "mzlib/unit200.ss"))
+
+;; Hide keywords from scheme/unit.ss:
+(define import #f)
+(define export #f)
+(define link #f)
 
 (syntax-test #'(unit))
 (syntax-test #'(unit (import)))
@@ -138,7 +143,7 @@
    (import)
    (export x y a? set-a-b!)
    
-   (define-struct a (b c))
+   (define-struct a (b c) #:mutable)
 
    (define x 7)
    (define z 8)
@@ -174,7 +179,7 @@
    (export x struct:a a? v y)
 
    (define x 5)
-   (define-struct a (b c))
+   (define-struct a (b c) #:mutable)
    (define v (make-a 5 6))
    (define (y v) (a? v))))
 
@@ -185,7 +190,7 @@
    
    (define-syntax a (list #'struct:a #f #'a? (list #f) (list #f) #f))
 
-   (define-struct (x a) (y z))
+   (define-struct (x a) (y z) #:mutable)
    (define both (lambda (v)
 		  (and (a? v) (x? v))))))
 
@@ -225,10 +230,10 @@
 	      (M x v struct:a y x? make-x x-z both))])
     (export)))
 
-  (test (string-append "(5 #<struct:a> #<struct-type:a> (proc: y)"
+  (test (string-append "(5 #<a> #<struct-type:a> (proc: y)"
 		       " (proc: make-x) (proc: x?)"
 		       " (proc: x-z) (proc: both))"
-		       "(5 #t #<struct:a> #t #f #<struct:x> #t #t #f #t)")
+		       "(5 #t #<a> #t #f #<x> #t #t #f #t)")
 	get-output-string p))
 
 ; Compound with circularity
@@ -320,7 +325,7 @@
 
 ; Units and objects combined:
 
-(require (lib "class.ss"))
+(require scheme/class)
 
 (define u@
   (unit (import x) (export)  
@@ -590,8 +595,11 @@
 	  #f y)
 	x))
 
+(require scheme/namespace)
+
 (test 55 'namespace
-      (parameterize ([current-namespace (make-namespace)])
+      (parameterize ([current-namespace (make-base-namespace)])
+        (namespace-require 'scheme/base)
 	(namespace-variable-bind/invoke-unit
 	 (x)
 	 (unit 

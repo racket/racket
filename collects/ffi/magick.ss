@@ -114,18 +114,16 @@
     [(FloatPixel)   _float]
     [(DoublePixel)  _double*]))
 
-;; Gets a list and a number, and returns a list of lists of length n
-;; (destructive).
-(define (n-split! l n)
-  (let ([r '()])
-    (let loop ([i 0] [l (reverse! l)])
-      (unless (null? l)
-        (when (zero? i) (set! r (cons '() r)))
-        (let ([next (cdr l)])
-          (set-cdr! l (car r))
-          (set-car! r l)
-          (loop (modulo (add1 i) n) next))))
-    r))
+;; Gets a list and a number, and returns a list of lists of length n.
+(define (n-split l n)
+  (let loop ([l l][i 0][a2 null][a null])
+    (cond
+     [(null? l) (let ([a (if (null? a2)
+                             a
+                             (cons (reverse a2) a))])
+                  (reverse a))]
+     [(= i n) (loop l 0 null (cons (reverse a2) a))]
+     [else (loop (cdr l) (add1 i) (cons (car l) a2) a)])))
 
 ;; _Quantum is something that the library tells us how big it is
 (define _Quantum
@@ -1054,7 +1052,7 @@
   -> _status
   -> (let loop ([n (sub1 size)] [r '()])
        (if (< n 0)
-         (n-split! (n-split! r (string-length map)) width)
+         (n-split (n-split r (string-length map)) width)
          (loop (sub1 n) (cons (ptr-ref block type n) r)))))
 
 ;; MagickGetImageProfile returns the named image profile.

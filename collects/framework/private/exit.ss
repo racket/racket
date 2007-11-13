@@ -1,4 +1,5 @@
-(module exit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "string-constant.ss" "string-constants")
            "sig.ss"
            "../preferences.ss"
@@ -72,4 +73,4 @@
           (exit)
           (set! is-exiting? #f)))]
       [else
-       (set! is-exiting? #f)])))
+       (set! is-exiting? #f)]))

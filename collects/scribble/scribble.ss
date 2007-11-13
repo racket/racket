@@ -35,7 +35,7 @@
             (loop (cddr xs) (list* (cadr xs) key kvs) (cons key seen)))
           (let loop ([xs xs] [body '()] [seen seen])
             (cond [(null? xs)
-                   (cons tag (append! (reverse! kvs) (reverse! body)))]
+                   (cons tag (append (reverse kvs) (reverse body)))]
                   [(or (not (pair? (car xs))) (not (memq (caar xs) syms+keys)))
                    (loop (cdr xs) (cons (car xs) body) seen)]
                   [else

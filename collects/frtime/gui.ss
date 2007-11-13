@@ -1,4 +1,4 @@
-(module gui (lib "frtime.ss" "frtime")
+(module gui "frtime.ss"
   (require
    (all-except (lib "etc.ss") rec)
    (lib "list.ss")

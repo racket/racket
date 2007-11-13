@@ -30,7 +30,7 @@
 ;; compilation takes place when installing a .plt it is essential that
 ;; this file is updated whenever a new release is made.
 
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "srfi")
   (define doc.txt "doc.txt")
 

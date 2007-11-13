@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "quote"]{Quoting: @scheme[quote] and @schemevalfont{'}}
@@ -34,7 +34,7 @@ containing more such values, or a box containing another such value.
 ]
 
 As the last example above shows, the @scheme[_datum] does not have to
-be the normalized printed form of a value. For example, A
+be the normalized printed form of a value. A
 @scheme[_datum] cannot be a printed representation that starts with
 @litchar{#<}, however, so it cannot be @|void-const|,
 @|undefined-const|, or a procedure.

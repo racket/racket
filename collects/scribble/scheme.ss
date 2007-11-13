@@ -1,11 +1,12 @@
-(module scheme (lib "lang.ss" "big")
+(module scheme scheme/base
   (require "struct.ss"
            "basic.ss"
-           (lib "class.ss")
-           (lib "for.ss")
-           (lib "main-collects.ss" "setup")
-           (lib "modresolve.ss" "syntax"))
-
+           mzlib/class
+           mzlib/for
+           setup/main-collects
+           syntax/modresolve
+           (for-syntax scheme/base))
+  
   (provide define-code
            to-element
            to-element/no-color
@@ -19,8 +20,8 @@
            current-variable-list
            current-meta-list
 
-           (struct shaped-parens (val shape))
-           (struct just-context (val ctx)))
+           (struct-out shaped-parens)
+           (struct-out just-context))
 
   (define no-color "schemeplain")
   (define reader-color "schemereader")
@@ -219,29 +220,29 @@
                     [else (let ([p2 (syntax-position (car l))])
                             (if (and p2
                                      (p2 . > . (syntax-position a)))
-                                (datum->syntax-object c
-                                                      (append 
-                                                       (reverse prev)
-                                                       (list
-                                                        (datum->syntax-object 
-                                                         a
-                                                         (let ([val? (positive? quote-depth)])
-                                                           (make-sized-element 
-                                                            (if val? value-color #f)
-                                                            (list
-                                                             (make-element (if val? value-color paren-color) '(". "))
-                                                             (typeset a #f "" "" "" (not val?))
-                                                             (make-element (if val? value-color paren-color) '(" .")))
-                                                            (+ (syntax-span a) 4)))
-                                                         (list (syntax-source a)
-                                                               (syntax-line a)
-                                                               (- (syntax-column a) 2)
-                                                               (- (syntax-position a) 2)
-                                                               (+ (syntax-span a) 4))
-                                                         a))
-                                                       l)
-                                                      c
-                                                      c)
+                                (datum->syntax c
+                                               (append 
+                                                (reverse prev)
+                                                (list
+                                                 (datum->syntax 
+                                                  a
+                                                  (let ([val? (positive? quote-depth)])
+                                                    (make-sized-element 
+                                                     (if val? value-color #f)
+                                                     (list
+                                                      (make-element (if val? value-color paren-color) '(". "))
+                                                      (typeset a #f "" "" "" (not val?))
+                                                      (make-element (if val? value-color paren-color) '(" .")))
+                                                     (+ (syntax-span a) 4)))
+                                                  (list (syntax-source a)
+                                                        (syntax-line a)
+                                                        (- (syntax-column a) 2)
+                                                        (- (syntax-position a) 2)
+                                                        (+ (syntax-span a) 4))
+                                                  a))
+                                                l)
+                                               c
+                                               c)
                                 (loop (cdr l)
                                       (cons (car l) prev))))]))))))
       (define (no-fancy-chars s)
@@ -257,7 +258,7 @@
                  (eq? (syntax-e (car (syntax-e c))) 'code:comment))
             (advance c init-line!)
             (out "; " comment-color)
-            (let ([v (syntax-object->datum (cadr (syntax->list c)))])
+            (let ([v (syntax->datum (cadr (syntax->list c)))])
               (if (paragraph? v)
                   (map (lambda (v) 
                          (let ([v (no-fancy-chars v)])
@@ -289,7 +290,7 @@
             (let ([l (syntax->list c)]
                   [h? highlight?])
               (unless (and l (= 2 (length l)))
-                (error "bad code:redex: ~e" (syntax-object->datum c)))
+                (error "bad code:redex: ~e" (syntax->datum c)))
               (advance c init-line!)
               (set! src-col (syntax-column (cadr l)))
               (hash-table-put! next-col-map src-col dest-col)
@@ -304,7 +305,7 @@
             (set! src-col (+ src-col 1))
             (hash-table-put! next-col-map src-col dest-col)
             ((loop init-line! quote-depth) 
-             (datum->syntax-object #'here 'quote (car (syntax-e c))))
+             (datum->syntax #'here 'quote (car (syntax-e c))))
             (for-each (loop init-line! (add1 quote-depth))
                       (cdr (syntax->list c)))
             (out ")" (if (positive? quote-depth) value-color paren-color))
@@ -460,7 +461,7 @@
                          [(elem color len)
                           (make-sized-element (and color? color) (list elem) len)])
                         color? 0))))
-    
+  
   (define (to-element c)
     (typeset c #f "" "" "" #t))
 
@@ -482,7 +483,7 @@
 	     (cond
 	      [(syntax? v)
 	       (let ([mk `(,#'d->s
-			   (quote-syntax ,(datum->syntax-object v 'defcode))
+			   (quote-syntax ,(datum->syntax v 'defcode))
 			   ,(syntax-case v (uncode)
 			      [(uncode e) #'e]
 			      [else (stx->loc-s-expr (syntax-e v))])
@@ -504,7 +505,7 @@
 	      [(null? v) 'null]
 	      [else `(quote ,v)]))
 	   (define (cvt s)
-	     (datum->syntax-object #'here (stx->loc-s-expr s) #f))
+	     (datum->syntax #'here (stx->loc-s-expr s) #f))
 	   (syntax-case stx ()
 	     [(_ expr) #`(typeset-code #,(cvt #'expr))]
 	     [(_ expr (... ...))
@@ -512,13 +513,13 @@
       [(_ code typeset-code uncode d->s)
        #'(define-code code typeset-code uncode d->s syntax-property)]
       [(_ code typeset-code uncode)
-       #'(define-code code typeset-code uncode datum->syntax-object syntax-property)]
+       #'(define-code code typeset-code uncode datum->syntax syntax-property)]
       [(_ code typeset-code) #'(define-code code typeset-code unsyntax)]))
 
   
   (define (register-scheme stx [warn-if-no-label? #f])
     (unless (identifier? stx)
-      (error 'register-scheme-definition "not an identifier: ~e" (syntax-object->datum stx)))
+      (error 'register-scheme-definition "not an identifier: ~e" (syntax->datum stx)))
     (let ([b (identifier-label-binding stx)])
       (if (or (not b)
               (eq? b 'lexical))
@@ -535,10 +536,10 @@
                 (format ":NOLABEL:~a" (syntax-e stx)))
               #f)
           (format ":~a:~a" 
-                  (if (module-path-index? (car b))
-                      (let ([p (resolve-module-path-index (car b) #f)])
-                        (path->main-collects-relative p))
-                      (car b))
+                  (let ([p (resolve-module-path-index (car b) #f)])
+                    (if (path? p)
+                        (path->main-collects-relative p)
+                        p))
                   (cadr b)))))
 
   (define (register-scheme/invent stx warn-if-no-label?)
@@ -589,11 +590,11 @@
                        (shaped-parens-shape v))]
      [(just-context? v)
       (let ([s (syntax-ize (just-context-val v) col)])
-        (datum->syntax-object (just-context-ctx v)
-                              (syntax-e s)
-                              s
-                              s
-                              (just-context-ctx v)))]
+        (datum->syntax (just-context-ctx v)
+                       (syntax-e s)
+                       s
+                       s
+                       (just-context-ctx v)))]
      [(and (list? v)
            (pair? v)
            (memq (let ([s (car v)])
@@ -602,11 +603,11 @@
                        s))
                  '(quote unquote unquote-splicing)))
       (let ([c (syntax-ize (cadr v) (+ col 1))])
-        (datum->syntax-object #f
-                              (list (syntax-ize (car v) col)
-                                    c)
-                              (list #f 1 col (+ 1 col)
-                                    (+ 1 (syntax-span c)))))]
+        (datum->syntax #f
+                       (list (syntax-ize (car v) col)
+                             c)
+                       (list #f 1 col (+ 1 col)
+                             (+ 1 (syntax-span c)))))]
      [(or (list? v)
           (vector? v))
       (let* ([vec-sz (if (vector? v)
@@ -621,30 +622,30 @@
                        (let ([i (syntax-ize (car v) col)])
                          (cons i
                                (loop (+ col 1 (syntax-span i)) (cdr v))))))])
-          (datum->syntax-object #f
-                                (if (vector? v)
-                                    (short-list->vector v l)
-                                    l)
-                                (list #f 1 col (+ 1 col)
-                                      (+ 2
-                                         vec-sz
-                                         (if (zero? (length l))
-                                             0
-                                             (sub1 (length l)))
-                                         (apply + (map syntax-span l)))))))]
+          (datum->syntax #f
+                         (if (vector? v)
+                             (short-list->vector v l)
+                             l)
+                         (list #f 1 col (+ 1 col)
+                               (+ 2
+                                  vec-sz
+                                  (if (zero? (length l))
+                                      0
+                                      (sub1 (length l)))
+                                  (apply + (map syntax-span l)))))))]
      [(pair? v)
       (let* ([a (syntax-ize (car v) (+ col 1))]
              [sep (if (pair? (cdr v)) 0 3)]
              [b (syntax-ize (cdr v) (+ col 1 (syntax-span a) sep))])
-        (datum->syntax-object #f
-                              (cons a b)
-                              (list #f 1 col (+ 1 col)
-                                    (+ 2 sep (syntax-span a) (syntax-span b)))))]
+        (datum->syntax #f
+                       (cons a b)
+                       (list #f 1 col (+ 1 col)
+                             (+ 2 sep (syntax-span a) (syntax-span b)))))]
      [(box? v)
       (let ([a (syntax-ize (unbox v) (+ col 2))])
-        (datum->syntax-object #f
-                              (box a)
-                              (list #f 1 col (+ 1 col)
-                                    (+ 2 (syntax-span a)))))]
+        (datum->syntax #f
+                       (box a)
+                       (list #f 1 col (+ 1 col)
+                             (+ 2 (syntax-span a)))))]
      [else
-      (datum->syntax-object #f v (list #f 1 col (+ 1 col) 1))])))
+      (datum->syntax #f v (list #f 1 col (+ 1 col) 1))])))

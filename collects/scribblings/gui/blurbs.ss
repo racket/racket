@@ -1,12 +1,12 @@
-#reader(lib "reader.ss" "scribble")
-(module blurbs (lib "lang.ss" "big")
-  (require (lib "struct.ss" "scribble")
-           (lib "manual.ss" "scribble")
-           (lib "scheme.ss" "scribble")
-           (lib "decode.ss" "scribble"))
-  (require-for-label (lib "mred.ss" "mred"))
+#readerscribble/reader
+(module blurbs scheme/base
+  (require scribble/struct
+           scribble/manual
+           scribble/scheme
+           scribble/decode
+           (for-label mred))
 
-  (provide (all-defined-except p))
+  (provide (except-out (all-defined-out) p))
 
   (define (p . l)
     (decode-paragraph l))
@@ -160,7 +160,7 @@ information@|details|, even if the editor currently has delayed refreshing (see
                @item{@method[dc<%> end-doc]}}
       @p{Attempts to use a drawing method outside of an active page raises an exception.})))
 
-  (define reference-doc '(lib "reference.scrbl" "scribblings" "reference"))
+  (define reference-doc '(lib "scribblings/reference/reference.scrbl"))
 
   (define SeeMzParam @elem{(see @secref[#:doc reference-doc "parameters"])})
   

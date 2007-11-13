@@ -44,7 +44,7 @@
 		   list-tabulate
 		   cons*
 		   list-copy
-		   circular-list
+		   ; circular-list
 		   iota)
 
   ;; Occasionally useful as a value to be passed to a fold or other
@@ -89,6 +89,7 @@
 				(cons (car lis) (recur (cdr lis)))	
 				lis)))					
   
+  #;
   (define (circular-list val1 . vals)
 	(let ((ans (cons val1 vals)))
 	  (set-cdr! (last-pair ans) ans)

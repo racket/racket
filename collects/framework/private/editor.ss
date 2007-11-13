@@ -1,5 +1,5 @@
 
-(module editor (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "class.ss")
            (lib "string-constant.ss" "string-constants")
            "sig.ss"
@@ -598,4 +598,4 @@
                   (set! callback-running? #f))
                 #f))))
          'framework:update-lock-icon))
-      (super-new))))
+      (super-new)))

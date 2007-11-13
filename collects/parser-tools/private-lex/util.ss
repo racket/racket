@@ -5,7 +5,7 @@
 
   (define max-char-num #x10FFFF)
   
-  (define-struct lex-abbrev (abbrev))
+  (define-struct lex-abbrev (get-abbrev))
   (define-struct lex-trans (f))
   
   #;(define-syntax test-block

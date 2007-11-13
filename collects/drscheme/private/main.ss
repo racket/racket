@@ -1,5 +1,5 @@
 
-(module main (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "string-constant.ss" "string-constants")
            (lib "cmdline.ss")
            (lib "contract.ss")
@@ -504,4 +504,4 @@
       (make-basic))
     (when (and (preferences:get 'drscheme:open-in-tabs)
                (not (null? no-dups)))
-      (handler:edit-file (car no-dups)))))
+      (handler:edit-file (car no-dups))))

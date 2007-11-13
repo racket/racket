@@ -3,7 +3,7 @@
 (module vector-lib mzscheme
   
   (require (lib "receive.ss" "srfi" "8")
-           (lib "etc.ss" "mzlib")
+           (lib "etc.ss")
            (lib "contract.ss"))
   
   (define mutable-vector/c

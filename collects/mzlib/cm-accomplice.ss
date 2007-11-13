@@ -12,7 +12,7 @@
       (thread-wait 
        (thread (lambda ()
 		 (set! param
-		       (dynamic-require '(lib "cm-ctime.ss" "mzlib" "private")
+		       (dynamic-require '(lib "cm-ctime.ss" "mzlib/private")
 					'current-external-file-registrar)))))
       ((param) f))))
 

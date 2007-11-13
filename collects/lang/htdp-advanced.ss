@@ -1,52 +1,54 @@
 
-(module htdp-advanced mzscheme
+(module htdp-advanced scheme/base
   (require "private/teach.ss"
 	   "private/teachprims.ss"
 	   "private/contract-forms.ss"
-	   (lib "etc.ss")
-	   (lib "list.ss")
-	   (lib "pretty.ss")
-	   (lib "docprovide.ss" "syntax")
+	   mzlib/etc
+	   mzlib/list
+	   mzlib/pretty
+	   syntax/docprovide
 	   "posn.ss")
 
   ;; syntax:
-  (provide (rename advanced-define define)
-	   (rename advanced-define-struct define-struct)
-	   (rename advanced-lambda lambda)
-	   (rename advanced-app #%app)
-	   (rename beginner-top #%top)
-	   (rename intermediate-local local)
-	   (rename advanced-let let)
-	   (rename intermediate-let* let*)
-	   (rename intermediate-letrec letrec)
-	   (rename advanced-recur recur)
-	   (rename beginner-cond cond)
-	   (rename beginner-else else)
-	   (rename beginner-if if)
-	   (rename beginner-and and)
-	   (rename beginner-or or)
-           (rename beginner-require require)
-           (rename beginner-dots ..)
-           (rename beginner-dots ...)
-           (rename beginner-dots ....)
-           (rename beginner-dots .....)
-           (rename beginner-dots ......)
-	   (rename intermediate-quote quote)
-	   (rename intermediate-quasiquote quasiquote)
-	   (rename intermediate-unquote unquote)
-	   (rename intermediate-unquote-splicing unquote-splicing)
-	   (rename intermediate-time time)
-	   (rename advanced-begin begin)
-	   (rename advanced-begin0 begin0)
-	   (rename advanced-shared shared)
-	   (rename advanced-set! set!)
-	   (rename advanced-when when)
-	   (rename advanced-unless unless)
-	   (rename advanced-case case)
-	   (rename advanced-delay delay)
-	   (rename advanced-module-begin #%module-begin)
-	   ;; (rename advanced-contract contract)
-	   ;; (rename advanced-define-data define-data)
+  (provide (rename-out
+            [advanced-define define]
+            [advanced-define-struct define-struct]
+            [advanced-lambda lambda]
+            [advanced-app #%app]
+            [beginner-top #%top]
+            [intermediate-local local]
+            [advanced-let let]
+            [intermediate-let* let*]
+            [intermediate-letrec letrec]
+            [advanced-recur recur]
+            [beginner-cond cond]
+            [beginner-else else]
+            [beginner-if if]
+            [beginner-and and]
+            [beginner-or or]
+            [beginner-require require]
+            [beginner-dots ..]
+            [beginner-dots ...]
+            [beginner-dots ....]
+            [beginner-dots .....]
+            [beginner-dots ......]
+            [intermediate-quote quote]
+            [intermediate-quasiquote quasiquote]
+            [intermediate-unquote unquote]
+            [intermediate-unquote-splicing unquote-splicing]
+            [intermediate-time time]
+            [advanced-begin begin]
+            [advanced-begin0 begin0]
+            [advanced-shared shared]
+            [advanced-set! set!]
+            [advanced-when when]
+            [advanced-unless unless]
+            [advanced-case case]
+            [advanced-delay delay]
+            [advanced-module-begin #%module-begin]
+            ;; [advanced-contract contract]
+            ;; [advanced-define-data define-data]
+            )
 	   #%datum
            #%top-interaction
 	   empty true false)
@@ -55,7 +57,7 @@
   (provide-and-document
    procedures
 
-   (all-from-except intermediate: (lib "htdp-intermediate-lambda.ss" "lang") procedures
+   (all-from-except intermediate: lang/htdp-intermediate-lambda procedures
 		    cons list* append)
 
    ("Reading and Printing"
@@ -80,18 +82,8 @@
     ((advanced-cons cons) (X (listof X) -> (listof X))
 			  "to construct a list")
 
-    (set-first! ((cons Y (listof X)) Y -> void)
-		"to update the first item of a non-empty list")
-    ((advanced-set-rest! set-rest!) ((cons Y (listof X)) (listof X) -> void)
-	       "to update the rest of a non-empty list")
-    (set-car! ((cons Y (listof X)) Y -> void)
-	      "to update the first item of a non-empty list")
-    ((advanced-set-cdr! set-cdr!) ((cons Y (listof X)) (listof X) -> void)
-				  "to update the rest of a non-empty list")
     ((advanced-append append) ((listof any) ... -> (listof any))
-			      "to create a single list from several, by updating the lists")
-    ((advanced-append! append!) ((listof any) ... -> (listof any))
-				"to create a single list from several, by updating the lists"))
+			      "to create a single list from several"))
    
    ("Misc"
     (force (delay -> any) "to find the delayed value; see also delay")

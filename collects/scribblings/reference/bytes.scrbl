@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "bytestrings"]{Byte Strings}
@@ -170,7 +170,6 @@ string.
 @; ----------------------------------------
 @section{Byte String Comparisons}
 
-
 @defproc[(bytes=? [bstr1 bytes?] [bstr2 bytes?] ...+) boolean?]{ Returns
  @scheme[#t] if all of the arguments are @scheme[eqv?].}
 
@@ -199,6 +198,7 @@ string.
 @; ----------------------------------------
 @section{Bytes to/from Characters, Decoding and Encoding}
 
+@declare-exporting[(lib "scheme/bytes")]
 
 @defproc[(bytes->string/utf-8 [bstr bytes?]
                               [err-char (or/c false/c char?) #f]
@@ -334,6 +334,8 @@ string.
 @; ----------------------------------------
 @section{Bytes to Bytes Encoding Conversion}
 
+@declare-exporting[(lib "scheme/bytes/converter")]
+
 @defproc[(bytes-open-converter [from-name string?][to-name string?])
          bytes-converter?]{
 
@@ -403,15 +405,15 @@ is any of the guaranteed combinations (including @scheme[""]) under
 Windows and Mac OS X.
 
 @margin-note{In PLT's software distributions for Windows, a suitable
-@file{iconv.dll} is included with @file{libmzsch@italic{VERS}.dll}.}
+@filepath{iconv.dll} is included with @filepath{libmzsch@italic{VERS}.dll}.}
 
 The set of available encodings and combinations varies by platform,
 depending on the @exec{iconv} library that is installed. Under
-Windows, @file{iconv.dll} or @file{libiconv.dll} must be in the same
-directory as @file{libmzsch@italic{VERS}.dll} (where @italic{VERS} is
+Windows, @filepath{iconv.dll} or @filepath{libiconv.dll} must be in the same
+directory as @filepath{libmzsch@italic{VERS}.dll} (where @italic{VERS} is
 a version number), in the user's path, in the system directory, or in
 the current executable's directory at run time, and the DLL must
-either supply @tt{_errno} or link to @file{msvcrt.dll} for
+either supply @tt{_errno} or link to @filepath{msvcrt.dll} for
 @tt{_errno}; otherwise, only the guaranteed combinations are
 available.}
 

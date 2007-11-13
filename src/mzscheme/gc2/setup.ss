@@ -25,40 +25,40 @@
     (current-library-collection-paths 
      (list p))))
 
-(require (lib "moddep.ss" "syntax")
-	 (lib "cm.ss"))
+(require syntax/moddep
+	 mzlib/cm)
 
 (define (go mod-path rel-to target)
-  (let ([path (if target
-		  mod-path
-		  (if (module-path-index? mod-path)
-		      (resolve-module-path-index mod-path rel-to)
-		      (resolve-module-path mod-path rel-to)))])
-    ;; Copy file to here:
-    (let ([target 
-	   (or target
-	       (let-values ([(src-base rel-path)
-			     (let loop ([path (simplify-path path)][accum null])
-			       (let-values ([(base name dir?) (split-path path)])
-				 (if (string=? (path->string name) "collects")
-				     (values base (cons "xform-collects" accum))
-				     (loop base (cons name accum)))))])
-		 (let loop ([place (current-directory)][rel-path rel-path])
-		   (if (null? (cdr rel-path))
-		       (build-path place (car rel-path))
-		       (let ([next (build-path place (car rel-path))])
-			 (unless (directory-exists? next)
-			   (make-directory next))
-			 (loop next (cdr rel-path)))))))])
-      (unless (file-exists? target)
-	(printf "Copying ~a to ~a~n" path target)
-	(copy-file path target)
-	(let ([code (get-module-code path "no-such-dir")])
-	  (let-values ([(a b c d) (module-compiled-imports code)])
-	    (map (lambda (x)
-		   (unless (symbol? x)
-		     (go x path #f)))
-		 (append a b c d))))))))
+  (let* ([path (if target
+                   mod-path
+                   (if (module-path-index? mod-path)
+                       (resolve-module-path-index mod-path rel-to)
+                       (resolve-module-path mod-path rel-to)))])
+    (unless (symbol? path)
+      ;; Copy file to here:
+      (let ([target 
+             (or target
+                 (let-values ([(src-base rel-path)
+                               (let loop ([path (simplify-path path)][accum null])
+                                 (let-values ([(base name dir?) (split-path path)])
+                                   (if (string=? (path->string name) "collects")
+                                       (values base (cons "xform-collects" accum))
+                                       (loop base (cons name accum)))))])
+                   (let loop ([place (current-directory)][rel-path rel-path])
+                     (if (null? (cdr rel-path))
+                         (build-path place (car rel-path))
+                         (let ([next (build-path place (car rel-path))])
+                           (unless (directory-exists? next)
+                             (make-directory next))
+                           (loop next (cdr rel-path)))))))])
+        (unless (file-exists? target)
+          (printf "Copying ~a to ~a~n" path target)
+          (copy-file path target)
+          (let ([code (get-module-code path "no-such-dir")])
+            (let-values ([(a b c d) (module-compiled-imports code)])
+              (map (lambda (x)
+                     (go x path #f))
+                   (append a b c d)))))))))
 
 (unless (directory-exists? "xform-collects")
   (make-directory "xform-collects"))
@@ -69,19 +69,22 @@
     #f
     "xform-collects/xform/xform-mod.ss")
 ;; Needed for cm:
-(go '(lib "cm-ctime.ss" "mzlib" "private") #f #f)
+(go 'mzlib/private/cm-ctime #f #f)
 
 (current-library-collection-paths 
  (list (build-path (current-directory) "xform-collects")))
 
 (printf "Compiling xform support...~n")
 
-(let ([mk-cm make-compilation-manager-load/use-compiled-handler])
+(let ([mk-cm make-compilation-manager-load/use-compiled-handler]
+      [old-namespace (current-namespace)])
   (current-namespace (make-namespace))
+  (namespace-attach-module old-namespace ''#%builtin)
   (use-compiled-file-paths (list "compiled"))
-  (current-load/use-compiled (mk-cm)))
+  (current-load/use-compiled (mk-cm))
+  (namespace-require 'scheme/base))
 
-(dynamic-require '(lib "xform-mod.ss" "xform") (void))
+(dynamic-require 'xform/xform-mod (void))
 
 (with-output-to-file "xform-collects/version.ss"
   (lambda () (write (version))))

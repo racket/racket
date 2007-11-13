@@ -117,7 +117,7 @@ transcript.
   (case-lambda
    [(th expr) (thunk-error-test th expr exn:application:type?)]
    [(th expr exn-type?)
-    (set! expr (syntax-object->datum expr))
+    (set! expr (syntax->datum expr))
     (set! number-of-error-tests (add1 number-of-error-tests))
     (printf "~s  =e=> " expr)
     (flush-output)
@@ -178,7 +178,7 @@ transcript.
     [(expr) (error-test expr exn:application:type?)]
     [(expr exn-type?) (thunk-error-test (lambda () (eval expr)) expr exn-type?)]))
 
-(require (rename mzscheme err:mz:lambda lambda)) ; so err/rt-test works with beginner.ss
+(require (only-in (lib "scheme") [lambda err:mz:lambda])) ; so err/rt-test works with beginner.ss
 (define-syntax err/rt-test
   (lambda (stx)
     (syntax-case stx ()
@@ -194,7 +194,7 @@ transcript.
 (define (syntax-test expr)
   (error-test expr exn:fail:syntax?)
   (unless no-extra-if-tests?
-    (error-test (datum->syntax-object expr `(if #f ,expr) expr)
+    (error-test (datum->syntax expr `(if #f ,expr (void)) expr)
                 exn:fail:syntax?)))
 
 (define arity-test

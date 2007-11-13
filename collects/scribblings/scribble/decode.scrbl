@@ -1,13 +1,13 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
 @require["utils.ss"]
 
 @title[#:tag "decode"]{Text Decoder}
 
-The @file{decode.ss} library helps you write document content in a
+The @filepath{decode.ss} library helps you write document content in a
 natural way---more like plain text, except for @litchar["@"] escapes.
 Roughly, it processes a stream of strings to produces instances of the
-@file{struct.ss} datatypes (see @secref["struct"]).
+@filepath{struct.ss} datatypes (see @secref["struct"]).
 
 At the flow level, decoding recognizes a blank line as a paragraph
 separator. At the paragraph-content level, decoding makes just a few

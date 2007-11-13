@@ -1,4 +1,4 @@
-(module fred (lib "frtime.ss" "frtime")
+(module fred frtime
   (require "mixin-macros.ss"
            "aux-mixin-macros.ss"
            (lib "class.ss")

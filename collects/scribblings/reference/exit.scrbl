@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title{Exiting}
+
+@declare-exporting[(lib "scheme/exit")]
 
 @defproc[(exit [v any/c #t]) any]{
 

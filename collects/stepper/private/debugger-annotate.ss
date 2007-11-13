@@ -1,6 +1,6 @@
-(module debugger-annotate mzscheme
+(module debugger-annotate scheme/base
   
-  (require (prefix kernel: (lib "kerncase.ss" "syntax"))
+  (require (prefix-in kernel: (lib "kerncase.ss" "syntax"))
            "shared.ss"
            "marks.ss"
            (lib "contract.ss"))
@@ -33,7 +33,7 @@
     
     (define (module-level-expr-iterator stx)
       (kernel:kernel-syntax-case stx #f
-        [(provide . provide-specs)
+        [(#%provide . provide-specs)
          stx]
         [else-stx
          (general-top-level-expr-iterator stx)]))
@@ -49,9 +49,7 @@
          (quasisyntax/loc stx (begin #,@(map (lambda (expr)
                                                (module-level-expr-iterator expr))
                                              (syntax->list #'top-level-exprs))))]
-        [(require . require-specs)
-         stx]
-        [(require-for-syntax . require-specs)
+        [(#%require . require-specs)
          stx]
         [else
          (annotate stx '() #f)]))
@@ -98,17 +96,13 @@
         (kernel:kernel-syntax-case expr #f
           [var-stx (identifier? (syntax var-stx)) expr]
         
-	  [(lambda . clause)
+	  [(#%plain-lambda . clause)
 	   (quasisyntax/loc expr 
-			    (lambda #,@(lambda-clause-annotator #`clause)))]
+			    (#%plain-lambda #,@(lambda-clause-annotator #`clause)))]
 	  
 	  [(case-lambda . clauses)
 	   (quasisyntax/loc expr
 			    (case-lambda #,@(map lambda-clause-annotator (syntax->list #`clauses))))]
-	  
-	  [(if test then)
-	   (quasisyntax/loc expr (if #,(annotate #`test bound-vars #f)
-				     #,(annotate #`then bound-vars is-tail?)))]
 	  
 	  [(if test then else)
 	   (quasisyntax/loc expr (if #,(annotate #`test bound-vars #f)
@@ -148,7 +142,7 @@
 							 #,(annotate #`mark bound-vars #f)
 							 #,(annotate #`body bound-vars is-tail?)))]
 	  
-	  [(#%app . exprs)
+	  [(#%plain-app . exprs)
 	   (let ([subexprs (map (lambda (expr) 
 				  (annotate expr bound-vars #f))
 				(syntax->list #`exprs))])
@@ -157,16 +151,14 @@
 		 (wcm-wrap (make-debug-info expr bound-vars bound-vars 'normal #f)
 			   (quasisyntax/loc expr #,subexprs))))]
         
-        [(#%datum . _) expr]
-        
         [(#%top . var) expr]
         
         [else (error 'expr-syntax-object-iterator "unknown expr: ~a"
-                     (syntax-object->datum expr))]))
+                     (syntax->datum expr))]))
 
       (set! count (+ count 1))
-      (if (= (modulo count 100) 0)
-          (fprintf (current-error-port) "syntax-source: ~v\nsyntax-position: ~v\n" (syntax-source expr) (syntax-position expr)))
+      (when (= (modulo count 100) 0)
+        (fprintf (current-error-port) "syntax-source: ~v\nsyntax-position: ~v\n" (syntax-source expr) (syntax-position expr)))
       
       
       (if (and (eq? (syntax-source expr) breakpoint-origin)

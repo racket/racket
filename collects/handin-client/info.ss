@@ -1,4 +1,4 @@
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   ;; Modify these definitions to enable & customize the tool.
   ;; (Detailed instructions are in the handin-server collection's doc.txt)
   ;; Also replace the "server-cert.pem" files.

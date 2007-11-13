@@ -1,6 +1,5 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
-@require[(lib "for.ss")]
 
 @title[#:tag "for"]{Iterations and Comprehensions: @scheme[for], @scheme[for/list], ...}
 

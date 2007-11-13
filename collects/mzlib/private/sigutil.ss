@@ -123,7 +123,7 @@
       (let-values ([(elems ctxs struct-defs)
 		    (let loop ([body body][accum null][ctx-accum null][struct-accum null])
 		      (syntax-case body ()
-			[() (values (reverse! accum) (reverse! ctx-accum) (reverse! struct-accum))]
+			[() (values (reverse accum) (reverse ctx-accum) (reverse struct-accum))]
 			[(something . rest)
 			 (syntax-case (syntax something) ()
 			   [:
@@ -449,17 +449,17 @@
 				  values)])
 		  `(define-syntaxes (,@(if check? null (list (cadr name))))
 		     ,(check
-		       `(list-immutable ,(pfx (car names))
-					,(pfx (cadr names))
-					,(pfx (caddr names))
-					;; trailing #fs below mean that we don't know whether we have all the fields:
-					(list-immutable
-					 ,@(map pfx (every-other (cdddr names)))
-					 #f)
-					(list-immutable
-					 ,@(map pfx (every-other (if (null? (cdddr names)) null (cddddr names))))
-					 #f)
-					#f))))))
+		       `(list ,(pfx (car names))
+                              ,(pfx (cadr names))
+                              ,(pfx (caddr names))
+                              ;; trailing #fs below mean that we don't know whether we have all the fields:
+                              (list
+                               ,@(map pfx (every-other (cdddr names)))
+                               #f)
+                              (list
+                               ,@(map pfx (every-other (if (null? (cdddr names)) null (cddddr names))))
+                               #f)
+                              #f))))))
 	    (signature-structs sig)))))
 
   ;; Could be called at expansion time from the result of a `unit/sig' expansion.

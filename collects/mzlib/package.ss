@@ -111,7 +111,7 @@
     ;;  kernel-form list:
     (define kernel-form-identifier-list+defines
       (append (list #'define*-values #'define*-syntaxes)
-	      (kernel-form-identifier-list #'here)))
+	      (kernel-form-identifier-list)))
 
     ;; Ensures that a single package element is a definition:
     (define (fix-expr e)

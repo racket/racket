@@ -165,8 +165,8 @@
   (define (check-now!)
     (begin0
       (if (= GUESSES# 2)
-          (apply check-guess (append choices (reverse! guessed-colors)))
-          (check-guess choices (reverse! guessed-colors)))
+          (apply check-guess (append choices (reverse guessed-colors)))
+          (check-guess choices (reverse guessed-colors)))
       (set! guessed-colors null)))
   
   ;; ------------------------------------------------------------------------

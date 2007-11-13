@@ -891,7 +891,7 @@
 		  (let loop ([s null])
 		    (let ([r (read-byte in)])
 		      (if (zero? r)
-			  (list->bytes (reverse! s))
+			  (list->bytes (reverse s))
 			  (loop (cons r s))))))]
 	       [original-filename (and has-original-filename?
 				       (read-null-term-string))]

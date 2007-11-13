@@ -28,7 +28,7 @@
                   (if (eq? 'EOF (position-token-token cur-tok))
                       (cons cur-tok acc)
                       (getter (cons cur-tok acc)))))))
-      (reverse! (getter null))))
+      (reverse (getter null))))
   ;getter: (list position-token) -> (-> position-token)
   (define (getter token-list)
     (lambda ()

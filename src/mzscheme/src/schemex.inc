@@ -246,7 +246,7 @@
   scheme_extension_table->scheme_make_closed_prim_w_everything = scheme_make_closed_prim_w_everything;
   scheme_extension_table->scheme_prim_is_method = scheme_prim_is_method;
   scheme_extension_table->scheme_make_pair = scheme_make_pair;
-  scheme_extension_table->scheme_make_immutable_pair = scheme_make_immutable_pair;
+  scheme_extension_table->scheme_make_mutable_pair = scheme_make_mutable_pair;
   scheme_extension_table->scheme_make_raw_pair = scheme_make_raw_pair;
   scheme_extension_table->scheme_make_byte_string = scheme_make_byte_string;
   scheme_extension_table->scheme_make_sized_byte_string = scheme_make_sized_byte_string;
@@ -451,6 +451,7 @@
   scheme_extension_table->scheme_file_exists = scheme_file_exists;
   scheme_extension_table->scheme_directory_exists = scheme_directory_exists;
   scheme_extension_table->scheme_expand_filename = scheme_expand_filename;
+  scheme_extension_table->scheme_expand_user_filename = scheme_expand_user_filename;
   scheme_extension_table->scheme_expand_string_filename = scheme_expand_string_filename;
   scheme_extension_table->scheme_os_getcwd = scheme_os_getcwd;
   scheme_extension_table->scheme_os_setcwd = scheme_os_setcwd;
@@ -513,6 +514,8 @@
   scheme_extension_table->scheme_make_modidx = scheme_make_modidx;
   scheme_extension_table->scheme_apply_for_syntax_in_env = scheme_apply_for_syntax_in_env;
   scheme_extension_table->scheme_dynamic_require = scheme_dynamic_require;
+  scheme_extension_table->scheme_namespace_require = scheme_namespace_require;
+  scheme_extension_table->scheme_is_module_path = scheme_is_module_path;
   scheme_extension_table->scheme_intern_symbol = scheme_intern_symbol;
   scheme_extension_table->scheme_intern_exact_symbol = scheme_intern_exact_symbol;
   scheme_extension_table->scheme_intern_exact_char_symbol = scheme_intern_exact_char_symbol;
@@ -550,7 +553,7 @@
   scheme_extension_table->scheme_set_type_equality = scheme_set_type_equality;
   scheme_extension_table->scheme_build_list = scheme_build_list;
   scheme_extension_table->scheme_build_list_offset = scheme_build_list_offset;
-  scheme_extension_table->scheme_make_list_immutable = scheme_make_list_immutable;
+  scheme_extension_table->scheme_is_list = scheme_is_list;
   scheme_extension_table->scheme_list_length = scheme_list_length;
   scheme_extension_table->scheme_proper_list_length = scheme_proper_list_length;
   scheme_extension_table->scheme_alloc_list = scheme_alloc_list;

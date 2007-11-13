@@ -340,7 +340,7 @@ OS_SEMAPHORE_TYPE scheme_break_semaphore;
 #endif
 
 #ifdef MZ_FDS
-static Scheme_Object *make_fd_input_port(int fd, Scheme_Object *name, int regfile, int textmode, int *refcount);
+static Scheme_Object *make_fd_input_port(int fd, Scheme_Object *name, int regfile, int textmode, int *refcount, int internal);
 static Scheme_Object *make_fd_output_port(int fd, Scheme_Object *name, int regfile, int textmode, int read_too);
 #endif
 #ifdef USE_OSKIT_CONSOLE
@@ -498,9 +498,9 @@ scheme_init_port (Scheme_Env *env)
 #else
 # ifdef MZ_FDS
 #  ifdef WINDOWS_FILE_HANDLES
-			    : make_fd_input_port((int)GetStdHandle(STD_INPUT_HANDLE), scheme_intern_symbol("stdin"), 0, 0, NULL)
+			    : make_fd_input_port((int)GetStdHandle(STD_INPUT_HANDLE), scheme_intern_symbol("stdin"), 0, 0, NULL, 0)
 #  else
-			    : make_fd_input_port(0, scheme_intern_symbol("stdin"), 0, 0, NULL)
+			    : make_fd_input_port(0, scheme_intern_symbol("stdin"), 0, 0, NULL, 0)
 #  endif
 # else
 			    : scheme_make_named_file_input_port(stdin, scheme_intern_symbol("stdin"))
@@ -3508,7 +3508,7 @@ static void filename_exn(char *name, char *msg, char *filename, int err)
 }
 
 Scheme_Object *
-scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[])
+scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[], int internal)
 {
 #ifdef USE_FD_PORTS
   int fd;
@@ -3565,9 +3565,10 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
   filename = scheme_expand_string_filename(argv[0],
 					   name,
 					   NULL,
-					   SCHEME_GUARD_FILE_READ);
+					   (internal ? 0 : SCHEME_GUARD_FILE_READ));
 
-  scheme_custodian_check_available(NULL, name, "file-stream");
+  if (!internal)
+    scheme_custodian_check_available(NULL, name, "file-stream");
 
 #ifdef USE_FD_PORTS
   /* Note: assuming there's no difference between text and binary mode */
@@ -3595,7 +3596,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
     } else {
       regfile = S_ISREG(buf.st_mode);
       scheme_file_open_count++;
-      result = make_fd_input_port(fd, scheme_make_path(filename), regfile, 0, NULL);
+      result = make_fd_input_port(fd, scheme_make_path(filename), regfile, 0, NULL, internal);
     }
   }
 #else
@@ -3620,7 +3621,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
     return NULL;
   }
 
-  result = make_fd_input_port((int)fd, scheme_make_path(filename), regfile, mode[1] == 't', NULL);
+  result = make_fd_input_port((int)fd, scheme_make_path(filename), regfile, mode[1] == 't', NULL, internal);
 # else
   if (scheme_directory_exists(filename)) {
     filename_exn(name, "cannot open directory as a file", filename, 0);
@@ -3635,7 +3636,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
     if (scheme_mac_path_to_spec(filename, &spec)) {
       errno = FSpOpenDF(&spec, fsRdWrShPerm, &refnum);
       if (errno == noErr)
-	result = make_fd_input_port(refnum, scheme_make_path(filename), 1, mode[1] == 't', NULL);
+	result = make_fd_input_port(refnum, scheme_make_path(filename), 1, mode[1] == 't', NULL, internal);
       else {
 	filename_exn(name, "could not open file", filename, errno);
 	return NULL;
@@ -4029,7 +4030,7 @@ Scheme_Object *scheme_open_input_file(const char *name, const char *who)
   Scheme_Object *a[1];
 
   a[0]= scheme_make_path(name);
-  return scheme_do_open_input_file((char *)who, 0, 1, a);
+  return scheme_do_open_input_file((char *)who, 0, 1, a, 0);
 }
 
 Scheme_Object *scheme_open_output_file(const char *name, const char *who)
@@ -5069,7 +5070,7 @@ static int fd_input_buffer_mode(Scheme_Port *p, int mode)
 }
 
 static Scheme_Object *
-make_fd_input_port(int fd, Scheme_Object *name, int regfile, int win_textmode, int *refcount)
+make_fd_input_port(int fd, Scheme_Object *name, int regfile, int win_textmode, int *refcount, int internal)
 {
   Scheme_Input_Port *ip;
   Scheme_FD *fip;
@@ -5108,7 +5109,7 @@ make_fd_input_port(int fd, Scheme_Object *name, int regfile, int win_textmode, i
 			      fd_byte_ready,
 			      fd_close_input,
 			      fd_need_wakeup,
-			      1);
+			      !internal);
   ip->p.buffer_mode_fun = fd_input_buffer_mode;
 
   ip->pending_eof = 1; /* means that pending EOFs should be tracked */
@@ -5240,7 +5241,7 @@ Scheme_Object *
 scheme_make_fd_input_port(int fd, Scheme_Object *name, int regfile, int textmode)
 {
 #ifdef MZ_FDS
-  return make_fd_input_port(fd, name, regfile, textmode, NULL);
+  return make_fd_input_port(fd, name, regfile, textmode, NULL, 0);
 #else
   return NULL;
 #endif
@@ -6344,7 +6345,7 @@ make_fd_output_port(int fd, Scheme_Object *name, int regfile, int win_textmode, 
     *rc = 2;
     fop->refcount = rc;
     a[1] = the_port;
-    a[0] = make_fd_input_port(fd, name, regfile, win_textmode, rc);
+    a[0] = make_fd_input_port(fd, name, regfile, win_textmode, rc, 0);
     return scheme_values(2, a);
   } else
     return the_port;
@@ -7473,9 +7474,9 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   /*        Create new port objects       */
   /*--------------------------------------*/
 
-  in = (in ? in : make_fd_input_port(from_subprocess[0], scheme_intern_symbol("subprocess-stdout"), 0, 0, NULL));
+  in = (in ? in : make_fd_input_port(from_subprocess[0], scheme_intern_symbol("subprocess-stdout"), 0, 0, NULL, 0));
   out = (out ? out : make_fd_output_port(to_subprocess[1], scheme_intern_symbol("subprocess-stdin"), 0, 0, 0));
-  err = (err ? err : make_fd_input_port(err_subprocess[0], scheme_intern_symbol("subprocess-stderr"), 0, 0, 0));
+  err = (err ? err : make_fd_input_port(err_subprocess[0], scheme_intern_symbol("subprocess-stderr"), 0, 0, NULL, 0));
 
   /*--------------------------------------*/
   /*          Return result info          */
@@ -7676,6 +7677,39 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
   return NULL;
 #endif
 }
+
+/*========================================================================*/
+/*                          fd reservation                                */
+/*========================================================================*/
+
+/* We don't want on-demand loading of code to fail because we run out of
+   file descriptors. So, keep one in reserve. */
+
+#ifdef USE_FD_PORTS
+static int fd_reserved, the_fd;
+#endif
+
+void scheme_reserve_file_descriptor(void)
+{
+#ifdef USE_FD_PORTS
+  if (!fd_reserved) {
+    the_fd = open("/dev/null", O_RDONLY); 
+    if (the_fd != -1)
+      fd_reserved = 1;
+  }
+#endif
+}
+
+void scheme_release_file_descriptor(void)
+{
+#ifdef USE_FD_PORTS
+  if (fd_reserved) {
+    close(the_fd);
+    fd_reserved = 0;
+  }
+#endif
+}
+
 
 /*========================================================================*/
 /*                             sleeping                                   */

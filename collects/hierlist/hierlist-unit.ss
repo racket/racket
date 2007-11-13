@@ -338,30 +338,33 @@
            [depth dpth]
            [parent-snip parent-snp]
            [children null]
-	   [last-child #f]
+	   [new-children null]
 	   [no-sublists? #f])
           (private
+            [append-children! (lambda ()
+                                (unless (null? new-children)
+                                  (set! children (append children (reverse new-children)))
+                                  (set! new-children null)))]
             [make-whitespace (lambda () (make-object whitespace-snip%))]
             [insert-item 
              (lambda (mixin snip% whitespace?)
                (let ([s (make-object snip% this top top-select (add1 depth) mixin)])
                  (begin-edit-sequence)
-                 (unless (null? children)
+                 (unless (and (null? children)
+                              (null? new-children))
                    (insert #\newline (last-position)))
                  (when whitespace?
 		   (insert (make-whitespace) (last-position)))
                  (insert s (last-position))
                  (end-edit-sequence)
-		 (let ([p (list s)])
-		   (if last-child
-		       (set-cdr! last-child p)
-		       (set! children (append children p)))
-		   (set! last-child p))
+                 (set! new-children (cons s new-children))
                  (send s get-item)))])
           (public
             [get-parent-snip (lambda () parent-snip)]
             [deselect-all 
-             (lambda () (for-each (lambda (x) (send x deselect-all)) children))]
+             (lambda () 
+               (append-children!)
+               (for-each (lambda (x) (send x deselect-all)) children))]
             [new-item 
              (case-lambda
               [() (new-item (lambda (x) x))]
@@ -376,12 +379,16 @@
                (insert-item mixin hierarchical-list-snip% #f)])]
 	    [set-no-sublists
 	     (lambda (no?)
+               (append-children!)
 	       (unless (null? children)
 		 (error 'set-no-sublists "cannot change sublist mode because the list is non-empty"))
 	       (set! no-sublists? (and no? #t)))]
-            [get-items (lambda () (map (lambda (x) (send x get-item)) children))]
+            [get-items (lambda () 
+                         (append-children!)
+                         (map (lambda (x) (send x get-item)) children))]
             [delete-item
              (lambda (i)
+               (append-children!)
                (let loop ([pos 0][l children][others null])
                  (cond
                    [(null? l) (error 'hierarchical-list-compound-item::delete-item "item not found: ~a" i)]
@@ -389,12 +396,12 @@
 		    (send top ensure-not-selected i)
                     (send (car l) deselect-all)
                     (set! children (append (reverse others) (cdr l)))
-		    (set! last-child #f)
                     (let ([s (line-start-position pos)]
                           [e (line-end-position pos)])
                       (delete (if (zero? s) s (sub1 s)) (if (zero? s) (add1 e) e)))]
                    [else (loop (add1 pos) (cdr l) (cons (car l) others))])))]
             [sort (opt-lambda (less-than? [recur? #t])
+                    (append-children!)
                     (let ([l (sort* children
                                     (lambda (a b)
                                       (less-than? (send a get-item)
@@ -424,12 +431,12 @@
                         (unless (null? l)
                           (delete)) ; delete last #\newline
                         (set! children l)
-			(set! last-child #f)
                         (when to-scroll-to
                           (send (send to-scroll-to get-item) scroll-to)))
                       (end-edit-sequence)))]
             [reflow-items
              (lambda ()
+               (append-children!)
                (for-each
                 (lambda (c)
                   (send c reflow-item))

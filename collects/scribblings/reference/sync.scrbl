@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "all-sync" #:style 'toc]{Synchronization}
+
+@declare-exporting[(lib "scheme/sync")]
 
 Scheme's synchronization toolbox spans three layers:
 

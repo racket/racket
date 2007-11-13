@@ -752,13 +752,13 @@ profile todo:
         (when (hash-table? ht)
           ;; if rep isn't around, we don't do test coverage...
           ;; this can happen when check syntax expands, for example
-          (hash-table-put! ht key (list #f expr)))))
+          (hash-table-put! ht key (mcons #f expr)))))
     
     (define (test-covered key)
       (let ([ht (thread-cell-ref current-test-coverage-info)])
         (when (hash-table? ht) ;; as in the `when' test in `initialize-test-coverage-point'
           (let ([v (hash-table-get ht key)])
-            (set-car! v #t)))))
+            (set-mcar! v #t)))))
     
     (define test-coverage-interactions-text<%>
       (interface ()
@@ -894,7 +894,7 @@ profile todo:
                  ;; remove those that cannot be annotated
                  [can-annotate
                   (filter (λ (pr)
-                            (let ([stx (cadr pr)])
+                            (let ([stx (mcdr pr)])
                               (and (syntax? stx)
                                    (let ([src (syntax-source stx)]
                                          [pos (syntax-position stx)]
@@ -911,8 +911,8 @@ profile todo:
                         [actions-ht (make-hash-table 'equal)])
                     (for-each
                      (λ (pr)
-                       (let* ([stx (cadr pr)]
-                              [on? (car pr)]
+                       (let* ([stx (mcdr pr)]
+                              [on? (mcar pr)]
                               [key (list (syntax-source stx)
                                          (syntax-position stx)
                                          (syntax-span stx))]

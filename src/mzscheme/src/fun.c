@@ -133,6 +133,7 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv);
 #endif
 static Scheme_Object *object_name(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity(int argc, Scheme_Object *argv[]);
+static Scheme_Object *procedure_arity_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity_includes(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[]);
@@ -465,6 +466,11 @@ scheme_init_fun (Scheme_Env *env)
   scheme_add_global_constant("procedure-arity",
 			     scheme_make_folding_prim(procedure_arity,
 						      "procedure-arity",
+						      1, 1, 1),
+			     env);
+  scheme_add_global_constant("procedure-arity?",
+			     scheme_make_folding_prim(procedure_arity_p,
+						      "procedure-arity?",
 						      1, 1, 1),
 			     env);
   scheme_add_global_constant("procedure-arity-includes?",
@@ -877,6 +883,33 @@ Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Object *context)
 #endif
 
   return code;
+}
+
+void scheme_delay_load_closure(Scheme_Closure_Data *data)
+{
+  if (SCHEME_RPAIRP(data->code)) {
+    Scheme_Object *v, *vinfo = NULL;
+
+    v = SCHEME_CAR(data->code);
+    if (SCHEME_VECTORP(v)) {
+      /* Has info for delayed validation */
+      vinfo = v;
+      v = SCHEME_VEC_ELS(vinfo)[0];
+    }
+    v = scheme_load_delayed_code(SCHEME_INT_VAL(v), 
+                                 (struct Scheme_Load_Delay *)SCHEME_CDR(data->code));
+    data->code = v;
+    
+    if (vinfo) {
+      scheme_validate_closure(NULL, 
+                              (Scheme_Object *)data,
+                              (char *)SCHEME_VEC_ELS(vinfo)[1], 
+                              (Validate_TLS)SCHEME_VEC_ELS(vinfo)[2], 
+                              SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[3]),
+                              SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[4]),
+                              SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[5]));
+    }
+  }
 }
 
 /* Closure_Info is used to store extra closure information
@@ -2453,13 +2486,13 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
      tail = SCHEME_STX_CDR(code);
      setkw = SCHEME_STX_CAR(code);
      tail = SCHEME_STX_CDR(tail);
-     code = scheme_make_immutable_pair(setkw, scheme_make_immutable_pair(rator, tail));
+     code = scheme_make_pair(setkw, scheme_make_pair(rator, tail));
      code = scheme_datum_to_syntax(code, orig_code, orig_code, 0, 0);
    } else if (SCHEME_SYMBOLP(SCHEME_STX_VAL(code)))
      code = rator;
    else {
      code = SCHEME_STX_CDR(code);
-     code = scheme_make_immutable_pair(rator, code);
+     code = scheme_make_pair(rator, code);
      code = scheme_datum_to_syntax(code, orig_code, scheme_sys_wraps(env), 0, 0);
    }
 
@@ -3167,6 +3200,39 @@ static Scheme_Object *procedure_arity(int argc, Scheme_Object *argv[])
     scheme_wrong_type("procedure-arity", "procedure", 0, argc, argv);
 
   return get_or_check_arity(argv[0], -1, NULL);
+}
+
+static Scheme_Object *procedure_arity_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *a = argv[0], *v;
+
+  if (SCHEME_INTP(a)) {
+    return ((SCHEME_INT_VAL(a) >= 0) ? scheme_true : scheme_false);
+  } else if (SCHEME_BIGNUMP(a)) {
+    return (SCHEME_BIGPOS(a) ? scheme_true : scheme_false);
+  } else if (SCHEME_NULLP(a)) {
+    return scheme_true;
+  } else if (SCHEME_PAIRP(a)) {
+    while (SCHEME_PAIRP(a)) {
+      v = SCHEME_CAR(a);
+      if (SCHEME_INTP(v)) {
+        if (SCHEME_INT_VAL(v) < 0)
+          return scheme_false;
+      } else if (SCHEME_BIGNUMP(v)) {
+        if (!SCHEME_BIGPOS(v))
+          return scheme_false;
+      } else if (!SCHEME_STRUCTP(v)
+                 || !scheme_is_struct_instance(scheme_arity_at_least, v)) {
+        return scheme_false;
+      }
+      a = SCHEME_CDR(a);
+    }
+    return SCHEME_NULLP(a) ? scheme_true : scheme_false;
+  } else if (SCHEME_STRUCTP(a)
+             && scheme_is_struct_instance(scheme_arity_at_least, a)) {
+    return scheme_true;
+  } else
+    return scheme_false;
 }
 
 static Scheme_Object *procedure_arity_includes(int argc, Scheme_Object *argv[])
@@ -7821,8 +7887,9 @@ scheme_default_prompt_read_handler(int argc, Scheme_Object *argv[])
 static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
 {
   Scheme_Closure_Data *data;
-  Scheme_Object *name, *l;
-  int svec_size;
+  Scheme_Object *name, *l, *code, *ds;
+  int svec_size, pos;
+  Scheme_Marshal_Tables *mt;
 
   data = (Scheme_Closure_Data *)obj;
 
@@ -7849,15 +7916,90 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
     svec_size += (data->num_params + BITS_PER_MZSHORT - 1) / BITS_PER_MZSHORT;
   }
 
+  /* If the body is simple enough, write it directly.
+     Otherwise, create a delay indirection so that the body
+     is loaded on demand. */
+  code = data->code;
+  switch (SCHEME_TYPE(code)) {
+  case scheme_toplevel_type:
+  case scheme_local_type:
+  case scheme_local_unbox_type:
+  case scheme_integer_type:
+  case scheme_true_type:
+  case scheme_false_type:
+  case scheme_void_type:
+  case scheme_quote_syntax_type:
+    ds = code;
+    break;
+  default:
+    ds = NULL;
+    break;
+  }
+  
+  if (!ds) {
+    mt = scheme_current_thread->current_mt;
+    if (!mt->pass) {
+      int key;
+
+      pos = mt->cdata_counter;
+      if ((!mt->cdata_map || (pos >= 32))
+          && !(pos & (pos - 1))) {
+        /* Need to grow the array */
+        Scheme_Object **a;
+        a = MALLOC_N(Scheme_Object *, (pos ? 2 * pos : 32));
+        memcpy(a, mt->cdata_map, pos * sizeof(Scheme_Object *));
+        mt->cdata_map = a;
+      }
+      mt->cdata_counter++;
+
+      key = pos & 255;
+      MZ_OPT_HASH_KEY(&data->iso) = ((int)MZ_OPT_HASH_KEY(&data->iso) & 0x00FF) | (key << 8);
+    } else {
+      pos = ((int)MZ_OPT_HASH_KEY(&data->iso) & 0xFF00) >> 8;
+
+      while (pos < mt->cdata_counter) {
+        ds = mt->cdata_map[pos];
+        if (ds) {
+          ds = SCHEME_PTR_VAL(ds);
+          if (SAME_OBJ(data->code, ds))
+            break;
+          if (SAME_TYPE(scheme_quote_compilation_type, SCHEME_TYPE(ds)))
+            if (SAME_OBJ(data->code, SCHEME_PTR_VAL(ds)))
+              break;
+        }
+        pos += 256;
+      }
+      if (pos >= mt->cdata_counter) {
+        scheme_signal_error("didn't find delay record");
+      }
+    }
+
+    ds = mt->cdata_map[pos];
+    if (!ds) {
+      if (mt->pass)
+        scheme_signal_error("broken closure-data table\n");
+    
+      code = scheme_protect_quote(data->code);
+    
+      ds = scheme_alloc_small_object();
+      ds->type = scheme_delay_syntax_type;
+      SCHEME_PTR_VAL(ds) = code;
+
+      MZ_OPT_HASH_KEY(&((Scheme_Small_Object *)ds)->iso) |= 1; /* => hash on ds, not contained data */
+
+      mt->cdata_map[pos] = ds;
+    }
+  }
+
   l = CONS(scheme_make_svector(svec_size,
                                data->closure_map),
-           scheme_protect_quote(data->code));
+           ds);
 
   if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REF_ARGS)
     l = CONS(scheme_make_integer(data->closure_size),
              l);
 
-  return CONS(scheme_make_integer(SCHEME_CLOSURE_DATA_FLAGS(data)),
+  return CONS(scheme_make_integer(SCHEME_CLOSURE_DATA_FLAGS(data) & 0x7F),
 	      CONS(scheme_make_integer(data->num_params),
 		   CONS(scheme_make_integer(data->max_let_depth),
 			CONS(name,

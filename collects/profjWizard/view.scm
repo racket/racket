@@ -473,11 +473,7 @@
         (set! pa* (append pa* (list x)))
         (send this change-children 
               (lambda (y)
-                (let loop ([y y])
-                  (if (eq? (cadr y) pa+)
-                      (set-cdr! y (cons x end)) 
-                      (loop (cdr y))))
-                y))
+                (remq y pa+)))
         (send this end-container-sequence))
       
       ;; re-establish this pane so that programmers can edit the method info

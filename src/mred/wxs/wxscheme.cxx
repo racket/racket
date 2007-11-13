@@ -2444,7 +2444,7 @@ Scheme_Object *wxSchemeFindDirectory(int argc, Scheme_Object **argv)
     Scheme_Object *home;
     int ends_in_slash;
 
-    home = scheme_make_path(scheme_expand_filename("~/", 2, NULL, NULL, 0));
+    home = scheme_make_path(scheme_expand_user_filename("~/", 2, NULL, NULL, 0));
     
     ends_in_slash = (SCHEME_BYTE_STR_VAL(home))[SCHEME_BYTE_STRTAG_VAL(home) - 1] == '/';
     
@@ -2701,9 +2701,9 @@ int wxGetPreference(const char *name, char *res, long len)
 
 #if defined(wx_xt) || defined(OS_X)
 # ifdef wx_mac
-    home = scheme_expand_filename("~/Library/Preferences/", -1, NULL, NULL, 0);
+    home = scheme_expand_user_filename("~/Library/Preferences/", -1, NULL, NULL, 0);
 # else
-    home = scheme_expand_filename("~/.plt-scheme/", -1, NULL, NULL, 0);
+    home = scheme_expand_user_filename("~/.plt-scheme/", -1, NULL, NULL, 0);
 # endif 
     
     l = strlen(home);

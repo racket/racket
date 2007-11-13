@@ -15,16 +15,16 @@
 	   set-region-interactive-callback!)
 
   (define-syntax region
-    (list-immutable #'struct:region
-		    #'make-region
-		    #'region?
-		    (list-immutable
-		     #'region-callback #'region-label 
-		     #'region-h #'region-w 
-		     #'region-y #'region-x 
-		     #f)
-		    (list-immutable #f)
-		    #t))
+    (list #'struct:region
+          #'make-region
+          #'region?
+          (list
+           #'region-callback #'region-label 
+           #'region-h #'region-w 
+           #'region-y #'region-x 
+           #f)
+          (list #f)
+          #t))
 
   (define-values (struct:region make-region region? region-get region-set!)
     (make-struct-type 'region #f 6 6 #f))

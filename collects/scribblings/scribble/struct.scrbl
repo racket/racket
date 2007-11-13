@@ -1,5 +1,5 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
 @require["utils.ss"]
 
 @title[#:tag "struct"]{Document Structures And Processing}

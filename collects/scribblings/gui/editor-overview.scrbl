@@ -1,5 +1,5 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/bnf]
 @require["common.ss"]
 
 @title[#:tag "editor-overview"]{Editor}

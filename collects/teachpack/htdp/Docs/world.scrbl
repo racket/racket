@@ -1,12 +1,10 @@
 #lang scribble/doc
 
-@begin[(require
-	 (lib "manual.ss" "scribble"))
-       (require-for-label
-	 (lib "lang.ss" "big")
-	 (only "../world.ss" run-simulation)
-	 "../image.ss"
-	 )]
+@begin[(require scribble/manual)
+       (require (for-label
+                 scheme/base
+                 (only-in "../world.ss" run-simulation)
+                 "../image.ss"))]
 
 @title[#:tag "world"]{Simulations and Animations: world.ss}
 

@@ -154,7 +154,10 @@
 			   (check-item 'set-item-label i)
 			   (check-label-string '(method tab-panel% set-item-label) s)
 			   (let ([s (string->immutable-string s)])
-			     (set-car! (list-tail save-choices i) s)
+                             (set! save-choices (let loop ([save-choices save-choices][i i])
+                                                  (if (zero? i)
+                                                      (cons s (cdr save-choices))
+                                                      (cons (car save-choices) (loop (cdr save-choices) (sub1 i))))))
 			     (send (mred->wx tabs) set-label i s))))]
 	[set
 	 (entry-point (lambda (l) 

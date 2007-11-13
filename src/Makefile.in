@@ -51,7 +51,7 @@ both:
 
 # Install (common) ----------------------------------------
 
-SETUP_ARGS = -mvqX "$(DESTDIR)$(collectsdir)" -M setup
+SETUP_ARGS = -X "$(DESTDIR)$(collectsdir)" -l setup
 
 install:
 	$(MAKE) install-@MAIN_VARIANT@
@@ -74,7 +74,7 @@ no-run:
 	cd .
 
 copytree-run:
-	mzscheme/mzscheme@CGC@ -mvxqu \
+	mzscheme/mzscheme@CGC@ -u \
           "$(srcdir)/../collects/setup/unixstyle-install.ss" \
           make-install-copytree "$(srcdir)/.." \
           $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"

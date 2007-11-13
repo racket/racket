@@ -1,38 +1,40 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title{Module Names and Loading}
 
+@declare-exporting[(lib "scheme/module-name")]
+
 @;------------------------------------------------------------------------
 @section[#:tag "modnameresolver"]{Resolving Module Names}
 
-The name of a declared module is either a symbol or a @deftech{resolved
-module path}. A symbol normally refers to a predefined module or
-module declared through reflective evaluation (e.g., @scheme[eval]). A
-@tech{resolved module path} encapsulates a filesystem path (see
-@secref["pathutils"]) and normally refers to a module declaration
-that was loaded on demand via @scheme[require] or other forms.
+The name of a declared module is represented by a @deftech{resolved
+module path}, which encapsulates either a symbol or a complete
+filesystem path (see @secref["pathutils"]). A symbol normally refers
+to a predefined module or module declared through reflective
+evaluation (e.g., @scheme[eval]). A filesystem path normally refers to
+a module declaration that was loaded on demand via @scheme[require] or
+other forms.
 
 @defproc[(resolved-module-path? [v any/c]) boolean?]{
 
 Returns @scheme[#f] if @scheme[v] is a @tech{resolved module path},
 @scheme[#f] otherwise.}
 
-@defproc[(make-resolved-module-path [path path-string?])
+@defproc[(make-resolved-module-path [path (or/c symbol? (and/c path? complete-path?))])
          resolved-module-path?]{
 
-Returns a @tech{resolved module path} that encapsulates @scheme[path]
-as relative to @scheme[current-directory] and expanded (see
+Returns a @tech{resolved module path} that encapsulates @scheme[path].
+If @scheme[path] is not a symbol, it normally should be expanded (see
 @scheme[expand-path]), simplified (see @scheme[simplify-path]), and
-with all but the last path element case-normalized (see
-@scheme[normal-case-path]).
+case-normalized (see @scheme[normal-case-path]).
 
 A @tech{resolved module path} is interned. That is, if two
 @tech{resolved module path} values encapsulate paths that are
-@scheme{equal?}, then the @tech{resolved module path} values are
-@scheme{eq?}.}
+@scheme[equal?], then the @tech{resolved module path} values are
+@scheme[eq?].}
 
-@defproc[(resolved-module-path->path [module-path resolved-module-path?])
+@defproc[(resolved-module-path-name [module-path resolved-module-path?])
          path?]{
 
 Returns the path encapsulated by a @tech{resolved module path}.}
@@ -47,14 +49,15 @@ the grammar for @scheme[_module-path] for @scheme[require],
 
 @defparam[current-module-name-resolver proc 
            (case->
-            ((or/c symbol? resolved-module-path?)
+            (resolved-module-path?
              . -> . 
              any)
             ((or/c module-path? path?)
-             (or/c false/c symbol? resolved-module-path?) 
+             (or/c false/c resolved-module-path?) 
+             (or/c false/c syntax?) 
              boolean?
              . -> . 
-             (or/c symbol? resolved-module-path?)))]{
+             resolved-module-path?))]{
 
 A parameter that determines the current @deftech{module name
 resolver}, which manages the conversion from other kinds of module
@@ -67,7 +70,7 @@ module, the @deftech{module path resolver} is also given the name of
 the enclosing module, so that a relative reference can be converted to
 an absolute symbol or @tech{resolved module path}.
 
-A @tech{module name resolver} takes one and three arguments:
+A @tech{module name resolver} takes one and four arguments:
 %
 @itemize{
 
@@ -78,15 +81,17 @@ A @tech{module name resolver} takes one and three arguments:
   shares the same module registry). The module name resolver's result
   is ignored.}
  
-  @item{When given three arguments, the first is a module path, either
+  @item{When given four arguments, the first is a module path, either
   equivalent to a quoted @scheme[module-path] for @scheme[require] or
   a file system path.  The second is name for the source module, if
   any, to which the path is relative; f the second argument is
   @scheme[#f], the module path is relative to @scheme[(or
-  (current-load-relative-directory) (current-directory))].  If the
-  argument is @scheme[#t], then the module declaration should be
-  loaded (if it is not already), otherwise the module path should be
-  simply resolved to a name. The result is the resolved name.}
+  (current-load-relative-directory) (current-directory))].  The third
+  argument is a @tech{syntax object} that can be used for error
+  reporting, if it is not @scheme[#f]. If the last argument is
+  @scheme[#t], then the module declaration should be loaded (if it is
+  not already), otherwise the module path should be simply resolved to
+  a name. The result is the resolved name.}
 
 }
 
@@ -99,10 +104,8 @@ the table and the corresponding file is loaded with a variant of
 @tech{compiled-load handler}.
 
 While loading a file, the default @tech{module name resolver} sets the
-@scheme[current-module-name-prefix] parameter, so that the name of any
-module declared in the loaded file is given a prefix. The resolver
-sets the prefix to the resolved module name, minus the de-suffixed
-file name. Also, the default @tech{module name resolver} records in a
+@scheme[current-module-declare-name] parameter to the resolved module
+name. Also, the default @tech{module name resolver} records in a
 private @tech{continuation mark} the filename being loaded, and it
 checks whether such a mark already exists; if such a continuation mark
 does exist in the current continuation, then the @exnraise[exn:fail]
@@ -124,16 +127,13 @@ tools (such as DrScheme) might call this resolver in this mode to
 avoid redundant module loads.}
 
 
-@defparam[current-module-name-prefix prefix (or/c path? false/c)]{
+@defparam[current-module-declare-name name (or/c resolved-module-path? false/c)]{
 
-A parameter that determines a prefix used when evaluating a
-@scheme[module] declaration when the prefix is not @scheme[#f]. In
-that case, the quoted form of the @scheme[_id] from the
-@scheme[module] declaration is converted to a path element (via
-@scheme[symbol->string] and @scheme[string->path-element]), combined
-with the prefix (via @scheme[build-path]), and then converted to a
-@tech{resolved module path} (via @scheme[make-resolved-module-path])
-which is used as the name of the declared module.}
+A parameter that determines a module name that is used when evaluating
+a @scheme[module] declaration (when the parameter value is not
+@scheme[#f]). In that case, the @scheme[_id] from the @scheme[module]
+declaration is ignored, and the parameter's value is used as the name
+of the declared module.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "modpathidx"]{Compiled Modules and References}
@@ -148,13 +148,12 @@ among compiled code.
 
 When a module reference is extracted from compiled form (see
 @scheme[module-compiled-imports]) or from syntax objects in macro
-expansion (see @secref["stxops"]), the module reference is
-typically reported in the form of a @deftech{module path index}. A
-@tech{module path index} is a semi-interned (multiple references to
-the same relative module tend to use the same @tech{module path index}
-value, but not always) opaque value that encodes a module path (see
-@scheme[module-path?])  and another @tech{module path index} to which
-it is relative.
+expansion (see @secref["stxops"]), the module reference is reported in
+the form of a @deftech{module path index}. A @tech{module path index}
+is a semi-interned (multiple references to the same relative module
+tend to use the same @tech{module path index} value, but not always)
+opaque value that encodes a module path (see @scheme[module-path?])
+and another @tech{module path index} to which it is relative.
 
 A @tech{module path index} that uses both @scheme[#f] for its path and
 base @tech{module path index} represents ``self''---i.e., the module
@@ -172,20 +171,14 @@ index} that contains the @scheme[require]d module path and the
 
 
 A @tech{module path index} has state. When it is @deftech{resolved} to
-a symbolic module name, then the symbol or @tech{resolved module path}
-is stored with the @tech{module path index}. In particular, when a
-module is loaded, its root @tech{module path index} is resolved to
-match the module's declaration-time name. This resolved path is
-forgotten, however, in identifiers that the module contributes to the
-compiled and marshaled form of other modules. This transient nature of
-resolved names allows the module code to be loaded with a different
-resolved name than the name when it was compiled.
-
-Where a @tech{module path index} is expected, a symbol can usually
-take its place, representing a literal module name. A symbol is used
-instead of a @tech{module path index} when a module is imported using
-its name directly with @scheme[require] instead of a module path (in
-which case the symbol is also the resolved name of the module).
+a @tech{resolved module path}, then the @tech{resolved module path} is
+stored with the @tech{module path index}. In particular, when a module
+is loaded, its root @tech{module path index} is resolved to match the
+module's declaration-time name. This resolved path is forgotten,
+however, in identifiers that the module contributes to the compiled
+and marshaled form of other modules. The transient nature of resolved
+names allows the module code to be loaded with a different resolved
+name than the name when it was compiled.
 
 @defproc[(module-path-index? [v any/c]) boolean?]{
 
@@ -194,11 +187,11 @@ Returns @scheme[#t] if @scheme[v] is a @tech{module path index},
 
 
 @defproc[(module-path-index-resolve [mpi module-path-index?])
-         (or/c symbol? resolved-module-path?)]{
+         resolved-module-path?]{
 
-Returns a symbol or @tech{resolved module path} for the resolved
-module name, computing the resolved name (and storing it in
-@scheme[mpi]) if it has not been computed before.
+Returns a @tech{resolved module path} for the resolved module name,
+computing the resolved name (and storing it in @scheme[mpi]) if it has
+not been computed before.
 
 Resolving a @tech{module path index} uses the current @tech{module
 name resolver} (see @scheme[current-module-name-resolver]). Depending
@@ -209,11 +202,11 @@ resolved name can depend on the value of
 
 
 @defproc[(module-path-index-split [mpi module-path-index?])
-         (values (or/c (and/c module-path? (not/c symbol?)) false/c)
+         (values (or/c module-path? false/c)
                  (or/c module-path-index? false/c))]{
 
-Returns two values: a module path, and a base @tech{module path
-index}, symbol, or @scheme[#f] to which the module path is relative.
+Returns two values: a module path, and a base @tech{module path index}
+or @scheme[#f] to which the module path is relative.
 
 A @scheme[#f] second result means that the path is relative to an
 unspecified directory (i.e., its resolution depends on the value of
@@ -224,14 +217,13 @@ A @scheme[#f] for the first result implies a @scheme[#f] for the
 second result, and means that @scheme[mpi] represents ``self'' (see
 above).}
 
-@defproc[(module-path-index-join [path (or/c (and/c module-path? (not/c symbol?))
-                                             false/c)]
+@defproc[(module-path-index-join [path (or/c module-path? false/c)]
                                  [mpi (or/c module-path-index? false/c)])
          module-path-index?]{
 
 Combines @scheme[path] and @scheme[mpi] to create a new @tech{module
 path index}. The @scheme[path] argument can @scheme[#f] only if
-@scheme[mpi] i also @scheme[false].}
+@scheme[mpi] is also @scheme[false].}
 
 @defproc[(compiled-module-expression? [v any/c]) boolean?]{
 
@@ -248,9 +240,9 @@ the module's declared name.}
 
 
 @defproc[(module-compiled-imports [compiled-module-code compiled-module-expression?])
-         (values (listof (or/c module-path-index? symbol?))
-                 (listof (or/c module-path-index? symbol?))
-                 (listof (or/c module-path-index? symbol?)))]{
+         (values (listof module-path-index?)
+                 (listof module-path-index?)
+                 (listof module-path-index?))]{
 
 Takes a module declaration in compiled form and returns three values:
 a list of module references for the module's explicit imports, a list

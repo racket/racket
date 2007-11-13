@@ -149,7 +149,7 @@
        (identifier? (syntax name))
        (syntax/loc stx
         (define-syntax name
-          (make-lex-abbrev (quote-syntax re)))))
+          (make-lex-abbrev (lambda () (quote-syntax re))))))
       (_ 
        (raise-syntax-error
         #f

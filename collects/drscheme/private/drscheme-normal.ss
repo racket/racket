@@ -4,11 +4,8 @@
            (lib "class.ss")
            (lib "cmdline.ss")
            (lib "bday.ss" "framework" "private"))
-  
-  ;; this used to be done by mred, but
-  ;; since drscheme uses the -Z flag now,
-  ;; we have to do it explicitly.
-  (current-load text-editor-load-handler)
+
+  ; (current-load text-editor-load-handler)
   
   (define files-to-open
     (command-line
@@ -75,11 +72,16 @@
            magic-images))
   
   (define (add-key-code new-code)
-    (let loop ([n (- longest-magic-string 2)] [l key-codes])
-      (cond [(null? l) 'done]
-            [(zero? n) (set-cdr! l '())]
-            [else (loop (sub1 n) (cdr l))]))
-    (set! key-codes (cons new-code key-codes)))
+    (set! key-codes
+          (cons
+           new-code
+           (let loop ([n (- longest-magic-string 2)] [l key-codes])
+             (cond [(null? l) null]
+                   [(zero? n) null]
+                   [else (let ([p (loop (sub1 n) (cdr l))])
+                           (if (eq? p (cdr l))
+                               l
+                               (cons (car l) p)))])))))
   
   (let ([set-splash-bitmap
          (dynamic-require '(lib "splash.ss" "framework") 'set-splash-bitmap)])
@@ -274,5 +276,5 @@
                           ((dynamic-require '(lib "key.ss" "drscheme" "private") 'break-threads))))
                        (parent f))])
           (send f show #t)))))
-  
+
   (dynamic-require '(lib "tool-lib.ss" "drscheme") #f))

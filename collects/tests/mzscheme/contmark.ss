@@ -2,8 +2,6 @@
 
 (load-relative "loadtest.ss")
 
-(require (lib "unit200.ss"))
-
 (Section 'continuation-marks)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -102,6 +100,13 @@
 				   (list (extract-current-continuation-marks 'key)
 					 (with-continuation-mark 'key 10 (extract-current-continuation-marks 'key))
 					 (extract-current-continuation-marks 'key)))))
+
+(require (lib "mzlib/unit200.ss"))
+
+;; Hide keywords from scheme/unit.ss:
+(define import #f)
+(define export #f)
+(define link #f)
 
 (wcm-test '(11)
 	  (lambda ()
@@ -678,8 +683,10 @@
            (continuation-mark-set->list
             (current-continuation-marks)
             'x))))))
-(require m-wcm_)
+(require 'm-wcm_)
 (m-wcm-go (lambda (a) (test '((y3)) values a)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

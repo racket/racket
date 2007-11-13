@@ -36,11 +36,9 @@
   (wx:set-dialogs get-file put-file get-ps-setup-from-user message-box)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
-  (define mred-module-name ((current-module-name-resolver)
-			    '(lib "mred.ss" "mred") #f #f))
-  (define class-module-name ((current-module-name-resolver)
-			     '(lib "class.ss") #f #f))
+
+  (define mred-module-name '(lib "mred/mred.ss"))
+  (define class-module-name '(lib "scheme/class.ss"))
 
   (define make-namespace-with-mred
     (opt-lambda ([flag 'mred])

@@ -1,9 +1,9 @@
 
-(module base-render mzscheme
+(module base-render scheme/base
   (require "struct.ss"
-           (lib "class.ss")
-           (lib "serialize.ss")
-           (lib "file.ss"))
+           mzlib/class
+           mzlib/serialize
+           scheme/file)
 
   (provide render%)
 
@@ -290,9 +290,9 @@
         (map (lambda (d fn)
                (printf " [Output to ~a]\n" fn)
                (with-output-to-file fn
+                 #:exists 'truncate/replace
                  (lambda ()
-                   (render-one d ri fn))
-                 'truncate/replace))
+                   (render-one d ri fn))))
              ds
              fns))
                

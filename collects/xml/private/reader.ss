@@ -33,7 +33,7 @@
                              (let-values ([(misc1 end-of-file) (read-misc in pos)])
                                (unless (eof-object? end-of-file)
                                  (let ([loc-after (pos)])
-                                   (parse-error (list-immutable
+                                   (parse-error (list
                                                  (make-srcloc
                                                   (object-name in)
                                                   #f
@@ -57,7 +57,7 @@
         (cond
           [(start-tag? start) (read-element start in pos)]
           [(element? start) start]
-          [else (parse-error (list-immutable
+          [else (parse-error (list
                               (make-srcloc
                                (object-name in)
                                #f
@@ -96,7 +96,7 @@
             (let ([x (lex in pos)])
               (cond
                 [(eof-object? x)
-                 (parse-error (list-immutable
+                 (parse-error (list
                                (make-srcloc
                                 (object-name in)
                                 #f
@@ -117,7 +117,7 @@
                  (let ([end-loc (source-stop x)])
                    (unless (eq? name (end-tag-name x))
                      (parse-error
-                      (list-immutable
+                      (list
                        (make-srcloc (object-name in)
                                     #f
                                     #f
@@ -447,7 +447,7 @@
                     (format-source the-pos)
                     (apply format str rest))
             (current-continuation-marks)
-            (list-immutable
+            (list
              (make-srcloc (object-name in) #f #f offset 1))))))
 
       ;; parse-error : (listof srcloc) (listof TST) *-> alpha

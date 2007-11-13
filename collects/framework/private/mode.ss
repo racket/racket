@@ -1,4 +1,4 @@
-(module mode (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "surrogate.ss")
            (lib "class.ss")
            "sig.ss")
@@ -47,4 +47,4 @@
      (augment #t can-set-size-constraint? ())
      (override can-do-edit-operation? (op) (op recursive?))
      (augment #t can-load-file? (filename format))
-     (augment #t can-save-file? (filename format)))))
+     (augment #t can-save-file? (filename format))))

@@ -33,10 +33,10 @@
   (define-struct alist (name l))
   (define (a-set! alist key val)
     (let ([l (alist-l alist)])
-      (cond [(assq key l) => (lambda (p) (set-cdr! p val))]
-            [else (set-alist-l! alist (cons (cons key val) l))])))
+      (cond [(assq key l) => (lambda (p) (set-box! (cdr p) val))]
+            [else (set-alist-l! alist (cons (cons key (box val)) l))])))
   (define (a-ref alist key . default)
-    (cond [(assq key (alist-l alist)) => cdr]
+    (cond [(assq key (alist-l alist)) => (lambda (x) (unbox (cdr x)))]
           [(pair? default) (car default)]
           [else (error (alist-name alist) "no value for `~s'" key)]))
 
@@ -461,7 +461,7 @@
     (define msg #f)
     (define active-assignments (assignment-list))
     (define data
-      (make-alist 'protocol-data `((assignments . ,active-assignments))))
+      (make-alist 'protocol-data `((assignments . ,(box active-assignments)))))
     (define (perror fmt . args) (apply error 'handin-protocol fmt args))
     (let loop ()
       (set! msg (read r-safe))

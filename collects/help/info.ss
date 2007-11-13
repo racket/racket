@@ -1,5 +1,5 @@
 ; help collection
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "Help")
   (define doc.txt "doc.txt")
   (define compile-subcollections

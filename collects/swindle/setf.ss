@@ -60,7 +60,7 @@
        (syntax-case pvs ()
          [(p v . more)
           (loop #'more (cons (syntax/loc stx (setf! p v)) r))]
-         [() (quasisyntax/loc stx (begin #,@(reverse! r)))]
+         [() (quasisyntax/loc stx (begin #,@(reverse r)))]
          [_ (raise-syntax-error #f "uneven number of forms" stx)]))]))
 
 ;;>> (psetf! place value ...)
@@ -142,7 +142,7 @@
                   (if (null? (cdr args))
                     (quasisyntax/loc stx
                       (setf!-values #,(datum->syntax-object
-                                       #'(x y ...) (reverse! as) #'(x y ...))
+                                       #'(x y ...) (reverse as) #'(x y ...))
                                     #,(convert (car args))))
                     (loop (cdr args) (cons (car args) as))))])))])
     (values
@@ -166,7 +166,7 @@
                                  [all-ids? #t])
                         (syntax-case xs ()
                           [() (and (not all-ids?)
-                                   (cons (reverse! bindings) (reverse! expr)))]
+                                   (cons (reverse bindings) (reverse expr)))]
                           [(x . xs)
                            (let ([new (datum->syntax-object
                                        #'x (gensym) #'x)])
@@ -177,9 +177,9 @@
                           [x (and (not (and all-ids? (identifier? #'x)))
                                   (let ([new (datum->syntax-object
                                               #'x (gensym) #'x)])
-                                    (cons (reverse! (cons (list new #'x)
+                                    (cons (reverse (cons (list new #'x)
                                                           bindings))
-                                          (append! (reverse! expr) new))))]))])
+                                          (append (reverse expr) new))))]))])
                  (if bindings+expr
                    #`(let #,(car bindings+expr) #,(body (cdr bindings+expr)))
                    (body place)))]
@@ -188,7 +188,7 @@
           (lambda (places body)
             (let loop ([ps places] [r '()])
               (if (null? ps)
-                (body (reverse! r))
+                (body (reverse r))
                 (protect-indexes (car ps) (lambda (p)
                                             (loop (cdr ps) (cons p r)))))))])
     (values
@@ -218,7 +218,7 @@
                     (let ([v #,(car vars)])
                       (psetf! #,@(datum->syntax-object
                                   #'(x y more ...)
-                                  (reverse! r)
+                                  (reverse r)
                                   #'(x y more ...)))
                       v))
                   (loop (cdr vs) (list* (cadr vs) (car vs) r))))))]))
@@ -241,7 +241,7 @@
                   (quasisyntax/loc stx
                     (psetf! #,@(datum->syntax-object
                                 #'(x xs ...)
-                                (reverse! (list* (car vars) (car vs) r))
+                                (reverse (list* (car vars) (car vs) r))
                                 #'(x xs ...))))
                   (loop (cdr vs) (list* (cadr vs) (car vs) r))))))]))
 ;;>> (inc! place [delta])

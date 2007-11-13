@@ -2,7 +2,6 @@
 (module modresolve mzscheme
   (require (lib "list.ss")
            (lib "contract.ss")
-           (lib "resolver.ss" "planet")
            "private/modhelp.ss")
 
   (define (force-relto relto dir?)
@@ -24,7 +23,12 @@
     ;; relto should be a complete path, #f, or procedure that returns a
     ;; complete path
     (define (get-dir) (force-relto relto #t))
-    (cond [(string? s)
+    (cond [(symbol? s)
+           ;; use resolver handler:
+           (resolved-module-path-name
+            (module-path-index-resolve
+             (module-path-index-join s #f)))]
+          [(string? s)
            ;; Parse Unix-style relative path string
            (apply build-path (get-dir) (explode-relpath-string s))]
           [(and (or (not (pair? s)) (not (list? s))) (not (path? s)))
@@ -37,20 +41,13 @@
                     d
                     (or (current-load-relative-directory)
                         (current-directory))))))]
-          [(eq? (car s) 'lib)
-           (let* ([cols (let ([len (length s)])
-                          (if (= len 2) (list "mzlib") (cddr s)))]
-                  [p (apply collection-path cols)])
-             (build-path p (cadr s)))]
-          [(eq? (car s) 'planet)
-           (let ([module-id
-                  (and (path? relto)
-                       (string->symbol
-                        (string-append
-                         "," (path->string (path->complete-path relto)))))])
-             (let-values ([(path pkg)
-                           (get-planet-module-path/pkg s module-id #f)])
-               path))]
+          [(or (eq? (car s) 'lib)
+               (eq? (car s) 'quote)
+               (eq? (car s) 'planet))
+           ;; use resolver handler in this case, too:
+           (resolved-module-path-name
+            (module-path-index-resolve
+             (module-path-index-join s #f)))]
           [else #f]))
 
   (define (resolve-module-path-index mpi relto)
@@ -63,13 +60,10 @@
   (define (resolve-possible-module-path-index base relto)
     (cond [(module-path-index? base)
            (resolve-module-path-index base relto)]
-          [(symbol? base)
-           (let ([s (symbol->string base)])
-             (if (and ((string-length s) . > . 0)
-                      (char=? #\, (string-ref s 0)))
-               (substring s 1 (string-length s))
-               relto))]
-          [relto (if (procedure? relto) (relto) relto)]
+          [(and (resolved-module-path? base)
+                (path? (resolved-module-path-name base)))
+           (resolved-module-path-name base)]
+          [relto relto]
           [else #f]))
 
   (define rel-to-path-string/thunk/#f
@@ -77,7 +71,7 @@
 
   (provide/contract
    [resolve-module-path (module-path-v? rel-to-path-string/thunk/#f
-                         . -> . path?)]
+                         . -> . (or/c path? symbol?))]
    [resolve-module-path-index ((or/c symbol? module-path-index?)
                                rel-to-path-string/thunk/#f
-                               . -> . path?)]))
+                               . -> . (or/c path? symbol?))]))

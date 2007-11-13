@@ -26,7 +26,8 @@
 ;;
 ;; Commentary:
 
-(module qp-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require "qp-sig.ss"
            (lib "etc.ss"))
 
@@ -169,6 +170,6 @@
       (vector-set! hex-values (+ i 65) (+ 10 i))
       (vector-set! hex-values (+ i 97) (+ 10 i))
       (vector-set! hex-bytes (+ 10 i) (+ i 65))
-      (loop (add1 i)))))
+      (loop (add1 i))))
 
 ;;; qp-unit.ss ends here

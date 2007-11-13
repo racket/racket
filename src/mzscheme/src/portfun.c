@@ -100,6 +100,7 @@ static Scheme_Object *write_char (int, Scheme_Object *[]);
 static Scheme_Object *write_byte (int, Scheme_Object *[]);
 static Scheme_Object *load (int, Scheme_Object *[]);
 static Scheme_Object *current_load (int, Scheme_Object *[]);
+static Scheme_Object *current_load_use_compiled (int, Scheme_Object *[]);
 static Scheme_Object *current_load_directory(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_write_directory(int argc, Scheme_Object *argv[]);
 #ifdef LOAD_ON_DEMAND
@@ -661,6 +662,11 @@ scheme_init_port_fun(Scheme_Env *env)
 						       "current-load",
 						       MZCONFIG_LOAD_HANDLER),
 			     env);
+  scheme_add_global_constant("current-load/use-compiled",
+			     scheme_register_parameter(current_load_use_compiled,
+						       "current-load/use-compiled",
+						       MZCONFIG_LOAD_COMPILED_HANDLER),
+			     env);
   scheme_add_global_constant("current-load-relative-directory",
 			     scheme_register_parameter(current_load_directory,
 						       "current-load-relative-directory",
@@ -748,8 +754,8 @@ void scheme_init_port_fun_config(void)
   scheme_set_root_param(MZCONFIG_LOAD_DIRECTORY, scheme_false);
   scheme_set_root_param(MZCONFIG_WRITE_DIRECTORY, scheme_false);
   scheme_set_root_param(MZCONFIG_USE_COMPILED_KIND,
-			scheme_make_immutable_pair(scheme_make_path("compiled"),
-						   scheme_null));
+			scheme_make_pair(scheme_make_path("compiled"),
+                                         scheme_null));
   scheme_set_root_param(MZCONFIG_USE_USER_PATHS, 
 			(scheme_ignore_user_paths 
 			 ? scheme_false
@@ -2741,7 +2747,7 @@ make_output_port (int argc, Scheme_Object *argv[])
 static Scheme_Object *
 open_input_file (int argc, Scheme_Object *argv[])
 {
-  return scheme_do_open_input_file("open-input-file", 0, argc, argv);
+  return scheme_do_open_input_file("open-input-file", 0, argc, argv, 0);
 }
 
 static Scheme_Object *
@@ -2933,7 +2939,7 @@ call_with_input_file(int argc, Scheme_Object *argv[])
 
   scheme_check_proc_arity("call-with-input-file", 1, 1, argc, argv);
 
-  port = scheme_do_open_input_file("call-with-input-file", 1, argc, argv);
+  port = scheme_do_open_input_file("call-with-input-file", 1, argc, argv, 0);
 
   v = _scheme_apply_multi(argv[1], 1, &port);
 
@@ -3004,7 +3010,7 @@ with_input_from_file(int argc, Scheme_Object *argv[])
 
   scheme_check_proc_arity("with-input-from-file", 0, 1, argc, argv);
 
-  port = scheme_do_open_input_file("with-input-from-file", 1, argc, argv);
+  port = scheme_do_open_input_file("with-input-from-file", 1, argc, argv, 0);
 
   config = scheme_extend_config(scheme_current_config(),
 				MZCONFIG_INPUT_PORT,
@@ -4376,7 +4382,7 @@ static Scheme_Object *do_load_handler(void *data)
 
       m = scheme_extract_compiled_module(SCHEME_STX_VAL(d));
       if (m) {
-	if (!SAME_OBJ(m->modname, lhd->expected_module)) {
+	if (!SAME_OBJ(SCHEME_PTR_VAL(m->modname), lhd->expected_module)) {
 	  other = m->modname;
 	  d = NULL;
 	}
@@ -4454,7 +4460,7 @@ static Scheme_Object *do_load_handler(void *data)
 	a = SCHEME_STX_CAR(obj);
 	d = SCHEME_STX_CDR(obj);
 	a = scheme_datum_to_syntax(module_symbol, a, scheme_sys_wraps(NULL), 0, 1);
-	d = scheme_make_immutable_pair(a, d);
+	d = scheme_make_pair(a, d);
 	obj = scheme_datum_to_syntax(d, obj, scheme_false, 0, 1);
       }
     } else {
@@ -4524,7 +4530,7 @@ static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
   if (!SCHEME_FALSEP(expected_module) && !SCHEME_SYMBOLP(expected_module))
     scheme_wrong_type("default-load-handler", "symbol or #f", 1, argc, argv);
 
-  port = scheme_do_open_input_file("default-load-handler", 0, 1, argv);
+  port = scheme_do_open_input_file("default-load-handler", 0, 1, argv, 0);
 
   /* Turn on line/column counting, unless it's a .zo file: */
   if (SCHEME_PATHP(argv[0])) {
@@ -4646,6 +4652,15 @@ current_load(int argc, Scheme_Object *argv[])
 {
   return scheme_param_config("current-load",
 			     scheme_make_integer(MZCONFIG_LOAD_HANDLER),
+			     argc, argv,
+			     2, NULL, NULL, 0);
+}
+
+static Scheme_Object *
+current_load_use_compiled(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("current-load/use-compiled",
+			     scheme_make_integer(MZCONFIG_LOAD_COMPILED_HANDLER),
 			     argc, argv,
 			     2, NULL, NULL, 0);
 }

@@ -715,7 +715,7 @@ Matthew
         (save-image img)
         (cond
           [(null? ev) (update-frame (text "creating i-animated.gif" 18 'red))
-                      (create-animated-gif (reverse! bitmap-list))
+                      (create-animated-gif (reverse bitmap-list))
                       (update-frame img)]
           [else (replay (cdr ev) (world-transition world (car ev)))]))))
 

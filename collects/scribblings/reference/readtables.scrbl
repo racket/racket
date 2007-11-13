@@ -1,8 +1,10 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/bnf]
 @require["mz.ss"]
 
 @title[#:style 'toc]{Reader Extension}
+
+@declare-exporting[(lib "scheme/readtable")]
 
 Scheme's reader can be extended in three ways: through a reader-macro
 procedure in a readtable (see @secref["readtables"]), through a
@@ -194,7 +196,7 @@ directly accessible. To invoke default behaviors, use
 character and the @scheme[#f] readtable.}
 
 @begin[
-#reader(lib "comment-reader.ss" "scribble")
+#readerscribble/comment-reader
 [examples
 ;; Provides @scheme[raise-read-error] and @scheme[raise-read-eof-error]
 (require (lib "readerr.ss" "syntax"))

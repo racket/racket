@@ -326,6 +326,7 @@
 ;;>> (set-cddddr! place x)
 ;;>   These are all defined so it is possible to use `setf!' from "setf.ss"
 ;;>   with these standard and library-provided functions.
+#|
 (define* set-caar!   (lambda (p v) (set-car! (car p) v)))
 (define* set-cadr!   (lambda (p v) (set-car! (cdr p) v)))
 (define* set-cdar!   (lambda (p v) (set-cdr! (car p) v)))
@@ -354,6 +355,7 @@
 (define* set-cddadr! (lambda (p v) (set-cdr! (cdadr p) v)))
 (define* set-cdddar! (lambda (p v) (set-cdr! (cddar p) v)))
 (define* set-cddddr! (lambda (p v) (set-cdr! (cdddr p) v)))
+|#
 
 ;;>> (1st list)
 ;;>> (2nd list)
@@ -383,6 +385,7 @@
 ;;>> (set-7th! list x)
 ;;>> (set-8th! list x)
 ;;>   Setter functions for the above.
+#|
 (define* set-1st! set-car!)
 (define* set-2nd! set-cadr!)
 (define* set-3rd! set-caddr!)
@@ -391,6 +394,7 @@
 (define* set-6th! (lambda (p v) (set-car! (cdr (cddddr p)) v)))
 (define* set-7th! (lambda (p v) (set-car! (cddr (cddddr p)) v)))
 (define* set-8th! (lambda (p v) (set-car! (cdddr (cddddr p)) v)))
+|#
 
 ;;>> (head pair)
 ;;>> (tail pair)
@@ -399,8 +403,8 @@
 ;;>   Synonyms for `first', `rest', `set-first!', `set-rest!'.
 (define* head first)
 (define* tail rest)
-(define* set-head! set-first!)
-(define* set-tail! set-rest!)
+;(define* set-head! set-first!)
+;(define* set-tail! set-rest!)
 
 ;;>> (set-second! list x)
 ;;>> (set-third! list x)
@@ -412,6 +416,7 @@
 ;;>   Defined to allow `setf!' with these mzlib/list functions.  Note that
 ;;>   there is no error checking (unlike the accessor functions which are
 ;;>   provided by mzlib/list).
+#|
 (define* set-second!  set-2nd!)
 (define* set-third!   set-3rd!)
 (define* set-fourth!  set-4th!)
@@ -419,6 +424,7 @@
 (define* set-sixth!   set-6th!)
 (define* set-seventh! set-7th!)
 (define* set-eighth!  set-8th!)
+|#
 
 ;;>> (nth list n)
 ;;>> (nthcdr list n)
@@ -432,16 +438,18 @@
 ;;>> (set-nth! list n x)
 ;;>   A function to set the nth element of a list, also provided as
 ;;>   `set-nth!' to allow using `setf!' with `nth'.
+#|
 (define* (list-set! lst index new)
   (set-car! (nthcdr lst index) new))
 (define* set-nth! list-set!)
+|#
 
 ;;>> (set-list-ref! list n x)
 ;;>> (set-vector-ref! vector n x)
 ;;>> (set-string-ref! string n x)
 ;;>   These are defined as `list-set!', `vector-set!', and `string-set!', so
 ;;>   the accessors can be used with `setf!'.
-(define* set-list-ref!   list-set!)
+; (define* set-list-ref!   list-set!)
 (define* set-vector-ref! vector-set!)
 (define* set-string-ref! string-set!)
 
@@ -450,8 +458,10 @@
 ;;>   Accessing a list's last element, and modifying it.
 (define* (last l)
   (car (last-pair l)))
+#|
 (define* (set-last! l x)
   (set-car! (last-pair l) x))
+|#
 
 ;;>> (set-unbox! box x)
 ;;>   Allow using `setf!' with `unbox'.  Note: this is an alias for
@@ -506,6 +516,7 @@
 ;;>   Same as `map' -- but destructively modifies the first list to hold the
 ;;>   results of applying the function.  Assumes all lists have the same
 ;;>   length.
+#|
 (define* (map! f l . rest)
   (if (null? rest)
     (let loop ([xs l])
@@ -513,10 +524,12 @@
     (let loop ([xs l] [ls rest])
       (if (null? xs) l (begin (set-car! xs (apply f (car xs) (map car ls)))
                               (loop (cdr xs) (map cdr ls)))))))
+|#
 
 ;;>> (maptree! func tree)
 ;;>   Same as `maptree' -- but destructively modifies the list to hold the
 ;;>   results of applying the function.
+#|
 (define* (maptree! f x)
   (if (pair? x)
     (begin (let loop ([x x])
@@ -528,6 +541,7 @@
              (do-part cdr set-cdr!))
            x)
     (f x))) ; can't be destructive here
+|#
 
 ;;>> (mappend func list ...)
 ;;>> (mappend! func list ...)
@@ -535,8 +549,10 @@
 ;;>   results.  `mappend!' uses `append!'.
 (define* (mappend f . ls)
   (apply append (apply map f ls)))
+#|
 (define* (mappend! f . ls)
   (apply append! (apply map f ls)))
+|#
 
 ;;>> (mapply func list-of-lists)
 ;;>   Apply the given `func' on every list in `list-of-lists' and return the
@@ -716,7 +732,7 @@
 ;;>   Implemented as:
 ;;>     (reverse! (collect (acc '() (cons expr acc)) clause ...))
 (defsubst* (list-of expr clause ...)
-  (reverse! (collect (acc '() (cons expr acc)) clause ...)))
+  (reverse (collect (acc '() (cons expr acc)) clause ...)))
 ;;>
 
 ;;>> (sum-of expr clause ...)
@@ -821,9 +837,9 @@
   (define (split id stxs)
     (let loop ([stxs '()] [stxss '()]
                [l (if (syntax? stxs) (syntax->list stxs) stxs)])
-      (cond [(null? l) (reverse! (cons (reverse! stxs) stxss))]
+      (cond [(null? l) (reverse (cons (reverse stxs) stxss))]
             [(and (identifier? (car l)) (module-identifier=? id (car l)))
-             (loop '() (cons (reverse! stxs) stxss) (cdr l))]
+             (loop '() (cons (reverse stxs) stxss) (cdr l))]
             [else (loop (cons (car l) stxs) stxss (cdr l))])))
   (define (gen-loop generate add-aux! &optional hacked)
     (with-syntax ([generate generate]
@@ -1644,7 +1660,7 @@
                          (values args '())
                          (let loop ([rest args] [args '()] [n required])
                            (if (zero? n)
-                             (values (reverse! args) rest)
+                             (values (reverse args) rest)
                              (loop (cdr rest) (cons (car rest) args)
                                    (sub1 n)))))]
                       [(result) (apply proc proc-args)])
@@ -1689,11 +1705,11 @@
         ;; this returns a thunk so the whole thing is not expanded in one shot
         (let loop ([args args] [cars '()] [cdrs '()] [last? '?])
           (if (null? args)
-            (reverse!
-             (if last? cars (list* (do-lists (reverse! cdrs)) call: cars)))
+            (reverse
+             (if last? cars (list* (do-lists (reverse cdrs)) call: cars)))
             (let* ([1st (car args)] [p? (pair? 1st)])
               (if (and last? (eq? 1st break:))
-                (reverse! cars)
+                (reverse cars)
                 (if (null? 1st)
                   '()
                   (loop (cdr args)
@@ -1721,7 +1737,7 @@
                (if (zero? level)
                  (begin
                    (pop-key-tags)
-                   (set! args (append! ((do-lists (reverse! l-args))) args)))
+                   (set! args (append ((do-lists (reverse l-args))) args)))
                  (next))]
               [(:\{)
                (set! level (add1 level)) (next)]
@@ -1734,7 +1750,7 @@
       (unless (null? args)
         (let ([arg (getarg)])
           (cond
-           [(eq? arg call:) (set! args (append! ((getarg)) args))]
+           [(eq? arg call:) (set! args (append ((getarg)) args))]
            [(eq? arg echo:) (set! keys? (or keys? 'just-one))]
            [(and keys? (keyword? arg))
             (unless (eq? keys? #t) (set! keys? #f))

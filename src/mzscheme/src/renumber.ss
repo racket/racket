@@ -13,6 +13,7 @@
 (define n 0)
 
 (with-output-to-file filename
+  #:exists 'truncate
   (lambda ()
     (for-each
      (lambda (l)
@@ -31,5 +32,4 @@
 	 (printf "~a~n" l)]
 	[else
 	 (printf "~a~n" l)]))
-     lines))
-  'truncate)
+     lines)))

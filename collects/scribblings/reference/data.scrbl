@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:style 'toc]{Core Datatypes}
@@ -54,6 +54,11 @@ The number and character datatypes are the only ones for which
 Return @scheme[#t] if @scheme[v1] and @scheme[v2] refer to the same
 object, @scheme[#f] otherwise. See also @secref["model-eq"].}
 
+
+@defproc[(immutable? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is an immutable string, byte string,
+vector, or box, @scheme[#f] otherwise.}
 
 @; ------------------------------------------------------------
 @include-section["numbers.scrbl"]
@@ -274,6 +279,19 @@ the elements of @scheme[vec] from @scheme[start-pos] (inclusive) to
 @scheme[end-pos] is less than @scheme[start-pos], the
 @exnraise[exn:fail:contract].}
 
+@defproc[(build-vector [n exact-nonnegative-integer?]
+                       [proc (exact-nonnegative-integer? . -> . any.c)])
+         vector?]{
+
+Creates a vector of @scheme[n] elements by applying @scheme[proc] to
+the integers from @scheme[0] to @scheme[(sub1 n)] in order. If
+@scheme[_vec] is the resulting vector, then @scheme[(vector-ref _vec
+_i)] is the value produced by @scheme[(proc _i)].
+
+@examples[
+(build-vector 5 add1)
+]}
+
 @; ------------------------------------------------------------
 @section[#:tag "boxes"]{Boxes}
 
@@ -306,6 +324,8 @@ Sets the content of @scheme[box] to @scheme[v].}
 
 @; ----------------------------------------------------------------------
 @section[#:tag "hashtables"]{Hash Tables}
+
+@declare-exporting[(lib "scheme/hash-table")]
 
 A hash table can be used as a two-valued sequence (see
 @secref["sequences"]). The keys and values of the hash table serve

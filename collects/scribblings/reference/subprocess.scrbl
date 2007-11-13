@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "subprocess"]{Processes}
+
+@declare-exporting[(lib "scheme/subprocess")]
 
 @defproc[(subprocess [stdout (or/c output-port? false/c)]
                      [stdin (or/c input-port? false/c)]

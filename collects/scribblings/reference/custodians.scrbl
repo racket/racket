@@ -1,8 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "custodians"]{Custodians}
+
+@declare-exporting[(lib "scheme/custodian")]
 
 See @secref["custodian-model"] for basic information on the PLT
 Scheme custodian model.

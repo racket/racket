@@ -1,12 +1,12 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/bnf]
 @require["mz.ss"]
 
 @require["rx.ss"]
 
 @title[#:tag "regexp"]{Regular Expressions}
 
-@declare-exporting[big (lib "big/regexp")]
+@declare-exporting[(lib "scheme/regexp")]
 
 @section-index{regexps}
 @section-index{pattern matching}

@@ -233,8 +233,8 @@
 
       (define/private (get-specialized-policies)
         (map (lambda (policy)
-               (define key (car policy))
-               (define show? (cdr policy))
+               (define key (mcar policy))
+               (define show? (mcdr policy))
                (cond [(pair? key)
                       (lambda (id binding return)
                         (when (and (pair? binding)
@@ -260,11 +260,11 @@
             (let loop ([i 0] [policies identifier-policies])
               (cond [(null? policies)
                      (set! identifier-policies
-                           (cons (cons key show?) identifier-policies))
+                           (cons (mcons key show?) identifier-policies))
                      (send look-ctl append "")
                      (update-list-view i key show?)]
-                    [(key=? key (car (car policies)))
-                     (set-cdr! (car policies) show?)
+                    [(key=? key (mcar (car policies)))
+                     (set-mcdr! (car policies) show?)
                      (update-list-view i key show?)]
                     [else (loop (add1 i) (cdr policies))])))))
 

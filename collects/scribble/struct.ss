@@ -1,7 +1,8 @@
 
-(module struct (lib "lang.ss" "big")
-  (require (lib "contract.ss")
-           (lib "serialize.ss"))
+(module struct scheme/base
+  (require mzlib/serialize
+           scheme/contract
+           (for-syntax scheme/base))
 
   ;; ----------------------------------------
   
@@ -50,8 +51,8 @@
       v))
 
   (provide 
-   (struct collect-info (ht ext-ht parts tags gen-prefix))
-   (struct resolve-info (ci delays undef))
+   (struct-out collect-info)
+   (struct-out resolve-info)
    part-collected-info
    collect-put!
    resolve-get
@@ -72,11 +73,11 @@
                  (letrec ([get-fields (lambda (super-id)
                                         (ormap (lambda (id  fields+cts)
                                                  (if (identifier? id)
-                                                     (and (module-identifier=? id super-id)
+                                                     (and (free-identifier=? id super-id)
                                                           fields+cts)
                                                      (syntax-case id ()
                                                        [(my-id next-id)
-                                                        (module-identifier=? #'my-id super-id)
+                                                        (free-identifier=? #'my-id super-id)
                                                         #`[#,@(get-fields #'next-id)
                                                            #,@fields+cts]]
                                                        [_else #f])))
@@ -151,6 +152,7 @@
 
   ;; Delayed element has special serialization support:
   (define-struct delayed-element (resolve sizer plain)
+    #:mutable
     #:property 
     prop:serializable 
     (make-serialize-info
@@ -193,6 +195,7 @@
   ;; ----------------------------------------
 
   (define-struct (collect-element element) (collect)
+    #:mutable
     #:property 
     prop:serializable 
     (make-serialize-info
@@ -235,7 +238,7 @@
      (or (current-load-relative-directory) (current-directory))))
 
   (provide
-   (struct generated-tag ()))
+   (struct-out generated-tag))
 
   (provide deserialize-generated-tag)
   (define deserialize-generated-tag

@@ -202,7 +202,7 @@
       (test #t procedure-struct-type? type)
       (let* ([bad1 (make 17)]
 	     [bad2 (make2 18 -18)]
-	     [bad3 (make3 #f 19)]
+	     [bad3 (make3 700 19)]
 	     [bad11 (make bad1)])
 	(test #t pred bad1)
 	(test #t pred2 bad2)
@@ -254,7 +254,7 @@
 
       (let* ([cons1 (make cons)]
 	     [cons2 (make2 cons -18)]
-	     [cons3 (make3 #f cons)]
+	     [cons3 (make3 700 cons)]
 	     [cons11 (make cons1)])
 	(test #t pred cons1)
 	(test #t pred2 cons2)
@@ -415,7 +415,7 @@
 	     exn:application:mismatch?)
 
 
-(define-struct a (b c))
+(define-struct a (b c) #:mutable)
 (define-struct aa ())
 (define ai (make-a 1 2))
 (define aai (make-aa))
@@ -435,7 +435,7 @@
 (test 2 a-c ai)
 (test 3 a-b ai2)
 (test 4 a-c ai2)
-(define-struct a (b c))
+(define-struct a (b c) #:mutable)
 (test #f a? ai)
 (arity-test make-a 2 2)
 (err/rt-test (make-aa 1) exn:application:arity?)
@@ -452,24 +452,23 @@
 (arity-test struct-type? 1 1)
 
 (define (gen-struct-syntax-test formname suffix)
-  (syntax-test (datum->syntax-object #f `(,formname 1 (x) ,@suffix) #f))
-  (syntax-test (datum->syntax-object #f `(,formname a (1) ,@suffix) #f))
-  (syntax-test (datum->syntax-object #f `(,formname a (x 1) ,@suffix) #f))
-  (syntax-test (datum->syntax-object #f `(,formname a (x . y) ,@suffix) #f))
-  (syntax-test (datum->syntax-object #f `(,formname (a) (x) ,@suffix) #f))
-  (syntax-test (datum->syntax-object #f `(,formname (a . y) (x) ,@suffix) #f))
-  (syntax-test (datum->syntax-object #f `(,formname (a 2) (x) ,@suffix) #f))
-  (syntax-test (datum->syntax-object #f `(,formname (a 2 3) (x) ,@suffix) #f)))
+  (syntax-test (datum->syntax #f `(,formname 1 (x) ,@suffix) #f))
+  (syntax-test (datum->syntax #f `(,formname a (1) ,@suffix) #f))
+  (syntax-test (datum->syntax #f `(,formname a (x 1) ,@suffix) #f))
+  (syntax-test (datum->syntax #f `(,formname a (x . y) ,@suffix) #f))
+  (syntax-test (datum->syntax #f `(,formname (a) (x) ,@suffix) #f))
+  (syntax-test (datum->syntax #f `(,formname (a . y) (x) ,@suffix) #f))
+  (syntax-test (datum->syntax #f `(,formname (a 2) (x) ,@suffix) #f))
+  (syntax-test (datum->syntax #f `(,formname (a 2 3) (x) ,@suffix) #f)))
 (define (struct-syntax-test formname)
-  (syntax-test (datum->syntax-object #f `(,formname) #f))
-  (syntax-test (datum->syntax-object #f `(,formname . a) #f))
-  (syntax-test (datum->syntax-object #f `(,formname a . x) #f))
-  (syntax-test (datum->syntax-object #f `(,formname (a 9) (x)) #f))
-  (syntax-test (datum->syntax-object #f `(,formname a x) #f))
+  (syntax-test (datum->syntax #f `(,formname) #f))
+  (syntax-test (datum->syntax #f `(,formname . a) #f))
+  (syntax-test (datum->syntax #f `(,formname a . x) #f))
+  (syntax-test (datum->syntax #f `(,formname (a 9) (x)) #f))
+  (syntax-test (datum->syntax #f `(,formname a x) #f))
   (gen-struct-syntax-test formname '()))
 
 (struct-syntax-test 'define-struct)
-(gen-struct-syntax-test 'let-struct '(5))
 
 (define-struct base0 ())
 (define-struct base1 (a))
@@ -706,10 +705,10 @@
   (test "1, 2, a" with-output-string 
 	(lambda ()
 	  (display (make-tuple '(1 2 "a")))))
-  (test "#0=<#0#, 2, \"a\">" with-output-string 
+  (test "#0=<#&#0#, 2, \"a\">" with-output-string 
 	(lambda ()
-	  (let ([t (make-tuple (list 1 2 "a"))])
-	    (set-car! (tuple-ref t 0) t)
+	  (let ([t (make-tuple (list (box 1) 2 "a"))])
+	    (set-box! (car (tuple-ref t 0)) t)
 	    (write t))))
   (test "ack: here: <10, 2, \"a\">" with-output-string 
 	(lambda ()

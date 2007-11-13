@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "begin"]{Sequencing}
@@ -37,7 +37,7 @@ tail position with respect to the @scheme[begin] form.
 ]
 
 Many forms, such as @scheme[lambda] or @scheme[cond] support a
-sequence of expressions even with a @scheme[begin]. Such positions are
+sequence of expressions even without a @scheme[begin]. Such positions are
 sometimes said to have an @defterm{implicit begin}.
 
 @defexamples[

@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["common.ss"]
 
 @defclass/title[menu% object% (menu-item-container<%> labelled-menu-item<%>)]{

@@ -57,7 +57,7 @@
 		    (with-output-to-file "tmp8"
 		      (lambda ()
 			(write-string "hello"))
-		      'truncate/replace)
+                      #:exists 'truncate/replace)
 		    (open-input-file "tmp8"))])
 	   (test-hello-port p commit-eof?)
 	   (close-input-port p)))])
@@ -609,6 +609,23 @@
    (try (lambda (x) (read-bytes-avail!/enable-break (make-bytes 10) x)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that an uncooperative output port doesn't keep breaks
+;; disabled too long:
 
+(test 'ok
+      'stuck-port
+      (let ([p (make-output-port 'stumper
+                                 always-evt
+                                 (lambda args
+                                   never-evt)
+                                 void)]
+            [t (current-thread)])
+        (thread (lambda () 
+                  (sync (system-idle-evt))
+                  (break-thread t)))
+        (with-handlers ([exn:break? (lambda (exn) 'ok)])
+          (write-byte 0 p))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

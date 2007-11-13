@@ -160,7 +160,8 @@ extern UDItype __MPN(udiv_qrnnd) _PROTO ((UDItype, UDItype, UDItype, UDItype *))
 #endif /* LONGLONG_STANDALONE */
 #endif /* hppa */
 
-#if defined (__ia64) && W_TYPE_SIZE == 64
+/* PLTSCHEME: doesn't seem to work, so disabled: */
+#if defined (__ia64) && W_TYPE_SIZE == 64 && 0
 #if defined (__GNUC__)
 #define umul_ppmm(ph, pl, m0, m1) \
   do {									\

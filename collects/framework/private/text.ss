@@ -5,7 +5,7 @@ WARNING: printf is rebound in the body of the unit to always
 
 |#
 
-(module text (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "string-constant.ss" "string-constants")
            (lib "class.ss")
            (lib "match.ss")
@@ -2814,4 +2814,4 @@ designates the character that triggers autocompletion
   (define clever-file-format% (clever-file-format-mixin file%))
   (define backup-autosave% (editor:backup-autosave-mixin clever-file-format%))
   (define searching% (searching-mixin backup-autosave%))
-  (define info% (info-mixin (editor:info-mixin searching%))))
+  (define info% (info-mixin (editor:info-mixin searching%)))

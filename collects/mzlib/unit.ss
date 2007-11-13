@@ -73,10 +73,10 @@
                (if omit-constructor
                    #f
                    (caddr l)))
-             (cons-immutable (car l)
-                             (cons-immutable new-type
-                                             (cons-immutable new-ctor
-                                                             (cdddr l)))))
+             (cons (car l)
+                   (cons new-type
+                         (cons new-ctor
+                               (cdddr l)))))
            (check-id #'name)
            (for-each check-id (syntax->list #'(field ...)))
            (for-each
@@ -495,11 +495,11 @@
             (quasisyntax/loc (error-syntax)
               (make-unit
                'name
-               (vector-immutable (cons-immutable 'import-name
-                                                 (vector-immutable import-key import-super-keys ...)) ...)
-               (vector-immutable (cons-immutable 'export-name 
-                                                 (vector-immutable export-key ...)) ...)
-               (list-immutable (cons-immutable 'dept depr) ...)
+               (vector-immutable (cons 'import-name
+                                       (vector-immutable import-key import-super-keys ...)) ...)
+               (vector-immutable (cons 'export-name 
+                                       (vector-immutable export-key ...)) ...)
+               (list (cons 'dept depr) ...)
                (lambda ()
                  (let ([eloc (box undefined)] ... ...)
                    (values 
@@ -547,7 +547,7 @@
                 [local-evars (syntax->list (localify #'evars def-ctx))]
                 [stop-list
                  (append
-                  (kernel-form-identifier-list (quote-syntax here))
+                  (kernel-form-identifier-list)
                   (syntax->list #'ivars)
                   (syntax->list #'evars))]
                 [definition?
@@ -839,19 +839,19 @@
                   (check-unit unit-tmp 'form)
                   (check-sigs unit-tmp
                               (vector-immutable
-                               (cons-immutable 'orig-import-name
-                                               (vector-immutable orig-import-key ...)) ...)
+                               (cons 'orig-import-name
+                                     (vector-immutable orig-import-key ...)) ...)
                               (vector-immutable 
-                               (cons-immutable 'orig-export-name 
-                                               (vector-immutable orig-export-key ...)) ...)
+                               (cons 'orig-export-name 
+                                     (vector-immutable orig-export-key ...)) ...)
                               'form)
                   (make-unit
                    'name
-                   (vector-immutable (cons-immutable 'import-name
-                                                     (vector-immutable import-key ...)) ...)
-                   (vector-immutable (cons-immutable 'export-name 
-                                                     (vector-immutable export-key ...)) ...)
-                   (list-immutable (cons-immutable 'dept depr) ...)
+                   (vector-immutable (cons 'import-name
+                                           (vector-immutable import-key ...)) ...)
+                   (vector-immutable (cons 'export-name 
+                                           (vector-immutable export-key ...)) ...)
+                   (list (cons 'dept depr) ...)
                    (lambda ()
                      (let-values ([(unit-fn export-table) ((unit-go unit-tmp))])
                        (values (lambda (import-table)
@@ -1079,20 +1079,20 @@
                                        #,(syntax/loc #'sub-exp
                                            (check-sigs sub-tmp
                                                        (vector-immutable
-                                                        (cons-immutable 'sub-in-signame
-                                                                        (vector-immutable sub-in-key ...))
+                                                        (cons 'sub-in-signame
+                                                              (vector-immutable sub-in-key ...))
                                                         ...)
                                                        (vector-immutable
-                                                        (cons-immutable 'sub-out-signame
-                                                                        (vector-immutable sub-out-key ...))
+                                                        (cons 'sub-out-signame
+                                                              (vector-immutable sub-out-key ...))
                                                         ...)
                                                        'form))
                                        (let ([fht (hash-table 'equal
-                                                              ((cons-immutable 'fdep-tag fdep-rtime)
-                                                               (cons-immutable 'fsig-name 'flnk-name))
+                                                              ((cons 'fdep-tag fdep-rtime)
+                                                               (cons 'fsig-name 'flnk-name))
                                                               ...)]
                                              [rht (hash-table 'equal
-                                                              ((cons-immutable 'rdep-tag rdep-rtime)
+                                                              ((cons 'rdep-tag rdep-rtime)
                                                                #t)
                                                               ...)])
                                          #,(syntax/loc #'sub-exp (check-deps fht sub-tmp 'form))
@@ -1124,12 +1124,12 @@
                     (make-unit
                      'name
                      (vector-immutable
-                      (cons-immutable 'import-name
-                                      (vector-immutable import-key ...))
+                      (cons 'import-name
+                            (vector-immutable import-key ...))
                       ...)
                      (vector-immutable
-                      (cons-immutable 'export-name
-                                      (vector-immutable export-key ...))
+                      (cons 'export-name
+                            (vector-immutable export-key ...))
                       ...)
                      deps
                      (lambda ()
@@ -1308,12 +1308,12 @@
                 #,(syntax/loc #'unit-exp
                     (check-sigs unit-tmp 
                                 (vector-immutable
-                                 (cons-immutable 'import-name
-                                                 (vector-immutable import-keys ...))
+                                 (cons 'import-name
+                                       (vector-immutable import-keys ...))
                                  ...)
                                 (vector-immutable
-                                 (cons-immutable 'export-name
-                                                 (vector-immutable export-keys ...))
+                                 (cons 'export-name
+                                       (vector-immutable export-keys ...))
                                  ...)
                                 'form))
                 unit-tmp)

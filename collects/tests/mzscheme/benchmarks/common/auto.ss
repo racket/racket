@@ -3,14 +3,16 @@
 exec mzscheme -qu "$0" ${1+"$@"}
 |#
 
-(module auto mzscheme
-  (require (lib "process.ss")
+(module auto scheme/base
+  (require (for-syntax scheme/base)
+           (lib "process.ss")
            "cmdline.ss"
            (lib "list.ss")
            (lib "compile.ss")
            (lib "inflate.ss")
            (lib "date.ss")
-           (lib "file.ss" "dynext"))
+           (lib "file.ss" "dynext")
+           scheme/namespace)
 
   ;; Implementaton-specific control functions ------------------------------
 
@@ -31,17 +33,32 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
   (define (mk-mzscheme bm)
     ;; To get compilation time:
-    (parameterize ([current-namespace (make-namespace)])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (namespace-require 'scheme/base)
       (load (format "~a.ss" bm))))
 
   (define (clean-up-nothing bm)
     (void))
 
+  (define (mk-mzscheme-r5rs bm)
+    (with-output-to-file (format "~a.scm" bm)
+      #:exists 'replace
+      (lambda ()
+        (printf "(module ~a \"r5rs-wrap.ss\")\n" bm)))
+    ;; To get compilation time:
+    (parameterize ([current-namespace (make-base-namespace)])
+      (namespace-require 'scheme/base)
+      (load (format "~a.scm" bm))))
+
+  (define (clean-up-r5rs bm)
+    (let ([f (format "~s.scm" bm)])
+      (when (file-exists? f)
+        (delete-file f))))
+
   (define (mk-mzscheme-tl bm)
     ;; To get compilation time:
-    (parameterize ([current-namespace (make-namespace)])
-      (namespace-require 'mzscheme)
-      (namespace-transformer-require 'mzscheme)
+    (parameterize ([current-namespace (make-base-namespace)])
+      (namespace-require 'scheme/base)
       (eval '(define null #f)) ; for dynamic.sch
       (compile-file (format "~a.sch" bm))))
 
@@ -129,22 +146,38 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
   (define-struct impl (name make run extract-result clean-up skips))
 
+  (define mutable-pair-progs '(conform
+                               destruct
+                               dynamic
+                               lattice
+                               maze
+                               peval
+                               scheme
+                               sort1))
+
   (define impls
     (list
      (make-impl 'mzscheme
                 mk-mzscheme
                 (lambda (bm)
-                  (system (format "mzscheme -qu ~a.ss" bm)))
+                  (system (format "mzscheme -u ~a.ss" bm)))
                 extract-mzscheme-times
                 clean-up-nothing
-                '())
+                mutable-pair-progs)
      (make-impl 'mzschemecgc
                 mk-mzscheme
                 (lambda (bm)
-                  (system (format "mzschemecgc -qu ~a.ss" bm)))
+                  (system (format "mzschemecgc -u ~a.ss" bm)))
                 extract-mzscheme-times
                 clean-up-nothing
-                '())
+                mutable-pair-progs)
+     (make-impl 'mz-r5rs
+                mk-mzscheme-r5rs
+                (lambda (bm)
+                  (system (format "mzscheme -u ~a.scm" bm)))
+                extract-mzscheme-times
+                clean-up-r5rs
+                null)
      (make-impl 'mzc
                 mk-mzc
                 (lambda (bm)
@@ -153,21 +186,23 @@ exec mzscheme -qu "$0" ${1+"$@"}
                                   bm)))
                 extract-mzscheme-times
                 clean-up-extension
-                '(takr))
+                (append '(takr)
+                        mutable-pair-progs))
      (make-impl 'mzscheme-j
                 mk-mzscheme
                 (lambda (bm)
                   (system (format "mzscheme -jqu ~a.ss" bm)))
                 extract-mzscheme-times
                 clean-up-nothing
-                '())
+                mutable-pair-progs)
      (make-impl 'mzschemecgc-tl
                 mk-mzscheme-tl
                 (lambda (bm)
                   (system (format "mzschemecgc -qr compiled/~a.zo" bm)))
                 extract-mzscheme-times
                 clean-up-zo
-                '(nucleic2))
+                (append '(nucleic2)
+                        mutable-pair-progs))
      (make-impl 'chicken
                 (run-mk "mk-chicken.ss")
                 run-exe
@@ -179,7 +214,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 run-exe/time
                 extract-time-times
                 clean-up-bin
-                '(cpstack maze puzzle triangle))
+                '(cpstack maze maze2 puzzle triangle))
      (make-impl 'gambit
                 (run-mk "mk-gambit.ss")
                 run-gambit-exe
@@ -191,7 +226,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 run-larceny
                 extract-larceny-times
                 clean-up-fasl
-                '(maze))))
+                '(maze maze2))))
 
   (define obsolte-impls '(mzscheme mzscheme-j mzschemecgc-tl mzc))
 
@@ -204,11 +239,14 @@ exec mzscheme -qu "$0" ${1+"$@"}
       destruct
       div
       dynamic
+      dynamic2
       earley
       fft
       graphs
       lattice
+      lattice2
       maze
+      maze2
       mazefun
       nboyer
       nestedloop
@@ -220,6 +258,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
       puzzle
       sboyer
       scheme
+      scheme2
       sort1
       tak
       takl
@@ -271,8 +310,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
   (rprintf "; ~a\n" (date->string (seconds->date (current-seconds)) #t))
 
-  (map (lambda (impl)
-         (map (lambda (bm)
-                (run-benchmark impl bm))
-              actual-benchmarks-to-run))
-       actual-implementations-to-run))
+  (for-each (lambda (impl)
+              (map (lambda (bm)
+                     (run-benchmark impl bm))
+                   actual-benchmarks-to-run))
+            actual-implementations-to-run))

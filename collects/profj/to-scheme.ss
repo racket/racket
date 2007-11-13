@@ -370,11 +370,11 @@
      (if (to-file) 
          (let ((location (build-path (begin (send type-recs set-location! (def-file (car defs)))
                                             (send type-recs get-compilation-location) "compiled")
-                                     (string-append (symbol->string (module-name)) ".zo"))))
+                                     (string-append (symbol->string (module-name)) "_ss.zo"))))
            (for-each 
             (lambda (def) (send type-recs set-composite-location (id-string (def-name def)) location))
             defs)
-           `(file ,(path->string (build-path (string-append (symbol->string (module-name)) ".zo")))))
+           `(file ,(path->string (build-path (string-append (symbol->string (module-name)) ".ss")))))
          (module-name)))
     (let* ((translated-defs 
             (map (lambda (d)

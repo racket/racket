@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "networking" #:style 'toc]{Networking}
+
+@declare-exporting[(lib "scheme/network")]
 
 @local-table-of-contents[]
 

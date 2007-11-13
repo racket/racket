@@ -49,7 +49,7 @@
   (define vc2     (list "Node" '(("ATree" "left") ("ATree" "right"))))
   (define datat1  (make-dt "ATree" methods (list vc1 vc2) "a tree for ints"))
   
-  (require (file "aux-contract.scm"))
+  (require "aux-contract.scm")
   (require (lib "contract.ss"))
   
   (provide 

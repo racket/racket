@@ -1,4 +1,5 @@
-(module btree (lib "a-unit.ss")
+#lang scheme/unit
+
   (require "sig.ss")
   
 ;; Implements a red-black tree with relative indexing along right
@@ -204,18 +205,16 @@
                     (+ v (node-pos n)))))))
       
       (define (btree-map btree f)
-        (let ([start (cons #f null)])
-          (let loop ([n (btree-root btree)]
-                     [l start]
-                     [v 0])
-            (if (not n)
-                l
-                (let ([pre (loop (node-left n) l v)]
+        (reverse
+         (let loop ([n (btree-root btree)]
+                    [v 0]
+                    [a null])
+           (if (not n)
+               a
+               (let* ([pre (loop (node-left n) v a)]
                       [here (cons (f (+ v (node-pos n))
                                      (node-data n))
-                                  null)])
-                  (set-cdr! pre here)
-                  (loop (node-right n)
-                        here
-                        (+ v (node-pos n))))))
-          (cdr start))))
+                                  pre)])
+                 (loop (node-right n)
+                       (+ v (node-pos n))
+                       here))))))

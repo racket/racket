@@ -182,7 +182,9 @@
 		 ;; BEGIN EXPRESSIONS
 		 ;;
 		 [(zodiac:begin-form? ast)
-		  (map! transform! (zodiac:begin-form-bodies ast))
+                  (zodiac:set-begin-form-bodies!
+                   ast
+                   (map transform! (zodiac:begin-form-bodies ast)))
 		  ast]
 		 
 		 ;;------------------------------------------------------------------

@@ -1,17 +1,17 @@
 (module sort mzscheme
   (provide list-sort
-           list-sort!
+           (rename list-sort list-sort!)
            list-stable-sort
-           list-stable-sort!
+           (rename list-stable-sort list-stable-sort!)
            vector-sort
            vector-sort!
            vector-stable-sort
            vector-stable-sort!
            ; lmsort
            list-merge
-           list-merge!
+           (rename list-merge list-merge!)
            list-merge-sort
-           list-merge-sort!
+           (rename list-merge-sort list-merge-sort!)
            ; vmsort
            vector-merge
            vector-merge!
@@ -28,9 +28,9 @@
            vector-binary-search3
            ; delndups
            list-delete-neighbor-dups
-           list-delete-neighbor-dups!
+           (rename list-delete-neighbor-dups list-delete-neighbor-dups!)
            vector-delete-neighbor-dups
-           vector-delete-neighbor-dups!
+           (rename vector-delete-neighbor-dups vector-delete-neighbor-dups!)
            ; sortp
            list-sorted?
            vector-sorted?
@@ -59,10 +59,10 @@
       (vector-heap-sort! < v)
       (vector->list v)))
   
-  (define list-sort! list-merge-sort!)
+  #;(define list-sort! list-merge-sort!)
   
   (define list-stable-sort  list-merge-sort)
-  (define list-stable-sort! list-merge-sort!)
+  #;(define list-stable-sort! list-merge-sort!)
   
   (define vector-sort  vector-heap-sort)
   (define vector-sort! vector-heap-sort!)

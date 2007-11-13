@@ -1,4 +1,4 @@
-(module icon (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "class.ss")
            (lib "include-bitmap.ss" "mrlib")
            "bday.ss"
@@ -69,4 +69,4 @@
     (force
      (if (mrf-bday?)
          mrf-off-bitmap
-         gc-off-bitmap))))
+         gc-off-bitmap)))

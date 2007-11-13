@@ -1,9 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "bnf.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/bnf]
+@require[scribble/eval]
 @require["utils.ss"]
-@require-for-syntax[mzscheme]
+@require[(for-syntax scheme/base)]
 
 @title[#:tag "reader"]{The Scribble Reader}
 
@@ -24,12 +24,12 @@ meaning of these S-expressions depends on the rest of your own code.
 A PLT Scheme manual more likely starts with
 
 @schemeblock[
- #, @schemefont{#reader(lib "docreader.ss" "scribble")}
+ #, @schemefont{#lang scribble/doc}
 ]
 
 which installs a reader, wraps the file content afterward into a
 MzScheme module, and parses the body into a document using
-@file{decode.ss}.  See @secref["docreader"] for more information.
+@filepath{decode.ss}.  See @secref["docreader"] for more information.
 
 Another way to use the reader is to use the @scheme[use-at-readtable]
 function to switch the current readtable to a readtable that parses
@@ -721,7 +721,7 @@ an example of this.
 @;--------------------------------------------------------------------
 @section{Interface}
 
-The @file{reader.ss} module provides functionality for advanced needs.
+The @filepath{reader.ss} module provides functionality for advanced needs.
 
 @; The `with-scribble-read' trick below shadows `read' and
 @;  `read-syntax' with for-label bindings from the Scribble reader
@@ -731,7 +731,7 @@ The @file{reader.ss} module provides functionality for advanced needs.
   [(_)
    (...
     (begin
-     (require-for-label (lib "reader.ss" "scribble"))
+     (require (for-label scribble/reader))
 
 @; *** Start reader-import section ***
 @defproc[(read [in input-port? (current-input-port)]) any]{}
@@ -750,7 +750,7 @@ in reading.
 These @schemeid[-inside] variants parse as if starting inside a
 @litchar["@{"]...@litchar["}"], and they return a (syntactic) list.
 Useful for implementing languages that are textual by default (see
-@file{docreader.ss} for example).
+@filepath{docreader.ss} for example).
 }
 
 @defform[(make-at-readtable [keyword-args ...])]{

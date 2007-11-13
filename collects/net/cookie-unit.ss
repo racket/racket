@@ -48,7 +48,8 @@
 ;;
 ;; You should think of this procedures as a `format' for cookies.
 
-(module cookie-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "etc.ss")
            (lib "list.ss")
            (lib "string.ss" "srfi" "13")
@@ -323,7 +324,5 @@
 
   (define (valid-path? v)
     (and (string? v) (rfc2109:value? v)))
-
-  )
 
 ;;; cookie-unit.ss ends here

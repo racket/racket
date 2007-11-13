@@ -1,8 +1,7 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
-@require[(lib "list.ss")]
 
 @title{Pairs, Lists, and Scheme Syntax}
 
@@ -72,6 +71,9 @@ After you see
 @interaction[
 (list 1 2 3)
 ]
+
+@; FIXME: This isn't a particularly good motivation for introducing "quote", since
+@; (quote (1 2 3)) is actually _harder_ to type than (list 1 2 3)
 
 enough times, you'll wish (or you're already wishing) that there was a
 way to write just @scheme[(1 2 3)] and have it mean the list that
@@ -181,6 +183,10 @@ Beware, however, that the @tech{REPL}'s printer recognizes the symbol
 (eval:alts '(#, @schemevalfont{quote} #, @schemevalfont{road}) ''road)
 ]
 
+@; FIXME:
+@; warning about how "quote" creates constant data, which is subtly
+@; different than what "list" creates
+
 @;------------------------------------------------------------------------
 @section[#:tag "lists-and-syntax"]{Lists and Scheme Syntax}
 
@@ -194,7 +200,7 @@ streams. Instead, the syntax is determined by two layers:
 @itemize{
 
  @item{a @defterm{read} layer, which turns a sequence of characters
-       into a lists, symbols, and other constants; and}
+       into lists, symbols, and other constants; and}
 
  @item{an @defterm{expand} layer, which processes the lists, symbols,
        and other constants to parse them as an expression.}

@@ -11,7 +11,7 @@
             `(set! ,l ,r)
             (let ((a (car l)))
               (if (eq? a 'list-ref)
-                `(set-car! (list-tail ,@(cdr l)) ,r)
+                  (error "no") ; `(set-car! (list-tail ,@(cdr l)) ,r)
                 `(,(cond
                     ((eq? a 'string-ref) 'string-set!)
                     ((eq? a 'vector-ref) 'vector-set!)
@@ -107,7 +107,7 @@
 (define slatex::mapcan
   (lambda (f l)
     (let loop ((l l))
-      (if (null? l) '() (append! (f (car l)) (loop (cdr l)))))))
+      (if (null? l) '() (append (f (car l)) (loop (cdr l)))))))
 
 (define slatex::lassoc
   (lambda (x al eq)
@@ -126,7 +126,7 @@
       (cond
        ((null? l) l)
        ((eq (car l) x) (loop (cdr l)))
-       (else (set-cdr! l (loop (cdr l))) l)))))
+       (else (cons (car l) (loop (cdr l))))))))
 
 (define slatex::adjoin
   (lambda (x l eq) (if (slatex::lmember x l eq) l (cons x l))))
@@ -137,7 +137,7 @@
       (cond
        ((null? s) s)
        ((p (car s)) (loop (cdr s)))
-       (else (set-cdr! s (loop (cdr s))) s)))))
+       (else (cons (car s) (loop (cdr s))))))))
 
 (define slatex::string-prefix?
   (lambda (s1 s2 i)
@@ -150,7 +150,7 @@
   (lambda (l i f)
     (let loop ((l (list-tail l i)) (k i) (r '()))
       (cond
-       ((>= k f) (reverse! r))
+       ((>= k f) (reverse r))
        ((null? l) (slatex::slatex-error "sublist: List too small"))
        (else (loop (cdr l) (+ k 1) (cons (car l) r)))))))
 
@@ -483,11 +483,10 @@
 
 (define slatex::set-special-symbol
   (lambda (x transl)
-    (let ((c (slatex::lassoc x slatex::special-symbols slatex::token=?)))
-      (if c
-        (set-cdr! c transl)
-        (set! slatex::special-symbols
-          (cons (cons x transl) slatex::special-symbols))))))
+    (set! slatex::special-symbols
+          (cons (cons x transl) 
+                (slatex::delete x slatex::special-symbols 
+                                (lambda (a x) (slatex::token=? (car a) x)))))))
 
 (define slatex::unset-special-symbol
   (lambda (x)
@@ -502,44 +501,37 @@
   (lambda (s)
     (let loop ((l (slatex::texify-aux s)) (r '()))
       (if (null? l)
-        (list->string (reverse! r))
+        (list->string (reverse r))
         (let ((c (car l)))
           (loop
            (cdr l)
-           (if (char=? c #\-) (append! (list #\$ c #\$) r) (cons c r))))))))
+           (if (char=? c #\-) (append (list #\$ c #\$) r) (cons c r))))))))
 
 (define slatex::texify-aux
   (let ((arrow (string->list "-$>$"))
         (em-dash (string->list "---"))
         (en-dash (string->list "--"))
-        (arrow2 (string->list "$\\to$"))
-        (em-dash-2 (string->list "${-}{-}{-}$"))
-        (en-dash-2 (string->list "${-}{-}$")))
+        (arrow2 (reverse (string->list "$\\to$")))
+        (em-dash-2 (reverse (string->list "${-}{-}{-}$")))
+        (en-dash-2 (reverse (string->list "${-}{-}$"))))
     (lambda (s)
       (let ((texified-sl
               (slatex::mapcan
                 (lambda (c) (string->list (slatex::tex-analog c)))
                 (string->list s))))
-        (let loop ((d texified-sl))
+        (let loop ((d texified-sl) (a null))
           (cond
-           ((null? d) #f)
+           ((null? d) (reverse a))
            ((slatex::list-prefix? arrow d)
-            (let ((d2 (list-tail d 4)))
-              (set-car! d (car arrow2))
-              (set-cdr! d (append (cdr arrow2) d2))
-              (loop d2)))
+            (loop (list-tail d 4)
+                  (append arrow2 a)))
            ((slatex::list-prefix? em-dash d)
-            (let ((d2 (list-tail d 3)))
-              (set-car! d (car em-dash-2))
-              (set-cdr! d (append (cdr em-dash-2) d2))
-              (loop d2)))
+            (loop (list-tail d 3)
+                  (append em-dash-2 a)))
            ((slatex::list-prefix? en-dash d)
-            (let ((d2 (list-tail d 2)))
-              (set-car! d (car en-dash-2))
-              (set-cdr! d (append (cdr en-dash-2) d2))
-              (loop d2)))
-           (else (loop (cdr d)))))
-        texified-sl))))
+            (loop (list-tail d 2)
+                  (append en-dash-2 a)))
+           (else (loop (cdr d) (cons (car d) a)))))))))
 
 (define slatex::display-begin-sequence
   (lambda (out)
@@ -1292,7 +1284,7 @@
              (cons (slatex::of line slatex::=char / (+ i 1)) (cons c buf))
              (+ i 2)))
            ((or (memv c token-delims) (memv c slatex::*math-triggerers*))
-            (slatex::output-token (list->string (reverse! buf)))
+            (slatex::output-token (list->string (reverse buf)))
             i)
            ((char? c)
             (loop (cons (slatex::of line slatex::=char / i) buf) (+ i 1)))
@@ -1418,7 +1410,7 @@
           (loop
            (list-tail p (+ separator-pos 1))
            (cons (list->string (slatex::sublist p 0 separator-pos)) r))
-          (reverse! (cons (list->string p) r)))))))
+          (reverse (cons (list->string p) r)))))))
 
 (define slatex::find-some-file
   (lambda (path . files)
@@ -1529,7 +1521,7 @@
         (slatex::slatex-error "read-ctrl-exp: \\ followed by eof."))
       (if (char-alphabetic? c)
         (list->string
-          (reverse!
+          (reverse
             (let loop ((s (list c)))
               (let ((c (peek-char in)))
                 (cond
@@ -1586,7 +1578,7 @@
           c))
       (slatex::eat-tex-whitespace in)
       (list->string
-        (reverse!
+        (reverse
           (slatex::chop-off-whitespace
             (let loop ((s '()) (nesting 0) (escape? #f))
               (let ((c (read-char in)))
@@ -1631,7 +1623,7 @@
         (if (char=? c #\{)
           (slatex::read-grouped-latexexp in)
           (list->string
-            (reverse!
+            (reverse
               (let loop ((s '()) (escape? #f))
                 (let ((c (peek-char in)))
                   (cond
@@ -1661,7 +1653,7 @@
     (lambda (in)
       (slatex::eat-whitespace in)
       (list->string
-        (reverse!
+        (reverse
           (let loop ((s '()) (escape? #f))
             (let ((c (peek-char in)))
               (cond
@@ -1689,7 +1681,7 @@
             (slatex::slatex-error
               "read-delimed-commaed-filenames: ~\nFound eof inside filename(s)."))
           (if (char=? c rt-delim)
-            (begin (read-char in) (reverse! s))
+            (begin (read-char in) (reverse s))
             (let ((s (cons (slatex::read-filename in) s)))
               (slatex::eat-tex-whitespace in)
               (let ((c (peek-char in)))
@@ -1728,7 +1720,7 @@
             (slatex::slatex-error
               "read-grouped-schemeids:\nFound eof inside Scheme identifiers."))
           (if (char=? c #\})
-            (begin (read-char in) (reverse! s))
+            (begin (read-char in) (reverse s))
             (loop (cons (slatex::read-schemeid in) s))))))))
 
 (define slatex::eat-delimed-text
@@ -2320,7 +2312,7 @@
                 "trigger-region: ~\nUnknown triggerer ~s."
                 typ)))))
         (slatex::process-tex-file aux2.tex)
-        (set! slatex::*protected-files* (reverse! slatex::*protected-files*))
+        (set! slatex::*protected-files* (reverse slatex::*protected-files*))
         (call-with-input-file
           aux2.tex
           (lambda (in)

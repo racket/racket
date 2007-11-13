@@ -147,7 +147,8 @@ static char *pltcollects_from_resource;
 #endif
 
 #define CMDLINE_STDIO_FLAG
-#define VERSION_YIELD_FLAG
+#define YIELD_BEFORE_EXIT
+#define INITIAL_NAMESPACE_MODULE "scheme/gui/init"
 
 # include "../mzscheme/cmdline.inc"
 
@@ -170,16 +171,22 @@ static void do_graph_repl(Scheme_Env *env)
 {
   mz_jmp_buf * volatile save, newbuf;
   Scheme_Thread * volatile p;
+  Scheme_Object *a[2], *v;
 
   p = scheme_get_current_thread();
   save = p->error_buf;
   p->error_buf = &newbuf;
 
   if (!scheme_setjmp(newbuf)) {
-    if (xfa->a->alternate_rep)
-      scheme_eval_string("(read-eval-print-loop)", env);
-    else
-      scheme_eval_string("(graphical-read-eval-print-loop)", env);
+    if (xfa->a->alternate_rep) {
+      a[0] = scheme_intern_symbol("scheme/base");
+      a[1] = scheme_intern_symbol("read-eval-print-loop");
+    } else {
+      a[0] = scheme_intern_symbol("mred/mred");
+      a[1] = scheme_intern_symbol("graphical-read-eval-print-loop");
+    }
+    v = scheme_dynamic_require(2, a);
+    scheme_apply(v, 0, NULL);
   }
 
   p->error_buf = save;

@@ -31,21 +31,21 @@ DO_MAP(int argc, Scheme_Object *argv[])
 
   for (i = 1; i < argc; i++) {
     l = scheme_proper_list_length(argv[i]);
-
+    
     if (l < 0)
       scheme_wrong_type(MAP_NAME, "proper list", i, argc, argv);
-
+    
     if (i == 1)
       size = l;
     else if (size != l) {
       char *argstr;
       long alen;
-
+      
       argstr = scheme_make_args_string("", -1, argc, argv, &alen);
-
+      
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "%s: all lists must have same size%t",
-		       MAP_NAME, argstr, alen);
+                       "%s: all lists must have same size%t",
+                       MAP_NAME, argstr, alen);
       return NULL;
     }
   }
@@ -88,6 +88,8 @@ DO_MAP(int argc, Scheme_Object *argv[])
   while (pos < size) {
     /* collect args to apply */
     for (i = 0; i < argc ; i++) {
+#if 0
+      /* No longer needed: */
       if (!SCHEME_PAIRP(working[i])) {
 	/* There was a mutation! */
 	scheme_raise_exn(MZEXN_FAIL_CONTRACT,
@@ -95,6 +97,7 @@ DO_MAP(int argc, Scheme_Object *argv[])
 			 MAP_NAME);
 	return NULL;
       }
+#endif
       args[i] = SCHEME_CAR(working[i]);
       working[i] = SCHEME_CDR(working[i]);
     }

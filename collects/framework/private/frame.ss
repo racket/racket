@@ -1,4 +1,4 @@
-(module frame (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "string-constant.ss" "string-constants")
            (lib "class.ss")
            (lib "include.ss")
@@ -2526,4 +2526,4 @@
   (define searchable% (searchable-text-mixin (searchable-mixin -text%)))
   (define delegate% (delegate-mixin searchable%))
   
-  (define -pasteboard% (pasteboard-mixin open-here%)))
+  (define -pasteboard% (pasteboard-mixin open-here%))

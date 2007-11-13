@@ -1,15 +1,15 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["common.ss"]
 
-@title[#:tag-prefix '(lib "gui.scrbl" "scribblings" "gui") 
+@title[#:tag-prefix '(lib "scribblings/gui/gui.scrbl") 
        #:tag "top"]{PLT Scheme GUI: MrEd}
 
 @declare-exporting[(lib "mred")]
 
 This reference manual describes the MrEd GUI toolbox that is part of
- PLT Scheme. See @secref[#:doc '(lib "guide.scrbl" "scribblings"
- "guide") "mred"] in @italic{@link["../guide/index.html"]{A Guide to
- PLT Scheme}} for an introduction to MrEd.
+ PLT Scheme. See @secref[#:doc '(lib "scribblings/guide/guide.scrbl")
+ "mred"] in @italic{@link["../guide/index.html"]{A Guide to PLT
+ Scheme}} for an introduction to MrEd.
 
 The @scheme[(lib "mred")] module provides all of the class, interface,
  and procedure bindings defined in this manual. The

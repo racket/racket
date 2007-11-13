@@ -47,8 +47,8 @@
    car+cdr
    take drop
    take-right drop-right
-   take! drop-right!
-   split-at split-at!
+   (rename take take!) (rename drop-right drop-right!)
+   split-at (rename split-at split-at!)
    last
    last-pair)
 
@@ -79,6 +79,7 @@
 	(let iter ((lis lis) (k k))
 	  (if (zero? k) lis (iter (cdr lis) (- k 1)))))
   
+  #;
   (define (take! lis k)
 	(check-arg integer? k 'take!)
 	(if (zero? k) '()
@@ -105,6 +106,7 @@
   
   ;; In this function, LEAD is actually K+1 ahead of LAG. This lets
   ;; us stop LAG one step early, in time to smash its cdr to ().
+  #;
   (define (drop-right! lis k)
 	(check-arg integer? k 'drop-right!)
 	(let ((lead (drop lis k)))
@@ -125,6 +127,7 @@
 		  (receive (prefix suffix) (recur (cdr lis) (- k 1))
 				   (values (cons (car lis) prefix) suffix)))))
   
+  #;
   (define (split-at! x k)
 	(check-arg integer? k 'split-at!)
 	(if (zero? k) (values '() x)

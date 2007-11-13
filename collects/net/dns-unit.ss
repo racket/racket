@@ -1,4 +1,5 @@
-(module dns-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "list.ss") (lib "process.ss") "dns-sig.ss")
 
   (import)
@@ -96,7 +97,7 @@
            (cond
              [(zero? len)
               (let-values ([(s start) (parse-name start reply)])
-                (let ([s0 (list->bytes (reverse! accum))])
+                (let ([s0 (list->bytes (reverse accum))])
                   (values (if s (bytes-append s0 #"." s) s0)
                           start)))]
              [else (loop (sub1 len) (cdr start) (cons (car start) accum))]))]
@@ -127,7 +128,7 @@
         ;; Extract next len bytes for data:
         (let loop ([len len] [start start] [accum null])
           (if (zero? len)
-            (values (list name type class ttl (reverse! accum))
+            (values (list name type class ttl (reverse accum))
                     start)
             (loop (sub1 len) (cdr start) (cons (car start) accum)))))))
 
@@ -145,7 +146,7 @@
   (define (parse-n parse start reply n)
     (let loop ([n n][start start][accum null])
       (if (zero? n)
-        (values (reverse! accum) start)
+        (values (reverse accum) start)
         (let-values ([(rr start) (parse start reply)])
           (loop (sub1 n) start (cons rr accum))))))
 
@@ -340,4 +341,4 @@
                                               line))
                            => (lambda (m) (loop name (cadr m) #f))]
                           [else (loop name ip #f)]))))))]
-      [else #f])))
+      [else #f]))

@@ -166,12 +166,12 @@
   ;; split-acc : (listof (cons int int))^5 -> integer-set^3
   (define (split-acc s1 s2 i s1-i s2-i)
     (cond
-      ((null? s1) (values (make-integer-set (reverse! i))
-                          (make-integer-set (reverse! s1-i))
-                          (make-integer-set (reverse! (append! (reverse s2) s2-i)))))
-      ((null? s2) (values (make-integer-set (reverse! i))
-                          (make-integer-set (reverse! (append! (reverse s1) s1-i)))
-                          (make-integer-set (reverse! s2-i))))
+      ((null? s1) (values (make-integer-set (reverse i))
+                          (make-integer-set (reverse s1-i))
+                          (make-integer-set (reverse (append (reverse s2) s2-i)))))
+      ((null? s2) (values (make-integer-set (reverse i))
+                          (make-integer-set (reverse (append (reverse s1) s1-i)))
+                          (make-integer-set (reverse s2-i))))
       (else
        (let ((r1 (car s1))
              (r2 (car s2)))

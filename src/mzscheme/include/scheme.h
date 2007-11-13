@@ -33,12 +33,6 @@
 # include "../sconfig.h"
 #endif
 
-#ifdef INCLUDE_WITHOUT_PATHS
-# include "schvers.h"
-#else
-# include "../src/schvers.h"
-#endif
-
 #if defined(__MWERKS__)
 # ifdef MZSCHEME_USES_NEAR_GLOBALS
 #  pragma far_data off
@@ -288,7 +282,7 @@ typedef struct Scheme_Object *(*Scheme_Closure_Func)(struct Scheme_Object *);
 
 /* Scheme_Small_Object is used for several types of MzScheme values: */
 typedef struct {
-  Scheme_Object so;
+  Scheme_Inclhash_Object iso;
   union {
     mzchar char_val;
     Scheme_Object *ptr_value;
@@ -422,8 +416,7 @@ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj);
 
 #define SCHEME_NULLP(obj)    SAME_OBJ(obj, scheme_null)
 #define SCHEME_PAIRP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_pair_type)
-#define SCHEME_MUTABLE_PAIRP(obj)    (SCHEME_PAIRP(obj) && SCHEME_MUTABLEP(obj))
-#define SCHEME_IMMUTABLE_PAIRP(obj)    (SCHEME_PAIRP(obj) && SCHEME_IMMUTABLEP(obj))
+#define SCHEME_MUTABLE_PAIRP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_mutable_pair_type)
 #define SCHEME_LISTP(obj)    (SCHEME_NULLP(obj) || SCHEME_PAIRP(obj))
 
 #define SCHEME_RPAIRP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_raw_pair_type)
@@ -572,7 +565,6 @@ typedef struct Scheme_Offset_Cptr
 #define SCHEME_SET_IMMUTABLE(obj)  ((MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(obj)) |= 0x1))
 #define SCHEME_SET_CHAR_STRING_IMMUTABLE(obj) SCHEME_SET_IMMUTABLE(obj)
 #define SCHEME_SET_BYTE_STRING_IMMUTABLE(obj) SCHEME_SET_IMMUTABLE(obj)
-#define SCHEME_SET_PAIR_IMMUTABLE(obj) SCHEME_SET_IMMUTABLE(obj)
 #define SCHEME_SET_VECTOR_IMMUTABLE(obj) SCHEME_SET_IMMUTABLE(obj)
 #define SCHEME_SET_BOX_IMMUTABLE(obj) SCHEME_SET_IMMUTABLE(obj)
 
@@ -1002,6 +994,10 @@ typedef struct Scheme_Thread {
   Scheme_Object *current_local_certs;
   Scheme_Object *current_local_modidx;
   Scheme_Env *current_local_menv;
+  Scheme_Object *current_local_bindings;
+  int current_phase_shift;
+
+  struct Scheme_Marshal_Tables *current_mt;
 
   char skip_error;
 
@@ -1114,6 +1110,7 @@ enum {
   MZCONFIG_EVAL_HANDLER,
   MZCONFIG_COMPILE_HANDLER,
   MZCONFIG_LOAD_HANDLER,
+  MZCONFIG_LOAD_COMPILED_HANDLER,
 
   MZCONFIG_PRINT_HANDLER,
   MZCONFIG_PROMPT_READ_HANDLER,
@@ -1137,6 +1134,8 @@ enum {
   MZCONFIG_PRINT_VEC_SHORTHAND,
   MZCONFIG_PRINT_HASH_TABLE,
   MZCONFIG_PRINT_UNREADABLE,
+  MZCONFIG_PRINT_PAIR_CURLY,
+  MZCONFIG_PRINT_MPAIR_CURLY,
 
   MZCONFIG_CASE_SENS,
   MZCONFIG_SQUARE_BRACKETS_ARE_PARENS,
@@ -1174,7 +1173,7 @@ enum {
   MZCONFIG_RANDOM_STATE,
 
   MZCONFIG_CURRENT_MODULE_RESOLVER,
-  MZCONFIG_CURRENT_MODULE_PREFIX,
+  MZCONFIG_CURRENT_MODULE_NAME,
 
   MZCONFIG_ERROR_PRINT_SRCLOC,
 
@@ -1618,6 +1617,7 @@ MZ_EXTERN void scheme_set_case_sensitive(int);
 MZ_EXTERN void scheme_set_allow_set_undefined(int);
 MZ_EXTERN void scheme_set_binary_mode_stdio(int);
 MZ_EXTERN void scheme_set_startup_use_jit(int);
+MZ_EXTERN void scheme_set_startup_load_on_demand(int);
 MZ_EXTERN void scheme_set_ignore_user_paths(int);
 
 MZ_EXTERN int scheme_get_allow_set_undefined();

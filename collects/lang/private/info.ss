@@ -1,3 +1,3 @@
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "HtDP Languages Private"))
 

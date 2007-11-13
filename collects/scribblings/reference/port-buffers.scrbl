@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "port-buffers"]{Port Buffers and Positions}
+
+@declare-exporting[(lib "scheme/port")]
 
 Some ports---especially those that read from and write to files---are
 internally buffered:

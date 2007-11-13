@@ -8,8 +8,6 @@
 
 |#
 
-(use-compiled-file-paths null)
-
 (module osx_appl mzscheme
 
   (require (lib "plist.ss" "xml")
@@ -137,6 +135,3 @@
                 "Starter"
                 "APPLMrSt"
                 (make-info-plist "Starter" "MrSt" #t)))
-
-(require osx_appl)
-

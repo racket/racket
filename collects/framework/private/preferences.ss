@@ -26,7 +26,8 @@ the state transitions / contracts are:
 
 |#
 
-(module preferences (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "string-constant.ss" "string-constants")
 	   (lib "class.ss")
            (lib "file.ss")
@@ -132,7 +133,7 @@ the state transitions / contracts are:
       (add-to-existing-children
        titles 
        make-panel
-       (λ (new-subtree) (set! ppanels (cons new-subtree ppanels))))))
+       (λ (new-ppanels) (set! ppanels new-ppanels)))))
   
   ;; add-to-existing-children : (listof string) (panel -> panel) (ppanel -> void)
   ;; adds the child specified by the path in-titles to the tree.
@@ -143,7 +144,7 @@ the state transitions / contracts are:
                [banger banger])
       (cond
         [(null? children)
-         (banger (build-new-subtree (cons title titles) make-panel))]
+         (banger (list (build-new-subtree (cons title titles) make-panel)))]
         [else
          (let ([child (car children)])
            (if (string=? (ppanel-name child) title)
@@ -157,19 +158,17 @@ the state transitions / contracts are:
                    (ppanel-interior-children child)
                    (car titles)
                    (cdr titles)
-                   (λ (x)
+                   (λ (children)
                      (set-ppanel-interior-children! 
-                      (cons
-                       x
-                       (ppanel-interior-children child)))))])
+                      child
+                      children)))])
                (loop 
                 (cdr children)
                 title
                 titles
-                (λ (x)
-                  (set-cdr! children
-                            (cons x (cdr children)))))))])))
-  
+                (λ (children)
+                   (banger (cons child children))))))])))
+
   ;; build-new-subtree : (cons string (listof string)) (panel -> panel) -> ppanel
   (define (build-new-subtree titles make-panel)
     (let loop ([title (car titles)]
@@ -641,4 +640,4 @@ the state transitions / contracts are:
            main))))
     (set! local-add-font-panel void))
   
-  (define (add-font-panel) (local-add-font-panel)))
+  (define (add-font-panel) (local-add-font-panel))

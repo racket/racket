@@ -26,7 +26,7 @@
     ;; fine: getting rid of `.' and `..', collapsing multiple
     ;; `/'s to one `/', and converting '/'s to '\'s under Windows.
     (define (simplify-path* bytes)
-      (path->bytes (simplify-path (bytes->path bytes))))
+      (path->bytes (normal-case-path (simplify-path (bytes->path bytes)))))
     
     (define main-collects-dir/
       (delay (let ([dir (find-main-dir)])

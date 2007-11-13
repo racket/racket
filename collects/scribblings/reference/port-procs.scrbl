@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "port-ops"]{Managing Ports}
+
+@declare-exporting[(lib "scheme/port")]
 
 @defproc[(input-port? [v any/c]) boolean?]{
 Returns @scheme[#t] if @scheme[v] is an input port, @scheme[#f] otherwise.}

@@ -1,13 +1,14 @@
 
-(module html-render mzscheme
+(module html-render scheme/base
   (require "struct.ss"
-           (lib "class.ss")
-           (lib "file.ss")
-           (lib "list.ss")
-           (lib "runtime-path.ss")
-           (lib "main-doc.ss" "setup")
-           (lib "main-collects.ss" "setup")
-           (prefix xml: (lib "xml.ss" "xml")))
+           scheme/class
+           scheme/file
+           mzlib/runtime-path
+           setup/main-doc
+           setup/main-collects
+           mzlib/list
+           (prefix-in xml: xml/xml)
+           (for-syntax scheme/base))
   (provide render-mixin
            render-multi-mixin)
 
@@ -210,7 +211,7 @@
                                      (lambda (para)
                                        (let loop ([c (paragraph-content para)])
                                          (cond
-                                          [(empty? c) null]
+                                          [(null? c) null]
                                           [else (let ([a (car c)])
                                                   (cond
                                                    [(toc-target-element? a)
@@ -280,7 +281,8 @@
                                     (href "scribble.css")
                                     (title "default"))))
                             (body ,@(render-toc-view d ri)
-                                  (div ((class "main")) ,@(render-part d ri))))])
+                                  (div ((class "maincolumn")) 
+                                       (div ((class "main")) ,@(render-part d ri)))))])
             (install-file scribble-css)
             (xml:write-xml/content (xml:xexpr->xml xpr)))))
 
@@ -577,9 +579,9 @@
                (parameterize ([current-subdirectory (file-name-from-path fn)])
                  (let ([fn (build-path fn "index.html")])
                    (with-output-to-file fn
+                     #:exists 'truncate/replace
                      (lambda ()
-                       (render-one d ri fn))
-                     'truncate/replace))))
+                       (render-one d ri fn))))))
              ds
              fns))
 
@@ -718,9 +720,9 @@
                                           filename)])
               (parameterize ([on-separate-page #t])
                 (with-output-to-file full-path
+                  #:exists 'truncate/replace
                   (lambda ()
-                    (render-one-part d ri full-path number))
-                  'truncate/replace)
+                    (render-one-part d ri full-path number)))
                 null))]
            [else
             (let ([sep? (on-separate-page)])

@@ -6,7 +6,7 @@
 	   (lib "utils.ss" "texpict")
 	   "sig.ss"
 	   "core.ss"
-	   "util.ss"
+	   "private/utils.ss"
 	   "param.ss")
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -77,14 +77,15 @@
 		    [slide/name/tall/inset slide/title/inset-contract]
 		    [slide/name/center/inset slide/title/inset-contract]
 		    [comment (() (listof (or/c string? pict?)) . ->* . any)])
-  (provide most-recent-slide retract-most-recent-slide re-slide start-at-recent-slide
+  (provide slide/kw
+           most-recent-slide retract-most-recent-slide re-slide start-at-recent-slide
 	   scroll-transition pause-transition
 	   make-outline
-	   item item* page-item page-item*
+	   item/kw item item* page-item page-item*
 	   item/bullet item*/bullet page-item/bullet page-item*/bullet
-	   subitem subitem* page-subitem page-subitem*
+	   subitem/kw subitem subitem* page-subitem page-subitem*
 	   itemize itemize* page-itemize page-itemize*
-	   para para* page-para page-para*
+	   para/kw para para* page-para page-para*
 	   para/c para/r para*/c para*/r page-para/c page-para/r page-para*/c page-para*/r
 	   font-size gap-size current-font-size current-line-sep line-sep title-size 
 	   main-font current-main-font with-font current-title-color
@@ -100,6 +101,7 @@
 	   enable-click-advance!
 	   title-h get-title-h set-title-h! current-slide-assembler
 	   current-page-number-font current-page-number-color 
+           current-titlet current-para-width
 	   set-page-numbers-visible! done-making-slides
            slide/timeout
            slide/title/timeout

@@ -1,4 +1,4 @@
-(module main (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "framework.ss" "framework")
            (lib "mred.ss" "mred")
            (lib "class.ss")
@@ -165,4 +165,4 @@
                       (close-output-port out)))
                    (render-html-to-text in text #f #t))))
                     
-             vp)))))
+             vp))))

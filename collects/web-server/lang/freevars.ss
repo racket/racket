@@ -39,7 +39,7 @@
        (set-diff (union (free-vars* (syntax->list #'(ve ...)))
                         (free-vars* (syntax->list #'(be ...))))
                  (apply append (map syntax->list (syntax->list #'((v ...) ...)))))]
-      [(lambda formals be ...)
+      [(#%plain-lambda formals be ...)
        (set-diff (free-vars* (syntax->list #'(be ...)))
                  (formals-list #'formals))]
       [(case-lambda [formals be ...] ...)
@@ -69,12 +69,10 @@
        (free-vars* (syntax->list #'(ke me be)))]
       [(#%expression d)
        (free-vars #'d)]
-      [(#%app e ...)
+      [(#%plain-app e ...)
        (free-vars* (syntax->list #'(e ...)))]
       [(#%top . v)
        #;(printf "Not including top ~S in freevars~n" (syntax-object->datum #'v))
-       empty]
-      [(#%datum . d)
        empty]
       [(#%variable-reference . id)
        (let ([i-bdg (identifier-binding #'id)])

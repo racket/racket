@@ -16,14 +16,14 @@
   (define test-coverage-info (make-hash-table))
 
   (define (initialize-test-coverage-point key expr)
-    (hash-table-put! test-coverage-info key (cons expr 0)))
+    (hash-table-put! test-coverage-info key (mcons expr 0)))
 
   (define (test-covered key)
     (let ([v (hash-table-get test-coverage-info key)])
-      (set-cdr! v (add1 (cdr v)))))
+      (set-mcdr! v (add1 (mcdr v)))))
 
   (define (get-coverage-counts)
-    (hash-table-map test-coverage-info (lambda (k v) v)))
+    (hash-table-map test-coverage-info (lambda (k v) (cons (mcar v) (mcdr v)))))
 
   (define (annotate-covered-file name . more)
     (apply annotate-file name (get-coverage-counts)
@@ -44,31 +44,29 @@
   (define (clear-profile-results)
     (hash-table-for-each profile-info
       (lambda (k v)
-        (set-box! (car v) #f)
-        (set-car! (cdr v) 0)
-        (set-car! (cddr v) 0)
-        (set-car! (cdr (cdddr v)) null))))
+        (set-box! (vector-ref v 0) #f)
+        (vector-set! v 1 0)
+        (vector-set! v 2 0)
+        (vector-set! v 4 null))))
 
   (define (initialize-profile-point key name expr)
     (hash-table-put! profile-info key
-                     (list (box #f) 0 0 (and name (syntax-e name)) expr null)))
+                     (vector (box #f) 0 0 (and name (syntax-e name)) expr null)))
 
   (define (register-profile-start key)
     (and (profiling-record-enabled)
          (let ([v (hash-table-get profile-info key)])
-           (let ([b (car v)]
-                 [v (cdr v)])
-             (set-car! v (add1 (car v)))
+           (let ([b (vector-ref v 0)])
+             (vector-set! v 1 (add1 (vector-ref v 1)))
              (when (profile-paths-enabled)
-               (let ([v (cddddr v)])
-		 (let ([cms
-			(continuation-mark-set->list
-			 (current-continuation-marks)
-			 profile-key)])
-		   (unless (hash-table? (car v))
-		     (set-car! v (make-hash-table 'equal)))
-		   (hash-table-put! (car v) cms 
-				    (add1 (hash-table-get (car v) cms (lambda () 0)))))))
+               (let ([cms
+                      (continuation-mark-set->list
+                       (current-continuation-marks)
+                       profile-key)])
+                 (unless (hash-table? (vector-ref v 5))
+                   (vector-set! v 5 (make-hash-table 'equal)))
+                 (hash-table-put! (vector-ref v 5) cms 
+                                  (add1 (hash-table-get (vector-ref v 5) cms (lambda () 0))))))
              (if (unbox b)
                  #f
                  (begin
@@ -78,28 +76,28 @@
   (define (register-profile-done key start)
     (when start
       (let ([v (hash-table-get profile-info key)])
-        (let ([b (car v)]
-              [v (cddr v)])
+        (let ([b (vector-ref v 0)])
           (set-box! b #f)
-          (let ([v (cddr (hash-table-get profile-info key))])
-            (set-car! v (+ (- (current-process-milliseconds) start)
-                           (car v))))))))
+          (vector-set! v 2
+                       (+ (- (current-process-milliseconds) start)
+                          (vector-ref v 2)))))))
 
   (define (get-profile-results)
     (hash-table-map profile-info
       (lambda (key val)
-        (let ([count (cadr val)]
-              [time (caddr val)]
-              [name (cadddr val)]
-              [expr (cadddr (cdr val))]
-              [cmss (cadddr (cddr val))])
+        (let ([count (vector-ref val 1)]
+              [time (vector-ref val 2)]
+              [name (vector-ref val 3)]
+              [expr (vector-ref val 4)]
+              [cmss (vector-ref val 5)])
           (list count time name expr
 		(if (hash-table? cmss)
 		    (hash-table-map cmss (lambda (ks v)
 					   (cons v 
 						 (map (lambda (k)
 							(let ([v (cdr (hash-table-get profile-info k))])
-							  (list (caddr v) (cadddr v))))
+							  (list (vector-ref v 2)
+                                                                (vector-ref v 3))))
 						      ks))))
 		    null))))))
 
@@ -136,12 +134,12 @@
 
   (define (register-executed-once key)
     (let ([i (hash-table-get execute-info key)])
-      (set-cdr! i (add1 (cdr i)))))
+      (set-mcdr! i (add1 (mcdr i)))))
 
   (define (execute-point mark expr)
     (if (execute-counts-enabled)
         (let ([key (gensym)])
-          (hash-table-put! execute-info key (cons mark 0))
+          (hash-table-put! execute-info key (mcons mark 0))
           (with-syntax ([key (datum->syntax-object #f key (quote-syntax here))]
                         [expr expr]
                         [register-executed-once register-executed-once]);<- 3D!
@@ -152,7 +150,8 @@
         expr))
 
   (define (get-execute-counts)
-    (hash-table-map execute-info (lambda (k v) v)))
+    (hash-table-map execute-info (lambda (k v) (cons (mcar v)
+                                                     (mcdr v)))))
 
   (define (annotate-executed-file name . more)
     (apply annotate-file name (get-execute-counts)
@@ -178,7 +177,7 @@
              ;; Merge entries with the same position+span
              [sorted (if (null? sorted)
                        sorted ; guarantee one element for the next case
-                       (let loop ([xs (reverse! sorted)] [r '()])
+                       (let loop ([xs (reverse sorted)] [r '()])
                          (cond [(null? (cdr xs)) (append xs r)]
                                [(and (= (syntax-position (caar xs))
                                         (syntax-position (caadr xs)))
@@ -324,10 +323,10 @@
                        #,(syntax-recertify
 			  #`(#%plain-module-begin
 			     #,((make-syntax-introducer)
-				#'(require (lib "errortrace-key.ss" "errortrace")))
+				#'(#%require (lib "errortrace-key.ss" "errortrace")))
 			     #,((make-syntax-introducer)
-				#'(require-for-syntax
-				   (lib "errortrace-key.ss" "errortrace")))
+				#'(#%require (for-syntax
+                                              (lib "errortrace-key.ss" "errortrace"))))
 			     body ...)
 			  (list-ref (syntax->list top-e) 3)
 			  orig-inspector

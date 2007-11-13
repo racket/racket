@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "numbers"]{Numbers}
@@ -66,7 +66,7 @@ so that inexactness acts as a kind of taint on numbers. Beware,
 however, that Scheme offers no ``inexact booleans'', so computations
 that branch on the comparison of inexact numbers can nevertheless
 produce exact results. The procedures @scheme[exact->inexact] and
-@scheme[inexact->exact] support explicit conversions between the two
+@scheme[inexact->exact] convert between the two
 types of numbers.
 
 @examples[

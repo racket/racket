@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "module-provide"]{Exports: @scheme[provide]}
@@ -13,7 +13,7 @@ available where the module is @scheme[require]d.
 
 A @scheme[provide] form can only appear at module level (i.e., in the
 immediate body of a @scheme[module]).  Specifying multiple
-@scheme[_provide-spec]s in a single @scheme[require] is exactly the
+@scheme[_provide-spec]s in a single @scheme[provide] is exactly the
 same as using multiple @scheme[provide]s each with a single
 @scheme[_provide-spec].
 
@@ -34,10 +34,10 @@ local definition, or from an import.
 }
 
 @;------------------------------------------------------------------------
-@specspecsubform[#:literals(rename)
-                 (rename [orig-id export-id] ...)]{
+@specspecsubform[#:literals(rename-out)
+                 (rename-out [orig-id export-id] ...)]{
 
-A @scheme[rename] form is similar to just specifying an identifier,
+A @scheme[rename-out] form is similar to just specifying an identifier,
 but the exported binding @scheme[orig-id] is given a different name,
 @scheme[export-id], to importing modules.
 
@@ -45,38 +45,52 @@ but the exported binding @scheme[orig-id] is given a different name,
 
 
 @;------------------------------------------------------------------------
-@specspecsubform[#:literals(all-defined)
-                 (all-defined)]{
+@specspecsubform[#:literals(struct-out)
+                 (struct-out struct-id)]{
 
-The @scheme[all-defined] shorthand exports all bindings that are
+A @scheme[struct-out] form exports the bindings created by
+@scheme[(define-struct struct-id ....)].
+
+@guideother{See @secref["define-struct"] for information on
+@scheme[define-struct].}
+
+}
+
+
+@;------------------------------------------------------------------------
+@specspecsubform[#:literals (all-defined-out)
+                 (all-defined-out)]{
+
+The @scheme[all-defined-out] shorthand exports all bindings that are
 defined within the exporting module (as opposed to imported).
 
-Use of the @scheme[all-defined] shorthand is generally discouraged,
-because it makes less clear the actual exports for a module, and
-because PLT Scheme programmers get into the habit of thinking that
-definitions can be added freely to a module without affecting its
-public interface.
+Use of the @scheme[all-defined-out] shorthand is generally
+discouraged, because it makes less clear the actual exports for a
+module, and because PLT Scheme programmers get into the habit of
+thinking that definitions can be added freely to a module without
+affecting its public interface (which is not the case when
+@scheme[all-defined-out] is used).
 
 }
 
 @;------------------------------------------------------------------------
-@specspecsubform[#:literals(all-from)
-                 (all-from module-path)]{
+@specspecsubform[#:literals (all-from-out)
+                 (all-from-out module-path)]{
 
-The @scheme[all-from] shorthand exports all bindings in the module
+The @scheme[all-from-out] shorthand exports all bindings in the module
 that were imported using a @scheme[_require-spec] that is based on
 @scheme[module-path].
 
 Although different @scheme[module-path]s could refer to the same
-file-based module, re-exporting with @scheme[all-from] is based
+file-based module, re-exporting with @scheme[all-from-out] is based
 specifically on the @scheme[module-path] reference, and not the module
 that is actually referenced.
 
 }
 
 @;------------------------------------------------------------------------
-@specspecsubform[#:literals(except)
-                 (except provide-spec id ...)]{
+@specspecsubform[#:literals (except-out)
+                 (except-out provide-spec id ...)]{
 
 Like @scheme[provide-spec], but omitting the export of each
 @scheme[id], where @scheme[id] is the external name of the binding to
@@ -86,8 +100,8 @@ omit.
 
 
 @;------------------------------------------------------------------------
-@specspecsubform[#:literals(prefix)
-                 (prefix provide-spec prefix-id)]{
+@specspecsubform[#:literals (prefix-out)
+                 (prefix-out prefix-id provide-spec)]{
 
 Like @scheme[provide-spec], but adding @scheme[prefix-id] to the
 beginning of the external name for each exported binding.

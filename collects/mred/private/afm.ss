@@ -29,10 +29,9 @@
       (unless (and (list? l)
 		   (andmap path-string? l))
 	(raise-type-error who "list of paths/strings" l))
-      (apply list-immutable
-	     (map (lambda (i)
-		    (if (string? i) (string->path i) i))
-		  l))))
+      (map (lambda (i)
+             (if (string? i) (string->path i) i))
+           l)))
 
   ;; Paths that users can set
   ;;  Location of .afm files:
@@ -216,38 +215,38 @@
   ;; AFM
 
   ;; An achar is either
-  ;;  - (cons num-or-bytes num)
-  ;;  - (list num-or-bytes num ligature-assoc kern-assoc)
+  ;;  - (mcons num-or-bytes num)
+  ;;  - (mcons num-or-bytes (vector num ligature-assoc kern-assoc))
 
   (define make-achar
     (case-lambda
      [(enc width ligatures)
       (if (null? ligatures)
-	  (cons enc width)
-	  (list enc width ligatures null))]
-     [(enc width) (cons enc width)]))
-  (define achar-enc car)   ; Number (unicode or CID) or bytes (Adobe char name)
+	  (mcons enc width)
+	  (mcons enc (vector width ligatures null)))]
+     [(enc width) (mcons enc width)]))
+  (define achar-enc mcar)   ; Number (unicode or CID) or bytes (Adobe char name)
   (define achar-width ; Integer, 0 to 1000
     (lambda (x)
-      (if (pair? (cdr x))
-	  (cadr x)
-	  (cdr x))))
+      (if (vector? (mcdr x))
+	  (vector-ref (mcdr x) 0)
+	  (mcdr x))))
   (define achar-ligatures
     (lambda (x)
-      (if (pair? (cdr x))
-	  (caddr x)
+      (if (vector? (mcdr x))
+	  (vector-ref (mcdr x) 1)
 	  null)))
   (define achar-kerns
     (lambda (x)
-      (if (pair? (cdr x))
-	  (cadddr x)
+      (if (vector? (mcdr x))
+	  (vector-ref (mcdr x) 2)
 	  null)))
   (define (strip-ligatures-and-kerning achar)
     (make-achar (achar-enc achar) (achar-width achar)))
   (define (achar-add-kern! achar v amt)
-    (when (not (pair? (cdr achar)))
-      (set-cdr! achar (list (cdr achar) null null)))
-    (set-car! (cdddr achar) (cons (cons v amt) (cadddr achar))))
+    (when (not (vector? (mcdr achar)))
+      (set-mcdr! achar (vector (mcdr achar) null null)))
+    (vector-set! (mcdr achar) 2 (cons (cons v amt) (vector-ref (mcdr achar) 2))))
 
   (define-struct font (height descent ascent internal-leading achars is-cid? char-set-name))
 

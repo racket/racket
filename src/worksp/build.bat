@@ -5,7 +5,7 @@ devenv mred.sln /Build Release
 cd ..
 
 cd gc2
-..\..\..\mzschemecgc -qr make.ss
+..\..\..\mzschemecgc -cu make.ss
 cd ..
 
 cd mzcom
@@ -15,11 +15,11 @@ devenv libmysterx.sln /Build Release
 cd ..
 
 cd libmysterx
-..\..\..\mzschemecgc -qr xform.ss
+..\..\..\mzscheme -cu xform.ss
 cd ..
 
 cd mzcom
-..\..\..\mzschemecgc -qr xform.ss
+..\..\..\mzscheme -cu xform.ss
 cd ..
 
 cd mzcom
@@ -34,4 +34,4 @@ cd ..\mrstart
 devenv mrstart.sln /Build Release
 cd ..
 
-..\..\mzscheme -mvqM- setup
+..\..\mzscheme -l setup

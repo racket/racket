@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["common.ss"]
 
 @definterface/title[dc<%> ()]{
@@ -86,7 +86,7 @@ If the mask bitmap is grayscale and the bitmap to draw is not
  opacity of the drawn pixel (i.e., the mask acts as an inverted alpha
  channel), at least on most platforms. (Non-monochrome masks
  are collapsed to monochrome under X when the RENDER extension is not
- available, and under Windows 95 and NT when @file{msing32.dll} is not
+ available, and under Windows 95 and NT when @filepath{msing32.dll} is not
  available.) Other combinations involving a non-monochrome mask (i.e.,
  a non-grayscale mask or a monochrome bitmap to draw) produce
  platform-specific results.
@@ -780,7 +780,7 @@ Enables or disables anti-aliased smoothing of lines, curves,
  instead controlled through the @scheme[font%] object.)
 
 Smoothing is supported under Windows only when Microsoft's
- @file{gdiplus.dll} is installed (which is always the case for Windows
+ @filepath{gdiplus.dll} is installed (which is always the case for Windows
  XP). Smoothing is supported under Mac OS X always. Smoothing is
  supported under X only when Cairo is installed when MrEd is compiled.
  Smoothing is never supported for black-and-white contexts. Smoothing

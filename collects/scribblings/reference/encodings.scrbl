@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "encodings"]{Encodings and Locales}
+
+@declare-exporting[(lib "scheme/locale")]
 
 When a port is provided to a character-based operation, such as
 @scheme[read-char] or @scheme[read], the port's bytes are read and

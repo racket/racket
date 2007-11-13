@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title{Quasiquoting}
@@ -27,8 +27,8 @@ evaluated to produce a value that takes the place of the
 The @scheme[unquote-splicing] form is similar to @scheme[unquote], but
 its @scheme[_expr] must produce a list, and the
 @scheme[unquote-splicing] form must appear in a context that produces
-either a list of vector. As the name suggests, the resulting list
-spliced into the context of its use.
+either a list or a vector. As the name suggests, the resulting list
+is spliced into the context of its use.
 
 @examples[
 (eval:alts (#,(schemekeywordfont "quasiquote") (1 2 (#,(schemekeywordfont "unquote-splicing") (list (+ 1 2) (- 5 1))) 5))

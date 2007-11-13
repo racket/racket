@@ -1,5 +1,6 @@
 
-(module texpict-extra (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "etc.ss")
 	   (lib "list.ss"))
 
@@ -463,5 +464,4 @@
 		   (error 'pict->string "cannot handle prog pict")]
 		  [else (error 'pict->string "bad tag: ~s" tag)])))))
 
-      (define pict->commands pict->command-list))
-
+      (define pict->commands pict->command-list)

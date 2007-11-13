@@ -1,10 +1,11 @@
-(module annotator mzscheme
+(module annotator scheme/base
 
-  (require (prefix kernel: (lib "kerncase.ss" "syntax"))
+  (require (prefix-in kernel: (lib "kerncase.ss" "syntax"))
            (lib "list.ss")
            (lib "marks.ss" "mztake")
            (lib "etc.ss")
-           (prefix srfi: (lib "search.ss" "srfi" "1"))
+           (prefix-in srfi: (lib "search.ss" "srfi" "1"))
+           (for-syntax scheme/base)
            )
   (provide annotate-stx annotate-for-single-stepping)
 
@@ -67,7 +68,8 @@
                    (if (#,break? #,start)
                        (set! value-list (#,break-before
                                            #,debug-info
-                                           (current-continuation-marks))))
+                                           (current-continuation-marks)))
+                       (void))
                    (if (not value-list)
                        #,annotated
                        (apply values value-list)))
@@ -75,7 +77,8 @@
                    (if (#,break? #,start)
                        (set! value-list (#,break-before
                                            #,debug-info
-                                           (current-continuation-marks))))
+                                           (current-continuation-marks)))
+                       (void))
                    (if (not value-list)
                        (call-with-values
                         (lambda () #,annotated)
@@ -163,7 +166,7 @@
       (define (module-level-expr-iterator stx module-name )
         (kernel:kernel-syntax-case
          stx #f
-         [(provide . provide-specs)
+         [(#%provide . provide-specs)
           stx]
          [else-stx
           (general-top-level-expr-iterator stx module-name )]))
@@ -196,11 +199,8 @@
           (quasisyntax/loc stx (begin #,@(map (lambda (expr)
                                                 (module-level-expr-iterator expr module-name ))
                                               (syntax->list #'top-level-exprs))))]
-         [(require . require-specs)
+         [(#%require . require-specs)
           stx]
-         [(require-for-syntax . require-specs)
-          stx]
-         [(require-for-template dot require-specs) stx]
          [else
           (annotate stx '() #f module-name )]))
       
@@ -216,7 +216,6 @@
                  (hash-table-get breakpoints pos (lambda () #t))
                  (kernel:kernel-syntax-case
                   expr #f
-                  [(if test then) #t]
                   [(if test then else) #t]
                   [(begin . bodies) #t]
                   [(begin0 . bodies) #t]
@@ -224,7 +223,7 @@
                   [(letrec-values . clause) #t]
                   [(set! var val) #t]
                   [(with-continuation-mark key mark body) #t]
-                  [(#%app . exprs) #t]
+                  [(#%plain-app . exprs) #t]
                   [_ #f])
                  (begin
                    (hash-table-put! breakpoints pos #f)
@@ -303,24 +302,20 @@
             expr #f
             [var-stx (identifier? (syntax var-stx))
                      (let ([binder (and (syntax-original? expr)
-                                        (srfi:member expr bound-vars module-identifier=?))])
+                                        (srfi:member expr bound-vars free-identifier=?))])
                        (if binder
                            (let ([f (first binder)])
                              (record-bound-id 'ref expr f))
                            (record-bound-id 'top-level expr expr))
                        expr)]
             
-            [(lambda . clause)
+            [(#%plain-lambda . clause)
              (quasisyntax/loc expr 
-               (lambda #,@(lambda-clause-annotator #'clause)))]
+               (#%plain-lambda #,@(lambda-clause-annotator #'clause)))]
             
             [(case-lambda . clauses)
              (quasisyntax/loc expr
                (case-lambda #,@(map lambda-clause-annotator (syntax->list #'clauses))))]
-            
-            [(if test then)
-             (quasisyntax/loc expr (if #,(annotate #'test bound-vars #f module-name )
-                                       #,(annotate #'then bound-vars is-tail? module-name )))]
             
             [(if test then else)
              (quasisyntax/loc expr (if #,(annotate #'test bound-vars #f module-name )
@@ -349,7 +344,7 @@
             
             [(set! var val)
              (let ([binder (and (syntax-original? #'var)
-                                (srfi:member #'var bound-vars module-identifier=?))])
+                                (srfi:member #'var bound-vars free-identifier=?))])
                (when binder
                  (let ([f (first binder)])
                    (record-bound-id 'set expr f)))
@@ -364,7 +359,7 @@
                                      #,(annotate #'mark bound-vars #f module-name )
                                      #,(annotate #'body bound-vars is-tail? module-name )))]
             
-            [(#%app . exprs)
+            [(#%plain-app . exprs)
              (let ([subexprs (map (lambda (expr) 
                                     (annotate expr bound-vars #f module-name ))
                                   (syntax->list #'exprs))])
@@ -373,12 +368,10 @@
                    (wcm-wrap (make-debug-info module-name expr bound-vars bound-vars 'normal #f (previous-bindings bound-vars))
                              (quasisyntax/loc expr #,subexprs))))]
             
-            [(#%datum . _) expr]
-            
             [(#%top . var) expr]
             
             [else (error 'expr-syntax-object-iterator "unknown expr: ~a"
-                         (syntax-object->datum expr))])
+                         (syntax->datum expr))])
            expr
            (current-code-inspector)
            #f))

@@ -1,18 +1,19 @@
 
-(module class-internal mzscheme
-  (require (lib "list.ss")
+(module class-internal scheme/base
+  (require (for-syntax scheme/base)
+           (lib "list.ss")
            (lib "etc.ss")
 	   (lib "stxparam.ss")
            "class-events.ss"
-	   "serialize-structs.ss")
-  (require-for-syntax (lib "kerncase.ss" "syntax")
-		      (lib "stx.ss" "syntax")
-		      (lib "name.ss" "syntax")
-		      (lib "context.ss" "syntax")
-		      (lib "define.ss" "syntax")
-		      (lib "boundmap.ss" "syntax" "private")
-		      (lib "stxparam.ss")
-		      "classidmap.ss")
+	   "serialize-structs.ss"
+           (for-syntax (lib "kerncase.ss" "syntax")
+                       (lib "stx.ss" "syntax")
+                       (lib "name.ss" "syntax")
+                       (lib "context.ss" "syntax")
+                       (lib "define.ss" "syntax")
+                       (lib "boundmap.ss" "syntax" "private")
+                       (lib "stxparam.ss")
+                       "classidmap.ss"))
 
   (define insp (current-inspector)) ; for all opaque structures
 
@@ -127,7 +128,7 @@
       (define (expand-all-forms stx defn-and-exprs def-ctx bind-local-id)
 	(let* ([stop-forms
 		(append
-		 (kernel-form-identifier-list (quote-syntax here))
+		 (kernel-form-identifier-list)
 		 (list 
 		  (quote-syntax -init)
 		  (quote-syntax init-rest)
@@ -205,7 +206,7 @@
 		 [(and (stx-pair? (car l))
 		       (let ([id (stx-car (car l))])
 			 (and (identifier? id)
-			      (ormap (lambda (k) (module-identifier=? k id)) kws))))
+			      (ormap (lambda (k) (free-identifier=? k id)) kws))))
 		  (values (cons (car l) in) out)]
 		 [else
 		  (values in (out-cons (car l) out))])))))
@@ -219,7 +220,7 @@
 	       (map (lambda (i)
 		      (let ([l (let ([l (syntax->list i)])
 				 (if (ormap (lambda (i)
-					      (module-identifier=? (car l) i))
+					      (free-identifier=? (car l) i))
 					    (syntax-e (quote-syntax (-init -init-field -field))))
 				     (cddr l)
 				     (cdr l)))])
@@ -270,7 +271,7 @@
 	;; mk-name: constructs a method name
 	;; for error reporting, etc.
 	(define (mk-name name)
-	  (datum->syntax-object 
+	  (datum->syntax 
 	   #f 
 	   (string->symbol (format "~a method~a~a" 
 				   (syntax-e name)
@@ -282,8 +283,8 @@
 	   #f))
 	;; -- tranform loop starts here --
 	(let loop ([stx orig-stx][can-expand? #t][name name][locals null])
-	  (syntax-case stx (lambda case-lambda letrec-values let-values)
-	    [(lambda vars body1 body ...)
+	  (syntax-case stx (#%plain-lambda case-lambda letrec-values let-values)
+	    [(#%plain-lambda vars body1 body ...)
 	     (vars-ok? (syntax vars))
 	     (if xform?
 		 (with-syntax ([the-obj the-obj]
@@ -297,7 +298,7 @@
 		       (syntax/loc stx 
 			 (let ([name l]) name)))))
 		 stx)]
-	    [(lambda . _)
+	    [(#%plain-lambda . _)
 	     (bad "ill-formed lambda expression for method" stx)]
 	    [(case-lambda [vars body1 body ...] ...)
 	     (andmap vars-ok? (syntax->list (syntax (vars ...))))
@@ -316,18 +317,18 @@
 	    [(case-lambda . _)
 	     (bad "ill-formed case-lambda expression for method" stx)]
 	    [(let- ([(id) expr] ...) let-body)
-	     (and (or (module-identifier=? (syntax let-) 
+	     (and (or (free-identifier=? (syntax let-) 
 					   (quote-syntax let-values))
-		      (module-identifier=? (syntax let-) 
+		      (free-identifier=? (syntax let-) 
 					   (quote-syntax letrec-values)))
 		  (andmap identifier? (syntax->list (syntax (id ...)))))
-	     (let* ([letrec? (module-identifier=? (syntax let-) 
+	     (let* ([letrec? (free-identifier=? (syntax let-) 
 						  (quote-syntax letrec-values))]
 		    [ids (syntax->list (syntax (id ...)))]
 		    [new-ids (if xform?
 				 (map
 				  (lambda (id)
-				    (datum->syntax-object
+				    (datum->syntax
 				     #f
 				     (gensym (syntax-e id))))
 				  ids)
@@ -398,8 +399,8 @@
 
       (define (main stx trace-flag super-expr deserialize-id-expr name-id interface-exprs defn-and-exprs)
 	(let-values ([(this-id) #'this-id]
-		     [(the-obj) (datum->syntax-object (quote-syntax here) (gensym 'self))]
-		     [(the-finder) (datum->syntax-object (quote-syntax here) (gensym 'find-self))])
+		     [(the-obj) (datum->syntax (quote-syntax here) (gensym 'self))]
+		     [(the-finder) (datum->syntax (quote-syntax here) (gensym 'find-self))])
 
 	  (let* ([def-ctx (syntax-local-make-definition-context)]
 		 [localized-map (make-bound-identifier-mapping)]
@@ -446,8 +447,8 @@
 						  inspect)
 			    [(form orig idp ...)
 			     (and (identifier? (syntax form))
-				  (or (module-identifier=? (syntax form) (quote-syntax -init))
-				      (module-identifier=? (syntax form) (quote-syntax -init-field))))
+				  (or (free-identifier=? (syntax form) (quote-syntax -init))
+				      (free-identifier=? (syntax form) (quote-syntax -init-field))))
 			     
 			     (let ([form (syntax-e (stx-car (syntax orig)))])
 			       (for-each 
@@ -505,7 +506,7 @@
 			     (bad "ill-formed private clause" stx)]
 			    [(form idp ...)
 			     (and (identifier? (syntax form))
-				  (ormap (lambda (f) (module-identifier=? (syntax form) f))
+				  (ormap (lambda (f) (free-identifier=? (syntax form) f))
 					 (syntax-e (quote-syntax (public
 								   override
 								   augride
@@ -560,8 +561,8 @@
 			     (bad "ill-formed inherit-field clause" stx)]
 			    [(kw idp ...)
 			     (and (identifier? #'kw)
-				  (or (module-identifier=? #'rename-super #'kw)
-				      (module-identifier=? #'rename-inner #'kw)))
+				  (or (free-identifier=? #'rename-super #'kw)
+				      (free-identifier=? #'rename-inner #'kw)))
 			     (for-each 
 			      (lambda (idp)
 				(syntax-case idp ()
@@ -678,12 +679,12 @@
 			     (identifier? (stx-car (car l))))
 			(let ([form (stx-car (car l))])
 			  (cond
-			   [(module-identifier=? #'init-rest form)
+			   [(free-identifier=? #'init-rest form)
 			    (loop (cdr l) #t)]
 			   [(not saw-rest?) (loop (cdr l) #f)]
-			   [(module-identifier=? #'-init form)
+			   [(free-identifier=? #'-init form)
 			    (bad "init clause follows init-rest clause" (stx-car (stx-cdr (car l))))]
-			   [(module-identifier=? #'-init-field form)
+			   [(free-identifier=? #'-init-field form)
 			    (bad "init-field clause follows init-rest clause" (stx-car (stx-cdr (car l))))]
 			   [else (loop (cdr l) #t)]))]
 		       [else (loop (cdr l) saw-rest?)]))))
@@ -727,8 +728,7 @@
                                            inherit/inner-names
 					   rename-super-names
 					   rename-inner-names
-					   (kernel-form-identifier-list
-					    (quote-syntax here)))])
+					   (kernel-form-identifier-list))])
 		  ;; Do the extraction:
 		  (let-values ([(methods          ; (listof (cons id stx))
 				 private-methods  ; (listof (cons id stx))
@@ -736,7 +736,7 @@
 				 stx-defines)     ; (listof (cons (listof id) stx))
 				(let loop ([exprs exprs][ms null][pms null][es null][sd null])
 				  (if (null? exprs)
-				      (values (reverse! ms) (reverse! pms) (reverse! es) (reverse! sd))
+				      (values (reverse ms) (reverse pms) (reverse es) (reverse sd))
 				      (syntax-case (car exprs) (define-values define-syntaxes)
 					[(define-values (id ...) expr)
 					 (let ([ids (syntax->list (syntax (id ...)))])
@@ -893,7 +893,7 @@
 					    [(_init orig idp ...)
 					     (and (identifier? (syntax _init))
 						  (ormap (lambda (it) 
-							   (module-identifier=? it (syntax _init)))
+							   (free-identifier=? it (syntax _init)))
 							 (syntax-e (quote-syntax (-init
 										  -init-field)))))
 					     (let* ([norms (map normalize-init/field
@@ -936,7 +936,7 @@
 					exprs)]
 			    [mk-method-temp
 			     (lambda (id-stx)
-			       (datum->syntax-object (quote-syntax here)
+			       (datum->syntax (quote-syntax here)
 						     (gensym (syntax-e id-stx))))]
 			    [rename-super-extras (append overments overrides override-finals inherit/supers)]
 			    [rename-inner-extras (append pubments overments augments inherit/inners)]
@@ -1124,7 +1124,7 @@
 					    [(rename-inner-name ...) (map lookup-localize-cdr rename-inners)]
 					    [(rename-inner-extra-name ...) (map lookup-localize-cdr rename-inner-extras)]
 					    [inherit-names (map lookup-localize-cdr all-inherits)]
-					    [num-fields (datum->syntax-object
+					    [num-fields (datum->syntax
 							 (quote-syntax here)
 							 (+ (length private-field-names)
 							    (length plain-init-fields)
@@ -1307,7 +1307,7 @@
 								    (super-go the-obj si_c si_inited? si_leftovers args null)))])
 							    (if (identifier? stx)
 								code
-								(datum->syntax-object
+								(datum->syntax
 								 code
 								 (cons code
 								       (cdr (syntax-e stx)))))))])
@@ -1381,7 +1381,7 @@
     (syntax-case stx ()
       [(_ orig-stx name super-expression (interface-expr ...)
 	  defn-or-expr ...)
-       (let ([deserialize-name-info (datum->syntax-object
+       (let ([deserialize-name-info (datum->syntax
 				     #'name
 				     (string->symbol
 				      (format "deserialize-info:~a" (syntax-e #'name)))
@@ -1486,7 +1486,7 @@
 		  #f
 		  "use of a class keyword is not in a class top-level"
 		  stx))
-	       (let-values ([(id rhs) (normalize-definition stx #'lambda)])
+	       (let-values ([(id rhs) (normalize-definition stx #'lambda #f #t)])
 		 (quasisyntax/loc stx
 		   (begin
 		     (#,decl-form #,id)
@@ -1634,17 +1634,22 @@
 			field-ht       ; maps public field names to (cons class pos)
 			field-ids      ; list of public field names
 
-			struct:object  ; structure type for instances
-			object?        ; predicate
-			make-object    ; : (-> object), constructor that creates an uninitialized object
-			field-ref      ; accessor
-			field-set!     ; mutator
+			[struct:object ; structure type for instances
+                         #:mutable]
+			[object?       ; predicate
+                         #:mutable]
+			[make-object   ; : (-> object), constructor that creates an uninitialized object
+                         #:mutable]
+			[field-ref     ; accessor
+                         #:mutable]
+			[field-set!    ; mutator
+                         #:mutable]
 
 			init-args      ; list of symbols in order; #f => only by position
 			init-mode      ; 'normal, 'stop (don't accept by-pos for super), or 'list
 
-                        init           ; initializer
-                                       ; :   object
+                        [init          ; initializer
+                         #:mutable]    ; :   object
                                        ;     (object class (box boolean) leftover-args new-by-pos-args new-named-args 
 				       ;      -> void) // always continue-make-super?
                                        ;     class
@@ -1653,11 +1658,13 @@
                                        ;     named-args
                                        ;  -> void
                         
-			serializer     ; proc => serializer, #f => not serializable
-			fixup          ; for deserialization
+			[serializer    ; proc => serializer, #f => not serializable
+                         #:mutable]
+			[fixup         ; for deserialization
+                         #:mutable]
 
 			no-super-init?); #t => no super-init needed
-                    insp)
+    #:inspector insp)
   
   ;; compose-class: produces one result if `deserialize-id' is #f, two
   ;;                results if `deserialize-id' is not #f
@@ -2199,7 +2206,7 @@
 				   "duplicate name"
 				   stx
 				   dup)))
-	   (with-syntax ([name (datum->syntax-object #f name #f)]
+	   (with-syntax ([name (datum->syntax #f name #f)]
 			 [(var ...) (map localize vars)])
 	     (syntax/loc
 	      stx
@@ -2209,13 +2216,14 @@
 	       `(var ...)))))])))
 
   (define-struct interface 
-                 (name            ; symbol
-                  supers          ; (listof interface)
-		  all-implemented ; hash-table: interface -> #t
-                  public-ids      ; (listof symbol) (in any order?!?)
-                  class)          ; (union #f class) -- means that anything implementing
-                                  ; this interface must be derived from this class
-                 insp)
+                 (name             ; symbol
+                  supers           ; (listof interface)
+		  [all-implemented ; hash-table: interface -> #t
+                   #:mutable]
+                  public-ids       ; (listof symbol) (in any order?!?)
+                  [class           ; (union #f class) -- means that anything implementing
+                   #:mutable])     ; this interface must be derived from this class
+                 #:inspector insp)
 
   (define (compose-interface name supers vars)
     (for-each
@@ -3116,8 +3124,7 @@
   (define (interface->method-names i)
     (unless (interface? i)
       (raise-type-error 'interface->method-names "interface" i))
-    ;; copy list, and also filter private (interned) methods:
-    (apply list-immutable (filter interned? (interface-public-ids i))))
+    (filter interned? (interface-public-ids i)))
 
   
   (define-traced (object-info o)
@@ -3149,7 +3156,7 @@
 		    (struct? ((class-insp-mk next))))
 		(values (to-sym (class-name c))
 			(- (class-field-width c) (class-field-width super))
-			(apply list-immutable (filter interned? (class-field-ids c)))
+			(filter interned? (class-field-ids c))
 			(class-field-ref c)
 			(class-field-set! c)
 			next
@@ -3437,7 +3444,7 @@
   
   (define undefined (letrec ([x x]) x))
 
-  (define-struct (exn:fail:object exn:fail) () insp)
+  (define-struct (exn:fail:object exn:fail) () #:inspector insp)
 
   (define (obj-error where . msg)
     (raise (make-exn:fail:object
@@ -3572,9 +3579,9 @@
   (provide class-traced
            class*-traced
            class/derived-traced
-	   (rename define-serializable-class define-serializable-class-traced)
-           (rename define-serializable-class* define-serializable-class*-traced)
-           (rename mixin mixin-traced)
+	   (rename-out [define-serializable-class define-serializable-class-traced]
+                       [define-serializable-class* define-serializable-class*-traced]
+                       [mixin mixin-traced])
            new-traced
            make-object-traced
            instantiate-traced
@@ -3587,8 +3594,8 @@
            get-field-traced
            field-bound?-traced
            field-names-traced
-	   (rename generic/form generic-traced)
-           (rename make-generic/proc make-generic-traced)
+	   (rename-out [generic/form generic-traced]
+                       [make-generic/proc make-generic-traced])
            send-generic-traced
 	   is-a?-traced
            object-interface-traced
@@ -3598,16 +3605,16 @@
 	   )
 
   ;; Providing normal functionality:
-  (provide (protect make-wrapper-class
-		    wrapper-object-wrapped
-		    extract-vtable
-		    extract-method-ht)
+  (provide (protect-out make-wrapper-class
+                        wrapper-object-wrapped
+                        extract-vtable
+                        extract-method-ht)
            
-           (rename _class class) class* class/derived
+           (rename-out [_class class]) class* class/derived
            define-serializable-class define-serializable-class*
            class?
            mixin
-	   (rename _interface interface) interface?
+	   (rename-out [_interface interface]) interface?
 	   object% object? object=? externalizable<%>
            new make-object instantiate
            get-field field-bound? field-names
@@ -3622,11 +3629,11 @@
 	   define/public-final define/override-final define/augment-final
 	   define-local-member-name define-member-name 
            member-name-key generate-member-key member-name-key? member-name-key=? member-name-key-hash-code
-	   (rename generic/form generic) (rename make-generic/proc make-generic) send-generic
+	   (rename-out [generic/form generic]) (rename-out [make-generic/proc make-generic]) send-generic
 	   is-a? subclass? implementation? interface-extension?
 	   object-interface object-info object->vector
            object-method-arity-includes?
 	   method-in-interface? interface->method-names class->interface class-info
-	   (struct exn:fail:object ())
+	   (struct-out exn:fail:object)
 	   make-primitive-class))
 

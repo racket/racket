@@ -1,4 +1,5 @@
-(module head-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "date.ss") (lib "string.ss") "head-sig.ss")
 
   (import)
@@ -345,4 +346,4 @@
                     alen)
               (loop (cdr addresses)
                     (format "~a, ~a" s addr)
-                    (+ len alen 2)))))))))
+                    (+ len alen 2))))))))

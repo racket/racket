@@ -1,5 +1,5 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/eval]
 @require["common.ss"]
 @require["diagrams.ss"]
 

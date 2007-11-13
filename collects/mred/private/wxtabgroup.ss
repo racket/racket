@@ -361,7 +361,10 @@
 		  (send dc set-clipping-region #f))))))
 
       (define/public (set-label i s)
-	(set-car! (list-tail tabs i) (wx:label->plain-label s))
+        (set! tabs (let loop ([tabs tabs][i i])
+                     (if (zero? i)
+                         (cons (wx:label->plain-label s) (cdr tabs))
+                         (cons (car tabs) (loop (cdr tabs) (sub1 i))))))
 	(set! tab-widths #f)
 	(set! regions #f)
 	(refresh))

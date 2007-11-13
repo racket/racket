@@ -369,7 +369,7 @@
 		  (when (send s user-can-flip)
 		    (send s flip)))
 		l)
-	       (let loop ([l (reverse! l)])
+	       (let loop ([l (reverse l)])
 		 (unless (null? l)
 		   (set-before (car l) #f)
 		   (loop (cdr l)))))

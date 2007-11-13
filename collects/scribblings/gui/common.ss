@@ -1,22 +1,22 @@
 
-(module common mzscheme
-  (require (lib "manual.ss" "scribble")
-           (lib "basic.ss" "scribble")
-           (lib "class.ss")
-           (lib "contract.ss")
+(module common scheme/base
+  (require scribble/manual
+           scribble/basic
+           mzlib/class
+           mzlib/contract
            "blurbs.ss"
-           (only "../reference/mz.ss" AllUnix exnraise))
-  (provide (all-from (lib "manual.ss" "scribble"))
-           (all-from (lib "basic.ss" "scribble"))
-           (all-from (lib "class.ss"))
-           (all-from (lib "contract.ss"))
-           (all-from "blurbs.ss")
-           (all-from "../reference/mz.ss"))
+           (only-in "../reference/mz.ss" AllUnix exnraise))
+  (provide (all-from-out scribble/manual)
+           (all-from-out scribble/basic)
+           (all-from-out mzlib/class)
+           (all-from-out mzlib/contract)
+           (all-from-out "blurbs.ss")
+           (all-from-out "../reference/mz.ss"))
 
-  (require-for-label (lib "mred.ss" "mred")
-                     (lib "class.ss")
-                     (lib "lang.ss" "big"))
-  (provide-for-label (all-from (lib "mred.ss" "mred"))
-                     (all-from (lib "class.ss"))
-                     (all-from (lib "lang.ss" "big"))))
+  (require (for-label mred
+                      mzlib/class
+                      scheme/base))
+  (provide (for-label (all-from-out mred)
+                      (all-from-out mzlib/class)
+                      (all-from-out scheme/base))))
 

@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
-@require-for-syntax[mzscheme]
+@require[(for-syntax scheme/base)]
 
 @define-syntax[speed
   (syntax-rules ()
@@ -10,6 +10,8 @@
         iteration when it appears directly in a @scheme[for] clause.}])]
 
 @title[#:tag "sequences"]{Sequences}
+
+@declare-exporting[(lib "scheme/sequence")]
 
 @guideintro["sequences"]{sequences}
 

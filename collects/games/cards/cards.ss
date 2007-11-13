@@ -1,6 +1,6 @@
 
 (module cards mzscheme
-  (require "main.ss"
+  (require "base.ss"
 	   "utils.ss"
 	   "region.ss")
 

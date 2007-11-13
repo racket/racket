@@ -59,7 +59,7 @@
                                 #'require
                                 #'require-for-syntax
                                 #'require-for-template
-                                (kernel-form-identifier-list #'here))))])
+                                (kernel-form-identifier-list))))])
          (syntax-case e (begin)
            [(req r ...)
             (or (module-identifier=? #'req #'require)

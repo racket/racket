@@ -353,21 +353,22 @@
   (let ([o (open-output-string)])
     (writer t o)
     (test #t (car strings) (and (member (get-output-string o) strings) #t))))
-(test-write-ht write #hash((1 . 2)) "#<hash-table>")
+(parameterize ([print-hash-table #f])
+  (test-write-ht write #hash((1 . 2)) "#<hash-table>"))
 
 (parameterize ([print-hash-table #t])
   (test-write-ht write #hash((1 . 2)) "#hash((1 . 2))")
   (test-write-ht write #hash((1 . 2) (3 . 4)) "#hash((1 . 2) (3 . 4))" "#hash((3 . 4) (1 . 2))")
   (test-write-ht write #hash(("apple" . |coconut !|)) "#hash((\"apple\" . |coconut !|))")
   (test-write-ht display #hash(("apple" . |coconut !|)) "#hash((apple . coconut !))")
-  (test-write-ht write #3=#hash((1 . #3#)) "#0=#hash((1 . #0#))")
-  (test-write-ht write #hash((#37=(1 2) . #37#)) "#hash(((1 2) . (1 2)))")
-  (test-write-ht write #hash((a . #9=(1 2)) (b . #9#)) 
+  (test-write-ht write (read (open-input-string "#3=#hash((1 . #3#))")) "#0=#hash((1 . #0#))")
+  (test-write-ht write (read (open-input-string "#hash((#37=(1 2) . #37#))")) "#hash(((1 2) . (1 2)))")
+  (test-write-ht write (read (open-input-string "#hash((a . #9=(1 2)) (b . #9#))"))
 		 "#hash((a . (1 2)) (b . (1 2)))"
 		 "#hash((b . (1 2)) (a . (1 2)))")
   (parameterize ([print-graph #t])
-    (test-write-ht write #hash((#33=(1 2) . #33#)) "#hash((#0=(1 2) . #0#))")
-    (test-write-ht write #hash((a . #7=(1 2)) (b . #7#)) 
+    (test-write-ht write (read (open-input-string "#hash((#33=(1 2) . #33#))")) "#hash((#0=(1 2) . #0#))")
+    (test-write-ht write (read (open-input-string "#hash((a . #7=(1 2)) (b . #7#))"))
 		   "#hash((a . #0=(1 2)) (b . #0#))"
 		   "#hash((b . #0=(1 2)) (a . #0#))")))
 
@@ -416,17 +417,21 @@
 (test #t (lambda (x) (and (vector? x) (eq? (vector-ref x 1) (vector-ref x 2)))) (readstr "#3(#0=(1 2) #0#)"))
 (test '(1 1 1) readstr "(#0=1 #1=#0# #1#)")
 
-;; Check that syntax, expansion, etc. preserve vector sharing
-(test #t (lambda (x) (and (vector? x) (eq? (vector-ref x 0) (vector-ref x 1)))) #2((1 2)))
+;; Show that syntax, expansion, etc. do not preserve vector sharing
+(test #f 
+      (lambda (x) (and (vector? x) (eq? (vector-ref x 0) (vector-ref x 1)))) 
+      #2((1 2)))
 
-(define (graph-error-tests readstr)
+(define (graph-error-tests readstr graph-ok?)
   (err/rt-test (readstr "#0#") exn:fail:read?)
   (err/rt-test (readstr "#0=#0#") exn:fail:read?)
   (err/rt-test (readstr "#0=#0#") exn:fail:read?)
   (err/rt-test (readstr "(#0# #0=7)") exn:fail:read?)
   (err/rt-test (readstr "(#0=7 #1#)") exn:fail:read?)
   (err/rt-test (readstr "(#0=7 #0=7)") exn:fail:read?)
-  (err/rt-test (readstr "#0=") exn:fail:read:eof?)
+  (err/rt-test (readstr "#0=") (if graph-ok?
+                                   exn:fail:read:eof?
+                                   exn:fail:read?))
   (err/rt-test (readstr "#0") exn:fail:read:eof?)
   (err/rt-test (readstr "#012345678=7") exn:fail:read?)
   (err/rt-test (readstr "(#12345678=7 #012345678#)") exn:fail:read?)
@@ -434,9 +439,10 @@
   (parameterize ([read-accept-graph #f])
     (err/rt-test (readstr "#1=1") exn:fail:read?)
     (err/rt-test (readstr "#1#") exn:fail:read?)))
-(graph-error-tests readstr)
+(graph-error-tests readstr #t)
 (graph-error-tests (lambda (s)
-		     (read-syntax "string" (open-input-string s))))
+		     (read-syntax "string" (open-input-string s)))
+                   #f)
 
 ;; Long symbol:
 (test 'abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg
@@ -693,7 +699,7 @@
   (test a-special cadr v)
   (test b-special caddr v))
 
-(require (rename (lib "port.ss") relocate-input-port relocate-input-port))
+(require (only-in (lib "mzlib/port.ss") [relocate-input-port relocate-input-port]))
 (define (shift-port p count-lines? deltas)
   (let ([p (relocate-input-port p 
 				(add1 (car deltas))
@@ -718,7 +724,7 @@
        [_ (port-count-lines! p)]
        [v (read-syntax 'dk (shift-port p #t '(7 70 700)))]
        [l (syntax->list v)]
-       [v2 (syntax-object->datum v)])
+       [v2 (syntax->datum v)])
   (test 'list car v2)
   (test a-special cadr v2)
   (test b-special caddr v2)
@@ -748,7 +754,7 @@
     (test stx cadr l)
     (test 9 syntax-position (caddr l))
 
-    ;; Check that plain read performs a syntax-object->datum:
+    ;; Check that plain read performs a syntax->datum:
     (let* ([p (make-p `(#"(list "
 			,stx
 			#" end))")
@@ -881,7 +887,7 @@
 
 (let ([p (open-output-bytes)])
   (display void p)
-  (test "#<primitive:void>" get-output-string p)
+  (test "#<procedure:void>" get-output-string p)
   (let ([try-bad
 	 (lambda (x)
 	   (test (void) (list x)
@@ -934,11 +940,11 @@
 
 (test `(READ 10) 'ten 
       (parameterize ([read-accept-reader #t])
-	(read (open-input-string "#reader reader-test-module 10"))))
+	(read (open-input-string "#reader 'reader-test-module 10"))))
 (test `(READ-SYNTAX 10) 'ten 
-      (syntax-object->datum
+      (syntax->datum
        (parameterize ([read-accept-reader #t])
-	 (read-syntax '??? (open-input-string "#reader reader-test-module 10")))))
+	 (read-syntax '??? (open-input-string "#reader 'reader-test-module 10")))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test 'paren-shape property
@@ -987,10 +993,34 @@
                       (make-readtable #f
                                       #\% 'terminating-macro
                                       (lambda (char port . args)
-                                        (let ([v (read-syntax/recursive #f port)])
+                                        (let ([v (read/recursive port)])
                                           v)))])
-        (let ([ht (eval (read-syntax #f (open-input-string "#0=' % % #hash((a . #0#) (b . \"banana\"))")))])
-          (cadr (hash-table-get ht 'a)))))
+        (let ([ht (read (open-input-string "#0=' % % #hash((a . #0#) (b . \"banana\"))"))])
+          (cadr (hash-table-get (cadr ht) 'a)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(parameterize ([current-readtable (make-readtable (current-readtable) #\. #\a #f)])
+  (test '|.| read (open-input-string ".")))
+(parameterize ([read-accept-dot #f]
+               [current-readtable (make-readtable (current-readtable) #\w #\. #f)])
+  (test '|w| read (open-input-string "w")))
+(parameterize ([current-readtable (make-readtable (current-readtable) #\w #\. #f)])
+  (err/rt-test (read (open-input-string "w")) exn:fail:read?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(let ([s "#0=(1 #hasheq((#0# . (1))) 2 . #&(3 #1(#0#)))"])
+  (test s
+        format
+        "~s"
+        (make-reader-graph (let ([p (make-placeholder #f)]) 
+                             (placeholder-set! p (list* 1
+                                                        (make-immutable-hash-table (list (list p 1))) 
+                                                        2 
+                                                        (box (list 3 (vector p))))) 
+                             p)))
+  (test s format "~s" (read (open-input-string s))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

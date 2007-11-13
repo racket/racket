@@ -42,15 +42,16 @@
 		   "filter.ss")
 
   (provide delete
-		   delete!
-		   delete-duplicates
-		   delete-duplicates!)
+           (rename delete delete!)
+           delete-duplicates
+           (rename delete-duplicates delete-duplicates!))
 
   (define delete
 	(opt-lambda (x lis (maybe-= equal?))
 				(let ((= maybe-=))
 				  (filter (lambda (y) (not (= x y))) lis))))
 
+  #;
   (define delete!
 	(opt-lambda (x lis  (maybe-= equal?))
 				(let ((= maybe-=))
@@ -76,6 +77,7 @@
 							   (new-tail (recur (delete x tail elt=))))
 						  (if (eq? tail new-tail) lis (cons x new-tail))))))))
 
+  #;
   (define delete-duplicates!
 	(opt-lambda (lis (maybe-= equal?))
 				(let ((elt= maybe-=))

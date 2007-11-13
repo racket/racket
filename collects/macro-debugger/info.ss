@@ -1,5 +1,5 @@
 
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "Macro Debugger")
   (define tools '(["tool.ss"]))
   (define tool-names '("Macro Stepper"))

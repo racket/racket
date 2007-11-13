@@ -113,16 +113,19 @@
 (arity-test eqv? 2 2)
 (arity-test equal? 2 2)
 
+(err/rt-test (set-mcdr! (list 1 2) 4))
+
 (test '(a b c d e) 'dot '(a . (b . (c . (d . (e . ()))))))
-(define x (list 'a 'b 'c))
+(define x (mcons 'a (mcons 'b (mcons 'c null))))
 (define y x)
-(and list? (test #t list? y))
-(set-cdr! x 4)
-(test '(a . 4) 'set-cdr! x)
+(set-mcdr! x 4)
+(test (mcons 'a 4) 'set-mcdr! x)
+(set-mcar! x 'z)
+(test (mcons 'z 4) 'set-mcar! x)
 (test #t eqv? x y)
 (test '(a b c . d) 'dot '(a . (b . (c . d))))
 (test #f list? y)
-(let ((x (list 'a))) (set-cdr! x x) (test #f list? x))
+(test #f list? (cons 'a 4))
 (arity-test list? 1 1)
 
 (test #t pair? '(a . b))
@@ -161,20 +164,18 @@
 (err/rt-test (length '(1 . 2)))
 (err/rt-test (length "a"))
 ; (err/rt-test (length (quote #0=(1 . #0#))))
-(err/rt-test (let ([p (cons 1 1)]) (set-cdr! p p) (length p)))
+(err/rt-test (let ([p (cons 1 (make-placeholder #f))]) 
+               (placeholder-set! (cdr p) p)
+               (length (make-reader-graph p))))
 (define x (cons 4 0))
-(set-cdr! x x) 
 (err/rt-test (length x))
 
-(define l '(1 2 3))
-(set-cdr! l 5)
-(test '(1 . 5) 'set-cdr! l)
-(set-car! l 0)
-(test '(0 . 5) 'set-car! l)
-(arity-test set-car! 2 2)
-(arity-test set-cdr! 2 2)
-(err/rt-test (set-car! 4 4))
-(err/rt-test (set-cdr! 4 4))
+(arity-test set-mcar! 2 2)
+(arity-test set-mcdr! 2 2)
+(err/rt-test (set-mcar! 4 4))
+(err/rt-test (set-mcdr! 4 4))
+(err/rt-test (set-mcar! (cons 1 4) 4))
+(err/rt-test (set-mcdr! (cons 1 4) 4))
 
 (define (box-tests box unbox box? set-box! set-box!-name unbox-name)
   (define b (box 5))
@@ -206,50 +207,17 @@
 (test '(1 . 2) append '(1) 2)
 (err/rt-test (append '(1 2 . 3) 1))
 (err/rt-test (append '(1 2 3) 1 '(4 5 6)))
-(test '(x y) append! '(x) '(y))
-(test '(a b c d) append! '(a) '(b c d))
-(test '(a (b) (c)) append! '(a (b)) '((c)))
-(test '() append!)
-(test '(a b c . d) append! '(a b) '(c . d))
-(test 'a append! '() 'a)
-(test 1 append! 1)
-(err/rt-test (append! '(1 2 . 3) 1))
-(err/rt-test (append! '(1 2 3) 1 '(4 5 6)))
-(err/rt-test (append! (cons-immutable 1 null) '(4 5 6)))
 
 (define l '(1 2))
 (define l2 '(3 4 . 7))
 (define l3 (append l l2))
 (test '(1 2 3 4 . 7) 'append l3)
-(set-car! l2 5)
-(test '(1 2 5 4 . 7) 'append l3)
-(set-car! l3 0)
-(test '(0 2 5 4 . 7) 'append l3)
-(test '(1 2) 'append l)
-
-(let* ([l '(1 2)]
-       [l2 '(3 4 . 7)]
-       [l3 (append! l l2)])
-  (test '(1 2 3 4 . 7) 'append! l3)
-  (set-car! l2 5)
-  (test '(1 2 5 4 . 7) 'append! l3)
-  (set-car! l3 0)
-  (test '(0 2 5 4 . 7) 'append! l3)
-  (test '(0 2 5 4 . 7) 'append! l))
 
 (test '(c b a) reverse '(a b c))
 (test '((e (f)) d (b c) a) reverse '(a (b c) d (e (f))))
 (arity-test reverse 1 1)
 (err/rt-test (reverse 1))
 (err/rt-test (reverse '(1 . 1)))
-
-(define l '(a b c))
-(test '(c b a) reverse! l)
-(test '(a) 'reverse! l)
-(test '((e (f)) d (b c) a) reverse! '(a (b c) d (e (f))))
-(arity-test reverse! 1 1)
-(err/rt-test (reverse! 1))
-(err/rt-test (reverse! '(1 . 1)))
 
 (test 'c list-ref '(a b c d) 2)
 (test 'c list-ref '(a b c . d) 2)
@@ -335,11 +303,6 @@
 (test #f immutable? #())
 (test #f immutable? (string-copy "hi"))
 
-(test #t immutable? (cons-immutable 1 null))
-(test #t immutable? (list-immutable 1))
-(test #t immutable? (list-immutable 1 2))
-(test #t immutable? (list*-immutable 1 null))
-(test #t immutable? (list*-immutable 1 2 null))
 (test #t immutable? "hi")
 (test #t immutable? (string->immutable-string "hi"))
 (test #t immutable? (string->immutable-string (string-copy "hi")))
@@ -362,7 +325,8 @@
 #ci(parameterize ([read-case-sensitive #f])
      (define char-standard-case char-upcase)
      (if (string=? (symbol->string 'A) "a")
-	 (set! char-standard-case char-downcase))
+	 (set! char-standard-case char-downcase)
+         (void))
      (test #t 'standard-case
 	   (string=? (symbol->string 'a) (symbol->string 'A)))
      (test #t 'standard-case
@@ -687,6 +651,7 @@
 (define f (make-string 3 #\*))
 (test "?**" 'string-set! (begin (string-set! f 0 #\?) f))
 (arity-test string-set! 3 3)
+(test #t immutable? "hello")
 (err/rt-test (string-set! "hello" 0 #\a)) ; immutable string constant
 (define hello-string (string-copy "hello"))
 (err/rt-test (string-set! hello-string 'a #\a))
@@ -1204,9 +1169,9 @@
      (let loop ([n 0][m 0][s null])
        (cond
 	[(and (= n mx) (zero? m))
-	 (let* ([s (list->string (reverse! s))]
+	 (let* ([s (list->string (reverse s))]
 		[plain (regexp-replace* "[()]" s "")])
-	   (test (cons plain (map list->string (map reverse! (vector->list v)))) regexp-match s plain))]
+	   (test (cons plain (map list->string (map reverse (vector->list v)))) regexp-match s plain))]
 	[(or (= n mx) (< (random 10) 3))
 	 (if (and (positive? m)
 		  (< (random 10) 7))
@@ -1359,10 +1324,6 @@
 			'(0 1 2 3 4))
 		v))
 
-(err/rt-test (let ([l (list 1 2 3)])
-	       (for-each (lambda (x) (set-cdr! (cdr l) 1)) l))
-	     exn:application:mismatch?)
-
 
 (define (map-tests map)
   (let ([size? exn:application:mismatch?]
@@ -1406,7 +1367,7 @@
 
 (test -3 call-with-current-continuation
 		(lambda (exit)
-		 (for-each (lambda (x) (if (negative? x) (exit x)))
+                  (for-each (lambda (x) (if (negative? x) (exit x) (void)))
 		 	'(54 0 37 -3 245 19))
 		#t))
 (define list-length
@@ -1590,7 +1551,8 @@
 	      (lambda () 
 		(let/cc k (set! c1 k))
 		(if (>= x 5)
-		    (set! c1 #f)))
+		    (set! c1 #f)
+                    (void)))
 	      (lambda () (set! y (add1 y))))
 	     (when c1 (c1))
 	     (list x y)))]
@@ -1841,7 +1803,8 @@
               (begin
                 (set! first-time? #f)
                 (set! count (+ count 1))
-                (k values))))
+                (k values))
+              (void)))
         count))
 
 (arity-test call/cc 1 2)
@@ -1919,7 +1882,7 @@
 
 (let ()
   (define-struct ax (b c)) ; opaque
-  (define-struct a (b c) (make-inspector))
+  (define-struct a (b c) #:inspector (make-inspector))
 
   (define save (let ([x null])
                  (case-lambda 
@@ -2137,7 +2100,7 @@
 (err/rt-test (make-immutable-hash-table '(1)))
 (err/rt-test (make-immutable-hash-table '((1 . 2) . 2)))
 (err/rt-test (make-immutable-hash-table '((1 . 2) 3)))
-(define cyclic-alist '#0=((1 . 2) . #0#))
+(define cyclic-alist (read (open-input-string "#0=((1 . 2) . #0#)")))
 (err/rt-test (make-immutable-hash-table cyclic-alist))
 (err/rt-test (make-immutable-hash-table '((1 . 2)) 'weak))
 

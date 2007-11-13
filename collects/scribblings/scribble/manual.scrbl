@@ -1,11 +1,11 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
 @require["utils.ss"]
-@require-for-syntax[mzscheme]
+@require[(for-syntax scheme/base)]
 
 @title[#:tag "manual"]{PLT Manual Forms}
 
-The @file{manual.ss} module provides all of @file{basic.ss}, and
+The @filepath{manual.ss} module provides all of @filepath{basic.ss}, and
 more...
 
 @; ------------------------------------------------------------------------
@@ -352,9 +352,9 @@ Like @scheme[defproc], but for a non-procedure binding.}
               ([struct-name id
                             (id super-id)]
                [flag-keywords code:blank
-                              #:immutable
+                              #:mutable
                               (code:line #:inspector #f)
-                              (code:line #:immutable #:inspector #f)])]{
+                              (code:line #:mutable #:inspector #f)])]{
 
 Similar to @scheme[defform] or @scheme[defproc], but for a structure
 definition.}
@@ -461,7 +461,7 @@ button.}
 @defproc[(menuitem [menu-name string?] [item-name string?]) element?]{
 Typesets the given combination of a GUI's menu and item name.}
 
-@defproc[(file [pre-content any/c] ...) element?]{Typesets the given content
+@defproc[(filepath [pre-content any/c] ...) element?]{Typesets the given content
 as a file name (e.g., in typewriter font and in in quotes).}
 
 @defproc[(exec [pre-content any/c] ...) element?]{Typesets the given content

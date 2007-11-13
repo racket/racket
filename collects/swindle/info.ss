@@ -1,6 +1,6 @@
 ;;; Written by Eli Barzilay: Maze is Life!  (eli@barzilay.org)
 
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   ;;
   (define name "Swindle")
   (define blurb

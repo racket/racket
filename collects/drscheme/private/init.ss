@@ -1,5 +1,5 @@
 
-(module init (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "string-constant.ss" "string-constants")
            "drsig.ss"
            (lib "list.ss")
@@ -48,4 +48,4 @@
          
          (parameterize ([current-custodian system-custodian])
            (parameterize ([current-eventspace error-display-eventspace])
-             (message-box title text #f '(stop ok)))))))))
+             (message-box title text #f '(stop ok))))))))

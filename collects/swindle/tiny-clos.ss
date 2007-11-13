@@ -131,8 +131,8 @@
       (if (zero? a)
         (raise (exn-maker
                 (if sym
-                  (apply format (concat "~s: " fmt) sym (reverse! fmt-args))
-                  (apply format fmt (reverse! fmt-args)))
+                  (apply format (concat "~s: " fmt) sym (reverse fmt-args))
+                  (apply format fmt (reverse fmt-args)))
                 (current-continuation-marks) . args))
         (loop (cons (car args) fmt-args) (cdr args) (sub1 a))))))
 
@@ -334,7 +334,7 @@
                 [dslots  (map list (getarg initargs :direct-slots '()))]
                 [cpl     (let loop ([sups dsupers] [so-far (list new)])
                            (if (null? sups)
-                             (reverse! so-far)
+                             (reverse so-far)
                              (loop (append (cdr sups)
                                            (%class-direct-supers (car sups)))
                                    (if (memq (car sups) so-far)
@@ -352,8 +352,8 @@
                    (let ([f nfields])
                      (set! nfields (+ nfields 1))
                      (set! field-initializers (cons init field-initializers))
-                     (list (lambda (o)   (%instance-ref  o f))
-                           (lambda (o n) (%instance-set! o f n)))))]
+                     (mcons (lambda (o)   (%instance-ref  o f))
+                            (lambda (o n) (%instance-set! o f n)))))]
                 [getters-n-setters
                  (map (lambda (s)
                         (cons (car s) (allocator unspecified-initializer)))
@@ -363,7 +363,7 @@
            (%set-class-cpl!                new cpl)
            (%set-class-slots!              new slots)
            (%set-class-nfields!            new nfields)
-           (%set-class-field-initializers! new (reverse! field-initializers))
+           (%set-class-field-initializers! new (reverse field-initializers))
            (%set-class-getters-n-setters!  new getters-n-setters)
            (%set-class-name!               new name)
            (%set-class-initializers!       new '()) ; no class inits now
@@ -415,12 +415,12 @@
 
 ;; This is a utility that is used to make locked slots
 (define (make-setter-locked! g+s key error)
-  (let ([setter (cadr g+s)])
-    (set-cadr! g+s
+  (let ([setter (mcdr g+s)])
+    (set-mcdr! g+s
       (lambda (o n)
         (cond [(and (pair? n) (eq? key (car n)) (not (eq? key #t)))
                (setter o (cdr n))]
-              [(eq? ??? ((car g+s) o)) (setter o n)]
+              [(eq? ??? ((mcar g+s) o)) (setter o n)]
               [else (error)])))))
 
 ;;>> (slot-bound? object slot)
@@ -627,9 +627,9 @@
 (define getters-n-setters-for-class ; see lookup-slot-info
   (map (lambda (s)
          (let ([f (position-of s the-slots-of-a-class)])
-           (list s
-                 (lambda (o)   (%instance-ref  o f))
-                 (lambda (o n) (%instance-set! o f n)))))
+           (cons s
+                 (mcons (lambda (o)   (%instance-ref  o f))
+                        (lambda (o n) (%instance-set! o f n))))))
        the-slots-of-a-class))
 
 ;;>>...
@@ -986,12 +986,16 @@
   ;; add singleton specializer value (if any) to the corresponding hash table
   ;; in singletons-list.
   (define (add-to-singletons-list specs tables)
-    (unless (null? specs)
-      (when (%singleton? (car specs))
-        (unless (car tables)
-          (set-car! tables (make-hash-table 'weak)))
-        (hash-table-put! (car tables) (singleton-value (car specs)) #t))
-      (add-to-singletons-list (cdr specs) (cdr tables))))
+    (cond
+     [(null? specs) null]
+     [(%singleton? (car specs))
+      (let ([ht (or (car tables)
+                    (make-hash-table 'weak))])
+        (hash-table-put! ht (singleton-value (car specs)) #t)
+        (cons ht (add-to-singletons-list (cdr specs) (cdr tables))))]
+     [else
+      (cons (car tables)
+            (add-to-singletons-list (cdr specs) (cdr tables)))]))
   (define (n-falses n)
     (let loop ([n n] [r '()]) (if (zero? n) r (loop (sub1 n) (cons #f r)))))
   (let ([tables    (%generic-singletons-list generic)]
@@ -1002,11 +1006,11 @@
            (set! tables (n-falses (length specs)))
            (%set-generic-singletons-list! generic tables)]
           [(< (length tables) (length specs))
-           (set! tables (append!
+           (set! tables (append
                          tables
                          (n-falses (- (length specs) (length tables)))))
            (%set-generic-singletons-list! generic tables)])
-    (add-to-singletons-list specs tables)
+    (set! tables (add-to-singletons-list specs tables))
     (if (memq generic generic-invocation-generics)
       ;; reset all caches by changing the value of *generic-app-cache-tag*
       (set! *generic-app-cache-tag* (list #f))
@@ -1053,7 +1057,7 @@
       (define (get-keys args tables)
         (let loop ([args args] [tables tables] [ks '()])
           (if (or (null? tables) (null? args))
-            (reverse! ks)
+            (reverse ks)
             (loop (cdr args) (cdr tables)
                   (cons (if (and (car tables)
                                  (hash-table-get
@@ -1213,10 +1217,10 @@
                 ;;              (%method-qualifier (car methods)))]
                 )
             (loop (cdr ms)))))
-        (set! primaries (reverse! primaries))
-        (set! arounds   (reverse! arounds))
-        (set! befores   (reverse! befores))
-        ;; no reverse! for afters
+        (set! primaries (reverse primaries))
+        (set! arounds   (reverse arounds))
+        (set! befores   (reverse befores))
+        ;; no reverse for afters
         (cond [(null? primaries)
                (lambda args (no-applicable-method generic . args))]
               ;; optimize common case of only primaries
@@ -1315,17 +1319,17 @@
 (define* generic-+-combination
   (make-generic-combination :init 0 :combine +))
 (define* generic-list-combination
-  (make-generic-combination :process-result reverse!))
+  (make-generic-combination :process-result reverse))
 (define* generic-min-combination
   (make-generic-combination :process-result (lambda (r) (apply min r))))
 (define* generic-max-combination
   (make-generic-combination :process-result (lambda (r) (apply max r))))
 (define* generic-append-combination
   (make-generic-combination
-   :process-result (lambda (r) (apply append (reverse! r)))))
+   :process-result (lambda (r) (apply append (reverse r)))))
 (define* generic-append!-combination
   (make-generic-combination
-   :process-result (lambda (r) (apply append! (reverse! r)))))
+   :process-result (lambda (r) (apply append (reverse r)))))
 (define* generic-begin-combination
   (make-generic-combination :init #f :combine (lambda (x y) x)))
 (define* generic-and-combination
@@ -1455,7 +1459,7 @@
                                               class slot allocator)))
                                      (%class-slots class))])
         (%set-class-nfields! class nfields)
-        (%set-class-field-initializers! class (reverse! field-initializers))
+        (%set-class-field-initializers! class (reverse field-initializers))
         (%set-class-getters-n-setters! class getters-n-setters))
       (%set-class-initializers!
        class (reverse
@@ -1530,13 +1534,13 @@
                                 #t))
                             to-process)])
               (collect remaining-to-process
-                       (cons (cons name (apply append (reverse! others)))
+                       (cons (cons name (apply append (reverse others)))
                              result)))))
         ;; Sort the slots by order of appearance in cpl, makes them stay in the
         ;; same index, allowing optimizations for single-inheritance
-        (let collect ([to-process (apply append (reverse! all-slots))]
+        (let collect ([to-process (apply append (reverse all-slots))]
                       [result '()])
-          (cond [(null? to-process) (reverse! result)]
+          (cond [(null? to-process) (reverse result)]
                 [(assq (caar to-process) result)
                  (collect (cdr to-process) result)]
                 [else (collect (cdr to-process)
@@ -1582,7 +1586,7 @@
           (case allocation
             [(:instance)
              (let* ([f (allocator init-slot)]
-                    [g+s (list (lambda (o) (%instance-ref o f))
+                    [g+s (mcons (lambda (o) (%instance-ref o f))
                                (if (and type (not (eq? <top> type)))
                                  (lambda (o n)
                                    (if (instance-of? n type)
@@ -1621,7 +1625,7 @@
                               :allocation #f))
                ;; the slot was declared as :class here
                (let* ([cell (init)] ; default value - no arguments
-                      [g+s (list (lambda (o) cell)
+                      [g+s (mcons (lambda (o) cell)
                                  (lambda (o n)
                                    (if (and type (not (instance-of? n type)))
                                      (raise*

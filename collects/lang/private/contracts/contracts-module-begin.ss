@@ -217,23 +217,23 @@
 					      language-level-define-data
 					      cnt-list
 					      expr-list)))]
-	     [(_ e1s (e2 . e3s) def-ids)
+	     [(frm e1s (e2 . e3s) def-ids)
 	      (let ([e2 (local-expand #'e2 'module local-expand-stop-list)])
 		;; Lift out certain forms to make them visible to the module
 		;;  expander:
 		(syntax-case e2 (require define-syntaxes define-values-for-syntax define-values begin)
 		  [(require . __)
-		   #`(begin #,e2 (_ e1s e3s def-ids))]
-		  [(define-syntaxes (id ...) . __)
-		   #`(begin #,e2 (_ e1s e3s (id ... . def-ids)))]
-		  [(define-values-for-syntax . __)
-		   #`(begin #,e2 (_ e1s e3s def-ids))]
+		   #`(begin #,e2 (frm e1s e3s def-ids))]
+		  [(define-syntaxes (id ...) . _)
+		   #`(begin #,e2 (frm e1s e3s (id ... . def-ids)))]
+		  [(define-values-for-syntax . _)
+		   #`(begin #,e2 (frm e1s e3s def-ids))]
 		  [(begin b1 ...)
-		   #`(_ e1s (b1 ... . e3s) def-ids)]
-		  [(define-values (id ...) . __)
-		   #`(_ (#,e2 . e1s) e3s (id ... . def-ids))]
-		  [else
-		   #`(_ (#,e2 . e1s) e3s def-ids)]))]))))
+		   #`(frm e1s (b1 ... . e3s) def-ids)]
+		  [(define-values (id ...) . _)
+		   #`(frm (#,e2 . e1s) e3s (id ... . def-ids))]
+		  [_
+		   #`(frm (#,e2 . e1s) e3s def-ids)]))]))))
       
       (define-values (parse-beginner-contract/func continue-beginner-contract/func)
         (parse-contracts #'beginner-contract #'beginner-define-data #'beginner-continue))

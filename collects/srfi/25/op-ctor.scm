@@ -1,5 +1,9 @@
 (begin
   (define array:opt-args '(ctor (4)))
+  (define (mlist->list l)
+    (if (null? l)
+        null
+        (cons (mcar l) (mlist->list (mcdr l)))))
   (define (array:optimize f r)
     (case r
       ((0) (let ((n0 (f))) (array:0 n0)))
@@ -16,9 +20,9 @@
            (- (f 0 0 1) n0))))
       (else
        (let ((v
-              (do ((k 0 (+ k 1)) (v '() (cons 0 v)))
+              (do ((k 0 (+ k 1)) (v '() (mcons 0 v)))
                   ((= k r) v))))
-         (let ((n0 (apply f v)))
+         (let ((n0 (apply f (mlist->list v))))
            (apply
             array:n
             n0
@@ -31,10 +35,10 @@
     (case vp
       ((()) '())
       (else
-       (set-car! vp 1)
-       (let ((n (- (apply f vs) n0)))
-         (set-car! vp 0)
-         (cons n (array:coefficients f n0 vs (cdr vp)))))))
+       (set-mcar! vp 1)
+       (let ((n (- (apply f (mlist->list vs)) n0)))
+         (set-mcar! vp 0)
+         (cons n (array:coefficients f n0 vs (mcdr vp)))))))
   (define (array:vector-index x ks)
     (do ((sum 0 (+ sum (* (vector-ref x k) (car ks))))
          (ks ks (cdr ks))

@@ -1,13 +1,13 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "void+undefined"]{Void and Undefined}
 
 Some procedures or expression forms have no need for a result
 value. For example, the @scheme[display] procedure is called only for
-the side-effect of writing output. In such cases the reslt value is
+the side-effect of writing output. In such cases the result value is
 normally a special constant that prints as @|void-const|.  When the
 result of an expression is simply @|void-const|, the REPL does not
 print anything.
@@ -26,7 +26,7 @@ directly to @|void-const|.)
 A constant that prints as @undefined-const is used as the result of a
 reference to a local binding when the binding is not yet
 initialized. Such early references are not possible for bindings that
-corerspond to procedure arguments, @scheme[let] bindings, or
+correspond to procedure arguments, @scheme[let] bindings, or
 @scheme[let*] bindings; early reference requires a recursive binding
 context, such as @scheme[letrec] or local @scheme[define]s in a
 procedure body. Also, early references to top-level and module-level

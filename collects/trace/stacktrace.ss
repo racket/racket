@@ -33,7 +33,7 @@
       
       (define (module-level-expr-iterator stx)
         (kernel-syntax-case stx #f
-          [(provide . provide-specs)
+          [(#%provide . provide-specs)
            stx]
           [else-stx
            (general-top-level-expr-iterator stx)]))
@@ -48,9 +48,7 @@
            #`(define-syntaxes (var ...) #,(expr-iterator #'expr #f (current-code-inspector)))]
           [(begin . top-level-exprs)
            #`(begin #,@(map top-level-expr-iterator (syntax->list #'top-level-exprs)))]
-          [(require . require-specs)
-           stx]
-          [(require-for-syntax . require-specs)
+          [(#%require . require-specs)
            stx]
           [else
            (expr-iterator stx #f (current-code-inspector))]))
@@ -118,8 +116,8 @@
              [var-stx
               (identifier? (syntax var-stx))
               stx]
-             [(lambda . clause)
-              #`(lambda #,@(lambda-clause-abstraction #'clause))]
+             [(#%plain-lambda . clause)
+              #`(#%plain-lambda #,@(lambda-clause-abstraction #'clause))]
              [(case-lambda . clauses)
               #`(case-lambda #,@(map lambda-clause-abstraction (syntax->list #'clauses)))]
              [(if test then)
@@ -148,10 +146,8 @@
                     #,(recur-non-tail #'key)
                   #,(recur-non-tail #'mark)
                   #,(recur-tail #'body))]
-             [(#%app . exprs)
-              #`(#%app #,@(map recur-non-tail (syntax->list #'exprs)))]
-             [(#%datum . _)
-              stx]
+             [(#%plain-app . exprs)
+              #`(#%plain-app #,@(map recur-non-tail (syntax->list #'exprs)))]
              [(#%top . var)
               stx]
              [else

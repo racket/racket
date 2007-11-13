@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "linecol"]{Counting Positions, Lines, and Columns}
+
+@declare-exporting[(lib "scheme/port")]
 
 @section-index["line numbers"]
 @section-index["column numbers"]

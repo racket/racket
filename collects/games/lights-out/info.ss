@@ -1,4 +1,4 @@
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "Lights Out")
   (define doc.txt "doc.txt")
   (define game-set "Puzzle Games")

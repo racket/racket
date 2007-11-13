@@ -1,7 +1,7 @@
-(module ellipses (lib "lang.ss" "big")
-  (require (lib "manual.ss" "scribble")
-           "ellipses-defn.ss")
-  (require-for-label "ellipses-defn.ss")
+(module ellipses scheme/base
+  (require scribble/manual
+           "ellipses-defn.ss"
+           (for-label "ellipses-defn.ss"))
 
   (provide ellipses-defn
            ellipses-id)

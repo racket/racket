@@ -1,20 +1,20 @@
 
-(module manual (lib "lang.ss" "big")
+(module manual scheme/base
   (require "decode.ss"
            "struct.ss"
            "scheme.ss"
            "config.ss"
            "basic.ss"
-           (lib "string.ss")
-           (lib "list.ss")
-           (lib "class.ss")
-           (lib "stxparam.ss")
-           (lib "serialize.ss"))
-  (require-for-syntax (lib "stxparam.ss"))
-  (require-for-label (lib "lang.ss" "big")
-                     (lib "class.ss"))
+           mzlib/string
+           scheme/class
+           scheme/stxparam
+           mzlib/serialize
+           (for-syntax scheme/base)
+           (for-label scheme/base
+                      scheme/class))
 
-  (provide (all-from "basic.ss"))
+  (provide (all-from-out "basic.ss")
+           unsyntax)
 
   (provide PLaneT)
   (define PLaneT "PLaneT")
@@ -42,9 +42,9 @@
   (define-syntax (schememod stx)
     (syntax-case stx ()
       [(_ lang rest ...)
-       (with-syntax ([modtag (datum->syntax-object
+       (with-syntax ([modtag (datum->syntax
                               #'here
-                              `(unsyntax (schemefont ,(format "#module ~a" (syntax-e #'lang))))
+                              `(unsyntax (schemefont ,(format "#lang ~a" (syntax-e #'lang))))
                               #'lang)])
          #'(schemeblock modtag rest ...))]))
 
@@ -61,7 +61,7 @@
                  (boolean? sv)
                  (and (pair? sv)
                       (identifier? (car sv))
-                      (module-identifier=? #'cons (car sv))))
+                      (free-identifier=? #'cons (car sv))))
              ;; We know that the context is irrelvant
              #'s
              ;; Context may be relevant:
@@ -124,11 +124,26 @@
               [else (format "~s" s)])])
       (index* (list k) (list e) e)))
 
-  (provide schemeblock SCHEMEBLOCK
-           schemeblock0 SCHEMEBLOCK0
+  (define-syntax define-/form
+    (syntax-rules ()
+      [(_ id base)
+       (define-syntax (id stx)
+         (syntax-case stx ()
+           [(_ a)
+            (with-syntax ([ellipses (datum->syntax #'a
+                                                   '(... ...))])
+              #'(let ([ellipses #f])
+                  (base a)))]))]))
+
+  (define-/form schemeblock0/form schemeblock0)
+  (define-/form schemeblock/form schemeblock)
+  (define-/form scheme/form scheme)
+  
+  (provide schemeblock SCHEMEBLOCK schemeblock/form
+           schemeblock0 SCHEMEBLOCK0 schemeblock0/form
            schemeinput
            schememod
-           scheme schemeresult schemeid schememodname
+           scheme scheme/form schemeresult schemeid schememodname
            indexed-scheme
            litchar
            verbatim)
@@ -136,7 +151,7 @@
   (provide onscreen menuitem defterm
            schemefont schemevalfont schemeresultfont schemeidfont 
            schemeparenfont schemekeywordfont schememetafont schememodfont
-           file exec envvar Flag DFlag
+           filepath exec envvar Flag DFlag
            indexed-file indexed-envvar
            link procedure
            idefterm)
@@ -166,10 +181,10 @@
     (make-element "schememod" (decode-content str)))
   (define (schemekeywordfont . str)
     (make-element "schemekeyword" (decode-content str)))
-  (define (file . str)
+  (define (filepath . str)
     (make-element 'tt (append (list "\"") (decode-content str) (list "\""))))
   (define (indexed-file . str)
-    (let* ([f (apply file str)]
+    (let* ([f (apply filepath str)]
            [s (element->string f)])
       (index* (list (substring s 1 (sub1 (string-length s)))) (list f) f)))
   (define (exec . str)
@@ -202,7 +217,7 @@
 
   ;; ----------------------------------------
 
-  (provide method xmethod (rename method ::))
+  (provide method xmethod (rename-out [method ::]))
 
   (define-syntax method
     (syntax-rules ()
@@ -234,8 +249,10 @@
   (provide margin-note)
   
   (define (margin-note . c)
-    (make-styled-paragraph (list (make-element "refcontent"
-                                               c))
+    (make-styled-paragraph (list (make-element "refcolumn"
+                                               (list
+                                                (make-element "refcontent"
+                                                              c))))
                            "refpara"))
 
   ;; ----------------------------------------
@@ -280,6 +297,7 @@
            defidform
            specform specform/subs 
            specsubform specsubform/subs specspecsubform specspecsubform/subs specsubform/inline
+           defsubform
            schemegrammar schemegrammar*
            var svar void-const undefined-const)
 
@@ -305,10 +323,10 @@
                               (syntax-position s)
                               (syntax-span s)))])
          #'(let ([s (quote-syntax id)])
-             (datum->syntax-object s
-                                   (syntax-e s)
-                                   'loc
-                                   s)))]))
+             (datum->syntax s
+                            (syntax-e s)
+                            'loc
+                            s)))]))
 
   (define void-const
     (schemeresultfont "#<void>"))
@@ -365,14 +383,14 @@
                  (lambda () (list desc ...)))]))
   (define-syntax defstruct
     (syntax-rules ()
-      [(_ name fields #:immutable #:inspector #f desc ...)
-       (**defstruct name fields #t #t desc ...)]
-      [(_ name fields #:immutable desc ...)
-       (**defstruct name fields #t #f desc ...)]
-      [(_ name fields #:inspector #f desc ...)
+      [(_ name fields #:mutable #:inspector #f desc ...)
        (**defstruct name fields #f #t desc ...)]
+      [(_ name fields #:mutable desc ...)
+       (**defstruct name fields #f #f desc ...)]
+      [(_ name fields #:inspector #f desc ...)
+       (**defstruct name fields #t #t desc ...)]
       [(_ name fields desc ...)
-       (**defstruct name fields #f #f desc ...)]))
+       (**defstruct name fields #t #f desc ...)]))
   (define-syntax **defstruct
     (syntax-rules ()
       [(_ name ([field field-contract] ...) immutable? transparent? desc ...)
@@ -385,23 +403,23 @@
        (with-syntax ([new-spec
                       (syntax-case #'spec ()
                         [(name . rest)
-                         (datum->syntax-object #'spec
-                                               (cons
-                                                (datum->syntax-object #'here
-                                                                      '(unsyntax x)
-                                                                      #'name)
-                                                #'rest)
-                                               #'spec)])]
+                         (datum->syntax #'spec
+                                        (cons
+                                         (datum->syntax #'here
+                                                        '(unsyntax x)
+                                                        #'name)
+                                         #'rest)
+                                        #'spec)])]
                      [spec-id
                       (syntax-case #'spec ()
                         [(name . rest) #'name])])
          #'(*defforms (quote-syntax/loc spec-id) '(lit ...)
                       '(spec spec1 ...) 
-                      (list (lambda (x) (schemeblock0 new-spec))
-                            (lambda (ignored) (schemeblock0 spec1)) ...)
+                      (list (lambda (x) (schemeblock0/form new-spec))
+                            (lambda (ignored) (schemeblock0/form spec1)) ...)
                       '((non-term-id non-term-form ...) ...)
                       (list (list (lambda () (scheme non-term-id))
-                                  (lambda () (schemeblock0 non-term-form))
+                                  (lambda () (schemeblock0/form non-term-form))
                                   ...)
                             ...)
                       (lambda () (list desc ...))))]
@@ -423,7 +441,7 @@
     (syntax-case stx ()
       [(_ spec desc ...)
        #'(*defforms #f null
-                    '(spec) (list (lambda (ignored) (schemeblock0 spec))) 
+                    '(spec) (list (lambda (ignored) (schemeblock0/form spec))) 
                     null null
                     (lambda () (list desc ...)))]))
   (define-syntax (defidform stx)
@@ -435,19 +453,22 @@
                     null
                     null
                     (lambda () (list desc ...)))]))
+  (define-syntax (defsubform stx)
+    (syntax-case stx ()
+      [(_ . rest) #'(into-blockquote (defform . rest))]))
   (define-syntax specsubform
     (syntax-rules ()
       [(_ #:literals (lit ...) spec desc ...)
-       (*specsubform 'spec #f '(lit ...) (lambda () (schemeblock0 spec)) null null (lambda () (list desc ...)))]
+       (*specsubform 'spec #f '(lit ...) (lambda () (schemeblock0/form spec)) null null (lambda () (list desc ...)))]
       [(_ spec desc ...)
-       (*specsubform 'spec #f null (lambda () (schemeblock0 spec)) null null (lambda () (list desc ...)))]))
+       (*specsubform 'spec #f null (lambda () (schemeblock0/form spec)) null null (lambda () (list desc ...)))]))
   (define-syntax specsubform/subs
     (syntax-rules ()
       [(_ #:literals (lit ...) spec ([non-term-id non-term-form ...] ...) desc ...)
-       (*specsubform 'spec #f '(lit ...) (lambda () (schemeblock0 spec)) 
+       (*specsubform 'spec #f '(lit ...) (lambda () (schemeblock0/form spec)) 
                      '((non-term-id non-term-form ...) ...)
                      (list (list (lambda () (scheme non-term-id))
-                                 (lambda () (schemeblock0 non-term-form))
+                                 (lambda () (schemeblock0/form non-term-form))
                                  ...)
                            ...)
                      (lambda () (list desc ...)))]
@@ -464,18 +485,18 @@
   (define-syntax specform
     (syntax-rules ()
       [(_ #:literals (lit ...) spec desc ...)
-       (*specsubform 'spec #t '(lit ...) (lambda () (schemeblock0 spec)) null null (lambda () (list desc ...)))]
+       (*specsubform 'spec #t '(lit ...) (lambda () (schemeblock0/form spec)) null null (lambda () (list desc ...)))]
       [(_ spec desc ...)
-       (*specsubform 'spec #t null (lambda () (schemeblock0 spec)) null null (lambda () (list desc ...)))]))
+       (*specsubform 'spec #t null (lambda () (schemeblock0/form spec)) null null (lambda () (list desc ...)))]))
   (define-syntax specform/subs
     (syntax-rules ()
       [(_ #:literals (lit ...) spec ([non-term-id non-term-form ...] ...) desc ...)
        (*specsubform 'spec #t 
                      '(lit ...)
-                     (lambda () (schemeblock0 spec)) 
+                     (lambda () (schemeblock0/form spec)) 
                      '((non-term-id non-term-form ...) ...)
                      (list (list (lambda () (scheme non-term-id))
-                                 (lambda () (schemeblock0 non-term-form))
+                                 (lambda () (schemeblock0/form non-term-form))
                                  ...)
                            ...)
                      (lambda () (list desc ...)))]
@@ -501,7 +522,7 @@
     (syntax-rules ()
       [(_ #:literals (lit ...) id clause ...) (*schemegrammar '(lit ...) 
                                                               '(id clause ...)
-                                                              (lambda () (list (list (scheme id) (schemeblock0 clause) ...))))]
+                                                              (lambda () (list (list (scheme id) (schemeblock0/form clause) ...))))]
       [(_ id clause ...) (schemegrammar #:literals () id clause ...)]))
   (define-syntax schemegrammar*
     (syntax-rules ()
@@ -509,7 +530,7 @@
                                                                     '(id ... clause ... ...)
                                                                     (lambda () 
                                                                       (list
-                                                                       (list (scheme id) (schemeblock0 clause) ...) ...)))]
+                                                                       (list (scheme id) (schemeblock0/form clause) ...) ...)))]
       [(_ [id clause ...] ...) (schemegrammar #:literals () [id clause ...] ...)]))
   (define-syntax var
     (syntax-rules ()
@@ -517,6 +538,13 @@
   (define-syntax svar
     (syntax-rules ()
       [(_ id) (*var 'id)]))
+
+  (define (into-blockquote s)
+    (cond
+     [(splice? s)
+      (make-blockquote "leftindent" (flow-paragraphs (decode-flow (splice-run s))))]
+     [else
+      (make-blockquote "leftindent" (list s))]))
 
   (define (make-table-if-necessary style content)
     (if (= 1 (length content))
@@ -879,9 +907,9 @@
                         (map symbol->string (car wrappers)))]
                 [tag 
                  (register-scheme-definition 
-                  (datum->syntax-object stx-id
-                                        (string->symbol
-                                         name))
+                  (datum->syntax stx-id
+                                 (string->symbol
+                                  name))
                   #t)])
            (if tag
                (inner-make-target-element
@@ -937,9 +965,9 @@
                                                values
                                                (map (lambda (f)
                                                       (if (and (pair? (car f))
-                                                               (memq '#:immutable (car f)))
-                                                          #f
-                                                          (list 'set- name '- (field-name f) '!)))
+                                                               (memq '#:mutable (car f)))
+                                                          (list 'set- name '- (field-name f) '!)
+                                                          #f))
                                                     fields)))))))])
                           (if (pair? name)
                               (to-element (list just-name
@@ -1010,11 +1038,11 @@
                                                        e)))))
                                         (loop (cdr fields))))))
                         (cond
-                         [(and immutable? transparent?)
+                         [(and (not immutable?) transparent?)
                           (list
                            (list (to-flow spacer)
                                  (to-flow spacer)
-                                 (to-flow (to-element '#:immutable))
+                                 (to-flow (to-element '#:mutable))
                                  'cont
                                  'cont)
                            (list (to-flow spacer)
@@ -1027,13 +1055,13 @@
                                                  (schemeparenfont ")"))))
                                  'cont
                                  'cont))]
-                         [immutable?
+                         [(not immutable?)
                           (list
                            (list (to-flow spacer)
                                  (to-flow spacer)
                                  (to-flow (make-element
                                            #f
-                                           (list (to-element '#:immutable)
+                                           (list (to-element '#:mutable)
                                                  (schemeparenfont ")"))))
                                  'cont
                                  'cont))]
@@ -1117,7 +1145,7 @@
                                                      (loop (cdr form)))]
                                [else null])))
                           forms))]
-                     [current-meta-list '(... ...+)])
+                   [current-meta-list '(... ...+)])
       (make-splice
        (cons
         (make-table
@@ -1267,7 +1295,7 @@
   (provide commandline)
   (define (commandline . s)
     (make-paragraph (list (hspace 2) (apply tt s))))
-           
+  
   (define (elemtag t . body)
     (make-target-element #f (decode-content body) `(elem ,t)))
   (define (elemref t . body)
@@ -1329,21 +1357,21 @@
     "[...]"
     #;
     (make-bibliography-element
-     #f
-     (list "[...]")
-     key
-     (list (string-append
-            (content->string (list author))
-            ", "
-            (content->string (list title))))
-     (list (make-element #f (list author
-                                  ", "
-                                  title
-                                  ", "
-                                  date
-                                  ". "
-                                  location
-                                  ".")))))
+    #f
+    (list "[...]")
+    key
+    (list (string-append
+    (content->string (list author))
+    ", "
+    (content->string (list title))))
+    (list (make-element #f (list author
+    ", "
+    title
+    ", "
+    date
+    ". "
+    location
+    ".")))))
 
   ;; ----------------------------------------
 
@@ -1444,7 +1472,8 @@
                                  (list (symbol->string (syntax-e (decl-name decl))))
                                  tag)))
                          (and (decl-super decl)
-                              (not (module-label-identifier=? #'object% (decl-super decl)))
+                              (not (free-label-identifier=? (quote-syntax object%)
+                                                            (decl-super decl)))
                               (register-scheme-definition (decl-super decl)))
                          (map register-scheme-definition (decl-intfs decl))
                          (map (lambda (m)
@@ -1545,17 +1574,17 @@
     (syntax-rules ()
       [(_ *include-class name super (intf ...) body ...)
        (*include-class
-         (syntax-parameterize ([current-class (quote-syntax name)])
-           (make-decl (quote-syntax/loc name)
-                      (quote-syntax/loc super)
-                      (list (quote-syntax/loc intf) ...)
-                      (lambda (whole-page?)
-                        (list
-                         (*class-doc (quote-syntax/loc name)
-                                     (quote-syntax super)
-                                     (list (quote-syntax intf) ...)
-                                     whole-page?)))
-                      (list body ...))))]))
+        (syntax-parameterize ([current-class (quote-syntax name)])
+          (make-decl (quote-syntax/loc name)
+                     (quote-syntax/loc super)
+                     (list (quote-syntax/loc intf) ...)
+                     (lambda (whole-page?)
+                       (list
+                        (*class-doc (quote-syntax/loc name)
+                                    (quote-syntax super)
+                                    (list (quote-syntax intf) ...)
+                                    whole-page?)))
+                     (list body ...))))]))
 
   (define-syntax defclass
     (syntax-rules ()
@@ -1598,15 +1627,15 @@
       [(_ mode ((arg ...) ...) desc ...)
        (let ([n (syntax-parameter-value #'current-class)])
          (with-syntax ([name n]
-                       [result (datum->syntax-object #f
-                                                     (list
-                                                      (datum->syntax-object #'is-a?/c
-                                                                            'is-a?/c
-                                                                            (list 'src 1 1 2 1))
-                                                      (datum->syntax-object n
-                                                                            (syntax-e n)
-                                                                            (list 'src 1 3 4 1)))
-                                                     (list 'src 1 0 1 5))]
+                       [result (datum->syntax #f
+                                              (list
+                                               (datum->syntax #'is-a?/c
+                                                              'is-a?/c
+                                                              (list 'src 1 1 2 1))
+                                               (datum->syntax n
+                                                              (syntax-e n)
+                                                              (list 'src 1 3 4 1)))
+                                              (list 'src 1 0 1 5))]
                        [(((kw ...) ...) ...) (map (lambda (ids)
                                                     (map (lambda (arg)
                                                            (if (and (pair? (syntax-e arg))

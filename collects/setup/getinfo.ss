@@ -34,7 +34,7 @@
 		  (unless (eof-object? (read))
 		    (error "info.ss file has multiple expressions in ~a" dir))
 		  (match r
-		    [('module 'info '(lib "infotab.ss" "setup")
+		    [('module 'info (or '(lib "infotab.ss" "setup") 'setup/infotab)
 		       expr ...)
 		     'ok]
 		    [else (error 

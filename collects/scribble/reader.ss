@@ -31,7 +31,7 @@
       (define (rev-byte b)
         (cond [(assq b pairs) => cdr]
               [else b]))
-      (lambda (bs) (list->bytes (map rev-byte (reverse! (bytes->list bs)))))))
+      (lambda (bs) (list->bytes (map rev-byte (reverse (bytes->list bs)))))))
 
   ;; --------------------------------------------------------------------------
   ;; syntax
@@ -201,7 +201,7 @@
              (let loop ([r '()])
                (skip-whitespace inp)
                (if (*skip end-re)
-                 (reverse! r)
+                 (reverse r)
                  (let ([x (read-stx)])
                    (if (eof-object? x)
                      (read-error line col pos 'eof "expected a '~a'" end-ch)
@@ -221,7 +221,7 @@
       ;; newline)
       (if (andmap eol-syntax? xs)
         ;; nothing to do
-        (reverse! xs)
+        (reverse xs)
         (let ([mincol (let loop ([xs xs] [m #f])
                         (if (null? xs)
                           m
@@ -342,7 +342,7 @@
                                   ;; throw away comments
                                   [(special-comment? x) r]
                                   ;; escaped expressions: no merge
-                                  [(pair? x) (append! (reverse x) r)]
+                                  [(pair? x) (append (reverse x) r)]
                                   [(null? x) (cons (make-special-comment #f) r)]
                                   [else (maybe-merge x r)]))))]
           ;; must be last, since it will always succeed with 1 char

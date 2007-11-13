@@ -147,6 +147,7 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 #define INITIAL_BIN_TYPE "zi"
 #define BANNER scheme_banner()
 #define MZSCHEME_CMD_LINE
+#define INITIAL_NAMESPACE_MODULE "scheme/init"
 
 /*========================================================================*/
 /*                        command-line parsing                            */

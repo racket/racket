@@ -427,11 +427,17 @@
     (newline port))
   
   (define (test-result-set! runner pname value)
-    (let* ((alist (test-result-alist runner))
-           (p (assq pname alist)))
-      (if p
-          (set-cdr! p value)
-          (test-result-alist! runner (cons (cons pname value) alist)))))
+    (let* ((alist (test-result-alist runner)))
+      (test-result-alist! 
+       runner
+       (let loop ([alist alist])
+         (cond
+          [(null? alist) (list (cons pname value))]
+          [(eq? pname (caar alist))
+           (cons (cons pname value)
+                 (cdr alist))]
+          [else (cons (car alist)
+                      (loop (cdr alist)))])))))
   
   (define (test-result-clear runner)
     (test-result-alist! runner '()))
@@ -624,7 +630,7 @@
           (if r
               (let ((run-list (%test-runner-run-list r)))
                 (cond ((null? rest)
-                       (%test-runner-run-list! r (reverse! run-list))
+                       (%test-runner-run-list! r (reverse run-list))
                        (first)) ;; actually apply procedure thunk
                       (else
                        (%test-runner-run-list!

@@ -129,16 +129,12 @@
     going?))
 
 
-(define l1 (cons 0 #f))
-(set-cdr! l1 l1)
-(define l2 (cons 0 #f))
-(set-cdr! l2 l2)
+(define l1 (read (open-input-string "#0=(cons 0 #0#)")))
+(define l2 (read (open-input-string "#0=(cons 0 #0#)")))
 (test #t 'equal?-forever (equal?-forever l1 l2 #f))
 
-(define l1 (cons 0 #f))
-(set-car! l1 l1)
-(define l2 (cons 0 #f))
-(set-car! l2 l2)
+(define l1 (read (open-input-string "#0=(cons #0# #f)")))
+(define l2 (read (open-input-string "#0=(cons #0# #f)")))
 (test #t 'equal?-forever/memory (equal?-forever l1 l2 #t))
 
 (define l1 (vector 0))
@@ -147,7 +143,7 @@
 (vector-set! l2 0 l2)
 (test #t 'equal?-forever/vector (equal?-forever l1 l2 #t))
 
-(define-struct a (b c) (make-inspector))
+(define-struct a (b c) #:inspector (make-inspector) #:mutable)
 (define l1 (make-a 0 #f))
 (set-a-b! l1 l1)
 (define l2 (make-a 0 #f))

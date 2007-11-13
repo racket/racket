@@ -12,15 +12,15 @@
   ;; (todo: this and the next assumes no cycles.)
   (define (!list x)
     (let loop ([x x])
-      (let ([x (! x)]) (when (pair? x) (set-cdr! x (loop (cdr x)))) x)))
+      (let ([x (! x)]) (when (mpair? x) (set-mcdr! x (loop (mcdr x)))) x)))
   ;; Force a top-level list structure and the first level of values, again,
   ;; similar to the above.
   (define (!!list x)
     (let loop ([x x])
       (let ([x (! x)])
-        (when (pair? x)
-          (set-car! x (! (car x)))
-          (set-cdr! x (loop (cdr x)))) x)))
+        (when (mpair? x)
+          (set-mcar! x (! (mcar x)))
+          (set-mcdr! x (loop (mcdr x)))) x)))
   ;; Force and split resulting values.
   (define (!values x)
     (split-values (! x)))
@@ -52,9 +52,9 @@
        (let ([x (! x)])
          (unless (hash-table-get table x (lambda () #f))
            (hash-table-put! table x #t)
-           (cond [(pair? x)
-                  (set-car! x (loop (car x)))
-                  (set-cdr! x (loop (cdr x)))]
+           (cond [(mpair? x)
+                  (set-mcar! x (loop (car x)))
+                  (set-mcdr! x (loop (cdr x)))]
                  [(vector? x)
                   (let vloop ([i 0])
                     (when (< i (vector-length x))

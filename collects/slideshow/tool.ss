@@ -736,8 +736,8 @@ pict snip :
           [general-top-level-expr (rewrite-general-top-level stx)]))
 
       (define (rewrite-module-level stx)
-        (syntax-case stx (provide begin)
-          [(provide provide-spec ...) stx]
+        (syntax-case stx (#%provide begin)
+          [(#%provide provide-spec ...) stx]
           [(begin module-level-expr ...)
            (with-syntax ([(rewritten-module-level-expr ...)
                           (map rewrite-module-level 
@@ -746,8 +746,7 @@ pict snip :
           [general-top-level-expr (rewrite-general-top-level stx)]))
       
       (define (rewrite-general-top-level stx)
-        (syntax-case stx (define-values define-syntaxes define-values-for-syntax 
-			   require require-for-syntax require-for-template)
+        (syntax-case stx (define-values define-syntaxes define-values-for-syntax #%require)
           [(define-values (variable ...) expr)
            (with-syntax ([rewritten-expr (add-send-over (rewrite-expr (syntax expr)) 
                                                         (syntax expr) 
@@ -755,14 +754,12 @@ pict snip :
              (syntax/cert stx (define-values (variable ...) rewritten-expr)))]
           [(define-syntaxes (variable ...) expr) stx]
           [(define-values-for-syntax (variable ...) expr) stx]
-          [(require require-spec ...) stx]
-          [(require-for-syntax require-spec ...) stx]
-          [(require-for-template require-spec ...) stx]
+          [(#%require require-spec ...) stx]
           [expr (rewrite-expr stx)]))
       
       (define (rewrite-expr stx)
         (syntax-case stx (lambda case-lambda if begin begin0 let-values letrec-values set! quote quote-syntax 
-				 with-continuation-mark #%app #%datum #%top)
+				 with-continuation-mark #%app #%top)
           [variable
            (identifier? (syntax variable))
            (add-send-over/var (syntax variable) stx)]
@@ -834,7 +831,6 @@ pict snip :
           [(#%expression e)
            (with-syntax ([e (add-send-over (rewrite-expr #'x) #'x 1)])
              (syntax/cert stx (#%expression e)))]
-          [(#%datum . datum) stx]
           [(#%top . variable) stx]))
       
       (define (add-send-over stx loc-stx values-expected)
@@ -890,9 +886,9 @@ pict snip :
       (define orig-namespace (current-namespace))
       
       (define (pict->image-snip p)
-        (let* ([pict-width (dynamic-require '(lib "mrpict.ss" "texpict") 'pict-width)]
-               [pict-height (dynamic-require '(lib "mrpict.ss" "texpict") 'pict-height)]
-               [draw-pict (dynamic-require '(lib "mrpict.ss" "texpict") 'draw-pict)]
+        (let* ([pict-width (dynamic-require '(lib "texpict/mrpict.ss") 'pict-width)]
+               [pict-height (dynamic-require '(lib "texpict/mrpict.ss") 'pict-height)]
+               [draw-pict (dynamic-require '(lib "texpict/mrpict.ss") 'draw-pict)]
                [bm (make-object bitmap%
                      (max 1 (inexact->exact (ceiling (pict-width p))))
                      (max 1 (inexact->exact (ceiling (pict-height p)))))]
@@ -909,13 +905,13 @@ pict snip :
          ;; this can happen when, for example, there is no mred module
          ;; in the namespace
          (let ([pict? (with-handlers ((exn? (λ (x) #f)))
-                        (dynamic-require '(lib "mrpict.ss" "texpict") 'pict?))])
+                        (dynamic-require '(lib "texpict/mrpict.ss") 'pict?))])
            (and pict?
                 (pict? x))))
        ;; Converter:
        pict->image-snip
        ;; Namespace setup:
-       (λ () (dynamic-require '(lib "mrpict.ss" "texpict") #f)))
+       (λ () (dynamic-require '(lib "texpict/mrpict.ss") #f)))
         
       (define lib-pict-snipclass (make-object lib-pict-snipclass%))
       (send lib-pict-snipclass set-version 2)

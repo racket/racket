@@ -9,7 +9,7 @@
   
   (begin-for-syntax
 
-   (define kernel-forms (kernel-form-identifier-list #'here))
+   (define kernel-forms (kernel-form-identifier-list))
    (define prop-expand-stop-forms (list* #'honu-typed
                                          #'honu-unparsed-block
                                          kernel-forms))
@@ -1685,9 +1685,6 @@
 
   ;; ----------------------------------------
   ;;  Pre-defined types
-
-  (define (exact-integer? v)
-    (and (integer? v) (exact? v)))
 
   (define-type int exact-integer?)
   (define-type bool boolean?)

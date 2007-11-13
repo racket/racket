@@ -46,7 +46,7 @@
 			 (cons
 			  `(,code (lambda ,bv2 ,@body))
 			  (append bindings blist)))
-		   (list p code bv (and fail (gensym)) #f)))
+		   (list p code bv (and fail (gensym)) (box #f))))
 	       clauses))
 	     (code
 	      (gen x '() plist (cdr eb-errf) length>= (gensym))))
@@ -66,7 +66,7 @@
 	     (bv (cadr x))
 	     (bindings (caddr x))
 	     (code (gensym))
-	     (plist (list (list p code bv #f #f)))
+	     (plist (list (list p code bv #f (box #f))))
 	     (x (gensym))
 	     (m (gen x '() plist (cdr eb-errf) length>= (gensym)))
 	     (gs (map (lambda (_) (gensym)) bv)))
@@ -92,7 +92,7 @@
 	     (bv (cadr x))
 	     (bindings (caddr x))
 	     (code (gensym))
-	     (plist (list (list p code bv #f #f)))
+	     (plist (list (list p code bv #f (box #f))))
 	     (x (gensym))
 	     (m (gen x '() plist (cdr eb-errf) length>= (gensym)))
 	     (gs (map (lambda (_) (gensym)) bv)))
@@ -140,7 +140,7 @@
     (lambda (plist match-expr)
       (for-each
        (lambda (x)
-	 (if (not (car (cddddr x)))
+	 (if (not (unbox (car (cddddr x))))
 	     (fprintf
 	      (current-error-port)
 	      "Warning: unreachable pattern ~e in ~e~n"
@@ -612,7 +612,7 @@
 		    (gen x sf (cdr plist) erract length>= eta)))
 		 (success
 		  (lambda (sf)
-		    (set-car! (cddddr (car plist)) #t)
+		    (set-box! (car (cddddr (car plist))) #t)
 		    (let* ((code (cadr (car plist)))
 			   (bv (caddr (car plist)))
 			   (fail-sym (cadddr (car plist))))
@@ -1051,6 +1051,7 @@
 	     (lambda (y) (vector-set! x ,(caddr e) y))))
 	 ((eq? (car e) 'unbox)
 	  `(let ((x ,(cadr e))) (lambda (y) (set-box! x y))))
+         #;
 	 ((eq? (car e) 'car)
 	  `(let ((x ,(cadr e))) (lambda (y) (set-car! x y))))
 	 ((eq? (car e) 'cdr)

@@ -1,4 +1,4 @@
-(module animation (lib "frtime.ss" "frtime")
+(module animation frtime
   
   (require (all-except "graphics.ss" make-posn posn-x posn-y make-rgb)
            (lifted "graphics.ss" posn-x posn-y make-posn make-rgb)

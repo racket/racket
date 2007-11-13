@@ -1,4 +1,4 @@
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "ProfessorJ Wizard")
   (define tools '(("tool.ss")))
   (define tool-names '("ProfessorJ Wizard"))

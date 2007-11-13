@@ -486,23 +486,8 @@ module browser threading seems wrong.
             (begin-edit-sequence))
           (define/augment (after-load-file success?)
             (when success?
-              (let* ([module-language
-                      (and (preferences:get 'drscheme:switch-to-module-language-automatically?)
-                           (ormap 
-                            (λ (lang)
-                              (and (is-a? lang drscheme:module-language:module-language<%>)
-                                   lang))
-                            (drscheme:language-configuration:get-languages)))]
-                     [module-language-settings
-                      (let ([prefs-setting (preferences:get 
-                                            drscheme:language-configuration:settings-preferences-symbol)])
-                        (cond
-                          [(eq? (drscheme:language-configuration:language-settings-language prefs-setting)
-                                module-language)
-                           (drscheme:language-configuration:language-settings-settings prefs-setting)]
-                          [else 
-                           (and module-language
-                                (send module-language default-settings))]))])
+              (let-values ([(module-language module-language-settings)
+                            (get-module-language/settings)])
                 (let-values ([(matching-language settings)
                               (pick-new-language
                                this
@@ -692,6 +677,26 @@ module browser threading seems wrong.
           
           (inherit set-max-undo-history)
           (set-max-undo-history 'forever))))
+    
+    (define (get-module-language/settings)
+      (let* ([module-language
+              (and (preferences:get 'drscheme:switch-to-module-language-automatically?)
+                   (ormap 
+                    (λ (lang)
+                      (and (is-a? lang drscheme:module-language:module-language<%>)
+                           lang))
+                    (drscheme:language-configuration:get-languages)))]
+             [module-language-settings
+              (let ([prefs-setting (preferences:get 
+                                    drscheme:language-configuration:settings-preferences-symbol)])
+                (cond
+                  [(eq? (drscheme:language-configuration:language-settings-language prefs-setting)
+                        module-language)
+                   (drscheme:language-configuration:language-settings-settings prefs-setting)]
+                  [else 
+                   (and module-language
+                        (send module-language default-settings))]))])
+        (values module-language module-language-settings)))
     
     
     
@@ -2023,6 +2028,20 @@ module browser threading seems wrong.
         ;; just the execute button.
         (define/public (execute-callback)
           (when (send execute-button is-enabled?)
+            
+            ;; if the language is not-a-language, and the buffer looks like a module,
+            ;; automatically make the switch to the module language
+            (let ([next-settings (send definitions-text get-next-settings)])
+              (when (is-a? (drscheme:language-configuration:language-settings-language next-settings) 
+                           drscheme:language-configuration:not-a-language-language<%>)
+                (when (looks-like-module? definitions-text)
+                  (let-values ([(module-language module-language-settings) (get-module-language/settings)])
+                    (when (and module-language module-language-settings)
+                      (send definitions-text set-next-settings 
+                            (drscheme:language-configuration:make-language-settings
+                             module-language
+                             module-language-settings)))))))
+            
             (check-if-save-file-up-to-date)
             (when (preferences:get 'drscheme:show-interactions-on-execute)
               (ensure-rep-shown interactions-text))
@@ -2034,9 +2053,11 @@ module browser threading seems wrong.
             (send interactions-canvas focus)
             (send interactions-text reset-console)
             (send interactions-text clear-undos)
+            
             (let ([start 0])
               (send definitions-text split-snip start)
-              (let ([text-port (open-input-text-editor definitions-text start)])
+              (let* ([name (drscheme:eval:editor->port-name definitions-text)]
+                     [text-port (open-input-text-editor definitions-text start 'end values name)])
                 (port-count-lines! text-port)
                 (let* ([line (send definitions-text position-paragraph start)]
                        [column (- start (send definitions-text paragraph-start-position line))]

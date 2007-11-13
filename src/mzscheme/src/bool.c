@@ -231,6 +231,14 @@ int scheme_equal (Scheme_Object *obj1, Scheme_Object *obj2)
       goto top;
     } else
       return 0;
+  } else if (SCHEME_MUTABLE_PAIRP(obj1)) {
+#   include "mzeqchk.inc"
+    if (scheme_equal(SCHEME_CAR(obj1), SCHEME_CAR(obj2))) {
+      obj1 = SCHEME_CDR(obj1);
+      obj2 = SCHEME_CDR(obj2);
+      goto top;
+    } else
+      return 0;
   } else if (SCHEME_VECTORP(obj1)) {
 #   include "mzeqchk.inc"
     return vector_equal(obj1, obj2);
@@ -273,6 +281,8 @@ int scheme_equal (Scheme_Object *obj1, Scheme_Object *obj2)
     return scheme_bucket_table_equal((Scheme_Bucket_Table *)obj1, (Scheme_Bucket_Table *)obj2);
   } else if (SAME_TYPE(SCHEME_TYPE(obj1), scheme_wrap_chunk_type)) {
     return vector_equal(obj1, obj2);
+  } else if (SAME_TYPE(SCHEME_TYPE(obj1), scheme_resolved_module_path_type)) {
+    return scheme_equal(SCHEME_PTR_VAL(obj1), SCHEME_PTR_VAL(obj2));
   } else {
     Scheme_Equal_Proc eql = scheme_type_equals[SCHEME_TYPE(obj1)];
     if (eql)

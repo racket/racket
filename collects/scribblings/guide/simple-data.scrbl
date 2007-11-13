@@ -1,16 +1,16 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title{Simple Values}
 
 Scheme values include numbers, booleans, strings, and byte strings. In
 DrScheme and documentation examples (when you read the documentation
-in color), value expression are shown in green.
+in color), value expressions are shown in green.
 
 @defterm{Numbers} are written in the usual way, including fractions
-and imagnary numbers:
+and imaginary numbers:
 
 @moreguide["numbers"]{numbers}
 
@@ -29,7 +29,7 @@ treated as true.
 
 @defterm{Strings} are written between doublequotes. Within a string,
 backslash is an escaping character; for example, a backslash followed
-by a doublequote includes a little doublequote in the string. Except
+by a doublequote includes a literal doublequote in the string. Except
 for an unescaped doublequote or backslash, any Unicode character can
 appear in a string constant.
 

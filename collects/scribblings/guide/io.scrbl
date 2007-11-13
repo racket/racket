@@ -1,8 +1,8 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "struct.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
-@require[(lib "process.ss")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/struct]
+@require[scribble/eval]
+@require[mzlib/process]
 @require["guide-utils.ss"]
 
 @define[(twocolumn a b)
@@ -164,7 +164,7 @@ stdout in purple, and output written to stderr in red italics.
 (swing-hammer)
 ]
 
-The current-port functions actually @tech{parameters}, which means
+The current-port functions are actually @tech{parameters}, which means
 that their values can be set with @scheme[parameterize].
 
 @moreguide["parameters"]{parameters}
@@ -222,7 +222,7 @@ ways to print an instance of a built-in value:
 
 The @scheme[printf] function supports simple formatting of data and
 text. In the format string supplied to @scheme[printf], @litchar{~a}
-@scheme[display]s the enxt argument, while @litchar{~s}
+@scheme[display]s the next argument, while @litchar{~s}
 @scheme[write]s the next argument.
 
 @defexamples[

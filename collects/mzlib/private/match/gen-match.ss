@@ -27,7 +27,7 @@
   ;; the clause.  If it is not set to #t then the clause is
   ;; unreachable which is an indication of programmer error.
   (define (mark-patlist clauses)
-    (syntax-map (lambda (x) (cons x #f)) clauses))
+    (syntax-map (lambda (x) (mcons x #f)) clauses))
   
   ;; parse-clause : syntax -> syntax syntax maybe[syntax]
   ;; takes in a pattern
@@ -59,12 +59,12 @@
   ;; result is a function which takes a failure function and a list
   ;; of let-bound expressions and returns a success-function.
   (define (test-list-with-success-func exp pat/mark stx success-func)
-    (define-values (pat body fail-sym) (parse-clause (car pat/mark)))
+    (define-values (pat body fail-sym) (parse-clause (mcar pat/mark)))
     (define (success fail let-bound)
       (if (not success-func)
           (lambda (sf bv)
             ;; mark this pattern as reached
-            (set-cdr! pat/mark #t)
+            (set-mcdr! pat/mark #t)
             (with-syntax ([fail-var fail-sym]
                           [(bound-vars ...) (map car bv)]
                           [(args ...) (map (lambda (b) (subst-bindings (cdr b) let-bound)) bv)]
@@ -77,7 +77,7 @@
                   #'(let ([bound-vars args] ...) . body))))
           (lambda (sf bv)
             ;; mark this pattern as reached
-            (set-cdr! pat/mark #t)
+            (set-mcdr! pat/mark #t)
             (let ((bv (map
                        (lambda (bind)
                          (cons (car bind)

@@ -9,7 +9,7 @@
 	 (let ([names (let loop ([defns (syntax->list (syntax (defn ...)))]
                                  [r '()])
                         (if (null? defns)
-                          (reverse! r)
+                          (reverse r)
                           (loop (cdr defns)
                                 (syntax-case (car defns) (define)
                                   [(define var val)

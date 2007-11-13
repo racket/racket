@@ -128,7 +128,7 @@
 						   defn-or-expr
 						   expand-context
 						   (append
-						    (kernel-form-identifier-list (quote-syntax here))
+						    (kernel-form-identifier-list)
 						    declared-names)
 						   def-ctx)])
 					    (syntax-case defn-or-expr (begin define-values define-syntaxes)

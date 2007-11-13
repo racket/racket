@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
-@require[(lib "bnf.ss" "scribble")]
+@require[scribble/bnf]
 @require["reader-example.ss"]
 @begin[
 (define (ilitchar s)
@@ -143,6 +143,7 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar["#hash"]]{starts a hash table; see @secref["parse-hashtable"]}
 
   @dispatch[@litchar["#reader"]]{starts a reader extension use; see @secref["parse-reader"]}
+  @dispatch[@litchar["#lang"]]{starts a reader extension use; see @secref["parse-reader"]}
 
   @dispatch[@elem{@litchar{#}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{(}}]{starts a vector; see @secref["parse-vector"]}
   @dispatch[@elem{@litchar{#}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{[}}]{starts a vector; see @secref["parse-vector"]}
@@ -361,7 +362,7 @@ then when then reader encounters @litchar["{"] and @litchar["}"], the
 
 If the @scheme[read-accept-dot] @tech{parameter} is set to
 @scheme[#f], then a delimited @scheme{.} is not treated specially; it
-is instead parsed a s symbol. If the @scheme[read-accept-infix-dot]
+is instead parsed as a symbol. If the @scheme[read-accept-infix-dot]
 @tech{parameter} is set to @scheme[#f], then multiple delimited
 @litchar{.}s trigger a @scheme[exn:fail:read], instead of the infix
 conversion.
@@ -738,5 +739,17 @@ converted to one using @scheme[datum->syntax-object]. See also
 If the @scheme[read-accept-reader] @tech{parameter} is set to
 @scheme[#f], then if the reader encounters @litchar{#reader}, the
 @exnraise[exn:fail:read].
+
+The @litchar{#lang} reader form is similar, but more constrained: the
+@litchar{#lang} must be followed by a single space (ASCII 32), and
+then a non-empty sequence of alphanumeric ASCII, @litchar{+},
+@litchar{-}, @litchar{_}, and/or @litchar{/} characters terminated by
+@schemelink[char-whitespace?]{whitespace} or an end-of-file.  The
+sequence must not start or end with @litchar{/}. A sequence
+@litchar{#lang }@nonterm{name} is equivalent to 
+@litchar{#reader (lib "}@nonterm{name}@litchar{/lang/reader.ss")}.
+
+By convention, @litchar{#lang} normally appears at the beginning of a
+file, possibly after comment forms, to specify the syntax of a module.
 
 @section[#:tag "parse-honu"]{Honu Parsing}

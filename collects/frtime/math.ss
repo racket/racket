@@ -3,7 +3,7 @@
 ;; math.ss: some extra math routines
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(module math (lib "frtime.ss" "frtime")
+(module math "frtime.ss"
   (provide e 
 	  pi 
 	  sqr

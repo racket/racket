@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "procedures"]{Procedures}
@@ -24,6 +24,10 @@ is called in tail position with respect to the @scheme[apply] call.
 (apply + '())
 ]}
 
+@; ----------------------------------------
+@section{Keywords and Arity}
+
+@declare-exporting[(lib "scheme/procedure")]
 
 @defproc[(keyword-apply [proc procedure?]
                         [kw-lst (listof keyword?)]
@@ -204,7 +208,7 @@ immutable (so that a property binding or immutable designation is
 redundant and disallowed).
 
 @examples[
-(define-struct annotated-proc ([base #:immutable] note)
+(define-struct annotated-proc (base note)
                #:property prop:procedure (struct-field-index base))
 (define plus1 (make-annotated-proc
                 (lambda (x) (+ x 1))

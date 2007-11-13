@@ -1,4 +1,5 @@
-(module pop3-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "etc.ss") "pop3-sig.ss")
 
   (import)
@@ -386,4 +387,4 @@
                          (regexp-match matcher first))
                        desireds)
               (cons first (loop rest))
-              (loop rest)))))))
+              (loop rest))))))

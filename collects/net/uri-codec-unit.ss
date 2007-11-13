@@ -86,7 +86,7 @@ See more in PR8831.
 ;; Draws inspiration from encode-decode.scm by Kurt Normark and a code
 ;; sample provided by Eli Barzilay
 
-(module uri-codec-unit (lib "a-unit.ss")
+#lang scheme/unit
 
   (require (lib "match.ss")
            (lib "string.ss")
@@ -265,6 +265,6 @@ See more in PR8831.
           (raise-type-error 'current-alist-separator-mode
                             "'amp, 'semi, 'amp-or-semi, or 'semi-or-amp"
                             s))
-        s))))
+        s)))
 
 ;;; uri-codec-unit.ss ends here

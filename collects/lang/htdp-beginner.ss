@@ -3,41 +3,44 @@
 ;; forms and procedures. The reader-level aspects of the language
 ;; (e.g., case-sensitivity) are not implemented here.
 
-(module htdp-beginner mzscheme
-  (require (lib "etc.ss")
-	   (lib "list.ss")
-	   (lib "docprovide.ss" "syntax"))
+(module htdp-beginner scheme/base
+  (require mzlib/etc
+	   mzlib/list
+	   syntax/docprovide
+           (for-syntax scheme/base))
 
   ;; Implements the forms:
   (require "private/teach.ss"
 	   "private/contract-forms.ss")
 
   ;; syntax:
-  (provide (rename beginner-define define)
-	   (rename beginner-define-struct define-struct)
-	   (rename beginner-lambda lambda)
-	   (rename beginner-app #%app)
-	   (rename beginner-top #%top)
-	   (rename beginner-cond cond)
-	   (rename beginner-else else)
-	   (rename beginner-if if)
-	   (rename beginner-and and)
-	   (rename beginner-or or)
-	   (rename beginner-quote quote)
-	   (rename beginner-module-begin #%module-begin)
-           (rename beginner-require require)
-           (rename beginner-dots ..)
-           (rename beginner-dots ...)
-           (rename beginner-dots ....)
-           (rename beginner-dots .....)
-           (rename beginner-dots ......)
-	   ; (rename beginner-contract contract)
-	   ; (rename beginner-define-data define-data)
+  (provide (rename-out
+            [beginner-define define]
+            [beginner-define-struct define-struct]
+            [beginner-lambda lambda]
+            [beginner-app #%app]
+            [beginner-top #%top]
+            [beginner-cond cond]
+            [beginner-else else]
+            [beginner-if if]
+            [beginner-and and]
+            [beginner-or or]
+            [beginner-quote quote]
+            [beginner-module-begin #%module-begin]
+            [beginner-require require]
+            [beginner-dots ..]
+            [beginner-dots ...]
+            [beginner-dots ....]
+            [beginner-dots .....]
+            [beginner-dots ......]
+            ;; [beginner-contract contract]
+            ;; [beginner-define-data define-data]
+            )
 	   #%datum
            #%top-interaction
 	   empty true false)
 
-  (require-for-syntax "private/firstorder.ss")
+  (require (for-syntax "private/firstorder.ss"))
     
   ;; This is essentially a specialized version of `define-primitive'
   ;;  that refines the error messages for built-in things, which
@@ -86,4 +89,4 @@
   (provide-and-document/wrap
    procedures
    in-rator-position-only
-   (all-from beginner: (lib "beginner-funs.ss" "lang" "private") procedures)))
+   (all-from beginner: lang/private/beginner-funs procedures)))

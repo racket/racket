@@ -1,8 +1,8 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "struct.ss" "scribble")]
-@require-for-syntax[mzscheme]
-@require["mz.ss"]
-@require["prog-steps.ss"]
+#lang scribble/doc
+@require[scribble/struct
+         (for-syntax scheme/base)
+         "mz.ss"
+         "prog-steps.ss"]
 
 @define[reduces (make-element #f (list 'rarr))]
 @define[rspace (make-element "ghost" (list 'rarr))]

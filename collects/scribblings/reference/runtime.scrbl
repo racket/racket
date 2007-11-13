@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title{Environment and Runtime Information}
+
+@declare-exporting[(lib "scheme/runtime")]
 
 @defproc[(getenv [name string?]) (or/c string? false/c)]{
 
@@ -162,6 +164,9 @@ follows, in the order that they are set within @scheme[results]:
 
   @item{@scheme[9]: The number of additional hash slots searched to complete
   hash searches (using double hashing).}
+
+  @item{@scheme[10]: The number of bytes allocated for machine code
+  that is not reported by @scheme[current-memory-use].}
 
  }
 

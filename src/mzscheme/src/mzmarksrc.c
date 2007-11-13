@@ -648,6 +648,9 @@ thread_val {
   gcMARK(pr->current_local_certs);
   gcMARK(pr->current_local_modidx);
   gcMARK(pr->current_local_menv);
+  gcMARK(pr->current_local_bindings);
+
+  gcMARK(pr->current_mt);
   
   gcMARK(pr->overflow_reply);
 
@@ -819,6 +822,7 @@ namespace_val {
   gcMARK(e->syntax);
   gcMARK(e->exp_env);
   gcMARK(e->template_env);
+  gcMARK(e->label_env);
 
   gcMARK(e->shadowed_syntax);
 
@@ -957,12 +961,17 @@ module_phase_exports_val {
  mark:
   Scheme_Module_Phase_Exports *m = (Scheme_Module_Phase_Exports *)p;
 
+  gcMARK(m->src_modidx);
+
   gcMARK(m->provides);
   gcMARK(m->provide_srcs);
   gcMARK(m->provide_src_names);
   gcMARK(m->provide_src_phases);
 
   gcMARK(m->kernel_exclusion);
+  gcMARK(m->kernel_exclusion2);
+
+  gcMARK(m->ht);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Phase_Exports));
@@ -1399,9 +1408,12 @@ mark_marshal_tables {
   gcMARK(mt->st_ref_stack);
   gcMARK(mt->reverse_map);
   gcMARK(mt->same_map);
+  gcMARK(mt->cert_lists);
+  gcMARK(mt->shift_map);
   gcMARK(mt->top_map);
   gcMARK(mt->key_map);
   gcMARK(mt->delay_map);
+  gcMARK(mt->cdata_map);
   gcMARK(mt->rn_saved);
   gcMARK(mt->shared_offsets);
   gcMARK(mt->sorted_keys);
@@ -1865,7 +1877,10 @@ mark_delay_load {
   gcMARK(ld->symtab);
   gcMARK(ld->shared_offsets);
   gcMARK(ld->insp);
-  gcMARK(ld->rn_memory);
+  gcMARK(ld->ut);
+  gcMARK(ld->current_rp);
+  gcMARK(ld->cached);
+  gcMARK(ld->cached_port);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Load_Delay));
 }
@@ -1937,6 +1952,7 @@ mark_rename_table {
   gcMARK(rn->ht);
   gcMARK(rn->nomarshal_ht);
   gcMARK(rn->unmarshal_info);
+  gcMARK(rn->shared_pes);
   gcMARK(rn->plus_kernel_nominal_source);
   gcMARK(rn->marked_names);
  size:

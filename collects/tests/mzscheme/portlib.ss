@@ -5,7 +5,7 @@
 
 (define SLEEP-TIME 0.1)
 
-(require (lib "port.ss"))
+(require (lib "mzlib/port.ss"))
 
 ;; ----------------------------------------
 

@@ -141,7 +141,7 @@
                    inherit inherit/super inherit/inner
                    this super inner
                    field inherit-field))
-              (kernel-form-identifier-list #'here))]
+              (kernel-form-identifier-list))]
             [expand-context (generate-class-expand-context)])
         (let loop ([l clauses])
           (cond

@@ -64,12 +64,11 @@
 (define-syntax (with-cc-variants stx)
   (syntax-case stx ()
     [(_ body)
-     (with-syntax ([call/cc (datum->syntax-object stx 'call/cc)]
-                   [let/cc (datum->syntax-object stx 'let/cc)]
+     (with-syntax ([call/cc (datum->syntax stx 'call/cc)]
+                   [let/cc (datum->syntax stx 'let/cc)]
                    [call-with-continuation-prompt
-                    (datum->syntax-object stx
-                                          'call-with-continuation-prompt)]
-                   [thread (datum->syntax-object stx 'thread)])
+                    (datum->syntax stx 'call-with-continuation-prompt)]
+                   [thread (datum->syntax stx 'thread)])
        #'(begin
            (define (a-test call/cc call-with-continuation-prompt thread)
              (define-syntax let/cc

@@ -28,7 +28,7 @@
 				   expr
 				   'expression
 				   (append
-				    (kernel-form-identifier-list (quote-syntax here))
+				    (kernel-form-identifier-list)
 				    names))])
 			   ;; Remove #%app if present...
 			   (syntax-case e (#%app)
@@ -49,7 +49,7 @@
 					    (let ([v (syntax-local-value name (lambda () #f))])
 					      (and v
 						   (struct-declaration-info? v)
-						   v)))))))]
+						   (extract-struct-info v))))))))]
 	   [same-special-id? (lambda (a b)
 			       ;; Almost module-or-top-identifier=?,
 			       ;; but handle the-cons specially

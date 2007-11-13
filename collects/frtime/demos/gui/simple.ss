@@ -1,4 +1,4 @@
-(module simple (lib "frtime.ss" "frtime")
+(module simple frtime
   
   (require "fred.ss"
            (lib "class.ss")

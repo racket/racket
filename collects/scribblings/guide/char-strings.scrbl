@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require[(lib "eval.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/manual]
+@require[scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "strings"]{Strings (Unicode)}
@@ -12,7 +12,7 @@ escaped with backslashes. Other common string escapes are supported,
 including @litchar["\\n"] for a linefeed, @litchar["\\r"] for a
 carriage return, octal escapes using @litchar["\\"] followed by up
 to three octal digits, and hexadimal escapes with @litchar["\\u"]
-(up to four digits).  Unprintable characters in a string normally
+(up to four digits).  Unprintable characters in a string are normally
 shown with @litchar["\\u"] when the string is printed.
 
 @refdetails/gory["parse-string"]{the syntax of strings}

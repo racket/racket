@@ -1,5 +1,5 @@
 
-(module text (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "class.ss")
            "drsig.ss"
            (lib "framework.ss" "framework"))
@@ -31,4 +31,4 @@
       ;			    (get-filename)
       ;			    "Untitled"))])
       ;	      (send dc draw-text str dx dy)))])
-      (super-new))))
+      (super-new)))

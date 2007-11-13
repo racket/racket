@@ -27,27 +27,27 @@
   (define (get-deps code path)
     (let-values ([(imports fs-imports ft-imports fl-imports) (module-compiled-imports code)])
       (map path->bytes
-	   (map (lambda (x)
-		  (resolve-module-path-index x path))
-		;; Filter symbols:
-		(let loop ([l (append imports fs-imports ft-imports fl-imports)])
-		  (cond
-		   [(null? l) null]
-		   [(symbol? (car l)) (loop (cdr l))]
-		   [else (cons (car l) (loop (cdr l)))]))))))
+           (let ([l (map (lambda (x)
+                           (resolve-module-path-index x path))
+                         (append imports fs-imports ft-imports fl-imports))])
+             ;; Filter symbols:
+             (let loop ([l l])
+               (cond
+                [(null? l) null]
+                [(symbol? (car l)) (loop (cdr l))]
+                [else (cons (car l) (loop (cdr l)))]))))))
 
   (define (get-compilation-dir+name mode path)
-    (let-values (((base name-suffix must-be-dir?) (split-path path)))
-      (let ((name (path-replace-suffix name-suffix #"")))
-	(values
-	 (cond
-	  ((eq? 'relative base) mode)
-	  (else (build-path base mode)))
-	 name))))
+    (let-values (((base name must-be-dir?) (split-path path)))
+      (values
+       (cond
+        ((eq? 'relative base) mode)
+        (else (build-path base mode)))
+       name)))
 
   (define (get-compilation-path mode path)
     (let-values ([(dir name) (get-compilation-dir+name mode path)])
-      (path->bytes (build-path dir name))))
+      (build-path dir name)))
 
   (define (get-code-dir mode path)
     (let-values (((base name-suffix must-be-dir?) (split-path path)))
@@ -83,8 +83,7 @@
 		(close-output-port out)))))))
 
   (define (write-deps code mode path external-deps)
-    (let ((dep-path (bytes->path
-		     (bytes-append (get-compilation-path mode path) #".dep")))
+    (let ((dep-path (path-add-suffix (get-compilation-path mode path) #".dep"))
           (deps (get-deps code path)))
       (with-compile-output 
        dep-path
@@ -102,8 +101,7 @@
   (define (compilation-failure mode path zo-name date-path reason)
     (with-handlers ((exn:fail:filesystem? void))
       (delete-file zo-name))
-    (let ([fail-path (bytes->path
-		      (bytes-append (get-compilation-path mode path) #".fail"))])
+    (let ([fail-path (path-add-suffix (get-compilation-path mode path) #".fail")])
       (with-compile-output 
        fail-path
        (lambda (p)
@@ -114,7 +112,7 @@
     ((manager-compile-notify-handler) path)
     (trace-printf "compiling: ~a" path)
     (parameterize ([indent (string-append "  " (indent))])
-      (let ([zo-name (bytes->path (bytes-append (get-compilation-path mode path) #".zo"))])
+      (let ([zo-name (path-add-suffix (get-compilation-path mode path) #".zo")])
         (cond
          [(and (file-exists? zo-name) (trust-existing-zos)) (touch zo-name)]
          [else
@@ -127,7 +125,7 @@
             (let* ([param
                     ;; Avoid using cm while loading cm-ctime:
                     (parameterize ([use-compiled-file-paths null])
-                      (dynamic-require '(lib "cm-ctime.ss" "mzlib" "private")
+                      (dynamic-require 'mzlib/private/cm-ctime
                                        'current-external-file-registrar))]
                    [external-deps null]
                    [code (parameterize ([param (lambda (ext-file)
@@ -182,19 +180,14 @@
 	    (date-second date)))
   
   (define (append-object-suffix f)
-    (path-replace-suffix f (case (system-type)
-			     [(windows) #".dll"]
-			     [else #".so"])))
-
-  (define _loader-path (append-object-suffix (bytes->path #"_loader")))
+    (path-add-suffix f (system-type 'so-suffix)))
 
   (define (get-compiled-time mode path w/fail?)
     (let*-values  ([(dir name) (get-compilation-dir+name mode path)])
       (first-date
-       (lambda () (build-path dir "native" (system-library-subpath) _loader-path))
        (lambda () (build-path dir "native" (system-library-subpath) (append-object-suffix name)))
-       (lambda () (build-path dir (path-replace-suffix name #".zo")))
-       (and w/fail? (lambda () (build-path dir (path-replace-suffix name #".fail")))))))
+       (lambda () (build-path dir (path-add-suffix name #".zo")))
+       (and w/fail? (lambda () (build-path dir (path-add-suffix name #".fail")))))))
 
   (define first-date
     (case-lambda
@@ -232,8 +225,7 @@
 		   (compile-zo mode path))
                   (else
                    (let ((deps (with-handlers ((exn:fail:filesystem? (lambda (ex) (list (version)))))
-                                 (call-with-input-file (bytes->path 
-							(bytes-append (get-compilation-path mode path) #".dep"))
+                                 (call-with-input-file (path-add-suffix (get-compilation-path mode path) #".dep")
                                    read))))
                      (cond
                        ((or (not (pair? deps))
@@ -280,7 +272,7 @@
   (define (make-compilation-manager-load/use-compiled-handler/table cache)
     (let ([orig-eval (current-eval)]
 	  [orig-load (current-load)]
-	  [orig-namespace (current-namespace)]
+	  [orig-registry (namespace-module-registry (current-namespace))]
 	  [default-handler (current-load/use-compiled)]
 	  [modes (use-compiled-file-paths)])
       (when (null? modes)
@@ -312,11 +304,11 @@
                                    orig-load
                                    (current-load))
                      (default-handler path mod-name)]
-                    [(not (eq? orig-namespace (current-namespace)))
-                     (trace-printf "skipping:  ~a orig-namespace ~s current-namespace ~s" 
+                    [(not (eq? orig-registry (namespace-module-registry (current-namespace))))
+                     (trace-printf "skipping:  ~a orig-rgistry ~s current-registry ~s" 
                                    path
-                                   orig-namespace
-                                   (current-namespace))
+                                   orig-registry
+                                   (namespace-module-registry (current-namespace)))
                      (default-handler path mod-name)]
                     [else 
                      (trace-printf "processing: ~a" path)

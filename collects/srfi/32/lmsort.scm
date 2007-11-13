@@ -1,8 +1,8 @@
 (module lmsort mzscheme
   (provide list-merge
-           list-merge!
+           #;list-merge!
            list-merge-sort
-           list-merge-sort!)
+           #;list-merge-sort!)
   
   ;;; list merge & list merge-sort	-*- Scheme -*-
   ;;; Copyright (c) 1998 by Olin Shivers.
@@ -159,6 +159,7 @@
   ;;; - destructive, in-place: this routine allocates no extra working memory; 
   ;;;   it simply rearranges the list with SET-CDR! operations.
   
+  #;
   (define (list-merge-sort! elt< lis)
     ;; (getrun lis) -> runlen last rest
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -312,6 +313,7 @@
   ;;; the list is already sorted, it does no SET-CDR!s at all. It is also
   ;;; iterative, running in constant stack.
   
+  #;
   (define (list-merge! < a b)
     ;; The logic of these two loops is completely driven by these invariants:
     ;;   SCAN-A: (CDR PREV) = A. X = (CAR A). Y = (CAR B).

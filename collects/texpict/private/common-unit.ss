@@ -1,5 +1,6 @@
 
-(module common-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "etc.ss"))
 
   (require "common-sig.ss")
@@ -953,4 +954,3 @@
 		  [(prog)
 		   `((prog ,(cadr s) ,(caddr s)))]
 		  [else (error 'pict->commands "bad tag: ~s" tag)])))))
-      )

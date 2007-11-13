@@ -3,7 +3,7 @@
 ;; no .zo compilation necessary, since all the
 ;; real code is in C++
 
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "SrPersist")
   (define doc.txt "doc.txt")
   (define help-desk-message

@@ -1,14 +1,13 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "manual.ss" "scribble")]
-@require-for-label["cards.ss"
-                   (lib "mred.ss" "mred")
-                   (lib "class.ss")]
+#lang scribble/doc
+@require[scribble/manual
+         (for-label "cards.ss"
+                    mred)]
 
 @title{Virtual Playing Cards Library}
 
-@declare-exporting[(lib "cards.ss" "games" "cards")]
+@declare-exporting[games/cards]
 
-The library is @scheme[(lib "cards.ss" "games" "cards")].
+The library is @scheme[games/cards].
 
 @defproc[(make-table [title string? "Cards"] 
                      [w nonnegative-exact-integer? 7]
@@ -148,7 +147,8 @@ Create an instance with @scheme[make-table].
 @defmethod[(add-cards [cards (listof (is-a?/c card<%>))]
                       [x real?]
                       [y real?]
-                      [offset-proc (nonnegative-exact-integer? . -> . (values real? real?))
+                      [offset-proc (nonnegative-exact-integer? 
+                                    . -> . (values real? real?))
                                    (lambda (i) (values 0 0))])
             void?]{
 
@@ -352,9 +352,9 @@ Removes @scheme[card] from the table.}
             void?]{
 
  Adds a @onscreen{Help} button to the give pane, where clicking the
- button opens a new window to display @file{doc.txt} from the given
+ button opens a new window to display @filepath{doc.txt} from the given
  collection. The @scheme[str] argument is used for the help window
- title.  If @scheme[tt?]  is true, then @file{doc.txt} is displayed
+ title.  If @scheme[tt?]  is true, then @filepath{doc.txt} is displayed
  verbatim, otherwise it is formatted as for @scheme[show-help] from
  @scheme[(lib "show-help.ss" "games")].}
 }

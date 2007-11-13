@@ -1,4 +1,6 @@
 
+#lang scheme/base
+
 (use-compiled-file-paths null)
 
 (require (lib "restart.ss")
@@ -91,9 +93,10 @@
 	       (restart-mzscheme #() (lambda (x) x)
 				 (list->vector 
 				  (append
-				   (list "-r"
+				   (list "-u"
 					 "../../mzscheme/gc2/xform.ss"
-					 "--setup")
+					 "--setup"
+					 ".")
 				   (if objdest
 				       (if use-precomp
 					   (list "--precompiled" use-precomp)
@@ -117,14 +120,14 @@
 	  (delete-file dest))
 	(error "error xforming")))
     (when objdest
-      (compile dest objdest null (string-append
-				  extra-compile-flags
-				  common-cpp-defs
-				  (if msvc-pch
-				      (format " /Fp~a" msvc-pch)
-				      ""))))))
+      (c-compile dest objdest null (string-append
+				    extra-compile-flags
+				    common-cpp-defs
+				    (if msvc-pch
+					(format " /Fp~a" msvc-pch)
+					""))))))
 
-(define (compile c o deps flags)
+(define (c-compile c o deps flags)
   (unless (and (file-exists? o)
 	       (let ([t (file-or-directory-modify-seconds o)])
 		 (and (>= t (file-or-directory-modify-seconds c))
@@ -197,21 +200,21 @@
      #f
      #f)
 
-(compile "../../mzscheme/gc2/gc2.c" "xsrc/gc2.obj"
-	 (map (lambda (f) (build-path "../../mzscheme/gc2/" f))
-	      '("gc2.c"
-		"compact.c"
-		"newgc.c"
-		"vm_win.c"
-		"sighand.c"
-		"msgprint.c"))
-	 (string-append
-	  "/D GC2_AS_EXPORT "
-	  (if accounting-gc?
-	      "/D NEWGC_BTC_ACCOUNT "
-	      "/D USE_COMPACT_3M_GC ")
-	  mz-inc))
-(compile "../../mzscheme/src/mzsj86.c" "xsrc/mzsj86.obj" '() mz-inc)
+(c-compile "../../mzscheme/gc2/gc2.c" "xsrc/gc2.obj"
+	   (map (lambda (f) (build-path "../../mzscheme/gc2/" f))
+		'("gc2.c"
+		  "compact.c"
+		  "newgc.c"
+		  "vm_win.c"
+		  "sighand.c"
+		  "msgprint.c"))
+	   (string-append
+	    "/D GC2_AS_EXPORT "
+	    (if accounting-gc?
+		"/D NEWGC_BTC_ACCOUNT "
+		"/D USE_COMPACT_3M_GC ")
+	    mz-inc))
+(c-compile "../../mzscheme/src/mzsj86.c" "xsrc/mzsj86.obj" '() mz-inc)
 
 (define dll "../../../lib/libmzsch3mxxxxxxx.dll")
 (define exe "../../../MzScheme.exe")
@@ -254,10 +257,10 @@
 				     ""))))
 	(error 'winmake "~a link failed" (if exe? "EXE" "DLL"))))))
 
-(compile "../mzscheme/uniplt.c"
-	 "xsrc/uniplt.obj"
-	 null
-	 " -Dwx_msw")
+(c-compile "../mzscheme/uniplt.c"
+	   "xsrc/uniplt.obj"
+	   null
+	   " -Dwx_msw")
 
 (let ([objs (list*
 	     "../libmzsch/Release/uniplt.obj"
@@ -346,9 +349,9 @@
     "wb_utils"
     "wb_win"))
 
-(map (lambda (x)
-       (wx-try "wxwindow/src/base" "wxwin" x #t "cxx" #f))
-     wxwin-base-srcs)
+(for-each (lambda (x)
+	    (wx-try "wxwindow/src/base" "wxwin" x #t "cxx" #f))
+	  wxwin-base-srcs)
 
 (define wxwin-msw-srcs
   '("wx_buttn"
@@ -379,9 +382,9 @@
     "wx_win"
     "wximgfil"))
 
-(map (lambda (x)
-       (wx-try "wxwindow/src/msw" "wxwin" x #t "cxx" #f))
-     wxwin-msw-srcs)
+(for-each (lambda (x)
+	    (wx-try "wxwindow/src/msw" "wxwin" x #t "cxx" #f))
+	  wxwin-msw-srcs)
 
 (define wxs-srcs
   '("wxs_bmap"
@@ -414,9 +417,9 @@
     "wxs_win"
     "wxscheme"))
 
-(map (lambda (x)
-       (wx-try "mred/wxs" "wxs" x #t "cxx" #f))
-     wxs-srcs)
+(for-each (lambda (x)
+	    (wx-try "mred/wxs" "wxs" x #t "cxx" #f))
+	  wxs-srcs)
 
 (define wxme-srcs
   '("wx_cgrec"
@@ -432,24 +435,24 @@
     "wx_snip"
     "wx_style"))
 
-(map (lambda (x)
-       (wx-try "mred/wxme" "wxme" x #t "cxx" #f))
-     wxme-srcs)
+(for-each (lambda (x)
+	    (wx-try "mred/wxme" "wxme" x #t "cxx" #f))
+	  wxme-srcs)
 
 (define mred-srcs
   '("mred"
     "mredmsw"))
 
-(map (lambda (x)
-       (wx-try "mred" "libmred" x #t "cxx" #f))
-     mred-srcs)
+(for-each (lambda (x)
+	    (wx-try "mred" "libmred" x #t "cxx" #f))
+	  mred-srcs)
 
 (wx-try "wxcommon" "wxme" "wxJPEG" #t "cxx" #f)
 (wx-try "mzscheme/utils" "wxme" "xcglue" #f "c" #f)
-(compile "../../wxcommon/wxGC.cxx"
-	 "xsrc/wxGC.obj"
-	 null
-	 (string-append wx-inc " -DMZ_PRECISE_GC -DGC2_AS_IMPORT -Dwx_msw"))
+(c-compile "../../wxcommon/wxGC.cxx"
+	   "xsrc/wxGC.obj"
+	   null
+	   (string-append wx-inc " -DMZ_PRECISE_GC -DGC2_AS_IMPORT -Dwx_msw"))
 
 (let ([objs (append (list
 		     "xsrc/uniplt.obj"

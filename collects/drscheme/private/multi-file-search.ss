@@ -1,5 +1,5 @@
 
-(module multi-file-search (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "framework.ss" "framework")
            (lib "class.ss")
            (lib "mred.ss" "mred")
@@ -712,4 +712,4 @@
                                         (car pos)
                                         (- (cdr pos) (car pos))))))
                        (loop (+ line-number 1))]))))
-              'text))))))
+              'text)))))

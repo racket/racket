@@ -2,7 +2,8 @@
 ;;  for programs that used to manipulate the
 ;;  output of zodiac elaboration.
 
-(module zodiac-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "unit.ss")
 	   (lib "list.ss")
            "kerncase.ss"
@@ -242,14 +243,6 @@
 		  #f
 		  #f)]
 
-		[(#%datum . val)
-		 (let ([val (syntax val)])
-		   (make-quote-form
-		    stx
-		    (mk-back)
-		    (make-zread
-		     val)))]
-
 		[(define-values names rhs)
 		 (make-define-values-form
 		  stx
@@ -363,19 +356,11 @@
 		    (syntax-property stx 'module-indirect-provides)
 		    (syntax-property stx 'module-kernel-reprovide-hint)
 		    (syntax-property stx 'module-self-path-index)))]
-		[(require i ...)
+		[(#%require i ...)
 		 (make-require/provide-form
 		  stx
 		  (mk-back))]
-		[(require-for-syntax i ...)
-		 (make-require/provide-form
-		  stx
-		  (mk-back))]
-		[(require-for-template i ...)
-		 (make-require/provide-form
-		  stx
-		  (mk-back))]
-		[(provide i ...)
+		[(#%provide i ...)
 		 (make-require/provide-form
 		  stx
 		  (mk-back))]
@@ -392,7 +377,7 @@
 		  (mk-back)
 		  (syntax expr))]
 		
-		[(lambda args . body)
+		[(#%plain-lambda args . body)
 		 (let-values ([(env args) (args-s->z env (syntax args))])
 		   (make-case-lambda-form
 		    stx
@@ -456,7 +441,7 @@
 		  (mk-back)
 		  (loop (syntax test) env trans?)
 		  (loop (syntax then) env trans?)
-		  (loop (syntax (#%app void)) env trans?))]
+		  (loop (syntax (#%plain-app void)) env trans?))]
 
 		[(if test then else)
 		 (make-if-form
@@ -474,7 +459,7 @@
 		  (loop (syntax v) env trans?)
 		  (loop (syntax body) env trans?))]
 
-		[(#%app 'gp vec (#%datum . pos))
+		[(#%plain-app 'gp vec (quote pos))
 		 (and (eq? (syntax-e #'gp) global-prepare-id)
 		      (number? (syntax-e #'pos)))
 		 (make-global-prepare
@@ -482,7 +467,7 @@
 		  (mk-back)
 		  (loop (syntax vec) env trans?)
 		  (syntax-e #'pos))]
-		[(#%app 'gl vec (#%datum . pos))
+		[(#%plain-app 'gl vec (quote pos))
 		 (and (eq? (syntax-e #'gl) global-lookup-id)
 		      (number? (syntax-e #'pos)))
 		 (make-global-lookup
@@ -490,7 +475,7 @@
 		  (mk-back)
 		  (loop (syntax vec) env trans?)
 		  (syntax-e #'pos))]
-		[(#%app 'ga vec (#%datum . pos) val)
+		[(#%plain-app 'ga vec (quote pos) val)
 		 (and (eq? (syntax-e #'ga) global-assign-id)
 		      (number? (syntax-e #'pos)))
 		 (make-global-assign
@@ -499,7 +484,7 @@
 		  (loop (syntax vec) env trans?)
 		  (syntax-e #'pos)
 		  (loop (syntax val) env trans?))]
-		[(#%app 'svr vec (#%datum . pos))
+		[(#%plain-app 'svr vec (quote pos))
 		 (and (eq? (syntax-e #'svr) safe-vector-ref-id)
 		      (number? (syntax-e #'pos)))
 		 (make-safe-vector-ref
@@ -508,12 +493,12 @@
 		  (loop (syntax vec) env trans?)
 		  (syntax-e #'pos))]
 		
-		[(#%app)
+		[(#%plain-app)
 		 (make-quote-form
 		  (syntax/loc stx ())
 		  (mk-back)
 		  (make-zread (quote-syntax ())))]
-		[(#%app func arg ...)
+		[(#%plain-app func arg ...)
 		 (make-app
 		  stx
 		  (mk-back)
@@ -547,7 +532,7 @@
 	   [(app? x)
 	    (with-syntax ([fun (loop (app-fun x))]
 			  [args (map loop (app-args x))])
-	      (syntax (#%app fun . args)))]
+	      (syntax (#%plain-app fun . args)))]
 
 	   [(if-form? x)
 	    (with-syntax ([test (loop (if-form-test x))]
@@ -783,4 +768,4 @@
       (define-struct arglist (vars))
       (define-struct (sym-arglist arglist) ())
       (define-struct (list-arglist arglist) ())
-      (define-struct (ilist-arglist arglist) ()))
+      (define-struct (ilist-arglist arglist) ())

@@ -20,7 +20,7 @@
                 table
                 (cons (cond
                         [(module-path-index? mpi)
-                         (module-path-index-resolve mpi)]
+                         (resolved-module-path-name (module-path-index-resolve mpi))]
                         [(symbol? mpi) mpi]
                         [else #f])
                       (if (path? p)

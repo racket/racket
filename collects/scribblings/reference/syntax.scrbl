@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @define[cvt (schemefont "CVT")]
@@ -594,8 +594,14 @@ returned as the result of the @scheme[cond] form. The
 
 @defidform[else]{
 
-Recognized special ly withing forms like @scheme[cond]. An
+Recognized specially within forms like @scheme[cond]. An
 @scheme[else] form as an expression is a syntax error.}
+
+
+@defidform[=>]{
+
+Recognized specially within forms like @scheme[cond]. A
+@scheme[=>] form as an expression is a syntax error.}
 
 
 @defform[(and expr ...)]{
@@ -854,11 +860,8 @@ classifications:
  @item{@scheme[define] or @scheme[define-values] form: converted to
        a @scheme[define-for-syntax] form.}
 
- @item{@scheme[require] form: converted to a
-       @scheme[require-for-syntax] form.}
-
- @item{@scheme[require-for-template] form: converted to a
-       @scheme[require].}
+ @item{@scheme[require] form: content is wrapped with
+       @scheme[for-syntax].}
 
  @item{expression form @scheme[_expr]: converted to
        @scheme[(define-values () (begin _expr (values)))], which
@@ -1080,16 +1083,16 @@ is treated like a @scheme[(require require-spec)] prefix on
 
 If a single @scheme[form] is provided, then it is partially expanded
 in a @tech{module-begin context}. If the expansion leads to
-@scheme[#%module-begin], then the body of the @scheme[#%module-begin]
+@scheme[#%plain-module-begin], then the body of the @scheme[#%plain-module-begin]
 is the body of the module. If partial expansion leads to any other
 primitive form, then the form is wrapped with
 @schemeidfont{#%module-begin} using the lexical context of the module
 body; this identifier must be bound by the initial
 @scheme[require-spec] import, and its expansion must produce a
-@scheme[#%module-begin] to supply the module body. Finally, if
+@scheme[#%plain-module-begin] to supply the module body. Finally, if
 multiple @scheme[form]s are provided, they are wrapped with
 @schemeidfont{#%module-begin}, as in the case where a single
-@scheme[form] does not expand to @scheme[#%module-begin].
+@scheme[form] does not expand to @scheme[#%plain-module-begin].
 
 After such wrapping, if any, and before any expansion, an
 @indexed-scheme['enclosing-module-name] property is attached to the
@@ -1112,13 +1115,11 @@ action depends on the shape of the form:
   evaluated (in @tech{phase} 1), and the binding is immediately
   installed for further partial expansion within the module.}
 
- @item{If the form is a @scheme[require], @scheme[require-for-syntax],
-   or @scheme[require-for-template] form, bindings are introduced
+ @item{If the form is a @scheme[require] form, bindings are introduced
    immediately, and the imported modules are @tech{instantiate}d or
    @tech{visit}ed as appropriate.}
 
- @item{If the form is a @scheme[provide] or
-   @scheme[provide-for-syntax] form, then it is recorded for
+ @item{If the form is a @scheme[provide] form, then it is recorded for
    processing after the rest of the body.}
 
  @item{If the form is a @scheme[define-values] form, then the binding
@@ -1153,8 +1154,7 @@ module, whose full name depends both on @scheme[id] and
 @scheme[(current-module-name-prefix)].
 
 The module body is executed only when the module is explicitly
-@techlink{instantiate}d via @scheme[require],
-@scheme[require-for-syntax], @scheme[require-for-template], or
+@techlink{instantiate}d via @scheme[require] or
 @scheme[dynamic-require]. On invocation, expressions and definitions
 are evaluated in order as they appear within the module; accessing a
 @tech{module-level variable} before it is defined signals a run-time
@@ -1165,25 +1165,42 @@ See also @secref["module-eval-model"] and @secref["mod-parse"].}
 @defform[(#%module-begin form ...)]{
 
 Legal only in a @tech{module begin context}, and handled by the
+@scheme[module] form.
+
+The pre-defined @scheme[#%module-begin] form wraps every
+top-level expression to print non-@|void-const| results using
+@scheme[current-print].}
+
+@defform[(#%plain-module-begin form ...)]{
+
+Legal only in a @tech{module begin context}, and handled by the
 @scheme[module] form.}
 
 @;------------------------------------------------------------------------
-@section[#:tag "require"]{Importing: @scheme[require], @scheme[require-for-syntax], @scheme[require-for-template]}
+@section[#:tag '("require" "provide")]{Importing and Exporting: @scheme[require] and @scheme[provide]}
 
 @section-index["modules" "imports"]
+@section-index["modules" "exports"]
 
-@defform/subs[#:literals (only only-rename prefix except rename lib file planet)
+@defform/subs[#:literals (only-in prefix-in except-in rename-in lib file planet + - =
+                          for-syntax for-template for-label quote)
               (require require-spec ...)
               ([require-spec module-path
-                             (only require-spec id-maybe-renamed ...)
-                             (except require-spec id ...)
-                             (prefix require-spec prefix-id)
-                             (rename require-spec [orig-id bind-id] ...)]
-               [module-path id
+                             (only-in require-spec id-maybe-renamed ...)
+                             (except-in require-spec id ...)
+                             (prefix-in prefix-id require-spec)
+                             (rename-in require-spec [orig-id bind-id] ...)
+                             (for-syntax require-spec ...)
+                             (for-template require-spec ...)
+                             (for-label require-spec ...)
+                             derived-require-spec]
+               [module-path (#,(scheme quote) id)
                             rel-string
-                            (lib rel-string)
+                            (lib rel-string ...)
+                            id
                             (file string)
-                            (planet rel-string (user-string pkg-string vers ...))]
+                            (planet rel-string
+                                    (user-string pkg-string vers ...))]
                [id-maybe-renamed id
                                  [orig-id bind-id]]
                [vers nat
@@ -1204,13 +1221,18 @@ A @scheme[require-spec] designates a particular set of identifiers to
 be bound in the importing context. Each identifier is mapped to a
 particular export of a particular module; the identifier to bind may
 be different from the symbolic name of the originally exported
-identifier.
+identifier. Each identifier also binds at a particular @tech{phase
+level}.
+
+The syntax of @scheme[require-spec] can be extended via
+@scheme[define-syntax] with @scheme[make-require-transformer], but the
+pre-defined forms are as follows.
 
  @specsubform[module-path]{ Imports all exported bindings from the
   named module, using the export identifiers as the local identifiers.
   (See below for information on @scheme[module-path].)}
 
- @specsubform[#:literals (only) (only require-spec id-maybe-renamed ...)]{
+ @defsubform[(only-in require-spec id-maybe-renamed ...)]{
   Like @scheme[require-spec], but constrained to those exports for
   which the identifiers to bind match @scheme[id-maybe-renamed]: as
   @scheme[id] or as @scheme[orig-id] in @scheme[[orig-id bind-id]]. If
@@ -1218,22 +1240,38 @@ identifier.
   is not in the set that @scheme[require-spec] describes, a syntax
   error is reported.}
 
- @specsubform[#:literals (except) (except require-spec id ...)]{ Like
+ @defsubform[(except-in require-spec id ...)]{ Like
   @scheme[require-spec], but omitting those exports for which
   @scheme[id]s are the identifiers to bind; if any @scheme[id] is not
   in the set that @scheme[require-spec] describes, a syntax error is
   reported.}
 
- @specsubform[#:literals (prefix) (prefix require-spec prefix-id)]{
-  Like @scheme[require-spec], but adjusting each identifier to be bound
-  by prefixing it with @scheme[prefix-id].}
+ @defsubform[(prefix-in prefix-id require-spec)]{ Like
+  @scheme[require-spec], but adjusting each identifier to be bound by
+  prefixing it with @scheme[prefix-id].}
 
- @specsubform[#:literals (rename)
-              (rename require-spec [orig-id bind-id] ...)]{
+ @defsubform[(rename-in require-spec [orig-id bind-id] ...)]{
   Like @scheme[require-spec], but replacing the identifier to
   bind @scheme[orig-id] with @scheme[bind-id]; if any
   @scheme[orig-id] is not in the set that @scheme[require-spec]
   describes, a syntax error is reported.}
+
+ @specsubform[#:literals (for-syntax)
+              (for-syntax require-spec ...)]{Like the combination of
+  @scheme[require-spec]s, but constrained to imports specified as
+  @tech{phase level} 0 imports, each shifted to a @tech{phase level} 1
+  binding. A @scheme[for-syntax] form cannot appear within a
+  @scheme[for-syntax], @scheme[for-template], or @scheme[for-label]
+  form.}
+
+ @specsubform[#:literals (for-template)
+              (for-template require-spec ...)]{Analogous to
+  @scheme[for-syntax-spec], but shifts bindings to @tech{phase level} -1.}
+
+ @specsubform[#:literals (for-label)
+              (for-label require-spec ...)]{Analogous to
+  @scheme[for-syntax-spec], but shifts bindings to the @tech{label
+  phase level}.}
 
 A @scheme[module-path] identifies a module, either through a concrete
 name in the form of an identifier, or through an indirect name that
@@ -1243,8 +1281,8 @@ the @scheme[id] case below, the actual resolution is up to the current
 @scheme[current-module-name-resolver]), and the description below
 corresponds to the default @tech{module name resolver}.
 
- @specsubform[id]{ Refers to a module previously declared with the name
-  @scheme[id].}
+ @specsubform[(#,(scheme quote) id)]{ Refers to a module previously declared
+ interactively with the name @scheme[id].}
 
  @specsubform[rel-string]{A path relative to the containing source (as
  determined by @scheme[current-load-relative-directory] or
@@ -1253,22 +1291,59 @@ corresponds to the default @tech{module name resolver}.
  @litchar{/} is the path delimiter (multiple adjacent @litchar{/}s are
  treated as a single delimiter), @litchar{..} accesses the parent
  directory, and @litchar{.} accesses the current directory. The path
- cannot be empty or contain a leading or trailing slash.}
+ cannot be empty or contain a leading or trailing slash, path
+ elements before than the last one cannot include a file suffix,
+ and the only allowed characters are ASCII letters, ASCII digits,
+ @litchar{-}, @litchar{+}, @litchar{_}, @litchar{.}, and @litchar{/}.}
 
- @specsubform[#:literals (lib) (lib rel-string)]{Like the plain
- @scheme[rel-string] case, but @scheme[rel-string] must contain at
- least two path elements. All path elements up to the last one form a
- @tech{collection} path, which is used to locate the relevant
- directory (not relative to the containing source), and the last path
- element refers to a file. See @secref["collects"] for more
- information.}
+ @defsubform[(lib rel-string ...)]{A path to a module installed into
+ a @tech{collection} (see @secref["collects"]). The @scheme[rel-string]s in
+ @scheme[lib] are constrained similar to the plain @scheme[rel-string]
+ case, with the additional constraint that a @scheme[rel-string]
+ cannot contain @litchar{.} or @litchar{..} directory indicators.
 
- @specsubform[#:literals (file) (file string)]{Similar to the plain
- @scheme[rel-string] case, but @scheme[string] is a path (possibly
- absolute) using the current platform's path conventions.}
+ The specific interpretation of the path depends on the number and
+ shape of the @scheme[rel-string]s:
 
- @specsubform[#:literals(planet)
-              (planet rel-string (user-string pkg-string vers ...))]{
+ @itemize{
+
+    @item{If a single @scheme[rel-string] is provided, and if it
+    consists of a single element (i.e., no @litchar{/}) with no file
+    suffix (i.e, no @litchar{.}), then @scheme[rel-string] names a
+    collection, and @filepath{main.ss} is the library file name.}
+
+    @item{If a single @scheme[rel-string] is provided, and if it
+    consists of multiple @litchar{/}-separated elements, then each
+    element up to the last names a @tech{collection}, subcollection,
+    etc., and the last element names a file. If the last element has
+    no file suffix, @filepath{.ss} is added.}
+
+    @item{If a single @scheme[rel-string] is provided, and if it
+    consists of a single element @italic{with} a file suffix (i.e, no
+    @litchar{.}), then @scheme[rel-string] names a file within the
+    @filepath{mzlib} collection. (This convention is for compatibility
+    with older version of PLT Scheme.)}
+
+    @item{Otherwise, when multiple @scheme[rel-string]s are provided,
+    the first @scheme[rel-string] is effectively moved after the
+    others, and all @scheme[rel-string]s are appended with @litchar{/}
+    separators. The resulting path names a @tech{collection}, then
+    subcollection, etc., ending with a file name. No suffix is added
+    automatically. (This convention is for compatibility
+    with older version of PLT Scheme.)}
+
+  }}
+
+ @specsubform[id]{A shorthand for a @scheme[lib] form with a single
+ @scheme[_rel-string] whose characters are the same as in the symbolic
+ form of @scheme[id]. In addition to the constraints of a @scheme[lib]
+ @scheme[_rel-string], @scheme[id] must not contain @litchar{.}.}
+
+ @defsubform[(file string)]{Similar to the plain @scheme[rel-string]
+ case, but @scheme[string] is a path---possibly absolute---using the
+ current platform's path conventions.}
+
+ @defsubform[(planet rel-string (user-string pkg-string vers ...))]{
  Specifies a library available via the @PLaneT server.}
 
 No identifier can be bound multiple times in a given @tech{phase
@@ -1277,95 +1352,115 @@ original definition in the same module.  In a @tech{module context},
 an identifier can be either imported or defined for a given
 @tech{phase level}, but not both.}
 
-@defform[(require-for-syntax require-spec ...)]{
-Like @scheme[require], but @tech{instantiate}s a module at phase 1
-(see @secref["module-eval-model"]) in a @tech{top-level context} or
-@tech{module context}, and introduces bindings at phase level 1 (see
-@secref["intro-binding"] and @secref["mod-parse"]).
-}
 
-@defform[(require-for-template require-spec ...)]{ Like
-@scheme[require], but without @tech{instantiation} (see
-@secref["module-eval-model"]) in a @tech{top-level context}, and
-introduces bindings at phase level -1 (see @secref["intro-binding"]
-and @secref["mod-parse"]).
-}
-
-@defform[(require-for-label require-spec ...)]{ Like @scheme[require],
-but without implying @tech{instantiation} (see
-@secref["module-eval-model"]) at all, and introducing bindings only in
-the @tech{label phase level}. Such bindings are accessible via
-@scheme[identifier-label-binding] and
-@scheme[free-label-identifier=?].}
-
-@;------------------------------------------------------------------------
-@section[#:tag "provide"]{Exporting: @scheme[provide] and @scheme[provide-for-syntax]}
-
-@section-index["modules" "exports"]
-
-@defform/subs[#:literals (protect all-defined all-from rename except prefix)
-              (provide protected-provide-spec ...)
-              ([protected-provide-spec provide-spec
-                                       (protect provide-spec)]
-               [provide-spec id
-                             (all-defined)
-                             (all-from module-path)
-                             (rename [orig-id export-id] ...)
-                             (except provide-spec id ...)
-                             (prefix provide-spec prefix-id)])]{
+@defform/subs[#:literals (protect-out all-defined-out all-from-out rename-out 
+                          except-out prefix-out struct-out
+                          for-syntax for-label)
+              (provide provide-spec ...)
+              ([provide-spec id
+                             (all-defined-out)
+                             (all-from-out module-path ...)
+                             (rename-out [orig-id export-id] ...)
+                             (except-out provide-spec id ...)
+                             (prefix-out prefix-id provide-spec)
+                             (struct-out id)
+                             (protect-out provide-spec ...)
+                             derived-provide-spec])]{
 
 Declares exports from a module. A @scheme[provide] form must appear in
 a @tech{module context} or a @tech{module-begin context}.
 
-A @scheme[provide-spec] indicates one or more bindings to provide,
-specifying for each an export symbol that can be different from
-the symbolic form of the identifier bound within the module:
+A @scheme[provide-spec] indicates one or more bindings to provide.
+For each exported binding, the external name is a symbol that can be
+different from the symbolic form of the identifier that is bound
+within the module. Also, each export is drawn from a particular
+@tech{phase level} and exported at the same @tech{phase level}.
+
+The syntax of @scheme[provide-spec] can be extended via
+@scheme[define-syntax] with @scheme[make-provide-transformer], but the
+pre-defined forms are as follows.
 
  @specsubform[id]{ Exports @scheme[id], which must be @tech{bound}
- within the module (i.e., either defined or imported), at @tech{phase
- level} 0 using the symbolic form of @scheme[id] as the external
+ within the module (i.e., either defined or imported) at the relevant @tech{phase
+ level} 0. The symbolic form of @scheme[id] is used as the external
  name.}
 
- @specsubform[#:literals (all-defined) (all-defined)]{ Exports all
- identifiers that are defined at @tech{phase level} 0 within the
- exporting module. The external name for each identifier is the
- symbolic form of the identifier; note that this can lead to an
- illegal multiple export for a single symbolic name if different
- defined identifiers use the same symbolic name.}
+ @defsubform[(all-defined-out)]{ Exports
+ all identifiers that are defined at @tech{phase level} 0 or
+ @tech{phase level} 1 within the exporting module. The external name
+ for each identifier is the symbolic form of the identifier; note that
+ this can lead to an illegal multiple export for a single symbolic
+ name in the case different identifier bindings have the same symbolic
+ name.}
 
- @specsubform[#:literals (all-from) (all-from module-path)]{ Exports
- all identifiers that are imported into the exporting module at
- @tech{phase level} 0 using a @scheme[require-spec] built on
- @scheme[module-path] (see @secref["require"]). The symbolic name
- for export is derived from the name that is bound within the module,
- as opposed to the symbolic name of the export from
+ @defsubform[(all-from-out module-path ...)]{ Exports all identifiers
+ that are imported into the exporting module using a
+ @scheme[require-spec] built on each @scheme[module-path] (see
+ @secref["require"]) with no @tech{phase-level} shift.  The symbolic
+ name for export is derived from the name that is bound within the
+ module, as opposed to the symbolic name of the export from each
  @scheme[module-path].}
 
- @specsubform[#:literals (rename) (rename [orig-id export-id] ...)]{
- Exports each @scheme[orig-id], which must be @tech{bound} within the
- module at @tech{phase level} 0.  The symbolic name for each export is
+ @defsubform[(rename-out [orig-id export-id] ...)]{ Exports each
+ @scheme[orig-id], which must be @tech{bound} within the module at
+ @tech{phase level} 0.  The symbolic name for each export is
  @scheme[export-id] instead @scheme[orig-d].}
 
- @specsubform[#:literals (except) (except provide-spec id ...)]{ Like
+ @defsubform[(except-out provide-spec id ...)]{ Like
  @scheme[provide-spec], but omitting the export of each binding with
  external name @scheme[id]. If @scheme[id] is not specified as an
  export by @scheme[provide-spec], a syntax error is reported.}
 
- @specsubform[#:literals (prefix) (prefix provide-spec prefix-id)]{
+ @defsubform[(prefix-out prefix-id provide-spec)]{
  Like @scheme[provide-spec], but with each symbolic export name from
  @scheme[provide-spec] prefixed with @scheme[prefix-id].}
 
-If @scheme[provide] wraps a @scheme[provide-spec], then the exports of
-the @scheme[provide-spec] are protected; see
-@secref["modprotect"]. The @scheme[provide-spec] must
-specify only bindings that are defined within the exporting module.
+ @defsubform[(struct-out id)]{Exports the bindings associated
+ with a structure type @scheme[id]. Typically, @scheme[id] is
+ bound with @scheme[(define-struct id ....)] or
+ @scheme[(define-struct (id super-id) ....)]; more generally,
+ @scheme[id] must have a @tech{transformer binding} of structure-type
+ information at @tech{phase level} 0; see @secref["structinfo"].
+ If the structure-type information includes a super-type
+ identifier, and if the identifier has a @tech{transformer
+ binding} of structure-type information, the accessor and mutator
+ bindings of the super-type are @italic{not} included by
+ @scheme[struct-out] for export.}
+
+ @defsubform[(protect-out provide-spec ...)]{ Like the union of the
+ @scheme[provide-spec]s, except that theexports are protected; see
+ @secref["modprotect"]. The @scheme[provide-spec] must specify only
+ bindings that are defined within the exporting module.}
+
+ @specsubform[#:literals (for-syntax) 
+              (for-syntax provide-spec ...)]{ Like the union of the
+ @scheme[provide-spec]s, but adjusted to apply to @scheme{phase level}
+ 1. In particular, an @scheme[id] or @scheme[rename-out] formas a
+ @scheme[provide-spec] refers to a @scheme{phase-level} 1 binding, an
+ @scheme[all-define-out] exports only @scheme{phase level} 1
+ definitions, and an @scheme[all-from-out] exports only bindings
+ imported with a shift to @tech{phase level} 1.}
+
+ @specsubform[#:literals (for-label)
+              (for-label provide-spec ...)]{Analogous to
+ @scheme[for-syntax], adjusting each @scheme[provide-spec] to the
+ @tech{label phase level}.}
 
 Each export specified within a module must have a distinct symbolic
 export name, though the same binding can be specified with the
 multiple symbolic names.}
 
-@defform[(provide-for-syntax protected-provide-spec ...)]{Like
-@scheme[provide], but for @tech{phase level} 1.}
 
-@defform[(provide-for-label protected-provide-spec ...)]{Like
-@scheme[provide], but for the @tech{label phase level}.}
+@defform[(for-syntax require-spec ...)]{See @scheme[require] and @scheme[provide].}
+@defform[(for-template require-spec ...)]{See @scheme[require].}
+@defform[(for-label require-spec ...)]{See @scheme[require] and @scheme[provide].}
+
+@defform[(#%require raw-require-spec ...)]{
+
+A primitive import form, to which @scheme[require]
+expands. @italic{To be documented...}}
+
+@defform[(#%provide raw-require-spec ...)]{
+
+A primitive export form, to which @scheme[provide] expands. @italic{To be
+documented...}}

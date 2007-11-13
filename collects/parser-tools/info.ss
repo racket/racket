@@ -1,5 +1,5 @@
 
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define doc.txt "doc.txt")
   (define name "Parser-tools"))
 

@@ -1,10 +1,10 @@
 
-(module reader-example (lib "lang.ss" "big")
-  (require (lib "struct.ss" "scribble")
-           (lib "decode.ss" "scribble")
-           (lib "manual.ss" "scribble")
-           (lib "scheme.ss" "scribble")
-           (lib "class.ss"))
+(module reader-example scheme/base
+  (require scribble/struct
+           scribble/decode
+           scribble/manual
+           scribble/scheme
+           scheme/class)
 
   (provide reader-examples
            read-quote-table

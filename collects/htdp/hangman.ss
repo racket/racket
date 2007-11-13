@@ -243,7 +243,7 @@
     (set! uncover
           (lambda (a-word)
             ;; abstraction breaking hack.
-            (parameterize ([current-inspector (dynamic-require 'drscheme-secrets 'drscheme-inspector)])
+            (parameterize ([current-inspector (dynamic-require ''drscheme-secrets 'drscheme-inspector)])
               (unless (struct? a-word)
                 (error 'hangman "expected a struct, got: ~e" a-word))
               (let ([word-vec (struct->vector a-word)])

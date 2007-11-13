@@ -1,5 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "semaphore"]{Semaphores}

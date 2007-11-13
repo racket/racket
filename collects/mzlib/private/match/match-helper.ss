@@ -85,17 +85,18 @@
     ;; ending when it reaches the top of the hierarchy, or a struct that we can't access
     (define (get-lineage struct-name)
       (let ([super (list-ref 
-                    (local-val struct-name)
+                    (extract-struct-info (local-val struct-name))
                     super-type-index)])
         (cond [(equal? super #t) '()] ;; no super type exists
               [(equal? super #f) '()] ;; super type is unknown
               [else (cons super (get-lineage super))])))
     
-    (define info-on-struct (local-val struct-name))
+    (define info-on-struct (let ([v (local-val struct-name)])
+                             (unless (struct-declaration-info? v) 
+                               (failure-thunk))
+                             (extract-struct-info v)))
     
     (define (ref-info i) (list-ref info-on-struct i))
-    
-    (unless (struct-declaration-info? info-on-struct) (failure-thunk))
     
     (let*-values ([(acc-list) (ref-info accessors-index)]
                   [(mut-list) (ref-info mutators-index)]

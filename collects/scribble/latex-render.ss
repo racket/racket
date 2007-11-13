@@ -1,7 +1,7 @@
 
-(module latex-render mzscheme
+(module latex-render scheme/base
   (require "struct.ss"
-           (lib "class.ss"))
+           mzlib/class)
   (provide render-mixin)
 
   (define current-table-mode (make-parameter #f))

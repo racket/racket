@@ -56,7 +56,7 @@
                           [(nbe ...) nbes])
               (values (syntax/loc stx (letrec-values ([(v ...) nve] ...) nbe ...))
                       (append ve-defs be-defs))))]
-         [(lambda formals be ...)
+         [(#%plain-lambda formals be ...)
           (let-values ([(nbes be-defs) (defun* (syntax->list #'(be ...)))])
             (with-syntax ([(nbe ...) nbes])
               (let ([fvars (free-vars stx)])
@@ -64,10 +64,10 @@
                               (make-closure-definition-syntax 
                                (make-new-closure-label (current-code-labeling) stx)
                                fvars 
-                               (syntax/loc stx (lambda formals nbe ...)))])
+                               (syntax/loc stx (#%plain-lambda formals nbe ...)))])
                   (values (if (empty? fvars)
                               (quasisyntax/loc stx (#,make-CLOSURE))
-                              (quasisyntax/loc stx (#,make-CLOSURE (lambda () (values #,@fvars)))))
+                              (quasisyntax/loc stx (#,make-CLOSURE (#%plain-lambda () (values #,@fvars)))))
                           (append be-defs new-defs))))))]
          [(case-lambda [formals be ...] ...)       
           (let-values ([(nbes be-defs) (defun** (syntax->list #'((be ...) ...)))])
@@ -116,14 +116,11 @@
           (let-values ([(nd d-defs) (defun #'d)])
             (values (quasisyntax/loc stx (#%expression #,nd))
                     d-defs))]
-         [(#%app e ...)
+         [(#%plain-app e ...)
           (let-values ([(es defs) (defun* (syntax->list #'(e ...)))])
-            (values (quasisyntax/loc stx (#%app #,@es))
+            (values (quasisyntax/loc stx (#%plain-app #,@es))
                     defs))]
          [(#%top . v)
-          (values stx
-                  empty)]
-         [(#%datum . d)
           (values stx
                   empty)]
          [(#%variable-reference . v)

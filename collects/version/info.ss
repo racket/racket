@@ -1,4 +1,4 @@
-(module info (lib "infotab.ss" "setup")
+(module info setup/infotab
   (define name "Version")
   (define doc.txt "doc.txt")
   (define tools (list "tool.ss"))

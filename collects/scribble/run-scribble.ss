@@ -29,7 +29,7 @@
     (let* ([contents (dynamic-require `(file ,input) 'contents)]
            [renderer (format->renderer format)]
            [render   (lambda () (renderer contents))])
-      (if output (with-output-to-file output render 'truncate) (render))))
+      (if output (with-output-to-file output render #:exists 'truncate) (render))))
 
   (provide main)
   (define (main args)

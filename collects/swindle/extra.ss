@@ -381,7 +381,7 @@
   (syntax-case stx ()
     [(_ x i ...)
      (let* ([ris  (reverse (syntax->list #'(i ...)))]
-            [idxs (reverse! (cdr ris))]
+            [idxs (reverse (cdr ris))]
             [val  (car ris)])
        (quasisyntax/loc stx
          (put! x #,val #,@(datum->syntax-object #'(i ...) idxs #'(i ...)))))]))
@@ -394,8 +394,10 @@
             typename args))
    (car args)))
 
+#|
 (defmethod (put! [l <list>] x . i_)
   (list-set! l (put!-arg '<list> i_) x))
+|#
 (defmethod (put! [v <vector>] x . i_)
   (vector-set! v (put!-arg '<vector> i_) x))
 (defmethod (put! [s <string>] [c <char>] . i_)
@@ -836,7 +838,7 @@
 ;;; Add a matcher - normally at the end, with add-matcher0 at the beginning
 (define (add-matcher matcher m)
   (slot-set! matcher 'matchers
-             (append! (slot-ref matcher 'matchers) (list m))))
+             (append (slot-ref matcher 'matchers) (list m))))
 (define (add-matcher0 matcher m)
   (slot-set! matcher 'matchers
              (cons m (slot-ref matcher 'matchers))))
@@ -917,7 +919,7 @@
             (let ([v e]) (push! v results) (k #t)))
       ((amb-fail)))
     (amb-fail prev-amb-fail)
-    (reverse! results)))
+    (reverse results)))
 
 ;;; ---------------------------------------------------------------------------
 ;;>>... Very basic UI - works also in console mode

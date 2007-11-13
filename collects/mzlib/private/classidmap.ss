@@ -312,8 +312,8 @@
     (let ([c (syntax-local-context)]
 	  [v (make-class-context)])
       (if (pair? c)
-	  (cons-immutable v c)
-	  (list-immutable v))))
+	  (cons v c)
+	  (list v))))
 
   (define (class-top-level-context? ctx)
     (and (pair? ctx)

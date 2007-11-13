@@ -1,4 +1,4 @@
-(module pasteboard (lib "a-unit.ss")
+#lang scheme/unit
   (require "sig.ss"
            (lib "mred-sig.ss" "mred"))
   
@@ -14,4 +14,4 @@
   (define -keymap% (editor:keymap-mixin standard-style-list%))
   (define file% (editor:file-mixin -keymap%))
   (define backup-autosave% (editor:backup-autosave-mixin file%))
-  (define info% (editor:info-mixin backup-autosave%)))
+  (define info% (editor:info-mixin backup-autosave%))

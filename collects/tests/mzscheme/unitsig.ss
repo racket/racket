@@ -1,9 +1,14 @@
 
 (load-relative "loadtest.ss")
 
-(require (lib "unit200.ss"))
-(require (lib "unitsig200.ss"))
-(require (lib "include.ss"))
+;; Hide keywords from scheme/unit.ss:
+(define import #f)
+(define export #f)
+(define link #f)
+
+(require (lib "mzlib/unit200.ss"))
+(require (lib "mzlib/unitsig200.ss"))
+(require (lib "mzlib/include.ss"))
 
 (Section 'unit/sig)
 
@@ -220,7 +225,7 @@
    m1^
    (import)
    
-   (define-struct a (b c))
+   (define-struct a (b c) #:mutable)
 
    (define x 7)
    (define z 8)
@@ -265,7 +270,7 @@
    (import)
 
    (define xx 5)
-   (define-struct a (b c) (make-inspector))
+   (define-struct a (b c) #:inspector (make-inspector) #:mutable)
    (define v (make-a 5 6))
    (define (y v) (a? v))))
 
@@ -276,7 +281,7 @@
 
    (define-syntax a (list #'struct:a #f #f (list #f) (list #f) #f))
 
-   (define-struct (x a) (y z))
+   (define-struct (x a) (y z) #:mutable)
    (define both (lambda (v)
 		  (and (a? v) (x? v))))))
 
@@ -558,7 +563,7 @@
       [set-foo-bar! 100]
       [foo@ (unit/sig ((struct foo (bar)))
 	      (import)
-	      (define-struct foo (bar)))])
+	      (define-struct foo (bar) #:mutable))])
   (define-syntax (go stx)
     (syntax-case stx ()
       [(_ lookup omit ...)
@@ -597,9 +602,13 @@
 	    (import) 
 	    (define foo 12)))
 	foo))
+
+(require scheme/namespace)
+
 (test 120
       'namespace
-      (parameterize ([current-namespace (make-namespace)])
+      (parameterize ([current-namespace (make-base-namespace)])
+        (namespace-require 'scheme/base)
 	(namespace-variable-bind/invoke-unit/sig
 	 (foo)
 	 (unit/sig (foo)

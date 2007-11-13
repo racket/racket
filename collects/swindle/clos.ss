@@ -134,14 +134,14 @@
                      (not (eq? #\& (string-ref (symbol->string sym) 0))))))
           (loop #'rest (cons #'<top> specializers) (cons #'arg arguments))]
          [_ ; both null and rest argument
-          (let* ([specializers (reverse! specializers)]
-                 [arguments    (reverse! arguments)]
+          (let* ([specializers (reverse specializers)]
+                 [arguments    (reverse arguments)]
                  [name-e       (syntax-e #'name)]
                  [cnm (datum->syntax-object
                        #'args0 'call-next-method #'args0)])
             (unless (null? (syntax-e args))
               (set! arguments
-                    (if (null? arguments) args (append! arguments args))))
+                    (if (null? arguments) args (append arguments args))))
             (let ([makeit
                    (quasisyntax/loc stx
                      (make (*default-method-class*)
@@ -359,12 +359,12 @@
   (define (slots/initargs s/a)
     (let loop ([xs s/a] [r '()])
       (syntax-case xs ()
-        [() (values (datum->syntax-object #'s/a (reverse! r) #'s/a)
+        [() (values (datum->syntax-object #'s/a (reverse r) #'s/a)
                     #'())]
         [((name . args) . more) (identifier? #'name)
          (loop #'more (cons #'(list 'name . args) r))]
         [(key val . more) (syntax-keyword? #'key)
-         (values (datum->syntax-object #'s/a (reverse! r) #'s/a)
+         (values (datum->syntax-object #'s/a (reverse r) #'s/a)
                  #'(key val . more))]
         [(name . more) (identifier? #'name)
          (loop #'more (cons #'(list 'name) r))])))
@@ -607,7 +607,7 @@
                                  #'(rest ...)
                                  (list* #'v (car d) r))]
                           [_ (datum->syntax-object #'(args ...)
-                                                   (append (reverse! r) as)
+                                                   (append (reverse r) as)
                                                    #'(args ...))]))]
                      [else (raise-syntax-error
                             #f "bad form for :default-slot-options"
@@ -648,7 +648,7 @@
                                             '(:reader :writer :accessor))
                                     #''value #'value)
                                   #'keyword res))]
-                    [() (datum->syntax-object as (reverse! res) as)]))))
+                    [() (datum->syntax-object as (reverse res) as)]))))
             (when (eq? autoaccessors #t)
               (set! autoaccessors
                     (syntax-e ((syntax-local-value
@@ -658,7 +658,7 @@
                #f (concat "`:autoaccessors' expecting either a "
                           "`:slot' or `:class-slot' as value.")
                stx initargs))
-            (let ([slots (map do-slot (reverse! slots2))])
+            (let ([slots (map do-slot (reverse slots2))])
               #`(begin
                   (define name
                     (class-maker name supers
@@ -671,7 +671,7 @@
                                                initargs))
                                       #'slots0)))
                   #,@(datum->syntax-object
-                      #'stx (reverse! defmethods) #'stx)
+                      #'stx (reverse defmethods) #'stx)
                   #,@(if automaker
                        (with-syntax
                            ([maker (datum->syntax-object

@@ -1,6 +1,8 @@
 
 (load-relative "loadtest.ss")
 
+(require scheme/namespace)
+
 (Section 'namespaces)
 
 (arity-test eval 1 2)
@@ -17,14 +19,17 @@
 
 (test `,void eval `',void)
 
+#|
 (test car eval 'car (scheme-report-environment 5))
 (err/rt-test (eval 'car (null-environment 5)) exn:fail:contract:variable?)
 (err/rt-test (eval 'lambda (null-environment 5)) exn:fail:syntax?)
 (err/rt-test (eval 'lambda (scheme-report-environment 5)) exn:fail:syntax?)
 (err/rt-test (eval 'lambda (null-environment 5)) exn:fail:syntax?)
+|#
 
 ; Test primitive-name
-(let ([gvl (parameterize ([current-namespace (make-namespace)]) 
+(let ([gvl (parameterize ([current-namespace (make-base-namespace)]) 
+             (namespace-require/copy 'scheme/base)
 	     (map (lambda (s)
 		    (cons s (with-handlers ([exn:fail? (lambda (x) #f)])
 			      (namespace-variable-value s))))
@@ -52,32 +57,33 @@
 			    #f))))))
 	 gvl)))
 
-(define (test-empty . flags)
-  (let ([e (apply make-namespace flags)]
-	[orig (current-namespace)])
-    (parameterize ([current-namespace e])
-      (test null namespace-mapped-symbols)
-      (test 'unbound 'empty-namespace
-	    (with-handlers ([void (lambda (exn) 'unbound)])
-	      (eval 'car)))
-      (test 'unbound 'empty-namespace
-	    (with-handlers ([void (lambda (exn) 'unbound)])
-	      (eval '#%car)))
-      (namespace-set-variable-value! 'hello 5)
-      (namespace-attach-module orig 'mzscheme)
-      (namespace-require '(rename mzscheme #%top #%top))
-      (test 5 'empty-namespace (eval 'hello))
-      (test #t 'top+hello (let ([s (namespace-mapped-symbols)])
-			    (or (equal? s '(#%top hello))
-				(equal? s '(hello #%top))))))))
-(test-empty 'empty)
+;; Test empty namespace:
+(let ([e (make-namespace)]
+      [orig (current-namespace)])
+  (parameterize ([current-namespace e])
+    (test null namespace-mapped-symbols)
+    (test 'unbound 'empty-namespace
+          (with-handlers ([void (lambda (exn) 'unbound)])
+            (eval 'car)))
+    (test 'unbound 'empty-namespace
+          (with-handlers ([void (lambda (exn) 'unbound)])
+            (eval '#%car)))
+    (namespace-set-variable-value! 'hello 5)
+    (namespace-attach-module orig 'mzscheme)
+    (namespace-require '(rename mzscheme #%top #%top))
+    (test 5 'empty-namespace (eval 'hello))
+    (test #t 'top+hello (let ([s (namespace-mapped-symbols)])
+                          (or (equal? s '(#%top hello))
+                              (equal? s '(hello #%top)))))))
 
 (arity-test namespace-mapped-symbols 0 1)
 (arity-test namespace-variable-value 1 4)
 (arity-test namespace-set-variable-value! 2 4)
 (arity-test namespace-undefine-variable! 1 2)
 
-(define n (make-namespace))
+(define n (make-base-namespace))
+(parameterize ([current-namespace n])
+  (namespace-require 'scheme/base))
 (test #t 'same-with-arg-and-param
       ((lambda (a b)
 	 (and (andmap (lambda (ai) (memq ai b)) a)

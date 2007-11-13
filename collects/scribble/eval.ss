@@ -1,12 +1,12 @@
 
-(module eval (lib "lang.ss" "big")
+(module eval scheme/base
   (require "manual.ss"
            "struct.ss"
            "scheme.ss"
            "decode.ss"
-           (lib "class.ss")
-           (lib "file.ss")
-           (lib "string.ss"))
+           scheme/file
+           mzlib/string
+           (for-syntax scheme/base))
 
   (provide interaction
            interaction-eval
@@ -33,6 +33,17 @@
 
   (define maxlen 60)
 
+  (namespace-require 'scheme/base)
+
+  (define (literal-string style s)
+    (let ([m (regexp-match #rx"^(.*)(  +)(.*)$" s)])
+      (if m
+          (make-element #f
+                        (list (literal-string style (cadr m))
+                              (hspace (string-length (caddr m)))
+                              (literal-string style (cadddr m))))
+          (make-element style (list s)))))
+
   (define (format-output str style)
     (if (string=? "" str)
         null
@@ -48,14 +59,14 @@
                   (make-paragraph
                    (list
                     (hspace 2)
-                    (span-class style (car s))))
+                    (literal-string style (car s))))
                   (make-table
                    #f
                    (map (lambda (s)
                           (list (make-flow (list (make-paragraph
                                                   (list
                                                    (hspace 2)
-                                                   (span-class style s)))))))
+                                                   (literal-string style s)))))))
                         s))))))))))
 
   (define (interleave title expr-paras val-list+outputs)
@@ -145,11 +156,12 @@
       => (lambda (v) v)]
      [(string? v) (install ht v (string-copy v))]
      [(bytes? v) (install ht v (bytes-copy v))]
-     [(pair? v) (let ([p (cons #f #f)])
-                  (hash-table-put! ht v p)
-                  (set-car! p (copy-value (car v) ht))
-                  (set-cdr! p (copy-value (cdr v) ht))
-                  p)]
+     [(pair? v) (cons (copy-value (car v) ht)
+                      (copy-value (cdr v) ht))]
+     [(mpair? v) (let ([p (mcons #f #f)])
+                   (set-mcar! p (copy-value (mcar v) ht))
+                   (set-mcdr! p (copy-value (mcdr v) ht))
+                   p)]
      [(vector? v) (let ([v2 (make-vector (vector-length v))])
                     (hash-table-put! ht v v2)
                     (let loop ([i (vector-length v2)])
@@ -169,12 +181,12 @@
      [((code:comment . _) . rest)
       (strip-comments #'rest)]
      [(a . b)
-      (datum->syntax-object stx
-                            (cons (strip-comments #'a)
-                                  (strip-comments #'b))
-                            stx
-                            stx
-                            stx)]
+      (datum->syntax stx
+                     (cons (strip-comments #'a)
+                           (strip-comments #'b))
+                     stx
+                     stx
+                     stx)]
      [code:blank #'(void)]
      [else stx]))
       
@@ -187,7 +199,7 @@
                              (let ([s (strip-comments s)])
                                (syntax-case s (module)
                                  [(module . _rest)
-                                  (syntax-object->datum s)]
+                                  (syntax->datum s)]
                                  [_else s]))))
           list)))
 

@@ -167,7 +167,7 @@
      (make-same-test (interface () a b c) '(interface ...))
      
      (make-same-test (delay 1) '(delay ...))
-     (make-same-test (let () (define-struct a (a) (make-inspector)) (make-a 3)) '(make-a 3))
+     (make-same-test (let () (define-struct a (a) #:inspector (make-inspector)) (make-a 3)) '(make-a 3))
      (make-same-test (box 3) '(box 3))
      (make-pctest null 'empty 'empty 'empty '`() '`() '`() 'empty)
      (make-same-test add1 'add1)
@@ -231,7 +231,7 @@
                   '`("" "" ,(vector) ,(vector))
                   '`("" "" ,(vector) ,(vector))
                   '(cons "" (cons "" (cons (vector) (cons (vector) empty)))))
-     (make-pctest (let ([x (list 1)]) (set-car! x x) x)
+     (make-pctest (read (open-input-string "#0=(#0#)"))
                   '(shared ([-0- (list -0-)]) -0-)
                   '(shared ([-0- (list -0-)]) -0-)
                   '(shared ([-0- (list -0-)]) -0-)
@@ -239,7 +239,7 @@
                   '(shared ([-0- `(,-0-)]) -0-)
                   '(shared ([-0- `(,-0-)]) -0-)
                   '(shared ([-0- (cons -0- empty)]) -0-))
-     (make-pctest (let ([x (list 1)]) (set-cdr! x x) x)
+     (make-pctest (read (open-input-string "#0=(1 . #0#)"))
                   '(shared ([-0- (cons 1 -0-)]) -0-)
                   '(shared ([-0- (cons 1 -0-)]) -0-)
                   '(shared ([-0- (cons 1 -0-)]) -0-)
@@ -247,9 +247,7 @@
                   '(shared ([-0- `(1 . ,-0-)]) -0-)
                   '(shared ([-0- `(1 . ,-0-)]) -0-)
                   '(shared ([-0- (cons 1 -0-)]) -0-))
-     (make-pctest (let* ([a (list 1 2 3)]
-                         [b (list 1 a (cdr a))])
-                    (set-car! b b)
+     (make-pctest (let ([b (read (open-input-string "#0=(#0# (1 . #1=(2 3)) #1#)"))])
                     (append b (list (list 2 3))))
                   '(shared ([-1- (list -1- (list 1 2 3) (list 2 3))])
                      (list -1- (list 1 2 3) (list 2 3) (list 2 3)))
@@ -276,9 +274,7 @@
                                  (cons (cons 2 (cons 3 empty)) 
                                        (cons (cons 2 (cons 3 empty))
                                              empty))))))
-     (make-no-cons-test (let* ([a (list 1 2 3)]
-                               [b (list 1 a (cdr a))])
-                          (set-car! b b)
+     (make-no-cons-test (let ([b (read (open-input-string "#0=(#0# (1 . #1=(2 3)) #1#)"))])
                           (let* ([share-list (append b (list (list 2 3)))]
                                  [v (vector 1 share-list (cdr share-list))])
                             (vector-set! v 0 v)
@@ -356,7 +352,7 @@
   (test-shared "abc" "abc")
   (test-shared (list 1 2 3) '(list 1 2 3))
   (test-shared (vector 1 2 3) '(vector 1 2 3))
-  (let () (define-struct a () (make-inspector)) (test-shared (make-a) '(make-a)))
+  (let () (define-struct a () #:inspector (make-inspector)) (test-shared (make-a) '(make-a)))
   (test-shared (box 1) '(box 1))
   (test-shared (make-hash-table) '(hash-table)))
 
@@ -375,7 +371,7 @@
 
 (let ()
   (define-struct hidden (a))
-  (define-struct visible (b) (make-inspector))
+  (define-struct visible (b) #:inspector (make-inspector))
   (test '(make-hidden ...) print-convert (make-hidden 1))
   (test '(make-visible 2) print-convert (make-visible 2)))
 

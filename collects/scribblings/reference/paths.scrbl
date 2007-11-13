@@ -1,7 +1,9 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "pathutils" #:style 'toc]{Paths}
+
+@declare-exporting[(lib "scheme/path")]
 
 When a Scheme procedure takes a filesystem path as an argument, the
 path can be provided either as a string or as an instance of the
@@ -28,13 +30,13 @@ string containing nul is provided as a path to any procedure except
 @scheme[absolute-path?], @scheme[relative-path?], or
 @scheme[complete-path?], the @exnraise[exn:fail:contract].
 
-Most Scheme primitives that accept paths first @deftech{path-expand}
-the path before using it. Procedures that build paths or merely check
-the form of a path do not perform this expansion, with the exception
-of @scheme[simplify-path] for Windows paths.  For more information
-about path expansion and other platform-specific details, see
-@secref["unixpaths"] for @|AllUnix| paths and
-@secref["windowspaths"] for Windows paths.
+Most Scheme primitives that accept paths first @deftech{cleanse} the
+path before using it. Procedures that build paths or merely check the
+form of a path do not cleanse paths, with the exceptions of
+@scheme[cleanse-path], @scheme[expand-user-path], and
+@scheme[simplify-path].  For more information about path cleansing and
+other platform-specific details, see @secref["unixpaths"] for
+@|AllUnix| paths and @secref["windowspaths"] for Windows paths.
 
 @;------------------------------------------------------------------------
 @section{Manipulating Paths}
@@ -110,10 +112,9 @@ path for any platform.
 Conversion to and from byte values is useful for marshaling and
 unmarshaling paths, but manipulating the byte form of a path is
 generally a mistake. In particular, the byte string may start with a
-@litchar{\\?\REL} encoding for Windows paths or a @litchar{./~}
-encoding for @|AllUnix| paths. Instead of @scheme[path->bytes], use
-@scheme[split-path] and @scheme[path-element->bytes] to manipulate
-individual path elements.}
+@litchar{\\?\REL} encoding for Windows paths. Instead of
+@scheme[path->bytes], use @scheme[split-path] and
+@scheme[path-element->bytes] to manipulate individual path elements.}
 
 @defproc[(string->path-element [str string?]) path?]{
 
@@ -320,10 +321,10 @@ This procedure does not access the filesystem.}
 Returns @scheme[path] if @scheme[path] syntactically refers to a
 directory and ends in a separator, otherwise it returns an extended
 version of @scheme[path] that specifies a directory and ends with a
-separator. For example, under @|AllUnix|, the path @file{x/y/}
+separator. For example, under @|AllUnix|, the path @filepath{x/y/}
 syntactically refers to a directory and ends in a separator, but
-@file{x/y} would be extended to @file{x/y/}, and @file{x/..} would be
-extended to @file{x/../}. The @scheme[path] argument can be a path for
+@filepath{x/y} would be extended to @filepath{x/y/}, and @filepath{x/..} would be
+extended to @filepath{x/../}. The @scheme[path] argument can be a path for
 any platform, and the result will be for the same platform.  
 
 This procedure does not access the filesystem.}
@@ -339,11 +340,20 @@ owning @scheme[path]), otherwise @scheme[path] is returned (after
 expansion).}
 
 
-@defproc[(expand-path [path path-string?]) path]{
+@defproc[(cleanse-path [path path-string?] [expand-tilde? any/c #f]) path]{
 
-@tech{Path-expands} @scheme[path] (as described at the beginning of
+@techlink{Cleanse}s @scheme[path] (as described at the beginning of
 this section). The filesystem might be accessed, but the source or
 expanded path might be a non-existent path.}
+
+
+@defproc[(expand-user-path [path path-string?]) path]{
+
+@techlink{Cleanse}s @scheme[path]. In addition, under @|AllUnix|, a
+leading @litchar{~} is treated as user's home directory and expanded;
+the username follows the @litchar{~} (before a @litchar{/} or the end
+of the path), where @litchar{~} by itself indicates the home directory
+of the current user.}
 
 
 @defproc[(simplify-path [path path-string?][use-filesystem? boolean? #t]) path?]{
@@ -369,22 +379,19 @@ that the resulting path refers to the same directory as before).
 When @scheme[use-filesystem?] is @scheme[#f], up-directory indicators
 are removed by deleting a preceding path element, and the result can
 be a relative path with up-directory indicators remaining at the
-beginning of the path or, for @|AllUnix| paths, after an initial path
-element that starts with @litchar{~}; otherwise, up-directory
-indicators are dropped when they refer to the parent of a root
-directory. Similarly, the result can be the same as
+beginning of the path or, for @|AllUnix| paths; otherwise,
+up-directory indicators are dropped when they refer to the parent of a
+root directory. Similarly, the result can be the same as
 @scheme[(build-path 'same)] (but with a trailing separator) if
 eliminating up-directory indicators leaves only same-directory
-indicators, and the result can start with a same-directory indicator
-for @|AllUnix| paths if eliminating it would make the result start
-with a @litchar{~}.
+indicators.
 
 The @scheme[path] argument can be a path for any platform when
 @scheme[use-filesystem?] is @scheme[#f], and the resulting path is for
 the same platform.
 
 The filesystem might be accessed when @scheme[use-filesystem?] is
-true, but the source or expanded path might be a non-existent path. If
+true, but the source or simplified path might be a non-existent path. If
 @scheme[path] cannot be simplified due to a cycle of links, the
 @exnraise[exn:fail:filesystem] (but a successfully simplified path may
 still involve a cycle of links if the cycle did not inhibit the

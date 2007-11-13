@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["mz.ss"]
 
 @title[#:tag "numbers"]{Numbers}
@@ -100,6 +100,27 @@ noted above). Two numbers are @scheme[equal?] when they are
  @scheme[+nan.0] is not.
 
 @examples[(integer? 1) (integer? 2.3) (integer? 4.0) (integer? 2+3i) (integer? "hello")]}
+
+
+@defproc[(exact-integer? [v any/c]) boolean?]{
+
+Returns @scheme[(and (integer? v) (exact? v))].
+
+@examples[(exact-integer? 1) (exact-integer? 4.0)]}
+
+
+@defproc[(exact-nonnegative-integer? [v any/c]) boolean?]{
+
+Returns @scheme[(and (exact-integer? v) (not (negative? v)))].
+
+@examples[(exact-nonnegative-integer? 0) (exact-nonnegative-integer? -1)]}
+
+
+@defproc[(exact-positive-integer? [v any/c]) boolean?]{
+
+Returns @scheme[(and (exact-integer? v) (positive? v))].
+
+@examples[(exact-positive-integer? 1) (exact-positive-integer? 0)]}
 
 
 @defproc[(zero? [z number?]) boolean?]{ Returns @scheme[(= 0 z)].
@@ -534,6 +555,8 @@ noted above). Two numbers are @scheme[equal?] when they are
 @; ------------------------------------------------------------------------
 @section{Random Numbers}
 
+@declare-exporting[(lib "scheme/random")]
+
 @defproc*[([(random [k (and/c positive-exact-integer?
                               (integer-in 1 (sub1 (expt 2 31))))])
             nonnegative-exact-integer?]
@@ -602,6 +625,8 @@ one of the last three integers must be non-zero.}
 
 @; ------------------------------------------------------------------------
 @section{Number--String Conversions}
+
+@declare-exporting[(lib "scheme/number")]
 
 @section-index["numbers" "machine representations"]
 @section-index["numbers" "floating-point"]

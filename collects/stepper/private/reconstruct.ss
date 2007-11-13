@@ -3,15 +3,16 @@
 ; a varref at the top of the mark-list must either be a top-level-variable
 ;  or have a value in some mark somewhere (or both).
 
-(module reconstruct mzscheme
-  (require (prefix kernel: (lib "kerncase.ss" "syntax"))
+(module reconstruct scheme/base
+  (require (prefix-in kernel: (lib "kerncase.ss" "syntax"))
            (lib "list.ss")
            (lib "etc.ss")
 	   (lib "contract.ss")
            "marks.ss"
            "model-settings.ss"
            "shared.ss"
-           "my-macros.ss")
+           "my-macros.ss"
+           (for-syntax scheme/base))
 
   (provide/contract 
    [reconstruct-completed (syntax? 
@@ -190,7 +191,7 @@
                         (varref-skip-step? expr)])]
                   [(#%top . id-stx)
                    (varref-skip-step? #`id-stx)]
-                  [(#%app . terms)
+                  [(#%plain-app . terms)
                    ; don't halt for proper applications of constructors
                    (let ([fun-val (lookup-binding mark-list (get-arg-var 0))])
                      (and (procedure? fun-val)
@@ -215,7 +216,7 @@
     (let* ([expanded-application (expand (cons name valid-args))]
            [stepper-safe-expanded (skipto/auto expanded-application 'discard (lambda (x) x))]
            [just-the-fn (kernel:kernel-syntax-case stepper-safe-expanded #f
-                          [(#%app fn . rest)
+                          [(#%plain-app fn . rest)
                            #`fn]
                           [else (error 'find-special-name "couldn't find expanded name for ~a" name)])])      
       (eval (syntax-recertify just-the-fn expanded-application (current-code-inspector) #f))))
@@ -268,8 +269,8 @@
   
   (define (step-was-app? mark-list)
     (and (not (null? mark-list))
-         (syntax-case (mark-source (car mark-list)) (#%app)
-           [(#%app . rest)
+         (syntax-case (mark-source (car mark-list)) (#%plain-app)
+           [(#%plain-app . rest)
             #t]
            [else
             #f])))
@@ -352,9 +353,9 @@
                      [recon (kernel:kernel-syntax-case expr #f
                               
                               ; lambda
-                              [(lambda . clause-stx)
+                              [(#%plain-lambda . clause-stx)
                                (let* ([clause (recon-lambda-clause (syntax clause-stx))])
-                                 #`(lambda #,@clause))]
+                                 #`(#%plain-lambda #,@clause))]
                               
                               ; case-lambda
                               [(case-lambda . clauses-stx)
@@ -400,11 +401,7 @@
                               [(with-continuation-mark . rest) (recon-basic)]
                               
                               ; application
-                              [(#%app . terms) (recon-basic)]
-                              
-                              ; #%datum
-                              [(#%datum . datum) 
-                               #`#,(recon-value (syntax-e #'datum) render-settings)]
+                              [(#%plain-app . terms) (recon-basic)]
                               
                               ; varref                        
                               [var-stx
@@ -448,7 +445,7 @@
                               
                               [else
                                (error 'recon-source "no matching clause for syntax: ~a" (if (syntax? expr)
-                                                                                            (syntax-object->datum expr)
+                                                                                            (syntax->datum expr)
                                                                                             expr))])])
                 (attach-info recon expr)))))))
   
@@ -486,7 +483,7 @@
   (define (fixup-name s)
     (let ([m (regexp-match re:beginner: (symbol->string (syntax-e s)))])
       (if m
-	  (datum->syntax-object s (string->symbol (cadr m)) s s)
+	  (datum->syntax s (string->symbol (cadr m)) s s)
 	  s)))
   (define re:beginner: (regexp "^beginner:(.*)$"))
   
@@ -698,16 +695,16 @@
                  (kernel:kernel-syntax-case exp #f
                    [(begin . bodies)
                     (if (eq? so-far nothing-so-far)
-                        (error 'recon-inner "breakpoint before a begin reduction should have a result value in exp: ~a" (syntax-object->datum exp))
+                        (error 'recon-inner "breakpoint before a begin reduction should have a result value in exp: ~a" (syntax->datum exp))
                         #`(begin #,so-far #,@(map recon-source-current-marks (cdr (syntax->list #'bodies)))))]
                    [(begin0 first-body . rest-bodies)
                     (if (eq? so-far nothing-so-far)
-                        (error 'recon-inner "breakpoint before a begin0 reduction should have a result value in exp: ~a" (syntax-object->datum exp))
+                        (error 'recon-inner "breakpoint before a begin0 reduction should have a result value in exp: ~a" (syntax->datum exp))
                         #`(begin0 #,(recon-value (lookup-binding mark-list begin0-temp) render-settings)
                                   #,so-far
                                   #,@(map recon-source-current-marks (syntax->list #`rest-bodies))))]
                    [else
-                    (error 'recon-inner "unexpected fake-exp expression: ~a" (syntax-object->datum exp))])
+                    (error 'recon-inner "unexpected fake-exp expression: ~a" (syntax->datum exp))])
                  
                  (kernel:kernel-syntax-case exp #f 
                                             ; variable references
@@ -723,7 +720,7 @@
                                                  (error 'recon-inner "variable reference given as context: ~a" exp))]
                                             
                                             ; applications
-                                            [(#%app . terms)
+                                            [(#%plain-app . terms)
                                              (attach-info
                                               (let* ([sub-exprs (syntax->list (syntax terms))]
                                                      [arg-temps (build-list (length sub-exprs) get-arg-var)]
@@ -736,15 +733,15 @@
                                                                                                      (zip sub-exprs arg-vals))]
                                                                 [rectified-evaluated (map (lx (recon-value _ render-settings)) (map cadr evaluated))])
                                                                (if (null? unevaluated)
-                                                                   #`(#%app . #,rectified-evaluated)
-                                                                   #`(#%app 
+                                                                   #`(#%plain-app . #,rectified-evaluated)
+                                                                   #`(#%plain-app 
                                                                       #,@rectified-evaluated
                                                                       #,so-far 
                                                                       #,@(map recon-source-current-marks (cdr (map car unevaluated)))))))
                                                   ((called)
                                                    (if (eq? so-far nothing-so-far)
-                                                       (datum->syntax-object #'here `(,#'#%app ...)) ; in unannotated code
-                                                       (datum->syntax-object #'here `(,#'#%app ... ,so-far ...))))
+                                                       (datum->syntax #'here `(,#'#%plain-app ...)) ; in unannotated code
+                                                       (datum->syntax #'here `(,#'#%plain-app ... ,so-far ...))))
                                                   (else
                                                    (error 'recon-inner "bad label (~v) in application mark in expr: ~a" (mark-label (car mark-list)) exp))))
                                               exp)]
@@ -808,7 +805,7 @@
                                                   #`(begin #,(recon-source-current-marks (syntax clause)))
                                                   (error 
                                                    'recon-inner
-                                                   "stepper:reconstruct: one-clause begin appeared as context: ~a" (syntax-object->datum exp)))
+                                                   "stepper:reconstruct: one-clause begin appeared as context: ~a" (syntax->datum exp)))
                                               exp)]
                                             
                                             #;[(begin)
@@ -817,7 +814,7 @@
                                                   #`(begin)
                                                   (error 
                                                    'recon-inner
-                                                   "stepper-reconstruct: zero-clause begin appeared as context: ~a" (syntax-object->datum exp))))]
+                                                   "stepper-reconstruct: zero-clause begin appeared as context: ~a" (syntax->datum exp))))]
                                             
                                             ; begin0 : 
                                             ;; one-body begin0: perhaps this will turn out to be a special case of the
@@ -855,7 +852,7 @@
                                             [else
                                              (error
                                               'recon-inner
-                                              "stepper:reconstruct: unknown object to reconstruct: ~a" (syntax-object->datum exp))]))))
+                                              "stepper:reconstruct: unknown object to reconstruct: ~a" (syntax->datum exp))]))))
          
          ; the main recursive reconstruction loop is in recon:
          ; recon : (syntax-object mark-list boolean -> syntax-object)
@@ -884,7 +881,7 @@
          #;(define _ (printf "break-kind: ~a\ninnermost source: ~a\nreturned-value-list: ~a\n" 
                            break-kind
                            (and (pair? mark-list)
-                                (syntax-object->datum (mark-source (car mark-list))))
+                                (syntax->datum (mark-source (car mark-list))))
                            returned-value-list))
              
          (define answer
@@ -912,7 +909,7 @@
                                               [(let-values ([vars . rest] ...) . bodies)
                                                (apply append (map syntax->list (syntax->list #`(vars ...))))]
                                               [else (error 'reconstruct "expected a let-values as source for a double-break, got: ~e"
-                                                           (syntax-object->datum source-expr))])]
+                                                           (syntax->datum source-expr))])]
                      [innermost-after (mark-as-highlight (recon-source-expr (mark-source (car mark-list)) mark-list null newly-lifted-bindings render-settings))])
                 (list (recon innermost-before (cdr mark-list) #f)
                       (recon innermost-after (cdr mark-list) #f))))))

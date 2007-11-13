@@ -115,12 +115,12 @@ end-string
       (delete/continue file.o)))
 
   (define (build-helper compile-directory home variant)
-    (let ((file (build-path compile-directory "make-gl-info-helper"))
-          (c (build-path compile-directory "make-gl-info-helper.c"))
+    (let ((file (build-path compile-directory "make-gl-info-helper_ss"))
+          (c (build-path compile-directory "make-gl-info-helper_ss.c"))
           (so (build-path compile-directory
                           "native"
                           (system-library-subpath variant) 
-                          (path-replace-suffix "make-gl-info-helper.so" (system-type 'so-suffix)))))
+                          (path-replace-suffix "make-gl-info-helper_ss.so" (system-type 'so-suffix)))))
       (make-directory* (build-path compile-directory "native" (system-library-subpath variant)))
       (with-output-to-file c
         (lambda () (display c-file))
@@ -145,7 +145,7 @@ end-string
 	  t)))
   
   (define (make-gl-info compile-directory home)
-    (let ((zo (build-path compile-directory "gl-info.zo"))
+    (let ((zo (build-path compile-directory "gl-info_ss.zo"))
           (mod
            (compile
             (case (effective-system-type home)

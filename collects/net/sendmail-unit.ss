@@ -1,4 +1,5 @@
-(module sendmail-unit (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "process.ss") "sendmail-sig.ss")
 
   (import)
@@ -115,4 +116,4 @@
                     (display s writer)      ; We use -i, so "." is not a problem
                     (newline writer))
                   text)
-        (close-output-port writer)))))
+        (close-output-port writer))))

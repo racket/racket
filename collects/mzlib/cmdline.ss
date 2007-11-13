@@ -283,7 +283,7 @@
       (let* ([finalled? #f] ; set to true when 'once-final is seen
              [once-spec-set
 	      (lambda (lines)
-		(let ([set (cons #f (apply append (map car lines)))])
+		(let ([set (mcons #f (apply append (map car lines)))])
 		  (map
 		   (lambda (line) (cons set line))
 		   lines)))]
@@ -301,13 +301,14 @@
               ;;  any number of times.
               ;; If <once-set> is 'final, then its like #f, and `finalled?' should
               ;;  be set.
-              ;; Otherwise, <once-set> is (list <bool> <string> ...) where <bool>
+              ;; Otherwise, <once-set> is (mcons <bool> (list <string> ...)) where <bool>
               ;;  starts as #f and is mutated to #t when one of <string> is
               ;;  matched.
 	      (apply
 	       append
 	       (list
-		(list #f (list "--help" "-h")
+		(list #f 
+                      (list "--help" "-h")
 		      (lambda (f)
 			(let* ([sp (open-output-string)])
 			  (fprintf sp "~a [ <option> ... ]" program)
@@ -451,10 +452,10 @@
 		   [(member flag (cadar table))
 		    (when (eq? 'final (caar table))
                       (set! finalled? #t))
-		    (when (pair? (caar table))
+		    (when (mpair? (caar table))
 		      (let ([set (caar table)])
-			(if (car set)
-			    (let ([flags (cdr set)])
+			(if (mcar set)
+			    (let ([flags (mcdr set)])
 			      (raise-user-error 
 			       (string->symbol (format "~a" program))
 			       (let ([s (if (= 1 (length flags))
@@ -473,7 +474,7 @@
 							   (loop prefix (cdr flags) " "))))
 					     (string-append (substring orig-multi 0 1) orig-multi))
 				     s))))
-			    (set-car! set #t))))
+			    (set-mcar! set #t))))
 		    (call-handler (caddar table) flag args r-acc k)]
 		   [else (loop (cdr table))])))])
 	(let loop ([args arguments][r-acc null])

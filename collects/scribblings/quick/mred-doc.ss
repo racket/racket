@@ -8,7 +8,7 @@
        (begin
          (provide id)
          (define id (if mr-eval?
-                        (dynamic-require '(lib "mred.ss" "mred") 'id)
+                        (dynamic-require '(lib "mred/mred.ss") 'id)
                         #f)))]
       [(_ id ...)
        (begin (bounce id) ...)]))

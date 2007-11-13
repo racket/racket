@@ -5,9 +5,6 @@
 	   (lib "list.ss")
 	   "private/port.ss")
 
-  (define (exact-non-negative-integer? i)
-    (and (number? i) (exact? i) (integer? i) (i . >= . 0)))
-
   (define (input-port-with-progress-evts? ip)
     (and (input-port? ip)
 	 (port-provides-progress-evts? ip)))
@@ -168,17 +165,17 @@
 	     [(null? special-peeked) 
 	      (when progress-requested? (make-progress))
 	      (read s)]
-	     [else (if (bytes? (car special-peeked))
-		       (let ([b (car special-peeked)])
+	     [else (if (bytes? (mcar special-peeked))
+		       (let ([b (mcar special-peeked)])
 			 (write-bytes b peeked-w)
-			 (set! special-peeked (cdr special-peeked))
+			 (set! special-peeked (mcdr special-peeked))
 			 (when (null? special-peeked)
 			   (set! special-peeked-tail #f))
 			 (read-bytes-avail!* s peeked-r))
 		       (begin0
-			(car special-peeked)
+			(mcar special-peeked)
 			(make-progress)
-			(set! special-peeked (cdr special-peeked))
+			(set! special-peeked (mcdr special-peeked))
 			(when (null? special-peeked)
 			  (set! special-peeked-tail #f))))])))
       (define (peek-it-with-lock s skip unless-evt)
@@ -227,7 +224,7 @@
 			(choice-evt r (wrap-evt unless-evt (lambda (x) #f)))
 			r)]
 		   [else
-		    (set! special-peeked (cons r null))
+		    (set! special-peeked (mcons r null))
 		    (set! special-peeked-tail special-peeked)
 		    ;; Now try again
 		    (do-peek-it s skip unless-evt)]))]
@@ -256,34 +253,34 @@
 			 [else (let ([v (if (number? r)
 					    (subbytes t 0 r)
 					    r)])
-				 (let ([pr (cons v null)])
-				   (set-cdr! special-peeked-tail pr)
+				 (let ([pr (mcons v null)])
+				   (set-mcdr! special-peeked-tail pr)
 				   (set! special-peeked-tail pr))
 				 ;; Got something; now try again
 				 (do-peek-it s skip unless-evt))]))]
-		     [(eof-object? (car l)) 
+		     [(eof-object? (mcar l)) 
 		      ;; No peeking past an EOF
 		      eof]
-		     [(procedure? (car l))
+		     [(procedure? (mcar l))
 		      (if (zero? sk)
                           ;; We should call the procedure only once. Change
-                          ;;  (car l) to a memoizing function, if it isn't already:
-                          (let ([proc (car l)])
+                          ;;  (mcar l) to a memoizing function, if it isn't already:
+                          (let ([proc (mcar l)])
                             (if (memoized? proc)
                                 proc
                                 (let ([proc (memoize proc)])
-                                  (set-car! l proc)
+                                  (set-mcar! l proc)
                                   proc)))
                           ;; Skipping over special...
-			  (loop (sub1 sk) (cdr l)))]
-		     [(bytes? (car l))
-		      (let ([len (bytes-length (car l))])
+			  (loop (sub1 sk) (mcdr l)))]
+		     [(bytes? (mcar l))
+		      (let ([len (bytes-length (mcar l))])
 			(if (sk . < . len)
 			    (let ([n (min (bytes-length s)
 					  (- len sk))])
-			      (bytes-copy! s 0 (car l) sk (+ sk n))
+			      (bytes-copy! s 0 (mcar l) sk (+ sk n))
 			      n)
-			    (loop (- sk len) (cdr l))))])))])
+			    (loop (- sk len) (mcdr l))))])))])
 	      v)))
       (define (commit-it-with-lock amt unless-evt done-evt)
 	(if use-manager?
@@ -309,22 +306,22 @@
 		 [(null? l)
 		  ;; Requested commit was larger than previous peeks
 		  #f]
-		 [(bytes? (car l))
-		  (let ([bl (bytes-length (car l))])
+		 [(bytes? (mcar l))
+		  (let ([bl (bytes-length (mcar l))])
 		    (if (bl . > . amt)
 			;; Split the string
-			(let ([next (cons
-				     (subbytes (car l) amt)
-				     (cdr l))])
-			  (set-car! l (subbytes (car l) 0 amt))
-			  (set-cdr! l next)
+			(let ([next (mcons
+				     (subbytes (mcar l) amt)
+				     (mcdr l))])
+			  (set-mcar! l (subbytes (mcar l) 0 amt))
+			  (set-mcdr! l next)
 			  (when (eq? l special-peeked-tail)
 			    (set! special-peeked-tail next))
-			  (loop 0 (cdr l)))
+			  (loop 0 (mcdr l)))
 			;; Consume this string...
-			(loop  (- amt bl) (cdr l))))]
+			(loop  (- amt bl) (mcdr l))))]
 		 [else
-		  (loop (sub1 amt) (cdr l))])))))
+		  (loop (sub1 amt) (mcdr l))])))))
       (define (actual-commit p-commit l unless-evt done-evt)
 	;; The `finish' proc finally, actually, will commit...
 	(define (finish)
@@ -418,7 +415,7 @@
 	     (lambda (s skip unless-evt)
 	       (if (or unless-evt
 		       (byte-ready? peeked-r)
-		       (pair? special-peeked))
+		       (mpair? special-peeked))
 		   (peek-it s skip unless-evt)
 		   (fast-peek s skip fast-peek-k))))
 	   peek-it)
@@ -507,19 +504,19 @@
 		(set! more-last #f)
 		(when close-w?
 		  (close-output-port w)))
-	      (when (bytes? (car more))
-		(let ([amt (bytes-length (car more))])
-		  (let ([wrote (write-bytes-avail* (car more) w)])
+	      (when (bytes? (mcar more))
+		(let ([amt (bytes-length (mcar more))])
+		  (let ([wrote (write-bytes-avail* (mcar more) w)])
 		    (if (= wrote amt)
 			(begin
-			  (set! more (cdr more))
+			  (set! more (mcdr more))
 			  (flush-more))
 			(begin
 			  ;; This means that we let too many bytes
 			  ;;  get written while a special was pending.
 			  ;;  (The limit is disabled when a special
                           ;;  is in the pipe.)
-			  (set-car! more (subbytes (car more) wrote))
+			  (set-mcar! more (subbytes (mcar more) wrote))
 			  ;; By peeking, make room for more:
 			  (peek-byte r (sub1 (min (pipe-content-length w)
 						  (- amt wrote))))
@@ -529,8 +526,8 @@
 	    (if (eq? v 0)
 		(if more-last
 		    ;; Return a special
-		    (let ([a (car more)])
-		      (set! more (cdr more))
+		    (let ([a (mcar more)])
+		      (set! more (mcdr more))
 		      (flush-more)
 		      (lambda (file line col ppos)
 			a))
@@ -550,8 +547,8 @@
 	(define (write-these-bytes str start end)
 	  (begin0
 	   (if more-last
-	       (let ([p (cons (subbytes str start end) null)])
-		 (set-cdr! more-last p)
+	       (let ([p (mcons (subbytes str start end) null)])
+		 (set-mcdr! more-last p)
 		 (set! more-last p)
 		 (- end start))
 	       (let ([v (write-bytes-avail* str w start end)])
@@ -562,9 +559,9 @@
 	     (semaphore-post more-sema)
 	     (set! more-sema #f))))
 	(define (write-spec v)
-	  (let ([p (cons v null)])
+	  (let ([p (mcons v null)])
 	    (if more-last
-		(set-cdr! more-last p)
+		(set-mcdr! more-last p)
 		(set! more p))
 	    (set! more-last p)
 	    (when more-sema
@@ -1532,26 +1529,26 @@
   
   (provide/contract (read-bytes-avail!-evt (mutable-bytes? input-port-with-progress-evts?
 							   . -> . evt?))
-		    (peek-bytes-avail!-evt (mutable-bytes? exact-non-negative-integer? evt?/false
+		    (peek-bytes-avail!-evt (mutable-bytes? exact-nonnegative-integer? evt?/false
 							   input-port-with-progress-evts? 
 							   . -> . evt?))
 		    (read-bytes!-evt (mutable-bytes? input-port-with-progress-evts? . -> . evt?))
-		    (peek-bytes!-evt (mutable-bytes? exact-non-negative-integer? evt?/false
+		    (peek-bytes!-evt (mutable-bytes? exact-nonnegative-integer? evt?/false
 						     input-port-with-progress-evts? 
 						     . -> . evt?))
-		    (read-bytes-evt (exact-non-negative-integer? input-port-with-progress-evts? 
+		    (read-bytes-evt (exact-nonnegative-integer? input-port-with-progress-evts? 
 								 . -> . evt?))
-		    (peek-bytes-evt (exact-non-negative-integer? exact-non-negative-integer? evt?/false
+		    (peek-bytes-evt (exact-nonnegative-integer? exact-nonnegative-integer? evt?/false
 								 input-port-with-progress-evts? 
 								 . -> . evt?))
 		    (read-string!-evt (mutable-string? input-port-with-progress-evts? 
 						       . -> . evt?))
-		    (peek-string!-evt (mutable-string? exact-non-negative-integer? evt?/false
+		    (peek-string!-evt (mutable-string? exact-nonnegative-integer? evt?/false
 						       input-port-with-progress-evts? 
 						       . -> . evt?))
-		    (read-string-evt (exact-non-negative-integer? input-port-with-progress-evts? 
+		    (read-string-evt (exact-nonnegative-integer? input-port-with-progress-evts? 
 								  . -> . evt?))
-		    (peek-string-evt (exact-non-negative-integer? exact-non-negative-integer? evt?/false
+		    (peek-string-evt (exact-nonnegative-integer? exact-nonnegative-integer? evt?/false
 								  input-port-with-progress-evts? 
 								  . -> . evt?))
 		    (regexp-match-evt ((or/c regexp? byte-regexp? string? bytes?)

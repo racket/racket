@@ -68,10 +68,16 @@
 (test "#2(10)" pretty-format (vector 10 10))
 (parameterize ([print-vector-length #f])
   (test "#(10 10)" pretty-format (vector 10 10)))
-(test "#<hash-table>" pretty-format (let ([ht (make-hash-table)])
-                                  (hash-table-put! ht 1 2)
-                                  ht))
-
+(test "#hasheq((1 . 2))" pretty-format (let ([ht (make-hash-table)])
+                                         (hash-table-put! ht 1 2)
+                                         ht))
+(test "#hash((1 . 2))" pretty-format (let ([ht (make-hash-table 'equal)])
+                                       (hash-table-put! ht 1 2)
+                                       ht))
+(parameterize ([print-hash-table #f])
+  (test "#<hash-table>" pretty-format (let ([ht (make-hash-table)])
+                                        (hash-table-put! ht 1 2)
+                                        ht)))
 
 (parameterize ([pretty-print-abbreviate-read-macros #f])
   (test "(quote a)" pretty-format ''a)
@@ -151,7 +157,7 @@
 
 (parameterize ([print-struct #t])
   (let ()
-    (define-struct s (x) (make-inspector))
+    (define-struct s (x) #:inspector (make-inspector))
     (test "#(struct:s 1)" pretty-format (make-s 1))))
 
 (err/rt-test (pretty-print-extend-style-table 'ack '(a) '(b)))
@@ -178,6 +184,8 @@
      '(1)
      '(1 2 3)
      '(1 . 2)
+     (mcons 1 2)
+     (mcons 1 (mcons 2 null))
      #(1 2 3 4 5)
      (read (open-input-string "(#0=() . #0#)"))
      (read (open-input-string "#1=(1 . #1#)"))
@@ -208,6 +216,7 @@
   (list
    (list "DEPTH=2" pretty-print-depth 2)
    (list "GRAPH-ON" print-graph #t)
+   (list "HASH-TABLE-ON" print-hash-table #t)
    (list "STRUCT-ON" print-struct #t)
    (list "LINE-NO-ON" pretty-print-print-line print-line-no)
    (list "SUPER-WIDE" pretty-print-columns 300)))
@@ -253,8 +262,8 @@
 
 (when record-for-regression?
   (with-output-to-file regression-path
-    (lambda () (write recorded))
-    'truncate/replace))
+    #:exists 'truncate/replace
+    (lambda () (write recorded))))
 
 (test #t 'use-regression? use-regression?)
 

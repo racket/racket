@@ -323,7 +323,10 @@
 					vars)])
 			
 			(for-each set-annotation! vars bindings)
-			(set-car! (zodiac:let-values-form-vals ast) val)
+                        (zodiac:set-let-values-form-vals!
+                         ast
+                         (cons val
+                               (cdr (zodiac:let-values-form-vals ast))))
 			
 			(if (= 1 (length vars))
 			    
@@ -406,13 +409,9 @@
 		     ;; analyze the branches
 		     [(zodiac:begin-form? ast)
 		      
-		      (let loop ([bodies (zodiac:begin-form-bodies ast)])
-			(if (null? (cdr bodies))
-			    (let ([e (analyze! (car bodies))])
-			      (set-car! bodies e))
-			    (begin
-			      (set-car! bodies (analyze! (car bodies)))
-			      (loop (cdr bodies)))))
+                      (zodiac:set-begin-form-bodies!
+                       ast
+                       (map analyze! (zodiac:begin-form-bodies ast)))
 		      
 		      ast]
 		     

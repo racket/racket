@@ -1,19 +1,19 @@
 
-(module doclang (lib "lang.ss" "big")
+(module doclang scheme/base
   (require "struct.ss"
            "decode.ss"
-           (lib "kw.ss"))
-  (require-for-syntax (lib "kerncase.ss" "syntax"))
+           (for-syntax scheme/base
+                       syntax/kerncase))
 
-  (provide (all-from-except (lib "lang.ss" "big") #%module-begin)
-           (rename *module-begin #%module-begin))
+  (provide (except-out (all-from-out scheme/base) #%module-begin)
+           (rename-out [*module-begin #%module-begin]))
 
   ;; Module wrapper ----------------------------------------
 
   (define-syntax (*module-begin stx)
     (syntax-case stx ()
       [(_ id exprs . body)
-       #'(#%plain-module-begin
+       #'(#%module-begin
           (doc-begin id exprs . body))]))
 
   (define-syntax (doc-begin stx)
@@ -40,21 +40,17 @@
               (let ([expanded (local-expand #'body1
                                             'module
                                             (append
-                                             (kernel-form-identifier-list #'here)
+                                             (kernel-form-identifier-list)
                                              (syntax->list #'(provide
-                                                              require
-                                                              require-for-syntax
-                                                              require-for-label))))])
+                                                              require))))])
                 (syntax-case expanded  (begin)
                   [(begin body1 ...)
                    #`(doc-begin m-id exprs body1 ... . body)]
                   [(id . rest)
                    (and (identifier? #'id)
-                        (ormap (lambda (kw) (module-identifier=? #'id kw))
+                        (ormap (lambda (kw) (free-identifier=? #'id kw))
                                (syntax->list #'(require 
                                                 provide 
-                                                require-for-syntax
-                                                require-for-label
                                                 define-values
                                                 define-syntaxes
                                                 define-for-syntaxes))))

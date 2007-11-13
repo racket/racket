@@ -1,10 +1,12 @@
-#reader(lib "docreader.ss" "scribble")
-@require[(lib "bnf.ss" "scribble")]
+#lang scribble/doc
+@require[scribble/bnf]
 @require["mz.ss"]
 
 @define[(FmtMark . s) (apply litchar "~" s)]
 
 @title{Writing}
+
+@declare-exporting[(lib "scheme/write")]
 
 @defproc[(write [datum any/c][out output-port? (current-output-port)])
          void?]{
@@ -131,6 +133,19 @@ Formats to a string. The result is the same as
 @examples[
 (format "~a as a string is ~s.~n" '(3 4) "(3 4)")
 ]}
+
+@defboolparam[print-pair-curly-braces on?]{
+
+A parameter that control pair printing. If the value is true, then
+pairs print using @litchar["{"] and @litchar["}"] instead of
+@litchar["("] and @litchar[")"]. The default is @scheme[#f].}
+
+
+@defboolparam[print-mpair-curly-braces on?]{
+
+A parameter that control pair printing. If the value is true, then
+mutable pairs print using @litchar["{"] and @litchar["}"] instead of
+@litchar["("] and @litchar[")"]. The default is @scheme[#t].}
 
 @defboolparam[print-unreadable on?]{
 

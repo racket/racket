@@ -1,20 +1,30 @@
-(module filename-version mzscheme
+#lang scheme/base
 
-  ;; this module provides the string that should replace xxxxxxx's in file names
+;; This module provides the string that should replace xxxxxxx's in file names.
+;; The version number is compacted representing alternate sets of digits by
+;; letters, and then dropping "."s:
+;;    3.99.1.5 => 3.jj.1.f => 3jj1f
 
-  (provide filename-version-part)
-  (define filename-version-part
-    (cond [(regexp-match #rx"^([0-9]+(?:p[0-9])?)(?:[.]([0-9]+))?$"
-                         (version))
-           => (lambda (m)
-                (let ([major (cadr m)] [minor (or (caddr m) "")])
-                  (string-append major "_"
-                                 (make-string (- (string-length "xxxxxxx")
-                                                 1
-                                                 (string-length major)
-                                                 (string-length minor))
-                                              #\0)
-                                 minor)))]
-          [else (error 'filename-version-part
-                       "unexpected version string: ~s"
-                       (version))])))
+(provide filename-version-part)
+
+(define filename-version-part
+  (let* ([l (map string->number (regexp-split #rx"[.]" (version)))]
+         [s (apply
+             string-append
+             (let loop ([l l][alpha? #f])
+               (cond
+                [(null? l) null]
+                [else (let ([s (number->string (car l))])
+                        (cons (if alpha?
+                                  (list->string
+                                   (map (lambda (c)
+                                          (integer->char
+                                           (+ (char->integer c)
+                                              (- (char->integer #\a)
+                                                 (char->integer #\0)))))
+                                        (string->list s)))
+                                  s)
+                              (loop (cdr l) (not alpha?))))])))])
+    (string-append (make-string (max 0 (- 7 (string-length s)))
+                                #\_)
+                   s)))

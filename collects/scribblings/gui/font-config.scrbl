@@ -1,6 +1,6 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["common.ss"]
-@require[(lib "bnf.ss" "scribble")]
+@require[scribble/bnf]
 
 @title[#:tag "fontresources"]{Font Configuration}
 
@@ -330,9 +330,9 @@ Internal preferences for Mac OS X only:
 To generate PostScript output, MrEd must be able to find an @|AFM|
  (AFM) file corresponding to the PostScript font. An AFM file
  typically uses the suffix @indexed-file{.afm}, and several AFM files
- are distributed with MrEd in the @file{afm} collection.
+ are distributed with MrEd in the @filepath{afm} collection.
 
-MrEd finds an AFM file by adding a @file{.afm} suffix to the
+MrEd finds an AFM file by adding a @filepath{.afm} suffix to the
  PostScript name of the font, and checking all directories specified
  by the @scheme[current-ps-afm-file-paths] parameter. The initial
  value of this parameter is determined by the
@@ -348,18 +348,18 @@ Depending on whether the font is CID-based (typically for the Chinese,
  @itemize{
 
  @item{@italic{Non-CID:} In addition to an AFM file
- @file{@nonterm{x}.afm}, MrEd looks for a
- @file{@nonterm{x}-glyphlist.txt} file (in the same directory as the
+ @filepath{@nonterm{x}.afm}, MrEd looks for a
+ @filepath{@nonterm{x}-glyphlist.txt} file (in the same directory as the
  AFM file) to map glyph names in the AFM file to Unicode character
  values. In addition to this font-specific file, MrEd looks for a
  @indexed-file{glyphlist.txt} file to supply a mapping for Adobe's
  standard glyph names, and this mapping is used when a font-specific
  mapping is not supplied, or when the mapping does not cover a name
- found in the AFM file. MrEd looks for @file{glyphlist.txt} in the
- same place as AFM files. Since @file{glyphlist.txt} is large, if a
+ found in the AFM file. MrEd looks for @filepath{glyphlist.txt} in the
+ same place as AFM files. Since @filepath{glyphlist.txt} is large, if a
  @indexed-file{glyphshortlist.txt} file is available, it is read first,
- and then @file{glyphlist.txt} is read only if a character name must
- be resolved that is not in @file{glyphshortlist.txt}.}
+ and then @filepath{glyphlist.txt} is read only if a character name must
+ be resolved that is not in @filepath{glyphshortlist.txt}.}
 
  @item{@italic{CID:} In addition to an AFM file, MrEd must find and
  read CMap files to convert glyph IDs for the font to Unicode
@@ -381,6 +381,6 @@ When drawing or measuring text using a particular PostScript font, if
  the font does not contain a glyph for a character (or if a relevant
  AFM file cannot be found for the font), then MrEd attempts to
  substitute another PostScript font. A substitute font is selected by
- checking all @file{.afm} files in the directories specified
+ checking all @filepath{.afm} files in the directories specified
  by @scheme[current-ps-afm-file-paths] (in order), and choosing the
  first discovered match.

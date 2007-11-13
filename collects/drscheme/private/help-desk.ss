@@ -1,5 +1,5 @@
 
-(module help-desk (lib "a-unit.ss")
+#lang scheme/unit
   (require (lib "string-constant.ss" "string-constants")
            (lib "mred.ss" "mred")
            (lib "external.ss" "browser")
@@ -181,4 +181,4 @@
   ;; open-url : string -> void
   (define (open-url x) (send-url x))
   
-  (add-help-desk-mixin drscheme-help-desk-mixin))
+  (add-help-desk-mixin drscheme-help-desk-mixin)

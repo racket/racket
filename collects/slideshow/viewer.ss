@@ -13,7 +13,7 @@
 	   (lib "include-bitmap.ss" "mrlib")
 	   "sig.ss"
 	   "core.ss"
-	   "util.ss")
+	   "private/utils.ss")
 
   (provide viewer@)
 
@@ -62,23 +62,28 @@
 	    (list-ref talk-slide-list n)
 	    empty-slide))
 
+      (define (mlist->list l)
+        (cond
+         [(null? l) null]
+         [else (cons (mcar l) (mlist->list (mcdr l)))]))
+
       (define (given->main!)
 	(if config:quad-view?
 	    (begin
 	      ;; WARNING: This make slide creation O(n^2) for n slides
-	      (set! talk-slide-list (make-quad given-talk-slide-list))
+	      (set! talk-slide-list (make-quad (mlist->list given-talk-slide-list)))
 	      (set! slide-count (length talk-slide-list)))
 	    (begin
-	      (set! talk-slide-list given-talk-slide-list)
+	      (set! talk-slide-list (mlist->list given-talk-slide-list))
 	      (set! slide-count given-slide-count))))
 
       (define (add-talk-slide! s)
 	(when error-on-slide?
 	  (error "slide window has been closed"))
-	(let ([p (cons s null)])
+	(let ([p (mcons s null)])
 	  (if (null? talk-slide-reverse-cell-list)
 	      (set! given-talk-slide-list p)
-	      (set-cdr! (car talk-slide-reverse-cell-list) p))
+	      (set-mcdr! (car talk-slide-reverse-cell-list) p))
 	  (set! talk-slide-reverse-cell-list (cons p talk-slide-reverse-cell-list)))
 	(set! given-slide-count (add1 given-slide-count))
 	(given->main!)
@@ -96,7 +101,7 @@
 	  (set! talk-slide-reverse-cell-list (cdr talk-slide-reverse-cell-list))
 	  (if (null? talk-slide-reverse-cell-list)
 	      (set! given-talk-slide-list null)
-	      (set-cdr! (car talk-slide-reverse-cell-list) null)))
+	      (set-mcdr! (car talk-slide-reverse-cell-list) null)))
 	(set! given-slide-count (sub1 given-slide-count))
 	(given->main!)
 	(unless config:printing?
@@ -105,7 +110,7 @@
 
       (define (most-recent-talk-slide)
 	(and (pair? talk-slide-reverse-cell-list)
-	     (caar talk-slide-reverse-cell-list)))
+	     (mcar (car talk-slide-reverse-cell-list))))
       
       (define (set-init-page! p)
 	(set! current-page p)

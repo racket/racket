@@ -51,13 +51,11 @@
              'current-proxy-servers
              "list of list of scheme, string, and exact integer in [1,65535]"
              v))
-          (apply
-           list-immutable
-           (map (lambda (v)
-                  (list-immutable (string->immutable-string (car v))
-                                  (string->immutable-string (cadr v))
-                                  (caddr v)))
-                v)))))
+          (map (lambda (v)
+                 (list (string->immutable-string (car v))
+                       (string->immutable-string (cadr v))
+                       (caddr v)))
+               v))))
 
     (define (url-error fmt . args)
       (raise (make-url-exception
@@ -422,7 +420,7 @@
             [else
              (let loop ([strings (cdr strings)] [r (list (car strings))])
                (if (null? strings)
-                 (apply string-append (reverse! r))
+                 (apply string-append (reverse r))
                  (loop (cdr strings) (list* (car strings) sep r))))]))
 
     ;; delete-pure-port : url [x list (str)] -> in-port

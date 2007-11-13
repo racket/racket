@@ -28,7 +28,8 @@ A test case:
 	 #f))
 |#
 
-(module hyper (lib "a-unit.ss")
+#lang scheme/unit
+
   (require (lib "class.ss")
            "sig.ss"
            (lib "file.ss")
@@ -1155,4 +1156,5 @@ A test case:
         (eq? (car a) (car b)))
       
       (define (open-url file)
-        (make-object hyper-frame% file (string-constant browser) #f 500 450)))
+        (make-object hyper-frame% file (string-constant browser) #f 500 450))
+
