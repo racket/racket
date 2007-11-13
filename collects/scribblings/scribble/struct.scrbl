@@ -453,7 +453,7 @@ A placeholder for a tag to be generated during the @scheme{collect
 
 
 @defproc*[([(content->string (content list?)) string?]
-           [(content->string (content list?) (p part?) (info resolve-info?)) string?])]{
+           [(content->string (content list?) (renderer any/c) (p part?) (info resolve-info?)) string?])]{
 
 Converts a list of elements to a single string (essentially
 rendering the content as ``plain text'').
@@ -465,7 +465,7 @@ element (if it has not been forced already).}
 
 
 @defproc*[([(element->string (element any/c)) string?]
-           [(element->string (element any/c) (p part?) (info resolve-info?)) string?])]{
+           [(element->string (element any/c) (renderer any/c) (p part?) (info resolve-info?)) string?])]{
 
 Like @scheme[content->string], but for a single element.
 }

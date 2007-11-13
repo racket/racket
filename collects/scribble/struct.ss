@@ -270,7 +270,8 @@
   ;; ----------------------------------------
 
   (provide content->string
-           element->string)
+           element->string
+           strip-aux)
 
   (define content->string
     (case-lambda
@@ -297,11 +298,25 @@
                [else (format "~s" c)])])]
      [(c renderer sec ri)
       (cond
+       [(and (link-element? c)
+             (null? (element-content c)))
+        (let ([dest (resolve-get sec ri (link-element-tag c))])
+          (if dest
+              (content->string (strip-aux (cadr dest)) renderer sec ri)
+              "???"))]
        [(element? c) (content->string (element-content c) renderer sec ri)]
        [(delayed-element? c) 
         (content->string (delayed-element-content c ri)
                          renderer sec ri)]
        [else (element->string c)])]))
+
+  (define (strip-aux content)
+    (cond
+     [(null? content) null]
+     [(aux-element? (car content))
+      (strip-aux (cdr content))]
+     [else (cons (car content)
+                 (strip-aux (cdr content)))]))
 
   ;; ----------------------------------------
   

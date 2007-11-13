@@ -100,6 +100,9 @@ in several significant ways:
    "x.ss" is now named "x_ss.zo". The "_loader" protocol for
    native-code extensions is no longer supported.
 
+ - Windows console binary names are converted like Unix binary names:
+   downcased with " " replaced by "-".
+
 ======================================================================
  Immutable and Mutable Pairs
 ======================================================================

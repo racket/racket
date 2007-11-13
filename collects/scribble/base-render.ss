@@ -34,14 +34,6 @@
                (substring s 0 (sub1 (string-length s))))
              sep)))
 
-      (define/public (strip-aux content)
-        (cond
-         [(null? content) null]
-         [(aux-element? (car content))
-          (strip-aux (cdr content))]
-         [else (cons (car content)
-                     (strip-aux (cdr content)))]))
-
       ;; ----------------------------------------
       ;; marshal info
 

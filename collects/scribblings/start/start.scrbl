@@ -1,18 +1,27 @@
 #lang scribble/doc
 @require[scribble/manual
          scribble/struct
-         setup/getinfo
-         setup/main-collects]
+         setup/getinfo]
 
 @title{PLT Scheme Documentation}
 
 @begin[
+(define (resolve s)
+  (resolved-module-path-name
+   (module-path-index-resolve
+    (module-path-index-join `(lib ,(string-append s ".scrbl")
+                                  "scribblings"
+                                  ,s)
+                            #f))))
+
 (define initial-ones
-  '("(collects . scribblings/quick/quick.scrbl):top"
-    blank
-    "(collects . scribblings/guide/guide.scrbl):top"
-    "(collects . scribblings/reference/reference.scrbl):top"
-    blank))
+  (list (resolve "quick")
+        'blank
+        (resolve "guide")
+        (resolve "reference")
+        'blank
+        (resolve "gui")
+        'blank))
 
 (let* ([dirs (find-relevant-directories '(scribblings))]
        [infos (map get-info/full dirs)]
@@ -21,22 +30,31 @@
                            (let ([s (i 'scribblings)])
                              (map (lambda (d)
                                     (if (pair? d)
-                                        (format "~a:top"
-                                                (path->main-collects-relative
-                                                 (build-path dir (car d))))
-                                        (format "bad: ~s" d)))
+                                        (build-path dir (car d))
+                                        (build-path dir "???")))
                                   s)))
                          infos
-                         dirs))])
-  (make-table
-   #f
-   (map (lambda (doc)
+                         dirs))]
+       [line
+        (lambda (doc)
           (list (make-flow (list (make-paragraph (list 
                                                   (if (eq? doc 'blank)
                                                       (hspace 1)
-                                                      (secref doc))))))))
-        (append initial-ones
-                (remove* initial-ones 
-                         (remove "(collects . scribblings/start/start.scrbl):top"
-                                 docs))))))
+                                                      (secref #:doc doc "top"))))))))])
+
+  (make-delayed-flow-element
+   (lambda (renderer part resolve-info)
+     (make-table
+      #f
+      (append (map line initial-ones)
+              (sort
+               (map line
+                    (remove* initial-ones 
+                          (remove (resolve "start") 
+                                  docs)))
+               (lambda (a b)
+                 (let ([a (car (paragraph-content (car (flow-paragraphs (car a)))))]
+                       [b (car (paragraph-content (car (flow-paragraphs (car b)))))])
+                   (string-ci<? (element->string a renderer part resolve-info)
+                                (element->string b renderer part resolve-info))))))))))
 ]

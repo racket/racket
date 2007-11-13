@@ -63,7 +63,6 @@
                install-file
                get-dest-directory
                format-number
-               strip-aux
                quiet-table-of-contents)
 
       (define/override (get-suffix) #".html")
