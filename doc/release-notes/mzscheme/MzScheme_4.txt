@@ -2,8 +2,8 @@
 MzScheme version 4.0 is different from previous versions of MzScheme
 in several significant ways:
 
- - The documenation has been re-organized and re-written. Instead of
-   just reference manuals that occassionally provide examples, our
+ - The documentation has been re-organized and re-written. Instead of
+   just reference manuals that occasionally provide examples, our
    documentation is now based on "guides" that provides a friendly
    overview and extensive examples, and then separate "references"
    that provide the details (typically in a more terse, precise
@@ -55,13 +55,13 @@ in several significant ways:
 
    Library code should generally start with `scheme/base', which is a
    `mzscheme'-like compromise in terms of size (i.e., code size and
-   liklihood of name collisions) and convenience (i.e., the most
+   likelihood of name collisions) and convenience (i.e., the most
    commonly used bindings are available). The `scheme' choice is
    appropriate for programs where the additional functionality of
    `scheme' is likely to be needed or loaded, anyway.
 
  - The `#lang' shorthand for `module' is now preferred for a module
-   declaration in a file. In "my-library.ss", istead of
+   declaration in a file. In "my-library.ss", instead of
 
       (scheme my-library scheme/base
         (define my-stuff ....)
@@ -75,7 +75,7 @@ in several significant ways:
 
     Note the absence of the parenthesis wrapping the module content
     (it is terminated by the end-of-file) and the absence of the
-    redunant identifier `my-library'.
+    redundant identifier `my-library'.
 
  - Under Unix, "~" is no longer automatically expanded to a user's
    home directory. The `expand-path' function takes an optional
@@ -94,6 +94,11 @@ in several significant ways:
    `#%plain-app' (which are also the `lambda' and `#%app' of the
    `mzscheme' language). The `require' and `provide' forms expand to
    `#%require' and `#%provide'.
+
+ - The naming convention for compiled files has changed to preserve
+   the original file suffix. For example, the bytecode version of
+   "x.ss" is now named "x_ss.zo". The "_loader" protocol for
+   native-code extensions is no longer supported.
 
 ======================================================================
  Immutable and Mutable Pairs

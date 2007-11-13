@@ -216,7 +216,9 @@
                    (part-tag-prefix v)
                    src-file
                    p))
-          (set-part-tag-prefix! v p))))
+          (set-part-tag-prefix! v p))
+      (unless (member '(part "top") (part-tags v))
+        (set-part-tags! v (cons '(part "top") (part-tags v))))))
 
   (define ((get-doc-info only-dirs latex-dest) doc)
     (let ([info-out-file (build-path (or latex-dest (doc-dest-dir doc)) "xref-out.ss")]
