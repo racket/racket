@@ -115,7 +115,7 @@ end-string
       (delete/continue file.o)))
 
   (define (build-helper compile-directory home variant)
-    (let* ((file (build-path compile-directory "make-gl-info-helper.ss"))
+    (let* ((file "make-gl-info-helper.ss")
            (c (build-path compile-directory (append-c-suffix file)))
            (so (build-path compile-directory
                            "native"
