@@ -176,17 +176,17 @@
                        [#(exp #t) exp])])
                  finished-exps))
 
-          ;; (printf "break called with break-kind: ~a ..." break-kind)
+          #;(fprintf (current-error-port) "break called with break-kind: ~a ..." break-kind)
           (if (r:skip-step? break-kind mark-list render-settings)
             (begin
-              ;; (printf " but it was skipped!\n")
+              #;(fprintf (current-error-port) " but it was skipped!\n")
               (when (or (eq? break-kind 'normal-break)
                         ;; not sure about this...
                         (eq? break-kind 'nomal-break/values))
                 (set! held-exp-list skipped-step)))
 
             (begin
-              ;; (printf "and it wasn't skipped.\n")
+              #;(fprintf (current-error-port) "and it wasn't skipped.\n")
               (case break-kind
                 [(normal-break normal-break/values)
                  (begin
