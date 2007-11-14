@@ -32,7 +32,8 @@
 	   (lib "link.ss" "dynext")
 	   (lib "pack.ss" "setup")
 	   (lib "getinfo.ss" "setup")
-	   (lib "dirs.ss" "setup"))
+	   (lib "dirs.ss" "setup")
+           scheme/namespace)
 
   (define dest-dir (make-parameter #f))
   (define auto-dest-dir (make-parameter #f))
@@ -424,9 +425,11 @@
 		    (error 'mzc "prefix files not allowed with -m or --module"))
 		  #f)
 		`(begin
-		   ,(if (compiler:option:assume-primitives) '(require mzscheme) '(void))
+                   (require scheme)
+		   ,(if (compiler:option:assume-primitives) 
+                        '(void) 
+                        '(namespace-require/copy 'scheme))
 		   (require (lib "cffi.ss" "compiler"))
-		   (require-for-syntax mzscheme)
 		   ,@(map (lambda (s) `(load ,s)) prefixes)
 		   (void)))))))
      (list "file/directory/collection" "file/directory/sub-collection")))
@@ -483,7 +486,7 @@
 					    'auto
 					    (dest-dir)))]
     [(make-zo)
-     (let ([n (make-namespace)]
+     (let ([n (make-base-namespace)]
 	   [mc (dynamic-require '(lib "mzlib/cm.ss")
 				'managed-compile-zo)]
 	   [cnh (dynamic-require '(lib "mzlib/cm.ss")
@@ -493,23 +496,23 @@
 		      [cnh (lambda (p)
 			     (set! did-one? #t)
 			     (printf "  making ~s~n" (path->string p)))])
-	   (map (lambda (file)
-		  (unless (file-exists? file)
-		    (error 'mzc "file does not exist: ~a" file))
-		  (set! did-one? #f)
-		  (let ([name (extract-base-filename/ss file 'mzc)])
-		    (printf "\"~a\":~n" file)
-		    (mc file)
-		    (let ([dest (append-zo-suffix 
-				 (let-values ([(base name dir?) (split-path name)])
-				   (build-path (if (symbol? base) 'same base)
-					       "compiled" name)))])
-		      (printf " [~a \"~a\"]~n"
-			      (if did-one?
-				  "output to"
-				  "already up-to-date at")
-			      dest))))
-		source-files)))]
+         (for-each (lambda (file)
+                     (unless (file-exists? file)
+                       (error 'mzc "file does not exist: ~a" file))
+                     (set! did-one? #f)
+                     (let ([name (extract-base-filename/ss file 'mzc)])
+                       (printf "\"~a\":~n" file)
+                       (mc file)
+                       (let ([dest (append-zo-suffix 
+                                    (let-values ([(base name dir?) (split-path name)])
+                                      (build-path (if (symbol? base) 'same base)
+                                                  "compiled" name)))])
+                         (printf " [~a \"~a\"]~n"
+                                 (if did-one?
+                                     "output to"
+                                     "already up-to-date at")
+                                 dest))))
+                   source-files)))]
     [(collection-extension)
      (compiler-warning)
      (apply compile-collection-extension source-files)]

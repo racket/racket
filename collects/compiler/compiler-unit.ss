@@ -22,6 +22,7 @@
 	   syntax/toplevel
 	   syntax/moddep
 
+           scheme/namespace
            syntax/namespace-reflect
 
            mzlib/list
@@ -168,7 +169,12 @@
 	(printf " [output to \"~a\"]~n" dest))
 
       (define (compile-zos prefix)
-	(let ([n (if prefix (make-namespace) (current-namespace))])
+	(let ([n (if prefix 
+                     (let ([ns (make-base-namespace)])
+                       (parameterize ([current-namespace ns])
+                         (namespace-require 'scheme/base)
+                         ns))
+                     (current-namespace))])
 	  (when prefix
 	    (eval prefix n))
 	  (lambda (source-files destination-directory)

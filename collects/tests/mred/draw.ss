@@ -1,5 +1,4 @@
-
-(require (lib "class100.ss"))
+#lang scheme/gui
 
 (define manual-chinese? #f)
 
@@ -64,8 +63,6 @@
     (send e lock #t)
     (send c set-editor e)
     (send f show #t)))
-
-(define pi (atan 0 -1))
 
 (define star
   (list (make-object point% 30 0)
@@ -215,6 +212,7 @@
        [clock-start #f]
        [clock-end #f]
        [clock-clip? #f]
+       [do-clock #f]
        [use-bitmap? #f]
        [use-bad? #f]
        [depth-one? #f]
@@ -286,15 +284,15 @@
 				 [otfg (send dc get-text-foreground)]
 				 [otbg (send dc get-text-background)]
 				 [obm (send dc get-text-mode)])
-			    (if (positive? flevel)
-				(send dc set-font
-				      (make-object font%
-						   10 'decorative
-						   'normal 
-						   (if (> flevel 1)
-						       'bold
-						       'normal)
-						   #t)))
+			    (when (positive? flevel)
+                              (send dc set-font
+                                    (make-object font%
+                                                 10 'decorative
+                                                 'normal 
+                                                 (if (> flevel 1)
+                                                     'bold
+                                                     'normal)
+                                                 #t)))
 			    (send dc set-pen pens)
 			    (send dc set-brush brusht)
 			    
@@ -1146,7 +1144,7 @@
 		   (set! smoothing (list-ref '(unsmoothed smoothed aligned)
 					     (send self get-selection)))
 		   (send canvas refresh)))
-    (make-object button% "Clock" hp2.5 (lambda (b e) (clock #f)))
+    (make-object button% "Clock" hp2.5 (lambda (b e) (do-clock #f)))
     (make-object choice% #f
 		 '("MrEd XOR" "PLT Middle" "PLT ^ MrEd" "MrEd ^ PLT" "MrEd ^ MrEd" 
 		   "MrEd~" "MrEd ^ MrEd~" "M^M~ Opaque" "M^M~ Red"
@@ -1212,6 +1210,7 @@
 			     (set! clock-start #f)
 			     (set! clock-end #f)
 			     (send canvas refresh))))])
+      (set! do-clock clock)
       (make-object button% "Clip Clock" hp3 (lambda (b e) (clock #t)))
       (make-object slider% "Alpha" 0 10 hp4
                    (lambda (s e)

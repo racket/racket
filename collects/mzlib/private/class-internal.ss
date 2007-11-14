@@ -130,6 +130,7 @@
 		(append
 		 (kernel-form-identifier-list)
 		 (list 
+                  (quote-syntax #%app) ; scheme/base app, as opposed to #%plain-app
 		  (quote-syntax -init)
 		  (quote-syntax init-rest)
 		  (quote-syntax -field)
@@ -1314,7 +1315,7 @@
 						      (letrec-syntaxes+values
                                                           ([(plain-init-name) (make-init-redirect 
                                                                                (quote-syntax set!)
-                                                                               (quote-syntax #%app)
+                                                                               (quote-syntax #%plain-app)
                                                                                (quote-syntax local-plain-init-name)
                                                                                (quote-syntax plain-init-name-localized))] ...)
                                                           ([(local-plain-init-name) undefined] ...)

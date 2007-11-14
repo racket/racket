@@ -328,7 +328,7 @@
 
     (with-syntax ([object object-stx]
                   [method method-proc-stx]
-                  [app (if rest-arg? (qstx apply) (qstx #%app))]
+                  [app (if rest-arg? (qstx apply) (qstx #%plain-app))]
                   [args args-stx])
       (if traced?
           (with-syntax ([(mth obj) (generate-temporaries
