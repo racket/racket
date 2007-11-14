@@ -755,7 +755,16 @@ TODO
           (let ([locs (filter (λ (loc) (and (is-a? (srcloc-source loc) text:basic<%>)
                                             (number? (srcloc-position loc))
                                             (number? (srcloc-span loc))))
-                              raw-locs)])
+                              (map (λ (srcloc)
+                                     (if (equal? (normal-case-path (normalize-path (send definitions-text get-filename)))
+                                                 (normal-case-path (normalize-path (srcloc-source srcloc))))
+                                         (make-srcloc definitions-text
+                                                      (srcloc-line srcloc)
+                                                      (srcloc-column srcloc)
+                                                      (srcloc-position srcloc)
+                                                      (srcloc-span srcloc))
+                                         srcloc))
+                                   raw-locs))])
             (reset-highlighting)
             
             (set! error-ranges locs)
