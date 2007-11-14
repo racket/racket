@@ -44,7 +44,7 @@
 		   list-tabulate
 		   cons*
 		   list-copy
-		   ; circular-list
+		   circular-list
 		   iota)
 
   ;; Occasionally useful as a value to be passed to a fold or other
@@ -89,11 +89,17 @@
 				(cons (car lis) (recur (cdr lis)))	
 				lis)))					
   
-  #;
+  
   (define (circular-list val1 . vals)
-	(let ((ans (cons val1 vals)))
-	  (set-cdr! (last-pair ans) ans)
-	  ans))
+    (let ([ph (make-placeholder #f)])
+      (placeholder-set! ph
+                        (cons val1
+                              (let loop ([vals vals])
+                                (if (null? vals)
+                                    ph
+                                    (cons (car vals)
+                                          (loop (cdr vals)))))))
+      (make-reader-graph ph)))
 
 
   ;; IOTA count [start step]	(start start+step ... start+(count-1)*step)
