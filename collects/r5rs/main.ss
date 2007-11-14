@@ -406,6 +406,13 @@
        (syntax/loc stx
          (define . rest))]))
 
+  (define-syntax (r5rs:define-syntax stx)
+    (syntax-case stx ()
+      [(_ id expr)
+       (identifier? #'id)
+       (syntax/loc stx
+         (define-syntax id expr))]))
+
   (define-syntax r5rs:if
     (syntax-rules ()
       [(_ test then)
@@ -419,10 +426,11 @@
                        [r5rs:if if]
                        [r5rs:lambda lambda]
                        [r5rs:letrec letrec]
-                       [r5rs:define define])
+                       [r5rs:define define]
+                       [r5rs:define-syntax define-syntax])
            let and or cond case delay do
 	   let* begin set!
-	   define-syntax let-syntax letrec-syntax
+	   let-syntax letrec-syntax
            => else
 
 	   ;; We have to include the following MzScheme-isms to do anything,
