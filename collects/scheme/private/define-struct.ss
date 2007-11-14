@@ -107,7 +107,7 @@
               #f
               (if (keyword? (syntax-e (car ps)))
                   "unrecognized field-specification keyword"
-                  "expected a field-spefication keyword")
+                  "expected a field-specification keyword")
               stx
               (car ps))]))]
         [_else
