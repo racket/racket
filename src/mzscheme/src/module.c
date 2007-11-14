@@ -3809,7 +3809,10 @@ Scheme_Bucket *scheme_module_bucket(Scheme_Object *modname, Scheme_Object *var, 
 {
   Scheme_Object *a[2];
 
-  a[0] = modname;
+  if (SAME_OBJ(modname, kernel_symbol))
+    a[0] = ((Scheme_Modidx *)kernel_modidx)->path;
+  else
+    a[0] = modname;
   a[1] = var;
 
   return (Scheme_Bucket *)_dynamic_require(2, a, env, 1, 0, 0, 1, 1, pos);

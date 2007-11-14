@@ -191,7 +191,7 @@
 		     (zodiac:zodiac-stx ast)
 		     (make-empty-box) 
 		     constructor-name
-		     '#%kernel
+		     (module-path-index-join ''#%kernel #f)
 		     (box '())
 		     #f
 		     #f

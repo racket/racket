@@ -6,7 +6,7 @@
 ;;  'method-arity-error, and 'inferred-name properties are
 ;;  specially preserved for `lambda' expressions.
 
-(module src2src mzscheme
+(module src2src scheme/base
   (require (lib "class.ss")
 	   (lib "kerncase.ss" "syntax")
 	   (lib "primitives.ss" "syntax")
@@ -77,10 +77,9 @@
     (class object%
       
       (init-field src-stx)
-      (if (not (syntax? src-stx))
-          (begin
-            (printf "~a~n" src-stx)
-            (error 'stx)))
+      (when (not (syntax? src-stx))
+        (printf "~a~n" src-stx)
+        (error 'stx))
       (init-field [cert-stxes (list src-stx)])
       (field (known-value #f))
       
@@ -219,12 +218,12 @@
   (define (get-sexpr o) (send o sexpr))
   (define (get-body-sexpr o) (send o body-sexpr))
 
-  (define-struct bucket (mutated? inited-before-use?))
+  (define-struct bucket (mutated? inited-before-use?) #:mutable)
 
   (define (global-bucket table stx)
     (let ([l (hash-table-get table (syntax-e stx) (lambda () null))])
       (let ([s (ormap (lambda (b)
-			(and (module-identifier=? stx (car b))
+			(and (free-identifier=? stx (car b))
 			     (cdr b)))
 		      l)])
 	(if s
@@ -280,7 +279,7 @@
 
       (define/override (global->local env)
         (or (ormap (lambda (e)
-                     (and (module-identifier=? (car e) src-stx)
+                     (and (free-identifier=? (car e) src-stx)
                           (make-object ref% (cdr e) src-stx cert-stxes)))
                    env)
             this))
@@ -322,7 +321,7 @@
       (define/public (clone-binder env) 
         (make-object binding% 
           always-inited?
-          (datum->syntax-object
+          (datum->syntax
            #f
            (gensym (syntax-e src-stx))
            src-stx
@@ -404,7 +403,7 @@
       (inherit recertify)
       (define/override (sexpr) 
         (let ([x (send binding sexpr)])
-	  (recertify (datum->syntax-object
+	  (recertify (datum->syntax
 		      x
 		      (syntax-e x)
 		      src-stx))))
@@ -574,7 +573,7 @@
       
       (inherit recertify)
       (define/override (sexpr)
-	(let ([vstx (datum->syntax-object (quote-syntax here) val src-stx)])
+	(let ([vstx (datum->syntax (quote-syntax here) val src-stx)])
 	  (cond
 	   [(or (number? val)
 		(string? val)
@@ -779,8 +778,8 @@
            (let ([xformed
                   (let ([l (send (cadr rands) get-const-val)]
                         [l-stx (send (cadr rands) get-stx)]
-                        [false (make-object constant% #f (datum->syntax-object #f #f))]
-                        [true (make-object constant% #t (datum->syntax-object #f #t))])
+                        [false (make-object constant% #f (datum->syntax #f #f))]
+                        [true (make-object constant% #t (datum->syntax #f #t))])
                     (if (null? l)
                         false
                         (let loop ([l l])
@@ -887,7 +886,7 @@
 	 (keep-mzc-property
 	  (with-syntax ([rator (get-sexpr rator)]
 			[(rand ...) (map get-sexpr rands)])
-	    (syntax/loc src-stx (rator rand ...)))
+	    (syntax/loc src-stx (#%plain-app rator rand ...)))
 	  src-stx)))
 
       ;; Checks whether the expression is an app of `values'
@@ -1027,7 +1026,7 @@
 		   [vars . body] ...))
 		(with-syntax ([body (car (syntax->list (syntax (body ...))))])
 		  (syntax/loc src-stx
-		    (lambda vars ... . body))))
+		    (#%plain-lambda vars ... . body))))
 	    src-stx))))))
 
   (define local% 
@@ -1453,7 +1452,7 @@
                                             (map (lambda (var)
                                                    (make-object binding%
                                                      #t
-                                                     (datum->syntax-object
+                                                     (datum->syntax
                                                       #f
                                                       (syntax-e var)
                                                       var)))
@@ -1585,7 +1584,7 @@
       (fprintf (current-output-port) 
 	       "~a: ~e~n"
 	       msg
-	       (syntax-object->datum (send exp sexpr)))))
+	       (syntax->datum (send exp sexpr)))))
 
   (define (warning msg exp)
     ; (print-warning msg exp)
@@ -1713,7 +1712,7 @@
            stx)]
 
 	[(quote expr)
-	 (make-object constant% (syntax-object->datum (syntax expr)) stx)]
+	 (make-object constant% (syntax->datum (syntax expr)) stx)]
 
 	[(quote-syntax expr)
 	 (make-object constant% (syntax expr) stx)]
@@ -1761,13 +1760,11 @@
            (parse (syntax rhs) env trans? in-module? tables)
            stx)]
 
-	[(if test then . else)
+	[(if test then else)
 	 (make-object if%
            (parse (syntax test) env trans? in-module? tables)
            (parse (syntax then) env trans? in-module? tables)
-           (if (null? (syntax-e (syntax else)))
-               (parse (quote-syntax (#%plain-app void)) env trans? in-module? tables)
-               (parse (car (syntax-e (syntax else))) env trans? in-module? tables))
+           (parse (syntax else) env trans? in-module? tables)
            stx)]
 	
 	[(with-continuation-mark k v body)
@@ -1817,7 +1814,7 @@
 	[(#%require . i) (make-object require/provide% stx)]
 	[(#%provide i ...) (make-object require/provide% stx)]
 
-	[else (error 'parse "unknown expression: ~a" (syntax-object->datum stx))])))
+	[else (error 'parse "unknown expression: ~a" (syntax->datum stx))])))
 
   (define parse (make-parse #f))
   (define parse-top (make-parse #t))

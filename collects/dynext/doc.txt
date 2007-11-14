@@ -171,7 +171,8 @@ _file.ss_
 ---------
 
 > (append-zo-suffix s) - appends the .zo file suffix to the
-  path/string s, returning a path.
+  path/string s, returning a path. The existing suffix, if any, is
+  perserved and converted as with `path-add-suffix'.
 
 > (append-object-suffix s) - appends the platform-standard compiled
    object file suffix to the path/string s, returning a path.

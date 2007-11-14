@@ -151,7 +151,9 @@
 				  (bytes->path (bytes-append (path->bytes b) a)))]
 		   [sbase (extract-base-filename/ss file (if from-c? #f 'mzc))]
 		   [cbase (extract-base-filename/c file (if from-c? 'mzc #f))]
-		   [base (or sbase cbase)]
+		   [base (if sbase 
+                             (path-replace-suffix (path-add-suffix input-name #".x") #"")
+                             cbase)]
 		   [c-dir (if tmp-c?
 			      (find-system-path 'temp-dir)
 			      dest-dir)]

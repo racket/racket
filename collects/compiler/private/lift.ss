@@ -196,7 +196,7 @@
 				    [(var)
 				     (or (not (mod-glob? var))
 					 (let ([modname (mod-glob-modname var)])
-					   (if (eq? modname '#%kernel)
+					   (if (kernel-modname? modname)
 					       #t
 					       (not modname))))])
 				   (set->list (code-global-vars code)))))

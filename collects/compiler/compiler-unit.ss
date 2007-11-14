@@ -94,7 +94,7 @@
 	(lambda (prefix)
 	  (let ([c (make-extension-compiler mode prefix)])
 	    (lambda (source-files destination-directory)
-	      (map
+	      (for-each
 	       (lambda (source-file)
 		 (c source-file (or destination-directory 'same)))
 	       source-files)))))

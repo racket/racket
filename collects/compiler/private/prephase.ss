@@ -103,9 +103,9 @@
       (define prephase:primitive-name?
 	(lambda (ast)
 	  (let ([m (zodiac:top-level-varref-module ast)])
-	    (or (eq? '#%kernel m)
+	    (or (kernel-modname? m)
 		(and (box? m)
-		     (eq? '#%kernel (unbox m)))))))
+		     (kernel-modname? (unbox m)))))))
 
       (define (preprocess:adhoc-app-optimization ast prephase-it)
 	(let ([fun (zodiac:app-fun ast)])
@@ -120,7 +120,7 @@
 				  (zodiac:zodiac-stx fun)
 				  (make-empty-box)
 				  newname
-				  '#%kernel
+				  (module-path-index-join ''#%kernel #f)
 				  (box '())
 				  #f
 				  #f
@@ -629,7 +629,7 @@
 				      (zodiac:zodiac-stx ast))
 				     (make-empty-box)
 				     proc
-				     '#%kernel
+				     (module-path-index-join ''#%kernel #f)
 				     (box '())
 				     #f
 				     #f

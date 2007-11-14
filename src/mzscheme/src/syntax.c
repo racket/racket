@@ -1891,27 +1891,25 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
 
     if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
 	|| SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
+      int imported = 0;
       /* It must be in the module being compiled/expanded. */
       if (env->genv->module) {
         if (SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
           if (!SAME_OBJ(((Module_Variable *)var)->modidx, env->genv->module->self_modidx))
-            var = NULL;
+            imported = 1;
         } else
-          var = NULL;
+          imported = 1;
       } else {
         if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)) {
           if (!SAME_OBJ(((Scheme_Bucket_With_Home *)var)->home, env->genv))
-            var = NULL;
+            imported = 1;
         } else
-          var = NULL;
+          imported = 1;
       }
 
-      if (!var)
-        scheme_wrong_syntax(NULL, name, form, "identifier cannot refer to an imported binding");
-      
       if (rec[drec].comp) {
 	var = scheme_register_toplevel_in_prefix(var, env, rec, drec);
-        if (env->genv->module)
+        if (!imported && env->genv->module)
           SCHEME_TOPLEVEL_FLAGS(var) |= SCHEME_TOPLEVEL_MUTATED;
       }
     } else {

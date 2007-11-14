@@ -457,8 +457,8 @@
   (define (compiler-warning)
     (fprintf (current-error-port) 
              (string-append
-              "Warning: compilation to C is usually less effective\n"
-              "for performance than relying on the bytecode JIT compiler.\n")))
+              "Warning: compilation to C is usually less effective for performance\n"
+              "         than relying on the bytecode just-in-time compiler.\n")))
 
   (case mode
     [(compile)

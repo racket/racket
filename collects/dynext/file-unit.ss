@@ -13,23 +13,23 @@
       (export dynext:file^)
 
       (define (append-zo-suffix s)
-	(path-replace-suffix s #".zo"))
+	(path-add-suffix s #".zo"))
 
       (define (append-c-suffix s)
-	(path-replace-suffix s #".c"))
+	(path-add-suffix s #".c"))
 
       (define (append-constant-pool-suffix s)
-	(path-replace-suffix s #".kp"))
+	(path-add-suffix s #".kp"))
 
       (define (append-object-suffix s)
-	(path-replace-suffix
+	(path-add-suffix
 	 s
 	 (case (system-type)
 	   [(unix beos macos macosx) #".o"]
 	   [(windows) #".obj"])))
 
       (define (append-extension-suffix s)
-	(path-replace-suffix s (system-type 'so-suffix)))
+	(path-add-suffix s (system-type 'so-suffix)))
 
       (define (extract-suffix appender)
 	(subbytes

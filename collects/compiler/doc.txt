@@ -467,13 +467,6 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
   execution and for creating a distribution tha contains the
   executable).
 
-  When embedding into a copy of MrEd, a "-Z" flag should usually be
-  included in the list of command-line flags, so that the target
-  executable has a chance to see an embedded declaration of (lib
-  "mred.ss" "mred"). Then, if the literal code expect to have MrEd and
-  the class library required into the top-level namespace, literal
-  `require's for those libraries should be included at the start.
-
   The optional `aux' argument is an association list for
   platform-specific options (i.e., it is a list of pairs where the
   first element of the pair is a key symbol and the second element is

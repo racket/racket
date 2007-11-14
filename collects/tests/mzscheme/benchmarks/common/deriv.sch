@@ -31,7 +31,6 @@
      (list '*
            a
            (cons '+ (map deriv-aux (cdr a)))))
-#;
     ((eq? (car a) '/)
      (list '-
            (list '/

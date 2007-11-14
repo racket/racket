@@ -46,6 +46,7 @@
      compiler:clean-string
      protect-comment
      global-defined-value*
+     kernel-modname?
 
      compiler:get-label-number
      compiler:reset-label-number!))
