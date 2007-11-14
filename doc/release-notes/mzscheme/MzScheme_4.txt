@@ -63,7 +63,7 @@ in several significant ways:
  - The `#lang' shorthand for `module' is now preferred for a module
    declaration in a file. In "my-library.ss", instead of
 
-      (scheme my-library scheme/base
+      (module my-library scheme/base
         (define my-stuff ....)
         ....)
 
