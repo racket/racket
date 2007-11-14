@@ -92,7 +92,9 @@ module browser threading seems wrong.
         get-tab
         get-next-settings
         after-set-next-settings
-        set-needs-execution-message))
+        set-needs-execution-message
+        get-port-name-identifier
+        port-name-matches?))
     
     (define-struct teachpack-callbacks 
       (get-names   ;; settings -> (listof string)
@@ -402,6 +404,20 @@ module browser threading seems wrong.
           (define tab #f)
           (define/public (get-tab) tab)
           (define/public (set-tab t) (set! tab t))
+          
+          (define port-name-identifier #f)
+          (define/public (get-port-name-identifier)
+            (unless port-name-identifier
+              (set! port-name-identifier (gensym 'unsaved-editor)))
+            port-name-identifier)
+          (define/public (port-name-matches? id)
+            (let ([filename (get-filename)])
+              (or (and (path? id)
+                       (path? filename)
+                       (equal? (normal-case-path (normalize-path (get-filename)))
+                               (normal-case-path (normalize-path id))))
+                  (and (symbol? port-name-identifier)
+                       (equal? port-name-identifier id)))))
           
           (inherit get-surrogate set-surrogate)
           (define/public (set-current-mode mode)

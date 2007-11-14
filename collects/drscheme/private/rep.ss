@@ -756,8 +756,7 @@ TODO
                                             (number? (srcloc-position loc))
                                             (number? (srcloc-span loc))))
                               (map (λ (srcloc)
-                                     (if (equal? (normal-case-path (normalize-path (send definitions-text get-filename)))
-                                                 (normal-case-path (normalize-path (srcloc-source srcloc))))
+                                     (if (send definitions-text port-name-matches? (srcloc-source srcloc))
                                          (make-srcloc definitions-text
                                                       (srcloc-line srcloc)
                                                       (srcloc-column srcloc)
