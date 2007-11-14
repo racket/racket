@@ -155,7 +155,7 @@ void wxCanvasDC::DrawText(const char* text, double x, double y, Bool combine, Bo
      gleaned from ATSUI on a previous round. We can save a factor of
      10 for all but the smallest strings by avoiding ATSUI this
      time. */
-  if (!combine 
+  if (!combine
       && ucs4 
       && (angle == 0.0) 
       && table_key

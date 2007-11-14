@@ -41,6 +41,8 @@
 #define PAD_X 2
 #define MSPACEY 1
 
+extern int wx_leave_all_input_alone;
+
 static char *protect_leading_hyphen(char *s)
 {
   if (s[0] == '-') {
@@ -316,7 +318,9 @@ void wxChoice::OnEvent(wxMouseEvent *event) // mac platform only
       startPt.h = startH - PAD_Y;
 
       wxTracking();
+      wx_leave_all_input_alone++;
       trackResult = TrackControl(cMacControl,startPt,(ControlActionUPP)-1);
+      --wx_leave_all_input_alone;
       if (trackResult) {
 	wxCommandEvent *commandEvent;
 	selection = GetControlValue(cMacControl);

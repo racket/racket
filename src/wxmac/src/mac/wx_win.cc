@@ -34,6 +34,8 @@
 int SetOriginX = 0;
 int SetOriginY = 0;
 
+extern int wx_leave_all_input_alone;
+
 /* The gMouseWindow declaration confises xform.ss. */
 #ifdef MZ_PRECISE_GC
 START_XFORM_SKIP;
@@ -2092,7 +2094,9 @@ Bool wxWindow::PopupMenu(wxMenu *menu, double x, double y)
   pos.h = (short)x + SetOriginX;
   LocalToGlobal(&pos);
   wxTracking();
+  wx_leave_all_input_alone++;
   sel = ::PopUpMenuSelect(m, pos.v, pos.h, 0);
+  --wx_leave_all_input_alone;
 
   ReleaseCurrentDC();
 

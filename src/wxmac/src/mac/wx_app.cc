@@ -51,6 +51,8 @@ int wxTranslateRawKey(int key);
 
 int wxMenuBarHeight;
 
+extern int wx_leave_all_input_alone;
+
 extern wxApp *wxTheApp;
 //-----------------------------------------------------------------------------
 wxApp::wxApp():wxbApp()
@@ -369,7 +371,9 @@ void wxApp::doMacMouseDown(void)
 
 	wxTracking();
 	wxPrepareMenuDraw();
+        wx_leave_all_input_alone++;
 	menuResult = MenuSelect(cCurrentEvent.where);
+        --wx_leave_all_input_alone;
 	wxDoneMenuDraw(!!menuResult);
 	doMacInMenuBar(menuResult, FALSE);
       }
@@ -1436,8 +1440,6 @@ void wxApp::DoDefaultAboutItem(void)
 }
 
 //-----------------------------------------------------------------------------
-
-extern int wx_leave_all_input_alone;
 
 void wxPrimDialogSetUp()
 {
