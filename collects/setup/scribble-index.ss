@@ -17,7 +17,12 @@
          xref-index
          (struct-out entry))
 
-(define-struct entry (words content link-key desc))
+(define-struct entry (words    ; list of strings: main term, sub-term, etc.
+                      content  ; Scribble content to the index label
+                      link-key ; for generating a Scribble link
+                      desc))   ; further info that depends on the kind of index entry
+
+;; Private:
 (define-struct xrefs (renderer ri))
 
 ;; ----------------------------------------
