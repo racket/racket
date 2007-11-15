@@ -21,7 +21,6 @@ int wx_isFamilyFixedWidth(FMFontFamily fam)
       if (!ATSFontGetPostScriptName(ats, kATSOptionFlagsDefault, &ref)) {
         nsfnt = [NSFont fontWithName: (NSString *)ref size: 12];
         CFRelease(ref);
-        [pool release];
         is_fw = [nsfnt isFixedPitch];
       }
     }
