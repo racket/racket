@@ -54,6 +54,12 @@
 
       (define/public (get-undefined ri)
         (hash-table-map (resolve-info-undef ri) (lambda (k v) k)))
+
+      (define/public (transfer-info ci src-ci)
+        (let ([in-ht (collect-info-ext-ht ci)])
+          (hash-table-for-each (collect-info-ext-ht src-ci)
+                               (lambda (k v)
+                                 (hash-table-put! in-ht k v)))))
       
       ;; ----------------------------------------
       ;; global-info collection
@@ -193,7 +199,8 @@
         (collect-put! ci
                       `(index-entry ,(generate-tag (index-element-tag i) ci))
                       (list (index-element-plain-seq i)
-                            (index-element-entry-seq i))))
+                            (index-element-entry-seq i)
+                            (index-element-desc i))))
 
       ;; ----------------------------------------
       ;; global-info resolution
@@ -269,6 +276,11 @@
                            d ri)]
          [(element? i)
           (cond
+           [(index-element? i)
+            (let ([e (index-element-desc i)])
+              (when (delayed-index-desc? e)
+                (let ([v ((delayed-index-desc-resolve e) this d ri)])
+                  (hash-table-put! (resolve-info-delays ri) e v))))]
            [(link-element? i)
             (resolve-get d ri (link-element-tag i))])
           (for-each (lambda (e)

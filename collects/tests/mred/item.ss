@@ -1,4 +1,6 @@
 
+#lang scheme/gui
+
 (require (lib "class.ss")
 	 (lib "class100.ss")
 	 (lib "etc.ss"))
@@ -184,7 +186,7 @@
 (define OTHER-LABEL "XXXXXXXXXXXXXXXXXXXXXX")
 
 (define-values (icons-path local-path)
-  (let ([d (current-load-relative-directory)])
+  (let ([d (this-expression-source-directory)])
     (values
      (lambda (n)
        (build-path (collection-path "icons") n))
@@ -223,7 +225,7 @@
 	     (send dc draw-text "Tab in" 0 60))))]
       [on-event
        (lambda (e)
-	 (if (send e button-down?)
+	 (when (send e button-down?)
 	     (let ([x (send e get-x)]
 		   [y (send e get-y)]
 		   [m (if (or (null? last-m)
@@ -289,7 +291,7 @@
 
 (define prev-frame #f)
 
-(define bitmap%
+(define bitmap2%
   (class100 bitmap% args
     (inherit ok?)
     (sequence
@@ -298,29 +300,27 @@
 	(printf "bitmap failure: ~s~n" args)))))
 
 (define (active-mixin %)
-  (class100-asi %
-    (private-field
-      [pre-on void]
-      [click-i void]
-      [el void])
-    (rename [super-on-subwindow-event on-subwindow-event]
-	    [super-on-subwindow-char on-subwindow-char])
-    (override [on-subwindow-event (lambda args 
-				    (apply el args)
-				    (or (apply pre-on args)
-					(apply click-i args)
-					(super-on-subwindow-event . args)))]
-	      [on-subwindow-char (lambda args 
-				   (or (apply pre-on args)
-				       (super-on-subwindow-char . args)))]
-	      [on-activate (lambda (on?) (printf "active: ~a~n" on?))]
-	      [on-move (lambda (x y) (printf "moved: ~a ~a~n" x y))]
-	      [on-size (lambda (x y) (printf "sized: ~a ~a~n" x y))])
-    (public [set-info
-	     (lambda (ep)
-	       (set! pre-on (add-pre-note this ep))
-	       (set! click-i (add-click-intercept this ep))
-	       (set! el (add-enter/leave-note this ep)))])))
+  (class %
+    (define pre-on void)
+    (define click-i void)
+    (define el void)
+    (override* [on-subwindow-event (lambda args 
+                                     (apply el args)
+                                     (or (apply pre-on args)
+                                         (apply click-i args)
+                                         (super on-subwindow-event . args)))]
+               [on-subwindow-char (lambda args 
+                                    (or (apply pre-on args)
+                                        (super on-subwindow-char . args)))]
+               [on-activate (lambda (on?) (printf "active: ~a~n" on?))]
+               [on-move (lambda (x y) (printf "moved: ~a ~a~n" x y))]
+               [on-size (lambda (x y) (printf "sized: ~a ~a~n" x y))])
+    (public* [set-info
+              (lambda (ep)
+                (set! pre-on (add-pre-note this ep))
+                (set! click-i (add-click-intercept this ep))
+                (set! el (add-enter/leave-note this ep)))])
+    (super-new)))
 
 (define active-frame% (active-mixin frame%))
 (define active-dialog% (active-mixin dialog%))
@@ -339,13 +339,13 @@
       (apply super-init name args))))
 
 (define return-bmp 
-  (make-object bitmap% (icons-path "return.xbm") 'xbm))
+  (make-object bitmap2% (icons-path "return.xbm") 'xbm))
 (define bb-bmp
-  (make-object bitmap% (icons-path "bb.gif") 'gif))
+  (make-object bitmap2% (icons-path "bb.gif") 'gif))
 (define mred-bmp
-  (make-object bitmap% (icons-path "mred.xbm") 'xbm))
+  (make-object bitmap2% (icons-path "mred.xbm") 'xbm))
 (define nruter-bmp
-  (make-object bitmap% (local-path "nruter.xbm") 'xbm))
+  (make-object bitmap2% (local-path "nruter.xbm") 'xbm))
 
 (define (add-label-direction label-h? l)
   (if (not label-h?)
@@ -1398,18 +1398,15 @@
 			    (set! actual-content null)
 			    (set! actual-user-data null)
 			    (send c clear))))
+  (define (gone l n)
+    (if (zero? n)
+        (cdr l)
+        (cons (car l) (gone (cdr l) (sub1 n)))))
   (define (delete p)
     (send c delete p)
     (when (<= 0 p (sub1 (length actual-content)))
-      (if (zero? p)
-	  (begin
-	    (set! actual-content (cdr actual-content))
-	    (set! actual-user-data (cdr actual-user-data)))
-	  (begin
-	    (set-cdr! (list-tail actual-content (sub1 p)) 
-		      (list-tail actual-content (add1 p)))
-	    (set-cdr! (list-tail actual-user-data (sub1 p)) 
-		      (list-tail actual-user-data (add1 p)))))))
+      (set! actual-content (gone actual-content p))
+      (set! actual-user-data (gone actual-user-data p))))
   (define db (if list?
 		 (make-object button%
 			      "Delete" cdp
@@ -1646,22 +1643,20 @@
 (define (canvas-frame flags)
   (define f (make-frame frame% "Canvas Test" #f #f 250))
   (define p (make-object vertical-panel% f))
-  (define c% (class100 canvas% (-name -swapped-name p)
+  (define c% (class canvas%
+               (init -name -swapped-name p)
 	       (inherit get-dc get-scroll-pos get-scroll-range get-scroll-page
 			get-client-size get-virtual-size get-view-start)
-	       (rename [super-init-manual-scrollbars init-manual-scrollbars]
-		       [super-init-auto-scrollbars init-auto-scrollbars])
-	       (private-field
-		 [name -name]
-		 [swapped-name -swapped-name]
-		 [auto? #f]
-		 [incremental? #f]
-		 [vw 10]
-		 [vh 10])
-	       (public
+	       (define name -name)
+               (define swapped-name -swapped-name)
+               (define auto? #f)
+               (define incremental? #f)
+               (define vw 10)
+               (define vh 10)
+	       (public*
 		 [inc-mode (lambda (x) (set! incremental? x))]
 		 [set-vsize (lambda (w h) (set! vw w) (set! vh h))])
-	       (override
+	       (override*
 		[on-paint
 		 (lambda ()
 		   (let ([s (format "V: p: ~s r: ~s g: ~s H: ~s ~s ~s"
@@ -1697,12 +1692,11 @@
 		   (unless incremental? (on-paint)))]
 		[init-auto-scrollbars (lambda x
 					(set! auto? #t)
-					(super-init-auto-scrollbars . x))]
+					(super init-auto-scrollbars . x))]
 		[init-manual-scrollbars (lambda x
 					  (set! auto? #f)
-					  (super-init-manual-scrollbars . x))])
-	       (sequence
-		 (super-init p flags))))
+					  (super init-manual-scrollbars . x))])
+               (super-init p flags)))
   (define un-name "Unmanaged scroll")
   (define m-name "Automanaged scroll")
   (define c1 (make-object c% un-name m-name p))
@@ -2118,15 +2112,15 @@
 	 (super-init)
 	 (start 1000 #t))))))
 
-(define bp (make-object vertical-panel% ap '(border)))
-(define bp1 (make-object horizontal-panel% bp))
-(define bp2 (make-object horizontal-pane% bp))
+(define bp0 (make-object vertical-panel% ap '(border)))
+(define bp1 (make-object horizontal-panel% bp0))
+(define bp2 (make-object horizontal-pane% bp0))
 (define mp (make-object vertical-panel% ap '(border)))
 (define mp1 (make-object horizontal-panel% mp))
 (define mp2 (make-object horizontal-pane% mp))
 
 (define pp (make-object horizontal-pane% ap))
-(send bp stretchable-height #f)
+(send bp0 stretchable-height #f)
 (make-object button% "Make Menus Frame" pp (lambda (b e) (menu-frame)))
 (make-object horizontal-pane% pp)
 (make-object button% "Make Panel Frame" pp (lambda (b e) (panel-frame)))

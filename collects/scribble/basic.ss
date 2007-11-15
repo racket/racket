@@ -167,7 +167,8 @@
      (list (make-target-element #f content `(idx ,tag)))
      `(idx ,tag)
      word-seq
-     element-seq))
+     element-seq
+     #f))
 
   (define (index* word-seq content-seq . s)
     (let ([key (make-generated-tag)])

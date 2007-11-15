@@ -1,6 +1,7 @@
 
 (module decode mzscheme
   (require "struct.ss"
+           "decode-struct.ss"
            (lib "contract.ss")
            (lib "class.ss"))
 
@@ -75,17 +76,21 @@
                                       null
                                       tag
                                       (part-index-decl-plain-seq k)
-                                      (part-index-decl-entry-seq k)))
+                                      (part-index-decl-entry-seq k)
+                                      #f))
                                    keys k-tags)])
                        (append
-                        (if title
+                        (if (and title (not (or (eq? 'hidden style)
+                                                (and (list? style)
+                                                     (memq 'hidden style)))))
                             (cons (make-index-element
                                    #f
                                    null
                                    (car tags)
                                    (list (regexp-replace #px"^(?:A|An|The)\\s" (content->string title)
                                                          ""))
-                                   (list (make-element #f title)))
+                                   (list (make-element #f title))
+                                   (make-part-index-desc))
                                   l)
                             l)
                         colls))

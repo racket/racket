@@ -136,7 +136,8 @@
    [(link-element element) ([tag tag?])]
    [(index-element element) ([tag tag?]
                              [plain-seq (listof string?)]
-                             [entry-seq list?])]
+                             [entry-seq list?]
+                             [desc any/c])]
    [(aux-element element) ()]
    [(hover-element element) ([text string?])]
    ;; specific renders support other elements, especially strings
@@ -191,6 +192,38 @@
 
   (provide current-serialize-resolve-info)
   (define current-serialize-resolve-info (make-parameter #f))
+
+  ;; ----------------------------------------
+
+  ;; Delayed index entry also has special serialization support.
+  ;; It uses the same delay -> value table as delayed-element
+  (define-struct delayed-index-desc (resolve)
+    #:mutable
+    #:property 
+    prop:serializable 
+    (make-serialize-info
+     (lambda (d)
+       (let ([ri (current-serialize-resolve-info)])
+         (unless ri
+           (error 'serialize-delayed-index-desc
+                  "current-serialize-resolve-info not set"))
+         (with-handlers ([exn:fail:contract?
+                          (lambda (exn)
+                            (error 'serialize-index-desc
+                                   "serialization failed (wrong resolve info?); ~a"
+                                   (exn-message exn)))])
+           (vector
+            (delayed-element-content d ri)))))
+     #'deserialize-delayed-index-desc
+     #f
+     (or (current-load-relative-directory) (current-directory))))
+
+  (provide/contract
+   (struct delayed-index-desc ([resolve (any/c part? resolve-info? . -> . any)])))
+
+  (provide deserialize-delayed-index-desc)
+  (define deserialize-delayed-index-desc
+    (make-deserialize-info values values))
 
   ;; ----------------------------------------
 

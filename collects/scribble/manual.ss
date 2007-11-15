@@ -5,6 +5,7 @@
            "scheme.ss"
            "config.ss"
            "basic.ss"
+           "manual-struct.ss"
            mzlib/string
            scheme/class
            scheme/stxparam
@@ -281,7 +282,8 @@
                           (list t)
                           (target-element-tag t)
                           (list (element->string e))
-                          (list e))))
+                          (list e)
+                          'tech)))
 
   (define (tech #:doc [doc #f] . s)
     (*tech make-link-element "techlink" doc s))
@@ -591,6 +593,15 @@
      (lambda () e)
      (lambda () e)))
 
+  (define (get-exporting-libraries render p ri)
+    (resolve-get/tentative p ri '(exporting-libraries #f)))
+
+  (define (with-exporting-libraries proc)
+    (make-delayed-index-desc
+     (lambda (render part ri)
+       (proc
+        (or (get-exporting-libraries render part ri) null)))))
+    
   (define (*defproc mode within-id
                     stx-ids prototypes arg-contractss result-contracts content-thunk)
     (let ([spacer (hspace 1)]
@@ -696,7 +707,13 @@
                                                                                                   content
                                                                                                   tag
                                                                                                   (list (symbol->string mname))
-                                                                                                  content))
+                                                                                                  content
+                                                                                                  (with-exporting-libraries
+                                                                                                   (lambda (libs)
+                                                                                                     (make-method-index-desc 
+                                                                                                      (syntax-e within-id)
+                                                                                                      libs
+                                                                                                      mname)))))
                                                                         tag)
                                                                        (car content)))
                                                                  (*method (car prototype) within-id))))]
@@ -714,7 +731,12 @@
                                                                               content
                                                                               tag
                                                                               (list (symbol->string (car prototype)))
-                                                                              content))
+                                                                              content
+                                                                              (with-exporting-libraries
+                                                                               (lambda (libs)
+                                                                                 (make-procedure-index-desc
+                                                                                  (car prototype)
+                                                                                  libs)))))
                                                     tag)
                                                    (car content)))
                                              (annote-exporting-library
@@ -904,7 +926,7 @@
          stx-id
          (let* ([name
                  (apply string-append
-                        (map symbol->string (car wrappers)))]
+                        (map symbol->string (cdar wrappers)))]
                 [tag 
                  (register-scheme-definition 
                   (datum->syntax stx-id
@@ -919,7 +941,13 @@
                                      (list content)
                                      tag
                                      (list name)
-                                     (list (schemeidfont (make-element "schemevaluelink" (list name))))))
+                                     (list (schemeidfont (make-element "schemevaluelink" (list name))))
+                                     (with-exporting-libraries
+                                      (lambda (libs)
+                                        (let ([name (string->symbol name)])
+                                          (if (eq? 'info (caar wrappers))
+                                              (make-struct-index-desc name libs)
+                                              (make-procedure-index-desc name libs)))))))
                 tag)
                content))
          (cdr wrappers))))
@@ -952,12 +980,13 @@
                                 (let ([name (if (pair? name)
                                                 (car name)
                                                 name)])
-                                  (list* (list name)
-                                         (list name '?)
-                                         (list 'make- name)
+                                  (list* (list 'info name)
+                                         (list 'type 'struct: name)
+                                         (list 'predicate name '?)
+                                         (list 'constructor 'make- name)
                                          (append
                                           (map (lambda (f)
-                                                 (list name '- (field-name f)))
+                                                 (list 'accessor name '- (field-name f)))
                                                fields)
                                           (if immutable?
                                               null
@@ -966,7 +995,7 @@
                                                (map (lambda (f)
                                                       (if (and (pair? (car f))
                                                                (memq '#:mutable (car f)))
-                                                          (list 'set- name '- (field-name f) '!)
+                                                          (list 'mutator 'set- name '- (field-name f) '!)
                                                           #f))
                                                     fields)))))))])
                           (if (pair? name)
@@ -1116,7 +1145,10 @@
                                                         content
                                                         tag
                                                         (list (symbol->string name))
-                                                        content))
+                                                        content
+                                                        (with-exporting-libraries
+                                                         (lambda (libs)
+                                                           (make-thing-index-desc name libs)))))
                               tag)
                              (car content)))
                        spacer ":" spacer
@@ -1181,7 +1213,10 @@
                                                                  content
                                                                  tag
                                                                  (list (symbol->string (syntax-e kw-id)))
-                                                                 content))
+                                                                 content
+                                                                 (with-exporting-libraries
+                                                                  (lambda (libs)
+                                                                    (make-form-index-desc (syntax-e kw-id) libs)))))
                                        content)
                                    stag))
                                  tag)
@@ -1516,7 +1551,7 @@
           (decode-flow
            (build-body decl (decl-body decl))))))))))
 
-  (define (*class-doc stx-id super intfs whole-page?)
+  (define (*class-doc stx-id super intfs whole-page? make-index-desc)
     (let ([spacer (hspace 1)])
       (make-table
        'boxed
@@ -1532,13 +1567,14 @@
                                    make-page-target-element
                                    make-toc-target-element)
                                #f
-                               (if whole-page?
-                                   content ; title is already an index entry
-                                   (list (make-index-element #f
-                                                             content
-                                                             tag
-                                                             (list (symbol->string (syntax-e stx-id)))
-                                                             content)))
+                               (list (make-index-element #f
+                                                         content
+                                                         tag
+                                                         (list (symbol->string (syntax-e stx-id)))
+                                                         content
+                                                         (with-exporting-libraries
+                                                          (lambda (libs)
+                                                            (make-index-desc (syntax-e stx-id) libs)))))
                                tag)
                               (car content)))
                         spacer ":" spacer
@@ -1583,7 +1619,8 @@
                         (*class-doc (quote-syntax/loc name)
                                     (quote-syntax super)
                                     (list (quote-syntax intf) ...)
-                                    whole-page?)))
+                                    whole-page?
+                                    make-class-index-desc)))
                      (list body ...))))]))
 
   (define-syntax defclass
@@ -1609,7 +1646,8 @@
                         (*class-doc (quote-syntax/loc name)
                                     #f
                                     (list (quote-syntax intf) ...)
-                                    whole-page?)))
+                                    whole-page?
+                                    make-interface-index-desc)))
                      (list body ...))))]))
   
   (define-syntax definterface
