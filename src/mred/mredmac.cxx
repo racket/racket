@@ -533,17 +533,25 @@ void WakeUpMrEd()
    nothing and return 0. */
 
 static unsigned long lastTime;
+
+static int wne_delay_on;
+static unsigned long wne_delay_until;
  
 static int TransferQueue(int all)
 {
   EventRecord e;
+  unsigned long tc;
   int sleep_time = 0;
   int delay_time = 0;
   
   /* Don't call WaitNextEvent() too often. */
-  if (TickCount() <= lastTime + delay_time)
+  tc = TickCount();
+  if (tc <= lastTime + delay_time)
     return 0;
-  
+  if (wne_delay_on && (tc < wne_delay_until))
+    return 0;
+  wne_delay_on = 0;
+
   while (WNE(&e, dispatched ? ((double)sleep_time/60.0) : 0)) {
     QueueTransferredEvent(&e);
   }
@@ -551,6 +559,26 @@ static int TransferQueue(int all)
   lastTime = TickCount();
   
   return 1;
+}
+
+void wxStartRefreshSequence(void)
+{
+  /* Editors are not buffered offscreen under Mac OS X, instead
+     relying on the OS's buffering of all windows, which are updated
+     on WNE boundaries. To avoid flicker, avoid calling WNE in the
+     middle of an editor refresh.  The refresh might get stuck,
+     though, so we only wait a little while. */
+
+  if (!wne_delay_on) {
+    wne_delay_until = TickCount() + 10;
+  }
+  wne_delay_on++;
+}
+
+void wxEndRefreshSequence(void)
+{
+  if (wne_delay_on)
+    --wne_delay_on;
 }
 
 static void MrDequeue(MrQueueElem *q)
