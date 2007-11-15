@@ -3697,12 +3697,17 @@ int wxHiEventTrampoline(int (*_wha_f)(void *), void *wha_data)
 static void suspend_het_progress(void)
 {
   HiEventTramp * volatile het;
+  double msecs;
 
   {
     Scheme_Object *v;
     v = scheme_extract_one_cc_mark(NULL, mred_het_key);
     het = (HiEventTramp *)SCHEME_CAR(v);
   }
+
+  msecs = scheme_get_inexact_milliseconds();
+  if (msecs < het->continue_until)
+    return;
 
   scheme_on_atomic_timeout = NULL;
 
@@ -3725,11 +3730,18 @@ static void suspend_het_progress(void)
   }
 }
 
+#define HET_RUN_MSECS 200
+
 static void het_run_new(HiEventTramp * volatile het)
 {
+  double msecs;
+
   /* We're willing to start new work that is specific to this thread */
   het->progress_is_resumed = 0;
 
+  msecs = scheme_get_inexact_milliseconds();
+  het->continue_until = msecs + HET_RUN_MSECS;
+  
   if (!scheme_setjmp(het->progress_base)) {
     scheme_start_atomic();
     scheme_on_atomic_timeout = CAST_SUSPEND suspend_het_progress;
@@ -3790,8 +3802,11 @@ int mred_het_run_some(HiEventTrampProc do_f, void *do_data)
       /* We have work in progress. */
       if ((unsigned long)het->progress_base_addr < get_deeper_base()) {
 	/* We have stack space to resume the old work: */
+        double msecs;
 	het->in_progress = 0;
 	het->progress_is_resumed = 1;
+        msecs = scheme_get_inexact_milliseconds();
+        het->continue_until = msecs + HET_RUN_MSECS;
 	scheme_start_atomic();
 	scheme_on_atomic_timeout = CAST_SUSPEND suspend_het_progress;
 	if (!scheme_setjmp(het->progress_base)) {

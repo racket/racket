@@ -149,6 +149,7 @@ public:
   Scheme_Jumpup_Buf_Holder *progress_cont;
   int timer_on;
   HET_TIMER_T timer_id;
+  double continue_until;
 #ifdef MZ_PRECISE_GC
   void *fixup_var_stack_chain;
 #endif
