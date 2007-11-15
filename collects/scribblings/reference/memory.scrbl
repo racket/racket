@@ -5,8 +5,6 @@
 
 @local-table-of-contents[]
 
-@declare-exporting[(lib "scheme/memory")]
-
 @section[#:tag "weakbox"]{Weak Boxes}
 
 A @deftech{weak box} is similar to a normal box (see

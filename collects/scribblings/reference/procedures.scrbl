@@ -27,8 +27,6 @@ is called in tail position with respect to the @scheme[apply] call.
 @; ----------------------------------------
 @section{Keywords and Arity}
 
-@declare-exporting[(lib "scheme/procedure")]
-
 @defproc[(keyword-apply [proc procedure?]
                         [kw-lst (listof keyword?)]
                         [kw-val-lst list?]
@@ -58,12 +56,12 @@ and @scheme[lst]; otherwise, the @exnraise[exn:fail:contract].
 ]}
 
 @defproc[(procedure-arity [proc procedure?])
-         arity?]{
+         procedure-arity?]{
 
 Returns information about the number of by-position arguments accepted
-by @scheme[proc]. See also @scheme[arity?].}
+by @scheme[proc]. See also @scheme[procedure-arity?].}
 
-@defproc[(arity? [v any/c]) boolean?]{
+@defproc[(procedure-arity? [v any/c]) boolean?]{
 
 A valid arity is one of the following:
 
@@ -103,7 +101,7 @@ when no keyword arguments are supplied, @scheme[#f] otherwise.
 ]}
 
 @defproc[(procedure-reduce-arity [proc procedure?]
-                                 [arity arity?])
+                                 [arity procedure-arity?])
          procedure?]{
 
 Returns a procedure that is the same as @scheme[proc] (including
@@ -167,7 +165,7 @@ obtains its result frmo @scheme[plain-proc].
 @defstruct[arity-at-least ([value nonnegative-exact-integer?])]{
 
 This structure type is used for the result of @scheme[procedure-arity].
-See also @scheme[arity?].}
+See also @scheme[procedure-arity?].}
 
 
 @defthing[prop:procedure struct-type-property?]{

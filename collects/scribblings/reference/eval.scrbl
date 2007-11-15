@@ -3,8 +3,6 @@
 
 @title{Evaluation and Compilation}
 
-@declare-exporting[(lib "scheme/eval")]
-
 @defparam[current-eval proc (any/c . -> . any)]{
 
 A parameter that determines the current @deftech{evaluation handler}.

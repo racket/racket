@@ -3,8 +3,6 @@
 
 @title{Namespaces}
 
-@declare-exporting[(lib "scheme/namespace")]
-
 See @secref["namespace-model"] for basic information on the
 namespace model.
 

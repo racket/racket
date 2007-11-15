@@ -347,8 +347,6 @@ is inaccessible.)}
 @;------------------------------------------------------------------------
 @section[#:tag "structinfo"]{Structure Type Transformer Binding}
 
-@declare-exporting[(lib "scheme/struct-info.ss")]
-
 The @scheme[define-struct] form binds the name of a structure type as
 a @tech{transformer binding} that records the other identifiers bound
 to the structure type, the constructor procedure, the predicate

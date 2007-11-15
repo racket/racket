@@ -3,8 +3,6 @@
 
 @title{Byte and String Output}
 
-@declare-exporting[(lib "scheme/io")]
-
 @defproc[(write-char [char character?][out output-port? (current-output-port)])
          void?]{
 

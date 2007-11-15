@@ -4,7 +4,7 @@
 @title[#:tag-prefix '(lib "scribblings/reference/reference.scrbl")
        #:tag "top"]{PLT Scheme Reference}
 
-@declare-exporting[(lib "scheme/base")]
+@declare-exporting[scheme/base scheme]
 
 This manual defines the core PLT Scheme language and describes its
 most prominent libraries. The companion manual @|Guide| provides a

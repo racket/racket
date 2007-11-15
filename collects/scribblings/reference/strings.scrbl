@@ -259,8 +259,6 @@ _i)] is the character produced by @scheme[(proc _i)].
 @; ----------------------------------------
 @section{String Conversions}
 
-@declare-exporting[(lib "scheme/string")]
-
 @defproc[(string-upcase [str string?]) string?]{ Returns a string
  whose characters are the upcase conversion of the characters in
  @scheme[str]. The conversion uses Unicode's locale-independent
@@ -323,8 +321,6 @@ allocated string).}
 
 @; ----------------------------------------
 @section{Locale-Specific String Operations}
-
-@declare-exporting[(lib "scheme/locale")]
 
 @defproc[(string-locale=? [str1 string?] [str2 string?] ...+)
  boolean?]{  Like @scheme[string=?], but the strings are compared in a

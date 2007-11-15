@@ -3,8 +3,6 @@
 
 @title[#:tag "linecol"]{Counting Positions, Lines, and Columns}
 
-@declare-exporting[(lib "scheme/port")]
-
 @section-index["line numbers"]
 @section-index["column numbers"]
 @section-index["port positions"]

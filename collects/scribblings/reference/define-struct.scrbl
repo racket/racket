@@ -3,8 +3,6 @@
 
 @title[#:tag "define-struct"]{Defining Structure Types: @scheme[define-struct]}
 
-@declare-exporting[(lib "scheme/define-struct")]
-
 @guideintro["define-struct"]{@scheme[define-struct]}
 
 @defform/subs[(define-struct id-maybe-super (field ...)

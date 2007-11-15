@@ -198,8 +198,6 @@ string.
 @; ----------------------------------------
 @section{Bytes to/from Characters, Decoding and Encoding}
 
-@declare-exporting[(lib "scheme/bytes")]
-
 @defproc[(bytes->string/utf-8 [bstr bytes?]
                               [err-char (or/c false/c char?) #f]
                               [start exact-nonnegative-integer? 0]
@@ -333,8 +331,6 @@ string.
 
 @; ----------------------------------------
 @section{Bytes to Bytes Encoding Conversion}
-
-@declare-exporting[(lib "scheme/bytes/converter")]
 
 @defproc[(bytes-open-converter [from-name string?][to-name string?])
          bytes-converter?]{

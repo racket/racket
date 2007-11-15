@@ -4,7 +4,7 @@
 @title[#:tag-prefix '(lib "scribblings/gui/gui.scrbl") 
        #:tag "top"]{PLT Scheme GUI: MrEd}
 
-@declare-exporting[(lib "mred")]
+@declare-exporting[mred scheme/gui]
 
 This reference manual describes the MrEd GUI toolbox that is part of
  PLT Scheme. See @secref[#:doc '(lib "scribblings/guide/guide.scrbl")

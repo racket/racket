@@ -3,8 +3,6 @@
 
 @title{Filesystem}
 
-@declare-exporting[(lib "scheme/file")]
-
 @;------------------------------------------------------------------------
 @section[#:tag "findpaths"]{Locating Paths}
 

@@ -3,8 +3,6 @@
 
 @title[#:tag "custodians"]{Custodians}
 
-@declare-exporting[(lib "scheme/custodian")]
-
 See @secref["custodian-model"] for basic information on the PLT
 Scheme custodian model.
 

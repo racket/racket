@@ -3,8 +3,6 @@
 
 @title{Exiting}
 
-@declare-exporting[(lib "scheme/exit")]
-
 @defproc[(exit [v any/c #t]) any]{
 
 Passes @scheme[v] to the current @tech{exit handler}. If the exit

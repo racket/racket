@@ -137,8 +137,6 @@ Changes the mutable pair @scheme[p] so that its second element is
 @; ----------------------------------------
 @section{List Operations}
 
-@declare-exporting[(lib "scheme/list")]
-
 @defproc[(length [lst list?])
          nonnegative-exact-integer?]{
 
@@ -180,8 +178,6 @@ reverse order.}
 
 @; ----------------------------------------
 @section{List Iteration}
-
-@declare-exporting[(lib "scheme/list")]
 
 @defproc[(map [proc procedure?] [lst list?] ...+) 
          list?]{

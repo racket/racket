@@ -3,8 +3,6 @@
 
 @title[#:tag "threadcells"]{Thread Cells}
 
-@declare-exporting[(lib "scheme/thread-cell")]
-
 A @deftech{thread cell} contains a thread-specific value; that is, it
 contains a specific value for each thread, but it may contain
 different values for different threads. A thread cell is created with

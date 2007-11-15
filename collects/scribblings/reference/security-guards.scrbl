@@ -3,8 +3,6 @@
 
 @title[#:tag "securityguards"]{Security Guards}
 
-@declare-exporting[(lib "scheme/security-guard")]
-
 @defproc[(security-guard? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a security guard value as created

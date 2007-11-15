@@ -292,7 +292,8 @@
 
       (define/public (render ds fns ri)
         (map (lambda (d fn)
-               (printf " [Output to ~a]\n" fn)
+               (when #f
+                 (printf " [Output to ~a]\n" fn))
                (with-output-to-file fn
                  #:exists 'truncate/replace
                  (lambda ()

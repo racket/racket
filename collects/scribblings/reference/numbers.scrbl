@@ -555,8 +555,6 @@ Returns @scheme[(and (exact-integer? v) (positive? v))].
 @; ------------------------------------------------------------------------
 @section{Random Numbers}
 
-@declare-exporting[(lib "scheme/random")]
-
 @defproc*[([(random [k (and/c positive-exact-integer?
                               (integer-in 1 (sub1 (expt 2 31))))])
             nonnegative-exact-integer?]
@@ -625,8 +623,6 @@ one of the last three integers must be non-zero.}
 
 @; ------------------------------------------------------------------------
 @section{Number--String Conversions}
-
-@declare-exporting[(lib "scheme/number")]
 
 @section-index["numbers" "machine representations"]
 @section-index["numbers" "floating-point"]

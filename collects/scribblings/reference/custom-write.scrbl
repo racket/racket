@@ -3,8 +3,6 @@
 
 @title{Printer Extension}
 
-@declare-exporting[(lib "scheme/write")]
-
 @defthing[prop:custom-write struct-type-property?]{
 
 Associates a procedure to a structure type to used by the default

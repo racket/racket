@@ -7,8 +7,6 @@
 
 @title[#:tag "contmarks"]{Continuation Marks}
 
-@declare-exporting[(lib "scheme/control")]
-
 See @secref["mark-model"] and @secref["prompt-model"] for
 general information about continuation marks.
 

@@ -6,8 +6,6 @@
 
 @title{Writing}
 
-@declare-exporting[(lib "scheme/write")]
-
 @defproc[(write [datum any/c][out output-port? (current-output-port)])
          void?]{
 

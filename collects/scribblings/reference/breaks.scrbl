@@ -3,8 +3,6 @@
 
 @title[#:tag "breakhandler"]{Breaks}
 
-@declare-exporting[(lib "scheme/break")]
-
 @section-index["threads" "breaking"]
 
 A @deftech{break} is an asynchronous exception, usually triggered

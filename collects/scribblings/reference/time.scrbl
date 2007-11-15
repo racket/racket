@@ -3,8 +3,6 @@
 
 @title[#:tag "time"]{Time}
  
-@declare-exporting[(lib "scheme/time")]
-
 @defproc[(current-seconds) exact-integer?]{
 
 Returns the current time in seconds. This time is always an exact

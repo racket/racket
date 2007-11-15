@@ -325,8 +325,6 @@ Sets the content of @scheme[box] to @scheme[v].}
 @; ----------------------------------------------------------------------
 @section[#:tag "hashtables"]{Hash Tables}
 
-@declare-exporting[(lib "scheme/hash-table")]
-
 A hash table can be used as a two-valued sequence (see
 @secref["sequences"]). The keys and values of the hash table serve
 as elements of the sequence (i.e., each element is a key and its

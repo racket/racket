@@ -3,7 +3,7 @@
 
 @title[#:tag "mzlib:contract" #:style 'toc]{Contracts}
 
-@declare-exporting[scheme/contract]
+@declare-exporting[scheme/contract scheme]
 
 A @defterm{contract} controls the flow of values to ensure that the
 expectations of one party are met by another party.  The

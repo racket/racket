@@ -3,8 +3,6 @@
 
 @title[#:tag "cont"]{Continuations}
 
-@declare-exporting[(lib "scheme/control")]
-
 See @secref["cont-model"] and @secref["prompt-model"] for
 general information about continuations. PLT Scheme's support for
 prompts and composable continuations most closely resembles Dorai

@@ -3,8 +3,6 @@
 
 @title[#:tag "threadgroups"]{Thread Groups}
 
-@declare-exporting[(lib "scheme/thread")]
-
 A @deftech{thread group} is a collection of threads and other thread
 groups that have equal claim to the CPU. By nesting thread groups and
 by creating certain threads within certain groups, a programmer can

@@ -3,8 +3,6 @@
 
 @title[#:style 'toc]{Macros}
 
-@declare-exporting[(lib "scheme/syntax")]
-
 See @secref["syntax-model"] for general information on how programs
 are parsed. In particular, the subsection @secref["expand-steps"]
 describes how parsing triggers macros, and

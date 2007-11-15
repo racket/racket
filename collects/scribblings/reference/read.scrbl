@@ -3,8 +3,6 @@
 
 @title{Reading}
 
-@declare-exporting[(lib "scheme/read")]
-
 @defproc[(read [in input-port? (current-input-port)]) any]{
 
 Reads and returns a single @tech{datum} from @scheme[in]. If

@@ -3,8 +3,6 @@
 
 @title[#:tag "networking" #:style 'toc]{Networking}
 
-@declare-exporting[(lib "scheme/network")]
-
 @local-table-of-contents[]
 
 @;------------------------------------------------------------------------

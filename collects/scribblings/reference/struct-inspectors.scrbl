@@ -3,8 +3,6 @@
 
 @title[#:tag "inspectors"]{Structure Inspectors}
 
-@declare-exporting[(lib "scheme/inspector")]
-
 An @deftech{inspector} provides access to structure fields and
 structure type information without the normal field accessors and
 mutators. (Inspectors are also used to control access to module

@@ -6,8 +6,6 @@
 
 @title[#:tag "regexp"]{Regular Expressions}
 
-@declare-exporting[(lib "scheme/regexp")]
-
 @section-index{regexps}
 @section-index{pattern matching}
 @section-index["strings" "pattern matching"]

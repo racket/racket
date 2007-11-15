@@ -11,8 +11,6 @@
 
 @title[#:tag "sequences"]{Sequences}
 
-@declare-exporting[(lib "scheme/sequence")]
-
 @guideintro["sequences"]{sequences}
 
 A @pidefterm{sequence} encapsulates an ordered stream of values. The

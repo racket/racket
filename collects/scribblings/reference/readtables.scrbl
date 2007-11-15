@@ -4,8 +4,6 @@
 
 @title[#:style 'toc]{Reader Extension}
 
-@declare-exporting[(lib "scheme/readtable")]
-
 Scheme's reader can be extended in three ways: through a reader-macro
 procedure in a readtable (see @secref["readtables"]), through a
 @litchar{#reader} form (see @secref["parse-reader"]), or through a

@@ -713,7 +713,9 @@
                                                                                                      (make-method-index-desc 
                                                                                                       (syntax-e within-id)
                                                                                                       libs
-                                                                                                      mname)))))
+                                                                                                      mname
+                                                                                                      (register-scheme-definition 
+                                                                                                       within-id #t))))))
                                                                         tag)
                                                                        (car content)))
                                                                  (*method (car prototype) within-id))))]

@@ -3,8 +3,6 @@
 
 @title[#:tag "pipeports"]{Pipes}
 
-@declare-exporting[(lib "scheme/port/pipe")]
-
 A Scheme @deftech{pipe} is internal to Scheme, and not related to
 OS-level pipes (which are @tech{file-stream ports}) for communicating
 between different processes.

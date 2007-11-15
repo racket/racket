@@ -3,8 +3,6 @@
 
 @title[#:tag "pathutils" #:style 'toc]{Paths}
 
-@declare-exporting[(lib "scheme/path")]
-
 When a Scheme procedure takes a filesystem path as an argument, the
 path can be provided either as a string or as an instance of the
 @deftech{path} datatype. If a string is provided, it is converted to a

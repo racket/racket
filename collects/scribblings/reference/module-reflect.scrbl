@@ -3,8 +3,6 @@
 
 @title{Module Names and Loading}
 
-@declare-exporting[(lib "scheme/module-name")]
-
 @;------------------------------------------------------------------------
 @section[#:tag "modnameresolver"]{Resolving Module Names}
 

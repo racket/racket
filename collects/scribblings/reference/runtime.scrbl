@@ -3,8 +3,6 @@
 
 @title{Environment and Runtime Information}
 
-@declare-exporting[(lib "scheme/runtime")]
-
 @defproc[(getenv [name string?]) (or/c string? false/c)]{
 
 Gets the value of an operating system environment variable. The

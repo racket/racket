@@ -4,8 +4,6 @@
 
 @title[#:tag "exns"]{Exceptions}
 
-@declare-exporting[(lib "scheme/exn")]
-
 See @secref["exn-model"] for information on the PLT Scheme
 exception model. It is based on @cite[#:key "friedman-exns" #:title
 "Exception system proposal" #:author "Daniel P. Friedman and

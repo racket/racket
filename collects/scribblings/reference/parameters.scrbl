@@ -3,8 +3,6 @@
 
 @title[#:tag "parameters"]{Parameters}
 
-@declare-exporting[(lib "scheme/parameter")]
-
 See @secref["parameter-model"] for basic information on the
 parameter model. Parameters correspond to @defterm{preserved thread
 fluids} in Scsh @cite[#:key "cite:thread-fluids" #:title "Processes
