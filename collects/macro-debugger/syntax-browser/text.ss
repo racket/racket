@@ -4,11 +4,16 @@
            (lib "class.ss")
            (lib "mred.ss" "mred")
            (lib "arrow.ss" "drscheme")
-           (lib "framework.ss" "framework"))
+           (lib "framework.ss" "framework")
+           "../util/notify.ss")
 
-  (provide text:mouse-drawings<%>
+  (provide text:hover<%>
+           text:hover-identifier<%>
+           text:mouse-drawings<%>
            text:arrows<%>
 
+           text:hover-mixin
+           text:hover-identifier-mixin
            text:mouse-drawings-mixin
            text:tacking-mixin
            text:arrows-mixin)
@@ -25,6 +30,8 @@
 
   ;; A Drawing is (make-drawing number number (??? -> void) boolean boolean)
   (define-struct drawing (start end draw visible? tacked?) #f)
+
+  (define-struct idloc (start end id) #f)
 
   (define (mean x y)
     (/ (+ x y) 2))
@@ -57,6 +64,16 @@
               (send dc set-text-background old-background)
               (send dc set-text-mode old-mode))))
 
+  (define text:hover<%>
+    (interface (text:basic<%>)
+      update-hover-position))
+
+  (define text:hover-identifier<%>
+    (interface ()
+      get-hovered-identifier
+      set-hovered-identifier
+      listen-hovered-identifier))
+
   (define text:mouse-drawings<%>
     (interface (text:basic<%>)
       add-mouse-drawing
@@ -69,8 +86,51 @@
       add-question-arrow
       add-billboard))
 
+  (define text:hover-mixin
+    (mixin (text:basic<%>) (text:hover<%>)
+      (inherit dc-location-to-editor-location
+               find-position)
+
+      (define/override (on-default-event ev)
+        (define gx (send ev get-x))
+        (define gy (send ev get-y))
+        (define-values (x y) (dc-location-to-editor-location gx gy))
+        (define pos (find-position x y))
+        (super on-default-event ev)
+        (case (send ev get-event-type)
+          ((enter motion leave)
+           (update-hover-position pos))))
+
+      (define/public (update-hover-position pos)
+        (void))
+
+      (super-new)))
+
+  (define text:hover-identifier-mixin
+    (mixin (text:hover<%>) (text:hover-identifier<%>)
+      (field/notify hovered-identifier (new notify-box% (value #f)))
+
+      (define idlocs null)
+
+      (define/public (add-identifier-location start end id)
+        (set! idlocs (cons (make-idloc start end id) idlocs)))
+
+      (define/public (delete-all-identifier-locations)
+        (set! idlocs null)
+        (set-hovered-identifier #f))
+
+      (define/override (update-hover-position pos)
+        (super update-hover-position pos)
+        (let search ([idlocs idlocs])
+          (cond [(null? idlocs) (set-hovered-identifier #f)]
+                [(and (<= (idloc-start (car idlocs)) pos)
+                      (< pos (idloc-end (car idlocs))))
+                 (set-hovered-identifier (idloc-id (car idlocs)))]
+                [else (search (cdr idlocs))])))
+      (super-new)))
+
   (define text:mouse-drawings-mixin
-    (mixin (text:basic<%>) (text:mouse-drawings<%>)
+    (mixin (text:hover<%>) (text:mouse-drawings<%>)
       (inherit dc-location-to-editor-location
                find-position
                invalidate-bitmap-cache)
@@ -101,16 +161,10 @@
              (when (or (drawing-visible? d) (unbox (drawing-tacked? d)))
                ((drawing-draw d) this dc left top right bottom dx dy))))))
 
-      (define/override (on-default-event ev)
-        (define gx (send ev get-x))
-        (define gy (send ev get-y))
-        (define-values (x y) (dc-location-to-editor-location gx gy))
-        (define pos (find-position x y))
-        (super on-default-event ev)
-        (case (send ev get-event-type)
-          ((enter motion leave)
-           (let ([changed? (update-visible-drawings pos)])
-             (when changed? (invalidate-bitmap-cache 0.0 0.0 +inf.0 +inf.0))))))
+      (define/override (update-hover-position pos)
+        (super update-hover-position pos)
+        (let ([changed? (update-visible-drawings pos)])
+          (when changed? (invalidate-bitmap-cache 0.0 0.0 +inf.0 +inf.0))))
 
       (define/private (update-visible-drawings pos)
         (let ([changed? #f])
@@ -260,7 +314,8 @@
 
   (define text:mouse-drawings%
     (text:mouse-drawings-mixin
-     text:standard-style-list%))
+     (text:hover-mixin
+      text:standard-style-list%)))
 
   (define text:arrows%
     (text:arrows-mixin

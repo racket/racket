@@ -1,30 +1,33 @@
 
 (module yacc-interrupted mzscheme
-  (require "deriv.ss"
-           "yacc-ext.ss")
-  (provide ! ? 
-           production/I
-           productions/I
+  (require-for-syntax (lib "etc.ss"))
+  (require "yacc-ext.ss")
+  (provide ! ? !!
+           define-production-splitter
            skipped-token-values
            %skipped
            %action)
 
   ;; Grammar macros for "interrupted parses"
-  ;; Uses interrupted-wrap and error-wrap from deriv.ss
-  
+
   (define-syntax !
     (lambda (stx)
       (raise-syntax-error #f "keyword ! used out of context" stx)))
-  
+
+  (define-syntax !!
+    (lambda (stx)
+      (raise-syntax-error #f "keyword !! used out of context" stx)))
+
   (define-syntax ?
     (lambda (stx)
       (raise-syntax-error #f "keyword ? used out of context" stx)))
-  
-  (define-syntax (productions/I stx)
-    (syntax-case stx ()
-      [(productions/I def ...)
-       #'(begin (production/I def) ...)]))
-  
+
+  (define-syntax define-production-splitter
+    (syntax-rules ()
+      [(define-production-splitter name ok intW)
+       (define-syntax name
+         (make-production-splitter #'ok #'intW))]))
+
   (define-for-syntax (partition-options/alternates forms)
     (let loop ([forms forms] [options null] [alts null])
       (if (pair? forms)
@@ -33,17 +36,17 @@
              (loop (cdr forms) (cons (cons #:args #'args) options) alts)]
             [(#:skipped expr)
              (loop (cdr forms) (cons (cons #:skipped #'expr) options) alts)]
-            [(#:no-interrupted)
-             (loop (cdr forms) (cons (cons #:no-interrupted #t) options) alts)]
+            [(#:wrap)
+             (loop (cdr forms) (cons (cons #:wrap #t) options) alts)]
             [(#:no-wrap)
              (loop (cdr forms) (cons (cons #:no-wrap #t) options) alts)]
-            [(#:no-wrap-error)
-             (loop (cdr forms) (cons (cons #:no-wrap-error #t) options) alts)]
             [(kw . args)
              (keyword? (syntax-e #'kw))
-             (raise-syntax-error #f "bad keyword" (car forms))]
+             (raise-syntax-error 'split "bad keyword" (car forms))]
             [(pattern action)
-             (loop (cdr forms) options (cons (cons #'pattern #'action) alts))])
+             (loop (cdr forms) options (cons (cons #'pattern #'action) alts))]
+            [other
+             (raise-syntax-error 'split "bad grammar option or alternate" #'other)])
           (values options (reverse alts)))))
 
   (define-for-syntax (symbol+ . args)
@@ -53,118 +56,203 @@
             [(number? x) (number->string x)]
             [(symbol? x) (symbol->string x)]))
     (string->symbol (apply string-append (map norm args))))
-  
+
   (define-for-syntax (I symbol)
     (syntax-local-introduce
      (syntax-local-get-shadower (datum->syntax-object #f symbol))))
-  
-  (define-for-syntax (elaborate-skipped-tail head tail action)
-    (define new-tail
-      (let loop ([parts tail])
-        (syntax-case parts (? !)
-          [() #'()]
-          [(! . parts-rest) (loop #'((! #f) . parts-rest))]
-          [((! expr) . parts-rest)
-           (with-syntax ([NoError (I 'NoError)]
-                         [parts-rest (loop #'parts-rest)])
-             #'(NoError . parts-rest))]
+
+  (define-for-syntax ($name n)
+    (I (symbol+ '$ n)))
+
+  (define-for-syntax (interrupted-name s)
+    (I (symbol+ s '/Interrupted)))
+
+  (define-for-syntax (skipped-name s)
+    (I (symbol+ s '/Skipped)))
+
+  (define-for-syntax (elaborate-skipped-tail head tail position args mk-action)
+    (define-values (new-tail new-arguments)
+      (let loop ([parts tail] [position position] [rtail null] [arguments null])
+        (syntax-case parts (? ! !!)
+          [()
+           (values (reverse rtail) (reverse arguments))]
+          [(! . parts-rest)
+           (loop #'parts-rest position rtail (cons #'#f arguments))]
+          [(!! . parts-rest)
+           (raise-syntax-error 'split
+                               "cannot have !! after potential error"
+                               #'!!)]
           [((? NT) . parts-rest)
-           (loop #'((? NT #f) . parts-rest))]
-          [((? NT expr) . parts-rest)
-           (loop #'(NT . parts-rest))]
-          [(part0 . parts-rest)
-           (identifier? #'part0)
-           (with-syntax ([part0/Skipped (I (symbol+ #'part0 '/Skipped))]
-                         [parts-rest (loop #'parts-rest)])
-             #'(part0/Skipped . parts-rest))])))
-    (with-syntax ([head head]
-                  [new-tail new-tail])
-      (cons #'(head . new-tail)
-            action)))
-  
-  (define-for-syntax (elaborate-successful-alternate alt)
+           (loop #'(NT . parts-rest) position rtail arguments)]
+          [(NT . parts-rest)
+           (identifier? #'NT)
+           (loop #'parts-rest
+                 (add1 position)
+                 (cons (skipped-name #'NT) rtail)
+                 (cons ($name position) arguments))])))
+    (define arguments (append (reverse args) new-arguments))
+    (cons #`(#,head . #,new-tail)
+          (mk-action arguments)))
+
+  (define-for-syntax ((make-elaborate-successful-alternate wrap? okW) alt)
     (define pattern (car alt))
-    (define action (cdr alt))
-    (cons (let loop ([parts pattern])
-            (syntax-case parts (? !)
-              [() #'()]
-              [(! . parts-rest)
-               (loop #'((! #f) . parts-rest))]
-              [((! expr) . parts-rest)
-               (with-syntax ([NoError (I 'NoError)]
-                             [parts-rest (loop #'parts-rest)])
-                 #'(NoError . parts-rest))]
-              [((? NT) . parts-rest)
-               (loop #'((? NT #f) . parts-rest))]
-              [((? NT expr) . parts-rest)
-               (with-syntax ([parts-rest (loop #'parts-rest)])
-                 #'(NT . parts-rest))]
-              [(part0 . parts-rest)
-               (identifier? #'part0)
-               (with-syntax ([parts-rest (loop #'parts-rest)])
-                 #'(part0 . parts-rest))]))
-          action))
-  
-  (define-for-syntax (elaborate-interrupted-alternate alt wrap? wrap-error?)
+    (define action-function (cdr alt))
+    (define-values (new-patterns arguments)
+      (let loop ([parts pattern] [rpattern null] [position 1] [args null])
+        (syntax-case parts (? ! !!)
+          [() (values (list (reverse rpattern)) (reverse args))]
+          [(! . parts-rest)
+           (loop #'parts-rest rpattern position (cons #'#f args))]
+          [(!!)
+           (values null null)]
+          [((? NT) . parts-rest)
+           (loop (cons #'NT #'parts-rest) rpattern position args)]
+          [(NT . parts-rest)
+           (identifier? #'NT)
+           (loop #'parts-rest (cons #'NT rpattern)
+                 (add1 position) (cons ($name position) args))])))
+    (map (lambda (new-pattern)
+           (cons (datum->syntax-object #f new-pattern pattern)
+                 #`(#,action-function #,(if wrap? okW #'values) #,@arguments)))
+         new-patterns))
+
+  (define-for-syntax ((make-elaborate-interrupted-alternate wrap? intW) alt)
     (define pattern (car alt))
-    (define action (cdr alt))
-    (let loop ([parts pattern] [position 1])
-      (syntax-case parts (? !)
+    (define action-function (cdr alt))
+    (define (int-action args)
+      (let ([wrapf (if wrap? #`(lambda (x) (#,intW x)) #'values)])
+        #`(#,action-function #,wrapf #,@args)))
+    (let loop ([parts pattern] [position 1] [args null])
+      (syntax-case parts (? ! !!)
         [()
          ;; Can't be interrupted
          null]
         [(! . parts-rest)
-         (loop #'((! #f) . parts-rest) position)]
-        [((! expr) . parts-rest)
          (cons
           ;; Error occurs
-          (with-syntax ([Error (I 'syntax-error #;Error)]
-                        [action action]
-                        [position-argument (I (symbol+ '$ position))])
-            (elaborate-skipped-tail 
-             #'Error
-             #'parts-rest
-             (if wrap-error?
-                 #'(make-error-wrap position-argument expr action)
-                 #'action)))
+          (elaborate-skipped-tail (I 'syntax-error)
+                                  #'parts-rest
+                                  (add1 position)
+                                  (cons ($name position) args)
+                                  int-action)
           ;; Error doesn't occur
-          (with-syntax ([NoError (I 'NoError)])
-            (loop #'(NoError . parts-rest) position)))]
+          (loop #'parts-rest position (cons #'#f args)))]
+        [(!!)
+         (cons
+          (elaborate-skipped-tail (I 'syntax-error)
+                                  #'()
+                                  (add1 position)
+                                  (cons ($name position) args)
+                                  int-action)
+          null)]
         [((? NT) . parts-rest)
-         (loop #'((? NT #f) . parts-rest) position)]
-        [((? NT expr) . parts-rest)
          (cons 
           ;; NT is interrupted
-          (with-syntax ([NT/I (I (symbol+ #'NT '/Interrupted))]
-                        [action action])
-            (elaborate-skipped-tail
-             #'NT/I
-             #'parts-rest 
-             (if wrap?
-                 #'(make-interrupted-wrap expr action)
-                 #'action)))
+          (elaborate-skipped-tail (I (symbol+ #'NT '/Interrupted))
+                                  #'parts-rest
+                                  (add1 position)
+                                  (cons ($name position) args)
+                                  int-action)
           ;; NT is not interrupted
-          (loop #'(NT . parts-rest) position))]
+          (loop #'(NT . parts-rest) position args))]
         [(part0 . parts-rest)
          (identifier? #'part0)
          (map (lambda (clause) (cons #`(part0 . #,(car clause)) (cdr clause)))
-              (loop #'parts-rest (add1 position)))])))
+              (loop #'parts-rest (add1 position) (cons ($name position) args)))])))
+
+  (define-for-syntax (generate-action-name nt pos)
+    (syntax-local-get-shadower
+     (datum->syntax-object #f (symbol+ 'action-for- nt '/ pos))))
   
-  (define-syntax (production/I stx)
+  (define-for-syntax ((make-rewrite-alt+def nt args-spec) alt pos)
+    (define pattern (car alt))
+    (define action (cdr alt))
+    (define-values (var-indexes non-var-indexes)
+      (let loop ([pattern pattern] [n 1] [vars null] [nonvars null])
+        (syntax-case pattern ()
+          [(first . more)
+           (syntax-case #'first (! ? !!)
+             [!
+              (loop #'more (add1 n) (cons n vars) nonvars)]
+             [(! . _)
+              (raise-syntax-error 'split
+                                  "misuse of ! grammar form"
+                                  pattern #'first)]
+             [!!
+              (when (pair? (syntax-e #'more))
+                (raise-syntax-error 'split
+                                    "nothing may follow !!"
+                                    pattern))
+              (loop #'more (add1 n) (cons n vars) nonvars)]
+             [(!! . _)
+              (raise-syntax-error 'split
+                                  "misuse of !! grammar form"
+                                  pattern #'first)]
+             [(? NT)
+              (identifier? #'NT)
+              (loop #'more (add1 n) (cons n vars) nonvars)]
+             [(? . _)
+              (raise-syntax-error 'split
+                                  "misuse of ? grammar form"
+                                  pattern #'first)]
+             [NT
+              (identifier? #'NT)
+              (loop #'more (add1 n) (cons n vars) nonvars)]
+             [other
+              (raise-syntax-error 'rewrite-pattern
+                                  "invalid grammar pattern"
+                                  pattern #'first)])]
+          [()
+           (values (reverse vars) (reverse nonvars))])))
+    (define variables (map $name var-indexes))
+    (define non-var-names (map $name non-var-indexes))
+    (define action-function (generate-action-name nt pos))
+    (cons (cons pattern action-function)
+          (with-syntax ([(var ...) variables]
+                        [(nonvar ...) non-var-names]
+                        [action-function action-function]
+                        [action action])
+            #`(define (action-function wrap var ...)
+                (let-syntax ([nonvar invalid-$name-use] ...)
+                  #,(if args-spec
+                        #`(lambda #,args-spec (wrap action))
+                        #`(wrap action)))))))
+
+  (define-for-syntax (invalid-$name-use stx)
+    (raise-syntax-error #f "no value for positional variable" stx))
+
+  ;; An alternate is (cons pattern action-expr)
+  ;; An alternate* is (cons pattern action-function-name)
+
+  (define-for-syntax ((make-production-splitter okW intW) stx)
     (syntax-case stx ()
-      [(production/I (name form ...))
+      [(_ (name form ...))
        (let ()
-         (define-values (options alternates)
+         (define-values (options alternates0)
            (partition-options/alternates (syntax->list #'(form ...))))
+         (define wrap?
+           (let ([wrap? (assq #:wrap options)]
+                 [no-wrap? (assq #:no-wrap options)])
+             (unless (and (or wrap? no-wrap?) (not (and wrap? no-wrap?)))
+               (raise-syntax-error 'split
+                                   "must specify exactly one of #:wrap, #:no-wrap"
+                                   stx))
+             (and wrap? #t)))
+         (define args-spec
+           (let ([p (assq #:args options)]) (and p (cdr p))))
+         (define rewrite-alt+def (make-rewrite-alt+def #'name args-spec))
+         (define alternates+definitions
+           (map rewrite-alt+def alternates0 (build-list (length alternates0) add1)))
+         (define alternates (map car alternates+definitions))
+         (define action-definitions (map cdr alternates+definitions))
+         (define elaborate-successful-alternate
+           (make-elaborate-successful-alternate wrap? okW))
+         (define elaborate-interrupted-alternate
+           (make-elaborate-interrupted-alternate wrap? intW))
          (define successful-alternates
-           (map elaborate-successful-alternate alternates))
+           (apply append (map elaborate-successful-alternate alternates)))
          (define interrupted-alternates 
-           (apply append 
-                  (map (lambda (a)
-                         (elaborate-interrupted-alternate a
-                                                          (not (assq #:no-wrap options))
-                                                          (not (assq #:no-wrap-error options))))
-                       alternates)))
+           (apply append (map elaborate-interrupted-alternate alternates)))
          (with-syntax ([((success-pattern . success-action) ...)
                         successful-alternates]
                        [((interrupted-pattern . interrupted-action) ...)
@@ -175,19 +263,15 @@
                        [name/Interrupted (I (symbol+ #'name '/Interrupted))]
                        [%action ((syntax-local-certifier) #'%action)])
            #`(begin
+               (definitions #,@action-definitions)
                (productions
-                (name [success-pattern
-                       (%action args-spec success-action)]
-                      ...)
-                (name/Skipped [() (%skipped args-spec skip-spec)]))
-               #,(if (and (not (assq #:no-interrupted options))
-                          (pair? interrupted-alternates))
-                     #'(productions
-                        (name/Interrupted [interrupted-pattern
-                                           (%action args-spec interrupted-action)]
-                                          ...))
-                     #'(begin)))))]))
-  
+                (name [success-pattern success-action] ...)
+                #,(if (pair? interrupted-alternates)
+                      #'(name/Interrupted [interrupted-pattern interrupted-action]
+                                          ...)
+                      #'(name/Interrupted [(IMPOSSIBLE) #f]))
+                (name/Skipped [() (%skipped args-spec skip-spec)])))))]))
+
   (define-syntax (skipped-token-values stx)
     (syntax-case stx ()
       [(skipped-token-values)
@@ -201,19 +285,18 @@
        (with-syntax ([name/Skipped (I (symbol+ #'name '/Skipped))])
          #'(begin (productions (name/Skipped [() value]))
                   (skipped-token-values . more)))]))
-  
+
   (define-syntax (%skipped stx)
     (syntax-case stx ()
       [(%skipped args (#:skipped . expr))
        #'(%action args expr)]
       [(%skipped args #f)
        #'(%action args #f)]))
-  
+
   (define-syntax (%action stx)
     (syntax-case stx ()
-      [(elaborate-action (#:args . args) action)
+      [(%action (#:args . args) action)
        #'(lambda args action)]
-      [(elaborate-action #f action)
+      [(%action #f action)
        #'action]))
-  
   )

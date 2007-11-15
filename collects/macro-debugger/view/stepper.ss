@@ -16,6 +16,7 @@
            (prefix s: "../syntax-browser/params.ss")
            "../model/deriv.ss"
            "../model/deriv-util.ss"
+           "../model/deriv-find.ss"
            "../model/trace.ss"
            "../model/hide.ss"
            "../model/steps.ss"
@@ -270,7 +271,7 @@
       (define/public-final (navigate-down/pred p)
         (let* ([termlist (cursor:suffix->list terms)]
                [pred (lambda (trec)
-                       (and (p (lift/deriv-e1 (trec-deriv trec)))
+                       (and (p (wderiv-e1 (trec-deriv trec)))
                             trec))]
                [term (ormap pred termlist)])
           (unless term
@@ -395,7 +396,7 @@
             (send sbview add-text
                   "Internal error computing reductions. Original term:\n")
             (send sbview add-syntax
-                  (lift/deriv-e1 (trec-deriv (focused-term)))))))
+                  (wderiv-e1 (trec-deriv (focused-term)))))))
 
       ;; update:show-lctx : Step -> void
       (define/private (update:show-lctx step)
@@ -496,7 +497,7 @@
           (when (pair? suffix0)
             (for-each (lambda (trec)
                         (send sbview add-syntax
-                              (lift/deriv-e1 (trec-deriv trec))
+                              (wderiv-e1 (trec-deriv trec))
                               #:alpha-table alpha-table))
                       (cdr suffix0)))))
 
@@ -559,10 +560,10 @@
         (send warnings clear)
         (when trec
           (unless (send config get-suppress-warnings?)
-            (for-each (lambda (tag+message)
-                        (let ([tag (car tag+message)]
-                              [message (cdr tag+message)])
-                          (send warnings add-warning tag message)))
+            (for-each (lambda (tag+args)
+                        (let ([tag (car tag+args)]
+                              [args (cdr tag+args)])
+                          (send warnings add-warning tag args)))
                       (trec-warnings trec)))))
       
       ;; recache : TermRecord -> void
@@ -573,7 +574,7 @@
                            (lambda (e)
                              (handle-recache-error e 'macro-hiding)
                              (set-trec-synth-deriv! trec 'error)
-                             (set-trec-estx! trec (lift/deriv-e2 (trec-deriv trec))))])
+                             (set-trec-estx! trec (wderiv-e2 (trec-deriv trec))))])
             (recache-synth trec)))
         (unless (trec-raw-steps trec)
           (with-handlers ([(lambda (e) #t)
@@ -677,7 +678,7 @@
 
       (define/private (extract-protostep-seq step)
         (match (protostep-deriv step)
-          [(AnyQ mrule (_ _ (AnyQ transformation (_ _ _ _ _ _ seq)) _))
+          [(Wrap mrule (_ _ (Wrap transformation (_ _ _ _ _ _ _ _ seq)) _))
            seq]
           [else #f]))
 
@@ -688,15 +689,15 @@
           (let ([show-macro? (get-show-macro?)])
             (if show-macro?
                 (parameterize ((current-hiding-warning-handler
-                                (lambda (tag message)
+                                (lambda (tag args)
                                   (set-trec-warnings!
                                    trec
-                                   (cons (cons tag message)
+                                   (cons (cons tag args)
                                          (trec-warnings trec)))))
                                (force-letrec-transformation
                                 (send config get-force-letrec-transformation?)))
                   (hide/policy deriv show-macro?))
-                (values deriv (lift/deriv-e2 deriv)))))
+                (values deriv (wderiv-e2 deriv)))))
         (set-trec-synth-deriv! trec synth-deriv)
         (set-trec-estx! trec estx))
       

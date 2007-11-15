@@ -1,7 +1,8 @@
 
 (module steps mzscheme
   (require "deriv.ss"
-           "deriv-util.ss")
+           "deriv-util.ss"
+           "deriv-find.ss")
   (provide (all-defined))
 
   ;; A ReductionSequence is a (list-of Reduction)
@@ -71,7 +72,7 @@
   ;; A StepType is a simple in the following alist.
 
   (define step-type-meanings
-    '((macro-step       . "Macro transformation")
+    '((macro            . "Macro transformation")
       
       (rename-lambda    . "Rename formal parameters")
       (rename-case-lambda . "Rename formal parameters")

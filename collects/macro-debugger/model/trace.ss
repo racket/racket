@@ -1,14 +1,11 @@
 
 (module trace mzscheme
-  (require (lib "lex.ss" "parser-tools")
-           (lib "class.ss"))
+  (require (lib "lex.ss" "parser-tools"))
   (require "deriv.ss"
            "deriv-parser.ss"
            "deriv-tokens.ss"
-           "reductions.ss"
-           "hide.ss"
-           "hiding-policies.ss")
-  
+           "reductions.ss")
+
   (provide trace-verbose?
            trace
            trace/result

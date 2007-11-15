@@ -49,13 +49,11 @@
              (widget this)))
 
       (send -text lock #t)
+
       (send -split-panel set-percentages 
             (list (- 1 props-percentage) props-percentage))
 
       ;; syntax-properties-controller<%> methods
-
-      (define/public (set-syntax stx)
-        (send props set-syntax stx))
 
       (define/public (props-shown?)
         (send -props-panel is-shown?))
@@ -128,6 +126,7 @@
                                             "purple")))
                                 (send range get-ranges id))]
                      [_ (void)])
+
                    (let ([binder (get-binder id)])
                      (when binder
                        (for-each
@@ -150,7 +149,7 @@
                         (send range get-ranges binder)))))
                  (send range get-identifier-list))))
             display)))
-      
+
       (define/public (add-separator)
         (with-unlock -text
           (send* -text
@@ -162,9 +161,6 @@
           (send -text erase)
           (send -text delete-all-drawings))
         (send controller remove-all-syntax-displays))
-
-      (define/public (select-syntax stx)
-        (send controller select-syntax stx))
 
       (define/public (get-text) -text)
 
@@ -225,8 +221,11 @@
     (class (text:arrows-mixin
             (text:tacking-mixin
              (text:mouse-drawings-mixin
-              (text:hide-caret/selection-mixin
-               (editor:standard-style-list-mixin text:basic%)))))
+              (text:hover-mixin
+               (text:hide-caret/selection-mixin
+                (editor:standard-style-list-mixin text:basic%))))))
+      (inherit set-autowrap-bitmap)
       (define/override (default-style-name) "Basic")
-      (super-new)))
+      (super-new (auto-wrap #t))
+      (set-autowrap-bitmap #f)))
   )

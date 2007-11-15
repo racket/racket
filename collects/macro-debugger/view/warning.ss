@@ -94,14 +94,38 @@
          "syntax-local-lift-module-end-declaration. "
          "The macro stepper is only hiding macro after the "
          "lifts are caught."))
+
+      (define/private (add-lift/let-warning)
+        (add
+         'lift/let
+         "Lifts occurred during the expansion of phase 1 or higher code. "
+         "The macro stepper is showing some expansions that should be hidden."))
+
+      (define/private (add-hidden-lift-site-warning)
+        (add
+         'hidden-lift-site
+         "An opaque macro contained the target of a lifted declaration."
+         "The macro stepper is showing the expansion of that macro use."))
+
+      (define/private (add-hidden-lift-site/continuing-warning)
+        (add
+         'hidden-lift-site/continuing
+         "The target of a lifted declaration was a hidden #%module-begin context. "
+         "The macro stepper is omitting the lifted declaration."))
       
-      (define/public (add-warning tag _message)
+      (define/public (add-warning tag args)
         (case tag
           ((nonlinearity)
            (add-nonlinearity-warning))
           ((localactions)
            (add-localactions-warning))
           ((lifts)
-           (add-lifts-warning))))))
-  
+           (add-lifts-warning))
+          ((lift/let)
+           (add-lift/let-warning))
+          ((hidden-lift-site)
+           (add-hidden-lift-site-warning))
+          ((hidden-lift-site/continuing)
+           (add-hidden-lift-site/continuing-warning))))
+      ))
   )

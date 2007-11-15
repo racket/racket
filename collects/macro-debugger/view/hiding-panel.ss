@@ -6,7 +6,8 @@
            (lib "boundmap.ss" "syntax")
            "util.ss"
            "../model/synth-engine.ss"
-           "../syntax-browser/util.ss")
+           "../syntax-browser/util.ss"
+           "../util/hiding.ss")
   (provide macro-hiding-prefs-widget%)
 
   (define mode:disable "Disable")
@@ -36,11 +37,9 @@
           (when (pair? policies)
             ((car policies) id binding return)
             (loop (cdr policies))))
-        (cond [(and hide-mzscheme? (symbol? def-mod)
-                    (regexp-match #rx"^#%" (symbol->string def-mod)))
+        (cond [(and hide-mzscheme? def-mod (scheme-module? def-mod))
                #f]
-              [(and hide-libs? def-mod
-                    (lib-module? def-mod))
+              [(and hide-libs? def-mod (lib-module? def-mod))
                #f]
               [(and hide-contracts? def-name
                     (regexp-match #rx"^provide/contract-id-"
@@ -290,23 +289,16 @@
       (super-new)
       (update-visibility)))
 
-  (define (lib-module? mpi)
-    (and (module-path-index? mpi)
-         (let-values ([(path rel) (module-path-index-split mpi)])
-           (cond [(pair? path) (memq (car path) '(lib planet))]
-                 [(string? path) (lib-module? rel)]
-                 [else #f]))))
-
   (define (get-id-key id)
-    (let ([binding
-           (or (identifier-binding id)
-               (identifier-transformer-binding id))])
+    id
+    #; ;; FIXME
+    (let ([binding (identifier-binding id)])
       (get-id-key/binding id binding)))
 
   (define (get-id-key/binding id binding)
-      (cond [(pair? binding)
-             binding]
-            [else id]))
+    (cond [(pair? binding)
+           (list (car binding) (cadr binding))]
+          [else id]))
 
   (define (key=? key1 key2)
     (cond [(and (identifier? key1) (identifier? key2))

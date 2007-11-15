@@ -27,13 +27,13 @@
     (mixin (displays-manager<%>) (selection-manager<%>)
       (inherit-field displays)
       (field/notify selected-syntax (new notify-box% (value #f)))
-
+      
       (super-new)
       (listen-selected-syntax
        (lambda (new-value)
          (for-each (lambda (display) (send display refresh))
                    displays)))))
-
+  
   ;; mark-manager-mixin
   (define mark-manager-mixin
     (mixin () (mark-manager<%>)

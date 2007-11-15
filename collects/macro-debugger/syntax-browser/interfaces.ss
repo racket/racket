@@ -15,14 +15,11 @@
   ;; selection-manager<%>
   (define selection-manager<%>
     (interface ()
-      ;; set-selected-syntax : syntax -> void
+      ;; selected-syntax : syntax/#f
       set-selected-syntax
-
-      ;; get-selected-syntax : -> syntax
       get-selected-syntax
-
-      ;; listen-selected-syntax : (syntax -> void) -> void
-      listen-selected-syntax))
+      listen-selected-syntax
+      ))
 
   ;; mark-manager<%>
   ;; Manages marks, mappings from marks to colors

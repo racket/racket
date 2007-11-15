@@ -43,12 +43,12 @@
 
      enter-local/expr     ; syntax
      exit-local/expr      ; (cons syntax expanded-expression)
-     
+
      variable            ; (cons identifier identifier)
 
      IMPOSSIBLE           ; useful for error-handling clauses that have no NoError counterpart
      ))
-  
+
   (define-tokens renames-tokens
     (renames-lambda           ; (cons syntax syntax)
      renames-case-lambda      ; (cons syntax syntax)
@@ -56,7 +56,9 @@
      renames-letrec-syntaxes  ; (cons (listof syntax) (cons (listof syntax) syntax))
      renames-block            ; (cons syntax syntax) ... different, contains both pre+post
      ))
-  (define-empty-tokens prim-tokens
+
+  ;; Empty tokens
+  (define-tokens prim-tokens
     (prim-module prim-#%module-begin
      prim-define-syntaxes prim-define-values
      prim-if prim-wcm prim-begin prim-begin0 prim-#%app prim-lambda
@@ -67,9 +69,9 @@
      prim-set!
      prim-expression
      ))
-  
+
   ;; ** Signals to tokens
-  
+
   (define signal-mapping
     `((EOF . EOF)
       (error . ,token-syntax-error)
@@ -141,7 +143,7 @@
       (140 . ,token-exit-local/expr)
       (141 . ,token-start)
       ))
-  
+
   (define (tokenize sig-n val pos)
     (let ([p (assv sig-n signal-mapping)])
       (if (pair? p)
@@ -154,5 +156,5 @@
 
   (define (signal->symbol sig-n)
     (cdr (assv sig-n signal-mapping)))
-  
+
   )

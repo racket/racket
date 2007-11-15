@@ -31,25 +31,32 @@
       [(syntax/restamp (pa (... ...)) new-expr old-expr)
        #`(let ([new-parts (stx->list new-expr)]
                [old-parts (stx->list old-expr)])
-           #;
+           ;; FIXME 
            (unless (= (length new-parts) (length old-parts))
              (printf "** syntax/restamp~n~s~n" (quote-syntax #,stx))
              (printf "pattern : ~s~n" (syntax-object->datum #'(pa (... ...))))
-             (printf "old parts: ~s~n" old-parts)
-             (printf "new parts: ~s~n" new-parts))
+             (printf "old parts: ~s~n" (map syntax-object->datum old-parts))
+             (printf "new parts: ~s~n" (map syntax-object->datum new-parts)))
            (d->so
             old-expr
             (map (lambda (new old) (syntax/restamp pa new old))
                  new-parts
                  old-parts)))]
       [(syntax/restamp (pa . pb) new-expr old-expr)
-       #'(let ([na (stx-car new-expr)]
-               [nb (stx-cdr new-expr)]
-               [oa (stx-car old-expr)]
-               [ob (stx-cdr old-expr)])
-           (d->so old-expr
-                  (cons (syntax/restamp pa na oa)
-                        (syntax/restamp pb nb ob))))]
+       ;; FIXME 
+       #'(begin
+           (unless (and (stx-pair? new-expr) (stx-pair? old-expr))
+             (printf "** syntax/restamp~n~s~n" (quote-syntax #,stx))
+             (printf "pattern : ~s~n" (syntax-object->datum (quote-syntax (pa . pb))))
+             (printf "old parts: ~s~n" old-expr)
+             (printf "new parts: ~s~n" new-expr))
+           (let ([na (stx-car new-expr)]
+                 [nb (stx-cdr new-expr)]
+                 [oa (stx-car old-expr)]
+                 [ob (stx-cdr old-expr)])
+             (d->so old-expr
+                    (cons (syntax/restamp pa na oa)
+                          (syntax/restamp pb nb ob)))))]
       [(syntax/restamp pvar new-expr old-expr)
        #'new-expr]))
 
@@ -64,10 +71,30 @@
     (cond [(zero? n) null]
           [else (cons (stx-car items) (stx-take (stx-cdr items) (sub1 n)))]))
 
+  (define (take-if-possible items n)
+    (unless (number? n)
+      (raise-type-error 'take-if-possible "number" n))
+    (if (and (pair? items) (positive? n))
+        (cons (car items) (take-if-possible (cdr items) (sub1 n)))
+        null))
+
   ;; stx-improper-length : syntax -> number
   (define (stx-improper-length stx)
     (let loop ([stx stx] [n 0])
       (if (stx-pair? stx)
           (loop (stx-cdr stx) (add1 n))
           n)))
-  )
+
+  (define (stx->list* stx)
+    (cond [(pair? stx)
+           (cons (car stx) (stx->list* (cdr stx)))]
+          [(null? stx)
+           null]
+          [(syntax? stx)
+           (let ([x (syntax-e stx)])
+             (if (pair? x)
+                 (cons (car x) (stx->list* (cdr x)))
+                 (list stx)))]
+          [else null]))
+
+)

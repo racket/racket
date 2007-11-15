@@ -27,25 +27,24 @@
     ;; adjust-deriv/lift : Derivation -> (list-of Derivation)
     (define (adjust-deriv/lift deriv)
       (match deriv
-        [(IntQ lift-deriv (e1 e2 first lifted-stx second))
+        [(Wrap lift-deriv (e1 e2 first lifted-stx second))
          (let ([first (adjust-deriv/top first)])
            (and first
-                (let ([e1 (lift/deriv-e1 first)])
-                  (rewrap deriv 
-                          (make-lift-deriv e1 e2 first lifted-stx second)))))]
+                (let ([e1 (wderiv-e1 first)])
+                  (make-lift-deriv e1 e2 first lifted-stx second))))]
         [else (adjust-deriv/top deriv)]))
     ;; adjust-deriv/top : Derivation -> Derivation
     (define (adjust-deriv/top deriv)
-      (if (syntax-source (lift/deriv-e1 deriv))
+      (if (syntax-source (wderiv-e1 deriv))
           deriv
           ;; It's not original...
           ;; Strip out mzscheme's top-interactions
           ;; Keep anything that is a non-mzscheme top-interaction
           ;; Drop everything else (not original program)
           (match deriv
-            [(IntQ mrule (e1 e2 tx next))
+            [(Wrap mrule (e1 e2 tx next))
              (match tx
-               [(AnyQ transformation (e1 e2 rs me1 me2 locals seq))
+               [(Wrap transformation (e1 e2 rs ?1 me1 locals ?2 me2 seq))
                 (cond [(ormap (lambda (x)
                                 (module-identifier=? x #'#%top-interaction))
                               rs)
