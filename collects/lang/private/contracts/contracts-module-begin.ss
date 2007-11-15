@@ -122,8 +122,8 @@
               [_ (raise-syntax-error 'contract "internal error.5")])))
 	
 	(define local-expand-stop-list 
-          (list 'contract 'define-values 'define-syntaxes 'require 'require-for-syntax 
-                'provide 'define-data '#%app '#%datum 'define-struct 'begin 'begin0))
+          (list 'contract 'define-values 'define-syntaxes '#%require
+                '#%provide 'define-data '#%app '#%datum 'define-struct 'begin 'begin0))
 	
 	;; parse-contract-expressions 
 	;; takes in a list of top level expressions and a list of contracts, and outputs the correct transformation. 
@@ -221,8 +221,8 @@
 	      (let ([e2 (local-expand #'e2 'module local-expand-stop-list)])
 		;; Lift out certain forms to make them visible to the module
 		;;  expander:
-		(syntax-case e2 (require define-syntaxes define-values-for-syntax define-values begin)
-		  [(require . __)
+		(syntax-case e2 (#%require define-syntaxes define-values-for-syntax define-values begin)
+		  [(#%require . __)
 		   #`(begin #,e2 (frm e1s e3s def-ids))]
 		  [(define-syntaxes (id ...) . _)
 		   #`(begin #,e2 (frm e1s e3s (id ... . def-ids)))]
