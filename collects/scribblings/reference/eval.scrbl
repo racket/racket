@@ -191,7 +191,7 @@ handler} to load from a file that may have a compiled form. The
 @tech{compiled-load handler} is called by @scheme[load/use-compiled].
 
 The protocol for a @tech{compiled-load handler} is the same as for the
-@scheme{load handler} (see @scheme[current-load]), except that a
+@tech{load handler} (see @scheme[current-load]), except that a
 @tech{compiled-load handler} is expected to set
 @scheme[current-load-relative-directory] itself. The default
 @tech{compiled-load handler}, however, checks for @filepath{.zo} files
@@ -213,30 +213,9 @@ modification date is not older than the date for @scheme[_file]. If
 both @filepath{.zo} and @filepath{.so}/@filepath{.dll}/@filepath{.dylib} files are
 available, the @filepath{.so}/@filepath{.dll}/@filepath{.dylib} file is used.
 
-Multiple files can be combined into a single
-@filepath{.so}/@filepath{.dll}/@filepath{.dylib} file by creating a special file
-@indexed-file{_loader.so}, @indexed-file{_loader.dll}, or
-@indexed-file{_loader.dylib}. When such a file is present where a
-normal @filepath{.so}/@filepath{.dll}/@filepath{.dylib} would be loaded, then the
-@filepath{_loader} file is first loaded via @scheme[load-extension]. The
-result returned by @filepath{_loader} must be a procedure that accepts a
-symbol. This procedure will be called with a symbol matching the base
-part of @scheme[_file] (without the directory path part of the name
-and without the filename extension), and the result must be two
-values; if @scheme[#f] is returned as the first result, then
-@scheme[load/use-compiled] ignores @filepath{_loader} for @scheme[_file]
-and continues as normal. Otherwise, the first return value is yet
-another procedure. When this procedure is applied to no arguments, it
-should have the same effect as loading @scheme[_file]. The second
-return value is either a symbol or @scheme[#f]; a symbol indicates
-that calling the returned procedure has the effect of declaring the
-module named by the symbol (which is potentially useful information to
-a @tech{load handler}).
-
-While a @filepath{.zo}, @filepath{.so}, @filepath{.dll}, or @filepath{.dylib} file is
-loaded (or while a thunk returned by @filepath{_loader} is invoked), the
-current @scheme[load-relative] directory is set to the directory of
-the original @scheme[_file].
+While a @filepath{.zo}, @filepath{.so}, @filepath{.dll}, or
+@filepath{.dylib} file is loaded, the current @scheme[load-relative]
+directory is set to the directory of the original @scheme[_file].
 
 If the original @scheme[_file] is loaded or a @filepath{.zo} variant is
 loaded, the @tech{load handler} is called to load the file. If any
