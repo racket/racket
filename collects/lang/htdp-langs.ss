@@ -522,8 +522,10 @@
                                          (datum->syntax-object
                                           #f
                                           `(,#'module #%htdp ,language-module 
-                                                      ,@(map (λ (x) `(require ,x))
-                                                             (htdp-lang-settings-teachpacks settings))))))])
+                                                      ,@(map (λ (x) 
+                                                               `(require ,x))
+                                                             (htdp-lang-settings-teachpacks settings))
+                                                      1))))])
                        (let ([body-exps 
                               (let loop ()
                                 (let ([result (reader (object-name port) port)])
@@ -553,8 +555,8 @@
                       (dynamic-wind
                        void
                        (lambda () 
-                         ;(dynamic-require ''#%htdp #f)
-                         (eval #'(require '#%htdp)))  ;; work around a bug in dynamic-require
+                         (dynamic-require ''#%htdp #f)
+                         #;(eval #'(dynamic-require '#%htdp)))  ;; work around a bug in dynamic-require
                        (lambda () 
                          (unless done-already?
                            (set! done-already? #t)
@@ -933,11 +935,13 @@
                   (cons body (loop (cdr bodies)))]
                  [(define-syntaxes (new-vars ...) e)
                   (cons body (loop (cdr bodies)))]
-                 [(require specs ...)
+                 [(define-values-for-syntax (new-vars ...) e)
+                  (cons body (loop (cdr bodies)))]
+                 [(#%require specs ...)
                   (cons body (loop (cdr bodies)))]
                  [(require-for-syntax specs ...)
                   (cons body (loop (cdr bodies)))]
-                 [(provide specs ...)
+                 [(#%provide specs ...)
                   (loop (cdr bodies))]
                  [else 
                   (let ([new-exp
@@ -1402,7 +1406,7 @@
            (sharing-printing #t)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #t)
-           (reader-module '(lib "lang/htdp-advanced-reader.ss"))
+           (reader-module '(lib "htdp-advanced-reader.ss" "lang"))
 	   (stepper:supported #f)
 	   (stepper:enable-let-lifting #t)
 	   (stepper:show-lambdas-as-lambdas #t)))
@@ -1430,7 +1434,7 @@
            (sharing-printing #f)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
-           (reader-module '(lib "lang/htdp-intermediate-lambda-reader.ss"))
+           (reader-module '(lib "htdp-intermediate-lambda-reader.ss" "lang"))
 	   (stepper:supported #t)
            (stepper:enable-let-lifting #t)
 	   (stepper:show-lambdas-as-lambdas #t)))
@@ -1450,7 +1454,7 @@
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
            (use-function-output-syntax? #t)
-           (reader-module '(lib "lang/htdp-intermediate-reader.ss"))
+           (reader-module '(lib "htdp-intermediate-reader.ss" "lang"))
 	   (stepper:supported #t)
            (stepper:enable-let-lifting #t)
 	   (stepper:show-lambdas-as-lambdas #f)))
@@ -1469,7 +1473,7 @@
            (sharing-printing #f)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
-           (reader-module '(lib "lang/htdp-beginner-abbr-reader.ss"))
+           (reader-module '(lib "htdp-beginner-abbr-reader.ss" "lang"))
 	   (stepper:supported #t)
            (stepper:enable-let-lifting #t)
 	   (stepper:show-lambdas-as-lambdas #f)))
@@ -1489,7 +1493,7 @@
            (abbreviate-cons-as-list #f)
            (allow-sharing? #f)
            (accept-quasiquote? #f)
-           (reader-module '(lib "lang/htdp-beginner-reader.ss"))
+           (reader-module '(lib "htdp-beginner-reader.ss" "lang"))
 	   (stepper:supported #t)
            (stepper:enable-let-lifting #t)
 	   (stepper:show-lambdas-as-lambdas #f)))

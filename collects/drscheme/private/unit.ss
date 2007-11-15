@@ -417,6 +417,7 @@ module browser threading seems wrong.
                        (equal? (normal-case-path (normalize-path (get-filename)))
                                (normal-case-path (normalize-path id))))
                   (and (symbol? port-name-identifier)
+                       (symbol? id)
                        (equal? port-name-identifier id)))))
           
           (inherit get-surrogate set-surrogate)
