@@ -2620,6 +2620,8 @@ void protect_old_mpages()
 
 #if GENERATIONS
 
+static int designate_modified(void *p);
+
 static int designate_modified_maybe(void *p, int no_barrier_ok)
 {
   unsigned long g = ((unsigned long)p >> MAPS_SHIFT);
