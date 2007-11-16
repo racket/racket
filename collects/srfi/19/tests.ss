@@ -4,7 +4,7 @@
 
   ;; Updated to SchemeUnit 2 syntax by Dave Gurnell -- 2007-09-14
 
-  (require (lib "time.ss" "srfi" "19"))
+  (require (file "time.ss"))
 
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2)))
@@ -149,7 +149,28 @@
       (check-equal? (date->string (make-srfi:date 123       2 3 4 5 6 2007 0) "~N") "000000123")
       (check-equal? (date->string (make-srfi:date 12        2 3 4 5 6 2007 0) "~N") "000000012")
       (check-equal? (date->string (make-srfi:date 1         2 3 4 5 6 2007 0) "~N") "000000001"))
-
+      
+      (test-case
+      "[DJG] string->date conversions of dates with nanosecond components"
+      (check-equal? (string->date "12:00:00.123456789" "~H:~M:~S.~N") (make-srfi:date 123456789 0 0 12 #t #t #t 0) "check 1")
+      (check-equal? (string->date "12:00:00.12345678"  "~H:~M:~S.~N") (make-srfi:date 123456780 0 0 12 #t #t #t 0) "check 2")
+      (check-equal? (string->date "12:00:00.1234567"   "~H:~M:~S.~N") (make-srfi:date 123456700 0 0 12 #t #t #t 0) "check 3")
+      (check-equal? (string->date "12:00:00.123456"    "~H:~M:~S.~N") (make-srfi:date 123456000 0 0 12 #t #t #t 0) "check 4")
+      (check-equal? (string->date "12:00:00.12345"     "~H:~M:~S.~N") (make-srfi:date 123450000 0 0 12 #t #t #t 0) "check 5")
+      (check-equal? (string->date "12:00:00.1234"      "~H:~M:~S.~N") (make-srfi:date 123400000 0 0 12 #t #t #t 0) "check 6")
+      (check-equal? (string->date "12:00:00.123"       "~H:~M:~S.~N") (make-srfi:date 123000000 0 0 12 #t #t #t 0) "check 7")
+      (check-equal? (string->date "12:00:00.12"        "~H:~M:~S.~N") (make-srfi:date 120000000 0 0 12 #t #t #t 0) "check 8")
+      (check-equal? (string->date "12:00:00.1"         "~H:~M:~S.~N") (make-srfi:date 100000000 0 0 12 #t #t #t 0) "check 9")
+      (check-equal? (string->date "12:00:00.123456789" "~H:~M:~S.~N") (make-srfi:date 123456789 0 0 12 #t #t #t 0) "check 10")
+      (check-equal? (string->date "12:00:00.012345678" "~H:~M:~S.~N") (make-srfi:date 12345678  0 0 12 #t #t #t 0) "check 11")
+      (check-equal? (string->date "12:00:00.001234567" "~H:~M:~S.~N") (make-srfi:date 1234567   0 0 12 #t #t #t 0) "check 12")
+      (check-equal? (string->date "12:00:00.000123456" "~H:~M:~S.~N") (make-srfi:date 123456    0 0 12 #t #t #t 0) "check 13")
+      (check-equal? (string->date "12:00:00.000012345" "~H:~M:~S.~N") (make-srfi:date 12345     0 0 12 #t #t #t 0) "check 14")
+      (check-equal? (string->date "12:00:00.000001234" "~H:~M:~S.~N") (make-srfi:date 1234      0 0 12 #t #t #t 0) "check 15")
+      (check-equal? (string->date "12:00:00.000000123" "~H:~M:~S.~N") (make-srfi:date 123       0 0 12 #t #t #t 0) "check 16")
+      (check-equal? (string->date "12:00:00.000000012" "~H:~M:~S.~N") (make-srfi:date 12        0 0 12 #t #t #t 0) "check 17")
+      (check-equal? (string->date "12:00:00.000000001" "~H:~M:~S.~N") (make-srfi:date 1         0 0 12 #t #t #t 0) "check 18"))
+      
      (test-case
       "date<->julian-day conversion"
       (check = 365 (- (date->julian-day (make-srfi:date 0 0 0 0 1 1 2004 0))
