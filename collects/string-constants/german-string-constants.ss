@@ -882,7 +882,7 @@
  (r5rs-one-line-summary "R5RS, ohne alles andere")
  (expander "Expander")
  (expander-one-line-summary "Expandiert Ausdrücke, statt sie auszuwerten")
- (professional-languages "Sprachen für Entwickler")
+ (legacy-languages "Altlast-Sprachen")
  (teaching-languages "Lehrsprachen")
  (experimental-languages "Experimentelle Sprachen")
  (initial-language-category "Sprache am Anfang")
