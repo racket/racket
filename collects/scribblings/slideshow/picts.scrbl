@@ -4,10 +4,14 @@
 
 @title[#:style 'toc]{Making Pictures}
 
-The @scheme[slideshow/pict] layer provides core functions for
+@declare-exporting[slideshow/pict slideshow]
+
+The @schememodname[slideshow/pict] layer provides core functions for
 constructing pictures, and it is independent of the slide viewer. This
 layer can be used, for example, to generate a picture as encapsulated
-PostScript for inclusion into a larger document.
+PostScript for inclusion into a larger document. The
+@schememodname[slideshow/pict] layer is re-provided by the
+@schememodname[slideshow] module.
 
 @local-table-of-contents[]
 

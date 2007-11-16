@@ -22,7 +22,7 @@
     (size-in-pixels
      (bitmap (build-path (collection-path "icons") "PLT-206.png")))
     (blank)
-    (colorize (it "Press the spacebar to continue") blue)
+    (colorize (it "Press the spacebar to continue") "blue")
     (comment "Welcome to Slideshow"))
 
    (slide
@@ -34,7 +34,7 @@
           "you get the power of Scheme"))
    
    (define (symbol n)
-     (text (string (integer->char n)) 'symbol font-size))
+     (text (string (integer->char n)) 'symbol (current-font-size)))
    (define sym:rightarrow (symbol 174))
    (define sym:leftarrow (symbol 172))
 

@@ -253,7 +253,7 @@
 	(lambda (s v-sep p)
 	  (apply vc-append v-sep
 		 (if s
-		     (list (evenize-width (titlet s)) p)
+		     (list (evenize-width (if (pict? s) s (titlet s))) p)
 		     (list p)))))
 
       (define current-slide-assembler
@@ -846,22 +846,23 @@
       ;; ----------------------------------------
 
       (define subitem/kw
-        (let ([subitem (lambda (#:bullet [bullet bullet]
+        (let ([subitem (lambda (#:bullet [bullet o-bullet]
                                          #:width [width (current-para-width)]
                                          #:align [align 'left]
                                          #:fill? [fill? #t]
                                          #:decode? [decode? #t]
                                          . s)
-                         (htl-append (/ gap-size 2)
-                                     bullet 
-                                     (para/kw #:width (- width
-                                                         (* 2 gap-size)
-                                                         (pict-width bullet) 
-                                                         (/ gap-size 2)) 
-                                              #:align align
-                                              #:fill? fill?
-                                              #:decode? decode?
-                                              s)))])
+                         (inset (htl-append (/ gap-size 2)
+                                            o-bullet 
+                                            (para/kw #:width (- width
+                                                                (* 2 gap-size)
+                                                                (pict-width o-bullet) 
+                                                                (/ gap-size 2)) 
+                                                     #:align align
+                                                     #:fill? fill?
+                                                     #:decode? decode?
+                                                     s))
+                                (* 2 gap-size) 0 0 0))])
           subitem))
 
       (define (subitem* w . s)

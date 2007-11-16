@@ -1,6 +1,9 @@
 
 (module base scheme
-  (require "slide.ss")
+  (require "slide.ss"
+           (only-in "core.ss"
+                    sliderec?
+                    just-a-comment?))
 
   (current-line-sep 5)
 
@@ -12,31 +15,34 @@
   (current-para-width (* 3/4 client-w))
 
   (current-titlet (lambda (s)
-                    (text s (current-main-font) 40)))
+                    (colorize (text s (current-main-font) 40)
+                              (current-title-color))))
   (set-title-h! (pict-height (titlet "Hi")))
+  (current-title-color "black")
 
-  (provide (rename-out [slide/kw slide])
+  (provide (rename-out [slide/kw slide]
+                       [sliderec? slide?]
+                       [just-a-comment? comment?])
            comment
            most-recent-slide retract-most-recent-slide re-slide start-at-recent-slide
-	   scroll-transition pause-transition
 	   make-outline
 	   (rename-out [item/kw item]
                        [subitem/kw subitem]
                        [para/kw para])
-	   font-size gap-size current-font-size current-line-sep line-sep title-size 
-	   main-font current-main-font with-font current-title-color
-	   red green blue purple orange size-in-pixels
+	   gap-size current-font-size current-line-sep
+	   current-main-font current-title-color
+	   size-in-pixels
 	   t it bt bit tt titlet tt* rt
 	   bullet o-bullet
-	   margin get-margin set-margin! 
-	   client-w client-h get-client-w get-client-h
-	   full-page titleless-page get-full-page get-titleless-page
+	   margin set-margin! 
+	   client-w client-h
+	   full-page titleless-page
 	   printing? condense?
 	   skip-slides
 	   set-use-background-frame!
 	   enable-click-advance!
-	   title-h get-title-h set-title-h! current-slide-assembler
+	   title-h set-title-h! current-slide-assembler
 	   current-page-number-font current-page-number-color 
            current-titlet current-para-width
 	   set-page-numbers-visible! done-making-slides
-           clickback make-slide-inset apply-slide-inset))
+           clickback make-slide-inset slide-inset? apply-slide-inset))

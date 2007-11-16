@@ -1051,7 +1051,8 @@
                                                                 (schemeparenfont "(")))))
                                (to-flow (if (or (null? fields)
                                                 (short-width . < . max-proto-width))
-                                            (to-element (map field-view fields))
+                                            (make-element #f (list (to-element (map field-view fields))
+                                                                   (schemeparenfont ")")))
                                             (to-element (field-view (car fields)))))))
                         (if (short-width . < . max-proto-width)
                             null
@@ -1070,7 +1071,7 @@
                                                         #f 
                                                         (list e 
                                                               (schemeparenfont 
-                                                               (if (and (not immutable?)
+                                                               (if (and immutable?
                                                                         (not transparent?))
                                                                    "))"
                                                                    ")"))))
@@ -1398,7 +1399,7 @@
 
   (provide cite)
 
-  (define (cite #:key key #:title title #:author author #:location location #:date date)
+  (define (cite #:key key #:title title #:author author #:location location #:date date #:url [url #f])
     "[...]"
     #;
     (make-bibliography-element

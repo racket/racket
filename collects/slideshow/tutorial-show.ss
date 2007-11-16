@@ -186,7 +186,7 @@
                    "There's a margin, so the ``client'' area is"
               (number->string client-w) "x" (number->string client-h))
              (para #:fill? #f
-                   "The font size is" (number->string font-size)))))
+                   "The font size is" (number->string (current-font-size))))))
 
 (slide
  #:title "Titled Client Area"
@@ -203,9 +203,9 @@
  (para "Functions exist for" (bt "bold") ","
             (it "italic") ", and even" (bit "bold-italic") "text")
  (para "The" (tt "text") "function gives you more direct control over the"
-            (text "font" '(italic . modern) font-size) ","
-            (text "size" main-font 24) ", and even"
-            (text "angle" main-font font-size (/ 3.14159 4))))
+            (text "font" '(italic . modern) (current-font-size)) ","
+            (text "size" (current-main-font) 24) ", and even"
+            (text "angle" (current-main-font) (current-font-size) (/ 3.14159 4))))
 
 (require slideshow/code)
 (slide

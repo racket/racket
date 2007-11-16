@@ -109,7 +109,7 @@ mixture of strings and picts, and it formats them as a paragraph.
 
 @; ------------------------------------------------------------------------
 
-@section{Staging Slides}
+@section[#:tag "staging"]{Staging Slides}
 
 The @scheme[slide] function creates a slide as a side effect. It can
 be put inside a function to abstract over a slide:

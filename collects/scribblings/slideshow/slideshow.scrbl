@@ -13,14 +13,11 @@ program.
 To get started, run the @exec{slideshow} executable, and click the
 @onscreen{Run Tutorial} link.
 
-To learn more about why Slideshow is cool, read the paper
-
-@schemeblock[
-#, @elem{``Slideshow: Functional Presentations''}
-#, @elem{Robert Bruce Findler and Matthew Flatt}
-#, @elem{@italic{Journal of Functional Programming}, 16(4-5), pp. 583--619, 2006.}
-#, @link[paper-url (tt paper-url)]
-]
+To learn more about why Slideshow is cool, see also ``Slideshow:
+Functional Presentations'' @cite[#:key "slideshow" #:title "Slideshow:
+Functional Presentations" #:author "Robert Bruce Findler and Matthew
+Flatt" #:location @elem{@italic{Journal of Functional Programming},
+16(4-5), pp. 583--619} #:date "2006" #:url paper-url].
 
 @table-of-contents[]
 
@@ -28,3 +25,4 @@ To learn more about why Slideshow is cool, read the paper
 
 @include-section["guide.scrbl"]
 @include-section["picts.scrbl"]
+@include-section["slides.scrbl"]

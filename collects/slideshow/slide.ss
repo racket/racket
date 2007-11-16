@@ -106,7 +106,8 @@
            slide/timeout
            slide/title/timeout
            slide/center/timeout
-           slide/title/center/timeout)
+           slide/title/center/timeout
+           (rename sinset? slide-inset?))
   (provide/contract [clickback 
 		     ((pict? (lambda (x)
 			       (and (procedure? x)

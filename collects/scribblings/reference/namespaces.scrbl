@@ -21,23 +21,10 @@ Returns @scheme[#t] if @scheme[v] is a namespace value, @scheme[#f]
 otherwise.}
 
 
-@defproc[(make-namespace [flag (one-of/c 'initial 'empty) 'initial]) namespace?]{
+@defproc[(make-namespace) namespace?]{
 
-Creates a new namespace with a new module registry. The @scheme[flag]
-is an option that determines the initial bindings in the namespace:
-
-@itemize{
-
-   @item{@indexed-scheme['initial] --- the new namespace contains the
-   module declarations of the initial namespace, and the new
-   namespace's @tech{phase-level} 1 top-level environment contains
-   bindings and imports as in the initial namespace. However, the
-   namespace's @tech{phase-level} 1 top-level environment is empty.}
-
-   @item{@indexed-scheme['empty] --- creates a namespace with no
-   initial bindings or module declarations.}
-
-}}
+Creates a new namespace that is empty. Attach modules from an existing
+namespace to the new one with @scheme[namespace-attach-module].}
 
 
 @defparam[current-namespace n namespace?]{

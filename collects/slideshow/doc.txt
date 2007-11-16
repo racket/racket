@@ -491,7 +491,7 @@ Procedure Reference
 > current-main-font - Parameter for the font specification
   used for `t'. Its argument must be a text-style (see
   texpict for details).
-> main-font - Defaultfor `current-main-font'
+> main-font - Default for `current-main-font'
 > current-title-color - Parameter for the color used by titles/`titlet'
 
 > (with-font f thunk) - Calls `thunk' with
