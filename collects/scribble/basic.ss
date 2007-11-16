@@ -65,7 +65,7 @@
   (define (subsubsub*section #:tag [tag #f] . str)
     (let ([content (decode-content str)])
       (make-paragraph (list (make-element 'bold content)))))
-
+  
   (define-syntax (include-section stx)
     (syntax-case stx ()
       [(_ mod)

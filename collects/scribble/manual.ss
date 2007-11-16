@@ -149,13 +149,21 @@
            litchar
            verbatim)
 
-  (provide onscreen menuitem defterm
+  (provide image onscreen menuitem defterm
            schemefont schemevalfont schemeresultfont schemeidfont 
            schemeparenfont schemekeywordfont schememetafont schememodfont
            filepath exec envvar Flag DFlag
            indexed-file indexed-envvar
            link procedure
            idefterm)
+
+  ;; String String *-> Element
+  ;; an in-lined image, relative to the current directory 
+  (define (image filename-relative-to-source . alt)
+    (centerline ;; this doesn't do anything? 
+      (make-element
+	(make-image-file filename-relative-to-source)
+	(decode-content alt))))
 
   (define (onscreen . str)
     (make-element 'sf (decode-content str)))
