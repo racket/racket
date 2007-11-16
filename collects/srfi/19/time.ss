@@ -1250,6 +1250,24 @@
     (lambda (port)
       (tm:integer-reader upto port)))
   
+  ;; read an fractional integer upto n characters long on port; upto -> #f if any length
+  ;;
+  ;; The return value is normalized to upto decimal places. For example, if upto is 9 and 
+  ;; the string read is "123", the return value is 123000000.
+  (define (tm:fractional-integer-reader upto port)
+    (define (accum-int port accum nchars)
+      (let ((ch (peek-char port)))
+	(if (or (eof-object? ch)
+		(not (char-numeric? ch))
+		(and upto (>= nchars  upto )))
+	    (* accum (expt 10 (- upto nchars)))
+	    (accum-int port (+ (* accum 10) (tm:char->int (read-char port))) (+ nchars 1)))))
+    (accum-int port 0 0))
+  
+  (define (tm:make-fractional-integer-reader upto)
+    (lambda (port)
+      (tm:fractional-integer-reader upto port)))
+  
   ;; read *exactly* n characters and convert to integer; could be padded
   (define (tm:integer-reader-exact n port)
     (let ( (padding-ok #t) )
@@ -1356,7 +1374,7 @@
   (define tm:read-directives 
     (let ( (ireader4 (tm:make-integer-reader 4))
            (ireader2 (tm:make-integer-reader 2))
-           (ireader7 (tm:make-integer-reader 7))
+           (fireader9 (tm:make-fractional-integer-reader 9))
 	   (ireaderf (tm:make-integer-reader #f))
 	   (eireader2 (tm:make-integer-exact-reader 2))
 	   (eireader4 (tm:make-integer-exact-reader 4))
@@ -1399,8 +1417,8 @@
        (list #\M char-numeric? ireader2 (lambda (val object)
 					  (tm:set-date-minute!
 					   object val)))
-       (list #\N char-numeric? ireader7 (lambda (val object)
-                                          (tm:set-date-nanosecond! object val)))
+       (list #\N char-numeric? fireader9 (lambda (val object)
+                                           (tm:set-date-nanosecond! object val)))
        (list #\S char-numeric? ireader2 (lambda (val object)
 					  (tm:set-date-second! object val)))
        (list #\y char-fail eireader2 
@@ -1439,7 +1457,7 @@
 		  (tm:time-error 'string->date 'bad-date-format-string template-string)
 		  (let* ( (format-char (string-ref format-string (+ index 1)))
 			  (format-info (assoc format-char tm:read-directives)) )
-		    (if (not format-info)
+                    (if (not format-info)
 			(tm:time-error 'string->date 'bad-date-format-string template-string)
 			(begin
 			  (let ((skipper (cadr format-info))
