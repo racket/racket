@@ -287,6 +287,12 @@ vector_to_list (int argc, Scheme_Object *argv[])
   return scheme_vector_to_list(argv[0]);
 }
 
+#ifdef MZ_PRECISE_GC
+# define cons(car, cdr) GC_malloc_pair(car, cdr)
+#else
+# define cons(car, cdr) scheme_make_pair(car, cdr)
+#endif
+
 Scheme_Object *
 scheme_vector_to_list (Scheme_Object *vec)
 {
@@ -297,13 +303,13 @@ scheme_vector_to_list (Scheme_Object *vec)
 
   if (i < 0xFFF) {
     for (; i--; ) {
-      pair = scheme_make_pair(SCHEME_VEC_ELS(vec)[i], pair);
+      pair = cons(SCHEME_VEC_ELS(vec)[i], pair);
     }
   } else {
     for (; i--; ) {
       if (!(i & 0xFFF))
 	SCHEME_USE_FUEL(0xFFF);
-      pair = scheme_make_pair(SCHEME_VEC_ELS(vec)[i], pair);
+      pair = cons(SCHEME_VEC_ELS(vec)[i], pair);
     }
   }
 
@@ -364,7 +370,7 @@ static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[])
   ovec = argv[0];
   len = SCHEME_VEC_SIZE(ovec);
   if (!len)
-    return vec;
+    return ovec;
 
   vec = scheme_make_vector(len, NULL);
   for (i = 0; i < len; i++) {

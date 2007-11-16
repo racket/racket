@@ -614,13 +614,19 @@ Scheme_Object *scheme_make_raw_pair(Scheme_Object *car, Scheme_Object *cdr)
   return cons;
 }
 
+#ifdef MZ_PRECISE_GC
+# define cons(car, cdr) GC_malloc_pair(car, cdr)
+#else
+# define cons(car, cdr) scheme_make_pair(car, cdr)
+#endif
+
 Scheme_Object *scheme_build_list(int size, Scheme_Object **argv)
 {
   Scheme_Object *pair = scheme_null;
   int i;
 
   for (i = size; i--; ) {
-    pair = scheme_make_pair(argv[i], pair);
+    pair = cons(argv[i], pair);
   }
 
   return pair;
@@ -632,7 +638,7 @@ Scheme_Object *scheme_build_list_offset(int size, Scheme_Object **argv, int delt
   int i;
 
   for (i = size; i-- > delta; ) {
-    pair = scheme_make_pair(argv[i], pair);
+    pair = cons(argv[i], pair);
   }
 
   return pair;
@@ -644,7 +650,7 @@ Scheme_Object *scheme_alloc_list(int size)
   int i;
 
   for (i = size; i--; ) {
-    pair = scheme_make_pair(scheme_false, pair);
+    pair = cons(scheme_false, pair);
   }
 
   return pair;
@@ -694,7 +700,7 @@ scheme_named_map_1(char *name, Scheme_Object *(*fun)(Scheme_Object*, Scheme_Obje
     Scheme_Object *v;
     v = SCHEME_STX_CAR(lst);
     v = fun(v, form);
-    pr = scheme_make_pair(v, scheme_null);
+    pr = cons(v, scheme_null);
     if (last)
       SCHEME_CDR(last) = pr;
     else
@@ -764,7 +770,7 @@ mpair_p_prim (int argc, Scheme_Object *argv[])
 static Scheme_Object *
 cons_prim (int argc, Scheme_Object *argv[])
 {
-  return scheme_make_pair(argv[0], argv[1]);
+  return cons(argv[0], argv[1]);
 }
 
 static Scheme_Object *
@@ -902,29 +908,26 @@ list_p_prim (int argc, Scheme_Object *argv[])
 
 #define NORMAL_LIST_INIT() l = scheme_null
 #define STAR_LIST_INIT() --argc; l = argv[argc]
-#ifndef MZ_PRECISE_GC
-# define GC_malloc_pair scheme_make_pair
-#endif
 
-#define LIST_BODY(INIT, scheme_make_pair)        \
+#define LIST_BODY(INIT)                          \
   int i;                                         \
   Scheme_Object *l;                              \
   INIT;                                          \
   for (i = argc ; i--; ) {                       \
-    l = scheme_make_pair(argv[i], l);            \
+    l = cons(argv[i], l);                        \
   }                                              \
   return l
 
 static Scheme_Object *
 list_prim (int argc, Scheme_Object *argv[])
 {
-  LIST_BODY(NORMAL_LIST_INIT(), GC_malloc_pair);
+  LIST_BODY(NORMAL_LIST_INIT());
 }
 
 static Scheme_Object *
 list_star_prim (int argc, Scheme_Object *argv[])
 {
-  LIST_BODY(STAR_LIST_INIT(), GC_malloc_pair);
+  LIST_BODY(STAR_LIST_INIT());
 }
 
 static Scheme_Object *
@@ -965,7 +968,7 @@ scheme_append (Scheme_Object *lst1, Scheme_Object *lst2)
 
   first = last = NULL;
   while (SCHEME_PAIRP(lst1)) {
-    v = scheme_make_pair(SCHEME_CAR(lst1), scheme_null);
+    v = cons(SCHEME_CAR(lst1), scheme_null);
     if (!first)
       first = v;
     else
@@ -1021,7 +1024,7 @@ reverse_prim (int argc, Scheme_Object *argv[])
   while (!SCHEME_NULLP (lst)) {
     if (!SCHEME_PAIRP(lst))
       scheme_wrong_type("reverse", "proper list", 0, argc, argv);
-    last = scheme_make_pair (SCHEME_CAR (lst), last);
+    last = cons(SCHEME_CAR (lst), last);
     lst = SCHEME_CDR (lst);
 
     SCHEME_USE_FUEL(1);
@@ -1658,7 +1661,7 @@ static Scheme_Object *do_map_hash_table(int argc,
 	p[1] = (Scheme_Object *)bucket->val;
 	if (keep) {
 	  v = _scheme_apply(f, 2, p);
-	  v = scheme_make_pair(v, scheme_null);
+	  v = cons(v, scheme_null);
 	  if (last)
 	    SCHEME_CDR(last) = v;
 	  else
@@ -1679,7 +1682,7 @@ static Scheme_Object *do_map_hash_table(int argc,
 	p[1] = hash->vals[i];
 	if (keep) {
 	  v = _scheme_apply(f, 2, p);
-	  v = scheme_make_pair(v, scheme_null);
+	  v = cons(v, scheme_null);
 	  if (last)
 	    SCHEME_CDR(last) = v;
 	  else
