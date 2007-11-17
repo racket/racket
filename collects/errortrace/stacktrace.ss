@@ -90,7 +90,7 @@
                                   #f key (quote-syntax here))]
                             [body body]
                             [test-covered test-covered])
-                #'(begin (test-covered 'key) body)))
+                #'(begin (#%plain-app test-covered 'key) body)))
             body))
 
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
