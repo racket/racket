@@ -930,7 +930,7 @@
             [(null? bodies) null]
             [else
              (let ([body (car bodies)])
-               (syntax-case body (require define-values define-syntaxes require-for-syntax provide)
+               (syntax-case body (#%require define-values define-syntaxes define-values-for-syntax #%provide)
                  [(define-values (new-vars ...) e)
                   (cons body (loop (cdr bodies)))]
                  [(define-syntaxes (new-vars ...) e)
@@ -938,8 +938,6 @@
                  [(define-values-for-syntax (new-vars ...) e)
                   (cons body (loop (cdr bodies)))]
                  [(#%require specs ...)
-                  (cons body (loop (cdr bodies)))]
-                 [(require-for-syntax specs ...)
                   (cons body (loop (cdr bodies)))]
                  [(#%provide specs ...)
                   (loop (cdr bodies))]
