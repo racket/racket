@@ -1,8 +1,6 @@
 
 (load-relative "loadtest.ss")
 
-(require scheme/namespace)
-
 (Section 'namespaces)
 
 (arity-test eval 1 2)
@@ -58,7 +56,7 @@
 	 gvl)))
 
 ;; Test empty namespace:
-(let ([e (make-namespace)]
+(let ([e (make-empty-namespace)]
       [orig (current-namespace)])
   (parameterize ([current-namespace e])
     (test null namespace-mapped-symbols)

@@ -31,7 +31,7 @@
         (if (zero? n)
             null
             (cons
-             (let ([ns (make-namespace)]
+             (let ([ns (make-base-namespace)]
                    [eh (exit-handler)]
                    [cust (list-ref custodians (sub1 n))])
                (parameterize ([current-custodian cust])

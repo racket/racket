@@ -1,8 +1,6 @@
 
 (load-relative "loadtest.ss")
 
-(require scheme/namespace)
-
 (Section 'parameters)
 
 (let ([p (open-output-file "tmp5" #:exists 'replace)])
@@ -296,7 +294,7 @@
 
 		(list current-namespace
 		      (list (make-base-namespace)
-			    (make-namespace))
+			    (make-empty-namespace))
 		      '(begin 0)
 		      exn:fail:syntax?
 		      '("bad setting"))

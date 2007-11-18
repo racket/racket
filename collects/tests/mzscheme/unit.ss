@@ -595,8 +595,6 @@
 	  #f y)
 	x))
 
-(require scheme/namespace)
-
 (test 55 'namespace
       (parameterize ([current-namespace (make-base-namespace)])
 	(namespace-variable-bind/invoke-unit

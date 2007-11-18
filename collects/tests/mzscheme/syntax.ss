@@ -1091,7 +1091,7 @@
       [(_ . e) (quote e)])))
 
 (dynamic-require ''quoting-top-interaction #f)
-(let ([ns (make-namespace)])
+(let ([ns (make-empty-namespace)])
   (namespace-attach-module (current-namespace) ''quoting-top-interaction ns)
   (parameterize ([current-namespace ns])
     (namespace-require ''quoting-top-interaction))

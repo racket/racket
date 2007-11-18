@@ -252,7 +252,7 @@
 
 (let ([v (et-struct-info arity-at-least)])
   (test '(struct:arity-at-least make-arity-at-least arity-at-least? 
-				(arity-at-least-value) (set-arity-at-least-value!) #t) 
+				(arity-at-least-value) (#f) #t) 
 	values v))
 
 (let ()

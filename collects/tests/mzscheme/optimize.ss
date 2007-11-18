@@ -3,8 +3,6 @@
 
 (Section 'optimization)
 
-(require scheme/namespace)
-
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check JIT inlining of primitives:

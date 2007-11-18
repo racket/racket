@@ -133,7 +133,7 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check namespace-attach-module:
 
-(let* ([n (make-namespace)]
+(let* ([n (make-empty-namespace)]
        [l null]
        [here (lambda (v)
 	       (set! l (cons v l)))])
@@ -177,7 +177,7 @@
     (eval `(require 'f))
     (let ([finished '(f b e  a d c b  d c b d c b c)])
       (test finished values l)
-      (let ([n2 (make-namespace)])
+      (let ([n2 (make-empty-namespace)])
 	(namespace-attach-module n ''f)
 	(test finished values l)
 	(eval `(require 'a))

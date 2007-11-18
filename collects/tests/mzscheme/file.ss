@@ -1367,7 +1367,7 @@
 	 (equal? (cdr x) who))))
 
 (parameterize ([current-security-guard (make-file-sg '(exists read))])
-  (test #t path? (expand-path "tmp1"))
+  (test #t path? (cleanse-path "tmp1"))
   (test #t file-exists? "tmp1")
   (test #f directory-exists? "tmp1")
   (test #f link-exists? "tmp1")
@@ -1383,7 +1383,7 @@
   (test #t list? (directory-list)))
 
 (parameterize ([current-security-guard (make-file-sg '(exists write))])
-  (test #t path? (expand-path "tmp1"))
+  (test #t path? (cleanse-path "tmp1"))
   (err/rt-test (open-input-file "tmp1") (fs-reject? 'open-input-file))
   (err/rt-test (open-output-file "tmp1" #:exists 'append) (fs-reject? 'open-output-file))
   (err/rt-test (open-output-file "tmp1" #:exists 'update) (fs-reject? 'open-output-file))
@@ -1404,7 +1404,7 @@
   (err/rt-test (current-directory "tmp1") (fs-reject? 'current-directory))
   (err/rt-test (current-drive) (lambda (x)
 				 (or (exn:unsupported? x) ((fs-reject? 'current-drive) x))))
-  (err/rt-test (expand-path "tmp1") (fs-reject? 'expand-path))
+  (err/rt-test (cleanse-path "tmp1") (fs-reject? 'cleanse-path))
   (err/rt-test (resolve-path "tmp1") (fs-reject? 'resolve-path))
   (err/rt-test (simplify-path "../tmp1") (fs-reject? 'simplify-path))
   (err/rt-test (file-exists? "tmp1") (fs-reject? 'file-exists?))

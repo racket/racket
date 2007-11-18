@@ -452,7 +452,7 @@
 (let ([b (identifier-binding (syntax-case (expand #'(module m scheme/base
 						      (require (only-in (lib "lang/htdp-intermediate.ss") [cons bcons]))
 						      bcons)) ()
-			       [(mod m mz (#%mod-beg req (app print cons) void))
+			       [(mod m mz (#%mod-beg req (app call-with-values (lambda () cons) print) void))
 				(let ([s (syntax cons)])
 				  (test 'bcons syntax-e s)
 				  s)]))])
@@ -842,11 +842,9 @@
 (test 100 values ++xm)
 (test 10 values ++y-macro2)
 
-(require scheme/namespace)
-
 (let ()
   (define n (current-namespace))
-  (define n2 (make-empty-base-namespace))
+  (define n2 (make-base-empty-namespace))
   (define i (make-inspector))
 
 

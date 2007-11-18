@@ -1,7 +1,7 @@
 
 (define flat-number 0)
 (for-each (lambda (f)
-	    (parameterize ([current-namespace (make-namespace)])
+	    (parameterize ([current-namespace (make-base-namespace)])
 	      (set! flat-number (add1 flat-number))
 	      (eval
 	       `(begin

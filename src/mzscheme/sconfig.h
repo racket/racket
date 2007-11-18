@@ -673,6 +673,8 @@
 
 # define USE_UNDERSCORE_SETJMP
 
+# define UDP_DISCONNECT_EADRNOTAVAIL_OK
+
 #ifndef XONX
 # define MACOS_UNICODE_SUPPORT
 #endif
@@ -708,6 +710,8 @@
 # define USE_TM_GMTOFF_FIELD
 
 # define USE_UNDERSCORE_SETJMP
+
+# define UDP_DISCONNECT_EADRNOTAVAIL_OK
 
 # define MZ_USE_JIT_I386
 
@@ -1041,6 +1045,10 @@
 
  /* USE_NULL_TO_DISCONNECT_UDP calls connect() with NULL instead of
     an AF_UNSPEC address to disconnect a UDP socket. */
+
+ /* UDP_DISCONNECT_EADRNOTAVAIL_OK means that a disconnecting call
+    to connect() might return EADDRNOTAVAIL instead of 
+    EAFNOSUPPORT. */
 
  /* MZ_BINARY is combinaed with other flags in all calls to open();
     it can be defined to O_BINARY in Cygwin, for example. */

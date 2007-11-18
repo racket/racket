@@ -2395,11 +2395,7 @@ static Scheme_Object *system_language_country(int argc, Scheme_Object *argv[])
 
 #ifndef DONT_USE_LOCALE
 
-#ifdef OS_X
-# define ICONV_ARG_CAST (const char **)
-#else
-# define ICONV_ARG_CAST /* empty */
-#endif
+#define ICONV_ARG_CAST /* empty */
 
 static char *do_convert(iconv_t cd,
 			/* if cd == -1 and either from_e or to_e can be NULL, then

@@ -603,8 +603,6 @@
 	    (define foo 12)))
 	foo))
 
-(require scheme/namespace)
-
 (test 120
       'namespace
       (parameterize ([current-namespace (make-base-namespace)])

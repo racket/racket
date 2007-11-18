@@ -284,9 +284,9 @@
  rels)
 
 (define (test-path expect f . args)
-  (test (normal-case-path (expand-path expect))
+  (test (normal-case-path (cleanse-path expect))
 	(or (object-name f) 'unknown)
-	(normal-case-path (expand-path (apply f args)))))
+	(normal-case-path (cleanse-path (apply f args)))))
 
 (for-each
  (lambda (absol)
@@ -387,7 +387,8 @@
 (test (path->directory-path (build-path 'same)) simplify-path (build-path 'same "a" 'same 'up 'same) #f)
 (arity-test simplify-path 1 2)
 
-(arity-test expand-path 1 2)
+(arity-test cleanse-path 1 1)
+(arity-test expand-user-path 1 1)
 (arity-test resolve-path 1 1)
 
 (map
@@ -396,7 +397,7 @@
  (list build-path split-path file-exists? directory-exists?
        delete-file directory-list make-directory delete-directory
        file-or-directory-modify-seconds file-or-directory-permissions 
-       expand-path resolve-path simplify-path path->complete-path
+       cleanse-path resolve-path simplify-path path->complete-path
        open-input-file open-output-file))
 (map 
  (lambda (f)
@@ -416,7 +417,7 @@
 	       (string-append
 		"\\\\?\\"
 		(path->string
-		 (normal-case-path (simplify-path (expand-path (current-directory))))))
+		 (normal-case-path (simplify-path (cleanse-path (current-directory))))))
 	       "")]
 	[drive (path->string (current-drive))])
 
@@ -672,26 +673,26 @@
   (test (string->path "\\\\?\\UNC\\foo\\A") normal-case-path (coerce "\\\\?\\UNC\\foo\\A"))
   (test (string->path "\\\\?\\RED\\..\\..") normal-case-path (coerce "\\\\?\\RED\\..\\.."))
 
-  ;; expand-path removes redundant backslashes
+  ;; cleanse-path removes redundant backslashes
   (when (eq? 'windows (system-type))
-    (test (string->path "\\\\?\\\\UNC\\x\\y") expand-path (coerce "\\\\?\\\\UNC\\x\\y"))
-    (test (string->path "\\\\?\\c:\\") expand-path (coerce "\\\\?\\c:\\\\")))
+    (test (string->path "\\\\?\\\\UNC\\x\\y") cleanse-path (coerce "\\\\?\\\\UNC\\x\\y"))
+    (test (string->path "\\\\?\\c:\\") cleanse-path (coerce "\\\\?\\c:\\\\")))
 
-  ;; expand-path removes redundant backslashes, and
-  ;; simplify-path uses expand-path under Windows:
+  ;; cleanse-path removes redundant backslashes, and
+  ;; simplify-path uses cleanse-path under Windows:
   (let ([go
-         (lambda (expand-path)
-           (test (string->path "c:\\") expand-path (coerce "c:"))
-           (test (string->path "\\\\?\\c:\\a\\.") expand-path (coerce "\\\\?\\c:\\\\a\\\\."))
-           (test (string->path "\\\\?\\c:\\a\\\\") expand-path (coerce "\\\\?\\c:\\a\\\\"))
-           (test (string->path "\\\\?\\c:\\a\\.") expand-path (coerce "\\\\?\\c:\\a\\\\."))
-           (test (string->path "\\\\?\\UNC\\a\\b\\.") expand-path (coerce "\\\\?\\UNC\\\\a\\b\\."))
-           (test (string->path "\\\\?\\UNC\\a\\b\\.") expand-path (coerce "\\\\?\\UNC\\\\a\\b\\\\."))
-           (test (string->path "\\\\?\\RED\\\\..") expand-path (coerce "\\\\?\\RED\\.."))
-           (test (string->path "\\\\?\\") expand-path (coerce "\\\\?\\\\")))])
+         (lambda (cleanse-path)
+           (test (string->path "c:\\") cleanse-path (coerce "c:"))
+           (test (string->path "\\\\?\\c:\\a\\.") cleanse-path (coerce "\\\\?\\c:\\\\a\\\\."))
+           (test (string->path "\\\\?\\c:\\a\\\\") cleanse-path (coerce "\\\\?\\c:\\a\\\\"))
+           (test (string->path "\\\\?\\c:\\a\\.") cleanse-path (coerce "\\\\?\\c:\\a\\\\."))
+           (test (string->path "\\\\?\\UNC\\a\\b\\.") cleanse-path (coerce "\\\\?\\UNC\\\\a\\b\\."))
+           (test (string->path "\\\\?\\UNC\\a\\b\\.") cleanse-path (coerce "\\\\?\\UNC\\\\a\\b\\\\."))
+           (test (string->path "\\\\?\\RED\\\\..") cleanse-path (coerce "\\\\?\\RED\\.."))
+           (test (string->path "\\\\?\\") cleanse-path (coerce "\\\\?\\\\")))])
     (when (eq? 'windows (system-type))
-      (go expand-path)
-      (test (string->path "\\\\?\\c:") expand-path (coerce "\\\\?\\c:"))
+      (go cleanse-path)
+      (test (string->path "\\\\?\\c:") cleanse-path (coerce "\\\\?\\c:"))
       (go simplify-path))
     (go (lambda (p) (simplify-path p #f)))
     (test (string->path "a\\b") simplify-path (coerce "a/b") #f)
@@ -709,7 +710,7 @@
   (test (bytes->path #"\\\\?\\\\\\c:") simplify-path (coerce "\\\\?\\\\\\c:") #f)
 
   (when (eq? 'windows (system-type))
-    (test (bytes->path #"\\\\?\\c:\\a\\b//c\\d") expand-path (coerce "\\\\?\\c:\\a\\b//c\\d")))
+    (test (bytes->path #"\\\\?\\c:\\a\\b//c\\d") cleanse-path (coerce "\\\\?\\c:\\a\\b//c\\d")))
 
   (test (bytes->path #"\\\\?\\UNC\\a\\b/c\\") simplify-path (coerce "\\\\?\\\\UNC\\a\\b/c") #f)
   (test (bytes->path #"\\\\a\\b\\") simplify-path (coerce "\\\\?\\\\UNC\\a\\b") #f)
@@ -720,7 +721,7 @@
   (test (bytes->path #"..\\") simplify-path (coerce "\\\\?\\REL\\..") #f)
   (test (bytes->path #"..\\") simplify-path (coerce "\\\\?\\REL\\..\\") #f)
   (when (eq? 'windows (system-type))
-    (test (bytes->path #"\\\\foo\\bar\\") expand-path (coerce "\\\\foo\\bar\\")))
+    (test (bytes->path #"\\\\foo\\bar\\") cleanse-path (coerce "\\\\foo\\bar\\")))
   (test (bytes->path #"\\\\foo\\bar\\") simplify-path (coerce "\\\\foo\\bar\\") #f)
   (test (bytes->path #"\\\\foo\\bar\\") simplify-path (coerce "\\\\?\\UNC\\foo\\bar") #f)
   (test (bytes->path #"\\\\foo\\bar\\") simplify-path (coerce "\\\\?\\UNC\\foo\\bar\\") #f)
