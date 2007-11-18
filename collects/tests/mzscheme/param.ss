@@ -295,10 +295,7 @@
 		      #f)
 
 		(list current-namespace
-		      (list (let ([n (make-base-namespace)])
-                              (parameterize ([current-namespace n])
-                                (namespace-require 'scheme/base))
-                              n)
+		      (list (make-base-namespace)
 			    (make-namespace))
 		      '(begin 0)
 		      exn:fail:syntax?

@@ -6,22 +6,22 @@
              "stxmz-body.ss"
              "define.ss")
 
-  (#%provide make-namespace*
+  (#%provide make-namespace
              free-identifier=?*
              namespace-transformer-require)
 
   (define reflect-var #f)
   
-  (define make-namespace*
+  (define make-namespace
     (case-lambda
-     [() (make-namespace* 'initial)]
+     [() (make-namespace 'initial)]
      [(flag)
       (unless (memq flag '(initial empty))
         (raise-syntax-error 'make-namespace
                             "'initial or 'empty"
                             flag))
-      (let ([new (make-namespace)]
-            [old (variable-reference-namespace (#%variable-reference reflect-var))])
+      (let ([new (make-empty-namespace)]
+            [old (variable-reference->empty-namespace (#%variable-reference reflect-var))])
         (namespace-attach-module old 'mzscheme new)
         (parameterize ([current-namespace new])
           (namespace-require 'mzscheme))

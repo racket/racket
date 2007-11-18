@@ -2513,6 +2513,8 @@ Scheme_Object *scheme_module_exported_list(Scheme_Object *modpath, Scheme_Env *g
 void scheme_run_module(Scheme_Env *menv, int set_ns);
 void scheme_run_module_exptime(Scheme_Env *menv, int set_ns);
 
+Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env);
+
 /*========================================================================*/
 /*                         errors and exceptions                          */
 /*========================================================================*/

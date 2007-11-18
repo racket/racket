@@ -10,7 +10,6 @@
 ;; Check JIT inlining of primitives:
 (parameterize ([current-namespace (make-base-namespace)]
 	       [eval-jit-enabled #t])
-  (namespace-require 'scheme/base)
   (let* ([check-error-message (lambda (name proc)
 				(unless (memq name '(eq? not null? pair?
 							 real? number? boolean? 

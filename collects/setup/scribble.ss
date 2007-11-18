@@ -7,7 +7,6 @@
            setup/main-collects
            scribble/base-render
            scribble/struct
-           syntax/namespace-reflect
            scribble/manual ; really shouldn't be here... see dynamic-require-doc
            (prefix-in html: scribble/html-render)
            (prefix-in latex: scribble/latex-render))
@@ -367,17 +366,17 @@
                   (set-info-time! info (/ (current-inexact-milliseconds) 1000))
                   (void)))))))))
 
-  (define-reflection-anchor anchor)
+  (define-namespace-anchor anchor)
 
   (define (dynamic-require-doc path)
     ;; Use a separate namespace so that we don't end up with all the documentation
     ;;  loaded at once.
     ;; Use a custodian to compensate for examples executed during the build
     ;;  that may not be entirely clean (e.g., leaves a stuck thread).
-    (let ([p (make-namespace)]
+    (let ([p (make-empty-namespace)]
           [c (make-custodian)]
           [ch (make-channel)]
-          [ns (reflection-anchor->namespace anchor)])
+          [ns (namespace-anchor->empty-namespace anchor)])
       (parameterize ([current-custodian c])
         (namespace-attach-module ns 'scribble/base-render p)
         (namespace-attach-module ns 'scribble/html-render p)

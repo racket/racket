@@ -2039,18 +2039,12 @@ static int add_require_renames(Scheme_Object *rn, Scheme_Object *et_rn, Scheme_O
   return add_initial_require_renames(NULL, rn, NULL, et_rn, NULL, dt_rn, NULL, im, idx);
 }
 
-static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
 {
-  Scheme_Env *menv, *env;
-  Scheme_Object *modchain, *name;
+  Scheme_Env *menv;
+  Scheme_Object *modchain;
 
-  env = scheme_get_env(NULL);
-
-  if (!SCHEME_PATHP(argv[0])
-      && !scheme_is_module_path(argv[0]))
-    scheme_wrong_type("module->namespace", "path or module-path", 0, argc, argv);
-
-  name = scheme_module_resolve(scheme_make_modidx(argv[0], scheme_false, scheme_false), 1);
+  name = scheme_module_resolve(scheme_make_modidx(name, scheme_false, scheme_false), 1);
 
   modchain = env->modchain;
   menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(modchain), name);
@@ -2148,7 +2142,7 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
   }
 
   if (menv->lazy_syntax)
-    finish_expstart_module(menv, 1, 0, scheme_null);
+    finish_expstart_module_in_namespace(menv, env);
   if (!menv->et_ran)
     scheme_run_module_exptime(menv, 1);
   scheme_prepare_exp_env(menv);
@@ -2296,6 +2290,20 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
 
   return (Scheme_Object *)menv;
 }
+
+static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
+{
+  Scheme_Env *env;
+
+  env = scheme_get_env(NULL);
+
+  if (!SCHEME_PATHP(argv[0])
+      && !scheme_is_module_path(argv[0]))
+    scheme_wrong_type("module->namespace", "path or module-path", 0, argc, argv);
+
+  return scheme_module_to_namespace(argv[0], env);
+}
+
 
 static Scheme_Object *module_compiled_p(int argc, Scheme_Object *argv[])
 {

@@ -1,7 +1,6 @@
 
 (module main scheme/base
-  (require syntax/namespace-reflect
-           (for-syntax scheme/base))
+  (require (for-syntax scheme/base))
 
   (provide (for-syntax syntax-rules ...)
            (rename-out
@@ -441,7 +440,7 @@
   
   ;; --------------------------------------------------
 
-  (define-reflection-anchor here)
+  (define-namespace-anchor here)
 
   (define (scheme-report-environment n)
     (unless (= n 5)
@@ -454,10 +453,8 @@
     (mk-r5rs #t))
 
   (define (mk-r5rs stx-only?)
-    (let ([n (make-namespace)]
-          [orig (reflection-anchor->namespace here)])
+    (let ([n (namespace-anchor->empty-namespace here)])
       (parameterize ([current-namespace n])
-	(namespace-attach-module orig 'r5rs)
         (if stx-only?
             (namespace-require '(only r5rs
                                       quote quasiquote

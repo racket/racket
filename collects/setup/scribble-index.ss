@@ -8,7 +8,6 @@
          scheme/class
          setup/getinfo
          setup/dirs
-         syntax/namespace-reflect
          mzlib/serialize
          scheme/file)
 
@@ -30,7 +29,7 @@
 
 (define-struct doc (source dest))
 
-(define-reflection-anchor here)
+(define-namespace-anchor here)
 
 (define (load-xref)
   (let* ([renderer (new (html:render-mixin render%) 
@@ -64,7 +63,7 @@
                             dirs)))]
          [ci (send renderer collect null null)])
     (map (lambda (doc)
-           (parameterize ([current-namespace (reflection-anchor->namespace here)])
+           (parameterize ([current-namespace (namespace-anchor->empty-namespace here)])
              (with-handlers ([exn:fail? (lambda (exn) exn)])
                (let ([r (with-input-from-file (build-path (doc-dest doc) "xref-out.ss")
                           read)])

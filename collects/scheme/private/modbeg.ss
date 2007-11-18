@@ -7,14 +7,7 @@
   (#%provide module-begin)
 
   (define-values (print-values)
-    (lambda vs
-      (for-each (lambda (v)
-                  (if (void? v)
-                      (void)
-                      (begin
-                        (print v)
-                        (newline))))
-                vs)))
+    (lambda vs (for-each (current-print) vs)))
 
   (define-syntaxes (module-begin)
     (lambda (stx)

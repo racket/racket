@@ -455,9 +455,9 @@ void scheme_init_thread(Scheme_Env *env)
 
 
 
-  scheme_add_global_constant("make-namespace",
+  scheme_add_global_constant("make-empty-namespace",
 			     scheme_make_prim_w_arity(scheme_make_namespace,
-						      "make-namespace",
+						      "make-empty-namespace",
 						      0, 0),
 			     env);
 

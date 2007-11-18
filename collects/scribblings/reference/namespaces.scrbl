@@ -6,14 +6,12 @@
 See @secref["namespace-model"] for basic information on the
 namespace model.
 
-A new namespace is created with the @scheme[make-namespace] procedure,
-which returns a first-class namespace value. A namespace is used by
-setting the @scheme[current-namespace] parameter value, or by
-providing the namespace to procedures such as @scheme[eval] and
+A new namespace is created with procedures like
+@scheme[make-empty-namespace], and @scheme[make-base-namespace], which
+return a first-class namespace value. A namespace is used by setting
+the @scheme[current-namespace] parameter value, or by providing the
+namespace to procedures such as @scheme[eval] and
 @scheme[eval-syntax].
-
-[FIXME: define the initial namespace.]
-
 
 @defproc[(namespace? [v any/c]) boolean?]{
 
@@ -21,10 +19,67 @@ Returns @scheme[#t] if @scheme[v] is a namespace value, @scheme[#f]
 otherwise.}
 
 
-@defproc[(make-namespace) namespace?]{
+@defproc[(make-empty-namespace) namespace?]{
 
-Creates a new namespace that is empty. Attach modules from an existing
-namespace to the new one with @scheme[namespace-attach-module].}
+Creates a new namespace that is empty, and whose module registry
+contains no mappings. Attach modules from an existing namespace to the
+new one with @scheme[namespace-attach-module].}
+
+
+@defproc[(make-base-empty-namespace) namespace?]{
+
+Creates a new empty namespace, but with @schememodname[scheme/base]
+attached.}
+
+
+@defproc[(make-base-namespace) namespace?]{
+
+Creates a new namespace with @schememodname[scheme/base] attached and
+@scheme[require]d into the top-level environment.}
+
+
+@defform[(define-namespace-anchor id)]{
+
+Binds @scheme[id] to a namespace anchor that can be used with
+@scheme[namespace-anchor->empty-namespace] and
+@scheme[namespace-anchor->namespace].
+
+This form can be used only in a @tech{top-level context} or in a
+@tech{module-context}.}
+
+
+@defproc[(namespace-anchor? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a namespace-anchor value,
+@scheme[#f] otherwise.}
+
+
+@defproc[(namespace-anchor->empty-namespace [a namespace-anchor?]) namespace?]{
+
+Returns an empty namespace that shares a module registry with the
+source of the anchor.
+
+If the anchor is from a @scheme[define-namespace-anchor] form in a
+module context, then the source is the namespace in which the
+containing module is instantiated at @tech{phase} 0. If the anchor is
+from a @scheme[define-namespace-anchor] form in a top-level content,
+then the source is the namespace in which the anchor definition was
+evaluated.}
+
+
+@defproc[(namespace-anchor->namespace [a namespace-anchor?]) namespace?]{
+
+Returns a namespace corresponding to the source of the anchor.
+
+If the anchor is from a @scheme[define-namespace-anchor] form in a
+module context, then the result is a namespace obtained via
+@scheme[module->namespace] using the resolved name of the enclosing
+module and the module registry of the module instance at @tech{phase}
+0.
+
+If the anchor is from a @scheme[define-namespace-anchor] form in a
+top-level content, then the result is the namespace in which the
+anchor definition was evaluated.}
 
 
 @defparam[current-namespace n namespace?]{

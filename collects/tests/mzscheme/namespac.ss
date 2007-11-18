@@ -82,8 +82,6 @@
 (arity-test namespace-undefine-variable! 1 2)
 
 (define n (make-base-namespace))
-(parameterize ([current-namespace n])
-  (namespace-require 'scheme/base))
 (test #t 'same-with-arg-and-param
       ((lambda (a b)
 	 (and (andmap (lambda (ai) (memq ai b)) a)

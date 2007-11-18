@@ -846,7 +846,7 @@
 
 (let ()
   (define n (current-namespace))
-  (define n2 (make-base-namespace))
+  (define n2 (make-empty-base-namespace))
   (define i (make-inspector))
 
 
@@ -1070,7 +1070,6 @@
 (let ([go-once
        (lambda (eval)
 	 (parameterize ([current-namespace (make-base-namespace)])
-           (namespace-require 'scheme/base)
 	   (eval '(module mm scheme/base
                     (require (for-syntax scheme/base))
 		    (define-syntax (define$ stx)
@@ -1092,7 +1091,6 @@
 	   (test '(1 2 7 8) eval '(list a b c d)))
 
 	 (parameterize ([current-namespace (make-base-namespace)])
-           (namespace-require 'scheme/base)
 	   (eval '(module mm scheme/base
                     (require (for-syntax scheme/base))
 		    (define-syntax (define$ stx)
@@ -1176,7 +1174,6 @@
                             (test #f 'load-ok load?))
                           (make-resolved-module-path 'a))
                         (old name base stx load?))])])
-    (namespace-require 'scheme/base)
     (let ([a-code '(module a scheme/base
 		     (provide x y)
 		     (define x 1)
@@ -1193,7 +1190,6 @@
 			(parameterize ([read-accept-compiled #t])
 			  (read (open-input-bytes (get-output-bytes p))))))]
 	    [x-id (parameterize ([current-namespace (make-base-namespace)])
-                    (namespace-require 'scheme/base)
                     (printf "here\n")
 		    (eval a-code)
 		    (eval '(require 'a))
@@ -1207,7 +1203,6 @@
 	(test #t eval '(free-identifier=? (f) #'x))
 	(test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
 	(parameterize ([current-namespace (make-base-namespace)])
-          (namespace-require 'scheme/base)
 	  (eval '(module a scheme/base
 		   (provide y)
 		   (define y 3)))

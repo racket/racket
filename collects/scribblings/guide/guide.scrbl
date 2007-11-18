@@ -91,7 +91,7 @@ printed output.
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "reflection"]{Reflection and Dynamic Evaluation}
+@include-section["namespaces.scrbl"]
 
 
 @; ----------------------------------------------------------------------

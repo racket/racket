@@ -29,7 +29,7 @@
              (all-from "private/qqstx.ss")
              (all-from "private/define.ss")
              (all-from-except '#%kernel #%module-begin #%datum 
-                              if make-namespace
+                              if make-empty-namespace
                               syntax->datum datum->syntax
                               free-identifier=?
                               free-transformer-identifier=?
@@ -45,7 +45,7 @@
              namespace-transformer-require
              (rename cleanse-path expand-path)
              (rename if* if)
-             (rename make-namespace* make-namespace)
+             make-namespace
              #%top-interaction
              (rename datum #%datum)
              (rename mzscheme-in-stx-module-begin #%module-begin)

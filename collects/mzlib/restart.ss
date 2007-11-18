@@ -1,7 +1,6 @@
 
 (module restart scheme/base
-  (require "cmdline.ss"
-	   scheme/namespace)
+  (require "cmdline.ss")
 
   (provide restart-mzscheme)
 
@@ -95,7 +94,7 @@
 	 (unless (null? rest)
 	   (set! args rest))
 	 ;(when args (set! rest args))
-	 (let ([n (make-base-namespace)]
+	 (let ([n (make-base-empty-namespace)]
 	       [argv (if args (list->vector args) (vector))])
 	   (parameterize ([current-command-line-arguments argv])
 	     (thread-wait

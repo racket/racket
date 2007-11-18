@@ -339,12 +339,9 @@ with some syntactic and name changes.
       module-template-identifier=?    -> free-template-identifier=?
       module-label-identifier=?       -> free-label-identifier=?
 
- * The `make-namespace' function always creates an empty
-   namespace. The `make-base-namespace' function from the
-   `scheme/namespace' library creates a namespace to which
-   `scheme/base' is attached, but not required into the top-level
-   environment.
-
-   See also the new `syntax/reflect-namespace' library, which provides
-   a syntactic form and function for obtaining a namespace for the
-   enclosing module.
+ * Instead of `make-namespace': `make-empty-namespace' always creates
+   an empty namespace; `make-empty-base-namespace' creates a namespace
+   to which `scheme/base' is attached, but not required into the
+   top-level environment; `make-base-namespace' function creates a
+   namespace where `scheme/base' is `require'd into the top-level
+   environment. See also `define-namespace-anchor'.

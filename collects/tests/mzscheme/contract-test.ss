@@ -9,7 +9,6 @@
   (define contract-namespace 
     (let ([n (make-base-namespace)])
       (parameterize ([current-namespace n])
-        (namespace-require 'scheme/base)
         (namespace-require '(for-syntax scheme/base))
         (namespace-require '(for-template scheme/base))
         (namespace-require 'scheme/contract)

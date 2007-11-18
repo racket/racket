@@ -76,7 +76,9 @@ static Scheme_Object *namespace_set_variable_value(int, Scheme_Object *[]);
 static Scheme_Object *namespace_undefine_variable(int, Scheme_Object *[]);
 static Scheme_Object *namespace_mapped_symbols(int, Scheme_Object *[]);
 static Scheme_Object *namespace_module_registry(int, Scheme_Object *[]);
+static Scheme_Object *variable_module_path(int, Scheme_Object *[]);
 static Scheme_Object *variable_namespace(int, Scheme_Object *[]);
+static Scheme_Object *variable_top_level_namespace(int, Scheme_Object *[]);
 static Scheme_Object *now_transforming(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_exp_time_value(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_exp_time_name(int argc, Scheme_Object *argv[]);
@@ -510,9 +512,19 @@ static void make_init_env(void)
 						      1, 1),
 			     env);
 
-  scheme_add_global_constant("variable-reference-namespace",
+  scheme_add_global_constant("variable-reference->resolved-module-path",
+			     scheme_make_prim_w_arity(variable_module_path,
+						      "variable-reference->resolved-module-path",
+						      1, 1),
+			     env);
+  scheme_add_global_constant("variable-reference->empty-namespace",
 			     scheme_make_prim_w_arity(variable_namespace,
-						      "variable-reference-namespace",
+						      "variable-reference->empty-namespace",
+						      1, 1),
+			     env);
+  scheme_add_global_constant("variable-reference->top-level-namespace",
+			     scheme_make_prim_w_arity(variable_top_level_namespace,
+						      "variable-reference->top-level-namespace",
 						      1, 1),
 			     env);
 
@@ -3759,7 +3771,46 @@ static Scheme_Object *namespace_module_registry(int argc, Scheme_Object **argv)
   return (Scheme_Object *)((Scheme_Env *)argv[0])->module_registry;
 }
 
+static Scheme_Object *do_variable_namespace(const char *who, int tl, int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v;
+  Scheme_Env *env;
+  int ph;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_global_ref_type))
+    env = NULL;
+  else {
+    v = SCHEME_PTR_VAL(argv[0]);
+    env = ((Scheme_Bucket_With_Home *)v)->home;
+    if (tl && env->module) {
+      env = NULL;
+    } else {
+      ph = env->phase;
+      while (ph--) {
+        env = env->template_env;
+      }
+    }
+  }
+
+  if (!env)
+    scheme_wrong_type(who, 
+                      (tl ? "top-level variable-reference" : "variable-reference"), 
+                      0, argc, argv);
+
+  return (Scheme_Object *)make_env(env, 0, 0);
+}
+
 static Scheme_Object *variable_namespace(int argc, Scheme_Object *argv[])
+{
+  return do_variable_namespace("variable-reference->empty-namespace", 0, argc, argv);
+}
+
+static Scheme_Object *variable_top_level_namespace(int argc, Scheme_Object *argv[])
+{
+  return do_variable_namespace("variable-reference->top-level-namespace", 1, argc, argv);
+}
+
+static Scheme_Object *variable_module_path(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v;
   Scheme_Env *env;
@@ -3769,14 +3820,15 @@ static Scheme_Object *variable_namespace(int argc, Scheme_Object *argv[])
   else {
     v = SCHEME_PTR_VAL(argv[0]);
     env = ((Scheme_Bucket_With_Home *)v)->home;
-    if (env->phase)
-      env = NULL;
   }
 
   if (!env)
-    scheme_wrong_type("variable-reference-namespace", "variable-reference (phase 0)", 0, argc, argv);
+    scheme_wrong_type("variable-reference->resolved-module-path", "variable-reference", 0, argc, argv);
 
-  return (Scheme_Object *)env;
+  if (env->module)
+    return env->module->modname;
+  else
+    return scheme_false;
 }
 
 static Scheme_Object *

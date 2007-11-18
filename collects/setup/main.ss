@@ -18,7 +18,7 @@
 
   (define-values (make-kernel-namespace)
     (lambda ()
-      (let-values ([(ns) (make-namespace)]
+      (let-values ([(ns) (make-empty-namespace)]
                    [(cns) (current-namespace)])
         (namespace-attach-module cns ''#%builtin ns)
         ns)))

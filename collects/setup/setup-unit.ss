@@ -14,8 +14,6 @@
            mzlib/process
            planet/planet-archives
            planet/private/planet-shared
-           scheme/namespace
-           syntax/namespace-reflect
            
 	   "option-sig.ss"
 	   compiler/sig
@@ -28,7 +26,7 @@
 	   "dirs.ss"
 	   "main-collects.ss")
 
-  (define-reflection-anchor anchor)
+  (define-namespace-anchor anchor)
 
   (provide setup@)
 
@@ -582,7 +580,7 @@
         ;; already loaded, create a fresh namespace before calling
         ;; this function.
 	;; To avoid keeping modules in memory across collections,
-	;; pass `make-namespace' as `get-namespace', otherwise use
+	;; pass `make-base-namespace' as `get-namespace', otherwise use
 	;; `current-namespace' for `get-namespace'.
         (for-each (lambda (cc)
 		    (parameterize ([current-namespace (get-namespace)])
@@ -625,8 +623,8 @@
                                 (dynamic-require `(lib "zo-compile.ss" ,(compile-mode)) 'zo-compile))]
                   [orig-kinds (use-compiled-file-paths)]
                   [orig-compile (current-compile)]
-                  [orig-namespace (reflection-anchor->namespace anchor)])
-              (parameterize ([current-namespace (make-base-namespace)]
+                  [orig-namespace (namespace-anchor->empty-namespace anchor)])
+              (parameterize ([current-namespace (make-base-empty-namespace)]
                              [current-compile zo-compile]
                              [use-compiled-file-paths (list mode-dir)]
                              [current-compiler-dynamic-require-wrapper
@@ -665,7 +663,7 @@
                                         (directory-list c))))))
                       ;; Make .zos
                       (compile-directory-zos dir info))
-                    make-base-namespace))))
+                    make-base-empty-namespace))))
       (when (make-so) (make-it "extensions" compile-directory-extension current-namespace))
 
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -773,11 +771,17 @@
       (when (make-docs)
         (setup-printf "Building documentation")
         (doc:verbose (verbose))
-        (doc:setup-scribblings (if (and (null? x-specific-collections)
-                                        (null? x-specific-planet-dirs))
-                                   #f
-                                   (map cc-path ccs-to-compile))
-                               #f))
+        (with-handlers ([exn:fail? (lambda (exn)
+                                     (setup-printf 
+                                      "Docs failure: ~a"
+                                      (if (exn? exn)
+                                          (exn-message exn)
+                                          exn)))])
+          (doc:setup-scribblings (if (and (null? x-specific-collections)
+                                          (null? x-specific-planet-dirs))
+                                     #f
+                                     (map cc-path ccs-to-compile))
+                                 #f)))
 
       (when (doc-pdf-dest)
         (setup-printf "Building PDF documentation (via pdflatex)")

@@ -22,9 +22,6 @@
 	   syntax/toplevel
 	   syntax/moddep
 
-           scheme/namespace
-           syntax/namespace-reflect
-
            mzlib/list
            scheme/file
 	   mzlib/compile ; gets compile-file
@@ -33,8 +30,8 @@
 
   (provide compiler@)
 
-  (define-reflection-anchor anchor)
-  (define orig-namespace (reflection-anchor->namespace anchor))
+  (define-namespace-anchor anchor)
+  (define orig-namespace (namespace-anchor->empty-namespace anchor))
 
   ;; ;;;;;;;; ----- The main compiler unit ------ ;;;;;;;;;;
   (define-unit compiler@
@@ -170,10 +167,7 @@
 
       (define (compile-zos prefix)
 	(let ([n (if prefix 
-                     (let ([ns (make-base-namespace)])
-                       (parameterize ([current-namespace ns])
-                         (namespace-require 'scheme/base)
-                         ns))
+                     (make-base-namespace)
                      (current-namespace))])
 	  (when prefix
 	    (eval prefix n))

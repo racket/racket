@@ -32,8 +32,7 @@
 	   (lib "link.ss" "dynext")
 	   (lib "pack.ss" "setup")
 	   (lib "getinfo.ss" "setup")
-	   (lib "dirs.ss" "setup")
-           scheme/namespace)
+	   (lib "dirs.ss" "setup"))
 
   (define dest-dir (make-parameter #f))
   (define auto-dest-dir (make-parameter #f))
@@ -486,7 +485,7 @@
 					    'auto
 					    (dest-dir)))]
     [(make-zo)
-     (let ([n (make-base-namespace)]
+     (let ([n (make-base-empty-namespace)]
 	   [mc (dynamic-require '(lib "mzlib/cm.ss")
 				'managed-compile-zo)]
 	   [cnh (dynamic-require '(lib "mzlib/cm.ss")

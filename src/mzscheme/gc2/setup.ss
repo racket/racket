@@ -78,7 +78,7 @@
 
 (let ([mk-cm make-compilation-manager-load/use-compiled-handler]
       [old-namespace (current-namespace)])
-  (current-namespace (make-namespace))
+  (current-namespace (make-empty-namespace))
   (namespace-attach-module old-namespace ''#%builtin)
   (use-compiled-file-paths (list "compiled"))
   (current-load/use-compiled (mk-cm))

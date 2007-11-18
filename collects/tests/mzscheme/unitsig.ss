@@ -608,7 +608,6 @@
 (test 120
       'namespace
       (parameterize ([current-namespace (make-base-namespace)])
-        (namespace-require 'scheme/base)
 	(namespace-variable-bind/invoke-unit/sig
 	 (foo)
 	 (unit/sig (foo)

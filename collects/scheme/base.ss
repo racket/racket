@@ -6,6 +6,7 @@
              "private/qqstx.ss"
              "private/stx.ss"
              "private/kw-file.ss"
+             "private/namespace.ss"
              (for-syntax "private/stxcase-scheme.ss"))
 
   (#%provide (all-from-except "private/pre-base.ss"
@@ -21,6 +22,7 @@
              identifier?
              (all-from "private/stxcase-scheme.ss")
              (all-from "private/qqstx.ss")
+             (all-from "private/namespace.ss")
              (for-syntax syntax-rules syntax-id-rules ... _)
              (rename -open-input-file open-input-file)
              (rename -open-output-file open-output-file)
