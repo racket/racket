@@ -195,7 +195,7 @@ instance of @schememodname[scheme/class]. Moreover, that instance is
 the same as the one imported into the module, so the class datatype is
 shared.
 
-@; {
+@;{
 
 @; ----------------------------------------------------------------------
 
