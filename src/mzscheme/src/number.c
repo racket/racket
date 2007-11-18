@@ -2157,6 +2157,18 @@ static Scheme_Object *magnitude(int argc, Scheme_Object *argv[])
       a[0] = i;
       return scheme_exact_to_inexact(1, a);
     }
+    if (SCHEME_FLOATP(i)) {
+      double d;
+      d = SCHEME_FLOAT_VAL(i);
+      if (MZ_IS_POS_INFINITY(d)) {
+        if (SCHEME_FLOATP(r)) {
+          d = SCHEME_FLOAT_VAL(r);
+          if (MZ_IS_NAN(d))
+            return scheme_nan_object;
+        }
+        return scheme_inf_object;
+      }
+    }
     q = scheme_bin_div(r, i);
     q = scheme_bin_plus(scheme_make_integer(1),
 			scheme_bin_mult(q, q));
