@@ -25,10 +25,9 @@
                      (when (equal? lang-spec spec-in-file)
                        (set! found-language? lang)
                        (set! settings (send lang metadata->settings str))
-                       (let ([locked? (send text is-locked?)])
-                         (when locked? (send text lock #f))
-                         (send text delete 0 (send text paragraph-start-position lines))
-                         (when locked? (send text lock #t))))))))))
+                       (send text while-unlocked
+                             (λ () 
+                               (send text delete 0 (send text paragraph-start-position lines)))))))))))
          all-languages)
         
         ;; check to see if it looks like the module language.

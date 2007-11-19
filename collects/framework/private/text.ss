@@ -880,7 +880,8 @@ WARNING: printf is rebound in the body of the unit to always
   
   (define file<%>
     (interface (editor:file<%> basic<%>)
-      get-read-write?))
+      get-read-write?
+      while-unlocked))
   
   (define file-mixin
     (mixin (editor:file<%> basic<%>) (file<%>)
@@ -895,6 +896,15 @@ WARNING: printf is rebound in the body of the unit to always
                                    #t)
                               #t)])
           (set! read-write? can-edit?)))
+      
+      (define/public (while-unlocked t)
+        (let ([unlocked? 'unint])
+          (dynamic-wind
+           (λ () 
+             (set! unlocked? read-write?)
+             (set! read-write? #t))
+           (λ () (t))
+           (λ () (set! read-write? unlocked?)))))
       
       (define/augment (can-insert? x y)
         (and read-write? (inner #t can-insert? x y)))
