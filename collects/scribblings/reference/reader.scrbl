@@ -750,7 +750,7 @@ constrained: the @litchar{#lang} must be followed by a single space
 terminated by @schemelink[char-whitespace?]{whitespace} or an
 end-of-file.  The sequence must not start or end with @litchar{/}. A
 sequence @litchar{#lang }@nonterm{name} is equivalent to
-@litchar{#reader }@nonterm{name}@litchar{/lang/reader)}.
+@litchar{#reader }@nonterm{name}@litchar{/lang/reader}.
 
 By convention, @litchar{#lang} normally appears at the beginning of a
 file, possibly after comment forms, to specify the syntax of a module.
