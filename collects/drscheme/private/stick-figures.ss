@@ -3,15 +3,48 @@
            (lib "pretty.ss")
            (lib "mred.ss" "mred"))
   
-  (provide running-canvas%
-           get-running-bitmap)
-  
   (define head-size 40)
-  (define running-factor 1/2)
+  (define small-bitmap-factor 1/2)
   (define small-factor 1/5)
   (define line-size 2)
   
   (define waiting-points
+    '((head 47 2)
+      (neck 46 15)
+      (shoulders 38 42)
+      (left-shoulder 18 39)
+      (right-shoulder 65 42)
+      (left-elbow 8 74)
+      (right-elbow 68 76)
+      (left-hand 24 79)
+      (right-hand 56 83)
+      (waist 37 87)
+      (left-knee 23 117)
+      (right-knee 57 117)
+      (left-ankle 21 149)
+      (right-ankle 59 148)
+      (left-toe 3 148)
+      (right-toe 79 145)))
+  
+  (define waiting-points/2
+    '((head 47 2)
+      (neck 46 15)
+      (shoulders 38 42)
+      (left-shoulder 18 39)
+      (right-shoulder 65 42)
+      (left-elbow 8 74)
+      (right-elbow 68 76)
+      (left-hand 24 79)
+      (right-hand 56 83)
+      (waist 37 87)
+      (left-knee 23 117)
+      (right-knee 57 117)
+      (left-ankle 21 149)
+      (right-ankle 59 148)
+      (left-toe 3 148)
+      (right-toe 79 132)))
+  
+  (define waiting-points/old
     '((head 55 0)
       (neck 43 18)
       (shoulders 37 33)
@@ -29,7 +62,7 @@
       (left-toe 0 154)
       (right-toe 83 146)))
   
-  (define waiting-points/2
+  (define waiting-points/2/old
     '((head 55 0)
       (neck 43 18)
       (shoulders 37 33)
@@ -65,58 +98,6 @@
       (left-toe 14 146)
       (right-toe 109 132)))
   
-  (define running-canvas%
-    (class canvas%
-      (inherit get-dc refresh get-client-size)
-      (define/public (set-running r?) 
-        (unless (eq? r? is-running?)
-          (set! is-running? r?)
-          (refresh)))
-      (define is-running? #f)
-      (define toggle? #t)
-      (define timer #f)
-      (define inside? #f)
-      
-      (define/override (on-event evt)
-        (let-values ([(w h) (get-client-size)])
-          (let ([new-inside?
-                 (and (<= 0 (send evt get-x) w)
-                      (<= 0 (send evt get-y) h))]
-                [old-inside? inside?])
-            (set! inside? new-inside?)
-            (cond
-              [(and new-inside? (not old-inside?))
-               (unless is-running?
-                 (set! timer
-                       (new timer%
-                            [notify-callback 
-                             (λ ()
-                               (set! toggle? (not toggle?))
-                               (refresh))]
-                            [interval 200])))]
-              [(and (not new-inside?) old-inside? timer)
-               (send timer stop)
-               (set! timer #f)]))))
-      
-      (define-values (w h running-dx running-dy waiting-dx waiting-dy)
-        (get-size-parameters))
-      
-      (define/override (on-paint) 
-        (if is-running?
-            (draw-callback (get-dc) small-factor #f 
-                           running-points
-                           running-dx running-dy line-size)
-            (draw-callback (get-dc) small-factor #f
-                           (if toggle? waiting-points waiting-points/2)
-                           waiting-dx waiting-dy line-size)))
-      
-      (super-new [stretchable-width #f]
-                 [stretchable-height #f]
-                 [style '(transparent)])
-      (inherit min-width min-height)
-      (min-width w)
-      (min-height h)))
-  
   (define (get-size-parameters)
     (let-values ([(min-rx min-ry) (get-max/min-x/y min running-points)]
                  [(max-rx max-ry) (get-max/min-x/y max running-points)]
@@ -134,59 +115,44 @@
              [waiting-dy (+ 1 (- (/ h 2) (/ waiting-h 2)))])
         (values w h running-dx running-dy waiting-dx waiting-dy))))
   
-  (define running-bitmap #f)
-  (define (get-running-bitmap)
-    (unless running-bitmap
-      (let-values ([(min-rx min-ry) (get-max/min-x/y min running-points)]
-                   [(max-rx max-ry) (get-max/min-x/y max running-points)])
-        (let* ([margin 2]
-               [bw (+ margin margin (ceiling (* small-factor (- max-rx min-rx))))]
-               [bh (+ margin margin (ceiling (* small-factor (- max-ry min-ry))))]
-               [w (ceiling (* bw running-factor))] 
-               [h (ceiling (* bh running-factor))]
-               [bm-big (make-object bitmap% bw bh)]
-               [bm-solid (make-object bitmap% w h)]
-               [bm-small (make-object bitmap% w h)]
-               [bdc-big (make-object bitmap-dc% bm-big)]
-               [bdc-solid (make-object bitmap-dc% bm-solid)]
-               [bdc-small (make-object bitmap-dc% bm-small)]
-               [green (make-object color% 30 100 30)])
-          (send bdc-big clear)
-          (draw-callback bdc-big small-factor #f running-points
-                         (+ margin (- (* small-factor min-rx)))
-                         (+ margin (- (* small-factor min-ry)))
-                         3)
-          
-          (send bdc-small clear)
-          (send bdc-small set-scale running-factor running-factor)
-          (send bdc-small draw-bitmap bm-big 0 0)
-          (send bdc-small set-scale 1 1)
-          
-          (send bdc-solid set-brush green 'solid)
-          (send bdc-solid set-pen green 1 'solid)
-          (send bdc-solid draw-rectangle 0 0 w h)
-          
-          (send bdc-solid set-bitmap #f)
-          (send bdc-small set-bitmap #f)
-          (send bdc-big set-bitmap #f)
-          
-          (send bm-solid set-loaded-mask bm-small)
-          (set! running-bitmap bm-solid))))
-    running-bitmap)
+  (define (get-bitmap points green)
+    (let-values ([(min-rx min-ry) (get-max/min-x/y min points)]
+                 [(max-rx max-ry) (get-max/min-x/y max points)])
+      (let* ([margin 2]
+             [bw (+ margin margin (ceiling (* small-factor (- max-rx min-rx))))]
+             [bh (+ margin margin (ceiling (* small-factor (- max-ry min-ry))))]
+             [w (ceiling (* bw small-bitmap-factor))] 
+             [h (ceiling (* bh small-bitmap-factor))]
+             [bm-big (make-object bitmap% bw bh)]
+             [bm-solid (make-object bitmap% w h)]
+             [bm-small (make-object bitmap% w h)]
+             [bdc-big (make-object bitmap-dc% bm-big)]
+             [bdc-solid (make-object bitmap-dc% bm-solid)]
+             [bdc-small (make-object bitmap-dc% bm-small)])
+        (send bdc-big clear)
+        (draw-callback bdc-big small-factor #f points
+                       (+ margin (- (* small-factor min-rx)))
+                       (+ margin #;(- (* small-factor min-ry)))
+                       3)
+        
+        (send bdc-small clear)
+        (send bdc-small set-scale small-bitmap-factor small-bitmap-factor)
+        (send bdc-small draw-bitmap bm-big 0 0)
+        (send bdc-small set-scale 1 1)
+        
+        (send bdc-solid set-brush green 'solid)
+        (send bdc-solid set-pen green 1 'solid)
+        (send bdc-solid draw-rectangle 0 0 w h)
+        
+        (send bdc-solid set-bitmap #f)
+        (send bdc-small set-bitmap #f)
+        (send bdc-big set-bitmap #f)
+        
+        (send bm-solid set-loaded-mask bm-small)
+        bm-solid)))
   
-  (define (test-running-canvas)
-    (let* ([f (new frame% [label ""])]
-           [c (new running-canvas% [parent f])])
-      (new button% [parent f]
-           [label "on"]
-           [callback
-            (λ (x y) (send c set-running #t))])
-      (new button% [parent f]
-           [label "off"]
-           [callback
-            (λ (x y) (send c set-running #f))])
-      (send f show #t)))
-  
+  (define (get-running-bitmap) (get-bitmap running-points (make-object color% 30 100 30)))
+  (define (get-waiting-bitmap) (get-bitmap waiting-points (make-object color% 30 100 30)))
   
   (define (normalize points)
     (let-values ([(min-x min-y) (get-max/min-x/y min points)])
@@ -258,7 +224,7 @@
               (+ dy (* factor (list-ref to-p 2)))))))
   
   ;; Use this thunk to edit the points.
-  ;; Click the 'show' button to print out the pionts and then
+  ;; Click the 'show' button to print out the points and then
   ;; copy and paste them back into this file.
   (define (edit-points points)
     (define c%
@@ -325,6 +291,7 @@
                              (draw-callback dc small-factor #f waiting-points 30 0 line-size)
                              (draw-callback dc small-factor #f points 30 50 line-size)
                              (draw-callback dc small-factor #f points 0 50 line-size))]))
+    (define cbitmap (new message% [label (get-bitmap points (send the-color-database find-color "black"))] [parent cp]))
     (define bp (new horizontal-panel% [parent f] [stretchable-height #f]))
     (new button%
          [parent bp]
@@ -339,30 +306,36 @@
           (λ (x y)
             (set! show-dots? (not show-dots?))
             (send cbig refresh))])
+    (new button%
+         [parent bp]
+         [label "Bitmap"]
+         [callback
+          (λ (x y)
+            (send cbitmap set-label (get-bitmap points (send the-color-database find-color "black"))))])
     (send f show #t))
   
-  #;
   (let ()
     (define f (new frame% [label ""]))
-    (define m (new message% [label (get-running-bitmap)] [parent f]))
+    (define hp (new horizontal-panel% [parent f]))
+    (define left-column (new vertical-panel% [parent hp]))
+    (define right-column (new vertical-panel% [parent hp]))
+    (define green-rb (get-running-bitmap))
+    (define black (send the-color-database find-color "black"))
+    (define rb (get-bitmap running-points black))
+    (define wb (get-bitmap waiting-points black))
+    (define wb2 (get-bitmap waiting-points/2 black))
+    (define rm (new message% [label rb] [parent left-column]))
+    (define grm (new message% [label green-rb] [parent right-column]))
+    (new message% [label wb] [parent left-column])
+    (new message% [label wb2] [parent left-column])
+    (new message% [label wb2] [parent right-column])
+    (new message% [label wb] [parent right-column])
     (new grow-box-spacer-pane% [parent f])
-    (send (get-running-bitmap) save-file (build-path (collection-path "icons") "run.png") 'png)
+    (send green-rb save-file (build-path (collection-path "icons") "run.png") 'png)
+    (send rb save-file (build-path (collection-path "icons") "b-run.png") 'png)
+    (send wb save-file (build-path (collection-path "icons") "b-wait.png") 'png)
+    (send wb2 save-file (build-path (collection-path "icons") "b-wait2.png") 'png)
     (send f show #t))
-  
-  #;
-  (let ()
-    (define f (new frame% [label ""]))
-    (define c (new running-canvas% [parent f]))
-    (new button%
-         [label "Run"]
-         [parent f]
-         [callback (λ (x y) (send c set-running #t))])
-    (new button%
-         [label "Wait"]
-         [parent f]
-         [callback (λ (x y) (send c set-running #f))])
-    (send c set-running #t)
-    (send f show #t))
-  
-  #;(edit-points waiting-points)
+
+  #;(edit-points waiting-points/2)
   #;(edit-points running-points))

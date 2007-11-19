@@ -25,7 +25,12 @@
                      (when (equal? lang-spec spec-in-file)
                        (set! found-language? lang)
                        (set! settings (send lang metadata->settings str))
-                       (send text delete 0 (send text paragraph-start-position lines)))))))))
+                       (let ([locked? (send text is-locked?)])
+                         (when locked? (send text lock #f))
+                         (printf "before ~s\n" (send text get-text 0 (send text last-position)))
+                         (send text delete 0 (send text paragraph-start-position lines))
+                         (printf "after ~s\n" (send text get-text 0 (send text last-position)))
+                         (when locked? (send text lock #t))))))))))
          all-languages)
         
         ;; check to see if it looks like the module language.

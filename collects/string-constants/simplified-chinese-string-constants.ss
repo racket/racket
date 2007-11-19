@@ -123,10 +123,7 @@
   
   ;;; info bar at botttom of drscheme frame
   (collect-button-label "垃圾回收")
-  (read-only-line1 "只")
-  (read-only-line2 "读")
-  (read/write-line1 "读/")
-  (read/write-line2 "写")
+  (read-only "只读")
   (auto-extend-selection "自动扩展")
   (overwrite "覆盖")
   (running "运行中")
@@ -886,7 +883,6 @@
   
   ; used in the bottom left of the drscheme frame as the label
   ; above the programming language's name
-  (programming-language-label "编程语言：")
   ; used the popup menu from the just above; greyed out and only
   ; visible when some languages are in the history
   (recent-languages "最近使用的语言：")

@@ -98,10 +98,7 @@
 
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
- (read-only-line1 "Lese-")
- (read-only-line2 "Modus")
- (read/write-line1 "Schreib-")
- (read/write-line2 "Modus")
+ (read-only "Lese Modus")
  (auto-extend-selection "Automatisch erweitern")
  (overwrite "Überschreiben")
  (running "Programm läuft")
@@ -854,7 +851,6 @@
 
  ;; used in the bottom left of the drscheme frame as the label
  ;; above the programming language's name
- (programming-language-label "Programmiersprache:")
  ;; used the popup menu from the just above; greyed out and only
  ;; visible when some languages are in the history
  (recent-languages "Kürzlich verwendete Sprachen:")

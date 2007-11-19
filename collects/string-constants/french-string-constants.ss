@@ -196,10 +196,7 @@
 
   ;;; info bar at botttom of drscheme frame
   (collect-button-label "Ramassage") ; de miettes
-  (read-only-line1 "Lecture")
-  (read-only-line2 "seulement")
-  (read/write-line1 "Lecture/")
-  (read/write-line2 "écriture")
+  (read-only "Lecture seulement")
   (auto-extend-selection "Autosélection") ; "Sélection auto-étendable" ?
   (overwrite "Correction") ; vs Insertion ? surimpression ?
   (running "en cours")
@@ -959,8 +956,6 @@
   (decimal-notation-for-rationals "Utiliser la notation décimale pour les nombres rationnels")
 
   ; used in the bottom left of the drscheme frame as the label
-  ; above the programming language's name
-  (programming-language-label "Langage de programmation :")
   ; used the popup menu from the just above; greyed out and only
   ; visible when some languages are in the history
   (recent-languages "Langages récents :")

@@ -24,7 +24,8 @@
           [h (and/c number? (min-h w))]
           [mouse-over? boolean?]
           [grabbed? boolean?]
-          [button-label-font (is-a?/c font%)])
+          [button-label-font (is-a?/c font%)]
+          [bkg-color (or/c false/c (is-a?/c color%) string?)])
          void?))
 
    (calc-button-min-sizes
@@ -44,6 +45,13 @@
         (unless (eq? hidden? d?)
           (set! hidden? d?)
           (refresh)))
+    
+      (define allow-to-shrink #f)
+      (define/public (set-allow-shrinking w) 
+        (unless (eq? w allow-to-shrink)
+          (set! allow-to-shrink w)
+          (set! to-draw-message #f)
+          (update-min-sizes)))
       
       (define paths #f)
       
@@ -75,6 +83,7 @@
                            [else (string-constant untitled)])])
           (unless (equal? label new-label)
             (set! label new-label)
+            (set! to-draw-message #f)
             (update-min-sizes)
             (refresh))))
 
@@ -134,13 +143,25 @@
       (inherit get-parent)
       (define/private (update-min-sizes)
         (let-values ([(w h) (calc-button-min-sizes (get-dc) label font)])
-          (min-width w)
+          (cond
+            [allow-to-shrink
+             (cond
+               [(< w allow-to-shrink)
+                (stretchable-width #f)
+                (min-width w)]
+               [else
+                (stretchable-width #t)
+                (min-width allow-to-shrink)])]
+            [else
+             (min-width w)])
           (min-height h)
           (send (get-parent) reflow-container)))
       
       (define/override (on-paint)
 	(when paint-sema
-	  (semaphore-post paint-sema))
+          (semaphore-post paint-sema))
+        (unless to-draw-message
+          (compute-new-string))
         (let ([dc (get-dc)])
           (let-values ([(w h) (get-client-size)])
             (cond
@@ -154,7 +175,30 @@
                  (send dc set-brush brush))]
               [else
                (when (and (> w 5) (> h 5))
-                 (draw-button-label dc label 0 0 w h mouse-over? mouse-grabbed? font))]))))
+                 (draw-button-label dc to-draw-message 0 0 w h mouse-over? mouse-grabbed? font (get-background-color)))]))))
+      
+      (define/public (get-background-color) #f)
+      
+      (define to-draw-message #f)
+      (define/private (compute-new-string)
+        (let-values ([(cw ch) (get-client-size)])
+          (let ([width-to-use (- cw (get-left-side-padding) triangle-width circle-spacer)])
+            (let loop ([c (string-length label)])
+              (cond
+                [(= c 0) (set! to-draw-message "")]
+                [else 
+                 (let ([candidate (if (= c (string-length label))
+                                      label
+                                      (string-append (substring label 0 c) "..."))])
+                   (let-values ([(tw th _1 _2) (send (get-dc) get-text-extent candidate small-control-font)])
+                     (cond
+                       [(tw . <= . width-to-use) (set! to-draw-message candidate)]
+                       [else
+                        (loop (- c 1))])))])))))
+      
+      (define/override (on-size w h)
+        (compute-new-string)
+        (refresh))
       
       (super-new [style '(transparent no-focus)])
       (update-min-sizes)
@@ -215,7 +259,13 @@
        ans-w
        ans-h)))
   
-  (define (draw-button-label dc label dx dy w h mouse-over? grabbed? button-label-font)
+  (define (draw-button-label dc label dx dy w h mouse-over? grabbed? button-label-font bkg-color)
+    
+    (when bkg-color
+      (send dc set-pen bkg-color 1 'solid)
+      (send dc set-brush bkg-color 'solid)
+      (send dc draw-rectangle dx dy w h))
+    
     (when (or mouse-over? grabbed?)
       (let ([color (if grabbed?
 		       mouse-grabbed-color

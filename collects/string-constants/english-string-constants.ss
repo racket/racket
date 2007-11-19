@@ -196,10 +196,7 @@ please adhere to these guidelines:
 
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
-  (read-only-line1 "Read")
-  (read-only-line2 "only")
-  (read/write-line1 "Read/")
-  (read/write-line2 "Write")
+  (read-only "Read only")
  (auto-extend-selection "Auto-extend")
  (overwrite "Overwrite")
  (running "running")
@@ -958,9 +955,7 @@ please adhere to these guidelines:
  (use-repeating-decimals "Repeating decimals")
  (decimal-notation-for-rationals "Use decimal notation for rationals")
 
-  ; used in the bottom left of the drscheme frame as the label
-  ; above the programming language's name
-  (programming-language-label "Programming language:")
+  ; used in the bottom left of the drscheme frame 
   ; used the popup menu from the just above; greyed out and only
   ; visible when some languages are in the history
   (recent-languages "Recent languages:")

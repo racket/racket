@@ -524,8 +524,7 @@
                                           `(,#'module #%htdp ,language-module 
                                                       ,@(map (λ (x) 
                                                                `(require ,x))
-                                                             (htdp-lang-settings-teachpacks settings))
-                                                      1))))])
+                                                             (htdp-lang-settings-teachpacks settings))))))])
                        (let ([body-exps 
                               (let loop ()
                                 (let ([result (reader (object-name port) port)])
@@ -555,8 +554,7 @@
                       (dynamic-wind
                        void
                        (lambda () 
-                         (dynamic-require ''#%htdp #f)
-                         #;(eval #'(dynamic-require '#%htdp)))  ;; work around a bug in dynamic-require
+                         (dynamic-require ''#%htdp #f))  ;; work around a bug in dynamic-require
                        (lambda () 
                          (unless done-already?
                            (set! done-already? #t)

@@ -23,8 +23,7 @@ module browser threading seems wrong.
            (lib "framework.ss" "framework")
            (lib "name-message.ss" "mrlib")
            (lib "bitmap-label.ss" "mrlib")
-           
-           "stick-figures.ss"
+           (lib "include-bitmap.ss" "mrlib")
            "drsig.ss"
            "auto-language.ss"
            
@@ -395,7 +394,7 @@ module browser threading seems wrong.
                        (λ (x) x)
                        text:info%)))))))))])
         (class* definitions-super% (definitions-text<%>)
-          (inherit get-top-level-window)
+          (inherit get-top-level-window is-locked? lock)
           
           (define interactions-text #f)
           (define/public (set-interactions-text it)
@@ -471,8 +470,11 @@ module browser threading seems wrong.
                 (let ([metadata (send lang get-metadata (filename->modname filename) settings)])
                   (begin-edit-sequence)
                   (begin-metadata-changes)
-                  (set! save-file-metadata metadata)
-                  (insert metadata 0 0)))))
+                  (let ([locked? (is-locked?)])
+                    (when locked? (lock #f))
+                    (set! save-file-metadata metadata)
+                    (insert metadata 0 0)
+                    (when locked? (lock #t)))))))
           (define/private (filename->modname filename)
             (let-values ([(base name dir) (split-path filename)])
               (string->symbol (regexp-replace #rx"\\.[^.]*$"
@@ -489,8 +491,11 @@ module browser threading seems wrong.
                     (let-values ([(creator type) (file-creator-and-type filename)])
                       (file-creator-and-type filename #"DrSc" type))))))
             (when save-file-metadata
-              (let ([modified? (is-modified?)])
+              (let ([modified? (is-modified?)]
+                    [locked? (is-locked?)])
+                (when locked? (lock #f))
                 (delete 0 (string-length save-file-metadata))
+                (when locked? (lock #t))
                 (set! save-file-metadata #f)
                 ;; restore modification status to where it was before the metadata is removed
                 (set-modified modified?)
@@ -3364,17 +3369,15 @@ module browser threading seems wrong.
         
         (define language-message
           (let* ([info-panel (get-info-panel)]
-                 [vp (new vertical-panel% 
-                          [parent info-panel]
-                          [alignment '(left center)]
-                          [stretchable-width #t]
-                          [stretchable-height #f])]
-                 [l-m-label (new language-label-message% [parent vp] [frame this])]
-                 [language-message (new language-message% [parent vp])])
+                 [p (new vertical-panel% 
+                         [parent info-panel]
+                         [alignment '(left center)])]
+                 [language-message (new language-label-message% [parent p] [frame this])])
             (send info-panel change-children 
                   (λ (l)
-                    (list* vp
-                           (remq* (list vp) l))))
+                    (list* p
+                           (remq* (list p)
+                                  l))))
             language-message))
         
         (update-save-message)
@@ -3400,6 +3403,66 @@ module browser threading seems wrong.
         (update-toolbar-visiblity)
         (set! newest-frame this)
         (send definitions-canvas focus)))
+    
+    (define running-bitmap (include-bitmap (lib "b-run.png" "icons")))
+    (define waiting-bitmap (include-bitmap (lib "b-wait.png" "icons")))
+    (define waiting2-bitmap (include-bitmap (lib "b-wait2.png" "icons")))
+    (define running/waiting-bitmaps (list running-bitmap waiting-bitmap waiting2-bitmap))
+    (define running-canvas%
+      (class canvas%
+        (inherit get-dc refresh get-client-size)
+        (define/public (set-running r?) 
+          (unless (eq? r? is-running?)
+            (set! is-running? r?)
+            (refresh)))
+        (define is-running? #f)
+        (define toggle? #t)
+        (define timer #f)
+        (define inside? #f)
+        
+        (define/override (on-event evt)
+          (let-values ([(w h) (get-client-size)])
+            (let ([new-inside?
+                   (and (<= 0 (send evt get-x) w)
+                        (<= 0 (send evt get-y) h))]
+                  [old-inside? inside?])
+              (set! inside? new-inside?)
+              (cond
+                [(and new-inside? (not old-inside?))
+                 (unless is-running?
+                   (set! timer
+                         (new timer%
+                              [notify-callback 
+                               (λ ()
+                                 (set! toggle? (not toggle?))
+                                 (refresh))]
+                              [interval 200])))]
+                [(and (not new-inside?) old-inside? timer)
+                 (send timer stop)
+                 (set! timer #f)]))))
+        
+        (define/override (on-paint) 
+          (let ([dc (get-dc)]
+                [bm 
+                 (if is-running?
+                     running-bitmap
+                     (if toggle?
+                         waiting-bitmap
+                         waiting2-bitmap))])
+            (let-values ([(cw ch) (get-client-size)])
+              (send dc draw-bitmap bm 
+                    (- (/ cw 2) (/ (send bm get-width) 2))
+                    (- (/ ch 2) (/ (send bm get-height) 2))
+                    'solid
+                    (send the-color-database find-color "black")
+                    (send bm get-loaded-mask)))))
+        
+        (super-new [stretchable-width #f]
+                   [stretchable-height #f]
+                   [style '(transparent)])
+        (inherit min-width min-height)
+        (min-width (apply max (map (λ (x) (send x get-width)) running/waiting-bitmaps)))
+        (min-height (apply max (map (λ (x) (send x get-height)) running/waiting-bitmaps)))))
     
     ;; get-mbytes : top-level-window -> (union #f  ;; cancel
     ;;                                         integer[>=100] ;; a limit
@@ -3530,86 +3593,21 @@ module browser threading seems wrong.
                 (loop (cdr l))
                 (cons (car l) (loop (cdr l))))]))))
     
-    (define programming-language-label (string-constant programming-language-label))
-    (define second-line-indent 6)
-    (define language-message%
-      (class canvas%
-        (inherit get-dc get-client-size refresh)
-        (define message "")
-        (define to-draw-message #f)
-        (define/public (set-lang l)
-          (unless (equal? l message)
-            (set! message l)
-            (compute-new-string)
-            (refresh)))
-        
-        (define yellow? #f)
-        
-        (define/public (set-yellow/lang y? l)
-          (unless (and (equal? y? yellow?)
-                       (equal? l message))
-            (set! yellow? y?)
-            (set! message l)
-            (compute-new-string)
-            (refresh)))
-        
-        (define/override (on-size w h)
-          (compute-new-string)
-          (refresh))
-        
-        (define/private (compute-new-string)
-          (let-values ([(cw ch) (get-client-size)])
-            (let ([width-to-use (- cw (get-left-side-padding))])
-              (let loop ([c (string-length message)])
-                (cond
-                  [(= c 0) (set! to-draw-message "")]
-                  [else 
-                   (let ([candidate (if (= c (string-length message))
-                                        message
-                                        (string-append (substring message 0 c) "..."))])
-                     (let-values ([(tw th _1 _2) (send (get-dc) get-text-extent candidate small-control-font)])
-                       (cond
-                         [(tw . <= . width-to-use) (set! to-draw-message candidate)]
-                         [else
-                          (loop (- c 1))])))])))))
-        
-        (define/public (set-yellow y?)
-          (unless (equal? y? yellow?)
-            (set! yellow? y?)
-            (refresh)))
-        
-        (define last-time-width 0)
-        (define last-time-string "")
-        
-        (define/override (on-paint)
-          (unless to-draw-message
-            (compute-new-string))
-          (let ([dc (get-dc)])
-            (send dc set-font small-control-font)
-            (let*-values ([(tw th _1 _2) (send dc get-text-extent to-draw-message)]
-                          [(w h) (values (+ tw (get-left-side-padding)) th)])
-              (send dc set-pen (get-panel-background) 1 'transparent)
-              (send dc set-brush (get-panel-background) 'transparent)
-              (send dc draw-rectangle 0 0 w h)
-              (when yellow?
-                (send dc set-pen "black" 1 'transparent)
-                (send dc set-brush "yellow" 'solid)
-                (send dc draw-rectangle (get-left-side-padding) 0 tw th))
-              (send dc draw-text to-draw-message (get-left-side-padding) 0))))
-        
-        (super-new [style '(transparent)])
-        (inherit stretchable-width stretchable-height)
-        (stretchable-width #t)
-        (stretchable-height #f)
-        
-        (inherit min-height)
-        (let ([dc (get-dc)])
-          (let-values ([(w2 h2 _3 _4) (send dc get-text-extent "x" small-control-font)])
-            (min-height (inexact->exact (floor h2)))))))
-    
     (define language-label-message%
       (class name-message%
         (init-field frame)
+        (inherit refresh)
+        
+        (inherit set-message)
+        (define yellow? #f)
+        (define/override (get-background-color) (and yellow? "yellow"))
+        (define/public (set-yellow y?) 
+          (set! yellow? y?)
+          (refresh))
+        (define/public (set-yellow/lang y? lang) 
+          (set-message #f lang)
+          (set-yellow y?))
+        
         (define/override (fill-popup menu reset)
           (let ([added-one? #f])
             (send (new menu-item%
@@ -3658,8 +3656,11 @@ module browser threading seems wrong.
                 (λ (x y)
                   (send frame choose-language-callback))]))
         
-        (super-new [label programming-language-label]
-                   [font tiny-control-font])))
+        (super-new [label ""]
+                   [font small-control-font])
+                
+        (inherit set-allow-shrinking)
+        (set-allow-shrinking 100)))
     
     (define -frame% (frame-mixin super-frame%))
     

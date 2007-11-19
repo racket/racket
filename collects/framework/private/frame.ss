@@ -254,10 +254,7 @@
       (super-new)
       (send (group:get-the-frame-group) insert-frame this)))
   
-  (define locked-message-line1 (string-constant read-only-line1))
-  (define locked-message-line2 (string-constant read-only-line2))
-  (define unlocked-message-line1 (string-constant read/write-line1))
-  (define unlocked-message-line2 (string-constant read/write-line2))
+  (define locked-message (string-constant read-only))
   
   (define lock-canvas%
     (class canvas%
@@ -272,38 +269,26 @@
       (define/override (on-paint)
         (let* ([dc (get-dc)]
                [draw
-                (λ (str1 str2 bg-color bg-style line-color line-style)
+                (λ (str bg-color bg-style line-color line-style)
                   (send dc set-font small-control-font)
                   (let-values ([(w h) (get-client-size)]
-                               [(tw1 th1 _1 _2) (send dc get-text-extent str1)]
-                               [(tw2 th2 _3 _4) (send dc get-text-extent str2)])
+                               [(tw th _1 _2) (send dc get-text-extent str)])
                     (send dc set-pen (send the-pen-list find-or-create-pen line-color 1 line-style))
                     (send dc set-brush (send the-brush-list find-or-create-brush bg-color bg-style))
                     (send dc draw-rectangle 0 0 w h)
-                    (cond
-                      [(string=? str2 "")
-                       (send dc draw-text str1
-                             (- (/ w 2) (/ tw1 2))
-                             (- (* h 1/2) (/ th1 2)))]
-                      [else
-                       (send dc draw-text str1
-                             (- (/ w 2) (/ tw1 2))
-                             (- (* h 1/2) th1))
-                       (send dc draw-text str2
-                             (- (/ w 2) (/ tw2 2))
-                             (* h 1/2))])))])
+                    (send dc draw-text str
+                          (- (/ w 2) (/ tw 2))
+                          (- (/ h 2) (/ th 2)))))])
           (when locked?
-            (draw locked-message-line1 locked-message-line2
-                  "yellow" 'solid "black" 'solid))))
+            (draw locked-message "yellow" 'solid "black" 'solid))))
       
       (inherit get-parent min-width min-height stretchable-width stretchable-height)
       (define/private (setup-sizes)
         (let ([dc (get-dc)])
           (if locked?
-              (let-values ([(wl1 hl1 _1 _2) (send dc get-text-extent locked-message-line1)]
-                           [(wl2 hl2 _3 _4) (send dc get-text-extent locked-message-line2)])
-                (min-width (inexact->exact (floor (+ 2 (max (+ wl1 2) (+ wl2 2))))))
-                (min-height (inexact->exact (floor (+ 2 hl1 hl2)))))
+              (let-values ([(w h _1 _2) (send dc get-text-extent locked-message)])
+                (min-width (inexact->exact (floor (+ w 4))))
+                (min-height (inexact->exact (floor (+ h 2)))))
               (begin
                 (min-width 0)
                 (min-height 0)))))
@@ -314,58 +299,6 @@
       (setup-sizes)
       (stretchable-width #f)
       (stretchable-height #t)))
-  
-  #;
-  (define lock-canvas%
-    (class canvas%
-      (field [locked? #f])
-      (inherit refresh)
-      (define/public (set-locked l)
-        (set! locked? l)
-        (refresh))
-      (inherit get-client-size get-dc)
-      (define/override (on-paint)
-        (let* ([dc (get-dc)]
-               [draw
-                (λ (str1 str2 bg-color bg-style line-color line-style)
-                  (send dc set-font small-control-font)
-                  (let-values ([(w h) (get-client-size)]
-                               [(tw1 th1 _1 _2) (send dc get-text-extent str1)]
-                               [(tw2 th2 _3 _4) (send dc get-text-extent str2)])
-                    (send dc set-pen (send the-pen-list find-or-create-pen line-color 1 line-style))
-                    (send dc set-brush (send the-brush-list find-or-create-brush bg-color bg-style))
-                    (send dc draw-rectangle 0 0 w h)
-                    (cond
-                      [(string=? str2 "")
-                       (send dc draw-text str1
-                             (- (/ w 2) (/ tw1 2))
-                             (- (* h 1/2) (/ th1 2)))]
-                      [else
-                       (send dc draw-text str1
-                             (- (/ w 2) (/ tw1 2))
-                             (- (* h 1/2) th1))
-                       (send dc draw-text str2
-                             (- (/ w 2) (/ tw2 2))
-                             (* h 1/2))])))])
-          (if locked?
-              (draw locked-message-line1 locked-message-line2
-                    "yellow" 'solid "black" 'solid)
-              (draw unlocked-message-line1 unlocked-message-line2
-                    (get-panel-background) 'transparent (get-panel-background) 'transparent))))
-      (inherit get-parent min-width min-height stretchable-width stretchable-height)
-      
-      (super-new [style '(transparent)])
-      
-      (let ([dc (get-dc)])
-        (send dc set-font small-control-font)
-        (let-values ([(wl1 hl1 _1 _2) (send dc get-text-extent locked-message-line1)]
-                     [(wl2 hl2 _3 _4) (send dc get-text-extent locked-message-line2)]
-                     [(wu1 hu1 _5 _6) (send dc get-text-extent unlocked-message-line1)]
-                     [(wu2 hu2 _7 _8) (send dc get-text-extent unlocked-message-line2)])
-          (stretchable-width #f)
-          (stretchable-height #t)
-          (min-width (inexact->exact (floor (+ 2 (max (+ wl1 2) (+ wl2 2) wu1 wu2)))))
-          (min-height (inexact->exact (floor (+ 2 hu1 hu2))))))))
   
   (define status-line<%>
     (interface (basic<%>)
@@ -987,34 +920,26 @@
       (define-values (anchor-message
                       overwrite-message 
                       macro-recording-message)
-        (let* ([text-info-messages-parent
-                (new vertical-panel% 
-                     [parent (get-info-panel)]
-                     [stretchable-width #f])]
-               [anchor-message
+        (let* ([anchor-message
                 (new message%
                      [font small-control-font]
                      [label (string-constant auto-extend-selection)]
-                     [parent text-info-messages-parent])]
-               [hp (new horizontal-panel% 
-                        [alignment '(left center)]
-                        [parent text-info-messages-parent]
-                        [stretchable-height #f])]
+                     [parent (get-info-panel)])]
                [overwrite-message 
                 (new message%
                      [font small-control-font]
                      [label (string-constant overwrite)]
-                     [parent hp])]
+                     [parent (get-info-panel)])]
                [macro-recording-message
                 (new message%
                      [label "c-x;("]
                      [font small-control-font]
-                     [parent hp])])
+                     [parent (get-info-panel)])]
+               [msgs (list anchor-message
+                           overwrite-message
+                           macro-recording-message)])
           (send (get-info-panel) change-children
-                (λ (l)
-                  (cons
-                   text-info-messages-parent
-                   (remq text-info-messages-parent l))))
+                (λ (l) (append msgs (remq* msgs l))))
           (values anchor-message
                   overwrite-message 
                   macro-recording-message)))
