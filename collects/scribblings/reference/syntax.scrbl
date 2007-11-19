@@ -141,8 +141,14 @@ Produces an opaque value representing the location of @scheme[id],
 which must be bound as a @tech{top-level variable} or
 @tech{module-level variable}.
 
-The result is useful only to low-level extensions; see
-@secref["inside-mzscheme"].}
+The result is useful to low-level extensions; see
+@secref["inside-mzscheme"]. It can also be used with
+@scheme[variable-reference->empty-namespace],
+@scheme[variable-reference->resolved-module-path], and
+@scheme[variable-reference->top-level-namespace], but facilities
+like @scheme[define-namespace-anchor] and
+@scheme[namespace-anchor->namespace] wrap those to provide an clearer
+interface.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "application"]{Procedure Applications and @scheme[#%app]}

@@ -61,10 +61,11 @@ source of the anchor.
 
 If the anchor is from a @scheme[define-namespace-anchor] form in a
 module context, then the source is the namespace in which the
-containing module is instantiated at @tech{phase} 0. If the anchor is
-from a @scheme[define-namespace-anchor] form in a top-level content,
-then the source is the namespace in which the anchor definition was
-evaluated.}
+containing module is instantiated. If the anchor is from a
+@scheme[define-namespace-anchor] form in a top-level content, then the
+source is the namespace in which the anchor definition was evaluated.
+The resulting namespace corresponds to @tech{phase} 0, independent of
+the phase of @scheme[a]'s definition.}
 
 
 @defproc[(namespace-anchor->namespace [a namespace-anchor?]) namespace?]{
@@ -287,3 +288,34 @@ indices.
 Typically, the arguments to @scheme[module-provide-protected?]
 correspond to the first two elements of a list produced by
 @scheme[identifier-binding].}
+
+
+@defproc[(variable-reference->empty-namespace [varref variable-reference?])
+         namespace?]{
+
+Returns an empty namespace that shares module declarations and
+instances with the namespace in which @scheme[varref] is
+instantiated. The namespace corresponds to @tech{phase} 0, independent
+of the phase of @scheme[varref]'s binding.}
+
+
+@defproc[(variable-reference->top-level-namespace [varref variable-reference?])
+         namespace?]{
+
+If @scheme[varref] refers to a top-level binding, the result is
+@scheme[varref]'s namespace if it corresponds to a @tech{phase} 0
+binding, otherwise it is the @tech{phase} 0 namespace associated with
+@scheme[varref]'s namespace.
+
+If @scheme[varref] refers to a module binding, then the
+@exnraise[exn:fail:contract].}
+
+
+@defproc[(variable-reference->resolved-module-path [varref variable-reference?])
+         resolved-module-path?]{
+
+If @scheme[varref] refers to a module binding, the result is a
+@tech{resolved module path} naming the module.
+
+If @scheme[varref] refers to a top-level binding, then the
+@exnraise[exn:fail:contract].}
