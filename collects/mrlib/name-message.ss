@@ -259,7 +259,15 @@
        ans-w
        ans-h)))
   
-  (define (draw-button-label dc label dx dy w h mouse-over? grabbed? button-label-font bkg-color)
+  (define (draw-button-label dc label dx dy full-w h mouse-over? grabbed? button-label-font bkg-color)
+    
+    (define label-width
+      (if label
+          (let-values ([(w _1 _2 _3) (send dc get-text-extent label)])
+            w)
+          0))
+
+    (define w (+ border-inset circle-spacer button-label-inset label-width triangle-width circle-spacer border-inset))
     
     (when bkg-color
       (send dc set-pen bkg-color 1 'solid)
@@ -310,17 +318,17 @@
 	      #t)))
 
     (send dc set-pen (send the-pen-list find-or-create-pen 
-			   (if grabbed? grabbed-fg-color triangle-color)
-			   1 'solid))
+                           (if grabbed? grabbed-fg-color triangle-color)
+                           1 'solid))
     (let ([x (- w triangle-width circle-spacer)]
-	  [y (- (/ h 2) (/ triangle-height 2))])
+          [y (- (/ h 2) (/ triangle-height 2))])
       (let loop ([x-off 0][off-y 5])
-	(unless (= 5 x-off)
-	  (send dc draw-line 
-		(+ dx (+ x 1 x-off))
+        (unless (= 5 x-off)
+          (send dc draw-line 
+                (+ dx (+ x 1 x-off))
                 (+ dy (+ y off-y))
-		(+ dx (+ x (- triangle-width 1 x-off)))
+                (+ dx (+ x (- triangle-width 1 x-off)))
                 (+ dy (+ y off-y)))
-	  (loop (+ x-off 1) (+ off-y 1)))))
+          (loop (+ x-off 1) (+ off-y 1)))))
 
     (void)))
