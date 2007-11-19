@@ -1583,7 +1583,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
             menv2 = scheme_clone_module_env(menv, to_env, to_modchain);
 	    if (menv->attached)
 	      menv2->attached = 1;
-	    
+
 	    scheme_hash_set(MODCHAIN_TABLE(to_modchain), name, (Scheme_Object *)menv2);
 	    scheme_hash_set(to_env->module_registry, name, (Scheme_Object *)menv2->module);
 	    scheme_hash_set(to_env->export_registry, name, (Scheme_Object *)menv2->module->me);
@@ -1623,7 +1623,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
     resolver = scheme_get_param(config, MZCONFIG_CURRENT_MODULE_RESOLVER);
     while (!SCHEME_NULLP(notifies)) {
       a[0] = SCHEME_CAR(notifies);
-      
+
       scheme_apply(resolver, 1, a);
       
       notifies = SCHEME_CDR(notifies);
@@ -3115,9 +3115,9 @@ static void show(const char *what, Scheme_Env *menv, int v)
       for (i = 0; i < indent; i++) {
         printf(" ");
       }
-      printf("%s \t%s @%ld [%d]\n", 
+      printf("%s \t%s @%ld [%d] %p\n", 
              what, scheme_write_to_string(menv->module->modname, NULL), 
-             menv->phase, v);
+             menv->phase, v, menv->modchain);
       indent++;
     }
 }
@@ -3614,6 +3614,7 @@ static void eval_module_body(Scheme_Env *menv)
   int volatile save_phase_shift;
   mz_jmp_buf newbuf, * volatile savebuf;
 
+  menv->running = 1;
   menv->ran = 1;
 
   depth = m->max_let_depth + scheme_prefix_depth(m->prefix);

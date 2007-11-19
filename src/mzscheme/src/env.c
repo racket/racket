@@ -3784,11 +3784,6 @@ static Scheme_Object *do_variable_namespace(const char *who, int tl, int argc, S
     env = ((Scheme_Bucket_With_Home *)v)->home;
     if (tl && env->module) {
       env = NULL;
-    } else {
-      ph = env->phase;
-      while (ph--) {
-        env = env->template_env;
-      }
     }
   }
 
@@ -3797,7 +3792,25 @@ static Scheme_Object *do_variable_namespace(const char *who, int tl, int argc, S
                       (tl ? "top-level variable-reference" : "variable-reference"), 
                       0, argc, argv);
 
-  return (Scheme_Object *)make_env(env, 0, 0);
+  ph = env->phase;
+  if (tl) {
+    while (ph--) {
+      env = env->template_env;
+    }
+  } else {
+    env = make_env(env, 0, 0);
+    
+    /* rewind modchain to phase 0: */
+    while (ph--) {
+      v = SCHEME_VEC_ELS(env->modchain)[2];
+      if (SCHEME_FALSEP(v)) {
+        scheme_signal_error("internal error: missing modchain for previous phase");
+      }
+      env->modchain = v;
+    }
+  }
+
+  return (Scheme_Object *)env;
 }
 
 static Scheme_Object *variable_namespace(int argc, Scheme_Object *argv[])
