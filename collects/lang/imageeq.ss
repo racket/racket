@@ -20,7 +20,7 @@
                (unless tried?
                  (set! tried? #t)
                  (with-handlers ([exn:fail? (lambda (x) #f)])
-                   (set! got-id (dynamic-require '(lib "private/lang/imageeq.ss") 'id))
+                   (set! got-id (dynamic-require 'lang/private/imageeq 'id))
                    ...)))))]))
 
   ;; This macro is used once for each individual function,
