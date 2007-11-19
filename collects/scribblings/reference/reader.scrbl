@@ -508,20 +508,21 @@ A @as-index{@litchar{;}} starts a line comment. When the reader
 encounters @litchar{;}, then it skips past all characters until the
 next linefeed or carriage return.
 
-A @litchar["#|"] starts a nestable block comment.  When the reader
-encounters @litchar["#|"], then it skips past all characters until a
-closing @litchar["|#"]. Pairs of matching @litchar["#|"] and
+A @as-index{@litchar["#|"]} starts a nestable block comment.  When the
+reader encounters @litchar["#|"], then it skips past all characters
+until a closing @litchar["|#"]. Pairs of matching @litchar["#|"] and
 @litchar["|#"] can be nested.
 
-A @litchar{#;} starts an S-expression comment. Then the reader
-encounters @litchar{#;}, it recursively reads one datum, and then
-discards the datum (continuing on to the next datum for the read
+A @as-index{@litchar{#;}} starts an S-expression comment. Then the
+reader encounters @litchar{#;}, it recursively reads one datum, and
+then discards the datum (continuing on to the next datum for the read
 result).
 
-A @litchar{#! } (which is @litchar{#!} followed by a space) or
-@litchar{#!/} starts a line comment that can be continued to the next
-line by ending a line with @litchar["\\"]. This form of comment
-normally appears at the beginning of a Unix script file.
+A @as-index{@litchar{#! }} (which is @litchar{#!} followed by a space)
+or @as-index{@litchar{#!/}} starts a line comment that can be
+continued to the next line by ending a line with @litchar["\\"]. This
+form of comment normally appears at the beginning of a Unix script
+file.
 
 @reader-examples[
 "; comment"
@@ -563,18 +564,18 @@ vector's elements are also wraped as syntax objects.
 
 @section[#:tag "parse-hashtable"]{Reading Hash Tables}
 
-A @litchar{#hash} starts an immutable hash-table constant with key
-matching based on @scheme[equal?]. The characters after @litchar{hash}
-must parse as a list of pairs (see @secref["parse-pair"]) with a
-specific use of delimited @litchar{.}: it must appear between the
-elements of each pair in the list, and nowhere in the sequence of list
-elements. The first element of each pair is used as the key for a
-table entry, and the second element of each pair is the associated
-value.
+A @as-index{@litchar{#hash}} starts an immutable hash-table constant
+with key matching based on @scheme[equal?]. The characters after
+@litchar{hash} must parse as a list of pairs (see
+@secref["parse-pair"]) with a specific use of delimited @litchar{.}:
+it must appear between the elements of each pair in the list, and
+nowhere in the sequence of list elements. The first element of each
+pair is used as the key for a table entry, and the second element of
+each pair is the associated value.
 
-A @litchar{#hasheq} starts a hash table like @litchar{#hash}, except
-that it constructs a hash table based on @scheme[eq?] instead of
-@scheme[equal?].
+A @as-index{@litchar{#hasheq}} starts a hash table like
+@litchar{#hash}, except that it constructs a hash table based on
+@scheme[eq?] instead of @scheme[equal?].
 
 In either case, the table is constructed by adding each mapping to the
  hash table from left to right, so later mappings can hide earlier
@@ -591,9 +592,10 @@ In either case, the table is constructed by adding each mapping to the
 
 @section[#:tag "parse-box"]{Reading Boxes}
 
-When the reader encounters a @litchar{#&}, it starts parsing a box;
-see @secref["boxes"] for information on boxes. The content of the box
-is determined by recursively reading the next datum.
+When the reader encounters a @as-index{@litchar{#&}}, it starts
+parsing a box; see @secref["boxes"] for information on boxes. The
+content of the box is determined by recursively reading the next
+datum.
 
 In @scheme[read-syntax] mode, the recursive read for the box content
 is also in @scheme[read-syntax] mode, so that the wrapped box's
@@ -607,8 +609,8 @@ content is also wraped as a syntax object.
 
 @guideintro["characters"]{the syntax of characters}
 
-A @litchar["#\\"] starts a character constant, which has one of the
-following forms:
+A @as-index{@litchar["#\\"]} starts a character constant, which has
+one of the following forms:
 
 @itemize{
 
@@ -655,10 +657,10 @@ following forms:
 
 @section[#:tag "parse-keyword"]{Reading Keywords}
 
-A @litchar{#:} starts a keyword. The parsing of a keyword after the
-@litchar{#:} is the same as for a symbol, including case-folding in
-case-insensitive mode, except that the part after @litchar{#:} is
-never parsed as a number.
+A @as-index{@litchar{#:}} starts a keyword. The parsing of a keyword
+after the @litchar{#:} is the same as for a symbol, including
+case-folding in case-insensitive mode, except that the part after
+@litchar{#:} is never parsed as a number.
 
 @reader-examples[
 "#:Apple"
@@ -667,14 +669,14 @@ never parsed as a number.
 
 @section[#:tag "parse-regexp"]{Reading Regular Expressions}
 
-A @litchar{#rx} or @litchar{#px} starts a regular expression. The
-characters immediately after @litchar{#rx} or @litchar{#px} must parse
-as a string or byte string (see @secref["parse-string"]). A
-@litchar{#rx} prefix starts a regular expression as would be
-constructed by @scheme[regexp], @litchar{#px} as
-constructed by @scheme[pregexp], @litchar{#rx#} as
-constructed by @scheme[byte-regexp], and @litchar{#px#} as
-constructed by @scheme[byte-pregexp].
+A @as-index{@litchar{#rx}} or @as-index{@litchar{#px}} starts a
+regular expression. The characters immediately after @litchar{#rx} or
+@litchar{#px} must parse as a string or byte string (see
+@secref["parse-string"]). A @litchar{#rx} prefix starts a regular
+expression as would be constructed by @scheme[regexp], @litchar{#px}
+as constructed by @scheme[pregexp], @litchar{#rx#} as constructed by
+@scheme[byte-regexp], and @litchar{#px#} as constructed by
+@scheme[byte-pregexp].
 
 @reader-examples[
 "#rx\".*\""
@@ -715,8 +717,9 @@ neither defines nor uses graph tags for other top-level forms.
 
 @section[#:tag "parse-reader"]{Reading via an External Reader}
 
-When the reader encounters @litchar{#reader}, then it loads an
-external reader procedure and applies it to the current input stream.
+When the reader encounters @as-index{@litchar{#reader}}, then it loads
+an external reader procedure and applies it to the current input
+stream.
 
 The reader recursively reads the next datum after @litchar{#reader},
 and passes it to the procedure that is the value of the
@@ -740,14 +743,14 @@ If the @scheme[read-accept-reader] @tech{parameter} is set to
 @scheme[#f], then if the reader encounters @litchar{#reader}, the
 @exnraise[exn:fail:read].
 
-The @litchar{#lang} reader form is similar, but more constrained: the
-@litchar{#lang} must be followed by a single space (ASCII 32), and
-then a non-empty sequence of alphanumeric ASCII, @litchar{+},
-@litchar{-}, @litchar{_}, and/or @litchar{/} characters terminated by
-@schemelink[char-whitespace?]{whitespace} or an end-of-file.  The
-sequence must not start or end with @litchar{/}. A sequence
-@litchar{#lang }@nonterm{name} is equivalent to 
-@litchar{#reader (lib "}@nonterm{name}@litchar{/lang/reader.ss")}.
+The @as-index{@litchar{#lang}} reader form is similar, but more
+constrained: the @litchar{#lang} must be followed by a single space
+(ASCII 32), and then a non-empty sequence of alphanumeric ASCII,
+@litchar{+}, @litchar{-}, @litchar{_}, and/or @litchar{/} characters
+terminated by @schemelink[char-whitespace?]{whitespace} or an
+end-of-file.  The sequence must not start or end with @litchar{/}. A
+sequence @litchar{#lang }@nonterm{name} is equivalent to
+@litchar{#reader }@nonterm{name}@litchar{/lang/reader)}.
 
 By convention, @litchar{#lang} normally appears at the beginning of a
 file, possibly after comment forms, to specify the syntax of a module.
