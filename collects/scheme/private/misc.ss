@@ -5,8 +5,29 @@
 (module misc '#%kernel
   (#%require '#%utils ; built into mzscheme
              "more-scheme.ss" "small-scheme.ss" "define.ss"
-             (for-syntax '#%kernel "stx.ss" "stxcase-scheme.ss"))
+             (for-syntax '#%kernel "stx.ss" "stxcase-scheme.ss" "stxcase.ss"))
   
+  ;; -------------------------------------------------------------------------
+
+  (define-syntax define-syntax-rule
+    (lambda (stx)
+      (syntax-case stx ()
+        [(dr (foo . pattern) template)
+         (identifier? #'foo)
+         (syntax/loc stx
+           (define-syntax foo
+             (lambda (x)
+               (syntax-case** dr #t x () free-identifier=?
+                              [(_ . pattern) (syntax/loc x template)]))))]
+        [(dr (foo . pattern) template)
+         (raise-syntax-error 'define-rule "expected an identifier" stx #'foo)]
+        [(dr (foo . pattern))
+         (raise-syntax-error 'define-rule "no template provided" stx)]
+        [(dr (foo . pattern) template . etc)
+         (raise-syntax-error 'define-rule "too many templates" stx #'etc)]
+        [(dr head . template)
+         (raise-syntax-error 'define-rule "invalid pattern" stx #'head)])))
+
   ;; -------------------------------------------------------------------------
 
   (define rationalize
@@ -129,7 +150,8 @@
 
   ;; -------------------------------------------------------------------------
 
-  (#%provide rationalize 
+  (#%provide define-syntax-rule
+             rationalize 
              path-string? path-replace-suffix path-add-suffix normal-case-path
              read-eval-print-loop
              load/cd

@@ -29,21 +29,19 @@
       (syntax-case** syntax-rules #t stx () free-identifier=?
 	((_ (k ...) ((keyword . pattern) template) ...)
 	 (andmap identifier? (syntax->list (syntax (k ...))))
-	 (with-syntax (((dummy ...)
-			(map (lambda (id)
-			       (unless (identifier? id)
-				 (raise-syntax-error
-				  #f
-				  "pattern must start with an identifier, found something else"
-				  stx
-				  id))
-			       ;; Preserve the name, in case it's printed out
-			       (string->uninterned-symbol (symbol->string (syntax-e id))))
-			     (syntax->list (syntax (keyword ...))))))
+	 (begin
+           (for-each (lambda (id)
+                       (unless (identifier? id)
+                         (raise-syntax-error
+                          #f
+                          "pattern must start with an identifier, found something else"
+                          stx
+                          id)))
+                     (syntax->list (syntax (keyword ...))))
 	   (syntax/loc stx
 	     (lambda (x)
 	       (syntax-case** _ #t x (k ...) free-identifier=?
-		 ((dummy . pattern) (syntax/loc x template))
+		 ((_ . pattern) (syntax/loc x template))
 		 ...))))))))
 
   (-define-syntax syntax-id-rules

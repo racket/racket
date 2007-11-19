@@ -361,6 +361,18 @@ Equivalent to
 ]}
 
 
+@defform[(define-syntax-rule (id . pattern) template)]{
+
+Equivalent to
+
+@schemeblock/form[
+(define-syntax id
+  (syntax-rules ()
+   [(id . pattern) template]))
+]
+}
+
+
 @defidform[...]{
 
 The @scheme[...] transformer binding prohibits @scheme[...] from

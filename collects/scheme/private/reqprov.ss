@@ -36,31 +36,43 @@
        stx)))
 
   (define-syntaxes (lib file planet)
-    (let ([t
-           (make-require-transformer
-            (lambda (stx)
-              (check-lib-form stx)
-              (let*-values ([(mod-path) (syntax->datum stx)]
-                            [(names et-names lt-names) (syntax-local-module-exports stx)])
-                (values
-                 (apply
-                  append
-                  (map (lambda (names mode)
-                         (map (lambda (name)
-                                (make-import (datum->syntax
-                                              stx
+    (let ([t (lambda (stx)
+               (check-lib-form stx)
+               (let*-values ([(mod-path) (syntax->datum stx)]
+                             [(names et-names lt-names) (syntax-local-module-exports stx)])
+                 (values
+                  (apply
+                   append
+                   (map (lambda (names mode)
+                          (map (lambda (name)
+                                 (make-import (datum->syntax
+                                               stx
+                                               name
+                                               stx)
                                               name
-                                              stx)
-                                             name
-                                             mod-path
-                                             mode
-                                             'run
-                                             stx))
-                              names))
-                       (list names et-names lt-names)
-                       (list 'run 'syntax 'label)))
-                 (list (make-import-source stx 'run))))))])
-      (values t t t)))
+                                              mod-path
+                                              mode
+                                              'run
+                                              stx))
+                               names))
+                        (list names et-names lt-names)
+                        (list 'run 'syntax 'label)))
+                  (list (make-import-source stx 'run)))))])
+      (let ([t2
+             (let-values ([(s: mk s? s-ref s-set!)
+                           (make-struct-type 'req+prov
+                                             #f
+                                             0 0 #f
+                                             (list 
+                                              (cons prop:require-transformer (lambda (a) t)))
+                                             (current-inspector)
+                                             (lambda (p stx)
+                                               (raise-syntax-error
+                                                #f
+                                                "misuse of module-path constructor (not within, e.g., `require' or `provide')"
+                                                stx)))])
+               (mk))])
+        (values t2 t2 t2))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; for-syntax, for-template, for-label

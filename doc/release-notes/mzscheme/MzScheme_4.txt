@@ -95,7 +95,9 @@ in several significant ways:
    that `lambda' and `#%app' expand to `#%plain-lambda' and
    `#%plain-app' (which are also the `lambda' and `#%app' of the
    `mzscheme' language). The `require' and `provide' forms expand to
-   `#%require' and `#%provide'.
+   `#%require' and `#%provide'. Finally, beware that `#%datum' in
+   `scheme/base' is different than in `mzscheme' (because the former
+   disallows unquoted keywords as expressions).
 
  - The naming convention for compiled files has changed to preserve
    the original file suffix. For example, the bytecode version of
