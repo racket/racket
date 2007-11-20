@@ -92,4 +92,5 @@
                                       (entry-words entry)))
                              index))))))
        file)
-      (send-url (format "file://~a" (path->string file))))))
+      (send-url (format "file://~a" (path->string file)))
+      (void))))
