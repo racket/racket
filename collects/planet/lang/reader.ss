@@ -19,10 +19,10 @@
           (raise-syntax-error 'read "bad version number pair"))
         (values 
          `(planet "lang/main.ss"
-                   (,owner
-                    ,pkgname
-                    ,@(if maj `(,maj) '())
-                    ,@(if min `(,min) '())))
+                  (,owner
+                   ,pkgname
+                   ,@(if maj `(,maj) '())
+                   ,@(if min `(,min) '())))
          (spec->read-data
           `(planet "lang/reader.ss"
                    (,owner
@@ -31,19 +31,18 @@
                     ,@(if min `(,min) '())))))))))
 
 (define (wrap port spec body)
-    (let* ([p-name (object-name port)]
-	   [name (if (path? p-name)
-		     (let-values ([(base name dir?) (split-path p-name)])
-		       (string->symbol (path->string (path-replace-suffix name #""))))
-		     'page)]
-           [id 'doc])
-      `(module ,name ,spec
-         ,body)))         
+  (let* ([p-name (object-name port)]
+         [name (if (path? p-name)
+                   (let-values ([(base name dir?) (split-path p-name)])
+                     (string->symbol (path->string (path-replace-suffix name #""))))
+                   'page)])
+    `(module ,name ,spec
+       ,body)))
 
 (define (planet-read [inp (current-input-port)])
   (define-values (spec r) (planet-read-fn inp (λ (spec) (dynamic-require spec 'read))))
   (wrap inp spec (r inp)))
 
-(define (planet-read-syntax [src #f] [port (current-input-port)])
-  (define-values (spec r) (planet-read-fn port (λ (spec) (dynamic-require spec 'read-syntax))))
-  (wrap port spec (r src port)))
+(define (planet-read-syntax [src #f] [inp (current-input-port)])
+  (define-values (spec r) (planet-read-fn inp (λ (spec) (dynamic-require spec 'read-syntax))))
+  (wrap inp spec (r src inp)))
