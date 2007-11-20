@@ -57,7 +57,7 @@
 
 (define (generate-search-results search-keys)
   (let ([file (next-search-results-file)]
-        [search-regexps (map regexp-quote search-keys)]
+        [search-regexps (map (λ (x) (regexp-quote x #f)) search-keys)]
         [search-key-string
          (cond
            [(null? search-keys) ""]
