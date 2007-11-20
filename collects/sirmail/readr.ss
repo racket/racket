@@ -1868,12 +1868,13 @@
 
       ;; Optional GC icon (lots of work for this little thing!)
       (when (get-pref 'sirmail:show-gc-icon)
-	(let* ([gif (make-object bitmap% (build-path (collection-path "icons") "recycle.gif"))]
+	(let* ([gif (make-object bitmap% (build-path (collection-path "icons") "recycle.png"))]
 	       [w (send gif get-width)]
 	       [h (send gif get-height)]
-	       [recycle-bm (make-object bitmap% (quotient w 2) (quotient h 2))]
+               [scale 1]
+	       [recycle-bm (make-object bitmap% (quotient w scale) (quotient h scale))]
 	       [dc (make-object bitmap-dc% recycle-bm)])
-	  (send dc set-scale 0.5 0.5)
+	  (send dc set-scale (/ 1 scale) (/ 1 scale))
 	  (send dc draw-bitmap gif 0 0)
 	  (send dc set-bitmap #f)
 	  (let* ([w (send recycle-bm get-width)]

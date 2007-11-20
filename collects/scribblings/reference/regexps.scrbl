@@ -178,6 +178,21 @@ syntax (see @secref["regexp-syntax"]). The result can be used with
 (byte-pregexp #"ap*le")
 ]}
 
+@defproc*[([(regexp-quote [str string?][case-sensitive? any/c #f]) string?]
+           [(regexp-quote [bstr bytes?][case-sensitive? any/c #f]) bytes?])]{
+
+Produces a string or byte string suitable for use with @scheme[regexp]
+to match the literal sequence of characters in @scheme[str] or
+sequence of bytes in @scheme[bstr]. If @scheme[case-sensitive?] is
+true, the resulting regexp matches letters in @scheme[str] or
+@scheme[bytes] case-insensitively, otherwise it matches
+case-sensitively.
+
+@examples[
+(regexp-match "." "apple.scm")
+(regexp-match (regexp-quote ".") "apple.scm")
+]}
+
 
 @;------------------------------------------------------------------------
 @section{Regexp Matching}
@@ -270,7 +285,66 @@ used for matching may be different than the bytes read and discarded
 after the match completes; the matcher inspects only the peeked
 bytes. To avoid such interleaving, use @scheme[regexp-match-peek]
 (with a @scheme[progress-evt] argument) followed by
-@scheme[port-commit-peeked].}
+@scheme[port-commit-peeked].
+
+@examples[
+(regexp-match #rx"x." "12x4x6")
+(regexp-match #rx"y." "12x4x6")
+(regexp-match #rx"x." "12x4x6" 3)
+(regexp-match #rx"x." "12x4x6" 3 4)
+(regexp-match #rx#"x." "12x4x6")
+(regexp-match #rx"x." "12x4x6" 0 #f (current-output-port))
+(regexp-match #rx"(-[0-9]*)+" "a-12--345b")
+]}
+
+
+@defproc[(regexp-match* [pattern (or/c string? bytes? regexp? byte-regexp?)]
+                        [input (or/c string? bytes? input-port?)]
+                        [start-pos nonnegative-exact-integer? 0]
+                        [end-pos (or/c nonnegative-exact-integer? false/c) #f])
+         (listof (or/c string? bytes?))]{
+
+Like @scheme[regexp-match], but the result is a list of strings or
+byte strings corresponding to a sequence of matches of
+@scheme[pattern] in @scheme[input]. (Unlike @scheme[regexp-match],
+results for parenthesized sub-patterns in @scheme[pattern] are not
+returned.)  If @scheme[pattern] matches a zero-length string or byte
+sequence along the way, the @exnraise[exn:fail].
+
+If @scheme[input] contains no matches (in the range @scheme[start-pos]
+to @scheme[end-pos]), @scheme[null] is returned. Otherwise, each item
+in the resulting list is a distinct substring or byte sequence from
+@scheme[input] that matches @scheme[pattern]. The @scheme[end-pos]
+argument can be @scheme[#f] to match to the end of @scheme[input]
+(which corresponds to an end-of-file if @scheme[input] is an input
+port).
+
+@examples[
+(regexp-match* #rx"x." "12x4x6")
+]}
+
+
+@defproc[(regexp-match/fail-without-reading 
+                       [pattern (or/c string? bytes? regexp? byte-regexp?)]
+                       [input input-port?]
+                       [start-pos nonnegative-exact-integer? 0]
+                       [end-pos (or/c nonnegative-exact-integer? false/c) #f]
+                       [output-port (or/c output-port? false/c) #f])
+         (or/c (listof (or/c (cons (or/c string? bytes?)
+                                   (or/c string? bytes?))
+                             false/c))
+               false/c)]{
+
+Like @scheme[regexp-match] on input ports, except that if the match
+fails, no characters are read and discarded from @scheme[in].
+
+This procedure is especially useful with a @scheme[pattern] that
+begins with a start-of-string @litchar{^} or with a non-@scheme[#f]
+@scheme[end-pos], since each limits the amount of peeking into the
+port. Otherwise, beware that a large portion of the stream may be
+peeked (and therefore pulled into memory) before the match succeeds or
+fails.}
+
 
 @defproc[(regexp-match-positions [pattern (or/c string? bytes? regexp? byte-regexp?)]
                         [input (or/c string? bytes? input-port?)]
@@ -294,7 +368,29 @@ Range results are returned in a @scheme[substring]- and
 @scheme[subbytes]-compatible manner, independent of
 @scheme[start-pos]. In the case of an input port, the returned
 positions indicate the number of bytes that were read, including
-@scheme[start-pos], before the first matching byte.}
+@scheme[start-pos], before the first matching byte.
+
+@examples[
+(regexp-match-positions #rx"x." "12x4x6")
+(regexp-match-positions #rx"x." "12x4x6" 3)
+(regexp-match-positions #rx"(-[0-9]*)+" "a-12--345b")
+]}
+
+
+@defproc[(regexp-match-positions* [pattern (or/c string? bytes? regexp? byte-regexp?)]
+                        [input (or/c string? bytes? input-port?)]
+                        [start-pos nonnegative-exact-integer? 0]
+                        [end-pos (or/c nonnegative-exact-integer? false/c) #f])
+         (listof (cons nonnegative-exact-integer?
+                       nonnegative-exact-integer?))]{
+
+Like @scheme[regexp-match-positions], but returns multiple matches
+like @scheme[regexp-match*].
+
+@examples[
+(regexp-match-positions #rx"x." "12x4x6")
+]}
+
 
 @defproc[(regexp-match? [pattern (or/c string? bytes? regexp? byte-regexp?)]
                         [input (or/c string? bytes? input-port?)]
@@ -304,7 +400,26 @@ positions indicate the number of bytes that were read, including
            boolean?]{
 
 Like @scheme[regexp-match], but returns merely @scheme[#t] when the
-match succeeds, @scheme[#f] otherwise.}
+match succeeds, @scheme[#f] otherwise.
+
+@examples[
+(regexp-match? #rx"x." "12x4x6")
+(regexp-match? #rx"y." "12x4x6")
+]}
+
+
+@defproc[(regexp-match-exact? [pattern (or/c string? bytes? regexp? byte-regexp?)]
+                              [input (or/c string? bytes? input-port?)])
+          boolean?]{
+
+Like @scheme[regexp-match?], but @scheme[#t] is only returned when the
+entire content of @scheme[input] matches @scheme[pattern].
+
+@examples[
+(regexp-match-exact? #rx"x." "12x4x6")
+(regexp-match-exact? #rx"1.*x." "12x4x6")
+]}
+
 
 @defproc[(regexp-match-peek [pattern (or/c string? bytes? regexp? byte-regexp?)]
                             [input input-port?]
@@ -323,7 +438,18 @@ becomes ready, then the match stops peeking from @scheme[input-port]
 and returns @scheme[#f]. The @scheme[progress] argument can be
 @scheme[#f], in which case the peek may continue with inconsistent
 information if another process meanwhile reads from
-@scheme[input-port].}
+@scheme[input-port].
+
+@examples[
+(define p (open-input-string "a abcd"))
+(regexp-match-peek ".*bc" p)
+(regexp-match-peek ".*bc" p 2)
+(regexp-match ".*bc" p 2)
+(peek-char p)
+(regexp-match ".*bc" p)
+(peek-char p)
+]}
+
 
 @defproc[(regexp-match-peek-positions [pattern (or/c string? bytes? regexp? byte-regexp?)]
                             [input input-port?]
@@ -339,6 +465,7 @@ Like @scheme[regexp-match-positions] on input ports, but only peeks
 bytes from @scheme[input-port] instead of reading them, and with a
 @scheme[progress] argument like @scheme[regexp-match-peek].}
 
+
 @defproc[(regexp-match-peek-immediate [pattern (or/c string? bytes? regexp? byte-regexp?)]
                             [input input-port?]
                             [start-pos nonnegative-exact-integer? 0]
@@ -352,6 +479,7 @@ Like @scheme[regexp-match-peek], but it attempts to match only bytes
 that are available from @scheme[input-port] without blocking.  The
 match fails if not-yet-available characters might be used to match
 @scheme[pattern].}
+
 
 @defproc[(regexp-match-peek-positions-immediate [pattern (or/c string? bytes? regexp? byte-regexp?)]
                             [input input-port?]
@@ -368,88 +496,146 @@ only bytes that are available from @scheme[input-port] without
 blocking. The match fails if not-yet-available characters might be
 used to match @scheme[pattern].}
 
-@;{
+
+@defproc[(regexp-match-peek-positions* [pattern (or/c string? bytes? regexp? byte-regexp?)]
+                            [input input-port?]
+                            [start-pos nonnegative-exact-integer? 0]
+                            [end-pos (or/c nonnegative-exact-integer? false/c) #f])
+         (listof (cons nonnegative-exact-integer?
+                       nonnegative-exact-integer?))]{
+
+Like @scheme[regexp-match-peek-positions], but returns multiple matches like
+@scheme[regexp-match*].}
+
+@;------------------------------------------------------------------------
+@section{Regexp Splitting}
+
+@defproc[(regexp-split [pattern (or/c string? bytes? regexp? byte-regexp?)]
+                       [input (or/c string? bytes? input-port?)]
+                       [start-pos nonnegative-exact-integer? 0]
+                       [end-pos (or/c nonnegative-exact-integer? false/c) #f])
+         (listof (or/c string? bytes?))]{
+
+The complement of @scheme[regexp-match*]: the result is a list of
+strings (if @scheme[pattern] is a string or character regexp and
+@scheme[input] is a string) or byte strings (otherwise) from in
+@scheme[input] that are separated by matches to
+@scheme[pattern]. Adjacent matches are separated with @scheme[""] or
+@scheme[#""]. If @scheme[pattern] matches a zero-length string or byte
+sequence along the way, the @exnraise[exn:fail].
+
+If @scheme[input] contains no matches (in the range @scheme[start-pos]
+to @scheme[end-pos]), the result is a list containing @scheme[input]'s
+content (from @scheme[start-pos] to @scheme[end-pos]) as a single
+element. If a match occurs at the beginning of @scheme[input] (at
+@scheme[start-pos]), the resulting list will start with an empty
+string or byte string, and if a match occurs at the end (at
+@scheme[end-pos]), the list will end with an empty string or byte
+string. The @scheme[end-pos] argument can be @scheme[#f], in which
+case splitting goes to the end of @scheme[input] (which corresponds to
+an end-of-file if @scheme[input] is an input port).
+
+@examples[
+(regexp-split #rx"x" "12x4x6")
+(regexp-split #rx"." "12x4x6")
+]}
 
 @;------------------------------------------------------------------------
 @section{Regexp Substitution}
 
-@defproc[(regexp-replace [char-pattern any/c][string any/c][insert any/c]) any]{
+@defproc[(regexp-replace [pattern (or/c string? bytes? regexp? byte-regexp?)]
+                         [input (or/c string? bytes?)]
+                         [insert (or/c string? bytes? 
+                                       (string? . -> . string?)
+                                       (bytes? . -> . bytes?))])
+         (or/c string? bytes?)]{
 
-Performs a match using @scheme[pattern] on @scheme[input] and
-then returns a string in which the matching portion of @scheme[input]
-is replaced with @scheme[insert-string].  If @scheme[char-pattern]
-matches no part of @scheme[string], then @scheme[string] is returned
+Performs a match using @scheme[pattern] on @scheme[input], and then
+returns a string or byte string in which the matching portion of
+@scheme[input] is replaced with @scheme[insert].  If @scheme[pattern]
+matches no part of @scheme[input], then @scheme[iput] is returned
 unmodified.
 
- The @scheme[char-pattern] must be a string or a character regexp value
- (not a byte string or a byte regexp value).
+If @scheme[pattern] is a string or character regexp and @scheme[input]
+is a string, then @scheme[insert] must be a string or a procedure that
+accept strings, and the result is a string. If @scheme[pattern] is a
+byte string or byte regexp, or if @scheme[input] is a byte string,
+then @scheme[insert] as a string is converted to a byte string,
+@scheme[insert] as a procedure is called with a byte string, and the
+result is a byte string.
 
- If @scheme[insert-string] contains ``\&'', then ``\&'' is replaced with
- the matching portion of @scheme[string] before it is substituted into
- @scheme[string].  If @scheme[insert-string] contains
- ``{\Backslash}@scheme[n]'' (for some integer @scheme[n]), then it is
- replaced with the @scheme[n]th matching sub-expression from
- @scheme[string].\footnote{The backslash is a character in the string, so
- an extra backslash is required to specify the string as a Scheme
- constant. For example, the Scheme constant
- @scheme["\\1"] is ``{\Backslash}1''.} ``\&''
- and ``{\Backslash}0'' are synonymous. If the @scheme[n]th sub-expression
- was not used in the match or if @scheme[n] is greater than the number of
- sub-expressions in @scheme[pattern], then ``{\Backslash}@scheme[n]'' is
- replaced with the empty string.
+If @scheme[insert] contains @litchar["&"], then @litchar["&"]
+is replaced with the matching portion of @scheme[input] before it is
+substituted into the match's place.  If @scheme[insert] contains
+@litchar["\\"]@nonterm{n} for some integer @nonterm{n}, then it is
+replaced with the @nonterm{n}th matching sub-expression from
+@scheme[input]. A @litchar{&} and @litchar["\\0"] are synonymous. If
+the @nonterm{n}th sub-expression was not used in the match, or if
+@nonterm{n} is greater than the number of sub-expressions in
+@scheme[pattern], then @litchar["\\"]@nonterm{n} is replaced with the
+empty string.
 
- A literal ``\&'' or ``{\Backslash}'' is specified as
- ``{\Backslash}\&'' or ``{\Backslash}{\Backslash}'', respectively.  If
- @scheme[insert-string] contains ``{\Backslash}\$'', then
- ``{\Backslash}\$'' is replaced with the empty string. (This can be
- used to terminate a number @scheme[n] following a backslash.) If a
- ``{\Backslash}'' is followed by anything other than a digit, ``\&'',
- ``{\Backslash}'', or ``\$'', then it is treated as ``{\Backslash}0''.}
+To substitute a literal @litchar{&} or @litchar["\\"], use
+@litchar["\\&"] and @litchar["\\\\"], respectively, in
+@scheme[insert]. A @litchar["\\$"] in @scheme[insert] is
+equivalent to an empty sequence; this can be used to terminate a
+number @nonterm{n} following @litchar["\\"]. If a @litchar["\\"] in
+@scheme[insert] is followed by anything other than a digit,
+@litchar{&}, @litchar["\\"], or @litchar{$}, then the @litchar["\\"]
+by itself is treated as @litchar["\\0"].
 
- @item{@defproc[(regexp-replace [byte-pattern any/c][string-or-bytes any/c][insert-string-or-bytes any/c]) any]
-%
-  is analogous to @scheme[regexp-replace] on strings, where
-  @scheme[byte-pattern] is a byte string or a byte regexp value. The result
-  is always a byte string.}
+Note that the @litchar["\\"] described in the previous paragraphs is a
+character or byte of @scheme[input]. To write such an @scheme[input]
+as a Scheme string literal, an escaping @litchar["\\"] is needed
+before the @litchar["\\"]. For example, the Scheme constant
+@scheme["\\1"] is @litchar["\\1"].
 
- @item{@defproc[(regexp-replace [char-pattern any/c][string any/c][proc any/c]) any]
-%
-   is like @scheme[regexp-replace], but instead of an
-   @scheme[insert-string] third argument, the third argument is a
-   procedure that accepts match strings and produces a string to
-   replace the match. The @scheme[proc] must accept the same number of
-   arguments as @scheme[regexp-match] produces list elements for a
-   successful match with @scheme[char-pattern].}
+@examples[
+(regexp-replace "mi" "mi casa" "su")
+(regexp-replace "mi" "mi casa" string-upcase)
+(regexp-replace "([Mm])i ([a-zA-Z]*)" "Mi Casa" "\\1y \\2")
+(regexp-replace "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi"
+                "\\1y \\2")
+(regexp-replace #rx"x" "12x4x6" "\\\\")
+(display (regexp-replace #rx"x" "12x4x6" "\\\\"))
+]}
 
- @item{@defproc[(regexp-replace [byte-pattern any/c][string-or-bytes any/c][proc any/c]) any]
-%
-   is analogous to @scheme[regexp-replace] on strings and a procedure
-   argument, but the procedure accepts byte strings to produce a byte
-   string, instead of character strings.}
+@defproc[(regexp-replace* [pattern (or/c string? bytes? regexp? byte-regexp?)]
+                          [input (or/c string? bytes?)]
+                          [insert (or/c string? bytes? 
+                                        (string? . -> . string?)
+                                        (bytes? . -> . bytes?))])
+         (or/c string? bytes?)]{
 
- @item{@defproc[(regexp-replace* [pattern any/c][string any/c][insert-string any/c]) any]
-%
- is the same as @scheme[regexp-replace], except that every instance of
- @scheme[pattern] in @scheme[string] is replaced with
- @scheme[insert-string]. Only non-overlapping instances of @scheme[pattern]
- in the original @scheme[string] are replaced, so instances of
- @scheme[pattern] within inserted strings are \Em{not} replaced
- recursively. If, in the process of repeating matches, @scheme[pattern]
- matches an empty string, the @exnraise[exn:fail].}
+Like @scheme[regexp-replace], except that every instance of
+@scheme[pattern] in @scheme[input] is replaced with @scheme[insert],
+instead of just the first match. Only non-overlapping instances of
+@scheme[pattern] in @scheme[input] are replaced, so instances of
+@scheme[pattern] within inserted strings are @italic{not} replaced
+recursively. If, in the process of repeating matches, @scheme[pattern]
+matches an empty string, the @exnraise[exn:fail].
 
- @item{@defproc[(regexp-replace* [byte-pattern any/c][bytes any/c][insert-bytes any/c]) any]
-%
- is analogous to @scheme[regexp-replace*] on strings.}
+@examples[
+(regexp-replace* "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi" 
+                 "\\1y \\2")
+(regexp-replace* "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi" 
+                 (lambda (all one two)
+                   (string-append (string-downcase one) "y"
+                                  (string-upcase two))))
+(display (regexp-replace* #rx"x" "12x4x6" "\\\\"))
+]}
 
- @item{@defproc[(regexp-replace* [char-pattern any/c][string any/c][proc any/c]) any]
-%
-   is like @scheme[regexp-replace] with a procedure argument, but with
-   multiple instances replaced. The given @scheme[proc] is called once
-   for each match.}
+@defproc*[([(regexp-replace-quote [str string?][case-sensitive? any/c #f]) string?]
+           [(regexp-replace-quote [bstr bytes?][case-sensitive? any/c #f]) bytes?])]{
 
- @item{@defproc[(regexp-replace* [byte-pattern any/c][bytes any/c][proc any/c]) any]
-%
-   is like @scheme[regexp-replace*] with a string and procedure
-   argument, but the procedure accepts and produces byte strings.}
+Produces a string suitable for use as the third argument to
+@scheme[regexp-replace] to insert the literal sequence of characters
+in @scheme[str] or bytes in @scheme[bstr] as a replacement.
+Concretely, every @litchar["\\"] and @litchar{&} in @scheme[str] or
+@scheme[bstr] is protected by a quoting @litchar["\\"].
 
-}
+@examples[
+(regexp-replace "UT" "Go UT!" "A&M")
+(regexp-replace "UT" "Go UT!" (regexp-replace-quote "A&M"))
+]}
+

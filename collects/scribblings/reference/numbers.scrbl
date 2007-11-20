@@ -1,5 +1,6 @@
 #lang scribble/doc
 @require["mz.ss"]
+@require[(only-in scheme pi)]
 
 @title[#:tag "numbers"]{Numbers}
 
@@ -652,6 +653,25 @@ one of the last three integers must be non-zero.}
           (string->number "111" 7)  (string->number "#b111" 7)]
 }
 
+@defproc[(real->decimal-string [n real?] [decimal-digits nonnegative-exact-integer? 2])
+         string?]{
+
+Prints @scheme[n] into a string and returns the string. The printed
+form of @scheme[n] shows exactly @scheme[decimal-digits] digits after
+the decimal point. The printed for uses a minus sign if @scheme[n] is
+negative, and it does not use a plus sign if @scheme[n] is positive.
+
+Before printing, @scheme[n] is converted to an exact number,
+multiplied by @scheme[(expt 10 decimal-digits)], rounded, and then
+divided again by @scheme[(expt 10 decimal-digits)].  The result of ths
+process is an exact number whose decimal representation has no more
+than @scheme[decimal-digits] digits after the decimal (and it is
+padded with trailing zeros if necessary).
+
+@examples[
+(real->decimal-string pi)
+(real->decimal-string pi 5)
+]}
 
 @defproc[(integer-bytes->integer [bstr bytes?]
                                  [signed? any/c]
