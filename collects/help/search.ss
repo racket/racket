@@ -7,9 +7,11 @@
          scribble/basic
          scribble/manual
          (prefix-in scheme: scribble/scheme)
-         browser/external)
+         browser/external
+         mzlib/contract)
 
-(provide generate-search-results)
+(provide/contract
+ [generate-search-results (-> (listof string?) void?)])
 
 (define (make-extra-content desc)
   ;; Use `desc' to provide more details on the link:
