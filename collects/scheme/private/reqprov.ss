@@ -164,7 +164,7 @@
                   [else (error "huh?" mode)]))]
              [simple-path? (lambda (p)
                              (syntax-case p (lib)
-                               [(lib s)
+                               [(lib . _)
                                 (check-lib-form p)]
                                [_
                                 (or (identifier? p)
@@ -211,14 +211,14 @@
                    (and (simple-path? #'path)
                         ;; check that it's well-formed...
                         (call-with-values (lambda () (expand-import in))
-                          (lambda (a b) #t))
-                        (list (mode-wrap
-                               base-mode
-                               (datum->syntax
-                                #'path
-                                (syntax-e
-                                 (quasisyntax/loc in
-                                   (all-except path id ...)))))))]
+                          (lambda (a b) #t)))
+                   (list (mode-wrap
+                          base-mode
+                          (datum->syntax
+                           #'path
+                           (syntax-e
+                            (quasisyntax/loc in
+                              (all-except path id ...))))))]
                   ;; General case:
                   [_ (let-values ([(imports sources) (expand-import in)])
                        ;; TODO: collapse back to simple cases when possible

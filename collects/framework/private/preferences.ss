@@ -30,7 +30,7 @@ the state transitions / contracts are:
 
   (require (lib "string-constant.ss" "string-constants")
 	   (lib "class.ss")
-           (lib "file.ss")
+           scheme/file
            "sig.ss"
            "../gui-utils.ss"
            "../preferences.ss"
@@ -117,7 +117,7 @@ the state transitions / contracts are:
   ;;         (make-ppanel-interior string (union #f panel) (listof panel-tree)))
   (define-struct ppanel (name panel))
   (define-struct (ppanel-leaf ppanel) (maker))
-  (define-struct (ppanel-interior ppanel) (children))
+  (define-struct (ppanel-interior ppanel) (children) #:mutable)
   
   ;; ppanels : (listof ppanel-tree)
   (define ppanels null)

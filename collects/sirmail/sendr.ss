@@ -2,15 +2,14 @@
 ;; This module implements the mail-composing window. The `new-mailer'
 ;;  function creates a compose-window instance.
 
-(module sendr mzscheme
-  (require (lib "unit.ss")
-	   (lib "class.ss")
+(module sendr scheme/base
+  (require scheme/tcp
+           scheme/unit
+           scheme/class
 	   (lib "mred-sig.ss" "mred")
            (lib "framework.ss" "framework"))
 
-  (require (lib "list.ss")
-	   (lib "file.ss")
-	   (lib "string.ss")
+  (require scheme/file
 	   (lib "process.ss")
 	   (lib "mzssl.ss" "openssl"))
 
@@ -126,7 +125,8 @@
       
       (define-struct enclosure (name            ; identifies enclosure in the GUI
 				subheader       ; header for enclosure
-				data-thunk))    ; gets enclosure data as bytes (already encoded)
+				data-thunk)     ; gets enclosure data as bytes (already encoded)
+        #:mutable)
 
       ;; Create a message with enclosures.
       ;;  `header' is a message header created with the head.ss library

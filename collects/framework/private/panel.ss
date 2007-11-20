@@ -164,7 +164,7 @@
   (define-struct gap (before before-dim before-percentage after after-dim after-percentage))
   
   ;; type percentage : (make-percentage number)
-  (define-struct percentage (%))
+  (define-struct percentage (%) #:mutable)
   
   (define dragable<%>
     (interface (window<%> area-container<%>)

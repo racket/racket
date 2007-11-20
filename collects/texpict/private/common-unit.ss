@@ -17,7 +17,8 @@
 			   ascent   ; portion of height above top baseline
 			   descent  ; portion of height below bottom baseline
 			   children ; list of child records
-			   panbox)) ; panorama box
+			   panbox)  ; panorama box
+        #:mutable)
       (define-struct child (pict dx dy sx sy))
       (define-struct bbox (x1 y1 x2 y2 ay dy))
 

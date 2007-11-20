@@ -1,3 +1,3 @@
 (module reader syntax/module-reader
-  mzlib/a-signature)
+  scheme/signature/lang)
 

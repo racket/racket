@@ -511,7 +511,7 @@
             (λ (edit event)
               (let ([sel-start (send edit get-start-position)]
                     [sel-end (send edit get-end-position)])
-                (if (= sel-start sel-end)
+                (when (= sel-start sel-end)
                     (send* edit 
                       (insert #\newline)
                       (set-position sel-start)))))]
@@ -729,7 +729,7 @@
                         (get-text-from-user 
                          (string-constant goto-position)
                          (string-constant goto-position))))])
-                (if (string? num-str)
+                (when (string? num-str)
                     (let ([pos (string->number num-str)])
                       (when pos
                         (send edit set-position (sub1 pos))))))

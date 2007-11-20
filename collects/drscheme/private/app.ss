@@ -2,7 +2,7 @@
 #lang scheme/unit
   (require (lib "class.ss")
            (lib "list.ss")
-           (lib "file.ss")
+           scheme/file
            (lib "string-constant.ss" "string-constants")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")

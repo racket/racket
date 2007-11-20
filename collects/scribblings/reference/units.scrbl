@@ -593,28 +593,20 @@ declarations; @scheme[define-signature] has no splicing @scheme[begin]
 form.)}
 
 @defform/subs[
-#:literals (-type -selectors -setters -constructor)
-(struct id (field-id ...) omit-decl ...) 
+(struct id (field ...) option ...) 
 
-([omit-decl
-  -type
-  -selectors
-  -setters
-  -constructor])]{
+([field id
+        [id #:mutable]]
+ [option #:mutable
+         #:omit-constructor
+         #:omit-define-syntaxes
+         #:omit-define-values])]{
 
 For use with @scheme[define-signature]. The expansion of a
 @scheme[struct] signature form includes all of the identifiers that
-would be bound by @scheme[(define-struct id (field-id ...))], except
-that a @scheme[omit-decl] can cause some of the bindings to be
-omitted.  Specifically @scheme[-type] causes
-@schemeidfont{struct:}@scheme[id] to be omitted, @scheme[-selectors]
-causes all @scheme[id]@schemeidfont{-}@scheme[_field-id]s to be
-omitted, @scheme[-setters] causes all
-@schemeidfont{set-}@scheme[id]@schemeidfont{-}@scheme[field-id]@schemeidfont{!}s
-to be omitted, and @scheme[-construct] causes
-@schemeidfont{make-}@scheme[id] to be omitted.  These omissions are
-reflected in the static information bound to @scheme[id] (which is
-used by, for example, pattern matchers).}
+would be bound by @scheme[(define-struct id (field ...) option ...)],
+where the extra option @scheme[#:omit-constructor] omits the
+@schemeidfont{make-}@scheme[id] identifier.}
 
 @; ------------------------------------------------------------------------
 

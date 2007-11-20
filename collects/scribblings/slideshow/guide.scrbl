@@ -181,7 +181,7 @@ slideshow
 
 @; ------------------------------------------------------------------------
 
-@section{Display Size and Fonts}
+@section[#:tag "display-size"]{Display Size and Fonts}
 
 Slideshow is configured for generating slides in @math{1024} by
 @math{768} pixel format. When the current display has a different

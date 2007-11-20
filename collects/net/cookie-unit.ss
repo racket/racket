@@ -59,7 +59,7 @@
   (import)
   (export cookie^)
 
-  (define-struct cookie (name value comment domain max-age path secure version))
+  (define-struct cookie (name value comment domain max-age path secure version) #:mutable)
   (define-struct (cookie-error exn:fail) ())
 
   ;; error* : string args ... -> raises a cookie-error exception

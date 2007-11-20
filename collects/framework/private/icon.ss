@@ -1,5 +1,6 @@
 #lang scheme/unit
-  (require (lib "class.ss")
+  (require (for-syntax scheme/base)
+           (lib "class.ss")
            (lib "include-bitmap.ss" "mrlib")
            "bday.ss"
            "sig.ss"

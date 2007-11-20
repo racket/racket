@@ -1,7 +1,7 @@
-(module sig mzscheme
-  (require (lib "unit.ss"))
+(module sig scheme/base
+  (require scheme/unit)
   
-  (provide (prefix-all-defined-except framework: framework^)
+  (provide (prefix-out framework: (except-out (all-defined-out) framework^))
            framework^)
   
   (define-signature number-snip-class^ 

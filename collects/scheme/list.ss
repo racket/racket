@@ -46,14 +46,6 @@
       (raise-type-error 'rest "non-empty list" x))
     (cdr x))
 
-  (define (last-pair l)
-    (if (pair? l)
-      (let loop ([l l] [x (cdr l)])
-        (if (pair? x)
-          (loop x (cdr x))
-          l))
-      (raise-type-error 'last-pair "pair" l)))
-
   (define cons? (lambda (x) (pair? x)))
   (define empty? (lambda (x) (null? x)))
   (define empty '()))

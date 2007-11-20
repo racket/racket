@@ -11,7 +11,7 @@
            (lib "etc.ss")
            (lib "struct.ss")
            (lib "class.ss")
-           (lib "file.ss")
+           scheme/file
            (lib "list.ss")
            (lib "embed.ss" "compiler")
            (lib "launcher.ss" "launcher")
@@ -1131,7 +1131,7 @@
       (let ([s (reader (object-name port) port)])
         (if (syntax? s)
             (with-syntax ([s s]
-                          [t (namespace-syntax-introduce (datum->syntax-object #f '#%top-interaction))])
+                          [t (namespace-syntax-introduce (datum->syntax #f '#%top-interaction))])
               (syntax (t . s)))
             s))))
   

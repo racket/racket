@@ -1,6 +1,7 @@
 #lang scheme/unit
 
-  (require (lib "list.ss") (lib "process.ss") "dns-sig.ss")
+  (require (lib "list.ss") (lib "process.ss") "dns-sig.ss"
+           scheme/udp)
 
   (import)
   (export dns^)

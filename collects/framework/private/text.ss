@@ -18,7 +18,7 @@ WARNING: printf is rebound in the body of the unit to always
            (lib "etc.ss")
            (lib "dirs.ss" "setup")
            (lib "string.ss")
-           (prefix srfi1: (lib "1.ss" "srfi")))
+           (prefix-in srfi1: (lib "1.ss" "srfi")))
   
   (import mred^
           [prefix icon: framework:icon^]
@@ -954,7 +954,7 @@ WARNING: printf is rebound in the body of the unit to always
       get-box-input-editor-snip%
       get-box-input-text%))
   
-  (define-struct peeker (bytes skip-count pe resp-chan nack polling?) (make-inspector))
+  (define-struct peeker (bytes skip-count pe resp-chan nack polling?) #:inspector (make-inspector))
   (define-struct committer (kr commit-peeker-evt done-evt resp-chan resp-nack))
   
   (define msec-timeout 500)
@@ -1989,7 +1989,7 @@ WARNING: printf is rebound in the body of the unit to always
   ;;
   ;; queues
   ;;
-  (define-struct queue (front back count))
+  (define-struct queue (front back count) #:mutable)
   (define (empty-queue) (make-queue '() '() 0))
   (define (enqueue e q) (make-queue 
                          (cons e (queue-front q))

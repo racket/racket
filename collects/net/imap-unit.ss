@@ -1,6 +1,8 @@
 #lang scheme/unit
 
-  (require (lib "list.ss") "imap-sig.ss" "private/rbtree.ss")
+  (require scheme/tcp
+           "imap-sig.ss"
+           "private/rbtree.ss")
 
   (import)
   (export imap^)
@@ -252,7 +254,8 @@
       (info-handler i)))
 
   (define-struct imap (r w exists recent unseen uidnext uidvalidity
-                       expunges fetches new?))
+                       expunges fetches new?) 
+    #:mutable)
   (define (imap-connection? v) (imap? v))
 
   (define imap-port-number

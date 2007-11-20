@@ -1,4 +1,5 @@
-(module path-spec mzscheme
+(module path-spec scheme/base
+  (require (for-template scheme/base))
   (require "stx.ss")
 
   (provide resolve-path-spec)
@@ -19,7 +20,7 @@
 		(string->path s))]
 	     [(-build-path elem ...)
 	      (module-or-top-identifier=? #'-build-path build-path-stx)
-	      (let ([l (syntax-object->datum (syntax (elem ...)))])
+	      (let ([l (syntax->datum (syntax (elem ...)))])
 		(when (null? l)
 		  (raise-syntax-error
 		   #f
@@ -28,7 +29,7 @@
 		   fn))
 		(apply build-path l))]
 	     [(lib filename ...)
-	      (let ([l (syntax-object->datum (syntax (filename ...)))])
+	      (let ([l (syntax->datum (syntax (filename ...)))])
 		(unless (or (andmap string? l)
 			    (pair? l))
 		  (raise-syntax-error

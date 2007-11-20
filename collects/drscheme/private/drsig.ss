@@ -1,6 +1,6 @@
 
-(module drsig mzscheme
-  (require (lib "unit.ss"))
+(module drsig scheme/base
+  (require scheme/unit)
   
   (provide drscheme:eval^
            drscheme:debug^
@@ -33,8 +33,7 @@
      get-modes
      add-initial-modes
      (struct mode (name surrogate repl-submit matches-language) 
-             -setters
-             -constructor)))
+             #:omit-constructor)))
   
   (define-signature drscheme:font^
     (setup-preferences))
@@ -93,7 +92,7 @@
   (define-signature drscheme:language-configuration^
     (add-language
      get-languages
-     (struct language-settings (language settings) -setters)
+     (struct language-settings (language settings))
      get-settings-preferences-symbol
      language-dialog
      fill-language-dialog))
@@ -216,16 +215,15 @@
      create-executable-gui
      put-executable
      
-     ;(struct loc (source position line column span) -setters)
+     ;(struct loc (source position line column span))
      
-     (struct text/pos (text start end) -setters)
+     (struct text/pos (text start end))
      (struct simple-settings (case-sensitive 
                               printing-style 
                               fraction-style
                               show-sharing
                               insert-newlines
-                              annotations)
-             -setters)
+                              annotations))
      simple-settings->vector
      
      simple-module-based-language-config-panel

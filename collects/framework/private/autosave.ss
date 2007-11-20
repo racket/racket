@@ -2,7 +2,7 @@
 #lang scheme/unit
 
   (require (lib "class.ss")
-           (lib "file.ss")
+           scheme/file
            "sig.ss"
            "../gui-utils.ss"
            "../preferences.ss"

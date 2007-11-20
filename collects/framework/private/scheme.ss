@@ -75,7 +75,7 @@
                         (send text last-position)
                         (send text last-position)))
            saved-snips)
-          (datum->syntax-object
+          (datum->syntax
            #f
            (read (open-input-text-editor text))
            (list file line col pos 1))))
@@ -551,10 +551,10 @@
                  [get-proc
                   (λ ()
                     (let ([id-end (get-forward-sexp contains)])
-                      (if (and id-end (> id-end contains))
-                          (let* ([text (get-text contains id-end)])
-                            (or (get-keyword-type text tabify-prefs)
-                                'other)))))]
+                      (and (and id-end (> id-end contains))
+                           (let* ([text (get-text contains id-end)])
+                             (or (get-keyword-type text tabify-prefs)
+                                 'other)))))]
                  [procedure-indent
                   (λ ()
                     (case (get-proc)
@@ -715,7 +715,7 @@
             (let* ([first-para (position-paragraph start-pos)] 
                    [last-para (calc-last-para end-pos)]) 
               (let para-loop ([curr-para first-para]) 
-                (if (<= curr-para last-para) 
+                (when (<= curr-para last-para) 
                     (let ([first-on-para (paragraph-start-position curr-para)]) 
                       (insert #\; first-on-para) 
                       (para-loop (add1 curr-para)))))) 
@@ -964,8 +964,8 @@
                  [first-char (get-character pos)]
                  [paren? (or (char=? first-char #\( )
                              (char=? first-char #\[ ))]
-                 [closer (if paren? 
-                             (get-forward-sexp pos))])
+                 [closer (and paren? 
+                              (get-forward-sexp pos))])
             (if (and paren? closer)
                 (begin (begin-edit-sequence)
                        (delete pos (add1 pos))

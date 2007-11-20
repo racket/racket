@@ -131,7 +131,20 @@
                    [code (parameterize ([param (lambda (ext-file)
                                                  (set! external-deps
                                                        (cons (path->bytes ext-file)
-                                                             external-deps)))])
+                                                             external-deps)))]
+                                        [current-reader-guard
+                                         (let ([rg (current-reader-guard)])
+                                           (lambda (d)
+                                             (let ([d (rg d)])
+                                               (when (module-path? d)
+                                                 (let ([p (resolved-module-path-name
+                                                           (module-path-index-resolve
+                                                            (module-path-index-join d #f)))])
+                                                   (when (path? p)
+                                                     (set! external-deps
+                                                           (cons (path->bytes p)
+                                                                 external-deps)))))
+                                               d)))])
                            (get-module-code path mode))]
                    [code-dir (get-code-dir mode path)])
               (if (not (directory-exists? code-dir))

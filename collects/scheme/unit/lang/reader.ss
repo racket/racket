@@ -1,3 +1,2 @@
 (module reader syntax/module-reader
-  mzlib/a-unit)
-
+  scheme/unit/lang)

@@ -121,12 +121,15 @@
       ("quicktime" . quicktime)))
 
   ;; Basic structures
-  (define-struct message (version entity fields))
+  (define-struct message (version entity fields)
+    #:mutable)
   (define-struct entity
     (type subtype charset encoding disposition params id description other
-     fields parts body))
+     fields parts body) 
+    #:mutable)
   (define-struct disposition
-    (type filename creation modification read size params))
+    (type filename creation modification read size params)
+    #:mutable)
 
   ;; Exceptions
   (define-struct mime-error ())
@@ -227,7 +230,7 @@
           [(message multipart)
            (let ([boundary (entity-boundary entity)])
              (when (not boundary)
-               (if (eq? 'multipart (entity-type entity))
+               (when (eq? 'multipart (entity-type entity))
                  (raise (make-missing-multipart-boundary-parameter))))
              (set-entity-parts! entity
                                 (map (lambda (part)

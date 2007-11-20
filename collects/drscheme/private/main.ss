@@ -7,11 +7,11 @@
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            (lib "class.ss")
-           (prefix pretty-print: (lib "pretty.ss"))
-           (prefix print-convert: (lib "pconvert.ss"))
+           (prefix-in pretty-print: (lib "pretty.ss"))
+           (prefix-in print-convert: (lib "pconvert.ss"))
            (lib "include.ss")
            (lib "list.ss")
-           (lib "file.ss")
+           scheme/file
            (lib "external.ss" "browser")
            (lib "plt-installer.ss" "setup"))
   

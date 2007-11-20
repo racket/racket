@@ -3,7 +3,7 @@
   (require (lib "framework.ss" "framework")
            (lib "class.ss")
            (lib "mred.ss" "mred")
-           (lib "file.ss")
+           scheme/file
            (lib "thread.ss")
            (lib "async-channel.ss")
            (lib "string-constant.ss" "string-constants")

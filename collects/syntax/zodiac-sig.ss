@@ -30,7 +30,7 @@ eof?
 
 ;; zodiac struct:
 ;;  zodiac (stx) ; used to be (origin start finish)
-(struct zodiac (stx))
+(struct zodiac (stx) #:mutable)
 zodiac-origin    ; = identity
 zodiac-start     ; = identity
 zodiac-finish    ; = zodiac-start
@@ -40,70 +40,70 @@ zodiac-finish    ; = zodiac-start
 ;;    zread ; used to have (object)
 ;; The sub-tree has been cut off; inspect
 ;;  the stx object, instead.
-(struct zread ())
+(struct zread () #:mutable)
 
 ;; elaborator structs:
-(struct parsed (back))
+(struct parsed (back) #:mutable)
 
-(struct varref (var))
-(struct top-level-varref (module slot exptime? expdef? position))  ; added module, exptime?, position
+(struct varref (var) #:mutable)
+(struct top-level-varref (module slot exptime? expdef? position) #:mutable)  ; added module, exptime?, position
 create-top-level-varref
-(struct bound-varref (binding))   create-bound-varref
+(struct bound-varref (binding) #:mutable)   create-bound-varref
 
-(struct binding (var orig-name))  create-binding
+(struct binding (var orig-name) #:mutable)  create-binding
 
 make-lexical-varref
 lexical-varref? create-lexical-varref      ; alias for bound-varref
 make-lexical-binding
 lexical-binding?  create-lexical-binding   ; alias for binding
 
-(struct app (fun args))           create-app
+(struct app (fun args) #:mutable)           create-app
 
-(struct if-form (test then else))               create-if-form
-(struct quote-form (expr))                      create-quote-form
-(struct begin-form (bodies))                    create-begin-form
-(struct begin0-form (bodies))                   create-begin0-form
-(struct let-values-form (vars vals body))       create-let-values-form
-(struct letrec-values-form (vars vals body))    create-letrec-values-form
-(struct define-values-form (vars val))          create-define-values-form
-(struct set!-form (var val))                    create-set!-form
-(struct case-lambda-form (args bodies))         create-case-lambda-form
-(struct with-continuation-mark-form (key val body)) create-with-continuation-mark-form
+(struct if-form (test then else) #:mutable)               create-if-form
+(struct quote-form (expr) #:mutable)                      create-quote-form
+(struct begin-form (bodies) #:mutable)                    create-begin-form
+(struct begin0-form (bodies) #:mutable)                   create-begin0-form
+(struct let-values-form (vars vals body) #:mutable)       create-let-values-form
+(struct letrec-values-form (vars vals body) #:mutable)    create-letrec-values-form
+(struct define-values-form (vars val) #:mutable)          create-define-values-form
+(struct set!-form (var val) #:mutable)                    create-set!-form
+(struct case-lambda-form (args bodies) #:mutable)         create-case-lambda-form
+(struct with-continuation-mark-form (key val body) #:mutable) create-with-continuation-mark-form
 
 ;; Thess are new:
-(struct quote-syntax-form (expr))               create-quote-syntax-form
-(struct define-syntaxes-form (names expr))      create-define-syntaxes-form
-(struct define-for-syntax-form (names expr))    create-define-for-syntax-form
+(struct quote-syntax-form (expr) #:mutable)               create-quote-syntax-form
+(struct define-syntaxes-form (names expr) #:mutable)      create-define-syntaxes-form
+(struct define-for-syntax-form (names expr) #:mutable)    create-define-for-syntax-form
 (struct module-form (name requires            ; lstof stx for module paths
                           for-syntax-requires ; lstof stx for module paths
                           for-template-requires ; lstof stx for module paths
                           body                ; begin form
                           syntax-body         ; begin form
-                          provides  ; lstof (sym | (def-sym . prvd-sym) | (mod-path def-sym . prvd-sym))
+                          provides  ; lstof (sym | (def-sym . prvd-sym) #:mutable | (mod-path def-sym . prvd-sym))
                           syntax-provides  ;  ditto
                           indirect-provides   ; lstof sym
                           kernel-reprovide-hint ; #f | #t | exclude-sym
                           self-path-index))   ; module path index
 create-module-form
-(struct require/provide-form ())                create-require/provide-form
+(struct require/provide-form () #:mutable)                create-require/provide-form
 
 ;; These forms are highly mzc-specific. They are recongized
 ;;  as applications of the corresponding quoted symbols to the
 ;;  right kinds of arguments.
-(struct global-prepare (vec pos))             create-global-prepare
-(struct global-lookup (vec pos))              create-global-lookup
-(struct global-assign (vec pos expr))         create-global-assign
-(struct safe-vector-ref (vec pos))            create-safe-vector-ref
+(struct global-prepare (vec pos) #:mutable)             create-global-prepare
+(struct global-lookup (vec pos) #:mutable)              create-global-lookup
+(struct global-assign (vec pos expr) #:mutable)         create-global-assign
+(struct safe-vector-ref (vec pos) #:mutable)            create-safe-vector-ref
 global-prepare-id
 global-lookup-id
 global-assign-id
 safe-vector-ref-id
 
 ;; args:
-(struct arglist (vars))
-(struct sym-arglist ())
-(struct list-arglist ())
-(struct ilist-arglist ())
+(struct arglist (vars) #:mutable)
+(struct sym-arglist () #:mutable)
+(struct list-arglist () #:mutable)
+(struct ilist-arglist () #:mutable)
 
 make-empty-back-box
 register-client

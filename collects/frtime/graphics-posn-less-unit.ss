@@ -122,7 +122,7 @@
 |#       
        [on-char
 	(lambda (key-event)
-          (if key-listener
+          (when key-listener
               (send-event
                key-listener
                (make-sixkey

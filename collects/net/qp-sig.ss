@@ -1,9 +1,9 @@
 #lang scheme/signature
 
 ;; -- exceptions raised --
-(struct qp-error () -setters -constructor)
-(struct qp-wrong-input () -setters -constructor)
-(struct qp-wrong-line-size (size) -setters -constructor)
+(struct qp-error () #:omit-constructor)
+(struct qp-wrong-input () #:omit-constructor)
+(struct qp-wrong-line-size (size) #:omit-constructor)
 
 ;; -- qp methods --
 qp-encode

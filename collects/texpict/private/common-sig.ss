@@ -1,5 +1,5 @@
-(module common-sig mzscheme
-  (require (lib "unit.ss"))
+(module common-sig scheme/base
+  (require scheme/unit)
 
   (provide texpict-common^)
   (define-signature texpict-common^

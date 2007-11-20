@@ -8,7 +8,7 @@
            "bday.ss"
            (lib "mred-sig.ss" "mred")
            (lib "list.ss")
-           (lib "file.ss")
+           scheme/file
            (lib "etc.ss"))
   
   (import mred^
@@ -310,7 +310,7 @@
   (define-struct status-line (id count))
   
   ;; status-line-msg : (make-status-line-msg (is-a?/c message%) (union symbol #f))
-  (define-struct status-line-msg (message id))
+  (define-struct status-line-msg (message [id #:mutable]))
   
   (define status-line-mixin
     (mixin (basic<%>) (status-line<%>)

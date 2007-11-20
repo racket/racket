@@ -2,7 +2,6 @@
 #lang scheme/unit
   (require (lib "name-message.ss" "mrlib")
            (lib "string-constant.ss" "string-constants")
-           (lib "unit.ss")
            (lib "match.ss")
            (lib "class.ss")
            (lib "string.ss")
@@ -14,8 +13,7 @@
            (lib "head.ss" "net")
            (lib "plt-installer.ss" "setup")
            (lib "bug-report.ss" "help")
-           (prefix mzlib:file: (lib "file.ss")) (lib "file.ss")
-           (prefix mzlib:list: (lib "list.ss")))
+           scheme/file)
   
   (import [prefix drscheme:unit: drscheme:unit^]
           [prefix drscheme:app: drscheme:app^]
@@ -123,7 +121,7 @@
                             (filter (λ (binding) (not (bound-by-menu? binding menu-names)))
                                     bindings))]
                    [structured-list
-                    (mzlib:list:sort
+                    (sort
                      w/menus
                      (λ (x y) (string-ci<=? (cadr x) (cadr y))))])
               (show-keybindings-to-user structured-list this))
@@ -500,8 +498,8 @@
                        (λ (a b) (string-ci<=? (cadr a) (cadr b)))])
                   (send lb set
                         (if by-key?
-                            (map format-binding/key (mzlib:list:sort bindings predicate/key))
-                            (map format-binding/name (mzlib:list:sort bindings predicate/name))))))])
+                            (map format-binding/key (sort bindings predicate/key))
+                            (map format-binding/name (sort bindings predicate/name))))))])
       (send bp stretchable-height #f)
       (send bp set-alignment 'center 'center)
       (send bp2 stretchable-height #f)

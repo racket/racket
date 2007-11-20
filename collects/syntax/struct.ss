@@ -1,14 +1,16 @@
 
-(module struct mzscheme
-  (require (lib "etc.ss")
+(module struct scheme/base
+  (require (for-syntax scheme/base)
+           (lib "etc.ss")
            (lib "contract.ss")
 	   "stx.ss"
            (lib "struct-info.ss" "scheme"))
-  (require-for-template mzscheme)
+  (require (for-template mzscheme))
   
   (provide parse-define-struct
 
 	   build-struct-generation
+	   build-struct-generation*
 	   build-struct-expand-info
 	   struct-declaration-info?
 	   extract-struct-info
@@ -96,7 +98,7 @@
 	    [fields (map symbol->string (map syntax-e fields))]
 	    [+ string-append])
 	(map (lambda (s)
-	       (datum->syntax-object name-stx (string->symbol s) srcloc-stx))
+	       (datum->syntax name-stx (string->symbol s) srcloc-stx))
 	     (append
 	      (list 
 	       (+ "struct:" name)
@@ -155,8 +157,14 @@
 		   ,@acc/mut-makers)))))
 
   (define build-struct-expand-info
-    (lambda (name-stx fields omit-sel? omit-set? base-name base-getters base-setters)
-      (let* ([names (build-struct-names name-stx fields omit-sel? omit-set?)])
+    (lambda (name-stx fields omit-sel? omit-set? base-name base-getters base-setters 
+                      #:omit-constructor? [no-ctr? #f])
+      (let* ([names (build-struct-names name-stx fields omit-sel? omit-set?)]
+             [names (if no-ctr?
+                        (list* (car names)
+                               #f
+                               (cddr names))
+                        names)])
 	(build-struct-expand-info* names name-stx fields omit-sel? omit-set? base-name base-getters base-setters))))
 
   (define build-struct-expand-info*

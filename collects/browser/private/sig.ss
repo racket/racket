@@ -1,5 +1,5 @@
-(module sig mzscheme
-  (require (lib "unit.ss"))
+(module sig scheme/base
+  (require scheme/unit)
   
   (provide relative-btree^
            bullet-export^
