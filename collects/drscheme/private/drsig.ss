@@ -200,9 +200,7 @@
      goto-release-notes
      goto-plt-license
      help-desk
-     get-docs
-     open-url
-     add-help-desk-font-prefs))
+     get-docs))
   
   (define-signature drscheme:language^
     (get-default-mixin

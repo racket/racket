@@ -204,7 +204,6 @@
    list?)
   
   (drscheme:font:setup-preferences)
-  (drscheme:help-desk:add-help-desk-font-prefs #t)
   (color-prefs:add-background-preferences-panel)
   (scheme:add-preferences-panel)
   (scheme:add-coloring-preferences-panel)

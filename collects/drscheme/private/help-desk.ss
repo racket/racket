@@ -3,7 +3,8 @@
   (require (lib "string-constant.ss" "string-constants")
            (lib "mred.ss" "mred")
            (lib "external.ss" "browser")
-           (lib "help-desk.ss" "help")
+           (lib "bug-report.ss" "help")
+	   (lib "buginfo.ss" "help" "private")
            (lib "framework.ss" "framework")
            (lib "class.ss")
            (lib "list.ss")
@@ -13,10 +14,9 @@
   
   (import [prefix drscheme:frame: drscheme:frame^]
           [prefix drscheme:language-configuration: drscheme:language-configuration/internal^])
-  (export (rename drscheme:help-desk^
-                  [-add-help-desk-font-prefs add-help-desk-font-prefs]))
+  (export drscheme:help-desk^)
   
-  (define (-add-help-desk-font-prefs b) (add-help-desk-font-prefs b))
+  (define (-add-help-desk-font-prefs b) '(add-help-desk-font-prefs b))
   
   ;; : -> string
   (define (get-computer-language-info)
@@ -32,87 +32,7 @@
         (send language get-language-position)
         (send language marshall-settings settings)))))
   
-  ;; get-docs : (listof (cons path[short-dir-name] string[doc full name]))
-  (define (get-docs) 
-    (let ([dirs (find-doc-names)])
-      (map (λ (pr)
-             (let-values ([(base name dir?) (split-path (car pr))])
-               (cons name (cdr pr))))
-           dirs)))
-  
   (set-bug-report-info! "Computer Language" get-computer-language-info)
-  
-  (define drscheme-help-desk-mixin
-    (mixin (help-desk-frame<%> frame:standard-menus<%>) ()
-      (define/override (file-menu:create-open-recent?) #t)
-      
-      (define/override (file-menu:new-callback x y)
-        (handler:edit-file #f)
-        #t)
-      (define/override (file-menu:between-save-as-and-print menu)
-        (new separator-menu-item% (parent menu)))
-      
-      (define current-language 
-        (preferences:get drscheme:language-configuration:settings-preferences-symbol))
-      (define/public (set-current-language cl)
-        (set! current-language cl))
-      
-      (define/override (order-manuals x)
-        (send (drscheme:language-configuration:language-settings-language current-language)
-              order-manuals
-              x))
-      (define/override (get-language-name)
-        (send (drscheme:language-configuration:language-settings-language current-language)
-              get-language-name))
-      
-      (define/override (file-menu:between-new-and-open file-menu)
-        (instantiate menu:can-restore-menu-item% ()
-          (label (string-constant plt:hd:new-help-desk))
-          (parent file-menu)
-          (callback (λ (x y) (new-help-desk))))
-        (super file-menu:between-new-and-open file-menu))
-      
-      (super-new)
-      
-      (inherit get-menu-bar)
-      (inherit-field choices-panel)
-      (letrec ([language-menu (new menu% 
-                                   (parent (get-menu-bar))
-                                   (label (string-constant language-menu-name)))]
-               [change-language-callback
-                (λ ()
-                  (let ([new-settings (drscheme:language-configuration:language-dialog
-                                       #f
-                                       current-language
-                                       this 
-                                       #t)])
-                    (when new-settings
-                      (set! current-language new-settings)
-                      (send lang-message set-msg (get-language-name))
-                      (preferences:set
-                       drscheme:language-configuration:settings-preferences-symbol
-                       new-settings))))]
-               [lang-message
-                (new lang-message% 
-                     (button-release (λ () (change-language-callback)))
-                     (parent choices-panel)
-                     (font normal-control-font))]
-               [language-item (new menu-item%
-                                   (label (string-constant choose-language-menu-item-label))
-                                   (parent language-menu)
-                                   (shortcut #\l)
-                                   (callback
-                                    (λ (x y)
-                                      (change-language-callback))))])
-        (frame:reorder-menus this)
-        (send lang-message set-msg (get-language-name))
-        
-        ;; move the grow box spacer pane to the end
-        (send choices-panel change-children
-              (λ (l)
-                (append
-                 (filter (λ (x) (not (is-a? x grow-box-spacer-pane%))) l)
-                 (list (car (filter (λ (x) (is-a? x grow-box-spacer-pane%)) l)))))))))
   
   (define lang-message%
     (class canvas%
@@ -145,40 +65,22 @@
                (send dc draw-text dots (- cw dw) (- (/ ch 2) (/ th 2)))]))))
       (super-new)))
   
+  (define (goto-manual-link a b) (error 'goto-maual-link "~s ~s" a b))
+  (define (goto-hd-location b) (error 'goto-hd-location "~s" b))
+
   (define (goto-help manual link) (goto-manual-link manual link))
   (define (goto-tour) (goto-hd-location 'hd-tour))
   (define (goto-release-notes) (goto-hd-location 'release-notes))
   (define (goto-plt-license) (goto-hd-location 'plt-license))
   
+  (define (get-docs) (error 'help-desk.ss "get-docs"))
+
   (define help-desk
     (case-lambda
-      [() (show-help-desk)]
+      [() (void)]
       [(key) (help-desk key #f)]
       [(key lucky?) (help-desk key lucky? 'keyword+index)]
       [(key lucky? type) (help-desk key lucky? type 'contains)]
       [(key lucky? type mode) (help-desk key lucky? type mode #f)]
       [(key lucky? type mode language)
-       (let ([frame (or (find-help-desk-frame)
-                        (new-help-desk))])
-         (when language 
-           (send frame set-current-language language))
-         (search-for-docs/in-frame
-          frame
-          key
-          (case type
-            [(keyword) "keyword"]
-            [(keyword+index) "keyword-index"]
-            [(keyword+index+text) "keyword-index-text"]
-            [else (error 'drscheme:help-desk:help-desk "unknown type argument: ~s" type)])
-          (case mode
-            [(exact) "exact-match"]
-            [(contains) "containing-match"]
-            [(regexp) "regexp-match"]
-            [else (error 'drscheme:help-desk:help-desk "unknown mode argument: ~s" mode)])
-          lucky?
-          (map car (get-docs))))]))
-  
-  ;; open-url : string -> void
-  (define (open-url x) (send-url x))
-  
-  (add-help-desk-mixin drscheme-help-desk-mixin)
+       (void)]))

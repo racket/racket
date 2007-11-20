@@ -1325,12 +1325,6 @@
   ;                      ;                                            
   ;                      ;                                            
   
-  (drscheme:help-desk:open-url
-   (string? . -> . void?)
-   (url)
-   
-   "Opens \\var{url} in a new help desk window.")
-  
   (drscheme:help-desk:help-desk
    (case->
     (-> void?)
