@@ -13,4 +13,4 @@ if [ "x${MODE}" == "xgraphical" ] ; then
     PROG=mred
 fi
 
-${PROG} -mvt ${FILE} -e "(begin (require (planet \"${MODE}-ui.ss\" (\"schematics\" \"schemeunit.plt\" 2))) (test/${MODE}-ui ${T}))"
+${PROG} -e "(begin (require \"${FILE}\") (require (planet \"${MODE}-ui.ss\" (\"schematics\" \"schemeunit.plt\" 2))) (test/${MODE}-ui ${T}))"

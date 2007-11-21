@@ -1,8 +1,8 @@
 (module servlet-env-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (only (planet "ssax.ss" ("lizorkin" "ssax.plt" 1 3))
+           #;(only (planet "ssax.ss" ("lizorkin" "ssax.plt" 1 3))
                  ssax:xml->sxml)
-           (planet "sxml.ss" ("lizorkin" "sxml.plt" 1 4))
+           #;(planet "sxml.ss" ("lizorkin" "sxml.plt" 1 4))
            (lib "etc.ss")
            (lib "list.ss")
            (lib "pretty.ss")
@@ -10,7 +10,7 @@
            (lib "servlet-env.ss" "web-server"))
   (provide servlet-env-tests)
   
-  (define (call u bs)
+  #;(define (call u bs)
     (define sx (ssax:xml->sxml (get-pure-port (string->url u)) empty))
     (pretty-print sx)
     sx)
@@ -18,6 +18,8 @@
   (define servlet-env-tests
     (test-suite
      "Servlet Environment"
+     
+     ; XXX At least just check whether the server can be started by the servlet-env guts
      
      ; XXX Broken
      #;(test-not-exn "Add two numbers"

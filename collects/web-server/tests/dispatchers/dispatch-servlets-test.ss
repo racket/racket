@@ -1,6 +1,6 @@
 (module dispatch-servlets-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (planet "sxml.ss" ("lizorkin" "sxml.plt" 1 4))
+           #;(planet "sxml.ss" ("lizorkin" "sxml.plt" 1 4))
            (lib "etc.ss")
            (lib "list.ss")
            (lib "request-structs.ss" "web-server" "private")
@@ -10,6 +10,9 @@
            (prefix servlets: (lib "dispatch-servlets.ss" "web-server" "dispatchers"))
            "../util.ss")
   (provide dispatch-servlets-tests)
+  
+  ; XXX Sxpath broken
+  (define sxpath (lambda _ (lambda _ (error 'sxpath))))
   
   (current-server-custodian (current-custodian))
   

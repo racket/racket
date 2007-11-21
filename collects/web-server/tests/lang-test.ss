@@ -222,7 +222,7 @@
                    (hash-table-get the-table (car key-pair) (lambda () #f)))))])         
          (table-01-eval
           '(module m06 (lib "lang.ss" "web-server")
-             (require table01)
+             (require 'table01)
              (provide start)
              
              (define (gn which)
@@ -236,7 +236,7 @@
                (let ([result (+ (gn "first") (gn "second"))])
                  (let ([ignore (printf "The answer is: ~s~n" result)])
                    result)))))         
-         (table-01-eval '(require m06))         
+         (table-01-eval '(require 'm06))         
          (let* ([first-key (table-01-eval '(dispatch-start start 'foo))]
                 [second-key (table-01-eval `(dispatch lookup-k '(,first-key 1)))]
                 [third-key (table-01-eval `(dispatch lookup-k '(,first-key -7)))])                    
@@ -391,12 +391,12 @@
                             (printf "result = ~s~n" result)
                             result))))])
          (nta-eval '(module m09 (lib "lang.ss" "web-server")
-                      (require nta)
+                      (require 'nta)
                       (provide start)
                       (define (start ignore)
                         (non-tail-apply (lambda (x) (let/cc k (k x))) 7))))
          
-         (nta-eval '(require m09))
+         (nta-eval '(require 'm09))
          
          (check-true (catch-unsafe-context-exn
                       (lambda () (nta-eval '(dispatch-start start 'foo)))))))
@@ -444,13 +444,13 @@
                    (apply f args))))])
          
          (ta-eval '(module m12 (lib "lang.ss" "web-server")
-                     (require ta)
+                     (require 'ta)
                      (provide start)
                      (define (start initial)
                        (+ initial 
                           (tail-apply (lambda (x) (let/cc k (k x))) 1)))))
          
-         (ta-eval '(require m12))
+         (ta-eval '(require 'm12))
          
          (check = 2 (ta-eval '(dispatch-start start 1)))))
       
@@ -483,7 +483,7 @@
                           (apply f args))))])
          
          (ta-eval '(module m14 (lib "lang.ss" "web-server")
-                     (require ta)
+                     (require 'ta)
                      (provide start)
                      (define (start ignore)
                        (+ 1 (tail-apply
@@ -493,7 +493,7 @@
                                  (lambda (k)
                                    (let ([ignore (printf "n = ~s~n" n)])
                                      k))))) 7)))))
-         (ta-eval '(require m14))
+         (ta-eval '(require 'm14))
          
          (let ([k0 (ta-eval '(dispatch-start start 'foo))])
            (check = 3 (ta-eval `(dispatch ,the-dispatch (list ,k0 2))))

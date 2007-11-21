@@ -4,6 +4,7 @@
            (lib "file.ss")
            (lib "url.ss" "net")
            (lib "list.ss")
+           (lib "serialize.ss")
            (lib "request-structs.ss" "web-server" "private")
            (lib "dispatch.ss" "web-server" "dispatchers")
            (prefix passwords: (lib "dispatch-passwords.ss" "web-server" "dispatchers"))
@@ -52,8 +53,9 @@
                exn:dispatcher?
                (lambda () (runt #t #t)))
      (test-equal? "not authorized"
-                  (runt #t #f)
-                  `(WWW-Authenticate . " Basic realm=\"secret stuff\""))
+                  (let ([v (runt #t #f)])
+                    (list (header-field v) (header-value v)))
+                  (list #"WWW-Authenticate" #" Basic realm=\"secret stuff\""))
      (test-exn "does not apply"
                exn:dispatcher?
                (lambda ()
