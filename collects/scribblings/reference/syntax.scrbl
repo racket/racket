@@ -1434,16 +1434,16 @@ pre-defined forms are as follows.
  @scheme[struct-out] for export.}
 
  @defsubform[(protect-out provide-spec ...)]{ Like the union of the
- @scheme[provide-spec]s, except that theexports are protected; see
+ @scheme[provide-spec]s, except that the exports are protected; see
  @secref["modprotect"]. The @scheme[provide-spec] must specify only
  bindings that are defined within the exporting module.}
 
  @specsubform[#:literals (for-syntax) 
               (for-syntax provide-spec ...)]{ Like the union of the
- @scheme[provide-spec]s, but adjusted to apply to @scheme{phase level}
+ @scheme[provide-spec]s, but adjusted to apply to @tech{phase level}
  1. In particular, an @scheme[id] or @scheme[rename-out] formas a
- @scheme[provide-spec] refers to a @scheme{phase-level} 1 binding, an
- @scheme[all-define-out] exports only @scheme{phase level} 1
+ @scheme[provide-spec] refers to a @tech{phase-level}-1 binding, an
+ @scheme[all-define-out] exports only @tech{phase-level}-1
  definitions, and an @scheme[all-from-out] exports only bindings
  imported with a shift to @tech{phase level} 1.}
 
