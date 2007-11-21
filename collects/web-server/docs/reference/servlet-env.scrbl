@@ -3,11 +3,12 @@
 
 @title[#:tag "servlet-env.ss"
        #:style 'toc]{Environment}
+@require[(for-label web-server/servlet-env)]
 
 The @web-server provides a means of running Scheme servlets
 from within DrScheme, or any other REPL.
 
-@file{servlet-env.ss} provides the servlet API from @file{servlet.ss}
+@filepath{servlet-env.ss} provides the servlet API from @filepath{servlet.ss}
 as well as the following:
 
 @defthing[send-url (parameter/c ([url string?] [separate-window? boolean?] . -> . void))]{

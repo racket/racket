@@ -32,10 +32,11 @@ the server runs until the process is killed.
 
 @; ------------------------------------------------------------
 @section[#:tag "web-server.ss"]{Functional}
+@require[(for-label web-server/web-server)]
 
-@file{web-server.ss} provides a number of functions for easing embedding
+@filepath{web-server.ss} provides a number of functions for easing embedding
 of the @web-server in other applications, or loading a custom
-dispatcher. See @file{run.ss} for an example of such a script.
+dispatcher. See @filepath{run.ss} for an example of such a script.
 
 @defproc[(serve [#:dispatch dispatch dispatcher?]
                 [#:tcp\@ tcp\@ tcp-unit^ raw:tcp\@]

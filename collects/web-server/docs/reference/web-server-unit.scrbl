@@ -3,10 +3,12 @@
 
 @title[#:tag "web-server-unit.ss"
        #:style 'toc]{Web Server Unit}
+@require[(for-label web-server/web-server-sig)]
+@require[(for-label web-server/web-server-unit)]
 
 The @web-server offers a unit-based approach to running the server.
 
-@file{web-server-sig.ss} provides the @defthing[web-server^ signature?] signature
+@filepath{web-server-sig.ss} provides the @defthing[web-server^ signature?] signature
 with two elements:
 
  @defproc[(serve) (-> void)]{
@@ -20,7 +22,7 @@ with two elements:
  @scheme[op].
  }
 
-@file{web-server-unit.ss} provides the @defthing[web-server\@ unit?] unit. It
+@filepath{web-server-unit.ss} provides the @defthing[web-server\@ unit?] unit. It
 imports a @scheme[web-config^] unit and a @scheme[tcp^] unit. It uses the
 @scheme[web-config^] to construct a @scheme[dispatcher?] function that
 sets up one virtual host dispatcher, for each virtual host in the @scheme[web-config^],

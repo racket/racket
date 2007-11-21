@@ -26,23 +26,22 @@ the following identifier:
 @; ------------------------------------------------------------
 @section[#:tag "considerations"]{Usage Considerations}
 
-
 A servlet has the following process performed on it automatically:
 @itemize[
  @item{All uses of @scheme[letrec] are removed and replaced with equivalent uses of
-       @scheme[let] and imperative features. (@file{lang/elim-letrec.ss})}
+       @scheme[let] and imperative features. (@filepath{lang/elim-letrec.ss})}
  @item{The program is converted into ANF (Administrative Normal Form),
-       making all continuations explicit. (@file{lang/anormal.ss})}
+       making all continuations explicit. (@filepath{lang/anormal.ss})}
  @item{All continuations (and other continuations marks) are recorded in the
        continuation marks of the expression
-       they are the continuation of. (@file{lang/elim-callcc.ss})}
+       they are the continuation of. (@filepath{lang/elim-callcc.ss})}
  @item{All calls to external modules are identified and marked.
-       (@file{lang/elim-callcc.ss})}
+       (@filepath{lang/elim-callcc.ss})}
  @item{All uses of @scheme[call/cc] are removed and replaced with
        equivalent gathering of the continuations through the continuation-marks.
-       (@file{lang/elim-callcc.ss})}
+       (@filepath{lang/elim-callcc.ss})}
  @item{The program is defunctionalized with a serializable data-structure for each
-       anonymous lambda. (@file{lang/defun.ss})}
+       anonymous lambda. (@filepath{lang/defun.ss})}
 ]
 
 This process allows the continuations captured by your servlet to be serialized.
@@ -100,8 +99,9 @@ by the Web language API.
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/web.ss"]{Web}
+@require[(for-label web-server/lang/web)]
 
-@file{lang/web.ss} provides the most basic Web functionality.
+@filepath{lang/web.ss} provides the most basic Web functionality.
 
 @defproc[(send/suspend/url [response-generator (url? . -> . response?)])
          request?]{
@@ -139,8 +139,9 @@ by the Web language API.
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/stuff-url.ss"]{Stuff URL}
+@require[(for-label web-server/lang/stuff-url)]
 
-@file{lang/stuff-url.ss} provides an interface for "stuffing"
+@filepath{lang/stuff-url.ss} provides an interface for "stuffing"
 serializable values into URLs. Currently there is a particular
 hard-coded behavior, but we hope to make it more flexible in
 the future.
@@ -150,7 +151,7 @@ the future.
          url?]{
  Serializes @scheme[v] and computes the MD5 of the serialized
  representation. The serialization of @scheme[v] is written to
- @file{$HOME/.urls/M} where `M' is the MD5. `M' is then
+ @filepath{$HOME/.urls/M} where `M' is the MD5. `M' is then
  placed in @scheme[u] as a URL param.
 }
 
@@ -174,18 +175,20 @@ In the future, we will offer the facilities to:
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/web-extras.ss"]{Web Extras}
+@require[(for-label web-server/lang/web-extras)]
 
-@file{lang/web-extras.ss} provides @scheme[send/suspend/dispatch] and
+@filepath{lang/web-extras.ss} provides @scheme[send/suspend/dispatch] and
 @scheme[redirect/get] as @secref["web.ss"], except they use
 @scheme[embed-proc/url] + @scheme[extract-proc/url] and
 @scheme[send/suspend/url] respectively.
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/file-box.ss"]{File Boxes}
+@require[(for-label web-server/lang/file-box)]
 
 As mentioned earlier, it is dangerous to rely on the store in
 Web Language servlets, due to the deployment scenarios available
-to them. @file{lang/file-box.ss} provides a simple API to replace
+to them. @filepath{lang/file-box.ss} provides a simple API to replace
 boxes in a safe way.
 
 @defproc[(file-box? [v any/c])
@@ -219,9 +222,10 @@ are on a shared medium.}
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/web-param.ss"]{Web Parameters}
+@require[(for-label web-server/lang/web-param)]
 
 As mentioned earlier, it is not easy to use @scheme[parameterize] in the
-Web Language. @file{lang/web-param.ss} provides (roughly) the same
+Web Language. @filepath{lang/web-param.ss} provides (roughly) the same
 functionality in a way that is serializable. Like other serializable
 things in the Web Language, they are sensitive to source code modification.
 
@@ -246,7 +250,8 @@ things in the Web Language, they are sensitive to source code modification.
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/web-cells.ss"]{Web Cells}
+@require[(for-label web-server/lang/web-cells)]
 
-@file{lang/web-cells.ss} provides the same API as @secref["web-cells.ss"],
+@filepath{lang/web-cells.ss} provides the same API as @secref["web-cells.ss"],
 but in a way compatible with the Web Language. The one difference is that
 @scheme[make-web-cell] is syntax, rather than a function.

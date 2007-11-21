@@ -6,7 +6,7 @@
 
 The @web-server allows servlets to be written in Scheme. It
 provides the supporting API, described below, for the construction
-of these servlets. This API is provided by @file{servlet.ss}.
+of these servlets. This API is provided by @filepath{servlet.ss}.
 
 @local-table-of-contents[]
 
@@ -51,8 +51,9 @@ provides:
 
 @; ------------------------------------------------------------
 @section[#:tag "servlet-structs.ss"]{Contracts}
+@require[(for-label web-server/servlet/servlet-structs)]
 
-@file{servlet/servlet-structs.ss} provides a number of contracts
+@filepath{servlet/servlet-structs.ss} provides a number of contracts
 for use in servlets.
 
 @defthing[k-url? contract?]{Equivalent to @scheme[string?].}
@@ -67,10 +68,11 @@ for use in servlets.
 
 @; ------------------------------------------------------------
 @section[#:tag "request-structs.ss"]{HTTP Requests}
+@require[(for-label web-server/private/request-structs)]
 
 @; XXX Create http sub-directory
 @; XXX Have this include read-request and write-response
-@file{private/request-structs.ss} provides a number of structures and functions
+@filepath{private/request-structs.ss} provides a number of structures and functions
 related to HTTP request data structures.
 
 @defstruct[header ([field bytes?]
@@ -123,8 +125,9 @@ related to HTTP request data structures.
 
 @; ------------------------------------------------------------
 @section[#:tag "bindings.ss"]{Request Bindings}
+@require[(for-label web-server/servlet/bindings)]
 
-@file{servlet/bindings.ss} provides a number of helper functions
+@filepath{servlet/bindings.ss} provides a number of helper functions
 for accessing request bindings.
 
 @defproc[(request-bindings [req request?])
@@ -173,8 +176,9 @@ you lose the filename.
 
 @; ------------------------------------------------------------
 @section[#:tag "response-structs.ss"]{HTTP Responses}
+@require[(for-label web-server/private/response-structs)]
 
-@file{private/response-structs.ss} provides structures and functions related to
+@filepath{private/response-structs.ss} provides structures and functions related to
 HTTP responses.
 
 @; XXX Only use bytes
@@ -231,8 +235,9 @@ transmission that the server will not catch.}
 
 @; ------------------------------------------------------------
 @section[#:tag "web.ss"]{Web}
+@require[(for-label web-server/servlet/web)]
 
-@file{servlet/web.ss} provides the primary functions of interest for the
+@filepath{servlet/web.ss} provides the primary functions of interest for the
 servlet developer.
 
 @defproc[(send/back [response response?])
@@ -316,9 +321,10 @@ servlet developer.
 
 @; ------------------------------------------------------------
 @section[#:tag "helpers.ss"]{Helpers}
+@require[(for-label web-server/servlet/helpers)]
 
-@file{servlet/helpers.ss} provides functions built on
-@file{servlet/web.ss} that are useful in many servlets.
+@filepath{servlet/helpers.ss} provides functions built on
+@filepath{servlet/web.ss} that are useful in many servlets.
 
 @; XXX Move into http/response.ss
 @defproc[(redirect-to [uri string?]
@@ -349,8 +355,9 @@ servlet developer.
 @; XXX Depreciate
 @; ------------------------------------------------------------
 @section[#:tag "servlet-url.ss"]{Servlet URLs}
+@require[(for-label web-server/servlet/servlet-url)]
 
-@file{servlet/servlet-url.ss} provides functions that might be useful to you.
+@filepath{servlet/servlet-url.ss} provides functions that might be useful to you.
 They may eventually provided by another module.
 
 @defproc[(request->servlet-url (req request?))
@@ -365,8 +372,9 @@ They may eventually provided by another module.
 @; XXX Support Digest
 @; ------------------------------------------------------------
 @section[#:tag "basic-auth.ss"]{Basic Authentication}
+@require[(for-label web-server/servlet/basic-auth)]
 
-@file{servlet/basic-auth.ss} provides a function for helping with
+@filepath{servlet/basic-auth.ss} provides a function for helping with
 implementation of HTTP Basic Authentication.
 
 @defproc[(extract-user-pass [heads (listof header?)])
@@ -377,8 +385,9 @@ implementation of HTTP Basic Authentication.
 
 @; ------------------------------------------------------------
 @section[#:tag "web-cells.ss"]{Web Cells}
+@require[(for-label web-server/servlet/web-cells)]
 
-@file{servlet/web-cell.ss} provides the interface to web cells.
+@filepath{servlet/web-cells.ss} provides the interface to web cells.
 
 A web cell is a kind of state defined relative to the @defterm{frame tree}.
 The frame-tree is a mirror of the user's browsing session. Every time a

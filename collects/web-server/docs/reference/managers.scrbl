@@ -15,8 +15,9 @@ pluggable through the manager interface.
 
 @; ------------------------------------------------------------
 @section[#:tag "manager.ss"]{General}
+@require[(for-label web-server/managers/manager)]
 
-@file{managers/manager.ss} defines the manager interface. It is required by
+@filepath{managers/manager.ss} defines the manager interface. It is required by
 the users and implementers of managers.
 
 @defstruct[manager ([create-instance ((-> void) . -> . number?)]
@@ -62,8 +63,9 @@ the users and implementers of managers.
 
 @; ------------------------------------------------------------
 @section[#:tag "none.ss"]{No Continuations}
+@require[(for-label web-server/managers/none)]
 
-@file{managers/none.ss} defines a manager constructor:
+@filepath{managers/none.ss} defines a manager constructor:
 
 @defproc[(create-none-manager (instance-expiration-handler expiration-handler?))
          manager?]{
@@ -78,8 +80,9 @@ Web Language. (See @secref["lang"].)
 
 @; ------------------------------------------------------------
 @section[#:tag "timeouts.ss"]{Timeouts}
+@require[(for-label web-server/managers/timeouts)]
 
-@file{managers/timeouts.ss} defines a manager constructor:
+@filepath{managers/timeouts.ss} defines a manager constructor:
 
 @defproc[(create-timeout-manager [instance-exp-handler expiration-handler?]
                                  [instance-timeout number?]
@@ -105,8 +108,9 @@ deployments of the @web-server .
 
 @; ------------------------------------------------------------
 @section[#:tag "lru.ss"]{LRU}
+@require[(for-label web-server/managers/lru)]
 
-@file{managers/lru.ss} defines a manager constructor:
+@filepath{managers/lru.ss} defines a manager constructor:
 
 @defproc[(create-LRU-manager
           [instance-expiration-handler expiration-handler?]

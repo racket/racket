@@ -1,7 +1,7 @@
 (module info setup/infotab
   (define name "Web Server")  
-  ; Name clash
-  #;(define scribblings '(("docs/reference/reference.scrbl" (multi-page main-doc))))
+  (define scribblings '(("docs/reference/web-reference.scrbl" (multi-page main-doc))
+                        ("docs/guide/web-guide.scrbl" (multi-page main-doc))))
   
   (define mzscheme-launcher-libraries
     (list "private/launch-text.ss"))

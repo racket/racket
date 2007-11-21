@@ -15,8 +15,9 @@ documentation will be useful.
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch.ss"]{General}
+@require[(for-label web-server/dispatchers/dispatch)]
 
-@file{dispatchers/dispatch.ss} provides a few functions for dispatchers in general.
+@filepath{dispatchers/dispatch.ss} provides a few functions for dispatchers in general.
 
 @defthing[dispatcher? contract?]{
  Equivalent to @scheme[(connection? request? . -> . void)].
@@ -57,8 +58,9 @@ Consider the following example dispatcher, that captures the essence of URL rewr
 
 @; ------------------------------------------------------------
 @section[#:tag "filesystem-map.ss"]{Mapping URLs to Paths}
+@require[(for-label web-server/dispatchers/filesystem-map)]
 
-@file{dispatchers/filesystem-map.ss} provides a means of mapping
+@filepath{dispatchers/filesystem-map.ss} provides a means of mapping
 URLs to paths on the filesystem.
 
 @defthing[url-path? contract?]{
@@ -85,8 +87,9 @@ URLs to paths on the filesystem.
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-sequencer.ss"]{Sequencing}
+@require[(prefix-in seq: (for-label web-server/dispatchers/dispatch-sequencer))]
 
-@file{dispatchers/dispatch-sequencer.ss} defines a dispatcher constructor
+@filepath{dispatchers/dispatch-sequencer.ss} defines a dispatcher constructor
 that invokes a sequence of dispatchers until one applies.
 
 @defproc[(make (dispatcher dispatcher?) ...)
@@ -99,8 +102,9 @@ that invokes a sequence of dispatchers until one applies.
 @; XXX Kind of timeout that is proportional to bindings
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-timeout.ss"]{Timeouts}
+@require[(prefix-in timeout: (for-label web-server/dispatchers/dispatch-timeout))]
 
-@file{dispatchers/dispatch-timeout.ss} defines a dispatcher constructor
+@filepath{dispatchers/dispatch-timeout.ss} defines a dispatcher constructor
 that changes the timeout on the connection and calls the next
 dispatcher.
 
@@ -112,8 +116,9 @@ dispatcher.
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-lift.ss"]{Lifting Procedures}
+@require[(prefix-in lift: (for-label web-server/dispatchers/dispatch-lift))]
 
-@file{dispatchers/dispatch-lift.ss} defines:
+@filepath{dispatchers/dispatch-lift.ss} defines:
 
 @defproc[(make (proc (request? . -> . response?)))
          dispatcher?]{
@@ -124,8 +129,9 @@ dispatcher.
 @; XXX Change filtering to take predicate, rather than regexp
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-filter.ss"]{Filtering Requests}
+@require[(prefix-in filter: (for-label web-server/dispatchers/dispatch-filter))]
 
-@file{dispatchers/dispatch-filter.ss} defines a dispatcher constructor
+@filepath{dispatchers/dispatch-filter.ss} defines a dispatcher constructor
 that calls an underlying dispatcher
 with all requests that pass a predicate.
 
@@ -137,8 +143,9 @@ with all requests that pass a predicate.
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-pathprocedure.ss"]{Procedure Invocation upon Request}
+@require[(prefix-in pathproc: (for-label web-server/dispatchers/dispatch-pathprocedure))]
 
-@file{dispatchers/dispatch-pathprocedure.ss} defines a dispatcher constructor
+@filepath{dispatchers/dispatch-pathprocedure.ss} defines a dispatcher constructor
 for invoking a particular procedure when a request is given to a particular
 URL path.
 
@@ -153,8 +160,9 @@ a URL that refreshes the password file, servlet cache, etc.
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-log.ss"]{Logging}
+@require[(prefix-in log: (for-label web-server/dispatchers/dispatch-log))]
 
-@file{dispatchers/dispatch-log.ss} defines a dispatcher constructor
+@filepath{dispatchers/dispatch-log.ss} defines a dispatcher constructor
 for transparent logging of requests.
 
 @defthing[format-req/c contract?]{
@@ -205,8 +213,9 @@ for transparent logging of requests.
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-passwords.ss"]{Password Protection}
+@require[(prefix-in passwords: (for-label web-server/dispatchers/dispatch-passwords))]
 
-@file{dispatchers/dispatch-passwords.ss} defines a dispatcher constructor
+@filepath{dispatchers/dispatch-passwords.ss} defines a dispatcher constructor
 that performs HTTP Basic authentication filtering.
 
 @defproc[(make [#:password-file password-file path-string? "passwords"]
@@ -240,8 +249,9 @@ that performs HTTP Basic authentication filtering.
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-host.ss"]{Virtual Hosts}
+@require[(prefix-in host: (for-label web-server/dispatchers/dispatch-host))]
 
-@file{dispatchers/dispatch-host.ss} defines a dispatcher constructor
+@filepath{dispatchers/dispatch-host.ss} defines a dispatcher constructor
 that calls a different dispatcher based upon the host requested.
 
 @defproc[(make (lookup-dispatcher (symbol? . -> . dispatcher?)))
@@ -254,8 +264,9 @@ that calls a different dispatcher based upon the host requested.
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-files.ss"]{Serving Files}
+@require[(prefix-in files: (for-label web-server/dispatchers/dispatch-files))]
 
-@file{dispatchers/dispatch-files.ss} allows files to be served.
+@filepath{dispatchers/dispatch-files.ss} allows files to be served.
 It defines a dispatcher construction procedure:
 
 @defproc[(make [#:url->path url->path url->path?]
@@ -274,8 +285,9 @@ It defines a dispatcher construction procedure:
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-servlets.ss"]{Serving Scheme Servlets}
+@require[(prefix-in servlets: (for-label web-server/dispatchers/dispatch-servlets))]
 
-@file{dispatchers/dispatch-servlets.ss} defines a dispatcher constructor
+@filepath{dispatchers/dispatch-servlets.ss} defines a dispatcher constructor
 that runs servlets written in Scheme.
 
 @; XXX Remove config:scripts
@@ -316,8 +328,9 @@ that runs servlets written in Scheme.
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-lang.ss"]{Serving Web Language Servlets}
+@require[(prefix-in lang: (for-label web-server/dispatchers/dispatch-lang))]
 
-@file{dispatchers/dispatch-lang.ss} defines a dispatcher constructor
+@filepath{dispatchers/dispatch-lang.ss} defines a dispatcher constructor
 that runs servlets written in the Web Language.
 
 @defproc[(make [#:url->path url->path url->path?]
@@ -338,8 +351,9 @@ that runs servlets written in the Web Language.
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-stat.ss"]{Statistics}
+@require[(prefix-in stat: (for-label web-server/dispatchers/dispatch-stat))]
 
-@file{dispatchers/dispatch-stat.ss} provides services related to performance
+@filepath{dispatchers/dispatch-stat.ss} provides services related to performance
 statistics.
 
 @defproc[(make-gc-thread [time integer?])

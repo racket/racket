@@ -11,8 +11,9 @@ configuring the @web-server .
 
 @; ------------------------------------------------------------
 @section[#:tag "configuration-table-structs.ss"]{Configuration Table Structure}
+@require[(for-label web-server/configuration/configuration-table-structs)]
 
-@file{configuration/configuration-table-structs.ss} provides the following structures that
+@filepath{configuration/configuration-table-structs.ss} provides the following structures that
 represent a standard configuration (see @secref["web-server-unit.ss"]) of the @web-server .
 The contracts on this structure influence the valid types of values in
 the configuration table S-expression file format described in
@@ -78,8 +79,9 @@ the configuration table S-expression file format described in
 
 @; ------------------------------------------------------------
 @section[#:tag "configuration-table.ss"]{Configuration Table}
+@require[(for-label web-server/configuration/configuration-table)]
 
-@file{configuration/configuration-table.ss} provides functions for
+@filepath{configuration/configuration-table.ss} provides functions for
 reading, writing, parsing, and printing @scheme[configuration-table]
 structures.
 
@@ -148,10 +150,11 @@ This function writes a @scheme[configuration-table] to @scheme[path].
 
 @; ------------------------------------------------------------
 @section[#:tag "namespace.ss"]{Servlet Namespaces}
+@require[(for-label web-server/configuration/namespace)]
 
-@file{configuration/namespace.ss} provides a function to help create the
+@filepath{configuration/namespace.ss} provides a function to help create the
 @scheme[make-servlet-namespace] procedure needed by the @scheme[make] functions
-of @file{dispatchers/dispatch-servlets.ss} and @file{dispatchers/dispatch-lang.ss}.
+of @filepath{dispatchers/dispatch-servlets.ss} and @filepath{dispatchers/dispatch-lang.ss}.
 
 @; XXX Define make-servlet-namespace?
 @; XXX Use actual keyword argument syntax
@@ -188,8 +191,9 @@ of servlets can share different sets of modules.
 
 @; ------------------------------------------------------------
 @section[#:tag "responders.ss"]{Standard Responders}
+@require[(for-label web-server/configuration/responders)]
 
-@file{configuration/responders.ss} provides some functions that help constructing HTTP responders.
+@filepath{configuration/responders.ss} provides some functions that help constructing HTTP responders.
 These functions are used by the default dispatcher constructor (see @secref["web-server-unit.ss"]) to
 turn the paths given in the @scheme[configuration-table] into responders for the associated circumstance.
 

@@ -3,10 +3,12 @@
 
 @title[#:tag "web-config-unit.ss"
        #:style 'toc]{Web Config Unit}
+@require[(for-label web-server/web-config-unit)]
+@require[(for-label web-server/web-config-sig)]
 
 The @web-server offers a unit-based approach to configuring the server.
 
-@file{web-config-sig.ss} provides the signature
+@filepath{web-config-sig.ss} provides the signature
 @defthing[web-config^ signature?] signature, which contains the following
 identifiers:
 
@@ -38,7 +40,7 @@ identifiers:
  Passed to @scheme[servlets:make].
 }
 
-@file{web-config-unit.ss} provides the following:
+@filepath{web-config-unit.ss} provides the following:
 
 @defproc[(configuration-table->web-config\@ [path path?]
                                            [#:port port (or/c false/c port-number?) #f]
