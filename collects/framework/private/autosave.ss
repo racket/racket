@@ -56,8 +56,8 @@
               (call-with-output-file autosave-toc-filename
                 (λ (port)
                   (write new-name-mapping port))
-                'truncate
-                'text))))
+                #:exists 'truncate
+                #:mode 'text))))
         (let ([seconds (preferences:get 'framework:autosave-delay)])
           (start (* 1000 seconds) #t)))
       (super-new)
