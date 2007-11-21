@@ -31,7 +31,7 @@
   (call-with-output-file init-code-tmp-filename
     (λ (port)
       (write init-code port))
-    'truncate 'text)
+    #:exists 'truncate #:mode 'text)
   
   (define init-code-proc (dynamic-require init-code-tmp-filename 'init-code))
   

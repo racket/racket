@@ -438,7 +438,7 @@
                                (unless (eof-object? s) 
                                  (display s) 
                                  (loop (+ total (string-length s))))))))
-                       'binary 'truncate))
+                       #:mode 'binary #:exists 'truncate))
                    (send d show #f)))]) 
         (send d center) 
         (make-object button% (string-constant &stop)

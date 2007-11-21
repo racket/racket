@@ -888,8 +888,8 @@
                             (list))
                       ((dynamic-require ',init-code-mod-name 'init-code)))
                    port))
-          'truncate
-          'text)
+          #:exists 'truncate
+          #:mode 'text)
         
         (let ([new-init-code 
                (list*
@@ -899,7 +899,7 @@
           (call-with-output-file init-code-tmp-filename
             (λ (port)
               (write new-init-code port))
-            'truncate 'text)))
+            #:exists 'truncate #:mode 'text)))
       
       (let* ([pre-to-be-embedded-module-specs0
               (if (or (not transformer-module-language-spec)
