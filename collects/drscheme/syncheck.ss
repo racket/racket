@@ -71,7 +71,11 @@ If the namespace does not, they are colored the unbound color.
     (unit 
       (import drscheme:tool^)
       (export drscheme:tool-exports^)
-      
+    
+      ;; use this to communicate the frame being
+      ;; syntax checked w/out having to add new
+      ;; parameters to all of the functions
+      (define currently-processing-drscheme-frame (make-parameter #f))
 
       (define (phase1) 
         (drscheme:unit:add-to-program-editor-mixin clearing-text-mixin))
@@ -1102,8 +1106,9 @@ If the namespace does not, they are colored the unbound color.
                                        (with-lock/edit-sequence
                                         definitions-text
                                         (λ ()
-                                          (expansion-completed user-namespace user-directory)
-                                          (send definitions-text syncheck:sort-bindings-table)))
+                                          (parameterize ([currently-processing-drscheme-frame this])
+                                            (expansion-completed user-namespace user-directory)
+                                            (send definitions-text syncheck:sort-bindings-table))))
                                        (cleanup)
                                        (custodian-shutdown-all user-custodian))))]
                                  [else
@@ -1117,7 +1122,8 @@ If the namespace does not, they are colored the unbound color.
                                         (λ ()
                                           (open-status-line 'drscheme:check-syntax)
                                           (update-status-line 'drscheme:check-syntax status-coloring-program)
-                                          (expanded-expression user-namespace user-directory sexp jump-to-id)
+                                          (parameterize ([currently-processing-drscheme-frame this])
+                                            (expanded-expression user-namespace user-directory sexp jump-to-id))
                                           (close-status-line 'drscheme:check-syntax))))))
                                   (update-status-line 'drscheme:check-syntax status-expanding-expression)
                                   (loop)]))))))))))]))
@@ -1932,29 +1938,27 @@ If the namespace does not, they are colored the unbound color.
       ;; connect-syntaxes : syntax[original] syntax[original] boolean -> void
       ;; adds an arrow from `from' to `to', unless they have the same source loc. 
       (define (connect-syntaxes from to actual?)
-        (let* ([from-source (syntax-source from)]
-	       [to-source (syntax-source to)])
-          (when (and (is-a? from-source text%)
-                     (is-a? to-source text%))
-            (let ([to-syncheck-text (find-syncheck-text to-source)]
-                  [from-syncheck-text (find-syncheck-text from-source)])
-              (when (and to-syncheck-text
-                         from-syncheck-text
-                         (eq? to-syncheck-text from-syncheck-text))
-                (let ([pos-from (syntax-position from)]
+        (let ([drs-frame (currently-processing-drscheme-frame)])
+          (when drs-frame
+            (let ([defs-text (send drs-frame get-definitions-text)])
+              (when (and (send defs-text port-name-matches? (syntax-source from))
+                         (send defs-text port-name-matches? (syntax-source to)))
+                (let ([from-source defs-text] ;; these two aren't right in the case of embedded editors
+                      [to-source defs-text] ;; these two aren't right in the case of embedded editors
+                      [pos-from (syntax-position from)]
                       [span-from (syntax-span from)]
                       [pos-to (syntax-position to)]
                       [span-to (syntax-span to)])
                   (when (and pos-from span-from pos-to span-to)
-                        (let* ([from-pos-left (- (syntax-position from) 1)]
-                               [from-pos-right (+ from-pos-left (syntax-span from))]
-                               [to-pos-left (- (syntax-position to) 1)]
-                               [to-pos-right (+ to-pos-left (syntax-span to))])
-                          (unless (= from-pos-left to-pos-left)
-                            (send from-syncheck-text syncheck:add-arrow
-                                  from-source from-pos-left from-pos-right
-                                  to-source to-pos-left to-pos-right
-                                  actual?))))))))))
+                    (let* ([from-pos-left (- (syntax-position from) 1)]
+                           [from-pos-right (+ from-pos-left (syntax-span from))]
+                           [to-pos-left (- (syntax-position to) 1)]
+                           [to-pos-right (+ to-pos-left (syntax-span to))])
+                      (unless (= from-pos-left to-pos-left)
+                        (send defs-text syncheck:add-arrow
+                              from-source from-pos-left from-pos-right
+                              to-source to-pos-left to-pos-right
+                              actual?))))))))))
       
       ;; add-mouse-over : syntax[original] string -> void
       ;; registers the range in the editor so that a mouse over
@@ -2278,15 +2282,17 @@ If the namespace does not, they are colored the unbound color.
       
       ;; make-rename-menu : (cons stx[original,id] (listof stx[original,id])) (listof id-set) -> void
       (define (make-rename-menu stxs id-sets)
-        (let ([source (syntax-source (car stxs))]) ;; all stxs in the list must have the same source
-          (when (is-a? source text%)
-            (let ([syncheck-text (find-syncheck-text source)])
-              (when syncheck-text
+        (let ([defs-frame (currently-processing-drscheme-frame)])
+          (when defs-frame
+            (let* ([defs-text (send defs-frame get-definitions-text)]
+                   [source (syntax-source (car stxs))]) ;; all stxs in the list must have the same source
+              (when (and (send defs-text port-name-matches? source)
+                         (send defs-text port-name-matches? source))
                 (let* ([name-to-offer (format "~a" (syntax-object->datum (car stxs)))]
                        [start (- (syntax-position (car stxs)) 1)]
                        [fin (+ start (syntax-span (car stxs)))])
-                  (send syncheck-text syncheck:add-menu
-                        source 
+                  (send defs-text syncheck:add-menu
+                        defs-text
                         start 
                         fin 
                         (syntax-e (car stxs))
@@ -2298,6 +2304,7 @@ If the namespace does not, they are colored the unbound color.
                              (λ (x y)
                                (let ([frame-parent (find-menu-parent menu)])
                                  (rename-callback name-to-offer
+                                                  defs-text
                                                   stxs
                                                   id-sets
                                                   frame-parent)))))))))))))
@@ -2320,9 +2327,14 @@ If the namespace does not, they are colored the unbound color.
             [(is-a? menu menu-item<%>) (loop (send menu get-parent))]
             [else #f])))
 
-      ;; rename-callback : string (listof syntax[original]) (listof id-set) (union #f (is-a?/c top-level-window<%>)) -> void
+      ;; rename-callback : string 
+      ;;                   (and/c syncheck-text<%> definitions-text<%>)
+      ;;                   (listof syntax[original])
+      ;;                   (listof id-set) 
+      ;;                   (union #f (is-a?/c top-level-window<%>)) 
+      ;;                -> void
       ;; callback for the rename popup menu item
-      (define (rename-callback name-to-offer stxs id-sets parent)
+      (define (rename-callback name-to-offer defs-text stxs id-sets parent)
         (let ([new-str
                (fw:keymap:call/text-keymap-initializer
                 (λ ()
@@ -2360,19 +2372,17 @@ If the namespace does not, they are colored the unbound color.
                            1))])
                 (when do-renaming?
                   (unless (null? to-be-renamed)
-                    (let ([first-one-source (syntax-source (car to-be-renamed))])
-                      (when (is-a? first-one-source text%)
-                        (send first-one-source begin-edit-sequence)
-                        (for-each (λ (stx) 
-                                    (let ([source (syntax-source stx)])
-                                      (when (is-a? source text%)
-                                        (let* ([start (- (syntax-position stx) 1)]
-                                               [end (+ start (syntax-span stx))])
-                                          (send source delete start end #f)
-                                          (send source insert new-sym start start #f)))))
-                                  to-be-renamed)
-                        (send first-one-source invalidate-bitmap-cache)
-                        (send first-one-source end-edit-sequence))))))))))
+                    (send defs-text begin-edit-sequence)
+                    (for-each (λ (stx) 
+                                (let ([source (syntax-source stx)])
+                                  (when (send defs-text port-name-matches? source)
+                                    (let* ([start (- (syntax-position stx) 1)]
+                                           [end (+ start (syntax-span stx))])
+                                      (send defs-text delete start end #f)
+                                      (send defs-text insert new-sym start start #f)))))
+                              to-be-renamed)
+                    (send defs-text invalidate-bitmap-cache)
+                    (send defs-text end-edit-sequence))))))))
       
       ;; name-duplication? : (listof syntax) (listof id-set) symbol -> boolean
       ;; returns #t if the name chosen would be the same as another name in this scope.
