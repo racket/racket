@@ -1,5 +1,6 @@
 #lang scheme/base
-(require (lib "kerncase.ss" "syntax")
+(require (for-template scheme/base)
+         (lib "kerncase.ss" "syntax")
          (lib "list.ss")
          (lib "toplevel.ss" "syntax")
          (lib "plt-match.ss")
@@ -16,17 +17,6 @@
      (free-vars* (syntax->list #'(be ...)))]
     [(begin0 be ...)
      (free-vars* (syntax->list #'(be ...)))]
-    [(define-values (v ...) ve)
-     (set-diff (free-vars #'ve)
-               (syntax->list #'(v ...)))]
-    [(define-syntaxes (v ...) ve)
-     (parameterize ([transformer? #t])
-       (set-diff (free-vars #'ve)
-                 (syntax->list #'(v ...))))]
-    [(define-values-for-syntax (v ...) ve)
-     (parameterize ([transformer? #t])
-       (set-diff (free-vars #'ve)
-                 (syntax->list #'(v ...))))]
     [(set! v ve)
      (union (free-vars #'v)
             (free-vars #'ve))]
@@ -54,6 +44,35 @@
      empty]
     [(quote-syntax datum)
      empty]
+    [(with-continuation-mark ke me be)
+     (free-vars* (syntax->list #'(ke me be)))]
+    [(#%plain-app e ...)
+     (free-vars* (syntax->list #'(e ...)))]
+    [(#%top . v)
+     #;(printf "Not including top ~S in freevars~n" (syntax->datum #'v))
+     empty]
+    [(#%variable-reference . id)
+     (let ([i-bdg (identifier-binding #'id)])
+       (cond
+         [(eqv? 'lexical i-bdg)
+          (list #'id)]
+         [(not i-bdg) 
+          (list #'id)]
+         [else 
+          #;(printf "Not including var-reference ~S with binding ~S in freevars~n" (syntax->datum #'id) i-bdg)
+          empty]))]
+    [id (identifier? #'id)
+        (let ([i-bdg (identifier-binding #'id)])
+          #;(printf "ID ~S with binding ~S in freevars~n" (syntax->datum #'id) i-bdg)
+          (cond
+            [(eqv? 'lexical i-bdg)
+             (list #'id)]
+            [(not i-bdg) 
+             (list #'id)]
+            [else 
+             #;(printf "Not including id ~S with binding ~S in freevars~n" (syntax->datum #'id) i-bdg)
+             empty]))]
+    ; XXX Shouldn't be here
     [(letrec-syntaxes+values ([(sv ...) se] ...)
        ([(vv ...) ve] ...)
        be ...)
@@ -62,33 +81,8 @@
                        (free-vars* (syntax->list #'(be ...))))
                (append (apply append (map syntax->list (syntax->list #'((sv ...) ...))))
                        (apply append (map syntax->list (syntax->list #'((vv ...) ...))))))]
-    [(with-continuation-mark ke me be)
-     (free-vars* (syntax->list #'(ke me be)))]
     [(#%expression d)
      (free-vars #'d)]
-    [(#%plain-app e ...)
-     (free-vars* (syntax->list #'(e ...)))]
-    [(#%top . v)
-     #;(printf "Not including top ~S in freevars~n" (syntax-object->datum #'v))
-     empty]
-    [(#%variable-reference . id)
-     (let ([i-bdg (identifier-binding #'id)])
-       (cond
-         [(eqv? 'lexical (identifier-binding #'id))
-          (list #'id)]
-         [else 
-          #;(printf "Not including var-reference ~S with binding ~S in freevars~n" (syntax-object->datum #'id) i-bdg)
-          empty]))]
-    [id (identifier? #'id)
-        (let ([i-bdg (identifier-binding #'id)])
-          (cond
-            [(eqv? 'lexical i-bdg)
-             (list #'id)]
-            [(not i-bdg)
-             (list #'id)]
-            [else 
-             #;(printf "Not including id ~S with binding ~S in freevars~n" (syntax-object->datum #'id) i-bdg)
-             empty]))]
     [_
      (raise-syntax-error 'freevars "Dropped through:" stx)]))  
 
@@ -118,7 +112,7 @@
     (raise-syntax-error 'insert "Not identifier" sym))
   (cond
     [(null? into) (list sym)]
-    [(bound-identifier=? sym (car into)) into]
+    [(free-identifier=? sym (car into)) into]
     [else (cons (car into) (insert sym (cdr into)))]))
 
 ;; set-diff: (listof identifier) (listof identifier) -> (listof identifier)
@@ -135,7 +129,7 @@
     (raise-syntax-error 'sans "Not identifier" elt))
   (cond
     [(null? s) empty]
-    [(bound-identifier=? (car s) elt)
+    [(free-identifier=? (car s) elt)
      (cdr s)] ;; if we maintain the no-dupe invariant then we don't need to recur
     [else (cons (car s)
                 (sans (cdr s) elt))]))

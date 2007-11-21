@@ -1,5 +1,6 @@
 #lang scheme/base
-(require (lib "kerncase.ss" "syntax")
+(require (for-template scheme/base)
+         (lib "kerncase.ss" "syntax")
          (lib "list.ss")
          (lib "plt-match.ss")
          "util.ss")
@@ -58,14 +59,6 @@
                                   (#%plain-lambda #,save
                                                   (begin be ... 
                                                          (#%plain-app apply values #,ref-to-save)))))))]
-       [(define-values (v ...) ve)
-        (with-syntax ([ve (anormal-term #'ve)])
-          (syntax/loc stx 
-            (define-values (v ...) ve)))]
-       [(define-syntaxes (v ...) ve)
-        stx]
-       [(define-values-for-syntax (v ...) ve)
-        stx]
        [(set! v ve)
         (anormal
          (compose ctxt
@@ -121,11 +114,6 @@
         (ctxt stx)]
        [(quote-syntax datum)
         (ctxt stx)]
-       [(letrec-syntaxes+values ([(sv ...) se] ...)
-          ([(vv ...) ve] ...)
-          be ...)
-        (anormal ctxt
-                 (elim-letrec-term stx))]
        [(with-continuation-mark ke me be)
         (anormal
          (compose ctxt
@@ -136,13 +124,7 @@
                          (with-continuation-mark #,kev #,mev
                            #,(anormal-term #'be))))
                      #'me)))
-         #'ke)]
-       [(#%expression d)
-        (anormal
-         (compose ctxt
-                  (lambda (d)
-                    (quasisyntax/loc stx (#%expression #,d))))
-         #'d)]
+         #'ke)]       
        [(#%plain-app fe e ...)
         (anormal
          (lambda (val0)
@@ -159,6 +141,18 @@
         (ctxt stx)]
        [id (identifier? #'id)
            (ctxt #'id)]
+       ; XXX Shouldn't be here
+       [(letrec-syntaxes+values ([(sv ...) se] ...)
+          ([(vv ...) ve] ...)
+          be ...)
+        (anormal ctxt
+                 (elim-letrec-term stx))]
+       [(#%expression d)
+        (anormal
+         (compose ctxt
+                  (lambda (d)
+                    (quasisyntax/loc stx (#%expression #,d))))
+         #'d)]
        [_
         (raise-syntax-error 'anormal "Dropped through:" stx)])))
   

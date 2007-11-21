@@ -8,6 +8,7 @@
  
  ;; AUXILLIARIES
  abort
+ abort/cc
  resume
  the-cont-key
  the-save-cm-key
@@ -36,7 +37,7 @@
   (reverse
    (list* (cons key val)
           (let-values ([(current)
-                        (continuation-mark-set->list (current-continuation-marks) the-save-cm-key)])
+                        (continuation-mark-set->list (current-continuation-marks web-prompt) the-save-cm-key)])
             (if (empty? current)
                 empty
                 (first current))))))
@@ -44,7 +45,7 @@
 ;; current-continuation-as-list: -> (listof value)
 ;; check the safety marks and return the list of marks representing the continuation
 (define (activation-record-list)
-  (let* ([cm (current-continuation-marks)]
+  (let* ([cm (current-continuation-marks web-prompt)]
          [sl (reverse (continuation-mark-set->list cm safe-call?))])
     (if (andmap (lambda (x)
                   (if (pair? x)
@@ -161,4 +162,4 @@
        [(decode-continuation req)
         => (lambda (k) (k req))]
        [else
-        (error "no continuation associated with the provided request")]))))
+        (error 'dispatch "no continuation associated with the provided request: ~S" req)]))))

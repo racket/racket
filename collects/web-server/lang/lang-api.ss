@@ -9,7 +9,7 @@
          "web-param.ss"
          "file-box.ss"
          "web-extras.ss")
-(provide (except-out (all-from-out scheme/base) #%plain-module-begin)
+(provide (except-out (all-from-out scheme/base) #%module-begin)
          (all-from-out (lib "url.ss" "net"))
          (all-from-out "../private/request-structs.ss")
          (all-from-out "../private/response-structs.ss")

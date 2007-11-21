@@ -1,5 +1,7 @@
 #lang scheme/base
-(require (lib "kerncase.ss" "syntax")
+(require (for-template scheme/base)
+         (lib "kerncase.ss" "syntax")
+         (lib "pretty.ss")
          (lib "list.ss"))
 (provide (except-out (all-defined-out) template))
 
@@ -42,74 +44,63 @@
     [(v ... . rv)
      (list* #'rv (syntax->list #'(v ...)))]))
 
-(define ((make-define-case inner) stx)
-  (recertify 
+(define ((make-define-case/new-defs inner) stx)
+  (recertify*
    stx
    (syntax-case stx (define-values define-syntaxes define-values-for-syntax)
      [(define-values (v ...) ve)
-      (with-syntax ([ve (inner #'ve)])
-        (syntax/loc stx
-          (define-values (v ...) ve)))]
+      (let-values ([(nve defs) (inner #'ve)])
+        (append 
+         defs
+         (list (quasisyntax/loc stx
+                 (define-values (v ...) #,nve)))))]
      [(define-syntaxes (v ...) ve)
       (parameterize ([transformer? #t])
-        (with-syntax ([ve (inner #'ve)])
-          (syntax/loc stx
-            (define-syntaxes (v ...) ve))))]      
+        (let-values ([(nve defs) (inner #'ve)])
+          (append 
+           defs
+           (list (quasisyntax/loc stx
+                   (define-syntaxes (v ...) #,nve))))))]      
      [(define-values-for-syntax (v ...) ve)
       (parameterize ([transformer? #t])
-        (with-syntax ([ve (inner #'ve)])
-          (syntax/loc stx
-            (define-values-for-syntax (v ...) ve))))]
-     [_
-      (raise-syntax-error 'define-case "Dropped through:" stx)])))
-
-(define ((make-define-case/new-defs inner) stx)
-  (let-values ([(nstx defs) (inner stx)])
-    (append defs (list nstx))))
+        (let-values ([(nve defs) (inner #'ve)])
+          (append 
+           defs
+           (list (quasisyntax/loc stx
+                   (define-values-for-syntax (v ...) #,nve))))))]
+     [(#%require spec ...)
+      (list stx)]
+     [expr
+      (let-values ([(nexpr defs) (inner #'expr)])
+        (append defs (list nexpr)))])))
 
 (define ((make-module-case/new-defs inner) stx)
   (recertify*
    stx
-   (syntax-case* stx (#%require #%provide) free-identifier=?
-     [(#%require spec ...)
-      (list stx)]
+   (syntax-case* stx (#%provide) free-identifier=?     
      [(#%provide spec ...)
       (list stx)]
-     [_
-      (inner stx)])))
-
-(define ((make-module-case inner) stx)
-  (recertify
-   stx
-   (syntax-case* stx (#%require #%provide) free-identifier=?
-     [(#%require spec ...)
-      stx]
-     [(#%provide spec ...)
-      stx]
      [_
       (inner stx)])))
 
 (define ((make-lang-module-begin make-labeling transform) stx)
   (recertify
    stx
-   (syntax-case stx ()                     
-     ((mb forms ...)
-      (with-syntax ([(pmb rfs0 body ...)
+   (syntax-case stx ()
+     [(mb forms ...)
+      (with-syntax ([(pmb body ...)
                      (local-expand (quasisyntax/loc stx
-                                     (#%plain-module-begin 
-                                      #,(syntax-local-introduce
-                                         #'(require (for-syntax scheme/base)))
-                                      forms ...))
+                                     (#%module-begin forms ...))
                                    'module-begin 
                                    empty)])
-        (let ([base-labeling (make-labeling (string->bytes/utf-8 (format "~a" (syntax->datum stx))))])
+        (define base-labeling (make-labeling (string->bytes/utf-8 (format "~a" (syntax->datum stx)))))      
+        (define new-defs 
           (parameterize ([current-code-labeling
-                          (lambda (stx)
-                            (datum->syntax stx (base-labeling)))])
-            (let ([new-defs (apply append (map transform (syntax->list #'(body ...))))])
-              (quasisyntax/loc stx
-                (pmb rfs0
-                     #,@new-defs))))))))))
+                          (lambda (stx) (datum->syntax stx (base-labeling)))])
+            (apply append (map transform (syntax->list #'(body ...))))))
+        #;(pretty-print (syntax->datum #`(pmb #,@new-defs)))
+        (quasisyntax/loc stx
+          (pmb #,@new-defs)))])))
 
 (define (bound-identifier-member? id ids)
   (ormap
@@ -131,20 +122,6 @@
       (with-syntax ([(be ...) (map template (syntax->list #'(be ...)))])
         (syntax/loc stx
           (begin0 be ...)))]
-     [(define-values (v ...) ve)
-      (with-syntax ([ve (template #'ve)])
-        (syntax/loc stx
-          (define-values (v ...) ve)))]
-     [(define-syntaxes (v ...) ve)
-      (parameterize ([transformer? #t])
-        (with-syntax ([ve (template #'ve)])
-          (syntax/loc stx
-            (define-syntaxes (v ...) ve))))]
-     [(define-values-for-syntax (v ...) ve)
-      (parameterize ([transformer? #t])
-        (with-syntax ([ve (template #'ve)])
-          (syntax/loc stx 
-            (define-values-for-syntax (v ...) ve))))]
      [(set! v ve)
       (with-syntax ([ve (template #'ve)])
         (syntax/loc stx
@@ -176,25 +153,13 @@
      [(quote datum)
       stx]
      [(quote-syntax datum)
-      stx]
-     [(letrec-syntaxes+values ([(sv ...) se] ...)
-        ([(vv ...) ve] ...)
-        be ...)
-      (with-syntax ([(se ...) (map template (syntax->list #'(se ...)))]
-                    [(ve ...) (map template (syntax->list #'(ve ...)))]
-                    [(be ...) (map template (syntax->list #'(be ...)))])
-        (syntax/loc stx
-          (letrec-syntaxes+values ([(sv ...) se] ...)
-            ([(vv ...) ve] ...)
-            be ...)))]
+      stx]     
      [(with-continuation-mark ke me be)
       (with-syntax ([ke (template #'ke)]
                     [me (template #'me)]
                     [be (template #'be)])
         (syntax/loc stx
           (with-continuation-mark ke me be)))]
-     [(#%expression . d)
-      stx]
      [(#%plain-app e ...)
       (with-syntax ([(e ...) (map template (syntax->list #'(e ...)))])
         (syntax/loc stx

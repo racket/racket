@@ -1,5 +1,6 @@
 #lang scheme/base
-(require (lib "kerncase.ss" "syntax")
+(require (for-template scheme/base)
+         (lib "kerncase.ss" "syntax")
          (lib "list.ss")
          (lib "plt-match.ss")
          "util.ss"
@@ -27,16 +28,6 @@
         (let-values ([(nbes defs) (defun* (syntax->list #'(be ...)))])
           (values (quasisyntax/loc stx (begin0 #,@nbes))
                   defs))]
-       [(define-values (v ...) ve)
-        (let-values ([(nve defs) (defun #'ve)])
-          (values (quasisyntax/loc stx (define-values (v ...) #,nve))
-                  defs))]
-       [(define-syntaxes (v ...) ve)
-        (values stx
-                empty)]
-       [(define-values-for-syntax (v ...) ve)
-        (values stx
-                empty)]
        [(set! v ve)
         (let-values ([(nve defs) (defun #'ve)])
           (values (quasisyntax/loc stx (set! v #,nve))
@@ -91,6 +82,24 @@
        [(quote-syntax datum)
         (values stx
                 empty)]
+       [(with-continuation-mark ke me be)
+        (let-values ([(es defs) (defun* (list #'ke #'me #'be))])
+          (values (quasisyntax/loc stx (with-continuation-mark #,@es))
+                  defs))]       
+       [(#%plain-app e ...)
+        (let-values ([(es defs) (defun* (syntax->list #'(e ...)))])
+          (values (quasisyntax/loc stx (#%plain-app #,@es))
+                  defs))]
+       [(#%top . v)
+        (values stx
+                empty)]
+       [(#%variable-reference . v)
+        (values stx
+                empty)]
+       [id (identifier? #'id)
+           (values stx
+                   empty)]
+       ; XXX Shouldn't
        [(letrec-syntaxes+values ([(sv ...) se] ...)
           ([(vv ...) ve] ...)
           be ...)
@@ -105,27 +114,10 @@
                         ([(vv ...) nve] ...)
                         nbe ...))
                     (append se-defs ve-defs be-defs))))]
-       [(with-continuation-mark ke me be)
-        (let-values ([(es defs) (defun* (list #'ke #'me #'be))])
-          (values (quasisyntax/loc stx (with-continuation-mark #,@es))
-                  defs))]
        [(#%expression d)
         (let-values ([(nd d-defs) (defun #'d)])
           (values (quasisyntax/loc stx (#%expression #,nd))
                   d-defs))]
-       [(#%plain-app e ...)
-        (let-values ([(es defs) (defun* (syntax->list #'(e ...)))])
-          (values (quasisyntax/loc stx (#%plain-app #,@es))
-                  defs))]
-       [(#%top . v)
-        (values stx
-                empty)]
-       [(#%variable-reference . v)
-        (values stx
-                empty)]
-       [id (identifier? #'id)
-           (values stx
-                   empty)]
        [_
         (raise-syntax-error 'defun "Dropped through:" stx)]))))
 

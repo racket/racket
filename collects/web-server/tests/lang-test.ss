@@ -239,7 +239,8 @@
          (table-01-eval '(require 'm06))         
          (let* ([first-key (table-01-eval '(dispatch-start start 'foo))]
                 [second-key (table-01-eval `(dispatch lookup-k '(,first-key 1)))]
-                [third-key (table-01-eval `(dispatch lookup-k '(,first-key -7)))])                    
+                [third-key (table-01-eval `(dispatch lookup-k '(,first-key -7)))])
+           (printf "~S~n" (list first-key second-key third-key))
            (check = 3 (table-01-eval `(dispatch lookup-k '(,second-key 2))))
            (check = 4 (table-01-eval `(dispatch lookup-k '(,second-key 3))))
            (check-true (zero? (table-01-eval `(dispatch lookup-k '(,second-key -1)))))
@@ -267,7 +268,7 @@
          (let* ([first-key (test-m06.1 '(dispatch-start start 'foo))]
                 [second-key (test-m06.1 `(dispatch ,the-dispatch (list (deserialize (serialize ,first-key)) 1)))]
                 [third-key (test-m06.1 `(dispatch ,the-dispatch (list (deserialize (serialize ,first-key)) -7)))])
-           (check = 3 (test-m06.1 `(dispatch ,the-dispatch (list ,second-key 2))))
+           (check = 3 (test-m06.1 `(abort/cc (lambda () (dispatch ,the-dispatch (list ,second-key 2))))))
            (check = 4 (test-m06.1 `(dispatch ,the-dispatch (list ,second-key 3))))
            (check-true (zero? (test-m06.1 `(dispatch ,the-dispatch (list ,second-key -1)))))
            (check = -7 (test-m06.1 `(dispatch ,the-dispatch (list ,third-key 0))))
@@ -523,7 +524,7 @@
            (module data (lib "lang.ss" "web-server")
              (require (lib "contract.ss"))
              
-             (define-struct posn (x y))
+             (define-struct posn (x y) #:mutable)
              (provide/contract
               [struct posn ([x integer?] [y integer?])]))))))
       

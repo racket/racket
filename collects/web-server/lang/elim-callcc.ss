@@ -1,6 +1,8 @@
 #lang scheme/base
-(require (lib "kerncase.ss" "syntax")
-         (for-syntax "../lang/abort-resume.ss")
+(require (for-template scheme/base)
+         (lib "kerncase.ss" "syntax")
+         "../lang/abort-resume.ss"
+         (for-template "../lang/abort-resume.ss")
          "util.ss")
 (provide elim-callcc)
 
@@ -15,8 +17,8 @@
      [(#%plain-lambda formals be ...)
       (syntax/loc w
         (#%plain-lambda formals
-          (with-continuation-mark safe-call? '(#t (lambda formals))
-            be ...)))]
+                        (with-continuation-mark safe-call? '(#t (lambda formals))
+                          be ...)))]
      [(case-lambda [formals be ...] ...)
       (syntax/loc w
         (case-lambda [formals 
@@ -36,14 +38,6 @@
      (raise-syntax-error 'elim-callcc/mark "Not in ANF" stx)]
     [(begin0 be ...)
      (raise-syntax-error 'elim-callcc/mark "Not in ANF" stx)]
-    [(define-values (v ...) ve)
-     (with-syntax ([ve (mark-lambda-as-safe (elim-callcc #'ve))])
-       (syntax/loc stx
-         (define-values (v ...) ve)))]
-    [(define-syntaxes (v ...) ve)
-     stx]
-    [(define-values-for-syntax (v ...) ve)
-     stx]
     [(set! v ve)
      (with-syntax ([ve (elim-callcc #'ve)])
        (syntax/loc stx (set! v ve)))]
@@ -52,13 +46,15 @@
     [(letrec-values ([(v ...) ve] ...) be ...)
      (raise-syntax-error 'elim-callcc/mark "Not in ANF" stx)]
     [(#%plain-lambda formals be)
-     (with-syntax ([be (elim-callcc #'be)])
-       (syntax/loc stx
-         (#%plain-lambda formals be)))]
+     (mark-lambda-as-safe
+      (with-syntax ([be (elim-callcc #'be)])
+        (syntax/loc stx
+          (#%plain-lambda formals be))))]
     [(case-lambda [formals be] ...)
-     (with-syntax ([(be ...) (map elim-callcc (syntax->list #'(be ...)))])
-       (syntax/loc stx
-         (case-lambda [formals be] ...)))]
+     (mark-lambda-as-safe
+      (with-syntax ([(be ...) (map elim-callcc (syntax->list #'(be ...)))])
+        (syntax/loc stx
+          (case-lambda [formals be] ...))))]
     [(if te ce ae)
      (with-syntax ([te (elim-callcc #'te)]
                    [ce (elim-callcc #'ce)]
@@ -67,11 +63,7 @@
     [(quote datum)
      stx]
     [(quote-syntax datum)
-     stx]
-    [(letrec-syntaxes+values ([(sv ...) se] ...)
-       ([(vv ...) ve] ...)
-       be ...)
-     (raise-syntax-error 'elim-callcc/mark "Not in ANF" stx)]
+     stx]    
     [(with-continuation-mark ke me be)
      (let* ([ke-prime (elim-callcc #'ke)]
             [me-prime (elim-callcc #'me)]
@@ -83,9 +75,7 @@
             (with-continuation-mark 
                 the-save-cm-key 
               (#%plain-app current-saved-continuation-marks-and #,ke-prime #,me-prime)
-              #,be-prime)))))]
-    [(#%expression d)
-     (markit (quasisyntax/loc stx (#%expression #,(elim-callcc #'d))))]
+              #,be-prime)))))]    
     [(#%plain-app call/cc w)
      (let-values ([(cm ref-to-cm) (generate-formal 'current-marks)]
                   [(x ref-to-x) (generate-formal 'x)])
@@ -166,5 +156,12 @@
      stx]       
     [id (identifier? #'id)
         stx]
+    ; XXX Shouldn't
+    [(letrec-syntaxes+values ([(sv ...) se] ...)
+       ([(vv ...) ve] ...)
+       be ...)
+     (raise-syntax-error 'elim-callcc/mark "Not in ANF" stx)]
+    [(#%expression d)
+     (markit (quasisyntax/loc stx (#%expression #,(elim-callcc #'d))))]
     [_
      (raise-syntax-error 'elim-callcc "Dropped through:" stx)])))

@@ -10,7 +10,7 @@
          (for-syntax "lang/defun.ss")
          "lang/lang-api.ss")
 
-(provide (rename-out [lang-module-begin #%plain-module-begin])
+(provide (rename-out [lang-module-begin #%module-begin])
          (all-from-out "lang/lang-api.ss"))
 
 (define-syntax lang-module-begin 

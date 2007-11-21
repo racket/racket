@@ -1,8 +1,9 @@
 #lang scheme/base
-(require (lib "kerncase.ss" "syntax")
+(require (for-template scheme/base)         
+         (lib "kerncase.ss" "syntax")
          (lib "etc.ss")
          (lib "list.ss")
-         (for-syntax "../lang/abort-resume.ss")
+         (for-template "../lang/abort-resume.ss")
          "util.ss")
 (provide (all-defined-out))
 
@@ -22,14 +23,6 @@
       (with-syntax ([(be ...) (map (elim-letrec ids) (syntax->list #'(be ...)))])
         (syntax/loc stx
           (begin0 be ...)))]
-     [(define-values (v ...) ve)
-      (with-syntax ([ve ((elim-letrec ids) #'ve)])
-        (syntax/loc stx
-          (define-values (v ...) ve)))]
-     [(define-syntaxes (v ...) ve)
-      stx]
-     [(define-values-for-syntax (v ...) ve)       
-      stx]
      [(set! v ve)
       (with-syntax ([ve ((elim-letrec ids) #'ve)])
         (if (bound-identifier-member? #'id ids)
@@ -76,7 +69,26 @@
      [(quote datum)
       stx]
      [(quote-syntax datum)
+      stx]     
+     [(with-continuation-mark ke me be)
+      (with-syntax ([ke ((elim-letrec ids) #'ke)]
+                    [me ((elim-letrec ids) #'me)]
+                    [be ((elim-letrec ids) #'be)])
+        (syntax/loc stx
+          (with-continuation-mark ke me be)))]     
+     [(#%plain-app e ...)
+      (with-syntax ([(e ...) (map (elim-letrec ids) (syntax->list #'(e ...)))])
+        (syntax/loc stx
+          (#%plain-app e ...)))]
+     [(#%top . v)
       stx]
+     [(#%variable-reference . v)
+      stx]            
+     [id (identifier? #'id)
+         (if (bound-identifier-member? #'id ids)
+             (syntax/loc stx (#%plain-app unbox id))
+             #'id)]
+     ; XXX These two cases shouldn't be here.
      [(letrec-syntaxes+values ([(sv ...) se] ...)
         ([(vv ...) ve] ...)
         be ...)
@@ -101,27 +113,9 @@
                                    (#%plain-lambda (nvv ...)
                                                    (#%plain-app set-box! vv nvv) ...))
                       ...
-                      be ...))))))]
-     [(with-continuation-mark ke me be)
-      (with-syntax ([ke ((elim-letrec ids) #'ke)]
-                    [me ((elim-letrec ids) #'me)]
-                    [be ((elim-letrec ids) #'be)])
-        (syntax/loc stx
-          (with-continuation-mark ke me be)))]
+                      be ...))))))]     
      [(#%expression d)
       (quasisyntax/loc stx (#%expression #,((elim-letrec ids) #'d)))]
-     [(#%plain-app e ...)
-      (with-syntax ([(e ...) (map (elim-letrec ids) (syntax->list #'(e ...)))])
-        (syntax/loc stx
-          (#%plain-app e ...)))]
-     [(#%top . v)
-      stx]
-     [(#%variable-reference . v)
-      stx]       
-     [id (identifier? #'id)
-         (if (bound-identifier-member? #'id ids)
-             (syntax/loc stx (#%plain-app unbox id))
-             #'id)]
      [_
       (raise-syntax-error 'elim-letrec "Dropped through:" stx)])))
 
