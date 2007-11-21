@@ -1,6 +1,7 @@
 (module dispatch-lang-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           #;(planet "sxml.ss" ("lizorkin" "sxml.plt" 1 4))
+           ; XXX Replace with real
+           (lib "sxml.ss" "web-server/tmp/sxml")
            (lib "etc.ss")
            (lib "list.ss")
            (lib "dispatch.ss" "web-server" "dispatchers")
@@ -9,9 +10,6 @@
            (prefix lang: (lib "dispatch-lang.ss" "web-server" "dispatchers"))
            "../util.ss")
   (provide dispatch-lang-tests)
-  
-  ; XXX Sxpath broken
-  (define sxpath (lambda _ (lambda _ (error 'sxpath))))
   
   (define (mkd p)
     (lang:make #:url->path (lambda _ (values p (list p)))

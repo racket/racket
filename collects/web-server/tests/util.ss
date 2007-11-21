@@ -1,6 +1,7 @@
 (module util mzscheme
   (require (lib "connection-manager.ss" "web-server" "private")
-           #;(only (planet "ssax.ss" ("lizorkin" "ssax.plt" 1 3))
+           ; XXX Replace with real
+           (only (lib "ssax.ss" "web-server/tmp/ssax")
                  ssax:xml->sxml)
            (lib "request-structs.ss" "web-server" "private")
            (lib "web-server-structs.ss" "web-server" "private")
@@ -19,9 +20,7 @@
   (define (call d u bs)
     (htxml (collect d (make-request 'get (string->url u) empty bs #"" "127.0.0.1" 80 "127.0.0.1"))))
   (define (htxml bs)
-    ; XXX SSAX is broken
-    #;(define sx (ssax:xml->sxml (open-input-bytes (second (regexp-match #"^.+\r\n\r\n(.+)$" bs))) empty))
-    (define sx empty)
+    (define sx (ssax:xml->sxml (open-input-bytes (second (regexp-match #"^.+\r\n\r\n(.+)$" bs))) empty))
     (pretty-print sx)
     sx)
   

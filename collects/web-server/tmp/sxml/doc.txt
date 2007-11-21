@@ -1,0 +1,376 @@
+SXML Package
+============
+
+SXML package contains a collection of tools for processing markup documents
+(XML, XHTML, HTML) in the form of S-expressions (SXML, SHTML)
+
+You can find the API documentation in:
+http://modis.ispras.ru/Lizorkin/Apidoc/index.html
+
+SXML tools tutorial (under construction):
+http://modis.ispras.ru/Lizorkin/sxml-tutorial.html
+
+==========================================================================
+
+Description of the main high-level package components
+-----------------------------------------------------
+
+ 1. SXML-tools
+ 2. SXPath - SXML Query Language
+ 3. SXPath with context
+ 4. DDO SXPath
+ 5. Functional-style modification tool for SXML
+ 6. STX - Scheme-enabled XSLT processor
+ 7. XPathLink - query language for a set of linked documents
+
+-------------------------------------------------
+
+ 1. SXML-tools
+
+XML is XML Infoset represented as native Scheme data - S-expressions.
+Any Scheme programm can manipulate SXML data directly, and DOM-like API is not
+necessary for SXML/Scheme applications.
+SXML-tools (former DOMS) is just a set of handy functions which may be
+convenient for some popular operations on SXML data. 
+
+library file:	Bigloo, Chicken, Gambit: "sxml/sxml-tools.scm"
+		PLT:			 "sxml-tools.ss"
+
+http://www.pair.com/lisovsky/xml/sxmltools/
+
+-------------------------------------------------
+
+ 2. SXPath - SXML Query Language
+
+SXPath is a query language for SXML. It treats a location path as a composite
+query over an XPath tree or its branch. A single step is a combination of a
+projection, selection or a transitive closure. Multiple steps are combined via
+join and union operations. 
+
+Lower-level SXPath consists of a set of predicates, filters, selectors and
+combinators, and higher-level abbreviated SXPath functions which are
+implemented in terms of lower-level functions. 
+
+Higher level SXPath functions are dealing with XPath expressions which may be
+represented as a list of steps in the location path ("native" SXPath): 
+  (sxpath '(table (tr 3) td @ align)) 
+or as a textual representation of XPath expressions which is compatible with
+W3C XPath recommendation ("textual" SXPath): 
+  (sxpath "table/tr[3]/td/@align") 
+
+An arbitrary converter implemented as a Scheme function may be used as a step
+in location path of "native" SXPath, which makes it extremely powerful and
+flexible tool. On other hand, a lot of W3C Recommendations such as XSLT,
+XPointer, XLink depends on a textual XPath expressions. 
+
+It is possible to combine "native" and "textual" location paths and location
+step functions in one query, constructing an arbitrary XML query far beyond
+capabilities of XPath. For example, the query 
+  (sxpath `("document/chapter[3]" ,relevant-links @ author) 
+makes a use of location step function relevant-links which implements an
+arbitrary algorithm in Scheme. 
+
+SXPath may be considered as a compiler from abbreviated XPath (extended with
+native SXPath and location step functions) to SXPath primitives. 
+
+library file:	Bigloo, Chicken, Gambit: "sxml/sxpath.scm"
+		PLT:			 "sxpath.ss"
+
+http://www.pair.com/lisovsky/query/sxpath/
+
+-------------------------------------------------
+
+ 3. SXPath with context
+
+SXPath with context provides the effective implementation for XPath reverse
+axes ("parent::", "ancestor::" and such) on SXML documents.
+
+The limitation of SXML is the absense of an upward link from a child to its
+parent, which makes the straightforward evaluation of XPath reverse axes
+ineffective. The previous approach for evaluating reverse axes in SXPath was
+searching for a parent from the root of the SXML tree.
+
+SXPath with context provides the fast reverse axes, which is achieved by
+storing previously visited ancestors of the context node in the context.
+With a special static analysis of an XPath expression, only the minimal
+required number of ancestors is stored in the context on each location step.
+
+library file:	Bigloo, Chicken, Gambit: "sxml/xpath-context.scm"
+		PLT:			 "xpath-context_xlink.ss"
+
+-------------------------------------------------
+
+ 4. DDO SXPath
+
+The optimized SXPath that implements distinct document order (DDO) of the
+nodeset produced.
+
+Unlike conventional SXPath and SXPath with context, DDO SXPath guarantees that
+the execution time is at worst polynomial of the XPath expression size and of
+the SXML document size.
+
+The API of DDO SXPath is compatible of that in conventional SXPath. The main
+following kinds of optimization methods are designed and implemented in DDO
+SXPath: 
+
+- All XPath axes are implemented to keep a nodeset in distinct document
+  order (DDO). An axis can now be considered as a converter:
+   nodeset_in_DDO --> nodeset_in_DDO
+
+- Type inference for XPath expressions allows determining whether a
+  predicate involves context-position implicitly;
+
+- Faster evaluation for particular kinds of XPath predicates that involve
+  context-position, like:  [position() > number] or [number];
+
+- Sort-merge join algorithm implemented for XPath EqualityComparison of
+  two nodesets;
+
+- Deeply nested XPath predicates are evaluated at the very beginning of the
+  evaluation phase, to guarantee that evaluation of deeply nested predicates
+  is performed no more than once for each combination of
+  (context-node, context-position, context-size)
+
+library file:	Bigloo, Chicken, Gambit: "sxml/ddo-txpath.scm"
+		PLT:			 "ddo-txpath.ss"
+
+http://modis.ispras.ru/Lizorkin/ddo.html
+
+-------------------------------------------------
+
+ 5. Functional-style modification tool for SXML
+
+A tool for making functional-style modifications to SXML documents
+The basics of modification language design was inspired by Patrick Lehti and
+his data manipulation processor for XML Query Language:
+  http://www.ipsi.fraunhofer.de/~lehti/
+However, with functional techniques we can do this better...
+
+library file:	Bigloo, Chicken, Gambit: "sxml/modif.scm"
+		PLT:			 "modif.ss"
+
+-------------------------------------------------
+
+ 6. STX - Scheme-enabled XSLT processor
+
+STX is an XML transformation tool based on XSLT and Scheme which combines
+a processor for most common XSLT stylesheets and a framework for their
+extension in Scheme and provides an environment for a general-purpose
+transformation of XML data. It integrates two functional languages - Scheme
+and XSLT-like transformation language on the basis of the common data model -
+SXML.
+
+library file:	Bigloo, Chicken, Gambit: "stx/stx-engine.scm"
+		PLT:			 "stx-engine.ss"
+
+http://www.pair.com/lisovsky/transform/stx/
+
+-------------------------------------------------
+
+ 7. XPathLink - query language for a set of linked documents
+
+XLink is a language for describing links between resources using XML attributes
+and namespaces. XLink provides expressive means for linking information in
+different XML documents. With XLink, practical XML application data can be
+expressed as several linked XML documents, rather than a single complicated XML
+document. Such a design makes it very attractive to have a query language that
+would inherently recognize XLink links and provide a natural navigation
+mechanism over them.
+
+Such a query language has been designed and implemented in Scheme. This
+language is an extension to XPath with 3 additional axes. The implementation
+is naturally an extended SXPath. We call this language XPath with XLink
+support, or XPathLink.
+
+Additionally, an HTML <A> hyperlink can be considered as a particular case of
+an XLink link. This observation makes it possible to query HTML documents with
+XPathLink as well. Neil W. Van Dyke <neil@neilvandyke.org> and his permissive
+HTML parser HtmlPrag have made this feature possible.
+
+library file:	Bigloo, Chicken, Gambit: "sxml/xlink.scm"
+		PLT:			 "xpath-context_xlink.ss"
+
+http://modis.ispras.ru/Lizorkin/xpathlink.html
+
+
+==========================================================================
+
+Examples and expected results
+-----------------------------
+
+Obtaining an SXML document from XML
+(sxml:document "http://modis.ispras.ru/Lizorkin/XML/poem.xml")
+==>
+(*TOP*
+ (*PI* xml "version='1.0'")
+ (poem
+  (@ (title "The Lovesong of J. Alfred Prufrock") (poet "T. S. Eliot"))
+  (stanza
+    (line "Let us go then, you and I,")
+    (line "When the evening is spread out against the sky")
+    (line "Like a patient etherized upon a table:"))
+  (stanza
+    (line "In the room the women come and go")
+    (line "Talking of Michaelangelo."))))
+
+Accessing parts of the document with SXPath
+((sxpath "poem/stanza[2]/line/text()")
+  (sxml:document "http://modis.ispras.ru/Lizorkin/XML/poem.xml"))
+==>
+("In the room the women come and go" "Talking of Michaelangelo.")
+
+Obtaining/querying HTML documents
+((sxpath "html/head/title")
+  (sxml:document "http://modis.ispras.ru/Lizorkin/index.html"))
+==>
+((title "Dmitry Lizorkin homepage"))
+
+-------------------------------------
+SXML Transformations
+
+Transforming the document according to XSLT stylesheet
+(apply
+ string-append
+ (sxml:clean-feed
+   (stx:transform-dynamic
+     (sxml:add-parents
+      (sxml:document "http://modis.ispras.ru/Lizorkin/XML/poem.xml"))
+     (stx:make-stx-stylesheet
+       (sxml:document
+         "http://modis.ispras.ru/Lizorkin/XML/poem2html.xsl"
+         '((xsl . "http://www.w3.org/1999/XSL/Transform")))))))
+==>
+"<html><head><title>The Lovesong of J. Alfred Prufrock</title></head>
+<body><h1>The Lovesong of J. Alfred Prufrock</h1>
+<p>Let us go then, you and I,<br/>
+When the evening is spread out against the sky<br/>
+Like a patient etherized upon a table:<br/></p>
+<p>In the room the women come and go<br/>Talking of Michaelangelo.<br/></p>
+<i>T. S. Eliot</i></body></html>"
+
+Expressing the same transformation in pre-post-order (requires SSAX package)
+(pre-post-order
+  (sxml:document "http://modis.ispras.ru/Lizorkin/XML/poem.xml")
+  `((*TOP* *macro* . ,(lambda top (car ((sxpath '(*)) top))))
+    (poem
+     unquote
+     (lambda elem
+       `(html
+         (head
+           (title ,((sxpath "string(@title)") elem)))
+         (body
+           (h1 ,((sxpath "string(@title)") elem))
+           ,@((sxpath "node()") elem)
+           (i ,((sxpath "string(@poet)") elem))))))
+    (@ *preorder* . ,(lambda x x))
+    (stanza . ,(lambda (tag . content)
+                `(p ,@(map-union (lambda (x) x) content))))
+    (line . ,(lambda (tag . content) (append content '((br)))))
+    (*text* . ,(lambda (tag text) text))))
+==>
+(html
+ (head (title "The Lovesong of J. Alfred Prufrock"))
+ (body
+  (h1 "The Lovesong of J. Alfred Prufrock")
+  (p
+   "Let us go then, you and I,"
+   (br)
+   "When the evening is spread out against the sky"
+   (br)
+   "Like a patient etherized upon a table:"
+   (br))
+  (p "In the room the women come and go" (br)
+     "Talking of Michaelangelo." (br))
+  (i "T. S. Eliot")))
+
+-------------------------------------
+XPathLink: a query language with XLink support
+
+Returning a chapter element that is linked with the first item
+in the table of contents
+((sxpath/c "doc/item[1]/traverse::chapter")
+  (xlink:documents "http://modis.ispras.ru/Lizorkin/XML/doc.xml"))
+==>
+((chapter (@ (id "chap1"))
+   (title "Abstract")
+   (p "This document describes about XLink Engine...")))
+
+Traversing between documents with XPathLink
+((sxpath/c "descendant::a[.='XPathLink']/traverse::html/
+   descendant::blockquote[1]/node()")
+ (xlink:documents "http://modis.ispras.ru/Lizorkin/index.html"))
+==>
+((b "Abstract: ")
+ "\r\n"
+ "XPathLink is a query language for XML documents linked with XLink links.\r\n"
+ "XPathLink is based on XPath and extends it with transparent XLink support.\r\n"
+ "The implementation of XPathLink in Scheme is provided.\r\n")
+
+-------------------------------------
+SXML Modifications
+
+Modifying the SXML representation of the document
+((sxml:modify '("/poem/stanza[2]" move-preceding "preceding-sibling::stanza"))
+ (sxml:document "http://modis.ispras.ru/Lizorkin/XML/poem.xml"))
+==>
+(*TOP*
+ (*PI* xml "version='1.0'")
+ (poem
+  (@ (title "The Lovesong of J. Alfred Prufrock") (poet "T. S. Eliot"))
+  (stanza
+    (line "In the room the women come and go")
+    (line "Talking of Michaelangelo."))
+  (stanza
+    (line "Let us go then, you and I,")
+    (line "When the evening is spread out against the sky")
+    (line "Like a patient etherized upon a table:"))))
+
+-------------------------------------
+DDO SXPath: the optimized XPath implementation
+
+Return all text nodes that follow the keyword ``XPointer'' and
+that are not descendants of the element appendix
+((ddo:sxpath "//text()[contains(., 'XPointer')]/
+   following::text()[not(./ancestor::appendix)]")
+ (sxml:document "http://modis.ispras.ru/Lizorkin/XML/doc.xml"))
+==>
+("XPointer is the fragment identifier of documents having the mime-type..."
+ "Models for using XLink/XPointer "
+ "There are important keywords."
+ "samples"
+ "Conclusion"
+ "Thanks a lot.")
+
+-------------------------------------
+Lazy XML processing
+
+Lazy XML-to-SXML conversion
+(define doc
+  (lazy:xml->sxml
+    (open-input-resource "http://modis.ispras.ru/Lizorkin/XML/poem.xml")
+    '()))
+doc
+==>
+(*TOP*
+ (*PI* xml "version='1.0'")
+ (poem
+  (@ (title "The Lovesong of J. Alfred Prufrock") (poet "T. S. Eliot"))
+  (stanza (line "Let us go then, you and I,") #<struct:promise>)
+  #<struct:promise>))
+
+Querying a lazy SXML document, lazyly
+(define res ((lazy:sxpath "poem/stanza/line[1]") doc))
+res
+==>
+((line "Let us go then, you and I,") #<struct:promise>)
+
+Obtain the next portion of the result
+(force (cadr res))
+==>
+((line "In the room the women come and go") #<struct:promise>)
+
+Converting the lazy result to a conventional SXML nodeset
+(lazy:result->list res)
+==>
+((line "Let us go then, you and I,")
+ (line "In the room the women come and go"))

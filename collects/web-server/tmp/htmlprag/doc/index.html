@@ -1,0 +1,458 @@
+<html lang="en">
+<head>
+<title>HtmlPrag: Pragmatic Parsing and Emitting of HTML using SXML and SHTML</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="HtmlPrag: Pragmatic Parsing and Emitting of HTML using SXML and SHTML">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="top" href="#Top">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body>
+<a name="Top"></a>
+
+<h2 class="unnumbered">HtmlPrag: Pragmatic Parsing and Emitting of HTML using SXML and SHTML</h2>
+
+<p class="noindent">Version <b>0.16</b>, 2005-12-18, <a href="http://www.neilvandyke.org/htmlprag/">http://www.neilvandyke.org/htmlprag/</a>
+
+<p class="noindent">by
+Neil W. Van Dyke
+&lt;<code>neil@neilvandyke.org</code>&gt;
+
+   <blockquote>
+Copyright &copy; 2003 - 2005 Neil W. Van Dyke.  This program is Free
+Software; you can redistribute it and/or modify it under the terms of the
+GNU Lesser General Public License as published by the Free Software
+Foundation; either version 2.1 of the License, or (at your option) any
+later version.  This program is distributed in the hope that it will be
+useful, but without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.  See
+&lt;<code>http://www.gnu.org/copyleft/lesser.html</code>&gt; for details.  For
+other license options and consulting, contact the author. 
+</blockquote>
+
+<h2 class="chapter">Introduction</h2>
+
+<p>HtmlPrag provides permissive HTML parsing and emitting capability to Scheme
+programs.  The parser is useful for software agent extraction of
+information from Web pages, for programmatically transforming HTML files,
+and for implementing interactive Web browsers.  HtmlPrag emits &ldquo;SHTML,&rdquo;
+which is an encoding of HTML in
+<a href="http://pobox.com/~oleg/ftp/Scheme/SXML.html">SXML</a>, so that
+conventional HTML may be processed with XML tools such as
+<a href="http://pair.com/lisovsky/query/sxpath/">SXPath</a>.  Like Oleg
+Kiselyov's <a href="http://pobox.com/~oleg/ftp/Scheme/xml.html#HTML-parser">SSAX-based HTML parser</a>, HtmlPrag provides a permissive tokenizer, but also
+attempts to recover structure.  HtmlPrag also includes procedures for
+encoding SHTML in HTML syntax.
+
+   <p>The HtmlPrag parsing behavior is permissive in that it accepts erroneous
+HTML, handling several classes of HTML syntax errors gracefully, without
+yielding a parse error.  This is crucial for parsing arbitrary real-world
+Web pages, since many pages actually contain syntax errors that would
+defeat a strict or validating parser.  HtmlPrag's handling of errors is
+intended to generally emulate popular Web browsers' interpretation of the
+structure of erroneous HTML.  We euphemistically term this kind of parse
+&ldquo;pragmatic.&rdquo;
+
+   <p>HtmlPrag also has some support for XHTML, although XML namespace qualifiers
+are currently accepted but stripped from the resulting SHTML.  Note that
+valid XHTML input is of course better handled by a validating XML parser
+like Kiselyov's
+<a href="http://pobox.com/~oleg/ftp/Scheme/xml.html#XML-parser">SSAX</a>.
+
+   <p>HtmlPrag requires R5RS, SRFI-6, and SRFI-23.
+
+<h2 class="chapter">SHTML and SXML</h2>
+
+<p>SHTML is a variant of SXML, with two minor but useful extensions:
+
+     <ol type=1 start=1>
+
+     <li>The SXML keyword symbols, such as <code>*TOP*</code>, are defined to be in all
+uppercase, regardless of the case-sensitivity of the reader of the hosting
+Scheme implementation in any context.  This avoids several pitfalls.
+
+     <li>Since not all character entity references used in HTML can be converted to
+Scheme characters in all R5RS Scheme implementations, nor represented in
+conventional text files or other common external text formats to which one
+might wish to write SHTML, SHTML adds a special <code>&amp;</code> syntax for
+non-ASCII (or non-Extended-ASCII) characters.  The syntax is <code>(&amp;
+</code><var>val</var><code>)</code>, where <var>val</var> is a symbol or string naming with the symbolic
+name of the character, or an integer with the numeric value of the
+character.
+
+        </ol>
+
+<div class="defun">
+&mdash; Variable: <b>shtml-comment-symbol</b><var><a name="index-shtml_002dcomment_002dsymbol-1"></a></var><br>
+&mdash; Variable: <b>shtml-decl-symbol</b><var><a name="index-shtml_002ddecl_002dsymbol-2"></a></var><br>
+&mdash; Variable: <b>shtml-empty-symbol</b><var><a name="index-shtml_002dempty_002dsymbol-3"></a></var><br>
+&mdash; Variable: <b>shtml-end-symbol</b><var><a name="index-shtml_002dend_002dsymbol-4"></a></var><br>
+&mdash; Variable: <b>shtml-entity-symbol</b><var><a name="index-shtml_002dentity_002dsymbol-5"></a></var><br>
+&mdash; Variable: <b>shtml-pi-symbol</b><var><a name="index-shtml_002dpi_002dsymbol-6"></a></var><br>
+&mdash; Variable: <b>shtml-start-symbol</b><var><a name="index-shtml_002dstart_002dsymbol-7"></a></var><br>
+&mdash; Variable: <b>shtml-text-symbol</b><var><a name="index-shtml_002dtext_002dsymbol-8"></a></var><br>
+&mdash; Variable: <b>shtml-top-symbol</b><var><a name="index-shtml_002dtop_002dsymbol-9"></a></var><br>
+<blockquote>
+<p>These variables are bound to the following case-sensitive symbols used in
+SHTML, respectively: <code>*COMMENT*</code>, <code>*DECL*</code>, <code>*EMPTY*</code>,
+<code>*END*</code>, <code>*ENTITY*</code>, <code>*PI*</code>, <code>*START*</code>, <code>*TEXT*</code>,
+and <code>*TOP*</code>.  These can be used in lieu of the literal symbols in
+programs read by a case-insensitive Scheme reader.<a rel="footnote" href="#fn-1" name="fnd-1"><sup>1</sup></a>
+</p></blockquote></div>
+
+<div class="defun">
+&mdash; Variable: <b>shtml-named-char-id</b><var><a name="index-shtml_002dnamed_002dchar_002did-10"></a></var><br>
+&mdash; Variable: <b>shtml-numeric-char-id</b><var><a name="index-shtml_002dnumeric_002dchar_002did-11"></a></var><br>
+<blockquote>
+<p>These variables are bound to the SHTML entity public identifier strings
+used in SHTML <code>*ENTITY*</code> named and numeric character entity
+references. 
+</p></blockquote></div>
+
+<div class="defun">
+&mdash; Procedure: <b>make-shtml-entity</b><var> val<a name="index-make_002dshtml_002dentity-12"></a></var><br>
+<blockquote>
+<p>Yields an SHTML character entity reference for <var>val</var>.  For example:
+
+     <pre class="lisp">          (make-shtml-entity "rArr")                  =&gt; (&amp; rArr)
+          (make-shtml-entity (string-&gt;symbol "rArr")) =&gt; (&amp; rArr)
+          (make-shtml-entity 151)                     =&gt; (&amp; 151)
+     </pre>
+        </blockquote></div>
+
+<div class="defun">
+&mdash; Procedure: <b>shtml-entity-value</b><var> obj<a name="index-shtml_002dentity_002dvalue-13"></a></var><br>
+<blockquote>
+<p>Yields the value for the SHTML entity <var>obj</var>, or <code>#f</code> if <var>obj</var>
+is not a recognized entity.  Values of named entities are symbols, and
+values of numeric entities are numbers.  An error may raised if <var>obj</var>
+is an entity with system ID inconsistent with its public ID.  For example:
+
+     <pre class="lisp">          (define (f s) (shtml-entity-value (cadr (html-&gt;shtml s))))
+          (f "&amp;nbsp;")  =&gt; nbsp
+          (f "&amp;#2000;") =&gt; 2000
+     </pre>
+        </blockquote></div>
+
+<h2 class="chapter">Tokenizing</h2>
+
+<p>The tokenizer is used by the higher-level structural parser, but can also
+be called directly for debugging purposes or unusual applications.  Some of
+the list structure of tokens, such as for start tag tokens, is mutated and
+incorporated into the SHTML list structure emitted by the parser.
+
+<div class="defun">
+&mdash; Procedure: <b>make-html-tokenizer</b><var> in normalized?<a name="index-make_002dhtml_002dtokenizer-14"></a></var><br>
+<blockquote>
+<p>Constructs an HTML tokenizer procedure on input port <var>in</var>.  If boolean
+<var>normalized?</var> is true, then tokens will be in a format conducive to use
+with a parser emitting normalized SXML.  Each call to the resulting
+procedure yields a successive token from the input.  When the tokens have
+been exhausted, the procedure returns the null list.  For example:
+
+     <pre class="lisp">          (define input (open-input-string "&lt;a href=\"foo\"&gt;bar&lt;/a&gt;"))
+          (define next  (make-html-tokenizer input #f))
+          (next) =&gt; (a (@ (href "foo")))
+          (next) =&gt; "bar"
+          (next) =&gt; (*END* a)
+          (next) =&gt; ()
+          (next) =&gt; ()
+     </pre>
+        </blockquote></div>
+
+<div class="defun">
+&mdash; Procedure: <b>tokenize-html</b><var> in normalized?<a name="index-tokenize_002dhtml-15"></a></var><br>
+<blockquote>
+<p>Returns a list of tokens from input port <var>in</var>, normalizing according to
+boolean <var>normalized?</var>.  This is probably most useful as a debugging
+convenience.  For example:
+
+     <pre class="lisp">          (tokenize-html (open-input-string "&lt;a href=\"foo\"&gt;bar&lt;/a&gt;") #f)
+          =&gt; ((a (@ (href "foo"))) "bar" (*END* a))
+     </pre>
+        </blockquote></div>
+
+<div class="defun">
+&mdash; Procedure: <b>shtml-token-kind</b><var> token<a name="index-shtml_002dtoken_002dkind-16"></a></var><br>
+<blockquote>
+<p>Returns a symbol indicating the kind of tokenizer <var>token</var>:
+<code>*COMMENT*</code>, <code>*DECL*</code>, <code>*EMPTY*</code>, <code>*END*</code>,
+<code>*ENTITY*</code>, <code>*PI*</code>, <code>*START*</code>, <code>*TEXT*</code>. 
+This is used by higher-level parsing code.  For example:
+
+     <pre class="lisp">          (map shtml-token-kind
+               (tokenize-html (open-input-string "&lt;a&lt;b&gt;&gt;&lt;c&lt;/&lt;/c") #f))
+          =&gt; (*START* *START* *TEXT* *START* *END* *END*)
+     </pre>
+        </blockquote></div>
+
+<h2 class="chapter">Parsing</h2>
+
+<p>Most applications will call a parser procedure such as
+<code>html-&gt;shtml</code> rather than calling the tokenizer directly.
+
+<div class="defun">
+&mdash; Procedure: <b>parse-html/tokenizer</b><var> tokenizer normalized?<a name="index-parse_002dhtml_002ftokenizer-17"></a></var><br>
+<blockquote>
+<p>Emits a parse tree like <code>html-&gt;shtml</code> and related procedures, except
+using <var>tokenizer</var> as a source of tokens, rather than tokenizing from an
+input port.  This procedure is used internally, and generally should not be
+called directly. 
+</p></blockquote></div>
+
+<div class="defun">
+&mdash; Procedure: <b>html-&gt;sxml-0nf</b><var> input<a name="index-html_002d_003esxml_002d0nf-18"></a></var><br>
+&mdash; Procedure: <b>html-&gt;sxml-1nf</b><var> input<a name="index-html_002d_003esxml_002d1nf-19"></a></var><br>
+&mdash; Procedure: <b>html-&gt;sxml-2nf</b><var> input<a name="index-html_002d_003esxml_002d2nf-20"></a></var><br>
+&mdash; Procedure: <b>html-&gt;sxml</b><var> input<a name="index-html_002d_003esxml-21"></a></var><br>
+&mdash; Procedure: <b>html-&gt;shtml</b><var> input<a name="index-html_002d_003eshtml-22"></a></var><br>
+<blockquote>
+<p>Permissively parse HTML from <var>input</var>, which is either an input port or
+a string, and emit an SHTML equivalent or approximation.  To borrow and
+slightly modify an example from Kiselyov's discussion of his HTML parser:
+
+     <pre class="lisp">          (html-&gt;shtml
+           "&lt;html&gt;&lt;head&gt;&lt;title&gt;&lt;/title&gt;&lt;title&gt;whatever&lt;/title&gt;&lt;/head&gt;&lt;body&gt;
+          &lt;a href=\"url\"&gt;link&lt;/a&gt;&lt;p align=center&gt;&lt;ul compact style=\"aa\"&gt;
+          &lt;p&gt;BLah&lt;!-- comment &lt;comment&gt; --&gt; &lt;i&gt; italic &lt;b&gt; bold &lt;tt&gt; ened&lt;/i&gt;
+          still &amp;lt; bold &lt;/b&gt;&lt;/body&gt;&lt;P&gt; But not done yet...")
+          =&gt;
+          (*TOP* (html (head (title) (title "whatever"))
+                       (body "\n"
+                             (a (@ (href "url")) "link")
+                             (p (@ (align "center"))
+                                (ul (@ (compact) (style "aa")) "\n"))
+                             (p "BLah"
+                                (*COMMENT* " comment &lt;comment&gt; ")
+                                " "
+                                (i " italic " (b " bold " (tt " ened")))
+                                "\n"
+                                "still &lt; bold "))
+                       (p " But not done yet...")))
+     </pre>
+        <p>Note that in the emitted SHTML the text token <code>"still &lt; bold"</code> is
+<em>not</em> inside the <code>b</code> element, which represents an unfortunate
+failure to emulate all the quirks-handling behavior of some popular Web
+browsers.
+
+        <p>The procedures <code>html-&gt;sxml-</code><var>n</var><code>nf</code> for <var>n</var> 0 through 2
+correspond to 0th through 2nd normal forms of SXML as specified in SXML,
+and indicate the minimal requirements of the emitted SXML.
+
+        <p><code>html-&gt;sxml</code> and <code>html-&gt;shtml</code> are currently aliases for
+<code>html-&gt;sxml-0nf</code>, and can be used in scripts and interactively, when
+terseness is important and any normal form of SXML would suffice. 
+</p></blockquote></div>
+
+<h2 class="chapter">Emitting HTML</h2>
+
+<p>Two procedures encoding the SHTML representation as conventional HTML,
+<code>write-shtml-as-html</code> and <code>shtml-&gt;html</code>.  These are perhaps most
+useful for emitting the result of parsed and transformed input HTML.  They
+can also be used for emitting HTML from generated or handwritten SHTML.
+
+<div class="defun">
+&mdash; Procedure: <b>write-shtml-as-html</b><var> shtml </var>[<var>out </var>[<var>foreign-filter</var>]]<var><a name="index-write_002dshtml_002das_002dhtml-23"></a></var><br>
+<blockquote>
+<p>Writes a conventional HTML transliteration of the SHTML <var>shtml</var> to
+output port <var>out</var>.  If <var>out</var> is not specified, the default is the
+current output port.  HTML elements of types that are always empty are
+written using HTML4-compatible XHTML tag syntax.
+
+        <p>If <var>foreign-filter</var> is specified, it is a procedure of two argument
+that is applied to any non-SHTML (&ldquo;foreign&rdquo;) object encountered in
+<var>shtml</var>, and should yield SHTML.  The first argument is the object, and
+the second argument is a boolean for whether or not the object is part of
+an attribute value.
+
+        <p>No inter-tag whitespace or line breaks not explicit in <var>shtml</var> is
+emitted.  The <var>shtml</var> should normally include a newline at the end of
+the document.  For example:
+
+     <pre class="lisp">          (write-shtml-as-html
+           '((html (head (title "My Title"))
+                   (body (@ (bgcolor "white"))
+                         (h1 "My Heading")
+                         (p "This is a paragraph.")
+                         (p "This is another paragraph.")))))
+          -| &lt;html&gt;&lt;head&gt;&lt;title&gt;My Title&lt;/title&gt;&lt;/head&gt;&lt;body bgcolor="whi
+          -| te"&gt;&lt;h1&gt;My Heading&lt;/h1&gt;&lt;p&gt;This is a paragraph.&lt;/p&gt;&lt;p&gt;This is
+          -|  another paragraph.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
+     </pre>
+        </blockquote></div>
+
+<div class="defun">
+&mdash; Procedure: <b>shtml-&gt;html</b><var> shtml<a name="index-shtml_002d_003ehtml-24"></a></var><br>
+<blockquote>
+<p>Yields an HTML encoding of SHTML <var>shtml</var> as a string.  For example:
+
+     <pre class="lisp">          (shtml-&gt;html
+           (html-&gt;shtml
+            "&lt;P&gt;This is&lt;br&lt;b&lt;I&gt;bold &lt;/foo&gt;italic&lt;/ b &gt; text.&lt;/p&gt;"))
+          =&gt; "&lt;p&gt;This is&lt;br /&gt;&lt;b&gt;&lt;i&gt;bold italic&lt;/i&gt;&lt;/b&gt; text.&lt;/p&gt;"
+     </pre>
+        <p>Note that, since this procedure constructs a string, it should normally
+only be used when the HTML is relatively small.  When encoding HTML
+documents of conventional size and larger, <code>write-shtml-as-html</code> is
+much more efficient. 
+</p></blockquote></div>
+
+<h2 class="chapter">Tests</h2>
+
+<p>The HtmlPrag test suite can be enabled by editing the source code file and
+loading <a href="http://www.neilvandyke.org/testeez/">Testeez</a>.
+
+<h2 class="unnumbered">History</h2>
+
+     <dl>
+<dt>Version 0.16 &mdash; 2005-12-18<dd>Documentation fix.
+
+     <br><dt>Version 0.15 &mdash; 2005-12-18<dd>In the HTML parent element constraints that are used for structure
+recovery, <code>div</code> is now always permitted as a parent, as a stopgap
+measure until substantial time can be spent reworking the algorithm to
+better support <code>div</code> (bug reported by Corey Sweeney and Jepri).  Also
+no longer convert to Scheme character any HTML numeric character reference
+with value above 126, to avoid Unicode problem with PLT 299/300 (bug
+reported by Corey Sweeney).
+
+     <br><dt>Version 0.14 &mdash; 2005-06-16<dd>XML CDATA sections are now tokenized.  Thanks to Alejandro Forero Cuervo
+for suggesting this feature.  The deprecated procedures <code>sxml-&gt;html</code>
+and <code>write-sxml-html</code> have been removed.  Minor documentation changes.
+
+     <br><dt>Version 0.13 &mdash; 2005-02-23<dd>HtmlPrag now requires <code>syntax-rules</code>, and a reader that can read
+<code>@</code> as a symbol.  SHTML now has a special <code>&amp;</code> element for
+character entities, and it is emitted by the parser rather than the old
+<code>*ENTITY*</code> kludge.  <code>shtml-entity-value</code> supports both the new
+and the old character entity representations.  <code>shtml-entity-value</code>
+now yields <code>#f</code> on invalid SHTML entity, rather than raising an error. 
+<code>write-shtml-as-html</code> now has a third argument, <code>foreign-filter</code>. 
+<code>write-shtml-as-html</code> now emits SHTML <code>&amp;</code> entity references. 
+Changed <code>shtml-named-char-id</code> and <code>shtml-numeric-char-id</code>, as
+previously warned.  Testeez is now used for the test suite.  Test procedure
+is now the internal <code>%htmlprag:test</code>.  Documentation changes. 
+Notably, much documentation about using HtmlPrag under various particular
+Scheme implementations has been removed.
+
+     <br><dt>Version 0.12 &mdash; 2004-07-12<dd>Forward-slash in an unquoted attribute value is now considered a value
+constituent rather than an unconsumed terminator of the value (thanks to
+Maurice Davis for reporting and a suggested fix).  <code>xml:</code> is now
+preserved as a namespace qualifier (thanks to Peter Barabas for
+reporting).  Output port term of <code>write-shtml-as-html</code> is now
+optional.  Began documenting loading for particular implementation-specific
+packagings.
+
+     <br><dt>Version 0.11 &mdash; 2004-05-13<dd>To reduce likely namespace collisions with SXML tools, and in anticipation
+of a forthcoming set of new features, introduced the concept of &ldquo;SHTML,&rdquo;
+which will be elaborated upon in a future version of HtmlPrag.  Renamed
+<code>sxml-</code><var>x</var><code>-symbol</code> to <code>shtml-</code><var>x</var><code>-symbol</code>,
+<code>sxml-html-</code><var>x</var> to <code>shtml-</code><var>x</var>, and
+<code>sxml-token-kind</code> to <code>shtml-token-kind</code>.  <code>html-&gt;shtml</code>,
+<code>shtml-&gt;html</code>, and <code>write-shtml-as-html</code> have been added as
+names.  Considered deprecated but still defined (see the &ldquo;Deprecated&rdquo;
+section of this documentation) are <code>sxml-&gt;html</code> and
+<code>write-sxml-html</code>.  The growing pains should now be all but over. 
+Internally, <code>htmlprag-internal:error</code> introduced for Bigloo
+portability.  SISC returned to the test list; thanks to Scott G.  Miller
+for his help.  Fixed a new character <code>eq?</code>  bug, thanks to SISC.
+
+     <br><dt>Version 0.10 &mdash; 2004-05-11<dd>All public identifiers have been renamed to drop the &ldquo;<code>htmlprag:</code>&rdquo;
+prefix.  The portability identifiers have been renamed to begin with an
+<code>htmlprag-internal:</code> prefix, are now considered strictly
+internal-use-only, and have otherwise been changed.  <code>parse-html</code> and
+<code>always-empty-html-elements</code> are no longer public. 
+<code>test-htmlprag</code> now tests <code>html-&gt;sxml</code> rather than
+<code>parse-html</code>.  SISC temporarily removed from the test list, until an
+open source Java that works correctly is found.
+
+     <br><dt>Version 0.9 &mdash; 2004-05-07<dd>HTML encoding procedures added.  Added
+<code>htmlprag:sxml-html-entity-value</code>.  Upper-case <code>X</code> in hexadecimal
+character entities is now parsed, in addition to lower-case <code>x</code>. 
+Added <code>htmlprag:always-empty-html-elements</code>.  Added additional
+portability bindings.  Added more test cases.
+
+     <br><dt>Version 0.8 &mdash; 2004-04-27<dd>Entity references (symbolic, decimal numeric, hexadecimal numeric) are now
+parsed into <code>*ENTITY*</code> SXML.  SXML symbols like <code>*TOP*</code> are now
+always upper-case, regardless of the Scheme implementation.  Identifiers
+such as <code>htmlprag:sxml-top-symbol</code> are bound to the upper-case
+symbols.  Procedures <code>htmlprag:html-&gt;sxml-0nf</code>,
+<code>htmlprag:html-&gt;sxml-1nf</code>, and <code>htmlprag:html-&gt;sxml-2nf</code> have
+been added.  <code>htmlprag:html-&gt;sxml</code> now an alias for
+<code>htmlprag:html-&gt;sxml-0nf</code>.  <code>htmlprag:parse</code> has been refashioned
+as <code>htmlprag:parse-html</code> and should no longer be directly.  A number
+of identifiers have been renamed to be more appropriate when the
+<code>htmlprag:</code> prefix is dropped in some implementation-specific
+packagings of HtmlPrag: <code>htmlprag:make-tokenizer</code> to
+<code>htmlprag:make-html-tokenizer</code>, <code>htmlprag:parse/tokenizer</code> to
+<code>htmlprag:parse-html/tokenizer</code>, <code>htmlprag:html-&gt;token-list</code> to
+<code>htmlprag:tokenize-html</code>, <code>htmlprag:token-kind</code> to
+<code>htmlprag:sxml-token-kind</code>, and <code>htmlprag:test</code> to
+<code>htmlprag:test-htmlprag</code>.  Verbatim elements with empty-element tag
+syntax are handled correctly.  New versions of Bigloo and RScheme tested.
+
+     <br><dt>Version 0.7 &mdash; 2004-03-10<dd>Verbatim pair elements like <code>script</code> and <code>xmp</code> are now parsed
+correctly.  Two Scheme implementations have temporarily been dropped from
+regression testing: Kawa, due to a Java bytecode verifier error likely due
+to a Java installation problem on the test machine; and SXM 1.1, due to
+hitting a limit on the number of literals late in the test suite code. 
+Tested newer versions of Bigloo, Chicken, Gauche, Guile, MIT Scheme, PLT
+MzScheme, RScheme, SISC, and STklos.  RScheme no longer requires the
+&ldquo;<code>(define get-output-string close-output-port)</code>&rdquo; workaround.
+
+     <br><dt>Version 0.6 &mdash; 2003-07-03<dd>Fixed uses of <code>eq?</code> in character comparisons, thanks to Scott G. 
+Miller.  Added <code>htmlprag:html-&gt;normalized-sxml</code> and
+<code>htmlprag:html-&gt;nonnormalized-sxml</code>.  Started to add
+<code>close-output-port</code> to uses of output strings, then reverted due to
+bug in one of the supported dialects.  Tested newer versions of Bigloo,
+Gauche, PLT MzScheme, RScheme.
+
+     <br><dt>Version 0.5 &mdash; 2003-02-26<dd>Removed uses of <code>call-with-values</code>.  Re-ordered top-level definitions,
+for portability.  Now tests under Kawa 1.6.99, RScheme 0.7.3.2, Scheme 48
+0.57, SISC 1.7.4, STklos 0.54, and SXM 1.1.
+
+     <br><dt>Version 0.4 &mdash; 2003-02-19<dd>Apostrophe-quoted element attribute values are now handled.  A bug that
+incorrectly assumed left-to-right term evaluation order has been fixed
+(thanks to MIT Scheme for confronting us with this).  Now also tests OK
+under Gauche 0.6.6 and MIT Scheme 7.7.1.  Portability improvement for
+implementations (e.g., RScheme 0.7.3.2.b6, Stalin 0.9) that cannot read
+<code>@</code> as a symbol (although those implementations tend to present other
+portability issues, as yet unresolved).
+
+     <br><dt>Version 0.3 &mdash; 2003-02-05<dd>A test suite with 66 cases has been added, and necessary changes have been
+made for the suite to pass on five popular Scheme implementations.  XML
+processing instructions are now parsed.  Parent constraints have been added
+for <code>colgroup</code>, <code>tbody</code>, and <code>thead</code> elements.  Erroneous
+input, including invalid hexadecimal entity reference syntax and extraneous
+double quotes in element tags, is now parsed better. 
+<code>htmlprag:token-kind</code> emits symbols more consistent with SXML.
+
+     <br><dt>Version 0.2 &mdash; 2003-02-02<dd>Portability improvements.
+
+     <br><dt>Version 0.1 &mdash; 2003-01-31<dd>Dusted off old Guile-specific code from April 2001, converted to emit SXML,
+mostly ported to R5RS and SRFI-6, added some XHTML support and
+documentation.  A little preliminary testing has been done, and the package
+is already useful for some applications, but this release should be
+considered a preview to invite comments.
+
+</dl>
+
+   <div class="footnote">
+<hr>
+<a name="texinfo-footnotes-in-document"></a><h4>Footnotes</h4><p class="footnote"><small>[<a name="fn-1" href="#fnd-1">1</a>]</small> Scheme
+implementators who have not yet made <code>read</code> case-sensitive by default
+are encouraged to do so.</p>
+
+   <p><hr></div>
+
+</body></html>
+

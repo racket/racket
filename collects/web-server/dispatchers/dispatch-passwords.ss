@@ -1,5 +1,6 @@
 (module dispatch-passwords mzscheme
   (require (lib "kw.ss")
+           (lib "list.ss")
            (lib "url.ss" "net")
            (lib "contract.ss"))
   (require "dispatch.ss"
@@ -22,12 +23,12 @@
     (define password-cache (box #f))
     (define (update-password-cache!)
       (when (and (file-exists? password-file) (memq 'read (file-or-directory-permissions password-file)))
-          (let ([cur-mtime (file-or-directory-modify-seconds password-file)])
-            (when (or (not (unbox last-read-time))
-                      (cur-mtime . > . (unbox last-read-time))
-                      (not (unbox password-cache)))                
-              (set-box! last-read-time cur-mtime)
-              (set-box! password-cache (read-passwords password-file))))))
+        (let ([cur-mtime (file-or-directory-modify-seconds password-file)])
+          (when (or (not (unbox last-read-time))
+                    (cur-mtime . > . (unbox last-read-time))
+                    (not (unbox password-cache)))                
+            (set-box! last-read-time cur-mtime)
+            (set-box! password-cache (read-passwords password-file))))))
     (define (read-password-cache)
       (update-password-cache!)
       (unbox password-cache))
@@ -77,11 +78,14 @@
                                     (format "could not load password file ~a" password-path)
                                     (current-continuation-marks))))])
       (let ([passwords
-             (let ([raw (load password-path)])
-               (unless (password-list? raw)
-                 (raise "malformed passwords"))
-               (map (lambda (x) (make-pass-entry (car x) (regexp (cadr x)) (cddr x)))
-                    raw))])
+             (with-input-from-file
+                 password-path
+               (lambda ()
+                 (let ([raw (second (read))])
+                   (unless (password-list? raw)
+                     (raise "malformed passwords"))
+                   (map (lambda (x) (make-pass-entry (car x) (regexp (cadr x)) (cddr x)))
+                        raw))))])
         
         ;; string symbol bytes -> (or/c #f string)
         (lambda (request-path user-name password)

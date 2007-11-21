@@ -48,11 +48,11 @@
   ; compress-serial : serial -> serial (with compressed mod-map)
   (define compress-serial
     (match-lambda
-      [(list e0 mm e2 e3 e4 e5)
-       (list e0 (compress-mod-map mm) e2 e3 e4 e5)]))
+      [(list vs e0 mm e2 e3 e4 e5)
+       (list vs e0 (compress-mod-map mm) e2 e3 e4 e5)]))
   
   ; decompress-serial : serial (with compressed mod-map) -> serial
   (define decompress-serial
     (match-lambda
-      [(list e0 cmm e2 e3 e4 e5)
-       (list e0 (decompress-mod-map cmm) e2 e3 e4 e5)])))
+      [(list vs e0 cmm e2 e3 e4 e5)
+       (list vs e0 (decompress-mod-map cmm) e2 e3 e4 e5)])))
