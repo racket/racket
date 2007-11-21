@@ -1578,7 +1578,7 @@ WARNING: printf is rebound in the body of the unit to always
                                  (values (reverse (cons (cons (bytes->string/utf-8 converted-bytes) key) acc))
                                          (enqueue 
                                           (cons (subbytes the-bytes
-                                                          (- (bytes-length the-bytes) src-read-k) 
+                                                          src-read-k
                                                           (bytes-length the-bytes))
                                                 key)
                                           (empty-queue)))
