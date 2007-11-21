@@ -130,6 +130,7 @@
                          [else (loop base (cons name elements))])))))]
           [(eq? (car s) 'lib) s]
           [(eq? (car s) 'planet) s]
+          [(eq? (car s) 'quote) s]
           [else #f]))
 
   (define (collapse-module-path-index mpi relto-mp)
@@ -146,7 +147,8 @@
                  (or/c
                   (cons/c (symbols 'lib) any/c)
                   (cons/c (symbols 'file) any/c)
-                  (cons/c (symbols 'planet) any/c)))
+                  (cons/c (symbols 'planet) any/c)
+                  (cons/c (symbols 'quote) any/c)))
           path?))
 
   (define rel-to-module-path-v/c
