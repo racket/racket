@@ -61,7 +61,7 @@
          (define #,(gensym 'test)
            #,(stepper-syntax-property
               #`(check-values-expected
-                 (lambda () test) actual (make-src #,@(list (syntax-source stx)
+                 (lambda () test) actual (make-src #,@(list #`(quote #,(syntax-source stx))
                                                             (syntax-line stx)
                                                             (syntax-column stx)
                                                             (syntax-position stx)
