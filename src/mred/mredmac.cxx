@@ -1519,10 +1519,6 @@ static int has_null(const char *s, long l)
   return 0;
 }
 
-#ifdef OS_X
-
-/* Provided by MzScheme for Classic: */
-
 int scheme_mac_path_to_spec(const char *filename, FSSpec *spec)
 {
   FSRef fsref;
@@ -1535,6 +1531,8 @@ int scheme_mac_path_to_spec(const char *filename, FSSpec *spec)
   if (err != noErr) {
     return 0;
   }
+
+  memset(spec, 0, sizeof(FSSpec));
 	
   // then, convert to an FSSpec
   err = FSGetCatalogInfo(&fsref, kFSCatInfoNone, NULL, NULL, spec, NULL);
@@ -1571,8 +1569,6 @@ char *scheme_mac_spec_to_path(FSSpec *spec)
     
   return str;
 }
-
-#endif // OS_X
 
 static int ae_marshall(AEDescList *ae, AEDescList *list_in, AEKeyword kw, Scheme_Object *v, 
 		       char *name, OSErr *err, char **stage)

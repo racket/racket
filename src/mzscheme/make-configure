@@ -6,7 +6,7 @@ tgt="../configure"
 if [ ! -e "$src" ]; then echo "abort: did not find $src"; exit 1; fi
 echo "Creating $tgt from $src"
 if [ -e "$tgt" ]; then
-  echo -n "overwriting $tgt, Ctrl-C to abort, enter to continue "; read R;
+  /bin/echo -n "overwriting $tgt, Ctrl-C to abort, enter to continue "; read R;
 fi
 autoconf "$src" | mzscheme -qr "$0" > "$tgt"
 chmod +x "$tgt"

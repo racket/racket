@@ -162,7 +162,14 @@ if test "${bindir}" != '${exec_prefix}/bin' ; then
  unixstyle=yes
 fi
 if test "${datadir}" != '${prefix}/share' ; then
- unixstyle=yes
+ # Newer autoconf uses datarootdir:
+ if test "${datadir}" = '${datarootdir}' ; then
+   if test "${datarootdir}" != '${prefix}/share' ; then
+    unixstyle=yes
+   fi
+ else
+   unixstyle=yes
+ fi
 fi
 if test "${libdir}" != '${exec_prefix}/lib' ; then
  unixstyle=yes
@@ -171,7 +178,13 @@ if test "${includedir}" != '${prefix}/include' ; then
  unixstyle=yes
 fi
 if test "${mandir}" != '${prefix}/man' ; then
- unixstyle=yes
+ if test "${mandir}" = '${datarootdir}/man' ; then
+   if test "${datarootdir}" != '${prefix}/share' ; then
+    unixstyle=yes
+   fi
+ else
+   unixstyle=yes
+ fi
 fi
 
 MAKE_COPYTREE=no
@@ -576,8 +589,8 @@ case $OS in
     fi
     ;;
   Darwin)
-
-    PREFLAGS="$PREFLAGS -DOS_X"
+    
+    PREFLAGS="$PREFLAGS -D_DARWIN_UNLIMITED_SELECT -DOS_X"
 
     # zlib comes with the OS
     ZLIB_A=""
@@ -636,6 +649,7 @@ case $OS in
     else
       PREFLAGS="$PREFLAGS -DXONX "
       X_EXTRA_LIBS="$X_EXTRA_LIBS -lz"
+      X_LIBS="$X_LIBS -L/usr/X11R6/lib"
 
       # need help finding fontconfig and freetype headers:
       XFT_EXTRA_FLAGS="-I/usr/X11R6/include -I/usr/X11R6/include/freetype2"
@@ -1451,8 +1465,9 @@ else
   echo " C headers    : ${includepltdir}/..."
   echo " extra C objs : ${libpltdir}/..."
   echo " man pages    : ${mandir}/..."
-  echo "  where prefix = ${prefix}"
+  echo "     where prefix = ${prefix}"
+  echo "  and datarootdir = ${datarootdir}"
   if test "${unixstyle}" = "yes" ; then
-    echo "    and exec_prefix = ${exec_prefix}"
+    echo "  and exec_prefix = ${exec_prefix}"
   fi
 fi

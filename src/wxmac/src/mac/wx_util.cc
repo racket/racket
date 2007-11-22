@@ -103,21 +103,9 @@ char *wxGetTempFileName (const char *prefix, char *dest)
   return dest;
 }
 
-#ifndef OS_X
-extern "C" int scheme_mac_path_to_spec(const char *filename, FSSpec *spec);
-#endif
-
 void wxRemoveFile(char *filename)
 {
-#if OS_X
   unlink(filename);
-#else
-  FSSpec sp;
-
-  if (scheme_mac_path_to_spec(filename, &sp)) {
-    FSpDelete(&sp);
-  }
-#endif
 }
 
 // Get free memory in bytes, or -1 if cannot determine amount (e.g. on UNIX)

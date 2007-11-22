@@ -665,9 +665,9 @@ void *scheme_alloc_fdset_array(int count, int permanent)
   }
 
   if (permanent)
-    return scheme_malloc_eternal(count * dynamic_fd_size);
+    return scheme_malloc_eternal(count * (dynamic_fd_size + sizeof(long)));
   else
-    return scheme_malloc_atomic(count * dynamic_fd_size);
+    return scheme_malloc_atomic(count * (dynamic_fd_size + sizeof(long)));
 }
 
 #ifdef MZ_XFORM
@@ -681,12 +681,12 @@ void *scheme_init_fdset_array(void *fdarray, int count)
 
 void *scheme_get_fdset(void *fdarray, int pos)
 {
-  return ((char *)fdarray) + (pos * dynamic_fd_size);
+  return ((char *)fdarray) + (pos * (dynamic_fd_size + sizeof(long)));
 }
 
 void scheme_fdzero(void *fd)
 {
-  memset(fd, 0, dynamic_fd_size);
+  memset(fd, 0, dynamic_fd_size + sizeof(long));
 }
 
 #else
@@ -770,6 +770,12 @@ void scheme_fdset(void *fd, int n)
     ((win_extended_fd_set *)fd)->added++;
 #endif
 #if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
+# define STORED_ACTUAL_FDSET_LIMIT
+# define FDSET_LIMIT(fd) (*(int *)((char *)fd + dynamic_fd_size))
+  int mx;
+  mx = FDSET_LIMIT(fd);
+  if (n > mx)
+    FDSET_LIMIT(fd) = n;
   FD_SET(n, ((fd_set *)fd));
 #endif
 }
@@ -7846,7 +7852,7 @@ static void default_sleep(float v, void *fds)
     /* Something to block on - sort our the parts in Windows. */
 
 #if defined(FILES_HAVE_FDS) || defined(USE_WINSOCK_TCP)
-    int limit;
+    int limit, actual_limit;
     fd_set *rd, *wr, *ex;
     struct timeval time;
 
@@ -7890,6 +7896,16 @@ static void default_sleep(float v, void *fds)
     rd = (fd_set *)fds;
     wr = (fd_set *)MZ_GET_FDSET(fds, 1);
     ex = (fd_set *)MZ_GET_FDSET(fds, 2);
+# ifdef STORED_ACTUAL_FDSET_LIMIT
+    actual_limit = FDSET_LIMIT(rd);
+    if (FDSET_LIMIT(wr) > actual_limit)
+      actual_limit = FDSET_LIMIT(wr);
+    if (FDSET_LIMIT(ex) > actual_limit)
+      actual_limit = FDSET_LIMIT(ex);
+    actual_limit++;
+# else
+    actual_limit = limit;
+# endif
 
     /******* Start Windows stuff *******/
 
@@ -8020,11 +8036,14 @@ static void default_sleep(float v, void *fds)
 
 #if defined(FILES_HAVE_FDS)
     /* Watch for external events, too: */
-    if (external_event_fd)
+    if (external_event_fd) {
       MZ_FD_SET(external_event_fd, rd);
+      if (external_event_fd >= actual_limit)
+        actual_limit = external_event_fd + 1;
+    }
 #endif
 
-    select(limit, rd, wr, ex, v ? &time : NULL);
+    select(actual_limit, rd, wr, ex, v ? &time : NULL);
 
 #endif
   }

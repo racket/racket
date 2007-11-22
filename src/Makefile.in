@@ -10,6 +10,7 @@ libdir = @libdir@
 includepltdir = @includepltdir@
 libpltdir = @libpltdir@
 collectsdir = @collectsdir@
+datarootdir = @datarootdir@
 mandir = @mandir@
 docdir = @docdir@
 builddir = @builddir@
