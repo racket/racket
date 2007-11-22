@@ -3,9 +3,6 @@
 @title[#:tag-prefix '(lib "quick.scrbl" "scribblings/quick")
        #:tag "top"]{An Introduction to PLT Scheme with Pictures}
 
-@bold{This reference describes a potential future version of PLT Scheme.
-      It does not match the current implementation.}
-
 @; ----------------------------------------------------------------------
 
 @require[scribble/manual]

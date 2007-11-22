@@ -1,4 +1,22 @@
 
 (module match scheme/base
-  (require mzlib/plt-match)
-  (provide (all-from-out mzlib/plt-match)))
+  (require mzlib/plt-match
+           (for-syntax scheme/base))
+  (provide (except-out (all-from-out mzlib/plt-match)
+                       define-match-expander)
+           (rename-out [define-match-expander* define-match-expander]))
+
+  (define-syntax (no-old-match-form stx)
+    (raise-syntax-error
+     #f
+     "works only for constructor-based `match' form"
+     stx))
+
+  (define-syntax define-match-expander*
+    (syntax-rules ()
+      [(_ id expr) (define-match-expander id expr)]
+      [(_ id expr expr2) (define-match-expander id
+                           expr
+                           no-old-match-form
+                           expr2)])))
+

@@ -18,6 +18,15 @@
   (define AllUnix "Unix and Mac OS X")
   (provide AllUnix)
 
+  (provide note-lib)
+  (define-syntax-rule (note-lib lib)
+    (t "The bindings documented in this section are provided by the "
+       (schemeidfont "scheme/list")
+       " and "
+       (schemeidfont "scheme") 
+       " libraries, but not " (schemeidfont "scheme/base")
+       "."))
+
   (define (*exnraise s)
     (make-element #f (list s " exception is raised")))
   (define-syntax exnraise

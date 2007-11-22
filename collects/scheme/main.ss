@@ -8,6 +8,7 @@
            scheme/match
            scheme/tcp
            scheme/udp
+           scheme/list
            (for-syntax scheme/base))
 
   (provide (all-from-out scheme/contract
@@ -19,5 +20,6 @@
                          scheme/match
                          scheme/base
                          scheme/tcp
-                         scheme/udp)
+                         scheme/udp
+                         scheme/list)
            (for-syntax (all-from-out scheme/base))))

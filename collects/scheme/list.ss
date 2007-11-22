@@ -9,6 +9,7 @@
            sixth
            seventh
            eighth
+           last
 
            rest
 
@@ -39,6 +40,15 @@
   (define-lgetter sixth   6)
   (define-lgetter seventh 7)
   (define-lgetter eighth  8)
+
+  (define (last x)
+    (unless (and (pair? x)
+                 (list? x))
+      (raise-type-error 'rest "non-empty list" x))
+    (let loop ([x x])
+      (if (pair? (cdr x))
+          (loop (cdr x))
+          (car x))))
 
   (define (rest x)
     (unless (and (pair? x)

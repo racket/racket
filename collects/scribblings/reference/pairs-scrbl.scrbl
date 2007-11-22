@@ -53,12 +53,8 @@ of the sequence. See also @scheme[in-list].
 @defproc[(pair? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
 a pair, @scheme[#f] otherwise.}
 
-@defproc[(cons? [v any/c]) boolean?]{The same as @scheme[(pair? v)].}
-
 @defproc[(null? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
 the empty list, @scheme[#f] otherwise.}
-
-@defproc[(empty? [v any/c]) boolean?]{The same as @scheme[(null? v)].}
 
 @defproc[(cons [a any/c] [d any/c]) pair?]{Returns a pair whose first
 element is @scheme[a] and second element is @scheme[d].}
@@ -69,13 +65,7 @@ pair @scheme[p].}
 @defproc[(cdr [p pair?]) any/c]{Returns the second element of the
 pair @scheme[p].}
 
-@defproc[(first [p pair?]) any/c]{The same as @scheme[(car p)].}
-
-@defproc[(rest [p pair?]) any/c]{The same as @scheme[(cdr p)].}
-
 @defthing[null null?]{The empty list.}
-
-@defthing[empty null?]{The empty list.}
 
 
 @defproc[(list? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v]
@@ -458,3 +448,35 @@ Like @scheme[assoc], but finds an element using the predicate
 @defc_r[d d d a]
 @defc_r[d d d d]
 
+@; ----------------------------------------
+@section{List Synonyms}
+
+@declare-exporting[scheme/list scheme]
+
+@note-lib[scheme/list]
+
+@defthing[empty null?]{The empty list.}
+
+@defproc[(cons? [v any/c]) boolean?]{The same as @scheme[(pair? v)].}
+
+@defproc[(empty? [v any/c]) boolean?]{The same as @scheme[(null? v)].}
+
+@defproc[(first [lst list?]) any/c]{The same as @scheme[(car lst)], but only for no-empty lists.}
+
+@defproc[(rest [lst list?]) list?]{The same as @scheme[(cdr lst)], but only for non-empty lists.}
+
+@defproc[(second [lst list?]) any]{Returns the second element of the list.}
+
+@defproc[(third [lst list?]) any]{Returns the third element of the list.}
+
+@defproc[(fourth [lst list?]) any]{Returns the fourth element of the list.}
+
+@defproc[(fifth [lst list?]) any]{Returns the fifth element of the list.}
+
+@defproc[(sixth [lst list?]) any]{Returns the sixth element of the list.}
+
+@defproc[(seventh [lst list?]) any]{Returns the seventh element of the list.}
+
+@defproc[(eighth [lst list?]) any]{Returns the eighth element of the list.}
+
+@defproc[(last [lst list?]) any]{Returns the last element of the list.}

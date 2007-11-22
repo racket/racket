@@ -1,7 +1,8 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require[scribble/eval]
-@require[scribble/bnf]
+@require[scribble/manual
+         scribble/eval
+         scribble/bnf
+         scheme/list]
 @require["guide-utils.ss"]
 
 @define[step @elem{=}]

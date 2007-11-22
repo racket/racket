@@ -1,65 +1,101 @@
 #lang scheme/base
 (require scribble/scheme
          scribble/basic
-         scribble/struct)
+         scribble/struct
+         scribble/manual
+         (for-label scheme/base))
 
 (provide match-grammar)
 
 (define grammar "
-pat     ::= other-identifier                  @Match anything, bind identifier
-         |  _                                 @Match anything
-         |  literal                           @Match literal
-         |  (QUOTE datum)                     @Match equal% datum (e.g., symbol)
-         |  (LIST lvp ...)                    @Match sequence of lvps
-         |  (LIST-REST lvp ... pat)           @Match lvps consed onto a pat
-         |  (LIST-NO-ORDER pat ... lvp)       @Match arguments in a list in any order
-         |  (VECTOR lvp ... lvp)              @Match vector of pats
-         |  (HASH-TABLE (pat pat) ...)        @Match hash table mapping pats to pats
-         |  (HASH-TABLE (pat pat) ... ooo)    @Match hash table mapping pats to pats
-         |  (BOX pat)                         @Match boxed pat
-         |  (STRUCT struct-name (pat ...))    @Match struct-name instance
-         |  (REGEXP rx-expr)                  @Match astr using (r-match rx-expr ...)
-         |  (REGEXP rx-expr pat)              @Match astr to rx-expr, pat matches regexp result
-         |  (PREGEXP prx-expr)                @Match astr using (pr-match prx-expr ...)
-         |  (PREGEXP prx-expr pat)            @Match astr to prx-expr, pat matches pregexp result
-         |  (AND pat ...)                     @Match when all pats match
-         |  (OR pat ...)                      @Match when any pat match
-         |  (NOT pat ...)                     @Match when no pat match
-         |  (APP expr pat)                    @Match when result of applying expr to the value matches pat
-         |  (? pred-expr pat ...)             @Match if pred-expr is true on the value, and all pats match
-         |  (set! identifier)                 @Match anything, bind as setter
-         |  (get! identifier)                 @Match anything, bind as getter
-         |  (QUASIQUOTE qp)                   @Match a quasipattern
-literal ::= ()                                @Match the empty list
-         |  #t                                @Match true
-         |  #f                                @Match false
-         |  string                            @Match equal% string
-         |  number                            @Match equal% number
-         |  character                         @Match equal% character
-lvp     ::= (code:line pat ooo)               @Greedily match pat instances
-         |  pat                               @Match pat
-ooo     ::= ***                               @Zero or more (where *** is a keyword)
-         |  ___                               @Zero or more
-         |  ..K                               @K or more, where K is a non-negative integer
-         |  __K                               @K or more, where K is a non-negative integer
-qp      ::= literal                           @Match literal
-         |  identifier                        @Match equal% symbol
-         |  (qp ...)                          @Match sequences of qps
-         |  (qp ... . qp)                     @Match sequence of qps consed onto a qp
-         |  (qp ... ooo)                      @Match qps consed onto a repeated qp
-         |  #(qp ...)                         @Match vector of qps
-         |  #&qp                              @Match boxed qp
-         |  ,pat                              @Match pat
-         |  ,@(LIST lvp ...)                  @Match lvp sequence, spliced
-         |  ,@(LIST-REST lvp ... pat)         @Match lvp sequence plus pat, spliced
-         |  ,@'qp                             @Match list-matching qp, spliced
+pat     ::= id                                @match anything, bind identifier
+         |  _                                 @match anything
+         |  literal                           @match literal
+         |  (QUOTE datum)                     @match equal% value
+         |  (LIST lvp ...)                    @match sequence of lvps
+         |  (LIST-REST lvp ... pat)           @match lvps consed onto a pat
+         |  (LIST-NO-ORDER pat ...)           @match pats in any order
+         |  (LIST-NO-ORDER pat ... lvp)       @match pats in any order
+         |  (VECTOR lvp ...)                  @match vector of pats
+         |  (HASH-TABLE (pat pat) ...)        @match hash table
+         |  (HASH-TABLE (pat pat) ...+ ooo)   @match hash table
+         |  (BOX pat)                         @match boxed pat
+         |  (STRUCT struct-id (pat ...))      @match struct-id instance
+         |  (REGEXP rx-expr)                  @match string
+         |  (REGEXP rx-expr pat)              @match string, result with pat
+         |  (PREGEXP px-expr)                 @match string
+         |  (PREGEXP px-expr pat )            @match string, result with pat
+         |  (AND pat ...)                     @match when all pats match
+         |  (OR pat ...)                      @match when any pat match
+         |  (NOT pat ...)                     @match when no pat matches
+         |  (APP expr pat)                    @match (expr value) to pat
+         |  (? expr pat ...)                  @match if (expr value) and pats
+         |  (set! id)                         @match anything, bind as setter
+         |  (get! id)                         @match anything, bind as getter
+         |  (QUASIQUOTE qp)                   @match a quasipattern
+         |  derived-pattern                   @match using extension
+literal ::= ()                                @match the empty list
+         |  #t                                @match true
+         |  #f                                @match false
+         |  string                            @match equal% string
+         |  number                            @match equal% number
+         |  char                              @match equal% character
+lvp     ::= (code:line pat ooo)               @greedily match pat instances
+         |  pat                               @match pat
+qp      ::= literal                           @match literal
+         |  id                                @match symbol
+         |  (qp ...)                          @match sequences of qps
+         |  (qp ... . qp)                     @match qps ending qp
+         |  (qp ... ooo)                      @match qps ending repeated qp
+         |  #(qp ...)                         @match vector of qps
+         |  #&qp                              @match boxed qp
+         |  ,pat                              @match pat
+         |  ,@(LIST lvp ...)                  @match lvps, spliced
+         |  ,@(LIST-REST lvp ... pat)         @match lvps plus pat, spliced
+         |  ,@'qp                             @match list-matching qp, spliced
+ooo     ::= ***                               @zero or more; *** is literal
+         |  ___                               @zero or more
+         |  ..K                               @K or more
+         |  __K                               @K or more
 ")
 
 (define (match-nonterm s)
   (make-element "schemevariable" (list s)))
-  
+
+(define (fixup s middle)
+  (lambda (m)
+    (make-element #f
+                  (list (fixup-meaning (substring s 0 (caar m)))
+                        middle
+                        (fixup-meaning (substring s (cdar m)))))))
+    
 (define (fixup-meaning s)
-  s)
+  (cond
+   [(regexp-match-positions #rx"pattern" s)
+    => (fixup s "pattern")]
+   [(regexp-match-positions #rx"equal%" s)
+    => (fixup s (scheme equal?))]
+   [(regexp-match-positions #rx"pat" s)
+    => (fixup s (fixup-sexp 'pat))]
+   [(regexp-match-positions #rx"qp" s)
+    => (fixup s (fixup-sexp 'qp))]
+   [(regexp-match-positions #rx"lvp" s)
+    => (fixup s (fixup-sexp 'lvp))]
+   [(regexp-match-positions #rx"struct-id" s)
+    => (fixup s (fixup-sexp 'struct-id))]
+   [(regexp-match-positions #rx"pred-expr" s)
+    => (fixup s (fixup-sexp 'pred-expr))]
+   [(regexp-match-positions #rx"expr" s)
+    => (fixup s (fixup-sexp 'expr))]
+   [(regexp-match-positions #rx"[*][*][*]" s)
+    => (fixup s (schemeidfont "..."))]
+   [(regexp-match-positions #rx"[(]" s)
+    => (fixup s (schemeparenfont "("))]
+   [(regexp-match-positions #rx"[)]" s)
+    => (fixup s (schemeparenfont ")"))]
+   [(regexp-match-positions #rx"K" s)
+    => (fixup s (match-nonterm "k"))]
+   [else s]))
 
 (define (fixup-rhs s)
   (let ([r (read (open-input-string s))])
@@ -76,10 +112,23 @@ qp      ::= literal                           @Match literal
     (box (fixup-sexp (unbox s)))]
    [(symbol? s)
     (case s
-      [(lvp pat qp literal other-identifier ooo)
+      [(lvp pat qp literal ooo datum struct-id
+            string number character expr id
+            rx-expr px-expr pred-expr
+            derived-pattern)
        (match-nonterm (symbol->string s))]
-      [(QUOTE LIST)
+      [(QUOTE LIST LIST-REST LIST-NO-ORDER VECTOR HASH-TABLE BOX STRUCT 
+              REGEXP PREGEXP AND OR NOT APP ? get! set! QUASIQUOTE)
        (make-element "schemesymbol" (list (string-downcase (symbol->string s))))]
+      [(***)
+       (make-element "schemesymbol" '("..."))]
+      [(___) (make-element "schemesymbol" '("___"))]
+      [(__K)
+       (make-element #f (list (make-element "schemesymbol" '("__"))
+                              (match-nonterm "k")))]
+      [(..K)
+       (make-element #f (list (make-element "schemesymbol" '(".."))
+                              (match-nonterm "k")))]
       [else
        s])]
    [else s]))

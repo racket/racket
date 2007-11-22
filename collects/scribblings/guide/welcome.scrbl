@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require[scribble/eval]
+@require[scribble/manual
+         scribble/eval]
 @require["guide-utils.ss"]
 
 @title[#:tag "intro"]{Welcome to PLT Scheme}
