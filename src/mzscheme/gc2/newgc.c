@@ -2872,6 +2872,12 @@ extern double scheme_get_inexact_milliseconds(void);
 # define TIME_DONE() /**/
 #endif
 
+/* Full GCs trigger finalization. Finalization releases data
+   in the old generation. So one more full GC is needed to
+   really clean up. The another_full flag triggers the
+   second full GC. */
+static int another_full;
+
 static void garbage_collect(int force_full)
 {
   static unsigned long number = 0;
@@ -2879,6 +2885,7 @@ static void garbage_collect(int force_full)
   static unsigned int running_finalizers = 0;
   static unsigned long last_full_mem_use = (20 * 1024 * 1024);
   unsigned long old_mem_use = memory_in_use;
+  int orig_gc_full;
   TIME_DECLS();
 
   /* determine if this should be a full collection or not */
@@ -2887,6 +2894,13 @@ static void garbage_collect(int force_full)
 /*   printf("Collection #li (full = %i): %i / %i / %i / %i\n", number, */
 /* 	 gc_full, force_full, !generations_available, */
 /* 	 (since_last_full > 100), (memory_in_use > (2 * last_full_mem_use))); */
+
+  orig_gc_full = gc_full;
+  
+  if (another_full) {
+    another_full = 0;
+    gc_full = 1;
+  }
 
   number++; 
   INIT_DEBUG_FILE(); DUMP_HEAP();
@@ -3046,6 +3060,9 @@ static void garbage_collect(int force_full)
   }
 
   DUMP_HEAP(); CLOSE_DEBUG_FILE();
+
+  if (orig_gc_full)
+    another_full = 1;
 }
 
 #if MZ_GC_BACKTRACE
