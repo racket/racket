@@ -354,7 +354,7 @@
               (advance c init-line!)
               (when (vector? (syntax-e c))
                 (let ([vec (syntax-e c)])
-                  (out (format "#~a" (vector-length vec)) p-color)
+                  (out "#" #;(format "#~a" (vector-length vec)) p-color)
                   (if (zero? (vector-length vec))
                       (set! src-col (+ src-col (- (syntax-span c) 2)))
                       (set! src-col (+ src-col (- (syntax-column (vector-ref vec 0))
@@ -611,7 +611,7 @@
      [(or (list? v)
           (vector? v))
       (let* ([vec-sz (if (vector? v)
-                         (+ 1 (string-length (format "~a" (vector-length v))))
+                         (+ 1 #;(string-length (format "~a" (vector-length v))))
                          0)])
         (let ([l (let loop ([col (+ col 1 vec-sz)]
                             [v (if (vector? v)

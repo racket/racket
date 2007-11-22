@@ -10,11 +10,11 @@ values. Unlike a list, a vector supports constant-time access and
 update of its elements.
 
 A vector prints similar to a list---as a parenthesized sequence of its
-elements---but a vector is prefixed with @litchar{#} and the length
-of the vector. The vector length is optional for a vector as an
-expression. Also, a vector as an expression implicitly quotes the
-forms for its content, which means that identifiers and parenthesized
-forms in a vector constant represent symbols and lists.
+elements---but a vector is prefixed with @litchar{#}. For a vector as
+an expression, an optional length can be supplied. Also, a vector as
+an expression implicitly quotes the forms for its content, which means
+that identifiers and parenthesized forms in a vector constant
+represent symbols and lists.
 
 @refdetails/gory["parse-vector"]{the syntax of vectors}
 

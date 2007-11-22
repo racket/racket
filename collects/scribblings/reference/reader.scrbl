@@ -86,14 +86,14 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar{[}]{starts a pair or list; see @secref["parse-pair"]}
   @dispatch[@litchar["{"]]{starts a pair or list; see @secref["parse-pair"]}
 
-  @dispatch[@litchar{)}]{matches @litchar{(} or raises @Exn{exn:fail:read}}
-  @dispatch[@litchar{]}]{matches @litchar{[} or raises @Exn{exn:fail:read}}
-  @dispatch[@litchar["}"]]{matches @litchar["{"] or raises @Exn{exn:fail:read}}
+  @dispatch[@litchar{)}]{matches @litchar{(} or raises @Exn[exn:fail:read]}
+  @dispatch[@litchar{]}]{matches @litchar{[} or raises @Exn[exn:fail:read]}
+  @dispatch[@litchar["}"]]{matches @litchar["{"] or raises @Exn[exn:fail:read]}
 
   @dispatch[@litchar{"}]{starts a string; see @secref["parse-string"]}
   @dispatch[@litchar{,}]{starts a quote; see @secref["parse-quote"]}
   @dispatch[@litchar{`}]{starts a quasiquote; see @secref["parse-quote"]}
-  @dispatch[@litchar{,}]{starts an unquote or splicing unquote; see @secref["parse-quote"]}
+  @dispatch[@litchar{,}]{starts an [splicing] unquote; see @secref["parse-quote"]}
 
   @dispatch[@litchar{;}]{starts a line comment; see @secref["parse-comment"]}
 
@@ -117,7 +117,7 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar["#! "]]{starts a line comment; see @secref["parse-comment"]}
   @dispatch[@litchar["#!/"]]{starts a line comment; see @secref["parse-comment"]}
   @dispatch[@litchar{#`}]{starts a syntax quasiquote; see @secref["parse-quote"]}
-  @dispatch[@litchar{#,}]{starts an syntax unquote or splicing unquote; see @secref["parse-quote"]}
+  @dispatch[@litchar{#,}]{starts an syntax [splicing] unquote; see @secref["parse-quote"]}
   @dispatch[@litchar["#~"]]{starts compiled code; see @scheme[current-compile]}
 
   @dispatch[@cilitchar{#i}]{starts a number; see @secref["parse-number"]}
@@ -715,7 +715,7 @@ neither defines nor uses graph tags for other top-level forms.
 
 @local-table-of-contents[]
 
-@section[#:tag "parse-reader"]{Reading via an External Reader}
+@section[#:tag "parse-reader"]{Reading via an Extension}
 
 When the reader encounters @as-index{@litchar{#reader}}, then it loads
 an external reader procedure and applies it to the current input

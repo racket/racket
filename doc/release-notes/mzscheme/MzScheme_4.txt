@@ -83,7 +83,11 @@ in several significant ways:
    used carefully; library functions should typically allow "~" to be
    a relative path).
 
- - Hash table printing is enabled by default.
+ - Hash table printing is enabled by default, and vector-length
+   printing is disabled by default. Opaque structure instances no
+   longer print with a leading "struct:" between angle brackets, and
+   built-in procedures print with "procedure:" instead of
+   "primitive:".
 
  - Graph input syntax, such as `#0=(1 . #0#)' is no longer allowed in
    program syntax parsed by `read-syntax', though it is still allowed

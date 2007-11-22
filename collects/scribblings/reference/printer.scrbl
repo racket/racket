@@ -169,8 +169,9 @@ to three octal digits (only as many as necessary).
 In @scheme[display] mode, the printed form of a vector is @litchar{#}
 followed by the printed form of @scheme[vector->list] applied to the
 vector. In @scheme[write] mode, the printed form is the same, except
-that a decimal integer is printed after the @litchar{#} when the
-@scheme[print-vector-length] parameter is @scheme[#t].
+that when the @scheme[print-vector-length] parameter is @scheme[#t], a
+decimal integer is printed after the @litchar{#}, and a repeated last
+element is printed only once..
 
 @section[#:tag "print-hashtable"]{Printing Hash Tables}
 

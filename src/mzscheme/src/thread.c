@@ -6263,7 +6263,7 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_PRINT_GRAPH, scheme_false);
   init_param(cells, paramz, MZCONFIG_PRINT_STRUCT, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_BOX, scheme_true);
-  init_param(cells, paramz, MZCONFIG_PRINT_VEC_SHORTHAND, scheme_true);
+  init_param(cells, paramz, MZCONFIG_PRINT_VEC_SHORTHAND, scheme_false);
   init_param(cells, paramz, MZCONFIG_PRINT_HASH_TABLE, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_UNREADABLE, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_PAIR_CURLY, scheme_false);
