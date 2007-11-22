@@ -2885,7 +2885,7 @@ static void garbage_collect(int force_full)
   static unsigned int running_finalizers = 0;
   static unsigned long last_full_mem_use = (20 * 1024 * 1024);
   unsigned long old_mem_use = memory_in_use;
-  int orig_gc_full;
+  int next_gc_full;
   TIME_DECLS();
 
   /* determine if this should be a full collection or not */
@@ -2895,7 +2895,7 @@ static void garbage_collect(int force_full)
 /* 	 gc_full, force_full, !generations_available, */
 /* 	 (since_last_full > 100), (memory_in_use > (2 * last_full_mem_use))); */
 
-  orig_gc_full = gc_full;
+  next_gc_full = gc_full;
   
   if (another_full) {
     another_full = 0;
@@ -3034,6 +3034,9 @@ static void garbage_collect(int force_full)
 
   TIME_DONE();
 
+  if (!run_queue)
+    next_gc_full = 0;
+
   /* run any queued finalizers, EXCEPT in the case where this collection was
      triggered by the execution of a finalizer. The outside world needs this
      invariant in some corner case I don't have a reference for. In any case,
@@ -3061,7 +3064,7 @@ static void garbage_collect(int force_full)
 
   DUMP_HEAP(); CLOSE_DEBUG_FILE();
 
-  if (orig_gc_full)
+  if (next_gc_full)
     another_full = 1;
 }
 
