@@ -1597,7 +1597,7 @@ If the namespace does not, they are colored the unbound color.
                  (add-id varrefs sexp))]
               [_
                (begin
-                
+                #;
                  (printf "unknown stx: ~e datum: ~e source: ~e\n"
                          sexp
                          (and (syntax? sexp)
@@ -2275,7 +2275,6 @@ If the namespace does not, they are colored the unbound color.
     
     ;; find-source : definitions-text source -> editor or false
     (define (find-source-editor stx)
-      (printf "looking for ~s ~s\n" (syntax-source stx) (syntax->datum stx))
       (let ([defs-text (get-defs-text)])
         (and defs-text 
              (let txt-loop ([text defs-text])
