@@ -23,16 +23,6 @@
             [prefix drscheme:unit: drscheme:unit^])
     (export drscheme:eval^)
     
-    (define (editor->port-name txt)
-      (let* ([b (box #f)]
-             [n (send txt get-filename b)])
-        (cond
-          [(or (unbox b) (not n))
-           (if (is-a? txt drscheme:unit:definitions-text<%>)
-               (send txt get-port-name-identifier)
-               'unknown)]
-          [else n])))
-    
     (define (traverse-program/multiple language-settings
                                        init
                                        kill-termination)
@@ -54,7 +44,7 @@
                                           [start (drscheme:language:text/pos-start input)]
                                           [end (drscheme:language:text/pos-end input)]
                                           [text-port (open-input-text-editor text start end values 
-                                                                             (editor->port-name text))])
+                                                                             (send text get-port-name))])
                                      (port-count-lines! text-port)
                                      (let* ([line (send text position-paragraph start)]
                                             [column (- start (send text paragraph-start-position line))]

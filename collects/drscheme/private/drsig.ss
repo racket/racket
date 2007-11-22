@@ -154,8 +154,7 @@
     (frame%))
   
   (define-signature drscheme:eval^
-    (editor->port-name
-     expand-program
+    (expand-program
      expand-program/multiple
      traverse-program/multiple
      build-user-eventspace/custodian

@@ -23,7 +23,7 @@
                "read: bad syntax: empty scheme box")
            txt line col pos 1)))
       (let ([stx (read-syntax
-                  text
+                  (send text get-port-name)
                   (open-input-text-editor text 0 (send text last-position)))])
         (when (eof-object? stx)
           (raise-read-error

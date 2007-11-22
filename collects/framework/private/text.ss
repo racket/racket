@@ -9,6 +9,7 @@ WARNING: printf is rebound in the body of the unit to always
   (require (lib "string-constant.ss" "string-constants")
            (lib "class.ss")
            (lib "match.ss")
+           scheme/file
            "sig.ss"
            "../gui-utils.ss"
            "../preferences.ss"
@@ -53,7 +54,9 @@ WARNING: printf is rebound in the body of the unit to always
       get-fixed-style
       set-styles-fixed
       move/copy-to-edit
-      initial-autowrap-bitmap))
+      initial-autowrap-bitmap
+      get-port-name
+      port-name-matches?))
   
   (define basic-mixin
     (mixin (editor:basic<%> (class->interface text%)) (basic<%>)
@@ -63,7 +66,27 @@ WARNING: printf is rebound in the body of the unit to always
                delete find-snip invalidate-bitmap-cache
                set-file-format get-file-format
                get-style-list is-modified? change-style set-modified
-               position-location get-extent)
+               position-location get-extent get-filename)
+      
+      (define port-name-identifier #f)
+      (define/public (get-port-name)
+        (let* ([b (box #f)]
+               [n (get-filename b)])
+          (cond
+            [(or (unbox b) (not n))
+             (unless port-name-identifier
+               (set! port-name-identifier (gensym 'unsaved-editor)))
+             port-name-identifier]
+            [else n])))
+      (define/public (port-name-matches? id)
+        (let ([filename (get-filename)])
+          (or (and (path? id)
+                   (path? filename)
+                   (equal? (normal-case-path (normalize-path (get-filename)))
+                           (normal-case-path (normalize-path id))))
+              (and (symbol? port-name-identifier)
+                   (symbol? id)
+                   (equal? port-name-identifier id)))))
       
       (define highlight-pen #f)
       (define highlight-brush #f)

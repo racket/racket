@@ -18,17 +18,18 @@ If the namespace does not, they are colored the unbound color.
 
 
 (require string-constants/string-constant
-         (lib "unit.ss")
-         (lib "contract.ss")
-         (lib "tool.ss" "drscheme")
-         (lib "class.ss")
-         (lib "list.ss")
-         (lib "toplevel.ss" "syntax")
-         (lib "boundmap.ss" "syntax")
-         (lib "bitmap-label.ss" "mrlib")
-         (prefix-in drscheme:arrow: (lib "arrow.ss" "drscheme"))
-         (prefix-in fw: (lib "framework.ss" "framework"))
-         (lib "mred.ss" "mred"))
+         scheme/unit
+         scheme/contract
+         scheme/class
+         drscheme/tool
+         mzlib/list
+         syntax/toplevel
+         syntax/boundmap
+         mrlib/bitmap-label
+         (prefix-in drscheme:arrow: drscheme/arrow)
+         (prefix-in fw: framework/framework)
+         mred/mred
+         (for-syntax scheme/base))
 (provide tool@)
 
 (define o (current-output-port))
@@ -236,10 +237,10 @@ If the namespace does not, they are colored the unbound color.
               
               ;; compare-bindings : (list text number number) (list text number number) -> boolean
               (define (compare-bindings l1 l2)
-                (let ([start-text (first l1)]
-                      [start-left (second l1)]
-                      [end-text (first l2)]
-                      [end-left (second l2)])
+                (let ([start-text (list-ref l1 0)]
+                      [start-left (list-ref l1 1)]
+                      [end-text (list-ref l2 0)]
+                      [end-left (list-ref l2 1)])
                   (let-values ([(sx sy) (find-dc-location start-text start-left)]
                                [(ex ey) (find-dc-location end-text end-left)])
                     (cond
@@ -666,7 +667,7 @@ If the namespace does not, they are colored the unbound color.
                                            [arrows (filter arrow? vec-ents)]
                                            [def-links (filter def-link? vec-ents)]
                                            [var-arrows (filter var-arrow? arrows)]
-                                           [add-menus (map cdr (filter cons? vec-ents))])
+                                           [add-menus (map cdr (filter pair? vec-ents))])
                                       (unless (null? arrows)
                                         (make-object menu-item%
                                           (string-constant cs-tack/untack-arrow)
@@ -772,8 +773,8 @@ If the namespace does not, they are colored the unbound color.
                          [(null? arrows) (jump-to (car orig-arrows))]
                          [else (let ([arrow (car arrows)])
                                  (cond
-                                   [(and (object=? txt (first arrow))
-                                         (<= (second arrow) pos (third arrow)))
+                                   [(and (object=? txt (list-ref arrow 0))
+                                         (<= (list-ref arrow 1) pos (list-ref arrow 2)))
                                     (jump-to (if (null? (cdr arrows))
                                                  (car orig-arrows)
                                                  (cadr arrows)))]
@@ -781,9 +782,9 @@ If the namespace does not, they are colored the unbound color.
             
             ;; jump-to : (list text number number) -> void
             (define/private (jump-to to-arrow)
-              (let ([end-text (first to-arrow)]
-                    [end-pos-left (second to-arrow)]
-                    [end-pos-right (third to-arrow)])
+              (let ([end-text (list-ref to-arrow 0)]
+                    [end-pos-left (list-ref to-arrow 1)]
+                    [end-pos-right (list-ref to-arrow 2)])
                 (send end-text set-position end-pos-left end-pos-right)
                 (send end-text set-caret-owner #f 'global)))
             
@@ -1596,8 +1597,8 @@ If the namespace does not, they are colored the unbound color.
                  (add-id varrefs sexp))]
               [_
                (begin
-                 #;
-                 (printf "unknown stx: ~e (datum: ~e) (source: ~e)~n"
+                
+                 (printf "unknown stx: ~e datum: ~e source: ~e\n"
                          sexp
                          (and (syntax? sexp)
                               (syntax->datum sexp))
@@ -2274,10 +2275,25 @@ If the namespace does not, they are colored the unbound color.
     
     ;; find-source : definitions-text source -> editor or false
     (define (find-source-editor stx)
+      (printf "looking for ~s ~s\n" (syntax-source stx) (syntax->datum stx))
       (let ([defs-text (get-defs-text)])
         (and defs-text 
-             (send defs-text port-name-matches? (syntax-source stx))
-             defs-text)))
+             (let txt-loop ([text defs-text])
+               (cond
+                 [(and (is-a? text fw:text:basic<%>)
+                       (send text port-name-matches? (syntax-source stx)))
+                  text]
+                 [else
+                  (let snip-loop ([snip (send text find-first-snip)])
+                    (cond
+                      [(not snip)
+                       #f]
+                      [(and (is-a? snip editor-snip%)
+                            (send snip get-editor))
+                       (or (txt-loop (send snip get-editor))
+                           (snip-loop (send snip next)))]
+                      [else 
+                       (snip-loop (send snip next))]))])))))
     
     ;; get-defs-text : -> text or false
     (define (get-defs-text)
