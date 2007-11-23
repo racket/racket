@@ -1,3 +1,3 @@
-(module web-server-sig mzscheme
-  (require "private/dispatch-server-sig.ss")
-  (provide (rename dispatch-server^ web-server^)))
+#lang scheme/base
+(require "private/dispatch-server-sig.ss")
+(provide (rename-out [dispatch-server^ web-server^]))
