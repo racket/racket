@@ -771,7 +771,7 @@ void scheme_fdset(void *fd, int n)
 #endif
 #if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
 # define STORED_ACTUAL_FDSET_LIMIT
-# define FDSET_LIMIT(fd) (*(int *)((char *)fd + dynamic_fd_size))
+# define FDSET_LIMIT(fd) (*(int *)((char *)fd XFORM_OK_PLUS dynamic_fd_size))
   int mx;
   mx = FDSET_LIMIT(fd);
   if (n > mx)

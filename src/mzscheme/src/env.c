@@ -2480,8 +2480,9 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
 	if (!genv) {
 	  scheme_wrong_syntax("require", NULL, src_find_id, 
-			      "broken compiled code (phase %d, defn-phase %d): cannot find module %D",
-			      env->genv->phase, mod_defn_phase, modname);
+                              "namespace mismatch; reference (phase %d) to a module"
+                              " %D that is not instantiated (phase %d)", 
+			      env->genv->phase, modname, mod_defn_phase);
 	  return NULL;
 	}
       }

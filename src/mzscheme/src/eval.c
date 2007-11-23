@@ -1731,11 +1731,13 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     
     if (!menv) {
       scheme_wrong_syntax("link", NULL, varname,
-			  "broken compiled code (phase %d, defn-phase %d, in %D), no declaration for module"
-			  ": %D", 
-			  env->phase, mod_phase,
-			  env->module ? env->module->modname : scheme_false,
-			  modname);
+			  "namespace mismatch; reference (phase %d) to a module"
+                          " %D that is not instantiated (phase %d); reference"
+			  " appears in module: %D", 
+			  env->phase,
+                          modname,
+                          mod_phase,
+                          env->module ? env->module->modname : scheme_false);
       return NULL;
     }
 
