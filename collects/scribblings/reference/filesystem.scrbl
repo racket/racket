@@ -312,12 +312,12 @@ A parameter that determines the current directory for resolving
 relative paths.
 
 When the parameter procedure is called to set the current directory,
-the path argument is expanded using @scheme[expand-path], simplified
-using @scheme[simplify-path], and then converted to a directory path
-with @scheme[path->directory-path]; expansion and simplification raise
-an exception if the path is ill-formed. Thus, the current value of
-@scheme[current-directory] is always an expanded, simplified,
-complete, directory path.
+the path argument is @tech{cleanse}d using @scheme[cleanse-path],
+simplified using @scheme[simplify-path], and then converted to a
+directory path with @scheme[path->directory-path]; cleansing and
+simplification raise an exception if the path is ill-formed. Thus, the
+current value of @scheme[current-directory] is always a cleansed,
+simplified, complete, directory path.
 
 The path is not checked for existence when the parameter is set.}
 

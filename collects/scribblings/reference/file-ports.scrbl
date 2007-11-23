@@ -58,8 +58,8 @@ otherwise available for garbage collection (see
 @secref["gc-model"]); a @tech{will} could be associated input port
 to close it more automatically (see @secref["willexecutor"]).
 
-A @tech{path} value that is the expanded version of @scheme[path] is
-used as the name of the opened port.}
+A @tech{path} value that is the @tech{cleanse}d version of
+@scheme[path] is used as the name of the opened port.}
 
 @defproc[(open-output-file [path path-string?]
                            [#:mode mode-flag (one-of/c 'binary 'text) 'binary]
@@ -126,8 +126,8 @@ otherwise available for garbage collection (see
 @secref["gc-model"]); a @tech{will} could be associated input port
 to close it more automatically (see @secref["willexecutor"]).
 
-A @tech{path} value that is the expanded version of @scheme[path] is
-used as the name of the opened port.}
+A @tech{path} value that is the @tech{cleanse}d version of
+@scheme[path] is used as the name of the opened port.}
 
 @defproc[(open-input-output-file [path path-string?]
                            [#:mode mode-flag (one-of/c 'binary 'text) 'binary]

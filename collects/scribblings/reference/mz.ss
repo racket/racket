@@ -21,10 +21,18 @@
   (provide note-lib)
   (define-syntax-rule (note-lib lib)
     (t "The bindings documented in this section are provided by the "
-       (schemeidfont "scheme/list")
+       (schememodname lib)
        " and "
-       (schemeidfont "scheme") 
-       " libraries, but not " (schemeidfont "scheme/base")
+       (schememodname scheme)
+       " libraries, but not " (schememodname scheme/base)
+       "."))
+
+  (provide note-lib-only)
+  (define-syntax-rule (note-lib-only lib)
+    (t "The bindings documented in this section are provided by the "
+       (schememodname lib)
+       " library, not " (schememodname scheme/base)
+       " or " (schememodname scheme)
        "."))
 
   (define (*exnraise s)

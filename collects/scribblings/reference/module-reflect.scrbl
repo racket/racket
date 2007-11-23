@@ -14,6 +14,10 @@ evaluation (e.g., @scheme[eval]). A filesystem path normally refers to
 a module declaration that was loaded on demand via @scheme[require] or
 other forms.
 
+A @deftech{module path} is a datum that matches the grammar for
+@scheme[_module-path] for @scheme[require]. A module path is relative
+to another module.
+
 @defproc[(resolved-module-path? [v any/c]) boolean?]{
 
 Returns @scheme[#f] if @scheme[v] is a @tech{resolved module path},

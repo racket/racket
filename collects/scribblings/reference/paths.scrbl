@@ -330,8 +330,8 @@ This procedure does not access the filesystem.}
 
 @defproc[(resolve-path [path path-string?]) path?]{
 
-@tech{Path-expands} @scheme[path] and returns a path that references
-the same file or directory as @scheme[path]. Under @|AllUnix|, if
+@tech{Cleanse}s @scheme[path] and returns a path that references the
+same file or directory as @scheme[path]. Under @|AllUnix|, if
 @scheme[path] is a soft link to another path, then the referenced path
 is returned (this may be a relative path with respect to the directory
 owning @scheme[path]), otherwise @scheme[path] is returned (after

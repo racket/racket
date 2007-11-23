@@ -9,7 +9,7 @@ In @|AllUnix| paths, a @litchar{/} separates elements of the path,
 preceding path, and @litchar{..} as a path element always means the
 parent of the directory indicated by the preceding path. A leading
 @litchar{~} in a path is not treated specially, but
-@scheme[expand-path] can be used to convert a leading @litchar{~}
+@scheme[expand-user-path] can be used to convert a leading @litchar{~}
 element to a user-specific directory. No other character or byte has a
 special meaning within a path. Multiple adjacent @litchar{/} are
 equivalent to a single @litchar{/} (i.e., they act as a single path

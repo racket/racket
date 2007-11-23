@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require["mz.ss"]
-@require[(only-in scheme pi)]
+@require["mz.ss"
+         scheme/math]
 
 @title[#:tag "numbers"]{Numbers}
 
@@ -755,3 +755,50 @@ If @scheme[dest-bstr] is provided and it is not of length
 Returns @scheme[#t] if the native encoding of numbers is big-endian
 for the machine running Scheme, @scheme[#f] if the native encoding
 is little-endian.}
+
+@; ------------------------------------------------------------------------
+@section{Extra Constants and Functions}
+
+@declare-exporting[scheme/math scheme]
+@note-lib[scheme/math]
+
+@defthing[euler real?]{
+
+An approximation to Euler's constant: @number->string[euler].}
+
+@defthing[pi real]{
+
+An approximation to the ratio of a circle's circumference to its
+diameter: @number->string[pi].}
+
+@defproc[(sqr [z number?]) number?]{
+
+Returns @scheme[(* z z)].}
+
+@defproc[(sgn [x real?]) (one-of/c 1 0 -1 1.0 0.0 -1.0)]{
+
+Returns the sign of @scheme[x] as either @math{-1}, @math{0}, or
+@math{1}.
+
+@examples[
+(sgn 10)
+(sgn -10.0)
+(sgn 0)
+]}
+
+@defproc[(conjugate [z number?]) number?]{
+
+Returns the complex conjugate of @scheme[z].
+
+@examples[
+(conjugate 1)
+(conjugate 3+4i)
+]}
+
+@defproc[(sinh [z number?]) number?]{
+
+Returns the hyperbolic sine of @scheme[z].}
+
+@defproc[(cosh [z number?]) number?]{
+
+Returns the hyperbolic cosine of @scheme[z].}

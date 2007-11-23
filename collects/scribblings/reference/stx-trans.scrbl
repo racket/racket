@@ -1,5 +1,8 @@
 #lang scribble/doc
-@require["mz.ss"]
+@require[(except-in "mz.ss" import export)
+         (for-syntax scheme/base)
+         (for-label scheme/require-transform
+                    scheme/provide-transform)]
 
 @define[(transform-time) @t{This procedure must be called during the
 dynamic extent of a @tech{syntax transformer} application by the
@@ -409,3 +412,187 @@ mark}. Multiple applications of the same
 @scheme[make-syntax-introducer] result procedure use the same mark,
 and different result procedures use distinct marks.}
 
+@; ----------------------------------------------------------------------
+
+@section[#:tag "require-trans"]{@scheme[require] Transformers}
+
+@declare-exporting[scheme/require-transform]
+@note-lib-only[scheme/require-transform]
+
+A @tech{transformer binding} whose value is a structure with the
+@scheme[prop:require-transformer] property implements a derived
+@scheme[_require-spec] for @scheme[require].
+
+The transformer is called with the syntax object representing its use
+as a @scheme[_require-spec] within a @scheme[require] form, and the
+result must be two lists: a list of @scheme[import]s and a list of
+@scheme[import-source]s.
+
+If the derived form contains a sub-form that is a
+@scheme[_require-spec], then it can call @scheme[expand-import] to
+transform the sub-@scheme[_require-spec] to lists of imports and
+import sources.
+
+
+@defproc[(expand-import [stx syntax?])
+         (values (listof import?) 
+                 (listof import-source?))]{
+
+Expands the given @scheme[_require-spec] to lists of imports and
+import sources.}
+
+
+@defproc[(make-require-transformer [proc (syntax? . ->* . ((listof import?) (listof import-source?)))])
+         require-transformer?]{
+
+Creates a require transformer (i.e., a structure with the
+@scheme[prop:require-transformer] property) using the given procedure
+as the transformer.}
+
+
+@defthing[prop:require-transformer struct-type-property?]{
+
+A property to identify @scheme[require] transformers. The property
+value must be a procedure that takes a syntax object and returns
+import and import-source lists.}
+
+
+@defproc[(require-transformer? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] has the
+@scheme[prop:require-transformer] property, @scheme[#f] otherwise.}
+
+
+@defstruct[import ([local-id identifier?]
+                   [src-sym symbol?]
+                   [src-mod-path module-path?]
+                   [orig-stx syntax?]
+                   [mode (one-of/c 'run 'syntax 'template 'label)]
+                   [req-mode (one-of/c 'run 'syntax 'template 'label)])]{
+
+A structure representing a single imported identifier:
+
+@itemize{
+
+ @item{@scheme[local-id] --- the identifier to be bound within the
+       importing module.}
+
+ @item{@scheme[src-sym] --- the external name of the binding as
+       exported from its source module.}
+
+ @item{@scheme[src-mod-path] --- a @tech{module path} (relative to the
+       importing module) for the source of the imported binding.}
+
+ @item{@scheme[orig-stx] --- a @tech{syntax object} for the source of
+       the import, used for error reporting.}
+
+ @item{@scheme[mode] --- the @tech{phase level} of the binding in the
+       importing module.}
+
+ @item{@scheme[req-mode] --- the @tech{phase level} shift of the
+       import relative to the exporting module. Since the underlying
+       module system currently allows only for-run @scheme[require]s
+       to import into other @tech{phase levels}, if this value is not
+       @scheme['run], then it must match the @scheme[mode] field's
+       value.}
+
+}}
+
+@defstruct[import-source ([mod-path-stx (and/c syntax?
+                                               (lambda (x)
+                                                 (module-path? (syntax->datum x))))]
+                          [mode (one-of/c 'run 'syntax 'template 'label)])]{
+
+A structure representing an imported module, which must be
+instantiated or visited even if no binding is imported into a module.
+
+@itemize{
+
+ @item{@scheme[mod-path-stx] --- a @tech{module path} (relative
+       to the importing module) for the source of the imported binding.}
+
+ @item{@scheme[mode] --- the @tech{phase level} shift the import.}
+
+}}
+
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "provide-trans"]{@scheme[provide] Transformers}
+
+@declare-exporting[scheme/provide-transform]
+@note-lib-only[scheme/provide-transform]
+
+A @tech{transformer binding} whose value is a structure with the
+@scheme[prop:provide-transformer] property implements a derived
+@scheme[_provide-spec] for @scheme[provide].
+
+The transformer is called with the syntax object representing its use
+as a @scheme[_provide-spec] within a @scheme[provide] form and a list
+of symbols representing the export modes specified by enclosing
+@scheme[_provide-spec]s. The result must be a list of
+@scheme[export]s.
+
+If the derived form contains a sub-form that is a
+@scheme[_provide-spec], then it can call @scheme[expand-export] to
+transform the sub-@scheme[_provide-spec] to a lists of exports.
+
+
+@defproc[(expand-export [stx syntax?] [modes (listof (one-of/c 'run 'syntax 'label))])
+         (listof export?)]{
+
+Expands the given @scheme[_provide-spec] to a list of exports. The
+@scheme[modes] list controls the expansion of
+sub-@scheme[_provide-specs]; for example, an identifier refers to a
+@tech{phase level} 0 binding unless the @scheme[modes] list specifies
+otherwise. Normally, @scheme[modes] is either empty or contains a
+single symbol.}
+
+
+@defproc[(make-provide-transformer [proc (syntax? (listof (one-of/c 'run 'syntax 'label)) 
+                                          . -> . (listof export?))])
+         provide-transformer?]{
+
+Creates a provide transformer (i.e., a structure with the
+@scheme[prop:provide-transformer] property) using the given procedure
+as the transformer.}
+
+
+@defthing[prop:provide-transformer struct-type-property?]{
+
+A property to identify @scheme[provide] transformers. The property
+value must be a procedure that takes a syntax object and mode list and
+returns an export list.}
+
+
+@defproc[(provide-transformer? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] has the
+@scheme[prop:provide-transformer] property, @scheme[#f] otherwise.}
+
+
+@defstruct[export ([local-id identifier?]
+                   [out-sym symbol?]
+                   [orig-stx syntax?]
+                   [protect? any/c]
+                   [mode (one-of/c 'run 'syntax 'label)])]{
+
+A structure representing a single imported identifier:
+
+@itemize{
+
+ @item{@scheme[local-id] --- the identifier that is bound within the
+       exporting module.}
+
+ @item{@scheme[out-sym] --- the external name of the binding.}
+
+ @item{@scheme[orig-stx] --- a @tech{syntax object} for the source of
+       the export, used for error reporting.}
+
+ @item{@scheme[protect?] --- indicates whether the identifier should
+       be protected (see @secref["modprotect"]).}
+
+ @item{@scheme[mode] --- the @tech{phase level} of the binding in the
+       exporting module.}
+
+}}

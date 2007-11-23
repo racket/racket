@@ -11,10 +11,10 @@
   (#%provide expand-import
              make-require-transformer prop:require-transformer require-transformer?
              ;; the import struct type:
-             import make-import import?
+             import struct:import make-import import?
              import-local-id import-src-sym import-src-mod-path import-orig-stx import-mode import-req-mode
              ;; the import-source struct type:
-             import-source make-import-source import-source?
+             import-source struct:import-source make-import-source import-source?
              import-source-mod-path-stx import-source-mode)
   
   (define-struct* import (local-id src-sym src-mod-path mode req-mode orig-stx)

@@ -171,7 +171,7 @@ for each pair of keywords is the same as using
 @scheme[keyword->string] and @scheme[string<?].}
 
 @; ----------------------------------------------------------------------
-@include-section["pairs-scrbl.scrbl"]
+@include-section["pairs.scrbl"]
 
 @; ------------------------------------------------------------
 @section[#:tag "vectors"]{Vectors}

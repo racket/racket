@@ -12,5 +12,6 @@
 @include-section["write.scrbl"]
 @include-section["reader.scrbl"]
 @include-section["printer.scrbl"]
+@include-section["pretty-print.scrbl"]
 @include-section["readtables.scrbl"]
 @include-section["custom-write.scrbl"]

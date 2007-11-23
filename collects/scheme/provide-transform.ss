@@ -10,7 +10,7 @@
   (#%provide expand-export
              make-provide-transformer prop:provide-transformer provide-transformer?
              ;; the export struct type:
-             export make-export export?
+             export struct:export make-export export?
              export-local-id export-out-sym export-orig-stx export-protect? export-mode)
   
   (define-struct* export (local-id out-sym mode protect? orig-stx)

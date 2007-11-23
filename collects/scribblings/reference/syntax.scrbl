@@ -1279,6 +1279,9 @@ pre-defined forms are as follows.
   @scheme[for-syntax-spec], but shifts bindings to the @tech{label
   phase level}.}
 
+ @specsubform[derived-require-spec]{See @secref["require-trans"] for
+ information on expanding the set of @scheme[require-spec] forms.}
+
 A @scheme[module-path] identifies a module, either through a concrete
 name in the form of an identifier, or through an indirect name that
 can trigger automatic loading of the module declaration. Except for
@@ -1451,6 +1454,9 @@ pre-defined forms are as follows.
               (for-label provide-spec ...)]{Analogous to
  @scheme[for-syntax], adjusting each @scheme[provide-spec] to the
  @tech{label phase level}.}
+
+ @specsubform[derived-provide-spec]{See @secref["provide-trans"] for
+ information on expanding the set of @scheme[provide-spec] forms.}
 
 Each export specified within a module must have a distinct symbolic
 export name, though the same binding can be specified with the
