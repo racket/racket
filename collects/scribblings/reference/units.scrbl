@@ -24,6 +24,7 @@
 @title[#:tag "mzlib:unit" #:style 'toc]{Units}
 
 @declare-exporting[scheme/unit scheme]
+@note-lib[scheme/unit]
 
 @local-table-of-contents[]
 

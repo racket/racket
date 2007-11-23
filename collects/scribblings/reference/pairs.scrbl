@@ -452,7 +452,6 @@ Like @scheme[assoc], but finds an element using the predicate
 @section{List Synonyms}
 
 @declare-exporting[scheme/list scheme]
-
 @note-lib[scheme/list]
 
 @defthing[empty null?]{The empty list.}

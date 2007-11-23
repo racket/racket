@@ -34,3 +34,4 @@ it produces.
 @include-section["pipes.scrbl"]
 @include-section["prop-port.scrbl"]
 @include-section["custom-ports.scrbl"]
+@include-section["port-lib.scrbl"]

@@ -62,6 +62,7 @@
         (printf "\\newcommand{\\schemeopt}[1]{#1}\n")
         (printf "\\newcommand{\\textsub}[1]{$_{#1}$}\n")
         (printf "\\newcommand{\\textsuper}[1]{$^{#1}$}\n")
+        (printf "\\newcommand{\\refcolumn}[1]{#1}\n")
         (printf "\\newcommand{\\refcontent}[1]{#1}\n")
         (printf "\\newcommand{\\smaller}[1]{{\\footnotesize #1}}\n")
         (printf "\\definecolor{PaleBlue}{rgb}{0.90,0.90,1.0}\n")

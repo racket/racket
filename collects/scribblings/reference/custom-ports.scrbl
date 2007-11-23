@@ -44,7 +44,7 @@ written.
 
 Creates an input port, which is immediately open for reading. If
 @scheme[close] procedure has no side effects, then the port need not
-be explicitly closed.
+be explicitly closed. See also @scheme[make-input-port/peek-to-read].
 
 The arguments implement the port as follows:
 
