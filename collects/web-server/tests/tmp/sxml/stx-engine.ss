@@ -9,7 +9,7 @@
 (require "txpath.ss")
 (require "sxpath.ss")
 (require "libmisc.ss")
-(require (lib "ssax.ss" "web-server/tmp/ssax"))
+(require (lib "ssax.ss" "web-server/tests/tmp/ssax"))
 
 ;; $Id: stx-engine.scm,v 1.9403 2002/12/25 19:33:48 kl Exp kl $
 

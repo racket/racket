@@ -1,6 +1,6 @@
 ; Module header is generated automatically
 #cs(module guides mzscheme
-(require (lib "ssax.ss" "web-server/tmp/ssax"))
+(require (lib "ssax.ss" "web-server/tests/tmp/ssax"))
 
 ;; $Id: guides.scm,v 2.4 2003/12/08 02:07:23 kl Exp kl $
 ;; DataGuide is a "structural summary" for semistructured data and may be 

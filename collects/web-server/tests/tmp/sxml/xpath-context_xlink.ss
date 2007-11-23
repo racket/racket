@@ -7,8 +7,8 @@
 (require "xpath-parser.ss")
 (require "txpath.ss")
 (require "xpath-ast.ss")
-(require (lib "htmlprag.ss" "web-server/tmp/htmlprag"))
-(require (lib "ssax.ss" "web-server/tmp/ssax"))
+(require (lib "htmlprag.ss" "web-server/tests/tmp/htmlprag"))
+(require (lib "ssax.ss" "web-server/tests/tmp/ssax"))
 
 ;; Context-based XPath implementation
 ;

@@ -1,7 +1,7 @@
 (module dispatch-lang-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            ; XXX Replace with real
-           (lib "sxml.ss" "web-server/tmp/sxml")
+           (lib "sxml.ss" "web-server/tests/tmp/sxml")
            (lib "etc.ss")
            (lib "list.ss")
            (lib "dispatch.ss" "web-server" "dispatchers")

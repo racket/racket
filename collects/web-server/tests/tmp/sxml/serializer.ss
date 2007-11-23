@@ -1,6 +1,6 @@
 ; Module header is generated automatically
 #cs(module serializer mzscheme
-(require (lib "ssax.ss" "web-server/tmp/ssax"))
+(require (lib "ssax.ss" "web-server/tests/tmp/ssax"))
 
 ;; SXML serializer into XML and HTML
 ;

@@ -1,7 +1,7 @@
 (module util mzscheme
   (require (lib "connection-manager.ss" "web-server" "private")
            ; XXX Replace with real
-           (only (lib "ssax.ss" "web-server/tmp/ssax")
+           (only (lib "ssax.ss" "web-server/tests/tmp/ssax")
                  ssax:xml->sxml)
            (lib "request-structs.ss" "web-server" "private")
            (lib "web-server-structs.ss" "web-server" "private")

@@ -1,6 +1,6 @@
 ; Module header is generated automatically
 #cs(module xpath-ast mzscheme
-(require (lib "ssax.ss" "web-server/tmp/ssax"))
+(require (lib "ssax.ss" "web-server/tests/tmp/ssax"))
 (require "xpath-parser.ss")
 
 ;; XPath/XPointer -> Abstract Syntax Tree parser

@@ -2,7 +2,7 @@
 #cs(module sxml-tools mzscheme
 (require (lib "defmacro.ss"))
 (require (lib "string.ss" "srfi/13"))
-(require (lib "ssax.ss" "web-server/tmp/ssax"))
+(require (lib "ssax.ss" "web-server/tests/tmp/ssax"))
 (require "sxpathlib.ss")
 
 ;;                            S X M L   T o o l s               

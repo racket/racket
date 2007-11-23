@@ -1,7 +1,7 @@
 ; Module header is generated automatically
 #cs(module sxpath mzscheme
 (require (lib "string.ss" "srfi/13"))
-(require (lib "ssax.ss" "web-server/tmp/ssax"))
+(require (lib "ssax.ss" "web-server/tests/tmp/ssax"))
 (require "sxml-tools.ss")
 (require "sxpathlib.ss")
 (require "sxpath-ext.ss")

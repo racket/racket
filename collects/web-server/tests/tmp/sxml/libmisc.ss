@@ -2,7 +2,7 @@
 #cs(module libmisc mzscheme
 (require (rename (lib "pretty.ss") pp pretty-print))
 (require (lib "string.ss" "srfi/13"))
-(require (lib "ssax.ss" "web-server/tmp/ssax"))
+(require (lib "ssax.ss" "web-server/tests/tmp/ssax"))
 
 ;; Portable Library of Miscellaneous Functions
 ;; $Id: libmisc.scm,v 1.7 2002/10/08 15:47:21 kl Exp kl $ 
