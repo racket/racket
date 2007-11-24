@@ -42,26 +42,39 @@
   (serve))
 
 (define (serve/ports
+         #:dispatch dispatch
+         #:tcp@ [tcp@ raw:tcp@]
          #:ports [ports (list 80)]
-         . serve-keys)
+         #:listen-ip [listen-ip #f]
+         #:max-waiting [max-waiting 40]
+         #:initial-connection-timeout [initial-connection-timeout 60])
   (define shutdowns
     (map (lambda (port)
-           (apply serve
+           (serve #:dispatch dispatch
+                  #:tcp@ tcp@
                   #:port port
-                  serve-keys))
+                  #:listen-ip listen-ip
+                  #:max-waiting max-waiting
+                  #:initial-connection-timeout initial-connection-timeout))
          ports))
   (lambda ()
     (for-each apply shutdowns)))
 
 (define (serve/ips+ports
+         #:dispatch dispatch
+         #:tcp@ [tcp@ raw:tcp@]
          #:ips+ports [ips+ports (list (cons #f (list 80)))]
-         . serve-keys)
+         #:max-waiting [max-waiting 40]
+         #:initial-connection-timeout [initial-connection-timeout 60])
   (define shutdowns
     (map (match-lambda
            [(list-rest listen-ip ports)
-            (apply serve/ports
+            (serve #:dispatch dispatch
+                   #:tcp@ tcp@
                    #:ports ports
-                   serve-keys)])
+                   #:listen-ip listen-ip
+                   #:max-waiting max-waiting
+                   #:initial-connection-timeout initial-connection-timeout)])
          ips+ports))
   (lambda ()
     (for-each apply shutdowns)))

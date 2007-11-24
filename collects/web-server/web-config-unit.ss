@@ -13,26 +13,36 @@
 ; configuration-table->web-config@ : path -> configuration
 (define (configuration-table->web-config@ 
          table-file-name
-         . bct-keys)
-  (apply configuration-table-sexpr->web-config@ 
-         (call-with-input-file table-file-name read)
-         #:web-server-root (directory-part table-file-name)
-         bct-keys))
+         #:port [port #f]
+         #:listen-ip [listen-ip #f]
+         #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)])
+  (configuration-table-sexpr->web-config@ 
+   (call-with-input-file table-file-name read)
+   #:web-server-root (directory-part table-file-name)
+   #:port port
+   #:listen-ip listen-ip
+   #:make-servlet-namespace make-servlet-namespace))
 
 ; configuration-table-sexpr->web-config@ : string? sexp -> configuration
 (define (configuration-table-sexpr->web-config@
          sexpr
-         #:web-server-root [web-server-root (directory-part default-configuration-table-path)]
-         . bct-keys)
-  (apply complete-configuration
-         web-server-root
-         (sexpr->configuration-table sexpr)
-         bct-keys))
+         #:web-server-root [web-server-root (directory-part default-configuration-table-path)]         
+         #:port [port #f]
+         #:listen-ip [listen-ip #f]
+         #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)])
+  (complete-configuration
+   web-server-root
+   (sexpr->configuration-table sexpr)
+   #:port port
+   #:listen-ip listen-ip
+   #:make-servlet-namespace make-servlet-namespace))
 
 ; : str configuration-table -> configuration
 (define (complete-configuration 
-         base table
-         . bct-keys)
+         base table         
+         #:port [port #f]
+         #:listen-ip [listen-ip #f]
+         #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)])
   (define default-host
     (apply-default-functions-to-host-table
      base (configuration-table-default-host table)))
@@ -41,10 +51,12 @@
            (list (regexp (string-append (car x) "(:[0-9]*)?"))
                  (apply-default-functions-to-host-table base (cdr x))))
          (configuration-table-virtual-hosts table)))
-  (apply build-configuration
-         table
-         (gen-virtual-hosts expanded-virtual-host-table default-host)
-         bct-keys))
+  (build-configuration
+   table
+   (gen-virtual-hosts expanded-virtual-host-table default-host)
+   #:port port
+   #:listen-ip listen-ip
+   #:make-servlet-namespace make-servlet-namespace))
 
 ; : configuration-table host-table -> configuration
 (define (build-configuration 
