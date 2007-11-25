@@ -388,7 +388,7 @@ plt/collects/tests/mzscheme/image-test.ss
                           y2))))))
 
   (define (text str size color-in)
-    (check 'text string? str "string" "first")
+    (check 'text (lambda (x) (and (string? x) (not (equal? "" x)))) str "non-empty string" "first")
     (check 'text (lambda (x) (and (integer? x) (<= 1 x 255))) size "integer between 1 and 255" "second")
     (check-image-color 'text color-in "third")
     (let ([color (make-color% color-in)])
