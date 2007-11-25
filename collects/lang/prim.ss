@@ -33,11 +33,11 @@
                   (syntax-case stx ()
                     [(_ . body)
                      ;; HACK: we disable all checks if #%app is not beginner-app
-                     (not (module-identifier=? #'beginner-app (datum->syntax-object stx '#%plain-app)))
+                     (not (module-identifier=? #'beginner-app (datum->syntax-object stx '#%app)))
                      (syntax/loc stx (tagged-impl . body))]
                     [_
                      ;; HACK: see above
-                     (not (module-identifier=? #'beginner-app (datum->syntax-object stx '#%plain-app)))
+                     (not (module-identifier=? #'beginner-app (datum->syntax-object stx '#%app)))
                      (syntax/loc stx tagged-impl)]
                     [(id . args)
                      (syntax/loc stx (#%plain-app tagged-impl . args))]
@@ -99,11 +99,11 @@
                           (syntax-case s ()
                             [(_ . body)
                              ;; HACK: see above
-                             (not (module-identifier=? #'beginner-app (datum->syntax-object s '#%plain-app)))
+                             (not (module-identifier=? #'beginner-app (datum->syntax-object s '#%app)))
                              (syntax/loc s (tagged-impl . body))]
                             [_
                              ;; HACK: see above
-                             (not (module-identifier=? #'beginner-app (datum->syntax-object s '#%plain-app)))
+                             (not (module-identifier=? #'beginner-app (datum->syntax-object s '#%app)))
                              (syntax/loc s tagged-impl)]
                             [(_ new-arg ...)
                              (begin
