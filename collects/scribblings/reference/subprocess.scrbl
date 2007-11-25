@@ -1,29 +1,42 @@
 #lang scribble/doc
-@require["mz.ss"]
+@require["mz.ss"
+         (for-label scheme/system)]
 
 @title[#:tag "subprocess"]{Processes}
 
-@defproc[(subprocess [stdout (or/c output-port? false/c)]
-                     [stdin (or/c input-port? false/c)]
-                     [stderr (or/c output-port? false/c)]
-                     [command path-string?]
-                     [arg string?] ...)
-         (values subprocess?
-                 (or/c input-port? false/c)
-                 (or/c output-port? false/c)
-                 (or/c input-port? false/c))]{
+@defproc*[([(subprocess [stdout (or/c output-port? false/c)]
+                        [stdin (or/c input-port? false/c)]
+                        [stderr (or/c output-port? false/c)]
+                        [command path-string?]
+                        [arg string?] ...)
+            (values subprocess?
+                    (or/c input-port? false/c)
+                    (or/c output-port? false/c)
+                    (or/c input-port? false/c))]
+           [(subprocess [stdout (or/c output-port? false/c)]
+                        [stdin (or/c input-port? false/c)]
+                        [stderr (or/c output-port? false/c)]
+                        [command path-string?]
+                        [exact (one-of/c 'exact)]
+                        [arg string?])
+            (values subprocess?
+                    (or/c input-port? false/c)
+                    (or/c output-port? false/c)
+                    (or/c input-port? false/c))])]{
 
 Creates a new process in the underlying operating system to execute
-@scheme[command] asynchronously. The @scheme[command] argument is a
-path to a program executable, and the @scheme[arg]s are command-line
-arguments for the program. Under Unix and Mac OS X, command-line
-arguments are passed as byte strings using the current locale's
-encoding (see @secref["encodings"]).
+@scheme[command] asynchronously. See also @scheme[system] and
+@scheme[process] from @schememodname[scheme/system].
 
-Under Windows, the first @scheme[arg] can be @indexed-scheme['exact],
-which triggers a Windows-specific hack: the second @scheme[arg] is
-used exactly as the command-line for the subprocess, and no additional
-@scheme[arg]s can be supplied.  Otherwise, a command-line string is
+The @scheme[command] argument is a path to a program executable, and
+the @scheme[arg]s are command-line arguments for the program. Under
+Unix and Mac OS X, command-line arguments are passed as byte strings
+using the current locale's encoding (see @secref["encodings"]).
+
+Under Windows, the first @scheme[arg] can be replaced
+@indexed-scheme['exact], which triggers a Windows-specific behavior:
+the sole @scheme[arg] is used exactly as the command-line for the
+subprocess. Otherwise, under Windows, a command-line string is
 constructed from @scheme[command] and @scheme[arg] so that a typical
 Windows console application can parse it back to an array of
 arguments. If @scheme['exact] is provided on a non-Windows platform,
@@ -206,3 +219,137 @@ In future versions of Scheme, the result may be a subprocess value if
 the operating system did returns a process handle (but if a subprocess
 value is returned, its process ID will be @scheme[0] instead of the
 real process ID).
+
+@; ----------------------------------------------------------------------
+
+@section{Simple Subprocesses}
+
+@declare-exporting[scheme/system]
+@note-lib-only[scheme/system]
+
+@defproc[(system [command string?]) boolean?]{
+
+Executes a Unix, Mac OS X, or Windows shell command synchronously
+(i.e., the call to @scheme[system] does not return until the
+subprocess has ended). The @scheme[command] argument is a string
+containing no nul characters. If the command succeeds, the return
+value is @scheme[#t], @scheme[#f] otherwise.}
+
+
+@defproc*[([(system* [command path-string?][arg string?] ...) boolean?]
+           [(system* [command path-string?][exact (one-of/c 'exact)][arg string?]) boolean?])]{
+
+Like @scheme[system], except that @scheme[command] is a filename that
+is executed directly (instead of through a shell command), and the
+@scheme[arg]s are the arguments. The executed file is passed the
+specified string arguments (which must contain no nul
+characters).
+
+Under Windows, the first argument after @scheme[command] can be
+@scheme['exact], and the final @scheme[arg] is a complete command
+line. See @scheme[subprocess] for details.}
+
+
+@defproc[(system/exit-code [command string?]) (integer-in 0 255)]{
+
+Like @scheme[system], except that the result is the exit code returned
+by the subprocess. A @scheme[0] result normally indicates success.}
+
+
+@defproc*[([(system*/exit-code [command path-string?][arg string?] ...) (integer-in 0 255)]
+           [(system*/exit-code [command path-string?][exact (one-of/c 'exact)][arg string?]) (integer-in 0 255)])]{
+
+Like @scheme[system*], but returns the exit code like
+@scheme[system/exit-code].}
+ 
+
+@defproc[(process [command string?])
+         (list input-port?
+               output-port?
+               nonnegative-exact-integer?
+               input-port?
+               ((one-of/c 'status 'wait 'interrupt 'kill) . -> . any))]{
+
+Executes a shell command asynchronously. The result is a list of five values:
+
+@itemize{
+
+ @item{an input port piped from the subprocess's standard output,}
+
+ @item{an output port piped to the subprocess standard input,} 
+
+ @item{the system process id of the subprocess,}
+
+ @item{an input port piped from the subprocess's standard
+       error, and}
+
+ @item{a procedure of one argument, either @scheme['status],
+ @scheme['wait], @scheme['interrupt], or @scheme['kill]:
+
+   @itemize{
+
+   @item{@scheme['status] returns the status of the subprocess as one
+    of @scheme['running], @scheme['done-ok], or
+    @scheme['done-error].}
+
+   @item{@scheme['exit-code] returns the integer exit code of the
+    subprocess or @scheme[#f] if it is still running.}
+
+   @item{@scheme['wait] blocks execution in the current thread until
+    the subprocess has completed.}
+
+   @item{@scheme['interrupt] sends the subprocess an interrupt signal
+    under @|AllUnix|, and takes no action under Windows. The result is
+    @|void-const|.}
+
+   @item{@scheme['kill] terminates the subprocess and returns @|void-const|.}
+
+   }}
+
+}
+
+@bold{Important:} All three ports returned from @scheme[process] must
+be explicitly closed with @scheme[close-input-port] or
+@scheme[close-output-port].}
+ 
+
+@defproc*[([(process* [command path-string?][arg string?] ...) list?]
+           [(process* [command path-string?][exact (one-of/c 'exact)][arg string?]) list?])]{
+
+Like @scheme[process], except that @scheme[command] is a filename that
+is executed directly, and the @scheme[arg]s are the arguments. Under
+Windows, as for @scheme[system*], the first @scheme[arg] can be
+replaced with @scheme['exact].}
+
+
+@defproc[(process/ports [out (or/c false/c output-port?)]
+                        [in (or/c false/c input-port?)]
+                        [error-out (or/c false/c output-port?)]
+                        [command string?])
+         list?]{
+
+Like @scheme[process], except that @scheme[out] is used for the
+process's standard output, @scheme[in] is used for the process's
+standard input, and @scheme[error-out] is used for the process's
+standard error.  Any of the ports can be @scheme[#f], in which case a
+system pipe is created and returned, as in @scheme[process]. For each
+port that is provided, no pipe is created, and the corresponding value
+in the returned list is @scheme[#f].}
+
+@defproc*[([(process*/ports [out (or/c false/c output-port?)]
+                            [in (or/c false/c input-port?)]
+                            [error-out (or/c false/c output-port?)]
+                            [command path-string?]
+                            [arg string?] ...)
+            list?]
+           [(process*/ports [out (or/c false/c output-port?)]
+                            [in (or/c false/c input-port?)]
+                            [error-out (or/c false/c output-port?)]
+                            [command path-string?]
+                            [exact (one-of/c 'exact)]
+                            [arg string?])
+            list?])]{
+
+Like @scheme[process*], but with the port handling of
+@scheme[process/ports].}
+

@@ -64,8 +64,9 @@
 		  (and (exn:fail:syntax? x)
 		       (regexp-match rx (exn-message x)))))]))
 
-(require (rename mzscheme mz-let let)
-         (rename mzscheme mz-require require))
+(require (only-in mzscheme 
+                  [let mz-let]
+                  [require mz-require]))
 
 (define-syntax (htdp-test stx)
   (syntax-case stx ()

@@ -68,19 +68,18 @@
 		     [else null]))])
     (for-each (lambda (id1)
 		(for-each (lambda (id2)
-			    (if (and (= (syntax-position id1)
-					(syntax-position id2))
-				     (not (module-identifier=? id1 id2)))
-				(error 'original "mismatch: ~e ~e"
-				       id1 id2)))
+			    (when (and (= (syntax-position id1)
+                                          (syntax-position id2))
+                                       (not (free-identifier=? id1 id2)))
+                              (error 'original "mismatch: ~e ~e"
+                                     id1 id2)))
 			  orig-ids))
 	      orig-ids)))
     
 ;; Don't need these:
 (define no-extra-if-tests? #t)
 
-(require (rename mzscheme exn:fail? exn:fail?)
-	 (rename mzscheme exn:fail:contract? exn:fail:contract?))
+(require (only-in mzscheme exn:fail? exn:fail:contract?))
 
 (define current-htdp-lang '(lib "htdp-beginner.ss" "lang"))
 (load-relative "htdp-test.ss")

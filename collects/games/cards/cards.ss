@@ -5,7 +5,7 @@
 	   "region.ss")
 
   (provide table<%> card<%>
-           region
+           region struct:region
 	   make-region
 	   region? region-x region-y region-w region-h 
 	   region-label region-callback region-interactive-callback

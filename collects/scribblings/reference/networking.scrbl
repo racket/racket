@@ -8,6 +8,9 @@
 @;------------------------------------------------------------------------
 @section[#:tag "tcp"]{TCP}
 
+@declare-exporting[scheme/tcp]
+@note-lib[scheme/tcp]
+
 For information about TCP in general, see @italic{TCP/IP Illustrated,
  Volume 1} by W. Richard Stevens.
 
@@ -252,6 +255,9 @@ Returns @scheme[#t] if @scheme[v] is a port returned by
 
 @;------------------------------------------------------------------------
 @section[#:tag "udp"]{UDP}
+
+@declare-exporting[scheme/udp]
+@note-lib[scheme/udp]
 
 For information about UDP in general, see @italic{TCP/IP Illustrated,
 Volume 1} by W. Richard Stevens.

@@ -429,7 +429,7 @@ Snip class objects can be added to the eventspace-specific
 
 If a snip class's name is of the form @scheme["(lib ...)"], then the
  snip class implementation can be loaded on demand. The name is parsed
- using @scheme[read]; if the result has the form @scheme[(libKW string
+ using @scheme[read]; if the result has the form @scheme[(lib _string
  ...)], then it is supplied to @scheme[dynamic-require] along with
  @scheme['snip-class]. If the result is a @scheme[snip-class%] object,
  it is inserted into the current eventspace's snip class list, and

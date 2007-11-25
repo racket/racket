@@ -47,7 +47,10 @@ To define a class of snips that can be saved or cut-and-pasted:
 @itemize{
 
  @item{Create an instance of @scheme[snip-class%], implementing the
-       @method[snip-class% read] method.}
+       @method[snip-class% read] method. Export the
+       @scheme[snip-class%] instance as @scheme[snip-class] from a
+       module, and use a classname of the form @scheme["(lib ...)"] as
+       described in @|snipclassdiscuss|.}
 
  @item{For each instance of the snip class, set the snip's class object 
        with @method[snip% set-snipclass].}

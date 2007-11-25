@@ -220,8 +220,8 @@
         (set-part-tags! v (cons '(part "top") (part-tags v))))))
 
   (define ((get-doc-info only-dirs latex-dest) doc)
-    (let ([info-out-file (build-path (or latex-dest (doc-dest-dir doc)) "xref-out.ss")]
-          [info-in-file (build-path (or latex-dest (doc-dest-dir doc)) "xref-in.ss")]
+    (let ([info-out-file (build-path (or latex-dest (doc-dest-dir doc)) "out.sxref")]
+          [info-in-file (build-path (or latex-dest (doc-dest-dir doc)) "in.sxref")]
           [out-file (build-path (doc-dest-dir doc) "index.html")]
           [src-zo (let-values ([(base name dir?) (split-path (doc-src-file doc))])
                     (build-path base "compiled" (path-add-suffix name ".zo")))]
@@ -410,9 +410,9 @@
 
   (define (write-out info)
     (make-directory* (doc-dest-dir (info-doc info)))
-    (write- info "xref-out.ss" (lambda (o i) o)))
+    (write- info "out.sxref" (lambda (o i) o)))
   (define (write-in info)
     (make-directory* (doc-dest-dir (info-doc info)))
-    (write- info "xref-in.ss" (lambda (o i) i)))
+    (write- info "in.sxref" (lambda (o i) i)))
 
   )
