@@ -1,11 +1,9 @@
-#cs
-(module convert mzscheme
-  (require (lib "unitsig.ss")
-           (lib "etc.ss")
-           (lib "class.ss")
-           (lib "mred.ss" "mred")
-           (lib "error.ss" "htdp")
-           (lib "prim.ss" "lang"))
+#lang scheme/gui
+
+;(module convert mzscheme
+  (require (lib "etc.ss")
+           htdp/error
+           lang/prim)
   
   (provide-higher-order-primitive convert-gui (f2c))
   (provide-higher-order-primitive convert-repl (f2c))
@@ -258,4 +256,4 @@
       (delete-file out))
     (with-output-to-file out
       (lambda () (with-input-from-file in (make-reader-for f)))))
-  )
+;  )
