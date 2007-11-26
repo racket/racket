@@ -81,7 +81,7 @@
 
 (require (only-in mzscheme exn:fail? exn:fail:contract?))
 
-(define current-htdp-lang '(lib "htdp-beginner.ss" "lang"))
+(define current-htdp-lang 'lang/htdp-beginner)
 (load-relative "htdp-test.ss")
 
 (require (lib "htdp-beginner.ss" "lang"))

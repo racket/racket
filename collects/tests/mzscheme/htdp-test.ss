@@ -3,7 +3,7 @@
   ;; Just to be sure, remove all top-level context from the syntax object
   (cond
    [(syntax? v)
-    (datum->syntax-object
+    (datum->syntax
      #f
      (strip-context (syntax-e v))
      v
@@ -37,21 +37,23 @@
   (cond
    [(null? teachpack-accum) lang]
    [(equal? teachpack-accum previous-tp-accum)
-    previous-tp-lang]
+    `',previous-tp-lang]
    [else
     (let ([name (string->symbol (format "~a+tp~a" lang (gensym)))])
       (eval #`(module #,name mzscheme
                 (define-syntax (bounce stx)
                   #'(begin
-                      (require #,lang #,@teachpack-accum)
+                      (require #,lang #,@(map (lambda (t)
+                                                #`(quote #,t))
+                                              teachpack-accum))
                       (provide (all-from #,lang)
                                #,@(map (lambda (tp)
-                                         #`(all-from #,tp))
+                                         #`(all-from (quote #,tp)))
                                        teachpack-accum))))
                 (bounce)))
       (set! previous-tp-accum teachpack-accum)
       (set! previous-tp-lang name)
-      name)]))
+      `',name)]))
 
 (define htdp-syntax-test
   (case-lambda
@@ -66,7 +68,8 @@
 
 (require (only-in mzscheme 
                   [let mz-let]
-                  [require mz-require]))
+                  [require mz-require]
+                  [quote mz-quote]))
 
 (define-syntax (htdp-test stx)
   (syntax-case stx ()
@@ -85,9 +88,9 @@
                 #`(module #,name #,(add-teachpacks current-htdp-lang)
                     #,@body-accum
                     #,(strip-context #'expr)))
-               (dynamic-require name #f))]
+               (dynamic-require `',name #f))]
     [_ 
-     (printf "~s\n" (syntax-object->datum stx))
+     (printf "~s\n" (syntax->datum stx))
      #'(void)]))
 
 (define (htdp-string-to-pred exn?/rx)
@@ -106,18 +109,26 @@
 (define (htdp-error-test stx)
   (do-htdp-test stx #t #f))
 
-(module helper mzscheme
+(module helper scheme/base
+  (require (for-syntax scheme/base))
   (define-syntax (module-begin stx)
     (syntax-case stx ()
-     [(_ the-test lang to-export requires . rest)
-      #`(#%module-begin
-	 (require (rename tester the-test test))
-	 (require lang . requires)
-         #,@(if (syntax-object->datum (syntax to-export))
-                (list (syntax (provide to-export)))
-                '())
-	 . rest)]))
-  (provide (rename module-begin #%module-begin)))
+     [(_ the-test lang mb to-export (tp ...) . rest)
+      (with-syntax ([(tp ...)
+                     (map (lambda (tp)
+                            (datum->syntax
+                             tp
+                             (list #'quote tp)
+                             tp))
+                          (syntax->list #'(tp ...)))])
+        #`(#%module-begin
+           (require (only-in 'tester [test the-test]))
+           (require (except-in lang mb) tp ...)
+           #,@(if (syntax->datum (syntax to-export))
+                  (list (syntax (provide to-export)))
+                  '())
+           . rest))]))
+  (provide (rename-out [module-begin #%module-begin])))
        
 (module tester mzscheme
   (define test (namespace-variable-value 'test))
@@ -126,17 +137,17 @@
 (define (do-htdp-test stx stx-err? exn?)
   (let ([name (gensym 'm)])
     ((if stx-err? syntax-test eval)
-     #`(module #,name helper
+     #`(module #,name 'helper
 	 test
-	 (all-except #,current-htdp-lang #%module-begin)
+	 #,current-htdp-lang #%module-begin
          #f
          #,teachpack-accum
 	 #,@body-accum
 	 #,(strip-context stx)))
     (unless stx-err?
       (if exn?
-	  (err/rt-test (eval #`(mz-require #,name)) exn?)
-	  (eval #`(mz-require #,name))))))
+	  (err/rt-test (eval #`(mz-require '#,name)) exn?)
+	  (eval #`(mz-require '#,name))))))
 
 (define-syntax (htdp-eval stx)
   (syntax-case stx ()
@@ -145,11 +156,11 @@
 (define (do-htdp-eval stx)
   (let ([name (gensym 'm)])
     (eval
-     #`(module #,name helper
+     #`(module #,name 'helper
 	 test
-	 (all-except #,current-htdp-lang #%module-begin)
+	 #,current-htdp-lang #%module-begin
          the-answer
          #,teachpack-accum
 	 #,@body-accum
 	 (define the-answer #,(strip-context stx))))
-    (dynamic-require name 'the-answer)))
+    (dynamic-require `',name 'the-answer)))

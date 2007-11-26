@@ -21,7 +21,7 @@
       (cdr row)))
    docs))
 
-(define current-htdp-lang '(lib "htdp-advanced.ss" "lang"))
+(define current-htdp-lang 'lang/htdp-advanced)
 (load-relative "htdp-test.ss")
 
 (require (lib "htdp-advanced.ss" "lang"))

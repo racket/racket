@@ -20,7 +20,7 @@
       (cdr row)))
    docs))
 
-(define current-htdp-lang '(lib "htdp-intermediate-lambda.ss" "lang"))
+(define current-htdp-lang 'lang/htdp-intermediate-lambda)
 (load-relative "htdp-test.ss")
 
 (require (lib "htdp-intermediate-lambda.ss" "lang"))

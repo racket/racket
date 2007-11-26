@@ -60,26 +60,34 @@
            (syntax-case stx (quote)
              [(quote s) #t]
              [_ #f]))
-       ;; FIXME: check format of string
-       (let-values ([(names et-names lt-names) (syntax-local-module-exports stx)])
-         (values
-          (apply
-           append
-           (map (lambda (names mode)
-                  (map (lambda (name)
-                         (make-import (datum->syntax
-                                       stx
-                                       name
-                                       stx)
-                                      name
-                                      (syntax->datum #'simple)
-                                      mode
-                                      'run
-                                      stx))
-                       names))
-                (list names et-names lt-names)
-                (list 'run 'syntax 'label)))
-          (list (make-import-source #'simple 'run))))]
+       (let ([mod-path
+              (if (pair? (syntax-e #'simple))
+                  `(quote . ,(cdr (syntax->datum #'simple)))
+                  (syntax->datum #'simple))])
+         (unless (module-path? mod-path)
+           (raise-syntax-error
+            #f
+            "invalid module-path form"
+            stx))
+         (let-values ([(names et-names lt-names) (syntax-local-module-exports stx)])
+           (values
+            (apply
+             append
+             (map (lambda (names mode)
+                    (map (lambda (name)
+                           (make-import (datum->syntax
+                                         stx
+                                         name
+                                         stx)
+                                        name
+                                        mod-path
+                                        mode
+                                        'run
+                                        stx))
+                         names))
+                  (list names et-names lt-names)
+                  (list 'run 'syntax 'label)))
+            (list (make-import-source #'simple 'run)))))]
       [(id . rest)
        (identifier? #'id)
        (let ([t (syntax-local-value #'id (lambda () #f))])

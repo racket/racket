@@ -28,8 +28,27 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; lib
   
+  (define-for-syntax (xlate-path stx)
+    (if (pair? (syntax-e stx))
+        (let ([kw
+               ;; free-identifier=? identifers are not necessarily module=?
+               (syntax-case stx (lib planet file quote)
+                 [(quote . _) 'quote]
+                 [(lib . _) 'lib]
+                 [(planet . _) 'planet]
+                 [(file . _) 'file])]
+              [d (syntax->datum stx)])
+          (if (eq? (car d) kw)
+              stx
+              (datum->syntax
+               stx
+               (cons kw (cdr d))
+               stx
+               stx)))
+        stx))
+  
   (define-for-syntax (check-lib-form stx)
-    (unless (module-path? (syntax->datum stx))
+    (unless (module-path? (syntax->datum (xlate-path stx)))
       (raise-syntax-error
        #f
        "ill-formed module path"
@@ -163,8 +182,10 @@
                   [(eq? mode 'label) #`(for-label #,base)]
                   [else (error "huh?" mode)]))]
              [simple-path? (lambda (p)
-                             (syntax-case p (lib)
+                             (syntax-case p (lib quote)
                                [(lib . _)
+                                (check-lib-form p)]
+                               [(quote . _)
                                 (check-lib-form p)]
                                [_
                                 (or (identifier? p)
@@ -172,7 +193,7 @@
                                          (module-path? (syntax-e p))))]))]
              [transform-simple
               (lambda (in base-mode)
-                (syntax-case in (lib file planet prefix-in except-in)
+                (syntax-case in (lib file planet prefix-in except-in quote)
                   ;; Detect simple cases first:
                   [_ 
                    (string? (syntax-e in))
@@ -185,17 +206,21 @@
                         in))
                      (list (mode-wrap base-mode in)))]
                   [_
-                   (identifier? in)
+                   (and (identifier? in)
+                        (module-path? (syntax-e #'in)))
                    (list (mode-wrap base-mode in))]
+                  [(quote . s)
+                   (check-lib-form in)
+                   (list (mode-wrap base-mode (xlate-path in)))]
                   [(lib . s)
                    (check-lib-form in)
-                   (list (mode-wrap base-mode in))]
+                   (list (mode-wrap base-mode (xlate-path in)))]
                   [(file . s)
                    (check-lib-form in)
-                   (list (mode-wrap base-mode in))]
+                   (list (mode-wrap base-mode (xlate-path in)))]
                   [(planet . s)
                    (check-lib-form in)
-                   (list (mode-wrap base-mode in))]
+                   (list (mode-wrap base-mode (xlate-path in)))]
                   [(prefix-in pfx path)
                    (simple-path? #'path)
                    (list (mode-wrap
@@ -204,7 +229,7 @@
                            #'path
                            (syntax-e
                             (quasisyntax
-                             (prefix pfx path)))
+                             (prefix pfx #,(xlate-path #'path))))
                            in
                            in)))]
                   [(except-in path id ...)
@@ -218,7 +243,7 @@
                            #'path
                            (syntax-e
                             (quasisyntax/loc in
-                              (all-except path id ...))))))]
+                              (all-except #,(xlate-path #'path) id ...))))))]
                   ;; General case:
                   [_ (let-values ([(imports sources) (expand-import in)])
                        ;; TODO: collapse back to simple cases when possible

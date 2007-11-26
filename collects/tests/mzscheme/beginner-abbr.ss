@@ -15,10 +15,11 @@
 ;; Don't need these:
 (define no-extra-if-tests? #t)
 
-(require (rename mzscheme exn:fail? exn:fail?)
-	 (rename mzscheme exn:fail:contract? exn:fail:contract?))
+(require (only-in mzscheme 
+                  exn:fail?
+                  exn:fail:contract?))
 
-(define current-htdp-lang '(lib "htdp-beginner-abbr.ss" "lang"))
+(define current-htdp-lang 'lang/htdp-beginner-abbr)
 (load-relative "htdp-test.ss")
 
 (require (lib "htdp-beginner-abbr.ss" "lang"))
