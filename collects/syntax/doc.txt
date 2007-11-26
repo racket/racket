@@ -603,3 +603,10 @@ _to-string.ss_: rendering syntax objects with formatting
   and indenting according to the source locations in stx-list
 
   the outer pair of parens are not rendered from stx-list.
+
+======================================================================
+_free-vars.ss_: computing the free variables of an expression
+======================================================================
+
+> (free-vars expr-stx) - Returns a list of free lambda- and let-bound
+  identifiers in expr-stx. The expression must be fully expanded.
