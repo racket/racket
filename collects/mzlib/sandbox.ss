@@ -368,8 +368,8 @@
                 [(module mod . body)
                  (identifier? #'mod)
                  (let ([mod #'mod])
-                   (eval `(,#'require ,mod))
-                   (module->namespace (syntax-e mod)))]
+                   (eval `(,#'require (quote ,mod)))
+                   (module->namespace `(quote ,(syntax-e mod))))]
                 [_else #f])])
       (when uncovered!
         (let ([get (let ([ns (current-namespace)])

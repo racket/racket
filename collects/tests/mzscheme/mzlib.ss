@@ -42,12 +42,13 @@
 
 (load-relative "match-test.ss")
 
-(load-relative "kw.ss")
-
 (load-relative "sandbox.ss")
 
-; Next-to-last, because it `require's mzscheme
-(load-relative "shared.ss")
+; Near last, because it `require's mzscheme:
+; (load-relative "shared.ss") - FIXME
+
+; Also `require's mzscheme:
+(load-relative "kw.ss")
 
 ; Last - so macros are not present by accident
 (load-relative "macrolib.ss")

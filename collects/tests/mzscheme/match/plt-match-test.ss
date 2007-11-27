@@ -840,7 +840,7 @@
              (and (? number? tlp327) (? even? tlp328))
              (vector tlp329 ...)
              (list tlp330 ..3)))
-           #0=(list)
+           (list)
            tlp331
            (or (vector tlp332 ...) (vector tlp332 ...)))
           `(#&(2 #3(6 (+ 1 2) #t) (#\c #t symbols)) () #\b #3(#\d #f #\b))))
@@ -1964,6 +1964,7 @@
    ((list a b c) (=> fail) (if (= a 1) (fail) 'bad))
    ((list a b c) (list a b c)))
   '(1 2 3))
+#|
  (mytest
   (let ((x '(1 2 (3 4))))
     (match x ((list _ _ (list (set! set-it) _)) (set-it 17)))
@@ -2009,6 +2010,7 @@
     (match x ((list-rest _ _ (list-rest _ _) (set! set-it)) (set-it 17)))
     x)
   '(1 2 (3 . 4) . 17))
+|#
  (mytest
   (let ((x #2(1 2))) (match x ((vector _ (set! set-it)) (set-it 17))) x)
   #2(1 17))
@@ -2016,14 +2018,17 @@
   (let ((x #2(1 2))) (match x ((vector (set! set-it) _) (set-it 17))) x)
   #2(17 2))
  (mytest (let ((x #&1)) (match x ((box (set! set-it)) (set-it 17))) x) #&17)
+#|
  (mytest
   (let ((x #&(1 2))) (match x ((box (list _ (set! set-it))) (set-it 17))) x)
   #&(1 17))
+|#
  (mytest
   (let ((x #&#2(1 2)))
     (match x ((box (vector _ (set! set-it))) (set-it 17)))
     x)
   #&#2(1 17))
+#|
  (mytest
   (let* ((x '(1 2 (3 4)))
          (f (match x ((list _ _ (list (get! get-it) _)) get-it))))
@@ -2103,6 +2108,7 @@
     (match x ((box (vector _ (set! set-it))) (set-it 17)))
     (f))
   17)
+|#
  (mytest
   (match
    #2(#3(#3(1 2 3) #3(1 2 3) #3(2 3 4)) #3(#3(1 2 3) #3(1 2 3) #3(2 3 4)))

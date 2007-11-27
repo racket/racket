@@ -24,23 +24,6 @@
 	[l2 (list u u u 1 1 2 1 1 2 3 5)])
     (test l1 'let-plus l2)))
 
-(require (lib "shared.ss"))
-
-(test "((car . cdr) #(one two three four five six) #&box (list1 list2 list3 list4) #<weak-box> 3 3)"
-      'shared
-      (let ([s (open-output-string)])
-	(display
-	 (shared ((a (cons 'car 'cdr)) 
-		  (b (vector 'one 'two 'three 'four 'five 'six))
-		  (c (box 'box))
-		  (d (list 'list1 'list2 'list3 'list4))
-		  (e (make-weak-box 'weak-box))
-		  (f (+ 1 2))
-		  (g 3))
-		 (list a b c d e f g))
-	 s)
-	(get-output-string s)))
-
 (test 'hi 'local (local () 'hi))
 (define x 7)
 (test 6 'local (local ((define x 6)) x))

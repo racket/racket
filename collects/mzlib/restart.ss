@@ -71,7 +71,7 @@
 		,(lambda (f) (set! version? #t))
 		("Show the version")]
 	       [("-i" "--repl")
-		,(lambda (f) (load-scheme #t) (set! rep? #f))
+		,(lambda (f) (load-scheme #t) (set! rep? #t))
 		("Run the read-eval-print loop")]
 	       [("-b" "--binary")
 		,(lambda (f) (error 'mzscheme "The -b flag is not supported in this mode"))

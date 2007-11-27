@@ -3,7 +3,8 @@
 
 (Section 'kw)
 
-(require (lib "kw.ss"))
+(require (lib "kw.ss")
+         mzscheme)
 
 (let ()
   (define-syntax t
@@ -406,3 +407,5 @@
        (f 1 #:a 2 #:a 3) => '(1 (#:a 2 #:a 3))))
 
   )
+
+(report-errs)

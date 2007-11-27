@@ -250,7 +250,7 @@
             (lambda ()
               (printf "~s\n" '(module sandbox-test mzscheme
                                 (define x 123) (provide x))))
-            'replace)
+            #:exists 'replace)
           (set! ev (make-evaluator 'mzscheme `(,test-lib)))
           --eval--
           x => 123
@@ -341,3 +341,5 @@
    y => 789
 
    ))
+
+(report-errs)

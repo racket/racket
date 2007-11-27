@@ -1,8 +1,6 @@
 (load-relative "loadtest.ss")
 (Section 'contract)
 
-(require scheme/namespace)
-
 (parameterize ([error-print-width 200])
 (let ()
   

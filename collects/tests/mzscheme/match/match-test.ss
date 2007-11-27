@@ -1254,6 +1254,7 @@
 ; set! tests
 
 ; set! for lists
+#|
 (mytest (let ((x '(1 2 (3 4))))
         (match x
                ((_ _ ((set! set-it) _)) (set-it 17)))
@@ -1309,6 +1310,7 @@
                ((_ _ (_ . _) . (set! set-it)) (set-it 17)))
         x)
       '(1 2 (3 . 4) . 17))
+|#
 
 ;; set! for vectors
 
@@ -1332,11 +1334,13 @@
         x)
       #&17)
 
+#|
 (mytest (let ((x #&(1 2)))
         (match x
                (#&(_ (set! set-it)) (set-it 17)))
         x)
       #&(1 17))
+|#
 
 (mytest (let ((x #&#(1 2)))
         (match x
@@ -1348,7 +1352,7 @@
 ; get! tests
 
 ; get! for lists
-
+#|
 (mytest (let* ((x '(1 2 (3 4)))
              (f
         (match x
@@ -1381,7 +1385,6 @@
         (match x
                ((_ (set! set-it) (_ _)) (set-it 17)))
         (f)) 17)
-
 
 ;get! for improper lists
 
@@ -1428,7 +1431,7 @@
         (match x
                ((_ _ (_ . _) . (set! set-it)) (set-it 17)))
         (f)) 17)
-
+|#
 
 ;; get! for vectors
 
@@ -1461,6 +1464,7 @@
         (f)) 17)
 
 
+#|
 (mytest (let* ((x #&(1 2))
              (f
         (match x
@@ -1468,7 +1472,7 @@
         (match x
                (#&(_ (set! set-it)) (set-it 17)))
         (f)) 17)
-
+|#
 
 (mytest (let* ((x #&#(1 2))
              (f
