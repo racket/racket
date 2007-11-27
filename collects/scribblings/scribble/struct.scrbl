@@ -4,6 +4,8 @@
 
 @title[#:tag "struct"]{Document Structures And Processing}
 
+@declare-exporting[scribble/struct]
+
 A document is represented as a @techlink{part}, as described in
  @secref["parts"]. This representation is intended to
  independent of its eventual rendering, and it is intended to be

@@ -10,6 +10,7 @@
                          "struct-info.ss"))
 
   (#%provide define-struct*
+             define-struct/derived
              struct-field-index)
 
   (define-syntax-parameter struct-field-index
@@ -29,6 +30,12 @@
     what)
 
   (define-syntax (define-struct* stx)
+    (syntax-case stx ()
+      [(_ . rest)
+       (with-syntax ([stx stx])
+         #'(define-struct/derived stx . rest))]))
+
+  (define-syntax (define-struct/derived full-stx)
     (define make-field list)
     (define field-id car)
     (define field-default-value cadr)
@@ -183,9 +190,12 @@
                "expected a struct-spefication keyword")
            stx
            (car p))])))
+
+    (define stx (syntax-case full-stx ()
+                  [(_ stx . _) #'stx]))
     
-    (syntax-case stx ()
-      [(fm id (field ...) prop ...)
+    (syntax-case full-stx ()
+      [(_ (fm . _) id (field ...) prop ...)
        (let-values ([(id super-id)
                      (if (identifier? #'id)
                          (values #'id #f)
@@ -197,10 +207,9 @@
                            [else
                             (raise-syntax-error 
                              #f
-                             (string-append
-                              "expected an identifier for the struct type name, or a parenthesized sequence"
-                              " with an identifier followed by the struct supertype identifier")
-                             stx)]))])
+                             "bad syntax; expected <id> for structure-type name or (<id> <id>) for name and supertype name"
+                             stx
+                             #'id)]))])
          (let ([super-info 
                 (and super-id
                      (let ([v (syntax-local-value super-id (lambda () #f))])
@@ -400,5 +409,38 @@
                            (syntax-property result 
                                             'disappeared-use 
                                             (syntax-local-introduce super-id))
-                           result)))))))))])))
+                           result)))))))))]
+      [(_ _ id . _)
+       (not (or (identifier? #'id)
+                (and (syntax->list #'id)
+                     (= 2 (length (syntax->list #'id)))
+                     (andmap identifier? (syntax->list #'id)))))
+       (raise-syntax-error
+        #f
+        "bad syntax; expected <id> for structure-type name or (<id> <id>) for name and supertype name"
+        stx
+        #'id)]
+      [(_ _ id (field ...) . _)
+       (begin
+         (for-each parse-field (syntax->list #'(field ...)))
+         (raise-syntax-error
+          #f
+          "bad syntax after field sequence"
+          stx))]
+      [(_ _ id fields . _)
+       (raise-syntax-error
+        #f
+        "bad syntax; expected a parenthesized sequence of field descriptions"
+        stx
+        #'fields)]
+      [(_ _ id)
+       (raise-syntax-error
+        #f
+        "bad syntax; missing fields"
+        stx)]
+      [_
+       (raise-syntax-error
+        #f
+        "bad syntax"
+        stx)])))
       

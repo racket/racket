@@ -21,6 +21,8 @@
 
 @title[#:tag "basic"]{Basic Document Forms}
 
+@declare-exporting[scribble/basic]
+
 The @filepath{basic.ss} libraryprovides functions and forms that can be
 used from code written either in Scheme or with @elem["@"]
 expressions. For example, the @scheme[title] and @scheme[italic]

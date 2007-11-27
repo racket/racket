@@ -4,6 +4,8 @@
 
 @title[#:tag "eval"]{Evaluation and Examples}
 
+@declare-exporting[scribble/eval]
+
 The @filepath{eval.ss} library provides utilities for evaluating code at
 document-build time and incorporating the results in the document,
 especially to show example uses of defined procedures and syntax.

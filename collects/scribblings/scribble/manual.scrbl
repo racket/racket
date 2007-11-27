@@ -5,6 +5,8 @@
 
 @title[#:tag "manual"]{PLT Manual Forms}
 
+@declare-exporting[scribble/manual]
+
 The @filepath{manual.ss} module provides all of @filepath{basic.ss}, and
 more...
 
@@ -36,7 +38,7 @@ because that's the way it is idented the use of @scheme[schemeblock].
 Furthermore, @scheme[define] is typeset as a keyword (bold and black)
 and as a hyperlink to @scheme[define]'s definition in the reference
 manual, because this document was built using a for-label binding of
-@scheme[define] (in the source) that match the for-label binding of
+@scheme[define] (in the source) that matches the for-label binding of
 the definition in the reference manual. Similarly, @scheme[not] is a
 hyperlink to the its definition in the reference manual.
 

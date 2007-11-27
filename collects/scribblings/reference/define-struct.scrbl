@@ -1,5 +1,6 @@
 #lang scribble/doc
-@require["mz.ss"]
+@(require "mz.ss"
+          (for-syntax scheme/base))
 
 @title[#:tag "define-struct"]{Defining Structure Types: @scheme[define-struct]}
 
@@ -143,4 +144,27 @@ This form can only appear as an expression within a
 (define happy+ (make-mood-procedure add1 10))
 (happy+ 2)
 (mood-procedure-rating happy+)
+]}
+
+@defform[(define-struct/derived (id . rest-form) 
+           id-maybe-super (field ...) struct-option ...)]{
+
+Like @scheme[define-struct], but intended for use by macros that
+expand to @scheme[define-struct]. The form immediately after
+@scheme[define-struct/derived] is used for all syntax-error reporting,
+and the only constraint on the form is that it starts with some
+@scheme[id].
+
+@defexamples[
+(define-syntax (define-xy-struct stx)
+  (syntax-case stx ()
+   [(ds name . rest) 
+    (with-syntax ([orig stx])
+      #'(define-struct/derived orig name (x y) . rest))]))
+
+(define-xy-struct posn)
+(posn-x (make-posn 1 2))
+(define-xy-struct posn #:mutable)
+(set-posn-x! (make-posn 1 2) 0)
+(define-xy-struct posn #:bad-option)
 ]}

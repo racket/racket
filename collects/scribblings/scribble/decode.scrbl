@@ -4,6 +4,8 @@
 
 @title[#:tag "decode"]{Text Decoder}
 
+@declare-exporting[scribble/decode]
+
 The @filepath{decode.ss} library helps you write document content in a
 natural way---more like plain text, except for @litchar["@"] escapes.
 Roughly, it processes a stream of strings to produces instances of the

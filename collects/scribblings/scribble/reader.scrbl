@@ -721,6 +721,8 @@ an example of this.
 @;--------------------------------------------------------------------
 @section{Interface}
 
+@declare-exporting[scribble/reader]
+
 The @filepath{reader.ss} module provides functionality for advanced needs.
 
 @; The `with-scribble-read' trick below shadows `read' and

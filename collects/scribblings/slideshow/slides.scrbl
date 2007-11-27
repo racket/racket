@@ -4,6 +4,8 @@
 
 @title[#:style 'toc]{Making Slides}
 
+@declare-exporting[slideshow/base slideshow]
+
 @local-table-of-contents[]
 
 @; ----------------------------------------------------------------------

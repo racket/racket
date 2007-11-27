@@ -46,4 +46,5 @@
              keyword-apply
              procedure-keywords
              (rename define-struct* define-struct)
+             define-struct/derived
              struct-field-index))
