@@ -641,6 +641,9 @@ Scheme_Object * scheme_make_eof (void)
 #ifdef USE_DYNAMIC_FDSET_SIZE
 static int dynamic_fd_size;
 
+# define STORED_ACTUAL_FDSET_LIMIT
+# define FDSET_LIMIT(fd) (*(int *)((char *)fd XFORM_OK_PLUS dynamic_fd_size))
+
 #ifdef MZ_XFORM
 START_XFORM_SKIP;
 #endif
@@ -770,12 +773,12 @@ void scheme_fdset(void *fd, int n)
     ((win_extended_fd_set *)fd)->added++;
 #endif
 #if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
-# define STORED_ACTUAL_FDSET_LIMIT
-# define FDSET_LIMIT(fd) (*(int *)((char *)fd XFORM_OK_PLUS dynamic_fd_size))
+# ifdef STORED_ACTUAL_FDSET_LIMIT
   int mx;
   mx = FDSET_LIMIT(fd);
   if (n > mx)
     FDSET_LIMIT(fd) = n;
+# endif
   FD_SET(n, ((fd_set *)fd));
 #endif
 }
