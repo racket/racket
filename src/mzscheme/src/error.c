@@ -2664,19 +2664,38 @@ static Scheme_Object *variable_field_check(int argc, Scheme_Object **argv)
 
 static Scheme_Object *syntax_field_check(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *l;
+  Scheme_Object *l, *first = scheme_null, *last = NULL, *pr, *a[3];
+  int all_imm = 1;
 
   l = argv[2];
-  while (SCHEME_IMMUTABLE_PAIRP(l)) {
+  while (SCHEME_PAIRP(l)) {
+    if (!SCHEME_IMMUTABLE_PAIRP(l))
+      all_imm = 0;
+    
+    pr = scheme_make_immutable_pair(SCHEME_CAR(l), scheme_null);
+    if (last)
+      SCHEME_CDR(last) = pr;
+    else
+      first = pr;
+    last = pr;
+    
     if (!SCHEME_STXP(SCHEME_CAR(l)))
       break;
     l = SCHEME_CDR(l);
   }
 
   if (!SCHEME_NULLP(l))
-    scheme_wrong_field_type(argv[3], "immutable list of syntax objects", argv[2]);
+    scheme_wrong_field_type(argv[3], "list of syntax objects", argv[2]);
 
-  return scheme_values(3, argv);
+  a[0] = argv[0];
+  a[1] = argv[1];
+
+  if (!all_imm)
+    a[2] = first;
+  else
+    a[2] = argv[2];
+   
+  return scheme_values(3, a);
 }
 
 static Scheme_Object *read_field_check(int argc, Scheme_Object **argv)
