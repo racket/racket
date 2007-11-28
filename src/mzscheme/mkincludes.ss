@@ -22,19 +22,18 @@
         (lambda (dst)
           (when (regexp-match from src 0 #f dst)
             (display to dst)
-            (regexp-match "$" src 0 #f dst)))))))
+            (regexp-match "$" src 0 #f dst))))))
+  (void))
 
-(define (copy-if-newer basedir source-path . args)
-  (define (arg!) (and (pair? args) (begin0 (car args) (set! args (cdr args)))))
+(define (copy-if-newer basedir source-path [base #f] [copy copy-file])
   (define source (build-path basedir source-path))
   (define target
     (build-path incdir
-                (or (arg!)
+                (or base
                     (let-values ([(_1 name _2) (split-path source)]) name))))
   (define source-t (file-or-directory-modify-seconds source))
   (define target-t (and (file-exists? target)
                         (file-or-directory-modify-seconds target)))
-  (define copy (or (arg!) copy-file))
   (cond
    [(not target-t) (copy source target)]
    [(< target-t source-t) (delete-file target) (copy source target)]))
