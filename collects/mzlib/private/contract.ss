@@ -821,10 +821,8 @@ improve method arity mismatch contract violation error messages?
            false/c
 	   printable/c
            symbols one-of/c
-           listof list-immutableof 
+           listof cons/c list/c
            vectorof vector-immutableof vector/c vector-immutable/c 
-           cons-immutable/c cons/c list-immutable/c list/c
-           listof-unsafe cons-unsafe/c list-unsafe/c
            box-immutable/c box/c
            promise/c
            struct/c
@@ -1532,68 +1530,45 @@ improve method arity mismatch contract violation error messages?
      (build-compound-type-name 'not/c (proc/ctc->ctc f))
      (λ (x) (not (test-proc/flat-contract f x)))))
 
-  (define (listof p)
-    (unless (flat-contract/predicate? p)
-      (error 'listof "expected a flat contract or procedure of arity 1 as argument, got: ~e" p))
-    (build-flat-contract
-     (build-compound-type-name 'listof (proc/ctc->ctc p))
-     (λ (v)
-       (and (list? v)
-	    (andmap (λ (ele) (test-proc/flat-contract p ele))
-		    v)))))
-  
   (define-syntax (*-immutableof stx)
     (syntax-case stx ()
-      [(_ predicate? fill type-name name)
+      [(_ predicate? fill testmap type-name name)
        (identifier? (syntax predicate?))
        (syntax
         (let ([fill-name fill])
           (λ (input)
-            (let* ([ctc (coerce-contract 'name input)]
-                   [proj (contract-proc ctc)])
-              (make-proj-contract
-               (build-compound-type-name 'name ctc)
-               (λ (pos-blame neg-blame src-info orig-str)
-                 (let ([p-app (proj pos-blame neg-blame src-info orig-str)])
-                   (λ (val)
-                     (unless (predicate? val)
-                       (raise-contract-error
-                        val
-                        src-info
-                        pos-blame
-                        orig-str
-                        "expected <~a>, given: ~e"
-                        'type-name
-                        val))
-                     (fill-name p-app val))))
-               predicate?)))))]))
+            (let ([ctc (coerce-contract 'name input)])
+              (if (flat-contract? ctc)
+                  (let ([content-pred? (flat-contract-predicate ctc)])
+                    (flat-contract
+                     (lambda (x) (and (predicate? x) (testmap content-pred? x)))))
+                  (let ([proj (contract-proc ctc)])
+                    (make-proj-contract
+                     (build-compound-type-name 'name ctc)
+                     (λ (pos-blame neg-blame src-info orig-str)
+                       (let ([p-app (proj pos-blame neg-blame src-info orig-str)])
+                         (λ (val)
+                           (unless (predicate? val)
+                             (raise-contract-error
+                              val
+                              src-info
+                              pos-blame
+                              orig-str
+                              "expected <~a>, given: ~e"
+                              'type-name
+                              val))
+                           (fill-name p-app val))))
+                     predicate?)))))))]))
   
-  (define (map-immutable f lst)
-    (let loop ([lst lst])
-      (cond
-        [(pair? lst)
-         (cons (f (car lst))
-               (loop (cdr lst)))]
-        [(null? lst) null])))
-  
-  (define (immutable-list? val)
-    (let loop ([v val])
-      (or (and (pair? v)
-               (immutable? v)
-               (loop (cdr v)))
-          (null? v))))
-  
-  (define list-immutableof
-    (*-immutableof immutable-list? map-immutable immutable-list list-immutableof))
-  
-  (define listof-unsafe
-    (*-immutableof list? map list listof-unsafe))
+  (define listof
+    (*-immutableof list? map andmap list listf))
 
   (define (immutable-vector? val) (and (immutable? val) (vector? val)))
   
   (define vector-immutableof
     (*-immutableof immutable-vector?
                    (λ (f v) (apply vector-immutable (map f (vector->list v))))
+                   (λ (f v) (andmap f (vector->list v)))
                    immutable-vector
                    vector-immutableof))
   
@@ -1635,17 +1610,6 @@ improve method arity mismatch contract violation error messages?
      (λ (x)
        (and (box? x)
 	    (test-proc/flat-contract pred (unbox x))))))
-
-  (define (cons/c hdp tlp)
-    (unless (and (flat-contract/predicate? hdp)
-                 (flat-contract/predicate? tlp))
-      (error 'cons/c "expected two flat contracts or procedures of arity 1, got: ~e and ~e" hdp tlp))
-    (build-flat-contract
-     (build-compound-type-name 'cons/c (proc/ctc->ctc hdp) (proc/ctc->ctc tlp))
-     (λ (x)
-       (and (pair? x)
-            (test-proc/flat-contract hdp (car x))
-            (test-proc/flat-contract tlp (cdr x))))))
   
   ;;
   ;; cons/c opter
@@ -1730,28 +1694,35 @@ improve method arity mismatch contract violation error messages?
                    [selector-names selectors] ...)
                (λ (params ...)
                  (let ([ctc-x (coerce-contract 'name params)] ...)
-                   (let ([procs (contract-proc ctc-x)] ...)
-                     (make-proj-contract
-                      (build-compound-type-name 'name (proc/ctc->ctc params) ...)
-                      (λ (pos-blame neg-blame src-info orig-str)
-                        (let ([p-apps (procs pos-blame neg-blame src-info orig-str)] ...)
-                          (λ (v)
-                            (if #,(if test-immutable?
-                                      #'(and (predicate?-name v)
-                                             (immutable? v))
-                                      #'(predicate?-name v))
-                                (constructor-name (p-apps (selector-names v)) ...)
-                                (raise-contract-error
-                                 v
-                                 src-info
-                                 pos-blame
-                                 orig-str
-                                 #,(if test-immutable?
-                                       "expected immutable <~a>, given: ~e"
-                                       "expected <~a>, given: ~e")
-                                 'type-name
-                                 v)))))
-                      #f)))))))]
+                   (if (and (flat-contract? ctc-x) ...)
+                       (let ([p-apps (flat-contract-predicate ctc-x)] ...)
+                         (flat-contract
+                          (lambda (x)
+                            (and (predicate?-name x)
+                                 (p-apps (selector-names x)) 
+                                 ...))))
+                       (let ([procs (contract-proc ctc-x)] ...)
+                         (make-proj-contract
+                          (build-compound-type-name 'name (proc/ctc->ctc params) ...)
+                          (λ (pos-blame neg-blame src-info orig-str)
+                            (let ([p-apps (procs pos-blame neg-blame src-info orig-str)] ...)
+                              (λ (v)
+                                (if #,(if test-immutable?
+                                          #'(and (predicate?-name v)
+                                                 (immutable? v))
+                                          #'(predicate?-name v))
+                                    (constructor-name (p-apps (selector-names v)) ...)
+                                    (raise-contract-error
+                                     v
+                                     src-info
+                                     pos-blame
+                                     orig-str
+                                     #,(if test-immutable?
+                                           "expected immutable <~a>, given: ~e"
+                                           "expected <~a>, given: ~e")
+                                     'type-name
+                                     v)))))
+                          #f))))))))]
       [(_ predicate? constructor (arb? selector) correct-size type-name name)
        (eq? #t (syntax-object->datum (syntax arb?)))
        (syntax
@@ -1788,8 +1759,7 @@ improve method arity mismatch contract violation error messages?
                             v)))))
                  #f))))))]))
   
-  (define cons-immutable/c (*-immutable/c pair? cons (#f car cdr) immutable-cons cons-immutable/c))
-  (define cons-unsafe/c (*-immutable/c pair? cons (#f car cdr) cons cons-unsafe/c #f))
+  (define cons/c (*-immutable/c pair? cons (#f car cdr) cons cons/c #f))
   (define box-immutable/c (*-immutable/c box? box-immutable (#f unbox) immutable-box box-immutable/c))
   (define vector-immutable/c (*-immutable/c vector?
                                             vector-immutable
@@ -1799,16 +1769,16 @@ improve method arity mismatch contract violation error messages?
                                             vector-immutable/c))
   
   ;;
-  ;; cons-immutable/c opter
+  ;; cons/c opter
   ;;
-  (define/opter (cons-immutable/c opt/i opt/info stx)
-    (define (opt/cons-immutable-ctc hdp tlp)
+  (define/opter (cons/c opt/i opt/info stx)
+    (define (opt/cons-ctc hdp tlp)
       (let-values ([(next-hdp lifts-hdp superlifts-hdp partials-hdp flat-hdp unknown-hdp stronger-ribs-hd)
                     (opt/i opt/info hdp)]
                    [(next-tlp lifts-tlp superlifts-tlp partials-tlp flat-tlp unknown-tlp stronger-ribs-tl)
                     (opt/i opt/info tlp)])
         (with-syntax ((check (with-syntax ((val (opt/info-val opt/info)))
-                               (syntax (and (immutable? val) (pair? val))))))
+                               (syntax (pair? val)))))
           (values
            (with-syntax ((val (opt/info-val opt/info))
                          (ctc (opt/info-contract opt/info))
@@ -1842,43 +1812,10 @@ improve method arity mismatch contract violation error messages?
            #f
            (append stronger-ribs-hd stronger-ribs-tl)))))
     
-    (syntax-case stx (cons-immutable/c)
-      [(cons-immutable/c hdp tlp) (opt/cons-immutable-ctc #'hdp #'tlp)]))
-       
+    (syntax-case stx (cons/c)
+      [(_ hdp tlp) (opt/cons-ctc #'hdp #'tlp)]))
+  
   (define (list/c . args)
-    (unless (andmap flat-contract/predicate? args)
-      (error 'list/c "expected flat contracts, got: ~a"
-             (let loop ([args args])
-               (cond
-                 [(null? args) ""]
-                 [(null? (cdr args)) (format "~e" (car args))]
-                 [else (string-append
-                        (format "~e " (car args))
-                        (loop (cdr args)))]))))
-    (let loop ([args args])
-      (cond
-	[(null? args) (flat-contract null?)]
-	[else (cons/c (car args) (loop (cdr args)))])))
-  
-  (define (list-immutable/c . args)
-    (unless (andmap (λ (x) (or (contract? x)
-                                    (and (procedure? x)
-                                         (procedure-arity-includes? x 1))))
-                    args)
-      (error 'list/c "expected contracts or procedures of arity 1, got: ~a"
-             (let loop ([args args]) 
-               (cond
-                 [(null? args) ""]
-                 [(null? (cdr args)) (format "~e" (car args))]
-                 [else (string-append
-                        (format "~e " (car args))
-                        (loop (cdr args)))]))))
-    (let loop ([args args])
-      (cond
-	[(null? args) (flat-contract null?)]
-	[else (cons-immutable/c (car args) (loop (cdr args)))])))
-  
-  (define (list-unsafe/c . args)
     (unless (andmap (λ (x) (or (contract? x)
                                (and (procedure? x)
                                     (procedure-arity-includes? x 1))))
@@ -1893,8 +1830,8 @@ improve method arity mismatch contract violation error messages?
                         (loop (cdr args)))]))))
     (let loop ([args args])
       (cond
-	[(null? args) (flat-contract null?)]
-	[else (cons-unsafe/c (car args) (loop (cdr args)))])))
+        [(null? args) (flat-contract null?)]
+        [else (cons/c (car args) (loop (cdr args)))])))
 
   (define (syntax/c ctc-in)
     (let ([ctc (coerce-contract 'syntax/c ctc-in)])

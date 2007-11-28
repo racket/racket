@@ -95,12 +95,12 @@ it around flattened out.
                         (values))))
                     (list))
              
-             (define-syntax name (list-immutable #'struct:-name 
-                                                 #'struct-maker 
-                                                 #'predicate
-                                                 (reverse (list-immutable #'selectors ...))
-                                                 (list-immutable #,@(map (λ (x) #f) (syntax->list #'(selectors ...))))
-                                                 #t))
+             (define-syntax name (list #'struct:-name 
+                                       #'struct-maker 
+                                       #'predicate
+                                       (reverse (list #'selectors ...))
+                                       (list #,@(map (λ (x) #f) (syntax->list #'(selectors ...))))
+                                       #t))
              
              (define (evaluate-attrs stct contract/info)
                (when (wrap-parent-get stct 0) ;; test to make sure this even has attributes

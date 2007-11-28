@@ -2791,7 +2791,7 @@
 
   (test/pos-blame
    'immutable1
-   '(let ([ct (contract (list-immutableof (boolean? . -> . boolean?)) 
+   '(let ([ct (contract (listof (boolean? . -> . boolean?)) 
                         #f 
                         'pos
                         'neg)])
@@ -2799,7 +2799,7 @@
   
   (test/pos-blame
    'immutable2
-   '(let ([ct (contract (list-immutableof (boolean? . -> . boolean?)) 
+   '(let ([ct (contract (listof (boolean? . -> . boolean?)) 
                         (list (lambda (x) x)) 
                         'pos
                         'neg)])
@@ -2807,24 +2807,24 @@
   
   (test/neg-blame
    'immutable3
-   '(let ([ct (contract (list-immutableof (number? . -> . boolean?)) 
-                        (list-immutable (lambda (x) 1)) 
+   '(let ([ct (contract (listof (number? . -> . boolean?)) 
+                        (list (lambda (x) 1)) 
                         'pos
                         'neg)])
       ((car ct) #f)))
   
   (test/pos-blame
    'immutable4
-   '(let ([ct (contract (list-immutableof (number? . -> . boolean?)) 
-                        (list-immutable (lambda (x) 1)) 
+   '(let ([ct (contract (listof (number? . -> . boolean?)) 
+                        (list (lambda (x) 1)) 
                         'pos
                         'neg)])
       ((car ct) 1)))
   
   (test/spec-passed
    'immutable5
-   '(let ([ct (contract (list-immutableof (number? . -> . boolean?)) 
-                        (list-immutable (lambda (x) #t)) 
+   '(let ([ct (contract (listof (number? . -> . boolean?)) 
+                        (list (lambda (x) #t)) 
                         'pos
                         'neg)])
       ((car ct) 1)))
@@ -2832,119 +2832,96 @@
 
   (test/pos-blame
    'immutable6
-   '(contract (cons-immutable/c (boolean? . -> . boolean?) (boolean? . -> . boolean?)) 
+   '(contract (cons/c (boolean? . -> . boolean?) (boolean? . -> . boolean?)) 
               #f 
-              'pos
-              'neg))
-  
-  (test/pos-blame
-   'immutable7
-   '(contract (cons-immutable/c (boolean? . -> . boolean?) (boolean? . -> . boolean?)) 
-              (cons (lambda (x) x) (lambda (x) x))
               'pos
               'neg))
   
   (test/neg-blame
    'immutable8
-   '(let ([ct (contract (cons-immutable/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-                        (cons-immutable (lambda (x) 1) (lambda (x) 1))
+   '(let ([ct (contract (cons/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+                        (cons (lambda (x) 1) (lambda (x) 1))
                         'pos
                         'neg)])
       ((car ct) #f)))
   
   (test/neg-blame
    'immutable9
-   '(let ([ct (contract (cons-immutable/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-                        (cons-immutable (lambda (x) 1) (lambda (x) 1))
+   '(let ([ct (contract (cons/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+                        (cons (lambda (x) 1) (lambda (x) 1))
                         'pos
                         'neg)])
       ((cdr ct) #f)))
   
   (test/pos-blame
    'immutable10
-   '(let ([ct (contract (cons-immutable/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-                        (cons-immutable (lambda (x) 1) (lambda (x) 1)) 
+   '(let ([ct (contract (cons/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+                        (cons (lambda (x) 1) (lambda (x) 1)) 
                         'pos
                         'neg)])
       ((car ct) 1)))
   
   (test/pos-blame
    'immutable11
-   '(let ([ct (contract (cons-immutable/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-                        (cons-immutable (lambda (x) 1) (lambda (x) 1)) 
+   '(let ([ct (contract (cons/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+                        (cons (lambda (x) 1) (lambda (x) 1)) 
                         'pos
                         'neg)])
       ((cdr ct) 1)))
   
   (test/spec-passed
    'immutable12
-   '(let ([ct (contract (cons-immutable/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-                        (cons-immutable (lambda (x) #t) (lambda (x) #t)) 
+   '(let ([ct (contract (cons/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+                        (cons (lambda (x) #t) (lambda (x) #t)) 
                         'pos
                         'neg)])
       ((car ct) 1)))
   
   (test/spec-passed
    'immutable13
-   '(let ([ct (contract (cons-immutable/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-                        (cons-immutable (lambda (x) #t) (lambda (x) #t)) 
+   '(let ([ct (contract (cons/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+                        (cons (lambda (x) #t) (lambda (x) #t)) 
                         'pos
                         'neg)])
       ((cdr ct) 1)))
   
   (test/spec-passed/result
    'immutable14
-   '(contract (cons-immutable/c number? boolean?) 
-              (cons-immutable 1 #t) 
+   '(contract (cons/c number? boolean?) 
+              (cons 1 #t) 
               'pos
               'neg)
-   (cons-immutable 1 #t))
+   (cons 1 #t))
   
   (test/pos-blame
    'immutable15
-   '(contract (list-immutable/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+   '(contract (list/c (number? . -> . boolean?) (number? . -> . boolean?)) 
               #f
               'pos
               'neg))
   
   (test/pos-blame
-   'immutable16
-   '(contract (list-immutable/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-              (list (lambda (x) #t) (lambda (x) #t)) 
-              'pos
-              'neg))
-  
-  (test/pos-blame
    'immutable17
-   '(contract (list-immutable/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-              (list-immutable (lambda (x) #t)) 
+   '(contract (list/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+              (list (lambda (x) #t)) 
               'pos
               'neg))
   
   (test/pos-blame
    'immutable18
-   '(contract (list-immutable/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-              (list-immutable (lambda (x) #t) (lambda (x) #t) (lambda (x) #t)) 
+   '(contract (list/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+              (list (lambda (x) #t) (lambda (x) #t) (lambda (x) #t)) 
               'pos
               'neg))
   
   (test/spec-passed
    'immutable19
-   '(let ([ctc (contract (list-immutable/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-                         (list-immutable (lambda (x) #t) (lambda (x) #t)) 
+   '(let ([ctc (contract (list/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+                         (list (lambda (x) #t) (lambda (x) #t)) 
                          'pos
                          'neg)])
       (for-each (lambda (x) (x 1)) ctc)))
   
-  (test/spec-passed/result
-   'immutable20
-   '(let ([ctc (contract (list-immutable/c number?) 
-                         (list-immutable 1) 
-                         'pos
-                         'neg)])
-      (immutable? ctc))
-   #t)
-
   (test/pos-blame
    'vector-immutable1
    '(contract (vector-immutableof (boolean? . -> . boolean?)) 
@@ -3089,191 +3066,6 @@
                           'pos
                           'neg))
    #t)
-
-  (test/pos-blame
-   'unsafe1
-   '(let ([ct (contract (listof-unsafe (boolean? . -> . boolean?)) 
-                        #f 
-                        'pos
-                        'neg)])
-      ((car ct) 1)))
-  
-  (test/neg-blame
-   'unsafe2
-   '(let ([ct (contract (listof-unsafe (boolean? . -> . boolean?)) 
-                        (list (lambda (x) x)) 
-                        'pos
-                        'neg)])
-      ((car ct) 1)))
-
-  (test/spec-passed
-   'unsafe2b
-   '(let ([ct (contract (listof-unsafe (boolean? . -> . boolean?)) 
-                        (list (lambda (x) x)) 
-                        'pos
-                        'neg)])
-      ((car ct) #t)))
-  
-  (test/neg-blame
-   'unsafe3
-   '(let ([ct (contract (listof-unsafe (number? . -> . boolean?)) 
-                        (list (lambda (x) 1)) 
-                        'pos
-                        'neg)])
-      ((car ct) #f)))
-  
-  (test/pos-blame
-   'unsafe4
-   '(let ([ct (contract (list-unsafe/c (number? . -> . boolean?)) 
-                        (list (lambda (x) 1)) 
-                        'pos
-                        'neg)])
-      ((car ct) 1)))
-  
-  (test/spec-passed
-   'unsafe5
-   '(let ([ct (contract (listof-unsafe (number? . -> . boolean?)) 
-                        (list (lambda (x) #t)) 
-                        'pos
-                        'neg)])
-      ((car ct) 1)))
-  
-
-  (test/pos-blame
-   'unsafe6
-   '(contract (cons-unsafe/c (boolean? . -> . boolean?) (boolean? . -> . boolean?)) 
-              #f 
-              'pos
-              'neg))
-  
-  (test/spec-passed
-   'unsafe7
-   '(contract (cons-unsafe/c (boolean? . -> . boolean?) (boolean? . -> . boolean?)) 
-              (cons (lambda (x) x) (lambda (x) x))
-              'pos
-              'neg))
-  
-  (test/neg-blame
-   'unsafe8
-   '(let ([ct (contract (cons-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-                        (cons (lambda (x) 1) (lambda (x) 1))
-                        'pos
-                        'neg)])
-      ((car ct) #f)))
-  
-  (test/neg-blame
-   'unsafe9
-   '(let ([ct (contract (cons-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-                        (cons (lambda (x) 1) (lambda (x) 1))
-                        'pos
-                        'neg)])
-      ((cdr ct) #f)))
-  
-  (test/pos-blame
-   'unsafe10
-   '(let ([ct (contract (cons-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-                        (cons (lambda (x) 1) (lambda (x) 1)) 
-                        'pos
-                        'neg)])
-      ((car ct) 1)))
-  
-  (test/pos-blame
-   'unsafe11
-   '(let ([ct (contract (cons-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-                        (cons (lambda (x) 1) (lambda (x) 1)) 
-                        'pos
-                        'neg)])
-      ((cdr ct) 1)))
-  
-  (test/spec-passed
-   'unsafe12
-   '(let ([ct (contract (cons-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-                        (cons (lambda (x) #t) (lambda (x) #t)) 
-                        'pos
-                        'neg)])
-      ((car ct) 1)))
-  
-  (test/spec-passed
-   'unsafe13
-   '(let ([ct (contract (cons-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-                        (cons (lambda (x) #t) (lambda (x) #t)) 
-                        'pos
-                        'neg)])
-      ((cdr ct) 1)))
-  
-  (test/spec-passed/result
-   'unsafe14
-   '(contract (cons-unsafe/c number? boolean?) 
-              (cons 1 #t) 
-              'pos
-              'neg)
-   (cons-immutable 1 #t))
-  
-  (test/pos-blame
-   'unsafe15
-   '(contract (list-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-              #f
-              'pos
-              'neg))
-  
-  (test/spec-passed
-   'unsafe16
-   '(contract (list-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-              (list (lambda (x) #t) (lambda (x) #t)) 
-              'pos
-              'neg))
-  
-  (test/pos-blame
-   'unsafe17
-   '(contract (list-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-              (list (lambda (x) #t)) 
-              'pos
-              'neg))
-  
-  (test/pos-blame
-   'unsafe18
-   '(contract (list-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-              (list (lambda (x) #t) (lambda (x) #t) (lambda (x) #t)) 
-              'pos
-              'neg))
-  
-  (test/spec-passed
-   'unsafe19
-   '(let ([ctc (contract (list-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
-                         (list (lambda (x) #t) (lambda (x) #t)) 
-                         'pos
-                         'neg)])
-      (for-each (lambda (x) (x 1)) ctc)))
-  
-  (test/spec-passed/result
-   'unsafe20
-   '(let ([ctc (contract (list-unsafe/c number?) 
-                         (list 1) 
-                         'pos
-                         'neg)])
-      (immutable? ctc))
-   #f)
-
-  (test/spec-passed/result
-   'unsafe21
-   '(let* ([orig-list (list 1 2 3)]
-           [ctc (contract (listof-unsafe number?)
-                          orig-list
-                          'pos
-                          'neg)])
-      (eq? orig-list ctc))
-   #f)
-  
-  (test/spec-passed/result
-   'listof-no-copy
-   '(let* ([orig-list (list 1 2 3)]
-           [ctc (contract (listof number?)
-                          orig-list
-                          'pos
-                          'neg)])
-      (eq? orig-list ctc))
-   #t)
-
   
   (test/pos-blame
    'promise/c1
@@ -4385,10 +4177,10 @@ so that propagation occurs.
   
   (test-name '(listof boolean?) (listof boolean?))  
   (test-name '(listof any/c) (listof any/c))
-  (test-name '(list-immutableof boolean?) (list-immutableof boolean?))
-  (test-name '(list-immutableof any/c) (list-immutableof any/c))
-  (test-name '(list-immutableof boolean?) (list-immutableof boolean?))
-  (test-name '(list-immutableof (-> boolean? boolean?)) (list-immutableof (-> boolean? boolean?)))
+  (test-name '(listof boolean?) (listof boolean?))
+  (test-name '(listof any/c) (listof any/c))
+  (test-name '(listof boolean?) (listof boolean?))
+  (test-name '(listof (-> boolean? boolean?)) (listof (-> boolean? boolean?)))
   
   (test-name '(vectorof boolean?) (vectorof boolean?))
   (test-name '(vectorof any/c) (vectorof any/c))
@@ -4401,19 +4193,19 @@ so that propagation occurs.
   (test-name '(cons/c boolean? (cons/c integer? null?)) (list/c boolean? (flat-contract integer?)))
   (test-name '(cons/c boolean? (cons/c integer? null?)) (list/c boolean? (flat-contract integer?)))
 
-  (test-name '(cons-immutable/c boolean? integer?) (cons-immutable/c boolean? (flat-contract integer?)))
-  (test-name '(cons-immutable/c boolean? integer?) (cons-immutable/c boolean? (flat-contract integer?)))
-  (test-name '(cons-immutable/c boolean? integer?) (cons-immutable/c boolean? (flat-contract integer?)))
-  (test-name '(cons-immutable/c (-> boolean? boolean?) integer?) (cons-immutable/c (-> boolean? boolean?) integer?))
+  (test-name '(cons/c boolean? integer?) (cons/c boolean? (flat-contract integer?)))
+  (test-name '(cons/c boolean? integer?) (cons/c boolean? (flat-contract integer?)))
+  (test-name '(cons/c boolean? integer?) (cons/c boolean? (flat-contract integer?)))
+  (test-name '(cons/c (-> boolean? boolean?) integer?) (cons/c (-> boolean? boolean?) integer?))
   
-  (test-name '(cons-immutable/c boolean? (cons-immutable/c integer? null?))
-             (list-immutable/c boolean? (flat-contract integer?)))
-  (test-name '(cons-immutable/c boolean? (cons-immutable/c integer? null?)) 
-             (list-immutable/c boolean? (flat-contract integer?)))
-  (test-name '(cons-immutable/c boolean? (cons-immutable/c integer? null?))
-             (list-immutable/c boolean? (flat-contract integer?)))
-  (test-name '(cons-immutable/c (-> boolean? boolean?) (cons-immutable/c integer? null?))
-             (list-immutable/c (-> boolean? boolean?) integer?))
+  (test-name '(cons/c boolean? (cons/c integer? null?))
+             (list/c boolean? (flat-contract integer?)))
+  (test-name '(cons/c boolean? (cons/c integer? null?)) 
+             (list/c boolean? (flat-contract integer?)))
+  (test-name '(cons/c boolean? (cons/c integer? null?))
+             (list/c boolean? (flat-contract integer?)))
+  (test-name '(cons/c (-> boolean? boolean?) (cons/c integer? null?))
+             (list/c (-> boolean? boolean?) integer?))
   
   (test-name '(parameter/c integer?) (parameter/c integer?))
   
@@ -4639,9 +4431,9 @@ so that propagation occurs.
   (ctest #f contract-first-order-passes? (->d integer? boolean? (lambda (x y) char?)) (λ (x) x))
   (ctest #f contract-first-order-passes? (->d integer? boolean? (lambda (x y) char?)) (λ (x y z) x))
 
-  (ctest #t contract-first-order-passes? (list-immutableof integer?) (list-immutable 1))
-  (ctest #f contract-first-order-passes? (list-immutableof integer?) (list 1))
-  (ctest #f contract-first-order-passes? (list-immutableof integer?) #f)
+  (ctest #t contract-first-order-passes? (listof integer?) (list 1))
+  (ctest #f contract-first-order-passes? (listof integer?) (list 1))
+  (ctest #f contract-first-order-passes? (listof integer?) #f)
 
   (ctest #t contract-first-order-passes? (vector-immutableof integer?) (vector->immutable-vector (vector 1)))
   (ctest #f contract-first-order-passes? (vector-immutableof integer?) 'x)
@@ -4717,11 +4509,11 @@ so that propagation occurs.
   (ctest #f contract-first-order-passes? (and/c (-> integer?) (-> integer? integer?)) (λ (x) x))
   
   (ctest #t contract-first-order-passes? 
-        (cons-immutable/c boolean? (-> integer? integer?))
-        (list*-immutable #t (λ (x) x)))
+        (cons/c boolean? (-> integer? integer?))
+        (list* #t (λ (x) x)))
   (ctest #t contract-first-order-passes? 
-        (cons-immutable/c boolean? (-> integer? integer?))
-        (list*-immutable 1 2))
+        (cons/c boolean? (-> integer? integer?))
+        (list* 1 2))
   
   (ctest #f contract-first-order-passes? (flat-rec-contract the-name) 1)
   
@@ -4912,7 +4704,7 @@ so that propagation occurs.
                (require (lib "contract.ss"))
                (define-struct s_ (a))
                (provide/contract (struct s_ ((a any/c))))))
-      (eval '(require contract-test-suite6b))
+      (eval '(require 'contract-test-suite6b))
       (eval '(module contract-test-suite6b2 mzscheme
                (require 'contract-test-suite6b)
                (require (lib "contract.ss"))
@@ -4973,7 +4765,7 @@ so that propagation occurs.
                (provide/contract (struct s ((a number?) (b number?))))))
       (eval '(module pc10-n mzscheme
                (require (lib "struct.ss")
-                        pc10-m)
+                        'pc10-m)
                (print-struct #t)
                (copy-struct s 
                             (make-s 1 2)
@@ -5166,7 +4958,7 @@ so that propagation occurs.
                (provide/contract [f integer?])
                (define f 1)))
       (eval '(module provide/contract21b mzscheme
-               (require-for-syntax provide/contract21a) 
+               (require-for-syntax 'provide/contract21a) 
                (define-syntax (unit-body stx)
                  f f
                  #'1)))))
@@ -5179,7 +4971,7 @@ so that propagation occurs.
                (provide/contract [make-bound-identifier-mapping integer?])
                (define make-bound-identifier-mapping 1)))
       (eval '(module provide/contract22b mzscheme
-               (require-for-syntax provide/contract22a)
+               (require-for-syntax 'provide/contract22a)
                
                (define-syntax (unit-body stx)
                  make-bound-identifier-mapping)
