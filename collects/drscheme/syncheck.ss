@@ -1541,6 +1541,9 @@ If the namespace does not, they are colored the unbound color.
                (begin
                  (annotate-raw-keyword sexp varrefs)
                  ((annotate-require-open user-namespace user-directory) (syntax lang))
+                 
+                  ;; temporarily removed until Matthew fixes whatever.
+                 #;
                  (hash-table-put! requires 
                                   (syntax->datum (syntax lang))
                                   (cons (syntax lang)
