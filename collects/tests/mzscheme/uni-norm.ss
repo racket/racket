@@ -1,7 +1,7 @@
 
 (require (lib "string.ss")
-         (only (lib "url.ss" "net") get-pure-port string->url)
-         (only (lib "port.ss") copy-port))
+         (only-in (lib "url.ss" "net") get-pure-port string->url)
+         (only-in (lib "port.ss") copy-port))
 
 (load-relative "loadtest.ss")
 
@@ -31,7 +31,7 @@
         'truncate)))
   (or (existing)
       (begin (get-it) (existing))
-      (error "file not found: ~s" file)))
+      (error "file not found: ~s" (string-append base name))))
 
 (printf "Reading tests...\n")
 (define test-strings
@@ -44,7 +44,7 @@
 	  (if (eof-object? l)
             (if (null? a)
               (error "No tests found (couldn't retreive tests?)")
-              (reverse! a))
+              (reverse a))
             (let ([m (regexp-match #rx#"^([0-9A-F ]+);([0-9A-F ]+);([0-9A-F ]+);([0-9A-F ]+);([0-9A-F ]+)" l)])
               (if m
                 (loop (cons (cons l (map parse-string (cdr m))) a))
