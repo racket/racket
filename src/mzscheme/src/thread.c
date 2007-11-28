@@ -122,7 +122,11 @@ extern void scheme_gmp_tls_restore_snapshot(long *s, long *save, int do_free);
 extern int scheme_num_read_syntax_objects;
 extern int scheme_hash_request_count;
 extern int scheme_hash_iteration_count;
+#ifdef MZ_USE_JIT
 extern int scheme_jit_malloced;
+#else
+# define scheme_jit_malloced 0
+#endif
 
 /*========================================================================*/
 /*                    local variables and prototypes                      */
