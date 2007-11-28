@@ -147,8 +147,7 @@
     (for-each (lambda (proc setter traced-proc)
 		(unless (traced-proc? proc)
 		  (setter (make-traced-proc traced-proc proc))))
-	      procs setters traced-procs)
-    ids)
+	      procs setters traced-procs))
 
   ;; Key used for a continuation mark to indicate
   ;;  the nesting depth:
@@ -253,12 +252,9 @@
 			  id)))
 		     ids)
 	   (syntax
-	    (append
-	     (if (traced-proc? id)
-		 (begin
-		   (set! id (traced-proc-ref id 1))
-		   '(id))
-		 null)
+	    (begin
+	     (when (traced-proc? id)
+               (set! id (traced-proc-ref id 1)))
 	     ...)))])))
   )
 
