@@ -187,6 +187,12 @@ the class system, the unit system, and the pretty printer. More
 precisely, the default module is `scheme/init', which is like
 `scheme', but it installs the pretty printer.
 
+The initial top-level environment is completely empty. Command-line
+flags like `-l' introduce bindings into the environment. Such bindings
+are not yet introduced, however, during the evaluation of the module
+body (for the module named by `-l'), which means that `eval' using the
+default namespace will not work.
+
 ======================================================================
  Module Paths
 ======================================================================

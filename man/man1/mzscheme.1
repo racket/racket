@@ -1,5 +1,5 @@
 .\" dummy line
-.TH MZSCHEME 1 "February 2007"
+.TH MZSCHEME 1 "November 2007"
 .UC 4
 .SH NAME
 mzscheme \- The PLT Scheme implementation
@@ -32,72 +32,24 @@ applications.
 .SH STARTUP FILE AND EXPRESSION OPTIONS
 
 .TP
-.BI \-e \ expr\fR,\ \fP \-\^\-eval \ expr
+.BI \-e \ exprs\fR,\ \fP \-\^\-eval \ exprs
 Evaluates
-.I expr
-after
-.I MzScheme
-starts.
+.I exprs
+and prints each result.
 .TP
 .BI \-f \ file\fR,\ \fP \-\^\-load \ file
 Loads
 .I file
-after
-.I MzScheme
-starts.
-.TP
-.BI \-d \ file\fR,\ \fP \-\^\-load-cd \ file
-Load/cds
-.I file
-after
-.I MzScheme
-starts.
+and prints the last result from the file.
 .TP
 .BI \-t \ file\fR,\ \fP \-\^\-require \ file
 Requires
 .I file
-after
-.I MzScheme
-starts.
 .TP
-.B \-F\fR,\fP \-\^\-Load
-.br
-Loads all remaining arguments after
-.I MzScheme
-starts.
-.TP
-.B \-D\fR,\fP \-\^\-Load-cd
-.br
-Load/cds all remaining arguments after
-.I MzScheme
-starts.
-.TP
-.B \-T\fR,\fP \-\^\-Require
-.br
-Requires all remaining arguments after
-.I MzScheme
-starts.
-.TP
-.BI \-l \ file\fR,\ \fP \-\^\-mzlib \ file
+.BI \-l \ path\fR,\ \fP \-\^\-lib \ path
 Same as
 .BR -e \ '(require\ (lib\ "\|\c
-.I file\|\c
-"))'.
-.TP
-.BI \-L \ file \  coll
-Same as
-.BR -e \ '(require\ (lib\ "\|\c
-.I file\|\c
-" "\|\c
-.I coll\|\c
-"))'.
-.TP
-.BI \-M \ coll
-Same as
-.BR -e \ '(require\ (lib\ "\|\c
-.I coll\|\c
-\|.ss" "\|\c
-.I coll\|\c
+.I path\|\c
 "))'.
 .TP
 .BI \-p \ file \  user \  package
@@ -110,35 +62,14 @@ Same as
 .I package\|\c
 "))'.
 .TP
-.BI \-P \ name \  user
-Same as
-.BR -e \ '(require\ (planet\ "\|\c
-.I name\|\c
-\|.ss" "\|\c
-.I user\|\c
-\|" "\|\c
-.I name\|\c
-\|.plt"))'.
 .TP
 .B \-r\fR,\fP \-\^\-script
-Script mode: use as last flag for scripts.
-Same as
-.BR -fmv- .
-.TP
-.B \-i\fR,\fP \-\^\-script-cd
-Like -r, but also sets the directory.
-Same as 
-.BR -dmv- .
+Script mode; same as
+.BR -f- .
 .TP
 .B \-u\fR,\fP \-\^\-require-script
-Like -r, but requires a module.
-Same as
-.BR -tmv- .
-.TP
-.B \-w\fR,\fP \-\^\-awk
-Same as
-.B -l
-.BR awk.ss .
+Module script mode; same as
+.BR -t- .
 .TP
 .BI \-k \ n \  m\ 
 Load executable-embedded code from file offset
@@ -146,10 +77,8 @@ Load executable-embedded code from file offset
 to
 .IR m .
 .TP
-.B \-C\fR,\fP \-\^\-main
-Like -r, then calls `main' with a list of argument strings. The first 
-string in the list is the name of the loaded file, and
-the rest of the list contains leftover command-line arguments.
+.B \-m\fR,\fP \-\^\-main
+Calls `main' with command-line arguments.
 .PP
 
 .SH INITIALIZATION OPTIONS

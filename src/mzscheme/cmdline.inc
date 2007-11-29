@@ -257,7 +257,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
         
         if (!scheme_setjmp(newbuf)) {
           if (fa->eval_kind[i] == mzcmd_EVAL) {
-            scheme_eval_string_all_with_prompt(fa->evals_and_loads[i], fa->global_env, 0);
+            scheme_eval_string_all_with_prompt(fa->evals_and_loads[i], fa->global_env, 2);
           } else if (fa->eval_kind[i] == mzcmd_EMBEDDED) {
             Scheme_Object *s, *e, *a[2], *eload;
             eload = scheme_builtin_value("embedded-load");
@@ -1035,7 +1035,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #  endif
 # endif
 	 " File and expression options:\n"
-	 "  -e <expr>, --eval <expr> : Evaluates <expr> after " PROGRAM " starts\n"
+	 "  -e <exprs>, --eval <exprs> : Evaluates <exprs>, prints results\n"
 	 "  -f <file>, --load <file> : Like -e '(load \"<file>\")'\n"
 	 "  -t <file>, --require <file> : Like -e '(require (file \"<file>\"))'\n"
 	 "  -l <path>, --lib <path> : Like -e '(require (lib \"<path>\"))'\n"

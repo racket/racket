@@ -7365,8 +7365,8 @@ Scheme_Object *scheme_eval_multi_with_prompt(Scheme_Object *obj, Scheme_Env *env
 {
   Scheme_Object *expr;
   expr = scheme_compile_for_eval(obj, env);
-  return scheme_call_with_prompt(finish_eval_multi_with_prompt, 
-                                 scheme_make_pair(expr, (Scheme_Object *)env));
+  return scheme_call_with_prompt_multi(finish_eval_multi_with_prompt, 
+                                       scheme_make_pair(expr, (Scheme_Object *)env));
 }
 
 static void *eval_k(void)
@@ -8169,6 +8169,9 @@ expand_stx_to_top_form(int argc, Scheme_Object **argv)
 }
 
 static Scheme_Object *do_eval_string_all(const char *str, Scheme_Env *env, int cont, int w_prompt)
+/* cont == -1 => single result
+   cont == 1 -> multiple result ok
+   cont == 2 -> multiple result ok, use current_print to show results */
 {
   Scheme_Object *port, *expr, *result = scheme_void;
 
@@ -8187,6 +8190,29 @@ static Scheme_Object *do_eval_string_all(const char *str, Scheme_Env *env, int c
         result = scheme_eval_multi_with_prompt(expr, env);
       else
         result = scheme_eval_multi(expr, env);
+
+      if (cont == 2) {
+        Scheme_Object **a, *_a[1], *arg[1], *printer;
+        int cnt, i;
+
+        if (result == SCHEME_MULTIPLE_VALUES) {
+          Scheme_Thread *p = scheme_current_thread;
+          if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+            p->values_buffer = NULL;
+          a = p->ku.multiple.array;
+          cnt = p->ku.multiple.count;
+        } else {
+          _a[0] = result;
+          a = _a;
+          cnt = 1;
+        }
+
+        for (i = 0; i < cnt; i++) {
+          printer = scheme_get_param(scheme_current_config(), MZCONFIG_PRINT_HANDLER);
+          arg[0] = a[i];
+          scheme_apply(printer, 1, arg);
+        }
+      }
     }
   } while (cont > 0);
 
