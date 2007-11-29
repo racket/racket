@@ -404,9 +404,10 @@ Matthew
     (define w (image-width img))  
     (define h (image-height img))
     (cond
-      [(and (<= 0 x0 w) (<= 0 x1 w) (<= 0 y0 w) (<= 0 y1 w)) 
+      [(and (<= 0 x0) (< x0 w) (<= 0 x1) (< x1 w) (<= 0 y0) (< y0 w) (<= 0 y1) (< y1 w))
        (add-line img x0 y0 x1 y1 c)]
       [(= x0 x1) ;; vertical 
+       (printf "vertical\n")
        (if (<= 0 x0 w) (add-line img x0 (app y0 h) x0 (app y1 h) c) img)]
       [(= y0 y1) ;; horizontal 
        (if (<= 0 y0 h) (add-line img (app x0 w) y0 (app x1 w) y0 c) img)]
@@ -438,9 +439,9 @@ Matthew
   ;; y if in [0,h], otherwise the closest boundary
   (define (app y h)
     (cond
-      [(<= 0 y h) y]
+      [(and (<= 0 y) (< y h)) y]
       [(< y 0) 0]
-      [else    h]))
+      [else (- h 1)]))
   
   ;; Nat Nat Nat Nat -> (union 'upper-left 'upper-right 'lower-left 'lower-right)
   ;; how to get to (x1,y1) from (x0,y0)
