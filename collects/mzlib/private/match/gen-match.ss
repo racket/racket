@@ -34,7 +34,7 @@
   ;; returns three values representing the pattern, the body and the failure symbol
   
   (define (parse-clause clause)
-    (syntax-case clause (=>)
+    (syntax-case* clause (=>) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
       [(pat) (match:syntax-err clause
                                "missing action for pattern")]
       [(pat (=> fail-sym)) 
