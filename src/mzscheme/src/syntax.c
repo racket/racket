@@ -5269,7 +5269,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   eenv = scheme_new_comp_env(exp_env, insp, 0);
 
   /* First expand for expansion-observation */
-  {
+  if (!rec[drec].comp) {
     scheme_init_expand_recs(rec, drec, &mrec, 1);
     SCHEME_EXPAND_OBSERVE_PHASE_UP(mrec.observer);
     a = scheme_expand_expr_lift_to_let(a, eenv, &mrec, 0);
