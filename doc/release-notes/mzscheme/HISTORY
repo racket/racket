@@ -1,3 +1,6 @@
+Version 3.99.0.x
+>> See MzScheme_4.txt for information on major changes.
+
 Version 371.3
 Added syntax-local-lift-context
 Added #lang

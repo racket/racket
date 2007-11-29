@@ -191,11 +191,10 @@
                     key
                     content)))
 
-  (define (index-section tag)
+  (define (index-section #:tag [tag #f])
     (make-unnumbered-part
      #f
-     `((part , (or tag 
-                   (make-generated-tag))))
+     `((part ,(or tag "doc-index")))
      '("Index")
      'index
      null

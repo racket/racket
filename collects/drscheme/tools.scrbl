@@ -479,4 +479,4 @@ the tool shows this part of the GUI for DrScheme.
 See @scheme[drscheme:language:register-capability]
 for a list of the capabilities registered by default.
 
-@index-section["tools"]
+@index-section[]

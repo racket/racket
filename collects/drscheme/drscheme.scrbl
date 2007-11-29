@@ -8,4 +8,4 @@
 
 Nothing yet.
 
-@index-section["drscheme"]
+@index-section[]

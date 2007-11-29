@@ -325,6 +325,11 @@ with some syntactic and name changes.
  * The result of each expression at the module level is automatically
    printed using `(current-print)'.
 
+ * The identifiers `else', `=>', `_', and `...' are bound (as syntax
+   that cannot be used as an expression). The `else' and `=>' bindings
+   are used by `cond' and `case', while `_' and `...' are for syntax
+   patterns and templates.
+
  * For syntax patterns in `syntax-case', `syntax-rules', and
    elsewhere, `_' is a wildcard pattern (matches anything) instead of
    a pattern variable.

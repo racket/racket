@@ -47,13 +47,13 @@ card off one of the halves, randomly selecting one half or the
 other. According to some mathematical theorem, 7 is a large enough
 @scheme[n] to get a perfect shuffle.}
 
-@defstruct[region ([(x #:immutable) real?]
-                   [(y #:immutable) real?]
-                   [(w #:immutable) (and/c real? (not/c negative?))]
-                   [(h #:immutable) (and/c real? (not/c negative?))]
-                   [(label #:immutable) (or/c string? false/c)]
-                   [callback (or/c ((listof (is-a?/c card<%>)) . -> . any)
-                                   false/c)])]{
+@defstruct[region ([x real?]
+                   [y real?]
+                   [w (and/c real? (not/c negative?))]
+                   [h (and/c real? (not/c negative?))]
+                   [label (or/c string? false/c)]
+                   [(callback #:mutable) (or/c ((listof (is-a?/c card<%>)) . -> . any)
+                                               false/c)])]{
 
 The @scheme[x], @scheme[y], @scheme[w], and @scheme[h] fields
 determine the region's location on the table.

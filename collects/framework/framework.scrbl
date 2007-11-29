@@ -8,4 +8,4 @@
 
 Nothing yet.
 
-@index-section["framework"]
+@index-section[]

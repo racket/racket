@@ -178,11 +178,10 @@ section by @scheme[decode]. The @scheme[word]s serve as both the keys
 and as the rendered forms of the keys.}
 
 
-@defproc[(index-section [tag string?])]{
+@defproc[(index-section [#:tag tag (or/c false/c string?) "doc-index"])]{
 
 Produces a section that shows the index the enclosing document. The
-@scheme[tag] is required to be unique for each index among a set of
-documents that share ``collected'' information.}
+optional @scheme[tag] argument is used as the index section's tag.}
 
 
 @; ------------------------------------------------------------------------

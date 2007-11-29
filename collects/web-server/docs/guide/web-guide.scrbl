@@ -14,4 +14,4 @@ In quirks mode, IE does not parse your page as XML, in particular it will not re
 to format XML, which uses empty tag shorthand by default. You can change the default with the @scheme[empty-tag-shorthand]
 parameter: @scheme[(empty-tag-shorthand 'never)].
 
-@index-section["web-server-guide-index"]
+@index-section[]

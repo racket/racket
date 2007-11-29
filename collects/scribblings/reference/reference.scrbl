@@ -44,4 +44,4 @@ This chapter provides some temporary hyper-link targets.
 
 @;------------------------------------------------------------------------
 
-@index-section["mzscheme-index"]
+@index-section[]

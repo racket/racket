@@ -16,39 +16,44 @@
 	[(_ x (k ...))
 	 (syntax (memv x '(k ...)))])))
 
-  ;; From Dybvig:
-  (define-syntax case
-    (lambda (x)
-      (syntax-case x (else)
-	((_ v)
-	 (syntax (#%expression (begin v (void)))))
-	((_ v (else e1 e2 ...))
-	 (syntax/loc x (#%expression (begin v e1 e2 ...))))
-	((_ v ((k ...) e1 e2 ...))
-	 (syntax/loc x (if (case-test v (k ...)) (begin e1 e2 ...) (void))))
-	((_ v ((k ...) e1 e2 ...) c1 c2 ...)
-	 (syntax/loc x (let ((x v))
-			 (if (case-test x (k ...))
-			     (begin e1 e2 ...)
-			     (case x c1 c2 ...)))))
-	((_ v (bad e1 e2 ...) . rest)
-	 (raise-syntax-error 
-	  #f
-	  "bad syntax (not a datum sequence)"
-	  x
-	  (syntax bad)))
-	((_ v clause . rest)
-	 (raise-syntax-error 
-	  #f
-	  "bad syntax (missing expression after datum sequence)"
-	  x
-	  (syntax clause)))
-	((_ . v)
-	 (not (null? (syntax-e (syntax v))))
-	 (raise-syntax-error 
-	  #f
-	  "bad syntax (illegal use of `.')"
-	  x)))))
+  ;; Mostly from Dybvig:
+  (define-syntaxes (case old-case)
+    (let ([go
+           (lambda (x id=?)
+             (syntax-case* x (else) id=?
+               ((_ v)
+                (syntax (#%expression (begin v (void)))))
+               ((_ v (else e1 e2 ...))
+                (syntax/loc x (#%expression (begin v e1 e2 ...))))
+               ((_ v ((k ...) e1 e2 ...))
+                (syntax/loc x (if (case-test v (k ...)) (begin e1 e2 ...) (void))))
+               ((self v ((k ...) e1 e2 ...) c1 c2 ...)
+                (syntax/loc x (let ((x v))
+                                (if (case-test x (k ...))
+                                    (begin e1 e2 ...)
+                                    (self x c1 c2 ...)))))
+               ((_ v (bad e1 e2 ...) . rest)
+                (raise-syntax-error 
+                 #f
+                 "bad syntax (not a datum sequence)"
+                 x
+                 (syntax bad)))
+               ((_ v clause . rest)
+                (raise-syntax-error 
+                 #f
+                 "bad syntax (missing expression after datum sequence)"
+                 x
+                 (syntax clause)))
+               ((_ . v)
+                (not (null? (syntax-e (syntax v))))
+                (raise-syntax-error 
+                 #f
+                 "bad syntax (illegal use of `.')"
+                 x))))])
+      (values
+       (lambda (stx) (go stx free-identifier=?))
+       (let ([else-stx (datum->syntax #f 'else)])
+         (lambda (stx) (go stx (lambda (a b) (free-identifier=? a else-stx))))))))
 
   ;; From Dybvig:
   (define-syntax do
@@ -341,7 +346,7 @@
 	    (printf "cpu time: ~s real time: ~s gc time: ~s~n" cpu user gc)
 	    (apply values v)))])))
 
-  (#%provide case do delay force promise?
+  (#%provide case old-case do delay force promise?
              parameterize parameterize* current-parameterization call-with-parameterization
              parameterize-break current-break-parameterization call-with-break-parameterization
              with-handlers with-handlers* call-with-exception-handler

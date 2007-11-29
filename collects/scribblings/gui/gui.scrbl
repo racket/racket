@@ -29,4 +29,4 @@ The @scheme[(lib "mred")] module provides all of the class, interface,
 
 @;------------------------------------------------------------------------
 
-@index-section["mred-index"]
+@index-section[]

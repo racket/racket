@@ -33,4 +33,4 @@ Findler, Dan Licata, Matt Jadud, Jacob Matthews, Matthias Radestock, Andrey Skyl
 Michael Sperber, Dave Tucker, Anton van Straaten, and Noel Welsh. We also thank the
 many other PLT Scheme users who have exercised the server and offered critiques.
 
-@index-section["web-server-ref-index"]
+@index-section[]

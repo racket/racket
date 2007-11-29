@@ -25,7 +25,7 @@
            stx))
       (datum->syntax stx (cdr (syntax-e stx)) stx stx)))
 
-  (#%provide (all-from "more-scheme.ss")
+  (#%provide (all-from-except "more-scheme.ss" old-case)
              (all-from "misc.ss")
              (all-from "define.ss")
              (all-from-except "letstx-scheme.ss" -define -define-syntax -define-struct)

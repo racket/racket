@@ -161,4 +161,4 @@ includes more tools bsides DrScheme and MzScheme:
 
 @; ----------------------------------------------------------------------
 
-@index-section["guide-index"]
+@index-section[]

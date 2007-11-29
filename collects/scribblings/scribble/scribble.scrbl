@@ -94,4 +94,4 @@ information.
 @include-section["manual.scrbl"]
 @include-section["eval.scrbl"]
 
-@index-section["scribble-index"]
+@index-section[]

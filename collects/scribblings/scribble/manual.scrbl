@@ -448,6 +448,21 @@ Like @scheme[defproc], but for a method within a @scheme[defclass] or
 Like @scheme[defproc*], but for a method within a @scheme[defclass] or
 @scheme[definterface] body.}
 
+
+@defform[(method class/intf-id method-id)]{
+
+Creates a hyperlink to the method named by @scheme[method-id] in the
+class or interface named by @scheme[class/intf-id]. The hyperlink
+names the method, only; see also @scheme[xmethod].
+
+For-label binding information is used with @scheme[class/intf-id], but
+not @scheme[method-id].}
+
+@defform[(xmethod class/intf-id method-id)]{
+
+Like @scheme[method], but the hyperlink shows both the method name and
+the containing class/interface.}
+
 @; ------------------------------------------------------------------------
 @section{Various String Forms}
 

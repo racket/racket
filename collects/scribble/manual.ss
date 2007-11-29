@@ -998,16 +998,15 @@
                                           (map (lambda (f)
                                                  (list 'accessor name '- (field-name f)))
                                                fields)
-                                          (if immutable?
-                                              null
-                                              (filter 
-                                               values
-                                               (map (lambda (f)
-                                                      (if (and (pair? (car f))
-                                                               (memq '#:mutable (car f)))
-                                                          (list 'mutator 'set- name '- (field-name f) '!)
-                                                          #f))
-                                                    fields)))))))])
+                                          (filter 
+                                           values
+                                           (map (lambda (f)
+                                                  (if (or (not immutable?)
+                                                          (and (pair? (car f))
+                                                                (memq '#:mutable (car f))))
+                                                      (list 'mutator 'set- name '- (field-name f) '!)
+                                                      #f))
+                                                fields))))))])
                           (if (pair? name)
                               (to-element (list just-name
                                                 (make-just-context (cadr name) stx-id)))
