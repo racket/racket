@@ -1333,18 +1333,7 @@
       (let ([words #f])
         (λ ()
           (unless words
-            (set! words (text:get-completions/manuals 
-                         (list "gui"
-                               "guide"
-                               "help"
-                               "mzscheme"
-                               "mred"
-                               "quick"
-                               "r5rs"
-                               "reference"
-                               "scribble"
-                               "web-server-guide"
-                               "web-server-reference"))))
+            (set! words (text:get-completions/manuals #f)))
           words)))
     
     ;; add-built-in-languages : -> void

@@ -10,6 +10,8 @@
 
 (define (item/cap x . ys) (apply item (bold (format "~a" x)) ": " ys)) ;; indexing missing
 
+(define (gui x) (bold x))
+
 ]
 @title{PLT Plugins: DrScheme Extension Manual}
 
@@ -18,9 +20,11 @@
 This manual describes DrScheme's tools interface. It assumes
 familiarity with 
 PLT Scheme, as described in 
-@(secref #:doc '(lib "scribblings/guide/guide.scrbl") "top").
-DrScheme, as described in {\DrSchemeManual}, and
-the Framework, as described in {\FrameworkManual}.
+@(secref #:doc '(lib "scribblings/guide/guide.scrbl") "top"),
+DrScheme, as described in
+@(secref #:doc '(lib "drscheme/drscheme.scrbl") "top"),
+and the Framework, as described in
+@(secref #:doc '(lib "framework/framework.scrbl") "top").
 
 @section{Thanks}
 
@@ -52,10 +56,6 @@ Libraries are for extensions of DrScheme that only want to
 add new functions and other values bound in the users
 namespace.  See the DrScheme manual for more information on
 constructing libraries.
-
-Tools rely heavily on MzScheme's @scheme[units]. They also
-require understanding of \Mzhyperref{libraries and
-collections}{mz:mzlib}.
 
 When DrScheme starts up, it looks for tools by reading
 fields in the @File{info.ss} file of each collection and the
@@ -102,14 +102,14 @@ This bitmap and the name show up in the about box, Help
 Desk's bug report form, and the splash screen as the tool is
 loaded at DrScheme's startup.
 
-\index{drscheme:tool atsign \scmsig{drscheme:tool}}
-\index{phase1}\index{phase2}
+@index{phase1}
+@index{phase2}
 Each of @scheme[tools] files must contain a module that
 @scheme[provide]s @scheme[tool@], which must be bound to a
 @scheme[unit]. The unit
 must import the @scheme[drscheme:tool^] signature, which is
 provided by the @FileFirst{tool.ss} library in the
-@scheme[drscheme] collection. The \scmsig{drscheme:tool}
+@scheme[drscheme] collection. The @scheme[drscheme:tool^]
 signature contains all of the names listed in this manual.
 The unit must export the @scheme[drscheme:tool-exports^]
 signature. 
@@ -135,14 +135,12 @@ extension. Then, other languages that are aware of the
 extension can supply non-default implementations of the
 additional functionality.
 
-\tag{phase1}{phase~1}
 Phase 1 functions:
 @itemize{
 @item{@scheme[drscheme:language:extend-language-interface]}
 @item{@scheme[drscheme:unit:add-to-program-editor-mixin]}
 }
 
-\tag{phase2}{phase~2}
 Phase 2 functions:
 @itemize{
 @item{@scheme[drscheme:language-configuration:add-language]}
@@ -185,7 +183,7 @@ been loaded and that the @scheme[phase1] and @scheme[phase2]
 functions have been called.
 
 @section{Adding Languages to DrScheme}
-\index{adding languages to DrScheme}
+@index{adding languages to DrScheme}
 \label{tools:adding-languages}
 
 @subsection{Adding Module-based Languages to DrScheme}
@@ -198,7 +196,7 @@ where the module is saved. Include these
 definitions:
 @(itemize
 @item/cap['drscheme-language-modules]{
-  \index{drscheme-language-modules} This must be bound to a
+  @index{drscheme-language-modules} This must be bound to a
   list of collection path specifications or strings, one for
   each language in the collection. Each collection path
   specification is the quoted form of what might appear as
@@ -209,7 +207,7 @@ definitions:
   like string arguments to @scheme[require].
 }
 @item/cap['drscheme-language-positions]{
-\index{drscheme-language-positions}
+@index{drscheme-language-positions}
 This must be bound to a
   list of language positions. Each language position
   corresponds to the position of the language in language
@@ -217,7 +215,7 @@ This must be bound to a
   length must be at least two.
 }  
 @item/cap['drscheme-language-numbers]{
-\index{drscheme-language-numbers}
+@index{drscheme-language-numbers}
 This is optional. If
   present, it must be a list of a list of numbers. Each list
   corresponds to a single language from this collection.
@@ -229,14 +227,14 @@ This is optional. If
 }
   
 @item/cap['drscheme-language-one-line-summaries]{
-\index{drscheme-language-one-line-summaries}
+@index{drscheme-language-one-line-summaries}
 This is
   optional. If present, it must be a list of strings. Each
   string is displayed at the bottom of the language dialog
   when the corresponding language is selected.
 }  
 @item/cap['drscheme-language-urls]{
-\index{drscheme-language-urls}
+@index{drscheme-language-urls}
 This is
   optional. If present, it must be a list whose elements are
   either strings or @scheme{#f}.
@@ -244,7 +242,7 @@ This is
   the interactions window opens a web browser to the url.
 }  
 @item/cap['drscheme-language-readers]{
-\index{drscheme-language-readers}
+@index{drscheme-language-readers}
 This is optional. If
   present, it must be bound to a quoted list of module
   specifications (that is, a quoted version of the argument
@@ -419,14 +417,14 @@ classes derived from that class as its result. For example:
 extends the interactions text class with a method named @tt{method1}.
 
 @section[#:tag "Expanding and Breaking"]{Expanding the User's Program Text and Breaking}
-\index{expanding user programs}
-\index{breaking}
-\index{break button}
+@index{expanding user programs}
+@index{breaking}
+@index{break button}
 
 Macro-expanding a program may involve arbitrary computation
 and requires the setup of the correct language. To aid this,
 DrScheme's tool interface provides
-\iscmprocedure{drscheme:eval:expand-program} to help. Use
+@scheme[drscheme:eval:expand-program] to help. Use
 this method to extract the fully expanded program text in a
 particular language.
 
@@ -453,19 +451,19 @@ method. This method controls what behavior the Break button
 has.
 
 @section{Editor Modes}
-\index{modes}
-\index{scheme mode}
+@index{modes}
+@index{scheme mode}
 
 DrScheme provides support for multiple editor modes. Tools
 register modes via
-\iscmprocedure{drscheme:modes:add-mode}. Each mode is
-visible in the \gui{Modes} submenu of the \gui{Edit}
+@scheme[drscheme:modes:add-mode]. Each mode is
+visible in the @gui{Modes} submenu of the @gui{Edit}
 menu. Initially, DrScheme only supports two modes: scheme
 mode and text mode.
 
 DrScheme automatically selects a mode for each open
 file based on the file's extension. If the file ends with
-\File{.txt}, DrScheme uses text mode. Otherwise, DrScheme
+@File{.txt}, DrScheme uses text mode. Otherwise, DrScheme
 uses Scheme mode.
 
 @section{Language-specific capabilities}
@@ -474,12 +472,12 @@ Drscheme's capability interface provides a mechanism for
 tools to allow languages to hide their GUI interface, if the
 tool does not apply to the language. Tools register
 capabilities keyed with symbols via.
-\iscmprocedure{drscheme:language:register-capability}. Once
+@scheme[drscheme:language:register-capability]. Once
 registered, a tool can query a language, via the 
 \iscmintfmethodspec{drscheme:language:language}{capability-value}{capability-value} 
 method. The result from this method controls whether or not
 the tool shows this part of the GUI for DrScheme.
 
-See \iscmprocedure{drscheme:language:register-capability}
+See @scheme[drscheme:language:register-capability]
 for a list of the capabilities registered by default.
 

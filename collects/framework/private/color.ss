@@ -37,6 +37,7 @@
       thaw-colorer
       
       reset-region
+      get-region
       update-region-end
       
       skip-whitespace

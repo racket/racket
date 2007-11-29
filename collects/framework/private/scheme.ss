@@ -431,7 +431,7 @@
       
       (inherit get-styles-fixed)
       (inherit has-focus? find-snip split-snip
-               position-location get-dc)
+               position-location get-dc get-region)
       
       (define/override (get-word-at current-pos)
         (let ([no-word ""])
@@ -447,12 +447,18 @@
                  [else no-word]))])))
       
       (define/private (look-for-non-symbol start)
-        (let loop ([i start])
-          (cond
-            [(< i 0) 0]
-            [(eq? (classify-position i) 'symbol)
-             (loop (- i 1))]
-            [else (+ i 1)])))
+        (let-values ([(region-start region-end) (get-region)])
+          (let loop ([i start])
+            (cond
+              [(and (number? region-start)
+                    (< i region-start))
+               region-start]
+              [(< i 0) 
+               0]
+              [(eq? (classify-position i) 'symbol)
+               (loop (- i 1))]
+              [else
+               (+ i 1)]))))
 
       (public tabify-on-return? tabify
               tabify-all insert-return calc-last-para 
