@@ -10,8 +10,6 @@
 
 (define (item/cap x . ys) (apply item (bold (format "~a" x)) ": " ys)) ;; indexing missing
 
-(define (gui x) (bold x))
-
 ]
 @title{PLT Plugins: DrScheme Extension Manual}
 
@@ -433,20 +431,20 @@ evaluate arbitrary code that the user wrote, tools that
 expand the user's program should also allow the user to break
 the expansion. To help with this, the tools interfaces
 provides these methods:
-\iscmintfmethodspec{drscheme:rep:context}{enable-evaluation}{enable-evaluation}
+@method[drscheme:rep:context<%> enable-evaluation]
 and
-\iscmintfmethodspec{drscheme:rep:context}{disable-evaluation}{disable-evaluation}.
+@method[drscheme:rep:context<%> disable-evaluation].
 Since your tool will be expanding the program text, you
 should be both overriding 
-\iscmintfmethodspec{drscheme:rep:context}{enable-evaluation}{enable-evaluation}
+@method[drscheme:rep:context<%> enable-evaluation]
 and
-\iscmintfmethodspec{drscheme:rep:context}{disable-evaluation}{disable-evaluation}
+@method[drscheme:rep:context<%> disable-evaluation]
 to disable your tool and calling them
 to ensure that only one expansion is happening
 at a time.
 
 Finally, DrScheme provides the
-\iscmintfmethodspec{drscheme:rep:context}{set-breakables}{set-breakables}, 
+@method[drscheme:rep:context<%> set-breakables]
 method. This method controls what behavior the Break button
 has.
 
@@ -457,7 +455,7 @@ has.
 DrScheme provides support for multiple editor modes. Tools
 register modes via
 @scheme[drscheme:modes:add-mode]. Each mode is
-visible in the @gui{Modes} submenu of the @gui{Edit}
+visible in the @onscreen{Modes} submenu of the @onscreen{Edit}
 menu. Initially, DrScheme only supports two modes: scheme
 mode and text mode.
 
@@ -474,10 +472,11 @@ tool does not apply to the language. Tools register
 capabilities keyed with symbols via.
 @scheme[drscheme:language:register-capability]. Once
 registered, a tool can query a language, via the 
-\iscmintfmethodspec{drscheme:language:language}{capability-value}{capability-value} 
+@method[drscheme:language:language<%> capability-value]
 method. The result from this method controls whether or not
 the tool shows this part of the GUI for DrScheme.
 
 See @scheme[drscheme:language:register-capability]
 for a list of the capabilities registered by default.
 
+@index-section["tools"]

@@ -7,3 +7,5 @@
 @title{PLT DrScheme: Programming Environment Manual}
 
 Nothing yet.
+
+@index-section["drscheme"]

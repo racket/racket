@@ -7,3 +7,5 @@
 @title{PLT Framework: GUI Application Framework}
 
 Nothing yet.
+
+@index-section["framework"]
