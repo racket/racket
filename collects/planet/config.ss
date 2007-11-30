@@ -16,7 +16,7 @@
     (HARD-LINK-FILE           (build-path (PLANET-BASE-DIR) "HARD-LINKS"))
     (LOGGING-ENABLED?         #t)
     (LOG-FILE                 (build-path (PLANET-DIR) "INSTALL-LOG"))
-    (DEFAULT-PACKAGE-LANGUAGE "371.3" #;(version))
+    (DEFAULT-PACKAGE-LANGUAGE "372.0" #;(version))
     
     (USE-HTTP-DOWNLOADS?       #t)
     (HTTP-DOWNLOAD-SERVLET-URL "http://planet.plt-scheme.org/servlets/planet-servlet.ss")
