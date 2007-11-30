@@ -413,9 +413,14 @@
       (define mismatch-color (make-object color% "PINK"))
       (define/private (get-match-color) (preferences:get 'framework:paren-match-color))
       
-      (define/private (highlight start end caret-pos error?)
+      ;; higlight : number number number (or/c #f #t color)
+      ;;   if color is a boolean, then #t means the normal paren color and #f means an error color. 
+      ;;   Otherwise, color is a color
+      (define/private (highlight start end caret-pos color)
         (let ([off (highlight-range (+ start-pos start) (+ start-pos end)
-                                    (if error? mismatch-color (get-match-color))
+                                    (if (boolean? color)
+                                        (if color mismatch-color (get-match-color))
+                                        color)
                                     (and (send (icon:get-paren-highlight-bitmap)
                                                ok?)
                                          (icon:get-paren-highlight-bitmap))
@@ -463,14 +468,37 @@
                                 (send parens match-forward (- here start-pos))))
                     (when (and (not (f-match-false-error start-f end-f error-f))
                                start-f end-f)
-                      (highlight start-f end-f here error-f)))
+                      (if error-f
+                          (highlight start-f end-f here error-f)
+                          (highlight-nested-region start-f end-f here))))
                   (let-values  (((start-b end-b error-b)
                                  (send parens match-backward (- here start-pos))))
                     (when (and start-b end-b)
-                      (highlight start-b end-b here error-b))))))
+                      (if error-b
+                          (highlight start-b end-b here error-b)
+                          (highlight-nested-region start-b end-b here)))))))
             (end-edit-sequence)
             (set! in-match-parens? #f))))
       
+      (define/private (highlight-nested-region orig-start orig-end here)
+        (let paren-loop ([start orig-start]
+                         [end orig-end]
+                         [depth 0])
+          (when (< depth (vector-length (get-parenthesis-colors)))
+            (let seq-loop ([inner-sequence-start (+ start 1)])
+              (let ([post-whitespace (skip-whitespace inner-sequence-start 'forward #t)])
+                (let-values ([(start-inner end-inner error-inner) 
+                              (send parens match-forward (- post-whitespace start-pos))])
+                  (cond
+                    [(and start-inner end-inner (not error-inner))
+                     (paren-loop start-inner end-inner (+ depth 1))
+                     (seq-loop end-inner)]
+                    [(skip-past-token post-whitespace)
+                     =>
+                     (λ (after-non-paren-thing)
+                       (seq-loop after-non-paren-thing))]))))
+            (highlight start end here (vector-ref (get-parenthesis-colors) depth)))))
+
       ;; See docs
       (define/public (forward-match position cutoff)
         (do-forward-match position cutoff #t))
@@ -493,6 +521,8 @@
                    (else #f))))
               ((and start end error) #f)
               (else
+               (skip-past-token position)
+               #;
                (let-values (((tok-start tok-end)
                              (begin
                                (tokenize-to-pos position)
@@ -505,6 +535,20 @@
                     #f)
                    (else
                     (+ start-pos tok-end)))))))))
+      
+      (define/private (skip-past-token position)
+        (let-values (((tok-start tok-end)
+                      (begin
+                        (tokenize-to-pos position)
+                        (send tokens search! (- position start-pos))
+                        (values (send tokens get-root-start-position)
+                                (send tokens get-root-end-position)))))
+          (cond
+            ((or (send parens is-close-pos? tok-start)
+                 (= (+ start-pos tok-end) position))
+             #f)
+            (else
+             (+ start-pos tok-end)))))
       
       
       ;; See docs
@@ -702,6 +746,44 @@
       ;; when the editor goes away, so does the callback
       (define (pref-callback k v) (toggle-color v))
       (preferences:add-callback 'framework:coloring-active pref-callback #t)))
+  
+  (define parenthesis-colors #f)
+  (define (get-parenthesis-colors)
+    (unless parenthesis-colors
+      (set! parenthesis-colors
+            (vector (preferences:get 'framework:paren-match-color))
+            
+            ;; shades of blue
+            #;
+            (let ([size 4])
+              (build-vector
+               4 
+               (lambda (x) 
+                 (let* (
+                        ;; start with a pale blue 
+                        [start-r 204]
+                        [start-g 204]
+                        [start-b 255]
+                        
+                        ;; end with a pale cyan
+                        [end-r 153]
+                        [end-g 153]
+                        [end-b 255]
+                        [between (λ (start end) (+ start (* (- end start) (/ x (- size 1)))))])
+                   (make-object color% 
+                     (between start-r end-r)
+                     (between start-g end-g)
+                     (between start-b end-b))))))
+            
+            ;; shades of grey
+            #;
+            (let ([size 4])
+              (build-vector
+               4 
+               (lambda (x) 
+                 (let* ([grey-amount (floor (+ 180 (* 40 (/ x size))))])
+                   (make-object color% grey-amount grey-amount grey-amount)))))))
+    parenthesis-colors)
   
   (define -text% (text-mixin text:keymap%))
   
