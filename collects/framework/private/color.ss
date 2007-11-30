@@ -751,29 +751,29 @@
   (define (get-parenthesis-colors)
     (unless parenthesis-colors
       (set! parenthesis-colors
+            
             (vector (preferences:get 'framework:paren-match-color))
             
             ;; shades of blue
             #;
-            (let ([size 4])
-              (build-vector
-               4 
-               (lambda (x) 
-                 (let* (
-                        ;; start with a pale blue 
-                        [start-r 204]
-                        [start-g 204]
-                        [start-b 255]
-                        
-                        ;; end with a pale cyan
-                        [end-r 153]
-                        [end-g 153]
-                        [end-b 255]
-                        [between (λ (start end) (+ start (* (- end start) (/ x (- size 1)))))])
-                   (make-object color% 
-                     (between start-r end-r)
-                     (between start-g end-g)
-                     (between start-b end-b))))))
+            (between 204 204 255
+                     153 153 255)
+            
+            ;; shades of yellow (too pale)
+            #;
+            (between 255 255 204
+                     255 255 153)
+            
+            ;; springtime
+            #;
+            (between 255 255 153
+                     204 255 153)
+            
+            ;; fall
+            #;
+            (between 255 204 153
+                     204 153 102)
+                     
             
             ;; shades of grey
             #;
@@ -784,6 +784,17 @@
                  (let* ([grey-amount (floor (+ 180 (* 40 (/ x size))))])
                    (make-object color% grey-amount grey-amount grey-amount)))))))
     parenthesis-colors)
+  
+  (define (between start-r start-g start-b end-r end-g end-b)
+    (let ([size 4])
+      (build-vector
+       4 
+       (lambda (x) 
+         (let ([between (λ (start end) (+ start (* (- end start) (/ x (- size 1)))))])
+           (make-object color% 
+             (between start-r end-r)
+             (between start-g end-g)
+             (between start-b end-b)))))))
   
   (define -text% (text-mixin text:keymap%))
   
