@@ -287,11 +287,8 @@ improve method arity mismatch contract violation error messages?
                   [super-id (syntax-case struct-name-position ()
                               [(a b) (syntax b)]
                               [else #t])]
-                  [struct-info (lookup-struct-info struct-name-position provide-stx)]
-                  [constructor-id (list-ref struct-info 1)]
-                  [predicate-id (list-ref struct-info 2)]
-                  [selector-ids (reverse (list-ref struct-info 3))]
-                  [mutator-ids (reverse (list-ref struct-info 4))]
+                  
+                  
                   [all-parent-struct-count/names (get-field-counts/struct-names struct-name provide-stx)]
                   [parent-struct-count (if (null? all-parent-struct-count/names)
                                            #f
@@ -299,6 +296,21 @@ improve method arity mismatch contract violation error messages?
                                              (if (null? pp)
                                                  #f
                                                  (car (car pp)))))]
+                  
+                  [struct-info (lookup-struct-info struct-name-position provide-stx)]
+                  [constructor-id (list-ref struct-info 1)]
+                  [predicate-id (list-ref struct-info 2)]
+                  [selector-ids (reverse (list-ref struct-info 3))]
+                  [is-id-ok?
+                   (λ (id i)
+                     (if (or (not parent-struct-count)
+                             (parent-struct-count . <= . i))
+                         id
+                         #t))]
+                  [mutator-ids (let ([candidate-mutator-ids (reverse (list-ref struct-info 4))])
+                                 (if (andmap/count is-id-ok? candidate-mutator-ids)
+                                     candidate-mutator-ids
+                                     #f))]
                   [field-contract-ids (map (λ (field-name field-contract) 
                                              (if (a:known-good-contract? field-contract)
                                                  field-contract
@@ -335,28 +347,16 @@ improve method arity mismatch contract violation error messages?
                        'provide/contract
                        (format "cannot determine ~a, found ~s" what names)
                        provide-stx
-                       struct-name))]
-		   [is-id-ok?
-		    (λ (id i)
-                      (if (or (not parent-struct-count)
-			      (parent-struct-count . <= . i))
-			  id
-			  #t))])
+                       struct-name))])
                
                (unless constructor-id (unknown-info "constructor" constructor-id))
                (unless predicate-id (unknown-info "predicate" predicate-id))
                (unless (andmap/count is-id-ok? selector-ids)
-		 (unknown-info "selectors"
-			       (map (λ (x) (if (syntax? x)
+                 (unknown-info "selectors"
+                               (map (λ (x) (if (syntax? x)
                                                (syntax-object->datum x)
                                                x))
-                                    selector-ids)))
-               (unless (andmap/count is-id-ok? mutator-ids)
-		 (unknown-info "mutators"
-			       (map (λ (x) (if (syntax? x)
-                                               (syntax-object->datum x)
-                                               x))
-				    mutator-ids))))
+                                    selector-ids))))
              
              (unless (equal? (length selector-ids)
                              (length field-contract-ids))
@@ -368,8 +368,9 @@ improve method arity mismatch contract violation error messages?
                                            (if (= 1 (length field-contract-ids)) "" "s"))
                                    provide-stx
                                    struct-name))
-             (unless (equal? (length mutator-ids)
-                             (length field-contract-ids))
+             (unless (or (not mutator-ids)
+                         (equal? (length mutator-ids)
+                                 (length field-contract-ids)))
                (raise-syntax-error 'provide/contract
                                    (format "found ~a fields in struct, but ~a contracts"
                                            (length mutator-ids)
@@ -447,28 +448,32 @@ improve method arity mismatch contract violation error messages?
                                                #f))
                                          selector-ids)))]
                            [((mutator-codes mutator-new-names) ...)
-                            (filter
-                             (λ (x) x)
-                             (map/count (λ (mutator-id field-contract-id index)
-                                          (if (is-new-id? index)
-                                              (code-for-one-id/new-name stx
-                                                                        mutator-id 
-                                                                        (build-mutator-contract struct-name 
-                                                                                                predicate-id
-                                                                                                field-contract-id)
-                                                                        #f)
-                                              #f))
-                                        mutator-ids
-                                        field-contract-ids))]
+                            (if mutator-ids
+                                (filter
+                                 (λ (x) x)
+                                 (map/count (λ (mutator-id field-contract-id index)
+                                              (if (is-new-id? index)
+                                                  (code-for-one-id/new-name stx
+                                                                            mutator-id 
+                                                                            (build-mutator-contract struct-name 
+                                                                                                    predicate-id
+                                                                                                    field-contract-id)
+                                                                            #f)
+                                                  #f))
+                                            mutator-ids
+                                            field-contract-ids))
+                                (list))]
                            [(rev-mutator-old-names ...)
-                            (reverse
-                             (filter
-                              (λ (x) x)
-                              (map/count (λ (mutator-id index)
-                                           (if (not (is-new-id? index))
-                                               mutator-id
-                                               #f))
-                                         mutator-ids)))]
+                            (if mutator-ids
+                                (reverse
+                                 (filter
+                                  (λ (x) x)
+                                  (map/count (λ (mutator-id index)
+                                               (if (not (is-new-id? index))
+                                                   mutator-id
+                                                   #f))
+                                             mutator-ids)))
+                                '())]
                            [(predicate-code predicate-new-name)
                             (code-for-one-id/new-name stx predicate-id (syntax (-> any/c boolean?)) #f)]
                            [(constructor-code constructor-new-name)
@@ -504,7 +509,12 @@ improve method arity mismatch contract violation error messages?
                                               [super-id (if (boolean? super-id)
                                                             super-id
                                                             (with-syntax ([super-id super-id])
-                                                              (syntax ((syntax-local-certifier) #'super-id))))])
+                                                              (syntax ((syntax-local-certifier) #'super-id))))]
+                                              [mutator-id-info
+                                               (if mutator-ids
+                                                   #'(list (slc #'rev-mutator-new-names) ...
+                                                           (slc #'rev-mutator-old-names) ...)
+                                                   #''(#f))])
                                   (syntax (begin
                                             (provide (rename id-rename struct-name))
                                             (define-syntax id-rename
@@ -514,8 +524,7 @@ improve method arity mismatch contract violation error messages?
                                                       (slc #'predicate-new-name)
                                                       (list (slc #'rev-selector-new-names) ...
                                                             (slc #'rev-selector-old-names) ...)
-                                                      (list (slc #'rev-mutator-new-names) ...
-                                                            (slc #'rev-mutator-old-names) ...)
+                                                      mutator-id-info
                                                       super-id))))))]
                                [struct:struct-name struct:struct-name]
                                [-struct:struct-name -struct:struct-name]
@@ -1540,7 +1549,8 @@ improve method arity mismatch contract violation error messages?
             (let ([ctc (coerce-contract 'name input)])
               (if (flat-contract? ctc)
                   (let ([content-pred? (flat-contract-predicate ctc)])
-                    (flat-contract
+                    (build-flat-contract
+                     `(listof ,(contract-name ctc))
                      (lambda (x) (and (predicate? x) (testmap content-pred? x)))))
                   (let ([proj (contract-proc ctc)])
                     (make-proj-contract
@@ -1561,7 +1571,7 @@ improve method arity mismatch contract violation error messages?
                      predicate?)))))))]))
   
   (define listof
-    (*-immutableof list? map andmap list listf))
+    (*-immutableof list? map andmap list listof))
 
   (define (immutable-vector? val) (and (immutable? val) (vector? val)))
   
@@ -1696,7 +1706,8 @@ improve method arity mismatch contract violation error messages?
                  (let ([ctc-x (coerce-contract 'name params)] ...)
                    (if (and (flat-contract? ctc-x) ...)
                        (let ([p-apps (flat-contract-predicate ctc-x)] ...)
-                         (flat-contract
+                         (build-flat-contract
+                          `(name ,(contract-name ctc-x) ...)
                           (lambda (x)
                             (and (predicate?-name x)
                                  (p-apps (selector-names x)) 

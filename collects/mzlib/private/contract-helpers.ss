@@ -109,7 +109,13 @@
            ;; want to assume that the collection paths
            ;; are set or the file system can be accessed.
            (if path
-               (string->symbol (format "~s" path))
+               (string->symbol
+                (if (and (pair? path)
+                         (eq? (car path) 'quote)
+                         (pair? (cdr path))
+                         (null? (cddr path)))
+                    (format "'~s" (cadr path))
+                    (format "~s" path)))
                'top-level))]
         [else 'top-level])))
   

@@ -70,6 +70,12 @@
   (define (test/spec-failed name expression blame)
     (let ()
       (define (has-proper-blame? msg)
+        (printf ">> ~s\n"
+                (cond
+                  [(regexp-match #rx"(^| )([^ ]*) broke" msg) 
+                   =>
+                   (λ (x) (caddr x))]
+                  [else (format "no blame in error message: \"~a\"" msg)]))
         (equal?
          blame
          (cond
@@ -2797,7 +2803,7 @@
                         'neg)])
       ((car ct) 1)))
   
-  (test/pos-blame
+  (test/neg-blame
    'immutable2
    '(let ([ct (contract (listof (boolean? . -> . boolean?)) 
                         (list (lambda (x) x)) 
@@ -4432,7 +4438,6 @@ so that propagation occurs.
   (ctest #f contract-first-order-passes? (->d integer? boolean? (lambda (x y) char?)) (λ (x y z) x))
 
   (ctest #t contract-first-order-passes? (listof integer?) (list 1))
-  (ctest #f contract-first-order-passes? (listof integer?) (list 1))
   (ctest #f contract-first-order-passes? (listof integer?) #f)
 
   (ctest #t contract-first-order-passes? (vector-immutableof integer?) (vector->immutable-vector (vector 1)))
@@ -4635,7 +4640,7 @@ so that propagation occurs.
                (provide/contract (x integer?))))
       (eval '(require 'contract-test-suite3))
       (eval 'x))
-   "contract-test-suite3")
+   "'contract-test-suite3")
   
   (test/spec-passed
    'provide/contract4
@@ -4862,24 +4867,26 @@ so that propagation occurs.
   
   ;; provide/contract should signal errors without requiring a reference to the variable
   ;; this test is bogus, because provide/contract'd variables can be set!'d.
-  (test/pos-blame
+  (test/spec-failed
    'provide/contract15
    '(begin
       (eval '(module pos mzscheme
                (require (lib "contract.ss"))
                (define i #f)
                (provide/contract [i integer?])))
-      (eval '(require 'pos))))
+      (eval '(require 'pos)))
+   "'pos")
   
   ;; this is really a positive violation, but name the module `neg' just for an addl test
-  (test/neg-blame
+  (test/spec-failed
    'provide/contract16
    '(begin
       (eval '(module neg mzscheme
                (require (lib "contract.ss"))
                (define i #f)
                (provide/contract [i integer?])))
-      (eval '(require 'neg))))
+      (eval '(require 'neg)))
+   "'neg")
   
   ;; this test doesn't pass yet ... waiting for support from define-struct
   
@@ -5017,6 +5024,17 @@ so that propagation occurs.
                                      [(#%app e ...) (list e ...)])])
                  (seventeen 18))))
       (eval '(require 'provide/contract25b))))
+  
+  (test/spec-passed/result
+   'provide/contract26
+   '(begin
+      (eval '(module provide/contract26 scheme/base
+               (require scheme/contract)
+               (define-struct pc26-s (a))
+               (provide/contract (struct pc26-s ((a integer?))))))
+      (eval '(require 'provide/contract26))
+      (eval '(pc26-s-a (make-pc26-s 1))))
+   1)
 
   (contract-error-test
    #'(begin
@@ -5060,7 +5078,7 @@ so that propagation occurs.
                 (define the-defined-variable4 (λ (x) #f))
                 (provide/contract [the-defined-variable4 (-> any/c number?)])))
        (eval '(require 'pce4-bug))
-       (eval '((if #t the-defined-variable4) #f)))
+       (eval '((if #t the-defined-variable4 the-defined-variable4) #f)))
    (λ (x)
      (and (exn? x)
           (regexp-match #rx"on the-defined-variable4" (exn-message x)))))
