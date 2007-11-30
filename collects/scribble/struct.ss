@@ -1,6 +1,6 @@
 
 (module struct scheme/base
-  (require mzlib/serialize
+  (require scheme/serialize
            scheme/contract
            (for-syntax scheme/base))
 
@@ -66,7 +66,7 @@
     (syntax-case stx ()
       [(_ (id ([field ct] ...)) ...)
        #`(begin
-           (define-serializable-struct id (field ...)) ...
+           (define-serializable-struct id (field ...) #:mutable) ...
            (provide/contract
             #,@(let ([ids (syntax->list #'(id ...))]
                      [fields+cts (syntax->list #'(([field ct] ...) ...))])
