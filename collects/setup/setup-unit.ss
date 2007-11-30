@@ -17,8 +17,6 @@
 	   (lib "sig.ss" "compiler")
 	   (lib "launcher-sig.ss" "launcher")
 
-           (prefix doc: "scribble.ss")
-           
 	   "unpack.ss"
 	   "getinfo.ss"
 	   "dirs.ss"
@@ -740,53 +738,6 @@
                                              (newline))
                                            'truncate/replace)))))))))
       
-      ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-      ;;                       Docs                    ;;
-      ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-      (when (make-docs)
-        (setup-printf "Building documentation")
-        (doc:verbose (verbose))
-        (doc:setup-scribblings (if (and (null? x-specific-collections)
-                                        (null? x-specific-planet-dirs))
-                                   #f
-                                   (map cc-path ccs-to-compile))
-                               #f))
-
-      (when (doc-pdf-dest)
-        (setup-printf "Building PDF documentation (via pdflatex)")
-        (unless (directory-exists? (doc-pdf-dest))
-          (make-directory (doc-pdf-dest)))
-        (let ([tmp-dir (build-path (find-system-path 'temp-dir) 
-                                   (format "pltpdfdoc~a" (current-seconds)))])
-          (dynamic-wind
-           void
-           (lambda ()
-             (make-directory tmp-dir)
-             (doc:verbose (verbose))
-             (doc:setup-scribblings (if (and (null? x-specific-collections)
-                                             (null? x-specific-planet-dirs))
-                                        #f
-                                        (map cc-path ccs-to-compile))
-                                    tmp-dir)
-             (parameterize ([current-directory tmp-dir])
-               (for-each (lambda (f)
-                           (when (regexp-match? #rx#"[.]tex$" (path-element->bytes f))
-                             (let loop ([n 3])
-                               (unless (zero? n)
-                                 (unless (system (format "pdflatex ~a" f))
-                                   (error 'setup-plt "pdflatex failed"))
-                                 (loop (sub1 n))))
-                             (let* ([f (path-replace-suffix f #".pdf")]
-                                    [target (build-path (doc-pdf-dest) f)])
-                               (when (file-exists? target)
-                                 (delete-file target))
-                               (copy-file f target))))
-                         (directory-list))))
-           (lambda ()
-             (when (directory-exists? tmp-dir)
-               (delete-directory/files tmp-dir))))))
-
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;                  Make Launchers               ;;
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

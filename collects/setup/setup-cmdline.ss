@@ -38,8 +38,7 @@
 		      (make-zo #f)
 		      (call-install #f)
 		      (make-launchers #f)
-		      (make-info-domain #f)
-                      (make-docs #f)))]
+		      (make-info-domain #f)))]
 	[("-n" "--no-zo") "Do not produce .zo files"
 	 (add-flags '((make-zo #f)))]
 	[("-x" "--no-launcher") "Do not produce launcher programs"
@@ -50,8 +49,6 @@
 	 (add-flags '((call-post-install #f)))]
 	[("-d" "--no-info-domain") "Do not produce info-domain caches"
 	 (add-flags '((make-info-domain #f)))]
-	[("-D" "--no-docs") "Do not produce documentation"
-	 (add-flags '((make-docs #f)))]
 	[("-e" "--extension") "Produce native code extensions"
 	 (add-flags '((make-so #t)))]
 	[("-v" "--verbose") "See names of compiled files and info printfs"
@@ -71,8 +68,6 @@
 	 (add-flags '((all-users #t)))]
 	[("--mode") mode "Select a compilation mode"
 	 (add-flags `((compile-mode ,mode)))]
-        [("--doc-pdf") dir "Write doc PDF to <dir>"
-         (add-flags `((doc-pdf-dest ,dir)))]
 	[("-l") =>
 	 (lambda (flag . collections)
 	   (map list collections))
