@@ -261,6 +261,9 @@ WARNING: printf is rebound in the body of the unit to always
           (unless (or (eq? priority 'high) (eq? priority 'low))
             (error 'highlight-range "expected last argument to be either 'high or 'low, got: ~e"
                    priority))
+          (unless (is-a? color color%)
+            (error 'highlight-range "expected a color for the third argument, got ~s" color))
+                      
           (let ([l (make-range start end bitmap color caret-space?)])
             (invalidate-rectangles range-rectangles)
             (set! ranges (if (eq? priority 'high) (cons l ranges) (append ranges (list l))))

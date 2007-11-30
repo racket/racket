@@ -413,14 +413,15 @@
       (define mismatch-color (make-object color% "PINK"))
       (define/private (get-match-color) (preferences:get 'framework:paren-match-color))
       
-      ;; higlight : number number number (or/c #f #t color)
-      ;;   if color is a boolean, then #t means the normal paren color and #f means an error color. 
-      ;;   Otherwise, color is a color
+      ;; higlight : number number number (or/c color any)
+      ;;   if color is a color, then it uses that color to higlight
+      ;;   Otherwise, it treats it like a boolean, where a true value  
+      ;;   means the normal paren color and #f means an error color. 
       (define/private (highlight start end caret-pos color)
         (let ([off (highlight-range (+ start-pos start) (+ start-pos end)
-                                    (if (boolean? color)
-                                        (if color mismatch-color (get-match-color))
-                                        color)
+                                    (if (is-a? color color%)
+                                        color
+                                        (if color mismatch-color (get-match-color)))
                                     (and (send (icon:get-paren-highlight-bitmap)
                                                ok?)
                                          (icon:get-paren-highlight-bitmap))
