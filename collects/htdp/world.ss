@@ -78,7 +78,7 @@ Matthew
   (provide (all-from (lib "image.ss" "htdp")))
   
   (provide
-   ;; Scene is Image with pinhole in origin
+    ;; Scene is Image with pinhole in origin 
    nw:rectangle ;; Number Number Mode Color -> Image
    place-image  ;; Image Number Number Scene -> Scene
    empty-scene  ;; Number Number -> Scene 
@@ -159,7 +159,7 @@ Matthew
     (check-arg 'place-image (number? y) 'integer "third" y)
     (check-scene 'place-image scene "fourth")
     (let ([x (number->integer x)]
-          [y (number->integer y)])
+	  [y (number->integer y)])
       (place-image0 image x y scene)))
   
   (define (empty-scene width height)
@@ -212,7 +212,7 @@ Matthew
      "-- (big-bang <width> <height> <rate> <world0>)\n"
      "-- (big-bang <width> <height> <rate> <world0> <animated-gif>)\n"
      "see Help Desk."))
-  
+    
   (define big-bang0
     (case-lambda 
       [(w h delta world) (big-bang w h delta world #f)]
@@ -233,17 +233,17 @@ Matthew
                   "fifth"
                   animated-gif)
        (let ([w (coerce w)]
-             [h (coerce h)])
-         (when (vw-init?) (error 'big-bang "big-bang already called once"))
-         (install-world delta world) ;; call first to establish a visible world
-         (set-and-show-frame w h animated-gif) ;; now show it
-         (unless animated-gif (set! add-event void)) ;; no recording if image undesired
-         (set! *the-delta* delta)
-         #t)]))
-  
+	     [h (coerce h)])
+	 (when (vw-init?) (error 'big-bang "big-bang already called once"))
+	 (install-world delta world) ;; call first to establish a visible world
+	 (set-and-show-frame w h animated-gif) ;; now show it
+	 (unless animated-gif (set! add-event void)) ;; no recording if image undesired
+	 (set! *the-delta* delta)
+	 #t)]))
+
   ;; Number -> Int 
   (define (coerce x) (inexact->exact (floor x)))
-  
+
   (define *the-delta* 0.0)
   
   (define (end-of-time s)
@@ -285,17 +285,17 @@ Matthew
                 (check-image 'run-movie cand "first" "list of images"))
               movie)
     (let* ([fst (car movie)]
-           [wdt (image-width fst)]
-           [hgt (image-height fst)]
-           [nxt (lambda (w) (if (null? w) (end-of-time "") (cdr w)))])
+	   [wdt (image-width fst)]
+	   [hgt (image-height fst)]
+	   [nxt (lambda (w) (if (null? w) (end-of-time "") (cdr w)))])
       (big-bang wdt hgt (/ 1 27) movie)
       (let run-movie ([movie movie])
-        (cond
-          [(null? movie) #t]
-          [(pair? movie)
-           (update-frame (car movie))
-           (sleep/yield .05)
-           (run-movie (cdr movie))]))))
+	(cond
+	  [(null? movie) #t]
+	  [(pair? movie)
+	   (update-frame (car movie))
+	   (sleep/yield .05)
+	   (run-movie (cdr movie))]))))
   
   (define run-simulation 
     (lambda x 
@@ -309,8 +309,8 @@ Matthew
      "-- (run-simulation <width> <height> <rate> <world-to-world-function>)\n"
      "-- (run-simulation <width> <height> <rate> <world-to-world-function> <create-animated-gif?>)\n"
      "see Help Desk."))
-  
-  
+
+
   (define run-simulation0
     (case-lambda
       [(width height rate f record?)
@@ -352,7 +352,7 @@ Matthew
     (if (and (pair? other-message) (string? (car other-message)))
         (check-arg tag (image? i) (car other-message) rank i)
         (check-arg tag (image? i) "image" rank i)))
-  
+
   ;; Symbol Any String -> Void
   (define (check-scene tag i rank)
     (if (image? i)
@@ -371,10 +371,10 @@ Matthew
   ;; Symbol (union Symbol String) Nat -> Void
   (define (check-mode tag s rank)
     (check-arg tag (or (eq? s 'solid)
-                       (eq? s 'outline)
-                       (string=? "solid" s)
-                       (string=? "outline" s)) "mode (solid or outline)" rank s))
-  
+		       (eq? s 'outline)
+		       (string=? "solid" s)
+		       (string=? "outline" s)) "mode (solid or outline)" rank s))
+
   ;                                                                        
   ;                                                                        
   ;   ;;;;;                                     ;;;;;                      
@@ -404,7 +404,7 @@ Matthew
     (define w (image-width img))  
     (define h (image-height img))
     (cond
-      [(and (<= 0 x0 w) (<= 0 x1 w) (<= 0 y0 w) (<= 0 y1 w)) 
+      [(and (<= 0 x0) (< x0 w) (<= 0 x1) (< x1 w) (<= 0 y0) (< y0 w) (<= 0 y1) (< y1 w))
        (add-line img x0 y0 x1 y1 c)]
       [(= x0 x1) ;; vertical 
        (if (<= 0 x0 w) (add-line img x0 (app y0 h) x0 (app y1 h) c) img)]
@@ -438,9 +438,9 @@ Matthew
   ;; y if in [0,h], otherwise the closest boundary
   (define (app y h)
     (cond
-      [(<= 0 y h) y]
+      [(and (<= 0 y) (< y h)) y]
       [(< y 0) 0]
-      [else    h]))
+      [else (- h 1)]))
   
   ;; Nat Nat Nat Nat -> (union 'upper-left 'upper-right 'lower-left 'lower-right)
   ;; how to get to (x1,y1) from (x0,y0)
@@ -644,21 +644,21 @@ Matthew
   
   ;; Amount of space around the image in the world window:
   (define INSET 5)
-    
-  ;                                                                                      
-  ;                                                                                      
-  ;  ;;;;;;                                    ;;;;;                                  ;; 
-  ;   ;   ;                        ;            ;   ;                                  ; 
-  ;   ; ;   ;;; ;;;  ;;;  ;; ;;   ;;;;;         ;   ;   ;;;    ;;;;   ;;;   ;; ;;   ;; ; 
-  ;   ;;;    ;   ;  ;   ;  ;;  ;   ;            ;   ;  ;   ;  ;   ;  ;   ;   ;;    ;  ;; 
-  ;   ; ;    ;   ;  ;;;;;  ;   ;   ;            ;;;;   ;;;;;  ;      ;   ;   ;     ;   ; 
-  ;   ;       ; ;   ;      ;   ;   ;            ;  ;   ;      ;      ;   ;   ;     ;   ; 
-  ;   ;   ;   ; ;   ;      ;   ;   ;   ;        ;   ;  ;      ;   ;  ;   ;   ;     ;   ; 
-  ;  ;;;;;;    ;     ;;;; ;;; ;;;   ;;;        ;;;   ;  ;;;;   ;;;    ;;;   ;;;;;   ;;;;;
-  ;                                                                                      
-  ;                                                                                      
-  ;                                                                                      
-  ;                                                                                      
+     
+   ;                                                                                      
+   ;                                                                                      
+   ;  ;;;;;;                                    ;;;;;                                  ;; 
+   ;   ;   ;                        ;            ;   ;                                  ; 
+   ;   ; ;   ;;; ;;;  ;;;  ;; ;;   ;;;;;         ;   ;   ;;;    ;;;;   ;;;   ;; ;;   ;; ; 
+   ;   ;;;    ;   ;  ;   ;  ;;  ;   ;            ;   ;  ;   ;  ;   ;  ;   ;   ;;    ;  ;; 
+   ;   ; ;    ;   ;  ;;;;;  ;   ;   ;            ;;;;   ;;;;;  ;      ;   ;   ;     ;   ; 
+   ;   ;       ; ;   ;      ;   ;   ;            ;  ;   ;      ;      ;   ;   ;     ;   ; 
+   ;   ;   ;   ; ;   ;      ;   ;   ;   ;        ;   ;  ;      ;   ;  ;   ;   ;     ;   ; 
+   ;  ;;;;;;    ;     ;;;; ;;; ;;;   ;;;        ;;;   ;  ;;;;   ;;;    ;;;   ;;;;;   ;;;;;
+   ;                                                                                      
+   ;                                                                                      
+   ;                                                                                      
+   ;                                                                                      
   
   (define TICK 'tick)
   (define MOUSE 'mouse)
@@ -716,7 +716,7 @@ Matthew
                       (create-animated-gif (reverse bitmap-list))
                       (update-frame img)]
           [else (replay (cdr ev) (world-transition world (car ev)))]))))
-  
+
   ;; [Listof (-> bitmap)] -> Void
   ;; turn the list of thunks into animated gifs 
   ;; effect: overwrite the ANIMATED-GIF-FILE (in current directory)
@@ -796,12 +796,12 @@ Matthew
       (define fname (object-name f))
       (define tname (if fname fname 'your-redraw-function))
       (if (image? result)
-          (check-result tname scene? "scene" result
-                        (format "image with pinhole at (~s,~s)"
-                                (pinhole-x result) (pinhole-y result)))
-          (check-result tname (lambda (x) (image? x)) "scene" result))
+	  (check-result tname scene? "scene" result
+	    (format "image with pinhole at (~s,~s)"
+	      (pinhole-x result) (pinhole-y result)))
+	  (check-result tname (lambda (x) (image? x)) "scene" result))
       (update-frame result)))
-  
+
   ;; f : [World KeyEvent -> World]
   ;; esp : EventSpace 
   ;; e : KeyEvent 
