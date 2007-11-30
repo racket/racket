@@ -487,19 +487,20 @@
                          [depth 0])
           (when (< depth (vector-length (get-parenthesis-colors)))
             (let seq-loop ([inner-sequence-start (+ start 1)])
-              (let ([post-whitespace (skip-whitespace inner-sequence-start 'forward #t)])
-                (let-values ([(start-inner end-inner error-inner) 
-                              (send parens match-forward (- post-whitespace start-pos))])
-                  (cond
-                    [(and start-inner end-inner (not error-inner))
-                     (paren-loop start-inner end-inner (+ depth 1))
-                     (seq-loop end-inner)]
-                    [(skip-past-token post-whitespace)
-                     =>
-                     (λ (after-non-paren-thing)
-                       (seq-loop after-non-paren-thing))]))))
+              (when (< inner-sequence-start end)
+                (let ([post-whitespace (skip-whitespace inner-sequence-start 'forward #t)])
+                  (let-values ([(start-inner end-inner error-inner)
+                                (send parens match-forward (- post-whitespace start-pos))])
+                    (cond
+                      [(and start-inner end-inner (not error-inner))
+                       (paren-loop start-inner end-inner (+ depth 1))
+                       (seq-loop end-inner)]
+                      [(skip-past-token post-whitespace)
+                       =>
+                       (λ (after-non-paren-thing)
+                         (seq-loop after-non-paren-thing))])))))
             (highlight start end here (vector-ref (get-parenthesis-colors) depth)))))
-
+      
       ;; See docs
       (define/public (forward-match position cutoff)
         (do-forward-match position cutoff #t))
