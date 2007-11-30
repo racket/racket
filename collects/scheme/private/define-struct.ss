@@ -54,15 +54,17 @@
                     parts)))
        id))
 
-    (define (bad why kw where)
+    (define (bad why kw where . alt)
       (raise-syntax-error
        #f
        (format "~a ~a specification~a"
                why
-               (syntax-e kw)
+               (if (string? kw)
+                   kw
+                   (syntax-e kw))
                where)
        stx
-       kw))
+       (if (null? alt) kw (car alt))))
 
     (define (check-exprs orig-n ps)
       (let loop ([nps (cdr ps)][n orig-n])
@@ -149,7 +151,7 @@
          [(eq? '#:super (syntax-e (car p)))
           (check-exprs 1 p)
           (when (lookup config '#:super)
-            (bad "multiple" (car p) ""))
+            (bad "multiple" (car p) "s"))
           (when super-id
             (raise-syntax-error
              #f
@@ -161,11 +163,11 @@
           (loop (cddr p)
                 (extend-config config '#:super (cadr p)))]
          [(memq (syntax-e (car p))
-                '(#:inspector #:guard #:auto-value))
+                '(#:guard #:auto-value))
           (let ([key (syntax-e (car p))])
             (check-exprs 1 p)
             (when (lookup config key)
-              (bad "multiple" (car p) ""))
+              (bad "multiple" (car p) "s"))
             (loop (cddr p)
                   (extend-config config key (cadr p))))]
          [(eq? '#:property (syntax-e (car p)))
@@ -175,6 +177,17 @@
                                '#:props
                                (cons (cons (cadr p) (caddr p))
                                      (lookup config '#:props))))]
+         [(eq? '#:inspector (syntax-e (car p)))
+          (check-exprs 1 p)
+          (when (lookup config '#:inspector)
+            (bad "multiple" "#:inspector or #:transparent" "s" (car p)))
+          (loop (cddr p)
+                (extend-config config '#:inspector (cadr p)))]
+         [(eq? '#:transparent (syntax-e (car p)))
+          (when (lookup config '#:inspector)
+            (bad "multiple" "#:inspector or #:transparent" "s" (car p)))
+          (loop (cdr p)
+                (extend-config config '#:inspector #'#f))]
          [(memq (syntax-e (car p))
                 '(#:mutable #:omit-define-values #:omit-define-syntaxes))
           (let ([key (syntax-e (car p))])

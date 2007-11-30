@@ -15,3 +15,5 @@
 @include-section["pretty-print.scrbl"]
 @include-section["readtables.scrbl"]
 @include-section["custom-write.scrbl"]
+@include-section["serialization.scrbl"]
+

@@ -168,7 +168,7 @@
                          (void))))))))
              #,@(map (lambda (other-deserialize-id proc-expr cycle-proc-expr)
                        #`(define #,other-deserialize-id
-                           (make-deserialize-info proc-expr cycle-proc-expr)))
+                           (make-deserialize-info #,proc-expr #,cycle-proc-expr)))
                      other-deserialize-ids
                      (syntax->list #'(make-proc-expr ...))
                      (syntax->list #'(cycle-make-proc-expr ...)))

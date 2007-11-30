@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-syntax scheme/base))
+          (for-syntax scheme/base)
+          (for-label scheme/serialize))
 
 @title[#:tag "define-struct"]{Defining Structure Types: @scheme[define-struct]}
 
@@ -14,6 +15,7 @@
                       [field-id field-option ...]]
                [struct-option #:mutable
                               (code:line #:super super-expr)
+                              (code:line #:transparent)
                               (code:line #:inspector inspector-expr)
                               (code:line #:auto-value auto-expr)
                               (code:line #:guard guard-expr)
@@ -90,10 +92,11 @@ The @scheme[#:inspector], @scheme[#:auto-value], and @scheme[#:guard]
 options specify an inspector, value for automatic fields, and guard
 procedure, respectively. See @scheme[make-struct-type] (in
 @secref["creatingmorestructs"]) for more information on these
-properties of a structure type. The @scheme[#:property] option, which
-is the only one that can be specified multiple times, attaches a
-property value to the structure type; see @secref["structprops"]
-for more information on properties.
+properties of a structure type. The @scheme[#:transparent] option is a
+shorthand for @scheme[#:inspector #f]. The @scheme[#:property]
+option, which is the only one that can be specified multiple times,
+attaches a property value to the structure type; see
+@secref["structprops"] for more information on properties.
 
 If the @scheme[#:omit-define-syntaxes] option is supplied, then
 @scheme[id] is not bound as a transformer. If the
@@ -114,10 +117,12 @@ error is reported. If any @scheme[field-option] or
 @scheme[struct-option] keyword is repeated, other than
 @scheme[#:property], a syntax error is reported.
 
+For serialization, see @scheme[define-serializable-struct].
+
 @defexamples[
 (define-struct posn (x y [z #:auto])
                #:auto-value 0
-               #:inspector #f)
+               #:transparent)
 (make-posn 1 2)
 (posn? (make-posn 1 2))
 (posn-y (make-posn 1 2))

@@ -397,7 +397,8 @@ See @scheme[unit] for information on @scheme[tagged-sig-spec],
   sig-id]
 
  [infer-linkage-decl
-  ((link-binding ...) unit-id tagged-link-id)
+  ((link-binding ...) unit-id 
+                      tagged-link-id)
   unit-id])]{
 
 Like @scheme[compound-unit]. Syntactically, the difference between
