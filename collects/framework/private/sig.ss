@@ -365,7 +365,7 @@
      text-mode-mixin
      text-mode%))
   (define-signature color^ extends color-class^
-    ())
+    (get-parenthesis-colors-table))
   
   (define-signature color-prefs-class^
     ())

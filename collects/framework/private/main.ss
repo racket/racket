@@ -20,6 +20,8 @@
   
   (application-preferences-handler (λ () (preferences:show-dialog)))
   
+  (preferences:set-default 'framework:paren-color-scheme 'basic-grey symbol?)
+  
   (preferences:set-default 'framework:square-bracket:cond/offset
                            '(("case-lambda" 0)
                              ("cond" 0)

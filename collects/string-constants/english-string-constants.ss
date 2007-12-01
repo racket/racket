@@ -256,6 +256,16 @@ please adhere to these guidelines:
  (syntax-coloring-choose-color "Choose a color for ~a")
  (preferences-colors "Colors") ;; used in the preferences dialog
  
+  ;; parenthesis color scheme string constants
+  (parenthesis-color-scheme "Parenthesis color scheme") ;; label for the choice% menu in the preferences dialog
+  (paren-color-basic-grey "Basic grey")
+  (paren-color-shades-of-gray "Shades of grey")
+  (paren-color-shades-of-blue "Shades of blue")
+  (paren-color-spring "Spring")
+  (paren-color-fall "Fall")
+  (paren-color-winter "Winter")
+
+  
  (url: "URL:")
  (open-url... "Open URL...")
  (open-url "Open URL")
@@ -410,7 +420,7 @@ please adhere to these guidelines:
  (separate-dialog-for-searching "Use separate dialog for searching")
  (reuse-existing-frames "Reuse existing frames when opening new files")
  (default-fonts "Default Fonts")
- (paren-match-color "Parenthesis highlight color") ; in prefs dialog
+ (basic-gray-paren-match-color "Basic gray parenthesis highlight color") ; in prefs dialog
  (online-coloring-active "Color syntax interactively")
  (open-files-in-tabs "Open files in separate tabs (not separate windows)")
  (show-interactions-on-execute "Automatically open interactions window when running a program")

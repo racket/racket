@@ -21,7 +21,7 @@
     (define (setup-preferences)
       (preferences:add-panel
        (list (string-constant font-prefs-panel-title)
-             (string-constant drscheme))
+             #;(string-constant drscheme))  ;; thre is no help desk font configuration anymore ...
        (λ (panel)
          (letrec ([main (make-object vertical-panel% panel)]
                 [min-size 1]

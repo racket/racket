@@ -9,7 +9,9 @@
   (import [prefix preferences: framework:preferences^]
           [prefix editor: framework:editor^]
           [prefix panel: framework:panel^]
-          [prefix canvas: framework:canvas^])
+          [prefix canvas: framework:canvas^]
+          [prefix scheme: framework:scheme^]
+          [prefix color: framework:color^])
   (export framework:color-prefs^)
   (init-depend framework:editor^)
   
@@ -290,17 +292,38 @@
      (list (string-constant preferences-colors)
            (string-constant background-color))
      (λ (parent)
-       (let ([vp (new vertical-panel% (parent parent))])
+       (let ([vp (new vertical-panel% (parent parent) (alignment '(left top)))])
          (add-solid-color-config (string-constant background-color)
                                  vp
                                  'framework:basic-canvas-background)
-         (add-solid-color-config (string-constant paren-match-color)
+         (add-solid-color-config (string-constant basic-gray-paren-match-color)
                                  vp
                                  'framework:paren-match-color)
          (build-text-foreground-selection-panel vp
                                                 'framework:default-text-color
                                                 (editor:get-default-color-style-name)
                                                 (string-constant default-text-color))
+         
+         (let* ([choice (new choice% 
+                             [label (string-constant parenthesis-color-scheme)]
+                             [parent vp]
+                             [choices (map (λ (x) (list-ref x 1)) 
+                                           (color:get-parenthesis-colors-table))]
+                             [callback
+                              (λ (choice _)
+                                (preferences:set 'framework:paren-color-scheme
+                                                 (car (list-ref (color:get-parenthesis-colors-table)
+                                                                (send choice get-selection)))))])]
+                [update-choice
+                 (lambda (v)
+                   (send choice set-string-selection 
+                         (cadr (or (assoc v (color:get-parenthesis-colors-table))
+                                   (car (color:get-parenthesis-colors-table))))))])
+           (preferences:add-callback 
+            'framework:paren-color-scheme
+            (λ (p v)
+              (update-choice v)))
+           (update-choice (preferences:get 'framework:paren-color-scheme)))
          
          (let ([hp (new horizontal-panel% 
                         [parent vp]

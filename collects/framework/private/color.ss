@@ -6,6 +6,7 @@
            (lib "token-tree.ss" "syntax-color")
            (lib "paren-tree.ss" "syntax-color")
            (lib "default-lexer.ss" "syntax-color")
+           string-constants/string-constant
            "../preferences.ss"
            "sig.ss")
   
@@ -749,50 +750,48 @@
       (define (pref-callback k v) (toggle-color v))
       (preferences:add-callback 'framework:coloring-active pref-callback #t)))
   
-  (define parenthesis-colors #f)
-  (define (get-parenthesis-colors)
-    (unless parenthesis-colors
-      (set! parenthesis-colors
-            
-            (vector (preferences:get 'framework:paren-match-color))
-            
-            ;; shades of blue
-            #;
-            (between 204 204 255
-                     153 153 255)
-            
-            ;; shades of yellow (too pale)
-            #;
-            (between 255 255 204
-                     255 255 153)
-            
-            ;; springtime
-            #;
-            (between 255 255 153
-                     204 255 153)
-            
-            ;; fall
-            #;
-            (between 255 204 153
-                     204 153 102)
-                     
-            
-            ;; shades of grey
-            #;
-            (let ([size 4])
-              (build-vector
-               4 
-               (lambda (x) 
-                 (let* ([grey-amount (floor (+ 180 (* 40 (/ x size))))])
-                   (make-object color% grey-amount grey-amount grey-amount)))))))
-    parenthesis-colors)
+  (define parenthesis-color-table #f)
+  (define (get-parenthesis-colors-table)
+    (unless parenthesis-color-table
+      (set! parenthesis-color-table
+            (list
+             (list 'shades-of-gray  
+                   (string-constant paren-color-shades-of-gray)
+                   (between 180 180 180
+                            220 220 220))
+             (list 'shades-of-blue
+                   (string-constant paren-color-shades-of-blue)
+                   (between 204 204 255
+                            153 153 255))
+             (list 'spring
+                   (string-constant paren-color-spring)
+                   (between 255 255 153
+                            204 255 153))
+             (list 'fall
+                   (string-constant paren-color-fall)
+                   (between 255 204 153
+                            204 153 102))
+             (list 'winter
+                   (string-constant paren-color-winter)
+                   (between 204 205 255
+                            255 255 255)))))
+    (cons (list 'basic-grey
+                (string-constant paren-color-basic-grey)
+                (vector (preferences:get 'framework:paren-match-color)))
+          parenthesis-color-table))
   
+  (define (get-parenthesis-colors) 
+    (let ([choice (or (assoc (preferences:get 'framework:paren-color-scheme)
+                             (get-parenthesis-colors-table))
+                      (car (get-parenthesis-colors-table)))])
+      (caddr choice)))
+      
   (define (between start-r start-g start-b end-r end-g end-b)
     (let ([size 4])
       (build-vector
        4 
        (lambda (x) 
-         (let ([between (λ (start end) (+ start (* (- end start) (/ x (- size 1)))))])
+         (let ([between (λ (start end) (floor (+ start (* (- end start) (/ x (- size 1))))))])
            (make-object color% 
              (between start-r end-r)
              (between start-g end-g)
