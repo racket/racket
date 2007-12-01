@@ -54,7 +54,7 @@
       [("++info-in") file "load format-specific link information form <file>"
        (current-info-input-files
         (cons file (current-info-input-files)))]]
-     [args file file]))
+     [args (file . another-file) (cons file another-file)]))
 
   (define (build-docs-files files)
     (build-docs (map (lambda (file)

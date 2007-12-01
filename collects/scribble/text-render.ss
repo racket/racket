@@ -18,7 +18,7 @@
                render-flow-element)
 
       (define/override (render-part d ht)
-        (let ([number (collected-info-number (part-collected-info d))])
+        (let ([number (collected-info-number (part-collected-info d ht))])
           (when (or (ormap values number)
                     (part-title-content d))
             (newline))
