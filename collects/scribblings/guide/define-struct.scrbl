@@ -131,12 +131,11 @@ structure type are kept private to a module, then no other module can
 rely on the representation of the type's instances.
 
 To make a structure type @defterm{transparent}, use the
-@scheme[#:inspector] keyword with the value @scheme[#f] after the
-field-name sequence:
+@scheme[#:transparent] keyword after the field-name sequence:
 
 @def+int[
 (define-struct posn (x y)
-               #:inspector #f)
+               #:transparent)
 (make-posn 1 2)
 ]
 
@@ -144,8 +143,7 @@ An instance of a transparent structure type prints like a vector, and
 it shows the content of the structure's fields. A transparent
 structure type also allows reflective operations, such as
 @scheme[struct?] and @scheme[struct-info], to be used on its instances
-(see @secref["reflection"]). Different values for @scheme[#:inspector]
-support more controlled access to reflective operations.
+(see @secref["reflection"]).
 
 Structure types are opaque by default, because opaque structure
 instances provide more encapsulation guarantees. That is, a library
@@ -192,10 +190,13 @@ A @scheme[_struct-option] always starts with a keyword:
    (set-person-age! friend 6)
    (set-person-name! friend "Mary")]}
 
- @specspecsubform[(code:line #:inspector inspector-expr)]{
+ @specspecsubform[(code:line #:transparent)]{
   Controls reflective access to structure instances, as discussed
-  in the previous section (@secref["trans-struct"]).
- }
+  in the previous section (@secref["trans-struct"]).}
+
+ @specspecsubform[(code:line #:inspector inspector-expr)]{
+  Generalizes @scheme[#:transparent] to support more controlled access
+  to reflective operations.}
 
  @specspecsubform[(code:line #:auto-value auto-expr)]{
 
@@ -206,7 +207,7 @@ A @scheme[_struct-option] always starts with a keyword:
 
   @defexamples[
     (define-struct posn (x y [z #:auto])
-                   #:inspector #f
+                   #:transparent
                    #:auto-value 0)
     (make-posn 1 2)
   ]}
@@ -224,7 +225,7 @@ A @scheme[_struct-option] always starts with a keyword:
 
  @defexamples[
    (define-struct thing (name)
-                  #:inspector #f
+                  #:transparent
                   #:guard (lambda (name type-name)
                             (cond
                               [(string? name) name]
@@ -242,7 +243,7 @@ A @scheme[_struct-option] always starts with a keyword:
 
  @defexamples[
   (define-struct (person thing) (age)
-                 #:inspector #f
+                 #:transparent
                  #:guard (lambda (name age type-name)
                            (if (negative? age)
                                (error "bad age" age)
@@ -282,7 +283,7 @@ A @scheme[_struct-option] always starts with a keyword:
     (define (make-raven-constructor super-type)
       (define-struct raven ()
                      #:super super-type
-                     #:inspector #f
+                     #:transparent
                      #:property prop:procedure (lambda (self)
                                                  'nevermore))
       make-raven)
@@ -307,7 +308,7 @@ times.
 
 @defexamples[
 (define (add-bigger-fish lst)
-  (define-struct fish (size) #:inspector #f) (code:comment #,(t "new every time"))
+  (define-struct fish (size) #:transparent) (code:comment #,(t "new every time"))
   (cond
    [(null? lst) (list (make-fish 1))]
    [else (cons (make-fish (* 2 (fish-size (car lst))))
@@ -317,7 +318,7 @@ times.
 (add-bigger-fish (add-bigger-fish null))
 ]
 @defs+int[
-[(define-struct fish (size) #:inspector #f)
+[(define-struct fish (size) #:transparent)
  (define (add-bigger-fish lst)
    (cond
     [(null? lst) (list (make-fish 1))]

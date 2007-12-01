@@ -16,6 +16,8 @@ A @tech{module path} that is a quoted identifier refers to a non-file
 @scheme[module] declaration using the identifier. This form of module
 reference makes the most sense in a @tech{REPL}.
 
+@interaction-eval[(compile-enforce-module-constants #f)]
+
 @examples[
 (module m scheme
   (provide color)
@@ -25,6 +27,8 @@ reference makes the most sense in a @tech{REPL}.
   (printf "my favorite color is ~a\n" color))
 (require 'n)
 ]}
+
+@interaction-eval[(compile-enforce-module-constants #t)]
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @specsubform[id]{

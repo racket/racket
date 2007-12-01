@@ -204,20 +204,28 @@
                                 (loop base)))))))
                only-dirs)))
 
-  (define (ensure-doc-prefix! src-file v)
+  (define (ensure-doc-prefix v src-file)
     (let ([p (format "~a" 
                      (path->main-collects-relative src-file))])
-      (if (part-tag-prefix v)
-          (unless (equal? p
-                          (part-tag-prefix v))
-            (error 'setup 
-                   "bad tag prefix: ~e for: ~a expected: ~e"
-                   (part-tag-prefix v)
-                   src-file
-                   p))
-          (set-part-tag-prefix! v p))
-      (unless (member '(part "top") (part-tags v))
-        (set-part-tags! v (cons '(part "top") (part-tags v))))))
+      (when (part-tag-prefix v)
+        (unless (equal? p
+                        (part-tag-prefix v))
+          (error 'setup 
+                 "bad tag prefix: ~e for: ~a expected: ~e"
+                 (part-tag-prefix v)
+                 src-file
+                 p)))
+      (let ([tag-prefix p]
+            [tags (if (member '(part "top") (part-tags v))
+                      (part-tags v)
+                      (cons '(part "top") (part-tags v)))])
+        (make-part tag-prefix
+                   tags
+                   (part-title-content v)
+                   (part-style v)
+                   (part-to-collect v)
+                   (part-flow v)
+                   (part-parts v)))))
 
   (define ((get-doc-info only-dirs latex-dest) doc)
     (let ([info-out-file (build-path (or latex-dest (doc-dest-dir doc)) "out.sxref")]
@@ -267,9 +275,9 @@
                              #f)))
               ;; Run the doc once:
               (parameterize ([current-directory (doc-src-dir doc)])
-                (let ([v (dynamic-require-doc (doc-src-file doc))]
+                (let ([v (ensure-doc-prefix (dynamic-require-doc (doc-src-file doc))
+                                            (doc-src-file doc))]
                       [dest-dir (pick-dest latex-dest doc)])
-                  (ensure-doc-prefix! (doc-src-file doc) v)
                   (let* ([ci (send renderer collect (list v) (list dest-dir))])
                     (let ([ri (send renderer resolve (list v) (list dest-dir) ci)]
                           [out-v (and info-out-time
@@ -314,9 +322,9 @@
               (doc-src-file doc))
       (set-info-rendered?! info #t)
       (parameterize ([current-directory (doc-src-dir doc)])
-        (let ([v (dynamic-require-doc (doc-src-file doc))]
+        (let ([v (ensure-doc-prefix (dynamic-require-doc (doc-src-file doc))
+                                    (doc-src-file doc))]
               [dest-dir (pick-dest latex-dest doc)])
-          (ensure-doc-prefix! (doc-src-file doc) v)
           (let* ([ci (send renderer collect (list v) (list dest-dir))])
             (for-each (lambda (i)
                         (send renderer deserialize-info (info-sci i) ci))

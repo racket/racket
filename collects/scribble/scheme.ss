@@ -45,14 +45,18 @@
 
   (define-struct (sized-element element) (length))
 
-  (define-struct spaces (pre cnt post))
+  (define-struct (spaces element) (cnt))
 
   (define (literalize-spaces i)
     (let ([m (regexp-match-positions #rx"  +" i)])
       (if m
-          (make-spaces (literalize-spaces (substring i 0 (caar m)))
-                       (- (cdar m) (caar m))
-                       (literalize-spaces (substring i (cdar m))))
+          (let ([cnt (- (cdar m) (caar m))])
+            (make-spaces #f
+                         (list
+                          (literalize-spaces (substring i 0 (caar m)))
+                          (make-element 'hspace (list (make-string cnt #\space)))
+                          (literalize-spaces (substring i (cdar m))))
+                         cnt))
           i)))
 
   (define (typeset-atom c out color? quote-depth)
@@ -150,17 +154,17 @@
                         [(delayed-element? v)
                          (element-width v)]
                         [(spaces? v)
-                         (+ (sz-loop (spaces-pre v))
+                         (+ (sz-loop (car (element-content v)))
                             (spaces-cnt v)
-                            (sz-loop (spaces-post v)))]
+                            (sz-loop (caddr (element-content v))))]
                         [else 1])))]
          [(v cls len)
           (unless (equal? v "")
             (cond
              [(spaces? v)
-              (out (spaces-pre v) cls 0)
-              (out (make-element 'hspace (list (make-string (spaces-cnt v) #\space))) #f 0)
-              (out (spaces-post v) cls len)]
+              (out (car (element-content v)) cls 0)
+              (out (cadr (element-content v)) #f 0)
+              (out (caddr (element-content v)) cls len)]
              [(equal? v "\n")
               (if multi-line?
                   (begin

@@ -114,6 +114,13 @@ banner text for an embedding program, such as MrEd). The banner string
 ends with a newline.}
 
 
+@defparam[current-command-line-arguments argv (vectorof (and/c string? immutable?))]{
+
+A parameter that is initialized with command-line arguments when
+Scheme starts (not including any command-line arguments that were
+treated as flags for the system).}
+
+
 @defproc[(vector-set-performance-stats! [results (and/c vector?
                                                         (not/c immutable?))]
                                         [thd (or/c thread? false/c) #f])
