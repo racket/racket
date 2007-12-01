@@ -34,6 +34,10 @@
                (substring s 0 (sub1 (string-length s))))
              sep)))
 
+      (field [report-output? #f])
+      (define/public (report-output!)
+        (set! report-output? #t))
+
       ;; ----------------------------------------
       ;; marshal info
 
@@ -292,7 +296,7 @@
 
       (define/public (render ds fns ri)
         (map (lambda (d fn)
-               (when #f
+               (when report-output?
                  (printf " [Output to ~a]\n" fn))
                (with-output-to-file fn
                  #:exists 'truncate/replace

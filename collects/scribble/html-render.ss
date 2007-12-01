@@ -525,6 +525,8 @@
                part-whole-page?
                format-number)
 
+      (inherit-field report-output?)
+
       (define/override (get-suffix) #"")
 
       (define/override (get-dest-directory)
@@ -572,7 +574,8 @@
       
       (define/override (render ds fns ri)
         (map (lambda (d fn)
-               (printf " [Output to ~a/index.html]\n" fn)
+               (when report-output?
+                 (printf " [Output to ~a/index.html]\n" fn))
                (unless (directory-exists? fn)
                  (make-directory fn))
                (parameterize ([current-subdirectory (file-name-from-path fn)])

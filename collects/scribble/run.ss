@@ -69,6 +69,7 @@
 
       (let ([renderer (new ((current-render-mixin) render%)
                            [dest-dir dir])])
+        (send renderer report-output!)
         (let* ([fns (map (lambda (fn)
                            (let-values ([(base name dir?) (split-path fn)])
                              (let ([fn (path-replace-suffix (or (current-dest-name) name)
