@@ -129,7 +129,7 @@
     sort))
 
 (define *rand* 21)
-(define (random m)
+(define (randm m)
   (set! *rand* (remainder (* *rand* 17) m))
   *rand*)
 
@@ -137,7 +137,7 @@
   (let loop ((n n) (l '()))
     (if (zero? n) 
 	l
-	(loop (- n 1) (cons (random m) l)))))
+	(loop (- n 1) (cons (randm m) l)))))
 
 (define (sort-benchmark sorter n)
   (let ((l (rgen n 1000000)))

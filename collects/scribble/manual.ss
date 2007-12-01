@@ -45,7 +45,10 @@
       [(_ lang rest ...)
        (with-syntax ([modtag (datum->syntax
                               #'here
-                              `(unsyntax (schemefont ,(format "#lang ~a" (syntax-e #'lang))))
+                              `(unsyntax (make-element
+                                          #f
+                                          (list (schemefont ,(format "#lang "))
+                                                (schemeidfont ,(format "~s" (syntax-e #'lang))))))
                               #'lang)])
          #'(schemeblock modtag rest ...))]))
 

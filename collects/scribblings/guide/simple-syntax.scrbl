@@ -109,7 +109,7 @@ evaluated only for some side-effect, such as printing.
 (greet "universe")
 ]
 
-Scheme programmers prefer to avoid assignment statements; it's
+Scheme programmers prefer to avoid assignment statements. It's
 important, though, to understand that multiple expressions are allowed
 in a definition body, because it explains why the following
 @scheme[nogreet] function simply returns its argument:
@@ -160,7 +160,7 @@ next line under the first argument, instead of under the
 
 Furthermore, when an open parenthesis has no matching close
 parenthesis in a program, both @exec{mzscheme} and DrScheme use the
-source's indentation information to suggest where it might be missing.
+source's indentation to suggest where it might be missing.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @section{Identifiers}
@@ -196,9 +196,9 @@ more examples:
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @section{Function Calls@aux-elem{ (Procedure Applications)}}
 
-We have already seen many function calls---or @defterm{procedure
-applications} in more traditional Scheme terminology. The syntax of a
-function call is
+We have already seen many function calls, which are called
+@defterm{procedure applications} in more traditional Scheme
+terminology. The syntax of a function call is
 
 @moreguide["application"]{function calls}
 

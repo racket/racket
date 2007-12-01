@@ -11,8 +11,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
            (lib "compile.ss")
            (lib "inflate.ss")
            (lib "date.ss")
-           (lib "file.ss" "dynext")
-           scheme/namespace)
+           (lib "file.ss" "dynext"))
 
   ;; Implementaton-specific control functions ------------------------------
 
@@ -100,6 +99,12 @@ exec mzscheme -qu "$0" ${1+"$@"}
                                                 bm))])
       (system "larceny")))
 
+  (define (mk-ikarus bm)
+    (void))
+
+  (define (run-ikarus bm)
+    (system (format "ikarus ~a.sch < /dev/null" bm)))
+
   (define (extract-times bm str)
     str)
 
@@ -141,6 +146,16 @@ exec mzscheme -qu "$0" ${1+"$@"}
             [user (ms->milliseconds (caddr m))]
             [sys (ms->milliseconds (cadddr m))])
         (list (+ user sys) real #f))))
+
+  (define (extract-ikarus-times bm str)
+    (let ([m (regexp-match (bytes-append
+                            #"([0-9]*) ms elapsed cpu time, including ([0-9]*) ms collecting\n"
+                            #"[ \t]*([0-9]*) ms elapsed real time")
+                           str)])
+      (list (string->number (bytes->string/utf-8 (cadr m)))
+            (string->number (bytes->string/utf-8 (cadddr m)))
+            (string->number (bytes->string/utf-8 (caddr m))))))
+
 
   ;; Table of implementatons and benchmarks ------------------------------
 
@@ -226,7 +241,13 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 run-larceny
                 extract-larceny-times
                 clean-up-fasl
-                '(maze maze2))))
+                '(maze maze2))
+     (make-impl 'ikarus
+                mk-ikarus
+                run-ikarus
+                extract-ikarus-times
+                clean-up-nothing
+                '(fft))))
 
   (define obsolte-impls '(mzscheme mzscheme-j mzschemecgc-tl mzc))
 

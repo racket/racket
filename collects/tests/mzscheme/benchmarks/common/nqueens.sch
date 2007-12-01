@@ -5,7 +5,7 @@
 
 (define (nqueens n)
 
-  (define (1-to n)
+  (define (one-to n)
     (let loop ((i n) (l '()))
       (if (= i 0) l (loop (- i 1) (cons i l)))))
 
@@ -26,7 +26,7 @@
            (not (= (car placed) (- row dist)))
            (ok? row (+ dist 1) (cdr placed)))))
 
-  (try-it (1-to n) '() '()))
+  (try-it (one-to n) '() '()))
 
 (let ((input (with-input-from-file "input.txt" read)))
   (time

@@ -283,6 +283,7 @@ pict snip :
                      (max 1 (inexact->exact (ceiling h))))]
                [bdc (make-object bitmap-dc% bm)])
           (send bdc clear)
+          (send bdc set-smoothing 'aligned)
           (draw-pict pict bdc 0 0)
           (send bdc set-bitmap #f)
           bm))
@@ -894,6 +895,7 @@ pict snip :
                      (max 1 (inexact->exact (ceiling (pict-height p)))))]
                [bdc (make-object bitmap-dc% bm)])
           (send bdc clear)
+          (send bdc set-smoothing 'aligned)
           (draw-pict p bdc 0 0)
           (send bdc set-bitmap #f)
           (make-object image-snip% bm)))

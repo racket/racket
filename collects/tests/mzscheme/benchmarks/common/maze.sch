@@ -193,7 +193,7 @@
 
 ;;; Iterates in reverse order.
 
-(define (vector-for-each proc v)
+(define (vec-for-each proc v)
   (let lp ((i (- (vector-length v) 1)))
     (cond ((>= i 0)
            (proc (vector-ref v i))
@@ -218,7 +218,7 @@
 (define (dig-maze walls ncells)
   (call-with-current-continuation
     (lambda (quit)
-      (vector-for-each
+      (vec-for-each
        (lambda (wall)                   ; For each wall,
          (let* ((c1   (wall:owner wall)) ; find the cells on
                 (set1 (cell:reachable c1))
@@ -369,7 +369,7 @@
 
 
 (define (harr-for-each proc harr)
-  (vector-for-each proc (harr:elts harr)))
+  (vec-for-each proc (harr:elts harr)))
 
 ;------------------------------------------------------------------------------
 ; Was file "hex.scm".

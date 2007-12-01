@@ -5,24 +5,34 @@
 
 @; ----------------------------------------------------------------------
 
-@require[scribble/manual]
-@require["mreval.ss"]
-@require[scribble/urls]
-@require[mzlib/class]
-@require["slideshow-doc.ss"]
-@require["slideshow-code-doc.ss"]
-@require["mred-doc.ss"]
+@(require scribble/manual
+          "mreval.ss"
+          scribble/urls
+          scribble/struct
+          scheme/class
+          "slideshow-doc.ss"
+          "slideshow-code-doc.ss"
+          "mred-doc.ss"
 
-@require[(for-label scheme/base)]
-@require[(for-label mred/mred)]
-@require[(for-label mzlib/class)]
+          (for-label scheme/base
+                     mred/mred
+                     scheme/class
+                     slideshow)
 
-@require[(for-syntax mzscheme)]
+          (for-syntax scheme/base))
 
-@define[filled-flash (lambda args (apply (eval 'filled-flash) args))]
-@define[random-gaussian (lambda args (apply (eval 'random-gaussian) args))]
-@define-syntax[code (syntax-rules () [(_ v) (typeset-code (quote-syntax v))])]
-@provide[filled-flash random-gaussian code]
+@(begin
+  (define filled-flash (lambda args (apply (eval 'filled-flash) args)))
+  (define random-gaussian (lambda args (apply (eval 'random-gaussian) args)))
+  (define-syntax code (syntax-rules () [(_ v) (typeset-code (quote-syntax v))]))
+  (provide filled-flash random-gaussian code)
+  (define (keep-file file)
+    (make-delayed-element
+     (lambda (render part ri)
+       (send render install-file file)
+       null)
+     (lambda () 0)
+     (lambda () (make-element #f (list))))))
 
 @; ----------------------------------------------------------------------
 @section{Why Pictures? Why DrScheme?}
@@ -268,9 +278,9 @@ environment of the expression determines the identifier's
 binding. This rule applies to identifiers in a @scheme[lambda] body as
 well as anywhere else.
 
-For example, in the following @scheme[color-series] function the uses
+For example, in the following @scheme[rgb-series] function the uses
 of @scheme[mk] in each @scheme[lambda] form to refer to the argument of
-@scheme[color-series], since that's the binding that is textually in
+@scheme[rgb-series], since that's the binding that is textually in
 scope:
 
 @mr-def+int[
@@ -319,9 +329,10 @@ here, because parentheses are used for both expressions, such as
 @scheme[(circle 10)], and printed results, such as
 @schemeresult[("red" "green" "blue")]. This connection between
 expressions and printed results is no coincidence, but we save that
-bit of culture for @link["elsewhere"]{discussion elsewhere}. In the
-documentation and in DrScheme, result parentheses are printed in blue,
-unlike expression parentheses.
+bit of culture for @seclink[#:doc '(lib
+"scribblings/guide/guide.scrbl") "quoting-lists"]{discussion
+elsewhere}. In the documentation and in DrScheme, result parentheses
+are printed in blue, unlike expression parentheses.
 
 If you have a list, then you'll eventually want to do something with
 each of the elements. The @scheme[map] function takes a list and a
@@ -368,11 +379,11 @@ picture-making functions as well as more commonly used functions
 such as @scheme[list] and @scheme[map].
 
 To import additional libraries, use the @scheme[require] form. For
-example, the library @schememodname[texpict/flash] provides a
+example, the library @schememodname[slideshow/flash] provides a
 @scheme[filled-flash] function:
 
 @mr-def+int[
-(require texpict/flash)
+(require slideshow/flash)
 (filled-flash 40 30)
 ]
 
@@ -383,11 +394,11 @@ Modules are named and distributed in various ways:
  @item{Some modules are packaged in the PLT Scheme distribution or
        otherwise installed into a hierarchy of
        @defterm{collections}. For example, the module name
-       @schememodname[(lib "flash.ss" "texpict")] means ``the module
+       @schememodname[slideshow/flash] means ``the module
        implemented in the file @filepath{flash.ss} that is located in the
-       @filepath{texpict} collection.''  The @schememodname[slideshow]
-       specification with @schemefont{#module} is a shorthand for
-       @schememodname[(lib "lang.ss" "slideshow")].}
+       @filepath{slideshow} collection.''  The @schememodname[slideshow]
+       specification with @schemefont{#lang} is a shorthand for
+       @schememodname[slideshow/main].}
 
  @item{Some modules are distributed through the
        @link[url:planet]{@PLaneT} server, and they can be
@@ -414,14 +425,14 @@ Modules are named and distributed in various ways:
        program @filepath{use.ss} in the same directory as @filepath{quick.ss}:
 
         @schememod[
-         little
+         scheme
          (require "quick.ss")
          (rainbow square)
         ]
 
         and when you run this later program, a rainbow list of squares
         is the output. Note that @filepath{use.ss} is written using the
-        initial import @schememodname[little], which does not
+        initial import @schememodname[scheme], which does not
         supply any picture-making functions itself---but does provide
         @scheme[require] and the function-calling syntax.}
 
@@ -429,7 +440,7 @@ Modules are named and distributed in various ways:
 
 Schemers typically write new programs and libraries as modules that
 import each other through relative paths, and that use existing
-libraries via @scheme[lib] and @scheme[planet]. When a program or
+libraries from collections and @scheme[planet]. When a program or
 library developed this way seems useful to others, it can be uploaded
 as a @PLaneT package or distributed in the more old-fashioned way as
 an installable collection archive (in either case without modifying
@@ -441,7 +452,7 @@ the internal relative references among modules).
 Here's another library to try:
 
 @mr-def+int[
-(require (lib "code.ss" "slideshow"))
+(require slideshow/code)
 (code (circle 10))
 ]
 
@@ -453,7 +464,7 @@ creating pictures; the bit between the opening parenthesis with
 @scheme[code] syntactic form.
 
 This helps explain what we meant in the previous section when we said
-that @schememodname[little] provides @scheme[require] and the
+that @schememodname[scheme] provides @scheme[require] and the
 function-calling syntax. Libraries are not restricted to exporting
 values, such as functions; they can also define new syntax. In this
 sense, Scheme isn't exactly language at all; it's more of an idea for
@@ -488,13 +499,13 @@ constantly giving talks and writing papers that involve Scheme code,
 and it's worthwhile for everyone who works on those products to know
 about @scheme[code].
 
-In fact, you might want to take a look at the @link["quick.scrbl"]{source of
-this document}. You'll see that it starts with @schemefont{#module},
-but otherwise doesn't look a lot like Scheme; nevertheless, we build
-this document by running its source as a PLT Scheme program. We have
-to use a lot more than @scheme[syntax-rules] to extend Scheme's syntax
-enough for writing documents, but Scheme's syntactic extension can
-take you a long way!
+In fact, you might want to take a look at the @keep-file["quick.scrbl"]
+@link["quick.scrbl"]{source of this document}. You'll see that it
+starts with @schemefont{#lang}, but otherwise doesn't look a lot
+like Scheme; nevertheless, we build this document by running its
+source as a PLT Scheme program. We have to use a lot more than
+@scheme[syntax-rules] to extend Scheme's syntax enough for writing
+documents, but Scheme's syntactic extension can take you a long way.
 
 @; ----------------------------------------------------------------------
 @section{Objects}
@@ -506,14 +517,13 @@ are sometimes better than functions, even when you have
 interfaces. The API for Scheme's GUI and graphics system is expressed
 in terms of objects and classes.
 
-The class system itself is implemented by the @schememodname[(lib
-"class.ss" "mzlib")] library, and the @schememodname[(lib "mred.ss"
-"mred")] library provides the GUI and drawing classes. By convention,
-the MrEd classes are given names that end with @scheme[%]:
+The class system itself is implemented by the
+@schememodname[scheme/class] library, and the @schememodname[mred]
+library provides the GUI and drawing classes. By convention, the MrEd
+classes are given names that end with @scheme[%]:
 
 @mr-defs+int[
-[(require (lib "class.ss" "mzlib")
-          (lib "mred.ss" "mred"))
+[(require scheme/class mred)
  (define f (new frame% [label "My Art"]
                        [width 300]
                        [height 300]
@@ -548,7 +558,7 @@ picture into a canvas:
 (add-drawing (colorize (filled-flash 50 30) "yellow"))
 ]
 
-@centerline{@mr-interaction-eval-show[(scale (bitmap "art.png") 0.5)]}
+@centerline{@mr-interaction-eval-show[(scale (bitmap (build-path (collection-path "scribblings/quick") "art.png")) 0.5)]}
 
 Each canvas stretches to fill an equal portion of the frame, because
 that's how a frame manages its children by default.

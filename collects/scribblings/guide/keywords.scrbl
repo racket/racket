@@ -32,17 +32,16 @@ not-a-symbol-expression
 
 Despite their similarities, keywords are used in a different way than
 identifiers or symbols. Keywords are intended for use (unquoted) as
-special markers in argument lists and in certain syntactic forms.
-
-@italic{Need some examples here, once we have more keyword-based
-procedures and syntax in place...}
-
-Keywords should not be used simply as another kind of symbol. Use
-symbols, instead of keywords, for run-time flags and enumerations.
-
-@; FIXME: explain more, especially since keywords are used in just 
-@;        this way in Common Lisp
+special markers in argument lists and in certain syntactic forms.  For
+run-time flags and enumerations, use symbols instead of keywords.  The
+example below illustrates the distinct roles of keywords and symbols.
 
 @examples[
-(code:line (bytes->path #"/usr/tmp" 'unix) (code:comment #, @t{@scheme['unix], not @scheme['#:unix]}))
+(code:line (define dir (find-system-path 'temp-dir)) (code:comment #, @t{not @scheme['#:temp-dir]}))
+(with-output-to-file (build-path dir "stuff.txt")
+  (lambda () (printf "example\n"))
+  (code:comment #, @t{optional @scheme[#:mode] argument can be @scheme['text] or @scheme['binary]})
+  #:mode 'text
+  (code:comment #, @t{optional @scheme[#:exists] argument can be @scheme['replace], @scheme['truncate], ...})
+  #:exists 'replace)
 ]

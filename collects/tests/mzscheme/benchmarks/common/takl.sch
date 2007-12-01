@@ -16,9 +16,9 @@
       (cons n (listn (- n 1)))
       '()))
  
-(define 18l (listn 18))
-(define 12l (listn 12))
-(define  6l (listn 2))
+(define l18l (listn 18))
+(define l12l (listn 12))
+(define  l6l (listn 2))
  
 (define (mas x y z)
   (if (not (shorterp y x))
@@ -39,5 +39,5 @@
 ;;; call: (mas 18l 12l 6l)
 
 
-(let ((v (if (with-input-from-file "input.txt" read) 6l '())))
-  (time (mas 18l 12l v)))
+(let ((v (if (with-input-from-file "input.txt" read) l6l '())))
+  (time (mas l18l l12l v)))

@@ -99,7 +99,9 @@
   (define (fixup-picts v)
     (cond
      [(pict? v)
-      (let ([fn (format "~a/img~a.png" img-dir image-counter)])
+      (let ([fn (build-path (collection-path "scribblings/quick")
+                            img-dir
+                            (format "img~a.png" image-counter))])
         (set! image-counter (add1 image-counter))
         (let* ([bm (make-object bitmap%
                                 (inexact->exact (ceiling (pict-width v)))
@@ -107,7 +109,7 @@
                [dc (make-object bitmap-dc% bm)])
           (send dc set-smoothing 'aligned)
           (send dc clear)
-          ((make-pict-drawer (colorize v (make-object color% 0 0 #xAF))) dc 0 0)
+          ((make-pict-drawer v) dc 0 0)
           (send bm save-file fn 'png)
           (make-element #f (list (make-element (make-image-file fn) (list "[image]"))))))]
      [(pair? v) (cons (fixup-picts (car v))

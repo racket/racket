@@ -1,7 +1,10 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require[scribble/eval]
-@require["guide-utils.ss"]
+@(require scribble/manual
+          scribble/eval
+          scheme/list
+          "guide-utils.ss"
+
+          (for-label scheme/list))
 
 @title{Pairs, Lists, and Scheme Syntax}
 
@@ -64,21 +67,18 @@ becomes @schemeresult[(0 1 . 2)], and
 @schemeresultfont{(1 . (2 . (3 . ())))} becomes @schemeresult[(1 2 3)].
 
 @;------------------------------------------------------------------------
-@section{Quoting Pairs and Symbols with @scheme[quote]}
+@section[#:tag "quoting-lists"]{Quoting Pairs and Symbols with @scheme[quote]}
 
 After you see
 
 @interaction[
-(list 1 2 3)
+(list (list 1) (list 2) (list 3))
 ]
 
-@; FIXME: This isn't a particularly good motivation for introducing "quote", since
-@; (quote (1 2 3)) is actually _harder_ to type than (list 1 2 3)
-
 enough times, you'll wish (or you're already wishing) that there was a
-way to write just @scheme[(1 2 3)] and have it mean the list that
-prints as @schemeresult[(1 2 3)]. The @scheme[quote] form does exactly
-that:
+way to write just @scheme[((1) (2) (3))] and have it mean the list of
+lists that prints as @schemeresult[((1) (2) (3))]. The @scheme[quote]
+form does exactly that:
 
 @interaction[
 (eval:alts (#, @scheme[quote] (1 2 3)) '(1 2 3))

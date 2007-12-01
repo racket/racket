@@ -1,11 +1,12 @@
 #lang scribble/doc
-@require[scribble/manual
-         scribble/eval
-         scribble/bnf
-         scheme/list]
-@require["guide-utils.ss"]
+@(require scribble/manual
+          scribble/eval
+          scribble/bnf
+          scheme/list
+          (for-label scheme/list)
+          "guide-utils.ss")
 
-@define[step @elem{=}]
+@(define step @elem{=})
 
 @title{Lists, Iteration, and Recursion}
 

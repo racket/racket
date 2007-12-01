@@ -90,7 +90,7 @@ the built-in function @scheme[substring] with the arguments
 @; ----------------------------------------------------------------------
 @section{Definitions and Interactions}
 
-You can define your own functions that work like @scheme[subtring] by
+You can define your own functions that work like @scheme[substring] by
 using the @scheme[define] form, like this:
 
 @def+int[

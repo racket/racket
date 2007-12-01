@@ -460,9 +460,9 @@ Like @scheme[assoc], but finds an element using the predicate
 
 @defproc[(empty? [v any/c]) boolean?]{The same as @scheme[(null? v)].}
 
-@defproc[(first [lst list?]) any/c]{The same as @scheme[(car lst)], but only for no-empty lists.}
+@defproc[(first [lst list?]) any/c]{The same as @scheme[(car lst)], but only for lists (that are not empty).}
 
-@defproc[(rest [lst list?]) list?]{The same as @scheme[(cdr lst)], but only for non-empty lists.}
+@defproc[(rest [lst list?]) list?]{The same as @scheme[(cdr lst)], but only for lists (that are not empty).}
 
 @defproc[(second [lst list?]) any]{Returns the second element of the list.}
 

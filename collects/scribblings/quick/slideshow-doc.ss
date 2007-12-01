@@ -4,7 +4,7 @@
 
   (when mr-eval?
     (parameterize ([current-command-line-arguments #()])
-      (dynamic-require '(lib "slideshow/slideshow.ss") #f)))
+      (dynamic-require '(lib "slideshow/main.ss") #f)))
 
   (define-syntax bounce
     (syntax-rules ()
@@ -12,7 +12,7 @@
        (begin
          (provide id)
          (define id (if mr-eval?
-                        (dynamic-require '(lib "slideshow/slideshow.ss") 'id)
+                        (dynamic-require '(lib "slideshow/main.ss") 'id)
                         #f)))]
       [(_ id ...)
        (begin (bounce id) ...)]))

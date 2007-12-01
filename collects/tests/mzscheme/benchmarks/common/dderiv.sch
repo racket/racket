@@ -43,15 +43,15 @@
 (define (dderiv-aux a)
   (list '/ (dderiv a) a))
  
-(define (+dderiv a)
+(define (f+dderiv a)
   (cons '+ (map dderiv a)))
  
-(put '+ 'dderiv +dderiv)    ; install procedure on the property list
+(put '+ 'dderiv f+dderiv)    ; install procedure on the property list
  
-(define (-dderiv a)
+(define (f-dderiv a)
   (cons '- (map dderiv a)))
  
-(put '- 'dderiv -dderiv)    ; install procedure on the property list
+(put '- 'dderiv f-dderiv)    ; install procedure on the property list
  
 (define (*dderiv a)
   (list '* (cons '* a)

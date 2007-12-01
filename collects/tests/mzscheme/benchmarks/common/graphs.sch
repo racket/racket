@@ -36,10 +36,6 @@
 ; 		(begin e-first
 ; 		    e-rest ...)))))
 
-(define assert
-  (lambda (test . info)
-    #f))
-
 ;;; ==== util.ss ====
 
 
@@ -94,7 +90,7 @@
 		((= i len)
 		    state)))))
 
-(define vector-map
+(define vec-map
     (lambda (vec proc)
 	(proc->vector (vector-length vec)
 	    (lambda (i)
@@ -107,7 +103,7 @@
 		(exact? limit)
 		(>= limit 0))
 	    limit)
-	(let -*-
+	(let _-*-
 	    ((limit
 		    limit)
 		(res
@@ -116,7 +112,7 @@
 		res
 		(let ((limit
 			    (- limit 1)))
-		    (-*- limit
+		    (_-*- limit
 			(cons limit res)))))))
 
 ; Fold over the integers [0, limit).
@@ -157,11 +153,11 @@
 	    limit)
 	'(assert (procedure? ok?)
 	    ok?)
-	(let -*-
+	(let _-*-
 	    ((i 0))
 	    (or (= i limit)
 		(and (ok? i)
-		    (-*- (+ i 1)))))))
+		    (_-*- (+ i 1)))))))
 
 (define natural-there-exists?
     (lambda (limit ok?)
@@ -171,11 +167,11 @@
 	    limit)
 	'(assert (procedure? ok?)
 	    ok?)
-	(let -*-
+	(let _-*-
 	    ((i 0))
 	    (and (not (= i limit))
 		(or (ok? i)
-		    (-*- (+ i 1)))))))
+		    (_-*- (+ i 1)))))))
 
 (define there-exists?
     (lambda (lst ok?)
@@ -183,11 +179,11 @@
 	    lst)
 	'(assert (procedure? ok?)
 	    ok?)
-	(let -*-
+	(let _-*-
 	    ((lst lst))
 	    (and (not (null? lst))
 		(or (ok? (car lst))
-		    (-*- (cdr lst)))))))
+		    (_-*- (cdr lst)))))))
 
 
 ;;; ==== ptfold.ss ====
@@ -233,7 +229,7 @@
 	    b-folder)
 	'(assert (procedure? t-folder)
 	    t-folder)
-	(let -*-
+	(let _-*-
 	    ((universe
 		    universe)
 		(b-state
@@ -245,7 +241,7 @@
 			final-t-state)))
 	    (if (null? universe)
 		(t-folder b-state t-state accross)
-		(let -**-
+		(let _-**-
 		    ((in
 			    universe)
 			(out
@@ -260,14 +256,14 @@
 				(if (null? rest)
 				    accross
 				    (lambda (new-t-state)
-					(-**- rest
+					(_-**- rest
 					    (cons first out)
 					    new-t-state)))))
 			(b-folder first
 			    b-state
 			    t-state
 			    (lambda (new-b-state new-t-state)
-				(-*- (fold out cons rest)
+				(_-*- (fold out cons rest)
 				    new-b-state
 				    new-t-state
 				    accross))
@@ -354,7 +350,7 @@
 		    (vector-ref graph x))
 		(from-perm-x
 		    (vector-ref graph perm-x)))
-	    (let -*-
+	    (let _-*-
 		((y
 			0))
 		(if (= x y)
@@ -371,7 +367,7 @@
 				    (cond ((eq? y->x?
 						(vector-ref (vector-ref graph perm-y)
 						    perm-x))
-					    (-*- (+ y 1)))
+					    (_-*- (+ y 1)))
 					(y->x?
 					    'less)
 					(else
@@ -445,7 +441,7 @@
 				edge?
 				cont
 				#t)))))
-	    (let -*-
+	    (let _-*-
 		((vertex
 			0)
 		    (state
@@ -467,7 +463,7 @@
 				    (make-reach? root edges))
 				(from-root
 				    (vector-ref edge? root)))
-			    (let -*-
+			    (let _-*-
 				((v
 					0)
 				    (outs
@@ -482,14 +478,14 @@
 						(= outs max-out)))
 					(vector-set! from-root v #t)
 					(let ((state
-						    (-*- (+ v 1)
+						    (_-*- (+ v 1)
 							(+ outs 1)
 							(cons v efr)
 							(cons (vector-ref reach? v)
 							    efrr)
 							state)))
 					    (vector-set! from-root v #f)
-					    (-*- (+ v 1)
+					    (_-*- (+ v 1)
 						outs
 						efr
 						efrr
@@ -511,7 +507,7 @@
 		    (else
 			(let ((from-vertex
 				    (vector-ref edge? vertex)))
-			    (let -**-
+			    (let _-**-
 				((sv
 					0)
 				    (outs
@@ -521,11 +517,11 @@
 				(if (= sv vertex)
 				    (begin
 					(vector-set! out-degrees vertex outs)
-					(-*- (+ vertex 1)
+					(_-*- (+ vertex 1)
 					    state))
 				    (let* ((state
 						; no sv->vertex, no vertex->sv
-						(-**- (+ sv 1)
+						(_-**- (+ sv 1)
 						    outs
 						    state))
 					    (from-sv
@@ -544,7 +540,7 @@
 							(vector-set! out-degrees sv (+ sv-out 1))
 							(let* ((state
 								    ; sv->vertex, no vertex->sv
-								    (-**- (+ sv 1)
+								    (_-**- (+ sv 1)
 									outs
 									state))
 								(state
@@ -558,7 +554,7 @@
 										    (vector-ref edges vertex)))
 									    (let ((state
 											; sv->vertex, vertex->sv
-											(-**- (+ sv 1)
+											(_-**- (+ sv 1)
 											    (+ outs 1)
 											    state)))
 										(vector-set! edges
@@ -582,7 +578,7 @@
 						(vector-set! from-vertex sv #t)
 						(let ((state
 							    ; no sv->vertex, vertex->sv
-							    (-**- (+ sv 1)
+							    (_-**- (+ sv 1)
 								(+ outs 1)
 								state)))
 						    (vector-set! from-vertex sv #f)
