@@ -51,6 +51,7 @@
 (load-relative "kw.ss")
 
 ; Last - so macros are not present by accident
+; Also: currently re-defines `else'!
 (load-relative "macrolib.ss")
 
 (report-errs)

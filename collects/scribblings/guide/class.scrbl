@@ -1,8 +1,10 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require[scribble/eval]
-@require[scheme/class]
-@require["guide-utils.ss"]
+@(require scribble/manual
+          scribble/eval
+          scheme/class
+          "guide-utils.ss"
+
+          (for-label scheme/class))
 
 @; FIXME: at some point, discuss classes vs. units vs. modules
 
@@ -310,7 +312,7 @@ new method or an overriding implementation.
 
 Between the extremes of allowing arbitrary overriding and disallowing
 overriding entirely, the class system also supports Beta-style
-@defterm{augmentable} methods~\cite{beta}. A method
+@defterm{augmentable} methods. A method
 declared with @scheme[pubment] is like @scheme[public], but the method
 cannot be overridden in subclasses; it can be augmented only. A
 @scheme[pubment] method must explicitly invoke an augmentation (if any)
@@ -322,9 +324,7 @@ a class derivation. The @scheme[augride] method specification
 indicates an augmentation to a method where the augmentation is itself
 overrideable in subclasses (though the superclass's implementation
 cannot be overridden). Similarly, @scheme[overment] overrides a method
-and makes the overriding implementation augmentable. Our earlier
-work~\cite{Super+Inner} motivates and explains these extensions and
-their interleaving.
+and makes the overriding implementation augmentable.
 
 @section[#:tag "extnames"]{Controlling the Scope of External Names}
 

@@ -543,16 +543,6 @@ static void do_text_path_dialog(wxCallbackInfo *cbi)
   ::DisposeControl(cancel);
   ::DisposeWindow(dialog);
 
-  {
-    FSSpec spec;
-    AEDesc desc;
-
-    scheme_mac_path_to_spec("/Users/mflatt/Desktop/ryan.scm", &spec);
-    AECreateDesc (typeFSS, &spec, sizeof(FSSpec), &desc);
-    NavCustomControl(cbi->dialog, kNavCtlSetSelection, &desc);
-    AEDisposeDesc(&desc);
-  }
-
   FREE_SAFEREF(info_sr);
   info_sr = NULL;
 }

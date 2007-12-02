@@ -75,6 +75,9 @@ Scheme_Object *scheme_def_exit_proc;
 
 Scheme_Object *scheme_raise_arity_error_proc;
 
+static Scheme_Object *arity_property;
+static Scheme_Object *check_arity_property_value_ok(int argc, Scheme_Object *argv[]);
+
 static char *init_buf(long *len, long *blen);
 static char *prepared_buf;
 static long prepared_buf_len;
@@ -574,6 +577,18 @@ void scheme_init_error(Scheme_Env *env)
   prepared_buf = "";
   prepared_buf = init_buf(NULL, &prepared_buf_len);
 
+  REGISTER_SO(arity_property);
+  {
+    Scheme_Object *guard;
+    guard = scheme_make_prim_w_arity(check_arity_property_value_ok,
+				     "guard-for-prop:arity-string",
+				     2, 2);
+    arity_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("arity-string"),
+                                                              guard);
+  }
+                                                            
+  scheme_add_global_constant("prop:arity-string", arity_property, env);
+
   scheme_init_error_config();
 }
 
@@ -850,6 +865,15 @@ static char *error_write_to_string_w_max(Scheme_Object *v, int len, int *lenout)
   }
 }
 
+static Scheme_Object *check_arity_property_value_ok(int argc, Scheme_Object *argv[])
+{
+  if (!scheme_check_proc_arity(NULL, 1, 0, 1, argv))
+    scheme_arg_mismatch("guard-for-prop:arity-string",
+                        "property value is not a procedure (arity 1): ",
+                        argv[0]);
+  return argv[0];
+}
+
 static char *make_arity_expect_string(const char *name, int namelen,
 				      int minc, int maxc,
 				      int argc, Scheme_Object **argv,
@@ -859,7 +883,8 @@ static char *make_arity_expect_string(const char *name, int namelen,
 {
   long len, pos, slen;
   int xargc, xminc, xmaxc;
-  char *s;
+  char *s, *arity_str = NULL;
+  int arity_len = 0;
 
   s = init_buf(&len, &slen);
 
@@ -871,22 +896,60 @@ static char *make_arity_expect_string(const char *name, int namelen,
   xmaxc = maxc - (is_method ? 1 : 0);
 
   if ((minc == -1) && SCHEME_PROC_STRUCTP((Scheme_Object *)name)) {
-    /* If the arity is something simple, we'll make a good error
-       message. Otherwise, we'll just use the "no matching case"
-       version. */
-    Scheme_Object *arity;
-    arity = scheme_arity((Scheme_Object *)name);
-    if (SCHEME_INTP(arity)) {
-      xminc = xmaxc = minc = maxc = SCHEME_INT_VAL(arity);
-      name = scheme_get_proc_name((Scheme_Object *)name, &namelen, 1);
-      if (!name) {
-        name = "#<procedure>";
-	namelen = strlen(name);
+    Scheme_Object *arity_maker;
+
+    while (1) {
+      arity_maker = scheme_struct_type_property_ref(arity_property, (Scheme_Object *)name);
+      if (arity_maker) {
+        Scheme_Object *v, *a[1];
+        a[0] = (Scheme_Object *)name;
+        v = scheme_apply(arity_maker, 1, a);
+        if (SCHEME_CHAR_STRINGP(v)) {
+          v = scheme_char_string_to_byte_string(v);
+          arity_str = SCHEME_BYTE_STR_VAL(v);
+          arity_len = SCHEME_BYTE_STRLEN_VAL(v);
+          if (arity_len > len)
+            arity_len = len;
+          name = scheme_get_proc_name((Scheme_Object *)name, &namelen, 1);
+          if (!name) {
+            name = "#<procedure>";
+            namelen = strlen(name);
+          }
+          break;
+        } else
+          break;
+      } else {
+        Scheme_Object *v;
+        int is_method;
+        v = scheme_extract_struct_procedure((Scheme_Object *)name, -1, NULL, &is_method);
+        if (!v || is_method || !SCHEME_PROC_STRUCTP(v))
+          break;
+        name = (const char *)v;
+      }
+      SCHEME_USE_FUEL(1);
+    }
+
+    if (!arity_str) {
+      /* If the arity is something simple, we'll make a good error
+         message. Otherwise, we'll just use the "no matching case"
+         version. */
+      Scheme_Object *arity;
+      arity = scheme_arity((Scheme_Object *)name);
+      if (SCHEME_INTP(arity)) {
+        xminc = xmaxc = minc = maxc = SCHEME_INT_VAL(arity);
+        name = scheme_get_proc_name((Scheme_Object *)name, &namelen, 1);
+        if (!name) {
+          name = "#<procedure>";
+          namelen = strlen(name);
+        }
       }
     }
   }
 
-  if (minc < 0) {
+  if (arity_str) {
+    pos = scheme_sprintf(s, slen, "%t: expects %t, given %d",
+			 name, namelen, arity_str, arity_len, xargc);
+  } else if (minc < 0) {
     const char *n;
     int nlen;
 
@@ -945,7 +1008,7 @@ static char *make_arity_expect_string(const char *name, int namelen,
 
 void scheme_wrong_count_m(const char *name, int minc, int maxc,
 			  int argc, Scheme_Object **argv, int is_method)
-/* minc == -1 => name is really a case-lambda, native closure, or proc-struct.
+/* minc == -1 => name is really a proc.
    minc == -2 => use generic "no matching clause" message */
 {
   char *s;
@@ -963,8 +1026,19 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
   /* minc = 1 -> name is really a case-lambda or native proc */
 
   if (minc == -1) {
-    /* Check for is_method in case-lambda */
-    if (SCHEME_CLOSUREP((Scheme_Object *)name)) {
+    /* Extract arity, check for is_method in case-lambda, etc. */
+    if (SAME_TYPE(SCHEME_TYPE((Scheme_Object *)name), scheme_closure_type)) {
+      Scheme_Closure_Data *data;
+      data = SCHEME_COMPILED_CLOS_CODE((Scheme_Object *)name);
+      name = scheme_get_proc_name((Scheme_Object *)name, NULL, 1);
+      
+      minc = data->num_params;
+      if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
+        minc -= 1;
+        maxc = -1;
+      } else
+        maxc = minc;
+    } else if (SAME_TYPE(SCHEME_TYPE((Scheme_Object *)name), scheme_case_closure_type)) {
       Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)name;
       if (cl->count) {
 	Scheme_Closure_Data *data;

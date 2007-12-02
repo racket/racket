@@ -305,8 +305,6 @@ macxsrc/wx_rbut.cc: $(WXMACDIR)/mac/wx_rbut.cc $(XFORMDEP) $(MACXPRECOMPDEP)
 	$(XFORMWP) macxsrc/wx_rbut.cc $(WXMACDIR)/mac/wx_rbut.cc
 macxsrc/wx_sbar.cc: $(WXMACDIR)/mac/wx_sbar.cc $(XFORMDEP) $(MACXPRECOMPDEP)
 	$(XFORMWP) macxsrc/wx_sbar.cc $(WXMACDIR)/mac/wx_sbar.cc
-macxsrc/wxMargin.cc: $(WXMACDIR)/mac/wxMargin.cc $(XFORMDEP) $(MACXPRECOMPDEP)
-	$(XFORMXX) macxsrc/wxMargin.cc $(WXMACDIR)/mac/wxMargin.cc
 macxsrc/wx_dialg.cc: $(WXMACDIR)/mac/wx_dialg.cc $(XFORMDEP) $(MACXPRECOMPDEP)
 	$(XFORMWP) macxsrc/wx_dialg.cc $(WXMACDIR)/mac/wx_dialg.cc
 macxsrc/wx_screen.cc: $(WXMACDIR)/mac/wx_screen.cc $(XFORMDEP) $(MACXPRECOMPDEP)
@@ -356,8 +354,6 @@ macxsrc/wx_mac_utils.cc: $(WXMACDIR)/mac/wx_mac_utils.cc $(XFORMDEP) $(MACXPRECO
 
 macxsrc/wx_bmp.cc: $(WXMACDIR)/../utils/image/src/wx_bmp.cc $(XFORMDEP) $(MACXPRECOMPDEP)
 	$(XFORMWP) macxsrc/wx_bmp.cc $(WXMACDIR)/../utils/image/src/wx_bmp.cc
-macxsrc/wx_24to8.cc: $(WXMACDIR)/../utils/image/src/wx_24to8.cc $(XFORMDEP) $(MACXPRECOMPDEP)
-	$(XFORMWP) macxsrc/wx_24to8.cc $(WXMACDIR)/../utils/image/src/wx_24to8.cc
 macxsrc/wx_image.cc: $(WXMACDIR)/../utils/image/src/wx_image.cc $(XFORMDEP) $(MACXPRECOMPDEP)
 	$(XFORMWP) macxsrc/wx_image.cc $(WXMACDIR)/../utils/image/src/wx_image.cc
 macxsrc/wx_xbm.cc: $(WXMACDIR)/../utils/image/src/wx_xbm.cc $(XFORMDEP) $(MACXPRECOMPDEP)
@@ -709,8 +705,6 @@ mwx_rbut.@LTO@: macxsrc/wx_rbut.cc $(MACPRECOMPDEP)
 	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_rbut.@LTO@ macxsrc/wx_rbut.cc
 mwx_sbar.@LTO@: macxsrc/wx_sbar.cc $(MACPRECOMPDEP)
 	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_sbar.@LTO@ macxsrc/wx_sbar.cc
-mwxMargin.@LTO@: macxsrc/wxMargin.cc
-	$(CXX) $(MACXFLAG) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxMargin.@LTO@ macxsrc/wxMargin.cc
 mwx_dialg.@LTO@: macxsrc/wx_dialg.cc $(MACPRECOMPDEP)
 	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dialg.@LTO@ macxsrc/wx_dialg.cc
 mwx_screen.@LTO@: macxsrc/wx_screen.cc $(MACPRECOMPDEP)
@@ -760,8 +754,6 @@ mwx_mac_utils.@LTO@: macxsrc/wx_mac_utils.cc $(MACPRECOMPDEP)
 
 mwx_bmp.@LTO@: macxsrc/wx_bmp.cc $(MACPRECOMPDEP)
 	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_bmp.@LTO@ macxsrc/wx_bmp.cc
-mwx_24to8.@LTO@: macxsrc/wx_24to8.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_24to8.@LTO@ macxsrc/wx_24to8.cc
 mwx_image.@LTO@: macxsrc/wx_image.cc $(MACPRECOMPDEP)
 	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_image.@LTO@ macxsrc/wx_image.cc
 mwx_xbm.@LTO@: macxsrc/wx_xbm.cc $(MACPRECOMPDEP)
@@ -995,7 +987,6 @@ wx_mac_XSRCS = \
   macxsrc/wx_rbox.cc \
   macxsrc/wx_rbut.cc \
   macxsrc/wx_sbar.cc \
-  macxsrc/wxMargin.cc \
   macxsrc/wx_dialg.cc \
   macxsrc/wx_screen.cc \
   macxsrc/wxRectBorder.cc \
@@ -1021,7 +1012,6 @@ wx_mac_XSRCS = \
   macxsrc/wx_mac_utils.cc \
 \
   macxsrc/wx_bmp.cc \
-  macxsrc/wx_24to8.cc \
   macxsrc/wx_image.cc \
   macxsrc/wx_xbm.cc \
 \
@@ -1197,7 +1187,6 @@ wx_mac_XOBJS = \
   mwx_rbox.@LTO@ \
   mwx_rbut.@LTO@ \
   mwx_sbar.@LTO@ \
-  mwxMargin.@LTO@ \
   mwx_dialg.@LTO@ \
   mwx_screen.@LTO@ \
   mwxRectBorder.@LTO@ \
@@ -1223,7 +1212,6 @@ wx_mac_XOBJS = \
   mwx_mac_utils.@LTO@ \
 \
   mwx_bmp.@LTO@ \
-  mwx_24to8.@LTO@ \
   mwx_image.@LTO@ \
   mwx_xbm.@LTO@ \
 \
@@ -1463,7 +1451,6 @@ gen-deps:
 @INCLUDEDEP@ wx_rbox.dd
 @INCLUDEDEP@ wx_rbut.dd
 @INCLUDEDEP@ wx_sbar.dd
-@INCLUDEDEP@ wxMargin.dd
 @INCLUDEDEP@ wx_dialg.dd
 @INCLUDEDEP@ wx_screen.dd
 @INCLUDEDEP@ wxRectBorder.dd

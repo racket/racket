@@ -6428,8 +6428,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  if (num_rands < (num_params - 1)) {
 	    UPDATE_THREAD_RSPTR_FOR_ERROR();
 	    /* note: scheme_wrong_count_m handles rands == p->tail_buffer */
-	    scheme_wrong_count_m(scheme_get_proc_name(obj, NULL, 1), 
-				 num_params - 1, -1,
+	    scheme_wrong_count_m((const char *)obj, 
+				 -1, -1,
 				 num_rands, rands,
 				 SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_IS_METHOD);
 	    return NULL; /* Doesn't get here */
@@ -6491,8 +6491,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  if (num_rands != num_params) {
 	    UPDATE_THREAD_RSPTR_FOR_ERROR();
 	    /* note: scheme_wrong_count_m handles rands == p->tail_buffer */
-	    scheme_wrong_count_m(scheme_get_proc_name(obj, NULL, 1), 
-				 num_params, num_params,
+	    scheme_wrong_count_m((const char *)obj,
+				 -1, -1,
 				 num_rands, rands,
 				 SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_IS_METHOD);
 	    return NULL; /* Doesn't get here */
@@ -6518,8 +6518,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  } else {
 	    UPDATE_THREAD_RSPTR_FOR_ERROR();
 	    /* note: scheme_wrong_count handles rands == p->tail_buffer */
-	    scheme_wrong_count(scheme_get_proc_name(obj, NULL, 1),
-			       0, 0, num_rands, rands);
+	    scheme_wrong_count((const char *)obj, -1, -1, num_rands, rands);
 	    return NULL; /* Doesn't get here */
 	  }
 	}

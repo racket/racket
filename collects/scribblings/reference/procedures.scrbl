@@ -197,7 +197,7 @@ from the application expression. The procedure's name (see
 used for the name and arity of the structure. If the value in the
 designated field is not a procedure, then the instance behaves like
 @scheme[(case-lambda)] (i.e., a procedure which does not accept any
-number of arguments).
+number of arguments). See also @scheme[procedure-extract-target].
 
 Providing an integer @scheme[proc-spec] argument to
 @scheme[make-struct-type] is the same as both supplying the value with
@@ -262,3 +262,42 @@ Returns @scheme[#t] if instances of the structure type represented by
 @scheme[type] are procedures (according to @scheme[procedure?]),
 @scheme[#f] otherwise.}
 
+@defproc[(procedure-extract-target [proc procedure?]) (or/c false/c procedure?)]{
+
+If @scheme[proc] is an instance of a structure type with property
+@scheme[prop:procedure], and if the property value indicates a field
+of the structure, and if the field value is a procedure, then
+@scheme[procedure-extract-target] returns the field value. Otherwise,
+the result if @scheme[#f].}
+
+@defthing[prop:arity-string struct-type-property?]{
+
+This property is used for reporting arity-mismatch errors when a
+structure type with the @scheme[prop:procedure] property is applied to
+the wrong number of arguments. The value of the
+@scheme[prop:arity-string] property must be a procedure that takes a
+single argument, which is the misapplied structure, and returns a
+string. The result string is used after the word ``expects,'' and it
+is followed in the error message by the number of actual arguments.
+
+Arity-mismatch reporting automatically uses
+@scheme[procedure-extract-target] when the @scheme[prop:arity-string]
+property is not associated with a procedure structure type.
+
+@examples[
+(define-struct evens (proc)
+  #:property prop:procedure (struct-field-index proc)
+  #:property prop:arity-string
+  (lambda (p)
+    "an even number of arguments"))
+
+(define pairs
+  (make-evens
+   (case-lambda
+    [() null]
+    [(a b . more)
+     (cons (cons a b)
+           (apply pairs more))])))
+
+(pairs 1 2 3 4)
+(pairs 5)]}

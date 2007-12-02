@@ -117,7 +117,6 @@ OBJS = \
    wx_rbox.o \
    wx_rbut.o \
    wx_sbar.o \
-   wxMargin.o \
    wx_dialg.o \
    wx_screen.o \
    wxRectBorder.o \
@@ -143,7 +142,6 @@ OBJS = \
    wx_mac_utils.o \
 \
    wx_bmp.o \
-   wx_24to8.o \
    wx_image.o \
    wx_xbm.o \
 \
@@ -250,8 +248,6 @@ wx_rbut.o : $(srcdir)/mac/wx_rbut.cc $(WXPRECOMP)
 	$(CXX) $(WXMAC_CXXFLAGS) -o wx_rbut.o -c $(srcdir)/mac/wx_rbut.cc
 wx_sbar.o : $(srcdir)/mac/wx_sbar.cc $(WXPRECOMP)
 	$(CXX) $(WXMAC_CXXFLAGS) -o wx_sbar.o -c $(srcdir)/mac/wx_sbar.cc
-wxMargin.o : $(srcdir)/mac/wxMargin.cc $(WXPRECOMP)
-	$(CXX) $(WXMAC_CXXFLAGS) -o wxMargin.o -c $(srcdir)/mac/wxMargin.cc
 wx_dialg.o : $(srcdir)/mac/wx_dialg.cc $(WXPRECOMP)
 	$(CXX) $(WXMAC_CXXFLAGS) -o wx_dialg.o -c $(srcdir)/mac/wx_dialg.cc
 wx_screen.o : $(srcdir)/mac/wx_screen.cc $(WXPRECOMP)
@@ -306,8 +302,6 @@ wx_mac_utils.o : $(srcdir)/mac/wx_mac_utils.cc $(WXPRECOMP)
 
 wx_bmp.o : $(srcdir)/../utils/image/src/wx_bmp.cc $(WXPRECOMP)
 	$(CXX) $(WXMAC_CXXFLAGS) -o wx_bmp.o -c $(srcdir)/../utils/image/src/wx_bmp.cc
-wx_24to8.o : $(srcdir)/../utils/image/src/wx_24to8.cc $(WXPRECOMP)
-	$(CXX) $(WXMAC_CXXFLAGS) -o wx_24to8.o -c $(srcdir)/../utils/image/src/wx_24to8.cc
 wx_image.o : $(srcdir)/../utils/image/src/wx_image.cc $(WXPRECOMP)
 	$(CXX) $(WXMAC_CXXFLAGS) -o wx_image.o -c $(srcdir)/../utils/image/src/wx_image.cc
 wx_xbm.o : $(srcdir)/../utils/image/src/wx_xbm.cc $(WXPRECOMP)
@@ -443,7 +437,6 @@ wx_font.o : $(srcdir)/mac/wx_font.m
 @INCLUDEDEP@ wx_rbox.d
 @INCLUDEDEP@ wx_rbut.d
 @INCLUDEDEP@ wx_sbar.d
-@INCLUDEDEP@ wxMargin.d
 @INCLUDEDEP@ wx_dialg.d
 @INCLUDEDEP@ wx_screen.d
 @INCLUDEDEP@ wxRectBorder.d
@@ -468,7 +461,6 @@ wx_font.o : $(srcdir)/mac/wx_font.m
 @INCLUDEDEP@ wx_gbox.d
 @INCLUDEDEP@ wx_mac_utils.d
 @INCLUDEDEP@ wx_bmp.d
-@INCLUDEDEP@ wx_24to8.d
 @INCLUDEDEP@ wx_image.d
 @INCLUDEDEP@ wx_xbm.d
 @INCLUDEDEP@ crbuffri.d

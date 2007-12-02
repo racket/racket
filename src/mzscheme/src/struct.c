@@ -126,6 +126,8 @@ static Scheme_Object *check_exn_source_property_value_ok(int argc, Scheme_Object
 static Scheme_Object *exn_source_p(int argc, Scheme_Object **argv);
 static Scheme_Object *exn_source_get(int argc, Scheme_Object **argv);
 
+static Scheme_Object *procedure_extract_target(int argc, Scheme_Object **argv);
+
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
@@ -400,7 +402,11 @@ scheme_init_struct (Scheme_Env *env)
 						     "procedure-struct-type?",
 						     1, 1, 1),
 			    env);
-
+  scheme_add_global_constant("procedure-extract-target",
+                             scheme_make_prim_w_arity(procedure_extract_target,
+                                                      "procedure-extract-target",
+                                                      1, 1),
+                             env);
 
   /*** Debugging ****/
 
@@ -2979,6 +2985,22 @@ Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands
   return proc;
 }
 
+static Scheme_Object *procedure_extract_target(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *v;
+  int is_method;
+
+  if (!SCHEME_PROCP(argv[0]))
+    scheme_wrong_type("procedure-extract-target", "procedure", 0, argc, argv);
+  
+  if (SCHEME_PROC_STRUCTP(argv[0])) {
+    v = scheme_extract_struct_procedure(argv[0], -1, NULL, &is_method);
+    if (v && !is_method && SCHEME_PROCP(v))
+      return v;
+  }
+
+  return scheme_false;
+}
 
 /*========================================================================*/
 /*                           location struct                              */
