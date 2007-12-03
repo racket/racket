@@ -93,6 +93,13 @@
         (with-unlock -text
           (send -text insert text)))
 
+      (define/public (add-error-text text)
+        (with-unlock -text
+          (let ([a (send -text last-position)])
+            (send -text insert text)
+            (let ([b (send -text last-position)])
+              (send -text change-style error-text-style a b)))))
+      
       (define/public (add-clickback text handler)
         (with-unlock -text
           (let ([a (send -text last-position)])
@@ -198,6 +205,12 @@
     (let ([sd (new style-delta%)])
       (send sd set-delta 'change-toggle-underline)
       (send sd set-delta-foreground "blue")
+      sd))
+
+  (define error-text-style
+    (let ([sd (new style-delta%)])
+      (send sd set-delta 'change-italic)
+      (send sd set-delta-foreground "red")
       sd))
 
   ;; Specialized classes for widget
