@@ -480,7 +480,7 @@
                              (protostep-definites step)
                              (protostep-frontier step))
         (separator step)
-        (send sbview add-text (exn-message (misstep-exn step)))
+        (send sbview add-error-text (exn-message (misstep-exn step)))
         (send sbview add-text "\n")
         (when (exn:fail:syntax? (misstep-exn step))
           (for-each (lambda (e) (send sbview add-syntax e
