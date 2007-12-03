@@ -3,40 +3,57 @@
   (require (lib "lex.ss" "parser-tools"))
   (require "deriv.ss"
            "deriv-parser.ss"
-           "deriv-tokens.ss"
-           "reductions.ss")
+           "deriv-tokens.ss")
 
-  (provide trace-verbose?
-           trace
+  (provide trace
+           trace*
            trace/result
-           trace+reductions
-           current-expand-observe
-           (all-from "reductions.ss"))
+           trace-verbose?
+           events->token-generator
+           current-expand-observe)
 
   (define current-expand-observe
     (dynamic-require ''#%expobs 'current-expand-observe))
 
   (define trace-verbose? (make-parameter #f))
 
-  ;; trace : syntax -> Derivation
+  ;; trace : stx -> Deriv
   (define (trace stx)
-    (let-values ([(result tracer) (expand+tracer stx expand)])
-      (parse-derivation tracer)))
+    (let-values ([(result events derivp) (trace* stx expand)])
+      (force derivp)))
 
-  ;; trace/result : syntax -> (values syntax/exn Derivation)
+  ;; trace/result : stx -> stx/exn Deriv
   (define (trace/result stx)
-    (let-values ([(result tracer) (expand+tracer stx expand)])
+    (let-values ([(result events derivp) (trace* stx expand)])
       (values result
-              (parse-derivation tracer))))
+              (force derivp))))
 
-  ;; trace+reductions : syntax -> ReductionSequence
-  (define (trace+reductions stx)
-    (reductions (trace stx)))
+  ;; trace* : stx (stx -> stx) -> stx/exn (list-of event) (promise-of Deriv)
+  (define (trace* stx expander)
+    (let-values ([(result events) (expand/events stx expander)])
+      (values result
+              events
+              (delay (parse-derivation
+                      (events->token-generator events))))))
 
-  ;; expand+tracer : syntax/sexpr (syntax -> A) -> (values A/exn (-> event))
-  (define (expand+tracer sexpr expander)
-    (let* ([events null]
-           [pos 0])
+  ;; events->token-generator : (list-of event) -> (-> token)
+  (define (events->token-generator events)
+    (let ([pos 0])
+      (lambda ()
+        (define sig+val (car events))
+        (set! events (cdr events))
+        (let* ([sig (car sig+val)]
+               [val (cdr sig+val)]
+               [t (tokenize sig val pos)])
+          (when (trace-verbose?)
+            (printf "~s: ~s~n" pos
+                    (token-name (position-token-token t))))
+          (set! pos (add1 pos))
+          t))))
+
+  ;; expand/events : stx (stx -> stx) -> stx/exn (list-of event)
+  (define (expand/events sexpr expander)
+    (let ([events null])
       (define (add! x)
         (set! events (cons x events)))
       (parameterize ((current-expand-observe
@@ -50,19 +67,7 @@
                                   (add! (cons 'error exn))
                                   exn)])
                  (expander sexpr))])
-          (add! (cons 'EOF pos))
+          (add! (cons 'EOF #f))
           (values result
-                  (let ([events (reverse events)])
-                    (lambda ()
-                      (define sig+val (car events))
-                      (set! events (cdr events))
-                      (let* ([sig (car sig+val)]
-                             [val (cdr sig+val)]
-                             [t (tokenize sig val pos)])
-                        (when (trace-verbose?)
-                          (printf "~s: ~s~n" pos
-                                  (token-name (position-token-token t))))
-                        (set! pos (add1 pos))
-                        t))))))))
-
+                  (reverse events))))))
   )

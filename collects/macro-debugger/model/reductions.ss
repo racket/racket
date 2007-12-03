@@ -8,7 +8,7 @@
            "reductions-engine.ss")
 
   (provide reductions
-           reductions+definites)
+           reductions+)
 
   ;; Setup for reduction-engines
 
@@ -46,14 +46,14 @@
       (when d (add-frontier (list (wderiv-e1 d))))
       (RS-steps (reductions* d))))
 
-  ;; reductions+definites : WDeriv -> (values ReductionSequence (list-of identifier))
-  (define (reductions+definites d)
+  ;; reductions+ : WDeriv -> (list-of step) (list-of identifier) ?stx ?exn
+  (define (reductions+ d)
     (parameterize ((current-definites null)
                    (current-frontier null))
       (when d (add-frontier (list (wderiv-e1 d))))
-      (let ([rs (RS-steps (reductions* d))])
-        (values rs (current-definites)))))
-  
+      (let-values ([(rs stx exn) (reductions* d)])
+        (values rs (current-definites) stx exn))))
+
   ;; reductions* : WDeriv -> RS(stx)
   (define (reductions* d)
     (match d
@@ -421,8 +421,8 @@
       [(struct local-lift-end (decl))
        (RSadd (list (walk/mono decl 'module-lift))
               RSzero)]
-      [(struct local-bind (deriv))
-       (reductions* deriv)]))
+      [(struct local-bind (bindrhs))
+       (bind-syntaxes-reductions bindrhs)]))
 
   ;; list-reductions : ListDerivation -> (RS Stxs)
   (define (list-reductions ld)

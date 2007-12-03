@@ -9,7 +9,11 @@
            (lib "tool.ss" "drscheme")
            (lib "bitmap-label.ss" "mrlib")
            (lib "string-constant.ss" "string-constants")
-           "view/drscheme-ext.ss")
+           "model/trace.ss"
+           "model/deriv.ss"
+           "model/deriv-util.ss"
+           "view/frame.ss"
+           "view/prefs.ss")
 
   (provide tool@
            language/macro-stepper<%>)
@@ -18,7 +22,24 @@
     (interface ()
       enable-macro-stepper?))
 
-  (define current-expand-observe (dynamic-require ''#%expobs 'current-expand-observe))
+  (define (ext-macro-stepper-frame-mixin %)
+    (class %
+      (define/override (get-macro-stepper-widget%)
+        (ext-macro-stepper-widget-mixin
+         (super get-macro-stepper-widget%)))
+      (super-new)))
+
+  (define (ext-macro-stepper-widget-mixin %)
+    (class %
+      (super-new)
+      (define/override (get-preprocess-deriv)
+        get-original-part)))
+
+  (define macro-stepper-frame%
+    (ext-macro-stepper-frame-mixin
+     (macro-stepper-frame-mixin
+      (frame:standard-menus-mixin
+       frame:basic%))))
 
   (define tool@
     (unit (import drscheme:tool^)
@@ -129,7 +150,9 @@
           (define/override (reset-console)
             (super reset-console)
             (when current-stepper
+              #;(message-box "obsoleting stepper" "before" #f '(ok))
               (send current-stepper add-obsoleted-warning)
+              #;(message-box "obsoleting stepper" "after" #f '(ok))
               (set! current-stepper #f))
             (run-in-evaluation-thread
              (lambda ()
@@ -150,13 +173,13 @@
           (define/private (make-handlers original-eval-handler original-module-name-resolver)
             (let* ([filename (send (send (get-top-level-window) get-definitions-text)
                                    get-filename/untitled-name)]
-                   [stepper (delay (make-stepper filename))]
+                   [stepperp (delay (make-stepper filename))]
                    [debugging? debugging?])
               (values
                (lambda (expr)
                  (if (and debugging? (syntax? expr))
-                     (let-values ([(e-expr deriv) (trace/result expr)])
-                       (show-deriv deriv stepper)
+                     (let-values ([(e-expr events derivp) (trace* expr expand)])
+                       (show-deriv stepperp events)
                        (if (syntax? e-expr)
                            (parameterize ((current-eval original-eval-handler))
                              (original-eval-handler e-expr))
@@ -175,11 +198,11 @@
                          (set! debugging? saved-debugging?)
                          (when eo (current-expand-observe eo)))))))))
 
-          (define/private (show-deriv deriv stepper-promise)
+          (define/private (show-deriv stepperp events)
             (parameterize ([current-eventspace drscheme-eventspace])
               (queue-callback
                (lambda ()
-                 (show-deriv/orig-parts deriv stepper-promise)))))
+                 (send (force stepperp) add-trace events)))))
           ))
 
       ;; Borrowed from mztake/debug-tool.ss
@@ -191,13 +214,13 @@
           (and (equal? main-group (string-constant legacy-languages))
                (or (member second 
                            (list (string-constant r5rs-lang-name)
-                                 "(module ...)"
+                                 "Module"
                                  "Swindle"))
                    (member third
                            (list (string-constant mzscheme-w/debug)
                                  (string-constant mred-w/debug)
                                  (string-constant pretty-big-scheme)))))))
-      
+
       ;; Macro debugger code
 
       (drscheme:get/extend:extend-unit-frame
@@ -209,4 +232,46 @@
       (drscheme:get/extend:extend-tab
        macro-debugger-tab-mixin)
 
-      )))
+      ))
+
+  ;; get-original-part : Deriv -> Deriv/#f
+  ;; Strip off mzscheme's #%top-interaction
+  ;; Careful: the #%top-interaction node may be inside of a lift-deriv
+  (define (get-original-part deriv)
+    ;; adjust-deriv/lift : Derivation -> (list-of Derivation)
+    (define (adjust-deriv/lift deriv)
+      (match deriv
+        [(Wrap lift-deriv (e1 e2 first lifted-stx second))
+         (let ([first (adjust-deriv/top first)])
+           (and first
+                (let ([e1 (wderiv-e1 first)])
+                  (make-lift-deriv e1 e2 first lifted-stx second))))]
+        [else (adjust-deriv/top deriv)]))
+    ;; adjust-deriv/top : Derivation -> Derivation
+    (define (adjust-deriv/top deriv)
+      (if (syntax-source (wderiv-e1 deriv))
+          deriv
+          ;; It's not original...
+          ;; Strip out mzscheme's top-interactions
+          ;; Keep anything that is a non-mzscheme top-interaction
+          ;; Drop everything else (not original program)
+          (match deriv
+            [(Wrap mrule (e1 e2 tx next))
+             (match tx
+               [(Wrap transformation (e1 e2 rs ?1 me1 locals ?2 me2 seq))
+                (cond [(ormap (lambda (x)
+                                (module-identifier=? x #'#%top-interaction))
+                              rs)
+                       ;; Just mzscheme's top-interaction; strip it out
+                       (adjust-deriv/top next)]
+                      [(equal? (map syntax-e rs) '(#%top-interaction))
+                       ;; A *different* top interaction; keep it
+                       deriv]
+                      [else
+                       ;; Not original and not tagged with top-interaction
+                       #f])])]
+            [else #f])))
+    (let ([deriv* (adjust-deriv/lift deriv)])
+      deriv*))
+
+  )

@@ -85,8 +85,11 @@
              (stretchable-height #f)
              (style '(deleted))))
 
+      (define/public (get-macro-stepper-widget%)
+        macro-stepper-widget%)
+
       (define widget
-        (new macro-stepper-widget%
+        (new (get-macro-stepper-widget%)
              (parent (get-area-container))
              (config config)))
 

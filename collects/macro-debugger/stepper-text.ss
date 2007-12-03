@@ -3,6 +3,7 @@
   (require (lib "list.ss")
            (lib "pretty.ss")
            "model/trace.ss"
+           "model/reductions.ss"
            "model/steps.ss"
            "model/hide.ss"
            "model/hiding-policies.ss"

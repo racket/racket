@@ -48,6 +48,7 @@
              (editor -text)
              (widget this)))
 
+      (send -text set-styles-sticky #f)
       (send -text lock #t)
 
       (send -split-panel set-percentages 
@@ -91,6 +92,14 @@
       (define/public (add-text text)
         (with-unlock -text
           (send -text insert text)))
+
+      (define/public (add-clickback text handler)
+        (with-unlock -text
+          (let ([a (send -text last-position)])
+            (send -text insert text)
+            (let ([b (send -text last-position)])
+              (send -text set-clickback a b handler)
+              (send -text change-style clickback-style a b)))))
 
       (define/public add-syntax
         (lambda/kw (stx #:key [hi-stxs null] hi-color alpha-table [definites null]
@@ -185,6 +194,11 @@
       (super-new)
       (setup-keymap)))
 
+  (define clickback-style
+    (let ([sd (new style-delta%)])
+      (send sd set-delta 'change-toggle-underline)
+      (send sd set-delta-foreground "blue")
+      sd))
 
   ;; Specialized classes for widget
 

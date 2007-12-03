@@ -1,6 +1,7 @@
 
 (module view mzscheme
   (require (lib "class.ss")
+           (lib "pretty.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            "interfaces.ss"
@@ -33,4 +34,10 @@
       (send w add-deriv deriv)
       (send f show #t)
       w))
+
+  (define (go/trace events)
+    (let* ([w (make-macro-stepper)])
+      (send w add-trace events)
+      w))
+
   )
