@@ -208,33 +208,35 @@ struct objhead {
   unsigned long size : LOG_APAGE_SIZE;
 };
 
-/* For sparcs, this structure must have an odd number of 4 byte words, or
-   our alignment stuff is going to get screwy */
-struct mpage {                      /* BYTES: */
-  struct mpage *next, *prev;        /*    8 */
-  unsigned long previous_size;      /* +  4 */
-  unsigned long size;               /* +  4 */
-  unsigned char generation;         /* +  1 */
-  unsigned char back_pointers;      /* +  1 */
-  unsigned char big_page;           /* +  1 */
-  unsigned char page_type;          /* +  1 */
-  unsigned char marked_on;          /* +  1 */
-  unsigned char has_new;            /* +  1 */
-  unsigned short live_size;         /* +  2 */
-  void **backtrace;                 /* +  4 */
-                                    /* = 28 bytes */
-                                    /* = 28 / 4 = 7 words */
+struct mpage {
+  struct mpage *next, *prev;
+  void *addr;
+  unsigned long previous_size;
+  unsigned long size;
+  unsigned char generation;
+  unsigned char back_pointers;
+  unsigned char big_page;
+  unsigned char page_type;
+  unsigned char marked_on;
+  unsigned char has_new;
+  unsigned char mprotected;
+  unsigned short live_size;
+  void **backtrace;
 };
 
-      
-/* these give the size of a *page* header in words and bytes, respsectively */
-#define HEADER_SIZEW gcBYTES_TO_WORDS(sizeof(struct mpage))
-#define HEADER_SIZEB gcWORDS_TO_BYTES(HEADER_SIZEW)
+#ifdef ALIGN_DOUBLES
+/* Make sure alloction starts out double-word aligned: */
+# define PREFIX_SIZE WORD_SIZE
+# define PREFIX_WSIZE 1      
+#else
+# define PREFIX_SIZE 0
+# define PREFIX_WSIZE 0      
+#endif
 
 /* this is the maximum size of an object that will fit on a page, in words.
    the "- 3" is basically used as a fudge/safety factor, and has no real, 
    important meaning. */
-#define MAX_OBJECT_SIZEW (gcBYTES_TO_WORDS(APAGE_SIZE) - HEADER_SIZEW - 3)
+#define MAX_OBJECT_SIZEW (gcBYTES_TO_WORDS(APAGE_SIZE) - PREFIX_WSIZE - 3)
 
 /* the page type constants */
 #define PAGE_TAGGED 0
@@ -301,8 +303,9 @@ static struct mpage *page_map[1 << USEFUL_ADDR_BITS];
 */
 static struct mpage *gen0_pages = NULL;
 static struct mpage *GC_gen0_alloc_page = NULL;
+static void *GC_gen0_alloc_page_addr = NULL;
 static struct mpage *gen0_big_pages = NULL;
-static unsigned long GC_gen0_alloc_page_size = 0;
+unsigned long GC_gen0_alloc_page_ptr = 0;
 static unsigned long gen0_current_size = 0;
 static unsigned long gen0_max_size = 0;
 
@@ -327,27 +330,27 @@ static int avoid_collection;
      mark it as potentially containing pointers from gen 1 to gen 0. 
 
    During collections, it maps pointers to "from" pages. */
-#define modify_page_map(page, val) {                                  \
-    long size_left = page->big_page ? page->size : APAGE_SIZE;         \
-    void *p = page;                                                   \
+#define modify_page_map(addr, page, val) {                            \
+    long size_left = page->big_page ? page->size : APAGE_SIZE;        \
+    void *p = addr;                                                   \
     DECL_PAGE_MAP;                                                    \
                                                                       \
     while(size_left > 0) {                                            \
       GET_PAGE_MAP(p);                                                \
       page_map[ADDR_BITS(p)] = val;                                   \
-      size_left -= APAGE_SIZE;                                         \
-      p = (char *)p + APAGE_SIZE;                                      \
+      size_left -= APAGE_SIZE;                                        \
+      p = (char *)p + APAGE_SIZE;                                     \
     }                                                                 \
   }
 
 inline static void pagemap_add(struct mpage *page)
 {
-  modify_page_map(page, page);
+  modify_page_map(page->addr, page, page);
 }
 
 inline static void pagemap_remove(struct mpage *page)
 {
-  modify_page_map(page, NULL);
+  modify_page_map(page->addr, page, NULL);
 }
 
 inline static struct mpage *find_page(void *p)
@@ -357,12 +360,24 @@ inline static struct mpage *find_page(void *p)
   return page_map[ADDR_BITS(p)];
 }
 
-
 static size_t round_to_apage_size(size_t sizeb)
 {  
   sizeb += APAGE_SIZE - 1;
   sizeb -= sizeb & (APAGE_SIZE - 1);
   return sizeb;
+}
+
+static struct mpage *malloc_mpage()
+{
+  struct mpage *page;
+  page = malloc(sizeof(struct mpage));
+  memset(page, 0, sizeof(struct mpage));
+  return page;
+}
+
+static void free_mpage(struct mpage *page)
+{
+  free(page);
 }
 
 static unsigned long custodian_single_time_limit(int set);
@@ -373,6 +388,7 @@ static void *allocate_big(size_t sizeb, int type)
 {
   unsigned long sizew;
   struct mpage *bpage;
+  void *addr;
 
   if(GC_out_of_memory) {
     /* We're allowed to fail. Check for allocations that exceed a single-time
@@ -388,10 +404,10 @@ static void *allocate_big(size_t sizeb, int type)
   }
 
   /* the actual size of this is the size, ceilinged to the next largest word,
-     plus the size of the page header, plus one word for the object header.
+     plus one word for the object header.
      This last serves many purposes, including making sure the object is 
      aligned for Sparcs. */
-  sizew = gcBYTES_TO_WORDS(sizeb) + HEADER_SIZEW + 1;
+  sizew = gcBYTES_TO_WORDS(sizeb) + PREFIX_WSIZE + 1;
   sizeb = gcWORDS_TO_BYTES(sizew);
 
   if((gen0_current_size + sizeb) >= gen0_max_size) {
@@ -403,11 +419,12 @@ static void *allocate_big(size_t sizeb, int type)
   /* We not only need APAGE_SIZE alignment, we 
      need everything consisently mapped within an APAGE_SIZE
      segment. So round up. */
-  if (type == PAGE_ATOMIC) {
-    bpage = malloc_dirty_pages(round_to_apage_size(sizeb), APAGE_SIZE);
-    memset(bpage, 0, sizeof(struct mpage));
-  } else
-    bpage = malloc_pages(round_to_apage_size(sizeb), APAGE_SIZE);
+  bpage = malloc_mpage();
+  if (type == PAGE_ATOMIC)
+    addr = malloc_dirty_pages(round_to_apage_size(sizeb), APAGE_SIZE);
+  else
+    addr = malloc_pages(round_to_apage_size(sizeb), APAGE_SIZE);
+  bpage->addr = addr;
   bpage->size = sizeb;
   bpage->big_page = 1;
   bpage->page_type = type;
@@ -416,7 +433,7 @@ static void *allocate_big(size_t sizeb, int type)
   gen0_big_pages = bpage;
   pagemap_add(bpage);
 
-  return (void*)(NUM(bpage) + HEADER_SIZEB + WORD_SIZE);
+  return (void*)(addr + PREFIX_SIZE + WORD_SIZE);
 }
 
 #ifdef ALIGN_DOUBLES
@@ -435,36 +452,45 @@ inline static void *allocate(size_t sizeb, int type)
     sizew = ALIGN_SIZE(sizew);
     if(sizew < MAX_OBJECT_SIZEW) {
       struct objhead *info;
-      unsigned long newsize;
+      unsigned long newptr;
 
       sizeb = gcWORDS_TO_BYTES(sizew);
     alloc_retry:
-      newsize = GC_gen0_alloc_page_size + sizeb;
+      newptr = GC_gen0_alloc_page_ptr + sizeb;
 
-      if(newsize > GEN0_PAGE_SIZE) {
-        gen0_current_size += (GC_gen0_alloc_page_size - HEADER_SIZEB);
-        GC_gen0_alloc_page->size = GC_gen0_alloc_page_size;
+      if(newptr > NUM(GC_gen0_alloc_page_addr) + GEN0_PAGE_SIZE) {
+        unsigned long old_size;
+        old_size = GC_gen0_alloc_page_ptr - NUM(GC_gen0_alloc_page_addr);
+        gen0_current_size += old_size;
+        GC_gen0_alloc_page->size = old_size;
 	if(GC_gen0_alloc_page->next) { 
 	  GC_gen0_alloc_page = GC_gen0_alloc_page->next;
-          GC_gen0_alloc_page_size = GC_gen0_alloc_page->size;
+	  GC_gen0_alloc_page_addr = GC_gen0_alloc_page->addr;
+          GC_gen0_alloc_page_ptr = NUM(GC_gen0_alloc_page_addr) + GC_gen0_alloc_page->size;
 	} else if (avoid_collection) {
 	  struct mpage *work;
+          void *addr;
 
-	  work = malloc_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
-	  work->size = GEN0_PAGE_SIZE;
-	  work->big_page = 1;
+          work = malloc_mpage();
+          addr = malloc_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
+          work->addr = addr;
 	  GC_gen0_alloc_page->prev = work;
 	  work->next = GC_gen0_alloc_page;
 	  GC_gen0_alloc_page = work;
-          GC_gen0_alloc_page_size = GC_gen0_alloc_page->size;
+	  GC_gen0_alloc_page_addr = addr;
+          GC_gen0_alloc_page_ptr = NUM(addr);
+	  work->big_page = 1; /* until added */
+          work->size = GEN0_PAGE_SIZE; /* until added */
 	  pagemap_add(work);
-	  work->size = HEADER_SIZEB;
+	  work->size = PREFIX_SIZE;
 	  work->big_page = 0;
 	} else 
 	  garbage_collect(0);
 	goto alloc_retry;
       } else {
-	void *retval = PTR(NUM(GC_gen0_alloc_page) + GC_gen0_alloc_page_size);
+	void *retval = PTR(GC_gen0_alloc_page_ptr);
+
+	GC_gen0_alloc_page_ptr = newptr;
 
         if (type == PAGE_ATOMIC)
           *((void **)retval) = NULL; /* init objhead */
@@ -474,7 +500,6 @@ inline static void *allocate(size_t sizeb, int type)
 	info = (struct objhead *)retval;
 	info->type = type;
 	info->size = sizew;
-	GC_gen0_alloc_page_size = newsize;
 
 	return PTR(NUM(retval) + WORD_SIZE);
       }
@@ -496,23 +521,25 @@ void GC_free(void *p) {}
 
 void *GC_malloc_one_small_tagged(size_t sizeb)
 {
-  unsigned long newsize;
+  unsigned long ptr, newptr;
 
   sizeb += WORD_SIZE;
   sizeb = ALIGN_BYTES_SIZE(sizeb);
-  newsize = GC_gen0_alloc_page_size + sizeb;
+  ptr = GC_gen0_alloc_page_ptr;
+  newptr = GC_gen0_alloc_page_ptr + sizeb;
 
-  if(newsize > GEN0_PAGE_SIZE) {
+  if(newptr > NUM(GC_gen0_alloc_page_addr) + GEN0_PAGE_SIZE) {
     return GC_malloc_one_tagged(sizeb - WORD_SIZE);
   } else {
-    void *retval = PTR(NUM(GC_gen0_alloc_page) + GC_gen0_alloc_page_size);
+    void *retval = PTR(ptr);
     struct objhead *info = (struct objhead *)retval;
+
+    GC_gen0_alloc_page_ptr = newptr;
 
     bzero(retval, sizeb);
 
     /* info->type = type; */ /* We know that the type field is already 0 */
     info->size = (sizeb >> gcLOG_WORD_SIZE);
-    GC_gen0_alloc_page_size = newsize;
     
     return PTR(NUM(retval) + WORD_SIZE);
   }
@@ -520,22 +547,25 @@ void *GC_malloc_one_small_tagged(size_t sizeb)
 
 void *GC_malloc_one_small_dirty_tagged(size_t sizeb)
 {
-  unsigned long newsize;
+  unsigned long ptr, newptr;
 
   sizeb += WORD_SIZE;
   sizeb = ALIGN_BYTES_SIZE(sizeb);
-  newsize = GC_gen0_alloc_page_size + sizeb;
+  ptr = GC_gen0_alloc_page_ptr;
+  newptr = GC_gen0_alloc_page_ptr + sizeb;
 
-  if(newsize > GEN0_PAGE_SIZE) {
+  if(newptr > NUM(GC_gen0_alloc_page_addr) + GEN0_PAGE_SIZE) {
     return GC_malloc_one_tagged(sizeb - WORD_SIZE);
   } else {
-    void *retval = PTR(NUM(GC_gen0_alloc_page) + GC_gen0_alloc_page_size);
+    void *retval = PTR(ptr);
     struct objhead *info = (struct objhead *)retval;
+
+    GC_gen0_alloc_page_ptr = newptr;
 
     *(void **)info = NULL; /* client promises the initialize the rest */
 
+    /* info->type = type; */ /* We know that the type field is already 0 */
     info->size = (sizeb >> gcLOG_WORD_SIZE);
-    GC_gen0_alloc_page_size = newsize;
     
     return PTR(NUM(retval) + WORD_SIZE);
   }
@@ -543,14 +573,15 @@ void *GC_malloc_one_small_dirty_tagged(size_t sizeb)
 
 void *GC_malloc_pair(void *car, void *cdr)
 {
+  unsigned long ptr, newptr;
   size_t sizeb;
-  unsigned long newsize;
   void *retval;
 
   sizeb = ALIGN_BYTES_SIZE(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object))) + WORD_SIZE);
-  newsize = GC_gen0_alloc_page_size + sizeb;
+  ptr = GC_gen0_alloc_page_ptr;
+  newptr = GC_gen0_alloc_page_ptr + sizeb;
 
-  if(newsize > GEN0_PAGE_SIZE) {
+  if(newptr > NUM(GC_gen0_alloc_page_addr) + GEN0_PAGE_SIZE) {
     park[0] = car;
     park[1] = cdr;
     retval = GC_malloc_one_tagged(sizeb - WORD_SIZE);
@@ -561,7 +592,9 @@ void *GC_malloc_pair(void *car, void *cdr)
   } else {
     struct objhead *info;
 
-    retval = PTR(NUM(GC_gen0_alloc_page) + GC_gen0_alloc_page_size);
+    GC_gen0_alloc_page_ptr = newptr;
+
+    retval = PTR(ptr);
     info = (struct objhead *)retval;
 
     ((void **)retval)[0] = NULL; /* objhead */
@@ -569,7 +602,6 @@ void *GC_malloc_pair(void *car, void *cdr)
 
     /* info->type = type; */ /* We know that the type field is already 0 */
     info->size = (sizeb >> gcLOG_WORD_SIZE);
-    GC_gen0_alloc_page_size = newsize;
 
     retval = PTR(NUM(retval) + WORD_SIZE);
   }
@@ -579,6 +611,28 @@ void *GC_malloc_pair(void *car, void *cdr)
   ((void **)retval)[2] = cdr;
   
   return retval;
+}
+
+long GC_compute_alloc_size(long sizeb)
+{
+  return ALIGN_BYTES_SIZE(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(sizeb)) + WORD_SIZE);
+}
+
+long GC_initial_word(int sizeb)
+{
+  struct objhead _info;
+
+  sizeb = ALIGN_BYTES_SIZE(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(sizeb)) + WORD_SIZE);
+  
+  memset(&_info, 0, sizeof(_info));
+  _info.size = (sizeb >> gcLOG_WORD_SIZE);
+
+  return *(long *)(void *)&_info;
+}
+
+long GC_alloc_alignment()
+{
+  return APAGE_SIZE;
 }
 
 void *GC_malloc_mutable_pair(void *car, void *cdr)
@@ -596,6 +650,7 @@ long GC_malloc_stays_put_threshold() { return gcWORDS_TO_BYTES(MAX_OBJECT_SIZEW)
 inline static void resize_gen0(unsigned long new_size)
 {
   struct mpage *work = gen0_pages, *prev = NULL;
+  void *addr;
   unsigned long alloced_size = 0;
   
   /* first, make sure the big pages pointer is clean */
@@ -617,7 +672,8 @@ inline static void resize_gen0(unsigned long new_size)
 	work->big_page = 1;
 	work->size = GEN0_PAGE_SIZE;
 	pagemap_remove(work);
-	free_pages(work, GEN0_PAGE_SIZE);
+	free_pages(work->addr, GEN0_PAGE_SIZE);
+        free_mpage(work);
 	work = next;
       }
       
@@ -628,7 +684,7 @@ inline static void resize_gen0(unsigned long new_size)
          better locality, and we don't have to zero
          for atomic allocations. */
       alloced_size += GEN0_PAGE_SIZE;
-      work->size = HEADER_SIZEB;
+      work->size = PREFIX_SIZE;
       prev = work;
       work = work->next;
     }
@@ -636,22 +692,25 @@ inline static void resize_gen0(unsigned long new_size)
 
   /* if we're short, add more */
   while(alloced_size < new_size) {
-    work = malloc_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
-    work->size = GEN0_PAGE_SIZE;
-    work->big_page = 1;
+    work = malloc_mpage();
+    addr = malloc_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
+    work->addr = addr;
     if(prev)
       prev->next = work;
     else gen0_pages = work;
     prev = work;
+    work->big_page = 1; /* until added */
+    work->size = GEN0_PAGE_SIZE; /* until added */
     pagemap_add(prev);
-    work->size = HEADER_SIZEB;
+    work->size = PREFIX_SIZE;
     work->big_page = 0;
     alloced_size += GEN0_PAGE_SIZE;
   }
 
   /* we're going to allocate onto the first page now */
   GC_gen0_alloc_page = gen0_pages;
-  GC_gen0_alloc_page_size = GC_gen0_alloc_page->size;
+  GC_gen0_alloc_page_addr = gen0_pages->addr;
+  GC_gen0_alloc_page_ptr = NUM(GC_gen0_alloc_page_addr) + GC_gen0_alloc_page->size;
 
   /* set the two size variables */
   gen0_max_size = alloced_size;
@@ -690,7 +749,7 @@ inline static int marked(void *p)
 
   if(!p) return 0;
   if(!(page = find_page(p))) return 1;
-  if((NUM(page) + page->previous_size) > NUM(p)) return 1;
+  if((NUM(page->addr) + page->previous_size) > NUM(p)) return 1;
   return ((struct objhead *)(NUM(p) - WORD_SIZE))->mark;
 }
 
@@ -738,22 +797,22 @@ static void dump_heap(void)
   
   if(collections >= 0) {
     for(page = gen0_pages; page; page = page->next) {
-      fprintf(dump, "Generation 0 Page (%p - %p, size %i):\n", 
-	      page, PTR(NUM(page) + GEN0_PAGE_SIZE), page->size);
-      dump_region(PPTR(page), PPTR(NUM(page) + page->size));
+      fprintf(dump, "Generation 0 Page (%p:%p - %p, size %i):\n", 
+	      page, page->addr, PTR(NUM(page->addr) + GEN0_PAGE_SIZE), page->size);
+      dump_region(PPTR(NUM(page->addr) + PREFIX_SIZE), PPTR(NUM(page->addr) + page->size));
     }
     for(page = gen0_big_pages; page; page = page->next) {
-      fprintf(dump, "Page %p (gen %i, type %i, big %i, back %i, size %i)\n",
-	      page, page->generation, page->page_type, page->big_page,
+      fprintf(dump, "Page %p:%p (gen %i, type %i, big %i, back %i, size %i)\n",
+	      page, page->addr, page->generation, page->page_type, page->big_page,
 	      page->back_pointers, page->size);
-      dump_region(PPTR(page), PPTR(NUM(page) + page->size));
+      dump_region(PPTR(NUM(page->addr) + PREFIX_SIZE), PPTR(NUM(page->addr) + page->size));
     }
     for(i = 0; i < PAGE_TYPES; i++)
       for(page = pages[i]; page; page = page->next) {
-	fprintf(dump, "Page %p (gen %i, type %i, big %i, back %i, size %i)\n",
-		page, page->generation, page->page_type, page->big_page,
+	fprintf(dump, "Page %p:%p (gen %i, type %i, big %i, back %i, size %i)\n",
+		page, page->addr, page->generation, page->page_type, page->big_page,
 		page->back_pointers, page->size);
-	dump_region(PPTR(page), PPTR(NUM(page) + page->size));
+	dump_region(PPTR(NUM(page->addr) + PREFIX_SIZE), PPTR(NUM(page->addr) + page->size));
       }
     fprintf(dump, "STACK:\n");
     dump_region((void*)(NUM(&i) & 0xfffffff0),
@@ -813,7 +872,7 @@ static void record_backtrace(struct mpage *page, void *ptr)
 {
   unsigned long delta;
 
-  delta = PPTR(ptr) - PPTR(page);
+  delta = PPTR(ptr) - PPTR(page->addr);
   page->backtrace[delta - 1] = bt_source;
   ((long *)page->backtrace)[delta] = bt_type;
 }
@@ -824,8 +883,8 @@ static void copy_backtrace_source(struct mpage *to_page, void *to_ptr,
 {
   unsigned long to_delta, from_delta;
 
-  to_delta = PPTR(to_ptr) - PPTR(to_page);
-  from_delta = PPTR(from_ptr) - PPTR(from_page);
+  to_delta = PPTR(to_ptr) - PPTR(to_page->addr);
+  from_delta = PPTR(from_ptr) - PPTR(from_page->addr);
 
   to_page->backtrace[to_delta] = from_page->backtrace[from_delta];
   to_page->backtrace[to_delta+1] = from_page->backtrace[from_delta+1];
@@ -837,9 +896,9 @@ static void *get_backtrace(struct mpage *page, void *ptr)
   unsigned long delta;
 
   if (page->big_page)
-    ptr = PTR(NUM(page) + HEADER_SIZEB);
+    ptr = PTR(page->addr + PREFIX_SIZE);
 
-  delta = PPTR(ptr) - PPTR(page);
+  delta = PPTR(ptr) - PPTR(page->addr);
   return page->backtrace[delta - 1];
 }
 
@@ -1566,7 +1625,7 @@ inline static void memory_account_mark(struct mpage *page, void *ptr)
 {
   GCDEBUG((DEBUGOUTF, "memory_account_mark: %p/%p\n", page, ptr));
   if(page->big_page) {
-    struct objhead *info = (struct objhead *)((char*)page + HEADER_SIZEB);
+    struct objhead *info = (struct objhead *)(page->addr + PREFIX_SIZE);
 
     if(info->btc_mark == old_btc_mark) {
       info->btc_mark = new_btc_mark;
@@ -1637,8 +1696,8 @@ inline static void mark_normal_obj(struct mpage *page, void *ptr)
 
 inline static void mark_acc_big_page(struct mpage *page)
 {
-  void **start = PPTR(NUM(page) + HEADER_SIZEB + WORD_SIZE);
-  void **end = PPTR(NUM(page) + page->size);
+  void **start = PPTR(NUM(page->addr) + PREFIX_SIZE + WORD_SIZE);
+  void **end = PPTR(NUM(page->addr) + page->size);
 
   switch(page->page_type) {
     case PAGE_TAGGED: 
@@ -1678,7 +1737,7 @@ static void propagate_accounting_marks(void)
   while(pop_ptr(&p) && !kill_propagation_loop) {
     page = find_page(p);
     set_backtrace_source(p, page->page_type);
-    GCDEBUG((DEBUGOUTF, "btc_account: popped off page %p, ptr %p\n", page, p));
+    GCDEBUG((DEBUGOUTF, "btc_account: popped off page %p:%p, ptr %p\n", page, page->addr, p));
     if(page->big_page)
       mark_acc_big_page(page);
     else
@@ -1943,15 +2002,21 @@ int GC_set_account_hook(int type, void *c1, unsigned long b, void *c2)
 /* administration / initialization                                           */
 /*****************************************************************************/
 
-static int generations_available = 1;
+static int generations_available = 1, no_further_modifications = 0;
 
 int designate_modified(void *p)
 {
   struct mpage *page = find_page(p);
 
+  if (no_further_modifications) {
+    GCPRINT(GCOUTF, "Seg fault (internal error during gc) at %p\n", p);
+    return 0;
+  }
+
   if(page) {
     if (!page->back_pointers) {
-      protect_pages(page, page->size, 1);
+      page->mprotected = 0;
+      protect_pages(page->addr, page->big_page ? round_to_apage_size(page->size) : APAGE_SIZE, 1);
       page->back_pointers = 1;
       return 1;
     }
@@ -2029,7 +2094,10 @@ long GC_get_memory_use(void *o)
       retval = custodian_usage(arg);
     }
   } else {
-    retval = gen0_current_size + (GC_gen0_alloc_page_size - HEADER_SIZEB) + memory_in_use;
+    retval = (gen0_current_size 
+              + ((GC_gen0_alloc_page_ptr - NUM(GC_gen0_alloc_page_addr))
+                 - PREFIX_SIZE)
+              + memory_in_use);
   }
 
   return retval;
@@ -2080,11 +2148,11 @@ void GC_mark(const void *const_p)
 	  pages[PAGE_BIG] = page;
 	  /* if we're doing memory accounting, then we need to make sure the
 	     btc_mark is right */
-	  set_btc_mark(NUM(page) + HEADER_SIZEB);
+	  set_btc_mark(NUM(page->addr) + PREFIX_SIZE);
 	}
 
 	page->marked_on = 1;
-	record_backtrace(page, PTR(NUM(page) + HEADER_SIZEB));
+	record_backtrace(page, NUM(page->addr) + PREFIX_SIZE);
 	GCDEBUG((DEBUGOUTF, "Marking %p on big page %p\n", p, page));
 	/* Finally, we want to add this to our mark queue, so we can 
 	   propagate its pointers */
@@ -2103,11 +2171,11 @@ void GC_mark(const void *const_p)
 	     object masquerading as a tagged object, etc. So all we do
 	     is add the pointer to the mark queue and note on the page
 	     that we marked something on it*/
-	  if((NUM(page) + page->previous_size) <= NUM(p)) {
+	  if((NUM(page->addr) + page->previous_size) <= NUM(p)) {
 	    GCDEBUG((DEBUGOUTF, "Marking %p (leaving alone)\n", p));
 	    ohead->mark = 1;
 	    page->marked_on = 1;
-	    page->previous_size = HEADER_SIZEB;
+	    page->previous_size = PREFIX_SIZE;
 	    page->live_size += ohead->size;
 	    record_backtrace(page, p);
 	    push_ptr(p);
@@ -2141,14 +2209,20 @@ void GC_mark(const void *const_p)
 	  if(work) {
 	    pagemap_add(work);
 	    work->marked_on = 1;
-	    newplace = PTR(NUM(work) + work->size);
+            if (work->mprotected) {
+              work->mprotected = 0;
+              protect_pages(work->addr, APAGE_SIZE, 1);
+            }
+            newplace = PTR(NUM(work->addr) + work->size);
 	  } else {
 	    /* Allocate and prep the page */
-	    work = (struct mpage *)malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE);
-            memset(work, 0, sizeof(struct mpage));
+            void *addr;
+	    work = malloc_mpage();
+            addr = malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE);
+            work->addr = addr;
 	    work->generation = 1;
 	    work->page_type = type;
-	    work->size = work->previous_size = HEADER_SIZEB;
+	    work->size = work->previous_size = PREFIX_SIZE;
 	    work->marked_on = 1;
 	    backtrace_new_page(work);
 	    work->next = pages[type];
@@ -2157,14 +2231,14 @@ void GC_mark(const void *const_p)
 	      work->next->prev = work;
 	    pagemap_add(work);
 	    pages[type] = work;
-	    newplace = PTR(NUM(work) + HEADER_SIZEB);
+	    newplace = PTR(NUM(work->addr) + PREFIX_SIZE);
 	  }
 
 	  /* update the size */
 	  work->size += size;
 	  work->has_new = 1;
-
-	  /* transfer the object */
+          
+          /* transfer the object */
 	  memcpy(newplace, (const void *)ohead, size);
 	  /* mark the old location as marked and moved, and the new location
 	     as marked */
@@ -2197,8 +2271,8 @@ inline static void internal_mark(void *p)
   /* we can assume a lot here -- like it's a valid pointer with a page --
      because we vet bad cases out in GC_mark, above */
   if(page->big_page) {
-    void **start = PPTR(NUM(page) + HEADER_SIZEB + WORD_SIZE);
-    void **end = PPTR(NUM(page) + page->size);
+    void **start = PPTR(NUM(page->addr) + PREFIX_SIZE + WORD_SIZE);
+    void **end = PPTR(NUM(page->addr) + page->size);
 
     set_backtrace_source(start, page->page_type);
 
@@ -2311,7 +2385,7 @@ static unsigned long num_major_collects = 0;
 # define trace_page_type(page) (page)->page_type
 static void *trace_pointer_start(struct mpage *page, void *p) { 
   if (page->big_page) 
-    return PTR(NUM(page) + HEADER_SIZEB + WORD_SIZE); 
+    return PTR(NUM(page->addr) + PREFIX_SIZE + WORD_SIZE); 
   else 
     return p; 
 }
@@ -2357,8 +2431,8 @@ void GC_dump_with_traces(int flags,
     counts[i] = sizes[i] = 0;
   }
   for (page = pages[PAGE_TAGGED]; page; page = page->next) {
-    void **start = PPTR(NUM(page) + HEADER_SIZEB);
-    void **end = PPTR(NUM(page) + page->size);
+    void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
+    void **end = PPTR(NUM(page->addr) + page->size);
     
     while(start < end) {
       struct objhead *info = (struct objhead *)start;
@@ -2379,7 +2453,7 @@ void GC_dump_with_traces(int flags,
   }
   for (page = pages[PAGE_BIG]; page; page = page->next) {
     if (page->page_type == PAGE_TAGGED) {
-      void **start = PPTR(NUM(page) + HEADER_SIZEB);
+      void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
       unsigned short tag = *(unsigned short *)(start + 1);
       if (tag < MAX_DUMP_TAG) {
 	counts[tag]++;
@@ -2412,7 +2486,9 @@ void GC_dump_with_traces(int flags,
   GCPRINT(GCOUTF, "End MzScheme3m\n");
 
   GCWARN((GCOUTF, "Generation 0: %li of %li bytes used\n",
-	  gen0_current_size +  (GC_gen0_alloc_page_size - HEADER_SIZEB), 
+          (gen0_current_size 
+           + ((GC_gen0_alloc_page_ptr - NUM(GC_gen0_alloc_page_addr))
+              - PREFIX_SIZE)),
           gen0_max_size));
   
   for(i = 0; i < PAGE_TYPES; i++) {
@@ -2486,22 +2562,32 @@ static void prepare_pages_for_collection(void)
        we don't accidentally screw up the mark routine */
     if (generations_available) {
       for(i = 0; i < PAGE_TYPES; i++)
-	for(work = pages[i]; work; work = work->next)
-	  add_protect_page_range(work, work->big_page ? work->size : APAGE_SIZE, APAGE_SIZE, 1);
+	for(work = pages[i]; work; work = work->next) {
+          if (work->mprotected) {
+            work->mprotected = 0;
+            add_protect_page_range(work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
+          }
+        }
       flush_protect_page_ranges(1);
     }
     for(i = 0; i < PAGE_TYPES; i++)
       for(work = pages[i]; work; work = work->next) {
 	work->live_size = 0;
-	work->previous_size = HEADER_SIZEB;
+	work->previous_size = PREFIX_SIZE;
       }
   } else {
     /* if we're not doing a major collection, then we need to remove all the
        pages in pages[] from the page map */
     for(i = 0; i < PAGE_TYPES; i++)
       for(work = pages[i]; work; work = work->next) {
-	if (generations_available)
-	  add_protect_page_range(work, work->big_page ? work->size : APAGE_SIZE, APAGE_SIZE, 1);
+	if (generations_available) {
+          if (work->back_pointers) {
+            if (work->mprotected) {
+              work->mprotected = 0;
+              add_protect_page_range(work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
+            }
+          }
+        }
 	pagemap_remove(work);
       }
     flush_protect_page_ranges(1);
@@ -2522,15 +2608,15 @@ static void mark_backpointers(void)
 	  /* these pages are guaranteed not to be write protected, because
 	     if they were, they wouldn't have this bit set */
 	  work->marked_on = 1;
-	  work->previous_size = HEADER_SIZEB;
+	  work->previous_size = PREFIX_SIZE;
 	  pagemap_add(work);
 	  if(work->big_page) {
 	    work->big_page = 2;
-	    push_ptr(PPTR(NUM(work) + HEADER_SIZEB));
+	    push_ptr(PPTR(NUM(work->addr) + PREFIX_SIZE));
 	  } else {
 	    if(work->page_type != PAGE_ATOMIC) {
-	      void **start = PPTR(NUM(work) + HEADER_SIZEB);
-	      void **end = PPTR(NUM(work) + work->size);
+	      void **start = PPTR(NUM(work->addr) + PREFIX_SIZE);
+	      void **end = PPTR(NUM(work->addr) + work->size);
 	    
 	      while(start < end) {
 		struct objhead *info = (struct objhead *)start;
@@ -2546,7 +2632,7 @@ static void mark_backpointers(void)
 	      }
 	    }
 	  }
-	  work->previous_size = HEADER_SIZEB;
+	  work->previous_size = PREFIX_SIZE;
 	} else {
 	  GCDEBUG((DEBUGOUTF,"Setting previous_size on %p to %i\n", work,
 		   work->size));
@@ -2560,10 +2646,12 @@ static void mark_backpointers(void)
 struct mpage *allocate_compact_target(struct mpage *work)
 {
   struct mpage *npage;
+  void *addr;
 
-  npage = malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE);
-  memset(npage, 0, sizeof(struct mpage));
-  npage->previous_size = npage->size = HEADER_SIZEB;
+  npage = malloc_mpage();
+  addr = malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE);
+  npage->addr = addr;
+  npage->previous_size = npage->size = PREFIX_SIZE;
   npage->generation = 1;
   npage->back_pointers = 0;
   npage->big_page = 0;
@@ -2581,7 +2669,7 @@ struct mpage *allocate_compact_target(struct mpage *work)
 }
 
 /* Compact when 1/4 of the space between objects is unused: */
-#define should_compact_page(lsize,tsize) (lsize < (tsize - HEADER_SIZEB - (APAGE_SIZE >> 2)))
+#define should_compact_page(lsize,tsize) (lsize < (tsize - PREFIX_SIZE - (APAGE_SIZE >> 2)))
 
 inline static void do_heap_compact(void)
 {
@@ -2601,8 +2689,8 @@ inline static void do_heap_compact(void)
       if(work->marked_on && !work->has_new) {
 	/* then determine if we actually want to do compaction */
 	if(should_compact_page(gcWORDS_TO_BYTES(work->live_size),work->size)) {
-	  void **start = PPTR(NUM(work) + HEADER_SIZEB);
-	  void **end = PPTR(NUM(work) + work->size);
+	  void **start = PPTR(NUM(work->addr) + PREFIX_SIZE);
+	  void **end = PPTR(NUM(work->addr) + work->size);
 	  void **newplace;
 	  unsigned long avail;
 
@@ -2614,7 +2702,7 @@ inline static void do_heap_compact(void)
 	    npage = allocate_compact_target(work);
 	  }
 	  avail = gcBYTES_TO_WORDS(APAGE_SIZE - npage->size);
-	  newplace = PPTR(NUM(npage) + npage->size);
+	  newplace = PPTR(NUM(npage->addr) + npage->size);
 
 	  while(start < end) {
 	    struct objhead *info;
@@ -2623,15 +2711,20 @@ inline static void do_heap_compact(void)
 
 	    if(info->mark) {
 	      while (avail <= info->size) {
-		npage->size = NUM(newplace) - NUM(npage);
+		npage->size = NUM(newplace) - NUM(npage->addr);
 		do {
 		  npage = npage->prev;
 		} while (!npage->marked_on || npage->has_new);
 		if (npage == work)
 		  npage = allocate_compact_target(work);
 		avail = gcBYTES_TO_WORDS(APAGE_SIZE - npage->size);
-		newplace = PPTR(NUM(npage) + npage->size);
+		newplace = PPTR(NUM(npage->addr) + npage->size);
 	      }
+
+              if (npage->mprotected) {
+                npage->mprotected = 0;
+                protect_pages(npage->addr, APAGE_SIZE, 1);
+              }
 
 	      GCDEBUG((DEBUGOUTF,"Moving size %i object from %p to %p\n",
 		       gcWORDS_TO_BYTES(info->size), start+1, newplace+1));
@@ -2644,7 +2737,7 @@ inline static void do_heap_compact(void)
 	    }
 	    start += info->size;	    
 	  }
-	  npage->size = NUM(newplace) - NUM(npage);
+	  npage->size = NUM(newplace) - NUM(npage->addr);
 
 	  prev = work->prev;
 
@@ -2681,8 +2774,8 @@ static void repair_heap(void)
 	page->has_new = 0;
 	/* these are guaranteed not to be protected */
 	if(page->big_page) {
-	  void **start = PPTR(NUM(page) + HEADER_SIZEB + WORD_SIZE);
-	  void **end = PPTR(NUM(page) + page->size);
+	  void **start = PPTR(NUM(page->addr) + PREFIX_SIZE + WORD_SIZE);
+	  void **end = PPTR(NUM(page->addr) + page->size);
 
 	  GCDEBUG((DEBUGOUTF, "Cleaning objs on page %p, starting with %p\n",
 		   page, start));
@@ -2706,8 +2799,8 @@ static void repair_heap(void)
 	    }
 	  }
 	} else {
- 	  void **start = PPTR(NUM(page) + page->previous_size);
-	  void **end = PPTR(NUM(page) + page->size);
+ 	  void **start = PPTR(NUM(page->addr) + page->previous_size);
+	  void **end = PPTR(NUM(page->addr) + page->size);
 
 	  GCDEBUG((DEBUGOUTF, "Cleaning objs on page %p, starting with %p\n",
 		   page, start));
@@ -2792,7 +2885,8 @@ static void clean_up_heap(void)
   for(work = gen0_big_pages; work; work = prev) {
     prev = work->next;
     pagemap_remove(work);
-    free_pages(work, round_to_apage_size(work->size));
+    free_pages(work->addr, round_to_apage_size(work->size));
+    free_mpage(work);
   }
 
   for(i = 0; i < PAGE_TYPES; i++) {
@@ -2808,7 +2902,8 @@ static void clean_up_heap(void)
 	  if(next) work->next->prev = prev;
 	  pagemap_remove(work);
 	  free_backtrace(work);
-	  free_pages(work, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE);
+	  free_pages(work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE);
+          free_mpage(work);
 	  work = next;
 	} else {
 	  pagemap_add(work);
@@ -2834,7 +2929,8 @@ static void clean_up_heap(void)
     prev = release_page->next;
     pagemap_remove(release_page);
     free_backtrace(release_page);
-    free_pages(release_page, APAGE_SIZE);
+    free_pages(release_page->addr, APAGE_SIZE);
+    free_mpage(release_page);
     release_page = prev;
   }
 }
@@ -2847,8 +2943,12 @@ static void protect_old_pages(void)
   for(i = 0; i < PAGE_TYPES; i++) 
     if(i != PAGE_ATOMIC)
       for(page = pages[i]; page; page = page->next)
-	if(page->page_type != PAGE_ATOMIC) 
-	  add_protect_page_range(page, page->size, APAGE_SIZE, 0);
+	if(page->page_type != PAGE_ATOMIC)  {
+          if (!page->mprotected) {
+            page->mprotected = 1;
+            add_protect_page_range(page->addr, page->size, APAGE_SIZE, 0);
+          }
+        }
 
   flush_protect_page_ranges(0);
 }
@@ -2917,6 +3017,8 @@ static void garbage_collect(int force_full)
     GC_collect_start_callback();
 
   TIME_STEP("started");
+
+  no_further_modifications = 1;
 
   prepare_pages_for_collection();
   init_weak_boxes();
@@ -2998,6 +3100,7 @@ static void garbage_collect(int force_full)
   TIME_STEP("accounted");
   if (generations_available)
     protect_old_pages();
+  TIME_STEP("protect");
   if (gc_full)
     flush_freed_pages();
   reset_finalizer_tree();
@@ -3006,6 +3109,8 @@ static void garbage_collect(int force_full)
 
   /* now we do want the allocator freaking if we go over half */
   in_unsafe_allocation_mode = 0;
+
+  no_further_modifications = 0;
 
   /* If we have too many idle pages, flush: */
   if (actual_pages_size > ((used_pages << (LOG_APAGE_SIZE + 1)))) {
