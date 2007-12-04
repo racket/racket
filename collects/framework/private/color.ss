@@ -418,6 +418,7 @@
       ;;   if color is a color, then it uses that color to higlight
       ;;   Otherwise, it treats it like a boolean, where a true value  
       ;;   means the normal paren color and #f means an error color. 
+      ;; numbers are expected to have zero be start-pos.
       (define/private (highlight start end caret-pos color)
         (let ([off (highlight-range (+ start-pos start) (+ start-pos end)
                                     (if (is-a? color color%)
@@ -487,19 +488,24 @@
                          [end orig-end]
                          [depth 0])
           (when (< depth (vector-length (get-parenthesis-colors)))
-            (let seq-loop ([inner-sequence-start (+ start 1)])
-              (when (< inner-sequence-start end)
-                (let ([post-whitespace (skip-whitespace inner-sequence-start 'forward #t)])
-                  (let-values ([(start-inner end-inner error-inner)
-                                (send parens match-forward (- post-whitespace start-pos))])
-                    (cond
-                      [(and start-inner end-inner (not error-inner))
-                       (paren-loop start-inner end-inner (+ depth 1))
-                       (seq-loop end-inner)]
-                      [(skip-past-token post-whitespace)
-                       =>
-                       (λ (after-non-paren-thing)
-                         (seq-loop after-non-paren-thing))])))))
+            
+            ;; when there is at least one more color in the vector we'll look
+            ;; for regions to color at that next level
+            (when (< (+ depth 1) (vector-length (get-parenthesis-colors)))
+              (let seq-loop ([inner-sequence-start (+ start 1)])
+                (when (< inner-sequence-start end)
+                  (let ([post-whitespace (- (skip-whitespace (+ inner-sequence-start start-pos) 'forward #t) start-pos)])
+                    (let-values ([(start-inner end-inner error-inner)
+                                  (send parens match-forward post-whitespace)])
+                      (cond
+                        [(and start-inner end-inner (not error-inner))
+                         (paren-loop start-inner end-inner (+ depth 1))
+                         (seq-loop end-inner)]
+                        [(skip-past-token post-whitespace)
+                         =>
+                         (λ (after-non-paren-thing)
+                           (seq-loop after-non-paren-thing))]))))))
+            
             (highlight start end here (vector-ref (get-parenthesis-colors) depth)))))
       
       ;; See docs
