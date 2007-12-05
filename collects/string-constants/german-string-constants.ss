@@ -155,6 +155,15 @@
  (syntax-coloring-choose-color "Wählen Sie eine Farbe für ~a")
  (preferences-colors "Farben")
 
+ ;; parenthesis color scheme string constants
+ (parenthesis-color-scheme "Farbschema für Klammern") ;; label for the choice% menu in the preferences dialog
+ (paren-color-basic-grey "Grau Standard")
+ (paren-color-shades-of-gray "Grauschattierungen")
+ (paren-color-shades-of-blue "Blauschattierungen")
+ (paren-color-spring "Frühling")
+ (paren-color-fall "Herbst")
+ (paren-color-winter "Winter")
+
  (url: "URL:")
  (open-url... "URL öffnen...")
  (open-url "URL öffnen")
@@ -306,7 +315,8 @@
  (separate-dialog-for-searching "Für Textsuche separaten Dialog verwenden")
  (reuse-existing-frames "Existierende Fenster für neu geöffnete Dateien wiederverwenden")
  (default-fonts "Standard-Fonts")
- (paren-match-color "Farbe für Klammern-Hervorhebung") ; in prefs dialog
+ (basic-gray-paren-match-color "Farbe für Klammern-Hervorhebung \"Grau Standard\"") ; in prefs dialog
+
  (online-coloring-active "Syntax interaktiv einfärben")
  (open-files-in-tabs "Dateien in separaten Tabs öffnen (nicht separaten Fenstern)")
  (show-interactions-on-execute "Interaktionen beim Programmstart automatisch öffnen")
