@@ -371,8 +371,13 @@
                                       . body)
                        (let ([t (if s
                                     (if (equal? name s)
-                                        s
-                                        (make-name+title name s))
+                                        (if (string? s)
+                                            (decode s)
+                                            s)
+                                        (make-name+title name 
+                                                         (if (string? s)
+                                                             (decode s)
+                                                             s)))
                                     (if name
                                         (make-name-only name)
                                         #f))])
