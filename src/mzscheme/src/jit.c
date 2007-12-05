@@ -1037,12 +1037,20 @@ static void *prepare_retry_alloc(void *p, void *p2)
   return p;
 }
 
+long scheme_read_first_word(void *sp)
+/* Not declared static, to avoid inlining. This procedure
+   helps avoid bugs in C compiler alias analysis, since we are
+   intentially aliasing. */
+{
+  return *(long *)sp;
+}
+
 static long initial_tag_word(Scheme_Type tag)
 {
-  Scheme_Small_Object s;
-  memset(&s, 0, sizeof(Scheme_Small_Object));
-  s.iso.so.type = tag;
-  return *(long *)(void *)&s;
+  GC_CAN_IGNORE Scheme_Small_Object sp;
+  memset(&sp, 0, sizeof(Scheme_Small_Object));
+  sp.iso.so.type = tag;
+  return scheme_read_first_word((void *)&sp);
 }
 
 static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int keep_r0_r1)
