@@ -433,7 +433,7 @@ static void *allocate_big(size_t sizeb, int type)
   gen0_big_pages = bpage;
   pagemap_add(bpage);
 
-  return (void*)(addr + PREFIX_SIZE + WORD_SIZE);
+  return PTR(NUM(addr) + PREFIX_SIZE + WORD_SIZE);
 }
 
 #ifdef ALIGN_DOUBLES
@@ -1625,7 +1625,7 @@ inline static void memory_account_mark(struct mpage *page, void *ptr)
 {
   GCDEBUG((DEBUGOUTF, "memory_account_mark: %p/%p\n", page, ptr));
   if(page->big_page) {
-    struct objhead *info = (struct objhead *)(page->addr + PREFIX_SIZE);
+    struct objhead *info = (struct objhead *)(NUM(page->addr) + PREFIX_SIZE);
 
     if(info->btc_mark == old_btc_mark) {
       info->btc_mark = new_btc_mark;
