@@ -394,11 +394,10 @@ Modules are named and distributed in various ways:
  @item{Some modules are packaged in the PLT Scheme distribution or
        otherwise installed into a hierarchy of
        @defterm{collections}. For example, the module name
-       @schememodname[slideshow/flash] means ``the module
-       implemented in the file @filepath{flash.ss} that is located in the
-       @filepath{slideshow} collection.''  The @schememodname[slideshow]
-       specification with @schemefont{#lang} is a shorthand for
-       @schememodname[slideshow/main].}
+       @schememodname[slideshow/flash] means ``the module implemented
+       in the file @filepath{flash.ss} that is located in the
+       @filepath{slideshow} collection.'' When a module name includes
+       no slash, then it refers to a @filepath{main.ss} file.}
 
  @item{Some modules are distributed through the
        @link[url:planet]{@PLaneT} server, and they can be

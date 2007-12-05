@@ -5,7 +5,6 @@
 
 @title[#:tag "serialization"]{Serialization}
 
-@declare-exporting[scheme/serialize]
 @note-lib-only[scheme/serialize]
 
 @defproc[(serializable? [v any/c]) boolean?]{

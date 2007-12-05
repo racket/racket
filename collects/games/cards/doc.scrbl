@@ -5,9 +5,7 @@
 
 @title{Virtual Playing Cards Library}
 
-@declare-exporting[games/cards]
-
-The library is @scheme[games/cards].
+@defmodule[games/cards]
 
 @defproc[(make-table [title string? "Cards"] 
                      [w nonnegative-exact-integer? 7]

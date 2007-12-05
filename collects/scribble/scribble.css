@@ -289,6 +289,11 @@
                background-color: #ddddff;
                }
 
+               .defmodule {
+                 width: 100%;
+                 background-color: #F5F5DC;
+               }
+
                .specgrammar {
                float: right;
                }
@@ -365,6 +370,11 @@
                }
 
                .schemevaluelink { 
+               text-decoration: none;
+               color: blue;
+               }
+
+               .schememodlink { 
                text-decoration: none;
                color: blue;
                }

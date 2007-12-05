@@ -424,7 +424,6 @@ imported structure type, in which case the user is expected to know
 the set of fields that are listed in the signature for the structure
 type.
 
-@declare-exporting[scheme/struct-info scheme]
 @note-lib-only[scheme/struct-info]
 
 @defproc[(struct-info? [v any/c]) boolean?]{

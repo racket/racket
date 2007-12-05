@@ -4,7 +4,6 @@
 
 @title[#:tag "pretty-print"]{Pretty Printing}
 
-@declare-exporting[scheme/pretty scheme]
 @note-lib[scheme/pretty]
 
 @defproc[(pretty-print [v any/c] [port output-port? (current-output-port)])

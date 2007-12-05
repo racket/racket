@@ -11,13 +11,14 @@ This reference manual describes the MrEd GUI toolbox that is part of
  "mred"] in @italic{@link["../guide/index.html"]{A Guide to PLT
  Scheme}} for an introduction to MrEd.
 
-The @scheme[(lib "mred")] module provides all of the class, interface,
- and procedure bindings defined in this manual. The
- @schememodname[big-gui] language (for use with @schemefont{#module})
- extends the @schememodname[big] language with @scheme[(lib "mred")].
+@defmodule*/no-declare[(mred)]{The @schememodname[mred] module provides
+all of the class, interface, and procedure bindings defined in this
+manual.}
 
-@bold{This reference describes a potential future version of PLT Scheme.
-      It does not match the current implementation.}
+@defmodulelang*/no-declare[(scheme/gui)]{The
+@schememodname[scheme/gui] language combines all bindings of the
+@schememodname[scheme] language and the @schememodname[mred] module.}
+
 
 @table-of-contents[]
 

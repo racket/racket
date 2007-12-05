@@ -78,11 +78,11 @@ re-evaluate the module body.
 ]
 
 @;------------------------------------------------------------------------
-@section{The @schememodfont{#lang} Shorthand}
+@section[#:tag "hash-lang"]{The @schememodfont{#lang} Shorthand}
 
-Unlike @litchar{'}, there is no fixed syntax for the body of a
-@litchar{#lang} shorthand. In general, the syntax is determined by
-the language name that follows @litchar{#lang}.
+The body of a @schememodfont{#lang} shorthand has no specific syntax,
+because the syntax is determined by the language name that follows
+@schememodfont{#lang}.
 
 In the case of @schememodfont{#lang} @schememodname[scheme], the syntax
 is
@@ -107,3 +107,9 @@ the longhand expansion uses @scheme[scheme/base] instead of
 @scheme[scheme]. The @schememodfont{#lang} @scheme[honu] form, in
 contrast, has a completely different syntax that doesn't even look
 like Scheme, and which we do not attempt to describe in this guide.
+
+Unless otherwise specified, a module that is documented as a
+``language'' using the @schememodfont{#lang} notation will expand to
+@scheme[module] in the same way as @schememodfont{#lang}
+@schememodname[scheme]. The documented language name can be used
+directly with @scheme[module] or @scheme[require], too.

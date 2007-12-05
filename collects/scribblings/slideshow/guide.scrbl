@@ -219,11 +219,14 @@ displays).
 
 @section{Command-line Options}
 
-The @schememodname[slideshow/start] module can be invoked
-directly, in which case a module file name should be provided on
-the command line to provide the slide content. Setup PLT creates
-a @exec{Slideshow} executable that runs the
-@schememodname[slideshow/start] modue.
+@defmodule[slideshow/start]
+
+The @exec{slideshow} executable invokes the
+@schememodname[slideshow/start] module, which inspects the command
+line as reported by @scheme[current-command-line-arguments] to get
+another module to provide the slide content. It also initializes
+variables like @scheme[printing?] and @scheme[condense?] based on
+flags supplied on the command line.
 
 Thus, if the above example is in @filepath{multi-step.ss}, then the
 command

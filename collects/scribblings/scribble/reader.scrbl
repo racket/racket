@@ -23,9 +23,7 @@ meaning of these S-expressions depends on the rest of your own code.
 
 A PLT Scheme manual more likely starts with
 
-@schemeblock[
- #, @schemefont{#lang scribble/doc}
-]
+@schememod[scribble/doc]
 
 which installs a reader, wraps the file content afterward into a
 MzScheme module, and parses the body into a document using
@@ -35,7 +33,7 @@ Another way to use the reader is to use the @scheme[use-at-readtable]
 function to switch the current readtable to a readtable that parses
 @"@"-forms.  You can do this in a single command line:
 
-@commandline{mzscheme -Le reader.ss scribble "(use-at-readtable)"}
+@commandline{mzscheme -l scheme -l scribble/reader -e "(use-at-readtable)"}
 
 @;--------------------------------------------------------------------
 @section{Concrete Syntax}
@@ -721,9 +719,8 @@ an example of this.
 @;--------------------------------------------------------------------
 @section{Interface}
 
-@declare-exporting[scribble/reader]
-
-The @filepath{reader.ss} module provides functionality for advanced needs.
+@defmodule[scribble/reader]{The @schememodname[scribble/reader] module
+provides direct Scribble reader functionality for advanced needs.}
 
 @; The `with-scribble-read' trick below shadows `read' and
 @;  `read-syntax' with for-label bindings from the Scribble reader

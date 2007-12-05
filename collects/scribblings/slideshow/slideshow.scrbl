@@ -19,6 +19,9 @@ Functional Presentations" #:author "Robert Bruce Findler and Matthew
 Flatt" #:location @elem{@italic{Journal of Functional Programming},
 16(4-5), pp. 583--619} #:date "2006" #:url paper-url].
 
+@defmodulelang*/no-declare[(slideshow)]{Most of the bindings defined in
+the manual are provided by the @schememodname[slideshow] language.}
+
 @table-of-contents[]
 
 @; ------------------------------------------------------------------------

@@ -759,7 +759,6 @@ is little-endian.}
 @; ------------------------------------------------------------------------
 @section{Extra Constants and Functions}
 
-@declare-exporting[scheme/math scheme]
 @note-lib[scheme/math]
 
 @defthing[euler real?]{

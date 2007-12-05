@@ -5,9 +5,8 @@
 
 @title[#:tag "docreader"]{Document Reader}
 
-The @filepath{docreader.ss} module is suitable for use with
-@schemefont{#reader} at the beginning of a file. It reads the entire
-file with @scheme[read-inside-syntax] from Scribble's
-@filepath{reader.ss}, and then wraps the result with @scheme[(module #,
-@nonterm{name} (lib "doclang.ss" "scribble") ...)], where
-@nonterm{name} is derived from the enclosing file's name.
+@defmodule[scribble/doc]{The @schememodname[scribble/doc] language is
+the same as @schememodname[scribble/doclang], except that
+@scheme[read-inside-syntax] is used to read the body of the module. In
+other words, the module body starts in Scribble ``text'' mode instead
+of S-expression mode.}

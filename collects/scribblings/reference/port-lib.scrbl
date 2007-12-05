@@ -4,7 +4,6 @@
 
 @title[#:tag "customport"]{More Port Constructors and Events}
 
-@declare-exporting[scheme/port scheme]
 @note-lib[scheme/port]
 
 @; ----------------------------------------------------------------------

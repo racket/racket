@@ -26,52 +26,51 @@ The layers are:
 
 @itemize{
 
- @item{@filepath{reader.ss}: a reader that extends the syntax of Scheme
-       with @"@"-forms for conveniently embedding a mixin of text and
-       escapes. See @secref["reader"].}
+ @item{@schememodname[scribble/reader]: a reader that extends the
+       syntax of Scheme with @"@"-forms for conveniently embedding a
+       mixin of text and escapes. See @secref["reader"].}
 
- @item{@filepath{struct.ss}: a set of document datatypes and utilities
+ @item{@schememodname[scribble/struct]: a set of document datatypes and utilities
        that define the basic layout and processing of a document. See
        @secref["struct"].}
 
- @item{@filepath{base-render.ss} with @filepath{html-render.ss},
-       @filepath{latex-render.ss}, or @filepath{text-render.ss}: A base
+ @item{@schememodname[scribble/base-render] with @schememodname[scribble/html-render],
+       @schememodname[scribble/latex-render], or @schememodname[scribble/text-render]: A base
        renderer and mixins that generate documents in various formats
-       from instances of the @filepath{struct.ss} datatypes. See
+       from instances of the @schememodname[scribble/struct] datatypes. See
        @secref["renderer"].}
 
- @item{@filepath{decode.ss}: Processes a stream of text, section-start
-       markers, etc. to produce instances of the @filepath{struct.ss}
+ @item{@schememodname[scribble/decode]: Processes a stream of text, section-start
+       markers, etc. to produce instances of the @schememodname[scribble/struct]
        datatypes. See @secref["decode"].}
 
- @item{@filepath{doclang.ss}: to be used for the initial import of a
+ @item{@schememodname[scribble/doclang]: to be used for the initial import of a
        module; processes the module top level through
-       @filepath{decode.ss}, and otherwise provides all of
-       @schememodname[big].  See @secref["doclang"].}
+       @schememodname[scribble/decode], and otherwise provides all of
+       @schememodname[scheme/base].  See @secref["doclang"].}
 
- @item{@filepath{docreader.ss}: a reader that is meant to tbe used to
-       process an entire file; it essentially combines
-       @filepath{reader.ss} with @filepath{doclang.ss}. See
-       @secref["docreader"].}
+ @item{@schememodname[scribble/doc]: a language that essentially
+       combines @schememodname[scribble/reader] with
+       @schememodname[scribble/doclang]. See @secref["docreader"].}
 
- @item{@filepath{basic.ss}: a library of basic document operators---such
+ @item{@schememodname[scribble/basic]: a library of basic document operators---such
        as @scheme[title], @scheme[section], and @scheme[secref]---for
-       use with @filepath{decode.ss} and a renderer. See
+       use with @schememodname[scribble/decode] and a renderer. See
        @secref["basic"].}
 
- @item{@filepath{scheme.ss}: a library of support functions for
-       typesetting Scheme code.}
+ @item{@schememodname[scribble/scheme]: a library of support functions for
+       typesetting Scheme code. See @secref["scheme"].}
 
- @item{@filepath{manual.ss}: a library of support functions for writing
-       PLT Scheme documentation; re-exports @filepath{basic.ss}. See
+ @item{@schememodname[scribble/manual]: a library of support functions for writing
+       PLT Scheme documentation; re-exports @schememodname[scribble/basic]. See
        @secref["manual"].}
 
- @item{@filepath{eval.ss}: a library of support functions for ealuating
+ @item{@schememodname[scribble/eval]: a library of support functions for ealuating
        code at document-build time, especially for showing
        examples. See @secref["eval"].}
 
- @item{@filepath{bnf.ss}: a library of support functions for writing
-       grammars.}
+ @item{@schememodname[scribble/bnf]: a library of support functions for writing
+       grammars. See @secref["bnf"].}
 
 }
 
@@ -80,7 +79,7 @@ exports a @scheme{struct.ss}-based document, generating output with a
 specified renderer. More specifically, the executable installs a
 renderer, loads the specified modules and extracts the @scheme[doc]
 export of each (which must be an instance of @scheme[section] from
-@filepath{struct.ss}), and renders each. Use @exec{scribble -h} for more
+@schememodname[scribble/struct]), and renders each. Use @exec{scribble -h} for more
 information.
 
 @; ------------------------------------------------------------------------
@@ -91,7 +90,9 @@ information.
 @include-section["doclang.scrbl"]
 @include-section["docreader.scrbl"]
 @include-section["basic.scrbl"]
+@include-section["scheme.scrbl"]
 @include-section["manual.scrbl"]
 @include-section["eval.scrbl"]
+@include-section["bnf.scrbl"]
 
 @index-section[]

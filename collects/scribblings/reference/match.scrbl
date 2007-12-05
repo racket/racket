@@ -9,6 +9,8 @@ The @scheme[match] form and related forms support general pattern
 matching on Scheme values. See also @secref["regexp"] for information
 on regular-expression matching on strings, bytes, and streams.
 
+@note-lib[scheme/match]
+
 @defform/subs[(match val-expr clause ...)
               ([clause [pat expr ...+]
                        [pat (=> identifier) expr ...+]])]{

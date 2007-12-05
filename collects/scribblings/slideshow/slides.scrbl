@@ -6,6 +6,10 @@
 
 @declare-exporting[slideshow/base slideshow]
 
+@defmodule*/no-declare[(slideshow/base)]{The
+@schememodname[slideshow/base] module, which is re-provided by
+@schememodname[slideshow], provides the functions for creating slides.}
+
 @local-table-of-contents[]
 
 @; ----------------------------------------------------------------------

@@ -50,6 +50,7 @@
         (define-color "schemesymbol" "IdentifierColor")
         (define-color "schemevalue" "ValueColor")
         (define-color "schemevaluelink" "blue")
+        (define-color "schememodlink" "blue")
         (define-color "schemeresult" "ResultColor")
         (define-color "schemestdout" "OutputColor")
         (define-color "schememeta" "IdentifierColor")

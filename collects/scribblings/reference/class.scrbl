@@ -71,7 +71,6 @@
 
 @title[#:tag "mzlib:class" #:style 'toc]{Classes and Objects}
 
-@declare-exporting[scheme/class scheme]
 @note-lib[scheme/class]
 
 @local-table-of-contents[]

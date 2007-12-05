@@ -3845,7 +3845,7 @@ static int generate_closure(Scheme_Closure_Data *data,
           (void)mz_finish(GC_malloc_one_small_tagged);
         }
         jit_retval(JIT_R0);
-        init_word = *(long *)&example_so;
+        init_word = *(long *)(void *)&example_so;
         jit_movi_l(JIT_R1, init_word);
         jit_str_l(JIT_R0, JIT_R1); 
       }

@@ -3,13 +3,12 @@
 
 @title[#:tag "mzlib:contract" #:style 'toc]{Contracts}
 
-@declare-exporting[scheme/contract scheme]
-@note-lib[scheme/contract]
-
 A @defterm{contract} controls the flow of values to ensure that the
 expectations of one party are met by another party.  The
 @scheme[provide/contract] form is the primary mechanism for
 associating a contract with a binding.
+
+@note-lib[scheme/contract]
 
 @local-table-of-contents[]
 

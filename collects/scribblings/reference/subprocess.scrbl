@@ -224,7 +224,6 @@ real process ID).
 
 @section{Simple Subprocesses}
 
-@declare-exporting[scheme/system]
 @note-lib-only[scheme/system]
 
 @defproc[(system [command string?]) boolean?]{

@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["../web-server.ss"]
 
 @title{Web Server User Guide}

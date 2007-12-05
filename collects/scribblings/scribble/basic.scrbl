@@ -21,12 +21,12 @@
 
 @title[#:tag "basic"]{Basic Document Forms}
 
-@declare-exporting[scribble/basic]
+@defmodule[scribble/basic]{The @schememodname[scribble/basic] libraryp
+rovides functions and forms that can be used from code written either
+in Scheme or with @elem["@"] expressions.}
 
-The @filepath{basic.ss} libraryprovides functions and forms that can be
-used from code written either in Scheme or with @elem["@"]
-expressions. For example, the @scheme[title] and @scheme[italic]
-functions might be called from Scheme as
+For example, the @scheme[title] and @scheme[italic] functions might be
+called from Scheme as
 
 @schemeblock[
 (title #:tag "how-to" "How to Design " (italic "Great") " Programs")
@@ -42,7 +42,7 @@ EOS
 
 Although the procedures are mostly design to be used from @elem["@"]
 mode, they are easier to document in Scheme mode (partly because we
-have Scribble's @filepath{scheme.ss} and @filepath{manual.ss}).
+have @schememodname[scribble/manual]).
 
 @; ------------------------------------------------------------------------
 

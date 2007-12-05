@@ -26,7 +26,8 @@
    [splice ([run list?])]
    [part-index-decl ([plain-seq (listof string?)]
                      [entry-seq list?])]
-   [part-collect-decl ([element element?])])
+   [part-collect-decl ([element element?])]
+   [part-tag-decl ([tag tag?])])
 
   (define (decode-string s)
     (let loop ([l '((#rx"---" mdash)
@@ -173,6 +174,8 @@
         (loop (cdr l) next? (cons (car l) keys) colls accum title tag-prefix tags style)]
        [(part-collect-decl? (car l))
         (loop (cdr l) next? keys (cons (part-collect-decl-element (car l)) colls) accum title tag-prefix tags style)]
+       [(part-tag-decl? (car l))
+        (loop (cdr l) next? keys colls accum title tag-prefix (cons (part-tag-decl-tag (car l)) tags) style)]
        [(and (pair? (cdr l))
 	     (splice? (cadr l)))
 	(loop (cons (car l) (append (splice-run (cadr l)) (cddr l))) next? keys colls accum title tag-prefix tags style)]

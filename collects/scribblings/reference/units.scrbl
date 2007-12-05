@@ -23,11 +23,6 @@
 
 @title[#:tag "mzlib:unit" #:style 'toc]{Units}
 
-@declare-exporting[scheme/unit scheme]
-@note-lib[scheme/unit]
-
-@local-table-of-contents[]
-
 @deftech{Units} are used to organize a program into separately
 compilable and reusable components. A unit resembles a procedure in
 that both are first-class values that are used for abstraction. While
@@ -42,6 +37,10 @@ multiple units together into a single compound unit. The compound unit
 itself imports variables that will be propagated to unresolved
 imported variables in the linked units, and re-exports some variables
 from the linked units for further linking.
+
+@note-lib[scheme/unit]
+
+@local-table-of-contents[]
 
 @; ------------------------------------------------------------------------
 

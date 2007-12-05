@@ -47,8 +47,11 @@
                               #'here
                               `(unsyntax (make-element
                                           #f
-                                          (list (schemefont ,(format "#lang "))
-                                                (schemeidfont ,(format "~s" (syntax-e #'lang))))))
+                                          (list hash-lang
+                                                (hspace 1)
+                                                (as-modname-link
+                                                 ',#'lang
+                                                 (to-element ',#'lang)))))
                               #'lang)])
          #'(schemeblock modtag rest ...))]))
 
@@ -83,7 +86,76 @@
   (define-code scheme to-element unsyntax keep-s-expr add-sq-prop)
   (define-code schemeresult to-element/result unsyntax keep-s-expr add-sq-prop)
   (define-code schemeid to-element/id unsyntax keep-s-expr add-sq-prop)
-  (define-code schememodname to-element unsyntax keep-s-expr add-sq-prop)
+  (define-code *schememodname to-element unsyntax keep-s-expr add-sq-prop)
+
+  (define-syntax-rule (schememodname n)
+    (as-modname-link 'n (*schememodname n)))
+
+  (define (as-modname-link s e)
+    (if (symbol? s)
+        (make-link-element "schememodlink"
+                           (list e)
+                           `(mod-path ,(symbol->string s)))
+        e))
+
+  (define-syntax-rule (defmodule*/no-declare (name ...) . content)
+    (*defmodule (list (schememodname name) ...)
+                #f
+                (list . content)))
+
+  (define-syntax-rule (defmodule* (name ...) . content)
+    (begin
+      (declare-exporting name ...)
+      (defmodule*/no-declare (name ...) . content)))
+
+  (define-syntax-rule (defmodule name . content)
+    (defmodule* (name) . content))
+  
+  (define-syntax-rule (defmodulelang*/no-declare (lang ...) . content)
+    (*defmodule (list (schememodname lang) ...)
+                #t
+                (list . content)))
+
+  (define-syntax-rule (defmodulelang* (name ...) . content)
+    (begin
+      (declare-exporting name ...)
+      (defmodulelang*/no-declare (name ...) . content)))
+
+  (define-syntax-rule (defmodulelang lang . content)
+    (defmodulelang* (lang) . content))
+
+  (define (*defmodule names lang? content)
+    (make-splice
+     (cons
+      (make-table
+       "defmodule"
+       (map (lambda (name)
+              (list
+               (make-flow
+                (list (make-paragraph
+                       (if lang?
+                           (list (hspace 1)
+                                 hash-lang
+                                 (hspace 1)
+                                 (make-defschememodname name))
+                           (list
+                            (hspace 1)
+                            (scheme (require #,(make-defschememodname name))))))))))
+            names))
+      (append
+       (map (lambda (name)
+              (make-part-tag-decl `(mod-path ,(element->string name))))
+            names)
+       (flow-paragraphs (decode-flow content))))))
+  
+  (define (make-defschememodname mn)
+    (let ([name-str (element->string mn)])
+      (make-index-element #f
+                          (list mn)
+                          `(mod-path ,name-str)
+                          (list name-str)
+                          (list mn)
+                          (make-module-path-index-desc))))
 
   (define (litchar . strs)
     (unless (andmap string? strs)
@@ -148,6 +220,8 @@
            schemeinput
            schememod
            scheme scheme/form schemeresult schemeid schememodname
+           defmodule defmodule* defmodulelang defmodulelang*
+           defmodule*/no-declare defmodulelang*/no-declare
            indexed-scheme
            litchar
            verbatim)
@@ -1375,6 +1449,13 @@
              c)))
   (provide pidefterm)
 
+
+  (define hash-lang (make-link-element
+                     "schememodlink"
+                     (list (schememodfont "#lang"))
+                     `(part ,(doc-prefix '(lib "scribblings/guide/guide.scrbl")
+                                         "hash-lang"))))
+  
   ;; ----------------------------------------
 
   (provide math)

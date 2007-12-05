@@ -4,11 +4,10 @@
 
 @title[#:tag "eval"]{Evaluation and Examples}
 
-@declare-exporting[scribble/eval]
-
-The @filepath{eval.ss} library provides utilities for evaluating code at
-document-build time and incorporating the results in the document,
-especially to show example uses of defined procedures and syntax.
+@defmodule[scribble/eval]{The @scheme[scribble/eval] library provides
+utilities for evaluating code at document-build time and incorporating
+the results in the document, especially to show example uses of
+defined procedures and syntax.}
 
 @defform[(interaction datum ...)]{Like @scheme[schemeinput], except
 that the result for each input @scheme[datum] is shown on the next

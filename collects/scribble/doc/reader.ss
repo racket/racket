@@ -1,6 +1,6 @@
 
-(module docreader scheme/base
-  (require (prefix-in scribble: "reader.ss"))
+(module reader scheme/base
+  (require (prefix-in scribble: "../reader.ss"))
 
   (provide (rename-out [*read read])
            (rename-out [*read-syntax read-syntax]))

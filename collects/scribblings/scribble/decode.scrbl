@@ -4,12 +4,11 @@
 
 @title[#:tag "decode"]{Text Decoder}
 
-@declare-exporting[scribble/decode]
-
-The @filepath{decode.ss} library helps you write document content in a
-natural way---more like plain text, except for @litchar["@"] escapes.
-Roughly, it processes a stream of strings to produces instances of the
-@filepath{struct.ss} datatypes (see @secref["struct"]).
+@defmodule[scribble/decode]{The @schememodname[scribble/decode]
+library helps you write document content in a natural way---more like
+plain text, except for @litchar["@"] escapes.  Roughly, it processes a
+stream of strings to produces instances of the
+@schememodname[scribble/struct] datatypes (see @secref["struct"]).}
 
 At the flow level, decoding recognizes a blank line as a paragraph
 separator. At the paragraph-content level, decoding makes just a few
@@ -39,9 +38,10 @@ Decodes a document, producing a part. In @scheme[lst], instances of
 @scheme[part-index-decl] (that precede any sub-part) add index entries
 that point to the section. Instances of @scheme[part-collect-decl] add
 elements to the part that are used only during the @techlink{collect
-pass}. Instances of @scheme[part-start] at level 0 trigger sub-part
-parsing. Instances of @scheme[section] trigger are used as-is as
-subsections, and instances of @scheme[paragraph] and other
+pass}. Instances of @scheme[part-tag-decl] add hyperlink tags to the
+section title. Instances of @scheme[part-start] at level 0 trigger
+sub-part parsing. Instances of @scheme[section] trigger are used as-is
+as subsections, and instances of @scheme[paragraph] and other
 flow-element datatypes are used as-is in the enclosing flow.
 
 }
@@ -124,6 +124,12 @@ See @scheme[decode]. The two fields are as for @scheme[index-element].
 }
 
 @defstruct[part-collect-decl ([element element?])]{
+
+See @scheme[decode].
+
+}
+
+@defstruct[part-tag-decl ([tag tag?])]{
 
 See @scheme[decode].
 

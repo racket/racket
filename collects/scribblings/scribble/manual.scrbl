@@ -5,10 +5,10 @@
 
 @title[#:tag "manual"]{PLT Manual Forms}
 
-@declare-exporting[scribble/manual]
-
-The @filepath{manual.ss} module provides all of @filepath{basic.ss}, and
-more...
+@defmodule[scribble/manual]{The @schememodname[scribble/manual]
+provides all of @schememodname[scribble/basic], plus additional
+functions that are relatively specific to writing PLT Scheme
+documentation.}
 
 @; ------------------------------------------------------------------------
 @section[#:tag "scribble:manual:code"]{Typesetting Code}
@@ -102,7 +102,7 @@ without insetting the code.}
 @scheme[datum] are typeset after a prompt representing a REPL.}
 
 @defform[(schememod lang datum ...)]{Like @scheme[schemeblock], but
-the @scheme[datum] are typeset inside a @schemefont{#module}-form
+the @scheme[datum] are typeset inside a @schememodfont{#lang}-form
 module whose language is @scheme[lang].}
 
 @defform[(scheme datum ...)]{Like @scheme[schemeblock], but typeset on
@@ -115,8 +115,10 @@ as a REPL value (i.e., a single color with no hyperlinks).}
 @defform[(schemeid datum ...)]{Like @scheme[scheme], but typeset
 as an unbound identifier (i.e., no coloring or hyperlinks).}
 
-@defform[(schememodname datum ...)]{Like @scheme[scheme], but typeset
-as a @schemefont{#module} language name.}
+@defform[(schememodname datum)]{Like @scheme[scheme], but typeset as a
+module path. If @scheme[datum] is an identifier, then it is
+hyperlinked to the module path's definition as created by
+@scheme[defmodule].}
 
 @defproc[(litchar [str string?]) element?]{Typesets @scheme[str] as a
 representation of literal text. Use this when you have to talk about
@@ -130,7 +132,7 @@ useful with @scheme[verbatim].}
 
 @defproc[(schemefont [pre-content any/c] ...) element?]{Typesets the given
 content as uncolored, unhyperlinked Scheme. This procedure is useful
-for typesetting things like @scheme{#module}, which are not
+for typesetting things like @schemefont{#lang}, which are not
 @scheme[read]able by themselves.}
 
 @defproc[(schemevalfont [pre-content any/c] ...) element?]{Like
@@ -167,7 +169,65 @@ cannot work for some reason.}
 in a form definition.}
 
 @; ------------------------------------------------------------------------
-@section{Definition Reference}
+@section{Documenting Modules}
+
+@defform[(defmodule id pre-flow ...)]{
+
+Produces a sequence of flow elements (encaptured in a @scheme[splice])
+to start the documentation for a module that can be @scheme[require]d
+using the path @scheme[id]. The @scheme[pre-flow]s list is parsed as a
+flow that documents the procedure (see @scheme[decode-flow]).
+
+Besides generating text, this form expands to a use of
+@scheme[declare-exporting] with @scheme[id].
+
+Hyperlinks created by @scheme[schememodname] are associated with the
+enclosing section, rather than the local @scheme[id] text.}
+
+
+@defform[(defmodulelang id pre-flow ...)]{
+
+Like @scheme[defmodule], but documents @scheme[id] as a module path
+suitable for use by either @scheme[require] or @schememodfont{#lang}.}
+
+
+@defform[(defmodule* (id ...) pre-flow ...)]{
+
+Like @scheme[defmodule], but introduces multiple module paths instead
+of just one.}
+
+
+@defform[(defmodulelang* (id ...) pre-flow ...)]{
+
+Like @scheme[defmodulelang], but introduces multiple module paths
+instead of just one.}
+
+
+@defform[(defmodule*/no-declare (id ...) pre-flow ...)]{
+
+Like @scheme[defmodule*], but without expanding to
+@scheme[declare-exporting]. Use this form when you want to provide a
+more specific list of modules (e.g., to name both a specific module
+and one that combines several modules) via your own
+@scheme[declare-exporting] declaration.}
+
+
+@defform[(defmodulelang*/no-declare (id ...) pre-flow ...)]{
+
+Like @scheme[defmodulelang*], but without expanding to
+@scheme[declare-exporting].}
+
+
+@defform[(declare-exporting module-path ...)]{
+
+Associates the @scheme[module-paths]s to all bindings defined within
+the enclosing section, except as overridden by other
+@scheme[declare-exporting] declarations in nested sub-sections.  The
+list of @scheme[module-path]s is shown, for example, when the user
+hovers the mouse over one of the bindings defined within the section.}
+
+@; ------------------------------------------------------------------------
+@section{Documenting Forms, Functions, Structure Types, and Values}
 
 @defform/subs[(defproc (id arg-spec ...)
                        result-contract-expr-datum
@@ -378,7 +438,7 @@ Like @scheme[schemegrammar], but for typesetting multiple productions
 at once, aligned around the @litchar{=} and @litchar{|}.}
 
 @; ------------------------------------------------------------------------
-@section{Classes and Interfaces}
+@section{Documenting Classes and Interfaces}
 
 @defform[(defclass id super-id (intf-id ...) pre-flow ...)]{
 

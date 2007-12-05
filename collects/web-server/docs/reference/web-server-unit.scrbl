@@ -1,4 +1,4 @@
-#reader(lib "docreader.ss" "scribble")
+#lang scribble/doc
 @require["../web-server.ss"]
 
 @title[#:tag "web-server-unit.ss"

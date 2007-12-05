@@ -743,6 +743,8 @@ If the @scheme[read-accept-reader] @tech{parameter} is set to
 @scheme[#f], then if the reader encounters @litchar{#reader}, the
 @exnraise[exn:fail:read].
 
+@guideintro["hash-lang"]{@schememodfont["#lang"]}
+
 The @as-index{@litchar{#lang}} reader form is similar, but more
 constrained: the @litchar{#lang} must be followed by a single space
 (ASCII 32), and then a non-empty sequence of alphanumeric ASCII,

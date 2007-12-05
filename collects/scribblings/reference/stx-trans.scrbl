@@ -416,7 +416,6 @@ and different result procedures use distinct marks.}
 
 @section[#:tag "require-trans"]{@scheme[require] Transformers}
 
-@declare-exporting[scheme/require-transform]
 @note-lib-only[scheme/require-transform]
 
 A @tech{transformer binding} whose value is a structure with the
@@ -520,7 +519,6 @@ instantiated or visited even if no binding is imported into a module.
 
 @section[#:tag "provide-trans"]{@scheme[provide] Transformers}
 
-@declare-exporting[scheme/provide-transform]
 @note-lib-only[scheme/provide-transform]
 
 A @tech{transformer binding} whose value is a structure with the
