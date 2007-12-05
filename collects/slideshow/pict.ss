@@ -31,7 +31,7 @@
            [f (if lw 
                   (linewidth lw f)
                   f)])
-      (refocus (cc-superimpose f p)
+      (refocus (cc-superimpose p f)
                p)))
 
   (define (pict-path? p)
