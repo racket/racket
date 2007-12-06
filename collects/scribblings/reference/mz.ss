@@ -19,7 +19,7 @@
   (provide AllUnix)
 
   (provide note-lib)
-  (define-syntax-rule (note-lib lib)
+  (define-syntax-rule (note-lib lib . more)
     (begin
       (declare-exporting lib scheme)
       (defmodule*/no-declare (lib)
@@ -28,16 +28,18 @@
            " and "
            (schememodname scheme)
            " libraries, but not " (schememodname scheme/base)
-           "."))))
+           "." 
+           . more))))
 
   (provide note-lib-only)
-  (define-syntax-rule (note-lib-only lib)
+  (define-syntax-rule (note-lib-only lib . more)
     (defmodule lib
       (t "The bindings documented in this section are provided by the "
          (schememodname lib)
          " library, not " (schememodname scheme/base)
          " or " (schememodname scheme)
-         ".")))
+         "."
+         . more)))
     
   (define (*exnraise s)
     (make-element #f (list s " exception is raised")))

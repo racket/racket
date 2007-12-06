@@ -38,7 +38,9 @@ itself imports variables that will be propagated to unresolved
 imported variables in the linked units, and re-exports some variables
 from the linked units for further linking.
 
-@note-lib[scheme/unit]
+@note-lib[scheme/unit]{The @schememodname[scheme/unit] module name can
+be used as a language name with @schemefont{#lang}; see
+@secref["single-unit"].}
 
 @local-table-of-contents[]
 
@@ -623,3 +625,63 @@ Returns @scheme[#t] if @scheme[v] is a unit, @scheme[#f] otherwise.}
 Expands to a @scheme[provide] of all identifiers implied by the
 @scheme[sig-spec]s. See @scheme[unit] for the grammar of
 @scheme[sig-spec].}
+
+@; ------------------------------------------------------------------------
+
+@section[#:tag "single-unit"]{Single-Unit Modules}
+
+When @schememodname[scheme/unit] is used as a language name with
+@schemefont{#lang}, the module body is treated as a unit body.  The
+body must match the following @scheme[_module-body] grammar:
+
+@schemegrammar*[
+#:literals (import export require begin)
+[module-body (code:line
+              require-decl ...
+              (import tagged-sig-expr ...)
+              (export tagged-sig-expr ...)
+              init-depends-decl
+              unit-body-expr-or-defn
+              ...)]
+[require-decl (require require-spec ...)
+              (begin require-decl ...)
+              derived-require-form]]
+
+After any number of @scheme[_require-decl]s, the content of the module
+is the same as a @scheme[unit] body.
+
+The resulting unit is exported as @scheme[_base]@schemeidfont["@"],
+where @scheme[_base] is derived from the enclosing module's name
+(i.e., its symbolic name, or its path without the directory and file
+suffix). If the module name ends in @schemeidfont{-unit}, then
+@scheme[_base] corresponds to the module name before
+@schemeidfont{-unit}. Otherwise, the module name serves as
+@scheme[_base].
+
+@; ------------------------------------------------------------------------
+
+@section{Single-Signature Modules}
+
+@defmodulelang[scheme/signature]{The @schememodname[scheme/signature]
+language treats a module body as a unit signature.}
+
+The body must match the following @scheme[_module-body] grammar:
+
+@schemegrammar*[
+#:literals (require)
+[module-body (code:line (require require-spec ...) ... sig-spec ...)]
+]
+
+See @secref["creatingunits"] for the grammar of @scheme[_sig-spec].
+Unlike the body of a @schememodname[scheme/unit] module, a
+@scheme[require] in a @schememodname[scheme/signature] module must be
+a literal use of @scheme[require].
+
+
+The resulting signature is exported as
+@scheme[_base]@schemeidfont["^"], where @scheme[_base] is derived from
+the enclosing module's name (i.e., its symbolic name, or its path
+without the directory and file suffix). If the module name ends in
+@schemeidfont{-sig}, then @scheme[_base] corresponds to the module
+name before @schemeidfont{-sig}. Otherwise, the module name serves as
+@scheme[_base].

@@ -37,9 +37,7 @@
   (define img-dir "images") ; relative to src dir
 
   ;; This one can be absolute:
-  (define exprs-dat-file (build-path (collection-path "scribblings")
-                                     "quick"
-                                     "images"
+  (define exprs-dat-file (build-path "images"
                                      "exprs.dat"))
 
   (define mr-eval-handler
@@ -99,8 +97,7 @@
   (define (fixup-picts v)
     (cond
      [(pict? v)
-      (let ([fn (build-path (collection-path "scribblings/quick")
-                            img-dir
+      (let ([fn (build-path img-dir
                             (format "img~a.png" image-counter))])
         (set! image-counter (add1 image-counter))
         (let* ([bm (make-object bitmap%
