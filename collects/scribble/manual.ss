@@ -1400,7 +1400,13 @@
                                              (loop (cdr form)))]
                        [else null]))])
       (let ([l (clauseses-thunk)])
-        (*schemerawgrammars #f (map car l) (map cdr l)))))
+        (*schemerawgrammars #f 
+                            (map (lambda (x)
+                                   (make-element #f
+                                                 (list (hspace 2)
+                                                       (car x))))
+                                 l)
+                            (map cdr l)))))
 
   (define (*var id)
     (to-element (*var-sym id)))

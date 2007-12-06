@@ -404,6 +404,7 @@
                                                 #t
                                                 (loop)))))))))))
               (when (file-exists? dest-file) (delete-file dest-file))
+              (make-directory* (path-only dest-file))
               (copy-file src-file dest-file))
             (path->string fn))))
 
