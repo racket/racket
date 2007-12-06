@@ -617,17 +617,22 @@ void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
   else {
     if (((Scheme_Bucket_With_Home *)b)->home->module) {
       const char *msg;
+      int is_set;
 
       if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC)))
 	msg = "%s: cannot %s: %S in module: %D";
       else
 	msg = "%s: cannot %s: %S";
 
+      is_set = !strcmp(who, "set!");
+      
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE, b->key,
 		       msg,
 		       who,
 		       (b->val
-			? "change identifier that is instantiated as a module constant"
+			? (is_set
+                           ? "modify a constant"
+                           : "re-define a constant")
 			: "set identifier before its definition"),
 		       (Scheme_Object *)b->key,
 		       ((Scheme_Bucket_With_Home *)b)->home->module->modname);
