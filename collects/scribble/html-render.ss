@@ -499,10 +499,16 @@
       (define/override (render-other i part ri)
         (cond
          [(string? i) (let ([m (and (extra-breaking?)
-                                    (regexp-match-positions #rx"[:/]" i))])
+                                    (regexp-match-positions #rx"[-:/]" i))])
                         (if m
                             (list* (substring i 0 (cdar m))
-                                   `(span ((class "mywbr")) " ")
+				   ;; Most browsers wrap after a hyphen. The
+				   ;; one that doesn't, Firefox, pays attention
+				   ;; to wbr. Some browsers ignore wbr, but
+				   ;; at they don't do strange things with it.
+				   (if (equal? #\- (string-ref i (caar m)))
+				       '(wbr)
+				       `(span ((class "mywbr")) " "))
                                    (render-other (substring i (cdar m)) part ri))
                             (list i)))]
          [(eq? i 'mdash) `(" " ndash " ")]
