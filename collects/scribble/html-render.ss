@@ -283,6 +283,7 @@
                                   (div ((class "maincolumn")) 
                                        (div ((class "main")) ,@(render-part d ri)))))])
             (install-file scribble-css)
+            (printf "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n")
             (xml:write-xml/content (xml:xexpr->xml xpr)))))
 
       (define/override (render-one d ri fn)
