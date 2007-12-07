@@ -244,9 +244,6 @@
                   #t
                   #f)))))
   
-  (define (exact-integer? n)
-    (and (integer? n) (exact? n)))
-  
   (define (exact-integer/string? ns)
     (or (and (integer? ns)
              (exact? ns))
