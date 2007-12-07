@@ -34,6 +34,7 @@
   (define maxlen 60)
 
   (namespace-require 'scheme/base)
+  (namespace-require '(for-syntax scheme/base))
 
   (define (literal-string style s)
     (let ([m (regexp-match #rx"^(.*)(  +)(.*)$" s)])
