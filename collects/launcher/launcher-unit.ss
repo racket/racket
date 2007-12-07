@@ -466,7 +466,7 @@
             (close-input-port p)
             (check-len len-exedir exedir "executable home directory")
             (check-len len-command bstr "collection/file name")
-            (let ([p (open-output-file dest 'update)])
+            (let ([p (open-output-file dest #:exists 'update)])
               (write-magic p exedir pos-exedir len-exedir)
               (write-magic p (bytes-append bstr #"\0\0") pos-command len-command)
               (let* ([suffix (variant-suffix (current-launcher-variant) #t)]
@@ -507,7 +507,7 @@
               (loop))))
       (let ([data-fork-size (file-position p)])
         (close-input-port p)
-        (let ([p (open-output-file dest 'update)]
+        (let ([p (open-output-file dest #:exists 'update)]
               [str (str-list->sh-str (append
                                       (if (eq? kind 'mred)
                                           null
