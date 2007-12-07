@@ -1314,12 +1314,12 @@ void objscheme_check_valid(Scheme_Object *sclass, const char *name, int n, Schem
 
   if (SCHEME_FALSEP((Scheme_Object *)obj->primflag)) {
     scheme_signal_error("%s: object is not yet initialized: %V",
-			name,
+			name ? name : "unbundle",
 			obj);
   }
   if (obj->primflag < 0) {
     scheme_signal_error("%s: %sobject%s: %V",
-			name,
+			name ? name : "unbundle",
 			(obj->primflag == -1) ? "invalidated " : "",
 			(obj->primflag == -2) ? " (shutdown by a custodian)" : "",
 			obj);
