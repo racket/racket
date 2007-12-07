@@ -10,19 +10,19 @@
                }
 
                .maincolumn {
-               font-family: "Courier", monospace; font-size: 13px;
+               font-family: Consolas, Courier, monospace; font-size: 13px;
                width: 43em;
                margin-right: -40em;
                margin-left: 15em;
                }
 
                .main {
-               font-family: serif; font-size: 16px;
+               font-family: Times, serif; font-size: 16px;
                text-align: left;
                }
 
                .refpara { 
-                font-family: "Courier", monospace; font-size: 13px;
+                font-family: Consolas, Courier, monospace; font-size: 13px;
                 position: relative;
                 float: right;
                 left: 1em;
@@ -42,11 +42,11 @@
                }
 
                .refcontent { 
-                font-family: serif; font-size: 13px;
+                font-family: Times, serif; font-size: 13px;
                }
 
                .tocset { 
-                 font-family: "Courier", monospace; font-size: 13px;
+                 font-family: Consolas, Courier, monospace; font-size: 13px;
                  position: relative;
                  float: left;
                  width: 12.5em;
@@ -54,13 +54,13 @@
                }
 
                .tocview {
-                 font-family: serif; font-size: 16px;
+                 font-family: Times, serif; font-size: 16px;
                  text-align: left;
                  background-color: #F5F5DC;
                }
 
                .tocsub {
-                 font-family: serif; font-size: 16px;
+                 font-family: Times, serif; font-size: 16px;
                  margin-top: 1em;
                  text-align: left;
                  background-color: #DCF5F5;
@@ -241,11 +241,11 @@
                }
 
                tt {
-                 font-family: "Courier", monospace; font-size: 13px;
+                 font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
                i {
-               font-family: serif;
+               font-family: Times, serif;
                }
 
                .boxed { 
@@ -273,7 +273,7 @@
                }
 
                .verbatim em {
-               font-family: serif;
+               font-family: Times, serif;
                }
 
                .ghost {
@@ -282,7 +282,7 @@
 
                .scheme em {
                color: black;
-               font-family: serif;
+               font-family: Times, serif;
                }
 
                .highlighted {
@@ -299,7 +299,7 @@
                }
 
                .hspace {
-               font-family: "Courier", monospace; font-size: 13px;
+               font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
                .small {
@@ -317,7 +317,7 @@
                .schemeinput {
                color: brown;
                background-color: #eeeeee;
-               font-family: "Courier", monospace; font-size: 13px;
+               font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
                .schemeinputbg {
@@ -325,22 +325,22 @@
                }
 
                .schemereader {
-               font-family: "Courier", monospace; font-size: 13px;
+               font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
                .schemeparen {
                color: #843c24;
-               font-family: "Courier", monospace; font-size: 13px;
+               font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
                .schememeta {
                color: #262680;
-               font-family: "Courier", monospace; font-size: 13px;
+               font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
                .schememod {
                color: black;
-               font-family: "Courier", monospace; font-size: 13px;
+               font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
                .schemeopt {
@@ -350,7 +350,7 @@
                .schemekeyword {
                color: black;
                font-weight: bold;
-               font-family: "Courier", monospace; font-size: 13px;
+               font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
                .schemeerror {
@@ -361,12 +361,12 @@
                .schemevariable {
                color: #262680;
                font-style: italic;             
-               font-family: "Courier", monospace; font-size: 13px;
+               font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
                .schemesymbol {
                color: #262680;
-               font-family: "Courier", monospace; font-size: 13px;
+               font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
                .schemevaluelink { 
@@ -401,22 +401,22 @@
 
                .schemeresult {
                color: #0000af;
-               font-family: "Courier", monospace; font-size: 13px;
+               font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
                .schemestdout {
                color: #960096;
-               font-family: "Courier", monospace; font-size: 13px;
+               font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
                .schemecomment {
                color: #c2741f;
-               font-family: "Courier", monospace; font-size: 13px;
+               font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
                .schemevalue {
                color: #228b22;
-               font-family: "Courier", monospace; font-size: 13px;
+               font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
                .imageleft { 

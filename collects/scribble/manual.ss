@@ -1200,7 +1200,7 @@
                  (list
                   (make-flow
                    (make-table-if-necessary
-                    #f
+                    "argcontract"
                     (list
                      (list (to-flow (hspace 2))
                            (to-flow (to-element (field-name v)))
