@@ -94,11 +94,14 @@
   
   (define image-counter 0)
 
+  ;; This path will be marshaled for use on multiple platforms
+  (define (build-string-path a b) (string-append a "/" b))
+
   (define (fixup-picts v)
     (cond
      [(pict? v)
-      (let ([fn (build-path img-dir
-                            (format "img~a.png" image-counter))])
+      (let ([fn (build-string-path img-dir
+                                   (format "img~a.png" image-counter))])
         (set! image-counter (add1 image-counter))
         (let* ([bm (make-object bitmap%
                                 (inexact->exact (ceiling (pict-width v)))
