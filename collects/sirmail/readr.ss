@@ -975,9 +975,9 @@
       (send global-keymap add-function "next-msg"
 	    (lambda (w e) (send header-list select-next)))
       (send global-keymap add-function "mark-msg"
-	    (lambda (w e) (send header-list mark-message)))
+	    (lambda (w e) (send header-list mark-message #t)))
       (send global-keymap add-function "unmark-msg"
-	    (lambda (w e) (send header-list unmark-message)))
+	    (lambda (w e) (send header-list unmark-message #t)))
       (send global-keymap add-function "hit-msg"
 	    (lambda (w e) (send header-list hit)))
       (send global-keymap add-function "scroll-down"
@@ -1186,13 +1186,13 @@
       (make-object separator-menu-item% msg-menu)
       (make-object menu-item% "&Mark Selected" msg-menu
 		   (lambda (i e)
-		     (send header-list mark-message))
+		     (send header-list mark-message #t))
 		   #\D)
       (make-object menu-item% "&Unmark Selected" msg-menu
         (lambda (i e)
-          (send header-list unmark-message))
+          (send header-list unmark-message #t))
         #\U)
-      (define (mark-all mark?)
+      (define (mark-all mark? between?)
 	(let* ([marked-uids (map message-uid (filter (if mark?
 							 (lambda (x) (not (message-marked? x)))
 							 message-marked?)
@@ -1204,17 +1204,31 @@
 	     (when (member (send i user-data) marked-uids)
 	       (send i select #t)
 	       (if mark?
-		   (send header-list mark-message)
-		   (send header-list unmark-message))))
-	   items)
+		   (send header-list mark-message #f)
+		   (send header-list unmark-message #f))))
+           (if between?
+               (let ([drop-some
+                      (lambda (items)
+                        (let loop ([items items])
+                          (if (null? items)
+                              null
+                              (if (message-marked? (find-message (send (car items) user-data)))
+                                  items
+                                  (loop (cdr items))))))])
+                 (reverse (drop-some (reverse (drop-some items)))))
+               items))
+          (write-mailbox)
+          (status "~aarked all" (if mark? "M" "Unm"))
 	  (if selected
 	      (send selected select #t)
 	      (send (send header-list get-selected) select #f))))
       
       (make-object menu-item% "Mark All" msg-menu
-        (lambda (i e) (mark-all #t)))
+        (lambda (i e) (mark-all #t #f)))
       (make-object menu-item% "Unmark All" msg-menu
-        (lambda (i e) (mark-all #f)))
+        (lambda (i e) (mark-all #f #f)))
+      (make-object menu-item% "Mark All Between Marked" msg-menu
+        (lambda (i e) (mark-all #t #t)))
       
       (make-object separator-menu-item% msg-menu)
       (make-object menu-item% "&Delete Marked" msg-menu
@@ -1300,6 +1314,7 @@
       (make-object menu-item% "by Subject" sort-menu (lambda (i e) (sort-by-subject)))
       (make-object menu-item% "by Date" sort-menu (lambda (i e) (sort-by-date)))
       (make-object menu-item% "by Order Received" sort-menu (lambda (i e) (sort-by-order-received)))
+      (make-object menu-item% "by Size" sort-menu (lambda (i e) (sort-by-size)))
       (make-object menu-item% "by Header Field..." sort-menu (lambda (i e) (sort-by-header-field)))
       
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1316,7 +1331,7 @@
           (inherit get-items show-focus set-cursor select)
           (field [selected #f])
           
-          (define/public (mark marked?)
+          (define/public (mark marked? update?)
             (when selected
               (let* ([uid (send selected user-data)]
                      [m (find-message uid)]
@@ -1326,13 +1341,15 @@
                   (set-message-flags! m (if marked?
                                             (cons 'marked flags)
                                             (remq 'marked flags)))
-                  (write-mailbox)
+                  (when update?
+                    (write-mailbox))
                   (apply-style selected 
                                (if marked? 
                                    marked-delta
                                    unmarked-delta))
-                  (status "~aarked" 
-                          (if marked? "M" "Unm"))))))
+                  (when update?
+                    (status "~aarked" 
+                            (if marked? "M" "Unm")))))))
           
           (define/public (archive-current-message)
             (when selected
@@ -1355,10 +1372,10 @@
             (when selected
               (on-double-select selected)))
           
-          (define/public (mark-message)
-            (mark #t))
-          (define/public (unmark-message)
-            (mark #f))
+          (define/public (mark-message update?)
+            (mark #t update?))
+          (define/public (unmark-message update?)
+            (mark #f update?))
           (define/public (selected-hit?) (eq? selected current-selected))
           (define/override (on-select i)
             (set! selected i))
@@ -2038,6 +2055,10 @@
         (sort-by subject<?)
         (reset-sorting-text-styles)
         (identify-sorted sorting-text-subject))
+      (define (sort-by-size) 
+        (sort-by size<?)
+        (reset-sorting-text-styles)
+        (identify-sorted sorting-text-subject))
       (define (sort-by-order-received) 
         (sort-by-uid)
         (reset-sorting-text-styles)
@@ -2261,6 +2282,13 @@
                                       s))
                                 "")))])
           (string-cmp/default-uid (simplify a) (simplify b) a b)))
+
+      (define (size<? a b)
+        (let ([sa (or (message-size a) 0)]
+              [sb (or (message-size b) 0)])
+          (if (= sa sb)
+              (< (message-uid a) (message-uid b))
+              (< sa sb))))
       
       ;; string-cmp : string string message message -> boolean
       (define (string-cmp/default-uid str-a str-b a b)

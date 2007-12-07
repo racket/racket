@@ -720,7 +720,7 @@
                                        (path-replace-suffix name #""))])
                       (let ([modname (if (vector? s-parsed)
                                          (vector-ref s-parsed 4)
-                                         (make-resolved-module-path normal-filename))]
+                                         (make-resolved-module-path filename))]
                             [ht (or (hash-table-get -module-hash-table-table
                                                     (namespace-module-registry (current-namespace))
                                                     #f)

@@ -58,8 +58,10 @@
                 ;; `begin' is special...
                 (if (let-values ([(p) (syntax-e e)])
                       (if (pair? p)
-                          (if (free-identifier=? (car p) (quote-syntax begin))
-                              (syntax->list e)
+                          (if (symbol? (syntax-e (car p)))
+                              (if (free-identifier=? (car p) (quote-syntax begin))
+                                  (syntax->list e)
+                                  #f)
                               #f)
                           #f))
                     ;; splice `begin'
