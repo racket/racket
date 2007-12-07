@@ -137,7 +137,8 @@ ooo     ::= ***                               @zero or more; *** is literal
 (define re:or-prod "^( +) [|]  (.*[^ ])( +)[@](.*)$")
 (define re:eng-prod "^([^ ]*)( +):== (.*)$")
 
-(define lines (regexp-split "\n" (substring grammar 1 (sub1 (string-length grammar)))))
+(define lines (let ([lines (regexp-split "\r?\n" grammar)])
+		(reverse (cdr (reverse (cdr lines))))))
 
 (define spacer (hspace 1))
 
@@ -191,5 +192,8 @@ ooo     ::= ***                               @zero or more; *** is literal
                (table-line spacer
                            -or-
                            (fixup-rhs val)
-                           (fixup-meaning meaning))))]))
+                           (fixup-meaning meaning))))]
+	[else (error 'make-match-grammar
+		     "non-matching line: ~e"
+		     line)]))
     lines)))
