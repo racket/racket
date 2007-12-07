@@ -120,48 +120,52 @@
                                           d))
                               (values d mine))))])
           `((div ((class "tocset"))
-                 (div ((class "tocview"))
-                      (div ((class "tocviewtitle"))
-                           (a ((href "index.html")
-                               (class "tocviewlink"))
-                              ,@(render-content (or (part-title-content top) '("???")) d ri)))
-                      (div nbsp)
-                      (table 
-                       ((class "tocviewlist")
-                        (cellspacing "0"))
-                       ,@(map (lambda (pp)
-                                (let ([p (car pp)]
-                                      [show-number? (cdr pp)])
-                                  `(tr
-                                    (td 
-                                     ((align "right"))
-                                     ,@(if show-number?
-                                           (format-number (collected-info-number (part-collected-info p ri))
-                                                          '((tt nbsp)))
-                                           '("-" nbsp)))
-                                    (td
-                                     (a ((href ,(let ([dest (resolve-get p ri (car (part-tags p)))])
-                                                  (format "~a~a~a" 
-                                                          (from-root (relative->path (car dest))
-                                                                     (get-dest-directory))
-                                                          (if (caddr dest)
-                                                              ""
-                                                              "#")
-                                                          (if (caddr dest)
-                                                              ""
-                                                              (anchor-name (cadddr dest))))))
-                                         (class ,(if (eq? p mine)
-                                                     "tocviewselflink"
-                                                     "tocviewlink")))
-                                        ,@(render-content (or (part-title-content p) '("???")) d ri))))))
-                              (let loop ([l (map (lambda (v) (cons v #t)) (part-parts top))])
-                                (cond
-                                 [(null? l) null]
-                                 [(reveal-subparts? (caar l))
-                                  (cons (car l) (loop (append (map (lambda (v) (cons v #f))
-                                                                   (part-parts (caar l)))
-                                                              (cdr l))))]
-                                 [else (cons (car l) (loop (cdr l)))])))))
+                 ,@(let ([toc-content 
+                          (map (lambda (pp)
+                                 (let ([p (car pp)]
+                                       [show-number? (cdr pp)])
+                                   `(tr
+                                     (td 
+                                      ((align "right"))
+                                      ,@(if show-number?
+                                            (format-number (collected-info-number (part-collected-info p ri))
+                                                           '((tt nbsp)))
+                                            '("-" nbsp)))
+                                     (td
+                                      (a ((href ,(let ([dest (resolve-get p ri (car (part-tags p)))])
+                                                   (format "~a~a~a" 
+                                                           (from-root (relative->path (car dest))
+                                                                      (get-dest-directory))
+                                                           (if (caddr dest)
+                                                               ""
+                                                               "#")
+                                                           (if (caddr dest)
+                                                               ""
+                                                               (anchor-name (cadddr dest))))))
+                                          (class ,(if (eq? p mine)
+                                                      "tocviewselflink"
+                                                      "tocviewlink")))
+                                         ,@(render-content (or (part-title-content p) '("???")) d ri))))))
+                               (let loop ([l (map (lambda (v) (cons v #t)) (part-parts top))])
+                                 (cond
+                                  [(null? l) null]
+                                  [(reveal-subparts? (caar l))
+                                   (cons (car l) (loop (append (map (lambda (v) (cons v #f))
+                                                                    (part-parts (caar l)))
+                                                               (cdr l))))]
+                                  [else (cons (car l) (loop (cdr l)))])))])
+                     (if (null? toc-content)
+                         null
+                         `((div ((class "tocview"))
+                                (div ((class "tocviewtitle"))
+                                     (a ((href "index.html")
+                                         (class "tocviewlink"))
+                                        ,@(render-content (or (part-title-content top) '("???")) d ri)))
+                                (div nbsp)
+                                (table 
+                                 ((class "tocviewlist")
+                                  (cellspacing "0"))
+                                 ,@toc-content)))))
                  ,@(render-onthispage-contents d ri top)
                  ,@(apply append
                           (map (lambda (t)
@@ -177,12 +181,17 @@
                                                     (loop (delayed-flow-element-flow-elements e ri))))))
                                        (flow-paragraphs (part-flow d)))))))))
 
+      (define/public (get-onthispage-label)
+        null)
+
+      (define/public (nearly-top? d ri top)
+        #f)
+
       (define/private (render-onthispage-contents d ri top)
         (if (ormap (lambda (p) (part-whole-page? p ri))
                    (part-parts d))
             null
-            (let* ([nearly-top? (lambda (d)
-                                  (eq? top (collected-info-parent (part-collected-info d ri))))]
+            (let* ([nearly-top? (lambda (d) (nearly-top? d ri top))]
                    [ps ((if (nearly-top? d) values cdr)
                         (let flatten ([d d])
                           (apply
@@ -238,8 +247,7 @@
               (if (null? ps)
                   null
                   `((div ((class "tocsub"))
-                         (div ((class "tocsubtitle"))
-                              "On this page:")
+                         ,@(get-onthispage-label)
                          (table
                           ((class "tocsublist")
                            (cellspacing "0"))
@@ -593,6 +601,13 @@
                        (render-one d ri fn))))))
              ds
              fns))
+
+      (define/override (nearly-top? d ri top)
+        (eq? top (collected-info-parent (part-collected-info d ri))))
+
+      (define/override (get-onthispage-label)
+        `((div ((class "tocsubtitle"))
+               "On this page:")))
 
       (define contents-content '("contents"))
       (define index-content '("index"))
