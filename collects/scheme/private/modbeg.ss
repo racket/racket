@@ -45,14 +45,14 @@
                                                (quote-syntax 
                                                 (quote 
                                                  quote-syntax #%top
-                                                 #%plain-lambda case-lambda
+                                                 lambda case-lambda
                                                  let-values letrec-values
                                                  begin begin0 set!
                                                  with-continuation-mark
-                                                 if #%plain-app #%expression
+                                                 if #%app #%expression
                                                  define-values define-syntaxes define-values-for-syntax
                                                  module 
-                                                 #%plain-module-begin 
+                                                 #%module-begin 
                                                  #%require #%provide 
                                                  #%variable-reference))))])
                 ;; `begin' is special...
@@ -84,7 +84,7 @@
                                                           (quote-syntax 
                                                            (define-values define-syntaxes define-values-for-syntax
                                                              module 
-                                                             #%plain-module-begin 
+                                                             #%module-begin 
                                                              #%require #%provide))))
                                                   #f
                                                   #t)
