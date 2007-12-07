@@ -28,9 +28,8 @@ Returns @scheme[#f] if @scheme[v] is a @tech{resolved module path},
 
 Returns a @tech{resolved module path} that encapsulates @scheme[path].
 If @scheme[path] is not a symbol, it normally should be
-@tech{cleanse}d (see @scheme[cleanse-path]), simplified (see
-@scheme[simplify-path]), and case-normalized (see
-@scheme[normal-case-path]).
+@tech{cleanse}d (see @scheme[cleanse-path]) and simplified (see
+@scheme[simplify-path]).
 
 A @tech{resolved module path} is interned. That is, if two
 @tech{resolved module path} values encapsulate paths that are

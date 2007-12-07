@@ -183,6 +183,16 @@
   (syntax-coloring-choose-color "为~a选择颜色")
   (preferences-colors "颜色") ;; used in the preferences dialog
   
+  ;; parenthesis color scheme string constants
+  (parenthesis-color-scheme "括号色彩调配") ;; label for the choice% menu in the preferences dialog
+  (paren-color-basic-grey "单一灰色")
+  (paren-color-shades-of-gray "渐变灰色")
+  (paren-color-shades-of-blue "渐变蓝色")
+  (paren-color-spring "春")
+  (paren-color-fall "秋")
+  (paren-color-winter "冬")
+
+
   (url: "URL:")
   (open-url... "打开URL...")
   (open-url "打开URL")
@@ -911,7 +921,7 @@
   (r5rs-one-line-summary "Scheme语言标准第5修改稿")
   (expander "Expander")
   (expander-one-line-summary "展开表达式，而不是求值")
-  (professional-languages "正式语言")
+  (legacy-languages "历代语言")
   (teaching-languages "教学语言")
   (experimental-languages "实验语言")
   (initial-language-category "初始语言")

@@ -81,14 +81,14 @@
   (bug-report-field-docs-installed "已安裝文檔")
   (bug-report-field-collections "Collections")
   (bug-report-field-human-language "自然語言")
-  (bug-report-field-memory-use "記憶體使用")
+  (bug-report-field-memory-use "內存使用")
   (bug-report-field-version "版本")
   (bug-report-synthesized-information "綜合信息")  ;; dialog title
   (bug-report-show-synthesized-info "顯示綜合信息")
   (bug-report-submit "提交")
   (bug-report-submit-menu-item "提交程序錯誤報告") ;; in Help Menu (drs & help desk)
   (error-sending-bug-report "程序錯誤報告傳輸出錯")
-  (error-sending-bug-report-expln "在傳輸程序錯誤報告的過程中出現了錯誤。如果你能夠正常瀏覽網路，請訪問：\n\n    http://bugs.plt-scheme.org/\n\n使用網頁上的表單提交程序錯誤報告。對於由此產生的不便，我們表示抱歉。\n\n傳輸錯誤詳情：\n~a")
+  (error-sending-bug-report-expln "在傳輸程序錯誤報告的過程中出現了錯誤。如果你能夠正常瀏覽網絡，請訪問：\n\n    http://bugs.plt-scheme.org/\n\n使用網頁上的表單提交程序錯誤報告。對於由此產生的不便，我們表示抱歉。\n\n傳輸錯誤詳情：\n~a")
   (illegal-bug-report "非法的程序錯誤報告")
   (pls-fill-in-field "請填寫\"~a\"欄目")
   (malformed-email-address "電子郵件地址不符合格式")
@@ -117,8 +117,8 @@
   (cs-status-expanding-expression "語法檢查：擴展表達式")
   (cs-mouse-over-import "綁定~s由~s導入")
   
-  (cs-lexical-variable "辭彙變數")
-  (cs-imported-variable "導入變數")
+  (cs-lexical-variable "詞彙變量")
+  (cs-imported-variable "導入變量")
   
   ;;; info bar at botttom of drscheme frame
   (collect-button-label "垃圾回收")
@@ -173,7 +173,7 @@
   (scheme-mode-color-symbol "符號")
   (scheme-mode-color-keyword "關鍵詞")
   (scheme-mode-color-comment "注釋")
-  (scheme-mode-color-string "字元串")
+  (scheme-mode-color-string "字符串")
   (scheme-mode-color-constant "常量")
   (scheme-mode-color-parenthesis "括號")
   (scheme-mode-color-error "錯誤")
@@ -181,6 +181,16 @@
   ;; the ~a is filled in with one of the above (scheme-mode-*)
   (syntax-coloring-choose-color "為~a選擇顏色")
   (preferences-colors "顏色") ;; used in the preferences dialog
+  
+  ;; parenthesis color scheme string constants
+  (parenthesis-color-scheme "括號色彩調配") ;; label for the choice% menu in the preferences dialog
+  (paren-color-basic-grey "單一灰色")
+  (paren-color-shades-of-gray "漸變灰色")
+  (paren-color-shades-of-blue "漸變藍色")
+  (paren-color-spring "春")
+  (paren-color-fall "秋")
+  (paren-color-winter "冬")
+  
   
   (url: "URL:")
   (open-url... "打開URL...")
@@ -219,14 +229,14 @@
   (plt:hd:refreshing-manuals-finished "完成。")
   (plt:hd:about-help-desk "關於Help Desk")
   (plt:hd:help-desk-about-string
-   "Help Desk是PLT軟體的信息來源，其中包含了DrScheme，MzScheme和MrEd的全部信息。\n\n版本~a\n版權所有(c)~a-~a PLT")
+   "Help Desk是PLT軟件的信息來源，其中包含了DrScheme，MzScheme和MrEd的全部信息。\n\n版本~a\n版權所有(c)~a-~a PLT")
   (plt:hd:help-on-help "關於幫助的幫助")
-  (plt:hd:help-on-help-details "關於使用Help Desk的幫助，請參見Help Desk主頁中的第一個連結「Help Desk」。（要進入Help Desk的主頁，請單擊Help Desk窗口上方的「主頁」按鈕。）")
+  (plt:hd:help-on-help-details "關於使用Help Desk的幫助，請參見Help Desk主頁中的第一個鏈接「Help Desk」。（要進入Help Desk的主頁，請單擊Help Desk窗口上方的「主頁」按鈕。）")
   (reload "刷新") ;; refresh the page in a web browser
   (plt:hd:ask-about-separate-browser
-   "你選擇了一個指向全球資訊網的連結。請問您是要在Help Desk中打開該頁面，還是想使用瀏覽器程序瀏覽網頁？")
+   "你選擇了一個指向萬維網的鏈接。請問您是要在Help Desk中打開該頁面，還是想使用瀏覽器程序瀏覽網頁？")
   (plt:hd:homebrew-browser "Help Desk") ;; choice for the above string (in a button)
-  (plt:hd:separate-browser "網路瀏覽器") ;; other choice for the above string (also in a button)
+  (plt:hd:separate-browser "網絡瀏覽器") ;; other choice for the above string (also in a button)
   (plt:hd:external-link-in-help "在Help中的外部URL")
   (plt:hd:use-homebrew-browser "對於外部URL，使用Help Desk瀏覽")
   (plt:hd:new-help-desk "新的Help Desk窗口")
@@ -235,20 +245,20 @@
   (plt:hd:manual-search-ordering "搜索手冊的順序")
   
   ;; in the help-desk standalone font preference dialog, on a check box
-  (use-drscheme-font-size "使用和DrScheme相同的字型大小")
+  (use-drscheme-font-size "使用和DrScheme相同的字號")
   
   ;; in the preferences dialog in drscheme there is example text for help desk font size.
   ;; clicking the links in that text produces a dialog with this message
   (help-desk-this-is-just-example-text
-   "這裡顯示的只是示例字體大小的文字。要察看這些連結，請通過幫助菜單打開真正的Help Desk。")
+   "這裡顯示的只是示例字體大小的文字。要察看這些鏈接，請通過幫助菜單打開真正的Help Desk。")
   
   ;; Help desk htty proxy
   (http-proxy "HTTP代理")
   (proxy-direct-connection "直接連接")
-  (proxy-use-proxy "使用代理伺服器：")
+  (proxy-use-proxy "使用代理服務器：")
   (proxy-host "地址")
-  (proxy-port "埠")
-  (proxy-bad-host "非法的代理伺服器")
+  (proxy-port "端口")
+  (proxy-bad-host "非法的代理服務器")
   
   ;; browser
   (rewind-in-browser-history "後退")
@@ -262,12 +272,12 @@
   (browser-cmdline-expl-line-1 "(命令行由pre-text，URL和post-text連接而成，") ; explanatory text for dialog, line 1
   (browser-cmdline-expl-line-2 "中間不含任何空格)") ; ... line 2. (Anyone need more lines?)
   (install? "安裝？")  ;; if a .plt file is found (title of dialog)
-  (you-have-selected-an-installable-package "你選擇了一個可以安裝的軟體包。")
+  (you-have-selected-an-installable-package "你選擇了一個可以安裝的軟件包。")
   (do-you-want-to-install-it? "是否安裝？")
-  (paren-file-size "(該文件的長度是~a位元組)")
+  (paren-file-size "(該文件的長度是~a字節)")
   (download-and-install "下載並安裝") ;; button label
   (download "下載") ;; button label
-  (save-downloaded-file/size "下載文件(~a位元組)並保存為") ;; label for get-file dialog
+  (save-downloaded-file/size "下載文件(~a字節)並保存為") ;; label for get-file dialog
   (save-downloaded-file "下載文件並保存為")  ;; label for get-file dialog
   (downloading "下載中") ;; dialog title
   (downloading-file... "下載文件中...")
@@ -276,7 +286,7 @@
   
   (install-plt-file-menu-item... "安裝.plt文件...")
   (install-plt-file-dialog-title "安裝.plt文件")
-  (install-plt-web-tab "網路文件")
+  (install-plt-web-tab "網絡文件")
   (install-plt-file-tab "本地文件")
   (install-plt-filename "文件名：")
   (install-plt-url "URL:")
@@ -329,13 +339,13 @@
   (count-columns-from-one "從1開始計算行號")
   (display-line-numbers "在編輯器中顯示行號")
   (show-line-and-column-numbers "顯示行號和列號") ; used for popup menu; right click on line/column box in bottom of drs window
-  (show-character-offsets "顯示字元在文件中的位置") ; used for popup menu; right click on line/column box in bottom of drs window
+  (show-character-offsets "顯示字符在文件中的位置") ; used for popup menu; right click on line/column box in bottom of drs window
   (enable-keybindings-in-menus "允許使用菜單中的快捷鍵")
-  (automatically-to-ps "自動列印成postscript文件")
+  (automatically-to-ps "自動打印成postscript文件")
   (command-as-meta "將command鍵當作meta") ;; macos/macos x only
   (separate-dialog-for-searching "使用單獨的搜索對話框")
   (reuse-existing-frames "在打開新文件時，使用現有的框架")
-  (default-fonts "預設字體")
+  (default-fonts "默認字體")
   (paren-match-color "高亮顯示括號所使用的顏色") ; in prefs dialog
   (online-coloring-active "實時根據語法用顏色標記程序")
   (open-files-in-tabs "在不同的標籤下打開多個文件（不使用多個窗口）")
@@ -344,9 +354,9 @@
   (interactions-beside-definitions "將定義窗口和交互窗口左右放置") ;; in preferences, below the checkbox one line above this one
   (limit-interactions-size "限制交互窗口的大小")
   (background-color "背景顏色")
-  (default-text-color "預設顏色") ;; used for configuring colors, but doesn't need the word "color"
+  (default-text-color "默認顏色") ;; used for configuring colors, but doesn't need the word "color"
   (choose-a-background-color "請選擇背景顏色")
-  (revert-to-defaults "恢復預設")
+  (revert-to-defaults "恢復默認")
   
   (black-on-white-color-scheme "白底黑字") ;; these two appear in the color preferences dialog on butttons
   (white-on-black-color-scheme "黑底白字") ;; clicking the buttons changes teh color schemes to some defaults that've been set up.
@@ -363,18 +373,18 @@
   ; filled with type of font, eg modern, swiss, etc.
   (choose-a-new-font "請選擇一種新的「~a」字體")
   
-  (font-size-slider-label "字型大小")
+  (font-size-slider-label "字號")
   (restart-to-see-font-changes "重新啟動，使修改生效")
   
   (font-prefs-panel-title "字體")
   (font-name "字體")
-  (font-size "字型大小")
+  (font-size "字號")
   (set-font "設置字體...")
   (font-smoothing-label  "字體平滑度設置")
   (font-smoothing-none "無")
   (font-smoothing-some "部分")
   (font-smoothing-all "全部")
-  (font-smoothing-default "使用系統預設")
+  (font-smoothing-default "使用系統默認")
   (select-font-name "選擇字體")
   (example-text "示例文字")
   (only-warn-once "當定義窗口和交互窗口不同步時，僅警告一次")
@@ -382,7 +392,7 @@
   ; warning message when lockfile is around
   (waiting-for-pref-lock "等待參數設置文件解鎖...")
   (pref-lock-not-gone
-   "參數設置封鎖文件：\n\n ~a\n\n禁止保存參數設置。請確定沒有其他PLT軟體正在運行中，然後刪除該封鎖文件。")
+   "參數設置封鎖文件：\n\n ~a\n\n禁止保存參數設置。請確定沒有其他PLT軟件正在運行中，然後刪除該封鎖文件。")
   (still-locked-exit-anyway? "參數無法保存。仍然退出？")
   
   ;;; indenting preferences panel
@@ -425,7 +435,7 @@
   
   ;;; multi-file-search
   (mfs-multi-file-search-menu-item "在文件中搜索...")
-  (mfs-string-match/graphics "字元串匹配(可用與包含圖像的文件)")
+  (mfs-string-match/graphics "字符串匹配(可用與包含圖像的文件)")
   (mfs-regexp-match/no-graphics "正則表達式匹配(只適用於純文本文件)")
   (mfs-searching... "搜索...")
   (mfs-configure-search "搜索設置") ;; dialog title
@@ -434,7 +444,7 @@
   (mfs-dir "目錄")
   (mfs-recur-over-subdirectories "包含子目錄")
   (mfs-regexp-filename-filter "文件名篩選(正則表達式)")
-  (mfs-search-string "查找字元串")
+  (mfs-search-string "查找字符串")
   (mfs-drscheme-multi-file-search "DrScheme——多文件查找") ;; results window and error message title
   (mfs-not-a-dir "\"~a\"不是目錄")
   (mfs-open-file "打開文件")
@@ -510,7 +520,7 @@
   (open-recent-info "最近使用過文件的列表")
   (open-recent-menu-item "最近使用過的文件")
   
-  (revert-info "將當前文件恢復為磁碟上的副本")
+  (revert-info "將當前文件恢復為磁盤上的副本")
   (revert-menu-item "恢復(&R)")
   
   (save-info "保存當前文件")
@@ -519,10 +529,10 @@
   (save-as-info "輸入新的文件名,保存當前文件")
   (save-as-menu-item "另存為(&A)...")
   
-  (print-info "列印當前文件")
-  (print-menu-item "列印(&P)...")
+  (print-info "打印當前文件")
+  (print-menu-item "打印(&P)...")
   
-  (page-setup-info "設置列印參數")
+  (page-setup-info "設置打印參數")
   (page-setup-menu-item "頁面設置...")
   
   (close-info "關閉當前文件")
@@ -555,13 +565,13 @@
   (select-all-info "選中整個文件")
   (select-all-menu-item "全選(&L)")
   
-  (find-info "搜索某個字元串")
+  (find-info "搜索某個字符串")
   (find-menu-item "查找...")
   
-  (find-again-info "繼續搜索該字元串")
+  (find-again-info "繼續搜索該字符串")
   (find-again-menu-item "查找下一個")
   
-  (replace-and-find-again-info "替換當前文本，然後繼續查找原字元串")
+  (replace-and-find-again-info "替換當前文本，然後繼續查找原字符串")
   (replace-and-find-again-menu-item "替換並查找下一個")
   
   (complete-word "自動完成") ; the complete word menu item in the edit menu
@@ -677,11 +687,11 @@
   (overwrite-file-button-label "保存")
   
   (definitions-modified 
-    "當前磁碟文件已被修改；請保存或恢復文件。")
+    "當前磁盤文件已被修改；請保存或恢復文件。")
   (drscheme-internal-error "DrScheme內部錯誤")
   
   ;;; tools
-  (invalid-tool-spec "Collection ~a中info.ss的tool定義不正確。需要一個字元串或者一個非空表，得到：~e")
+  (invalid-tool-spec "Collection ~a中info.ss的tool定義不正確。需要一個字符串或者一個非空表，得到：~e")
   (error-invoking-tool-title "調用tool ~s出錯；~s")
   (tool-tool-names-same-length
    "在~s的info.ss文件中，「tool-names」和「tools」應該是等長的表，得到~e和~e")
@@ -718,14 +728,14 @@
   ;;; file menu
   (save-definitions-as "將定義另存為(&A)")
   (save-definitions "保存定義")
-  (print-definitions "列印定義...")
+  (print-definitions "打印定義...")
   (about-drscheme "關於DrScheme")
   (save-other "其他保存方式")
   (save-definitions-as-text "將定義保存為文本...")
   (save-interactions "保存交互")
   (save-interactions-as "將交互另存為...")
   (save-interactions-as-text "將交互保存為文本...")
-  (print-interactions "列印交互...")
+  (print-interactions "打印交互...")
   (new-tab "新建標籤")
   (close-tab "關閉標籤") ;; must not have any &s in it.
   (close-tab-amp "關閉標籤(&C)") ;; like close-tab, but with an ampersand on the same letter as the one in close-menu-item
@@ -745,9 +755,9 @@
   (break-menu-item-help-string "中斷當前計算")
   (kill-menu-item-label "終止")
   (kill-menu-item-help-string "終止當前計算")
-  (limit-memory-menu-item-label "限制記憶體使用...")
-  (limit-memory-msg-1 "記憶體限制會在下一次運行")
-  (limit-memory-msg-2 "時生效。記憶體限制最低值為100megabytes.")
+  (limit-memory-menu-item-label "限制內存使用...")
+  (limit-memory-msg-1 "內存限制會在下一次運行")
+  (limit-memory-msg-2 "時生效。內存限制最低值為100megabytes.")
   (limit-memory-unlimited "無限制")
   (limit-memory-limited "限制")
   (limit-memory-megabytes "Megabytes")
@@ -780,7 +790,7 @@
   (stand-alone "獨立程序")
   (stand-alone-explanatory-label "獨立程序（僅在本機運行，運行編譯代碼）")
   (distribution "可發佈程序")
-  (distribution-explanatory-label "可發佈程序（可以在其它電腦上安裝並運行）")
+  (distribution-explanatory-label "可發佈程序（可以在其它計算機上安裝並運行）")
   (executable-type "類型")
   (executable-base "基於")
   (filename "文件名：")
@@ -826,7 +836,7 @@
   (insert-fraction-menu-item-label "插入分數...")
   
   ;; number snip popup menu
-  (show-decimal-expansion "用十進位表示")
+  (show-decimal-expansion "用十進製表示")
   (show-mixed-fraction-view "用帶分數表示")
   (show-improper-fraction-view "用假分數表示")
   (show-more-decimal-places "先是更多小數位")
@@ -836,7 +846,7 @@
   (clear-teachpack "卸載教學包~a")
   (teachpack-error-label "DrScheme——教學包出錯")
   (teachpack-didnt-load "無法裝載教學包~a。")
-  (add-teachpack-menu-item-label "載入教學包...")
+  (add-teachpack-menu-item-label "加載教學包...")
   (clear-all-teachpacks-menu-item-label "卸載全部教學包")
   (drscheme-teachpack-message-title "DrScheme教學包")
   (already-added-teachpack "教學包~a已裝載")
@@ -852,7 +862,7 @@
   
   ;;; Language dialog
   (introduction-to-language-dialog
-   "請選擇語言。大部分入門級的學生都可以使用預設語言。")
+   "請選擇語言。大部分入門級的學生都可以使用默認語言。")
   (language-dialog-title "語言選擇")
   (case-sensitive-label "大小寫敏感")
   (output-style-label "輸出格式")
@@ -874,11 +884,11 @@
   (show-details-button-label "顯示詳情")
   (hide-details-button-label "隱藏詳情")
   (choose-language-menu-item-label "選擇語言...")
-  (revert-to-language-defaults "恢復預設語言設置")
+  (revert-to-language-defaults "恢復默認語言設置")
   (fraction-style "分數格式")
   (use-mixed-fractions "帶分數")
   (use-repeating-decimals "循環小數")
-  (decimal-notation-for-rationals "使用十進位表示有理數")
+  (decimal-notation-for-rationals "使用十進製表示有理數")
   
   ; used in the bottom left of the drscheme frame as the label
   ; above the programming language's name
@@ -910,7 +920,7 @@
   (r5rs-one-line-summary "Scheme語言標準第5修改稿")
   (expander "Expander")
   (expander-one-line-summary "展開表達式，而不是求值")
-  (professional-languages "正式語言")
+  (legacy-languages "歷代語言")
   (teaching-languages "教學語言")
   (experimental-languages "實驗語言")
   (initial-language-category "初始語言")
@@ -988,7 +998,7 @@
   ;;; repl stuff
   (evaluation-terminated "計算已終止")
   (evaluation-terminated-explanation
-   "Evaluation執行緒已停止，在下一次執行之前不會進行計算。")
+   "Evaluation線程已停止，在下一次執行之前不會進行計算。")
   
   ; The next three constants show up in the same dialog as the above evaluation-terminated string
   ; constants.
@@ -996,7 +1006,7 @@
   ; The third shows up when the program runs out of memory.
   (exited-successfully "成功退出。")
   (exited-with-error-code "退出，錯誤代碼~a。") ;; ~a is filled in with a number between 1 and 255
-  (program-ran-out-of-memory "記憶體耗盡。")
+  (program-ran-out-of-memory "內存耗盡。")
   (last-stack-frame "顯示最新的stack frame")
   (last-stack-frames "顯示前~a個stack frames")
   (next-stack-frames "顯示後~a個stack frames")
@@ -1017,7 +1027,7 @@
   ;;; version checker
   (version:update-menu-item   "檢查更新...")
   (version:update-check       "檢查更新") ; dialog title, with the next line
-  (version:connecting-server  "連接PLT版本伺服器")
+  (version:connecting-server  "連接PLT版本服務器")
   (version:results-title      "PLT版本檢查")
   (version:do-periodic-checks "自動定期檢查PLT Scheme版本更新")
   (version:take-me-there      "下載") ; ...to the download website
@@ -1037,7 +1047,7 @@
   
   (module-browser-filename-format "文件全名: ~a (共~a行)")
   (module-browser-root-filename "根文件名: ~a")
-  (module-browser-font-size-gauge-label "字型大小")
+  (module-browser-font-size-gauge-label "字號")
   (module-browser-progress-label "Module overview progress")
   (module-browser-adding-file "添加文件: ~a...")
   (module-browser-laying-out-graph-label "正在為圖佈局")
@@ -1045,7 +1055,7 @@
   (module-browser "Module瀏覽器") ;; frame title
   (module-browser... "Module瀏覽器...") ;; menu item title
   (module-browser-error-expanding "展開程序時出錯：\n\n~a")
-  (module-browser-show-lib-paths "顯示通過(lib ..)載入的文件的路徑")
+  (module-browser-show-lib-paths "顯示通過(lib ..)加載的文件的路徑")
   (module-browser-progress "Module瀏覽器：~a") ;; prefix in the status line
   (module-browser-compiling-defns "Module瀏覽器：正在編譯定義")
   (module-browser-show-lib-paths/short "顯示lib調用") ;; check box label in show module browser pane in drscheme window.
@@ -1063,7 +1073,7 @@
   (happy-birthday-matthew "生日快樂，馬曉！")
   (happy-birthday-shriram "生日快樂，Shriram！")
   
-  (mrflow-using-default-language-title "正在使用預設語言")
+  (mrflow-using-default-language-title "正在使用默認語言")
   (mrflow-using-default-language "當前使用的語言並不包含定義primitive類型的標。改用R5RS Scheme。")
   (mrflow-button-title "分析")
   ;(mrflow-unknown-style-delta-error-title "Unknown Box Style Delta")
