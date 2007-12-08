@@ -1,16 +1,21 @@
 #lang scribble/doc
 @require["../web-server.ss"]
 
-@title[#:tag "web-config-unit.ss"
-       #:style 'toc]{Web Config Unit}
+@title[#:tag "web-config-unit.ss"]{Web Config Unit}
 @require[(for-label web-server/web-config-unit)]
 @require[(for-label web-server/web-config-sig)]
 
 The @web-server offers a unit-based approach to configuring the server.
 
-@filepath{web-config-sig.ss} provides the signature
-@defthing[web-config^ signature?] signature, which contains the following
-identifiers:
+@section{Configuration Signature}
+
+@defmodule[web-server/web-config-sig]
+
+@defsignature[web-config^ ()]{
+
+@signature-desc{
+Provides contains the following identifiers.
+}
 
 @defthing[max-waiting integer?]{
  Passed to @scheme[tcp-accept].
@@ -39,8 +44,11 @@ identifiers:
 @defthing[make-servlet-namespace make-servlet-namespace?]{
  Passed to @scheme[servlets:make].
 }
+}
 
-@filepath{web-config-unit.ss} provides the following:
+@section{Configuration Units}
+
+@defmodule[web-server/web-config-unit]
 
 @defproc[(configuration-table->web-config\@ [path path?]
                                            [#:port port (or/c false/c port-number?) #f]

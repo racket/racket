@@ -12,6 +12,7 @@ of these servlets. This API is provided by @filepath{servlet.ss}.
 
 @; ------------------------------------------------------------
 @section[#:tag "module-servlets"]{Definition}
+@require[(for-label "dummy-servlet.ss")] ; to give a binding context
 
 A @defterm{servlet} is a module that provides the following:
 
@@ -92,19 +93,17 @@ related to HTTP request data structures.
 
 @defstruct[binding ([id bytes?])]{Represents a binding of @scheme[id].}
 
-@defstruct[(binding:form binding) ([id bytes?]
-                                   [value bytes?])]{
+@defstruct[(binding:form binding) ([value bytes?])]{
  Represents a form binding of @scheme[id] to @scheme[value].
 }
 
-@defstruct[(binding:file binding) ([id bytes?]
-                                   [filename bytes?]
+@defstruct[(binding:file binding) ([filename bytes?]
                                    [content bytes?])]{
  Represents the uploading of the file @scheme[filename] with the id @scheme[id]
  and the content @scheme[content].
 }
 
-@defproc[(bindings-assq [id bytes?] [binds (listof binding?)])
+@defproc[(bindings-assq [binds (listof binding?)])
          (or/c false/c binding?)]{
  Returns the binding with an id equal to @scheme[id] from @scheme[binds] or @scheme[#f].
 }
@@ -196,23 +195,13 @@ HTTP responses.
 
 @; XXX Rename string? option
 @defstruct[(response/full response/basic)
-           ([code number?]
-            [message string?]
-            [seconds number?]
-            [mime bytes?]
-            [headers (listof header?)]
-            [body (listof (or/c string? bytes?))])]{
+           ([body (listof (or/c string? bytes?))])]{
  As with @scheme[response/basic], except with @scheme[body] as the response
  body.
 }
 
 @defstruct[(response/incremental response/basic)
-           ([code number?]
-            [message string?]
-            [seconds number?]
-            [mime bytes?]
-            [headers (listof header?)]
-            [generator ((() (listof (or/c bytes? string?)) . ->* . any) . -> . any)])]{
+           ([generator ((() (listof (or/c bytes? string?)) . ->* . any) . -> . any)])]{
  As with @scheme[response/basic], except with @scheme[generator] as a function that is
  called to generate the response body, by being given an @scheme[output-response] function
  that outputs the content it is called with.

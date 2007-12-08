@@ -234,7 +234,21 @@
           [src-zo (let-values ([(base name dir?) (split-path (doc-src-file doc))])
                     (build-path base "compiled" (path-add-suffix name ".zo")))]
           [renderer (make-renderer latex-dest doc)]
-          [can-run? ((can-build? only-dirs) doc)])
+          [can-run? ((can-build? only-dirs) doc)]
+          [aux-time (max
+                     (file-or-directory-modify-seconds (build-path 
+                                                        (collection-path "scribble")
+                                                        "compiled"
+                                                        (path-add-suffix
+                                                         (if latex-dest
+                                                             "latex-render.ss"
+                                                             "html-render.ss")
+                                                         ".zo"))
+                                                       #f (lambda () -inf.0))
+                     (file-or-directory-modify-seconds (build-path 
+                                                        (collection-path "scribble")
+                                                        "scribble.css")
+                                                       #f (lambda () +inf.0)))])
       (let ([my-time (file-or-directory-modify-seconds out-file #f (lambda () -inf.0))]
             [info-out-time (file-or-directory-modify-seconds info-out-file #f (lambda () #f))]
             [info-in-time (file-or-directory-modify-seconds info-in-file #f (lambda () #f))]
@@ -245,7 +259,8 @@
                     (or (not can-run?)
                         (my-time
                          . >= . 
-                         (file-or-directory-modify-seconds src-zo #f (lambda () +inf.0)))))])
+                         (max aux-time
+                              (file-or-directory-modify-seconds src-zo #f (lambda () +inf.0))))))])
           (printf " [~a ~a]\n"
                   (if up-to-date? "Using" "Running")
                   (doc-src-file doc))

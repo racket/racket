@@ -303,6 +303,63 @@
 
   ;; ----------------------------------------
 
+  (define-struct sig (tagstr))
+
+  (define (definition-site name stx-id form?)
+    (let ([sig (current-signature)])
+      (if sig
+          (make-link-element (if form?
+                                 "schemesyntaxlink" 
+                                 "schemevaluelink")
+                             (list (schemefont (symbol->string name)))
+                             `(,(if form? 'sig-form 'sig-val)
+                               ,(format "~a::~a" (sig-tagstr sig) name)))
+          (annote-exporting-library
+           (to-element (make-just-context name stx-id))))))
+
+  (define (id-to-tag id)
+    (add-signature-tag id #f))
+
+  (define (id-to-form-tag id)
+    (add-signature-tag id #t))
+
+  (define (add-signature-tag id form?)
+    (let ([sig (current-signature)])
+      (if sig
+          `(,(if form? 'sig-form 'sig-val)
+            ,(format "~a::~a" (sig-tagstr sig) (syntax-e id)))
+          (if form?
+              (register-scheme-form-definition id)
+              (register-scheme-definition id #t)))))
+
+  (define current-signature (make-parameter #f))
+
+  (define-syntax-rule (sigelem sig elem)
+    (*sig-elem (quote-syntax sig) 'elem))
+
+  (define (*sig-elem sig elem)
+    (let ([s (to-element elem)]
+          [tag (format "~a::~a" 
+                       (register-scheme-form-definition sig #t)
+                       elem)])
+      (make-delayed-element
+       (lambda (renderer sec ri)
+         (let* ([vtag `(sig-val ,tag)]
+                [stag `(sig-form ,tag)]
+                [sd (resolve-get/tentative sec ri stag)])
+           (list
+            (cond
+             [sd 
+              (make-link-element "schemesyntaxlink" (list s) stag)]
+             [else
+              (make-link-element "schemevaluelink" (list s) vtag)]))))
+       (lambda () s)
+       (lambda () s))))
+
+  (provide sigelem)
+
+  ;; ----------------------------------------
+
   (provide method xmethod (rename-out [method ::]))
 
   (define-syntax method
@@ -316,7 +373,7 @@
        (elem (method a b) " in " (scheme a))]))
 
   (define (*method sym id)
-    (**method sym (register-scheme-definition id #t)))
+    (**method sym (id-to-tag id)))
 
   (define (**method sym tag)
     (make-element
@@ -596,7 +653,7 @@
   (define-syntax defthing
     (syntax-rules ()
       [(_ id result desc ...)
-       (*defthing (quote-syntax/loc id) 'id (quote-syntax result) (lambda () (list desc ...)))]))
+       (*defthing (quote-syntax/loc id) 'id #f (schemeblock0 result) (lambda () (list desc ...)))]))
   (define-syntax defparam
     (syntax-rules ()
       [(_ id arg contract desc ...)
@@ -782,7 +839,7 @@
                                                              (hspace 1)
                                                              (if first?
                                                                  (let* ([mname (car prototype)]
-                                                                        [ctag (register-scheme-definition within-id #t)]
+                                                                        [ctag (id-to-tag within-id)]
                                                                         [tag (method-tag ctag mname)]
                                                                         [content (list (*method mname within-id))])
                                                                    (if tag
@@ -799,18 +856,14 @@
                                                                                                       (syntax-e within-id)
                                                                                                       libs
                                                                                                       mname
-                                                                                                      (register-scheme-definition 
-                                                                                                       within-id #t))))))
+                                                                                                      ctag)))))
                                                                         tag)
                                                                        (car content)))
                                                                  (*method (car prototype) within-id))))]
                                         [else
                                          (if first?
-                                             (let ([tag (register-scheme-definition stx-id #t)]
-                                                   [content (list 
-                                                             (annote-exporting-library
-                                                              (to-element (make-just-context (car prototype)
-                                                                                             stx-id))))])
+                                             (let ([tag (id-to-tag stx-id)]
+                                                   [content (list (definition-site (car prototype) stx-id #f))])
                                                (if tag
                                                    (make-toc-target-element
                                                     #f
@@ -1015,11 +1068,10 @@
                  (apply string-append
                         (map symbol->string (cdar wrappers)))]
                 [tag 
-                 (register-scheme-definition 
+                 (id-to-tag
                   (datum->syntax stx-id
                                  (string->symbol
-                                  name))
-                  #t)])
+                                  name)))])
            (if tag
                (inner-make-target-element
                 #f
@@ -1212,34 +1264,42 @@
              fields field-contracts)))
       (content-thunk))))
 
-  (define (*defthing stx-id name result-contract content-thunk)
+  (define (*defthing stx-id name form? result-contract content-thunk)
     (define spacer (hspace 1))
     (make-splice
      (cons
       (make-table
        'boxed
        (list
-        (list (make-flow 
-               (list
-                (make-paragraph
-                 (list (let ([tag (register-scheme-definition stx-id #t)]
-                             [content (list (annote-exporting-library
-                                             (to-element (make-just-context name stx-id))))])
-                         (if tag
-                             (make-toc-target-element
-                              #f
-                              (list (make-index-element #f
-                                                        content
-                                                        tag
-                                                        (list (symbol->string name))
-                                                        content
-                                                        (with-exporting-libraries
-                                                         (lambda (libs)
-                                                           (make-thing-index-desc name libs)))))
-                              tag)
-                             (car content)))
-                       spacer ":" spacer
-                       (to-element result-contract))))))))
+        (list
+         (make-flow
+          (make-table-if-necessary
+           "argcontract"
+           (list
+            (list (make-flow
+                   (list
+                    (make-paragraph
+                     (list (let ([tag ((if form? id-to-form-tag id-to-tag) stx-id)]
+                                 [content (list (definition-site name stx-id form?))])
+                             (if tag
+                                 (make-toc-target-element
+                                  #f
+                                  (list (make-index-element #f
+                                                            content
+                                                            tag
+                                                            (list (symbol->string name))
+                                                            content
+                                                            (with-exporting-libraries
+                                                             (lambda (libs)
+                                                               (make-thing-index-desc name libs)))))
+                                  tag)
+                                 (car content)))
+                           spacer ":" spacer))))
+                  (make-flow
+                   (list
+                    (if (flow-element? result-contract)
+                        result-contract
+                        (make-paragraph (list result-contract))))))))))))
       (content-thunk))))
 
   (define (meta-symbol? s) (memq s '(... ...+ ?)))
@@ -1282,13 +1342,13 @@
                               `(,x . ,(cdr form)))))))
                      (and kw-id
                           (eq? form (car forms))
-                          (let ([tag (register-scheme-definition kw-id #t)]
-                                [stag (register-scheme-form-definition kw-id)]
-                                [content (list (annote-exporting-library
-                                                (to-element (make-just-context (if (pair? form)
-                                                                                   (car form) 
-                                                                                   form)
-                                                                               kw-id))))])
+                          (let ([tag (id-to-tag kw-id)]
+                                [stag (id-to-form-tag kw-id)]
+                                [content (list (definition-site (if (pair? form)
+                                                                    (car form) 
+                                                                    form)
+                                                 kw-id
+                                                 #t))])
                             (if tag
                                 (make-target-element
                                  #f
@@ -1660,7 +1720,7 @@
          (list (make-flow 
                 (list
                  (make-paragraph
-                  (list (let ([tag (register-scheme-definition stx-id)]
+                  (list (let ([tag (id-to-tag stx-id)]
                               [content (list (annote-exporting-library (to-element stx-id)))])
                           (if tag
                               ((if whole-page? 
@@ -1871,10 +1931,11 @@
                (if v
                    (cons (cls/intf-super v)
                          (cls/intf-intfs v))
-                   null)))])
+                   null)))]
+          [ctag (id-to-tag cname)])
       (make-delayed-element
        (lambda (r d ri)
-         (let loop ([search (get d ri (register-scheme-definition cname))])
+         (let loop ([search (get d ri ctag)])
            (cond
             [(null? search)
              (make-element #f "<method not found>")]
@@ -1903,4 +1964,64 @@
                          null))))
 
   ;; ----------------------------------------
+
+  (provide defsignature
+           defsignature/splice
+           signature-desc)
+
+  (define-syntax defsignature
+    (syntax-rules ()
+      [(_ name (super ...) body ...)
+       (*defsignature
+        (quote-syntax name)
+        (list (quote-syntax super) ...)
+        (lambda ()
+          (list body ...))
+        #t)]))
+
+  (define-syntax defsignature/splice
+    (syntax-rules ()
+      [(_ name (super ...) body ...)
+       (*defsignature
+        (quote-syntax name)
+        (list (quote-syntax super) ...)
+        (lambda ()
+          (list body ...))
+        #f)]))
+
+  (define-struct sig-desc (in))
+  (define (signature-desc . l)
+    (make-sig-desc l))
+
+  (define (*defsignature stx-id supers body-thunk indent?)
+    (*defthing stx-id (syntax-e stx-id) #t (make-element #f '("signature"))
+               (lambda ()
+                 (let ([in (parameterize ([current-signature (make-sig
+                                                              (id-to-form-tag stx-id))])
+                             (body-thunk))])
+                   (if indent?
+                       (let-values ([(pre-body post-body)
+                                     (let loop ([in in][pre-accum null])
+                                       (cond
+                                        [(null? in) (values (reverse pre-accum) null)]
+                                        [(whitespace? (car in))
+                                         (loop (cdr in) (cons (car in)
+                                                              pre-accum))]
+                                        [(sig-desc? (car in))
+                                         (loop (cdr in) (append (reverse (sig-desc-in (car in)))
+                                                                pre-accum))]
+                                        [else
+                                         (values (reverse pre-accum) in)]))])
+                         (append
+                          pre-body
+                          (list
+                           (make-blockquote 
+                            "leftindent"
+                            (flow-paragraphs
+                             (decode-flow
+                              post-body))))))
+                       in)))))
+  
+  ;; ----------------------------------------
+
   )

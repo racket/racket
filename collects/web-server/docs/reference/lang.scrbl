@@ -12,6 +12,7 @@ is different and what API is provided.
 
 @; ------------------------------------------------------------
 @section[#:tag "lang-servlets"]{Definition}
+@require[(for-label "dummy-language-servlet.ss")] ; to give a binding context
 
 A @defterm{Web language servlet} is a module written in the
 @scheme[(lib "lang.ss" "web-server")] module language. It should provide

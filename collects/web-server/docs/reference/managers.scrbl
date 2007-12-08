@@ -46,17 +46,13 @@ the users and implementers of managers.
 }
 
 @defstruct[(exn:fail:servlet-manager:no-instance exn:fail)
-           ([message string?]
-            [continuation-marks continuation-mark-set?]
-            [expiration-handler expiration-handler?])]{
+           ([expiration-handler expiration-handler?])]{
  This exception should be thrown by a manager when an instance is looked
  up that does not exist.
 }
 
 @defstruct[(exn:fail:servlet-manager:no-continuation exn:fail)
-           ([message string?]
-            [continuation-marks continuation-mark-set?]
-            [expiration-handler expiration-handler?])]{
+           ([expiration-handler expiration-handler?])]{
  This exception should be thrown by a manager when a continuation is
  looked up that does not exist.
 }

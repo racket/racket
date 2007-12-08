@@ -1,15 +1,17 @@
 #lang scribble/doc
 @require["../web-server.ss"]
 
-@title[#:tag "web-server-unit.ss"
-       #:style 'toc]{Web Server Unit}
+@title[#:tag "web-server-unit.ss"]{Web Server Unit}
 @require[(for-label web-server/web-server-sig)]
 @require[(for-label web-server/web-server-unit)]
 
 The @web-server offers a unit-based approach to running the server.
 
-@filepath{web-server-sig.ss} provides the @defthing[web-server^ signature?] signature
-with two elements:
+@section{Signature}
+
+@defmodule[web-server/web-server-sig]
+
+@defsignature[web-server^ ()]{
 
  @defproc[(serve) (-> void)]{
   Runs the server and returns a procedure that shuts down the server.
@@ -21,12 +23,20 @@ with two elements:
  Serves a single connection represented by the ports @scheme[ip] and
  @scheme[op].
  }
+}
 
-@filepath{web-server-unit.ss} provides the @defthing[web-server\@ unit?] unit. It
-imports a @scheme[web-config^] unit and a @scheme[tcp^] unit. It uses the
-@scheme[web-config^] to construct a @scheme[dispatcher?] function that
-sets up one virtual host dispatcher, for each virtual host in the @scheme[web-config^],
-that sequences the following operations:
+@section{Unit}
+
+@defmodule[web-server/web-server-unit]
+
+@defthing[web-server\@ (unit/c (web-config^ tcp^)
+                               (web-server^))]{
+
+Uses the @scheme[web-config^] to construct a @scheme[dispatcher?]
+function that sets up one virtual host dispatcher, for each virtual
+host in the @scheme[web-config^], that sequences the following
+operations:
+
 @itemize[
  @item{Logs the incoming request with the given format to the given file}
  @item{Performs HTTP Basic Authentication with the given password file}
@@ -39,3 +49,4 @@ that sequences the following operations:
 
 Using this @scheme[dispatcher?], it loads a dispatching server that provides @scheme[serve]
 and @scheme[serve-ports] functions that operate as expected.
+}

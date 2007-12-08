@@ -5,7 +5,11 @@
 
 @title{Virtual Playing Cards Library}
 
-@defmodule[games/cards]
+@defmodule[games/cards]{The @scheme[games/cards] module provides a
+toolbox for creating cards games.}
+
+@; ----------------------------------------------------------------------
+@section{Creating Tables and Cards}
 
 @defproc[(make-table [title string? "Cards"] 
                      [w nonnegative-exact-integer? 7]
@@ -44,6 +48,9 @@ halves which are merged back together by repeatedly pulling the top
 card off one of the halves, randomly selecting one half or the
 other. According to some mathematical theorem, 7 is a large enough
 @scheme[n] to get a perfect shuffle.}
+
+@; ----------------------------------------------------------------------
+@section{Regions and Buttons}
 
 @defstruct[region ([x real?]
                    [y real?]
@@ -128,7 +135,8 @@ Returns a region like one made by @scheme[make-region], but the is
  Gets the current callback that is installed via
  @scheme[set-region-interaction-callback!].}
 
-@; ----------------------------------------
+@; ----------------------------------------------------------------------
+@section{Table Methods}
 
 @definterface[table<%> (frame%)]{
 
@@ -357,7 +365,8 @@ Removes @scheme[card] from the table.}
  @scheme[(lib "show-help.ss" "games")].}
 }
 
-@; ----------------------------------------
+@; ----------------------------------------------------------------------
+@section{Card Methods}
 
 @definterface[card<%> ()]{
 

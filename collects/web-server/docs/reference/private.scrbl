@@ -112,10 +112,14 @@ for doing this.
 The @web-server is just a configuration of a dispatching server.
 This dispatching server component is useful on its own.
 
-@filepath{private/dispatch-server-sig.ss} defines the following signatures:
+@subsection{Dispatching Server Signatures}
 
-@defthing[dispatch-server^ signature?]{
- The following identifiers:
+@defmodule[web-server/private/dispatch-server-sig]
+
+The @schememodname[web-server/private/dispatch-server-sig] module
+provides two signatures.
+
+@defsignature[dispatch-server^ ()]{
  @defproc[(serve)
           (-> void)]{
   Runs and returns a shutdown procedure.
@@ -127,8 +131,8 @@ This dispatching server component is useful on its own.
  }
 }
 
-@defthing[dispatch-server-config^ signature?]{
- The following identifiers:
+@defsignature[dispatch-server-config^ ()]{
+
  @defthing[port port?]{Specifies the port to serve on.}
  @defthing[listen-ip string?]{Passed to @scheme[tcp-accept].}
  @defthing[max-waiting integer?]{Passed to @scheme[tcp-accept].}
@@ -143,12 +147,18 @@ This dispatching server component is useful on its own.
  @defthing[dispatch dispatcher?]{How to handle requests.}
 }
 
-@filepath{private/dispatch-server-unit.ss} provides the unit
-which actually implements a dispatching server.
+
+@subsection{Dispatching Server Unit}
+
+@defmodule[web-server/private/dispatch-server-unit]
+
+The @schememodname[web-server/private/dispatch-server-unit] module
+provides the unit that actually implements a dispatching server.
 
 @; XXX Talk about how threads and custodians are used.
 
-@defthing[dispatch-server\@ (unit/c (tcp^ dispatch-server-config^) (dispatch-server^))]{
+@defthing[dispatch-server\@ (unit/c (tcp^ dispatch-server-config^) 
+                                    (dispatch-server^))]{
  Runs the dispatching server config in a very basic way, except that it uses
  @secref["connection-manager.ss"] to manage connections.
 }

@@ -1,5 +1,22 @@
 #lang scribble/doc
-@require["../web-server.ss"]
+@(require "../web-server.ss"
+          (for-syntax scheme/base))
+
+@(define-syntax (a-dispatcher stx)
+  (syntax-case stx ()
+   [(_ lib-name lib-desc . rest)
+    ;; This macro plays a standard trick for limiting the scope of
+    ;; `require'd bindings: it puts the require and the scope of the
+    ;; require into a macro, which introduces both together
+    #'(begin
+       (define-syntax-rule (intro)
+         ((... ...)
+          (begin
+            (require (for-label lib-name))
+            (defmodule lib-name
+                       "The " (schememodname lib-name) " module " lib-desc)
+            . rest)))
+       (intro))]))
 
 @title[#:tag "dispatchers"
        #:style 'toc]{Dispatchers}
@@ -87,67 +104,62 @@ URLs to paths on the filesystem.
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-sequencer.ss"]{Sequencing}
-@require[(prefix-in seq: (for-label web-server/dispatchers/dispatch-sequencer))]
-
-@filepath{dispatchers/dispatch-sequencer.ss} defines a dispatcher constructor
-that invokes a sequence of dispatchers until one applies.
+@a-dispatcher[web-server/dispatchers/dispatch-sequencer
+              @elem{defines a dispatcher constructor
+                 that invokes a sequence of dispatchers until one applies.}]{
 
 @defproc[(make (dispatcher dispatcher?) ...)
          dispatcher?]{
  Invokes each @scheme[dispatcher], invoking the next if the first
  calls @scheme[next-dispatcher]. If no @scheme[dispatcher] applies,
  then it calls @scheme[next-dispatcher] itself.
-}
+}}
 
 @; XXX Kind of timeout that is proportional to bindings
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-timeout.ss"]{Timeouts}
-@require[(prefix-in timeout: (for-label web-server/dispatchers/dispatch-timeout))]
-
-@filepath{dispatchers/dispatch-timeout.ss} defines a dispatcher constructor
-that changes the timeout on the connection and calls the next
-dispatcher.
+@a-dispatcher[web-server/dispatchers/dispatch-timeout
+               @elem{defines a dispatcher constructor
+                  that changes the timeout on the connection and calls the next
+                  dispatcher.}]{
 
 @defproc[(make [new-timeout integer?])
          dispatcher?]{
  Changes the timeout on the connection with @scheme[adjust-connection-timeout!]
  called with @scheme[new-timeout].
-}
+}}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-lift.ss"]{Lifting Procedures}
-@require[(prefix-in lift: (for-label web-server/dispatchers/dispatch-lift))]
-
-@filepath{dispatchers/dispatch-lift.ss} defines:
+@a-dispatcher[web-server/dispatchers/dispatch-lift
+              @elem{defines a dispatcher constructor.}]{
 
 @defproc[(make (proc (request? . -> . response?)))
          dispatcher?]{
  Constructs a dispatcher that calls @scheme[proc] on the request
  object, and outputs the response to the connection.
-}
+}}
 
 @; XXX Change filtering to take predicate, rather than regexp
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-filter.ss"]{Filtering Requests}
-@require[(prefix-in filter: (for-label web-server/dispatchers/dispatch-filter))]
-
-@filepath{dispatchers/dispatch-filter.ss} defines a dispatcher constructor
-that calls an underlying dispatcher
-with all requests that pass a predicate.
+@a-dispatcher[web-server/dispatchers/dispatch-filter
+              @elem{defines a dispatcher constructor
+                 that calls an underlying dispatcher
+                 with all requests that pass a predicate.}]{
 
 @defproc[(make (regex regexp?) (inner dispatcher?))
          dispatcher?]{
  Calls @scheme[inner] if the URL path of the request, converted to
  a string, matches @scheme[regex]. Otherwise, calls @scheme[next-dispatcher].
-}
+}}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-pathprocedure.ss"]{Procedure Invocation upon Request}
-@require[(prefix-in pathproc: (for-label web-server/dispatchers/dispatch-pathprocedure))]
-
-@filepath{dispatchers/dispatch-pathprocedure.ss} defines a dispatcher constructor
-for invoking a particular procedure when a request is given to a particular
-URL path.
+@a-dispatcher[web-server/dispatchers/dispatch-pathprocedure
+              @elem{defines a dispatcher constructor
+                   for invoking a particular procedure when a request is given to a particular
+                   URL path.}]{
 
 @defproc[(make (path string?) (proc (request? . -> . response?)))
          dispatcher?]{
@@ -156,14 +168,13 @@ URL path.
 }
 
 This is used in the standard @web-server pipeline to provide
-a URL that refreshes the password file, servlet cache, etc.
+a URL that refreshes the password file, servlet cache, etc.}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-log.ss"]{Logging}
-@require[(prefix-in log: (for-label web-server/dispatchers/dispatch-log))]
-
-@filepath{dispatchers/dispatch-log.ss} defines a dispatcher constructor
-for transparent logging of requests.
+@a-dispatcher[web-server/dispatchers/dispatch-log
+              @elem{defines a dispatcher constructor
+                    for transparent logging of requests.}]{
 
 @defthing[format-req/c contract?]{
  Equivalent to @scheme[(request? . -> . string?)].
@@ -209,14 +220,13 @@ for transparent logging of requests.
          dispatcher?]{
  Logs requests to @scheme[log-path] by using @scheme[format] to format the requests.
  Then invokes @scheme[next-dispatcher].
-}
+}}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-passwords.ss"]{Password Protection}
-@require[(prefix-in passwords: (for-label web-server/dispatchers/dispatch-passwords))]
-
-@filepath{dispatchers/dispatch-passwords.ss} defines a dispatcher constructor
-that performs HTTP Basic authentication filtering.
+@a-dispatcher[web-server/dispatchers/dispatch-passwords
+              @elem{defines a dispatcher constructor
+                    that performs HTTP Basic authentication filtering.}]{
 
 @defproc[(make [#:password-file password-file path-string? "passwords"]
                [#:authentication-responder
@@ -245,14 +255,13 @@ that performs HTTP Basic authentication filtering.
                     ...)]
  For example:
  @schemeblock['(("secret stuff" "/secret(/.*)?" (bubba "bbq") (|Billy| "BoB")))]
-}
+}}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-host.ss"]{Virtual Hosts}
-@require[(prefix-in host: (for-label web-server/dispatchers/dispatch-host))]
-
-@filepath{dispatchers/dispatch-host.ss} defines a dispatcher constructor
-that calls a different dispatcher based upon the host requested.
+@a-dispatcher[web-server/dispatchers/dispatch-host
+              @elem{defines a dispatcher constructor
+                    that calls a different dispatcher based upon the host requested.}]{
 
 @defproc[(make (lookup-dispatcher (symbol? . -> . dispatcher?)))
          dispatcher?]{
@@ -260,14 +269,13 @@ that calls a different dispatcher based upon the host requested.
  calls @scheme[lookup-dispatcher] with the host, and invokes the
  returned dispatcher. If no host can be extracted, then @scheme['none]
  is used.
-}
+}}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-files.ss"]{Serving Files}
-@require[(prefix-in files: (for-label web-server/dispatchers/dispatch-files))]
-
-@filepath{dispatchers/dispatch-files.ss} allows files to be served.
-It defines a dispatcher construction procedure:
+@a-dispatcher[web-server/dispatchers/dispatch-files
+             @elem{allows files to be served.
+                It defines a dispatcher construction procedure.}]{
 
 @defproc[(make [#:url->path url->path url->path?]
                [#:path->mime-type path->mime-type (path? . -> . bytes?) (lambda (path) TEXT/HTML-MIME-TYPE)]
@@ -281,14 +289,13 @@ It defines a dispatcher construction procedure:
  Type of the path. The file is then
  streamed out the connection object.
 
- This dispatcher supports HTTP Range GET requests and HEAD requests.}
+ This dispatcher supports HTTP Range GET requests and HEAD requests.}}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-servlets.ss"]{Serving Scheme Servlets}
-@require[(prefix-in servlets: (for-label web-server/dispatchers/dispatch-servlets))]
-
-@filepath{dispatchers/dispatch-servlets.ss} defines a dispatcher constructor
-that runs servlets written in Scheme.
+@a-dispatcher[web-server/dispatchers/dispatch-servlets
+              @elem{defines a dispatcher constructor
+                    that runs servlets written in Scheme.}]{
 
 @; XXX Remove config:scripts
 @defproc[(make [config:scripts (box/c cache-table?)]
@@ -324,14 +331,13 @@ that runs servlets written in Scheme.
  used to format a response with the exception.
 
  Servlets that do not specify timeouts are given timeouts according to @scheme[timeouts-default-servlet].
-}
+}}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-lang.ss"]{Serving Web Language Servlets}
-@require[(prefix-in lang: (for-label web-server/dispatchers/dispatch-lang))]
-
-@filepath{dispatchers/dispatch-lang.ss} defines a dispatcher constructor
-that runs servlets written in the Web Language.
+@a-dispatcher[web-server/dispatchers/dispatch-lang
+             @elem{defines a dispatcher constructor
+                   that runs servlets written in the Web Language.}]{
 
 @defproc[(make [#:url->path url->path url->path?]
                [#:make-servlet-namespace make-servlet-namespace
@@ -347,14 +353,13 @@ that runs servlets written in the Web Language.
  with the exception. If it succeeds, then @scheme[start] export of the module is invoked.
  If there is an error when a servlet is invoked, then @scheme[responders-servlet] is
  used to format a response with the exception.
-}
+}}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-stat.ss"]{Statistics}
-@require[(prefix-in stat: (for-label web-server/dispatchers/dispatch-stat))]
-
-@filepath{dispatchers/dispatch-stat.ss} provides services related to performance
-statistics.
+@a-dispatcher[web-server/dispatchers/dispatch-stat
+              @elem{provides services related to performance
+                    statistics.}]{
 
 @defproc[(make-gc-thread [time integer?])
          thread?]{
@@ -364,4 +369,4 @@ statistics.
 @defproc[(make)
          dispatcher?]{
  Returns a dispatcher that prints memory usage on every request.
-}
+}}

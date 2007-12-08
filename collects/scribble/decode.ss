@@ -175,7 +175,7 @@
        [(part-collect-decl? (car l))
         (loop (cdr l) next? keys (cons (part-collect-decl-element (car l)) colls) accum title tag-prefix tags style)]
        [(part-tag-decl? (car l))
-        (loop (cdr l) next? keys colls accum title tag-prefix (cons (part-tag-decl-tag (car l)) tags) style)]
+        (loop (cdr l) next? keys colls accum title tag-prefix (append tags (list (part-tag-decl-tag (car l)))) style)]
        [(and (pair? (cdr l))
 	     (splice? (cadr l)))
 	(loop (cons (car l) (append (splice-run (cadr l)) (cddr l))) next? keys colls accum title tag-prefix tags style)]
