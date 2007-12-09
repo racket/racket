@@ -48,4 +48,36 @@ This chapter provides some temporary hyper-link targets.
 
 @;------------------------------------------------------------------------
 
+@(bibliography
+
+  (bib-entry #:key "Sitaram93" 
+             #:title "Handling Control" 
+             #:author "Dorai Sitaram"
+             #:location "Programming Language Design and Implementation" 
+             #:date 1993)
+
+  (bib-entry #:key "Friedman95" 
+             #:title "Exception system proposal" 
+             #:author "Daniel P. Friedman, C. T. Haynes, and R. Kent Dybvig" 
+             #:location "web page"
+             #:url "http://www.cs.indiana.edu/scheme-repository/doc.proposals.exceptions.html"
+             #:date "1995")
+
+  (bib-entry #:key "SRFI-42"
+             #:title "SRFI-42: Eager Comprehensions"
+             #:author "Sebastian Egner"
+             #:location "SRFI"
+             #:url "http://srfi.schemers.org/srfi-42/"
+             #:date "2003")
+
+  (bib-entry #:key "Gasbichler02" 
+             #:title "Processes vs. User-Level Threads in Scsh" 
+             #:author "Martin Gasbichler and Michael Sperber" 
+             #:date 2002 
+             #:location "Scheme Workshop")
+
+  )
+
+@;------------------------------------------------------------------------
+
 @index-section[]

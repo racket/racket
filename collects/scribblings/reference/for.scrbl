@@ -6,11 +6,7 @@
 @guideintro["for"]{iterations and comprehensions}
 
 The PLT Scheme iteration forms are based on SRFI-42
-@cite[#:key "srfi-42"
-      #:title "SRFI-42: Eager Comprehensions"
-      #:author "Sebastian Egner"
-      #:location "http://srfi.schemers.org/srfi-42/"
-      #:date "2003"].
+@cite["SRFI-42"].
 
 @section{Iteration and Comprehension Forms}
 

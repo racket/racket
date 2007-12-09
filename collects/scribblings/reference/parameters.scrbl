@@ -5,9 +5,7 @@
 
 See @secref["parameter-model"] for basic information on the
 parameter model. Parameters correspond to @defterm{preserved thread
-fluids} in Scsh @cite[#:key "cite:thread-fluids" #:title "Processes
-vs. User-Level Threads in Scsh" #:author "Martin Gasbichler and
-Michael Sperber" #:date 2002 #:location "Scheme Workshop"].
+fluids} in Scsh @cite["Gasbichler02"].
 
 To parameterize code in a thread- and continuation-friendly manner,
 use @scheme[parameterize]. The @scheme[parameterize] form introduces a

@@ -419,6 +419,10 @@
                font-family: Consolas, Courier, monospace; font-size: 13px;
                }
 
+               .bibliography td { 
+                 vertical-align: top;
+               }
+
                .imageleft { 
                  float: left;
                  margin-right: 0.3em;

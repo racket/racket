@@ -1546,27 +1546,67 @@
 
   ;; ----------------------------------------
 
-  (provide cite)
+  (provide cite
+           bib-entry
+           (rename-out [a-bib-entry? bib-entry?])
+           bibliography)
 
-  (define (cite #:key key #:title title #:author author #:location location #:date date #:url [url #f])
-    "[...]"
-    #;
-    (make-bibliography-element
-    #f
-    (list "[...]")
-    key
-    (list (string-append
-    (content->string (list author))
-    ", "
-    (content->string (list title))))
-    (list (make-element #f (list author
-    ", "
-    title
-    ", "
-    date
-    ". "
-    location
-    ".")))))
+  (define (cite key)
+    (make-link-element
+     #f
+     (list (format "[~a]" key))
+     `(cite ,key)))
+
+  (define-struct a-bib-entry (key val))
+
+  (define (bib-entry #:key key #:title title #:author author #:location location #:date date #:url [url #f])
+    (make-a-bib-entry
+     key
+     (make-element
+      #f
+      (list author
+            ", "
+            'ldquo
+            title
+            "," 'rdquo " "
+            location
+            ", "
+            date
+            "."
+            (if url
+                (make-element #f
+                              (list " "
+                                    (link url
+                                          (tt url))))
+                "")))))
+
+  (define (bibliography #:tag [tag "doc-bibliography"] . citations)
+    (make-unnumbered-part
+     #f
+     (list `(part ,tag))
+     (list "Bibliography")
+     '()
+     null
+     (make-flow
+      (list
+       (make-table
+        "bibliography"
+        (map (lambda (c)
+               (let ([key (a-bib-entry-key c)]
+                     [val (a-bib-entry-val c)])
+                 (list
+                  (make-flow
+                   (list
+                    (make-paragraph
+                     (list
+                      (make-target-element 
+                       #f
+                       (list "[" key "]")
+                       `(cite ,key))))))
+                  (make-flow (list (make-paragraph (list (hspace 1)))))
+                  (make-flow (list (make-paragraph (list val)))))))
+             citations))))
+     null))
 
   ;; ----------------------------------------
 

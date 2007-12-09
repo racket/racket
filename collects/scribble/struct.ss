@@ -50,13 +50,24 @@
     (let-values ([(v ext?) (resolve-get/where part ri key)])
       v))
 
+  (define (resolve-get-keys part ri key-pred)
+    (let ([l null])
+      (hash-table-for-each 
+       (collected-info-info 
+        (part-collected-info part ri))
+       (lambda (k v)
+         (when (key-pred k)
+           (set! l (cons k l)))))
+      l))
+
   (provide 
    (struct-out collect-info)
    (struct-out resolve-info)
    part-collected-info
    collect-put!
    resolve-get
-   resolve-get/tentative)
+   resolve-get/tentative
+   resolve-get-keys)
 
   ;; ----------------------------------------
 

@@ -691,6 +691,65 @@ key for the index iterm does not include quotes.}
 combination of @scheme[envvar] and @scheme[as-index].}
 
 @; ------------------------------------------------------------------------
+@section{Bibliography}
+
+@defproc[(cite [key string?]) element?]{
+
+Links to a bibliography entry, using @scheme[key] both to indicate the
+bibliography entry and, in square brackets, as the link text.}
+
+@defproc[(bibliography [#:tag string? "doc-bibliography"]
+                       [entry bib-entry?] ...)
+         part?]{
+
+Creates a bibliography part containing the given entries, each of
+which is created with @scheme[bib-entry]. The entries are typeset in
+order as given}
+
+@defproc[(bib-entry [#:key key string?]
+                    [#:title title any/c]
+                    [#:author author any/c]
+                    [#:location location any/c]
+                    [#:date date any/c] 
+                    [#:url url any/c #f])
+         bib-entry?]{
+
+Creates a bibliography entry. The @scheme[key] is used to refer to the
+entry via @scheme[cite]. The other arguments are used as elements in
+the entry:
+
+@itemize{
+
+ @item{@scheme[title] is the title of the cited work. It will be
+       surrounded by quotes in typeset form.}
+
+ @item{@scheme[author] lists the authors. Use names in their usual
+       order (as opposed to ``last, first''), and separate multiple
+       names with commas using ``and'' before the last name (where
+       there are multiple names). The @scheme[author] is typeset in
+       the bibliography as given.}
+
+ @item{@scheme[location] names the publication venue, such as a
+       conference name or a journal with volume, number, and
+       pages. The @scheme[location] is typeset in the bibliography as
+       given.}
+
+ @item{@scheme[date] is a date, usually just a year (as a string). It
+       is typeset in the bibliography as given.}
+
+ @item{@scheme[url] is an optional URL. It is typeset in the
+       bibliography using @scheme[tt] and hyperlinked.}
+
+}}
+
+
+@defproc[(bib-entry? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a bibliography entry created by
+@scheme[bib-entry], @scheme[#f] otherwise.}
+
+
+@; ------------------------------------------------------------------------
 @section{Miscellaneous}
 
 @defthing[PLaneT string?]{@scheme["PLaneT"] (to help make sure you get

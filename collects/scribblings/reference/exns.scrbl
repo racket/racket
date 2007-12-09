@@ -4,12 +4,9 @@
 
 @title[#:tag "exns"]{Exceptions}
 
-See @secref["exn-model"] for information on the PLT Scheme
-exception model. It is based on @cite[#:key "friedman-exns" #:title
-"Exception system proposal" #:author "Daniel P. Friedman and
-C. T. Haynes and R. Kent Dybvig" #:location
-"http://www.cs.indiana.edu/scheme-repository/doc.proposals.exceptions.html"
-#:date ""].
+See @secref["exn-model"] for information on the PLT Scheme exception
+model. It is based on a proposal by Friedman, Haynes, and Dybvig
+@cite["Friedman95"].
 
 Whenever a primitive error occurs in PLT Scheme, an exception is
 raised.  The value that is passed to the current @tech{exception
