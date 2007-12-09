@@ -1,0 +1,209 @@
+#lang scribble/doc
+@(require "utils.ss")
+
+@title[#:tag "config"]{Parameterizations}
+
+A @defterm{parameterization} is a set of parameter values. Each thread
+has its own initial parameterization, which is extended functionally
+and superseded by parameterizations that are attached to a particular
+continuation mark.
+
+Parameterization information is stored in a @cppi{Scheme_Config}
+record. For the currently executing thread,
+@cppi{scheme_current_config} returns the current parameterization.
+
+To obtain parameter values, a @cpp{Scheme_Config} is combined with the
+current threads @cpp{Scheme_Thread_Cell_Table}, as stored in the
+thread record's @cpp{cell_values} field.
+
+Parameter values for built-in parameters are obtained and modified
+(for the current thread) using @cppi{scheme_get_param} and
+@cppi{scheme_set_param}. Each parameter is stored as a
+@cpp{Scheme_Object *} value, and the built-in parameters are accessed
+through the following indices:
+
+@itemize{
+@item{@cppi{MZCONFIG_ENV} --- @scheme[current-namespace] (use @cppi{scheme_get_env})}
+@item{@cppi{MZCONFIG_INPUT_PORT} --- @scheme[current-input-port]}
+@item{@cppi{MZCONFIG_OUTPUT_PORT} ---  @scheme[current-output-port]}
+@item{@cppi{MZCONFIG_ERROR_PORT} ---  @scheme[current-error-port]}
+
+@item{@cppi{MZCONFIG_ERROR_DISPLAY_HANDLER} --- @scheme[error-display-handler]}
+@item{@cppi{MZCONFIG_ERROR_PRINT_VALUE_HANDLER} --- @scheme[error-value->string-handler]}
+
+@item{@cppi{MZCONFIG_EXIT_HANDLER} --- @scheme[exit-handler]}
+
+@item{@cppi{MZCONFIG_INIT_EXN_HANDLER} ---  @scheme[uncaught-exception-handler]}
+
+@item{@cppi{MZCONFIG_EVAL_HANDLER} --- @scheme[current-eval]}
+@item{@cppi{MZCONFIG_LOAD_HANDLER} --- @scheme[current-load]}
+
+@item{@cppi{MZCONFIG_PRINT_HANDLER} --- @scheme[current-print]}
+@item{@cppi{MZCONFIG_PROMPT_READ_HANDLER} --- @scheme[current-prompt-read]}
+
+@item{@cppi{MZCONFIG_CAN_READ_GRAPH} --- @scheme[read-accept-graph]}
+@item{@cppi{MZCONFIG_CAN_READ_COMPILED} --- @scheme[read-accept-compiled]}
+@item{@cppi{MZCONFIG_CAN_READ_BOX} --- @scheme[read-accept-box]}
+@item{@cppi{MZCONFIG_CAN_READ_PIPE_QUOTE} --- @scheme[read-accept-bar-quote]}
+
+@item{@cppi{MZCONFIG_PRINT_GRAPH} --- @scheme[print-graph]}
+@item{@cppi{MZCONFIG_PRINT_STRUCT} --- @scheme[print-struct]}
+@item{@cppi{MZCONFIG_PRINT_BOX} --- @scheme[print-box]}
+
+@item{@cppi{MZCONFIG_CASE_SENS} --- @scheme[read-case-sensitive]}
+@item{@cppi{MZCONFIG_SQUARE_BRACKETS_ARE_PARENS} --- @scheme[read-square-brackets-as-parens]}
+@item{@cppi{MZCONFIG_CURLY_BRACES_ARE_PARENS} --- @scheme[read-curly-braces-as-parens]}
+
+@item{@cppi{MZCONFIG_ERROR_PRINT_WIDTH} --- @scheme[error-print-width]}
+
+@item{@cppi{MZCONFIG_ALLOW_SET_UNDEFINED} --- @scheme[allow-compile-set!-undefined]}
+
+@item{@cppi{MZCONFIG_CUSTODIAN} --- @scheme[current-custodian]}
+
+@item{@cppi{MZCONFIG_USE_COMPILED_KIND} --- @scheme[use-compiled-file-paths]}
+
+@item{@cppi{MZCONFIG_LOAD_DIRECTORY} --- @scheme[current-load-relative-directory]}
+
+@item{@cppi{MZCONFIG_COLLECTION_PATHS} --- @scheme[current-library-collection-paths]}
+
+@item{@cppi{MZCONFIG_PORT_PRINT_HANDLER} --- @scheme[global-port-print-handler]}
+
+@item{@cppi{MZCONFIG_LOAD_EXTENSION_HANDLER} --- @scheme[current-load-extension]}
+
+}
+
+To get or set a parameter value for a thread other than the current
+one, use @cppi{scheme_get_thread_param} and
+@cppi{scheme_set_thread_param}, each of which takes a
+@cpp{Scheme_Thread_Cell_Table} to use in resolving or setting a
+parameter value.
+
+When installing a new parameter with @cpp{scheme_set_param}, no check
+is performed on the supplied value to ensure that it is a legal value
+for the parameter; this is the responsibility of the caller of
+@cpp{scheme_set_param}. Note that Boolean parameters should only be
+set to the values @scheme[#t] and @scheme[#f].
+
+New primitive parameter indices are created with
+@cppi{scheme_new_param} and implemented with
+@cppi{scheme_make_parameter} and @cppi{scheme_param_config}.
+
+@; ----------------------------------------------------------------------
+
+@function[(Scheme_Object* scheme_get_param
+           [Scheme_Config* config]
+           [int param_id])]{
+
+Gets the current value (for the current thread) of the parameter
+ specified by @var{param_id}.}
+
+@function[(Scheme_Object* scheme_set_param
+           [Scheme_Config* config]
+           [int param_id]
+           [Scheme_Object* v])]{
+
+Sets the current value (for the current thread) of the parameter
+ specified by @var{param_id}.}
+
+@function[(Scheme_Object* scheme_get_thread_param
+           [Scheme_Config* config]
+           [Scheme_Thread_Cell_Table* cells]
+           [int param_id])]{
+
+Like @cpp{scheme_get_param}, but using an arbitrary thread's
+cell-value table.}
+
+@function[(Scheme_Object* scheme_set_thread_param
+           [Scheme_Config* config]
+           [Scheme_Thread_Cell_Table* cells]
+           [int param_id]
+           [Scheme_Object* v])]{
+
+Like @cpp{scheme_set_param}, but using an arbitrary thread's
+ cell-value table.}
+
+@function[(Scheme_Object* scheme_extend_config
+           [Scheme_Config* base]
+           [int param_id]
+           [Scheme_Object* v])]{
+
+Creates and returns a parameterization that extends @var{base} with a
+ new value @var{v} (in all threads) for the parameter
+ @var{param_id}. Use @cpp{scheme_install_config} to make this
+ configuration active in the current thread.}
+
+@function[(void scheme_install_config
+           [Scheme_Config* config])]{
+
+Adjusts the current thread's continuation marks to make @var{config}
+ the current parameterization. Typically, this function is called
+ after @cpp{scheme_push_continuation_frame} to establish a new
+ continuation frame, and then @cpp{scheme_pop_continuation_frame}
+ is called later to remove the frame (and thus the parameterization).}
+
+@function[(Scheme_Thread_Cell_Table* scheme_inherit_cells
+           [Scheme_Thread_Cell_Table* cells])]{
+
+Creates a new thread-cell-value table, copying values for preserved
+ thread cells from @var{cells}.}
+
+@function[(int scheme_new_param)]{
+
+Allocates a new primitive parameter index. This function must be
+ called @italic{before} @cppi{scheme_basic_env}, so it is only
+ available to embedding applications (i.e., not extensions).}
+
+@function[(Scheme_Object* scheme_register_parameter
+           [Scheme_Prim* function]
+           [char* name]
+           [int exnid])]{
+
+Use this function instead of the other primitive-constructing
+ functions, like @cpp{scheme_make_prim}, to create a primitive
+ parameter procedure. See also @cpp{scheme_param_config}, below.
+ This function is only available to embedding applications (i.e., not
+ extensions).}
+
+@function[(Scheme_Object* scheme_param_config
+           [char* name]
+           [Scheme_Object* param]
+           [int argc]
+           [Scheme_Object** argv]
+           [int arity]
+           [Scheme_Prim* check]
+           [char* expected]
+           [int isbool])]{
+
+Call this procedure in a primitive parameter procedure to implement
+ the work of getting or setting the parameter. The @var{name} argument
+ should be the parameter procedure name; it is used to report
+ errors. The @var{param} argument is a fixnum corresponding to the
+ primitive parameter index returned by @cpp{scheme_new_param}.  The
+ @var{argc} and @var{argv} arguments should be the un-touched and
+ un-tested arguments that were passed to the primitive parameter.
+ Argument-checking is performed within @cpp{scheme_param_config}
+ using @var{arity}, @var{check}, @var{expected}, and @var{isbool}:
+
+@itemize{
+
+ @item{If @var{arity} is non-negative, potential parameter values must
+ be able to accept the specified number of arguments. The @var{check}
+ and @var{expected} arguments should be @cpp{NULL}.}
+
+ @item{If @var{check} is not @cpp{NULL}, it is called to check a
+ potential parameter value. The arguments passed to @var{check} are
+ always @cpp{1} and an array that contains the potential parameter
+ value. If @var{isbool} is @cpp{0} and @var{check} returns
+ @cpp{scheme_false}, then a type error is reported using @var{name}
+ and @var{expected}. If @var{isbool} is @cpp{1}, then a type error is
+ reported only when @var{check} returns @cpp{NULL} and any
+ non-@cpp{NULL} return value is used as the actual value to be stored
+ for the parameter.}
+
+ @item{Otherwise, @var{isbool} should be 1. A potential procedure
+ argument is then treated as a Boolean value.}
+
+}
+
+ This function is only available to embedding applications (i.e., not
+ extensions).}

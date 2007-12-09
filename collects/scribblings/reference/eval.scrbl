@@ -165,11 +165,12 @@ handler}.
 
 An @tech{extension-load handler} takes the same arguments as a
 @tech{load handler}, but the file should be a platform-specific
-@deftech{dynamic extension}, typically with the file suffix @filepath{.so}
-(Unix), @filepath{.dll} (Windows), or @filepath{.dylib} (Mac OS X).  The file
-is loaded using internal, OS-specific primitives. See
-@secref["inside-mzscheme"] for more information on @tech{dynamic
-extensions}.}
+@deftech{dynamic extension}, typically with the file suffix
+@filepath{.so} (Unix), @filepath{.dll} (Windows), or @filepath{.dylib}
+(Mac OS X).  The file is loaded using internal, OS-specific
+primitives. See @italic{@secref[#:doc '(lib
+"scribblings/inside/inside.scrbl") "top"]} for more information on
+@tech{dynamic extensions}.}
 
 
 @defproc[(load-extension [file path-string?]) any]{

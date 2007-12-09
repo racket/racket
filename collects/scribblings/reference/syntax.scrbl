@@ -142,11 +142,12 @@ which must be bound as a @tech{top-level variable} or
 @tech{module-level variable}.
 
 The result is useful to low-level extensions; see
-@secref["inside-mzscheme"]. It can also be used with
+@italic{@secref[#:doc '(lib "scribblings/inside/inside.scrbl")
+"top"]}. It can also be used with
 @scheme[variable-reference->empty-namespace],
 @scheme[variable-reference->resolved-module-path], and
-@scheme[variable-reference->top-level-namespace], but facilities
-like @scheme[define-namespace-anchor] and
+@scheme[variable-reference->top-level-namespace], but facilities like
+@scheme[define-namespace-anchor] and
 @scheme[namespace-anchor->namespace] wrap those to provide an clearer
 interface.}
 

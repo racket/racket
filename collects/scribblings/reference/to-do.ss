@@ -5,6 +5,4 @@
   (define list-mutable/c #t)
   (define cons-mutable/c #t)
 
-  (define arity? #f)
-
   (provide (all-defined)))

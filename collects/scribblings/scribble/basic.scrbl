@@ -171,16 +171,18 @@ Like @scheme[index], but the word to index is determined by applying
 @scheme[content->string] on the parsed @scheme[pre-content] list.}
 
 
-@defproc[(section-index [word string?] ...)]{
+@defproc[(section-index [word string?] ...)
+         part-index-decl?]{
 
 Creates a @scheme[part-index-decl] to be associated with the enclosing
 section by @scheme[decode]. The @scheme[word]s serve as both the keys
 and as the rendered forms of the keys.}
 
 
-@defproc[(index-section [#:tag tag (or/c false/c string?) "doc-index"])]{
+@defproc[(index-section [#:tag tag (or/c false/c string?) "doc-index"])
+         part?]{
 
-Produces a section that shows the index the enclosing document. The
+Produces a part that shows the index the enclosing document. The
 optional @scheme[tag] argument is used as the index section's tag.}
 
 
