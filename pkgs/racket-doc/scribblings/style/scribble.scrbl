@@ -1,6 +1,7 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require["utils.ss"]
+@(require scribble/manual
+          "utils.ss"
+          (for-label scribble/manual))
 
 @title[#:tag "reference-style"]{Style Guide}
 
@@ -48,3 +49,6 @@ Use American style for quotation marks and punctuation at the end of
 quotation marks (i.e., a sentence-terminating period goes inside the
 quotation marks). Of course, this rule does not apply for quotation
 marks that are part of code.
+
+Do not use a citation reference (as created by @scheme[cite]) as a
+noun. Use it as an annotation.
