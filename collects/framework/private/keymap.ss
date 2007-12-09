@@ -947,6 +947,34 @@
               (send text lock #t)
               #t)]
            
+           [TeX-compress
+            (let* ([shortcut-table
+                    '(("lambda" "λ")
+                      ("forall" "\u2200")
+                      ("exists" "\u2203")
+                      ("in" "\u2208")
+                      ("Sigma" "\u2211")
+                      ("Pi" "\u220f")
+                      ("leq" "\u2264")
+                      ("geq" "\u2265")
+                      ("infty" "\u221e")
+                      ("leftarrow" "\u2190")
+                      ("rightarrow" "\u2192")
+                      ("Leftarrow" "\u21d0")
+                      ("Rightarrow" "\u21d2"))]
+                   [biggest (apply max (map (λ (x) (string-length (car x))) shortcut-table))])
+              (λ (text event)
+                (let ([pos (send text get-start-position)])
+                  (when (= pos (send text get-end-position))
+                    (let ([slash (send text find-string "\\" 'backward pos (max 0 (- pos biggest 1)))])
+                      (when slash
+                        (let ([to-replace (assoc (send text get-text slash pos) shortcut-table)])
+                          (when to-replace
+                            (send text begin-edit-sequence)
+                            (send text delete (- slash 1) pos)
+                            (send text insert (cadr to-replace))
+                            (send text end-edit-sequence)))))))))]
+           
            [greek-letters "αβγδεζηθι κλμνξοπρςστυφχψω"]
            [Greek-letters "ΑΒΓΔΕΖΗΘΙ ΚΛΜΝΞΟΠΡ ΣΤΥΦΧΨΩ"]) ;; don't have a capital ς, just comes out as \u03A2 (or junk) 
       
@@ -968,6 +996,8 @@
                (add (format "insert ~a" c) 
                     (λ (txt evt) (send txt insert c)))))
            (string->list (string-append greek-letters Greek-letters)))
+          
+          (add "TeX compress" TeX-compress)
           
           (add "down-into-embedded-editor" down-into-embedded-editor)
           (add "up-out-of-embedded-editor" up-out-of-embedded-editor)
@@ -1061,6 +1091,8 @@
                        (loop (+ i 1)))))])
             (setup-mappings greek-letters #f)
             (setup-mappings Greek-letters #t))
+          
+          (map "c:\\" "TeX compress")
           
           (map-meta "c:down" "down-into-embedded-editor")
           (map "a:c:down" "down-into-embedded-editor")
