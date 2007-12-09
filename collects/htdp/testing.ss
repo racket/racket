@@ -169,32 +169,36 @@
   (define (update-failed-checks failure) (set! failed-check (cons failure failed-check)))
 
   (define (generate-report)
-    (let* ([num-failed-tests (length failed-check)]
-           [my-text (new (editor:standard-style-list-mixin text%))]
-           [my-frame (new frame% [label "Test Results"][width 300] [height 200])]
-           [my-editor (new editor-canvas% [editor my-text] [parent my-frame]
-                           [style '(auto-hscroll auto-vscroll)])])
-      (send my-text insert 
-            (format "Recorded ~a check~a. ~a"
-                    num-checks
-                    (if (= 1 num-checks) "" "s")
-                    (if (= num-failed-tests 0)
-                        "All checks succeeded!"
-                        (format "~a check~a failed."
-                                num-failed-tests (if (= 1 num-failed-tests) "" "s")))))
-      (unless (null? failed-check)
-        (send my-text insert "\n")
-        (for-each (lambda (f) (report-check-failure f my-text)) 
-                  (reverse failed-check))
-        (send my-frame resize 
-              (min (+ 300 (* 5 (send my-text line-end-position num-failed-tests #f))) 1000)
-              (min (+ 200 (* 5 num-failed-tests)) 1000)))
-      (send my-text move-position 'home)
-      (send my-text lock #t)
-      (send my-frame show #t)
+    (let* ([num-failed-tests (length failed-check)])
+      (cond
+        [(zero? num-failed-tests)
+         (fprintf (current-error-port) "All checks succeeded!\n")]
+        [else
+         (let* ([my-text (new (editor:standard-style-list-mixin text%))]
+                [my-frame (new frame% [label "Test Results"][width 300] [height 200])]
+                [my-editor (new editor-canvas% [editor my-text] [parent my-frame]
+                                [style '(auto-hscroll auto-vscroll)])])
+           (send my-text insert 
+                 (format "Recorded ~a check~a. ~a"
+                         num-checks
+                         (if (= 1 num-checks) "" "s")
+                         (format "~a check~a failed."
+                                 num-failed-tests 
+                                 (if (= 1 num-failed-tests) 
+                                     ""
+                                     "s"))))
+           (unless (null? failed-check)
+             (send my-text insert "\n")
+             (for-each (lambda (f) (report-check-failure f my-text)) 
+                       (reverse failed-check))
+             (send my-frame resize 
+                   (min (+ 300 (* 5 (send my-text line-end-position num-failed-tests #f))) 1000)
+                   (min (+ 200 (* 5 num-failed-tests)) 1000)))
+           (send my-text move-position 'home)
+           (send my-text lock #t)
+           (send my-frame show #t))])
       #t))
     
-  
   (define (report-check-failure fail text)
     (make-link text (check-fail-src fail))
     (send text insert "\n   ")
@@ -262,40 +266,8 @@
         (send text change-style c start end #f))))
     
   (define (open-and-highlight-in-file srcloc)
-    (let* ([position (src-pos srcloc)]
-           [span (src-span srcloc)]
-           [rep/ed (get-editor srcloc #t)])
-      (when rep/ed
-        (let ((highlight
-               (lambda ()
-                 (send (car rep/ed) highlight-error (cadr rep/ed) position (+ position span)))))
-          (queue-callback highlight)))))
-  
-  (define (get-editor src rep?)
-    (let* ([source (src-file src)]
-           [frame (cond
-                    [(path? source) (handler:edit-file source)]
-                    [(is-a? source editor<%>)
-                     (let ([canvas (send source get-canvas)])
-                       (and canvas
-                            (send canvas get-top-level-window)))])]
-           [editor (cond
-                     [(path? source)
-                      (cond
-                        [(and frame (is-a? frame #;drscheme:unit:frame<%>))
-                         (send frame get-definitions-text)]
-                        [(and frame (is-a? frame frame:editor<%>))
-                         (send frame get-editor)]
-                        [else #f])]
-                     [(is-a? source editor<%>) source])]
-           [rep (and frame 
-                     #;(is-a? frame drscheme:unit:frame%)
-                     (send frame get-interactions-text))])
-      (when frame 
-        (unless (send frame is-shown?) (send frame show #t)))
-      (if (and rep? rep editor) 
-          (list rep editor)
-          (and rep editor))))
+    ;; the code here did not work properly. Need tool-level integration to make this work. -robby
+    (void))
   
   (define (format-src src)
     (string-append (cond
