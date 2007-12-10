@@ -1099,6 +1099,7 @@
             (setup-mappings Greek-letters #t))
           
           (map "c:\\" "TeX compress")
+          (map "m:\\" "TeX compress")
           
           (map-meta "c:down" "down-into-embedded-editor")
           (map "a:c:down" "down-into-embedded-editor")
