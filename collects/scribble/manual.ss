@@ -227,7 +227,7 @@
            verbatim)
 
   (provide image onscreen menuitem defterm
-           schemefont schemevalfont schemeresultfont schemeidfont 
+           schemefont schemevalfont schemeresultfont schemeidfont schemevarfont 
            schemeparenfont schemekeywordfont schememetafont schememodfont
            filepath exec envvar Flag DFlag
            indexed-file indexed-envvar
@@ -259,6 +259,8 @@
     (make-element "schemeresult" (decode-content str)))
   (define (schemeidfont . str)
     (make-element "schemesymbol" (decode-content str)))
+  (define (schemevarfont . str)
+    (make-element "schemevariable" (decode-content str)))
   (define (schemeparenfont . str)
     (make-element "schemeparen" (decode-content str)))
   (define (schememetafont . str)
@@ -436,7 +438,7 @@
   ;; ----------------------------------------
 
   (provide declare-exporting
-           defproc defproc* defstruct defthing defparam defboolparam
+           defproc defproc* defstruct defthing defthing* defparam defboolparam
            defform defform* defform/subs defform*/subs defform/none
            defidform
            specform specform/subs 
@@ -671,7 +673,13 @@
   (define-syntax defthing
     (syntax-rules ()
       [(_ id result desc ...)
-       (*defthing (quote-syntax/loc id) 'id #f (schemeblock0 result) (lambda () (list desc ...)))]))
+       (*defthing (list (quote-syntax/loc id)) (list 'id) #f (list (schemeblock0 result)) 
+                  (lambda () (list desc ...)))]))
+  (define-syntax defthing*
+    (syntax-rules ()
+      [(_ ([id result] ...) desc ...)
+       (*defthing (list (quote-syntax/loc id) ...) (list 'id ...) #f (list (schemeblock0 result) ...) 
+                  (lambda () (list desc ...)))]))
   (define-syntax defparam
     (syntax-rules ()
       [(_ id arg contract desc ...)
@@ -1285,42 +1293,43 @@
              fields field-contracts)))
       (content-thunk))))
 
-  (define (*defthing stx-id name form? result-contract content-thunk)
+  (define (*defthing stx-ids names form? result-contracts content-thunk)
     (define spacer (hspace 1))
     (make-splice
      (cons
       (make-table
        'boxed
-       (list
-        (list
-         (make-flow
-          (make-table-if-necessary
-           "argcontract"
-           (list
-            (list (make-flow
-                   (list
-                    (make-paragraph
-                     (list (let ([tag ((if form? id-to-form-tag id-to-tag) stx-id)]
-                                 [content (list (definition-site name stx-id form?))])
-                             (if tag
-                                 (make-toc-target-element
-                                  #f
-                                  (list (make-index-element #f
-                                                            content
-                                                            tag
-                                                            (list (symbol->string name))
-                                                            content
-                                                            (with-exporting-libraries
-                                                             (lambda (libs)
-                                                               (make-thing-index-desc name libs)))))
-                                  tag)
-                                 (car content)))
-                           spacer ":" spacer))))
-                  (make-flow
-                   (list
-                    (if (flow-element? result-contract)
-                        result-contract
-                        (make-paragraph (list result-contract))))))))))))
+       (map (lambda (stx-id name result-contract)
+              (list
+               (make-flow
+                (make-table-if-necessary
+                 "argcontract"
+                 (list
+                  (list (make-flow
+                         (list
+                          (make-paragraph
+                           (list (let ([tag ((if form? id-to-form-tag id-to-tag) stx-id)]
+                                       [content (list (definition-site name stx-id form?))])
+                                   (if tag
+                                       (make-toc-target-element
+                                        #f
+                                        (list (make-index-element #f
+                                                                  content
+                                                                  tag
+                                                                  (list (symbol->string name))
+                                                                  content
+                                                                  (with-exporting-libraries
+                                                                   (lambda (libs)
+                                                                     (make-thing-index-desc name libs)))))
+                                        tag)
+                                       (car content)))
+                                 spacer ":" spacer))))
+                        (make-flow
+                         (list
+                          (if (flow-element? result-contract)
+                              result-contract
+                              (make-paragraph (list result-contract)))))))))))
+            stx-ids names result-contracts))
       (content-thunk))))
 
   (define (meta-symbol? s) (memq s '(... ...+ ?)))
@@ -2055,7 +2064,10 @@
     (make-sig-desc l))
 
   (define (*defsignature stx-id supers body-thunk indent?)
-    (*defthing stx-id (syntax-e stx-id) #t (make-element #f '("signature"))
+    (*defthing (list stx-id)
+               (list (syntax-e stx-id))
+               #t 
+               (list (make-element #f '("signature")))
                (lambda ()
                  (let ([in (parameterize ([current-signature (make-sig
                                                               (id-to-form-tag stx-id))])
