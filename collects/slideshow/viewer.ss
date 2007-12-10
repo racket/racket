@@ -4,6 +4,7 @@
            scheme/unit
 	   scheme/contract
 	   scheme/list
+           scheme/path
            scheme/file
 	   mred
 	   (lib "mrpict.ss" "texpict")

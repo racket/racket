@@ -7,7 +7,7 @@
            "../gui-utils.ss"
            (lib "mred-sig.ss" "mred")
            (lib "list.ss")
-           scheme/file)
+           scheme/path)
   
   (import mred^
           [prefix application: framework:application^]

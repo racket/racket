@@ -510,6 +510,23 @@
         "bad argument form"
         #'arg)]))
 
+  (define-syntax (arg-default stx)
+    (syntax-case stx (... ...+ _...superclass-args...)
+      [(_ [id contract])
+       (identifier? #'id)
+       #'#f]
+      [(_ [id contract val])
+       (identifier? #'id)
+       #'(schemeblock0 val)]
+      [(_ [kw id contract])
+       (keyword? (syntax-e #'kw))
+       #'#f]
+      [(_ [kw id contract val])
+       (keyword? (syntax-e #'kw))
+       #'(schemeblock0 val)]
+      [else
+       #'#f]))
+
   (define-syntax defproc 
     (syntax-rules ()
       [(_ (id arg ...) result desc ...)
@@ -523,6 +540,7 @@
                  (list (quote-syntax/loc id) ...)
                  '[(id arg ...) ...] 
                  (list (list (lambda () (arg-contract arg)) ...) ...)
+                 (list (list (lambda () (arg-default arg)) ...) ...)
                  (list (lambda () (schemeblock0 result)) ...)
                  (lambda () (list desc ...)))]))
   (define-syntax defstruct
@@ -745,7 +763,7 @@
         (or (get-exporting-libraries render part ri) null)))))
     
   (define (*defproc mode within-id
-                    stx-ids prototypes arg-contractss result-contracts content-thunk)
+                    stx-ids prototypes arg-contractss arg-valss result-contracts content-thunk)
     (let ([spacer (hspace 1)]
           [has-optional? (lambda (arg)
                            (and (pair? arg)
@@ -803,7 +821,7 @@
            (apply 
             append
             (map 
-             (lambda (stx-id prototype arg-contracts result-contract first?)
+             (lambda (stx-id prototype arg-contracts arg-vals result-contract first?)
                (let*-values ([(required optional more-required)
                               (let loop ([a (cdr prototype)][r-accum null])
                                 (if (or (null? a)
@@ -992,7 +1010,7 @@
                                               (list end)))))
                       null)
                   (apply append
-                         (map (lambda (v arg-contract)
+                         (map (lambda (v arg-contract arg-val)
                                 (cond
                                  [(pair? v)
                                   (let* ([v (if (keyword? (car v)) 
@@ -1001,8 +1019,9 @@
                                          [arg-cont (arg-contract)]
                                          [base-len (+ 5 (string-length (symbol->string (car v)))
                                                       (flow-element-width arg-cont))]
+                                         [arg-val (and arg-val (arg-val))]
                                          [def-len (if (has-optional? v)
-                                                      (string-length (format "~a" (caddr v)))
+                                                      (flow-element-width arg-val)
                                                       0)]
                                          [base-list
                                           (list
@@ -1028,7 +1047,7 @@
                                                (to-flow spacer)
                                                (to-flow "=")
                                                (to-flow spacer)
-                                               (to-flow (to-element (caddr v)))))))
+                                               (make-flow (list arg-val))))))
                                            (make-table-if-necessary
                                             "argcontract"
                                             (list
@@ -1039,14 +1058,16 @@
                                                   (list (to-flow spacer)
                                                         (to-flow "=")
                                                         (to-flow spacer)
-                                                        (to-flow (to-element (caddr v))))
+                                                        (make-flow (list arg-val)))
                                                   null)))))))))]
                                  [else null]))
                               (cdr prototype)
-                              arg-contracts)))))
+                              arg-contracts
+                              arg-vals)))))
              stx-ids
              prototypes
              arg-contractss
+             arg-valss
              result-contracts
              (let loop ([ps prototypes][accum null])
                (cond

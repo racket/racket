@@ -1,6 +1,7 @@
 
 (module distribute scheme/base
   (require scheme/file
+           scheme/path
            (lib "dirs.ss" "setup")
 	   (lib "list.ss")
 	   (lib "variant.ss" "setup")

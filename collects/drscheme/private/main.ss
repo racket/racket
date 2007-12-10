@@ -11,7 +11,7 @@
            (prefix-in print-convert: (lib "pconvert.ss"))
            (lib "include.ss")
            (lib "list.ss")
-           scheme/file
+           scheme/path
            (lib "external.ss" "browser")
            (lib "plt-installer.ss" "setup"))
   

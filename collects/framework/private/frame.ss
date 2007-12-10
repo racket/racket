@@ -8,7 +8,7 @@
            "bday.ss"
            (lib "mred-sig.ss" "mred")
            (lib "list.ss")
-           scheme/file
+           scheme/path
            (lib "etc.ss"))
   
   (import mred^

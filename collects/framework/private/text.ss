@@ -9,7 +9,7 @@ WARNING: printf is rebound in the body of the unit to always
   (require (lib "string-constant.ss" "string-constants")
            (lib "class.ss")
            (lib "match.ss")
-           scheme/file
+           scheme/path
            "sig.ss"
            "../gui-utils.ss"
            "../preferences.ss"

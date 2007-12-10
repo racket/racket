@@ -2,6 +2,7 @@
 (module html-render scheme/base
   (require "struct.ss"
            scheme/class
+           scheme/path
            scheme/file
            mzlib/runtime-path
            setup/main-doc

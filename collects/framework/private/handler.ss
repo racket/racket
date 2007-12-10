@@ -7,7 +7,7 @@
            "../preferences.ss"
            "../gui-utils.ss"
            (lib "mred-sig.ss" "mred")
-           scheme/file
+           scheme/path
            (lib "string-constant.ss" "string-constants"))
   
   

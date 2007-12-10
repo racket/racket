@@ -9,6 +9,8 @@
            scheme/tcp
            scheme/udp
            scheme/list
+           scheme/path
+           scheme/file
            (for-syntax scheme/base))
 
   (provide (all-from-out scheme/contract
@@ -21,5 +23,7 @@
                          scheme/base
                          scheme/tcp
                          scheme/udp
-                         scheme/list)
+                         scheme/list
+                         scheme/path
+                         scheme/file)
            (for-syntax (all-from-out scheme/base))))

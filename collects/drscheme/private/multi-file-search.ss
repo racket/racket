@@ -4,6 +4,7 @@
            (lib "class.ss")
            (lib "mred.ss" "mred")
            scheme/file
+           scheme/path
            (lib "thread.ss")
            (lib "async-channel.ss")
            (lib "string-constant.ss" "string-constants")

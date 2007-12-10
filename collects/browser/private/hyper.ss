@@ -32,6 +32,7 @@ A test case:
 
 (require (lib "class.ss")
          "sig.ss"
+         scheme/path
          scheme/file
          (lib "url-sig.ss" "net")
          (lib "url-structs.ss" "net")

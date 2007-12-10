@@ -15,7 +15,7 @@ module browser threading seems wrong.
   (require scheme/contract
            scheme/unit
            scheme/class
-           scheme/file
+           scheme/path
            scheme/port
            scheme/list
            (only-in (lib "etc.ss") compose)

@@ -1,7 +1,8 @@
 
 #lang scheme/unit
 
-(require scheme/file
+(require scheme/path
+         scheme/file
 
          (lib "compile-sig.ss" "dynext")
          (lib "link-sig.ss" "dynext")

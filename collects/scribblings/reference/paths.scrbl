@@ -484,5 +484,71 @@ any platform, and the result is for the same platform. If
 @scheme[path] represents a root, the @exnraise[exn:fail:contract].}
 
 @;------------------------------------------------------------------------
+@section{More Path Utilities}
+
+@note-lib[scheme/path]
+
+@defproc[(explode-path [path path-string?]) 
+         (listof (or/c path? (one-of/c 'up 'same)))]{
+
+Returns the list of path element that constitute @scheme[path].  If
+@scheme[path] is simplified in the sense of @scheme[simple-form-path],
+then the result is always a list of paths, and the first element of
+the list is a root.}
+
+@defproc[(file-name-from-path [path path-string?]) (or/c path? false/c)]{
+
+Returns the last element of @scheme[path]. If @scheme[path]
+syntactically a directory path (see @scheme[split-path]), then then
+result is @scheme[#f].}
+
+@defproc[(filename-extension [path path-string?]) 
+         (or/c bytes? false/c)]{
+
+Returns a byte string that is the extension part of the filename in
+@scheme[path] without the @litchar{.} separator. If @scheme[path] is
+syntactically a directory (see @scheme[split-path]) or if the path has
+no extension, @scheme[#f] is returned.}
+
+@defproc[(find-relative-path [base path-string?][path path-string?]) path?]{
+
+Finds a relative pathname with respect to @scheme[basepath] that names
+the same file or directory as @scheme[path]. Both @scheme[basepath]
+and @scheme[path] must be simplified in the sense of
+@scheme[simple-form-path].  If @scheme[path] is not a proper subpath
+of @scheme[basepath] (i.e., a subpath that is strictly longer),
+@scheme[path] is returned.}
+
+@defproc[(normalize-path [path path-string?]
+                         [wrt (and/c path-string? complete-path?)
+                              (current-directory)]) 
+         path?]{
+
+Returns a normalized, complete version of @scheme[path], expanding the
+path and resolving all soft links. If @scheme[path] is relative, then
+@scheme[wrt] is used as the base path.
+
+Letter case is @italic{not} normalized by @scheme[normalize-path]. For
+this and other reasons, such as whether the path is syntactically a
+directory, the result of @scheme[normalize-path] is not suitable for
+comparisons that determine whether two paths refer to the same file or
+directory (i.e., the comparison may produce false negatives).
+
+An error is signaled by @scheme[normalize-path] if the input
+path contains an embedded path for a non-existent directory,
+or if an infinite cycle of soft links is detected.}
+
+@defproc[(path-only [path path-string?]) (or/c path? false/c)]{
+
+If @scheme[path] is a filename, the file's path is returned. If
+@scheme[path] is syntactically a directory, @scheme[#f] is returned.}
+
+@defproc[(simple-form-path [path path-string?]) path?]{
+
+Returns @scheme[(simplify-path (path->complete-path path))], which
+ensures that the result is a complete path containing no up- or
+same-directory indicators.}
+
+@;------------------------------------------------------------------------
 @include-section["unix-paths.scrbl"]
 @include-section["windows-paths.scrbl"]

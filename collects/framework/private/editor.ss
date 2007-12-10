@@ -7,7 +7,7 @@
            "../gui-utils.ss"
            (lib "etc.ss")
            (lib "mred-sig.ss" "mred")
-           scheme/file)
+           scheme/path)
   
   (import mred^
           [prefix autosave: framework:autosave^]

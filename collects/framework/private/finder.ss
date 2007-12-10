@@ -5,7 +5,7 @@
            "../preferences.ss"
            (lib "mred-sig.ss" "mred")
            (lib "string.ss")
-           scheme/file
+           scheme/path
            (lib "etc.ss"))
   
   

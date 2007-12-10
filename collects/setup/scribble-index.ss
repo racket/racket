@@ -9,7 +9,7 @@
          setup/getinfo
          setup/dirs
          mzlib/serialize
-         scheme/file)
+         scheme/path)
 
 (provide load-xref
          xref-render

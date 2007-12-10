@@ -3,7 +3,8 @@
   (require "struct.ss"
            mzlib/class
            mzlib/serialize
-           scheme/file)
+           scheme/file
+           scheme/path)
 
   (provide render%)
 

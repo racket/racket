@@ -1,5 +1,6 @@
 (module file scheme/base
   (require scheme/file
+           scheme/path
            (prefix-in mz: (only-in mzscheme 
                                    open-input-file
                                    open-output-file)))
@@ -27,6 +28,15 @@
 	   find-files
 	   pathlist-closure)
 
+  (define (build-relative-path p . args)
+    (if (relative-path? p)
+      (apply build-path p args)
+      (error 'build-relative-path "base path ~s is absolute" p)))
+
+  (define (build-absolute-path p . args)
+    (if (relative-path? p)
+      (error 'build-absolute-path "base path ~s is relative" p)
+      (apply build-path p args)))
 
   (define (find-library name . cp)
     (let ([dir (with-handlers ([exn:fail:filesystem? (lambda (exn) #f)])

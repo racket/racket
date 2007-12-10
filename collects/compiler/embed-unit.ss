@@ -1,7 +1,8 @@
 
 (module embed-unit scheme/base
   (require scheme/unit
-	   scheme/file
+	   scheme/path
+           scheme/file
 	   scheme/port
            syntax/moddep
            xml/plist
