@@ -961,7 +961,13 @@
                       ("leftarrow" "\u2190")
                       ("rightarrow" "\u2192")
                       ("Leftarrow" "\u21d0")
-                      ("Rightarrow" "\u21d2"))]
+                      ("Rightarrow" "\u21d2")
+                      ("wedge" "\u2227")
+                      ("vee" "\u2227")
+                      ("circ" "\u2218")
+                      ("models" "\u22a8")
+                      ("vdash" "\u22a2")
+                      ("dashv" "\u22a3"))]
                    [biggest (apply max (map (λ (x) (string-length (car x))) shortcut-table))])
               (λ (text event)
                 (let ([pos (send text get-start-position)])
