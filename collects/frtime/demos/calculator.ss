@@ -6,7 +6,7 @@
 (define (str->num s)
   (cond
     [(string->number s)]
-    [else 0]))
+    [#t 0]))
 
 (define x
   (str->num (make-text "First number:")))

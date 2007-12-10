@@ -18,7 +18,7 @@
                        letrec
                        match
                        cons car cdr pair? null?
-                       caar cdar cadr cddr caddr cdddr cadddr cddddr
+                       caar caadr cdar cadar cadr cddr caddr cdddr cadddr cddddr
                        make-struct-type
                        make-struct-field-accessor
                        make-struct-field-mutator
@@ -34,7 +34,7 @@
                        and
                        or
                        cond when unless ;case
-                       else =>
+                       ; else =>
                        map ormap andmap assoc member)
            (rename mzscheme mzscheme:if if)
            (rename "lang-ext.ss" lift lift)
@@ -150,6 +150,12 @@
   
   (define (cadr v)
     (car (cdr v)))
+  
+  (define (cadar v)
+    (car (cdar v)))
+  
+  (define (caadr v)
+    (car (cadr v)))
   
   (define (cddr v)
     (cdr (cdr v)))
@@ -275,6 +281,7 @@
   (define (dont-optimize x) x)
 
   (provide cond 
+           else =>
            and 
            or 
            or-undef 
@@ -284,6 +291,9 @@
            ormap 
            andmap
            caar
+           caadr
+           cdar
+           cadar
            cadr
            cddr
            caddr

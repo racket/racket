@@ -317,7 +317,7 @@
            (send obj meth (value-now arg) ...)
            (send obj meth arg ...))]))
   
-  ;; Depricated
+  ;; Deprecated
   (define (magic dtime thunk)
     (let* ([last-time (current-milliseconds)]
            [ret (let ([myself #f])
@@ -336,21 +336,16 @@
       ret))
   
   
-  ;; Depricated
+  ;; Deprecated
   (define (make-time-b ms)
     (let ([ret (proc->signal void)])
       (set-signal-thunk! ret
                          (lambda ()
                            (let ([t (current-milliseconds)])
-                             (schedule-alarm (+ ms t) ret)
+                             (schedule-alarm (+ (value-now ms) t) ret)
                              t)))
       (set-signal-value! ret ((signal-thunk ret)))
       ret))
-  
-  
-  
-  (define milliseconds (make-time-b 20))
-  (define time-b milliseconds)
   
   (define seconds
     (let ([ret (proc->signal void)])
@@ -379,7 +374,7 @@
                                  [ms (value-now ms-b)])
                             (let loop ()
                               (if (or (empty? (mcdr head))
-                                      (< now (+ ms (cdar (mcdr head)))))
+                                      (< now (+ ms (cdr (mcar (mcdr head))))))
                                   (car (mcar head))
                                   (begin
                                     (set! dummy consumer) ;; just to prevent GC
@@ -545,13 +540,13 @@
                        (when (ormap undefined? streams)
                          ;(fprintf (current-error-port) "had an undefined stream~n")
                          (set! streams (fix-streams streams args)))
-                       (let loop ()
-                         (extract (lambda (the-event)
+                       (let loop ([streams streams])
+                         (extract (lambda (the-event strs)
                                     (when proc-k
                                       (call/cc
                                        (lambda (k)
                                          (set! esc k)
-                                         (proc-k the-event)))) (loop))
+                                         (proc-k the-event)))) (loop strs))
                                   streams))
                        (set! streams (map signal-value args))
                        out)])
@@ -644,6 +639,13 @@
          (iq-enqueue rtn)
          rtn))))
   
+  (define (make-mutable lst)
+    (printf "make-mutable called on ~a~n" lst)
+    lst
+    #;(if (pair? lst)
+        (mcons (first lst) (make-mutable (rest lst)))
+        lst))
+  
   (define (event-processor proc . args)
     (let* ([out (econs undefined undefined)]
            [proc/emit (proc
@@ -654,10 +656,11 @@
            [streams (map signal-value args)]
            [thunk (lambda ()
                     (when (ormap undefined? streams)
+                      (printf "some streams were undefined~n")
                       ;(fprintf (current-error-port) "had an undefined stream~n")
                       (set! streams (fix-streams streams args)))
-                    (let loop ()
-                      (extract (lambda (the-event) (proc/emit the-event) (loop))
+                    (let loop ([streams streams])
+                      (extract (lambda (the-event strs) (proc/emit the-event) (loop strs))
                                streams))
                     (set! streams (map signal-value args))
                     out)])
@@ -685,7 +688,12 @@
       [(_ [ev k] ...)
        ()]))
   
-    ;;;;;;;;;;;;;;;;;;;;;;
+  (define fine-timer-granularity (new-cell 20))
+  
+  (define milliseconds (make-time-b fine-timer-granularity))
+  (define time-b milliseconds)
+  
+  ;;;;;;;;;;;;;;;;;;;;;;
   ;; Command Lambda 
   
   
@@ -846,6 +854,7 @@
            snapshot/apply
            magic
            milliseconds
+           fine-timer-granularity
            seconds
            delay-by
            inf-delay

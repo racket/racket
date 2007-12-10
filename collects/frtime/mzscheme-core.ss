@@ -202,27 +202,32 @@
        (let ([deps (make-hash-table)])
          (lambda ()
            (begin0
-             (proc (lambda (obj)
-                     (if (behavior? obj)
-                         (begin
-                           (case (hash-table-get deps obj 'absent)
-                             [(absent) (hash-table-put! deps obj 'new)]
-                             [(old)    (hash-table-put! deps obj 'alive)]
-                             [(new)    (void)])
-                           (value-now obj))
-                         obj)))
-             (hash-table-for-each
-              deps
-              (lambda (k v)
-                (case v
-                  [(new)   (hash-table-put! deps k 'old)
-                           #;(printf "reg~n")
-                           (register rtn k)]
-                  [(alive) (hash-table-put! deps k 'old)]
-                  [(old)   (hash-table-remove! deps k)
-                           #;(printf "unreg~n")
-                           (unregister rtn k)])))
-             #;(printf "count = ~a~n" (hash-table-count deps))))))
+             (let/ec esc
+               (with-handlers ([exn:fail? (lambda (exn) #f)])
+                 (proc (lambda (obj)
+                         (if (behavior? obj)
+                             (begin
+                               (case (hash-table-get deps obj 'absent)
+                                 [(absent) (hash-table-put! deps obj 'new)
+                                           (register rtn obj)
+                                           (iq-enqueue rtn)
+                                           (esc #f)]
+                                 [(old)    (hash-table-put! deps obj 'alive)]
+                                 [(new)    (void)])
+                               (value-now obj))
+                             obj))))
+               (hash-table-for-each
+                deps
+                (lambda (k v)
+                  (case v
+                    [(new)   (hash-table-put! deps k 'old)
+                             #;(printf "reg~n")
+                             (register rtn k)]
+                    [(alive) (hash-table-put! deps k 'old)]
+                    [(old)   (hash-table-remove! deps k)
+                             #;(printf "unreg~n")
+                             (unregister rtn k)])))
+               #;(printf "count = ~a~n" (hash-table-count deps)))))))
       (iq-enqueue rtn)
       rtn))
   

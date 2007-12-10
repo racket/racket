@@ -386,14 +386,14 @@
   
   
   (define (extract k evs)
-    (if (mpair? evs)
-        (let ([ev (mcar evs)])
+    (if (pair? evs)
+        (let ([ev (car evs)])
           (if (or (eq? ev undefined) (undefined? (erest ev)))
-              (extract k (mcdr evs))
+              (extract k (cdr evs))
               (begin
                 (let ([val (efirst (erest ev))])
-                  (set-mcar! evs (erest ev))
-                  (k val)))))))
+                  ;(set-mcar! evs (erest ev))
+                  (k val (cons (erest ev) (rest evs)))))))))
   
   
   (define (kill-signal sig)
@@ -768,12 +768,13 @@
                                        #;(not (undefined? (signal-value cur-beh))))
                               ;(when (empty? (continuation-mark-set->list
                                ;              (exn-continuation-marks exn) 'frtime))
-                                (set! exn (make-exn:fail
-                                           (exn-message exn)
-                                           (compose-continuation-mark-sets2
-                                            (signal-continuation-marks
-                                             cur-beh)
-                                            (exn-continuation-marks exn))));)
+                              (fprintf (current-error-port) "exception while updating ~a~n" cur-beh)
+                              (set! exn (make-exn:fail
+                                         (exn-message exn)
+                                         (compose-continuation-mark-sets2
+                                          (signal-continuation-marks
+                                           cur-beh)
+                                          (exn-continuation-marks exn))));)
                               ;(raise exn)
                               (iq-enqueue (list exceptions (list exn cur-beh)))
                               (when (behavior? cur-beh)
