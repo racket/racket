@@ -6,7 +6,7 @@ needed to really make this work:
 
 |#
 
-(module syntax-browser mzscheme
+(module syntax-browser scheme/base
   (require (lib "pretty.ss")
            (lib "list.ss")
            (lib "class.ss")
@@ -400,7 +400,7 @@ needed to really make this work:
   
   (define black-style-delta (make-object style-delta% 'change-normal-color))
   (define green-style-delta (make-object style-delta%))
-  (send green-style-delta set-delta-foreground "forest green")
+  (void (send green-style-delta set-delta-foreground "forest green"))
   (define small-style (make-object style-delta% 'change-size 4))
   
   (define turn-snip%
@@ -591,7 +591,7 @@ needed to really make this work:
          (contents ,contents))
        (foldl
         add-properties
-        (datum->syntax-object
+        (datum->syntax
          #'here ;; ack
          (unmarshall-object contents)
          (list (unmarshall-object src)

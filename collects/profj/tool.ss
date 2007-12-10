@@ -1,18 +1,20 @@
-(module tool mzscheme
+(module tool scheme/base
   (require (lib "tool.ss" "drscheme") (lib "contract.ss")
            (lib "mred.ss" "mred") (lib "framework.ss" "framework")
            (lib "errortrace-lib.ss" "errortrace")
-           (prefix u: (lib "unit.ss")) 
-           (lib "file.ss")
+           (prefix-in u: (lib "unit.ss")) 
+           scheme/file
            (lib "include-bitmap.ss" "mrlib") (lib "etc.ss")
            (lib "class.ss")
 	   (lib "string-constant.ss" "string-constants")
            (lib "Object.ss" "profj" "libs" "java" "lang") (lib "array.ss" "profj" "libs" "java" "lang")
            (lib "String.ss" "profj" "libs" "java" "lang"))
-  (require "compile.ss" "parameters.ss" "parsers/lexer.ss" "parser.ss" "ast.ss" "tester.scm"
+  (require "compile.ss" "parameters.ss" "parsers/lexer.ss" "parser.ss" 
+           (except-in "ast.ss" for) "tester.scm"
            "display-java.ss")
 
-  (require-for-syntax "compile.ss")
+  (require (for-syntax scheme/base
+                       "compile.ss"))
   
   (provide tool@)
 
@@ -273,7 +275,8 @@
       
       ;(make-profj-settings symbol boolean boolean boolean boolean (list string))
       (define-struct profj-settings 
-        (print-style print-full? allow-check? allow-test? run-tests? coverage? classpath) (make-inspector))
+        (print-style print-full? allow-check? allow-test? run-tests? coverage? classpath)
+        #:transparent)
       
       ;ProfJ general language mixin
       (define (java-lang-mixin level name number one-line dyn? manual-dirname)
@@ -593,8 +596,8 @@
                  (let ((end? (eof-object? (peek-char-or-special port))))
                    (if end? 
                        eof 
-                       (datum->syntax-object #f `(parse-java-full-program ,(parse port name level)
-                                                                          ,name) #f)))))))
+                       (datum->syntax #f `(parse-java-full-program ,(parse port name level)
+                                                                   ,name) #f)))))))
           (define/public (front-end/interaction port settings)
             (mred? #t)
             (let ([name (object-name port)]
@@ -605,7 +608,7 @@
                     (begin
                       (set! executed? #t)
                       (syntax-as-top
-                       (datum->syntax-object 
+                       (datum->syntax
                         #f
                         #;`(compile-interactions-helper ,(lambda (ast) (compile-interactions-ast ast name level execute-types))
                                                         ,(parse-interactions port name level))
@@ -639,15 +642,15 @@
                   (syntax-case tc (parse-java-interactions)
                     ((test-case eq (parse-java-interactions ast-1 ed-1) 
                                 (parse-java-interactions ast-2 ed-2) end1 end2)
-                     (datum->syntax-object #f
-                                           `(,(syntax test-case)
-                                              ,(dynamic-require '(lib "profj-testing.ss" "profj") 'java-values-equal?);,(syntax eq)
-                                              ,(compile-interactions-ast (syntax-object->datum (syntax ast-1))
-                                                                         (syntax-object->datum (syntax ed-1)) level type-recs #f)
-                                              ,(compile-interactions-ast (syntax-object->datum (syntax ast-2))
-                                                                         (syntax-object->datum (syntax ed-2)) level type-recs #f)
-                                              ,(syntax end1) ,(syntax end2))
-                                           #f))
+                     (datum->syntax #f
+                                    `(,(syntax test-case)
+                                      ,(dynamic-require '(lib "profj-testing.ss" "profj") 'java-values-equal?);,(syntax eq)
+                                      ,(compile-interactions-ast (syntax->datum (syntax ast-1))
+                                                                 (syntax->datum (syntax ed-1)) level type-recs #f)
+                                      ,(compile-interactions-ast (syntax->datum (syntax ast-2))
+                                                                 (syntax->datum (syntax ed-2)) level type-recs #f)
+                                      ,(syntax end1) ,(syntax end2))
+                                    #f))
                     (_ tc))) (process-extras (cdr extras) type-recs))
                #;(cons (test-case-test (car extras)) (process-extras (cdr extras) type-recs)))
               #;((interact-case? (car extras))
@@ -832,7 +835,7 @@
                                           (errortrace-annotate syn)))
                                         (loop (cdr mods) extras #t)))))))))
                           ((parse-java-interactions ex loc)
-                           (let ((exp (syntax-object->datum (syntax ex))))
+                           (let ((exp (syntax->datum (syntax ex))))
                              (old-current-eval 
                               (syntax-as-top (compile-interactions-ast exp (syntax loc) level execute-types #t)))))
                           (_ (old-current-eval exp))))))
@@ -1113,7 +1116,7 @@
                 ;(printf "~a~n~a~n" syntax-list (map remove-requires syntax-list))
                 (if ret-list?
                     syntax-list
-                    (datum->syntax-object #f `(begin ,@(map remove-requires syntax-list)) #f)))))
+                    (datum->syntax #f `(begin ,@(map remove-requires syntax-list)) #f)))))
           (define (remove-requires syn)
             (syntax-case* syn (begin require) (lambda (r1 r2) (eq? (syntax-e r1) (syntax-e r2)))
               ((begin (require x ...) exp1 exp ...) (syntax (begin exp1 exp ...)))
@@ -1165,8 +1168,8 @@
   (define-syntax (compile-interactions-helper syn)
     (syntax-case syn ()
       ((_ comp ast)
-        (namespace-syntax-introduce ((syntax-object->datum (syntax comp))
-                                     (syntax-object->datum (syntax ast)))))))
+        (namespace-syntax-introduce ((syntax->datum (syntax comp))
+                                     (syntax->datum (syntax ast)))))))
   
   (define (get-module-name stx)
     (syntax-case stx (module #%plain-module-begin)
@@ -1188,7 +1191,7 @@
                                   (display " - ")
                                   (display (,(string->symbol (string-append (cadr (main)) "-main_java.lang.String1")) x)))
                                'void)])
-         (with-syntax ([main (datum->syntax-object #f execute-body #f)]) 
+         (with-syntax ([main (datum->syntax #f execute-body #f)]) 
            (values (syntax name)
                    (syntax (module name lang 
                              (#%plain-module-begin 

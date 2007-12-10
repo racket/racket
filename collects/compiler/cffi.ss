@@ -304,7 +304,7 @@
       (raise-syntax-error #f "only allowed at the top-level or a module top-level" stx))
     (syntax-case stx () 
       [(_ path)
-       (let ([pathname (resolve-path-spec #'path #'path stx #'build-path)])
+       (let ([pathname (resolve-path-spec #'path #'path stx)])
          (let ([str
                 (with-handlers ([exn:fail?
                                  (lambda (x)

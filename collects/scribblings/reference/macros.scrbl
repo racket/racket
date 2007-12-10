@@ -18,3 +18,4 @@ called.
 @include-section["stx-props.scrbl"]
 @include-section["stx-certs.scrbl"]
 @include-section["stx-expand.scrbl"]
+@include-section["include.scrbl"]

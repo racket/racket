@@ -4,47 +4,51 @@
 
   (provide resolve-path-spec)
 
-  (define (resolve-path-spec fn loc stx build-path-stx)
+  (define (resolve-path-spec fn loc stx)
     (let ([file
-	   (syntax-case* fn (lib) module-or-top-identifier=?
+	   (syntax-case fn (lib file)
 	     [_
 	      (string? (syntax-e fn))
 	      (let ([s (syntax-e fn)])
-		(unless (or (relative-path? s)
-			    (absolute-path? s))
+		(unless (module-path? s)
 		  (raise-syntax-error
 		   #f
-		   "bad pathname string"
+		   "bad relative pathname string"
 		   stx
 		   fn))
-		(string->path s))]
-	     [(-build-path elem ...)
-	      (module-or-top-identifier=? #'-build-path build-path-stx)
-	      (let ([l (syntax->datum (syntax (elem ...)))])
-		(when (null? l)
+                (apply build-path
+                       (regexp-split #rx"/" s)))]
+	     [(file . _)
+	      (let ([l (syntax->datum fn)])
+		(unless (module-path? l)
 		  (raise-syntax-error
 		   #f
-		   "`build-path' keyword is not followed by at least one string"
+		   "bad `file' path"
 		   stx
 		   fn))
-		(apply build-path l))]
-	     [(lib filename ...)
-	      (let ([l (syntax->datum (syntax (filename ...)))])
-		(unless (or (andmap string? l)
-			    (pair? l))
+                (string->path (cadr l)))]
+	     [(lib . _)
+	      (let ([l (syntax->datum fn)])
+		(unless (module-path? l)
 		  (raise-syntax-error
 		   #f
-		   "`lib' keyword is not followed by a sequence of string datums"
+		   "bad `lib' path"
 		   stx
 		   fn))
-		(build-path (if (null? (cdr l))
-				(collection-path "mzlib")
-				(apply collection-path (cdr l)))
-			    (car l)))]
+                (let ([s (resolved-module-path-name
+                          (module-path-index-resolve
+                           (module-path-index-join l #f)))])
+                  (if (path? s)
+                      s
+                      (raise-syntax-error
+                       #f
+                       "`lib' path produced symbolic module name"
+                       stx
+                       fn))))]
 	     [else
 	      (raise-syntax-error
 	       #f
-	       "not a pathname string, `build-path' form, or `lib' form for file"
+	       "not a pathname string, `file' form, or `lib' form for file"
 	       stx
 	       fn)])])
       (if (complete-path? file)

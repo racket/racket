@@ -11,14 +11,14 @@ module browser threading seems wrong.
 
 |#
 
-(module unit mzscheme
-  (require (lib "contract.ss")
-           (lib "unit.ss")
-           (lib "class.ss")
-           (lib "file.ss")
-           (lib "etc.ss")
-           (lib "list.ss")
-           (lib "port.ss")
+(module unit scheme/base
+  (require scheme/contract
+           scheme/unit
+           scheme/class
+           scheme/file
+           scheme/port
+           scheme/list
+           (only-in (lib "etc.ss") compose)
            (lib "string-constant.ss" "string-constants")
            (lib "framework.ss" "framework")
            (lib "name-message.ss" "mrlib")
@@ -27,10 +27,10 @@ module browser threading seems wrong.
            "drsig.ss"
            "auto-language.ss"
            
-           (prefix drscheme:arrow: "../arrow.ss")
+           (prefix-in drscheme:arrow: "../arrow.ss")
            
            (lib "mred.ss" "mred")
-           (prefix mred: (lib "mred.ss" "mred"))
+           (prefix-in mred: (lib "mred.ss" "mred"))
            
            (lib "date.ss"))
   
@@ -377,7 +377,7 @@ module browser threading seems wrong.
           (unless definitions-text%
             (set! definitions-text% (make-definitions-text%)))
           definitions-text%)))
-    
+
     (define (make-definitions-text%)
       (let ([definitions-super%
               ((get-program-editor-mixin)
@@ -538,7 +538,7 @@ module browser threading seems wrong.
           
           (define/pubment (get-next-settings) next-settings)
           (define/pubment set-next-settings
-            (opt-lambda (_next-settings [update-prefs? #t])
+            (lambda (_next-settings [update-prefs? #t])
               (when (or (send (drscheme:language-configuration:language-settings-language _next-settings)
                               get-reader-module)
                         (send (drscheme:language-configuration:language-settings-language next-settings)
@@ -859,7 +859,7 @@ module browser threading seems wrong.
         (super-new (label "(define ...)"))))
     
     ;; defn = (make-defn number string number number)
-    (define-struct defn (indent name start-pos end-pos))
+    (define-struct defn (indent name start-pos end-pos) #:mutable)
     
     ;; get-definitions : boolean text -> (listof defn)
     (define (get-definitions tag-string indent? text)
@@ -2165,7 +2165,7 @@ module browser threading seems wrong.
         ;; create-new-tab : -> void
         ;; creates a new tab and updates the GUI for that new tab
         (define/private create-new-tab
-          (opt-lambda ([filename #f])
+          (lambda ([filename #f])
             (let* ([defs (new (drscheme:get/extend:get-definitions-text))]
                    [tab-count (length tabs)]
                    [new-tab (new (drscheme:get/extend:get-tab)
@@ -2262,7 +2262,7 @@ module browser threading seems wrong.
                           (change-to-tab (cond
                                            [(< (send tab get-i) (length tabs))
                                             (list-ref tabs (send tab get-i))]
-                                           [else (car (last-pair tabs))])))
+                                           [else (last tabs)])))
                         (loop (cdr l-tabs))))]))]))
         
         (define/private (close-tab tab)
@@ -2526,7 +2526,7 @@ module browser threading seems wrong.
                  [lang (drscheme:language-configuration:language-settings-language lang/config)]
                  [strs (send lang get-language-position)]
                  [can-browse?
-                  (or (regexp-match #rx"module" (car (last-pair strs)))
+                  (or (regexp-match #rx"module" (last strs))
                       (ormap (λ (x) (regexp-match #rx"PLT" x))
                              strs))])
             (unless can-browse?
@@ -2783,7 +2783,7 @@ module browser threading seems wrong.
           (let ([items (send menu get-items)])
             (when (null? items)
               (error 'register-capability-menu-item "menu ~e has no items" menu))
-            (let* ([menu-item (car (last-pair items))]
+            (let* ([menu-item (last items)]
                    [this-one (list menu-item (- (length items) 1) key)]
                    [old-ones (hash-table-get capability-menu-items menu (λ () '()))])
               (hash-table-put! capability-menu-items menu (cons this-one old-ones)))))
@@ -3716,7 +3716,7 @@ module browser threading seems wrong.
                   (create-new-drscheme-frame name)))]
            [else
             (create-new-drscheme-frame name)])]))
-    
+
     (define first-frame? #t)
     (define (create-new-drscheme-frame filename)
       (let* ([drs-frame% (drscheme:get/extend:get-unit-frame)]

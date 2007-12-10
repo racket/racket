@@ -13,7 +13,7 @@
   (define-syntax (-include-bitmap stx)
     (syntax-case stx ()
       [(_ orig-stx source path-spec type)
-       (let* ([c-file (resolve-path-spec #'path-spec #'source #'orig-stx #'build-path)]
+       (let* ([c-file (resolve-path-spec #'path-spec #'source #'orig-stx)]
 	      [content
 	       (with-handlers ([exn:fail?
 				(lambda (exn)

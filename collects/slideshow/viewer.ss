@@ -1,15 +1,14 @@
 
-(module viewer mzscheme
-  (require (lib "class.ss")
-           (lib "unit.ss")
-	   (lib "file.ss")
-	   (lib "etc.ss")
-	   (lib "contract.ss")
-	   (lib "mred.ss" "mred")
+(module viewer scheme/base
+  (require scheme/class
+           scheme/unit
+	   scheme/contract
+	   scheme/list
+           scheme/file
+	   mred
 	   (lib "mrpict.ss" "texpict")
 	   (lib "utils.ss" "texpict")
-	   (lib "math.ss")
-	   (lib "list.ss")
+	   scheme/math
 	   (lib "include-bitmap.ss" "mrlib")
 	   "sig.ss"
 	   "core.ss"
@@ -140,7 +139,7 @@
 				(make-vector
 				 (- 4 (length l))
 				 (make-sliderec void #f #f 
-						(sliderec-page (car (last-pair l)))
+						(sliderec-page (last l))
 						1 
 						zero-inset 
 						null
@@ -993,7 +992,7 @@
       (define c-both (make-object two-c% f-both))
       
       (define refresh-page
-	(opt-lambda ([immediate-prefetch? #f])
+	(lambda ([immediate-prefetch? #f])
 	  (hide-cursor-until-moved)
 	  (send f set-blank-cursor #t)
 	  (when (= current-page 0)
