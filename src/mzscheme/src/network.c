@@ -2699,6 +2699,12 @@ udp_connected_p(int argc, Scheme_Object *argv[])
 #endif
 }
 
+#ifdef OS_X
+# define OK_DISCONNECT_ERROR(e) (((e) == mz_AFNOSUPPORT) || ((e) == EADDRNOTAVAIL))
+#else
+# define OK_DISCONNECT_ERROR(e) ((e) == mz_AFNOSUPPORT)
+#endif
+
 static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Object *argv[], int do_bind)
 {
 #ifdef UDP_IS_SUPPORTED
@@ -2800,7 +2806,7 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
       else
 	errid = 0;
 
-      if (!ok && (errid == mz_AFNOSUPPORT) && !origid) {
+      if (!ok && OK_DISCONNECT_ERROR(errid) && !origid) {
 	/* It's ok. We were trying to disconnect */
 	ok = 1;
       }
