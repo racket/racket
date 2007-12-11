@@ -915,7 +915,9 @@ pict snip :
        ;; Converter:
        pict->image-snip
        ;; Namespace setup:
-       (λ () (dynamic-require '(lib "mrpict.ss" "texpict") #f)))
+       (λ () 
+         (with-handlers ((exn? void))
+           (dynamic-require '(lib "mrpict.ss" "texpict") #f))))
         
       (define lib-pict-snipclass (make-object lib-pict-snipclass%))
       (send lib-pict-snipclass set-version 2)
