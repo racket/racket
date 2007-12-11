@@ -13,11 +13,16 @@
          (except-out (all-from-out scribble/manual) var)
          (for-label (all-from-out scheme/base)))
 
+(define (as-cpp-defn name s)
+  (make-target-element #f
+                       (list (as-index s))
+                       `(cpp ,(format "~a" name))))
+
 (define-syntax (function stx)
   (syntax-case stx ()
     [(_ (ret name [type arg] ...) . body)
      #'(*function (cpp/sym 'ret)
-                  (as-index (cpp/sym 'name))
+                  (as-cpp-defn 'name (cpp/sym 'name))
                   (list (type/sym 'type) ...)
                   (list (var/sym 'arg) ...)
                   (lambda ()
@@ -125,9 +130,25 @@
 (define (var/sym s)
   (*var (symbol->string s)))
 
-(define cpp tt)
-(define cppi tt)
-(define cppdef (lambda (x) (as-index (tt x))))
+(define cpp
+  (case-lambda
+   [(x)
+    (if (string? x)
+        (let ([e (tt x)])
+          (make-delayed-element
+           (lambda (r part ri)
+             (let ([d (resolve-get/tentative part ri `(cpp ,x))])
+               (list
+                (if d
+                    (make-link-element "schemesyntaxlink" (list e) `(cpp ,x))
+                    e))))
+           (lambda () e)
+           (lambda () e)))
+        (tt x))]
+   [more (apply tt more)]))
+   
+(define cppi cpp)
+(define cppdef (lambda (x) (as-cpp-defn x (as-index (cpp x)))))
 (define *var italic)
 
 (define mzc (exec "mzc"))

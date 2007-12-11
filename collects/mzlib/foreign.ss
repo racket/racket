@@ -1,9 +1,10 @@
+#lang scheme/base
+
 ;; Foreign Scheme interface
-
-(module foreign mzscheme
-
-(require '#%foreign (lib "dirs.ss" "setup"))
-(require-for-syntax (lib "stx.ss" "syntax"))
+(require '#%foreign 
+         (lib "dirs.ss" "setup")
+         (for-syntax scheme/base
+                     (lib "stx.ss" "syntax")))
 
 ;; This module is full of unsafe bindings that are not provided to requiring
 ;; modules.  Instead, an `unsafe!' binding is provided that makes these unsafe
@@ -28,8 +29,8 @@
                      (with-syntax ([(p ...) provides]) #'(provide p ...)))
               (syntax-case (car ps) (unsafe)
                 [(unsafe u)
-                 (syntax-case #'u (rename)
-                   [(rename from to)
+                 (syntax-case #'u (rename-out)
+                   [(rename-out [from to])
                     (loop provides (cons (cons #'from #'to) unsafes) (cdr ps))]
                    [id (identifier? #'id)
                     (loop provides (cons (cons #'id #'id) unsafes) (cdr ps))]
@@ -45,10 +46,10 @@
                         [(id   ...) (generate-temporaries unsafe-bindings)])
             (set! unsafe-bindings '())
             #'(begin
-                (provide (protect unsafe))
+                (provide (protect-out unsafe))
                 (define-syntax (unsafe stx)
                   (syntax-case stx ()
-                    [(_) (with-syntax ([(id ...) (list (datum->syntax-object
+                    [(_) (with-syntax ([(id ...) (list (datum->syntax
                                                         stx 'to stx)
                                                        ...)])
                            #'(begin (define-syntax id
@@ -58,6 +59,7 @@
 (provide* ctype-sizeof ctype-alignof compiler-sizeof
           (unsafe malloc) (unsafe free) end-stubborn-change
           cpointer? ptr-equal? ptr-add (unsafe ptr-ref) (unsafe ptr-set!)
+          ptr-offset ptr-add! offset-ptr? set-ptr-offset!
           ctype? make-ctype make-cstruct-type make-sized-byte-string
           _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64
           _fixint _ufixint _fixnum _ufixnum
@@ -136,7 +138,7 @@
 (define lib-suffix (bytes->string/latin-1 (subbytes (system-type 'so-suffix) 1)))
 (define lib-suffix-re (regexp (string-append "\\." lib-suffix "$")))
 
-(provide (rename get-ffi-lib ffi-lib)
+(provide (rename-out [get-ffi-lib ffi-lib])
          ffi-lib? ffi-lib-name)
 (define get-ffi-lib
   (case-lambda
@@ -161,9 +163,9 @@
                                (if (or (not v) (zero? (string-length v)))
                                  "" (string-append "." v)))
                              versions)]
-              [fullpath (lambda (p) (path->complete-path (expand-path p)))]
+              [fullpath (lambda (p) (path->complete-path (cleanse-path p)))]
               [absolute? (absolute-path? name)]
-              [name0 (path->string (expand-path name))]     ; orig name
+              [name0 (path->string (cleanse-path name))]     ; orig name
               [names (map (if (regexp-match lib-suffix-re name0) ; name+suffix
                             (lambda (v) (string-append name0 v))
                             (lambda (v) (string-append name0 "." lib-suffix v)))
@@ -371,7 +373,7 @@
           body)))
 
   (define (custom-type->keys type err)
-    (define stops (map (lambda (s) (datum->syntax-object type s #f))
+    (define stops (map (lambda (s) (datum->syntax type s #f))
                        '(#%app #%top #%datum)))
     ;; Expand `type' using expand-fun-syntax/fun
     (define orig (expand-fun-syntax/fun type))
@@ -639,7 +641,7 @@
                             #,output-expr)))]
                 ;; if there is a string 'ffi-name property, use it as a name
                 [body (let ([n (cond [(syntax-property stx 'ffi-name)
-                                      => syntax-object->datum]
+                                      => syntax->datum]
                                      [else #f])])
                         (if (string? n)
                           (syntax-property
@@ -703,7 +705,7 @@
 
 (provide _path)
 ;; `file' type: path-expands a path string, provide _path too.
-(define* _file (make-ctype _path expand-path #f))
+(define* _file (make-ctype _path cleanse-path #f))
 
 ;; `string/eof' type: converts an output #f (NULL) to an eof-object.
 (define string-type->string/eof-type
@@ -935,7 +937,7 @@
 ;; be just like _bytes since the string carries its size information (so there
 ;; is no real need for the `o', but it's there for consistency with the above
 ;; macros).
-(provide (rename _bytes* _bytes))
+(provide (rename-out [_bytes* _bytes]))
 (define-fun-syntax _bytes*
   (syntax-id-rules (o)
     [(_ o n) (type: _bytes
@@ -952,7 +954,7 @@
 
 (provide* cvector? cvector-length cvector-type
           ;; make-cvector* is a dangerous operation
-          (unsafe (rename make-cvector make-cvector*)))
+          (unsafe (rename-out [make-cvector make-cvector*])))
 
 (define _cvector* ; used only as input types
   (make-ctype _pointer cvector-ptr
@@ -976,13 +978,13 @@
     [(_ . xs)   (_cvector* . xs)]
     [_          _cvector*]))
 
-(provide (rename allocate-cvector make-cvector))
+(provide (rename-out [allocate-cvector make-cvector]))
 (define (allocate-cvector type len)
   (make-cvector (if (zero? len) #f ; 0 => NULL
                     (malloc len type))
                 type len))
 
-(provide (rename cvector-args cvector))
+(provide (rename-out [cvector-args cvector]))
 (define (cvector-args type . args)
   (list->cvector args type))
 
@@ -1019,13 +1021,13 @@
       (syntax-case stx ()
         [(_ TAG type more ...) (identifier? #'TAG)
          (let ([name (string-append
-                      (symbol->string (syntax-object->datum #'TAG))
+                      (symbol->string (syntax->datum #'TAG))
                       "vector")])
            (define (make-TAG-id prefix suffix)
-             (datum->syntax-object #'TAG
-                                   (string->symbol
-                                    (string-append prefix name suffix))
-                                   #'TAG))
+             (datum->syntax #'TAG
+                            (string->symbol
+                             (string-append prefix name suffix))
+                            #'TAG))
            (with-syntax ([TAG?         (make-TAG-id "" "?")]
                          [TAG          (make-TAG-id "" "")]
                          [make-TAG     (make-TAG-id "make-" "")]
@@ -1052,20 +1054,20 @@
                                    bindings))
              (syntax-case #'(more ...) ()
                [(X? X-length make-X X X-ref X-set! X->list list->X _X)
-                #'(provide (rename X?       TAG?      )
-                           (rename X-length TAG-length)
-                           (rename make-X   make-TAG  )
-                           (rename X        TAG       )
-                           (rename X-ref    TAG-ref   )
-                           (rename X-set!   TAG-set!  )
-                           (rename X->list  TAG->list )
-                           (rename list->X  list->TAG )
-                           (rename _X       _TAG      ))]
+                #'(provide (rename-out [X?       TAG?      ]
+                                       [X-length TAG-length]
+                                       [make-X   make-TAG  ]
+                                       [X        TAG       ]
+                                       [X-ref    TAG-ref   ]
+                                       [X-set!   TAG-set!  ]
+                                       [X->list  TAG->list ]
+                                       [list->X  list->TAG ]
+                                       [_X       _TAG      ]))]
                [()
                 #'(begin
                     (define-struct TAG (ptr length))
                     (provide TAG? TAG-length)
-                    (provide (rename allocate-TAG make-TAG))
+                    (provide (rename-out [allocate-TAG make-TAG]))
                     (define (allocate-TAG n . init)
                       (let* ([p (if (eq? n 0) #f (malloc n type))]
                              [v (make-TAG p n)])
@@ -1076,7 +1078,7 @@
                                 (ptr-set! p type i init)
                                 (loop (sub1 i))))))
                         v))
-                    (provide (rename TAG* TAG))
+                    (provide (rename-out [TAG* TAG]))
                     (define (TAG* . vals)
                       (list->TAG vals))
                     (define* (TAG-ref v i)
@@ -1245,7 +1247,7 @@
      (let ([name (cadr (regexp-match #rx"^_(.+)$"
                                      (symbol->string (syntax-e #'_TYPE))))])
        (define (id . strings)
-         (datum->syntax-object
+         (datum->syntax
           #'_TYPE (string->symbol (apply string-append strings)) #'_TYPE))
        (with-syntax ([name-string name]
                      [TYPE?      (id name "?")]
@@ -1314,17 +1316,17 @@
     (define 1st-type
       (let ([xs (syntax->list slot-types-stx)]) (and (pair? xs) (car xs))))
     (define (id . strings)
-      (datum->syntax-object
+      (datum->syntax
        _TYPE-stx (string->symbol (apply string-append strings)) _TYPE-stx))
     (define (ids name-func)
       (map (lambda (s)
-             (datum->syntax-object
+             (datum->syntax
               _TYPE-stx
               (string->symbol (apply string-append (name-func s)))
               _TYPE-stx))
            slot-names))
     (define (safe-id=? x y)
-      (and (identifier? x) (identifier? y) (module-identifier=? x y)))
+      (and (identifier? x) (identifier? y) (free-identifier=? x y)))
     (with-syntax
         ([has-super?           has-super?]
          [name-string          name]
@@ -1468,7 +1470,7 @@
      (make-syntax #'_TYPE #f #'(slot ...) #'(slot-type ...))]
     [(_ (_TYPE _SUPER) ([slot slot-type] ...))
      (and (_-identifier? #'_TYPE) (identifiers? #'(slot ...)))
-     (with-syntax ([super (datum->syntax-object #'_TYPE 'super #'_TYPE)])
+     (with-syntax ([super (datum->syntax #'_TYPE 'super #'_TYPE)])
        (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...)))]))
 
 ;; helper for the above: keep runtime information on structs
@@ -1563,4 +1565,3 @@
   (will-register killer-executor obj finalizer))
 
 (define-unsafer unsafe!)
-)

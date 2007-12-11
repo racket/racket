@@ -23,52 +23,52 @@ Parameter values for built-in parameters are obtained and modified
 through the following indices:
 
 @itemize{
-@item{@cppi{MZCONFIG_ENV} --- @scheme[current-namespace] (use @cppi{scheme_get_env})}
-@item{@cppi{MZCONFIG_INPUT_PORT} --- @scheme[current-input-port]}
-@item{@cppi{MZCONFIG_OUTPUT_PORT} ---  @scheme[current-output-port]}
-@item{@cppi{MZCONFIG_ERROR_PORT} ---  @scheme[current-error-port]}
+@item{@cppdef{MZCONFIG_ENV} --- @scheme[current-namespace] (use @cpp{scheme_get_env})}
+@item{@cppdef{MZCONFIG_INPUT_PORT} --- @scheme[current-input-port]}
+@item{@cppdef{MZCONFIG_OUTPUT_PORT} ---  @scheme[current-output-port]}
+@item{@cppdef{MZCONFIG_ERROR_PORT} ---  @scheme[current-error-port]}
 
-@item{@cppi{MZCONFIG_ERROR_DISPLAY_HANDLER} --- @scheme[error-display-handler]}
-@item{@cppi{MZCONFIG_ERROR_PRINT_VALUE_HANDLER} --- @scheme[error-value->string-handler]}
+@item{@cppdef{MZCONFIG_ERROR_DISPLAY_HANDLER} --- @scheme[error-display-handler]}
+@item{@cppdef{MZCONFIG_ERROR_PRINT_VALUE_HANDLER} --- @scheme[error-value->string-handler]}
 
-@item{@cppi{MZCONFIG_EXIT_HANDLER} --- @scheme[exit-handler]}
+@item{@cppdef{MZCONFIG_EXIT_HANDLER} --- @scheme[exit-handler]}
 
-@item{@cppi{MZCONFIG_INIT_EXN_HANDLER} ---  @scheme[uncaught-exception-handler]}
+@item{@cppdef{MZCONFIG_INIT_EXN_HANDLER} ---  @scheme[uncaught-exception-handler]}
 
-@item{@cppi{MZCONFIG_EVAL_HANDLER} --- @scheme[current-eval]}
-@item{@cppi{MZCONFIG_LOAD_HANDLER} --- @scheme[current-load]}
+@item{@cppdef{MZCONFIG_EVAL_HANDLER} --- @scheme[current-eval]}
+@item{@cppdef{MZCONFIG_LOAD_HANDLER} --- @scheme[current-load]}
 
-@item{@cppi{MZCONFIG_PRINT_HANDLER} --- @scheme[current-print]}
-@item{@cppi{MZCONFIG_PROMPT_READ_HANDLER} --- @scheme[current-prompt-read]}
+@item{@cppdef{MZCONFIG_PRINT_HANDLER} --- @scheme[current-print]}
+@item{@cppdef{MZCONFIG_PROMPT_READ_HANDLER} --- @scheme[current-prompt-read]}
 
-@item{@cppi{MZCONFIG_CAN_READ_GRAPH} --- @scheme[read-accept-graph]}
-@item{@cppi{MZCONFIG_CAN_READ_COMPILED} --- @scheme[read-accept-compiled]}
-@item{@cppi{MZCONFIG_CAN_READ_BOX} --- @scheme[read-accept-box]}
-@item{@cppi{MZCONFIG_CAN_READ_PIPE_QUOTE} --- @scheme[read-accept-bar-quote]}
+@item{@cppdef{MZCONFIG_CAN_READ_GRAPH} --- @scheme[read-accept-graph]}
+@item{@cppdef{MZCONFIG_CAN_READ_COMPILED} --- @scheme[read-accept-compiled]}
+@item{@cppdef{MZCONFIG_CAN_READ_BOX} --- @scheme[read-accept-box]}
+@item{@cppdef{MZCONFIG_CAN_READ_PIPE_QUOTE} --- @scheme[read-accept-bar-quote]}
 
-@item{@cppi{MZCONFIG_PRINT_GRAPH} --- @scheme[print-graph]}
-@item{@cppi{MZCONFIG_PRINT_STRUCT} --- @scheme[print-struct]}
-@item{@cppi{MZCONFIG_PRINT_BOX} --- @scheme[print-box]}
+@item{@cppdef{MZCONFIG_PRINT_GRAPH} --- @scheme[print-graph]}
+@item{@cppdef{MZCONFIG_PRINT_STRUCT} --- @scheme[print-struct]}
+@item{@cppdef{MZCONFIG_PRINT_BOX} --- @scheme[print-box]}
 
-@item{@cppi{MZCONFIG_CASE_SENS} --- @scheme[read-case-sensitive]}
-@item{@cppi{MZCONFIG_SQUARE_BRACKETS_ARE_PARENS} --- @scheme[read-square-brackets-as-parens]}
-@item{@cppi{MZCONFIG_CURLY_BRACES_ARE_PARENS} --- @scheme[read-curly-braces-as-parens]}
+@item{@cppdef{MZCONFIG_CASE_SENS} --- @scheme[read-case-sensitive]}
+@item{@cppdef{MZCONFIG_SQUARE_BRACKETS_ARE_PARENS} --- @scheme[read-square-brackets-as-parens]}
+@item{@cppdef{MZCONFIG_CURLY_BRACES_ARE_PARENS} --- @scheme[read-curly-braces-as-parens]}
 
-@item{@cppi{MZCONFIG_ERROR_PRINT_WIDTH} --- @scheme[error-print-width]}
+@item{@cppdef{MZCONFIG_ERROR_PRINT_WIDTH} --- @scheme[error-print-width]}
 
-@item{@cppi{MZCONFIG_ALLOW_SET_UNDEFINED} --- @scheme[allow-compile-set!-undefined]}
+@item{@cppdef{MZCONFIG_ALLOW_SET_UNDEFINED} --- @scheme[allow-compile-set!-undefined]}
 
-@item{@cppi{MZCONFIG_CUSTODIAN} --- @scheme[current-custodian]}
+@item{@cppdef{MZCONFIG_CUSTODIAN} --- @scheme[current-custodian]}
 
-@item{@cppi{MZCONFIG_USE_COMPILED_KIND} --- @scheme[use-compiled-file-paths]}
+@item{@cppdef{MZCONFIG_USE_COMPILED_KIND} --- @scheme[use-compiled-file-paths]}
 
-@item{@cppi{MZCONFIG_LOAD_DIRECTORY} --- @scheme[current-load-relative-directory]}
+@item{@cppdef{MZCONFIG_LOAD_DIRECTORY} --- @scheme[current-load-relative-directory]}
 
-@item{@cppi{MZCONFIG_COLLECTION_PATHS} --- @scheme[current-library-collection-paths]}
+@item{@cppdef{MZCONFIG_COLLECTION_PATHS} --- @scheme[current-library-collection-paths]}
 
-@item{@cppi{MZCONFIG_PORT_PRINT_HANDLER} --- @scheme[global-port-print-handler]}
+@item{@cppdef{MZCONFIG_PORT_PRINT_HANDLER} --- @scheme[global-port-print-handler]}
 
-@item{@cppi{MZCONFIG_LOAD_EXTENSION_HANDLER} --- @scheme[current-load-extension]}
+@item{@cppdef{MZCONFIG_LOAD_EXTENSION_HANDLER} --- @scheme[current-load-extension]}
 
 }
 

@@ -237,8 +237,8 @@ value of @cpp{NULL} is translated to a Scheme @scheme[eof] value.}
 Corresponds to Scheme ``C pointer'' objects.  These pointers can have
 an arbitrary Scheme object attached as a type tag.  The tag is ignored
 by built-in functionality; it is intended to be used by interfaces.
-See @secref["tagged-pointers"] for creating pointer types that use
-these tags for safety.}
+See @secref["foreign:tagged-pointers"] for creating pointer types that
+use these tags for safety.}
 
 
 @defthing[_scheme ctype?]{

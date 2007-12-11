@@ -26,13 +26,13 @@ embedded:
  messages that possibly contain non-terminating nuls. The default is
  @var{NULL}.}
 
- @item{@cppdef{scheme_check_for_break} --- \index{user breaks} This
- points to a function of no arguments that returns an integer. It is
- used as the default user-break polling procedure in the main
- thread. A non-zero return value indicates a user break, and each time
- the function returns a non-zero value, it counts as a new break
- signal (though the break signal may be ignored if a previous signal
- is still pending).  The default is @cpp{NULL}.}
+ @item{@cppdef{scheme_check_for_break} --- This points to a function
+ of no arguments that returns an integer. It is used as the default
+ user-break polling procedure in the main thread. A non-zero return
+ value indicates a user break, and each time the function returns a
+ non-zero value, it counts as a new break signal (though the break
+ signal may be ignored if a previous signal is still pending).  The
+ default is @cpp{NULL}.}
 
  @item{@cppdef{scheme_case_sensitive} --- If this flag is set to a
  non-zero value before @cppi{scheme_basic_env} is called, then
@@ -41,7 +41,7 @@ embedded:
  set. The default is zero.}
 
  @item{@cppdef{scheme_allow_set_undefined} --- This flag determines
- the initial value of \scmi{compile-allow-set!-undefined}. The default
+ the initial value of @scheme[compile-allow-set!-undefined]. The default
  is zero.}
 
  @item{@cppdef{scheme_console_printf} --- This function pointer was

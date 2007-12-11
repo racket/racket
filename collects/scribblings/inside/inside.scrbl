@@ -9,9 +9,11 @@ interpreter to be extended by a dynamically-loaded library, or
 embedded within an arbitrary C/C++ program. The manual assumes
 familiarity with PLT Scheme as described in @|MzScheme|.
 
-For an alternative way of dealing with foreign code, see ..., which
-describes the @schememodname[scheme/foreign] module for manipulating
-low-level libraries and structures purely through Scheme code.
+For an alternative way of dealing with foreign code, see
+@italic{@secref[#:doc '(lib "scribblings/foreign/foreign.scrbl")
+"top"]}, which describes the @schememodname[scheme/foreign] module for
+manipulating low-level libraries and structures purely through Scheme
+code.
 
 @table-of-contents[]
 

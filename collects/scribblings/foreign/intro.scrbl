@@ -28,13 +28,5 @@ macro should be considered as a declaration that your code is itself
 unsafe, therefore can lead to serious problems in case of bugs: it is
 your responsibility to provide a safe interface.
 
-In rare cases, you might want to provide an @italic{unsafe} interface
-hat builds on the unsafe features of the FFI. In such cases, use the
-@indexed-scheme[provide*] macro with @scheme[unsafe] bindings, and use
-@indexed-scheme[define-unsafer] to provide an @scheme[unsafe!]-like macro
-that will make these bindings available to importers of your library.
-Providing users with unsafe operations without using this facility
-should be considered a bug in your code.
-
 For examples of common FFI usage patterns, see the defined interfaces
 in the @filepath{ffi} collection.

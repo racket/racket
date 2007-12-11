@@ -13,6 +13,9 @@ interface}. Furthermore, since most APIs consist mostly of functions,
 the foreign interface is sometimes called a @defterm{foreign function
 interface}, abbreviated @deftech{FFI}.
 
+@bold{Important:} Most of the bindings documented here are available
+only after an @scheme[(unsafe!)] declaration in the importing module.
+
 @table-of-contents[]
 
 @include-section["intro.scrbl"]
@@ -22,5 +25,6 @@ interface}, abbreviated @deftech{FFI}.
 @include-section["misc.scrbl"]
 @include-section["derived.scrbl"]
 @include-section["unexported.scrbl"]
+@include-section["unsafe.scrbl"]
 
 @index-section[]

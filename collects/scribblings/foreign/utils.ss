@@ -3,6 +3,7 @@
 (require scribble/manual
          scribble/struct
          scribble/decode
+         (only-in "../inside/utils.ss" cpp)
          (for-syntax scheme/base)
          (for-label scheme/base
                     scheme/contract
@@ -15,7 +16,6 @@
                                   scheme/contract
                                   "unsafe-foreign.ss")))
 
-(define cpp tt)
 
 (define InsideMzScheme
   (italic (secref #:doc '(lib "scribblings/inside/inside.scrbl") 

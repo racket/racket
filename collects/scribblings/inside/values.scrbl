@@ -240,16 +240,16 @@ The following are additional number predicates:
 
 @itemize{
 
- @item{@cppi{SCHEME_NUMBERP} --- all numerical types}
+ @item{@cppdef{SCHEME_NUMBERP} --- all numerical types}
 
- @item{@cppi{SCHEME_REALP} --- all non-complex numerical types, plus
+ @item{@cppdef{SCHEME_REALP} --- all non-complex numerical types, plus
  @cpp{scheme_complex_izi_type}}
 
- @item{@cppi{SCHEME_EXACT_INTEGERP} --- fixnums and bignums}
+ @item{@cppdef{SCHEME_EXACT_INTEGERP} --- fixnums and bignums}
 
- @item{@cppi{SCHEME_EXACT_REALP} --- fixnums, bignums, and rationals}
+ @item{@cppdef{SCHEME_EXACT_REALP} --- fixnums, bignums, and rationals}
 
- @item{@cppi{SCHEME_FLOATP} --- both single-precision (when enabled)
+ @item{@cppdef{SCHEME_FLOATP} --- both single-precision (when enabled)
  and double-precision flonums}
 
 }
