@@ -28,7 +28,7 @@
                     (get-pure-port (string->url (string-append base name)))])
       (with-output-to-file name
         (lambda () (copy-port (current-input-port) (current-output-port)))
-        'truncate)))
+        #:exists 'truncate)))
   (or (existing)
       (begin (get-it) (existing))
       (error "file not found: ~s" (string-append base name))))
