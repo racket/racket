@@ -67,7 +67,8 @@
          (determine-error (error-builder err:parse-intermediate find-intermediate-error lexed filename))
          (parse-intermediate my-get))
         ((intermediate+access)
-         (determine-error (error-builder err:parse-intermediate+access (lambda () #t) lexed filename))
+         (determine-error (error-builder err:parse-intermediate+access err:parse-intermediate+access
+                                         #;(lambda () #t) lexed filename))
          (parse-intermediate+access my-get))
         ((advanced) 
          (determine-error (error-builder err:parse-advanced find-advanced-error lexed filename))
