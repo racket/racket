@@ -323,7 +323,7 @@ X_(list_to, string) (int argc, Scheme_Object *argv[])
   }  
   
   if (!SCHEME_NULLP(list))
-    scheme_wrong_type("list->" XSTRINGSTR, "list of" CHAR_STR, 0, argc, argv);
+    scheme_wrong_type("list->" XSTRINGSTR, "list of " CHAR_STR, 0, argc, argv);
 
   return str;
 }
