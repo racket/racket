@@ -172,7 +172,9 @@
     (let* ([num-failed-tests (length failed-check)])
       (cond
         [(zero? num-failed-tests)
-         (fprintf (current-error-port) "All checks succeeded!\n")]
+         (fprintf (current-error-port) "All ~a check~a succeeded!\n" 
+                  num-checks
+                  (if (= 1 num-checks) "" "s"))]
         [else
          (let* ([my-text (new (editor:standard-style-list-mixin text%))]
                 [my-frame (new frame% [label "Test Results"][width 300] [height 200])]
