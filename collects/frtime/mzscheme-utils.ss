@@ -281,7 +281,7 @@
   (define (dont-optimize x) x)
 
   (provide cond 
-           else =>
+           ; else =>
            and 
            or 
            or-undef 
