@@ -1,13 +1,14 @@
 
 #lang scheme/unit
 
-  (require (lib "string-constant.ss" "string-constants")
-           (lib "class.ss")
-           (lib "list.ss")
-           (lib "mred-sig.ss" "mred")
-           (lib "match.ss")
-           "../preferences.ss"
-           "sig.ss")
+(require (lib "string-constant.ss" "string-constants")
+         (lib "class.ss")
+         (lib "list.ss")
+         (lib "mred-sig.ss" "mred")
+         (lib "match.ss")
+         "../preferences.ss"
+         "tex-table.ss"
+         "sig.ss")
 
   (import mred^
           [prefix finder: framework:finder^]
@@ -948,33 +949,13 @@
               #t)]
            
            [TeX-compress
-            (let* ([shortcut-table
-                    '(("lambda" "λ")
-                      ("forall" "\u2200")
-                      ("exists" "\u2203")
-                      ("in" "\u2208")
-                      ("Sigma" "\u2211")
-                      ("Pi" "\u220f")
-                      ("leq" "\u2264")
-                      ("geq" "\u2265")
-                      ("infty" "\u221e")
-                      ("leftarrow" "\u2190")
-                      ("rightarrow" "\u2192")
-                      ("Leftarrow" "\u21d0")
-                      ("Rightarrow" "\u21d2")
-                      ("wedge" "\u2227")
-                      ("vee" "\u2227")
-                      ("circ" "\u2218")
-                      ("models" "\u22a8")
-                      ("vdash" "\u22a2")
-                      ("dashv" "\u22a3"))]
-                   [biggest (apply max (map (λ (x) (string-length (car x))) shortcut-table))])
+            (let* ([biggest (apply max (map (λ (x) (string-length (car x))) tex-shortcut-table))])
               (λ (text event)
                 (let ([pos (send text get-start-position)])
                   (when (= pos (send text get-end-position))
                     (let ([slash (send text find-string "\\" 'backward pos (max 0 (- pos biggest 1)))])
                       (when slash
-                        (let ([to-replace (assoc (send text get-text slash pos) shortcut-table)])
+                        (let ([to-replace (assoc (send text get-text slash pos) tex-shortcut-table)])
                           (when to-replace
                             (send text begin-edit-sequence)
                             (send text delete (- slash 1) pos)
