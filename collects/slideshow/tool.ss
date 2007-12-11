@@ -913,7 +913,10 @@ pict snip :
        ;; Converter:
        pict->image-snip
        ;; Namespace setup:
-       (λ () (dynamic-require '(lib "texpict/mrpict.ss") #f)))
+       (λ () 
+         (with-handlers ((exn? void))
+           ;; code running in this thunk cannot fail, or else drscheme gets wedged.
+           (dynamic-require '(lib "texpict/mrpict.ss") #f))))
         
       (define lib-pict-snipclass (make-object lib-pict-snipclass%))
       (send lib-pict-snipclass set-version 2)
