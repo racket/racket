@@ -780,7 +780,7 @@
              (list 'winter
                    (string-constant paren-color-winter)
                    (between 204 205 255
-                            255 255 255)))))
+                            238 238 255)))))
     (cons (list 'basic-grey
                 (string-constant paren-color-basic-grey)
                 (vector (preferences:get 'framework:paren-match-color)))
