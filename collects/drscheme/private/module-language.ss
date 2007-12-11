@@ -107,7 +107,7 @@
           (run-in-user-thread
            (λ ()
              (current-command-line-arguments (module-language-settings-command-line-args settings))
-             (let ([default (current-library-collection-paths)])
+             (let ([default (find-library-collection-paths)])
                (current-library-collection-paths
                 (apply 
                  append
