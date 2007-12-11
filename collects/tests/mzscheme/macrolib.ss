@@ -92,6 +92,8 @@
        (let ([=> 12]) (evcase 3 [3 => 17]))
        (let ([=> 17]) (evcase 3 [3 =>]))))
 
+(require (only-in scheme/base else)) ; fix `else'
+
 (define (opt-lam-test exp expected)
    (let ([got (eval exp)])
      (unless (equal? got expected)
