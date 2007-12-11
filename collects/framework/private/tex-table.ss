@@ -2,17 +2,55 @@
 (provide tex-shortcut-table)
 
 (define tex-shortcut-table
-  '(("lambda" "λ")
-    ("forall" "\u2200")
-    ("exists" "\u2203")
-    ("Sigma" "\u2211")
-    ("Pi" "\u220f")
-    ("infty" "\u221e")
-    ("leftarrow" "\u2190")
-    ("rightarrow" "\u2192")
-    ("Leftarrow" "\u21d0")
-    ("Rightarrow" "\u21d2")
-    ("circ" "\u2218")
+  '(("Downarrow" "⇓")
+    ("nwarrow" "↖")
+    ("downarrow" "↓")
+    ("Rightarrow" "⇒")
+    ("rightarrow" "→")
+    ("searrow" "↘")
+    ("swarrow" "↙")
+    ("leftarrow" "←")
+    ("uparrow" "↑")
+    ("Leftarrow" "⇐")
+    ("longrightarrow" "−")
+    ("Uparrow" "⇑")
+    ("Leftrightarrow" "⇔")
+    ("updownarrow" "↕")
+    ("leftrightarrow" "↔")
+    ("nearrow" "↗")
+    ("Updownarrow" "⇕")
+   
+    ;; arrows that didn't come out right in copy & paste
+    ;←− \longleftarrow
+    ;⇐= \Longleftarrow 
+    ;← 􏰂 \hookleftarrow
+    ;←→ \longleftrightarrow 
+    ;􏰁 → \hookrightarrow
+    ;⇐⇒ \Longleftrightarrow
+    ;􏴲 \leadsto∗ 
+    ;􏰃−→ \longmapsto
+    ;=⇒ \Longrightarrow 
+    ;􏰃→ \mapsto
+    
+    
+    ("aleph" "ℵ")
+    ("prime" "′")
+    ("emptyset" "∅")
+    ("nabla" "∇")
+    ("diamondsuit" "♦")
+    ("spadesuit" "♠")
+    ("clubsuit" "♣")
+    ("heartsuit" "♥")
+    ("sharp" "♯")
+    ("flat" "♭")
+    ("natural" "♮")
+    ("surd" "√")
+    ("neg" "¬")
+    ("triangle" "△")
+    ("forall" "∀")
+    ("exists" "∃")
+    ("infty" "∞")
+    ("circ" "∘")
     ("alpha" "α")
     ("theta" "θ")
     ("tau" "τ")
@@ -102,7 +140,7 @@
     ("cong" "≌")
     ("sqsubsetb" "⊏")
     ("sqsupsetb" "⊐")
-    ("\neq" "̸")
+    ("neq" "≠")
     ("smile" "⌣")
     ("sqsubseteq" "⊑")
     ("sqsupseteq" "⊒")
@@ -113,3 +151,19 @@
     ("propto" "∝")
     ("vdash" "⊢")
     ("dashv" "⊣")))
+
+;; checks to see if there are duplicates
+#;
+(define (find-dups)
+  (let ([ht (make-hash-table 'equal)])
+    (for-each
+     (λ (line)
+       (let ([name (list-ref line 0)]
+             [obj (list-ref line 1)])
+         (hash-table-put! ht name (cons obj (hash-table-get ht name '())))))
+     tex-shortcut-table)
+    (hash-table-for-each
+     ht
+     (λ (k v)
+       (unless (= 1 (length v))
+         (printf "~s -> ~s\n" k v))))))
