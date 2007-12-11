@@ -211,7 +211,7 @@
    --top--
    (set! ev (make-evaluator 'mzscheme '() '(define x (+ 1 2 3))))
    --eval--
-   (define x (+ x 10)) =err> "cannot change identifier"
+   (define x (+ x 10)) =err> "cannot re-define a constant"
 
    ;; whole program argument
    --top--
@@ -222,7 +222,7 @@
    (set! ev (make-evaluator '(module foo mzscheme (provide x) (define x 1))))
    --eval--
    x => 1
-   (define x 2) =err> "cannot change identifier"
+   (define x 2) =err> "cannot re-define a constant"
 
    ;; limited FS access, allowed for requires
    --top--
