@@ -4,9 +4,10 @@
 (Section 'kw)
 
 (require (lib "kw.ss")
-         mzscheme)
+         (prefix-in mz: mzscheme))
 
-(let ()
+(let-syntax ([#%datum (syntax-rules () [(_ . xs) (mz:#%datum . xs)])]
+             [#%app   (syntax-rules () [(_ . xs) (mz:#%app   . xs)])])
   (define-syntax t
     (syntax-rules (=> <= :rt-err: :st-err:)
       [(t E => :rt-err:) (err/rt-test E)]
