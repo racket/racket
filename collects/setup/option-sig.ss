@@ -15,6 +15,7 @@
      make-info-domain
      make-launchers
      make-docs
+     make-planet
      call-install
      call-post-install
      pause-on-errors

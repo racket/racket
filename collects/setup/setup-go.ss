@@ -44,6 +44,7 @@
 	     all-users
 	     compile-mode
              make-docs
+             make-planet
              doc-pdf-dest)
 
   (specific-collections x-specific-collections)

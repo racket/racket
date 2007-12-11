@@ -96,7 +96,10 @@
       ;;    - (list path[directory] string[owner] string[package-name] (listof string[extra package path]) Nat[maj] Nat[min]), or
       ;;    - (list string[owner] string[package-name] string[maj as string] string[min as string])
       ;; x-specific-planet-dir ::= (listof specific-planet-dir)
-      (define x-specific-planet-dirs (specific-planet-dirs))
+      (define x-specific-planet-dirs 
+        (if (make-planet)
+            (specific-planet-dirs)
+            null))
       
       (define (done)
 	(setup-printf "Done setting up"))
@@ -217,11 +220,13 @@
 		   c)))
       
       (define planet-dirs-to-compile 
-        (remove-falses
-         (map (lambda (spec) (apply planet->cc spec))
-              (if (and (null? x-specific-collections) (null? x-specific-planet-dirs))
-                  (get-all-planet-packages)
-                  (remove-falses (map planet-spec->planet-list x-specific-planet-dirs))))))
+        (if (make-planet)
+            (remove-falses
+             (map (lambda (spec) (apply planet->cc spec))
+                  (if (and (null? x-specific-collections) (null? x-specific-planet-dirs))
+                      (get-all-planet-packages)
+                      (remove-falses (map planet-spec->planet-list x-specific-planet-dirs)))))
+            null))
       
       (define collections-to-compile
 	(sort
