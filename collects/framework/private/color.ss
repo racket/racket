@@ -483,6 +483,8 @@
             (end-edit-sequence)
             (set! in-match-parens? #f))))
       
+      ;; highlight-nested-region : number number number -> void
+      ;; colors nested regions of parentheses.
       (define/private (highlight-nested-region orig-start orig-end here)
         (let paren-loop ([start orig-start]
                          [end orig-end]
