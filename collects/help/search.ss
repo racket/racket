@@ -57,7 +57,8 @@
 
 (define (generate-search-results search-keys)
   (let ([file (next-search-results-file)]
-        [search-regexps (map (λ (x) (regexp-quote x #f)) search-keys)]
+        [search-regexps (map (λ (x) (regexp (regexp-quote x #f))) search-keys)]
+        [exact-search-regexps (map (λ (x) (regexp (format "^~a$" (regexp-quote x #f)))) search-keys)]
         [search-key-string
          (cond
            [(null? search-keys) ""]
@@ -71,26 +72,60 @@
       (xref-render
        x
        (decode `(,(title (format "Search results for ~a" search-key-string))
-                 ,(let* ([index (xref-index x)]
-                         [len (length index)])
-                    (apply itemize
-                           (map
-                            (λ (entry)
-                              (apply item
-                                     (make-link-element
-                                      "indexlink"
-                                      (entry-content entry)
-                                      (entry-link-key entry))
-                                     (make-extra-content
-                                      (entry-desc entry))))
-                            (filter
-                             (λ (entry) 
-                               (ormap (λ (str) 
-                                        (ormap 
-                                         (λ (key) (regexp-match key str))
-                                         search-regexps))
-                                      (entry-words entry)))
-                             index))))))
+                 ,@(let* ([index (xref-index x)]
+                          [len (length index)]
+                          [matching-entries (filter (has-match search-regexps) index)]
+                          [exact-matches (filter (has-match exact-search-regexps) matching-entries)]
+                          [inexact-matches (filter (compose not (has-match exact-search-regexps))  matching-entries)])
+                     (append
+                      (build-itemization "Exact matches" exact-matches)
+                      (build-itemization "Containing matches" inexact-matches)))))
        file)
       (send-url (format "file://~a" (path->string file)))
       (void))))
+
+(define ((compose f g) x) (f (g x)))
+
+;; has-match : (listof regexp) -> entry -> boolean
+(define ((has-match search-regexps) entry)
+  (ormap (λ (str) 
+           (ormap 
+            (λ (key) (regexp-match key str))
+            search-regexps))
+         (entry-words entry)))
+
+;; build-itemization : (listof entry) -> (listof <stuff>)
+(define (build-itemization title entries)
+  (cond
+    [(null? entries) '()]
+    [else 
+     (list 
+      (bold title)
+      (apply itemize
+             (map
+              (λ (entry)
+                (apply item
+                       (make-link-element
+                        "indexlink"
+                        (entry-content entry)
+                        (entry-link-key entry))
+                       (make-extra-content
+                        (entry-desc entry))))
+              (limit-length
+               500
+               (sort
+                entries
+                (λ (x y) (string-ci<=? (entry->sort-key x) (entry->sort-key y))))))))]))
+
+(define (limit-length n l)
+  (cond
+    [(zero? n) '()]
+    [(null? l) '()]
+    [else (cons (car l) (limit-length (- n 1) (cdr l)))]))
+
+(define (entry->sort-key e)
+  (let ([words (entry-words e)])
+    (apply string-append
+           (car words)
+           (map (λ (x) (string-append ", " x))
+                (cdr words)))))
