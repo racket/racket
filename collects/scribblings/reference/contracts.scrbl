@@ -14,7 +14,7 @@ associating a contract with a binding.
 
 @; ----------------------------------------
 
-@section{Flat Contracts}
+@section{Data-structure Contracts}
 
 A @deftech{flat contract} can be fully checked immediately for
 a given value.
@@ -228,52 +228,28 @@ contract}. Beware that when this contract is applied to a value, the
 result is not @scheme[eq?] to the input.}
 
 
-@defproc[(list-mutableof [c (or/c flat-contract? (any/c . -> . any/c))]) flat-contract?]{
-
-Accepts a @tech{flat contract} (or a predicate that is converted to a
-flat contract via @scheme[flat-contract]) and returns a flat contract
-that checks for lists and mutable lists whose elements match the
-original contract.}
-
-
 @defproc[(listof [c (or/c contract? (any/c . -> . any/c))]) contract?]{
 
-Like @scheme[list-mutableof], but does recognize mutable lists, and
-the contract need not be a @tech{flat contract}. Beware that when this
-contract is applied to a value, the result is not @scheme[eq?] to the
-input.}
+Returns a contract that recognizes a list whose every element matches
+the contract @scheme[c]. Beware that when this contract is applied to
+a value, the result is not necessarily @scheme[eq?] to the input.}
 
-
-@defproc[(cons-mutable/c [car-c flat-contract?][cdr-c flat-contract?]) flat-contract?]{
-
-Returns a flat contract that recognizes apirs or mutable pairs whose
-first and second elements match @scheme[car-c] and @scheme[cdr-c],
-respectively.}
 
 @defproc[(cons/c [car-c contract?][cdr-c contract?]) contract?]{
 
-Like @scheme[cons-mutable/c], but does recognize mutable pairs, and
-the contracts need not be @tech{flat contracts}. Beware that when this
-contract is applied to a value, the result is not @scheme[eq?] to the
-input.}
-
-
-@defproc[(list-mutable/c [c (or/c flat-contract? (any/c . -> . any/c))] ...) flat-contract?]{
-
-Accepts any number of flat contracts (or predicates that are converted
-to flat contracts via @scheme[flat-contract]) and returns a
-flat-contract that recognizes mutable and immutable lists. The number
-of elements in the list must match the number of arguments supplied to
-@scheme[vector/c], and each element of the list must match the
-corresponding flat contract.}
+Produces a contract the recognizes pairs first and second elements
+match @scheme[car-c] and @scheme[cdr-c], respectively. Beware that
+when this contract is applied to a value, the result is not
+necessarily @scheme[eq?] to the input.}
 
 
 @defproc[(list/c [c (or/c contract? (any/c . -> . any/c))] ...) contract?]{
 
-Like @scheme[list-mutable/c], but does not recognize mutable lists,
-and the individual contracts need not be @tech{flat contracts}. Beware
+Produces a contract for a list. The number of elements in the list
+must match the number of arguments supplied to @scheme[list/c], and
+each element of the list must match the corresponding contract. Beware
 that when this contract is applied to a value, the result is not
-@scheme[eq?] to the input.}
+necessarily @scheme[eq?] to the input.}
 
 
 @defproc[(syntax/c [c flat-contract?]) flat-contract?]{
@@ -331,7 +307,6 @@ result of the final @scheme[body] is the result of the entire form.}
 The @scheme[any] form can only be used in a result position of
 contracts like @scheme[->]. Using @scheme[any] elsewhere is a syntax
 error.}
-
 
 @; ------------------------------------------------------------------------
 
