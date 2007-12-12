@@ -26,13 +26,13 @@
                [lang (or lang '(begin))])
            (keyword-apply
             make-evaluator
-            '(#:allow-read)
-            (list (extract-requires lang reqs))
+            '(#:allow-read #:requires)
+            (list (extract-requires lang reqs)
+                  (if beg-req? null reqs))
             (case lang
               [(r5rs beginner beginner-abbr intermediate intermediate-lambda advanced)
                (list 'special lang)]
               [else lang])
-            (if beg-req? null reqs)
             (append
              (if beg-req? (cdr reqs) null)
              progs)))))]

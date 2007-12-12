@@ -2,7 +2,8 @@
 @(require "mz.ss"
           scheme/sandbox
           (for-label scheme/sandbox
-                     #;(only-in mred/mred make-gui-namespace)))
+                     (only-in mred/mred make-gui-namespace)
+                     scheme/gui/dynamic))
 
 @title{Sandboxed Evaluation}
 
@@ -10,14 +11,14 @@
 
 The @schememodname[scheme/sandbox] module provides utilities for
 creating ``sandboxed'' evaluators, which are configured in a
-particular way and can have restricted filesystem access, network
-access, and memory use.
+particular way and can have restricted resources (memory and time),
+filesystem access, and network access.
 
 @defproc*[([(make-evaluator [language (or/c module-path? 
                                             (list/c (one-of/c 'special) symbol?)
                                             (cons/c (one-of/c 'begin) list?))]
-                            [requires (listof (or/c module-path? path?))]
                             [input-program any/c] ...
+                            [#:requires requires (listof (or/c module-path? path?))]
                             [#:allow-read allow (listof (or/c module-path? path?))])
             (any/c . -> . any)]
            [(make-module-evaluator [module-decl (or/c syntax? pair?)]
@@ -51,8 +52,8 @@ a program in one of the following forms:
  @item{a path that names a file holding the input; or}
 
  @item{an S-expression or a @tech{syntax object}, which is evaluated
-       as with @scheme[eval]; see also
-       @scheme[get-uncovered-expressions].}
+       as with @scheme[eval] (see also
+       @scheme[get-uncovered-expressions]).}
 
 }
 
@@ -64,7 +65,7 @@ program, and is converted to a @tech{syntax object} (using
 @scheme['program] as the source), unless it already is a @tech{syntax
 object}.
 
-The returned evaluator function accepts an additional expressions
+The returned evaluator function accepts additional expressions
 (each time it is called) in essentially the same form: a string or
 byte string holding a sequence of expressions, a path for a file
 holding expressions, an S-expression, or a @tech{syntax object}.  If
@@ -100,7 +101,11 @@ argument:
        wrapped in a @scheme[module], and the resulting evaluator works
        within the resulting module's namespace. In addition, certain
        parameters (such as such as @scheme[read-accept-infix-dot]) are
-       set to customize reading programs from strings and ports.}
+       set to customize reading programs from strings and ports.
+
+       This option is provided mainly for older test systems. Using
+       @scheme[make-module-evaluator] with input starting
+       @schememodfont{#lang} is generally better.}
 
  @item{Finally, @scheme[language] can be a list whose first element is
        @scheme['begin].
@@ -169,8 +174,8 @@ environment:
 
 Evaluation can also be instrumented to track evaluation information
 when @scheme[sandbox-coverage-enabled] is set. Exceptions (both syntax
-and run-time) are propagated in the usual way to the caller of the
-evaluation function.}
+and run-time) are propagated as usual to the caller of the evaluation
+function (i.e., catch it with @scheme[with-handlers]).}
 
 @; ----------------------------------------------------------------------
 
@@ -186,9 +191,9 @@ A parameter that determines a thunk to be called for initializing a
 new evaluator.  The hook is called just before the program is
 evaluated in a newly-created evaluator context.  It can be used to
 setup environment parameters related to reading, writing, evaluation,
-and so on.  Certain languages (@scheme['(r5rs)] and the teaching
-languages) have initializations specific to the language; the hook is
-used after that initialization, so it can override settings.}
+and so on.  Certain languages (@scheme['(special r5rs)] and the
+teaching languages) have initializations specific to the language; the
+hook is used after that initialization, so it can override settings.}
 
 
 @defparam[sandbox-reader proc (any/c . -> . any)]{
@@ -317,7 +322,7 @@ of code can be helpful:
    `(,(car specs)
      ,@(cdr specs)
      lang/posn
-     ,@(if mred? '(mrlib/cache0image-snip) '()))))
+     ,@(if mred? '(mrlib/cache-image-snip) '()))))
 ]}
 
 
@@ -325,7 +330,7 @@ of code can be helpful:
 
 A parameter that determines a list of collection directories to prefix
 @scheme[current-library-collection-paths] in an evaluator. This
-parameter useful for cases when you want to test code using an
+parameter is useful for cases when you want to test code using an
 alternate, test-friendly version of a collection, for example, testing
 code that uses GUI (like the @schememodname[htdp/world] teachpack) can
 be done using a fake library that provides the same interface but no
@@ -349,7 +354,7 @@ default forbids all filesystem I/O except for things in
 A parameter that configures the behavior of the default sandbox
 security guard by listing paths and access modes that are allowed for
 them.  The contents of this parameter is a list of specifications,
-each an access mode and a byte-regexp for paths that are granted this
+each is an access mode and a byte-regexp for paths that are granted this
 access.
 
 The access mode symbol is one of: @scheme['execute], @scheme['write],
@@ -408,8 +413,9 @@ evaluator using @scheme[set-eval-limits].}
 @section{Interacting with Evaluators}
 
 The following functions actually pass themselves to the given
-procedure. An evaluator procedure recognizes these procedures (using
-@scheme[eq?]) to take an appropriate action.
+procedure, and an evaluator procedure recognizes these procedures
+(using @scheme[eq?]) to take an appropriate action---but you should
+avoid relying on that fact.
 
 
 @defproc[(kill-evaluator [evaluator (any/c . -> . any)]) void?]{
@@ -519,9 +525,11 @@ source location.}
 @defthing[gui? boolean?]{
 
 True if the @schememodname[scheme/gui] module can be used, @scheme[#f]
-otherwise. Various aspects of the @schememodname[scheme/sandbox]
-library change when the GUI library is available, such as using a new
-eventspace for each evaluator.}
+otherwise; see @scheme[gui-available?].
+
+Various aspects of the @schememodname[scheme/sandbox] library change
+when the GUI library is available, such as using a new eventspace for
+each evaluator.}
 
 
 @defproc[(call-with-limits [secs (or/c exact-nonnegative-integer? false/c)]
