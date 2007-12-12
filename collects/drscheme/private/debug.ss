@@ -35,20 +35,22 @@ profile todo:
     
     (define (oprintf . args) (apply fprintf orig args))
     
-    
-    
-    ;;                             ;                        
-    ;                                                      
-    ;                                                      
-    ;;;;  ;;  ;;   ;;; ;        ;;;     ;;;    ;;;  ; ;;;  
-    ;   ;  ;   ;  ;   ;           ;    ;   ;  ;   ;  ;;  ; 
-    ;   ;  ;   ;  ;   ;           ;    ;      ;   ;  ;   ; 
-    ;   ;  ;   ;  ;   ;           ;    ;      ;   ;  ;   ; 
-    ;   ;  ;   ;  ;   ;           ;    ;   ;  ;   ;  ;   ; 
-    ; ;;;    ;;; ;  ;;;;         ;;;;;   ;;;    ;;;  ;;;  ;;
-    ;                                    
-    ;                                    
-    ;;;                                     
+
+;                                                          
+;                                                          
+;   ;                                                      
+;   ;                             ;                        
+;   ;                                                      
+;   ; ;;   ;   ;   ;; ;         ;;;     ;;;;   ;;;   ; ;;  
+;   ;;  ;  ;   ;  ;  ;;           ;    ;      ;   ;  ;;  ; 
+;   ;   ;  ;   ;  ;   ;           ;    ;      ;   ;  ;   ; 
+;   ;   ;  ;   ;  ;   ;           ;    ;      ;   ;  ;   ; 
+;   ;   ;  ;   ;  ;   ;           ;    ;      ;   ;  ;   ; 
+;   ;;  ;  ;  ;;  ;  ;;           ;    ;      ;   ;  ;   ; 
+;   ; ;;    ;; ;   ;; ;           ;     ;;;;   ;;;   ;   ; 
+;                     ;                                    
+;                  ;;;                                     
+;                                                          
     
     ;; type debug-source = (union symbol (instanceof editor<%>))
     
@@ -74,9 +76,9 @@ profile todo:
           (if (preferences:get 'framework:white-on-black?)
               w-o-b
               b-o-w))))
-    
-    (define clickable-image-snip%
-      (class image-snip%
+
+    (define (clickable-snip-mixin snip%)
+      (class snip%
         (init-rest args)
         (inherit get-flags set-flags get-admin get-extent)
         
@@ -137,6 +139,17 @@ profile todo:
         
         (apply super-make-object args)
         (set-flags (cons 'handles-events (get-flags)))))
+    
+    (define clickable-image-snip%  (clickable-snip-mixin image-snip%))
+    (define clickable-string-snip%  
+      (class (clickable-snip-mixin string-snip%)
+        (inherit get-callback set-callback)
+        (init-field str)
+        (define/override (copy)
+          (let ([n (new clickable-string-snip% [str str])])
+            (send n set-callback (get-callback))
+            n))
+        (super-make-object str)))
     
     ;; make-note% : string -> (union class #f)
     (define (make-note% filename flag)
@@ -300,6 +313,7 @@ profile todo:
                         (and (not (unbox b))
                              fn))
                       raw-src)])
+
         (when (and (path? src) file-note%)
           (when (port-writes-special? (current-error-port))
             (let ([note (new file-note%)])
@@ -1050,20 +1064,23 @@ profile todo:
     
     
     
-    
-    ;;;    ;    ;;;      ;                 
-    ;              ;                        
-    ;              ;                        
-    ; ;;;   ; ;;;   ;;;   ;;;;;  ;;;      ;    ;;;   ; ;;;    ;;; ;
-    ;   ;   ;     ;   ;   ;       ;      ;      ;    ;;  ;  ;   ; 
-    ;   ;   ;     ;   ;   ;       ;      ;      ;    ;   ;  ;   ; 
-    ;   ;   ;     ;   ;   ;       ;      ;      ;    ;   ;  ;   ; 
-    ;   ;   ;     ;   ;   ;       ;      ;      ;    ;   ;  ;   ; 
-    ;;;;   ;;;;    ;;;   ;;;;   ;;;;;  ;;;;;; ;;;;; ;;;  ;;  ;;;; 
-    ;                                                           ; 
-    ;                                                           ; 
-    ;;;                                                       ;;;  
-    
+
+;                                                                 
+;                                                                 
+;                           ;;;        ;;;                        
+;                          ;      ;      ;      ;                 
+;                          ;             ;                        
+;   ; ;;   ; ;;;   ;;;   ;;;;;; ;;;      ;    ;;;    ; ;;    ;; ; 
+;   ;;  ;  ;;  ;  ;   ;    ;      ;      ;      ;    ;;  ;  ;  ;; 
+;   ;   ;  ;      ;   ;    ;      ;      ;      ;    ;   ;  ;   ; 
+;   ;   ;  ;      ;   ;    ;      ;      ;      ;    ;   ;  ;   ; 
+;   ;   ;  ;      ;   ;    ;      ;      ;      ;    ;   ;  ;   ; 
+;   ;;  ;  ;      ;   ;    ;      ;      ;      ;    ;   ;  ;  ;; 
+;   ; ;;   ;       ;;;     ;      ;      ;      ;    ;   ;   ;; ; 
+;   ;                                                           ; 
+;   ;                                                        ;;;  
+;                                                                 
+  
     
     (define profile-key (gensym))
     
@@ -1927,15 +1944,5 @@ profile todo:
         (super-instantiate ())))
     
     
-    
-    ;                                
-    ;                                
-    ;;;   ; ;;;  ; ;;;   ;;;   ; ;;;  ;;;;;  ; ;;;  ;;;;    ;;;    ;;;  
-    ;   ;   ;      ;     ;   ;   ;      ;      ;         ;  ;   ;  ;   ; 
-    ;;;;;   ;      ;     ;   ;   ;      ;      ;      ;;;;  ;      ;;;;; 
-    ;       ;      ;     ;   ;   ;      ;      ;     ;   ;  ;      ;     
-    ;   ;   ;      ;     ;   ;   ;      ;   ;  ;     ;   ;  ;   ;  ;   ; 
-    ;;;   ;;;;   ;;;;    ;;;   ;;;;     ;;;  ;;;;    ;;; ;  ;;;    ;;;  
-    
-    
+ 
     (define-values/invoke-unit/infer stacktrace@)))
