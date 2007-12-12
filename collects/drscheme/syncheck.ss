@@ -29,6 +29,10 @@ If the namespace does not, they are colored the unbound color.
          (prefix-in drscheme:arrow: drscheme/arrow)
          (prefix-in fw: framework/framework)
          mred/mred
+         setup/scribble-index
+         net/url
+         net/uri-codec
+         browser/external
          (for-syntax scheme/base))
 (provide tool@)
 
@@ -86,6 +90,8 @@ If the namespace does not, they are colored the unbound color.
     (define (printf . args) (apply fprintf o args))
     
     
+    (define xref #f)
+    (define (get-xref) (unless xref (set! xref (load-xref))) xref)
     
     
     ;;;  ;;; ;;; ;;;;; 
@@ -113,6 +119,11 @@ If the namespace does not, they are colored the unbound color.
                   end-text end-pos-left end-pos-right
                   actual?))
     (define-struct (tail-arrow arrow) (from-text from-pos to-text to-pos))
+    
+    ;; color : string
+    ;; start, fin: number
+    ;; used to represent regions to highlight when passing the mouse over the syncheck window
+    (define-struct colored-region (color start fin))
     
     ;; id : symbol  --  the nominal-source-id from identifier-binding
     ;; filename : path
@@ -186,7 +197,8 @@ If the namespace does not, they are colored the unbound color.
             (inherit set-cursor get-admin invalidate-bitmap-cache set-position
                      position-location
                      get-canvas last-position dc-location-to-editor-location
-                     find-position begin-edit-sequence end-edit-sequence)
+                     find-position begin-edit-sequence end-edit-sequence
+                     highlight-range unhighlight-range)
             
             
             
@@ -355,12 +367,16 @@ If the namespace does not, they are colored the unbound color.
                   (set! cursor-text #f)
                   (when any-tacked?
                     (invalidate-bitmap-cache))
+                  (update-docs-background #f)
                   (let ([f (get-top-level-window)])
                     (when f
                       (send f close-status-line 'drscheme:check-syntax:mouse-over))))))
             (define/public (syncheck:add-menu text start-pos end-pos key make-menu)
               (when (and (<= 0 start-pos end-pos (last-position)))
                 (add-to-range/key text start-pos end-pos make-menu key #t)))
+            
+            (define/public (syncheck:add-background-color text color start fin key)
+              (add-to-range/key text start fin (make-colored-region color start fin) key #f))
             
             ;; syncheck:add-arrow : symbol text number number text number number boolean -> void
             ;; pre: start-editor, end-editor are embedded in `this' (or are `this')
@@ -600,6 +616,7 @@ If the namespace does not, they are colored the unbound color.
               (if arrow-vectors
                   (cond
                     [(send event leaving?)
+                     (update-docs-background #f)
                      (when (and cursor-location cursor-text)
                        (set! cursor-location #f)
                        (set! cursor-text #f)
@@ -620,24 +637,9 @@ If the namespace does not, they are colored the unbound color.
                             
                             (let* ([arrow-vector (hash-table-get arrow-vectors cursor-text (λ () #f))]
                                    [eles (and arrow-vector (vector-ref arrow-vector cursor-location))])
+                              (update-docs-background eles)
                               (when eles
-                                (let ([has-txt? #f])
-                                  (for-each (λ (ele)
-                                              (cond
-                                                [(string? ele)
-                                                 (set! has-txt? #t)
-                                                 (let ([f (get-top-level-window)])
-                                                   (when f
-                                                     (send f update-status-line 
-                                                           'drscheme:check-syntax:mouse-over 
-                                                           ele)))]))
-                                            eles)
-                                  (unless has-txt?
-                                    (let ([f (get-top-level-window)])
-                                      (when f
-                                        (send f update-status-line 'drscheme:check-syntax:mouse-over #f))))))
-                              
-                              (when eles
+                                (update-status-line eles)
                                 (for-each (λ (ele)
                                             (cond
                                               [(arrow? ele)
@@ -645,6 +647,7 @@ If the namespace does not, they are colored the unbound color.
                                           eles)
                                 (invalidate-bitmap-cache))))]
                          [else
+                          (update-docs-background #f)
                           (let ([f (get-top-level-window)])
                             (when f
                               (send f update-status-line 'drscheme:check-syntax:mouse-over #f)))
@@ -697,6 +700,38 @@ If the namespace does not, they are colored the unbound color.
                     [else (super on-event event)])
                   (super on-event event)))
             
+            (define/private (update-status-line eles)
+              (let ([has-txt? #f])
+                (for-each (λ (ele)
+                            (cond
+                              [(string? ele)
+                               (set! has-txt? #t)
+                               (let ([f (get-top-level-window)])
+                                 (when f
+                                   (send f update-status-line 
+                                         'drscheme:check-syntax:mouse-over 
+                                         ele)))]))
+                          eles)
+                (unless has-txt?
+                  (let ([f (get-top-level-window)])
+                    (when f
+                      (send f update-status-line 'drscheme:check-syntax:mouse-over #f))))))
+            
+            (define current-colored-region #f)
+            ;; update-docs-background : (or/c false/c (listof any)) -> void
+            (define/private (update-docs-background eles)
+              (let ([new-region (and eles (ormap (λ (x) (and (colored-region? x) x)) eles))])
+                (unless (eq? current-colored-region new-region)
+                  (when current-colored-region
+                    (unhighlight-range (colored-region-start current-colored-region)
+                                       (colored-region-fin current-colored-region)
+                                       (send the-color-database find-color (colored-region-color current-colored-region))))
+                  (when new-region
+                    (highlight-range (colored-region-start new-region)
+                                     (colored-region-fin new-region)
+                                     (send the-color-database find-color (colored-region-color new-region))))
+                  (set! current-colored-region new-region))))
+                
             ;; tack/untack-callback : (listof arrow) -> void
             ;; callback for the tack/untack menu item
             (define/private (tack/untack-callback arrows)
@@ -1700,6 +1735,7 @@ If the namespace does not, they are colored the unbound color.
                     (for-each (λ (var)
                                 (when (syntax-original? var)
                                   (color-variable var identifier-binding)
+                                  (document-variable var identifier-binding)
                                   (record-renamable-var rename-ht var)))
                               vars))
                   (append (get-idss high-binders)
@@ -1708,6 +1744,7 @@ If the namespace does not, they are colored the unbound color.
         (for-each (λ (vars) (for-each 
                              (λ (var)
                                (color-variable var identifier-binding)
+                               (document-variable var identifier-binding)
                                (connect-identifier var
                                                    rename-ht
                                                    low-binders
@@ -1723,6 +1760,7 @@ If the namespace does not, they are colored the unbound color.
         (for-each (λ (vars) (for-each 
                              (λ (var)
                                (color-variable var identifier-transformer-binding)
+                               (document-variable var identifier-transformer-binding)
                                (connect-identifier var
                                                    rename-ht
                                                    high-binders
@@ -1798,7 +1836,7 @@ If the namespace does not, they are colored the unbound color.
         (color-unused require-for-syntaxes unused-require-for-syntaxes)
         (color-unused requires unused-requires)
         (hash-table-for-each rename-ht (lambda (k stxs) (make-rename-menu stxs id-sets)))))
-    
+        
     ;; record-renamable-var : rename-ht syntax -> void
     (define (record-renamable-var rename-ht stx)
       (let ([key (list (syntax-source stx) (syntax-position stx) (syntax-span stx))])
@@ -2302,6 +2340,58 @@ If the namespace does not, they are colored the unbound color.
       (let ([drs-frame (currently-processing-drscheme-frame)])
         (and drs-frame
              (send drs-frame get-definitions-text))))
+    
+    
+;                                                                                             
+;                                                                                             
+;       ;                                                                                     
+;       ;                                                                   ;                 
+;       ;                                             ;             ;                         
+;    ;; ;   ;;;    ;;;;  ;   ; ; ;; ;;  ;;;   ; ;;   ;;;;;  ;;;;   ;;;;;  ;;;     ;;;   ; ;;  
+;   ;  ;;  ;   ;  ;      ;   ; ;; ;; ; ;   ;  ;;  ;   ;         ;   ;       ;    ;   ;  ;;  ; 
+;   ;   ;  ;   ;  ;      ;   ; ;  ;  ; ;   ;  ;   ;   ;         ;   ;       ;    ;   ;  ;   ; 
+;   ;   ;  ;   ;  ;      ;   ; ;  ;  ; ;;;;;  ;   ;   ;      ;;;;   ;       ;    ;   ;  ;   ; 
+;   ;   ;  ;   ;  ;      ;   ; ;  ;  ; ;      ;   ;   ;     ;   ;   ;       ;    ;   ;  ;   ; 
+;   ;  ;;  ;   ;  ;      ;  ;; ;  ;  ; ;      ;   ;   ;     ;  ;;   ;       ;    ;   ;  ;   ; 
+;    ;; ;   ;;;    ;;;;   ;; ; ;  ;  ;  ;;;;  ;   ;    ;;;   ;;  ;   ;;;    ;     ;;;   ;   ; 
+;                                                                                             
+;                                                                                             
+;                                                                                             
+
+    
+    ;; document-variable : stx identifier-binding -> void
+    (define (document-variable stx get-binding)
+      (let ([defs-frame (currently-processing-drscheme-frame)])
+        (when defs-frame
+          (let* ([defs-text (send defs-frame get-definitions-text)]
+                 [binding-info (get-binding stx)])
+            (when (pair? binding-info)
+              (let* ([start (- (syntax-position stx) 1)]
+                     [fin (+ start (syntax-span stx))]
+                     [source-mod (list-ref binding-info 0)]
+                     [source-id (list-ref binding-info 1)]
+                     [definition-tag (xref-binding->definition-tag (get-xref) source-mod source-id)])
+                (when definition-tag
+                  (let-values ([(path tag) (xref-tag->path+anchor (get-xref) definition-tag)])
+                    (when path
+                      (send defs-text syncheck:add-background-color defs-text "navajowhite" start fin (syntax-e stx))
+                      (send defs-text syncheck:add-menu
+                            defs-text
+                            start 
+                            fin 
+                            (syntax-e stx)
+                            (λ (menu)
+                              (instantiate menu-item% ()
+                                (parent menu)
+                                (label (format (string-constant cs-view-docs) source-id))
+                                (callback
+                                 (λ (x y)
+                                   (send-url (format "file://~a~a"
+                                                     (path->string path) 
+                                                     (if tag
+                                                         (string-append "#" (uri-encode tag))
+                                                         "")))))))))))))))))
+    
     
     
     ;                                                          
