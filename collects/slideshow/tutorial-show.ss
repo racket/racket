@@ -584,7 +584,7 @@
 
 (define (run-example-talk f)
   (let ([c (make-custodian)])
-    (parameterize ([current-namespace (make-namespace-with-mred)]
+    (parameterize ([current-namespace (make-gui-namespace)]
                    [current-command-line-arguments
                     (vector (path->string
                              (build-path (collection-path "slideshow")

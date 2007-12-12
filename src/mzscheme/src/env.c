@@ -2481,7 +2481,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	if (!genv) {
 	  scheme_wrong_syntax("require", NULL, src_find_id, 
                               "namespace mismatch; reference (phase %d) to a module"
-                              " %D that is not instantiated (phase %d)", 
+                              " %D that is not available (phase %d)", 
 			      env->genv->phase, modname, mod_defn_phase);
 	  return NULL;
 	}

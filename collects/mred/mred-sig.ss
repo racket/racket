@@ -118,7 +118,8 @@ labelled-menu-item<%>
 list-box%
 list-control<%>
 make-eventspace
-make-namespace-with-mred
+make-gui-empty-namespace
+make-gui-namespace
 map-command-as-meta-key
 menu%
 menu-bar%

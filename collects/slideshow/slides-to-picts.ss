@@ -13,7 +13,7 @@
 
   (define get-slides-as-picts
     (opt-lambda (file w h c? [stop-after #f])
-      (let ([ns (make-namespace-with-mred)]
+      (let ([ns (make-gui-namespace)]
 	    [orig-ns (current-namespace)]
 	    [param ((current-module-name-resolver) '(lib "param.ss" "slideshow") #f #f)]
 	    [core ((current-module-name-resolver) '(lib "core.ss" "slideshow") #f #f)]

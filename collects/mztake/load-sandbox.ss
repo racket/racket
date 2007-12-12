@@ -13,7 +13,7 @@
   ;; custodian and the given error display handler.
   (define (require/sandbox+annotations custodian err-display-handler initial-module annotate-module? annotator)
     (parameterize ([current-custodian custodian]
-                   [current-namespace (make-namespace-with-mred)]
+                   [current-namespace (make-gui-namespace)]
                    [error-display-handler err-display-handler])
       (require/annotations initial-module annotate-module? annotator)))
 

@@ -24,7 +24,7 @@
             [old (variable-reference->empty-namespace (#%variable-reference reflect-var))])
         (namespace-attach-module old 'mzscheme new)
         (parameterize ([current-namespace new])
-          (namespace-require 'mzscheme))
+          (namespace-require/copy 'mzscheme))
         new)]))
 
   (define (free-identifier=?* a b)

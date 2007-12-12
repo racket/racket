@@ -10,10 +10,8 @@
            (all-from-out scribble/eval)
            (all-from-out scheme/contract))
 
-  (require (for-label scheme
-                      "to-do.ss"))
-  (provide (for-label (all-from-out scheme)
-                      (all-from-out "to-do.ss")))
+  (require (for-label scheme))
+  (provide (for-label (all-from-out scheme)))
 
   (define AllUnix "Unix and Mac OS X")
   (provide AllUnix)

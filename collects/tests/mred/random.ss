@@ -1083,12 +1083,12 @@
 		  (parameterize ([current-namespace n])
 		    (namespace-mapped-symbols)))]
        [expect-n (list* 'mred@ 'mred^ 
-			(append (get-all (let ([n (make-namespace)])
+			(append (get-all (let ([n (make-base-namespace)])
 					   (parameterize ([current-namespace n])
 					     (namespace-require '(lib "class.ss")))
 					   n))
 				in-top-level))]
-       [actual-n (get-all (make-namespace-with-mred))])
+       [actual-n (get-all (make-gui-namespace))])
   (for-each
    (lambda (i)
      (unless (memq i expect-n)

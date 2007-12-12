@@ -424,22 +424,16 @@ If the AppleEvent reply contains a value that cannot be
 
 }
 
-@defproc[(make-namespace-with-mred [flag (one-of/c 'mred 'initial 'empty) 'mred])
+@defproc[(make-gui-empty-namespace)
          namespace?]{
 
-Like @scheme[make-namespace], but the @scheme[(lib "mred.ss"
- "mred")] module of the current namespace is attached. In addition, by
- default, the namespace is initialized by importing the @filepath{mred.ss}
- module and MzLib's @indexed-file{class.ss} module into the
- namespace's top-level environment.
+Like @scheme[make-base-empty-namespace], but with
+@scheme[scheme/class] and @schememodname[scheme/gui/base] also
+attached to the result namespace.}
 
+@defproc[(make-gui-namespace)
+         namespace?]{
 
-The @scheme['initial] and @scheme['empty] flags control the namespace
- creation in the same way as for @scheme[make-namespace], except that
- the @filepath{mred.ss} module is attached to the created namespace (along
- with the transitive closure of its imports). The @scheme['mred] flag
- is like @scheme['initial], but also imports the @filepath{mred.ss} module
- and MzLib's @indexed-file{class.ss} module into the namespace's
- top-level environment.
-
-}
+Like @scheme[make-base-namespace], but with @scheme[scheme/class] and
+@schememodname[scheme/gui/base] also required into the top-level
+environment of the result namespace.}
