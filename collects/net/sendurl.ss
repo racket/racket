@@ -13,7 +13,7 @@
   (define separate-by-default?
     (get-preference 'new-browser-for-urls (lambda () #t)))
 
-  (define unix-browser-list '(firefox galeon opera netscape mozilla dillo))
+  (define unix-browser-list '(gnome-open firefox galeon opera netscape mozilla dillo))
 
   ;; : any -> bool
   (define (custom-browser? x)
@@ -77,6 +77,9 @@
       [(use-browser 'galeon)
        => (lambda (exe)
             (browser-process* exe (if separate-window? "-w" "-x") url-str))]
+      [(use-browser 'gnome-open)
+       => (lambda (exe)
+	     (browser-process* exe url-str))]
       [(or (use-browser 'netscape)
            (use-browser 'mozilla)
            (use-browser 'firefox))
