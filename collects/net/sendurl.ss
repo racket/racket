@@ -59,7 +59,7 @@
     (cond
       [(procedure? external) (external url-str)]
       [(eq? stype 'macosx)
-       (browser-process (format "open \"~a\"" url-str))]
+       (browser-process (format "osascript -e 'open location \"~a\"'" url-str))]
       [(eq? stype 'windows)
        (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL)]
       [(not (eq? stype 'unix))
