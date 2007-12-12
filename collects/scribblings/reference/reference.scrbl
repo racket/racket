@@ -49,11 +49,17 @@ This chapter provides some temporary hyper-link targets.
 
 @(bibliography
 
-  (bib-entry #:key "Sitaram93" 
-             #:title "Handling Control" 
-             #:author "Dorai Sitaram"
-             #:location "Programming Language Design and Implementation" 
-             #:date 1993)
+  (bib-entry #:key "Danvy90"
+             #:author "Olivier Danvy and Andre Filinski"
+             #:title "Abstracting Control"
+             #:location "LISP and Functional Programming"
+             #:date "1990")
+
+  (bib-entry #:key "Felleisen88"
+             #:author "Matthias Felleisen, Mitch Wand, Dan Friedman, and Bruce Duba"
+             #:title "Abstract Continuations: A Mathematical Semantics for Handling Full Functional Jumps"
+             #:location "LISP and Functional Programming"
+             #:date "1988")
 
   (bib-entry #:key "Friedman95" 
              #:title "Exception system proposal" 
@@ -62,18 +68,54 @@ This chapter provides some temporary hyper-link targets.
              #:url "http://www.cs.indiana.edu/scheme-repository/doc.proposals.exceptions.html"
              #:date "1995")
 
+  (bib-entry #:key "Gasbichler02" 
+             #:title "Processes vs. User-Level Threads in Scsh" 
+             #:author "Martin Gasbichler and Michael Sperber" 
+             #:date 2002 
+             #:location "Workshop on Scheme and Functional Programming")
+
+ (bib-entry #:key "Gunter95"
+            #:author "Carl Gunter, Didier Remy, and Jon Rieke"
+            #:title "A Generalization of Exceptions and Control in ML-like Languages"
+            #:location "Functional Programming Languages and Computer Architecture"
+            #:date 1995)
+
+  (bib-entry #:key "Hieb90"
+             #:author "Robert Hieb and R. Kent Dybvig"
+             #:title "Continuations and Concurrency"
+             #:location "Principles and Practice of Parallel Programming"
+             #:date "1990")
+
+  (bib-entry #:key "Queinnec91"
+             #:author "Queinnec and Serpette"
+             #:title "A Dynamic Extent Control Operator for Partial Continuations"
+             #:location "Principles of Programming Languages"
+             #:date "1991")
+
+  (bib-entry #:key "Shan04"
+             #:author "Ken Shan"
+             #:title "Shift to Control"
+             #:location "Workshop on Scheme and Functional Programming"
+             #:date 2004)
+
+  (bib-entry #:key "Sitaram90"
+             #:author "Dorai Sitaram"
+             #:title "Control Delimiters and Their Hierarchies"
+             #:location @italic{Lisp and Symbolic Computation}
+             #:date "1990")
+
+  (bib-entry #:key "Sitaram93" 
+             #:title "Handling Control" 
+             #:author "Dorai Sitaram"
+             #:location "Programming Language Design and Implementation" 
+             #:date "1993")
+
   (bib-entry #:key "SRFI-42"
              #:title "SRFI-42: Eager Comprehensions"
              #:author "Sebastian Egner"
              #:location "SRFI"
              #:url "http://srfi.schemers.org/srfi-42/"
              #:date "2003")
-
-  (bib-entry #:key "Gasbichler02" 
-             #:title "Processes vs. User-Level Threads in Scsh" 
-             #:author "Martin Gasbichler and Michael Sperber" 
-             #:date 2002 
-             #:location "Scheme Workshop")
 
   )
 

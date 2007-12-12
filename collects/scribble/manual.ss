@@ -438,6 +438,7 @@
   ;; ----------------------------------------
 
   (provide declare-exporting
+           deftogether
            defproc defproc* defstruct defthing defthing* defparam defboolparam
            defform defform* defform/subs defform*/subs defform/none
            defidform
@@ -769,6 +770,24 @@
      (lambda (render part ri)
        (proc
         (or (get-exporting-libraries render part ri) null)))))
+
+  (define (*deftogether boxes . body)
+    (make-splice
+     (cons
+      (make-table
+       'boxed
+       (map (lambda (box)
+              (unless (and (splice? box)
+                           (= 1 (length (splice-run box)))
+                           (table? (car (splice-run box)))
+                           (eq? 'boxed (table-style (car (splice-run box)))))
+                (error 'deftogether "element is not a splice containing a single table: ~e" box))
+              (list (make-flow (list (make-table #f (table-flowss (car (splice-run box))))))))
+            boxes))
+      body)))
+
+  (define-syntax-rule (deftogether (box ...) . body)
+    (*deftogether (list box ...) . body))
     
   (define (*defproc mode within-id
                     stx-ids prototypes arg-contractss arg-valss result-contracts content-thunk)
@@ -1581,11 +1600,22 @@
            (rename-out [a-bib-entry? bib-entry?])
            bibliography)
 
-  (define (cite key)
-    (make-link-element
+  (define (cite key . keys)
+    (make-element
      #f
-     (list (format "[~a]" key))
-     `(cite ,key)))
+     (list "["
+           (let loop ([keys (cons key keys)])
+             (if (null? (cdr keys))
+                 (make-link-element
+                  #f
+                  (list (car keys))
+                  `(cite ,(car keys)))
+                 (make-element
+                  #f
+                  (list (loop (list (car keys)))
+                        ", "
+                        (loop (cdr keys))))))
+           "]")))
 
   (define-struct a-bib-entry (key val))
 

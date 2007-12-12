@@ -9,7 +9,7 @@
 This guide is intended for programmers who are new to Scheme, new to PLT
 Scheme, or new to some part of PLT Scheme. It assumes
 programming experience, so if you are new to programming, consider
-instead reading @|HtDP|. If you want a quick and pretty overview of PLT
+instead reading @|HtDP|. If you want a brief introduction to PLT
 Scheme, start with @|Quick|.
 
 @seclink["to-scheme"]{Chapter 2} provides a brief introduction to

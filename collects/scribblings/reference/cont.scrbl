@@ -336,3 +336,7 @@ restore; in that case, the first step in a @scheme[pre-thunk] or
         (k (cons void esc)))))
   l)
 ]}
+
+@; ----------------------------------------------------------------------
+
+@include-section["control-lib.scrbl"]
