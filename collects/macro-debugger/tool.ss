@@ -13,6 +13,7 @@
            "model/deriv.ss"
            "model/deriv-util.ss"
            "view/frame.ss"
+           "view/stepper.ss"
            "view/prefs.ss")
 
   (provide tool@
@@ -25,15 +26,9 @@
   (define (ext-macro-stepper-frame-mixin %)
     (class %
       (define/override (get-macro-stepper-widget%)
-        (ext-macro-stepper-widget-mixin
+        (macro-stepper-widget/process-mixin
          (super get-macro-stepper-widget%)))
       (super-new)))
-
-  (define (ext-macro-stepper-widget-mixin %)
-    (class %
-      (super-new)
-      (define/override (get-preprocess-deriv)
-        get-original-part)))
 
   (define macro-stepper-frame%
     (ext-macro-stepper-frame-mixin
@@ -211,16 +206,16 @@
         (let ([main-group (car lang)]
               [second (and (pair? (cdr lang)) (cadr lang))]
               [third (and (pair? (cdr lang)) (pair? (cddr lang)) (caddr lang))])
-          (and (equal? main-group (string-constant legacy-languages))
-               (or (member second 
-                           (list (string-constant r5rs-lang-name)
-                                 "Module"
-                                 "Swindle"))
-                   (member third
-                           (list (string-constant mzscheme-w/debug)
-                                 (string-constant mred-w/debug)
-                                 (string-constant pretty-big-scheme)))))))
-
+          (or (equal? main-group "Module")
+              (and (equal? main-group (string-constant legacy-languages))
+                   (or (member second 
+                               (list (string-constant r5rs-lang-name)
+                                     "Swindle"))
+                       (member third
+                               (list (string-constant mzscheme-w/debug)
+                                     (string-constant mred-w/debug)
+                                     (string-constant pretty-big-scheme))))))))
+      
       ;; Macro debugger code
 
       (drscheme:get/extend:extend-unit-frame
@@ -233,45 +228,4 @@
        macro-debugger-tab-mixin)
 
       ))
-
-  ;; get-original-part : Deriv -> Deriv/#f
-  ;; Strip off mzscheme's #%top-interaction
-  ;; Careful: the #%top-interaction node may be inside of a lift-deriv
-  (define (get-original-part deriv)
-    ;; adjust-deriv/lift : Derivation -> (list-of Derivation)
-    (define (adjust-deriv/lift deriv)
-      (match deriv
-        [(Wrap lift-deriv (e1 e2 first lifted-stx second))
-         (let ([first (adjust-deriv/top first)])
-           (and first
-                (let ([e1 (wderiv-e1 first)])
-                  (make-lift-deriv e1 e2 first lifted-stx second))))]
-        [else (adjust-deriv/top deriv)]))
-    ;; adjust-deriv/top : Derivation -> Derivation
-    (define (adjust-deriv/top deriv)
-      (if (syntax-source (wderiv-e1 deriv))
-          deriv
-          ;; It's not original...
-          ;; Strip out mzscheme's top-interactions
-          ;; Keep anything that is a non-mzscheme top-interaction
-          ;; Drop everything else (not original program)
-          (match deriv
-            [(Wrap mrule (e1 e2 tx next))
-             (match tx
-               [(Wrap transformation (e1 e2 rs ?1 me1 locals ?2 me2 seq))
-                (cond [(ormap (lambda (x)
-                                (module-identifier=? x #'#%top-interaction))
-                              rs)
-                       ;; Just mzscheme's top-interaction; strip it out
-                       (adjust-deriv/top next)]
-                      [(equal? (map syntax-e rs) '(#%top-interaction))
-                       ;; A *different* top interaction; keep it
-                       deriv]
-                      [else
-                       ;; Not original and not tagged with top-interaction
-                       #f])])]
-            [else #f])))
-    (let ([deriv* (adjust-deriv/lift deriv)])
-      deriv*))
-
   )
