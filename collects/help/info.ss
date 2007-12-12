@@ -12,5 +12,5 @@
       ("help" "servlets" "scheme" "misc")
 |#
       ))
-  (define mred-launcher-libraries '("help.ss"))
-  (define mred-launcher-names     '("Help Desk")))
+  (define mzscheme-launcher-libraries '("help.ss"))
+  (define mzscheme-launcher-names     '("Help Desk")))

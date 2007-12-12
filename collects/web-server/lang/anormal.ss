@@ -11,15 +11,15 @@
 
 ;; a context is either
 ;;    frame
-;;    (compose context frame)
+;;    (ccompose context frame)
 
 ;; a frame is either
 ;;    w -> target-redex
 ;;    (listof w) -> target-redex
 
-;; compose: (w -> target-expr) (alpha -> target-redex) -> (alpha -> target-expr)
+;; ccompose: (w -> target-expr) (alpha -> target-redex) -> (alpha -> target-expr)
 ;; compose a context with a frame
-(define (compose ctxt frame)
+(define (ccompose ctxt frame)
   (if (eq? ctxt id) 
       frame
       (lambda (val)
@@ -61,9 +61,9 @@
                                                          (#%plain-app apply values #,ref-to-save)))))))]
        [(set! v ve)
         (anormal
-         (compose ctxt
-                  (lambda (val)
-                    (quasisyntax/loc stx (set! v #,val))))
+         (ccompose ctxt
+                   (lambda (val)
+                     (quasisyntax/loc stx (set! v #,val))))
          #'ve)]
        [(let-values () be)
         (anormal ctxt (syntax/loc stx be))]
@@ -103,12 +103,12 @@
                  (syntax/loc stx (case-lambda [formals (begin be ...)] ...)))]
        [(if te ce ae)
         (anormal
-         (compose ctxt
-                  (lambda (val)
-                    (quasisyntax/loc stx 
-                      (if #,val
-                          #,(anormal-term #'ce)
-                          #,(anormal-term #'ae)))))
+         (ccompose ctxt
+                   (lambda (val)
+                     (quasisyntax/loc stx 
+                       (if #,val
+                           #,(anormal-term #'ce)
+                           #,(anormal-term #'ae)))))
          #'te)]
        [(quote datum)
         (ctxt stx)]
@@ -116,23 +116,23 @@
         (ctxt stx)]
        [(with-continuation-mark ke me be)
         (anormal
-         (compose ctxt
-                  (lambda (kev)
-                    (anormal 
-                     (lambda (mev)
-                       (quasisyntax/loc stx 
-                         (with-continuation-mark #,kev #,mev
-                           #,(anormal-term #'be))))
-                     #'me)))
+         (ccompose ctxt
+                   (lambda (kev)
+                     (anormal 
+                      (lambda (mev)
+                        (quasisyntax/loc stx 
+                          (with-continuation-mark #,kev #,mev
+                            #,(anormal-term #'be))))
+                      #'me)))
          #'ke)]       
        [(#%plain-app fe e ...)
         (anormal
          (lambda (val0)
            (anormal*
-            (compose ctxt
-                     (lambda (rest-vals)
-                       (quasisyntax/loc stx 
-                         (#%plain-app #,val0 #,@rest-vals))))
+            (ccompose ctxt
+                      (lambda (rest-vals)
+                        (quasisyntax/loc stx 
+                          (#%plain-app #,val0 #,@rest-vals))))
             (syntax->list #'(e ...))))
          #'fe)]
        [(#%top . v)
@@ -149,9 +149,9 @@
                  (elim-letrec-term stx))]
        [(#%expression d)
         (anormal
-         (compose ctxt
-                  (lambda (d)
-                    (quasisyntax/loc stx (#%expression #,d))))
+         (ccompose ctxt
+                   (lambda (d)
+                     (quasisyntax/loc stx (#%expression #,d))))
          #'d)]
        [_
         (raise-syntax-error 'anormal "Dropped through:" stx)])))

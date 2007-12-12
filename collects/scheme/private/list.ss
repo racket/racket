@@ -21,7 +21,9 @@
 
            build-vector
            build-string
-           build-list)
+           build-list
+
+           compose)
 
   ;; used by sort-internal; note that a and b are reversed, to we invert `less?'
   ;; test
@@ -317,4 +319,31 @@
         (if (= i n)
             (reverse a)
             (loop (add1 i)
-                  (cons (fcn i) a)))))))
+                  (cons (fcn i) a))))))
+
+  (define compose
+    (case-lambda
+      [(f) (if (procedure? f) 
+               f
+               (raise-type-error 'compose "procedure" f))]
+      [(f g)
+       (let ([f (compose f)]
+             [g (compose g)])
+         (if (eqv? 1 (procedure-arity f)) ; optimize: don't use call-w-values
+             (if (eqv? 1 (procedure-arity g)) ; optimize: single arity everywhere
+                 (lambda (x) (f (g x)))
+                 (lambda args (f (apply g args))))
+             (if (eqv? 1 (procedure-arity g)) ; optimize: single input
+                 (lambda (a)
+                   (call-with-values
+                    (lambda () (g a))
+                    f))
+                 (lambda args
+                   (call-with-values
+                    (lambda () (apply g args))
+                    f)))))]
+      [(f . more)
+       (if (procedure? f)
+           (let ([m (apply compose more)])
+             (compose f m))
+           (compose f))])))

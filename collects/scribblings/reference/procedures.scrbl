@@ -24,6 +24,20 @@ is called in tail position with respect to the @scheme[apply] call.
 (apply + '())
 ]}
 
+@defproc[(compose [proc procedure?] ...) procedure?]{
+
+Returns a procedure that composes the given functions, applying the
+last @scheme[proc] first and the first @scheme[proc] last. The
+composed functions can consume and produce any number of values, as
+long as each function produces as many values as the preceding
+function consumes.
+
+@examples[
+((compose - sqrt) 10)
+((compose sqrt -) 10)
+((compose list split-path) (bytes->path #"/a" 'unix))
+]}
+
 @; ----------------------------------------
 @section{Keywords and Arity}
 

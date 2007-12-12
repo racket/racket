@@ -7,7 +7,7 @@
          scribble/basic
          scribble/manual
          (prefix-in scheme: scribble/scheme)
-         browser/external
+         net/sendurl ; browser/external
          mzlib/contract)
 
 (provide/contract
@@ -83,8 +83,6 @@
        file)
       (send-url (format "file://~a" (path->string file)))
       (void))))
-
-(define ((compose f g) x) (f (g x)))
 
 ;; has-match : (listof regexp) -> entry -> boolean
 (define ((has-match search-regexps) entry)

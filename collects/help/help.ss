@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "search.ss"
-         browser/external
+         net/sendurl ; browser/external
          setup/dirs
          mzlib/cmdline)
 
