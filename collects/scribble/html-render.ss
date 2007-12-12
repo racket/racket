@@ -108,6 +108,18 @@
       
       ;; ----------------------------------------
 
+      (define/public (tag->path+anchor ri tag)
+        (let ([dest (resolve-get #f ri tag)])
+          (if dest
+              (values
+               (relative->path (car dest))
+               (if (caddr dest)
+                   #f
+                   (anchor-name (cadddr dest))))
+              (values #f #f))))
+
+      ;; ----------------------------------------
+
       (define/private (reveal-subparts? p)
         (part-style? p 'reveal))
     

@@ -9,11 +9,14 @@
          setup/getinfo
          setup/dirs
          mzlib/serialize
-         scheme/path)
+         scheme/path
+         setup/main-collects)
 
 (provide load-xref
          xref-render
          xref-index
+         xref-binding->definition-tag
+         xref-tag->path+anchor
          (struct-out entry))
 
 (define-struct entry (words    ; list of strings: main term, sub-term, etc.
@@ -97,3 +100,51 @@
     (let ([ri (send renderer resolve (list doc) (list dest-file) ci)])
       (send renderer render (list doc) (list dest-file) ri)
       (void))))
+
+;; Returns (values <tag-or-#f> <form?>)
+(define (xref-binding-tag xrefs src id)
+  (let ([search
+         (lambda (src)
+           (let ([base (format ":~a:~a" 
+                               (if (path? src)
+                                   (path->main-collects-relative src)
+                                   src)
+                               id)]
+                 [ht (collect-info-ext-ht (resolve-info-ci (xrefs-ri xrefs)))])
+             (let ([form-tag `(form ,base)]
+                   [val-tag `(def ,base)])
+               (if (hash-table-get ht form-tag #f)
+                   (values form-tag #t)
+                   (if (hash-table-get ht val-tag #f)
+                       (values val-tag #f)
+                       (values #f #f))))))])
+    (let loop ([src src])
+      (cond
+       [(path? src)
+        (if (complete-path? src)
+            (search src)
+            (loop (path->complete-path src)))]
+       [(path-string? src)
+        (loop (path->complete-path src))]
+       [(resolved-module-path? src)
+        (let ([n (resolved-module-path-name src)])
+          (if (pair? n)
+              (loop n)
+              (search n)))]
+       [(module-path-index? src)
+        (loop (module-path-index-resolve src))]
+       [(module-path? src)
+        (loop (module-path-index-join src #f))]
+       [else
+        (raise-type-error 'xref-binding-definition->tag
+                          "module path, resolved module path, module path index, path, or string"
+                          src)]))))
+
+(define (xref-binding->definition-tag xrefs src id)
+  (let-values ([(tag form?) (xref-binding-tag xrefs src id)])
+    tag))
+
+(define (xref-tag->path+anchor xrefs tag)
+  (let ([renderer (new (html:render-mixin render%) 
+                       [dest-dir (find-system-path 'temp-dir)])])
+    (send renderer tag->path+anchor (xrefs-ri xrefs) tag)))
