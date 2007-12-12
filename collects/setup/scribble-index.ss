@@ -65,13 +65,12 @@
                             infos
                             dirs)))]
          [ci (send renderer collect null null)])
-    (map (lambda (doc)
-           (parameterize ([current-namespace (namespace-anchor->empty-namespace here)])
-             (with-handlers ([exn:fail? (lambda (exn) exn)])
-               (let ([r (with-input-from-file (build-path (doc-dest doc) "out.sxref")
-                          read)])
-                 (send renderer deserialize-info (cadr r) ci)))))
-         docs)
+    (for-each (lambda (doc)
+                (parameterize ([current-namespace (namespace-anchor->empty-namespace here)])
+                  (let ([r (with-input-from-file (build-path (doc-dest doc) "out.sxref")
+                             read)])
+                    (send renderer deserialize-info (cadr r) ci))))
+              docs)
     (make-xrefs renderer (send renderer resolve null null ci))))
 
 ;; ----------------------------------------

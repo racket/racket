@@ -140,11 +140,11 @@
 	      (null? v)
 	      (void? v))
 	  (void)]
-	 [(hash-table-get cycle v (lambda () #f))
+	 [(hash-table-get cycle v #f)
 	  ;; We already know that this value is
 	  ;;  part of a cycle
 	  (void)]
-	 [(hash-table-get tmp-cycle v (lambda () #f))
+	 [(hash-table-get tmp-cycle v #f)
 	  ;; We've just learned that this value is
 	  ;;  part of a cycle.
 	  (let ([mut-v (if (is-mutable? v)
@@ -154,10 +154,10 @@
 	    (unless (eq? mut-v v)
 	      ;; This value is potentially shared
 	      (hash-table-put! share v (share-id share cycle))))]
-	 [(hash-table-get share v (lambda () #f))
+	 [(hash-table-get share v #f)
 	  ;; We already know that this value is shared
 	  (void)]
-	 [(hash-table-get tmp-share v (lambda () #f))
+	 [(hash-table-get tmp-share v #f)
 	  ;; We've just learned that this value is
 	  ;;  shared
 	  (hash-table-put! share v (share-id share cycle))]
@@ -213,7 +213,7 @@
        [(void? v)
 	'(void)]
        [(and check-share?
-	     (hash-table-get share v (lambda () #f)))
+	     (hash-table-get share v #f))
 	=> (lambda (v) (cons '? v))]
        [(and (or (string? v)
 		 (bytes? v))
@@ -296,7 +296,7 @@
       (let ([ordered (map car (sort (hash-table-map share cons)
                                     (lambda (a b) (< (cdr a) (cdr b)))))])
 	(let ([serializeds (map (lambda (v)
-				  (if (hash-table-get cycle v (lambda () #f))
+				  (if (hash-table-get cycle v #f)
 				      ;; Box indicates cycle record allocation
 				      ;;  followed by normal serialization
 				      (box (serial-shell v mod-map mod-map-cache))
@@ -323,6 +323,25 @@
   ;; deserialize
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define-struct not-ready (shares fixup))
+
+  (define (lookup-shared! share n mod-map)
+    ;; The shared list is not necessarily in order of
+    ;;  refereds before referees. A `not-ready' object
+    ;;  indicates a reference before a value is ready,
+    ;;  so we need to recur to make it ready. Cycles
+    ;;  have been broken, though, so we don't run into
+    ;;  trouble with an infinite loop here.
+    (let ([sv (vector-ref share n)])
+      (if (not-ready? sv)
+          (let* ([v (vector-ref (not-ready-shares sv) n)]
+                 [val (if (box? v)
+                          (deserial-shell (unbox v) mod-map (not-ready-fixup sv) n)
+                          (deserialize-one v share mod-map))])
+            (vector-set! share n val)
+            v)
+          sv)))
+
   (define (deserialize-one v share mod-map)
     (let loop ([v v])
       (cond
@@ -342,7 +361,7 @@
 	  (apply (deserialize-info-maker info) (map loop (cdr v))))]
        [else
 	(case (car v)
-	  [(?) (vector-ref share (cdr v))]
+	  [(?) (lookup-shared! share (cdr v) mod-map)]
 	  [(void) (void)]
 	  [(u) (let ([x (cdr v)])
 		 (cond
@@ -448,16 +467,14 @@
               (vector-set! mod-map n des))
             (loop (add1 n) (cdr l))))
         ;; Create vector for sharing:
-        (let ([share (make-vector share-n #f)]
-              [fixup (make-vector share-n #f)])
+        (let* ([fixup (make-vector share-n #f)]
+               [share (make-vector share-n (make-not-ready
+                                            (list->vector shares)
+                                            fixup))])
           ;; Deserialize into sharing array:
           (let loop ([n 0][l shares])
             (unless (= n share-n)
-              (vector-set! share n
-                           (let ([v (car l)])
-                             (if (box? v)
-                                 (deserial-shell (unbox v) mod-map fixup n)
-                                 (deserialize-one v share mod-map))))
+              (lookup-shared! share n mod-map)
               (loop (add1 n) (cdr l))))
           ;; Fixup shell for graphs
           (for-each (lambda (n+v)
