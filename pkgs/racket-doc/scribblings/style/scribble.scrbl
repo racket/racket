@@ -45,6 +45,9 @@ variable, meta-variable, etc.---use @scheme[schemeidfont] (e.g., as in
 not merely @scheme[schemefont] or @scheme[verbatim], to refer to a
 specific sequence of characters.
 
+Refrain from referring to documentation ``above'' or ``below,'' and
+instead have a hyperlink point to the right place.
+
 Use American style for quotation marks and punctuation at the end of
 quotation marks (i.e., a sentence-terminating period goes inside the
 quotation marks). Of course, this rule does not apply for quotation
