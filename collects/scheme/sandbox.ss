@@ -569,7 +569,7 @@
          (raise r)))))
 
 (define make-evaluator
-  (lambda (language requires #:allow-read [allow null] . input-program)
+  (lambda (language #:requires [requires null] #:allow-read [allow null] . input-program)
     ;; `input-program' is either a single argument specifying a file/string,
     ;; or multiple arguments for a sequence of expressions
     (let (;; make it possible to provide #f for no language and no requires
