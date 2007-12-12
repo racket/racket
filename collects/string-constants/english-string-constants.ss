@@ -190,7 +190,8 @@ please adhere to these guidelines:
  (cs-status-eval-compile-time "Check Syntax: eval compile time")
  (cs-status-expanding-expression "Check Syntax: expanding expression")
  (cs-mouse-over-import "binding ~s imported from ~s")
-
+ (cs-view-docs "View documentation for ~a")
+  
  (cs-lexical-variable "lexical variable")
  (cs-imported-variable "imported variable")
 
