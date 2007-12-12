@@ -1,7 +1,7 @@
 #lang scribble/doc
 
 @title[#:tag-prefix '(lib "quick.scrbl" "scribblings/quick")
-       #:tag "top"]{An Introduction to PLT Scheme with Pictures}
+       #:tag "top"]{@bold{Quick}: An Introduction to PLT Scheme with Pictures}
 
 @; ----------------------------------------------------------------------
 

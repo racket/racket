@@ -2,7 +2,7 @@
 @(require "utils.ss")
 
 @title[#:tag-prefix '(lib "scribblings/inside/inside.scrbl") 
-       #:tag "top"]{Inside PLT Scheme}
+       #:tag "top"]{@bold{Inside}: PLT Scheme C API}
 
 This manual describes PLT Scheme's C interface, which allows the
 interpreter to be extended by a dynamically-loaded library, or

@@ -3,7 +3,7 @@
 
 @define[paper-url "http://www.cs.utah.edu/plt/publications/jfp05-ff.pdf"]
 
-@title{Slideshow}
+@title{@bold{Slideshow}: PLT Figure and Presentation Tools}
 
 Slideshow is a library for creating presentation slides. Unlike
 Powerpoint, Slideshow provides no WYSIWYG interface for constructing

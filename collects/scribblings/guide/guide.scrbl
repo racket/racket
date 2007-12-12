@@ -4,7 +4,7 @@
 @require["guide-utils.ss"]
 
 @title[#:tag-prefix '(lib "scribblings/guide/guide.scrbl") 
-       #:tag "top"]{A Guide to PLT Scheme}
+       #:tag "top"]{@bold{Guide}: PLT Scheme}
 
 This guide is intended for programmers who are new to Scheme, new to PLT
 Scheme, or new to some part of PLT Scheme. It assumes

@@ -2,7 +2,7 @@
 @require["common.ss"]
 
 @title[#:tag-prefix '(lib "scribblings/gui/gui.scrbl") 
-       #:tag "top"]{PLT Scheme GUI: MrEd}
+       #:tag "top"]{@bold{GUI}: PLT Graphics Toolkit}
 
 @declare-exporting[scheme/gui/base scheme/gui]
 

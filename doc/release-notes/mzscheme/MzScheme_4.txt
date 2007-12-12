@@ -307,21 +307,21 @@ with some syntactic and name changes.
 
     (define-struct posn (x y)) ; does not declare `set-posn-x!'
 
-  Specify the #:mutable optional for either the entire structure type
-  or an individual field:
+   Specify the #:mutable optional for either the entire structure type
+   or an individual field:
 
-   (define-struct posn (x y) 
-                  #:mutable) ; => `set-posn-x!' and  `set-posn-x!'
-   (define-struct posn ([x #:mutable] y)  ; => just `set-posn-x!'
+    (define-struct posn (x y) 
+                   #:mutable) ; => `set-posn-x!' and  `set-posn-x!'
+    (define-struct posn ([x #:mutable] y)  ; => just `set-posn-x!'
 
-  Use the #:inspector option to specify an inspector, such as
-  specifying #f to make the structure type tranparent:
+   Use the #:inspector option to specify an inspector, such as
+   specifying #f to make the structure type tranparent:
 
-   (define-struct posn (x y) #:inspector #f)
+    (define-struct posn (x y) #:inspector #f)
 
-  Other keyword options such as #:property and #:procedure enable
-  `define-struct' to reflect all of the funtionality of the underlying
-  `make-struct-type' function.
+   Other keyword options such as #:property and #:procedure enable
+   `define-struct' to reflect all of the funtionality of the
+   underlying `make-struct-type' function.
 
  * One-armed `if' is prohibited; use `when', instead.
 

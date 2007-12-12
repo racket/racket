@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.ss")
 
-@title{PLT Foreign Interface Manual}
+@title{@bold{FFI}: PLT Foreign Interface}
 
 @defmodule[scheme/foreign]
 

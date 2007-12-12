@@ -4,7 +4,7 @@
 (require scribble/manual)
 ]
 
-@title{PLT Framework: GUI Application Framework}
+@title{@bold{Framework}: PLT GUI Application Framework}
 
 Nothing yet.
 

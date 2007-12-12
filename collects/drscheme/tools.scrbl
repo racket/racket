@@ -11,7 +11,7 @@
 (define (item/cap x . ys) (apply item (bold (format "~a" x)) ": " ys)) ;; indexing missing
 
 ]
-@title{PLT Plugins: DrScheme Extension Manual}
+@title{@bold{Plugins}: Extending DrScheme}
 
 @section{This Manual}
 

@@ -390,6 +390,11 @@
                color: red;
                }
 
+               .plainlink { 
+               text-decoration: none;
+               color: blue;
+               }
+
                .techlink { 
                text-decoration: none;
                color: black;
