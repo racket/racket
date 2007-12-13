@@ -621,6 +621,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
     /* No switches => -u mode */
     script_mode = 1;
     no_more_switches = 1;
+    sprog = argv[0];
     evals_and_loads[num_enl] = argv[0];
     eval_kind[num_enl++] = mzcmd_REQUIRE;
     argv++;
@@ -745,6 +746,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	case 'r':
 	  script_mode = 1;
 	  no_more_switches = 1;
+          if (argc > 1)
+            sprog = argv[1];
 	case 'f':
 	  if (argc < 2) {
 	    PRINTF("%s: missing file name after %s switch\n", 
@@ -760,6 +763,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	case 'u':
 	  script_mode = 1;
 	  no_more_switches = 1;
+          if (argc > 1)
+            sprog = argv[1];
 	case 't':
 	  if (argc < 2) {
 	    PRINTF("%s: missing file name after %s switch\n", 
@@ -946,6 +951,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
     scheme_set_exec_cmd(prog);
     if (!sprog)
       sprog = prog;
+  
     ps = scheme_set_run_cmd(sprog);
   }
 
@@ -1040,8 +1046,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -t <file>, --require <file> : Like -e '(require (file \"<file>\"))'\n"
 	 "  -l <path>, --lib <path> : Like -e '(require (lib \"<path>\"))'\n"
 	 "  -p <fl> <u> <pkg> : Like -e '(require (planet \"<fl>\" (\"<u>\" \"<pkg>\"))'\n"
-	 "  -r, --script : Script mode; same as -f-\n" 
-	 "  -u, --require-script : Module script mode; same as -t-\n" 
+	 "  -r <file>, --script <file> : Same as -f <file> -N <file> --\n" 
+	 "  -u <file>, --require-script <file> : Same as -t <file> -N <file> --\n" 
 	 "  -k <n> <m> : Load executable-embedded code from file offset <n> to <m>\n"
 	 "  -m, --main : Call `main' with command-line arguments\n"
 	 " Interaction options:\n"

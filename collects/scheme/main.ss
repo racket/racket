@@ -11,6 +11,7 @@
            scheme/list
            scheme/path
            scheme/file
+           scheme/cmdline
            (for-syntax scheme/base))
 
   (provide (all-from-out scheme/contract
@@ -25,5 +26,6 @@
                          scheme/udp
                          scheme/list
                          scheme/path
-                         scheme/file)
+                         scheme/file
+                         scheme/cmdline)
            (for-syntax (all-from-out scheme/base))))

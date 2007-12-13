@@ -7,7 +7,7 @@
          scribble/basic
          scribble/manual
          (prefix-in scheme: scribble/scheme)
-         net/sendurl ; browser/external
+         net/sendurl
          mzlib/contract)
 
 (provide/contract

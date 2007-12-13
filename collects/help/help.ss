@@ -1,18 +1,15 @@
 #lang scheme/base
 
 (require "search.ss"
-         net/sendurl ; browser/external
+         net/sendurl
          setup/dirs
-         mzlib/cmdline)
+         scheme/cmdline)
 
-(define search-terms '())
-(command-line "Help Desk"
-              (current-command-line-arguments)
-              (args search-term (set! search-terms search-term)))
-              
-(cond
-  [(null? search-terms)
+(command-line
+ #:args search-term
+ (cond
+  [(null? search-term)
    (let ([dest-path (build-path (find-doc-dir) "start" "index.html")])
      (send-url (format "file://~a" (path->string dest-path))))]
   [else
-   (generate-search-results search-terms)])
+   (generate-search-results search-term)]))
