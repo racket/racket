@@ -470,8 +470,8 @@ Returns @scheme[(and (exact-integer? v) (positive? v))].
 @examples[(make-rectangular 3 4.0)]}
 
 
-@defproc[(make-polar [x real?] [y real?]) number?]{ Returns
- @scheme[(+ (* x (cos y)) (* x (sin y) 0+1i))].
+@defproc[(make-polar [magnitude real?] [angle real?]) number?]{ Returns
+ @scheme[(+ (* magnitude (cos angle)) (* magnitude (sin angle) 0+1i))].
 
 @examples[(make-polar 2 3.14159)]}
 
