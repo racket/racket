@@ -61,7 +61,25 @@
       [(eq? stype 'macosx)
        (browser-process (format "osascript -e 'open location \"~a\"'" url-str))]
       [(eq? stype 'windows)
-       (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL)]
+       (let ([simple
+	      (lambda ()
+		(shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL))])
+	 (if (regexp-match #rx"#" url-str)
+	     ;; complex case: need to launch the browser directly,
+	     ;; otherwise the fragment is ignored. Use `ftype' to discover
+	     ;; the browser...
+	     (let ([p (process "ftype htmlfile")])
+	       (close-output-port (cadr p))
+	       (let ([s (read-line (car p) 'return-linefeed)])
+		 (close-input-port (car p))
+		 (close-input-port (cadddr p))
+		 (let ([m (regexp-match #rx"^htmlfile=(.*)" s)])
+		   (if m
+		       (browser-process (string-append (cadr m) " " url-str))
+		       ;; give up and use simple mode
+		       (simple)))))
+	     ;; simple case: no fragment
+	     (simple)))]
       [(not (eq? stype 'unix))
        (error 'send-url "don't know how to open URL on platform: ~s" stype)]
       ;; unix
