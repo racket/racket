@@ -70,6 +70,10 @@
     "xform-collects/xform/xform-mod.ss")
 ;; Needed for cm:
 (go 'mzlib/private/cm-ctime #f #f)
+;; Readers:
+(go 'mzscheme/lang/reader #f #f)
+(go 'scheme/base/lang/reader #f #f)
+(go 'scheme/lang/reader #f #f)
 
 (current-library-collection-paths 
  (list (build-path (current-directory) "xform-collects")))
