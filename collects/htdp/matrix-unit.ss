@@ -236,7 +236,7 @@
 (define (check-matrix tag M* i j)
   (define M (cond
 	      [(matrix? M*) M*]
-	      [(visible? M*) (printf "dereferencing ... \n") (visible-matrix M*)]
+	      [(visible? M*) (visible-matrix M*)]
 	      [else (error 'check-matrix "something is wrong: ~e ~e~e\n"
 		      M* (visible? M*) (send M* get-M))]))
   (check-arg tag (matrix? M) 'matrix "first" M)
