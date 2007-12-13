@@ -645,7 +645,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
     else if (!strcmp("--require-script", argv[0]))
       argv[0] = "-u";
     else if (!strcmp("--main", argv[0]))
-      argv[0] = "-I";
+      argv[0] = "-m";
     else if (!strcmp("--name", argv[0]))
       argv[0] = "-N";
     else if (!strcmp("--no-lib-path", argv[0]))
