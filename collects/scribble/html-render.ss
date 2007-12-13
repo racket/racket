@@ -39,19 +39,28 @@
           (main-collects-relative->path p))))
 
   ;; HTML anchors are case-insenstive. To make them
-  ;;  distinct, add a "^" in front of capital letters.
+  ;;  distinct, add a "." in front of capital letters.
+  ;;  Also clean up characters that give browers trouble
+  ;;  (i.e., the ones that are not allowed as-in in URI
+  ;;  codecs) by using "~" followed by a hex encoding.
   (define (anchor-name v)
     (let loop ([s (format "~a" v)])
       (cond
-       [(regexp-match-positions #rx"[A-Z:]" s)
+       [(regexp-match-positions #rx"[A-Z.]" s)
+        => (lambda (m)
+             (string-append
+              (loop (substring s 0 (caar m)))
+              "."
+              (substring s (caar m) (cdar m))
+              (loop (substring s (cdar m)))))]
+       [(regexp-match-positions #rx"[^-a-zA-Z0-9_!*'().]" s)
         => (lambda (m)
              (string-append
               (substring s 0 (caar m))
-              ":"
-              (substring s (caar m) (cdar m))
+              "~"
+              (format "~x" (char->integer (string-ref s (caar m))))
               (loop (substring s (cdar m)))))]
        [else s])))
-                                
 
   ;; ----------------------------------------
   ;;  main mixin
