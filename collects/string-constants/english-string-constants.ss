@@ -189,6 +189,7 @@ please adhere to these guidelines:
  (cs-status-coloring-program "Check Syntax: coloring expression")
  (cs-status-eval-compile-time "Check Syntax: eval compile time")
  (cs-status-expanding-expression "Check Syntax: expanding expression")
+ (cs-status-loading-docs-index "Check Syntax: loading documentation index")
  (cs-mouse-over-import "binding ~s imported from ~s")
  (cs-view-docs "View documentation for ~a")
   

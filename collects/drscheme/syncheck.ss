@@ -42,6 +42,7 @@ If the namespace does not, they are colored the unbound color.
 (define status-coloring-program (string-constant cs-status-coloring-program))
 (define status-eval-compile-time (string-constant cs-status-eval-compile-time))
 (define status-expanding-expression (string-constant cs-status-expanding-expression))
+(define status-loading-docs-index (string-constant cs-status-loading-docs-index))
 
 (define jump-to-next-bound-occurrence (string-constant cs-jump-to-next-bound-occurrence))
 (define jump-to-binding (string-constant cs-jump-to-binding))
@@ -90,8 +91,15 @@ If the namespace does not, they are colored the unbound color.
     (define (printf . args) (apply fprintf o args))
     
     
-    (define xref #f)
-    (define (get-xref) (unless xref (set! xref (load-xref))) xref)
+    (define xref 'not-yet-loaded-xref)
+    (define (get-xref) 
+      (when (symbol? xref)
+        (error 'get-xref "xref has not yet been loaded"))
+      xref)
+    (define (force-xref th) 
+      (when (symbol? xref)
+        (th)
+        (set! xref (load-xref))))
     
     
     ;;;  ;;; ;;; ;;;;; 
@@ -1158,6 +1166,7 @@ If the namespace does not, they are colored the unbound color.
                                       definitions-text
                                       (λ ()
                                         (open-status-line 'drscheme:check-syntax)
+                                        (force-xref (λ () (update-status-line 'drscheme:check-syntax status-loading-docs-index)))
                                         (update-status-line 'drscheme:check-syntax status-coloring-program)
                                         (parameterize ([currently-processing-drscheme-frame this])
                                           (expanded-expression user-namespace user-directory sexp jump-to-id))
@@ -1707,8 +1716,6 @@ If the namespace does not, they are colored the unbound color.
                                 require-for-syntaxes
                                 require-for-templates
                                 require-for-labels)
-      
-      
       
       (let ([rename-ht
              ;; hash-table[(list source number number) -> (listof syntax)]
