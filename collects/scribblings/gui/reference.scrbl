@@ -11,3 +11,4 @@
 @include-section["draw-funcs.scrbl"]
 @include-section["editor-classes.scrbl"]
 @include-section["editor-funcs.scrbl"]
+@include-section["wxme.scrbl"]

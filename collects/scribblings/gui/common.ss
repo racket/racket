@@ -15,8 +15,10 @@
 
   (require (for-label mred
                       mzlib/class
+                      mzlib/contract
                       scheme/base))
   (provide (for-label (all-from-out mred)
                       (all-from-out mzlib/class)
+                      (all-from-out mzlib/contract)
                       (all-from-out scheme/base))))
 

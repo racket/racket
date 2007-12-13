@@ -529,6 +529,8 @@
 
       (super-new)))
 
+  (define stream<%> (class->interface stream%))
+
   ;; ----------------------------------------
   
   (define lib-mapping (make-hash-table 'equal))
@@ -715,5 +717,6 @@
            broken-wxme-big-endian?
            snip-reader<%>
            readable<%>
+           stream<%>
            wxme-read
            wxme-read-syntax))

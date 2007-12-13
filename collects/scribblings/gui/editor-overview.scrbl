@@ -339,18 +339,19 @@ See @xmethod[text% get-styles-sticky] for more information about the
 @section[#:tag "editorfileformat"]{File Format}
 
 To allow editor content to be saved to a file, the editor classes
- implement a special file format. (The format is used when cutting and
- pasting between applications or eventspaces, too). The file format is
- not documented, except that it begins
- @litchar{WXME01}@nonterm{digit}@nonterm{digit} ## }.  Otherwise, the
+ implement a special file format called @deftech{WXME}. (The format is
+ used when cutting and pasting between applications or eventspaces,
+ too). The file format is not documented, except that it begins
+ @litchar{WXME01}@nonterm{digit}@nonterm{digit}@litchar{ ## }. Otherwise, the
  @method[editor<%> load-file] and @method[editor<%> save-file] methods
  define the format internally. The file format is the same for text
  and pasteboard editors. When a pasteboard saves its content to a
  file, it saves the snips from front to back, and also includes extra
- location information.
+ location information. The @schememodname[wxme] library provides
+ utilities for manipulating WXME files.
 
 Editor data is read and written using @scheme[editor-stream-in%] and
- @scheme[editor-stream-out%] objects.  Editor information can only be
+@scheme[editor-stream-out%] objects.  Editor information can only be
  read from or written to one stream at a time. To write one or more
  editors to a stream, first call the function
  @scheme[write-editor-global-header] to write initialization data into
@@ -417,7 +418,7 @@ Snip classes, snip data, and snip data classes solve problems related
 Each snip can be associated to a @deftech{snip class}. This ``class''
  is not a class description in the programmer's language; it is an
  object which provides a way to create new snips of the appropriate
- type from an encoded snip specification. 
+ type from an encoded snip specification.
 
 Snip class objects can be added to the eventspace-specific
  @deftech{snip class list}, which is returned by
@@ -427,13 +428,27 @@ Snip class objects can be added to the eventspace-specific
  snip's class. The snip class will then provide a decoding function
  that can create a new snip from the encoding.
 
-If a snip class's name is of the form @scheme["(lib ...)"], then the
- snip class implementation can be loaded on demand. The name is parsed
- using @scheme[read]; if the result has the form @scheme[(lib _string
- ...)], then it is supplied to @scheme[dynamic-require] along with
- @scheme['snip-class]. If the result is a @scheme[snip-class%] object,
- it is inserted into the current eventspace's snip class list, and
- loading or saving continues using the new class.
+If a snip class's name is of the form
+@;-
+@scheme["((lib ...) (lib ...))"], 
+@;-
+ then the snip class implementation can be loaded on
+ demand. The name is parsed using @scheme[read]; if the result has the
+ form @scheme[((lib _string ...) (lib _string ...))], then the first
+ element used with @scheme[dynamic-require] along with
+ @scheme['snip-class]. If the @scheme[dynamic-require] result is a
+ @scheme[snip-class%] object, then it is inserted into the current
+ eventspace's snip class list, and loading or saving continues using
+ the new class.
+
+The second @scheme[lib] form in @scheme["((lib ...) (lib ...))"]
+ supplies a reader for a text-only version of the snip. See
+ @schememodname[wxme] for more information.
+
+A snip class's name can also be just @scheme["(lib ...)"], which is
+ used like the first part of the two-@scheme[lib] form. However, this
+ form provides no information for the text-only @schememodname[wxme]
+ reader.
 
 @subsubsection[#:tag "editordata"]{Editor Data}
 
@@ -449,10 +464,10 @@ Just as a snip must be associated with a snip class to be decoded (see
  data class} for decoding. Every editor data class object can be added
  to the eventspace-specific @deftech{editor data class list}, returned
  by @scheme[get-the-editor-data-class-list]. Alternatively, like snip
- classes, editor data class names can use the form @scheme["(lib ...)"]
- to enable on-demand loading. The corresponding module should export an
- @scheme[editor-data-class%] object named
- @scheme['editor-data-class].
+ classes (see @secref["editorsnipclasses"]), editor data class names
+ can use the form @scheme["((lib ...)  (lib ...))"]  to enable
+ on-demand loading. The corresponding module should export an
+ @scheme[editor-data-class%] object named @scheme['editor-data-class].
 
 To store and load information about a snip or region in an editor:
 

@@ -44,9 +44,9 @@ Returns the class's name, a string uniquely designating this snip
  class. For example, the standard text snip classname is
  @scheme["wxtext"]. Names beginning with @litchar{wx} are reserved.
 
-A snip class name should usually have the form @scheme["(lib ...)"]  to
- enable on-demand loading of the class; see @|snipclassdiscuss| for
- details.
+A snip class name should usually have the form @scheme["((lib ...)
+(lib ...))"]  to enable on-demand loading of the class. See
+@|snipclassdiscuss| for details.
 
 }
 

@@ -734,9 +734,9 @@ The resulting procedure should accept the same arguments as
 arguments are provided. The procedure is given the port whose stream
 contained @litchar{#reader}, and it should produce a datum result. If
 the result is a syntax object in @scheme[read] mode, then it is
-converted to a datum using @scheme[syntax-object->datum]; if the
+converted to a datum using @scheme[syntax->datum]; if the
 result is not a syntax object in @scheme[read-syntax] mode, then it is
-converted to one using @scheme[datum->syntax-object]. See also
+converted to one using @scheme[datum->syntax]. See also
 @secref["reader-procs"] for information on the procedure's results.
 
 If the @scheme[read-accept-reader] @tech{parameter} is set to
