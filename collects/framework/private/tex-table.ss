@@ -108,6 +108,8 @@
     ("oslash" "⊘")
     ("ast" "∗")
     ("sqcup" "⊔")
+    ("vee" "∨")
+    ("wedge" "∧")
     ("triangleright" "◃")
     ("odot" "⊙")
     ("star" "★")
