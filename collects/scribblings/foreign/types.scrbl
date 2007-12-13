@@ -16,8 +16,8 @@ along with conversion functions to and from the existing types.
 @section{Type Constructors}
 
 @defproc[(make-ctype [type ctype?]
-                     [scheme-to-C (or/c false/c (any/c . -> . any))]
-                     [C-to-scheme (or/c false/c (any/c . -> . any))])
+                     [scheme-to-c (or/c false/c (any/c . -> . any))]
+                     [c-to-scheme (or/c false/c (any/c . -> . any))])
          cttype?]{
 
 Creates a new @tech{C type} value, with the given conversions
