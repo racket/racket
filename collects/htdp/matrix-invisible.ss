@@ -8,6 +8,7 @@
   (unit (import)
         (export matrix-render^)
         (define-struct invisible (matrix))
+	(define visible? invisible?)
         (define make-visible make-invisible)
         (define visible-matrix invisible-matrix)))
 

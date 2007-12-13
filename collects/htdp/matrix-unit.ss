@@ -1,4 +1,4 @@
-#lang scheme/unit
+#lang scheme
 
 (require (lib "matrix-sig.ss" "htdp")
          (lib "matrix-render.ss" "htdp")
@@ -8,26 +8,17 @@
          (lib "pconvert.ss")
          (lib "pretty.ss"))
 
-(import matrix-render^)
-(export matrix^)
-
-
-(define (matrix-mixin% s%)
-  (class s%
+(printf "loading module matrix-unit @ bmatrix\n")
+;; [Matrix X] = [BST X]
+(define bmatrix%
+  (class object%
     (init-field n m mat)
+    (define/public (get-n) n)
+    (define/public (get-m) m)
+    (define/public (get-mat) mat)
     ;; [InnerMatrix X] = Nat x Nat x [vectorof X] 
     ;; s.t. (= (* n m)(vector-length vector))
     (super-new)))
-
-;; [Matrix X] = [BST X]
-(define bmatrix% (matrix-mixin% object%))
-
-(define (create-matrix n m mat) 
-  (new bmatrix% [n n] [m m] [mat mat]))
-
-(define matrix-get-mat (class-field-accessor bmatrix% mat))
-(define matrix-get-n (class-field-accessor bmatrix% n))
-(define matrix-get-m (class-field-accessor bmatrix% m))
 
 (define-struct imatrix (left i j info right) #:transparent)
 (define (set-imatrix-left n x)
@@ -36,6 +27,20 @@
   (make-imatrix (imatrix-left n) (imatrix-i n) (imatrix-j n) (imatrix-info n) x))
 (define (set-imatrix-info n x)
   (make-imatrix (imatrix-left n) (imatrix-i n) (imatrix-j n) x (imatrix-right n)))
+
+(provide matrix@)
+
+(define matrix@
+  (unit 
+    (import matrix-render^)
+    (export matrix^)
+
+(define (create-matrix n m mat) 
+  (new bmatrix% [n n] [m m] [mat mat]))
+
+(define (matrix-get-mat bm) (send bm get-mat))
+(define (matrix-get-n bm) (send bm get-n))
+(define (matrix-get-m bm) (send bm get-m))
 
 ;; [BST X] = [InnerMatrix X] | (make-imatrix [BST X] Nat Nat X [BST X])
 
@@ -229,7 +234,11 @@
 ;; Symbol [Matrix X] Nat Nat ->* [Vectorof X] Nat Nat 
 ;; contract checking for teaching languages; compute properties of matrix
 (define (check-matrix tag M* i j)
-  (define M (if (matrix? M*) M* (visible-matrix M*)))
+  (define M (cond
+	      [(matrix? M*) M*]
+	      [(visible? M*) (printf "dereferencing ... \n") (visible-matrix M*)]
+	      [else (error 'check-matrix "something is wrong: ~e ~e~e\n"
+		      M* (visible? M*) (send M* get-M))]))
   (check-arg tag (matrix? M) 'matrix "first" M)
   (check-arg tag (natural? i) 'Nat "second" i)
   (check-arg tag (natural? j) 'Nat "third" j)
@@ -253,3 +262,4 @@
     [(= n 2) "nd"]
     [(> n 3) "th"]
     [else (error 'th "can't happen")]))
+))
