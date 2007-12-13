@@ -1,4 +1,8 @@
 (module info setup/infotab
   (define name "HtDP Teachpacks")
   (define compile-omit-files
-    '("hangman-world.ss" "hangman-world-play.ss")))
+    '("hangman-world.ss" "hangman-world-play.ss"
+      ;; TEMPORARY DISABLE THESE FILES UNTIL FIXED
+      "matrix.ss" "matrix-client.ss" "matrix-invisible.ss"
+      "matrix-render.ss" "matrix-sig.ss" "matrix-unit.ss"
+      )))
