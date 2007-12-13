@@ -8,7 +8,6 @@
          (lib "pconvert.ss")
          (lib "pretty.ss"))
 
-(printf "loading module matrix-unit @ bmatrix\n")
 ;; [Matrix X] = [BST X]
 (define bmatrix%
   (class object%

@@ -21,7 +21,6 @@
 (define (v-m VM) (send VM get-M))
 (define (v? VM) (is-a? VM visible-matrix%))
 
-(printf "loading module matrix.ss @ visible-matrix\n")
 ;; representing a matrix that renders itself as an image, as in image.ss
 (define visible-matrix%
   (class cache-image-snip%
