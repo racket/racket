@@ -9,7 +9,9 @@
            "drsig.ss")
   
   ;; to ensure this guy is loaded (and the snipclass installed) in the drscheme namespace & eventspace
-  (require (lib "cache-image-snip.ss" "mrlib"))
+  ;; these things are for effect only!
+  (require (lib "cache-image-snip.ss" "mrlib")
+           (prefix foo (lib "matrix.ss" "htdp")))
   
   (define op (current-output-port))
   (define (oprintf . args) (apply fprintf op args))
