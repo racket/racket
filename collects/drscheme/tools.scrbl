@@ -40,7 +40,6 @@ PLT at large, and many others for
 their feedback and help.
 
 @section{Implementing DrScheme Tools}
-\label{drs:implementing-tools}
 
 Tools are designed for major extensions in DrScheme's
 functionality.  To extend the appearance
@@ -182,7 +181,6 @@ functions have been called.
 
 @section{Adding Languages to DrScheme}
 @index{adding languages to DrScheme}
-\label{tools:adding-languages}
 
 @subsection{Adding Module-based Languages to DrScheme}
 If a language can be implemented as a module
@@ -375,7 +373,8 @@ implements that method before overriding it:
       %))
 ]
 
-To help test your tool, use the @tt{PLTONLYTOOL}
+To help test your tool, use the 
+@seclink["environment-variables-in-drscheme-manual"]{@tt{PLTONLYTOOL}}
 environment variable to load it in isolation.
 
 @section{Creating New Kinds of DrScheme Frames}
