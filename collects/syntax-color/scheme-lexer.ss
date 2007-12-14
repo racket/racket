@@ -43,7 +43,8 @@
 
    [langchar (:or (:/ "az" "AZ" "09") "+" "-" "_")]
 
-   [scheme-whitespace (:or #\newline #\return #\tab #\space #\vtab #\page)]
+   [scheme-whitespace whitespace]
+
    [line-comment (:: ";" (:* (:~ #\newline)))]
 
    
