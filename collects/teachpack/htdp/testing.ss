@@ -1,3 +1,3 @@
-(module testing mzscheme
-  (provide (all-from (lib "testing.ss" "htdp")))
-  (require (lib "testing.ss" "htdp")))
+#lang scheme 
+(require htdp/testing)
+(provide (all-from-out htdp/testing))

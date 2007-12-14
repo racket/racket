@@ -1,3 +1,4 @@
-#cs(module convert mzscheme
-  (require (lib "convert.ss" "htdp"))
-  (provide (all-from (lib "convert.ss" "htdp"))))
+#lang mzscheme
+
+(require htdp/convert)
+(provide (all-from htdp/convert))
