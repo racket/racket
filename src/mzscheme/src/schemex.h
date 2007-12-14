@@ -734,7 +734,7 @@ Scheme_Bucket *(*scheme_global_keyword_bucket)(Scheme_Object *symbol, Scheme_Env
 Scheme_Bucket *(*scheme_module_bucket)(Scheme_Object *mod, Scheme_Object *var, int pos, Scheme_Env *env);
 Scheme_Object *(*scheme_builtin_value)(const char *name); /* convenience */
 void (*scheme_set_global_bucket)(char *proc, Scheme_Bucket *var, Scheme_Object *val,
-			      int set_undef);
+                                        int set_undef);
 void (*scheme_install_macro)(Scheme_Bucket *b, Scheme_Object *v);
 void (*scheme_save_initial_module_set)(Scheme_Env *env);
 Scheme_Env *(*scheme_primitive_module)(Scheme_Object *name, Scheme_Env *for_env);
@@ -747,6 +747,7 @@ Scheme_Object *(*scheme_apply_for_syntax_in_env)(Scheme_Object *proc, Scheme_Env
 Scheme_Object *(*scheme_dynamic_require)(int argc, Scheme_Object *argv[]);
 Scheme_Object *(*scheme_namespace_require)(Scheme_Object *);
 int (*scheme_is_module_path)(Scheme_Object *);
+Scheme_Object *(*scheme_datum_to_kernel_stx)(Scheme_Object *e);
 /*========================================================================*/
 /*                                symbols                                 */
 /*========================================================================*/

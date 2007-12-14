@@ -7778,6 +7778,11 @@ top_introduce_stx(int argc, Scheme_Object **argv)
   return form;
 }
 
+Scheme_Object *scheme_datum_to_kernel_stx(Scheme_Object *e)
+{
+  scheme_datum_to_syntax(e, scheme_false, scheme_sys_wraps(NULL), 0, 0);
+}
+
 static Scheme_Object *
 compile(int argc, Scheme_Object *argv[])
 {

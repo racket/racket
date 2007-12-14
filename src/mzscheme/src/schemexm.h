@@ -516,6 +516,7 @@
 #define scheme_dynamic_require (scheme_extension_table->scheme_dynamic_require)
 #define scheme_namespace_require (scheme_extension_table->scheme_namespace_require)
 #define scheme_is_module_path (scheme_extension_table->scheme_is_module_path)
+#define scheme_datum_to_kernel_stx (scheme_extension_table->scheme_datum_to_kernel_stx)
 #define scheme_intern_symbol (scheme_extension_table->scheme_intern_symbol)
 #define scheme_intern_exact_symbol (scheme_extension_table->scheme_intern_exact_symbol)
 #define scheme_intern_exact_char_symbol (scheme_extension_table->scheme_intern_exact_char_symbol)

@@ -292,9 +292,31 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 	save = p->error_buf;
 	p->error_buf = &newbuf;
 	if (!scheme_setjmp(newbuf)) {
-	  Scheme_Object *e;
-	  
-          e = scheme_make_pair(scheme_intern_symbol("main"), scheme_vector_to_list(fa->main_args));
+	  Scheme_Object *e, *a[2], *d2s, *nsi, *idb, *b;
+
+          d2s = scheme_builtin_value("datum->syntax");
+          a[0] = scheme_make_false();
+          e = scheme_intern_symbol("main");
+          a[1] = e;
+          e = scheme_apply(d2s, 2, a);
+
+          nsi = scheme_builtin_value("namespace-syntax-introduce");
+          a[0] = e;
+          e = scheme_apply(nsi, 1, a);
+
+          /* Check that `main' is imported and/or defined: */
+          idb = scheme_builtin_value("identifier-binding");
+          a[0] = e;
+          b = scheme_apply(idb, 1, a);
+          if (b == scheme_make_false()) {
+            if (!scheme_lookup_global(scheme_intern_symbol("main"), fa->global_env)) {
+              scheme_signal_error("main: not defined or required into the top-level environment");
+            }
+          }
+
+          e = scheme_make_pair(e, scheme_vector_to_list(fa->main_args));
+          e = scheme_datum_to_kernel_stx(e);
+          
 	  (void)scheme_eval_with_prompt(e, fa->global_env);
 	} else {
 	  exit_val = 1;
