@@ -2368,36 +2368,39 @@ If the namespace does not, they are colored the unbound color.
     
     ;; document-variable : stx identifier-binding -> void
     (define (document-variable stx get-binding)
-      (let ([defs-frame (currently-processing-drscheme-frame)])
-        (when defs-frame
-          (let* ([defs-text (send defs-frame get-definitions-text)]
-                 [binding-info (get-binding stx)])
-            (when (pair? binding-info)
-              (let* ([start (- (syntax-position stx) 1)]
-                     [fin (+ start (syntax-span stx))]
-                     [source-mod (list-ref binding-info 0)]
-                     [source-id (list-ref binding-info 1)]
-                     [definition-tag (xref-binding->definition-tag (get-xref) source-mod source-id)])
-                (when definition-tag
-                  (let-values ([(path tag) (xref-tag->path+anchor (get-xref) definition-tag)])
-                    (when path
-                      (send defs-text syncheck:add-background-color defs-text "navajowhite" start fin (syntax-e stx))
-                      (send defs-text syncheck:add-menu
-                            defs-text
-                            start 
-                            fin 
-                            (syntax-e stx)
-                            (λ (menu)
-                              (instantiate menu-item% ()
-                                (parent menu)
-                                (label (format (string-constant cs-view-docs) source-id))
-                                (callback
-                                 (λ (x y)
-                                   (send-url (format "file://~a~a"
-                                                     (path->string path) 
-                                                     (if tag
-                                                         (string-append "#" (uri-encode tag))
-                                                         "")))))))))))))))))
+      (when (syntax-original? stx)
+        (let ([defs-frame (currently-processing-drscheme-frame)])
+          (when defs-frame
+            (let* ([defs-text (send defs-frame get-definitions-text)]
+                   [binding-info (get-binding stx)])
+              (when (and (pair? binding-info)
+                         (syntax-position stx)
+                         (syntax-span stx))
+                (let* ([start (- (syntax-position stx) 1)]
+                       [fin (+ start (syntax-span stx))]
+                       [source-mod (list-ref binding-info 0)]
+                       [source-id (list-ref binding-info 1)]
+                       [definition-tag (xref-binding->definition-tag (get-xref) source-mod source-id)])
+                  (when definition-tag
+                    (let-values ([(path tag) (xref-tag->path+anchor (get-xref) definition-tag)])
+                      (when path
+                        (send defs-text syncheck:add-background-color defs-text "navajowhite" start fin (syntax-e stx))
+                        (send defs-text syncheck:add-menu
+                              defs-text
+                              start 
+                              fin 
+                              (syntax-e stx)
+                              (λ (menu)
+                                (instantiate menu-item% ()
+                                  (parent menu)
+                                  (label (format (string-constant cs-view-docs) source-id))
+                                  (callback
+                                   (λ (x y)
+                                     (send-url (format "file://~a~a"
+                                                       (path->string path) 
+                                                       (if tag
+                                                           (string-append "#" (uri-encode tag))
+                                                           ""))))))))))))))))))
     
     
     
