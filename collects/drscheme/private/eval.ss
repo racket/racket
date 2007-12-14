@@ -183,6 +183,8 @@
             '(lib "mzlib/foreign.ss")
             '(lib "mred/mred.ss")
             '(lib "mrlib/cache-image-snip.ss")
+	    ;; WOW:
+	    '(lib "htdp/matrix.ss")
             '(lib "mzlib/pconvert-prop.ss")))
     
     ;; ensure that they are all here.
