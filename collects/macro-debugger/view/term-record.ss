@@ -357,7 +357,7 @@
 
       (define/private (show-internal-error-details exn)
         (case (message-box/custom "Macro stepper internal error"
-                                  "Show error or dump debugging file."
+                                  (format "Internal error:\n~a" (exn-message exn))
                                   "Show error"
                                   "Dump debugging file"
                                   "Cancel")
