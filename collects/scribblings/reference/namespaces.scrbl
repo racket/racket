@@ -90,7 +90,7 @@ A parameter that determines the @techlink{current namespace}.}
 
 @defproc[(namespace-symbol->identifier [sym symbol?]) identifier?]{
 
-Similar to @scheme[datum->syntax-object] restricted to symbols. The
+Similar to @scheme[datum->syntax] restricted to symbols. The
 lexical context of the resulting identifier corresponds to the
 top-level environment of the current namespace; the identifier has no
 source location or properties.}

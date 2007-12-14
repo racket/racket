@@ -488,8 +488,9 @@ Returns @scheme[(and (exact-integer? v) (positive? v))].
 @examples[(imag-part 3+4i) (imag-part 5.0) (imag-part 5.0+0.0i)]}
 
 
-@defproc[(magnitude [z number?]) real?]{ Returns the magnitude of
- the complex number @scheme[z] in polar coordinates.
+@defproc[(magnitude [z number?]) (and/c real? (not/c negative?))]{
+ Returns the magnitude of the complex number @scheme[z] in polar
+ coordinates.
 
 @examples[(magnitude -3) (magnitude 3.0) (magnitude 3+4i)]}
 
