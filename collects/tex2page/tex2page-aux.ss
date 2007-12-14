@@ -13,6 +13,10 @@
   (lambda (ht k . d)
     (hash-table-get ht k (let ((d (if (null? d) #f (car d)))) (lambda () d)))))
 
+(define table-put!
+  (lambda (ht k v)
+    (hash-table-put! ht k v)))
+
 ; ensure shell-magic above
 ;Configured for Scheme dialect plt by scmxlate, v 2004-09-08,
 ;(c) Dorai Sitaram, 
