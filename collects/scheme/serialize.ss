@@ -1,10 +1,10 @@
 
 (module serialize scheme/base
-  (require mzlib/private/serialize
+  (require "private/serialize.ss"
            (for-syntax scheme/base
                        scheme/struct-info))
 
-  (provide (all-from-out mzlib/private/serialize)
+  (provide (all-from-out "private/serialize.ss")
            define-serializable-struct
            define-serializable-struct/versions)
 

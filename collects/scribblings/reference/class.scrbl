@@ -1153,6 +1153,77 @@ Evaluation of a @scheme[mixin] form checks that the
 
 @; ------------------------------------------------------------------------
 
+@section{Object and Class Contracts}
+
+@defform/subs[
+#:literals (field opt-> opt->* case-> -> ->* ->d ->d* ->r ->pp ->pp-rest)
+
+(object-contract member-spec ...)
+
+([member-spec
+  (method-id method-contract)
+  (field field-id contract-expr)]
+
+ [method-contract
+   (opt-> (required-contract-expr ...)
+          (optional-contract-expr ...)
+          any)
+   (opt-> (required-contract-expr ...)
+          (optional-contract-expr ...)
+          result-contract-expr)
+   (opt->* (required-contract-expr ...)
+           (optional-contract-expr ...)
+           (result-contract-expr ...))
+   (case-> arrow-contract ...)
+   arrow-contract]
+
+ [arrow-contract
+   (-> expr ... res-expr)
+   (-> expr ... (values res-expr ...))
+   (->* (expr ...) (res-expr ...))
+   (->* (expr ...) rest-expr (res-expr ...))
+   (->d expr ... res-proc-expr)
+   (->d* (expr ...) res-proc-expr)
+   (->d* (expr ...) rest-expr res-gen-expr)
+   (->r ((id expr) ...) expr)
+   (->r ((id expr) ...) id expr expr)
+   (->pp ((id expr) ...) pre-expr 
+              res-expr res-id post-expr)
+   (->pp ((id expr) ...) pre-expr any)
+   (->pp ((id expr) ...) pre-expr 
+              (values (id expr) ...) post-expr)
+   (->pp-rest ((id expr) ...) id expr pre-expr 
+              res-expr res-id post-expr)
+   (->pp-rest ((id expr) ...) id expr pre-expr any)
+   (->pp-rest ((id expr) ...) id expr pre-expr 
+              (values (id expr) ...) post-expr)])]{
+
+Produces a contract for an object.
+
+Each of the contracts for a method has the same semantics as the
+corresponding function contract, but the syntax of the method contract
+must be written directly in the body of the object-contract---much
+like the way that methods in class definitions use the same syntax as
+regular function definitions, but cannot be arbitrary procedures.  The
+only exception is that the @scheme[->r], @scheme[->pp], and
+@scheme[->pp-rest] contracts implicitly bind @scheme[this] to the
+object itself.}
+
+
+@defthing[mixin-contract contract?]{
+
+A @tech{function contract} that recognizes mixins. It guarantees that
+the input to the function is a class and the result of the function is
+a subclass of the input.}
+
+@defproc[(make-mixin-contract [type (or/c class? interface?)] ...) contract?]{
+
+Produces a @tech{function contract} that guarantees the input to the
+function is a class that implements/subclasses each @scheme[type], and
+that the result of the function is a subclass of the input.}
+
+@; ------------------------------------------------------------------------
+
 @section[#:tag "objectserialize"]{Object Serialization}
 
 @defform[

@@ -1,6 +1,6 @@
 (module serialize scheme/base
   (require syntax/modcollapse
-	   "serialize-structs.ss")
+           "serialize-structs.ss")
 
   ;; This module implements the core serializer. The syntactic
   ;; `define-serializable-struct' layer is implemented separately

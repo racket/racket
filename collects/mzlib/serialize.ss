@@ -4,13 +4,13 @@
 	   (lib "etc.ss")
 	   (lib "list.ss")
            ;; core [de]serializer:
-           "private/serialize.ss")
+           (lib "private/serialize.ss" "scheme"))
 
   (provide define-serializable-struct
 	   define-serializable-struct/versions
 
            ;; core [de]serializer:
-           (all-from "private/serialize.ss"))
+           (all-from (lib "private/serialize.ss" "scheme")))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; define-serializable-struct

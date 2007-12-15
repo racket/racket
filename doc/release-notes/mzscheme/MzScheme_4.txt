@@ -111,6 +111,11 @@ in several significant ways:
  - Windows console binary names are converted like Unix binary names:
    downcased with " " replaced by "-".
 
+ - The contract library (in scheme/contract) no longer
+   exports object or mixin contracts. Instead they are
+   exported from scheme/class. (The libraries in mzlib
+   remain the same as before.)
+
 ======================================================================
  Immutable and Mutable Pairs
 ======================================================================
