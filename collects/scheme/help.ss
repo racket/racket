@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require setup/scribble-index
+(require setup/xref
+         scribble/xref
          scribble/manual-struct
          net/url
          net/sendurl
@@ -49,13 +50,6 @@
 (define (open-help-start)
   (find-help #'help))
 
-(define xref #f)
-
-(define (refresh-xref!)
-  (unless xref
-    (printf "Loading help index...\n")
-    (set! xref (load-xref))))
-
 (define-namespace-anchor anchor)
 
 (define (find-help/lib sym lib)
@@ -71,12 +65,11 @@
                lib))))
 
 (define (find-help id)
-  (refresh-xref!)
   (let ([b (or (identifier-label-binding id)
                (identifier-binding id))])
     (if b
         (let ([tag (xref-binding->definition-tag
-                    xref
+                    (load-collections-xref)
                     (car b)
                     (cadr b))])
           (if tag
@@ -88,7 +81,7 @@
         (search-for-exports (syntax-e id)))))
 
 (define (search-for-exports sym)
-  (let ([idx (xref-index xref)]
+  (let ([idx (xref-index (load-collections-xref))]
         [libs null])
     (for-each (lambda (entry)
                 (when (exported-index-desc? (entry-desc entry))
@@ -106,7 +99,7 @@
               (loop (cdr libs))))))))
 
 (define (go-to-tag t)
-  (let-values ([(file anchor) (xref-tag->path+anchor xref t)])
+  (let-values ([(file anchor) (xref-tag->path+anchor (load-collections-xref) t)])
     (printf "Sending to web browser...\n  file: ~a\n  anchor: ~a\n"
             file
             anchor)
@@ -126,11 +119,11 @@
 (define generate-search-results #f)
 
 (define (search-for strs)
-  (refresh-xref!)
   (printf "Generating and opening search page...\n")
   (unless generate-search-results
     (parameterize ([current-namespace (namespace-anchor->empty-namespace
                                        anchor)])
       (set! generate-search-results
             (dynamic-require 'help/search 'generate-search-results))))
-  (generate-search-results strs #:xref xref))
+  (generate-search-results strs))
+

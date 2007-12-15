@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require setup/scribble-index
+(require setup/xref
+         scribble/xref
          scribble/struct
          scribble/manual-struct
          scribble/decode
@@ -10,11 +11,8 @@
          net/sendurl
          mzlib/contract)
 
-;; Restore the contract when keywords are supported:
-(provide generate-search-results)
-#;
 (provide/contract
- [generate-search-results (-> (listof string?) #:xref xref? void?)])
+ [generate-search-results (-> (listof string?) void?)])
 
 (define (make-extra-content desc)
   ;; Use `desc' to provide more details on the link:
@@ -58,7 +56,7 @@
                 (append (cdr search-results-files) 
                         (list (car search-results-files))))))
 
-(define (generate-search-results search-keys #:xref [xref #f])
+(define (generate-search-results search-keys)
   (let ([file (next-search-results-file)]
         [search-regexps (map (λ (x) (regexp (regexp-quote x #f))) search-keys)]
         [exact-search-regexps (map (λ (x) (regexp (format "^~a$" (regexp-quote x #f)))) search-keys)]
@@ -71,7 +69,7 @@
              (car search-keys)
              (map (λ (x) (format ", or ~a" x))
                   (cdr search-keys)))])])
-    (let ([x (or xref (load-xref))])
+    (let ([x (load-collections-xref)])
       (xref-render
        x
        (decode `(,(title (format "Search results for ~a" search-key-string))

@@ -29,7 +29,8 @@ If the namespace does not, they are colored the unbound color.
          (prefix-in drscheme:arrow: drscheme/arrow)
          (prefix-in fw: framework/framework)
          mred/mred
-         setup/scribble-index
+         setup/xref
+         scribble/xref
          net/url
          net/uri-codec
          browser/external
@@ -99,7 +100,7 @@ If the namespace does not, they are colored the unbound color.
     (define (force-xref th) 
       (when (symbol? xref)
         (th)
-        (set! xref (load-xref))))
+        (set! xref (load-collections-xref))))
     
     
     ;;;  ;;; ;;; ;;;;; 

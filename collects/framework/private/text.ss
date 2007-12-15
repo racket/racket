@@ -20,7 +20,8 @@ WARNING: printf is rebound in the body of the unit to always
          (lib "dirs.ss" "setup")
          (lib "string.ss")
          (prefix-in srfi1: (lib "1.ss" "srfi")))
-(require setup/scribble-index
+(require setup/xref
+         scribble/xref
          scribble/struct
          scribble/manual-struct
          scribble/decode
@@ -2812,7 +2813,7 @@ designates the character that triggers autocompletion
          [manual-mpis (and manuals (map sym->mpi manuals))])
     
     (unless xref 
-      (set! xref (load-xref)))
+      (set! xref (load-collections-xref)))
     
     (let ([ht (make-hash-table 'equal)])
       (for-each

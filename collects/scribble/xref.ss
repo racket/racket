@@ -6,8 +6,6 @@
          scribble/base-render
          (prefix-in html: scribble/html-render)
          scheme/class
-         setup/getinfo
-         setup/dirs
          mzlib/serialize
          scheme/path
          setup/main-collects)
@@ -33,47 +31,17 @@
 ;; ----------------------------------------
 ;; Xref loading
 
-(define-struct doc (source dest))
-
 (define-namespace-anchor here)
 
-(define (load-xref)
+(define (load-xref sources)
   (let* ([renderer (new (html:render-mixin render%) 
                         [dest-dir (find-system-path 'temp-dir)])]
-         [dirs (find-relevant-directories '(scribblings))]
-         [infos (map get-info/full dirs)]
-         [docs (filter
-                values
-                (apply append
-                       (map (lambda (i dir)
-                              (let ([s (i 'scribblings)])
-                                (map (lambda (d)
-                                       (if (pair? d)
-                                           (let ([flags (if (pair? (cdr d))
-                                                            (cadr d)
-                                                            null)])
-                                             (let ([name (if (and (pair? (cdr d))
-                                                                  (pair? (cddr d))
-                                                                  (caddr d))
-                                                             (cadr d)
-                                                             (let-values ([(base name dir?) (split-path (car d))])
-                                                               (path-replace-suffix name #"")))])
-                                               (make-doc
-                                                (build-path dir (car d))
-                                                (if (memq 'main-doc flags)
-                                                    (build-path (find-doc-dir) name)
-                                                    (build-path dir "compiled" "doc" name)))))
-                                           #f))
-                                     s)))
-                            infos
-                            dirs)))]
          [ci (send renderer collect null null)])
-    (for-each (lambda (doc)
+    (for-each (lambda (src)
                 (parameterize ([current-namespace (namespace-anchor->empty-namespace here)])
-                  (let ([r (with-input-from-file (build-path (doc-dest doc) "out.sxref")
-                             read)])
+                  (let ([r (with-input-from-file src read)])
                     (send renderer deserialize-info (cadr r) ci))))
-              docs)
+              sources)
     (make-xrefs renderer (send renderer resolve null null ci))))
 
 ;; ----------------------------------------
