@@ -29,7 +29,8 @@ For example, the @scheme[title] and @scheme[italic] functions might be
 called from Scheme as
 
 @schemeblock[
-(title #:tag "how-to" "How to Design " (italic "Great") " Programs")
+(title #:tag "how-to" 
+       "How to Design " (italic "Great") " Programs")
 ]
 
 or with an @elem["@"] expression as
@@ -54,11 +55,11 @@ have @schememodname[scribble/manual]).
          title-decl?]{
 
 Generates a @scheme[title-decl] to be picked up by @scheme[decode] or
-@scheme[decode-part].  The @scheme[pre-content]s list is parsed with
-@scheme[decode-content] for the title content. If @scheme[tag] is
-@scheme[#f], a tag string is generated automatically from the
-content. The tag string is combined with the symbol @scheme['part] to
-form the full tag.
+@scheme[decode-part].  The @tech{decode}d @scheme[pre-content] (i.e.,
+parsed with @scheme[decode-content]) supplies the title content. If
+@scheme[tag] is @scheme[#f], a tag string is generated automatically
+from the content. The tag string is combined with the symbol
+@scheme['part] to form the full tag.
 
 A style of @scheme['toc] causes sub-sections to be generated as
 separate pages in multi-page HTML output. A style of @scheme['index]
@@ -94,14 +95,17 @@ removed.}
  }
 
 @defproc[(item [pre-flow any/c] ...) item?]{
- Creates an item for use with @scheme[itemize]. The
- @scheme[pre-flow] list is parsed with @scheme[decode-flow].
-}
+
+Creates an item for use with @scheme[itemize]. The @tech{decode}d
+@scheme[pre-flow] (i.e., parsed with @scheme[decode-flow]) is the item
+content.}
+
 
 @defproc[(item? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is an item produced by
 @scheme[item], @scheme[#f] otherwise.}
+
 
 @defform[(include-section module-path)]{ Requires @scheme[module-path]
  and returns its @scheme[doc] export (without making any imports
@@ -112,9 +116,8 @@ Returns @scheme[#t] if @scheme[v] is an item produced by
 
 @section{Text Styles}
 
-@def-elem-proc[elem]{ Parses the @scheme[pre-content] list using
-@scheme[decode-content], and wraps the result as an element with
-style @scheme[#f].}
+@def-elem-proc[elem]{ Wraps the @tech{decode}d @scheme[pre-content] as
+an element with style @scheme[#f].}
 
 @def-elem-proc[aux-elem]{Like @scheme[elem], but creates an
 @scheme[aux-element].}
@@ -126,16 +129,16 @@ style @scheme[#f].}
 @def-style-proc[superscript]
 
 @defproc[(hspace [n nonnegative-exact-integer?]) element?]{
-Produces an element containing @scheme[n] spaces and style @scheme['hspace].
-}
+
+Produces an element containing @scheme[n] spaces and style
+@scheme['hspace].}
+
 
 @defproc[(span-class [style-name string?] [pre-content any/c] ...)
          element?]{
 
-Parses the @scheme[pre-content] list using @scheme[decode-content],
-and produces an element with style @scheme[style-name].
-
-}
+Wraps the @tech{decode}d @scheme[pre-content] as an element with style
+@scheme[style-name].}
 
 @; ------------------------------------------------------------------------
 
@@ -148,12 +151,10 @@ and produces an element with style @scheme[style-name].
 Creates an index element given a plain-text string---or list of
 strings for a hierarchy, such as @scheme['("strings" "plain")] for a
 ``plain'' entry until a more general ``strings'' entry. The strings
-also serve as the text to render in the index. The
-@scheme[pre-content] list, as parsed by @scheme[decode-content] is the
-text to appear in place of the element, to which the index entry
-refers.
+also serve as the text to render in the index. The @tech{decode}d
+@scheme[pre-content] is the text to appear inline as the index
+target.}
 
-}
 
 @defproc[(index* [words (listof string?)]
                  [word-contents (listof list?)]
@@ -168,7 +169,7 @@ the list of contents render in the index (in parallel to
          index-element?]{
 
 Like @scheme[index], but the word to index is determined by applying
-@scheme[content->string] on the parsed @scheme[pre-content] list.}
+@scheme[content->string] on the @tech{decode}d @scheme[pre-content].}
 
 
 @defproc[(section-index [word string?] ...)

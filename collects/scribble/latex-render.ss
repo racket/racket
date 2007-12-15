@@ -70,6 +70,7 @@
         (printf "\\definecolor{LightGray}{rgb}{0.90,0.90,0.90}\n")
         (printf "\\newcommand{\\schemeinput}[1]{\\colorbox{LightGray}{\\hspace{-0.5ex}\\schemeinputbg{#1}\\hspace{-0.5ex}}}\n")
         (printf "\\newcommand{\\highlighted}[1]{\\colorbox{PaleBlue}{\\hspace{-0.5ex}\\schemeinputbg{#1}\\hspace{-0.5ex}}}\n")
+        (printf "\\newcommand{\\plainlink}[1]{#1}\n")
         (printf "\\newcommand{\\techlink}[1]{#1}\n")
         (printf "\\newcommand{\\indexlink}[1]{#1}\n")
         (printf "\\newcommand{\\imageleft}[1]{} % drop it\n")

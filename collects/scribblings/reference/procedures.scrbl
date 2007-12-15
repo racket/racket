@@ -77,7 +77,7 @@ by @scheme[proc]. See also @scheme[procedure-arity?].}
 
 @defproc[(procedure-arity? [v any/c]) boolean?]{
 
-A valid arity is one of the following:
+A valid arity @scheme[_a] is one of the following:
 
 @itemize{
 

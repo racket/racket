@@ -1,0 +1,136 @@
+#lang scheme/base
+
+(require setup/scribble-index
+         scribble/manual-struct
+         net/url
+         net/sendurl
+         scheme/path
+         (for-syntax scheme/base))
+
+(provide help)
+
+(define-syntax (help stx)
+  (if (identifier? stx)
+      #'(open-help-start)
+      (syntax-case stx ()
+        [(help)
+         #'(open-help-start)]
+        [(help id)
+         (identifier? #'id)
+         #'(find-help (quote-syntax id))]
+        [(help id #:from lib)
+         (if (identifier? #'id)
+             (if (module-path? (syntax->datum #'lib))
+                 #'(find-help/lib (quote id) (quote lib))
+                 (raise-syntax-error
+                  #f
+                  "expected a module path after #:from"
+                  stx
+                  #'lib))
+             (raise-syntax-error
+              #f
+              "expected an identifier before #:from"
+              stx
+              #'id))]
+        [(help #:search str ...)
+         (with-syntax ([(str ...)
+                        (map (lambda (e)
+                               (if (string? (syntax-e e))
+                                   e
+                                   (format "~s"
+                                           (syntax->datum e))))
+                             (syntax->list #'(str ...)))])
+           #'(search-for (list str ...)))]
+        [_
+         (raise-syntax-error #f
+                             "expects a single identifer; try just `help' for more information"
+                             stx)])))
+
+(define (open-help-start)
+  (find-help #'help))
+
+(define xref #f)
+
+(define (refresh-xref!)
+  (unless xref
+    (printf "Loading help index...\n")
+    (set! xref (load-xref))))
+
+(define-namespace-anchor anchor)
+
+(define (find-help/lib sym lib)
+  (let ([id (parameterize ([current-namespace (namespace-anchor->empty-namespace
+                                               anchor)])
+              (namespace-require `(for-label ,lib))
+              (namespace-syntax-introduce (datum->syntax #f sym)))])
+    (if (identifier-label-binding id)
+        (find-help id)
+        (error 'help
+               "no binding for identifier: ~a from module: ~a"
+               sym
+               lib))))
+
+(define (find-help id)
+  (refresh-xref!)
+  (let ([b (or (identifier-label-binding id)
+               (identifier-binding id))])
+    (if b
+        (let ([tag (xref-binding->definition-tag
+                    xref
+                    (car b)
+                    (cadr b))])
+          (if tag
+              (go-to-tag tag)
+              (error 'help
+                     "no documentation found for: ~e provided by: ~a"
+                     (syntax-e id)
+                     (module-path-index-resolve (car b)))))
+        (search-for-exports (syntax-e id)))))
+
+(define (search-for-exports sym)
+  (let ([idx (xref-index xref)]
+        [libs null])
+    (for-each (lambda (entry)
+                (when (exported-index-desc? (entry-desc entry))
+                  (when (eq? sym (exported-index-desc-name (entry-desc entry)))
+                    (set! libs (append libs (exported-index-desc-from-libs (entry-desc entry)))))))
+              idx)
+    (if (null? libs)
+        (printf "Not found in any library's documentation: ~a" sym)
+        (begin
+          (printf "No documentation for current binding, but provided by:\n")
+          (let loop ([libs libs])
+            (unless (null? libs)
+              (unless (member (car libs) (cdr libs))
+                (printf "  ~a\n" (car libs)))
+              (loop (cdr libs))))))))
+
+(define (go-to-tag t)
+  (let-values ([(file anchor) (xref-tag->path+anchor xref t)])
+    (printf "Sending to web browser...\n  file: ~a\n  anchor: ~a\n"
+            file
+            anchor)
+    (unless (send-url (url->string
+                       (make-url "file"
+                                 #f #f #f #t
+                                 (map (lambda (s)
+                                        (make-path/param (if (absolute-path? s)
+                                                             (path->string s)
+                                                             (path-element->string s))
+                                                         null))
+                                      (explode-path file))
+                                 null
+                                 anchor)))
+      (error 'help "browser launch failed"))))
+
+(define generate-search-results #f)
+
+(define (search-for strs)
+  (refresh-xref!)
+  (printf "Generating and opening search page...\n")
+  (unless generate-search-results
+    (parameterize ([current-namespace (namespace-anchor->empty-namespace
+                                       anchor)])
+      (set! generate-search-results
+            (dynamic-require 'help/search 'generate-search-results))))
+  (generate-search-results strs #:xref xref))

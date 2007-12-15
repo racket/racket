@@ -56,53 +56,6 @@ next section.
      in c-file-list to an extension.  `dest-dir' is handled as in
      `compile-extensions'.
 
- Multi-file extension compilation
- ---------------------------------
-
->  ((compile-extension-parts expr) scheme-file-list dest-dir)
-
-      `(compile-extension-parts expr)' returns a compiler that is
-      initialized with the expression `expr'.
-
-      See `compile-extensions' above for information about the effect
-      of `expr'.
-
-      The compiler takes a list of Scheme files and compiles each of
-      them to a linkable object and a .kp (constant pool) file,
-      placing the resulting objects and .kp files in the directory
-      specified by `dest-dir'.  If `dest-dir' is #f, each object and
-      .kp file is placed in the same directory as its source file.  If
-      `dest-dir' is 'auto, each .kp file is placed in a
-      "compiled/native" subdirectory relative to the source file, and
-      each object file is placed in "compiled/native/<PLATFORM>",
-      where <PLATFORM> is the result of `system-library-subpath'. (The
-      directory is created if necessary.)
-
->  ((compile-extension-parts-to-c expr)  scheme-file-list dest-dir)
-
-     Like `compile-extension-parts', but only .c and .kp files are
-     produced, not compiled objects. If `dest-dir' is 'auto, each
-     output file is placed in a "compiled/native" subdirectory
-     relative to the source file.
-
->  (compile-c-extension-parts c-file-list dest-dir)
-
-     Compiles each .c file (produced with `compile-extension-parts-to-c')
-     in c-file-list to an extension.
-
->  (link-extension-parts obj-and-kp-file-list dest-dir)
-
-     Links objects for a multi-object extension together, using .kp
-     files to generate and link pooled constants.  The objects and
-     .kp files in `obj-and-kp-file' can be in any order.  The resulting
-     extension "_loader" is placed in the directory specified by `dest-dir'.
-
->  (glue-extension-parts obj-and-kp-file-list dest-dir)
-
-     Like `link-extension-parts', but only a "_loader" object file
-     is generated; this object file is linked with all the other
-     object files to produce the "_loader" extension.
-
  zo compilation
  --------------
 

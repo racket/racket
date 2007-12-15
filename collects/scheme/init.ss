@@ -1,6 +1,7 @@
 
 (module init scheme
-  (require "enter.ss")
+  (require "enter.ss"
+           "help.ss")
 
   ;; Set the printer:
   (current-print (let ([pretty-printer
@@ -10,5 +11,6 @@
                    pretty-printer))
 
   (provide (all-from-out scheme
-                         "enter.ss")))
+                         "enter.ss"
+                         "help.ss")))
 

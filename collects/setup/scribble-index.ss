@@ -13,6 +13,7 @@
          setup/main-collects)
 
 (provide load-xref
+         xref?
          xref-render
          xref-index
          xref-binding->definition-tag
@@ -26,6 +27,8 @@
 
 ;; Private:
 (define-struct xrefs (renderer ri))
+
+(define (xref? x) (xrefs? x))
 
 ;; ----------------------------------------
 ;; Xref loading

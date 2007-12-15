@@ -226,23 +226,23 @@ Like @scheme[#%app], but without support for keyword arguments.
 
 @guideintro["lambda"]{procedure expressions}
 
-@defform/subs[(lambda gen-formals body ...+)
-              ([formals (id ...)
-                        (id ...+ . rest-id)
-                        rest-id]
-               [gen-formals formals
-                            (arg ...)
-                            (arg ...+ . rest-id)]
+@deftogether[(
+@defform[(lambda kw-formals body ...+)]
+@defform/subs[(λ kw-formals body ...+)
+              ([kw-formals (arg ...)
+                           (arg ...+ . rest-id)
+                           rest-id]
                [arg id
                     [id default-expr]
                     (code:line keyword id)
-                    (code:line keyword [id default-expr])])]{
+                    (code:line keyword [id default-expr])])]
+)]{
 
-Produces a procedure. The @scheme[gen-formals] determines the number of
-arguments that the procedure accepts. It is either a simple
-@scheme[formals] or one of the extended forms.
+Produces a procedure. The @scheme[kw-formals] determines the number of
+arguments and which keyword arguments that the procedure accepts.
 
-A simple @scheme[_formals] has one of the following three forms:
+Considering only the first @scheme[arg] case, a simple
+@scheme[kw-formals] has one of the following three forms:
 
 @specsubform[(id ...)]{ The procedure accepts as many non-keyword
        argument values as the number of @scheme[id]s. Each @scheme[id]
@@ -259,9 +259,9 @@ A simple @scheme[_formals] has one of the following three forms:
        arguments. All arguments are placed into a list that is
        associated with @scheme[rest-id].}
 
-Besides the three @scheme[formals] forms, a @scheme[gen-formals] can be
-a sequence of @scheme[arg]s optionally ending with a
-@scheme[rest-id]:
+More generally, an @scheme[arg] can include a keyword and/or default
+value. Thus, the first two cases above are more completely specified
+as follows:
 
 @specsubform[(arg ...)]{ Each @scheme[arg] has the following
        four forms:
@@ -293,8 +293,8 @@ a sequence of @scheme[arg]s optionally ending with a
        value to associate with @scheme[id].}
 
       The position of a @scheme[_keyword] @scheme[arg] in
-      @scheme[gen-formals] does not matter, but each specified
-      @scheme[_keyword] must be distinct.}
+      @scheme[kw-formals] does not matter, but each specified
+      @scheme[keyword] must be distinct.}
 
 @specsubform[(arg ...+ . rest-id)]{ Like the previous case, but
        the procedure accepts any number of non-keyword arguments
@@ -303,18 +303,18 @@ a sequence of @scheme[arg]s optionally ending with a
        @scheme[arg]s, the extra arguments are placed into a
        list that is associated to @scheme[rest-id].}
 
-The @scheme[gen-formals] identifiers are bound in the @scheme[body]s. When
-the procedure is applied, a new location is created for each
-identifier, and the location is filled with the associated argument
-value.
+The @scheme[kw-formals] identifiers are bound in the
+@scheme[body]s. When the procedure is applied, a new location is
+created for each identifier, and the location is filled with the
+associated argument value.
 
 If any identifier appears in the @scheme[body]s that is not one of the
-identifiers in @scheme[gen-formals], then it refers to the same location
-that it would if it appeared in place of the @scheme[lambda]
+identifiers in @scheme[kw-formals], then it refers to the same
+location that it would if it appeared in place of the @scheme[lambda]
 expression. (In other words, variable reference is lexically scoped.)
 
-When multiple identifiers appear in a @scheme[gen-formals], they must be
-distinct according to @scheme[bound-identifier=?].
+When multiple identifiers appear in a @scheme[kw-formals], they must
+be distinct according to @scheme[bound-identifier=?].
 
 If the procedure procedure by @scheme[lambda] is applied to fewer or
 more by-position or arguments than it accepts, to by-keyword arguments
@@ -346,8 +346,11 @@ affects only the format of @scheme[exn:fail:contract:arity]
 exceptions, not the result of @scheme[procedure-arity].
 
 
-@defform[(case-lambda [formals body ...+] ...)]{
-
+@defform/subs[(case-lambda [formals body ...+] ...)
+              ([formals (id ...)
+                        (id ...+ . rest-id)
+                        rest-id])]{
+               
 Produces a procedure. Each @scheme[[forms body ...+]]
 clause is analogous to a single @scheme[lambda] procedure; applying
 the @scheme[case-lambda]-generated procedure is the same as applying a
@@ -357,7 +360,7 @@ procedure accepts the given number of arguments, the
 @exnraise[exn:fail:contract].
 
 Note that a @scheme[case-lambda] clause supports only
-@scheme[formals], not the more general @scheme[_gen-formals] of
+@scheme[formals], not the more general @scheme[_kw-formals] of
 @scheme[lambda]. That is, @scheme[case-lambda] does not directly
 support keyword and optional arguments.
 
@@ -724,8 +727,8 @@ procedure. In the second case, the generation procedure is
 defined as follows:
 
 @schemeblock[
-(#,cvt (id . _gen-formals) . _datum)   = (lambda _gen-formals . _datum)
-(#,cvt (head . _gen-formals) . _datum) = (lambda _gen-formals expr)
+(#,cvt (id . _kw-formals) . _datum)   = (lambda _kw-formals . _datum)
+(#,cvt (head . _kw-formals) . _datum) = (lambda _kw-formals expr)
                                          #, @elem{if} (#,cvt head . _datum) = expr
 ]
 

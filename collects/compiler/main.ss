@@ -72,7 +72,7 @@
 
 
   ;; Returns (values mode files prefixes)
-  ;;  where mode is 'compile, 'link, or 'zo
+  ;;  where mode is 'compile, 'make-zo, etc.
   (define (parse-options argv)
     (parse-command-line
      "mzc"
@@ -82,37 +82,7 @@
        [once-any
 	[("-k" "--make")
 	 ,(lambda (f) 'make-zo)
-	 ("Recursively compile Scheme source(s); uses/generates .dep files")]
-	[("-e" "--extension")
-	 ,(lambda (f) 'compile)
-	 (,(format "Output ~a file(s) from Scheme source(s) (default)" (extract-suffix append-extension-suffix)))]
-	[("-c" "--c-source")
-	 ,(lambda (f) 'compile-c)
-	 (,(format "Output ~a file(s) from Scheme source(s)" (extract-suffix append-c-suffix)))]
-	[("-o" "--object")
-	 ,(lambda (f) 'compile-o)
-	 (,(format "Output ~a/~a from Scheme source(s) for a multi-file extension" 
-		   (extract-suffix append-object-suffix)
-		   (extract-suffix append-constant-pool-suffix)))]
-	[("-l" "--link-extension")
-	 ,(lambda (f) 'link)
-	 (,(format "Link ~a and ~a from Scheme sources into a ~a file"
-		   (extract-suffix append-object-suffix)
-		   (extract-suffix append-constant-pool-suffix)
-		   (extract-suffix append-extension-suffix)))]
-	[("-g" "--link-glue")
-	 ,(lambda (f) 'link-glue)
-	 (,(format "Create the ~a glue for --link-extension, but do not link"
-		   (extract-suffix append-object-suffix)))]
-	[("-z" "--zo")
-	 ,(lambda (f) 'zo)
-	 (,(format "Output ~a file(s) from Scheme source(s)" (extract-suffix append-zo-suffix)))]
-	[("--collection-extension")
-	 ,(lambda (f) 'collection-extension)
-	 ("Compile specified collection to extension")]
-	[("--collection-zos")
-	 ,(lambda (f) 'collection-zos)
-	 (,(format "Compile specified collection to ~a files" (extract-suffix append-zo-suffix)))]
+	 (("Recursively compile Scheme source(s); uses/generates .dep files" ""))]
 	[("--cc")
 	 ,(lambda (f) 'cc)
 	 (,(format "Compile arbitrary file(s) for an extension: ~a -> ~a" 
@@ -124,11 +94,12 @@
 		   (extract-suffix append-object-suffix)
 		   (extract-suffix append-extension-suffix))
 	  "extension")]
-	[("--xform")
+	[("-x" "--xform")
 	 ,(lambda (f) 'xform)
-	 (,(format "Convert for 3m compilation: ~a -> ~a" 
-		   (extract-suffix append-c-suffix)
-		   (extract-suffix append-c-suffix)))]
+	 ((,(format "Convert for 3m compilation: ~a -> ~a" 
+                    (extract-suffix append-c-suffix)
+                    (extract-suffix append-c-suffix))
+           ""))]
 	[("--exe")
 	 ,(lambda (f name) (exe-output name) 'exe)
 	 (,(format "Embed module in MzScheme to create <exe>")
@@ -139,40 +110,49 @@
 	  "exe")]
 	[("--exe-dir")
 	 ,(lambda (f name) (exe-dir-output name) 'exe-dir)
-	 (,(format "Combine executables with support files in <dir>")
-	  "dir")]
+	 ((,(format "Combine executables with support files in <dir>") "")
+          "dir")]
 	[("--collection-plt")
 	 ,(lambda (f name) (plt-output name) 'plt-collect)
 	 (,(format "Create .plt <archive> containing collections")
 	  "archive")]
 	[("--plt")
 	 ,(lambda (f name) (plt-output name) 'plt)
-	 (,(format "Create .plt <archive> containing relative files/dirs")
-	  "archive")]]
+	 ((,(format "Create .plt <archive> containing relative files/dirs") "")
+          "archive")]	
+	[("-e" "--extension")
+	 ,(lambda (f) 'compile)
+	 (,(format "Output ~a file(s) from Scheme source(s)" (extract-suffix append-extension-suffix)))]
+	[("-c" "--c-source")
+	 ,(lambda (f) 'compile-c)
+	 ((,(format "Output ~a file(s) from Scheme source(s)" (extract-suffix append-c-suffix))
+           ""))]
+        [("-z" "--zo")
+	 ,(lambda (f) 'zo)
+	 (,(format "Output ~a file(s) from Scheme source(s)" (extract-suffix append-zo-suffix)))]
+	[("--collection-zos")
+	 ,(lambda (f) 'collection-zos)
+	 (,(format "Compile specified collection to ~a files" (extract-suffix append-zo-suffix)))]]
+       [help-labels ""]
        [once-any
 	[("--3m")
 	 ,(lambda (f) (compiler:option:3m #t))
-	 (,(format "Compile/link for 3m, with -e/-c/-o/--exe/etc.~a"
+	 (,(format "Compile/link for 3m, with -e/-c/--exe/etc.~a"
                    (if (eq? '3m (system-type 'gc)) " [current default]" "")))]
 	[("--cgc")
 	 ,(lambda (f) (compiler:option:3m #f))
-	 (,(format "Compile/link for CGC, with -e/-c/-o/--exe/etc.~a"
+	 (,(format "Compile/link for CGC, with -e/-c/--exe/etc.~a"
                    (if (eq? 'cgc (system-type 'gc)) " [current default]" "")))]]
        [once-each
 	[("-m" "--module")
 	 ,(lambda (f) (module-mode #t))
-	 ("Skip eval of top-level syntax, etc. for -e/-c/-o/-z")]
+	 ("Skip eval of top-level syntax, etc. for -e/-c/-z")]
 	[("--embedded")
 	 ,(lambda (f) (compiler:option:compile-for-embedded #t))
-	 ("Compile for embedded run-time engine, with -c/-o/-g")]
-	[("--source")
-	 ,(lambda (f) (stop-at-source #t))
-	 (,(format "Stop at ~a instead of ~a for -o/-g"
-		   (extract-suffix append-c-suffix)
-		   (extract-suffix append-object-suffix)))]
+	 ("Compile for embedded run-time engine, with -c")]
 	[("-p" "--prefix") 
 	 ,(lambda (f v) v)
-	 ("Add elaboration-time prefix file for -e/-c/-o/-z" "file")]
+	 ("Add elaboration-time prefix file for -e/-c/-z" "file")]
 	[("-n" "--name") 
 	 ,(lambda (f name) (compiler:option:setup-prefix name))
 	 ("Use <name> as extra part of public low-level names" "name")]]
@@ -182,7 +162,7 @@
 	    (unless (directory-exists? d)
 	      (error 'mzc "the destination directory does not exist: ~s" d))
 	    (dest-dir d))
-	 ("Output -e/-c/-o/-l/-g/-z file(s) to <dir>" "dir")]
+	 ("Output -e/-c/-z/-x file(s) to <dir>" "dir")]
 	[("--auto-dir")
 	 ,(lambda (f)
 	    (auto-dest-dir #t))
@@ -413,7 +393,7 @@
 	  mode
 	  (cons file files)
 	  (let ([prefixes (filter string? accum)])
-	    (unless (memq mode '(compile compile-c compile-o zo))
+	    (unless (memq mode '(compile compile-c zo))
 	      (unless (null? prefixes)
 		(error 'mzc "prefix files are not useful in ~a mode" mode)))
 	    (if (module-mode)
@@ -471,15 +451,6 @@
 						   (dest-dir)))]
     [(compile-c)
      ((compile-extensions-to-c prefix) source-files (dest-dir))]
-    [(compile-o)
-     (((if (stop-at-source) compile-extension-parts-to-c compile-extension-parts) prefix)
-      source-files (dest-dir))]
-    [(link)
-     (never-embedded "link")
-     (link-extension-parts source-files (or (dest-dir) (current-directory)))]
-    [(link-glue)
-     ((if (stop-at-source) glue-extension-parts-to-c glue-extension-parts)
-      source-files (or (dest-dir) (current-directory)))]
     [(zo)
      ((compile-zos prefix) source-files (if (auto-dest-dir)
 					    'auto
@@ -546,7 +517,10 @@
        (printf " [output to \"~a\"]~n" dest))]
     [(xform)
      (for-each (lambda (file)
-		 (let ([out-file (path-replace-suffix file ".3m.c")])
+		 (let* ([out-file (path-replace-suffix file ".3m.c")]
+                        [out-file  (if (dest-dir)
+                                       (build-path (dest-dir) out-file)
+                                       out-file)])
 		   ((dynamic-require '(lib "xform.ss" "compiler") 'xform)
 		    (not (compiler:option:verbose))
 		    file

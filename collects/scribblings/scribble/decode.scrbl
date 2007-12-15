@@ -30,6 +30,17 @@ special text conversions:
 
 }
 
+Some functions @deftech{decode} a sequence of @scheme[_pre-flow] or
+@scheme[_pre-content] arguments using @scheme[decode-flow] or
+@scheme[decode-content], respectively. For example, the @scheme[bold]
+function accepts any number of @scheme[_pre-content] arguments, so
+that in
+
+@verbatim["  @bold{``apple''}"]
+
+the @litchar{``apple''} argument is decoded to use fancy quotes, and
+then it is bolded.
+
 @defproc[(decode [lst list?]) part?]{
 
 Decodes a document, producing a part. In @scheme[lst], instances of

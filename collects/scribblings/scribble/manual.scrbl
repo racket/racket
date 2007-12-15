@@ -130,10 +130,10 @@ as a table/paragraph in typewriter font with the linebreaks specified
 by newline characters in @scheme[str]. ``Here strings'' are often
 useful with @scheme[verbatim].}
 
-@defproc[(schemefont [pre-content any/c] ...) element?]{Typesets the given
-content as uncolored, unhyperlinked Scheme. This procedure is useful
-for typesetting things like @schemefont{#lang}, which are not
-@scheme[read]able by themselves.}
+@defproc[(schemefont [pre-content any/c] ...) element?]{Typesets
+@tech{decode}d @scheme[pre-content] as uncolored, unhyperlinked
+Scheme. This procedure is useful for typesetting things like
+@schemefont{#lang}, which are not @scheme[read]able by themselves.}
 
 @defproc[(schemevalfont [pre-content any/c] ...) element?]{Like
 @scheme[schemefont], but colored as a value.}
@@ -143,6 +143,10 @@ for typesetting things like @schemefont{#lang}, which are not
 
 @defproc[(schemeidfont [pre-content any/c] ...) element?]{Like
 @scheme[schemefont], but colored as an identifier.}
+
+@defproc[(schemevarfont [pre-content any/c] ...) element?]{Like
+@scheme[schemefont], but colored as a variable (i.e., an argument or
+sub-form in a procedure being documented).}
 
 @defproc[(schemekeywordfont [pre-content any/c] ...) element?]{Like
 @scheme[schemefont], but colored as a syntactic form name.}
@@ -154,16 +158,16 @@ for typesetting things like @schemefont{#lang}, which are not
 @scheme[schemefont], but colored as meta-syntax, such as backquote or
 unquote.}
 
-@defproc[(procedure [pre-content any/c] ...) element?]{Typesets the given
-content as a procedure name in a REPL result (e.g., in typewriter font
-with a @litchar{#<procedure:} prefix and @litchar{>} suffix.).}
+@defproc[(procedure [pre-content any/c] ...) element?]{Typesets
+@tech{decode}d @scheme[pre-content] as a procedure name in a REPL
+result (e.g., in typewriter font with a @litchar{#<procedure:} prefix
+and @litchar{>} suffix.).}
 
-@defform[(var datum)]{Typesets @scheme[var] as an identifier that is
-an argument or sub-form in a procedure being
-documented. Normally, the @scheme[defproc] and @scheme[defform]
-arrange for @scheme[scheme] to format such identifiers automatically
-in the description of the procedure, but use @scheme[var] if that
-cannot work for some reason.}
+@defform[(var datum)]{Typesets @scheme[datum] as an identifier that is
+an argument or sub-form in a procedure being documented. Normally, the
+@scheme[defproc] and @scheme[defform] arrange for @scheme[scheme] to
+format such identifiers automatically in the description of the
+procedure, but use @scheme[var] if that cannot work for some reason.}
 
 @defform[(svar datum)]{Like @scheme[var], but for subform non-terminals
 in a form definition.}
@@ -175,8 +179,8 @@ in a form definition.}
 
 Produces a sequence of flow elements (encaptured in a @scheme[splice])
 to start the documentation for a module that can be @scheme[require]d
-using the path @scheme[id]. The @scheme[pre-flow]s list is parsed as a
-flow that documents the procedure (see @scheme[decode-flow]).
+using the path @scheme[id]. The @tech{decode}d @scheme[pre-flow]s
+introduce the module, but need not include all of the module content.
 
 Besides generating text, this form expands to a use of
 @scheme[declare-exporting] with @scheme[id].
@@ -274,12 +278,13 @@ The @scheme[result-contract-expr-datum] is typeset via
 @scheme[schemeblock0], and it represents a contract on the procedure's
 result.
 
-The @scheme[pre-flow]s list is parsed as a flow that documents the
-procedure. In this description, references to @svar[arg-id]s
-are typeset as procedure arguments.
+The @tech{decode}d @scheme[pre-flow] documents the procedure. In this
+description, references to @svar[arg-id]s using @scheme[scheme],
+@scheme[schemeblock], @|etc| are typeset as procedure arguments.
 
-The typesetting of all data before the @scheme[pre-flow]s ignores the
-source layout.}
+The typesetting of all information before the @scheme[pre-flow]s
+ignores the source layout, except that the local formatting is
+preserved for contracts and default-values expressions.}
 
 
 @defform[(defproc* ([(id arg-spec ...)
@@ -309,14 +314,14 @@ for-label binding) are hyperlinked to this documentation.  The
 @scheme[require-for-label]) that determines the module binding being
 defined.
 
-The @scheme[pre-flow]s list is parsed as a flow that documents the
-procedure. In this description, a reference to any identifier in
-@scheme[datum] is typeset as a sub-form non-terminal. If
-@scheme[#:literals] clause is provided, however, instances of the
-@scheme[literal-id]s are typeset normally.
+The @tech{decode}d @scheme[pre-flow] documents the procedure. In this
+description, a reference to any identifier in @scheme[datum] via
+@scheme[scheme], @scheme[schemeblock], @|etc| is typeset as a sub-form
+non-terminal. If @scheme[#:literals] clause is provided, however,
+instances of the @scheme[literal-id]s are typeset normally.
 
 The typesetting of @scheme[(id . datum)] preserves the source
-layout, like @scheme[schemeblock], and unlike @scheme[defproc].}
+layout, like @scheme[schemeblock].}
 
 @defform[(defform* maybe-literals [(id . datum) ..+] pre-flow ...)]{
 

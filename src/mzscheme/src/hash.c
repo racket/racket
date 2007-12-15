@@ -485,7 +485,7 @@ scheme_make_bucket_table (int size, int type)
 
   table = MALLOC_ONE_TAGGED(Scheme_Bucket_Table);
 
-  table->size = 1;
+  table->size = 2;
   while (table->size < size) {
     table->size <<= 1;
   }
