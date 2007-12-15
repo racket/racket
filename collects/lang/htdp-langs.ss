@@ -578,7 +578,7 @@
             (case key
               [(drscheme:autocomplete-words)
                (unless keywords 
-                 (set! keywords (text:get-completions/manuals (map bytes->string/utf-8 (htdp-manuals)))))
+                 (set! keywords (text:get-completions/manuals #f))) ;; complete with everything, which is wrong ..
                keywords]
               [(drscheme:teachpack-menu-items) htdp-teachpack-callbacks]
               [(drscheme:special:insert-lambda) #f]
@@ -1392,7 +1392,7 @@
          (instantiate htdp-language% ()
            (one-line-summary (string-constant advanced-one-line-summary))
            (module '(lib "lang/htdp-advanced.ss"))
-           (manual #"advanced")
+           ( #"advanced")
            (language-position
             (list (string-constant teaching-languages)
                   (string-constant how-to-design-programs)

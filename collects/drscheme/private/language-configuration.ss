@@ -1333,7 +1333,7 @@
       (let ([words #f])
         (λ ()
           (unless words
-            (set! words (text:get-completions/manuals #f)))
+            (set! words (text:get-completions/manuals '(scheme/base scheme/contract))))
           words)))
     
     ;; add-built-in-languages : -> void

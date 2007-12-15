@@ -82,11 +82,12 @@
     ""
     "Defaults to 15.")
    (text:get-completions/manuals
-    (-> (listof string?) (listof string?))
+    (-> (or/c false/c (listof symbol?)) (listof string?))
     (manuals)
     "Returns the list of keywords for the manuals from \\var{manuals}"
-    "by reading them from the \\texttt{keywords}"
-    "files in the corresponding manuals' directories")
+    "by extracting all of the documented exports of the manuals."
+    "The symbols are meant to be module paths."
+    "If \\var{manuals} is false, then all of the documented names are used.")
    
    (number-snip:make-repeating-decimal-snip
     (number? boolean? . -> . (is-a?/c snip%))
