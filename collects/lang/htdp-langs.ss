@@ -1392,7 +1392,7 @@
          (instantiate htdp-language% ()
            (one-line-summary (string-constant advanced-one-line-summary))
            (module '(lib "lang/htdp-advanced.ss"))
-           ( #"advanced")
+           (manual #"advanced")
            (language-position
             (list (string-constant teaching-languages)
                   (string-constant how-to-design-programs)
