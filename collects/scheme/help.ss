@@ -66,22 +66,25 @@
 
 (define (find-help id)
   (let ([b (or (identifier-label-binding id)
-               (identifier-binding id))])
+               (identifier-binding id))]
+        [xref (load-collections-xref
+               (lambda ()
+                 (printf "Loading help index...\n")))])
     (if b
         (let ([tag (xref-binding->definition-tag
-                    (load-collections-xref)
+                    xref
                     (car b)
                     (cadr b))])
           (if tag
-              (go-to-tag tag)
+              (go-to-tag xref tag)
               (error 'help
                      "no documentation found for: ~e provided by: ~a"
                      (syntax-e id)
                      (module-path-index-resolve (car b)))))
-        (search-for-exports (syntax-e id)))))
+        (search-for-exports xref (syntax-e id)))))
 
-(define (search-for-exports sym)
-  (let ([idx (xref-index (load-collections-xref))]
+(define (search-for-exports xref sym)
+  (let ([idx (xref-index xref)]
         [libs null])
     (for-each (lambda (entry)
                 (when (exported-index-desc? (entry-desc entry))
@@ -98,8 +101,8 @@
                 (printf "  ~a\n" (car libs)))
               (loop (cdr libs))))))))
 
-(define (go-to-tag t)
-  (let-values ([(file anchor) (xref-tag->path+anchor (load-collections-xref) t)])
+(define (go-to-tag xref t)
+  (let-values ([(file anchor) (xref-tag->path+anchor xref t)])
     (printf "Sending to web browser...\n  file: ~a\n  anchor: ~a\n"
             file
             anchor)

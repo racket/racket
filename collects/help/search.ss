@@ -107,7 +107,7 @@
                        (make-link-element
                         "indexlink"
                         (entry-content entry)
-                        (entry-link-key entry))
+                        (entry-tag entry))
                        (make-extra-content
                         (entry-desc entry))))
               (limit-length

@@ -3,6 +3,15 @@
 @require["utils.ss"]
 @require[(for-label scheme/class)]
 
+@(define-syntax-rule (defmodule/local lib . content)
+   (begin
+     (define-syntax-rule (intro)
+       (begin
+         (require (for-label lib))
+         (defmodule lib)
+         . content))
+     (intro)))
+
 @title[#:tag "renderer"]{Renderer}
 
 A renderer is an object that provides two main methods:
@@ -13,26 +22,14 @@ tends to be format-independent, and it usually implemented completely
 by the base renderer. The latter method generates the actual output,
 which is naturally specific to a particular format.
 
+@section{Base Renderer}
+
 @defmodule[scribble/base-render]{The
 @schememodname[scribble/base-render] module provides @scheme[render%],
-which implements the core of a renderer.}
-
-@defmodule*/no-declare[(scribble/text-render)]{The
-@schememodname[scribble/text-render] module provides
-@schemeidfont{renderer-mixin}, which specializes @scheme[render%] for
-generating plain text.}
-
-@defmodule*/no-declare[(scribble/html-render)]{The
-@schememodname[scribble/html-render] module provides
-@schemeidfont{renderer-mixin}, which specializes @scheme[render%] for
-generating a single HTML file. It also supplies
-@schemeidfont{multi-renderer-mixin}, which further specializes the
-renderer to produce multi-file HTML.}
-
-@defmodule*/no-declare[(scribble/latex-render)]{The
-@schememodname[scribble/latex-render] module provides
-@schemeidfont{renderer-mixin}, which specializes @scheme[render%] for
-generating Latex.}
+which implements the core of a renderer. This rendering class must be
+refined with a mixin from @schememodname[scribble/text-render],
+@schememodname[scribble/html-render], or
+@schememodname[scribble/latex-render].}
 
 The mixin structure is meant to support document-specific extensions
 to the renderers. For example, the @exec{scribble} command-line tool
@@ -97,3 +94,38 @@ Adds the deserialized form of @scheme[v] to @scheme[ci].
 }
 
 }
+
+@; ----------------------------------------
+
+@section{Text Renderer}
+
+@defmodule/local[scribble/text-render]{
+
+@defthing[render-mixin ((subclass?/c render%) . -> . (subclass?/c render%))]{
+
+Specializes @scheme[render%] for generating plain text.}}
+
+@; ----------------------------------------
+
+@section{HTML Renderer}
+
+@defmodule/local[scribble/html-render]{
+
+@defthing[render-mixin ((subclass?/c render%) . -> . (subclass?/c render%))]{
+
+Specializes @scheme[render%] for generating a single HTML file.}
+
+@defthing[render-multi-mixin ((subclass?/c render%) . -> . (subclass?/c render%))]{
+
+Further specializes @scheme[render%] for generating a multiple HTML
+files. The input class must be first extended with @scheme[render-mixin].}}
+
+@; ----------------------------------------
+
+@section{Latex Renderer}
+
+@defmodule/local[scribble/latex-render]{
+
+@defthing[render-mixin ((subclass?/c render%) . -> . (subclass?/c render%))]{
+
+Specializes @scheme[render%] for generating Latex input.}}

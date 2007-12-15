@@ -61,25 +61,31 @@ The layers are:
  @item{@schememodname[scribble/scheme]: a library of support functions for
        typesetting Scheme code. See @secref["scheme"].}
 
- @item{@schememodname[scribble/manual]: a library of support functions for writing
-       PLT Scheme documentation; re-exports @schememodname[scribble/basic]. See
-       @secref["manual"].}
+ @item{@schememodname[scribble/manual]: a library of support functions
+       for writing PLT Scheme documentation; re-exports
+       @schememodname[scribble/basic]. Also, the
+       @schememodname[scribble/manual-struct] library provides
+       types for index-entry descriptions created by functions in
+       @schememodname[scribble/manual]. See @secref["manual"].}
 
- @item{@schememodname[scribble/eval]: a library of support functions for ealuating
-       code at document-build time, especially for showing
-       examples. See @secref["eval"].}
+ @item{@schememodname[scribble/eval]: a library of support functions
+       for evaluating code at document-build time, especially for
+       showing examples. See @secref["eval"].}
 
  @item{@schememodname[scribble/bnf]: a library of support functions for writing
        grammars. See @secref["bnf"].}
 
+ @item{@schememodname[scribble/xref]: a library of support functions
+       for using cross-reference information, typically after a
+       document is rendered (e.g., to search). See @secref["xref"].}
+
 }
 
-The @exec{scribble} command-line utility works with a module that
-exports a @scheme{struct.ss}-based document, generating output with a
+The @exec{scribble} command-line utility generates output with a
 specified renderer. More specifically, the executable installs a
-renderer, loads the specified modules and extracts the @scheme[doc]
-export of each (which must be an instance of @scheme[section] from
-@schememodname[scribble/struct]), and renders each. Use @exec{scribble -h} for more
+renderer, loads the modules specified on the command line, extracts
+the @scheme[doc] export of each module (which must be an instance of
+@scheme[part]), and renders each. Use @exec{scribble -h} for more
 information.
 
 @; ------------------------------------------------------------------------
@@ -94,5 +100,6 @@ information.
 @include-section["manual.scrbl"]
 @include-section["eval.scrbl"]
 @include-section["bnf.scrbl"]
+@include-section["xref.scrbl"]
 
 @index-section[]

@@ -20,7 +20,7 @@
 
 (define-struct entry (words    ; list of strings: main term, sub-term, etc.
                       content  ; Scribble content to the index label
-                      link-key ; for generating a Scribble link
+                      tag ; for generating a Scribble link
                       desc))   ; further info that depends on the kind of index entry
 
 ;; Private:
@@ -33,14 +33,13 @@
 
 (define-namespace-anchor here)
 
-(define (load-xref sources)
-  (let* ([renderer (new (html:render-mixin render%) 
+(define (load-xref sources #:render% [render% (html:render-mixin render%)])
+  (let* ([renderer (new render%
                         [dest-dir (find-system-path 'temp-dir)])]
          [ci (send renderer collect null null)])
     (for-each (lambda (src)
                 (parameterize ([current-namespace (namespace-anchor->empty-namespace here)])
-                  (let ([r (with-input-from-file src read)])
-                    (send renderer deserialize-info (cadr r) ci))))
+                  (send renderer deserialize-info (src) ci)))
               sources)
     (make-xrefs renderer (send renderer resolve null null ci))))
 
@@ -59,11 +58,11 @@
                                       (cadr k)
                                       (caddr v)))))))
 
-(define (xref-render xrefs doc dest-file)
+(define (xref-render xrefs doc dest-file #:render% [render% (html:render-mixin render%)])
   (let* ([dest-file (if (string? dest-file)
                         (string->path dest-file)
                         dest-file)]
-         [renderer (new (html:render-mixin render%) 
+         [renderer (new render%
                         [dest-dir (path-only dest-file)])]
          [ci (send renderer collect (list doc) (list dest-file))])
     (send renderer transfer-info ci (resolve-info-ci (xrefs-ri xrefs)))
@@ -114,7 +113,7 @@
   (let-values ([(tag form?) (xref-binding-tag xrefs src id)])
     tag))
 
-(define (xref-tag->path+anchor xrefs tag)
-  (let ([renderer (new (html:render-mixin render%) 
+(define (xref-tag->path+anchor xrefs tag #:render% [render% (html:render-mixin render%)])
+  (let ([renderer (new render%
                        [dest-dir (find-system-path 'temp-dir)])])
     (send renderer tag->path+anchor (xrefs-ri xrefs) tag)))

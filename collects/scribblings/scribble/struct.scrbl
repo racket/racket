@@ -1,6 +1,7 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require["utils.ss"]
+@(require scribble/manual
+          "utils.ss"
+          (for-label scribble/manual-struct))
 
 @title[#:tag "struct"]{Document Structures And Processing}
 
@@ -362,16 +363,32 @@ Hyperlinks the content to @scheme[tag].
 
 
 @defstruct[(index-element element) ([tag tag?]
-                                    [plain-seq (listof string?)]
-                                    [entry-seq list?])]{
+                                    [plain-seq (and/c (listof string?) cons?)]
+                                    [entry-seq list?]
+                                    [desc any/c])]{
 
 The @scheme[plain-seq] specifies the keys for sorting, where the first
- element is the main key, the second is a sub-key, etc. The
- @scheme[entry-seq] list must have the same length, and it provides
- the form of each key to render in the final document. See also
- @scheme[index].
+element is the main key, the second is a sub-key, etc. For example, an
+``night'' portion of an index might have sub-entries for ``night,
+things that go bump in'' and ``night, defender of the''. The former
+would be represented by @scheme[plain-seq] @scheme['("night" "things
+that go bump in")], and the latter by @scheme['("night" "defender of
+the")]. Naturally, single-element @scheme[plain-seq] lists are the
+common case, and at least one word is required, but there is no limit
+to the word-list length.
 
-}
+The @scheme[entry-seq] list must have the same length as
+@scheme[plain-seq]. It provides the form of each key to render in the
+final document.
+
+The @scheme[desc] field provides additional information about the
+index entry as supplied by the entry creator. For example, a reference
+to a procedure binding can be recognized when @scheme[desc] is an
+instance of @scheme[procedure-index-desc]. See
+@schememodname[scribble/manual-struct] for other typical types of
+@scheme[desc] values.
+
+See also @scheme[index].}
 
 
 @defstruct[(aux-element element) ()]{
