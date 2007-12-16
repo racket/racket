@@ -513,7 +513,7 @@ improve method arity mismatch contract violation error messages?
                                              (if mutator-ids
                                                  #'(list (slc #'rev-mutator-new-names) ...
                                                          (slc #'rev-mutator-old-names) ...)
-                                                 #''(#f))])
+                                                 #`'#,(map (λ (x) #f) (syntax->list #'(rev-selector-new-names ... rev-selector-old-names ...))))])
                                 (syntax (begin
                                           (provide (rename-out [id-rename struct-name]))
                                           (define-syntax id-rename

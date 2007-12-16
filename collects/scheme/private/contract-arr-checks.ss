@@ -51,11 +51,16 @@
 (define (check->* f arity-count)
   (unless (procedure? f)
     (error 'object-contract "expected last argument of ->d* to be a procedure, got ~e" f))
-  (unless (procedure-arity-includes? f arity-count)
+  (unless (and (procedure-arity-includes? f arity-count)
+               (no-mandatory-keywords? f))
     (error 'object-contract 
            "expected last argument of ->d* to be a procedure that accepts ~a arguments, got ~e"
            arity-count
            f)))
+
+(define (no-mandatory-keywords? f)
+  (let-values ([(mandatory optional) (procedure-keywords f)])
+    (null? mandatory)))
 
 (define (check->*/more f arity-count)
   (unless (procedure? f)
@@ -86,19 +91,21 @@
 
 (define (check-procedure val dom-length src-info blame orig-str)
   (unless (and (procedure? val)
-               (procedure-arity-includes? val dom-length))
+               (and (procedure-arity-includes? val dom-length)
+                    (no-mandatory-keywords? val)))
     (raise-contract-error
      val
      src-info
      blame
      orig-str
-     "expected a procedure that accepts ~a arguments, given: ~e"
+     "expected a procedure that accepts ~a arguments without any keywords, given: ~e"
      dom-length
      val)))
 
 (define ((check-procedure? arity) val)
   (and (procedure? val)
-       (procedure-arity-includes? val arity)))
+       (procedure-arity-includes? val arity)
+       (no-mandatory-keywords? val)))
 
 (define ((check-procedure/more? arity) val)
   (and (procedure? val)
