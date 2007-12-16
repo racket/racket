@@ -158,7 +158,7 @@ requiring any keyword arguments).
 
 When the result is called with keyword arguments, then @scheme[proc]
 is called; the first argument is a list of keywords sorted by
-@scheme[keyword<], the second argument is a parllel list containing a
+@scheme[keyword<], the second argument is a parallel list containing a
 value for each keyword, and the remaining arguments are the
 by-position arguments.
 
