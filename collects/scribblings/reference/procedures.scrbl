@@ -164,7 +164,7 @@ by-position arguments.
 
 When the result is called without keyword arguments, then
 @scheme[plain-proc] is called. Furthermore, @scheme[procedure-arity]
-obtains its result frmo @scheme[plain-proc].
+obtains its result from @scheme[plain-proc].
 
 @defexamples[
 (define show
