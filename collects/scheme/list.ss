@@ -44,7 +44,7 @@
   (define (last x)
     (unless (and (pair? x)
                  (list? x))
-      (raise-type-error 'rest "non-empty list" x))
+      (raise-type-error 'last "non-empty list" x))
     (let loop ([x x])
       (if (pair? (cdr x))
           (loop (cdr x))
