@@ -2394,7 +2394,7 @@ If the namespace does not, they are colored the unbound color.
                               (λ (menu)
                                 (instantiate menu-item% ()
                                   (parent menu)
-                                  (label (format (string-constant cs-view-docs) source-id))
+                                  (label (format (string-constant cs-view-docs) (syntax-e stx)))
                                   (callback
                                    (λ (x y)
                                      (send-url (format "file://~a~a"
