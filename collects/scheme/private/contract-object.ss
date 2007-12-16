@@ -1,23 +1,22 @@
-(module contract-object mzscheme
-  (require (lib "etc.ss")
-           "contract-arrow.ss"
-           "contract-guts.ss"
-           "class-internal.ss"
-           "contract-arr-checks.ss")
-  
-  (require-for-syntax "contract-helpers.ss"
-                      "contract-arr-obj-helpers.ss"
-                      (lib "list.ss"))
-  
-  (provide mixin-contract
-           make-mixin-contract
-           is-a?/c 
-           subclass?/c 
-           implementation?/c
-           object-contract)
-  
-  (define-syntax-set (object-contract)
-    
+#lang scheme/base
+(require "contract-arrow.ss"
+         "contract-guts.ss"
+         "class-internal.ss"
+         "contract-arr-checks.ss")
+
+(require (for-syntax scheme/base
+                     "contract-helpers.ss"
+                     "contract-arr-obj-helpers.ss"))
+
+(provide mixin-contract
+         make-mixin-contract
+         is-a?/c 
+         subclass?/c 
+         implementation?/c
+         object-contract)
+
+(define-syntax object-contract
+  (let ()
     (define (obj->/proc stx) (make-/proc #t ->/h stx))
     (define (obj->*/proc stx) (make-/proc #t ->*/h stx))
     (define (obj->d/proc stx) (make-/proc #t ->d/h stx))
@@ -41,11 +40,11 @@
         [(xxx . args) (raise-syntax-error err-name "unknown arrow constructor" ctxt-stx (syntax xxx))]
         [_ (raise-syntax-error err-name "malformed arrow clause" ctxt-stx stx)]))
     
-
+    
     (define (obj-opt->/proc stx) (make-opt->/proc #t stx select/h #'case-> #'->))
     (define (obj-opt->*/proc stx) (make-opt->*/proc #t stx stx select/h #'case-> #'->))
     
-    (define (object-contract/proc stx)
+    (λ (stx)
       
       ;; name : syntax
       ;; ctc-stx : syntax[evals to a contract]
@@ -161,7 +160,7 @@
                 (syntax 
                  (->d any/c doms ... 
                       (let ([f rng-proc])
-			(check->* f arity-count)
+                        (check->* f arity-count)
                         (lambda (_this-var arg-vars ...)
                           (f arg-vars ...))))))
               (with-syntax ([(args-vars ...) (generate-temporaries doms-val)])
@@ -174,7 +173,7 @@
                             [arity-count (length doms-val)])
                 (syntax (->d* (any/c doms ...)
                               (let ([f rng-proc])
-				(check->* f arity-count)
+                                (check->* f arity-count)
                                 (lambda (_this-var arg-vars ...)
                                   (f arg-vars ...)))))))
             (with-syntax ([(args-vars ...) (generate-temporaries (syntax (doms ...)))]
@@ -190,7 +189,7 @@
                 (syntax (->d* (any/c doms ...)
                               rst-ctc
                               (let ([f rng-proc])
-				(check->*/more f arity-count)
+                                (check->*/more f arity-count)
                                 (lambda (_this-var arg-vars ... . rest-var)
                                   (apply f arg-vars ... rest-var))))))
               (with-syntax ([(args-vars ...) (generate-temporaries (syntax (doms ...)))]
@@ -204,7 +203,7 @@
            (andmap identifier? (syntax->list (syntax (x ...))))
            (with-syntax ([(arg-vars ...) (generate-temporaries (syntax (x ...)))]
                          [(this-var) (generate-temporaries (syntax (this-var)))]
-                         [this (datum->syntax-object mtd-stx 'this)])
+                         [this (datum->syntax mtd-stx 'this)])
              (values
               obj->r/proc
               (syntax (->r ([this any/c] [x dom] ...) rng))
@@ -214,7 +213,7 @@
            (andmap identifier? (syntax->list (syntax (x ...))))
            (with-syntax ([(arg-vars ...) (generate-temporaries (syntax (x ...)))]
                          [(this-var) (generate-temporaries (syntax (this-var)))]
-                         [this (datum->syntax-object mtd-stx 'this)])
+                         [this (datum->syntax mtd-stx 'this)])
              (values
               obj->r/proc
               (syntax (->r ([this any/c] [x dom] ...) rest-x rest-dom rng))
@@ -226,7 +225,7 @@
            (andmap identifier? (syntax->list (syntax (x ...))))
            (with-syntax ([(arg-vars ...) (generate-temporaries (syntax (x ...)))]
                          [(this-var) (generate-temporaries (syntax (this-var)))]
-                         [this (datum->syntax-object mtd-stx 'this)])
+                         [this (datum->syntax mtd-stx 'this)])
              (values
               obj->pp/proc
               (syntax (->pp ([this any/c] [x dom] ...) . other-stuff))
@@ -238,7 +237,7 @@
                 (andmap identifier? (syntax->list (syntax (x ...)))))
            (with-syntax ([(arg-vars ...) (generate-temporaries (syntax (x ...)))]
                          [(this-var) (generate-temporaries (syntax (this-var)))]
-                         [this (datum->syntax-object mtd-stx 'this)])
+                         [this (datum->syntax mtd-stx 'this)])
              (values
               obj->pp-rest/proc
               (syntax (->pp ([this any/c] [x dom] ...) rest-id . other-stuff))
@@ -249,6 +248,12 @@
       
       ;; build-methods-stx : syntax[list of lambda arg specs] -> syntax[method realized as proc]
       (define (build-methods-stx mtds)
+        
+        (define (last-pair l)
+          (cond
+            [(not (pair? (cdr l))) l]
+            [else (last-pair (cdr l))]))
+        
         (let loop ([arg-spec-stxss (map mtd-mtd-arg-stx mtds)]
                    [names (map mtd-name mtds)]
                    [i 0])
@@ -279,7 +284,7 @@
                                                             rest-ids ...
                                                             last-var)))))])))
                                         (syntax->list arg-spec-stxs))]
-                                  [name (string->symbol (format "~a method" (syntax-object->datum (car names))))])
+                                  [name (string->symbol (format "~a method" (syntax->datum (car names))))])
                       (with-syntax ([proc (syntax-property (syntax (case-lambda cases ...)) 'method-arity-error #t)])
                         (cons (syntax (lambda (field-ref) (let ([name proc]) name)))
                               (loop (cdr arg-spec-stxss)
@@ -307,8 +312,8 @@
       (syntax-case stx ()
         [(_ field/mtd-specs ...)
          (let* ([mtd/flds (map expand-field/mtd-spec (syntax->list (syntax (field/mtd-specs ...))))]
-		[mtds (filter mtd? mtd/flds)]
-		[flds (filter fld? mtd/flds)])
+                [mtds (filter mtd? mtd/flds)]
+                [flds (filter fld? mtd/flds)])
            (with-syntax ([(method-ctc-stx ...) (map mtd-ctc-stx mtds)]
                          [(method-name ...) (map mtd-name mtds)]
                          [(method-ctc-var ...) (generate-temporaries mtds)]
@@ -334,105 +339,105 @@
                                                  '(method-name ...)
                                                  (list methods ...)
                                                  '(field-name ...))])
-                  (make-proj-contract
-                   `(object-contract 
-                     ,(build-compound-type-name 'method-name method-ctc-var) ...
-                     ,(build-compound-type-name 'field 'field-name field-ctc-var) ...)
-                   (lambda (pos-blame neg-blame src-info orig-str)
-                     (let ([method/app-var (method-var pos-blame neg-blame src-info orig-str)] 
-                           ...
-                           [field/app-var (field-var pos-blame neg-blame src-info orig-str)]
-                           ...)
-                       (let ([field-names-list '(field-name ...)])
-                         (lambda (val)
-			   (check-object val src-info pos-blame orig-str)
-                           (let ([val-mtd-names
-                                  (interface->method-names
-                                   (object-interface
-                                    val))])
-                             (void)
-			     (check-method val 'method-name val-mtd-names src-info pos-blame orig-str)
+                    (make-proj-contract
+                     `(object-contract 
+                       ,(build-compound-type-name 'method-name method-ctc-var) ...
+                       ,(build-compound-type-name 'field 'field-name field-ctc-var) ...)
+                     (lambda (pos-blame neg-blame src-info orig-str)
+                       (let ([method/app-var (method-var pos-blame neg-blame src-info orig-str)] 
+                             ...
+                             [field/app-var (field-var pos-blame neg-blame src-info orig-str)]
                              ...)
-                           
-                           (unless (field-bound? field-name val)
-			     (field-error val 'field-name src-info pos-blame orig-str)) ...
-                           
-                           (let ([vtable (extract-vtable val)]
-                                 [method-ht (extract-method-ht val)])
-                             (make-object cls
-                               val
-                               (method/app-var (vector-ref vtable (hash-table-get method-ht 'method-name))) ...
-                               (field/app-var (get-field field-name val)) ...
-                               ))))))
-                   #f)))))))])))
+                         (let ([field-names-list '(field-name ...)])
+                           (lambda (val)
+                             (check-object val src-info pos-blame orig-str)
+                             (let ([val-mtd-names
+                                    (interface->method-names
+                                     (object-interface
+                                      val))])
+                               (void)
+                               (check-method val 'method-name val-mtd-names src-info pos-blame orig-str)
+                               ...)
+                             
+                             (unless (field-bound? field-name val)
+                               (field-error val 'field-name src-info pos-blame orig-str)) ...
+                             
+                             (let ([vtable (extract-vtable val)]
+                                   [method-ht (extract-method-ht val)])
+                               (make-object cls
+                                 val
+                                 (method/app-var (vector-ref vtable (hash-table-get method-ht 'method-name))) ...
+                                 (field/app-var (get-field field-name val)) ...
+                                 ))))))
+                     #f)))))))]))))
 
-  
-  (define (check-object val src-info blame orig-str)
-    (unless (object? val)
-      (raise-contract-error val
-                            src-info
-                            blame
-                            orig-str
-                            "expected an object, got ~e"
-                            val)))
-  
-  (define (check-method val method-name val-mtd-names src-info blame orig-str)
-    (unless (memq method-name val-mtd-names)
-      (raise-contract-error val
-                            src-info
-                            blame
-                            orig-str
-                            "expected an object with method ~s"
-                            method-name)))
-  
-  (define (field-error val field-name src-info blame orig-str)
+
+(define (check-object val src-info blame orig-str)
+  (unless (object? val)
     (raise-contract-error val
                           src-info
                           blame
                           orig-str
-                          "expected an object with field ~s"
-                          field-name))
-  
-  (define (make-mixin-contract . %/<%>s)
-    ((and/c (flat-contract class?)
-            (apply and/c (map sub/impl?/c %/<%>s)))
-     . ->d .
-     subclass?/c))
- 
-  (define (subclass?/c %)
-    (unless (class? %)
-      (error 'subclass?/c "expected <class>, given: ~e" %))
-    (let ([name (object-name %)])
-      (flat-named-contract
-       `(subclass?/c ,(or name 'unknown%))
-       (lambda (x) (subclass? x %)))))
-  
-  (define (implementation?/c <%>)
-    (unless (interface? <%>)
-      (error 'implementation?/c "expected <interface>, given: ~e" <%>))
-    (let ([name (object-name <%>)])
-      (flat-named-contract
-       `(implementation?/c ,(or name 'unknown<%>))
-       (lambda (x) (implementation? x <%>)))))
-  
-  (define (sub/impl?/c %/<%>)
-    (cond
-      [(interface? %/<%>) (implementation?/c %/<%>)]
-      [(class? %/<%>) (subclass?/c %/<%>)]
-      [else (error 'make-mixin-contract "unknown input ~e" %/<%>)]))
+                          "expected an object, got ~e"
+                          val)))
 
-  (define (is-a?/c <%>)
-    (unless (or (interface? <%>)
-		(class? <%>))
-      (error 'is-a?/c "expected <interface> or <class>, given: ~e" <%>))
-    (let ([name (object-name <%>)])
-      (flat-named-contract
-       (cond
-         [name
-          `(is-a?/c ,name)]
-         [(class? <%>)
-          `(is-a?/c unknown%)]
-         [else `(is-a?/c unknown<%>)])
-       (lambda (x) (is-a? x <%>)))))
-  
-  (define mixin-contract (class? . ->d . subclass?/c)))
+(define (check-method val method-name val-mtd-names src-info blame orig-str)
+  (unless (memq method-name val-mtd-names)
+    (raise-contract-error val
+                          src-info
+                          blame
+                          orig-str
+                          "expected an object with method ~s"
+                          method-name)))
+
+(define (field-error val field-name src-info blame orig-str)
+  (raise-contract-error val
+                        src-info
+                        blame
+                        orig-str
+                        "expected an object with field ~s"
+                        field-name))
+
+(define (make-mixin-contract . %/<%>s)
+  ((and/c (flat-contract class?)
+          (apply and/c (map sub/impl?/c %/<%>s)))
+   . ->d .
+   subclass?/c))
+
+(define (subclass?/c %)
+  (unless (class? %)
+    (error 'subclass?/c "expected <class>, given: ~e" %))
+  (let ([name (object-name %)])
+    (flat-named-contract
+     `(subclass?/c ,(or name 'unknown%))
+     (lambda (x) (subclass? x %)))))
+
+(define (implementation?/c <%>)
+  (unless (interface? <%>)
+    (error 'implementation?/c "expected <interface>, given: ~e" <%>))
+  (let ([name (object-name <%>)])
+    (flat-named-contract
+     `(implementation?/c ,(or name 'unknown<%>))
+     (lambda (x) (implementation? x <%>)))))
+
+(define (sub/impl?/c %/<%>)
+  (cond
+    [(interface? %/<%>) (implementation?/c %/<%>)]
+    [(class? %/<%>) (subclass?/c %/<%>)]
+    [else (error 'make-mixin-contract "unknown input ~e" %/<%>)]))
+
+(define (is-a?/c <%>)
+  (unless (or (interface? <%>)
+              (class? <%>))
+    (error 'is-a?/c "expected <interface> or <class>, given: ~e" <%>))
+  (let ([name (object-name <%>)])
+    (flat-named-contract
+     (cond
+       [name
+        `(is-a?/c ,name)]
+       [(class? <%>)
+        `(is-a?/c unknown%)]
+       [else `(is-a?/c unknown<%>)])
+     (lambda (x) (is-a? x <%>)))))
+
+(define mixin-contract (class? . ->d . subclass?/c))
