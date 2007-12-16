@@ -781,6 +781,7 @@
                  p))))
         (current-load-relative-directory init-dir)
         (current-directory init-dir)
+        #;
         (error-display-handler 
          (λ (str exn)
            (set! error-str str)
@@ -991,14 +992,16 @@
       (let loop ([direct-requires direct-requires])
         (cond
           [(null? direct-requires) null]
-          [else (let ([dr (car direct-requires)])
-                  (if (module-path-index? dr)
-                      (begin
-                        ;(printf ">> ~s ~s\n" base (collapse-module-path-index dr base))
-                        (cons (make-req (simplify-path (expand-path (resolve-module-path-index dr base)))
-                                        (get-key dr))
-                              (loop (cdr direct-requires))))
-                      (loop (cdr direct-requires))))])))
+          [else
+           
+           (let ([dr (car direct-requires)])
+             (if (module-path-index? dr)
+                 (let ([path (resolve-module-path-index dr base)])
+                   (if (path? path)
+                       (cons (make-req (simplify-path (expand-path path)) (get-key dr))
+                             (loop (cdr direct-requires)))
+                       (loop (cdr direct-requires))))
+                 (loop (cdr direct-requires))))])))
     
     (define (get-key dr)
       (and (module-path-index? dr)
