@@ -458,7 +458,7 @@ time, rather than run time (though the two times can overlap), though
 the binding itself is introduced with @tech{phase level} 0 (i.e., in
 the @tech{base environment}).
 
-The @deftech{value} for the binding is obtained by evaluating the
+The @tech{value} for the binding is obtained by evaluating the
 expression in the @scheme[define-syntaxes] form. This expression must
 be @tech{expand}ed (i.e. parsed) before it can be evaluated, and it is
 expanded at @tech{phase level} 1 (i.e., in the @tech{transformer

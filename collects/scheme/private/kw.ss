@@ -10,7 +10,7 @@
                          "norm-define.ss"
                          "qqstx.ss"))
 
-  (#%provide new-lambda
+  (#%provide new-lambda new-λ
              new-define
              new-app
              (rename *make-keyword-procedure make-keyword-procedure)
@@ -280,165 +280,168 @@
             #f "bad argument sequence" stx (syntax args))]))))
   
   ;; The new `lambda' form:
-  (define-syntax (new-lambda stx)
-    (syntax-case stx ()
-      [(_ args body1 body ...)
-       (if (simple-args? #'args)
-           ;; Use plain old `lambda':
-           (syntax/loc stx
-             (lambda args body1 body ...))
-           ;; Handle keyword or optional arguments:
-           (with-syntax ([((plain-id ...)
-                           (opt-id ...)
-                           ([id opt-expr kind] ...)
-                           ([kw kw-id kw-req] ...)
-                           need-kw
-                           rest)
-                          (parse-formals stx #'args)])
-             (let ([dup-id (check-duplicate-identifier (syntax->list #'(id ... . rest)))])
-               (when dup-id
-                 (raise-syntax-error
-                  #f
-                  "duplicate argument identifier"
-                  stx
-                  dup-id)))
-             (let* ([kws (syntax->list #'(kw ...))]
-                    [opts (syntax->list #'(opt-id ...))]
-                    [ids (syntax->list #'(id ...))]
-                    [plain-ids (syntax->list #'(plain-id ...))]
-                    [kw-reqs (syntax->list #'(kw-req ...))]
-                    [kw-args (generate-temporaries kws)]     ; to hold supplied value
-                    [kw-arg?s (generate-temporaries kws)]    ; to indicated whether it was supplied
-                    [opt-args (generate-temporaries opts)]   ; supplied value
-                    [opt-arg?s (generate-temporaries opts)]  ; whether supplied
-                    [needed-kws (sort (syntax->list #'need-kw)
-                                      (lambda (a b) (keyword<? (syntax-e a) (syntax-e b))))]
-                    [sorted-kws (sort (map list kws kw-args kw-arg?s kw-reqs)
-                                      (lambda (a b) (keyword<? (syntax-e (car a))
-                                                               (syntax-e (car b)))))])
-               (with-syntax ([(kw-arg ...) kw-args]
-                             [(kw-arg? ...) (let loop ([kw-arg?s kw-arg?s]
-                                                       [kw-reqs kw-reqs])
-                                              (cond
-                                                [(null? kw-arg?s) null]
-                                                [(not (syntax-e (car kw-reqs)))
-                                                 (cons (car kw-arg?s) (loop (cdr kw-arg?s) (cdr kw-reqs)))]
-                                                [else (loop (cdr kw-arg?s) (cdr kw-reqs))]))]
-                             [kws-sorted sorted-kws]
-                             [(opt-arg ...) opt-args]
-                             [(opt-arg? ...) opt-arg?s]
-                             [(new-plain-id  ...) (generate-temporaries #'(plain-id ...))]
-                             [new-rest (if (null? (syntax-e #'rest))
-                                           '()
-                                           '(new-rest))]
-                             [(rest-id) (if (null? (syntax-e #'rest))
-                                            '(())
-                                            #'rest)]
-                             [rest-empty (if (null? (syntax-e #'rest))
-                                             '()
-                                             '(null))])
-                 (let ([with-core 
-                        (lambda (result)
-                          ;; body of procedure, where all keyword and optional
-                          ;; argments come in as a pair of arguments (value and
-                          ;; whether the value is valid):
-                          (syntax-property
-                           (quasisyntax/loc stx
-                             ;; We need to push the certificates way down, so that
-                             ;; the `class' macro (for example) can pull it apart
-                             ;; enough to insert an additional argument.
-                             (let #,(syntax-property
-                                     #`(#,(syntax-property
-                                           #`[core 
-                                              #,(syntax-property
-                                                 #`(lambda #,(syntax-property
-                                                              #`(given-kws given-args
-                                                                           new-plain-id ... 
-                                                                           opt-arg ...
-                                                                           opt-arg? ...
-                                                                           . new-rest)
-                                                              'certify-mode
-                                                              'transparent)
-                                                     ;; sort out the arguments into the user-supplied bindings,
-                                                     ;; evaluating default-values expressions as needed:
-                                                     (let-kws given-kws given-args kws-sorted
-                                                              (let-maybe ([id opt-expr kind] ... . rest)
-                                                                         (kw-arg ...) (kw-arg? ...)
-                                                                         (opt-arg ...) (opt-arg? ...)
-                                                                         (new-plain-id ... . new-rest)
-                                                                         ;; the original body, finally:
-                                                                         body1 body ...)))
-                                                 'certify-mode
-                                                 'transparent)]
-                                           'certify-mode
-                                           'transparent))
-                                     'certify-mode
-                                     'transparent)
-                               ;; entry points use `core':
-                               #,result))
-                           'certify-mode
-                           'transparent))]
-                       [mk-no-kws
-                        (lambda ()
-                          ;; entry point without keywords:
-                          (syntax/loc stx
-                            (opt-cases (core null null) ([opt-id opt-arg opt-arg?] ...) (plain-id ...) 
-                                       () (rest-empty rest-id . rest)
-                                       ())))]
-                       [mk-with-kws
-                        (lambda ()
-                          ;; entry point with keywords:
-                          (if (and (null? opts)
-                                   (null? #'new-rest))
-                              #'core
-                              (syntax/loc stx
-                                (opt-cases (core) ([opt-id opt-arg opt-arg?] ...) (given-kws given-args plain-id ...) 
-                                           () (rest-empty rest-id . rest)
-                                           ()))))]
-                       [mk-kw-arity-stub
-                        (lambda ()
-                          ;; struct-type entry point for no keywords when a keyword is required
-                          (syntax/loc stx
-                            (fail-opt-cases (missing-kw) (opt-id ...) (self plain-id ...) 
-                                            () (rest-id . rest)
-                                            ())))])
-                   (cond
-                     [(null? kws)
-                      ;; just the no-kw part
-                      (with-core (mk-no-kws))]
-                     [(null? needed-kws)
-                      ;; both parts dispatch to core
-                      (with-core
-                       (with-syntax ([kws (map car sorted-kws)]
-                                     [no-kws (let ([p (mk-no-kws)]
-                                                   [n (syntax-local-infer-name stx)])
-                                               (if n
-                                                   #`(let ([#,n #,p]) #,n)
-                                                   p))]
-                                     [with-kws (mk-with-kws)])
-                         (syntax/loc stx
-                           (make-optional-keyword-procedure
-                            with-kws
-                            null
-                            'kws
-                            no-kws))))]
-                     [else
-                      ;; just the keywords part dispatches to core,
-                      ;; and the other part dispatches to failure
-                      (with-core
-                       (with-syntax ([kws (map car sorted-kws)]
-                                     [needed-kws needed-kws]
-                                     [no-kws (mk-no-kws)]
-                                     [with-kws (mk-with-kws)]
-                                     [mk-id (with-syntax ([n (syntax-local-infer-name stx)]
-                                                          [call-fail (mk-kw-arity-stub)])
-                                              (syntax-local-lift-expression
-                                               #'(make-required 'n call-fail)))])
-                         (syntax/loc stx
-                           (mk-id
-                            with-kws
-                            'needed-kws
-                            'kws))))]))))))]))
+  (define-syntaxes (new-lambda new-λ)
+    (let ([new-lambda
+           (lambda (stx)
+             (syntax-case stx ()
+               [(_ args body1 body ...)
+                (if (simple-args? #'args)
+                    ;; Use plain old `lambda':
+                    (syntax/loc stx
+                      (lambda args body1 body ...))
+                    ;; Handle keyword or optional arguments:
+                    (with-syntax ([((plain-id ...)
+                                    (opt-id ...)
+                                    ([id opt-expr kind] ...)
+                                    ([kw kw-id kw-req] ...)
+                                    need-kw
+                                    rest)
+                                   (parse-formals stx #'args)])
+                      (let ([dup-id (check-duplicate-identifier (syntax->list #'(id ... . rest)))])
+                        (when dup-id
+                          (raise-syntax-error
+                           #f
+                           "duplicate argument identifier"
+                           stx
+                           dup-id)))
+                      (let* ([kws (syntax->list #'(kw ...))]
+                             [opts (syntax->list #'(opt-id ...))]
+                             [ids (syntax->list #'(id ...))]
+                             [plain-ids (syntax->list #'(plain-id ...))]
+                             [kw-reqs (syntax->list #'(kw-req ...))]
+                             [kw-args (generate-temporaries kws)]     ; to hold supplied value
+                             [kw-arg?s (generate-temporaries kws)]    ; to indicated whether it was supplied
+                             [opt-args (generate-temporaries opts)]   ; supplied value
+                             [opt-arg?s (generate-temporaries opts)]  ; whether supplied
+                             [needed-kws (sort (syntax->list #'need-kw)
+                                               (lambda (a b) (keyword<? (syntax-e a) (syntax-e b))))]
+                             [sorted-kws (sort (map list kws kw-args kw-arg?s kw-reqs)
+                                               (lambda (a b) (keyword<? (syntax-e (car a))
+                                                                        (syntax-e (car b)))))])
+                        (with-syntax ([(kw-arg ...) kw-args]
+                                      [(kw-arg? ...) (let loop ([kw-arg?s kw-arg?s]
+                                                                [kw-reqs kw-reqs])
+                                                       (cond
+                                                        [(null? kw-arg?s) null]
+                                                        [(not (syntax-e (car kw-reqs)))
+                                                         (cons (car kw-arg?s) (loop (cdr kw-arg?s) (cdr kw-reqs)))]
+                                                        [else (loop (cdr kw-arg?s) (cdr kw-reqs))]))]
+                                      [kws-sorted sorted-kws]
+                                      [(opt-arg ...) opt-args]
+                                      [(opt-arg? ...) opt-arg?s]
+                                      [(new-plain-id  ...) (generate-temporaries #'(plain-id ...))]
+                                      [new-rest (if (null? (syntax-e #'rest))
+                                                    '()
+                                                    '(new-rest))]
+                                      [(rest-id) (if (null? (syntax-e #'rest))
+                                                     '(())
+                                                     #'rest)]
+                                      [rest-empty (if (null? (syntax-e #'rest))
+                                                      '()
+                                                      '(null))])
+                          (let ([with-core 
+                                 (lambda (result)
+                                   ;; body of procedure, where all keyword and optional
+                                   ;; argments come in as a pair of arguments (value and
+                                   ;; whether the value is valid):
+                                   (syntax-property
+                                    (quasisyntax/loc stx
+                                      ;; We need to push the certificates way down, so that
+                                      ;; the `class' macro (for example) can pull it apart
+                                      ;; enough to insert an additional argument.
+                                      (let #,(syntax-property
+                                              #`(#,(syntax-property
+                                                    #`[core 
+                                                       #,(syntax-property
+                                                          #`(lambda #,(syntax-property
+                                                                       #`(given-kws given-args
+                                                                                    new-plain-id ... 
+                                                                                    opt-arg ...
+                                                                                    opt-arg? ...
+                                                                                    . new-rest)
+                                                                       'certify-mode
+                                                                       'transparent)
+                                                              ;; sort out the arguments into the user-supplied bindings,
+                                                              ;; evaluating default-values expressions as needed:
+                                                              (let-kws given-kws given-args kws-sorted
+                                                                       (let-maybe ([id opt-expr kind] ... . rest)
+                                                                                  (kw-arg ...) (kw-arg? ...)
+                                                                                  (opt-arg ...) (opt-arg? ...)
+                                                                                  (new-plain-id ... . new-rest)
+                                                                                  ;; the original body, finally:
+                                                                                  body1 body ...)))
+                                                          'certify-mode
+                                                          'transparent)]
+                                                    'certify-mode
+                                                    'transparent))
+                                              'certify-mode
+                                              'transparent)
+                                        ;; entry points use `core':
+                                        #,result))
+                                    'certify-mode
+                                    'transparent))]
+                                [mk-no-kws
+                                 (lambda ()
+                                   ;; entry point without keywords:
+                                   (syntax/loc stx
+                                     (opt-cases (core null null) ([opt-id opt-arg opt-arg?] ...) (plain-id ...) 
+                                                () (rest-empty rest-id . rest)
+                                                ())))]
+                                [mk-with-kws
+                                 (lambda ()
+                                   ;; entry point with keywords:
+                                   (if (and (null? opts)
+                                            (null? #'new-rest))
+                                       #'core
+                                       (syntax/loc stx
+                                         (opt-cases (core) ([opt-id opt-arg opt-arg?] ...) (given-kws given-args plain-id ...) 
+                                                    () (rest-empty rest-id . rest)
+                                                    ()))))]
+                                [mk-kw-arity-stub
+                                 (lambda ()
+                                   ;; struct-type entry point for no keywords when a keyword is required
+                                   (syntax/loc stx
+                                     (fail-opt-cases (missing-kw) (opt-id ...) (self plain-id ...) 
+                                                     () (rest-id . rest)
+                                                     ())))])
+                            (cond
+                             [(null? kws)
+                              ;; just the no-kw part
+                              (with-core (mk-no-kws))]
+                             [(null? needed-kws)
+                              ;; both parts dispatch to core
+                              (with-core
+                               (with-syntax ([kws (map car sorted-kws)]
+                                             [no-kws (let ([p (mk-no-kws)]
+                                                           [n (syntax-local-infer-name stx)])
+                                                       (if n
+                                                           #`(let ([#,n #,p]) #,n)
+                                                           p))]
+                                             [with-kws (mk-with-kws)])
+                                 (syntax/loc stx
+                                   (make-optional-keyword-procedure
+                                    with-kws
+                                    null
+                                    'kws
+                                    no-kws))))]
+                             [else
+                              ;; just the keywords part dispatches to core,
+                              ;; and the other part dispatches to failure
+                              (with-core
+                               (with-syntax ([kws (map car sorted-kws)]
+                                             [needed-kws needed-kws]
+                                             [no-kws (mk-no-kws)]
+                                             [with-kws (mk-with-kws)]
+                                             [mk-id (with-syntax ([n (syntax-local-infer-name stx)]
+                                                                  [call-fail (mk-kw-arity-stub)])
+                                                      (syntax-local-lift-expression
+                                                       #'(make-required 'n call-fail)))])
+                                 (syntax/loc stx
+                                   (mk-id
+                                    with-kws
+                                    'needed-kws
+                                    'kws))))]))))))]))])
+      (values new-lambda new-lambda)))
   
   (define (missing-kw proc . args)
     (apply

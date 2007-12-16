@@ -435,7 +435,7 @@ special comment contains the comment text.}
 A text-mode reader for XML boxes.}]
 
 
-@defclass[comment-editor% editor% (readable<%>)]{
+@defclass[xml-editor% editor% (readable<%>)]{
 
 Instantiated for DrScheme XML boxes in a @tech{WXME} stream for text
 mode.
@@ -469,7 +469,7 @@ Scheme boxes.}
 A text-mode reader for Scheme boxes.}]
 
 
-@defclass[comment-editor% editor% (readable<%>)]{
+@defclass[scheme-editor% editor% (readable<%>)]{
 
 Instantiated for DrScheme Scheme boxes in a @tech{WXME} stream for text
 mode.
@@ -493,15 +493,15 @@ Generates an S-expression for the code in the box.}
 
 @section{DrScheme Text Boxes}
 
-@defmodule[wxme/scheme]
+@defmodule[wxme/text]
 
-@in[wxme/scheme
+@in[wxme/text
 @defthing[reader (is-a?/c snip-reader<%>)]{
 
 A text-mode reader for text boxes.}]
 
 
-@defclass[comment-editor% editor% (readable<%>)]{
+@defclass[text-editor% editor% (readable<%>)]{
 
 Instantiated for DrScheme text boxes in a @tech{WXME} stream for text
 mode.

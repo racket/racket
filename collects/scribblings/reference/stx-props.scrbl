@@ -98,19 +98,18 @@ information on properties and byte codes.
 
 @;------------------------------------------------------------------------
 
-@defproc[(syntax-property [stx syntax?][key any/c][v any/c])
-         syntax?]{
+@defproc*[([(syntax-property [stx syntax?][key any/c][v any/c])
+            syntax?]
+           [(syntax-property [stx syntax?][key any/c]) any])]{
 
-Extends @scheme[stx] by associating an arbitrary property value
-@scheme[v] with the key @scheme[key]; the result is a new syntax
-object with the association (while @scheme[stx] itself is unchanged).}
+The three-argument form extends @scheme[stx] by associating an
+arbitrary property value @scheme[v] with the key @scheme[key]; the
+result is a new syntax object with the association (while @scheme[stx]
+itself is unchanged).
 
-
-@defproc[(syntax-property [stx syntax?][key any/c]) any]{
-
-Returns an arbitrary property value associated to @scheme[stx] with
-the key @scheme[key], or @scheme[#f] if no value is associated to
-@scheme[stx] for @scheme[key].}
+The two-argument form returns an arbitrary property value associated
+to @scheme[stx] with the key @scheme[key], or @scheme[#f] if no value
+is associated to @scheme[stx] for @scheme[key].}
 
 
 @defproc[(syntax-property-symbol-keys [stx syntax?]) list?]{

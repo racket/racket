@@ -15,9 +15,12 @@
 
 
   (define (collect-put! ci key val)
-    (hash-table-put! (collect-info-ht ci)
-                     key
-                     val))
+    (let ([ht (collect-info-ht ci)])
+      (when (hash-table-get ht key #f)
+        (fprintf (current-error-port)
+                 "WARNING: collected information for key multiple times: ~e\n"
+                 key))
+      (hash-table-put! ht key val)))
 
   (define (resolve-get/where part ri key)
     (let ([key (tag-key key ri)])

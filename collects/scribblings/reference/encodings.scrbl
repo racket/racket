@@ -76,7 +76,7 @@ UTF-8 for encoding.
 
 @defparam[current-locale locale (or/c string? false/c)]{
 
-A parameter that determines the current @deftech{locale} for
+A parameter that determines the current @tech{locale} for
 procedures such as @scheme[string-locale-ci=?].
 
 When locale sensitivity is disabled by setting the parameter to

@@ -253,6 +253,10 @@
                  background-color: #E8E8FF;
                }
 
+               .together { 
+                 width: 100%;
+               }
+
                .prototype td { 
                  vertical-align: top;
                }

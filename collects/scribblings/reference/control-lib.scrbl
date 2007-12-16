@@ -16,7 +16,7 @@ work sensibly together. Many are redundant; for example,
  
 @deftogether[(
 @defform[(% expr)]
-@defform[(% expr handler-expr)]
+@defform/none[(% expr handler-expr)]
 @defproc[(fcontrol [v any/c]) any]
 )]{
 

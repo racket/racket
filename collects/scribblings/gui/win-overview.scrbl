@@ -109,7 +109,7 @@ In addition to dispatching events, the GUI classes also handle the
  graphical layout of windows. Our example frame demonstrates a simple
  layout; the frame's elements are lined up top-to-bottom. In general,
  a programmer specifies the layout of a window by assigning each GUI
- element to a parent @deftech{container}. A vertical container, such
+ element to a parent @tech{container}. A vertical container, such
  as a frame, arranges its children in a column, and a horizontal
  container arranges its children in a row. A container can be a child
  of another container; for example, to place two buttons side-by-side
@@ -296,9 +296,9 @@ Menu bars, menus, and menu items are graphical elements, but not areas
   @item{@scheme[separator-menu-item%] --- a @deftech{separator} is
   an unselectable line in a menu or popup menu.}
 
-  @item{@scheme[menu-item%] --- a @deftech{menu item} is a selectable
-  text item in a menu. When the item is selected, its callback procedure
-  is invoked.}
+  @item{@scheme[menu-item%] --- a @deftech{plain menu item} is a
+  selectable text item in a menu. When the item is selected, its
+  callback procedure is invoked.}
 
   @item{@scheme[checkable-menu-item%] --- a @deftech{checkable menu
   item} is a text item in a menu; the user selects a checkable menu
@@ -405,7 +405,7 @@ Each @tech{containee}, or child, has the following properties:
 
  @item{horizontal and vertical @deftech{stretchability} (on or off); and}
 
- @item{horizontal and vertical @deftech{margins}.}
+ @item{horizontal and vertical @tech{margins}.}
 
 }
 
@@ -822,7 +822,7 @@ Although a programmer has no direct control over the order in which
 
 @subsection[#:tag "espacethreads"]{Eventspaces and Threads}
 
-When a new eventspace is created, a corresponding @deftech{handler
+When a new eventspace is created, a corresponding @tech{handler
  thread} is created for the eventspace. When the system dispatches an
  event for an eventspace, it always does so in the eventspace's
  handler thread. A handler procedure can create new threads that run

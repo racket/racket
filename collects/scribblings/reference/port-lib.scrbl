@@ -2,7 +2,7 @@
 @require["mz.ss"
          (for-label scheme/port)]
 
-@title[#:tag "customport"]{More Port Constructors and Events}
+@title{More Port Constructors and Events}
 
 @note-lib[scheme/port]
 

@@ -30,7 +30,7 @@
              (all-from "define.ss")
              (all-from-except "letstx-scheme.ss" -define -define-syntax -define-struct)
              (rename new-lambda lambda)
-             (rename new-lambda λ)
+             (rename new-λ λ)
              (rename new-define define)
              (rename new-app #%app)
              (rename #%app #%plain-app)

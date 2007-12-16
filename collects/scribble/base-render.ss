@@ -119,11 +119,11 @@
             (hash-table-for-each (collect-info-ht p-ci)
                                  (lambda (k v)
                                    (when (cadr k)
-                                     (hash-table-put! (collect-info-ht ci)
-                                                      (if prefix
-                                                          (convert-key prefix k)
-                                                          k)
-                                                      v)))))))
+                                     (collect-put! ci
+                                                   (if prefix
+                                                       (convert-key prefix k)
+                                                       k)
+                                                   v)))))))
 
       (define/private (convert-key prefix k)
         (case (car k)

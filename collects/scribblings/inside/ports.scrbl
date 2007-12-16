@@ -815,7 +815,7 @@ is made if @var{copy} is not 0. The string @var{bytes} should contain
 nul terminator in addition. If @var{len} is negative, then the
 nul-terminated length of @var{bytes} is used for the length.}
 
-@function[(Scheme_Object* scheme_make_sized_path
+@function[(Scheme_Object* scheme_make_sized_offset_path
            [char* bytes]
            [long d]
            [long len]

@@ -82,11 +82,11 @@ Now, the standard cut and paste operations work, and the user can even
  on the outside of the box is rearranged as the box changes
  sizes. Note that the box itself can be copied and pasted.
 
-The content of an editor is made up of @deftech{snips}. An embedded
- editor is a single snip from the embedding editor's point-of-view. To
- encode immediate text, a snip can be a single character, but more
- often a snip is a sequence of adjacent characters on the same
- line. The @method[text% find-snip] method extracts a snip
+The content of an editor is made up of @defterm{@tech{snips}}. An
+ embedded editor is a single snip from the embedding editor's
+ point-of-view. To encode immediate text, a snip can be a single
+ character, but more often a snip is a sequence of adjacent characters
+ on the same line. The @method[text% find-snip] method extracts a snip
  from a text editor:
 
 @schemeblock[
@@ -396,15 +396,15 @@ Graceful and extensible encoding of snips requires that
  @item{Some editors may require additional information to be stored
  about a snip; this information is orthogonal to the type-specific
  information stored by the snip itself. For example, a pasteboard
- needs to remember a snip's @techlink{location}, while a text editor does not
- need this information.  If data is being cut and pasted from one
- pasteboard to another, then information about relative @techlink{location}s
- needs to be maintained, but this information should not inhibit
- pasting into an editor. Extra data is associated with a snip through
- @deftech{editor data} objects, instances of the
- @scheme[editor-data%] class; decoding requires that each editor data
- object has an @deftech{editor data class}, an instance of the
- @scheme[editor-data-class%] class.}
+ needs to remember a snip's @techlink{location}, while a text editor
+ does not need this information.  If data is being cut and pasted from
+ one pasteboard to another, then information about relative
+ @techlink{location}s needs to be maintained, but this information
+ should not inhibit pasting into an editor. Extra data is associated
+ with a snip through @deftech{editor data} objects, which are
+ instances of the @scheme[editor-data%] class; decoding requires that
+ each editor data object has an @deftech{editor data class}, which is
+ an instance of the @scheme[editor-data-class%] class.}
 
 }
 
@@ -415,7 +415,7 @@ Snip classes, snip data, and snip data classes solve problems related
 
 @subsubsection[#:tag "editorsnipclasses"]{Snip Classes}
 
-Each snip can be associated to a @deftech{snip class}. This ``class''
+Each snip can be associated to a @tech{snip class}. This ``class''
  is not a class description in the programmer's language; it is an
  object which provides a way to create new snips of the appropriate
  type from an encoded snip specification.
@@ -455,12 +455,12 @@ A snip class's name can also be just @scheme["(lib ...)"], which is
 While a snip belongs to an editor, the editor may store extra
  information about a snip in some specialized way. When the snip is to
  be encoded, this extra information needs to be put into an
- @deftech{editor data} object so that the extra information can be
+ @tech{editor data} object so that the extra information can be
  encoded as well.  In a text editor, extra information can be
  associated with ranges of @techlink{item}s, as well as snips.
 
 Just as a snip must be associated with a snip class to be decoded (see
- @|snipclassdiscuss|), an editor data object needs an @deftech{editor
+ @|snipclassdiscuss|), an editor data object needs an @tech{editor
  data class} for decoding. Every editor data class object can be added
  to the eventspace-specific @deftech{editor data class list}, returned
  by @scheme[get-the-editor-data-class-list]. Alternatively, like snip

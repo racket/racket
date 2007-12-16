@@ -517,12 +517,13 @@ interfaces. The API for Scheme's GUI and graphics system is expressed
 in terms of objects and classes.
 
 The class system itself is implemented by the
-@schememodname[scheme/class] library, and the @schememodname[mred]
-library provides the GUI and drawing classes. By convention, the MrEd
-classes are given names that end with @scheme[%]:
+@schememodname[scheme/class] library, and the
+@schememodname[scheme/gui/base] library provides the GUI and drawing
+classes. By convention, the classes are given names that end with
+@scheme[%]:
 
 @mr-defs+int[
-[(require scheme/class mred)
+[(require scheme/class scheme/gui/base)
  (define f (new frame% [label "My Art"]
                        [width 300]
                        [height 300]
@@ -539,8 +540,8 @@ such as @scheme[show], with arguments after the method name; the
 argument @scheme[#t] in this case is the boolean constant ``true.''
 
 Pictures generated with @schememodname[slideshow] encapsulate a
-function that uses MrEd's drawing commands to render the picture to a
-drawing context, such as a canvas in a frame. The
+function that uses the graphics toolbox's drawing commands to render
+the picture to a drawing context, such as a canvas in a frame. The
 @scheme[make-pict-drawer] function from @schememodname[slideshow]
 exposes a picture's drawing function. We can use
 @scheme[make-pict-drawer] in a canvas-painting callback to draw a

@@ -92,7 +92,7 @@ printed output.
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "macros"]{Reader Extension}
+@section[#:tag "reader"]{Reader Extension}
 
 @; ----------------------------------------------------------------------
 @section[#:tag "security"]{Security}

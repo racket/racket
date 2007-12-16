@@ -662,7 +662,7 @@ output, a hyperlink underline appears even when the mouse is not over
 the link.}
 
 @; ------------------------------------------------------------------------
-@section{Indexing}
+@section[#:tag "manual-indexing"]{Indexing}
 
 @defform[(indexed-scheme datum ...)]{
 
@@ -801,7 +801,7 @@ correspond to the documented name of the binding and the primary
 modules that export the documented name (but this list is not
 exhaustive, because new modules can re-export the binding).}
 
-@defstruct[(procedure-index-desc exported-index-desc) ()]{
+@defstruct[(form-index-desc exported-index-desc) ()]{
 
 Indicates that the index entry corresponds to the definition of a
 syntactic form via @scheme[defform] and company.}

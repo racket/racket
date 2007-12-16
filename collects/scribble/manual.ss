@@ -780,7 +780,7 @@
                            (table? (car (splice-run box)))
                            (eq? 'boxed (table-style (car (splice-run box)))))
                 (error 'deftogether "element is not a boxing splice containing a single table: ~e" box))
-              (list (make-flow (list (make-table #f (table-flowss (car (splice-run box))))))))
+              (list (make-flow (list (make-table "together" (table-flowss (car (splice-run box))))))))
             boxes))
       (parameterize ([current-variable-list
                       (apply append (map box-splice-var-list boxes))])

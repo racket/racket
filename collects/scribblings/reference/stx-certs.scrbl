@@ -10,8 +10,8 @@ module name (see @secref["modpathidx"]), an @tech{inspector} (see
 is attached as either an @deftech{active certificate} or an
 @deftech{inactive certificate}.
 
-The @scheme[datum->syntax] procedure never transfers an
-@deftech{active certificate} from one syntax object to another. The
+The @scheme[datum->syntax] procedure never transfers an @tech{active
+certificate} from one syntax object to another. The
 @scheme[syntax-recertify] procedure can be used to transfer a
 certificate from one syntax object to another, but only if the
 certificate's key is provided, or if a sufficiently powerful inspector

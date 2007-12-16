@@ -90,10 +90,11 @@ A @deftech{class} specifies
 
 }
 
-An @deftech{object} is a collection of bindings for fields that are
-instantiated according to a class description.
+In the context of the class system, an @defterm{object} is a
+collection of bindings for fields that are instantiated according to a
+class description.
 
-The object system allows a program to define a new class (a
+The class system allows a program to define a new class (a
 @deftech{derived class}) in terms of an existing class (the
 @deftech{superclass}) using inheritance, overriding, and augmenting:
 

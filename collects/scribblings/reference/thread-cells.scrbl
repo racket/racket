@@ -3,8 +3,8 @@
 
 @title[#:tag "threadcells"]{Thread Cells}
 
-A @deftech{thread cell} contains a thread-specific value; that is, it
-contains a specific value for each thread, but it may contain
+A @defterm{@tech{thread cell}} contains a thread-specific value; that
+is, it contains a specific value for each thread, but it may contain
 different values for different threads. A thread cell is created with
 a default value that is used for all existing threads. When the cell's
 content is changed with @scheme[thread-cell-set!], the cell's value
@@ -12,12 +12,12 @@ changes only for the current thread. Similarly,
 @scheme[thread-cell-ref] obtains the value of the cell that is
 specific to the current thread.
 
-A thread cell's value can be @deftech{preserved}, which means that
-when a new thread is created, the cell's initial value for the new
-thread is the same as the creating thread's current value. If a thread
-cell is non-preserved, then the cell's initial value for a newly
-created thread is the default value (which was supplied when the cell
-was created).
+A thread cell's value can be @defterm{@tech{preserved}}, which means
+that when a new thread is created, the cell's initial value for the
+new thread is the same as the creating thread's current value. If a
+thread cell is non-preserved, then the cell's initial value for a
+newly created thread is the default value (which was supplied when the
+cell was created).
 
 Within the current thread, the current values of all preserved threads
 cells can be captured through

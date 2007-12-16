@@ -331,7 +331,7 @@ the procedure body.
 (let ([f (lambda (x #:arg y) (list y x))])
  (list (f 1 #:arg 2)
        (f #:arg 2 1)))
-]}
+]
 
 When compiling a @scheme[lambda] or @scheme[case-lambda] expression,
 Scheme looks for a @indexed-scheme['method-arity-error] property
@@ -343,7 +343,7 @@ will hide the first argument, if one was provided. (Hiding the first
 argument is useful when the procedure implements a method, where the
 first argument is implicit in the original source). The property
 affects only the format of @scheme[exn:fail:contract:arity]
-exceptions, not the result of @scheme[procedure-arity].
+exceptions, not the result of @scheme[procedure-arity].}
 
 
 @defform/subs[(case-lambda [formals body ...+] ...)

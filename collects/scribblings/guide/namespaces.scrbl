@@ -93,8 +93,8 @@ initial module mapping, further modules can be loaded.
 
 A namespace created with @scheme[make-base-empty-namespace] is
 suitable for many basic dynamic tasks. For example, suppose that a
-@schememodname[my-dsl] library implements a domain-specific language in
-which you want to execute commands from a user-specified file. A
+@schememodfont{my-dsl} library implements a domain-specific language
+in which you want to execute commands from a user-specified file. A
 namespace created with @scheme[make-base-empty-namespace] is enough to
 get started:
 

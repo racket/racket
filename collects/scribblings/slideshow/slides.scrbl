@@ -377,6 +377,12 @@ Parameter that controls the amount of space used between lines by
 @scheme[para], @scheme[item], and @scheme[subitem].}
 
 
+@defparam[current-para-width n nonnegative-exact-integer?]{
+
+Parameter that controls the width of a pict created by
+@scheme[para], @scheme[item], and @scheme[subitem].}
+
+
 @defparam[current-title-color color (or/c string? (is-a?/c color%))]{
 
 Parameter used by the default @scheme[current-titlet] to colorize the

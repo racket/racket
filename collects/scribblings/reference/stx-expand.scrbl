@@ -1,7 +1,7 @@
 #lang scribble/doc
 @require["mz.ss"]
 
-@title[#:tag "expansion"]{Expanding Top-Level Forms}
+@title{Expanding Top-Level Forms}
 
 
 @defproc[(expand [top-level-form any/c]) syntax?]{

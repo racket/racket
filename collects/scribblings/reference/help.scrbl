@@ -17,9 +17,9 @@ arguments. It is not provided by @scheme[scheme] or
 
 @deftogether[(
 @defidform[help]
-@defform[(help id)]
-@defform[(help id #:from module-path)]
-@defform[(help #:search datum ...)]
+@defform/none[(help id)]
+@defform/none[(help id #:from module-path)]
+@defform/none[(help #:search datum ...)]
 )]{
 
 Searches the documentation, and opens a web browser (using the user's

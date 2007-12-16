@@ -39,13 +39,13 @@ that the sendmail process can complete.
 The @scheme[from] argument can be any value; of course, spoofing
 should be used with care.}
 
-@defproc[(send-mail-message/port [from string?]
-                                 [subject string?]
-                                 [to (listof string?)]
-                                 [cc (listof string?)]
-                                 [bcc (listof string?)]
-                                 [body (listof string?)]
-                                 [extra-header string?] ...)
+@defproc[(send-mail-message [from string?]
+                            [subject string?]
+                            [to (listof string?)]
+                            [cc (listof string?)]
+                            [bcc (listof string?)]
+                            [body (listof string?)]
+                            [extra-header string?] ...)
          void?]{
 
 Like @scheme[send-mail-message/port], but with @scheme[body] as a list

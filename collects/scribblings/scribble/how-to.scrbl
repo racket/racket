@@ -49,7 +49,7 @@ EOS
 
   @item{Run @exec{setup-plt} to build your documentation. For a
         collection, optionally supply @Flag{l} followed by the
-        collection name to limit the build process to the collection.}
+        collection name to limit the build process to that collection.}
 
   @item{The generated documentation is
         @filepath{compiled/doc/manual/index.html} within the
@@ -57,9 +57,9 @@ EOS
 
         If you want the output to be relative to the PLT Scheme
         documentation directory (which is recommend only for those who
-        produce the ``official'' PLT Scheme distribution), add the
-        @scheme['main-doc] option to the @scheme[scribblings]
-        definition in @filepath{info.ss}.}
+        produce the ``official'' PLT Scheme distribution, and even
+        then only in certain cases), add the @scheme['main-doc] option
+        to the @scheme[scribblings] definition in @filepath{info.ss}.}
 
 }
 
@@ -92,14 +92,14 @@ one must be present. No spaces are allowed between
 A @nonterm{cmd} or @nonterm{datum} is a Scheme datum, while a
 @nonterm{text-body} is itself in text mode.
 
-The expansion of a @litchar["@"] form into Scheme code is
+The expansion of @litchar["@"]@nonterm{cmd} into Scheme code is
 
 @schemeblock[
-  @nonterm{cmd}
+  #, @nonterm{cmd}
 ]
 
-if neither @litchar["["] @litchar["]"] nor @litchar["{"] @litchar["}"]
-are used, otherwise
+When either @litchar["["] @litchar["]"] or @litchar["{"] @litchar["}"]
+are used, the expansion is
 
 @schemeblock[
   (#, @nonterm{cmd} #, @kleenestar{@nonterm{datum}} #, @kleenestar{@nonterm{parsed-body}})

@@ -9,13 +9,14 @@
 
 A @deftech{weak box} is similar to a normal box (see
 @secref["boxes"]), but when the garbage collector (see
-@secref["gc-model"]) can prove that the content value of a weak box
-is only reachable via weak references, the content of the weak box is
-replaced with @scheme[#f]. A @deftech{weak reference} is a reference
-through a weak box, through a key reference in a weak hash table (see
-@secref["hashtables"]), through a value in an ephemeron where the
-value can be replaced by @scheme[#f] (see @secref["ephemerons"]), or
-through a custodian (see @secref["custodians"]).
+@secref["gc-model"]) can prove that the content value of a weak box is
+only reachable via weak references, the content of the weak box is
+replaced with @scheme[#f]. A @defterm{@tech{weak reference}} is a
+reference through a weak box, through a key reference in a weak hash
+table (see @secref["hashtables"]), through a value in an ephemeron
+where the value can be replaced by @scheme[#f] (see
+@secref["ephemerons"]), or through a custodian (see
+@secref["custodians"]).
 
 @defproc[(make-weak-box [v any/c]) weak-box?]{
 
