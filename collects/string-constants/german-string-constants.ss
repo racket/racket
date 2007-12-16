@@ -91,8 +91,11 @@
  (cs-status-coloring-program "Syntaxprüfung: Ausdruck einfärben")
  (cs-status-eval-compile-time "Syntaxprüfung: Compile-Time-Code ausführen")
  (cs-status-expanding-expression "Syntaxprüfung: Ausdruck expandieren")
+ (cs-status-loading-docs-index "Syntaxprüfung: Dokumentations-Index laden")
  (cs-mouse-over-import "Bindung ~s importiert aus ~s")
 
+ (cs-view-docs "Dokumentation für ~a anschauen")
+  
  (cs-lexical-variable "lexikalische Variable")
  (cs-imported-variable "importierte Variable")
 
