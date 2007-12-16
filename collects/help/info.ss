@@ -13,4 +13,4 @@
 |#
       ))
   (define mzscheme-launcher-libraries '("help.ss"))
-  (define mzscheme-launcher-names     '("Help Desk")))
+  (define mzscheme-launcher-names     '("PLT Help")))
