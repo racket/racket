@@ -1,6 +1,9 @@
 #lang scribble/doc
-@require["ss.ss"]
-@require[(for-label mred)]
+@(require "ss.ss"
+          (for-label mred
+                     slideshow/flash
+                     slideshow/face
+                     slideshow/balloon))
 
 @title[#:style 'toc]{Making Pictures}
 
@@ -562,7 +565,11 @@ cannot be found with functions like @scheme[lt-find].}
 
 @; ------------------------------------------------------------------------
 
-@section{Dingbats}
+@section{More Pict Constructors}
+
+@; ----------------------------------------
+
+@subsection{Dingbats}
 
 @defproc[(cloud [w real?]
                 [h real?] 
@@ -608,6 +615,237 @@ plain pumpkin. The @scheme[size] determines the width.}
 Creates an angel wing, left or right, or any size.  The color and pen
 width for drawing the wing outline is the current one.}
 
+@; ----------------------------------------
+
+@subsection{Balloon Annotations}
+
+@defmodule[slideshow/balloon]{The @schememodname[slideshow/balloon]
+library provides functions for creating and placing cartoon-speech
+balloons.}
+
+@defproc[(wrap-balloon [pict pict?]
+                       [spike one-of/c ('n 's 'e 'w 'ne 'se 'sw 'nw)]
+                       [dx real?]
+                       [dy real?]
+                       [color (or/c string? (is-a?/c color%)) balloon-color]
+                       [corner-radius (and/c real? (not/c negative?)) 32])
+         balloon?]{
+
+Superimposes @scheme[pict] on top of a balloon that wraps it.
+
+The @scheme[spike] argument indicates the corner from which a spike
+protrudes from the balloon (i.e., the spike that points to whatever
+the balloon is about). For example, @scheme['n] means ``north,'',
+which is a spike in the top middle of the balloon.
+
+The @scheme[dx] and @scheme[dy] arguments specify how far the spike
+should protrude.  For a @scheme['w] spike, @scheme[dx] should be
+negative, etc.
+
+The @scheme[color] argument is the background color for the balloon.
+
+The @scheme[corner-radius] argument determines the radius of the cicle
+used to roun the balloon's corners. As usual, if it is less than
+@scheme[1], then it acts as a ratio of the balloon's width or height.
+
+The result is a balloon, not a pict. The @scheme[balloon-pict]
+function extracts a pict whose bounding box does not include the
+spike, but includes the rest of the image, and the
+@scheme[balloon-point-x] and @scheme[balloon-point-y] functions
+extract the location of the spike point. More typically, the
+@scheme[pin-balloon] function is used to add a balloon to a pict.}
+
+@defproc[(pip-wrap-balloon [pict pict?]
+                           [spike one-of/c ('n 's 'e 'w 'ne 'se 'sw 'nw)]
+                           [dx real?]
+                           [dy real?]
+                           [color (or/c string? (is-a?/c color%)) balloon-color]
+                           [corner-radius (and/c real? (not/c negative?)) 32])
+         pict?]{
+
+Like @scheme[wrap-balloon], but produces a zero-sized pict suitable
+for use with @scheme[pin-over].}
+
+
+@defproc*[([(pin-balloon [balloon balloon?]
+                         [base pict?]
+                         [x real?]
+                         [y real?])
+            pict?]
+           [(pin-balloon [balloon balloon?]
+                         [base pict?]
+                         [at-pict pict-path?]
+                         [find ((pict? pict-path?) . ->* . (real? real?))])
+            pict?])]{
+
+Superimposes the pict in @scheme[balloon] onto @scheme[base] to
+produce a new pict. The balloon is positioned so that its spike points
+to the location specified by either @scheme[x] and @scheme[y]
+(numbers) or at the position determined by combining @scheme[base] and
+@scheme[at-pict] with @scheme[find]. The @scheme[find] function uses
+its arguments like @scheme[lt-find].
+
+The resulting pict has the same bounding box, descent, and ascent as
+@scheme[base], even if the balloon extends beyond the bounding box.}
+
+
+@defproc[(balloon [w real?]
+                  [h real?]
+                  [corner-radius (and/c real? (not/c negative?))]
+                  [spike one-of/c ('n 's 'e 'w 'ne 'se 'sw 'nw)]
+                  [dx real?]
+                  [dy real?]
+                  [color (or/c string? (is-a?/c color%)) balloon-color])
+         balloon?]{
+
+Creates a balloon, much like @scheme[wrap-balloon] except that the balloon's
+width is @scheme[w] and its height is @scheme[h].}
+
+@defproc*[([(balloon? [v any/c]) boolean?]
+           [(make-balloon [pict pict?] [x real?] [y real?]) balloon?]
+           [(balloon-pict [balloon balloon?]) pict?]
+           [(balloon-point-x [balloon balloon?]) real?]
+           [(balloon-point-y [balloon balloon?]) real?])]{
+
+A balloon encapsulates a pict and the position of the balloon's spike
+relative to the balloon's top-left corner.}
+
+@defthing[balloon-color (or/c string? (is-a?/c color%))]
+
+The default background color for a balloon.
+
+@; ----------------------------------------
+
+@subsection{Face}
+
+@defmodule[slideshow/face]{The @schememodname[slideshow/face] library
+provides functions for a kind of @as-index{Mr. Potatohead}-style face
+library.}
+
+@defthing[default-face-color (or/c string (is-a?/c color%))]{
+
+Orange.}
+
+@defproc[(face [mood symbol?]
+               [color (or/c string (is-a?/c color%)) default-face-color])
+         pict?]{
+
+Returns a pict for a pre-configured face with the given base
+color. The built-in configurations, selected by mood-symbol, are as
+follows:
+
+@itemize{
+
+    @item{@scheme['unhappy] --- @scheme[(face* 'none 'plain #t default-face-color 6)]}
+    @item{@scheme['sortof-unhappy] --- @scheme[(face* 'worried 'grimace #t default-face-color 6)]}
+    @item{@scheme['sortof-happy] --- @scheme[(face* 'worried 'medium #f default-face-color 6)]}
+    @item{@scheme['happy] --- @scheme[(face* 'none 'plain #f default-face-color 6)]}
+    @item{@scheme['happier] --- @scheme[(face* 'none 'large #f default-face-color 3)]}
+    @item{@scheme['embarrassed] --- @scheme[(face* 'worried 'medium #f default-face-color 3)]}
+    @item{@scheme['badly-embarrassed] --- @scheme[(face* 'worried 'medium #t default-face-color 3)]}
+    @item{@scheme['unhappier] --- @scheme[(face* 'normal 'large #t default-face-color 3)]}
+    @item{@scheme['happiest] --- @scheme[(face* 'normal 'huge #f default-face-color 0 -3)]}
+    @item{@scheme['unhappiest] --- @scheme[(face* 'normal 'huge #t default-face-color 0 -3)]}
+    @item{@scheme['mad] --- @scheme[(face* 'angry 'grimace #t default-face-color 0)]}
+    @item{@scheme['mean] --- @scheme[(face* 'angry 'narrow #f default-face-color 0)]}
+    @item{@scheme['surprised] --- @scheme[(face* 'worried 'oh #t default-face-color -4 -3 2)]}
+
+}}
+
+@defproc[(face* [eyebrow-kind (one-of/c 'none 'normal 'worried 'angry)]
+                [mouth-kind (one-of/c 'plain 'narrow 'medium 'large 'huge
+                                      'grimace 'oh 'tongue)]
+                [frown? any/c]
+                [color (or/c string (is-a?/c color%))]
+                [eye-inset real?]
+                [eyebrow-dy real?]
+                [pupil-dx real?]
+                [pupil-dy real?]
+                [#:eyebrow-shading? eyebrow-on? any/c #t]
+                [#:mouth-shading? mouth-on? any/c #t]
+                [#:eye-shading? eye-on? any/c #t]
+                [#:tongue-shading? tongue-on? any/c #t]
+                [#:face-background-shading? face-bg-on? any/c #t]
+                [#:teeth? teeth-on? any/c #t])
+         pict?]{
+
+Returns a pict for a face:
+
+@itemize{
+
+ @item{@scheme[eyebrow-kind] determines the eyebrow shape.}
+
+ @item{@scheme[mouth-kind] determines the mouth shape, sombined with
+       @scheme[frown?].}
+
+ @item{@scheme[frown?] determines whether the mouth is up or down.}
+
+ @item{@scheme[color] determines the face color.}
+
+ @item{@scheme[eye-inset] adjusts the eye size; recommend values are
+       between 0 and 10.}
+
+ @item{@scheme[eyebrow-dy] adjusts the eyebrows; recommend values:
+       between -5 and 5.}
+
+ @item{@scheme[pupil-dx] adjusts the pupil; recommend values are
+       between -10 and 10.}
+
+ @item{@scheme[pupil-dy] adjusts the pupil; recommend values are
+       between -15 and 15.}
+
+}
+
+The @scheme[#:eyebrow-shading?] through
+@scheme[#:face-background-shading?] arguments control whether a
+shading is used for on a particular feature in the face (shading tends
+to look worse than just anti-aliasing when the face is small). The
+@scheme[#:teeth?] argument controls the visibility of the teeth for
+some mouth shapes.}
+
+@; ----------------------------------------
+
+@subsection{Flash}
+
+@defmodule[slideshow/flash]
+
+@defproc[(filled-flash [width real?]
+                       [height real?]
+                       [n-points exact-positive-integer? 10]
+                       [spike-fraction (real-in 0 1) 0.25]
+                       [rotation real? 0])
+         pict?]{
+
+Returns a pict for a ``flash'': a spiky oval, like the yellow
+background that goes behind a ``new!'' logo on web pages or a box of
+cereal.
+  
+The @scheme[height] and @scheme[width] arguments determine the size of
+the oval in which the flash is drawn, prior to rotation. The actual
+height and width may be smaller if @scheme[points] is not a multiple
+of 4, and the actual height and width will be different if the flash
+is rotated.
+
+The @scheme[n-points] argument determines the number of points on the
+flash.
+
+The @scheme[spike-fraction] argument determines how big the flash
+spikes are compared to the bounding oval.
+
+The @scheme[rotation] argument specifies an angle in radians for
+counter-clockwise rotation.
+
+The flash is drawn in the default color.}
+
+@defproc[(outline-flash [width real?]
+                        [height real?]
+                        [n-points exact-positive-integer? 10]
+                        [spike-fraction (real-in 0 1) 0.25]
+                        [rotation real? 0])
+         pict?]{
+
+Like @scheme[filled-flash], but drawing only the outline.}
+
 @; ------------------------------------------------------------------------
 
 @section{Miscellaneous}
@@ -647,7 +885,6 @@ intermediate color.
 The @scheme[max-step] and @scheme[step-delta] arguments should be
 exact numbers; the procedure is called with each number from 0 to
 @scheme[max-step] inclusive using a @scheme[step-delta] increment.}
-
 
 @; ------------------------------------------------------------------------
 

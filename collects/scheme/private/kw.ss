@@ -154,8 +154,8 @@
             (apply proc normal-args)
             (apply
              (keyword-procedure-extract kws (+ 2 (length normal-args)) proc)
-             (apply list kws)
-             (apply list kw-vals)
+             kws
+             kw-vals
              normal-args)))))
 
   (define (procedure-keywords p)

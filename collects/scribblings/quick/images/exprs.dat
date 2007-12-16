@@ -84,7 +84,7 @@
 ((1) 0 () 0 () () (void))
 ((1) 0 () 0 () () (c pict+code c (c circle c 10)))
 ((1) 2 (((lib "struct.ss" "scribble") . deserialize-info:element-v0) ((lib "struct.ss" "scribble") . deserialize-info:image-file-v0)) 0 () () (0 #f (c (0 (1 (u . "images/img28.png")) (c "[image]")))))
-((1) 0 () 0 () () (c require c scheme/class c mred))
+((1) 0 () 0 () () (c require c scheme/class c scheme/gui/base))
 ((1) 0 () 0 () () (void))
 ((1) 0 () 0 () () (c define c f c (c new c frame% c (c label c "My Art") c (c width c 300) c (c height c 300) c (c alignment c (c quote c (c center c center))))))
 ((1) 0 () 0 () () (void))
