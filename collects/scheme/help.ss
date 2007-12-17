@@ -44,7 +44,7 @@
            #'(search-for (list str ...)))]
         [_
          (raise-syntax-error #f
-                             "expects a single identifer; try just `help' for more information"
+                             "expects a single identifer, a #:from clause, or a #:search clause; try just `help' for more information"
                              stx)])))
 
 (define (open-help-start)
@@ -103,9 +103,10 @@
 
 (define (go-to-tag xref t)
   (let-values ([(file anchor) (xref-tag->path+anchor xref t)])
-    (printf "Sending to web browser...\n  file: ~a\n  anchor: ~a\n"
-            file
-            anchor)
+    (printf "Sending to web browser...\n  file: ~a\n"
+            file)
+    (when anchor
+      (printf "  anchor: ~a\n" anchor))
     (unless (send-url (url->string
                        (make-url "file"
                                  #f #f #f #t

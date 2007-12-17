@@ -601,11 +601,13 @@
       [(_ spec subs desc ...) #'(defform*/subs [spec] subs desc ...)]))
   (define-syntax (defform/none stx)
     (syntax-case stx ()
-      [(_ spec desc ...)
-       #'(*defforms #f null
+      [(_ #:literals (lit ...) spec desc ...)
+       #'(*defforms #f '(lit ...)
                     '(spec) (list (lambda (ignored) (schemeblock0/form spec))) 
                     null null
-                    (lambda () (list desc ...)))]))
+                    (lambda () (list desc ...)))]
+      [(_ spec desc ...)
+       #'(defform/none #:literals () spec desc ...)]))
   (define-syntax (defidform stx)
     (syntax-case stx ()
       [(_ spec-id desc ...)

@@ -17,9 +17,9 @@ arguments. It is not provided by @scheme[scheme] or
 
 @deftogether[(
 @defidform[help]
-@defform/none[(help id)]
-@defform/none[(help id #:from module-path)]
-@defform/none[(help #:search datum ...)]
+@defform/none[#:literals (help) (help id)]
+@defform/none[#:literals (help) (help id #:from module-path)]
+@defform/none[#:literals (help) (help #:search datum ...)]
 )]{
 
 Searches the documentation, and opens a web browser (using the user's
@@ -27,7 +27,7 @@ selected browser) to display the results. See
 @schememodname[net/sendurl] for information on how the user's browser
 is launched.
 
-A simple @scheme[help] form opens this page.
+A simple @scheme[help] or @scheme[(help)] form opens this page.
 
 A @scheme[(help id)] form looks for documentation specific to the
 current binding of @scheme[id]. For example, 
