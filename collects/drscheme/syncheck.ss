@@ -31,6 +31,7 @@ If the namespace does not, they are colored the unbound color.
          mred/mred
          setup/xref
          scribble/xref
+         scribble/manual-struct
          net/url
          net/uri-codec
          browser/external
@@ -2385,23 +2386,25 @@ If the namespace does not, they are colored the unbound color.
                   (when definition-tag
                     (let-values ([(path tag) (xref-tag->path+anchor (get-xref) definition-tag)])
                       (when path
-                        (send defs-text syncheck:add-background-color defs-text "navajowhite" start fin (syntax-e stx))
-                        (send defs-text syncheck:add-menu
-                              defs-text
-                              start 
-                              fin 
-                              (syntax-e stx)
-                              (λ (menu)
-                                (instantiate menu-item% ()
-                                  (parent menu)
-                                  (label (format (string-constant cs-view-docs) (syntax-e stx)))
-                                  (callback
-                                   (λ (x y)
-                                     (send-url (format "file://~a~a"
-                                                       (path->string path) 
-                                                       (if tag
-                                                           (string-append "#" (uri-encode tag))
-                                                           ""))))))))))))))))))
+                        (let ([index-entry (xref-tag->index-entry (get-xref) definition-tag)])
+                          (when index-entry
+                            (send defs-text syncheck:add-background-color defs-text "navajowhite" start fin (syntax-e stx))
+                            (send defs-text syncheck:add-menu
+                                  defs-text
+                                  start 
+                                  fin 
+                                  (syntax-e stx)
+                                  (λ (menu)
+                                    (instantiate menu-item% ()
+                                      (parent menu)
+                                      (label (format (string-constant cs-view-docs) (exported-index-desc-name (entry-desc index-entry))))
+                                      (callback
+                                       (λ (x y)
+                                         (send-url (format "file://~a~a"
+                                                           (path->string path) 
+                                                           (if tag
+                                                               (string-append "#" (uri-encode tag))
+                                                               ""))))))))))))))))))))
     
     
     
