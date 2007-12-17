@@ -16,6 +16,7 @@
          xref-index
          xref-binding->definition-tag
          xref-tag->path+anchor
+         xref-tag->index-entry
          (struct-out entry))
 
 (define-struct entry (words    ; list of strings: main term, sub-term, etc.
@@ -117,3 +118,18 @@
   (let ([renderer (new render%
                        [dest-dir (find-system-path 'temp-dir)])])
     (send renderer tag->path+anchor (xrefs-ri xrefs) tag)))
+
+(define (xref-tag->index-entry xrefs tag)
+  (let ([v (hash-table-get (collect-info-ext-ht (resolve-info-ci (xrefs-ri xrefs)))
+                           `(index-entry ,tag)
+                           #f)])
+    (cond
+     [v (make-entry (car v) 
+                    (cadr v)
+                    (cadr tag)
+                    (caddr v))]
+     [(and (pair? tag) (eq? 'form (car tag)))
+      ;; Try again with 'def:
+      (xref-tag->index-entry xrefs (cons 'def (cdr tag)))]
+     [else #f])))
+

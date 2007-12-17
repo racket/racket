@@ -70,6 +70,16 @@ The optional @scheme[using-render%] argument is as for
 @scheme[load-xref].}
                                 
 
+@defproc[(xref-tag->index-entry [xref xref?]
+                                [tag tag?])
+         (or/c false/c entry?)]{
+
+Extract an @scheme[entry] structure that provides addition information
+about the definition (of any) referenced by @scheme[tag]. This
+function can be composed with @scheme[xref-binding->definition-tag] to
+obtain information about a binding, such as the library that exports
+the binding and its original name.}
+
 
 @defproc[(xref-render [xref xref?]
                       [doc part?]
