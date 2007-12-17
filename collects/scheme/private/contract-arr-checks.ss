@@ -58,6 +58,10 @@
            arity-count
            f)))
 
+(define (get-mandatory-keywords f)
+  (let-values ([(mandatory optional) (procedure-keywords f)])
+    mandatory))
+
 (define (no-mandatory-keywords? f)
   (let-values ([(mandatory optional) (procedure-keywords f)])
     (null? mandatory)))
@@ -89,18 +93,30 @@
                           orig-str
                           "post-condition expression failure")))
 
-(define (check-procedure val dom-length src-info blame orig-str)
+(define (check-procedure val dom-length mandatory-kwds src-info blame orig-str)
   (unless (and (procedure? val)
-               (and (procedure-arity-includes? val dom-length)
-                    (no-mandatory-keywords? val)))
+               (procedure-arity-includes? val dom-length)
+               (equal? mandatory-kwds (get-mandatory-keywords val)))
     (raise-contract-error
      val
      src-info
      blame
      orig-str
-     "expected a procedure that accepts ~a arguments without any keywords, given: ~e"
+     "expected a procedure that accepts ~a arguments~a, given: ~e"
      dom-length
+     (keyword-error-text mandatory-kwds)
      val)))
+
+(define (keyword-error-text mandatory-keywords)
+  (cond
+    [(null? mandatory-keywords) " without any keywords"]
+    [(null? (cdr mandatory-keywords))
+     (format " and the keyword ~a" (car mandatory-keywords))]
+    [else
+     (format
+      " and the keywords ~a~a"
+      (car mandatory-keywords)
+      (apply string-append (map (λ (x) (format " ~a" x)) (cdr mandatory-keywords))))]))
 
 (define ((check-procedure? arity) val)
   (and (procedure? val)
@@ -149,17 +165,18 @@
                           (procedure-arity val)
                           val)))
 
-(define (check-procedure/more val dom-length src-info blame orig-str)
+(define (check-procedure/more val dom-length mandatory-kwds src-info blame orig-str)
   (unless (and (procedure? val)
-               (procedure-accepts-and-more? val dom-length))
+               (procedure-accepts-and-more? val dom-length)
+               (equal? mandatory-kwds (get-mandatory-keywords val)))
     (raise-contract-error
      val
      src-info
      blame
      orig-str
-     "expected a procedure that accepts ~a arguments and any number of arguments larger than ~a, given: ~e"
+     "expected a procedure that accepts ~a arguments and and arbitrarily more~a, given: ~e"
      dom-length
-     dom-length
+     (keyword-error-text mandatory-kwds)
      val)))
 
 

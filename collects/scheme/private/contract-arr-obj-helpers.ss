@@ -382,7 +382,7 @@
              (lambda (outer-args)
                (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
                  (syntax
-                  (check-procedure val dom-length src-info pos-blame orig-str))))
+                  (check-procedure val dom-length '() #|mandatory-keywords|# src-info pos-blame orig-str))))
              (syntax (check-procedure? dom-length))
              (lambda (outer-args)
                (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
@@ -428,7 +428,7 @@
                (lambda (outer-args)
                  (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
                    (syntax
-                    (check-procedure val dom-length src-info pos-blame orig-str))))
+                    (check-procedure val dom-length '() #|mandatory-keywords|# src-info pos-blame orig-str))))
                (syntax (check-procedure? dom-length))
                
                (lambda (outer-args)
@@ -472,7 +472,7 @@
                (lambda (outer-args)
                  (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
                    (syntax
-                    (check-procedure val dom-length src-info pos-blame orig-str))))
+                    (check-procedure val dom-length '() #|mandatory keywords|# src-info pos-blame orig-str))))
                (syntax (check-procedure? dom-length))
                (lambda (outer-args)
                  (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
@@ -548,7 +548,7 @@
         (lambda (outer-args)
           (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
             (syntax
-             (check-procedure/more val dom-length src-info pos-blame orig-str))))
+             (check-procedure/more val dom-length '() #|mandatory keywords|# src-info pos-blame orig-str))))
         (syntax (check-procedure/more? dom-length))
         (lambda (outer-args)
           (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
@@ -610,7 +610,7 @@
         (lambda (outer-args)
           (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
             (syntax
-             (check-procedure/more val dom-length src-info pos-blame orig-str))))
+             (check-procedure/more val dom-length '() #|mandatory keywords|# src-info pos-blame orig-str))))
         (syntax (check-procedure/more? dom-length))
         (lambda (outer-args)
           (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
@@ -663,7 +663,7 @@
         (lambda (outer-args)
           (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
             (syntax
-             (check-procedure val arity src-info pos-blame orig-str))))
+             (check-procedure val arity '() #|mandatory keywords|# src-info pos-blame orig-str))))
         
         (syntax (check-procedure? arity))
         
@@ -723,7 +723,7 @@
         (lambda (outer-args)
           (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
             (syntax
-             (check-procedure val dom-length src-info pos-blame orig-str))))
+             (check-procedure val dom-length '() #|mandatory keywords|# src-info pos-blame orig-str))))
         (syntax (check-procedure? dom-length))
         
         (lambda (outer-args)
@@ -797,7 +797,7 @@
         (lambda (outer-args)
           (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
             (syntax
-             (check-procedure/more val arity src-info pos-blame orig-str))))
+             (check-procedure/more val arity '() #|mandatory keywords|# src-info pos-blame orig-str))))
         (syntax (check-procedure/more? arity))
         
         (lambda (outer-args)

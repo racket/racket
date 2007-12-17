@@ -317,16 +317,17 @@ checks for its arguments and results.
 
 @defform*[#:literals (any)
           [(-> expr ... res-expr)
+           (-> expr ... (values res-expr ...))
            (-> expr ... any)]]{
 
-Produces a contract for a function that accepts a fixed number of
-arguments and returns either a single result or an unspecified number
-of results (the latter when @scheme[any] is specified).
+Produces a contract for a function that accepts a fixed
+number of arguments and returns either a fixed number of
+results or completely unspecified results (the latter when
+@scheme[any] is specified).
 
-Each @scheme[expr] is a contract on the argument to a function, and
-either @scheme[res-expr] or @scheme[any] specifies the result
-contract. Each @scheme[expr] or @scheme[res-expr] must produce a
-contract or a predicate.
+Each @scheme[expr] is a contract on the argument to a
+function, and each @scheme[res-expr] is a contract on the
+result of the function.
 
 For example,
 
@@ -338,11 +339,25 @@ function must produce an integer. (This example uses Scheme's infix
 notation so that the @scheme[->] appears in a suggestive place; see
 @secref["parse-pair"]).
 
+The @scheme[expr] may be keywords. If so, the functions must
+have the corresponding (mandatory) keyword and those keyword
+arguments must match the contracts that follow them. For example:
+
+@schemeblock[(integer? #:x boolean? . -> . integer?)]
+
+is a contract on a function that accepts a single, integer
+ordinary argument and the keyword argument @scheme[#:x]
+whose values must be booleans.
+
 If @scheme[any] is used as the last argument to @scheme[->], no
 contract checking is performed on the result of the function, and
 tail-recursion is preserved. Note that the function may return
-multiple values in that case.}
+multiple values in that case.
 
+If @scheme[(values res-expr ...)] is used as the last
+argument to @scheme[->], the result must have single value
+for each contract and the values must match their respective
+contracts.}
 
 @defform*[#:literals (any)
           [(->* (expr ...) (res-expr ...))

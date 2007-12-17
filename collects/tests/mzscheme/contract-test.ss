@@ -428,12 +428,154 @@
      1))
 
   (test/pos-blame
-   'contract-arrow-keyword
+   'contract-arrow-keyword1
+   '(contract (-> integer? any)
+              (λ (x #:y y) x)
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'contract-arrow-keyword1b
+   '(contract (-> integer? #:y integer? any)
+              (λ (x) x)
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'contract-arrow-keyword2
+   '(contract (-> integer? #:y boolean? any)
+              (λ (x #:y y) x)
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'contract-arrow-keyword2b
+   '(contract (-> #:x boolean? #:y boolean? any)
+              (λ (#:x x #:y y) x)
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'contract-arrow-keyword2c
+   '(contract (-> #:y boolean? #:x boolean? any)
+              (λ (#:x x #:y y) x)
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'contract-arrow-keyword2d
+   '(contract (-> #:y boolean? #:x boolean? any)
+              (λ (#:y y #:x x) x)
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'contract-arrow-keyword2e
+   '(contract (-> #:x boolean? #:y boolean?  any)
+              (λ (#:y y #:x x) x)
+              'pos
+              'neg))
+  
+  (test/neg-blame
+   'contract-arrow-keyword3
+   '((contract (-> integer? #:y boolean? any)
+               (λ (x #:y y) x)
+               'pos
+               'neg)
+     1 #:y 1))
+  
+  (test/neg-blame
+   'contract-arrow-keyword4
+   '((contract (-> integer? #:y boolean? any)
+               (λ (x #:y y) x)
+               'pos
+               'neg)
+     #t #:y #t))
+  
+  (test/spec-passed
+   'contract-arrow-keyword5
+   '((contract (-> integer? #:y boolean? any)
+               (λ (x #:y y) x)
+               'pos
+               'neg)
+     1 #:y #t))
+  
+  (test/pos-blame
+   'contract-arrow-keyword6
    '(contract (-> integer? integer?)
               (λ (x #:y y) x)
               'pos
               'neg))
   
+  (test/spec-passed
+   'contract-arrow-keyword7
+   '(contract (-> integer? #:y boolean? integer?)
+              (λ (x #:y y) x)
+              'pos
+              'neg))
+  
+  (test/neg-blame
+   'contract-arrow-keyword8
+   '((contract (-> integer? #:y boolean? integer?)
+               (λ (x #:y y) x)
+               'pos
+               'neg)
+     1 #:y 1))
+  
+  (test/neg-blame
+   'contract-arrow-keyword9
+   '((contract (-> integer? #:y boolean? integer?)
+               (λ (x #:y y) x)
+               'pos
+               'neg)
+     #t #:y #t))
+  
+  (test/spec-passed
+   'contract-arrow-keyword10
+   '((contract (-> integer? #:y boolean? integer?)
+               (λ (x #:y y) x)
+               'pos
+               'neg)
+     1 #:y #t))
+  
+  (test/pos-blame
+   'contract-arrow-keyword11
+   '(contract (-> integer? (values integer? integer?))
+              (λ (x #:y y) x)
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'contract-arrow-keyword12
+   '(contract (-> integer? #:y boolean? (values integer? integer?))
+              (λ (x #:y y) x)
+              'pos
+              'neg))
+  
+  (test/neg-blame
+   'contract-arrow-keyword13
+   '((contract (-> integer? #:y boolean? (values integer? integer?))
+               (λ (x #:y y) x)
+               'pos
+               'neg)
+     1 #:y 1))
+  
+  (test/neg-blame
+   'contract-arrow-keyword14
+   '((contract (-> integer? #:y boolean? (values integer? integer?))
+               (λ (x #:y y) x)
+               'pos
+               'neg)
+     #t #:y #t))
+  
+  (test/spec-passed
+   'contract-arrow-keyword15
+   '((contract (-> integer? #:y boolean? (values integer? integer?))
+               (λ (x #:y y) (values x x))
+               'pos
+               'neg)
+     1 #:y #t))
+
   (test/pos-blame
    'contract-d1
    '(contract (integer? . ->d . (lambda (x) (lambda (y) (= x y))))

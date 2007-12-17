@@ -13,8 +13,7 @@
  (except-out (all-from-out "private/contract-ds.ss")
              lazy-depth-to-look)
  
- (except-out (all-from-out "private/contract-arrow.ss")
-             check-procedure)
+ (except-out (all-from-out "private/contract-arrow.ss"))
  (except-out (all-from-out "private/contract.ss")
              check-between/c
              check-unary-between/c))

@@ -53,46 +53,6 @@
          (error 'define/opter "expected opter name to be an identifier, got ~e" (syntax-e #'for)))]))
 
 ;;
-;; opt/unknown : opt/i id id syntax
-;;
-(define-for-syntax (opt/unknown opt/i opt/info uctc)
-  (let* ((lift-var (car (generate-temporaries (syntax (lift)))))
-         (partial-var (car (generate-temporaries (syntax (partial)))))
-         (partial-flat-var (car (generate-temporaries (syntax (partial-flat))))))
-    (values
-     (with-syntax ((partial-var partial-var)
-                   (lift-var lift-var)
-                   (uctc uctc)
-                   (val (opt/info-val opt/info)))
-       (syntax (partial-var val)))
-     (list (cons lift-var 
-                 ;; FIXME needs to get the contract name somehow
-                 (with-syntax ((uctc uctc))
-                   (syntax (coerce-contract 'opt/c uctc)))))
-     null
-     (list (cons
-            partial-var
-            (with-syntax ((lift-var lift-var)
-                          (pos (opt/info-pos opt/info))
-                          (neg (opt/info-neg opt/info))
-                          (src-info (opt/info-src-info opt/info))
-                          (orig-str (opt/info-orig-str opt/info)))
-              (syntax (((proj-get lift-var) lift-var) pos neg src-info orig-str))))
-           (cons
-            partial-flat-var
-            (with-syntax ((lift-var lift-var))
-              (syntax (if (flat-pred? lift-var)
-                          ((flat-get lift-var) lift-var)
-                          (lambda (x) (error 'opt/unknown "flat called on an unknown that had no flat pred ~s ~s"
-                                             lift-var
-                                             x)))))))
-     (with-syntax ([val (opt/info-val opt/info)]
-                   [partial-flat-var partial-flat-var])
-       #'(partial-flat-var val))
-     lift-var
-     null)))
-
-;;
 ;; opt/recursive-call
 ;;
 ;; BUG: currently does not try to optimize the arguments, this requires changing

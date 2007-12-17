@@ -1,6 +1,7 @@
 #lang scheme/base
 (require syntax/private/boundmap ;; needs to be the private one, since the public one has contracts
          (for-template scheme/base)
+         (for-template "contract-guts.ss")
          (for-syntax scheme/base))
 
 (provide get-opter reg-opter! opter
@@ -20,7 +21,9 @@
          opt/info-that
          
          opt/info-swap-blame
-         opt/info-change-val)
+         opt/info-change-val
+         
+         opt/unknown)
 
 ;; a hash table of opters
 (define opters-table
@@ -159,3 +162,42 @@
 
 (define (lifts-to-save lifts) (filter values (map car lifts)))
 
+;;
+;; opt/unknown : opt/i id id syntax
+;;
+(define (opt/unknown opt/i opt/info uctc)
+  (let* ((lift-var (car (generate-temporaries (syntax (lift)))))
+         (partial-var (car (generate-temporaries (syntax (partial)))))
+         (partial-flat-var (car (generate-temporaries (syntax (partial-flat))))))
+    (values
+     (with-syntax ((partial-var partial-var)
+                   (lift-var lift-var)
+                   (uctc uctc)
+                   (val (opt/info-val opt/info)))
+       (syntax (partial-var val)))
+     (list (cons lift-var 
+                 ;; FIXME needs to get the contract name somehow
+                 (with-syntax ((uctc uctc))
+                   (syntax (coerce-contract 'opt/c uctc)))))
+     null
+     (list (cons
+            partial-var
+            (with-syntax ((lift-var lift-var)
+                          (pos (opt/info-pos opt/info))
+                          (neg (opt/info-neg opt/info))
+                          (src-info (opt/info-src-info opt/info))
+                          (orig-str (opt/info-orig-str opt/info)))
+              (syntax (((proj-get lift-var) lift-var) pos neg src-info orig-str))))
+           (cons
+            partial-flat-var
+            (with-syntax ((lift-var lift-var))
+              (syntax (if (flat-pred? lift-var)
+                          ((flat-get lift-var) lift-var)
+                          (lambda (x) (error 'opt/unknown "flat called on an unknown that had no flat pred ~s ~s"
+                                             lift-var
+                                             x)))))))
+     (with-syntax ([val (opt/info-val opt/info)]
+                   [partial-flat-var partial-flat-var])
+       #'(partial-flat-var val))
+     lift-var
+     null)))
