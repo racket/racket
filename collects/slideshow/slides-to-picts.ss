@@ -1,29 +1,28 @@
 
-(module slides-to-picts mzscheme
-  (require (lib "mred.ss" "mred")
-	   (lib "class.ss")
-	   (lib "unit.ss")
-	   (lib "etc.ss")
+(module slides-to-picts scheme/base
+  (require mred
+           scheme/class
+           scheme/unit
 	   "sig.ss"
 	   "param.ss"
 	   "core.ss"
-	   (lib "mrpict.ss" "texpict"))
+           texpict/mrpict)
 
   (provide get-slides-as-picts)
 
+  (define-namespace-anchor anchor)
+
   (define get-slides-as-picts
-    (opt-lambda (file w h c? [stop-after #f])
+    (lambda (file w h c? [stop-after #f])
       (let ([ns (make-gui-namespace)]
-	    [orig-ns (current-namespace)]
-	    [param ((current-module-name-resolver) '(lib "param.ss" "slideshow") #f #f)]
-	    [core ((current-module-name-resolver) '(lib "core.ss" "slideshow") #f #f)]
+	    [orig-ns (namespace-anchor->empty-namespace anchor)]
 	    [slides null]
 	    [xs (/ w 1024)]
 	    [ys (/ h 768)]
 	    [escape void])
 	(parameterize ([current-namespace ns])
-	  (namespace-attach-module orig-ns param)
-	  (namespace-attach-module orig-ns core))
+	  (namespace-attach-module orig-ns 'slideshow/param)
+	  (namespace-attach-module orig-ns 'slideshow/core))
 	(current-slideshow-linker
 	 (lambda (core@)
 	   (compound-unit

@@ -1,6 +1,8 @@
 #lang scribble/doc
 @require["ss.ss"]
-@require[(for-label mred)]
+@require[(for-label mred
+                    slideshow/step
+                    slideshow/slides-to-picts)]
 
 @title[#:style 'toc]{Making Slides}
 
@@ -456,4 +458,102 @@ viewer for a slide on each side.}
 Returns @scheme[#t] if @scheme[v] is a slide inset created by
 @scheme[make-slide-inset], @scheme[#f] otherwise.}
 
+@; ----------------------------------------------------------------------
+
+@section{Pict-Staging Helper}
+
+@defmodule[slideshow/step]{The @schememodname[slideshow/step] library
+provides syntax for breaking a complex slide into steps that are more
+complex than can be handled with @scheme['next] and @scheme['alts] in
+a @scheme[slide] sequence.}
+
+@defform[(with-steps (id ...) body ...)]{
+
+Evaluates the @scheme[body]s once for each @scheme[id], skipping an
+@scheme[id] if its name ends with @litchar{~} and @scheme[condense?]
+is true.
+
+Within the @scheme[body]s, several keywords are bound non-hygienically
+(using the first @scheme[body]'s lexical context):
+
+@itemize{
+
+ @item{@scheme[(only? id)] --- returns @scheme[#t] during the
+    @scheme[id] step (i.e., during the evaluation of the
+    @scheme[body]s for @scheme[id]), @scheme[#f] otherwise.}
+
+ @item{@scheme[(vonly id)] --- returns the identity function during
+    the @scheme[id] step, @scheme[ghost] otherwise.}
+
+ @item{@scheme[(only id _then-expr)] returns the result of
+    @scheme[_then-expr] during the @scheme[id] step, @scheme[values]
+    otherwise.}
+
+ @item{@scheme[(only id _then-expr _else-expr)] returns the result
+    of @scheme[_then-expr] during the @scheme[id] step, the result of
+    @scheme[_else-expr] otherwise.}
+
+ @item{@scheme[(before? id)] --- returns @scheme[#t] before the
+    @scheme[id] step, @scheme[#f] starting for the @scheme[id] and
+    afterward.}
+
+ @item{@scheme[(vbefore id)], @scheme[(before id _then-expr)], or
+    @scheme[(before id _then-expr _else-expr)] --- analogous to
+    @scheme[vonly] and @scheme[only].}
+    
+ @item{@scheme[(after? id)] --- returns @scheme[#t] after the
+    @scheme[id] step, @scheme[#f] through the @scheme[id] step.}
+
+ @item{@scheme[(vafter id)], @scheme[(after id _then-expr)], or
+    @scheme[(after id _then-expr _else-expr)] --- analogous to
+    @scheme[vonly] and @scheme[only].}
+    
+ @item{@scheme[(between? _a-id _b-id)] --- returns @scheme[#t]
+    starting from the @scheme[_a-id] step through the @scheme[_b-id]
+    step, @scheme[#f] otherwise.}
+
+ @item{@scheme[(vbetween _a-id _b-id)], @scheme[(between _a-id
+    _b-id _then-expr)], or @scheme[(between _a-id _b-id _then-expr
+    _else-expr)] --- analogous to @scheme[vonly] and @scheme[only].}
+
+ @item{@scheme[(between-excel? _a-id _b-id)] --- returns
+    @scheme[#t] starting from the @scheme[_a-id] step through steps
+    before the @scheme[_b-id] step, @scheme[#f] for the @scheme[_b-id]
+    step and afterward.}
+
+ @item{@scheme[(vbetween-excl _a-id _b-id)], @scheme[(between-excl
+    _a-id _b-id _then-expr)], or @scheme[(between-excl _a-id _b-id
+    _then-expr _else-expr)] --- analogous to @scheme[vonly] and
+    @scheme[only].}
+}}
+
+
+@defform[(with-steps~ (id ...) body ...)]{
+
+Like @scheme[with-steps], but when @scheme[condense?] is true, then
+@scheme[expr] is evaluated only for the last @scheme[id] (independent
+of whether the name fo the last @scheme[id] name ends in @litchar{~}).
+}
+
+@; ----------------------------------------------------------------------
+
+@section{Slides to Picts}
+
+@defmodule[slideshow/slides-to-picts]
+
+@defproc[(get-slides-as-picts [path path-string?]
+                              [width real?]
+                              [height real?]
+                              [condense? any/c]
+                              [stop-after (or/c false/c exact-nonnegative-integer?) #f])
+         (listof pict?)]{
+
+Executes the Slideshow program indicated by @scheme[path] in a fresh
+namespace, and returns a list of picts for the slides. Each pict has
+the given @scheme[width] and @scheme[height], and @scheme[condense?]
+determines whether the Slideshow program is executed in condense
+mode.
+
+If @scheme[stop-after] is not @scheme[#f], then the list is truncated
+after @scheme[stop-after] slides are converted to picts.}
 
