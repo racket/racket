@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "ss.ss"
           (for-label mred
+                     slideshow/code
                      slideshow/flash
                      slideshow/face
                      slideshow/balloon))
@@ -39,7 +40,7 @@ In addition to its drawing part, a pict has the following
        |                  | a  \
        |------------------|    |
        |                  |    | h
-       |------------------|    |
+       |----------last----|    |
        |                  | d  /
         ------------------     
 EOS
@@ -51,6 +52,12 @@ baseline, and @math{a+d=h}. For multiple text lines (often created
 with a function like @scheme[vc-append]), @math{a} is the ascent of
 the top line, and @math{d} is the descent of the bottom line, so
 @math{a+d<h}. Many picts have @math{d=0} and @math{a=h}.
+
+In addition, a pict can have a @defterm{last} sub-pict that
+corresponds to the last item on the last line of text, so that extra
+lines can be added to the last line. In particular, the @defterm{last}
+element is useful for adding closing parentheses to a block of Scheme
+code, where the last line of code not the longest line in the block.
 
 The size information for a pict is computed when the pict is
 created. This strategy supports programs that create new picts though
@@ -66,7 +73,8 @@ information from a pict.
                  [ascent real?]
                  [descent real?]
                  [children (listof child?)]
-                 [panbox (or/c false/c any/c)])]{
+                 [panbox (or/c false/c any/c)]
+                 [last (or/c false/c pict?)])]{
 
 A @scheme[pict] structure is normally not created directly with
 @scheme[make-pict]. Instead, functions like @scheme[text],
@@ -81,7 +89,12 @@ will be set for a suitable default drawing mode, and the
 @scheme[dc<%>] scale will be set to scale the resulting image.
 
 The @scheme[panbox] field is internal, and it should be ininitialized
-to @scheme[#f].}
+to @scheme[#f].
+
+The @scheme[last] field indicates a pict within the @scheme[children]
+list (transitively) that can be treated as the last element of the
+last line in the pict. A @scheme[#f] value means that the pict is its
+own last sub-pict.}
 
 
 @defstruct[child ([pict pict?]
@@ -89,6 +102,7 @@ to @scheme[#f].}
                   [dy real?]
                   [sx real?]
                   [sy real?])]{
+
 Records, for a pict constructed of other picts, the relative location
 and scale of one nested pict.
 
@@ -335,7 +349,10 @@ pictures.
 The descent of the result corresponds to baseline that is lowest in
 the result among all of the picts' descent-specified baselines;
 similarly, the ascent of the result corresponds to the highest
-ascent-specified baseline.}
+ascent-specified baseline. If at least one @scheme[pict] is supplied,
+then the last element (as reported by @scheme[pict-last]) for the
+result is @scheme[(or (pict-last pict) pict)] for the using last
+supplied @scheme[pict].}
 
 @defproc*[([(lt-superimpose [pict pict?] ...) pict?]
            [(ltl-superimpose [pict pict?] ...) pict?]
@@ -360,7 +377,11 @@ alignment.
 The descent of the result corresponds to baseline that is lowest in
 the result among all of the picts' descent-specified baselines;
 similarly, the ascent of the result corresponds to the highest
-ascent-specified baseline.}
+ascent-specified baseline. The last element (as reported by
+@scheme[pict-last]) for the result is the lowest, right-most among the
+last-element picts of the @scheme[pict] arguments, as determined by
+comparing the last-element bottom-right corners.}
+
 
 @defproc*[([(pin-over [base pict?] [dx real?] [dy real?] [pict pict?])
             pict?]
@@ -378,6 +399,7 @@ pict's corner is from the first pict's corner.  Alternately, the
 @scheme[base] for @scheme[find-pict]; the @scheme[find] procedure
 should be something like @scheme[lt-find].}
 
+
 @defproc*[([(pin-under [base pict?] [dx real?] [dy real?] [pict pict?])
             pict?]
            [(pin-under [base pict?] 
@@ -388,6 +410,7 @@ should be something like @scheme[lt-find].}
 
 Like @scheme[pin-over], but @scheme[pict] is drawn before
 @scheme[base] in the resulting combination.}
+
 
 @defproc[(table [ncols exact-positive-integer?]
                 [picts (listof pict?)]
@@ -516,13 +539,20 @@ Makes the descent @scheme[0] and the ascent the same as the height.}
 
 Assuming that @scheme[sub-pict] can be found within @scheme[pict],
 shifts the overall bounding box to that of @scheme[sub-pict] (but
-preserving all the drawing of @scheme[pict]).}
+preserving all the drawing of @scheme[pict]). The last element, as
+reported by @scheme[pict-last] is also set to @scheme[(or (pict-last
+sub-pict) sub-pict)].}
 
 @defproc[(panorama [pict pict?]) pict?]{
 
 Shifts the given pict's bounding box to enclose the bounding boxes of
 all sub-picts (even @scheme[launder]ed picts).}
 
+@defproc[(use-last [pict pict?] [sub-pict pict?]) pict?]{
+
+Returns a pict like @scheme[pict], but with the last element (as
+reported by @scheme[pict-last]) set to @scheme[sub-pict]. The
+@scheme[sub-pict] must exist as a sub-pict within @scheme[pict].}
 
 @; ------------------------------------------------------------------------
 

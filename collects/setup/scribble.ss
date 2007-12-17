@@ -219,13 +219,16 @@
             [tags (if (member '(part "top") (part-tags v))
                       (part-tags v)
                       (cons '(part "top") (part-tags v)))])
-        (make-part tag-prefix
-                   tags
-                   (part-title-content v)
-                   (part-style v)
-                   (part-to-collect v)
-                   (part-flow v)
-                   (part-parts v)))))
+        (make-versioned-part tag-prefix
+                             tags
+                             (part-title-content v)
+                             (part-style v)
+                             (part-to-collect v)
+                             (part-flow v)
+                             (part-parts v)
+                             (if (versioned-part? v)
+                                 (versioned-part-version v)
+                                 #f)))))
 
   (define ((get-doc-info only-dirs latex-dest) doc)
     (let ([info-out-file (build-path (or latex-dest (doc-dest-dir doc)) "out.sxref")]

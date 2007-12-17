@@ -5,11 +5,15 @@
   (require-for-syntax (lib "to-string.ss" "syntax")
                       (lib "list.ss"))
 
+  (define current-code-line-sep (make-parameter line-sep))
+
   (define-values/invoke-unit/infer code@)
 
   (define-code code typeset-code)
 
-  (provide code)
+  (provide code
+           current-code-line-sep
+           define-code)
   (provide-signature-elements code^)
     
   (provide define-exec-code/scale

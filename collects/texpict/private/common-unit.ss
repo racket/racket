@@ -11,13 +11,14 @@
       (define default-seg 5)
       (define recordseplinespace 4)
 
-      (define-struct pict (draw     ; drawing instructions
-			   width    ; total width
-			   height   ; total height >= ascent + desecnt
-			   ascent   ; portion of height above top baseline
-			   descent  ; portion of height below bottom baseline
-			   children ; list of child records
-			   panbox)  ; panorama box
+      (define-struct pict (draw       ; drawing instructions
+			   width      ; total width
+			   height     ; total height >= ascent + desecnt
+			   ascent     ; portion of height above top baseline
+			   descent    ; portion of height below bottom baseline
+			   children   ; list of child records
+			   panbox     ; panorama box, computed on demand
+                           last)      ; a descendent for the bottom-right
         #:mutable)
       (define-struct child (pict dx dy sx sy))
       (define-struct bbox (x1 y1 x2 y2 ay dy))
@@ -32,8 +33,8 @@
 	 [() (blank 0 0 0)]
 	 [(s) (blank s s)]
 	 [(w h) (blank w h 0)]
-	 [(w a d) (make-pict `(picture ,w ,(+ a d)) w (+ a d) a d null #f)]
-	 [(w h a d) (make-pict `(picture ,w ,h) w h a d null #f)]))
+	 [(w a d) (make-pict `(picture ,w ,(+ a d)) w (+ a d) a d null #f #f)]
+	 [(w h a d) (make-pict `(picture ,w ,h) w h a d null #f #f)]))
 
       (define (extend-pict box dx dy dw da dd draw)
 	(let ([w (pict-width box)]
@@ -44,7 +45,8 @@
 		     (+ w dw) (+ h da dd) 
 		     (max 0 (+ a da)) (max 0 (+ d dd))
 		     (list (make-child box dx dy 1 1))
-		     #f)))
+		     #f
+                     (pict-last box))))
 
       (define (single-pict-offset pict subbox)
 	(let floop ([box pict]
@@ -168,6 +170,7 @@
 	(let ([b (extend-pict box 0 0 0 0 0 #f)])
 	  (set-pict-children! b null)
 	  (set-pict-panbox! b (pict-panbox box))
+          (set-pict-last! b #f)
 	  b))
 
       (define (lift p n)
@@ -189,7 +192,8 @@
 			     (+ dh (child-dy c))
 			     1 1))
 			  (pict-children p))
-		     #f)))
+		     #f
+                     (pict-last p))))
 
       (define (drop p n)
 	(let* ([dh (- (max 0 (- n (pict-ascent p))))]
@@ -204,7 +208,8 @@
 			 (- h2 a2)
 			 (pict-descent p))
 		     (pict-children p)
-		     #f)))
+		     #f
+                     (pict-last p))))
 
       (define (baseless p)
 	(let ([p (lift p (pict-descent p))])
@@ -220,7 +225,8 @@
 		       (pict-width c) (pict-height c)
 		       (pict-ascent c) (pict-descent c)
 		       (pict-children p)
-		       #f))))
+		       #f
+                       (or (pict-last c) c)))))
 
       (define (panorama-box! p)
 	(let ([bb (pict-panbox p)])
@@ -297,6 +303,22 @@
 	       ,w ,h
 	       (put ,l ,b ,(pict-draw box)))))]))
 
+      (define (use-last p sub-p)
+	(if (let floop ([p p])
+              (or (eq? p sub-p)
+                  (ormap (lambda (c) (floop (child-pict c)))
+                         (pict-children p))))
+            (make-pict (pict-draw p)
+		       (pict-width p) (pict-height p)
+		       (pict-ascent p) (pict-descent p)
+		       (list (make-child p 0 0 1 1))
+		       #f
+                       sub-p)
+            (error 'use-last
+                   "given new last pict: ~e not in the base pict: ~e"
+                   sub-p
+                   p)))
+
       (define dash-frame 
 	(case-lambda
 	 [(box) (dash-frame box default-seg)]
@@ -341,7 +363,8 @@
 	   (cadr (rotate width height))
 	   (cadr (rotate 0 height)) 0
 	   null
-	   #f)))
+	   #f
+           #f)))
 
       (define (rlist b a) (list a b))
 
@@ -459,7 +482,8 @@
                              (combine-descent fd2 rd2 fd1 rd1 fh rh h (- h dy1) (- h dy2))
                              (list (make-child first dx1 dy1 1 1)
                                    (make-child rest dx2 dy2 1 1))
-			     #f))])))))]
+			     #f
+                             (or (pict-last rest) rest)))])))))]
 	      [2max (lambda (a b c . rest) (max a b))]
 	      [zero (lambda (fw fh rw rh sep fd1 fd2 rd1 rd2 . args) 0)]
 	      [fv (lambda (a b . args) a)]
@@ -579,7 +603,25 @@
 				      (pict-width p) (pict-height p)
 				      min-a min-d
 				      (pict-children p)
-				      #f)))))))]
+				      #f
+                                      ;; Find bottomost, rightmost of old last picts to be the
+                                      ;;  new last pict.
+                                      (let ([subs (map (lambda (box)
+                                                         (let ([last (or (pict-last box)
+                                                                         box)])
+                                                           (let-values ([(x y) (rb-find p last)])
+                                                             (list last x y))))
+                                                       boxes)])
+                                        (if (null? subs)
+                                            #f
+                                            (caar (sort subs
+                                                        (lambda (a b)
+                                                          (let ([ay (caddr a)]
+                                                                [by (caddr b)])
+                                                            (cond
+                                                             [(ay . > . by) #t]
+                                                             [(= ay by) ((cadr a) . > . (cadr b))]
+                                                             [else #f]))))))))))))))]
 	      [norm (lambda (h a d ac dc) h)]
 	      [tbase (lambda (h a d ac dc) (+ a ac))] 
 	      [bbase (lambda (h a d ac dc) (+ d dc))] 
@@ -717,7 +759,8 @@
 	   (cons
 	    (make-child title 0 title-y 1 1)
 	    (map (lambda (child child-y) (make-child child 0 child-y 1 1)) fields field-ys))
-	   #f)))
+	   #f
+           #f)))
 
       (define (picture* w h a d commands)
 	(let loop ([commands commands][translated null][children null])
@@ -727,7 +770,8 @@
 			 ,@(reverse translated))
 	       w h a d
 	       children
-	       #f)
+	       #f
+               #f)
 	      (let ([c (car commands)]
 		    [rest (cdr commands)])
 		(unless (and (pair? c) (symbol? (car c)))

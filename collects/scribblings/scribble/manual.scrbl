@@ -110,6 +110,9 @@ module whose language is @scheme[lang].}
 a single line and wrapped with its enclosing paragraph, independent of
 the formatting of @scheme[datum].}
 
+@defform[(SCHEME datum ...)]{Like @scheme[scheme], but with the
+@scheme[UNSYNTAX] escape like @scheme[schemeblock].}
+
 @defform[(schemeresult datum ...)]{Like @scheme[scheme], but typeset
 as a REPL value (i.e., a single color with no hyperlinks).}
 

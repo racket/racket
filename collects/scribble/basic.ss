@@ -32,10 +32,11 @@
         (apply append (map (lambda (t) (convert-tag t content)) tag))
         `((part ,(or tag (gen-tag content))))))
   
-  (define (title #:tag [tag #f] #:tag-prefix [prefix #f] #:style [style #f] . str)
+  (define (title #:tag [tag #f] #:tag-prefix [prefix #f] #:style [style #f]  #:version [version #f] . str)
     (let ([content (decode-content str)])
       (make-title-decl (prefix->string prefix)
                        (convert-tag tag content)
+                       version
                        style
                        content)))
   

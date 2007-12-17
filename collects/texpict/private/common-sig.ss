@@ -3,7 +3,7 @@
 
   (provide texpict-common^)
   (define-signature texpict-common^
-    ((struct pict (draw width height ascent descent children panbox))
+    ((struct pict (draw width height ascent descent children panbox last))
      (struct child (pict dx dy sx sy))
 
      black-and-white
@@ -56,6 +56,8 @@
                     ; pict l t r b -> pict
      refocus        ; pict pict -> pict
      panorama       ; pict -> pict
+
+     use-last       ; pict pict -> pict
 
      hline        ; w h -> pict
      dash-hline   ; w h seg-length -> pict ; default seg-length is 5

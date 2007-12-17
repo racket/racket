@@ -53,7 +53,7 @@ function consumes.
 Like @scheme[apply], but @scheme[kw-lst] and @scheme[kw-val-lst]
 supply by-keyword arguments in addition to the by-position arguments
 of the @scheme[v]s and @scheme[lst]. The given @scheme[kw-lst] must be
-sorted using @scheme[keyword<], and no keyword can appear twice in
+sorted using @scheme[keyword<?], and no keyword can appear twice in
 @scheme[kw-lst], otherwise, the @exnraise[exn:fail:contract]. The
 given @scheme[kw-val-lst] must have the same length as
 @scheme[kw-lst], otherwise, the @exnraise[exn:fail:contract]. The
@@ -136,9 +136,9 @@ in @scheme[(procedure-arity proc)], the @exnraise[exn:fail:contract].}
 
 Returns information about the keyword arguments required and accepted
 by a procedure. The first result is a list of keywords (sorted by
-@scheme[keyword<]) that are required when applying @scheme[proc]. The
+@scheme[keyword<?]) that are required when applying @scheme[proc]. The
 second result is a list of accepted keywords (sorted by
-@scheme[keyword<]), or @scheme[#f] to mean that any keyword is
+@scheme[keyword<?]), or @scheme[#f] to mean that any keyword is
 accepted. When the second result is a list, every element in the first
 list is also in the second list.
 
@@ -150,7 +150,7 @@ list is also in the second list.
 
 @defproc[(make-keyword-procedure
           [proc (((listof keyword?) list?) list? . ->* . any)]
-          [plain-proc procedure? (lambda args (apply proc null null args))])
+          [plain-proc procedure? (lambda args (keyword-apply proc null null args))])
          procedure?]{
 
 Returns a procedure that accepts all keyword arguments (without
@@ -158,7 +158,7 @@ requiring any keyword arguments).
 
 When the result is called with keyword arguments, then @scheme[proc]
 is called; the first argument is a list of keywords sorted by
-@scheme[keyword<], the second argument is a parallel list containing a
+@scheme[keyword<?], the second argument is a parallel list containing a
 value for each keyword, and the remaining arguments are the
 by-position arguments.
 

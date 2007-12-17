@@ -99,7 +99,8 @@
 		 w h
 		 a d
 		 (list (make-child box 0 0 1 1))
-		 #f)))
+		 #f
+                 (pict-last box))))
   
   (define cons-colorized-picture
     (lambda (p color cmds)
@@ -925,7 +926,8 @@
 		     (pict-ascent new)
 		     (pict-descent new)
 		     (list (make-child p 0 0 x-factor y-factor))
-		     #f)))]
+		     #f
+                     (pict-last new))))]
      [(p factor) (scale p factor factor)]))
 
   (define cellophane
@@ -955,7 +957,8 @@
                        (pict-ascent new)
                        (pict-descent new)
                        (list (make-child p 0 0 1 1))
-                       #f)))])]))
+                       #f
+                       (pict-last new))))])]))
 
   (define inset/clip
     (case-lambda
@@ -982,7 +985,8 @@
 		     (pict-ascent new)
 		     (pict-descent new)
 		     (list (make-child p 0 0 1 1))
-		     #f)))]
+		     #f
+                     (pict-last new))))]
      [(p h v) (inset/clip p h v h v)]
      [(p a) (inset/clip p a a a a)]))
   

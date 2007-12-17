@@ -142,7 +142,8 @@
 		       (+ d h)
 		       h d
 		       null
-		       #f))]))
+		       #f
+                       #f))]))
 
       (define (text-line/phantom text phantom . args)
 	(apply tex (format "\\makebox[0pt]{\\vphantom{~a}}~a" phantom text) args))

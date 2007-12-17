@@ -131,6 +131,7 @@
           [flow flow?]
           [parts (listof part?)])]
    [(unnumbered-part part) ()]
+   [(versioned-part part) ([version (or/c string? false/c)])]
    [flow ([paragraphs (listof flow-element?)])]
    [paragraph ([content list?])]
    [(styled-paragraph paragraph) ([style any/c])]

@@ -51,6 +51,7 @@ have @schememodname[scribble/manual]).
 
 @defproc[(title [#:tag tag (or/c false/c string?) #f]
                 [#:style style any/c #f]
+                [#:version vers (or/c string? false/c) #f]
                 [pre-content any/c] ...+)
          title-decl?]{
 
@@ -66,9 +67,12 @@ separate pages in multi-page HTML output. A style of @scheme['index]
 indicates an index section whose body is rendered in two columns for
 Latex output.
 
-The section title is automatically indexed. For the index key, a
-leading ``A'', ``An'', or ``The'' (followed by whitespace) is
-removed.}
+The @scheme[vers] argument is propagated to the @scheme[title-decl]
+structure.
+
+The section title is automatically indexed by
+@scheme[decode-part]. For the index key, a leading ``A'', ``An'', or
+``The'' (followed by whitespace) is removed.}
 
 
 @def-section-like[section part-start?]{ Like @scheme[title], but

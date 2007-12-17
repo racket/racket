@@ -7,20 +7,17 @@
 
   (provide define-code code^ code-params^ code@)
 
-  (define-struct (code-pict pict) (bottom-line))
-
-
   (define (to-code-pict p extension)
-    (make-code-pict (pict-draw p)
-		    (pict-width p)
-		    (pict-height p)
-		    (pict-ascent p)
-		    (pict-descent p)
-		    (pict-children p)
-		    (pict-panbox p)
-		    (if (code-pict? extension)
-			(code-pict-bottom-line extension)
-			extension)))
+    (let ([last (pict-last extension)])
+      (if last
+          (use-last p last)
+          (use-last p extension))))
+
+  (define (code-pict? p)
+    (and (pict-last p) #t))
+
+  (define (code-pict-bottom-line p)
+    (pict-last p))
 
   (define (make-code-append htl-append)
     (case-lambda
@@ -105,7 +102,7 @@
 
   (define-signature code-params^
     (current-font-size 
-     line-sep))
+     current-code-line-sep))
 
   (define-syntax (define-computed stx)
     (syntax-case stx ()
@@ -144,10 +141,8 @@
 	    (to-code-pict p bottom-line)
 	    p))
       
-      (define mzscheme-ns (let ([n (make-namespace 'empty)]
-				[orig (current-namespace)])
+      (define mzscheme-ns (let ([n (make-namespace)])
 			    (parameterize ([current-namespace n])
-			      (namespace-attach-module orig 'mzscheme)
 			      (namespace-require/copy 'mzscheme))
 			    n))
       (define mzscheme-bindings (namespace-mapped-symbols mzscheme-ns))
@@ -278,7 +273,7 @@
       (define (pad-bottom space p)
 	(if (= 0 space)
 	    p
-	    (code-vl-append line-sep (tt " ") (pad-bottom (sub1 space) p))))
+	    (code-vl-append (current-code-line-sep) (tt " ") (pad-bottom (sub1 space) p))))
 
       (define (colorize-id str mode)
 	(cond
@@ -347,7 +342,7 @@
       (define (add-semis p)
 	(let loop ([p p] [semis (color-semi-p)])
 	  (if ((pict-height p) . > . (+ (pict-height semis) 1))
-	      (loop p (vl-append line-sep (color-semi-p) semis))
+	      (loop p (vl-append (current-code-line-sep) (color-semi-p) semis))
 	      (htl-append semis p))))
 
       (define (add-unquote unquote-p loop x closes mode)
@@ -481,7 +476,7 @@
 		      [else
 		       ;; Start on next line:
 		       (code-vl-append
-			line-sep
+			(current-code-line-sep)
 			line-so-far
 			(let* ([space (max 0 (- (or (syntax-column (car stxs)) 0) left))]
 			       [p 

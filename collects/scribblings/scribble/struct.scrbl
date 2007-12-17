@@ -30,10 +30,11 @@ A document is processed in three passes. The first pass is the
 A @deftech{part} is an instance of @scheme[part]; among other things,
  it has a title @techlink{content}, an initial @techlink{flow}, and a
  list of subsection @techlink{parts}. An @scheme[unnumbered-part] is
- the same as a @scheme[part], but it isn't numbered. There's no
- difference between a part and a full document; a particular source
- module just as easily defines a subsection (incorporated via
- @scheme[include-section]) as a document.
+ the same as a @scheme[part], but it isn't numbered. A
+ @scheme[versioned-part] is add a version field to
+ @scheme[part]. There's no difference between a part and a full
+ document; a particular source module just as easily defines a
+ subsection (incorporated via @scheme[include-section]) as a document.
 
 A @deftech{flow} is an instance of @scheme[flow]; it has a list of
  @techlink{flow elements}.
@@ -258,6 +259,18 @@ Although a section number is computed for an ``unnumbered'' section
 during the @techlink{collect pass}, the number is not rendered.
 
 }
+
+
+@defstruct[(versioned-part part) ([version (or/c string? false/c)])]{
+
+Supplies a version number for this part and its sub-parts (except as
+overridden). A @scheme[#f] version is the same as not supplying a
+version.
+
+The version number may be used when rendering a document. At a
+minimum, a version is rendered when it is attached to a part
+representing the whole document. The default version for a document is
+@scheme[(version)].}
 
 
 @defstruct[flow ([paragraphs (listof flow-element?)])]{

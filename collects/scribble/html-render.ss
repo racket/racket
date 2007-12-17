@@ -25,6 +25,7 @@
   (define collecting-sub (make-parameter 0))
   (define current-no-links (make-parameter #f))
   (define extra-breaking? (make-parameter #f))
+  (define current-version (make-parameter (version)))
 
   (define (path->relative p)
     (let ([p (path->main-doc-relative p)])
@@ -326,7 +327,7 @@
                   null
                   (if (part-style? d 'hidden)
                       (map (lambda (t)
-                              `(a ((name ,(format "~a" (anchor-name (tag-key t ri)))))))
+                             `(a ((name ,(format "~a" (anchor-name (tag-key t ri)))))))
                            (part-tags d))
                       `((,(case (length number)
                             [(0) 'h2]
@@ -754,36 +755,53 @@
                               ri)))))
 
       (define/override (render-part d ri)
-        (let ([number (collected-info-number (part-collected-info d ri))])
-          (cond
-           [(and (not (on-separate-page))
-                 (or (= 1 (length number))
-                     (next-separate-page)))
-            ;; Render as just a link, and put the actual 
-            ;; content in a new file:
-            (let* ([filename (derive-filename d)]
-                   [full-path (build-path (path-only (current-output-file))
-                                          filename)])
-              (parameterize ([on-separate-page #t])
-                (with-output-to-file full-path
-                  #:exists 'truncate/replace
-                  (lambda ()
-                    (render-one-part d ri full-path number)))
-                null))]
-           [else
-            (let ([sep? (on-separate-page)])
-              (parameterize ([next-separate-page (toc-part? d)]
-                             [on-separate-page #f])
-                (if sep?
-                    ;; Navigation bars;
-                    `(,@(navigation d ri)
-                      (p nbsp)
-                      ,@(super render-part d ri)
-                      (p nbsp)
-                      ,@(navigation d ri)
-                      (p nbsp))
-                    ;; Normal section render
-                    (super render-part d ri))))])))
+        (parameterize ([current-version
+                        (if (and (versioned-part? d)
+                                 (versioned-part-version d))
+                            (versioned-part-version d)
+                            (current-version))])
+          (let ([number (collected-info-number (part-collected-info d ri))])
+            (cond
+             [(and (not (on-separate-page))
+                   (or (= 1 (length number))
+                       (next-separate-page)))
+              ;; Render as just a link, and put the actual 
+              ;; content in a new file:
+              (let* ([filename (derive-filename d)]
+                     [full-path (build-path (path-only (current-output-file))
+                                            filename)])
+                (parameterize ([on-separate-page #t])
+                  (with-output-to-file full-path
+                    #:exists 'truncate/replace
+                    (lambda ()
+                      (render-one-part d ri full-path number)))
+                  null))]
+             [else
+              (let ([sep? (on-separate-page)])
+                (parameterize ([next-separate-page (toc-part? d)]
+                               [on-separate-page #f])
+                  (if sep?
+                      ;; Navigation bars;
+                      `(,@(navigation d ri)
+                        (p nbsp)
+                        ,@(render-table (make-table
+                                         "versionbox"
+                                         (list 
+                                          (list
+                                           (make-flow
+                                            (list
+                                             (make-paragraph (list 
+                                                              (make-element "version"
+                                                                            (list "Version: "
+                                                                                  (current-version))))))))))
+                                        d
+                                        ri)
+                        ,@(super render-part d ri)
+                        (p nbsp)
+                        ,@(navigation d ri)
+                        (p nbsp))
+                      ;; Normal section render
+                      (super render-part d ri))))]))))
 
       (super-new)))
 

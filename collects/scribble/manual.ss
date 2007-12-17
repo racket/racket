@@ -84,6 +84,7 @@
         s))
 
   (define-code scheme to-element unsyntax keep-s-expr add-sq-prop)
+  (define-code SCHEME to-element UNSYNTAX keep-s-expr add-sq-prop)
   (define-code schemeresult to-element/result unsyntax keep-s-expr add-sq-prop)
   (define-code schemeid to-element/id unsyntax keep-s-expr add-sq-prop)
   (define-code *schememodname to-element unsyntax keep-s-expr add-sq-prop)
@@ -221,7 +222,7 @@
            schemeblock0 SCHEMEBLOCK0 schemeblock0/form
            schemeinput
            schememod
-           scheme scheme/form schemeresult schemeid schememodname
+           scheme SCHEME scheme/form schemeresult schemeid schememodname
            defmodule defmodule* defmodulelang defmodulelang*
            defmodule*/no-declare defmodulelang*/no-declare
            indexed-scheme

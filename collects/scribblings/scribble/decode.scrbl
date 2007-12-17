@@ -45,14 +45,15 @@ then it is bolded.
 
 Decodes a document, producing a part. In @scheme[lst], instances of
 @scheme[splice] are inlined into the list. An instance of
-@scheme[title-decl] supplies the title for the part. Instances of
-@scheme[part-index-decl] (that precede any sub-part) add index entries
-that point to the section. Instances of @scheme[part-collect-decl] add
-elements to the part that are used only during the @techlink{collect
-pass}. Instances of @scheme[part-tag-decl] add hyperlink tags to the
-section title. Instances of @scheme[part-start] at level 0 trigger
-sub-part parsing. Instances of @scheme[section] trigger are used as-is
-as subsections, and instances of @scheme[paragraph] and other
+@scheme[title-decl] supplies the title for the part, plus tag, style
+and version information. Instances of @scheme[part-index-decl] (that
+precede any sub-part) add index entries that point to the
+section. Instances of @scheme[part-collect-decl] add elements to the
+part that are used only during the @techlink{collect pass}. Instances
+of @scheme[part-tag-decl] add hyperlink tags to the section
+title. Instances of @scheme[part-start] at level 0 trigger sub-part
+parsing. Instances of @scheme[section] trigger are used as-is as
+subsections, and instances of @scheme[paragraph] and other
 flow-element datatypes are used as-is in the enclosing flow.
 
 }
@@ -107,6 +108,7 @@ otherwise.
 
 @defstruct[title-decl ([tag-prefix (or/c false/c string?)]
                        [tags (listof string?)]
+                       [version (or/c string? false/c)]
                        [style any/c]
                        [content list?])]{
 
