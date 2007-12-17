@@ -8,10 +8,7 @@
   (provide define-code code^ code-params^ code@)
 
   (define (to-code-pict p extension)
-    (let ([last (pict-last extension)])
-      (if last
-          (use-last p last)
-          (use-last p extension))))
+    (use-last* p extension))
 
   (define (code-pict? p)
     (and (pict-last p) #t))
@@ -21,19 +18,22 @@
 
   (define (make-code-append htl-append)
     (case-lambda
-     [(a b) (if (code-pict? a)
-		(let ([extension (htl-append (ghost (code-pict-bottom-line a)) b)])
-		  (let ([p (lt-superimpose
-			    a
-			    (let-values ([(x y) (lt-find a (code-pict-bottom-line a))])
-			      (inset extension x y 0 0)))])
-		    (to-code-pict p (if (code-pict? b)
-					(code-pict-bottom-line b)
-					extension))))
-		(let ([p (htl-append a b)])
-		  (if (code-pict? b)
-		      (to-code-pict p (code-pict-bottom-line b))
-		      p)))]
+     [(a b) (let ([a-last (pict-last a)])
+              (if a-last
+                  (let ([extension (htl-append (ghost a-last) b)])
+                    (let ([p (let-values ([(x y) (lt-find a a-last)]
+                                          [(dx dy) (lt-find extension a-last)])
+                               (let ([ex (- x dx)]
+                                     [ey (- y dy)])
+                                 (if (negative? ey)
+                                     (lt-superimpose
+                                      (inset a 0 (- ey) 0 0)
+                                      (inset extension ex 0 0 0))
+                                     (lt-superimpose
+                                      a
+                                      (inset extension ex ey 0 0)))))])
+                      (use-last* p b)))
+                  (htl-append a b)))]
      [(a) a]
      [(a . rest)
       ((make-code-append htl-append)
@@ -129,7 +129,12 @@
 	((current-code-tt) s))
 
       (define (code-align p)
-	(lift (inset p 0 (pict-height p) 0 0) (pict-height p)))
+        (let ([b (dc void 
+                     (pict-width p)
+                     (pict-height p)
+                     (pict-height p)
+                     0)])
+          (refocus (cc-superimpose p b) b)))
 
       (define (code-pict-bottom-line-pict p)
 	(if (code-pict? p)

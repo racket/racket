@@ -74,6 +74,8 @@
 		(datum->syntax #f (append-number x))]
 	       [(string? x)
 		(datum->syntax #f (append-number x))]
+	       [(keyword? x)
+		(datum->syntax #f (append-number (keyword->string x)))]
 	       [(identifier? x)
 		(datum->syntax #f (append-number (syntax-e x)))]
 	       [else 

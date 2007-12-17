@@ -303,6 +303,9 @@
 	       ,w ,h
 	       (put ,l ,b ,(pict-draw box)))))]))
 
+      (define (use-last* p sub-p)
+        (use-last p (or (pict-last sub-p) sub-p)))
+
       (define (use-last p sub-p)
 	(if (let floop ([p p])
               (or (eq? p sub-p)
@@ -868,9 +871,10 @@
 		       [else
 			(error who
 			       "expects two numbers or a sub-pict and a find procedure")])])
-	  (cons-picture*
-	   base
-	   `((place ,dx ,(- dy (pict-height target)) ,target)))))
+	  (use-last (cons-picture*
+                     base
+                     `((place ,dx ,(- dy (pict-height target)) ,target)))
+                    (or (pict-last base) base))))
 
       (define (place-over base dx dy target)
 	(place-it 'place-over #f base dx dy target))

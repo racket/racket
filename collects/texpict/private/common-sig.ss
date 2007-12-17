@@ -58,6 +58,7 @@
      panorama       ; pict -> pict
 
      use-last       ; pict pict -> pict
+     use-last*      ; pict pict -> pict
 
      hline        ; w h -> pict
      dash-hline   ; w h seg-length -> pict ; default seg-length is 5

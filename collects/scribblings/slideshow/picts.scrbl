@@ -554,6 +554,16 @@ Returns a pict like @scheme[pict], but with the last element (as
 reported by @scheme[pict-last]) set to @scheme[sub-pict]. The
 @scheme[sub-pict] must exist as a sub-pict within @scheme[pict].}
 
+@defproc[(use-last* [pict pict?] [sub-pict pict?]) pict?]{
+
+Propagates the last element of @scheme[sub-pict] to @scheme[pict].
+
+That is, @scheme[use-last*] is like @scheme[use-last], but the last
+element of @scheme[sub-pict] is used as the new last element for
+@scheme[pict], instead of @scheme[sub-pict] itself---unless
+@scheme[(pict-last sub-pict)] is @scheme[#f], in which case
+@scheme[sub-pict] is used as the last element of @scheme[pict].}
+
 @; ------------------------------------------------------------------------
 
 @section{Pict Finders}
