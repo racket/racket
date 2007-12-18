@@ -38,7 +38,7 @@
     (fprintf (current-error-port) "~a: ~a\n" who (apply format fmt args)))
 
   (define (test-sequence-core namespace-spec teachpack-specs render-settings
-                              track-inferred-names? in-port expected-steps)
+                              show-lambdas-as-lambdas? in-port expected-steps)
     (let* ([current-error-display-handler (error-display-handler)]
            [all-steps
             (append expected-steps '((finished-stepping)))]
@@ -74,7 +74,7 @@
       (let/ec escape
         (parameterize ([error-escape-handler (lambda () (escape (void)))])
           (go program-expander receive-result render-settings
-              track-inferred-names?
+              show-lambdas-as-lambdas?
               ;; language level:
               'testing
               ;; run-in-drscheme thunk:
@@ -82,7 +82,7 @@
       (error-display-handler current-error-display-handler)))
 
   (define (test-sequence namespace-spec teachpack-specs render-settings
-                         track-inferred-names? exp-str expected-steps)
+                         show-lambdas-as-lambdas? exp-str expected-steps)
     (let ([filename (build-path test-directory "stepper-test")])
       (call-with-output-file filename
         (lambda (port) (fprintf port "~a" exp-str))
@@ -91,33 +91,33 @@
         (printf "testing string: ~v\n" exp-str))
       (letrec ([port (open-input-file filename)])
         (test-sequence-core namespace-spec teachpack-specs render-settings
-                            track-inferred-names? port expected-steps))))
+                            show-lambdas-as-lambdas? port expected-steps))))
 
-  (define (lang-level-test-sequence namespace-spec rs track-inferred-names?)
+  (define (lang-level-test-sequence namespace-spec rs show-lambdas-as-lambdas?)
     (lambda args
-      (apply test-sequence namespace-spec `() rs track-inferred-names? args)))
+      (apply test-sequence namespace-spec `() rs show-lambdas-as-lambdas? args)))
 
   (define (make-multi-level-test-sequence level-fns)
     (lambda args
       (for-each (lambda (fn) (apply fn args)) level-fns)))
 
   (define test-mz-sequence
-    (lang-level-test-sequence 'mzscheme fake-mz-render-settings #f))
+    (lang-level-test-sequence 'mzscheme fake-mz-render-settings #t))
   (define test-beginner-sequence
     (lang-level-test-sequence `(lib "htdp-beginner.ss" "lang")
-                              fake-beginner-render-settings #t))
+                              fake-beginner-render-settings #f))
   (define test-beginner-wla-sequence
     (lang-level-test-sequence `(lib "htdp-beginner-abbr.ss" "lang")
-                              fake-beginner-wla-render-settings #t))
+                              fake-beginner-wla-render-settings #f))
   (define test-intermediate-sequence
     (lang-level-test-sequence `(lib "htdp-intermediate.ss" "lang")
-                              fake-intermediate-render-settings #t))
+                              fake-intermediate-render-settings #f))
   (define test-intermediate/lambda-sequence
     (lang-level-test-sequence `(lib "htdp-intermediate-lambda.ss" "lang")
-                              fake-intermediate/lambda-render-settings #f))
+                              fake-intermediate/lambda-render-settings #t))
   (define test-advanced-sequence
     (lang-level-test-sequence `(lib "htdp-advanced.ss" "lang")
-                              fake-advanced-render-settings #f))
+                              fake-advanced-render-settings #t))
 
   (define test-upto-int/lam
     (make-multi-level-test-sequence
@@ -1327,7 +1327,7 @@
                                     ;(let ([new-custodian (make-custodian)])
                                      ; (parameterize ([current-custodian new-custodian])
                                       ;  (parameterize ([current-eventspace (make-eventspace)])
-                                          (test-sequence `(lib "htdp-beginner.ss" "lang") teachpack-specs fake-beginner-render-settings #t expr-string expected-results)
+                                          (test-sequence `(lib "htdp-beginner.ss" "lang") teachpack-specs fake-beginner-render-settings #f expr-string expected-results)
                                     ;))
                                      ; (custodian-shutdown-all new-custodian))
       ))
@@ -1610,7 +1610,7 @@
       ))
 
   ;; make sure to leave these off when saving, or the nightly tests will run these too...
-  #;(run-all-tests)
+  (run-all-tests)
   #;(run-tests '(check-expect))
   #;(parameterize ([display-only-errors #t])
     (run-all-tests-except '(prims qq-splice time set! local-set! lazy1 lazy2 lazy3)))
