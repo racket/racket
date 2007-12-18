@@ -315,7 +315,7 @@ error.}
 A @deftech{function contract} wraps a procedure to delay
 checks for its arguments and results.
 
-@defform*[#:literals (any)
+@defform*[#:literals (any values)
           [(-> expr ... res-expr)
            (-> expr ... (values res-expr ...))
            (-> expr ... any)]]{
@@ -329,15 +329,19 @@ Each @scheme[expr] is a contract on the argument to a
 function, and each @scheme[res-expr] is a contract on the
 result of the function.
 
+@margin-note{Using an @scheme[->] between two whitespace-delimited
+@schemeparenfont{.}s is the same as putting the @scheme[->] right
+after the enclosing open parenthesis. See
+@guidesecref["lists-and-syntax"] or @secref["parse-pair"] for more
+information.}
+
 For example,
 
 @schemeblock[(integer? boolean? . -> . integer?)] 
 
 produces a contract on functions of two arguments. The first argument
 must be an integer, and the second argument must be a boolean. The
-function must produce an integer. (This example uses Scheme's infix
-notation so that the @scheme[->] appears in a suggestive place; see
-@secref["parse-pair"]).
+function must produce an integer.
 
 The @scheme[expr] may be keywords. If so, the functions must
 have the corresponding (mandatory) keyword and those keyword
