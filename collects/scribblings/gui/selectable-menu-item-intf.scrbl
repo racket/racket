@@ -14,7 +14,7 @@ A @scheme[selectable-menu-item<%>] object is a
 @defmethod[(command [event (is-a?/c control-event%)])
            void?]{
 
-Invoke's the menu item's callback procedure, which is supplied when an
+Invokes the menu item's callback procedure, which is supplied when an
  instance of
 @scheme[menu-item%] or
 @scheme[checkable-menu-item%] is created.
@@ -78,7 +78,7 @@ The shortcut key, as determined by @method[selectable-menu-item<%>
 
 An empty list can be used for a shortcut prefix. However, the default
  @xmethod[frame% on-menu-char] method checks for menu shortcuts only
- when the key event includes either a non-Shift modifer or a Function
+ when the key event includes either a non-Shift modifier or a Function
  key. Thus, an empty shortcut prefix is normally useful only if the
  shortcut key is a Function key.
 

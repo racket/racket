@@ -14,7 +14,7 @@ optional, and it defaults to either the @defterm{current input port}
 or @defterm{current output port}. For @exec{mzscheme}, the current
 ports are initialized to the process's stdin and stdout. The
 @scheme[current-input-port] and @scheme[current-output-port]
-procedures, whien called with no arguments, return the current output
+procedures, when called with no arguments, return the current output
 and input port, respectively.
 
 @examples[

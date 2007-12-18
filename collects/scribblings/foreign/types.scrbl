@@ -18,7 +18,7 @@ along with conversion functions to and from the existing types.
 @defproc[(make-ctype [type ctype?]
                      [scheme-to-c (or/c false/c (any/c . -> . any))]
                      [c-to-scheme (or/c false/c (any/c . -> . any))])
-         cttype?]{
+         ctype?]{
 
 Creates a new @tech{C type} value, with the given conversions
 functions.  The conversion functions can be @scheme[#f] meaning that
@@ -136,7 +136,7 @@ inputs.}
 
 @subsection{Primitive String Types}
 
-The five primitive string types corerspond to cases where a C
+The five primitive string types correspond to cases where a C
 representation matches MzScheme's representation without encodings.
 
 The form @scheme[_bytes] form can be used type for Scheme byte
@@ -173,7 +173,7 @@ Return values using this type are interned as symbols.}
             [_string/locale ctype?])]{
 
 Types that correspond to (character) strings on the Scheme side and
-@cpp{char*} strings on the C side.  The brige between the two requires
+@cpp{char*} strings on the C side.  The bridge between the two requires
 a transformation on the content of the string.  As usual, the types
 treat @scheme[#f] as @cpp{NULL} and vice-versa.}
 
@@ -205,7 +205,7 @@ the parameter should be set before any interface definition that uses
 
 @defparam[default-_string-type type ctype?]{
 
-A parameter that determines the current meanging of @scheme[_string].
+A parameter that determines the current meaning of @scheme[_string].
 It is initially set to @scheme[_string/*utf-8].  If you change it, do
 so @italic{before} interfaces are defined.}
 
@@ -630,7 +630,7 @@ way to store pointers to GC-managed objects in structs (even if you
 keep a reference to avoid collecting the referenced objects, a the 3m
 variant's GC will invalidate the pointer's value).  Thus, only
 non-pointer values and pointers to memory that is outside the GC's
-control can be lpaced into struct fields.
+control can be placed into struct fields.
 
 As an example, consider the following C code:
 

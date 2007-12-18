@@ -21,7 +21,7 @@ between scalar-value numbers and the corresponding character.
 
 A printable character normally prints as @litchar["#\\"] followed
 by the represented character. An unprintable character normally prints
-as @litchar{#\u} followed by the scalar value as hexdecimal
+as @litchar{#\u} followed by the scalar value as hexadecimal
 number. A few characters are printed specially; for example, the space
 and linefeed characters print as @scheme[#\space] and
 @scheme[#\newline], respectively.

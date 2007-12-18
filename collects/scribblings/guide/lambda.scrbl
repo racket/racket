@@ -186,7 +186,7 @@ through parallel lists in the first two (by-position) arguments,
 and then all by-position arguments from an application as the
 remaining by-position arguments.
 
-@guideother{@secref["apply"] inroduces @scheme[keyword-apply].}
+@guideother{@secref["apply"] introduces @scheme[keyword-apply].}
 
 @defexamples[
 (define (trace-wrap f)

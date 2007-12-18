@@ -276,7 +276,7 @@ For a special keyword, the capitalization does not matter. However,
  capitalization is important for single-letter keynames. Furthermore,
  single-letter ASCII keynames are treated specially: @litchar["A"] and
  @litchar["s:a"] are both treated as @litchar["s:A"].  However, when
- @litchar["c:"] is inclued under Windows without @litchar["m:"], or when
+ @litchar["c:"] is included under Windows without @litchar["m:"], or when
  @litchar["d:"] is included under Mac OS X, then ASCII letters are not
  upcased with @litchar["s:"], since the upcasing behavior of the Shift key
  is cancelled by Control without Alt (under Windows) or by Command

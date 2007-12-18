@@ -9,7 +9,7 @@
 
 @declare-exporting['#%foreign]
 
-Parts of the @schememodname[scheme/foreign] libray are implemented by
+Parts of the @schememodname[scheme/foreign] library are implemented by
 the MzScheme built-in @schememodname['#%foreign] module.  The
 @schememodname['#%foreign] module is not intended for direct use, but
 it exports the following procedures.  If you find any of these useful,

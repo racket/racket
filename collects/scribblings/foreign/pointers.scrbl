@@ -86,7 +86,7 @@ pointer, such as supplying the pointer to a foreign function. In
 particular, the pointer and offset are not combined until after all
 allocation leading up to a foreign-function call; if the called
 function does not itself call anything that can trigger a garbage
-collection, it can safey use pointers that are offset into the middle
+collection, it can safely use pointers that are offset into the middle
 of a GCable object.}
 
 
@@ -219,7 +219,7 @@ see @|InsideMzScheme|.
 
 Allocates a memory block of a specified size using a specified
 allocation. The result is a @scheme[cpointer] to the allocated
-memory. Alhough not reflected above, the four arguments can appear in
+memory.  Although not reflected above, the four arguments can appear in
 any order since they are all different types of Scheme objects; a size
 specification is required at minimum:
 

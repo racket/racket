@@ -62,7 +62,7 @@ p
 p
 ]
 
-Among the most important predefined proecdures on lists are those that
+Among the most important predefined procedures on lists are those that
 iterate through the list's elements:
 
 @interaction[

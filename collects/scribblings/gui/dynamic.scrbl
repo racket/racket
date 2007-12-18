@@ -5,7 +5,7 @@
 @title{Dynamic Loading}
 
 @defmodule[scheme/gui/dynamic]{The @schememodname[scheme/gui/dynamic]
-library provides functiosn for dynamically accessing the PLT Scheme
+library provides functions for dynamically accessing the PLT Scheme
 GUI toolbox, instead of directly requiring @scheme[scheme/gui] or
 @scheme[scheme/gui/base].}
 

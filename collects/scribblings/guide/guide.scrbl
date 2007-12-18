@@ -140,7 +140,7 @@ constant propagation, constant folding, and inlining optimizations.
 @section[#:tag "tools"]{More Tools}
 
 In the @seclink["intro"]{introduction}, we mentioned that PLT Scheme
-includes more tools bsides DrScheme and MzScheme:
+includes more tools besides DrScheme and MzScheme:
 
 @itemize{
 

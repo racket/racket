@@ -187,7 +187,7 @@ See also @scheme[write-resource].}
 Strips shortcut ampersands from @scheme[label], removes parenthesized
  ampersand--character combinations along with any surrounding space,
  and removes anything after a tab. Overall, it returns the label as it would
- appear on a button on a platform without support for menmonics.
+ appear on a button on a platform without support for mnemonics.
 
 }
 

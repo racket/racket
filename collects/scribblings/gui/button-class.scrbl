@@ -3,7 +3,7 @@
 
 @defclass/title[button% object% (control<%>)]{
 
-Whenever a button is clicked by the user, the buttons's callback
+Whenever a button is clicked by the user, the button's callback
  procedure is invoked. A callback procedure is provided as an
  initialization argument when each button is created.
 

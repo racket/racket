@@ -277,7 +277,7 @@ The icon is used in a platform-specific way:
 
  @item{Windows --- the small icon is used for the frame's icon (in the
        top-left) and in the task bar, and the large icon is used for
-       the Atl-Tab task switcher.}
+       the Alt-Tab task switcher.}
 
  @item{Mac OS X --- both icons are ignored.}
 

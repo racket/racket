@@ -177,7 +177,7 @@ results in a definition (see @secref["multiple-values"]),
 @specform[(letrec-values ([(id ...) expr] ...)
             body ...+)]
 
-Each @scheme[_expr] must produce as many values as coresponding
+Each @scheme[_expr] must produce as many values as corresponding
 @scheme[_id]s. The binding rules are the same for the forms
 without @schemekeywordfont{-values} forms: the @scheme[_id]s of
 @scheme[let-values] are bound only in the @scheme[_body]s, the

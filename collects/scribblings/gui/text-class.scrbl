@@ -1825,7 +1825,7 @@ Sets a paragraph-specific horizontal alignment. The alignment is only
 
 @italic{This method is experimental.} It works reliably only when the
  paragraph is not merged or split. Merging or splitting a paragraph
- with alignment settings causes the settings to be transfered
+ with alignment settings causes the settings to be transferred
  unpredictably (although other paragraphs in the editor can be safely
  split or merged). If the last paragraph in an editor is empty,
  settings assigned to it are ignored.

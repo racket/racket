@@ -17,7 +17,7 @@ just like a @scheme[lambda] expression:
 
 The @scheme[_superclass-expr] determines the superclass for the new
 class. Each @scheme[_decl-or-expr] is either a declaration related to
-methods, fields, and intialization arguments, or it is an expression
+methods, fields, and initialization arguments, or it is an expression
 that is evaluated each time that the class is instantiated. In other
 words, instead of a method-like constructor, a class has
 initialization expressions interleaved with field and method

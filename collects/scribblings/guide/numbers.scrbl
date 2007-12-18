@@ -13,10 +13,10 @@ A Scheme @defterm{number} is either exact or inexact:
 
        @itemize{
 
-       @item{an aribrarily large or small integer, such as @scheme[5],
+       @item{an arbitrarily large or small integer, such as @scheme[5],
              @scheme[99999999999999999], or @scheme[-17];}
 
-       @item{a rational that is exactly the ratio of two arbitraily
+       @item{a rational that is exactly the ratio of two arbitrarily
              small or large integers, such as @scheme[1/2],
              @scheme[99999999999999999/2], or @scheme[-3/4]; or}
 
@@ -32,7 +32,7 @@ A Scheme @defterm{number} is either exact or inexact:
 
         @item{an IEEE floating-point representation of a number, such
               as @scheme[2.0] or @scheme[3.14e87], where the IEEE
-              infinitities and not-a-number are written
+              infinities and not-a-number are written
               @scheme[+inf.0], @scheme[-inf.0], and @scheme[+nan.0]
               (or @schemevalfont{-nan.0}); or}
 
@@ -50,8 +50,8 @@ exact numbers print as integers and fractions.  The same conventions
 apply for reading number constants, but @litchar{#e} or
 @litchar{#i} can prefix a number to force its parsing as an exact
 or inexact number. The prefixes @litchar{#b}, @litchar{#o}, and
-@litchar{#x} specificy binary, octal, and hexadecimal
-interprertation of digits.
+@litchar{#x} specify binary, octal, and hexadecimal
+interpretation of digits.
 
 @refdetails/gory["parse-number"]{the syntax of numbers}
 

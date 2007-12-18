@@ -111,7 +111,7 @@ Returns @scheme[#f].
            void?]{
 
 Tells the snip to blink the selection caret. This method is called
- periodically when the snips's editor's @techlink{display} has the
+ periodically when the snip's editor's @techlink{display} has the
  keyboard focus, and the snip has the editor-local focus.
 
 The drawing context and snip's @techlink{location}s in drawing context

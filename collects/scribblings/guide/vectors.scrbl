@@ -5,7 +5,7 @@
 
 @title[#:tag "vectors"]{Vectors}
 
-A @defterm{vector} is a fixed-length array of arbitarary
+A @defterm{vector} is a fixed-length array of arbitrary
 values. Unlike a list, a vector supports constant-time access and
 update of its elements.
 

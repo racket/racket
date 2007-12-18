@@ -30,7 +30,7 @@ will try all of them.
 
 If @scheme[path] is @scheme[#f], then the resulting foreign-library
 value represents all libraries loaded in the current process,
-including libraries previouly opened with @scheme[ffi-lib].  In
+including libraries previously opened with @scheme[ffi-lib].  In
 particular, use @scheme[#f] to access C-level functionality exported
 by the run-time system (as described in @|InsideMzScheme|).
 

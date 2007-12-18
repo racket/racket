@@ -25,7 +25,7 @@ parentheses wrapped around the printed form of the list
 elements. There's an opportunity for confusion here, because
 parentheses are used for both expressions, such as @scheme[(list "red"
 "green" "blue")], and printed results, such as @schemeresult[("red"
-"green" "blue")]. Rememeber that, in the documentation and in
+"green" "blue")]. Remember that, in the documentation and in
 DrScheme, parentheses for results are printed in blue, whereas
 parentheses for expressions are brown.
 
@@ -107,7 +107,7 @@ functions. One reason is that @scheme[map], @scheme[ormap],
 @scheme[andmap], and @scheme[filter] cover the most common kinds of
 list loops.
 
-Scheme provides a general @defterm{list compherension} form
+Scheme provides a general @defterm{list comprehension} form
 @scheme[for/list], which builds a list by iterating through
 @defterm{sequences}. List comprehensions and related iteration forms
 are described in see @secref["for"].
@@ -200,7 +200,7 @@ imagining how @scheme[(my-length (list "a" "b" "c"))] must evaluate:
 #,step 3
 ]
 
-For a list with @math{n} elements, evalution will stack up @math{n}
+For a list with @math{n} elements, evaluation will stack up @math{n}
 @scheme[(+ 1 ...)] additions, and then finally add them up when the
 list is exhausted.
 

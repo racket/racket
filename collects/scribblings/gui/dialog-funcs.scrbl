@@ -43,7 +43,7 @@ Under Windows, if @scheme[extension] is not @scheme[#f], the returned path
  ignored on other platforms.
 
 The @scheme[style] list can contain @scheme['common], a
- platform-independant version of the dialog is used instead of a
+ platform-independent version of the dialog is used instead of a
  native dialog.  Under Mac OS X, if the @scheme[style] list
  contains @scheme['packages], a user is allowed to select a package
  directory, which is a directory with a special suffix (e.g.,
@@ -116,12 +116,12 @@ Under Windows, if @scheme[extension] is not @scheme[#f], the returned path
  @scheme[filters] argument has the same format and auxiliary role as for
 @scheme[get-file]. In particular, if the only pattern in @scheme[filters]
  is @scheme[(string-append "*." extension)], then the result pathname is guaranteed
- to have an extenson mapping @scheme[extension].
+ to have an extension mapping @scheme[extension].
 
 Under Mac OS X, if @scheme[extension] is not @scheme[#f]
  and @scheme[filters] contains the single
  pattern @scheme[(string-append "*." extension)], then the result pathname is
- guaranteed to have an extenson mapping @scheme[extension]. Otherwise,
+ guaranteed to have an extension mapping @scheme[extension]. Otherwise,
  @scheme[extension] and @scheme[filters] are ignored.
 
 The @scheme[extension] argument is ignored under X, and @scheme[filters]

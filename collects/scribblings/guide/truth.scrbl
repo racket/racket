@@ -95,7 +95,7 @@ not:
 (eval:alts (#, @scheme[quote] (0 #, @schemeparenfont{.} (1 . 2))) '(0 . (1 . 2)))
 ]
 
-Naturaly, lists can be nested:
+Naturally, lists can be nested:
 
 @interaction[
 (list (list 1 2 3) 5 (list "a" "b" "c"))
@@ -110,7 +110,7 @@ that looks like an identifier:
 ]
 
 A value that prints like an identifier is a @defterm{symbol}. In the
-same way that parentehsized output should not be confused with
+same way that parenthesized output should not be confused with
 expressions, a printed symbol should not be confused with an
 identifier. In particular, the symbol @scheme[(#, @scheme[quote] #,
 @schemeidfont{map})] has nothing to do with the @schemeidfont{map}
@@ -238,7 +238,7 @@ conversion enables a kind of general infix notation:
 '(1 . < . 2)
 ]
 
-This two-dot convension is non-traditional, and it has essentially
+This two-dot convention is non-traditional, and it has essentially
 nothing to do with the dot notation for non-list pairs. PLT Scheme
-programmers use the infix convension sparingly---mostly for asymmetric
+programmers use the infix convention sparingly---mostly for asymmetric
 binary operators such as @scheme[<] and @scheme[is-a?].

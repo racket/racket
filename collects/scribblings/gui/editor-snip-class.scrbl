@@ -328,7 +328,7 @@ Shows or hides the snip's border.
            boolean?]{
 
 Returns @scheme[#t] if the snip uses its style's background and
- transparency informaiton when drawing, @scheme[#f] otherwise.
+ transparency information when drawing, @scheme[#f] otherwise.
 
 See also @method[editor-snip% use-style-background].
 
