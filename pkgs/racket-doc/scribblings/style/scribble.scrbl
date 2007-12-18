@@ -8,19 +8,34 @@
 In the descriptive body of @scheme[defform], @scheme[defproc], etc.,
 do not start with ``This ...'' Instead, start with a sentence whose
 implicit subject is the form or value being described. Thus, the
-description will often start with ``Produces.'' Refer to arguments by
-name.
+description will often start with ``Produces.'' Refer to arguments and
+sub-forms by name.
 
-Use @schemeidfont{id} or something that ends @schemeidfont{-id} in
+Do not use the word ``argument'' to describe a sub-form in a syntactic
+form; use the term ``sub-form'' instead, reserving ``argument'' for
+values or expressions in a function call.  Refer to libraries and
+languages as such, rather than as ``modules'' (even though the form to
+typeset a library or language name is called @scheme[schememodname]).
+Do not call an identifier (i.e., a syntactic element) a ``variable''
+or a ``symbol.''
+
+Use @schemeidfont{id} or a name that ends @schemeidfont{-id} in
 @scheme[defform] to mean an identifier, not @schemeidfont{identifier},
 @schemeidfont{variable}, @schemeidfont{name}, or
 @schemeidfont{symbol}. Similarly, use @schemeidfont{expr} or something
 that ends @schemeidfont{-expr} for an expression position within a
 syntactic form. Use @schemeidfont{body} for a form (definition or
-expression) in an internal-definition position. Never use
+expression) in an internal-definition position. Do not use
 @schemeidfont{expr} for something that isn't exactly an expression,
 @scheme[id] for something that isn't exactly an identifier, etc.;
 instead, use @scheme[defform/subs] to define a new non-terminal.
+
+Beware of using @scheme[deftogether] to define multiple variants of a
+syntactic form or procedure, because each @scheme[defform] or
+@scheme[defproc] creates a definition point, but each form or
+procedure should have a single definition point. (Scribble issues a
+warning when a binding has multiple definition points.) Instead, use
+@scheme[defproc*] or @scheme[defform*].
 
 Pay attention to the difference between identifiers and meta-variables
 when using @scheme[scheme], especially outside of @scheme[defproc] or
