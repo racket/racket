@@ -315,18 +315,23 @@ error.}
 A @deftech{function contract} wraps a procedure to delay
 checks for its arguments and results.
 
-@defform*[#:literals (any values)
-          [(-> expr ... res-expr)
-           (-> expr ... (values res-expr ...))
-           (-> expr ... any)]]{
+@deftogether[(
+@defform[#:literals (any values)
+         (-> dom-exprs ... res-expr)]
+@defform[#:literals (any values)
+         (-> dom-exprs ... (values res-expr ...))]
+@defform/subs[#:literals (any values)
+              (-> dom-exprs ... any)
+              ([dom-exprs expr (code:line keyword expr)])]
+)]{
 
 Produces a contract for a function that accepts a fixed
 number of arguments and returns either a fixed number of
 results or completely unspecified results (the latter when
 @scheme[any] is specified).
 
-Each @scheme[expr] is a contract on the argument to a
-function, and each @scheme[res-expr] is a contract on the
+Each @scheme[dom-expr] is a contract on an argument to a
+function, and each @scheme[res-expr] is a contract on a
 result of the function.
 
 @margin-note{Using an @scheme[->] between two whitespace-delimited
@@ -343,9 +348,10 @@ produces a contract on functions of two arguments. The first argument
 must be an integer, and the second argument must be a boolean. The
 function must produce an integer.
 
-The @scheme[expr] may be keywords. If so, the functions must
-have the corresponding (mandatory) keyword and those keyword
-arguments must match the contracts that follow them. For example:
+The domain specification may contain be keywords. If so, the
+functions must accept the same (mandatory) keyword arguments
+and those keyword arguments must match the contracts that
+follow them. For example:
 
 @schemeblock[(integer? #:x boolean? . -> . integer?)]
 
