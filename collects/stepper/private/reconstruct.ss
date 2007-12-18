@@ -730,23 +730,28 @@
                                                      [arg-vals (map (lambda (arg-temp) 
                                                                       (lookup-binding mark-list arg-temp))
                                                                     arg-temps)])
+                                                (let*-2vals ([(evaluated unevaluated) (split-list (lambda (x) (eq? (cadr x) *unevaluated*))
+                                                                                                  (zip sub-exprs arg-vals))]
+                                                             [rectified-evaluated (map (lx (recon-value _ render-settings)) (map cadr evaluated))])
                                                 (case (mark-label (car mark-list))
                                                   ((not-yet-called)
-                                                   (let*-2vals ([(evaluated unevaluated) (split-list (lambda (x) (eq? (cadr x) *unevaluated*))
-                                                                                                     (zip sub-exprs arg-vals))]
-                                                                [rectified-evaluated (map (lx (recon-value _ render-settings)) (map cadr evaluated))])
-                                                               (if (null? unevaluated)
-                                                                   #`(#%app . #,rectified-evaluated)
-                                                                   #`(#%app 
-                                                                      #,@rectified-evaluated
-                                                                      #,so-far 
-                                                                      #,@(map recon-source-current-marks (cdr (map car unevaluated)))))))
+                                                   (if (null? unevaluated)
+                                                       #`(#%app . #,rectified-evaluated)
+                                                       #`(#%app 
+                                                          #,@rectified-evaluated
+                                                          #,so-far 
+                                                          #,@(map recon-source-current-marks (cdr (map car unevaluated))))))
                                                   ((called)
-                                                   (if (eq? so-far nothing-so-far)
-                                                       (datum->syntax-object #'here `(,#'#%app ...)) ; in unannotated code
-                                                       (datum->syntax-object #'here `(,#'#%app ... ,so-far ...))))
+                                                   (unless (null? unevaluated)
+                                                     (error "stepper internal error: unevaluated args in called mark"))
+                                                   (stepper-syntax-property
+                                                    (if (eq? so-far nothing-so-far)
+                                                        (datum->syntax-object #'here `(,#'#%app ...)) ; in unannotated code
+                                                        (datum->syntax-object #'here `(,#'#%app ... ,so-far ...)))
+                                                    'stepper-evaled-args
+                                                    evaluated))
                                                   (else
-                                                   (error 'recon-inner "bad label (~v) in application mark in expr: ~a" (mark-label (car mark-list)) exp))))
+                                                   (error 'recon-inner "bad label (~v) in application mark in expr: ~a" (mark-label (car mark-list)) exp)))))
                                               exp)]
                                             
                                             ; define-struct 
