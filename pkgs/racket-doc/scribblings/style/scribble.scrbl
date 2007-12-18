@@ -11,13 +11,16 @@ implicit subject is the form or value being described. Thus, the
 description will often start with ``Produces.'' Refer to arguments by
 name.
 
-Use @schemeidfont{id} or something that ends @schemeidfont{-id} in a
-syntactic form to mean an identifier, not @schemeidfont{identifier},
-@schemeidfont{name}, or @schemeidfont{symbol}. Similarly, use
-@schemeidfont{expr} or something that ends @schemeidfont{-expr} for an
-expression position within a syntactic form. Use @schemeidfont{body}
-for a form (definition or expression) in an internal-definition
-position.
+Use @schemeidfont{id} or something that ends @schemeidfont{-id} in
+@scheme[defform] to mean an identifier, not @schemeidfont{identifier},
+@schemeidfont{variable}, @schemeidfont{name}, or
+@schemeidfont{symbol}. Similarly, use @schemeidfont{expr} or something
+that ends @schemeidfont{-expr} for an expression position within a
+syntactic form. Use @schemeidfont{body} for a form (definition or
+expression) in an internal-definition position. Never use
+@schemeidfont{expr} for something that isn't exactly an expression,
+@scheme[id] for something that isn't exactly an identifier, etc.;
+instead, use @scheme[defform/subs] to define a new non-terminal.
 
 Pay attention to the difference between identifiers and meta-variables
 when using @scheme[scheme], especially outside of @scheme[defproc] or
@@ -36,8 +39,11 @@ typeset as variables. The correct description is
 which produces @scheme[(_rator-expr _rand-expr ...)], where
 @schemeidfont{rator-expr} @schemeidfont{rand-expr} are typeset as
 meta-variables. The @scheme[defproc], @scheme[defform], @|etc| forms
-greatly reduce this burden in description, since they automatically
-set up meta-variable typesetting for non-literal identifiers.
+greatly reduce this burden in descriptions, since they automatically
+set up meta-variable typesetting for non-literal identifiers. In
+@scheme[defform], be sure to include literal identifiers (i.e., those
+not meant as variables, other than the form name being defined) in a
+@scheme[#:literals] clause.
 
 To typeset an identifier with no particular interpretation---syntax,
 variable, meta-variable, etc.---use @scheme[schemeidfont] (e.g., as in
