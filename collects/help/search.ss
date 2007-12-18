@@ -9,10 +9,61 @@
          scribble/manual
          (prefix-in scheme: scribble/scheme)
          net/sendurl
+         net/uri-codec
          mzlib/contract)
 
 (provide/contract
- [generate-search-results (-> (listof string?) void?)])
+ [generate-search-results (-> (listof string?) void?)]
+ [send-exact-results (-> string? void?)])
+
+;; if there is exactly one exact match for this search key, go directly
+;; to that place. Otherwise, go to a page that lists all of the matches.
+(define (send-exact-results search-key)
+  (let* ([file (next-search-results-file)]
+         [exact-search-regexp (regexp (format "^~a$" (regexp-quote search-key #f)))]
+         [x (load-collections-xref)]
+         [index (xref-index x)]
+         [len (length index)]
+         [exact-matches (filter (has-match (list exact-search-regexp)) index)])
+    (cond
+      [(or (null? exact-matches)
+           (not (null? (cdr exact-matches))))
+       (generate-search-results (list search-key))]
+      [else
+       (let ([match (car exact-matches)])
+         (let-values ([(path tag) (xref-tag->path+anchor x (entry-tag match))])
+           (send-url (format "file://~a~a" 
+                             (path->string path) 
+                             (if tag (string-append "#" (uri-encode tag)) "")))))])))
+
+(define (generate-search-results search-keys)
+  (let ([file (next-search-results-file)]
+        [search-regexps (map (λ (x) (regexp (regexp-quote x #f))) search-keys)]
+        [exact-search-regexps (map (λ (x) (regexp (format "^~a$" (regexp-quote x #f)))) search-keys)]
+        [search-key-string
+         (cond
+           [(null? search-keys) ""]
+           [else
+            (apply
+             string-append
+             (car search-keys)
+             (map (λ (x) (format ", or ~a" x))
+                  (cdr search-keys)))])])
+    (let ([x (load-collections-xref)])
+      (xref-render
+       x
+       (decode `(,(title (format "Search results for ~a" search-key-string))
+                 ,@(let* ([index (xref-index x)]
+                          [len (length index)]
+                          [matching-entries (filter (has-match search-regexps) index)]
+                          [exact-matches (filter (has-match exact-search-regexps) matching-entries)]
+                          [inexact-matches (filter (compose not (has-match exact-search-regexps))  matching-entries)])
+                     (append
+                      (build-itemization "Exact matches" exact-matches)
+                      (build-itemization "Containing matches" inexact-matches)))))
+       file)
+      (send-url (format "file://~a" (path->string file)))
+      (void))))
 
 (define (make-extra-content desc)
   ;; Use `desc' to provide more details on the link:
@@ -55,35 +106,6 @@
           (set! search-results-files 
                 (append (cdr search-results-files) 
                         (list (car search-results-files))))))
-
-(define (generate-search-results search-keys)
-  (let ([file (next-search-results-file)]
-        [search-regexps (map (λ (x) (regexp (regexp-quote x #f))) search-keys)]
-        [exact-search-regexps (map (λ (x) (regexp (format "^~a$" (regexp-quote x #f)))) search-keys)]
-        [search-key-string
-         (cond
-           [(null? search-keys) ""]
-           [else
-            (apply
-             string-append
-             (car search-keys)
-             (map (λ (x) (format ", or ~a" x))
-                  (cdr search-keys)))])])
-    (let ([x (load-collections-xref)])
-      (xref-render
-       x
-       (decode `(,(title (format "Search results for ~a" search-key-string))
-                 ,@(let* ([index (xref-index x)]
-                          [len (length index)]
-                          [matching-entries (filter (has-match search-regexps) index)]
-                          [exact-matches (filter (has-match exact-search-regexps) matching-entries)]
-                          [inexact-matches (filter (compose not (has-match exact-search-regexps))  matching-entries)])
-                     (append
-                      (build-itemization "Exact matches" exact-matches)
-                      (build-itemization "Containing matches" inexact-matches)))))
-       file)
-      (send-url (format "file://~a" (path->string file)))
-      (void))))
 
 ;; has-match : (listof regexp) -> entry -> boolean
 (define ((has-match search-regexps) entry)
