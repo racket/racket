@@ -394,6 +394,82 @@
               'pos
               'neg))
   
+  (test/pos-blame
+   'contract-arrow-star-keyword1
+   '(contract (->* (integer?) (listof integer?) (integer?))
+              (λ (x #:y y . args) x)
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'contract-arrow-star-keyword2
+   '(contract (->* (integer?) (listof integer?) any)
+              (λ (x #:y y . args) x)
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'contract-arrow-star-keyword3
+   '(contract (->* (integer? #:y integer?) (listof integer?) (integer? integer?))
+              (λ (x #:y y . args) x)
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'contract-arrow-star-keyword4
+   '(contract (->* (integer? #:y integer?) (listof integer?) any)
+              (λ (x #:y y . args) x)
+              'pos
+              'neg))
+  
+  (test/neg-blame
+   'contract-arrow-star-keyword5
+   '((contract (->* (integer? #:y integer?) (listof integer?) (integer? integer?))
+               (λ (x #:y y . args) x)
+               'pos
+               'neg)
+     1 #:y #t))
+  
+  (test/neg-blame
+   'contract-arrow-star-keyword6
+   '((contract (->* (integer? #:y integer?) (listof integer?) any)
+               (λ (x #:y y . args) x)
+               'pos
+               'neg)
+     1 #:y #t))
+  
+  (test/neg-blame
+   'contract-arrow-star-keyword7
+   '((contract (->* (integer? #:y integer?) (listof integer?) (integer? integer?))
+               (λ (x #:y y . args) x)
+               'pos
+               'neg)
+     #t #:y 1))
+  
+  (test/neg-blame
+   'contract-arrow-star-keyword8
+   '((contract (->* (integer? #:y integer?) (listof integer?) any)
+               (λ (x #:y y . args) x)
+               'pos
+               'neg)
+     #t #:y 1))
+  
+  (test/spec-passed
+   'contract-arrow-star-keyword9
+   '((contract (->* (integer? #:y integer?) (listof integer?) (integer? integer?))
+               (λ (x #:y y . args) (values x x))
+               'pos
+               'neg)
+     2 #:y 1))
+  
+  (test/spec-passed
+   'contract-arrow-star-keyword10
+   '((contract (->* (integer? #:y integer?) (listof integer?) any)
+               (λ (x #:y y . args) (values x x))
+               'pos
+               'neg)
+     2 #:y 1))
+  
   (test/spec-passed
    'contract-arrow-values1
    '(let-values ([(a b) ((contract (-> integer? (values integer? integer?))

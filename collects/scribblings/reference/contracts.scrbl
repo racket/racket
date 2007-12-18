@@ -363,18 +363,30 @@ If @scheme[(values res-expr ...)] is used as the last sub-form of
 @scheme[->], the function must produce a result for each contract, and
 each values must match its respective contract.}
 
-@defform*[#:literals (any)
-          [(->* (expr ...) (res-expr ...))
-           (->* (expr ...) rest-expr (res-expr ...))
-           (->* (expr ...) any)
-           (->* (expr ...) rest-expr any)]]{
+@;{
+@defform*/subs[#:literals (any)
+          [(->* (mandatory-dom ...) (optional-dom ...) rest-expr range)
+           (->* (mandatory-dom ...) (optional-dom ...) range)]
+          ([mandatory-dom dom-expr (code:line keyword dom-expr)]
+           [optional-dom dom-expr (code:line keyword dom-expr)]
+           [range (range-expr ...) any])]{
+new one
+}
+}
 
-Like @scheme[->], but for functions that return multiple results
-and/or have ``rest'' arguments. The @scheme[expr]s specify contracts
-on the initial arguments, and @scheme[rest-expr] (if supplied)
-specifies a contract on an additional ``rest'' argument, which is
-always a list. Each @scheme[res-expr] specifies a contract on a
-result from the function.
+@defform*/subs[#:literals (any)
+          [(->* (dom ...) (res-expr ...))
+           (->* (dom ...) rest-expr (res-expr ...))
+           (->* (dom ...) any)
+           (->* (dom ...) rest-expr any)]
+          ([dom dom-expr (code:line keyword dom-expr)])]{
+
+Like @scheme[->], but for functions that have ``rest''
+arguments. The @scheme[dom]s specify contracts on the
+initial arguments, and @scheme[rest-expr] (if supplied)
+specifies a contract on an additional ``rest'' argument,
+which is always a list. Each @scheme[res-expr] specifies a
+contract on a result from the function.
 
 For example, a function that accepts one or more integer arguments and
 returns one boolean would have the following contract:

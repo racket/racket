@@ -4,11 +4,11 @@
 
 keywords done:
 
-- added mandatory keywords to ->
+- added mandatory keywords to ->, ->*
 
 keywords todo:
 
-add mandatory keywords to ->* ->d ->d*
+add mandatory keywords to ->d ->d*
 
 Add both optional and mandatory keywords to opt-> and friends. 
 (Update opt-> so that it doesn't use case-lambda anymore.)
@@ -299,65 +299,83 @@ Add both optional and mandatory keywords to opt-> and friends.
      (->/proc/main (syntax (-> doms ... any)))]
     [(->* (doms ...) (rngs ...))
      (->/proc/main (syntax (-> doms ... (values rngs ...))))]
-    [(->* (doms ...) rst (rngs ...))
-     (with-syntax ([(dom-x ...) (generate-temporaries (syntax (doms ...)))]
-                   [(args ...) (generate-temporaries (syntax (doms ...)))]
-                   [(rst-x) (generate-temporaries (syntax (rst)))]
-                   [(rest-arg) (generate-temporaries (syntax (rst)))]
-                   [(rng-x ...) (generate-temporaries (syntax (rngs ...)))]
-                   [(rng-args ...) (generate-temporaries (syntax (rngs ...)))])
-       (let ([inner-args/body 
-              (syntax ((args ... . rest-arg)
-                       (let-values ([(rng-args ...) (apply val (dom-x args) ... (rst-x rest-arg))])
-                         (values (rng-x rng-args) ...))))])
-         (with-syntax ([inner-lambda (with-syntax ([(args body) inner-args/body])
-                                       (add-name-prop
-                                        (syntax-local-infer-name stx)
-                                        (syntax (lambda args body))))])
-           (with-syntax ([outer-lambda 
-                          (syntax
-                           (lambda (chk dom-x ... rst-x rng-x ...)
-                             (lambda (val)
-                               (chk val)
-                               inner-lambda)))])
-             (values (syntax (build--> '->*
-                                       (list doms ...)
-                                       rst
-                                       (list rngs ...)
-                                       '()
-                                       '()
-                                       #f 
-                                       outer-lambda))
-                     inner-args/body
-                     (syntax (dom-x ... rst-x rng-x ...)))))))]
-    [(->* (doms ...) rst any)
-     (with-syntax ([(dom-x ...) (generate-temporaries (syntax (doms ...)))]
-                   [(args ...) (generate-temporaries (syntax (doms ...)))]
-                   [(rst-x) (generate-temporaries (syntax (rst)))]
-                   [(rest-arg) (generate-temporaries (syntax (rst)))])
-       (let ([inner-args/body 
-              (syntax ((args ... . rest-arg) 
-                       (apply val (dom-x args) ... (rst-x rest-arg))))])
-         (with-syntax ([inner-lambda (with-syntax ([(args body) inner-args/body])
-                                       (add-name-prop
-                                        (syntax-local-infer-name stx)
-                                        (syntax (lambda args body))))])
-           (with-syntax ([outer-lambda 
-                          (syntax
-                           (lambda (chk dom-x ... rst-x ignored)
-                             (lambda (val)
-                               (chk val)
-                               inner-lambda)))])
-             (values (syntax (build--> '->*
-                                       (list doms ...)
-                                       rst
-                                       (list any/c)
-                                       '()
-                                       '()
-                                       #t
-                                       outer-lambda))
-                     inner-args/body
-                     (syntax (dom-x ... rst-x)))))))]))
+    [(->* (raw-doms ...) rst rng)
+     (with-syntax ([((doms ...) ((dom-kwd dom-kwd-ctc) ...)) (split-doms stx '-> #'(raw-doms ...))])
+       (with-syntax ([(dom-kwd-arg ...) (generate-temporaries (syntax (dom-kwd ...)))]
+                     [(dom-kwd-ctc-id ...) (generate-temporaries (syntax (dom-kwd ...)))])
+         (with-syntax ([(keyword-formal-parameters ...) (apply append (map syntax->list (syntax->list #'((dom-kwd dom-kwd-arg) ...))))]
+                       [(args ...) (generate-temporaries (syntax (doms ...)))]
+                       [(dom-ctc ...) (generate-temporaries (syntax (doms ...)))])
+           (with-syntax ([(dom-x ...) (generate-temporaries (syntax (doms ...)))]
+                         [(args ...) (generate-temporaries (syntax (doms ...)))]
+                         [(rst-x) (generate-temporaries (syntax (rst)))]
+                         [(rest-arg) (generate-temporaries (syntax (rst)))])
+             (syntax-case #'rng (any)
+               [(rngs ...)
+                (with-syntax ([(rng-x ...) (generate-temporaries (syntax (rngs ...)))]
+                              [(rng-args ...) (generate-temporaries (syntax (rngs ...)))])
+                  
+                  (let ([inner-args/body 
+                         #`((args ... keyword-formal-parameters ... . rest-arg)
+                            (let-values ([(rng-args ...)
+                                          #,(if (null? (syntax-e #'(dom-kwd ...)))
+                                                #'(apply val (dom-x args) ... (rst-x rest-arg))
+                                                #'(keyword-apply val 
+                                                                 '(dom-kwd ...)
+                                                                 (list (dom-kwd-ctc-id dom-kwd-arg) ...) 
+                                                                 (dom-x args) ...
+                                                                 (rst-x rest-arg)))])
+                              (values (rng-x rng-args) ...)))])
+                    (with-syntax ([inner-lambda (with-syntax ([(args body) inner-args/body])
+                                                  (add-name-prop
+                                                   (syntax-local-infer-name stx)
+                                                   (syntax (lambda args body))))])
+                      (with-syntax ([outer-lambda 
+                                     (syntax
+                                      (lambda (chk dom-x ... rst-x rng-x ... dom-kwd-ctc-id ...)
+                                        (lambda (val)
+                                          (chk val)
+                                          inner-lambda)))])
+                        (values (syntax (build--> '->*
+                                                  (list doms ...)
+                                                  rst
+                                                  (list rngs ...)
+                                                  (list dom-kwd-ctc ...)
+                                                  '(dom-kwd ...)
+                                                  #f 
+                                                  outer-lambda))
+                                inner-args/body
+                                (syntax (dom-x ... rst-x rng-x ...)))))))]
+               [any
+                (let ([inner-args/body 
+                       #`((args ... keyword-formal-parameters ... . rest-arg)
+                          #,(if (null? (syntax-e #'(dom-kwd ...)))
+                                #'(apply val (dom-x args) ... (rst-x rest-arg))
+                                #'(keyword-apply val
+                                                 '(dom-kwd ...) 
+                                                 (list (dom-kwd-ctc-id dom-kwd-arg) ...)
+                                                 (dom-x args) ...
+                                                 (rst-x rest-arg))))])
+                  (with-syntax ([inner-lambda (with-syntax ([(args body) inner-args/body])
+                                                (add-name-prop
+                                                 (syntax-local-infer-name stx)
+                                                 (syntax (lambda args body))))])
+                    (with-syntax ([outer-lambda 
+                                   (syntax
+                                    (lambda (chk dom-x ... rst-x ignored dom-kwd-ctc-id ...)
+                                      (lambda (val)
+                                        (chk val)
+                                        inner-lambda)))])
+                      (values (syntax (build--> '->*
+                                                (list doms ...)
+                                                rst
+                                                (list any/c)
+                                                (list dom-kwd-ctc ...)
+                                                '(dom-kwd ...)
+                                                #t
+                                                outer-lambda))
+                              inner-args/body
+                              (syntax (dom-x ... rst-x))))))])))))]))
 
 (define-syntax (->* stx) 
   (let-values ([(stx _1 _2) (->*/proc/main stx)])
