@@ -10,7 +10,8 @@
         (namespace-require '(for-syntax scheme/base))
         (namespace-require '(for-template scheme/base))
         (namespace-require 'scheme/contract)
-        (namespace-require 'scheme/class))
+        (namespace-require 'scheme/class)
+        (namespace-require 'scheme/promise))
       n))
   
   (define (contract-eval x)

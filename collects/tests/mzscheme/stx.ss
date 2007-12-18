@@ -444,7 +444,7 @@
         b)))
 
 (test '('#%kernel case-lambda scheme/init case-lambda #f)  identifier-binding* #'case-lambda)
-(test '("more-scheme.ss" delay scheme/init delay #f)  identifier-binding* #'delay)
+(test '(scheme/promise delay scheme/init delay #f)  identifier-binding* #'delay)
 (test '('#%kernel #%module-begin scheme/init #%plain-module-begin #f)  identifier-binding* #'#%plain-module-begin)
 (require (only-in scheme/base [#%plain-module-begin #%pmb]))
 (test '('#%kernel #%module-begin scheme/base #%plain-module-begin #f)  identifier-binding* #'#%pmb)

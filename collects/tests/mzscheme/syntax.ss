@@ -1,6 +1,8 @@
 
 (load-relative "loadtest.ss")
 
+(Section 'syntax)
+
 ;; ----------------------------------------
 
 (test 0 'with-handlers (with-handlers () 0))
@@ -519,8 +521,6 @@
 		       (with-handlers () ,@body)))
 	 (teval `(test ,val 'with-handlers-begin
 		       (with-handlers ([void void]) ,@body)))
-	 (teval `(test ,val 'fluid-let-begin (fluid-let () ,@body)))
-	 (teval `(test ,val 'fluid-let-begin (fluid-let ([x 20]) ,@body)))
 	 (syntax-test (datum->syntax #f `(when (positive? 1) ,@body) #f))
 	 (syntax-test (datum->syntax #f `(unless (positive? -1) ,@body) #f))
 	 (syntax-test (datum->syntax #f `(cond [(positive? 1) ,@body][else #f]) #f))
@@ -897,32 +897,6 @@
 (define x 1)
 (define y -1)
 (define (get-x) x)
-(test 5 'fluid-let (fluid-let () 5))
-(test 2 'fluid-let (fluid-let ([x 2]) x))
-(test 0 'fluid-let (fluid-let ([x 2][y -2]) (+ x y)))
-(test 20 'fluid-let (fluid-let ([x 20]) (get-x)))
-(test 1 'fluid-let-done x)
-(error-test #'(fluid-let ([x 10]) (error 'bad)) exn:fail?)
-(test 1 'fluid-let-done-escape x)
-(test 3 'fluid-let (let* ([x 0][y (lambda () x)]) (fluid-let ([x 3]) (y))))
-(test 0 'fluid-let (let* ([x 0][y (lambda () x)]) (fluid-let ([x 3]) (y)) (y)))
-(test-values '(34 56) (lambda () (fluid-let ([x 34][y 56]) (values x y))))
-(test 'second 'fluid-let (fluid-let ([x 2][y -2]) (+ x y) 'second))
-
-(error-test #'(fluid-let ([undefined-variable 0]) 8) exn:fail:contract:variable?)
-
-(syntax-test #'fluid-let)
-(syntax-test #'(fluid-let))
-(syntax-test #'(fluid-let . 1))
-(syntax-test #'(fluid-let x 9))
-(syntax-test #'(fluid-let 1 9))
-(syntax-test #'(fluid-let (x) 9))
-(syntax-test #'(fluid-let ([x]) 9))
-(syntax-test #'(fluid-let ([x . 5]) 9))
-(syntax-test #'(fluid-let ([x 5] . y) 9))
-(syntax-test #'(fluid-let ([x 5] [y]) 9))
-(syntax-test #'(fluid-let ([x 5]) . 9))
-(syntax-test #'(fluid-let ([x 5]) 9 . 10))
 
 (test 5 'parameterize (parameterize () 5))
 (test 6 'parameterize (parameterize ([error-print-width 10]) 6))

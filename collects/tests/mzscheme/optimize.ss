@@ -357,8 +357,6 @@
 	   '(f 5))
 (test-comp '(parameterize () (f 5))
 	   '(f 5))
-(test-comp '(fluid-let () (f 5))
-	   '(f 5))
 
 (test-comp '(let ([i (cons 0 1)]) (let ([j i]) j))
 	   '(let ([i (cons 0 1)]) i))
