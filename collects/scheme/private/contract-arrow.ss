@@ -109,6 +109,8 @@ Add both optional and mandatory keywords to opt-> and friends.
    (name-prop (λ (ctc) (single-arrow-name-maker 
                         (->-doms ctc)
                         (->-dom-rest ctc)
+                        (->-kwds ctc)
+                        (->-quoted-kwds ctc)
                         (->-rng-any? ctc)
                         (->-rngs ctc))))
    (first-order-prop
@@ -136,12 +138,12 @@ Add both optional and mandatory keywords to opt-> and friends.
                    (->-rngs this) 
                    (->-rngs that)))))))
 
-(define (single-arrow-name-maker doms/c doms-rest rng-any? rngs)
+(define (single-arrow-name-maker doms/c doms-rest kwds/c kwds rng-any? rngs)
   (cond
     [doms-rest
      (build-compound-type-name 
       '->*
-      (apply build-compound-type-name doms/c)
+      (apply build-compound-type-name (append doms/c (apply append (map list kwds kwds/c))))
       doms-rest
       (cond
         [rng-any? 'any]
@@ -153,7 +155,11 @@ Add both optional and mandatory keywords to opt-> and friends.
               [(null? rngs) '(values)]
               [(null? (cdr rngs)) (car rngs)]
               [else (apply build-compound-type-name 'values rngs)])])
-       (apply build-compound-type-name '-> (append doms/c (list rng-name))))]))
+       (apply build-compound-type-name 
+              '->
+              (append doms/c
+                      (apply append (map list kwds kwds/c))
+                      (list rng-name))))]))
 
 (define-for-syntax (sort-keywords stx kwd/ctc-pairs)
   (define (insert x lst)

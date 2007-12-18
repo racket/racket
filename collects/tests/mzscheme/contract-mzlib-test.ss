@@ -1,3 +1,11 @@
+#|
+
+This file started out as a copy of contract-test.ss.
+Its purpose is to try to ensure that the mzlib version
+of the contract library does not change over time.
+
+|#
+
 (load-relative "loadtest.ss")
 (Section 'contract)
 
@@ -7,10 +15,10 @@
   (define contract-namespace 
     (let ([n (make-base-namespace)])
       (parameterize ([current-namespace n])
-        (namespace-require '(for-syntax scheme/base))
-        (namespace-require '(for-template scheme/base))
-        (namespace-require 'scheme/contract)
-        (namespace-require 'scheme/class))
+        (namespace-require '(for-syntax mzscheme))
+        (namespace-require '(for-template mzscheme))
+        (namespace-require 'mzlib/contract)
+        (namespace-require 'mzlib/class))
       n))
   
   (define (contract-eval x)
@@ -394,82 +402,6 @@
               'pos
               'neg))
   
-  (test/pos-blame
-   'contract-arrow-star-keyword1
-   '(contract (->* (integer?) (listof integer?) (integer?))
-              (λ (x #:y y . args) x)
-              'pos
-              'neg))
-  
-  (test/pos-blame
-   'contract-arrow-star-keyword2
-   '(contract (->* (integer?) (listof integer?) any)
-              (λ (x #:y y . args) x)
-              'pos
-              'neg))
-  
-  (test/spec-passed
-   'contract-arrow-star-keyword3
-   '(contract (->* (integer? #:y integer?) (listof integer?) (integer? integer?))
-              (λ (x #:y y . args) x)
-              'pos
-              'neg))
-  
-  (test/spec-passed
-   'contract-arrow-star-keyword4
-   '(contract (->* (integer? #:y integer?) (listof integer?) any)
-              (λ (x #:y y . args) x)
-              'pos
-              'neg))
-  
-  (test/neg-blame
-   'contract-arrow-star-keyword5
-   '((contract (->* (integer? #:y integer?) (listof integer?) (integer? integer?))
-               (λ (x #:y y . args) x)
-               'pos
-               'neg)
-     1 #:y #t))
-  
-  (test/neg-blame
-   'contract-arrow-star-keyword6
-   '((contract (->* (integer? #:y integer?) (listof integer?) any)
-               (λ (x #:y y . args) x)
-               'pos
-               'neg)
-     1 #:y #t))
-  
-  (test/neg-blame
-   'contract-arrow-star-keyword7
-   '((contract (->* (integer? #:y integer?) (listof integer?) (integer? integer?))
-               (λ (x #:y y . args) x)
-               'pos
-               'neg)
-     #t #:y 1))
-  
-  (test/neg-blame
-   'contract-arrow-star-keyword8
-   '((contract (->* (integer? #:y integer?) (listof integer?) any)
-               (λ (x #:y y . args) x)
-               'pos
-               'neg)
-     #t #:y 1))
-  
-  (test/spec-passed
-   'contract-arrow-star-keyword9
-   '((contract (->* (integer? #:y integer?) (listof integer?) (integer? integer?))
-               (λ (x #:y y . args) (values x x))
-               'pos
-               'neg)
-     2 #:y 1))
-  
-  (test/spec-passed
-   'contract-arrow-star-keyword10
-   '((contract (->* (integer? #:y integer?) (listof integer?) any)
-               (λ (x #:y y . args) (values x x))
-               'pos
-               'neg)
-     2 #:y 1))
-  
   (test/spec-passed
    'contract-arrow-values1
    '(let-values ([(a b) ((contract (-> integer? (values integer? integer?))
@@ -503,154 +435,6 @@
                'neg)
      1))
 
-  (test/pos-blame
-   'contract-arrow-keyword1
-   '(contract (-> integer? any)
-              (λ (x #:y y) x)
-              'pos
-              'neg))
-  
-  (test/pos-blame
-   'contract-arrow-keyword1b
-   '(contract (-> integer? #:y integer? any)
-              (λ (x) x)
-              'pos
-              'neg))
-  
-  (test/spec-passed
-   'contract-arrow-keyword2
-   '(contract (-> integer? #:y boolean? any)
-              (λ (x #:y y) x)
-              'pos
-              'neg))
-  
-  (test/spec-passed
-   'contract-arrow-keyword2b
-   '(contract (-> #:x boolean? #:y boolean? any)
-              (λ (#:x x #:y y) x)
-              'pos
-              'neg))
-  
-  (test/spec-passed
-   'contract-arrow-keyword2c
-   '(contract (-> #:y boolean? #:x boolean? any)
-              (λ (#:x x #:y y) x)
-              'pos
-              'neg))
-  
-  (test/spec-passed
-   'contract-arrow-keyword2d
-   '(contract (-> #:y boolean? #:x boolean? any)
-              (λ (#:y y #:x x) x)
-              'pos
-              'neg))
-  
-  (test/spec-passed
-   'contract-arrow-keyword2e
-   '(contract (-> #:x boolean? #:y boolean?  any)
-              (λ (#:y y #:x x) x)
-              'pos
-              'neg))
-  
-  (test/neg-blame
-   'contract-arrow-keyword3
-   '((contract (-> integer? #:y boolean? any)
-               (λ (x #:y y) x)
-               'pos
-               'neg)
-     1 #:y 1))
-  
-  (test/neg-blame
-   'contract-arrow-keyword4
-   '((contract (-> integer? #:y boolean? any)
-               (λ (x #:y y) x)
-               'pos
-               'neg)
-     #t #:y #t))
-  
-  (test/spec-passed
-   'contract-arrow-keyword5
-   '((contract (-> integer? #:y boolean? any)
-               (λ (x #:y y) x)
-               'pos
-               'neg)
-     1 #:y #t))
-  
-  (test/pos-blame
-   'contract-arrow-keyword6
-   '(contract (-> integer? integer?)
-              (λ (x #:y y) x)
-              'pos
-              'neg))
-  
-  (test/spec-passed
-   'contract-arrow-keyword7
-   '(contract (-> integer? #:y boolean? integer?)
-              (λ (x #:y y) x)
-              'pos
-              'neg))
-  
-  (test/neg-blame
-   'contract-arrow-keyword8
-   '((contract (-> integer? #:y boolean? integer?)
-               (λ (x #:y y) x)
-               'pos
-               'neg)
-     1 #:y 1))
-  
-  (test/neg-blame
-   'contract-arrow-keyword9
-   '((contract (-> integer? #:y boolean? integer?)
-               (λ (x #:y y) x)
-               'pos
-               'neg)
-     #t #:y #t))
-  
-  (test/spec-passed
-   'contract-arrow-keyword10
-   '((contract (-> integer? #:y boolean? integer?)
-               (λ (x #:y y) x)
-               'pos
-               'neg)
-     1 #:y #t))
-  
-  (test/pos-blame
-   'contract-arrow-keyword11
-   '(contract (-> integer? (values integer? integer?))
-              (λ (x #:y y) x)
-              'pos
-              'neg))
-  
-  (test/spec-passed
-   'contract-arrow-keyword12
-   '(contract (-> integer? #:y boolean? (values integer? integer?))
-              (λ (x #:y y) x)
-              'pos
-              'neg))
-  
-  (test/neg-blame
-   'contract-arrow-keyword13
-   '((contract (-> integer? #:y boolean? (values integer? integer?))
-               (λ (x #:y y) x)
-               'pos
-               'neg)
-     1 #:y 1))
-  
-  (test/neg-blame
-   'contract-arrow-keyword14
-   '((contract (-> integer? #:y boolean? (values integer? integer?))
-               (λ (x #:y y) x)
-               'pos
-               'neg)
-     #t #:y #t))
-  
-  (test/spec-passed
-   'contract-arrow-keyword15
-   '((contract (-> integer? #:y boolean? (values integer? integer?))
-               (λ (x #:y y) (values x x))
-               'pos
-               'neg)
-     1 #:y #t))
 
   (test/pos-blame
    'contract-d1
@@ -1836,7 +1620,7 @@
   (test/spec-passed
    'define/contract7
    '(let ()
-      (eval '(module contract-test-suite-define1 scheme/base
+      (eval '(module contract-test-suite-define1 mzscheme
                (require (lib "contract.ss"))
                (define/contract x string? "a")
                x))
@@ -3443,7 +3227,7 @@
   (test/spec-passed
    'd-c-s-match1
    '(begin
-      (eval '(module d-c-s-match1 scheme/base
+      (eval '(module d-c-s-match1 mzscheme
                (require (lib "contract.ss")
                         (lib "match.ss"))
                
@@ -3457,7 +3241,7 @@
   (test/spec-passed/result
    'd-c-s-match2
    '(begin
-      (eval '(module d-c-s-match2 scheme/base
+      (eval '(module d-c-s-match2 mzscheme
                (require (lib "contract.ss")
                         (lib "match.ss"))
                
@@ -3476,7 +3260,7 @@
   
   (test/pos-blame 'd-c-s1
                   '(begin
-                     (eval '(module d-c-s1 scheme/base
+                     (eval '(module d-c-s1 mzscheme
                               (require (lib "contract.ss"))
                               (define-contract-struct couple (hd tl))
                               (contract (couple/c any/c any/c) 1 'pos 'neg)))
@@ -4258,7 +4042,7 @@ so that propagation occurs.
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (contract-eval 
-   '(module contract-test-suite-inferred-name1 scheme/base
+   '(module contract-test-suite-inferred-name1 mzscheme
       (require (lib "contract.ss"))
       (define contract-inferred-name-test-contract (-> integer? any))
       (define (contract-inferred-name-test x) #t)
@@ -4315,10 +4099,8 @@ so that propagation occurs.
   (test-name '(-> integer? (values boolean? char?)) (-> integer? (values boolean? char?)))
   (test-name '(-> integer? boolean? (values char? any/c)) (->* (integer? boolean?) (char? any/c)))
   (test-name '(-> integer? boolean? any) (->* (integer? boolean?) any))
-  (test-name '(-> integer? boolean? #:x string? any) (-> integer? #:x string? boolean? any))
   (test-name '(->* (integer?) boolean? (char? any/c)) (->* (integer?) boolean? (char? any/c)))
   (test-name '(->* (integer? char?) boolean? any) (->* (integer? char?) boolean? any))
-  (test-name '(->* (integer? char? #:z string? ) boolean? any) (->* (#:z string? integer? char?) boolean? any))
   (test-name '(->d integer? boolean? ...) (->d integer? boolean? (lambda (x y) char?)))
   (test-name '(->d* (integer? boolean?) ...) (->d* (integer? boolean?) (lambda (x y) char?)))
   (test-name '(->d* (integer? boolean?) any/c ...) (->d* (integer? boolean?) any/c (lambda (x y . z) char?)))
@@ -4843,7 +4625,7 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract1
    '(let ()
-      (eval '(module contract-test-suite1 scheme/base
+      (eval '(module contract-test-suite1 mzscheme
                 (require (lib "contract.ss"))
                 (define x 1)
                 (provide/contract (x integer?))))
@@ -4853,7 +4635,7 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract2
    '(let ()
-      (eval '(module contract-test-suite2 scheme/base
+      (eval '(module contract-test-suite2 mzscheme
                 (require (lib "contract.ss"))
                 (provide/contract)))
       (eval '(require 'contract-test-suite2))))
@@ -4861,7 +4643,7 @@ so that propagation occurs.
   (test/spec-failed
    'provide/contract3
    '(let ()
-      (eval '(module contract-test-suite3 scheme/base
+      (eval '(module contract-test-suite3 mzscheme
                (require (lib "contract.ss"))
                (define x #f)
                (provide/contract (x integer?))))
@@ -4872,9 +4654,9 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract4
    '(begin
-      (eval '(module contract-test-suite4 scheme/base
+      (eval '(module contract-test-suite4 mzscheme
                (require (lib "contract.ss"))
-               (define-struct s (a) #:mutable)
+               (define-struct s (a))
                (provide/contract (struct s ((a any/c))))))
       (eval '(require 'contract-test-suite4))
       (eval '(list (make-s 1)
@@ -4885,7 +4667,7 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract4-b
    '(begin
-      (eval '(module contract-test-suite4-b scheme/base
+      (eval '(module contract-test-suite4-b mzscheme
                (require (lib "contract.ss"))
                (define-struct s (a))
                (provide/contract (struct s ((a any/c))))))
@@ -4897,9 +4679,9 @@ so that propagation occurs.
   (test/spec-passed/result
    'provide/contract4-c
    '(begin
-      (eval '(module contract-test-suite4-c scheme/base
+      (eval '(module contract-test-suite4-c mzscheme
                (require (lib "contract.ss"))
-               (define-struct s (a b) #:mutable)
+               (define-struct s (a b))
                (provide/contract (struct s ((a any/c) (b any/c))))))
       (eval '(require 'contract-test-suite4-c))
       (eval '(let ([an-s (make-s 1 2)])
@@ -4915,7 +4697,7 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract5
    '(begin
-      (eval '(module contract-test-suite5 scheme/base
+      (eval '(module contract-test-suite5 mzscheme
                (require (lib "contract.ss"))
                (define-struct s (a))
                (define-struct t (a))
@@ -4932,7 +4714,7 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract6
    '(begin
-      (eval '(module contract-test-suite6 scheme/base
+      (eval '(module contract-test-suite6 mzscheme
                (require (lib "contract.ss"))
                (define-struct s (a))
                (provide/contract (struct s ((a any/c))))))
@@ -4942,12 +4724,12 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract6b
    '(begin
-      (eval '(module contract-test-suite6b scheme/base
+      (eval '(module contract-test-suite6b mzscheme
                (require (lib "contract.ss"))
                (define-struct s_ (a))
                (provide/contract (struct s_ ((a any/c))))))
       (eval '(require 'contract-test-suite6b))
-      (eval '(module contract-test-suite6b2 scheme/base
+      (eval '(module contract-test-suite6b2 mzscheme
                (require 'contract-test-suite6b)
                (require (lib "contract.ss"))
                (define-struct (t_ s_) (b))
@@ -4960,7 +4742,7 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract7
    '(begin
-      (eval '(module contract-test-suite7 scheme/base
+      (eval '(module contract-test-suite7 mzscheme
                (require (lib "contract.ss"))
                (define-struct s (a b))
                (define-struct (t s) (c d))
@@ -4978,7 +4760,7 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract8
    '(begin
-      (eval '(module contract-test-suite8 scheme/base
+      (eval '(module contract-test-suite8 mzscheme
                (require (lib "contract.ss"))
                (define-struct i-s (contents))
                (define (w-f-s? x) #t)
@@ -4990,7 +4772,7 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract9
    '(begin
-      (eval '(module contract-test-suite9 scheme/base
+      (eval '(module contract-test-suite9 mzscheme
                (require (lib "contract.ss"))
                (define the-internal-name 1)
                (provide/contract (rename the-internal-name the-external-name integer?))
@@ -5001,11 +4783,11 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract10
    '(begin
-      (eval '(module pc10-m scheme/base
+      (eval '(module pc10-m mzscheme
                (require (lib "contract.ss"))
-               (define-struct s (a b) #:inspector (make-inspector))
+               (define-struct s (a b) (make-inspector))
                (provide/contract (struct s ((a number?) (b number?))))))
-      (eval '(module pc10-n scheme/base
+      (eval '(module pc10-n mzscheme
                (require (lib "struct.ss")
                         'pc10-m)
                (print-struct #t)
@@ -5017,12 +4799,12 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract11
    '(begin
-      (eval '(module pc11-m scheme/base
+      (eval '(module pc11-m mzscheme
                (require (lib "contract.ss"))
                (define x 1)
                (provide/contract [rename x y integer?]
                                  [rename x z integer?])))
-      (eval '(module pc11-n scheme/base
+      (eval '(module pc11-n mzscheme
                (require 'pc11-m)
                (+ y z)))
       (eval '(require 'pc11-n))))
@@ -5032,11 +4814,11 @@ so that propagation occurs.
   (test/spec-failed
    'provide/contract11b
    '(parameterize ([current-namespace (make-namespace)])
-      (eval '(module pc11b-m scheme/base
+      (eval '(module pc11b-m mzscheme
                (require (lib "contract.ss"))
-               (define-struct s (a b) #:inspector (make-inspector))
+               (define-struct s (a b) (make-inspector))
                (provide/contract (struct s ((a number?) (b number?))))))
-      (eval '(module pc11b-n scheme/base
+      (eval '(module pc11b-n mzscheme
                (require (lib "struct.ss")
                         m)
                (print-struct #t)
@@ -5050,8 +4832,8 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract12
    '(begin
-      (eval '(module pc12-m scheme/base
-               (require scheme/contract)
+      (eval '(module pc12-m mzscheme
+               (require mzlib/contract)
                (define-struct (exn2 exn) ())
                (provide/contract (struct (exn2 exn) ((message any/c) (continuation-marks any/c))))))
       (eval '(require 'pc12-m))))
@@ -5059,9 +4841,9 @@ so that propagation occurs.
   (test/spec-passed/result
    'provide/contract13
    '(begin
-      (eval '(module pc13-common-msg-structs scheme/base
-               (require scheme/contract)
-               (define-struct register (name type) #:inspector (make-inspector))
+      (eval '(module pc13-common-msg-structs mzscheme
+               (require mzlib/contract)
+               (define-struct register (name type) (make-inspector))
                (provide/contract (struct register ([name any/c] [type any/c])))))
       
       (eval '(require 'pc13-common-msg-structs))
@@ -5074,8 +4856,8 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract14
    '(begin
-      (eval '(module pc14-test1 scheme/base
-               (require scheme/contract)
+      (eval '(module pc14-test1 mzscheme
+               (require mzlib/contract)
                
                (define-struct type (flags))
                (define-struct (type:ptr type) (type))
@@ -5087,7 +4869,7 @@ so that propagation occurs.
                 (struct (type:ptr type)
                         ([flags (listof string?)] [type type?])))))
 
-      (eval '(module pc14-test2 scheme/base
+      (eval '(module pc14-test2 mzscheme
                (require (lib "plt-match.ss"))
                (require 'pc14-test1)
                (match (make-type:ptr '() (make-type '()))
@@ -5097,8 +4879,8 @@ so that propagation occurs.
   ;; make sure unbound identifier exception is raised.
   (contract-error-test
    #'(begin
-       (eval '(module pos scheme/base
-                (require scheme/contract)
+       (eval '(module pos mzscheme
+                (require mzlib/contract)
                 (provide/contract [i any/c]))))
    exn:fail:syntax?)
   
@@ -5107,8 +4889,8 @@ so that propagation occurs.
   (test/spec-failed
    'provide/contract15
    '(begin
-      (eval '(module pos scheme/base
-               (require scheme/contract)
+      (eval '(module pos mzscheme
+               (require mzlib/contract)
                (define i #f)
                (provide/contract [i integer?])))
       (eval '(require 'pos)))
@@ -5118,8 +4900,8 @@ so that propagation occurs.
   (test/spec-failed
    'provide/contract16
    '(begin
-      (eval '(module neg scheme/base
-               (require scheme/contract)
+      (eval '(module neg mzscheme
+               (require mzlib/contract)
                (define i #f)
                (provide/contract [i integer?])))
       (eval '(require 'neg)))
@@ -5131,11 +4913,11 @@ so that propagation occurs.
   (test/neg-blame
    'provide/contract17
    '(begin
-      (eval '(module pos scheme/base
-               (require scheme/contract)
+      (eval '(module pos mzscheme
+               (require mzlib/contract)
                (define-struct s (a))
                (provide/contract [struct s ((a integer?))])))
-      (eval '(module neg scheme/base
+      (eval '(module neg mzscheme
                (require 'pos)
                (define-struct (t s) ())
                (make-t #f)))
@@ -5144,8 +4926,8 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract18
    '(begin
-      (eval '(module pc18-pos scheme/base
-               (require scheme/contract)
+      (eval '(module pc18-pos mzscheme
+               (require mzlib/contract)
                (define-struct s ())
                (provide/contract [struct s ()])))
       (eval '(require 'pc18-pos))
@@ -5154,25 +4936,25 @@ so that propagation occurs.
   (test/spec-passed/result
    'provide/contract19
    '(begin
-      (eval '(module pc19-a scheme/base
-               (require scheme/contract)
+      (eval '(module pc19-a mzscheme
+               (require mzlib/contract)
                (define-struct a (x))
                (provide/contract [struct a ([x number?])])))
 
-      (eval '(module pc19-b scheme/base
+      (eval '(module pc19-b mzscheme
                (require 'pc19-a
-                        scheme/contract)
+                        mzlib/contract)
                (define-struct (b a) (y))
                (provide/contract [struct (b a) ([x number?] [y number?])])))
 
-      (eval '(module pc19-c scheme/base
+      (eval '(module pc19-c mzscheme
                (require 'pc19-b
-                        scheme/contract)
+                        mzlib/contract)
                
                (define-struct (c b) (z))
                (provide/contract [struct (c b) ([x number?] [y number?] [z number?])])))
 
-      (eval' (module pc19-d scheme/base
+      (eval' (module pc19-d mzscheme
                (require 'pc19-a 'pc19-c)
                (define pc19-ans (a-x (make-c 1 2 3)))
                (provide pc19-ans)))
@@ -5184,8 +4966,8 @@ so that propagation occurs.
   ;; test that unit & contract don't collide over the name `struct'
   (test/spec-passed
    'provide/contract20
-   '(eval '(module tmp scheme/base
-             (require scheme/contract
+   '(eval '(module tmp mzscheme
+             (require mzlib/contract
                       (lib "unit.ss"))
              
              (define-struct s (a b))
@@ -5197,13 +4979,13 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract21
    '(begin
-      (eval '(module provide/contract21a scheme/base
-               (require scheme/contract)
+      (eval '(module provide/contract21a mzscheme
+               (require mzlib/contract)
                (provide/contract [f integer?])
                (define f 1)))
-      (eval '(module provide/contract21b scheme/base
+      (eval '(module provide/contract21b mzscheme
                (require (for-syntax 'provide/contract21a)
-                        (for-syntax scheme/base))
+                        (for-syntax mzscheme))
                (define-syntax (unit-body stx)
                  f f
                  #'1)))))
@@ -5211,13 +4993,13 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract22
    '(begin
-      (eval '(module provide/contract22a scheme/base
-               (require scheme/contract)
+      (eval '(module provide/contract22a mzscheme
+               (require mzlib/contract)
                (provide/contract [make-bound-identifier-mapping integer?])
                (define make-bound-identifier-mapping 1)))
-      (eval '(module provide/contract22b scheme/base
+      (eval '(module provide/contract22b mzscheme
                (require (for-syntax 'provide/contract22a)
-                        (for-syntax scheme/base))
+                        (for-syntax mzscheme))
                
                (define-syntax (unit-body stx)
                  make-bound-identifier-mapping)
@@ -5228,12 +5010,12 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract23
    '(begin
-      (eval '(module provide/contract23a scheme/base
-               (require scheme/contract)
+      (eval '(module provide/contract23a mzscheme
+               (require mzlib/contract)
                (provide/contract [f integer?])
                (define f 3)))
       
-      (eval '(module provide/contract23b scheme/base
+      (eval '(module provide/contract23b mzscheme
                (require 'provide/contract23a)
                (#%expression f)
                f))
@@ -5243,21 +5025,21 @@ so that propagation occurs.
   (test/spec-passed
    'provide/contract24
    '(begin
-      (eval '(module provide/contract24 scheme/base
-               (require (prefix-in c: scheme/contract))
+      (eval '(module provide/contract24 mzscheme
+               (require (prefix c: mzlib/contract))
                (c:case-> (c:-> integer? integer?)
                          (c:-> integer? integer? integer?))))))
   
   ;; tests that contracts pick up the #%app from the context
-  ;; instead of always using the scheme/base #%app.
+  ;; instead of always using the mzscheme #%app.
   (test/spec-passed
    'provide/contract25
    '(begin
-      (eval '(module provide/contract25a scheme/base
-               (require scheme/contract)
+      (eval '(module provide/contract25a mzscheme
+               (require mzlib/contract)
                (provide/contract [seventeen integer?])
                (define seventeen 17)))
-      (eval '(module provide/contract25b scheme/base
+      (eval '(module provide/contract25b mzscheme
                (require 'provide/contract25a)
                (let-syntax ([#%app (syntax-rules ()
                                      [(#%app e ...) (list e ...)])])
@@ -5267,8 +5049,8 @@ so that propagation occurs.
   (test/spec-passed/result
    'provide/contract26
    '(begin
-      (eval '(module provide/contract26 scheme/base
-               (require scheme/contract)
+      (eval '(module provide/contract26 mzscheme
+               (require mzlib/contract)
                (define-struct pc26-s (a))
                (provide/contract (struct pc26-s ((a integer?))))))
       (eval '(require 'provide/contract26))
@@ -5277,8 +5059,8 @@ so that propagation occurs.
 
   (contract-error-test
    #'(begin
-       (eval '(module pce1-bug scheme/base
-                (require scheme/contract)
+       (eval '(module pce1-bug mzscheme
+                (require mzlib/contract)
                 (define the-defined-variable1 'five)
                 (provide/contract [the-defined-variable1 number?])))
        (eval '(require 'pce1-bug)))
@@ -5288,8 +5070,8 @@ so that propagation occurs.
   
   (contract-error-test
    #'(begin
-       (eval '(module pce2-bug scheme/base
-                (require scheme/contract)
+       (eval '(module pce2-bug mzscheme
+                (require mzlib/contract)
                 (define the-defined-variable2 values)
                 (provide/contract [the-defined-variable2 (-> number? any)])))
        (eval '(require 'pce2-bug))
@@ -5300,8 +5082,8 @@ so that propagation occurs.
   
   (contract-error-test
    #'(begin
-       (eval '(module pce3-bug scheme/base
-                (require scheme/contract)
+       (eval '(module pce3-bug mzscheme
+                (require mzlib/contract)
                 (define the-defined-variable3 (λ (x) #f))
                 (provide/contract [the-defined-variable3 (-> any/c number?)])))
        (eval '(require 'pce3-bug))
@@ -5312,8 +5094,8 @@ so that propagation occurs.
   
   (contract-error-test
    #'(begin
-       (eval '(module pce4-bug scheme/base
-                (require scheme/contract)
+       (eval '(module pce4-bug mzscheme
+                (require mzlib/contract)
                 (define the-defined-variable4 (λ (x) #f))
                 (provide/contract [the-defined-variable4 (-> any/c number?)])))
        (eval '(require 'pce4-bug))
@@ -5324,8 +5106,8 @@ so that propagation occurs.
 
   (contract-error-test
    #'(begin
-       (eval '(module pce5-bug scheme/base
-                (require scheme/contract)
+       (eval '(module pce5-bug mzscheme
+                (require mzlib/contract)
                 
                 (define-struct bad (a b))
                 
@@ -5338,8 +5120,8 @@ so that propagation occurs.
   
   (contract-error-test
    #'(begin
-       (eval '(module pce6-bug scheme/base
-                (require scheme/contract)
+       (eval '(module pce6-bug mzscheme
+                (require mzlib/contract)
                 
                 (define-struct bad-parent (a))
                 (define-struct (bad bad-parent) (b))

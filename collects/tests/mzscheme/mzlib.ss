@@ -38,7 +38,9 @@
 
 ;; (load-relative "package.ss")
 
-(load-relative "contract-test.ss")
+(load-relative "contract-test.ss") ;; tests scheme/contract
+
+(load-relative "contract-mzlib-test.ss") ;; tests mzlib/contract
 
 (load-relative "match-test.ss")
 
