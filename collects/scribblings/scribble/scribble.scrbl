@@ -6,8 +6,8 @@
 @title[#:tag-prefix '(lib "scribblings/scribble/scribble.scrbl") 
        #:tag "top"]{@bold{Scribble}: PLT Documentation Tool}
 
-The @filepath{scribble} collection provides libraries that can be used to
-create documents from Scheme.
+Scribble is a collection of tools for creating prose documents,
+especially those that document libraries.
 
 @table-of-contents[]
 

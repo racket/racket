@@ -3,7 +3,8 @@
           "utils.ss"
           (for-label scribble/xref
                      scribble/base-render
-                     scribble/html-render))
+                     scribble/html-render
+                     setup/xref))
 
 @title[#:tag "xref"]{Cross-Reference Utilities}
 
@@ -30,7 +31,10 @@ serialize-info].
 
 Since the format of serialized information is specific to a rendering
 class, the optional @scheme[using-render%] argument accepts the
-relevant class. It default to HTML rendering.}
+relevant class. It default to HTML rendering.
+
+Use @scheme[load-collections-xref] from @schememodname[setup/xref] to
+get all cross-reference information for installed documentation.}
 
 
 @defproc[(xref-binding->definition-tag [xref xref?]

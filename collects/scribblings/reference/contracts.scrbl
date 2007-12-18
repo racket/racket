@@ -472,7 +472,8 @@ If @scheme[pre-expr] evaluates to @scheme[#f], the caller is blamed.
 If @scheme[post-expr] evaluates to @scheme[#f], the function itself is
 blamed.}
 
-@defform*[[(->pp-rest ([id expr] ...) id expr pre-expr res-expr res-id post-expr)
+@defform*[[(->pp-rest ([id expr] ...) id expr pre-expr
+                      res-expr res-id post-expr)
            (->pp-rest ([id expr] ...) id expr pre-expr any)
            (->pp-rest ([id expr] ...) id expr pre-expr 
                       (values [id expr] ...) post-expr)]]{
