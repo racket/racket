@@ -315,15 +315,11 @@ error.}
 A @deftech{function contract} wraps a procedure to delay
 checks for its arguments and results.
 
-@deftogether[(
-@defform[#:literals (any values)
-         (-> dom-exprs ... res-expr)]
-@defform[#:literals (any values)
-         (-> dom-exprs ... (values res-expr ...))]
-@defform/subs[#:literals (any values)
-              (-> dom-exprs ... any)
-              ([dom-exprs expr (code:line keyword expr)])]
-)]{
+@defform*/subs[#:literals (any values)
+               [(-> dom ... res-expr)
+                (-> dom ... (values res-expr ...))
+                (-> dom ... any)]
+               ([dom dom-expr (code:line keyword dom-expr)])]{
 
 Produces a contract for a function that accepts a fixed
 number of arguments and returns either a fixed number of
@@ -348,26 +344,24 @@ produces a contract on functions of two arguments. The first argument
 must be an integer, and the second argument must be a boolean. The
 function must produce an integer.
 
-The domain specification may contain be keywords. If so, the
-functions must accept the same (mandatory) keyword arguments
-and those keyword arguments must match the contracts that
-follow them. For example:
+A domain specification may include a keyword. If so, the function must
+accept corresponding (mandatory) keyword arguments, and the values for
+the keyword arguments must match the corresponding contracts. For
+example:
 
 @schemeblock[(integer? #:x boolean? . -> . integer?)]
 
-is a contract on a function that accepts a single, integer
-ordinary argument and the keyword argument @scheme[#:x]
-whose values must be booleans.
+is a contract on a function that accepts a by-position argument that
+is an integer and a @scheme[#:x] argument is that a boolean.
 
-If @scheme[any] is used as the last argument to @scheme[->], no
+If @scheme[any] is used as the last sub-form for @scheme[->], no
 contract checking is performed on the result of the function, and
 tail-recursion is preserved. Note that the function may return
 multiple values in that case.
 
-If @scheme[(values res-expr ...)] is used as the last
-argument to @scheme[->], the result must have single value
-for each contract and the values must match their respective
-contracts.}
+If @scheme[(values res-expr ...)] is used as the last sub-form of
+@scheme[->], the function must produce a result for each contract, and
+each values must match its respective contract.}
 
 @defform*[#:literals (any)
           [(->* (expr ...) (res-expr ...))

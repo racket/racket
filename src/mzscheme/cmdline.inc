@@ -467,7 +467,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
   int alternate_rep = 0;
   int no_front = 0;
 #endif
-  int no_lib_path = 0;
   int no_compiled = 0;
   int init_ns = 0, no_init_ns = 0;
   FinishArgs *fa;
@@ -671,8 +670,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-m";
     else if (!strcmp("--name", argv[0]))
       argv[0] = "-N";
-    else if (!strcmp("--no-lib-path", argv[0]))
-      argv[0] = "-x";
     else if (!strcmp("--no-compiled", argv[0]))
       argv[0] = "-c";
     else if (!strcmp("--no-lib", argv[0]))
@@ -755,15 +752,13 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  collects_extra = scheme_make_pair(scheme_make_path(argv[0]),
 					    collects_extra);
 	  break;
-	case 'x':
-	  no_lib_path = 1;
-	  break;
         case 'c':
           no_compiled = 1;
           break;
 	case 'm':
           evals_and_loads[num_enl] = "";
           eval_kind[num_enl++] = mzcmd_MAIN;
+          init_ns = 1;
 	  break;
 	case 'r':
 	  script_mode = 1;
@@ -979,7 +974,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 
 #ifndef NO_FILE_SYSTEM_UTILS
   /* Setup path for "collects" collection directory: */
-  if (!no_lib_path) {
+  {
     Scheme_Object *l, *r;
     int len, offset;
 
@@ -1091,7 +1086,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -X <dir>, --collects <dir> : Main collects at <dir> relative to " PROGRAM "\n"
 	 "  -S <dir>, --search <dir> : More collects at <dir> relative to " PROGRAM "\n"
 	 "  -U, --no-user-path : Ignore user-specific collects, etc.\n"
-         "  -x, --no-lib-path : Skip trying to set current-library-collection-paths\n"
 	 "  -N <file>, --name <file> : Sets `(find-system-path 'run-file)' to <file>\n"
 # ifdef MZ_USE_JIT
 	 "  -j, --no-jit : Disable the just-in-time compiler\n"

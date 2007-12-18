@@ -41,7 +41,6 @@ where @schememodname[scheme] includes all of
 
 This chapter provides some temporary hyper-link targets.
 
-@subsection[#:tag "running-sa"]{Running MzScheme}
 @subsection[#:tag "async-channel"]{Asynchronous Channels}
 @subsection[#:tag "honu"]{Honu}
 

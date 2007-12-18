@@ -232,7 +232,7 @@
   (provide image onscreen menuitem defterm
            schemefont schemevalfont schemeresultfont schemeidfont schemevarfont 
            schemeparenfont schemekeywordfont schememetafont schememodfont
-           filepath exec envvar Flag DFlag
+           filepath exec envvar Flag DFlag PFlag DPFlag
            indexed-file indexed-envvar
            link procedure
            idefterm)
@@ -284,6 +284,10 @@
     (make-element 'no-break (list (make-element 'tt (cons "-" (decode-content str))))))
   (define (DFlag . str)
     (make-element 'no-break (list (make-element 'tt (cons "--" (decode-content str))))))
+  (define (PFlag . str)
+    (make-element 'no-break (list (make-element 'tt (cons "+" (decode-content str))))))
+  (define (DPFlag . str)
+    (make-element 'no-break (list (make-element 'tt (cons "++" (decode-content str))))))
   (define (envvar . str)
     (make-element 'tt (decode-content str)))
   (define (indexed-envvar . str)

@@ -63,7 +63,8 @@ is initialized in @exec{mzscheme} to the result of
 @scheme[(find-library-collection-paths)].
 
 
-@defproc[(find-library-collection-paths) (listof path?)]{
+@defproc[(find-library-collection-paths [extras (listof path-string?) null]) 
+         (listof path?)]{
 
 Produces a list of paths as follows:
 
@@ -74,10 +75,8 @@ Produces a list of paths as follows:
   default collection path list, unless the value of the
   @scheme[use-user-specific-search-paths] parameter is @scheme[#f].}
 
- @item{If the executable embeds a list of search paths, they are
-  included (in order) after the first element in the default
-  collection path list. Embedded relative paths are included only when
-  the corresponding directory exists relative to the executable.}
+ @item{Extra directories provided in @scheme[extras] are included next,
+  converted to complete paths relative to the executable.}
 
  @item{If the directory specified by @scheme[(find-system-path
     'collects-dir)] is absolute, or if it is relative (to the

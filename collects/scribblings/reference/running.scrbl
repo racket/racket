@@ -5,6 +5,7 @@
 
 @local-table-of-contents[]
 
+@include-section["startup.scrbl"]
 @include-section["collects.scrbl"]
-@include-section["init.scrbl"]
 @include-section["help.scrbl"]
+@include-section["init.scrbl"]

@@ -245,7 +245,7 @@ hovers the mouse over one of the bindings defined within the section.}
                          (keyword arg-id contract-expr-datum)
                          (keyword arg-id contract-expr-datum default-expr)])]{
 
-Produces a sequence of flow elements (encaptured in a @scheme[splice])
+Produces a sequence of flow elements (encapsulated in a @scheme[splice])
 to document a procedure named @scheme[id]. The @scheme[id] is indexed,
 and it also registered so that @scheme[scheme]-typeset uses of the
 identifier (with the same for-label binding) are hyperlinked to this
@@ -343,7 +343,13 @@ non-terminals shown with the @scheme[id] form. Each
 @scheme[clause-datum] is preserved.}
 
 
-@defform[(defform/none datum pre-flow ...)]{
+@defform[(defform*/subs maybe-literals [(id . datum) ...]
+           pre-flow ...)]{
+
+Like @scheme[defform/subs], but for multiple forms for @scheme[id].}
+
+
+@defform[(defform/none maybe-literal datum pre-flow ...)]{
 
 Like @scheme[defform], but without registering a definition.}
 
@@ -429,6 +435,16 @@ Like @scheme[defproc], but for a non-procedure binding.}
 
 Similar to @scheme[defform] or @scheme[defproc], but for a structure
 definition.}
+
+
+@defform[(deftogether [def-expr ...] pre-flow ...)]{
+
+Combines the definitions created by the @scheme[def-expr]s into a
+single definition box. Each @scheme[def-expr] should produce a
+definition point via @scheme[defproc], @scheme[defform], etc. Each
+@scheme[def-expr] should have an empty @scheme[pre-flow]; the
+@tech{decode}d @scheme[pre-flow] sequence for the @scheme[deftogether]
+form documents the collected bindings.}
 
 
 @defform/subs[(schemegrammar maybe-literals id clause-datum ...+)
