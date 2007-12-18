@@ -7,6 +7,7 @@
 	   mzlib/list
 	   mzlib/pretty
 	   syntax/docprovide
+           scheme/promise
 	   "posn.ss")
 
   ;; syntax:

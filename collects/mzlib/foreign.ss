@@ -1557,11 +1557,11 @@
 ;; version that uses finalizers, but that leads to calling Scheme from the GC
 ;; which is not a good idea.
 (define killer-executor (make-will-executor))
-(define killer-thread
-  (delay
-    (thread (lambda () (let loop () (will-execute killer-executor) (loop))))))
+(define killer-thread #f)
+
 (define* (register-finalizer obj finalizer)
-  (force killer-thread)
+  (unless killer-thread
+    (set! killer-thread (thread (lambda () (let loop () (will-execute killer-executor) (loop))))))
   (will-register killer-executor obj finalizer))
 
 (define-unsafer unsafe!)

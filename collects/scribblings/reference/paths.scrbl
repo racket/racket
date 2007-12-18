@@ -478,10 +478,20 @@ Returns a path that is the same as @scheme[path], except that the
 suffix for the last element of the path is changed to
 @scheme[suffix]. If the last element of @scheme[path] has no suffix,
 then @scheme[suffix] is added to the path. A suffix is defined as a
-period followed by any number of non-period characters/bytes at the
-end of the path element. The @scheme[path] argument can be a path for
-any platform, and the result is for the same platform. If
+@litchar{.} followed by any number of non-@litchar{.} characters/bytes
+at the end of the path element, as long as the path element is not
+@scheme[".."] or @scheme["."]. The @scheme[path] argument can be a
+path for any platform, and the result is for the same platform. If
 @scheme[path] represents a root, the @exnraise[exn:fail:contract].}
+
+@defproc[(path-add-suffix [path path-string?]
+                          [suffix (or/c string? bytes?)])
+         path?]{
+
+Similar to @scheme[path-replace-suffix], but any existing suffix on
+@scheme[path] is preserved by replacing every @litchar{.} in the last
+path element with @litchar{_}, and then the @scheme[suffix] is added
+to the end.}
 
 @;------------------------------------------------------------------------
 @section{More Path Utilities}

@@ -25,10 +25,10 @@
            stx))
       (datum->syntax stx (cdr (syntax-e stx)) stx stx)))
 
-  (#%provide (all-from-except "more-scheme.ss" old-case)
+  (#%provide (all-from-except "more-scheme.ss" old-case fluid-let)
              (all-from "misc.ss")
              (all-from "define.ss")
-             (all-from-except "letstx-scheme.ss" -define -define-syntax -define-struct)
+             (all-from-except "letstx-scheme.ss" -define -define-syntax -define-struct old-cond)
              (rename new-lambda lambda)
              (rename new-λ λ)
              (rename new-define define)

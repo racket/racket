@@ -223,11 +223,7 @@
                     (get-slot stx (if trans? trans-slot-table slot-table))
                     trans?
                     (and b (list-ref b 4))
-                    (and b
-                         ((if trans?
-                              identifier-transformer-binding-export-position
-                              identifier-binding-export-position)
-                          stx))))))]
+                    #f))))]
 
           [(#%top . id)
            ;; Top-level reference:

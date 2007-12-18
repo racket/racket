@@ -7,6 +7,7 @@
 
 @include-section["values.scrbl"]
 @include-section["exns.scrbl"]
+@include-section["promise.scrbl"]
 @include-section["cont.scrbl"]
 @include-section["cont-marks.scrbl"]
 @include-section["breaks.scrbl"]

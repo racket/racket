@@ -1500,16 +1500,13 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	    case 'a':
 	      honu = 0;
 	      break;
-	    case 'o':
-	      honu = -1;
-	      break;
 	    case 'x':
 	      honu = 1;
 	      break;
 	    default:
 	      if (!params->honu_mode) {
 		scheme_read_err(port, stxsrc, line, col, pos, 2, ch, indentation,
-				"read: expected `a', `u', or `o' after #h");
+				"read: expected `a' or `x' after #h");
 		return NULL;
 	      }
 	      honu = 0;
@@ -1526,33 +1523,15 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	      ReadParams params_copy;
 	      Scheme_Object *v;
 
-	      if (honu == -1) {
-		/* Check for "nu", still */
-		ch = scheme_getc_special_ok(port);
-		if (ch == 'n') {
-		  ch = scheme_getc_special_ok(port);
-		  if (ch == 'u') {
-		    /* Done */
-		  } else
-		    scheme_read_err(port, stxsrc, line, col, pos, 4, ch, indentation,
-				    "read: expected `u' after #hon");
-		} else
-		  scheme_read_err(port, stxsrc, line, col, pos, 3, ch, indentation,
-			      "read: expected `nu' after #ho");
-	      }
-
 	      memcpy(&params_copy, params, sizeof(ReadParams));
 	      params_copy.honu_mode = 1;
 
-	      if (honu == 1) {
-		v = read_inner(port, stxsrc, ht, indentation, &params_copy, 0);
-		if (SCHEME_EOFP(v)) {
-		  scheme_read_err(port, stxsrc, line, col, pos, 2, EOF, indentation,
-				  "read: end-of-file after #hx");
-		  return NULL;
-		}
-	      } else
-		v = read_list(port, stxsrc, line, col, pos, EOF, mz_shape_cons, 0, ht, indentation, &params_copy);
+              v = read_inner(port, stxsrc, ht, indentation, &params_copy, 0);
+              if (SCHEME_EOFP(v)) {
+                scheme_read_err(port, stxsrc, line, col, pos, 2, EOF, indentation,
+                                "read: end-of-file after #hx");
+                return NULL;
+              }
 
 	      return v;
 	    } else {
@@ -2492,9 +2471,6 @@ static const char *dot_name(ReadParams *params)
 }
 
 static Scheme_Object *combine_angle_brackets(Scheme_Object *list);
-static Scheme_Object *honu_add_module_wrapper(Scheme_Object *list,
-					      Scheme_Object *stxsrc,
-					      Scheme_Object *port);
 
 /* "(" (or other opener) has already been read */
 static Scheme_Object *
@@ -2596,9 +2572,6 @@ read_list(Scheme_Object *port,
       list = (stxsrc
 	      ? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 	      : list);
-      if (params->honu_mode && (closer == EOF)) {
-	list = honu_add_module_wrapper(list, stxsrc, port);
-      }
       list = attach_shape_property(list, stxsrc, params, closer);
       return list;
     }
@@ -2893,50 +2866,6 @@ static Scheme_Object *combine_angle_brackets(Scheme_Object *list)
   }
 
   return list;
-}
-
-static Scheme_Object *
-honu_add_module_wrapper(Scheme_Object *list, Scheme_Object *stxsrc, Scheme_Object *port)
-{
-# define cons scheme_make_pair
-  Scheme_Object *v, *name;
-
-  if (stxsrc)
-    name = stxsrc;
-  else
-    name = ((Scheme_Input_Port *)port)->name;
-
-  if (SCHEME_CHAR_STRINGP(name))
-    name = scheme_char_string_to_byte_string_locale(name);
-
-  if (SCHEME_PATHP(name)) {
-    Scheme_Object *base;
-    int isdir, i;
-    name = scheme_split_path(SCHEME_BYTE_STR_VAL(name), SCHEME_BYTE_STRLEN_VAL(name), &base, &isdir,
-                             SCHEME_PLATFORM_PATH_KIND);
-    for (i = SCHEME_BYTE_STRLEN_VAL(name); i--; ) {
-      if (SCHEME_BYTE_STR_VAL(name)[i] == '.')
-	break;
-    }
-    if (i > 0)
-      name = scheme_make_sized_path(SCHEME_BYTE_STR_VAL(name), i, 0);
-    name = scheme_byte_string_to_char_string_locale(name);
-    name = scheme_intern_exact_char_symbol(SCHEME_CHAR_STR_VAL(name), SCHEME_CHAR_STRLEN_VAL(name));
-  } else if (!SCHEME_SYMBOLP(name)) {
-    name = scheme_intern_symbol("unknown");
-  }
-
-  v = cons(scheme_intern_symbol("module"),
-	   cons(name,
-		cons(cons(scheme_intern_symbol("lib"),
-			  cons(scheme_make_utf8_string("honu-module.ss"),
-			       cons(scheme_make_utf8_string("honu-module"),
-				    scheme_null))),
-		     list)));
-# undef cons
-  if (stxsrc)
-    v = scheme_datum_to_syntax(v, list, scheme_false, 0, 0);
-  return v;
 }
 
 static Scheme_Object *attach_shape_property(Scheme_Object *list, 

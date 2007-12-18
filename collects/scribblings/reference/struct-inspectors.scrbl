@@ -36,6 +36,14 @@ is also controlled by its ancestor inspectors, but no other
 inspectors.}
 
 
+@defproc[(make-sibling-inspector [inspector inspector? (current-inspector)])
+         inspector?]{
+
+Returns a new inspector that is a subinspector of the same inspector
+as @scheme[inspector]. That is, @scheme[inspector] and the result
+inspector control mutually disjoint sets of structure types.}
+
+
 @defparam[current-inspector insp inspector?]{
 
 A parameter that determines the default inspector for newly created

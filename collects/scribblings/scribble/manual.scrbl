@@ -552,35 +552,47 @@ the containing class/interface.}
 @section{Various String Forms}
 
 @defproc[(defterm [pre-content any/c] ...) element?]{Typesets the
-given content as a defined term (e.g., in italic). Consider using
-@scheme[deftech] instead, though, so that uses of @scheme[tech] can
-hyper-link to the definition.}
+@tech{decode}d @scheme[pre-content] as a defined term (e.g., in
+italic). Consider using @scheme[deftech] instead, though, so that uses
+of @scheme[tech] can hyper-link to the definition.}
 
-@defproc[(onscreen [pre-content any/c] ...) element?]{ Typesets the given
-content as a string that appears in a GUI, such as the name of a
-button.}
+@defproc[(onscreen [pre-content any/c] ...) element?]{ Typesets the
+@tech{decode}d @scheme[pre-content] as a string that appears in a GUI,
+such as the name of a button.}
 
 @defproc[(menuitem [menu-name string?] [item-name string?]) element?]{
 Typesets the given combination of a GUI's menu and item name.}
 
-@defproc[(filepath [pre-content any/c] ...) element?]{Typesets the given content
-as a file name (e.g., in typewriter font and in in quotes).}
+@defproc[(filepath [pre-content any/c] ...) element?]{Typesets the
+@tech{decode}d @scheme[pre-content] as a file name (e.g., in
+typewriter font and in in quotes).}
 
-@defproc[(exec [pre-content any/c] ...) element?]{Typesets the given content
-as a command line (e.g., in typewriter font).}
+@defproc[(exec [pre-content any/c] ...) element?]{Typesets the
+@tech{decode}d @scheme[pre-content] as a command line (e.g., in
+typewriter font).}
 
 @defproc[(envvar [pre-content any/c] ...) element?]{Typesets the given
-content as an environment variable (e.g., in typewriter font).}
+@tech{decode}d @scheme[pre-content] as an environment variable (e.g.,
+in typewriter font).}
 
 @defproc[(Flag [pre-content any/c] ...) element?]{Typesets the given
-content as a flag (e.g., in typewriter font with a leading hyphen).}
+@tech{decode}d @scheme[pre-content] as a flag (e.g., in typewriter
+font with a leading @litchar{-}).}
 
 @defproc[(DFlag [pre-content any/c] ...) element?]{Typesets the given
-content a long flag (e.g., in typewriter font with two leading
-hyphens).}
+@tech{decode}d @scheme[pre-content] a long flag (e.g., in typewriter
+font with two leading @litchar{-}s).}
 
-@defproc[(math [pre-content any/c] ...) element?]{The content form of
-@scheme[pre-content] is transformed:
+@defproc[(PFlag [pre-content any/c] ...) element?]{Typesets the given
+@tech{decode}d @scheme[pre-content] as a @litchar{+} flag (e.g., in typewriter
+font with a leading @litchar{+}).}
+
+@defproc[(DPFlag [pre-content any/c] ...) element?]{Typesets the given
+@tech{decode}d @scheme[pre-content] a long @litchar{+} flag (e.g., in
+typewriter font with two leading @litchar{+}s).}
+
+@defproc[(math [pre-content any/c] ...) element?]{The @tech{decode}d
+@scheme[pre-content] is further transformed:
 
  @itemize{
 
@@ -606,19 +618,19 @@ hyperlink label.}
 
 @defproc[(seclink [tag string?] [pre-content any/c] ...) element?]{
 
-The content from @scheme[pre-content] is hyperlinked to the section
+The @tech{decode}d @scheme[pre-content] is hyperlinked to the section
 tagged @scheme[tag].}
 
 
 @defproc[(schemelink [id symbol?] [pre-content any/c] ...) element?]{
 
-The content from @scheme[pre-content] is hyperlinked to the definition
+The @tech{decode}d @scheme[pre-content] is hyperlinked to the definition
 of @scheme[id].}
 
 
 @defproc[(link [url string?] [pre-content any/c] ...) element?]{
 
-The content from @scheme[pre-content] is hyperlinked to @scheme[url].}
+The @tech{decode}d @scheme[pre-content] is hyperlinked to @scheme[url].}
 
 
 @defproc[(elemtag [t tag?] [pre-content any/c] ...) element?]{
@@ -629,17 +641,17 @@ The tag @scheme[t] refers to the content form of
 
 @defproc[(elemref [t tag?] [pre-content any/c] ...) element?]{
 
-The content from @scheme[pre-content] is hyperlinked to @scheme[t],
+The @tech{decode}d @scheme[pre-content] is hyperlinked to @scheme[t],
 which is normally defined using @scheme[elemtag].}
 
 
 @defproc[(deftech [pre-content any/c] ...) element?]{
 
-Produces an element for the content form of @scheme[pre-content], and
+Produces an element for the @tech{decode}d @scheme[pre-content], and
 also defines a term that can be referenced elsewhere using
 @scheme[tech].
 
-The @scheme[content->string] result of the content form of
+The @scheme[content->string] result of the @tech{decode}d
 @scheme[pre-content] is used as a key for references, but normalized
 as follows:
 
@@ -660,7 +672,7 @@ that differ slightly from a defined form. For example, a definition of
 
 @defproc[(tech [pre-content any/c] ...) element?]{
 
-Produces an element for the content form of @scheme[pre-content], and
+Produces an element for the @tech{decode}d @scheme[pre-content], and
 hyperlinks it to the definition of the content as established by
 @scheme[deftech]. The content's string form is normalized in the same
 way as for @scheme[deftech].

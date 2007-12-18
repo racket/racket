@@ -496,6 +496,28 @@ The @scheme[continuation] field can be used by a handler to resume the
 interrupted computation.}
 
 
+@defthing[prop:exn:srclocs struct-type-property?]{
+
+A property that identifiers structure types that provide a list of
+@scheme[srcloc] values. The property is normally attached to structure
+types used to represent exception information.
+
+The property value must be a procedure that accepts a single
+value---the structure type instance from which to extract source
+locations---and returns a list of @scheme[srcloc]s.}
+
+
+@defproc[(exn:srclocs? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] has the @scheme[prop:exn:srclocs]
+property, @scheme[#f] otherwise.}
+
+
+@defproc[(exn:srclocs-accessor [v exn:srclocs?])
+         (exn:srclocs?. -> . (listof srcloc))]{
+
+Returns the @scheme[srcloc]-getting procedure associated with @scheme[v].}
+
 
 @defstruct[srcloc ([source any/c]
                    [line (or/c positive-exact-integer? false/c)]

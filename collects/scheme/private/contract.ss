@@ -17,7 +17,8 @@ improve method arity mismatch contract violation error messages?
 (require (for-syntax scheme/base)
          (for-syntax "contract-opt-guts.ss")
          (for-syntax scheme/struct-info)
-         (for-syntax scheme/list))
+         (for-syntax scheme/list)
+         scheme/promise)
 
 (require "contract-arrow.ss"
          "contract-guts.ss"

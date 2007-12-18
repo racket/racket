@@ -14,6 +14,7 @@
              "private/old-rp.ss"
              "private/old-if.ss"
              "private/old-procs.ss"
+             "promise.ss"
              (only "private/cond.ss" old-cond)
              "tcp.ss"
              "udp.ss"
@@ -33,6 +34,7 @@
              identifier? ;; from "private/stx.ss"
              (all-from "private/qqstx.ss")
              (all-from "private/define.ss")
+             force delay promise?
              (all-from-except '#%kernel #%module-begin #%datum 
                               if make-empty-namespace
                               syntax->datum datum->syntax
@@ -48,6 +50,7 @@
              (rename free-label-identifier=? module-label-identifier=?)
              (rename free-identifier=?* free-identifier=?)
              namespace-transformer-require
+             transcript-on transcript-off
              (rename cleanse-path expand-path)
              (rename if* if)
              make-namespace

@@ -184,7 +184,7 @@ A parameter that controls printing hash tables; defaults to
 @defboolparam[print-honu on?]{
 
 A parameter that controls printing values in an alternate syntax.  See
-@secref["honu"] for more information.}
+@|HonuManual| for more information.}
 
 
 @defproc*[([(port-write-handler [out output-port?]) (any/c output-port? . -> . any)]

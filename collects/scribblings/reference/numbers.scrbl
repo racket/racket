@@ -336,6 +336,21 @@ Returns @scheme[(and (exact-integer? v) (positive? v))].
 @examples[(denominator 5) (denominator 34/8) (denominator 2.3) (denominator +inf.0)]}
 
 
+@defproc[(rationalize [x real?][tolerance real?]) real?]{
+
+Among the real numbers within @scheme[(abs tolerance)] of @scheme[x],
+returns the one corresponding to an exact number whose
+@scheme[denominator] is smallest.  If multiple integers are within
+@scheme[tolerance] of @scheme[x], the one closest to @scheme[0] is
+used.
+
+@examples[
+(rationalize 1/4 1/10)
+(rationalize -1/4 1/10)
+(rationalize 1/4 1/4)
+(rationalize 11/40 1/4)
+]}
+
 @; ----------------------------------------
 @section{Number Comparison}
 

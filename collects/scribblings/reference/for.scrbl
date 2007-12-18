@@ -5,12 +5,13 @@
 
 @guideintro["for"]{iterations and comprehensions}
 
-The PLT Scheme iteration forms are based on SRFI-42
+The @scheme[for] iteration forms are based on SRFI-42
 @cite["SRFI-42"].
+
 
 @section{Iteration and Comprehension Forms}
 
-@defform/subs[(for (for-clause ...) . body)
+@defform/subs[(for (for-clause ...) body ...+)
               ([for-clause [id seq-expr]
                            [(id ...) seq-expr]
                            (code:line #:when guard-expr)])]{
@@ -49,7 +50,7 @@ wrapped as
 
 @schemeblock[
 (when guard-expr
-  (for (for-clause ...) . body))
+  (for (for-clause ...) body ...+))
 ]
 
 using the remaining @scheme[for-clauses].
@@ -68,7 +69,7 @@ using the remaining @scheme[for-clauses].
   (error "doesn't get here"))
 ]}
 
-@defform[(for/list (for-clause ...) . body)]{ Iterates like
+@defform[(for/list (for-clause ...) body ...+)]{ Iterates like
 @scheme[for], but that the last expression of @scheme[body] must
 produce a single value, and the result of the @scheme[for/list]
 expression is a list of the results in order.
@@ -84,7 +85,7 @@ expression is a list of the results in order.
   (error "doesn't get here"))
 ]}
 
-@defform[(for/and (for-clause ...) . body)]{ Iterates like
+@defform[(for/and (for-clause ...) body ...+)]{ Iterates like
 @scheme[for], but when last expression of @scheme[body] produces
 @scheme[#f], then iteration terminates, and the result of the
 @scheme[for/and] expression is @scheme[#f]. If the @scheme[body]
@@ -101,7 +102,7 @@ result from the last evaluation of @scheme[body].
   (error "doesn't get here"))
 ]}
 
-@defform[(for/or (for-clause ...) . body)]{ Iterates like
+@defform[(for/or (for-clause ...) body ...+)]{ Iterates like
 @scheme[for], but when last expression of @scheme[body] produces
 a value other than @scheme[#f], then iteration terminates, and
 the result of the @scheme[for/or] expression is the same
@@ -118,7 +119,17 @@ result of the @scheme[for/or] expression is
   (error "doesn't get here"))
 ]}
 
-@defform[(for/first (for-clause ...) . body)]{ Iterates like
+
+@defform[(for/lists (id ...) (for-clause ...) body ...+)]{
+
+Similar to @scheme[for/list], but the last @scheme[body] expression
+should produce as many values as given @scheme[id]s, and the result is
+as many lists as supplied @scheme[id]s. The @scheme[id]s are bound to
+the lists accumulated so far in the @scheme[for-clause]s and
+@scheme[body]s.}
+
+
+@defform[(for/first (for-clause ...) body ...+)]{ Iterates like
 @scheme[for], but after @scheme[body] is evaluated the first
 time, then the iteration terminates, and the @scheme[for/first]
 result is the (single) result of @scheme[body]. If the
@@ -133,7 +144,7 @@ result is the (single) result of @scheme[body]. If the
   (error "doesn't get here"))
 ]}
 
-@defform[(for/last (for-clause ...) . body)]{ Iterates like
+@defform[(for/last (for-clause ...) body ...+)]{ Iterates like
 @scheme[for], but the @scheme[for/last] result is the (single)
 result of of the last evaluation of @scheme[body]. If the
 @scheme[body] is never evaluated, then the result of the
@@ -166,7 +177,7 @@ accumulator values.
   (values (+ sum i) (cons (sqrt i) rev-roots)))
 ]}
 
-@defform[(for* (for-clause ...) . body)]{
+@defform[(for* (for-clause ...) body ...+)]{
 Like @scheme[for], but with an implicit @scheme[#:when #t] between
 each pair of @scheme[for-clauses], so that all sequence iterations are
 nested.
@@ -177,39 +188,35 @@ nested.
   (display (list i j)))
 ]}
 
-@defform[(for*/list (for-clause ...) . body)]{
-Like @scheme[for/list], but with the implicit nesting of @scheme[for*].
+@deftogether[(
+@defform[(for*/list (for-clause ...) body ...+)]
+@defform[(for*/lists (id ...) (for-clause ...) body ...+)]
+@defform[(for*/and (for-clause ...) body ...+)]
+@defform[(for*/or (for-clause ...) body ...+)]
+@defform[(for*/first (for-clause ...) body ...+)]
+@defform[(for*/last (for-clause ...) body ...+)]
+@defform[(for*/fold ([accum-id init-expr] ...) (for-clause ...) body ...+)]
+)]{
+
+Like @scheme[for/list], etc., but with the implicit nesting of
+@scheme[for*].
+
 @examples[
 (for*/list ([i '(1 2)]
             [j "ab"])
   (list i j))
 ]}
 
-@defform[(for*/and (for-clause ...) . body)]{
-Like @scheme[for/and], but with the implicit nesting of @scheme[for*].}
-
-@defform[(for*/or (for-clause ...) . body)]{
-Like @scheme[for/or], but with the implicit nesting of @scheme[for*].}
-
-@defform[(for*/first (for-clause ...) . body)]{
-Like @scheme[for/first], but with the implicit nesting of @scheme[for*].}
-
-@defform[(for*/last (for-clause ...) . body)]{
-Like @scheme[for/last], but with the implicit nesting of @scheme[for*].}
-
-@defform[(for*/fold ([accum-id init-expr] ...) (for-clause ...) . body)]{
-Like @scheme[for/fold], but with the implicit nesting of @scheme[for*].}
-
 @;------------------------------------------------------------------------
 @section{Deriving New Iteration Forms}
 
 @defform[(for/fold/derived orig-datum
-           ([accum-id init-expr] ...) (for-clause ...) . body)]{
+           ([accum-id init-expr] ...) (for-clause ...) body ...+)]{
 Like @scheme[fold/fold], but the extra @scheme[orig-datum] is used as the source for all syntax errors.
 }
 
 @defform[(for*/fold/derived orig-datum
-           ([accum-id init-expr] ...) (for-clause ...) . body)]{
+           ([accum-id init-expr] ...) (for-clause ...) body ...+)]{
 Like @scheme[fold*/fold], but the extra @scheme[orig-datum] is used as the source for all syntax errors.
 }
 
@@ -273,3 +280,34 @@ context of the @scheme[:do-in] use. The actual @scheme[loop] binding
 and call has additional loop arguments to support iterations in
 parallel with the @scheme[:do-in] form, and the other pieces are
 similarly accompanied by pieces form parallel iterations.}
+
+
+@section{Do Loops}
+
+@defform/subs[(do ([id init-expr step-expr-maybe] ...)
+                  (cont?-expr finish-expr ...)
+                expr ...+)
+              ([step-expr-maybe code:blank
+                                step-expr])]{
+
+Iteratively evaluates the @scheme[expr]s for as long as
+@scheme[cont-expr?] returns @scheme[#t].
+
+To initialize the loop, the @scheme[init-expr]s are evaluated in order
+and bound to the corresponding @scheme[id]s. The @scheme[id]s are
+bound in all expressions within the form other than the
+@scheme[init-expr]s.
+
+After he @scheme[id]s are bound, then @scheme[cont?-expr] is
+evaluated. If it produces a true value, then each @scheme[expr] is
+evaluated for its side-effect. The @scheme[id]s are then updated with
+the values of the @scheme[step-expr]s, where the default
+@scheme[step-expr] for @scheme[id] is just @scheme[id]. Iteration
+continues by evaluating @scheme[cont?-expr].
+
+When @scheme[cont?-expr] produces @scheme[#f], then the
+@scheme[finish-expr]s are evaluated in order, and the last one is
+evaluated in tail position to produce the overall value for the
+@scheme[do] form. If no @scheme[finish-expr] is provided, the value of
+the @scheme[do] form is @|void-const|.}
+

@@ -4,6 +4,7 @@
 	   scheme/path
            scheme/file
 	   scheme/port
+	   scheme/promise
            syntax/moddep
            xml/plist
            setup/dirs

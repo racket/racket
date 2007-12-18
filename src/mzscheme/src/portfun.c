@@ -107,8 +107,6 @@ static Scheme_Object *current_write_directory(int argc, Scheme_Object *argv[]);
 static Scheme_Object *load_on_demand_enabled(int argc, Scheme_Object *argv[]);
 #endif
 static Scheme_Object *default_load (int, Scheme_Object *[]);
-static Scheme_Object *transcript_on(int, Scheme_Object *[]);
-static Scheme_Object *transcript_off(int, Scheme_Object *[]);
 static Scheme_Object *flush_output (int, Scheme_Object *[]);
 static Scheme_Object *open_input_char_string (int, Scheme_Object *[]);
 static Scheme_Object *open_input_byte_string (int, Scheme_Object *[]);
@@ -684,17 +682,6 @@ scheme_init_port_fun(Scheme_Env *env)
 						       MZCONFIG_LOAD_DELAY_ENABLED),
 			     env);
 #endif
-
-  scheme_add_global_constant ("transcript-on",
-			      scheme_make_prim_w_arity(transcript_on,
-						       "transcript-on",
-						       1, 1),
-			      env);
-  scheme_add_global_constant ("transcript-off",
-			      scheme_make_prim_w_arity(transcript_off,
-						       "transcript-off",
-						       0, 0),
-			      env);
 
   scheme_add_global_constant("flush-output",
 			     scheme_make_noncm_prim(flush_output,
@@ -4754,27 +4741,6 @@ Scheme_Object *scheme_load(const char *file)
   scheme_current_thread->error_buf = savebuf;
 
   return val;
-}
-
-static Scheme_Object *
-transcript_on(int argc, Scheme_Object *argv[])
-{
-  if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("transcript-on", SCHEME_PATH_STRING_STR, 0, argc, argv);
-
-  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-		   "transcript-on: not supported");
-
-  return scheme_void;
-}
-
-static Scheme_Object *
-transcript_off(int argc, Scheme_Object *argv[])
-{
-  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-		   "transcript-off: not supported");
-
-  return scheme_void;
 }
 
 static Scheme_Object *

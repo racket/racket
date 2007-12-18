@@ -25,3 +25,4 @@ for synchronization.}
 @include-section["evts.scrbl"]
 @include-section["channels.scrbl"]
 @include-section["semaphores.scrbl"]
+@include-section["async-channels.scrbl"]

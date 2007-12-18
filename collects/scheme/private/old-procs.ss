@@ -8,7 +8,9 @@
 
   (#%provide make-namespace
              free-identifier=?*
-             namespace-transformer-require)
+             namespace-transformer-require
+             transcript-on
+             transcript-off)
 
   (define reflect-var #f)
   
@@ -33,4 +35,9 @@
          (free-identifier=? a b)))
 
   (define (namespace-transformer-require qrs)
-    (namespace-require `(for-syntax ,qrs))))
+    (namespace-require `(for-syntax ,qrs)))
+
+  (define (transcript-on filename)
+    (error 'transcript-on "unsupported"))
+  (define (transcript-off)
+    (error 'transcript-off "unsupported")))

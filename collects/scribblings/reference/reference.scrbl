@@ -37,15 +37,6 @@ where @schememodname[scheme] includes all of
 
 @;------------------------------------------------------------------------
 
-@section{To Do}
-
-This chapter provides some temporary hyper-link targets.
-
-@subsection[#:tag "async-channel"]{Asynchronous Channels}
-@subsection[#:tag "honu"]{Honu}
-
-@;------------------------------------------------------------------------
-
 @(bibliography
 
   (bib-entry #:key "Danvy90"

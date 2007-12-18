@@ -86,26 +86,6 @@
 		     (begin e1 e2 ...)
 		     (begin c ... (doloop step ...))))))))))))
   
-  ;; From Dybvig:
-  (define-syntax delay
-    (lambda (x)
-      (syntax-case x ()
-	((delay exp)
-	 (syntax/loc x (make-promise (lambda () exp)))))))
-  
-  (-define-struct promise (p))
-  
-  (define (force p)
-    (unless (promise? p)
-      (raise-type-error 'force "promise" p))
-    (let ([v (promise-p p)])
-      (if (procedure? v)
-	  (let ([v (call-with-values v list)])
-	    (when (procedure? (promise-p p))
-	      (set-promise-p! p v))
-	    (apply values (promise-p p)))
-	  (apply values v))))
-
   (define-syntax parameterize
     (lambda (stx)
       (syntax-case stx ()
@@ -346,7 +326,7 @@
 	    (printf "cpu time: ~s real time: ~s gc time: ~s~n" cpu user gc)
 	    (apply values v)))])))
 
-  (#%provide case old-case do delay force promise?
+  (#%provide case old-case do
              parameterize parameterize* current-parameterization call-with-parameterization
              parameterize-break current-break-parameterization call-with-break-parameterization
              with-handlers with-handlers* call-with-exception-handler

@@ -49,7 +49,8 @@
       [(_ s) (scheme s)]))
   (provide exnraise Exn)
 
-  (provide refalso moreref Guide guideintro guidesecref)
+  (provide refalso moreref Guide guideintro guidesecref
+           HonuManual)
 
   (define (refalso tag . s)
     (apply margin-note
@@ -73,5 +74,9 @@
                                    (list ".")))))
 
   (define Guide
-    (italic (guidesecref "top"))))
+    (italic (guidesecref "top")))
+
+  (define HonuManual
+    (secref #:doc '(lib "scribblings/honu/honu.scrbl") "top")))
+
 

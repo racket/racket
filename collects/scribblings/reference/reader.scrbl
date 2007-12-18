@@ -138,7 +138,6 @@ on the next character or characters in the input stream as follows:
   @dispatch[@cilitchar["#sx"]]{starts a Scheme expression; see @secref["parse-honu"]}
 
   @dispatch[@litchar["#hx"]]{starts a Honu expression; see @secref["parse-honu"]}
-  @dispatch[@litchar["#honu"]]{starts a Honu module; see @secref["parse-honu"]}
 
   @dispatch[@litchar["#hash"]]{starts a hash table; see @secref["parse-hashtable"]}
 
@@ -758,3 +757,6 @@ By convention, @litchar{#lang} normally appears at the beginning of a
 file, possibly after comment forms, to specify the syntax of a module.
 
 @section[#:tag "parse-honu"]{Honu Parsing}
+
+See @|HonuManual| for information on @litchar{#hx} and
+@litchar{#sx}.

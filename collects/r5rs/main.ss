@@ -1,6 +1,7 @@
 
 (module main scheme/base
-  (require (for-syntax scheme/base))
+  (require (for-syntax scheme/base)
+           (only-in mzscheme transcript-on transcript-off))
 
   (provide (for-syntax syntax-rules ...)
            (rename-out
@@ -62,7 +63,8 @@
            vector? make-vector vector vector-ref vector-set! 
            char? char=? char<? char>? char<=? char>=? 
            char-ci=? char-ci<? char-ci>? char-ci<=? char-ci>=? 
-           char-upcase boolean? eqv? equal? force
+           char-upcase boolean? eqv? equal? 
+           (rename-out [r5rs:force force])
            call-with-values values dynamic-wind
            (rename-out [meval eval])
            scheme-report-environment null-environment interaction-environment)
@@ -419,6 +421,26 @@
       [(_ test then else)
        (if test then else)]))
 
+  ;; Essentially from Dybvig:
+  (define-syntax r5rs:delay
+    (lambda (x)
+      (syntax-case x ()
+	((delay exp)
+	 (syntax/loc x (make-promise (lambda () exp)))))))
+  
+  (define-struct promise (p) #:mutable)
+  
+  (define (r5rs:force p)
+    (unless (promise? p)
+      (raise-type-error 'force "promise" p))
+    (let ([v (promise-p p)])
+      (if (procedure? v)
+	  (let ([v (call-with-values v list)])
+	    (when (procedure? (promise-p p))
+	      (set-promise-p! p v))
+	    (apply values (promise-p p)))
+	  (apply values v))))
+
   (provide unquote unquote-splicing 
 	   (rename-out [r5rs:quote quote]
                        [r5rs:quasiquote quasiquote]
@@ -426,8 +448,9 @@
                        [r5rs:lambda lambda]
                        [r5rs:letrec letrec]
                        [r5rs:define define]
-                       [r5rs:define-syntax define-syntax])
-           let and or cond case delay do
+                       [r5rs:define-syntax define-syntax]
+                       [r5rs:delay delay])
+           let and or cond case do
 	   let* begin set!
 	   let-syntax letrec-syntax
            => else

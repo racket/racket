@@ -68,3 +68,14 @@ so that graph and cycle structure can be represented.
   (write t))
 ]
 }
+
+@defproc[(custom-write? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] has the @scheme[prop:custom-write]
+property, @scheme[#f] otherwise.}
+
+
+@defproc[(custom-write-accessor [v custom-write?])
+         (custom-write? output-port? boolean?. -> . any)]{
+
+Returns the custom-write procedure associated with @scheme[v].}

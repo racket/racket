@@ -469,16 +469,6 @@ void scheme_init_stx(Scheme_Env *env)
 						    1, 1),
 			     env);
 
-  scheme_add_global_constant("identifier-binding-export-position",
-			     scheme_make_noncm_prim(module_binding_pos,
-						    "identifier-binding-export-position",
-						    1, 1),
-			     env);
-  scheme_add_global_constant("identifier-transformer-binding-export-position",
-			     scheme_make_noncm_prim(module_trans_binding_pos,
-						    "identifier-transformer-binding-export-position",
-						    1, 1),
-			     env);
 
   scheme_add_global_constant("syntax-source-module", 
 			     scheme_make_folding_prim(syntax_src_module,
@@ -5990,8 +5980,7 @@ static Scheme_Object *module_label_eq(int argc, Scheme_Object **argv)
   return do_module_eq("free-label-identifier=?", MZ_LABEL_PHASE, argc, argv);
 }
 
-static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **argv, 
-					int dphase, int get_position)
+static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **argv, int dphase)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *a, *m, *nom_mod, *nom_a;
@@ -6014,65 +6003,32 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
   if (!m)
     return scheme_false;
   else if (SAME_OBJ(m, scheme_undefined)) {
-    if (get_position)
-      return scheme_false;
-    else
-      return lexical_symbol;
-  } else {
-    if (get_position) {
-      /* Imported or a "self" variable? */
-      if (SAME_TYPE(SCHEME_TYPE(m), scheme_module_index_type)
-	  && SCHEME_FALSEP(((Scheme_Modidx *)m)->path)
-	  && SCHEME_FALSEP(((Scheme_Modidx *)m)->base)) {
-	/* self */
-	return scheme_false;
-      } else {
-	/* Imported */
-	int pos;
-	
-	m = scheme_module_resolve(m, 0);
-	pos = scheme_module_export_position(m, scheme_get_env(NULL), a);
-	if (pos < 0)
-	  return scheme_false;
-	else
-	  return scheme_make_integer(pos);
-      }
-    } else
-      return CONS(m, CONS(a, CONS(nom_mod, 
-				  CONS(nom_a, 
-				       CONS(mod_phase ? scheme_true : scheme_false, 
-					    scheme_null)))));
-  }
+    return lexical_symbol;
+  } else
+    return CONS(m, CONS(a, CONS(nom_mod, 
+                                CONS(nom_a, 
+                                     CONS(mod_phase ? scheme_true : scheme_false, 
+                                          scheme_null)))));
 }
 
 static Scheme_Object *module_binding(int argc, Scheme_Object **argv)
 {
-  return do_module_binding("identifier-binding", argc, argv, 0, 0);
+  return do_module_binding("identifier-binding", argc, argv, 0);
 }
 
 static Scheme_Object *module_trans_binding(int argc, Scheme_Object **argv)
 {
-  return do_module_binding("identifier-transformer-binding", argc, argv, 1, 0);
+  return do_module_binding("identifier-transformer-binding", argc, argv, 1);
 }
 
 static Scheme_Object *module_templ_binding(int argc, Scheme_Object **argv)
 {
-  return do_module_binding("identifier-template-binding", argc, argv, -1, 0);
+  return do_module_binding("identifier-template-binding", argc, argv, -1);
 }
 
 static Scheme_Object *module_label_binding(int argc, Scheme_Object **argv)
 {
-  return do_module_binding("identifier-label-binding", argc, argv, MZ_LABEL_PHASE, 0);
-}
-
-static Scheme_Object *module_binding_pos(int argc, Scheme_Object **argv)
-{
-  return do_module_binding("identifier-binding-export-position", argc, argv, 0, 1);
-}
-
-static Scheme_Object *module_trans_binding_pos(int argc, Scheme_Object **argv)
-{
-  return do_module_binding("identifier-transformer-binding-export-position", argc, argv, 1, 1);
+  return do_module_binding("identifier-label-binding", argc, argv, MZ_LABEL_PHASE);
 }
 
 static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv)

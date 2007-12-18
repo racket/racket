@@ -284,14 +284,6 @@ void scheme_init_module(Scheme_Env *env)
 			    scheme_make_compiled_syntax(provide_syntax, 
 							provide_expand), 
 			    env);
-  scheme_add_global_keyword("#%provide-for-syntax", 
-			    scheme_make_compiled_syntax(provide_syntax, 
-							provide_expand), 
-			    env);
-  scheme_add_global_keyword("#%provide-for-label", 
-			    scheme_make_compiled_syntax(provide_syntax, 
-							provide_expand), 
-			    env);
 
   REGISTER_SO(quote_symbol);
   REGISTER_SO(file_symbol);
