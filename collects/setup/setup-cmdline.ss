@@ -70,7 +70,13 @@
         (add-flags `((doc-pdf-dest ,dir)))]
        [("-l") =>
         (lambda (flag . collections)
-          (map list collections))
+          (map (lambda (v)
+                 ;; A normal-form collection path matches a symbolic module path;
+                 ;; this is a bit of a hack, but it's not entirely a coincidence:
+                 (unless (module-path? (string->symbol v))
+                   (error (format "bad collection path: ~a" v)))
+                 (list v))
+               collections))
         '("Setup specific <collection>s only" "collection")]
        #:multi
        [("-P") owner package-name maj min
