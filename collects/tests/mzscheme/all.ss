@@ -1,7 +1,8 @@
 
+(load-relative "loadtest.ss")
 (load-relative "mz.ss")
 (load-relative "mzlib.ss")
-(load-relative "boundmap-test.ss")
-(load-relative "net.ss")
-(load-relative "foreign-test.ss")
-(load-relative "uni-norm.ss")
+(load-in-sandbox "boundmap-test.ss")
+(load-in-sandbox "net.ss")
+(load-in-sandbox "foreign-test.ss")
+(load-in-sandbox "uni-norm.ss")

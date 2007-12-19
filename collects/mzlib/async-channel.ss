@@ -76,7 +76,7 @@
 		    [(zero? size)
 		     ;; The queue is currently empty:
 		     (sync enqueue tell-empty)]
-		    [(or (not limit) ((sub1 size) . < . limit))
+		    [(or (not limit) (size . < . limit))
 		     (sync enqueue (mk-dequeue))]
 		    [else
 		     (sync (mk-dequeue) tell-full)])

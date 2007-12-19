@@ -84,8 +84,13 @@ transcript.
                           [(dynamic-require 'scheme/sandbox 'sandbox-output)
                            current-output-port]
                           [(dynamic-require 'scheme/sandbox 'sandbox-error-output)
-                           current-error-port])
+                           current-error-port]
+                          [(dynamic-require 'scheme/sandbox 'sandbox-eval-limits)
+                           #f])
              ((dynamic-require 'scheme/sandbox 'make-evaluator) '(begin) #:requires (list 'scheme)))])
+    (e `(load-relative "testing.ss"))
+    (e `(define real-error-port (quote ,real-error-port)))
+    (e `(define Section-prefix ,Section-prefix))
     (e `(load-relative (quote ,file)))
     (let ([l (e '(list number-of-tests
                        number-of-error-tests

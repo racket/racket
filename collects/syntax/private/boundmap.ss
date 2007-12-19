@@ -33,13 +33,15 @@
                                        (error 'identifier-mapping-get
                                               "no mapping for ~e"
                                               id))])
-              (or (ormap (lambda (i)
-                           (and (identifier=? (car i) id)
-                                (cdr i)))
-                         (hash-table-get (identifier-mapping-ht bi)
-                                         (identifier->symbol id) 
-                                         null))
-                  (fail))))
+              (let ([i (ormap (lambda (i)
+                                (and (identifier=? (car i) id)
+                                     i))
+                              (hash-table-get (identifier-mapping-ht bi)
+                                              (identifier->symbol id) 
+                                              null))])
+                (if i
+                    (cdr i)
+                    (fail)))))
           
           (define identifier-mapping-put!
             (lambda (bi id v)

@@ -25,7 +25,7 @@
       ;; -- set up a timeout
       (thread (lambda ()
                 (sleep 600)
-                (fprintf err "\n\n~aTIMEOUT -- ABORTING!\n" Section-prefix)
+                (fprintf err "\n\n~aTIMEOUT -- ABORTING!\n" (get-section-prefix))
                 (exit 3)
                 ;; in case the above didn't work for some reason
                 (sleep 60)
@@ -42,7 +42,7 @@
    (lambda (thunk)
      (when last-error
        (fprintf real-error-port "~aERROR: ~a\n"
-                Section-prefix
+                (get-section-prefix)
                 (if (exn? last-error) (exn-message last-error) last-error))
        (exit 2))))
   (report-errs #t))

@@ -1255,6 +1255,12 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 # endif
 #endif
 
+#if 0
+  /* Syntax-object debugging support: */
+  if ((c == 1) && SCHEME_STXP(p[0])) {
+    return scheme_explode_syntax(p[0], scheme_make_hash_table(SCHEME_hash_ptr));
+  }
+
   if (c && SAME_TYPE(SCHEME_TYPE(p[0]), scheme_compilation_top_type)) {
     Scheme_Hash_Table *ht;
     Scheme_Compilation_Top *top;
@@ -1302,6 +1308,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 
     return scheme_reverse(lst);
   }
+#endif
 
   scheme_start_atomic();
 

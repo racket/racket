@@ -2,7 +2,7 @@
 
 (load-relative "loadtest.ss")
 
-(require (lib "async-channel.ss"))
+(require scheme/async-channel)
 
 (Section 'async-channel)
 
@@ -66,17 +66,28 @@
     (let ([p (async-channel-put-evt ch2 10)])
       (test p sync/timeout 0 p)))))
 
-;; Limitted channel:
-(let ([ch (make-async-channel 1)])
-  (async-channel-put ch 42)
-  (test 42 async-channel-get ch)
-  (let ([p (async-channel-put-evt ch 10)])
-    (test p sync/timeout #f p)
-    (test #f sync/timeout 0.01 p)
-    (test #f sync/timeout 0 p)
-    (test 10 async-channel-get ch)
-    (test p sync/timeout #f p)))
+;; Limited channel:
+(define (check-limited n)
+  (let ([ch (make-async-channel n)])
+    (async-channel-put ch 42)
+    (test 42 async-channel-get ch)
+    (let ([p (async-channel-put-evt ch 10)])
+      (let loop ([n n])
+        (unless (zero? n)
+          (test p sync/timeout #f p)
+          (loop (sub1 n))))
+      (test #f sync/timeout 0.01 p)
+      (test #f sync/timeout 0 p)
+      (let ([s (make-semaphore)])
+        (thread (lambda () 
+                  (sync (system-idle-evt))
+                  (semaphore-post s)))
+        (test s sync p s))
+      (test 10 async-channel-get ch)
+      (test p sync/timeout #f p))))
 
+(check-limited 1)
+(check-limited 3)
 
 (report-errs)
 

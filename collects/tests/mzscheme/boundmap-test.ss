@@ -20,9 +20,23 @@
                            (syntax x2)
                            (syntax x3)
                            (syntax x4))])])
-    
+
+    (let ([check (lambda (=?)
+                   (test #t =? x1 x2)
+                   (test #t =? x3 x4)
+                   (when (=? x1 x3)
+                     ((current-print) "huh!?"))
+                   (test #f =? x1 x3)
+                   (test #f =? x1 x4)
+                   (test #f =? x2 x3)
+                   (test #f =? x2 x4))])
+      (check bound-identifier=?)
+      (check free-identifier=?))
     
     (let ([mapping (make-bound-identifier-mapping)])
+      (bound-identifier-mapping-put! mapping x1 #f)
+      (test #f bound-identifier-mapping-get mapping x1)
+
       (bound-identifier-mapping-put! mapping x1 1)
       (bound-identifier-mapping-put! mapping x2 2)
       (bound-identifier-mapping-put! mapping x3 3)
@@ -103,6 +117,9 @@
               l)))
     
     (let ([mapping (make-module-identifier-mapping)])
+      (module-identifier-mapping-put! mapping y1 #f)
+      (test #f module-identifier-mapping-get mapping y1)
+
       (module-identifier-mapping-put! mapping y1 1)
       (module-identifier-mapping-put! mapping y2 2)
       (module-identifier-mapping-put! mapping y3 3)

@@ -125,7 +125,7 @@
 	  (with-handlers ([void
 			   (lambda (exn)
 			     (if (regexp-match
-				  (format "unknown switch: ~s" name)
+				  (format "unknown switch: ~a" name)
 				  (exn-message exn))
 				 'yes-it-worked
 				 exn))])

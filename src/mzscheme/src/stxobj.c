@@ -3252,8 +3252,10 @@ int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, long phase)
   a = resolve_env(NULL, a, phase, 1, NULL, NULL);
   b = resolve_env(NULL, b, phase, 1, NULL, NULL);
 
-  a = scheme_module_resolve(a, 0);
-  b = scheme_module_resolve(b, 0);
+  if (SAME_TYPE(SCHEME_TYPE(a), scheme_module_index_type))
+    a = scheme_module_resolve(a, 0);
+  if (SAME_TYPE(SCHEME_TYPE(b), scheme_module_index_type))
+    b = scheme_module_resolve(b, 0);
 
   /* Same binding environment? */
   return SAME_OBJ(a, b);
