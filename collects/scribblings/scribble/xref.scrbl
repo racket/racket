@@ -27,7 +27,8 @@ by @scheme[load-xref], @scheme[#f] otherwise.}
 
 Creates a cross-reference record given a list of functions that each
 produce a serialized information obtained from @xmethod[render%
-serialize-info].
+serialize-info]. If a @scheme[sources] element produces @scheme[#f],
+its result is ignored.
 
 Since the format of serialized information is specific to a rendering
 class, the optional @scheme[using-render%] argument accepts the

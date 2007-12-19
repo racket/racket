@@ -40,7 +40,9 @@
          [ci (send renderer collect null null)])
     (for-each (lambda (src)
                 (parameterize ([current-namespace (namespace-anchor->empty-namespace here)])
-                  (send renderer deserialize-info (src) ci)))
+                  (let ([v (src)])
+                    (when v
+                      (send renderer deserialize-info v ci)))))
               sources)
     (make-xrefs renderer (send renderer resolve null null ci))))
 

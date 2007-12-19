@@ -401,12 +401,12 @@ first is a timeout value in seconds, and the second is a memory limit
 in megabytes.  Either one can be @scheme[#f] for disabling the
 corresponding limit; alternately, the parameter can be set to
 @scheme[#f] to disable all limits (in case more are available in
-future versions).
+future versions). The default is @scheme[(list 30 20)].
 
 When limits are set, @scheme[call-with-limits] (see below) is wrapped
 around each use of the evaluator, so consuming too much time or memory
-results in an exception.  You can change the limits of a running
-evaluator using @scheme[set-eval-limits].}
+results in an exception.  Change the limits of a running evaluator
+using @scheme[set-eval-limits].}
 
 @; ----------------------------------------------------------------------
 
