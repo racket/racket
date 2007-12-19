@@ -7601,11 +7601,12 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
   if (!SCHEME_PATH_STRINGP(argv[3]))
     scheme_wrong_type("shell-execute", SCHEME_PATH_STRING_STR, 3, c, argv);
   {
+    int show_set = 0;
     show = 0;
 # define mzseCMP(id, str)			       \
     if (SAME_OBJ(scheme_intern_symbol(str), argv[4])   \
-        || SAME_OBJ(scheme_intern_symbol(# id), argv[4])) \
-      show = mzseSHOW(id)
+        || SAME_OBJ(scheme_intern_symbol(# id), argv[4])) { \
+      show = mzseSHOW(id); show_set = 1; }
     mzseCMP(SW_HIDE, "sw_hide");
     mzseCMP(SW_MAXIMIZE, "sw_maximize");
     mzseCMP(SW_MINIMIZE, "sw_minimize");
@@ -7619,7 +7620,7 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
     mzseCMP(SW_SHOWNOACTIVATE, "sw_shownoactivate");
     mzseCMP(SW_SHOWNORMAL, "sw_shownormal");
 
-    if (!show)
+    if (!show_set)
       scheme_wrong_type("shell-execute", "show-mode symbol", 4, c, argv);
   }
 
