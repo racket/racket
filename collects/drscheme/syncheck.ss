@@ -1910,7 +1910,7 @@ If the namespace does not, they are colored the unbound color.
                                    var
                                    id
                                    (get-require-filename req-path user-namespace user-directory)))
-                                (add-mouse-over var (format (string-constant cs-mouse-over-import)
+                                (add-mouse-over var (fw:gui-utils:format-literal-label (string-constant cs-mouse-over-import)
                                                             (syntax-e var)
                                                             req-path))
                                 (connect-syntaxes req-stx var actual?)))
@@ -2115,7 +2115,7 @@ If the namespace does not, they are colored the unbound color.
       (λ (menu)
         (let-values ([(base name dir?) (split-path file)])
           (instantiate menu-item% ()
-            (label (format (string-constant cs-open-file) (path->string name)))
+            (label (fw:gui-utils:format-literal-label (string-constant cs-open-file) (path->string name)))
             (parent menu)
             (callback (λ (x y) (fw:handler:edit-file file))))
           (void))))
@@ -2397,7 +2397,7 @@ If the namespace does not, they are colored the unbound color.
                                   (λ (menu)
                                     (instantiate menu-item% ()
                                       (parent menu)
-                                      (label (format (string-constant cs-view-docs) (exported-index-desc-name (entry-desc index-entry))))
+                                      (label (fw:gui-utils:format-literal-label (string-constant cs-view-docs) (exported-index-desc-name (entry-desc index-entry))))
                                       (callback
                                        (λ (x y)
                                          (send-url (format "file://~a~a"
@@ -2444,7 +2444,7 @@ If the namespace does not, they are colored the unbound color.
                       (λ (menu)
                         (instantiate menu-item% ()
                           (parent menu)
-                          (label (format (string-constant cs-rename-var) name-to-offer))
+                          (label (fw:gui-utils:format-literal-label (string-constant cs-rename-var) name-to-offer))
                           (callback
                            (λ (x y)
                              (let ([frame-parent (find-menu-parent menu)])
@@ -2485,7 +2485,7 @@ If the namespace does not, they are colored the unbound color.
               (λ ()
                 (get-text-from-user
                  (string-constant cs-rename-id)
-                 (format (string-constant cs-rename-var-to) name-to-offer)
+                 (fw:gui-utils:format-literal-label (string-constant cs-rename-var-to) name-to-offer)
                  parent
                  name-to-offer)))])
         (when new-str
@@ -2507,7 +2507,7 @@ If the namespace does not, they are colored the unbound color.
                         (equal?
                          (message-box/custom
                           (string-constant check-syntax)
-                          (format (string-constant cs-name-duplication-error) 
+                          (fw:gui-utils:format-literal-label (string-constant cs-name-duplication-error) 
                                   new-sym)
                           (string-constant cs-rename-anyway)
                           (string-constant cancel)

@@ -11,6 +11,7 @@
       [(_ (name contract docs ...) ...)
        (syntax (provide/contract (name contract) ...))]))
   
+   
   (define (trim-string str size)
     (let ([str-size (string-length str)])
       (cond
@@ -34,6 +35,20 @@
 	       (substring str
 			  (- str-size post-length)
 			  str-size))]))])))
+ 
+  
+  (define maximum-string-label-length 200)
+  
+  ;; format-literal-label: string any* -> string
+  (define (format-literal-label format-str . args)
+    (quote-literal-label (apply format format-str args)))
+    
+  ;; quote-literal-label: string -> string
+  (define (quote-literal-label a-str)
+    (trim-string (regexp-replace* #rx"(&)" a-str "\\1\\1")
+                 maximum-string-label-length))  
+  
+
   
   ;; selected-text-color : color
   (define selected-text-color (send the-color-database find-color "black"))
@@ -264,6 +279,8 @@
   
   ;; manual renaming
   (define gui-utils:trim-string trim-string)
+  (define gui-utils:quote-literal-label quote-literal-label)
+  (define gui-utils:format-literal-label format-literal-label)
   (define gui-utils:next-untitled-name next-untitled-name)
   (define gui-utils:show-busy-cursor show-busy-cursor)
   (define gui-utils:delay-action delay-action)
@@ -292,6 +309,29 @@
     "than \\var{size} by trimming the \\var{str}"
     "and inserting an ellispses into it.")
 
+   (gui-utils:quote-literal-label
+    (string?
+     . ->d .
+     (lambda (str)
+       (and/c string?
+              (lambda (str)
+                ((string-length str) . <= . 200)))))
+    "Constructs a string whose ampersand characters are"
+    "escaped; the label is also trimmed to <= 200"
+    "characters.")
+   
+   (gui-utils:format-literal-label
+    ((string?)
+     (listof any/c)
+     . ->d* .
+     (lambda (str . rest)
+       (and/c string?
+              (lambda (str)
+                ((string-length str) . <= . 200)))))
+    "Formats a string whose ampersand characters are"
+    "escaped; the label is also trimmed to <= 200"
+    "characters.")   
+   
    (gui-utils:cancel-on-right?
     (-> boolean?)
     ()

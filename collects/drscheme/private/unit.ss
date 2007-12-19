@@ -134,14 +134,14 @@ module browser threading seems wrong.
                  (unless (string=? str "")
                    (make-object separator-menu-item% menu)
                    (make-object menu-item%
-                     (format (string-constant search-help-desk-for) 
+                     (gui-utils:format-literal-label (string-constant search-help-desk-for) 
                              (shorten-str 
                               str 
                               (- 200 (string-length (string-constant search-help-desk-for)))))
                      menu
                      (λ x (help-desk:help-desk str #f 'keyword+index 'contains language)))
                    (make-object menu-item%
-                     (format (string-constant exact-lucky-search-help-desk-for) 
+                     (gui-utils:format-literal-label (string-constant exact-lucky-search-help-desk-for) 
                              (shorten-str 
                               str 
                               (- 200 (string-length (string-constant exact-lucky-search-help-desk-for)))))
@@ -756,7 +756,7 @@ module browser threading seems wrong.
                        (new separator-menu-item% (parent menu))
                        (new menu-item%
                             (parent menu)
-                            (label (format (string-constant jump-to-defn) (defn-name defn)))
+                            (label (gui-utils:format-literal-label (string-constant jump-to-defn) (defn-name defn)))
                             (callback (λ (x y)
                                         (send editor set-position (defn-start-pos defn))))))))))))
          (old menu editor event))))
@@ -841,10 +841,8 @@ module browser threading seems wrong.
                               (make-object (if checked?
                                                menu:can-restore-checkable-menu-item%
                                                menu:can-restore-menu-item%)
-                                (regexp-replace*
-                                 #rx"&"
-                                 (gui-utils:trim-string (defn-name defn) 200)
-                                 "&&")
+                                (gui-utils:quote-literal-label (defn-name defn))
+                                
                                 menu
                                 (λ (x y)
                                   (reset)
@@ -1268,7 +1266,7 @@ module browser threading seems wrong.
             (or (null? dir-list)
                 (let ([query (message-box 
                               (string-constant drscheme)
-                              (format (string-constant erase-log-directory-contents) log-directory)
+                              (gui-utils:format-literal-label (string-constant erase-log-directory-contents) log-directory)
                               this
                               '(yes-no))])
                   (cond
@@ -1279,7 +1277,7 @@ module browser threading seems wrong.
                                       (λ (exn)
                                         (message-box 
                                          (string-constant drscheme)
-                                         (format (string-constant error-erasing-log-directory)
+                                         (gui-utils:format-literal-label (string-constant error-erasing-log-directory)
                                                  (if (exn? exn)
                                                      (format "~a" (exn-message exn))
                                                      (format "~s" exn)))
@@ -2884,7 +2882,7 @@ module browser threading seems wrong.
                           mi)
                         (map (λ (name)
                                (new menu:can-restore-menu-item%
-                                    [label (format (string-constant clear-teachpack) name)]
+                                    [label (gui-utils:format-literal-label (string-constant clear-teachpack) name)]
                                     [parent language-menu]
                                     [callback
                                      (λ (item evt)
@@ -2899,7 +2897,7 @@ module browser threading seems wrong.
                            [callback
                             (λ (_1 _2)
                               (message-box (string-constant drscheme)
-                                           (format (string-constant teachpacks-only-in-languages)
+                                           (gui-utils:format-literal-label (string-constant teachpacks-only-in-languages)
                                                    (apply 
                                                     string-append
                                                     (reverse
