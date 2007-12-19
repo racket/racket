@@ -76,6 +76,26 @@ transcript.
 (define number-of-error-tests 0)
 (define number-of-exn-tests 0)
 
+(define (load-in-sandbox file)
+  (let ([e (parameterize ([(dynamic-require 'scheme/sandbox 'sandbox-security-guard)
+                           (current-security-guard)]
+                          [(dynamic-require 'scheme/sandbox 'sandbox-input)
+                           current-input-port]
+                          [(dynamic-require 'scheme/sandbox 'sandbox-output)
+                           current-output-port]
+                          [(dynamic-require 'scheme/sandbox 'sandbox-error-output)
+                           current-error-port])
+             ((dynamic-require 'scheme/sandbox 'make-evaluator) '(begin) #:requires (list 'scheme)))])
+    (e `(load-relative (quote ,file)))
+    (let ([l (e '(list number-of-tests
+                       number-of-error-tests
+                       number-of-exn-tests
+                       errs))])
+      (set! number-of-tests (+ number-of-tests (list-ref l 0)))
+      (set! number-of-error-tests (+ number-of-error-tests (list-ref l 1)))
+      (set! number-of-exn-tests (+ number-of-exn-tests (list-ref l 2)))
+      (set! errs (append (list-ref l 3) errs)))))
+
 (define (test expect fun . args)
   (set! number-of-tests (add1 number-of-tests))
   (printf "~s ==> " (cons fun args))

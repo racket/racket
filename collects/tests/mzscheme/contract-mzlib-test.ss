@@ -18,7 +18,8 @@ of the contract library does not change over time.
         (namespace-require '(for-syntax mzscheme))
         (namespace-require '(for-template mzscheme))
         (namespace-require 'mzlib/contract)
-        (namespace-require 'mzlib/class))
+        (namespace-require 'mzlib/class)
+        (namespace-require '(only mzscheme force delay)))
       n))
   
   (define (contract-eval x)

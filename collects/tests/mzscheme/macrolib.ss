@@ -66,7 +66,7 @@
 (syntax-test #'(let ([define-values 10]) (local ((define-values (x) 4)) 10)))
 (syntax-test #'(let ([define-struct 10]) (local ((define-struct x ())) 10)))
 
-(define else #f) ;; `evcase' needs unbound `else' !!!! <------------------ WARNING
+(define else #t) ;; `evcase' needs unbound `else' !!!! <------------------ WARNING
 
 (for-each syntax-test 
 	  (list #'(evcase)

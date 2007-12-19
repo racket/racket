@@ -65,8 +65,6 @@ static Scheme_Object *module_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_trans_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_templ_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_label_binding(int argc, Scheme_Object **argv);
-static Scheme_Object *module_binding_pos(int argc, Scheme_Object **argv);
-static Scheme_Object *module_trans_binding_pos(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv);
 
 static Scheme_Object *syntax_recertify(int argc, Scheme_Object **argv);

@@ -4,56 +4,52 @@
 
 (load-relative "loadtest.ss")
 
-(load-relative "md5.ss")
+(load-in-sandbox "md5.ss")
 
-(load-relative "etc.ss")
+(load-in-sandbox "etc.ss")
 
-(load-relative "structlib.ss")
+(load-in-sandbox "structlib.ss")
 
-(load-relative "async-channel.ss")
+(load-in-sandbox "async-channel.ss")
 
-(load-relative "restart.ss")
+(load-in-sandbox "restart.ss")
 
-(load-relative "function.ss")
+(load-in-sandbox "function.ss")
 
-(load-relative "string.ss")
+(load-in-sandbox "string.ss")
 
-(load-relative "filelib.ss")
+(load-in-sandbox "filelib.ss")
 
-(load-relative "portlib.ss")
+(load-in-sandbox "portlib.ss")
 
-(load-relative "threadlib.ss")
+(load-in-sandbox "threadlib.ss")
 
-(load-relative "date.ss")
+(load-in-sandbox "date.ss")
 
-(load-relative "compat.ss")
+(load-in-sandbox "compat.ss")
 
-(load-relative "cmdline.ss")
+(load-in-sandbox "cmdline.ss")
 
-(load-relative "pconvert.ss")
+(load-in-sandbox "pconvert.ss")
 
-(load-relative "pretty.ss")
+(load-in-sandbox "pretty.ss")
 
-(load-relative "control.ss")
+(load-in-sandbox "control.ss")
 
-;; (load-relative "package.ss")
+;; (load-in-sandbox "package.ss")
 
-(load-relative "contract-test.ss") ;; tests scheme/contract
+(load-in-sandbox "contract-test.ss") ;; tests scheme/contract
 
-(load-relative "contract-mzlib-test.ss") ;; tests mzlib/contract
+(load-in-sandbox "contract-mzlib-test.ss") ;; tests mzlib/contract
 
-(load-relative "match-test.ss")
+(load-in-sandbox "match-test.ss")
 
-(load-relative "sandbox.ss")
+(load-in-sandbox "sandbox.ss")
 
-; Near last, because it `require's mzscheme:
-; (load-relative "shared.ss") - FIXME
+; (load-in-sandbox "shared.ss") - FIXME
 
-; Also `require's mzscheme:
-(load-relative "kw.ss")
+(load-in-sandbox "kw.ss")
 
-; Last - so macros are not present by accident
-; Also: currently re-defines `else'!
-(load-relative "macrolib.ss")
+(load-in-sandbox "macrolib.ss")
 
 (report-errs)
