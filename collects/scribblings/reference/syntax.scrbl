@@ -7,6 +7,7 @@
 
 This section describes the core syntax forms that apear in a fully
 expanded expression, plus a many closely-related non-core forms.
+See @secref["fully-expanded"] for the core grammar.
 
 @local-table-of-contents[]
 

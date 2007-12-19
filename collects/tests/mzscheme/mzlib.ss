@@ -46,7 +46,7 @@
 
 (load-in-sandbox "sandbox.ss")
 
-; (load-in-sandbox "shared.ss") - FIXME
+(load-in-sandbox "shared.ss")
 
 (load-in-sandbox "kw.ss")
 

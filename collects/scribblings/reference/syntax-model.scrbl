@@ -727,7 +727,7 @@ expand code and to start evaluating expanded/compiled code.
 (code:comment #, @t{The following @scheme[let] expression is compiled in the original})
 (code:comment #, @t{namespace, so direct references to @scheme[x] see @scheme['orig].})
 (code:line
- (let ([n (make-namespace)]) ; make new namespace 
+ (let ([n (make-base-namespace)]) (code:comment #, @t{make new namespace})
    (parameterize ([current-namespace n]) 
      (eval '(define x 'new)) (code:comment #, @t{evals in the new namespace})
      (display x) (code:comment #, @t{displays @scheme['orig]})
@@ -757,7 +757,7 @@ x
 x
 (f)
 (module m mzscheme (define x 8) (provide x))
-(require m)
+(require 'm)
 (eval:alts x (eval 'x))
 (f)
 ]
