@@ -145,7 +145,7 @@
                  entries)))
         (if (<= (length entries) limit)
             '()
-            (list (italic (format "Search truncated after ~a hits." limit))))))]))
+            (list (make-element "schemeerror" (list (format "Search truncated after ~a hits." limit)))))))]))
 
 (define (limit-length n l)
   (cond
