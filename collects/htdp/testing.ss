@@ -59,15 +59,17 @@
        (not (eq? (syntax-local-context) 'expression))
        (quasisyntax/loc stx
          (define #,(gensym 'test)
+           
            #,(stepper-syntax-property
-              #`(check-values-expected
-                 (lambda () test) actual (make-src #,@(list (syntax-source stx)
-                                                            (syntax-line stx)
-                                                            (syntax-column stx)
-                                                            (syntax-position stx)
-                                                            (syntax-span stx))))
-              `stepper-hint
-              `comes-from-check-expect))))
+              (stepper-syntax-property
+               #`(check-values-expected
+                  (lambda () test) actual (make-src #,@(list (syntax-source stx)
+                                                             (syntax-line stx)
+                                                             (syntax-column stx)
+                                                             (syntax-position stx)
+                                                             (syntax-span stx))))
+               `stepper-hint `comes-from-check-expect)
+              `stepper-no-retval-wrap #t))))
       ((_ test)
        (not (eq? (syntax-local-context) 'expression))
        (raise-syntax-error 'check-expect CHECK-EXPECT-STR stx))
