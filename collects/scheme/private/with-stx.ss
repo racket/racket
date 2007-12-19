@@ -78,6 +78,8 @@
 		(datum->syntax #f (append-number (keyword->string x)))]
 	       [(identifier? x)
 		(datum->syntax #f (append-number (syntax-e x)))]
+	       [(and (syntax? x) (keyword? (syntax-e x)))
+		(datum->syntax #f (append-number (keyword->string (syntax-e x))))]
 	       [else 
 		(datum->syntax #f (append-number 'temp))])))
 	   l)))

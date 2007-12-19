@@ -189,8 +189,9 @@ Returns a list of identifiers that are distinct from all other
 identifiers. The list contains as many identifiers as
 @scheme[stx-pair] contains elements. The @scheme[stx-pair] argument
 must be a syntax pair that can be flattened into a list. The elements
-of @scheme[stx-pair] can be anything, but string, symbol, keyword, and
-identifier elements will be embedded in the corresponding generated
-name (useful for debugging purposes). The generated identifiers are
-built with interned symbols (not @scheme[gensym]s), so the limitations
-described with @scheme[current-compile] do not apply.}
+of @scheme[stx-pair] can be anything, but string, symbol, keyword
+(possibly wrapped as syntax), and identifier elements will be embedded
+in the corresponding generated name, which is useful for debugging
+purposes. The generated identifiers are built with interned symbols
+(not @scheme[gensym]s), so the limitations described with
+@scheme[current-compile] do not apply.}
