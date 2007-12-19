@@ -48,16 +48,15 @@
                 (warn 'test-sequence
                       "ran out of expected steps. Given result: ~v" result)
                 (begin
-                  (unless (compare-steps result (car all-steps))
-                    (warn 'test-sequence
+                  (if (compare-steps result (car all-steps))
+                      (begin
+                        ;; uncomment to see successful steps, too:
+                        #;(printf "test-sequence: steps match for expected result: ~v\n"
+                                (car all-steps))
+                        (void))
+                      (warn 'test-sequence
                           "steps do not match\n   given: ~v\nexpected: ~v"
                           result (car all-steps)))
-
-                  ;; uncomment to see successful steps, too:
-                  
-                  #;(when (compare-steps result (car all-steps))
-                    (printf "test-sequence: steps match for expected result: ~v\n"
-                            (car all-steps)))
 
                   (set! all-steps (cdr all-steps)))))]
            [program-expander
@@ -162,16 +161,18 @@
     (match expected
       [`(before-after ,before ,after)
        (and (before-after-result? actual)
-            (andmap (lambda (fn expected)
+            (andmap (lambda (fn expected name)
                       (unless (list? (fn actual))
                         (warn 'compare-steps "not a list: ~v"
                               (syntax-object->hilite-datum (fn actual))))
                       (noisy-equal? (map syntax-object->hilite-datum
                                          (fn actual))
-                                    expected))
+                                    expected
+                                    name))
                     (list before-after-result-pre-exps
                           before-after-result-post-exps)
-                    (list before after)))]
+                    (list before after)
+                    (list 'before 'after)))]
       [`(error ,err-msg)
        (and (error-result? actual)
             (string-contains (error-result-err-msg actual) err-msg))]
@@ -179,7 +180,8 @@
        (and (before-error-result? actual)
             (and (noisy-equal? (map syntax-object->hilite-datum
                                     (before-error-result-pre-exps actual))
-                               before)
+                               before
+                               'before)
                  (equal? err-msg (before-error-result-err-msg actual))))]
       [`(finished-stepping) (finished-stepping? actual)]
       [`(ignore) (warn 'compare-steps "ignoring one step")]
@@ -189,11 +191,11 @@
 
   ;; noisy-equal? : (any any . -> . boolean)
   ;; like equal?, but prints a noisy error message
-  (define (noisy-equal? a b)
-    (if (equal? a b)
+  (define (noisy-equal? actual expected name)
+    (if (equal? actual expected)
       #t
       (begin (warn 'not-equal?
-                   "~e =/= ~e\n  here's the diff: ~e" a b (sexp-diff a b))
+                   "~e:\nactual:   ~e =/= \nexpected: ~e\n  here's the diff: ~e" name actual expected (sexp-diff actual expected))
              #f)))
 
   ;; (-> (listof sexp) (listof sexp) boolean?)
@@ -1338,7 +1340,7 @@
        "(check-expect (+ 3 4) (+ 8 9))"
        `((before-after ((check-expect (+ 3 4) (hilite (+ 8 9))))
                        ((check-expect (+ 3 4) (hilite 17))))
-         (ignore)
+         #;(ignore)
          (before-after ((check-expect (hilite (+ 3 4)) 17))
                        ((check-expect (hilite 7) 17))))))
 
@@ -1610,8 +1612,9 @@
       ))
 
   ;; make sure to leave these off when saving, or the nightly tests will run these too...
-  (run-all-tests)
-  #;(run-tests '(check-expect))
+  #;(run-all-tests)
+  #;(parameterize ([store-steps? #t])
+    (run-tests '(check-expect)))
   #;(parameterize ([display-only-errors #t])
     (run-all-tests-except '(prims qq-splice time set! local-set! lazy1 lazy2 lazy3)))
   
