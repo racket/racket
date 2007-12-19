@@ -120,9 +120,20 @@
                                    (if (eq? (stepper-syntax-property #`body 'stepper-hint) 'comes-from-check-expect)
                                        (kernel:kernel-syntax-case
                                         (unwind #`body settings) #f
+                                         ;;hide the extra goo on a check-expect:
                                         [(c-e (lambda () a1) a2 a3)
                                          #`(check-expect a1 a2)]
-                                        [else #`(c-e body)])
+                                         [((... ...) test-exp dots2)
+                                          (let ([evaled-args (stepper-syntax-property #'body 'stepper-evaled-args)])
+                                            #;(printf "~e\n" (lengevaled-args) #;(pair? (cdr evaled-args)))
+                                            (unless (= (length evaled-args) 4)
+                                              (error 'unwind-define "expected exactly four args in check-expect unwind"))
+                                            ;;(printf "~e\n" (syntax-object->datum (unwind ((list-ref evaled-args 2)) settings)))
+                                           ;;#`(ding ding ding)
+                                            
+                                           (let ([expected (unwind ((list-ref evaled-args 2)) settings)])
+                                              #`(check-expect test-exp #,expected)))]
+                                        [else #`(c-e else)])
                                        (let* ([printed-name
                                                (or (stepper-syntax-property #`name 'stepper-lifted-name)
                                                    (stepper-syntax-property #'name 'stepper-orig-name)

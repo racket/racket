@@ -224,9 +224,13 @@ stepper-fake-exp :
   this expression does not occur directly in the source; reconstruct specially.
   used for begin.
 
+;; wrong name:
 args-of-call [ADDED BY RECONSTRUCTOR] :
   this reconstructed (...) expression is the result of a call with these args.
   used by the check-expect unwinder to figure out the expected values.
+
+stepper-no-retval-wrap:
+  don't annotate this with a return-values-wrap
 
 STEPPER-HINT COLLISIONS
 

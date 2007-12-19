@@ -191,7 +191,10 @@
                   [(#%top . id-stx)
                    (varref-skip-step? #`id-stx)]
                   [(#%app . terms)
-                   ; don't halt for proper applications of constructors
+                   (or
+                    ; don't halt for the reduction of a check-expect ... of course it's gross that this is here.
+                    (eq? (stepper-syntax-property expr 'stepper-hint) 'comes-from-check-expect)
+                    ; don't halt for proper applications of constructors
                    (let ([fun-val (lookup-binding mark-list (get-arg-var 0))])
                      (and (procedure? fun-val)
                           (procedure-arity-includes? 
@@ -205,7 +208,7 @@
                               ;(model-settings:special-function? 'vector fun-val)
                               (and (eq? fun-val void)
                                    (eq? (cdr (syntax->list (syntax terms))) null))
-                              (struct-constructor-procedure? fun-val))))]
+                              (struct-constructor-procedure? fun-val)))))]
                  [else #f])))))
   
   ;; find-special-value finds the value associated with the given name.  Applications of functions
@@ -749,7 +752,9 @@
                                                         (datum->syntax-object #'here `(,#'#%app ...)) ; in unannotated code
                                                         (datum->syntax-object #'here `(,#'#%app ... ,so-far ...)))
                                                     'stepper-evaled-args
-                                                    evaluated))
+                                                    ;; store thunks of recon-values:
+                                                    (map (lx (lambda () (recon-value _ render-settings)))
+                                                         (map cadr evaluated))))
                                                   (else
                                                    (error 'recon-inner "bad label (~v) in application mark in expr: ~a" (mark-label (car mark-list)) exp)))))
                                               exp)]

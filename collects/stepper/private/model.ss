@@ -73,7 +73,7 @@
   ; see provide stmt for contract
   (define (go program-expander receive-result render-settings
               show-lambdas-as-lambdas? language-level run-on-drscheme-side)
-
+    
     ;; finished-exps:
     ;;   (listof (list/c syntax-object? (or/c number? false?)( -> any)))
     ;; because of mutation, these cannot be fixed renderings, but must be
@@ -152,6 +152,15 @@
 
     (define break
       (opt-lambda (mark-set break-kind [returned-value-list #f])
+        
+        #;(if mark-set
+            (printf "mark-list: ~e\nbreak-kind: ~e\nreturned-value-list: ~e\n" (extract-mark-list mark-set) break-kind returned-value-list)
+            (printf "mark-set was false!\n"))
+        
+        (when (store-steps?)
+          (if mark-set
+              (set! stored-steps (append stored-steps (list (list (extract-mark-list mark-set) break-kind returned-value-list))))
+              (set! stored-steps (append stored-steps (list 'mark-set-was-#f)))))
 
         (set! steps-received (+ steps-received 1))
         ;; have to be careful else this won't be looked up right away:
@@ -308,17 +317,28 @@
                                      message))
           (set! held-exp-list no-sexp))
         (receive-result (make-error-result message))))
+    
 
+    (when (store-steps?) (set! stored-steps null))
+    
     (program-expander
      (lambda ()
        ;; swap these to allow errors to escape (e.g., when debugging)
-       (error-display-handler err-display-handler)
-       #;(void)
+       #;(error-display-handler err-display-handler)
+       (void)
        )
      (lambda (expanded continue-thunk) ; iter
        (r:reset-special-values)
        (if (eof-object? expanded)
          (begin
            (receive-result (make-finished-stepping)))
-         (step-through-expression expanded continue-thunk))))))
+         (step-through-expression expanded continue-thunk)))))
+  
+  ;; debugging support:
+  
+  (provide stored-steps)
+  (define stored-steps null)
+  (provide store-steps?)
+  (define store-steps? (make-parameter #f))
+)
 

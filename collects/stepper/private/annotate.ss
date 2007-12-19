@@ -315,21 +315,16 @@
       #`(begin (#,double-break) #,exp))
     
     ;; abstraction used in the next two defs
-    (define (return-value-wrap-maker break-proc) 
-      (lambda (exp)
-        #`(call-with-values
-           (lambda () #,exp)
-           (lambda args
-             (#,break-proc args)
-             (apply values args)))))
+    (define (return-value-wrap/helper break-proc exp) 
+      #`(call-with-values
+         (lambda () #,exp)
+         (lambda args
+           (#,break-proc args)
+           (apply values args))))
     
-    ;; wrap a return-value-break around exp
-    (define return-value-wrap
-      (return-value-wrap-maker result-value-break))
     
-    ;; wrap a normal-break/values around exp
-    (define normal-break/values-wrap
-      (return-value-wrap-maker normal-break/values))
+    
+ 
 
     (define (make-define-struct-break exp)
       (lambda ()
@@ -383,6 +378,16 @@
       #;(syntax? binding-set? boolean? (or/c false/c syntax? (list/p syntax? syntax?)) (or/c false/c integer?)
                . -> . (vector/p syntax? binding-set?))
       (lambda (exp tail-bound pre-break? procedure-name-info)
+        
+        ;; wrap a return-value-break around exp
+        (define (return-value-wrap new-exp)
+          (if (stepper-syntax-property exp 'stepper-no-retval-wrap)
+              new-exp
+              (return-value-wrap/helper result-value-break new-exp)))
+        
+        ;; wrap a normal-break/values around exp
+        (define (normal-break/values-wrap exp)
+          (return-value-wrap/helper normal-break/values exp))
         
         (cond [(stepper-syntax-property exp 'stepper-skipto)
                (let* ([free-vars-captured #f] ; this will be set!'ed
