@@ -39,6 +39,7 @@
 	   (lib "math.ss")
            "set-result.ss")
   (require-for-syntax "teachhelp.ss"
+                      "teach-shared.ss"
 		      (lib "kerncase.ss" "syntax")
 		      (lib "stx.ss" "syntax")
 		      (lib "struct.ss" "syntax")
@@ -2353,4 +2354,4 @@
 	     [_else (bad-use-error 'shared stx)])
 
 	   ;; The main implementation
-	   (include (build-path up up "mzlib" "private" "shared-body.ss"))))))))
+           (shared/proc stx make-check-cdr #'undefined)))))))

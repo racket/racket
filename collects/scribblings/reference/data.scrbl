@@ -1,7 +1,7 @@
 #lang scribble/doc
 @require["mz.ss"]
 
-@title[#:style 'toc]{Core Datatypes}
+@title[#:style 'toc]{Primitive Datatypes}
 
 Each of the built-in datatypes comes with a set of procedures for
 manipulating members of the datatype.

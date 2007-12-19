@@ -141,7 +141,7 @@
                                         (get-output-string o)
                                         (get-output-string o2)))])
             (list (let ([v (do-plain-eval s #t)])
-                    (copy-value v (make-hash-table)))
+                    (make-reader-graph (copy-value v (make-hash-table))))
                   (get-output-string o)
                   (get-output-string o2)))))]))
 
@@ -157,9 +157,15 @@
       => (lambda (v) v)]
      [(string? v) (install ht v (string-copy v))]
      [(bytes? v) (install ht v (bytes-copy v))]
-     [(pair? v) (cons (copy-value (car v) ht)
-                      (copy-value (cdr v) ht))]
+     [(pair? v) 
+      (let ([ph (make-placeholder #f)])
+        (hash-table-put! ht v ph)
+        (placeholder-set! ph
+                          (cons (copy-value (car v) ht)
+                                (copy-value (cdr v) ht)))
+        ph)]
      [(mpair? v) (let ([p (mcons #f #f)])
+                   (hash-table-put! ht v p)
                    (set-mcar! p (copy-value (mcar v) ht))
                    (set-mcdr! p (copy-value (mcdr v) ht))
                    p)]

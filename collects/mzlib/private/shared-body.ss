@@ -31,17 +31,20 @@
 				    (kernel-form-identifier-list)
 				    names))])
 			   ;; Remove #%app if present...
-			   (syntax-case e (#%app)
-			     [(#%app a ...)
+			   (syntax-case e (#%plain-app)
+			     [(#%plain-app a ...)
 			      (syntax/loc e (a ...))]
 			     [_else e])))
 		       exprs)]
+           [temp-ids (generate-temporaries names)]
+           [placeholder-ids (generate-temporaries names)]
+           [ph-used?s (map (lambda (x) (box #f)) names)]
 	   [struct-decl-for (lambda (id)
 			      (and (identifier? id)
 				   (let* ([s (symbol->string (syntax-e id))]
 					  [m (regexp-match-positions "make-" s)])
 				     (and m
-					  (let ([name (datum->syntax-object
+					  (let ([name (datum->syntax
 						       id
 						       (string->symbol (string-append (substring s 0 (caar m))
 										      (substring s (cdar m) (string-length s))))
@@ -49,125 +52,208 @@
 					    (let ([v (syntax-local-value name (lambda () #f))])
 					      (and v
 						   (struct-declaration-info? v)
-						   (extract-struct-info v))))))))]
+						   (let ([decl (extract-struct-info v)])
+                                                     (and (cadr decl)
+                                                          (andmap values (list-ref decl 4))
+                                                          decl)))))))))]
 	   [same-special-id? (lambda (a b)
 			       ;; Almost module-or-top-identifier=?,
 			       ;; but handle the-cons specially
-			       (or (module-identifier=? a b)
-				   (module-identifier=? 
+			       (or (free-identifier=? a b)
+				   (free-identifier=? 
 				    a 
-				    (datum->syntax-object
+				    (datum->syntax
 				     #f
 				     (if (eq? 'the-cons (syntax-e b))
 					 'cons
 					 (syntax-e b))))))])
-       (with-syntax ([(init-expr ...)
+       (with-syntax ([(graph-expr ...)
 		      (map (lambda (expr)
-			     (define (bad n)
-			       (raise-syntax-error
-				'shared
-				(format "illegal use of ~a" n)
-				stx
-				expr))
-			     (syntax-case* expr (the-cons list box vector) same-special-id?
-			       [(the-cons a d)
-				(syntax (cons undefined undefined))]
-			       [(the-cons . _)
-				(bad "cons")]
-			       [(list e ...)
-				(with-syntax ([(e ...)
-					       (map (lambda (x) (syntax undefined))
-						    (syntax->list (syntax (e ...))))])
-				  (syntax (list e ...)))]
-			       [(list . _)
-				(bad "list")]
-			       [(box v)
-				(syntax (box undefined))]
-			       [(box . _)
-				(bad "box")]
-			       [(vector e ...)
-				(with-syntax ([(e ...)
-					       (map (lambda (x) (syntax undefined))
-						    (syntax->list (syntax (e ...))))])
-				  (syntax (vector e ...)))]
-			       [(vector . _)
-				(bad "vector")]
-			       [(make-x . _)
-				(struct-decl-for (syntax make-x))
-				(let ([decl (struct-decl-for (syntax make-x))]
-				      [args (syntax->list (syntax _))])
-				  (unless args
-				    (bad "structure constructor"))
-				  (when (or (not (cadr decl))
-					    (ormap not (list-ref decl 4)))
-				    (raise-syntax-error
-				     'shared
-				     "not enough information about the structure type in this context"
-				     stx
-				     expr))
-				  (unless (= (length (list-ref decl 4)) (length args))
-				    (raise-syntax-error
-				     'shared
-				     (format "wrong argument count for structure constructor; expected ~a, found ~a"
-					     (length (list-ref decl 4)) (length args))
-				     stx
-				     expr))
-				  (with-syntax ([undefineds (map (lambda (x) (syntax undefined)) args)])
-				    (syntax (make-x . undefineds))))]
-			       [_else
-				expr]))
-			   exprs)]
+                             (let loop ([expr expr])
+                               (define (bad n)
+                                 (raise-syntax-error
+                                  'shared
+                                  (format "illegal use of ~a" n)
+                                  stx
+                                  expr))
+                               (define (cons-elem expr)
+                                 (or (and (identifier? expr)
+                                          (ormap (lambda (i ph ph-used?) 
+                                                   (and (free-identifier=? i expr)
+                                                        (set-box! ph-used? #t)
+                                                        ph))
+                                                 names placeholder-ids ph-used?s))
+                                     (loop expr)))
+                               (syntax-case* expr (the-cons mcons list box box-immutable vector vector-immutable) same-special-id?
+                                 [(the-cons a d)
+                                  (with-syntax ([a (cons-elem #'a)]
+                                                [d (cons-elem #'d)])
+                                    (syntax/loc expr (cons a d)))]
+                                 [(the-cons . _)
+                                  (bad "cons")]
+                                 [(mcons a d)
+                                  (syntax (mcons undefined undefined))]
+                                 [(mcons . _)
+                                  (bad "mcons")]
+                                 [(list e ...)
+                                  (with-syntax ([(e ...)
+                                                 (map (lambda (x) (cons-elem x))
+                                                      (syntax->list (syntax (e ...))))])
+                                    (syntax/loc expr (list e ...)))]
+                                 [(list . _)
+                                  (bad "list")]
+                                 [(box v)
+                                  (syntax (box undefined))]
+                                 [(box . _)
+                                  (bad "box")]
+                                 [(box-immutable v)
+                                  (with-syntax ([v (cons-elem #'v)])
+                                    (syntax/loc expr (box-immutable v)))]
+                                 [(vector e ...)
+                                  (with-syntax ([(e ...)
+                                                 (map (lambda (x) (syntax undefined))
+                                                      (syntax->list (syntax (e ...))))])
+                                    (syntax (vector e ...)))]
+                                 [(vector . _)
+                                  (bad "vector")]
+                                 [(vector-immutable e ...)
+                                  (with-syntax ([(e ...)
+                                                 (map (lambda (x) (cons-elem x))
+                                                      (syntax->list (syntax (e ...))))])
+                                    (syntax/loc expr (vector-immutable e ...)))]
+                                 [(vector-immutable . _)
+                                  (bad "vector-immutable")]
+                                 [(make-x . args)
+                                  (struct-decl-for (syntax make-x))
+                                  (let ([decl (struct-decl-for (syntax make-x))]
+                                        [args (syntax->list (syntax args))])
+                                    (unless args
+                                      (bad "structure constructor"))
+                                    (unless (= (length (list-ref decl 4)) (length args))
+                                      (raise-syntax-error
+                                       'shared
+                                       (format "wrong argument count for structure constructor; expected ~a, found ~a"
+                                               (length (list-ref decl 4)) (length args))
+                                       stx
+                                       expr))
+                                    (with-syntax ([undefineds (map (lambda (x) (syntax undefined)) args)])
+                                      (syntax (make-x . undefineds))))]
+                                 [_else expr])))
+                           exprs)]
+                     [(init-expr ...)
+		      (map (lambda (expr temp-id used?)
+                             (let ([init-id
+                                    (syntax-case* expr (the-cons mcons list box box-immutable vector vector-immutable) same-special-id?
+                                      [(the-cons . _) temp-id]
+                                      [(mcons . _) temp-id]
+                                      [(list . _) temp-id]
+                                      [(box . _) temp-id]
+                                      [(box-immutable . _) temp-id]
+                                      [(vector . _) temp-id]
+                                      [(vector-immutable . _) temp-id]
+                                      [(make-x . _)
+                                       (struct-decl-for (syntax make-x))
+                                       temp-id]
+                                      [else #f])])
+                               (cond
+                                [init-id
+                                 (set-box! used? #t)
+                                 init-id]
+                                [(unbox used?)
+                                 temp-id]
+                                [else
+                                 expr])))
+			   exprs temp-ids ph-used?s)]
 		     [(finish-expr ...)
 		      (let ([gen-n (lambda (l)
 				     (let loop ([l l][n 0])
 				       (if (null? l)
 					   null
-					   (cons (datum->syntax-object (quote-syntax here) n #f)
+					   (cons (datum->syntax (quote-syntax here) n #f)
 						 (loop (cdr l) (add1 n))))))])
 			(map (lambda (name expr)
-			       (with-syntax ([name name])
-				 (syntax-case* expr (the-cons list box vector) same-special-id?
-				   [(the-cons a d)
-				    (syntax (begin 
-					      (set-car! name a)
-					      (set-cdr! name d)))]
-				   [(list e ...)
-				    (with-syntax ([(n ...) (gen-n (syntax->list (syntax (e ...))))])
-				      (syntax (let ([lst name])
-						(set-car! (list-tail lst n) e)
-						...)))]
-				   [(box v)
-				    (syntax (set-box! name v))]
-				   [(vector e ...)
-				    (with-syntax ([(n ...) (gen-n (syntax->list (syntax (e ...))))])
-				      (syntax (let ([vec name])
-						(vector-set! vec n e)
-						...)))]
-				   [(make-x e ...)
-				    (struct-decl-for (syntax make-x))
-				    (let ([decl (struct-decl-for (syntax make-x))])
-                                      (syntax-case (reverse (list-ref decl 4)) ()
-                                        [() 
-                                         (syntax (void))]
-                                        [(setter ...) 
-                                         (syntax (begin (setter name e) ...))]))]
-				   [_else (syntax (void))])))
-			     names exprs))]
+                               (let loop ([name name] [expr expr])
+                                 (with-syntax ([name name])
+                                   (syntax-case* expr (the-cons mcons list box box-immutable vector vector-immutable) same-special-id?
+                                     [(the-cons a d)
+                                      #`(begin #,(loop #`(car name) #'a)
+                                               #,(loop #`(cdr name) #'d))]
+                                     [(mcons a d)
+                                      (syntax (begin 
+                                                (set-mcar! name a)
+                                                (set-mcdr! name d)))]
+                                     [(list e ...)
+                                      (let ([es (syntax->list #'(e ...))])
+                                        #`(begin
+                                            #,@(map (lambda (n e)
+                                                      (loop #`(list-ref name #,n) e))
+                                                    (gen-n es)
+                                                    es)))]
+                                     [(box v)
+                                      (syntax (set-box! name v))]
+                                     [(box-immutable v)
+                                      (loop #'(unbox name) #'v)]
+                                     [(vector e ...)
+                                      (with-syntax ([(n ...) (gen-n (syntax->list (syntax (e ...))))])
+                                        (syntax (let ([vec name])
+                                                  (vector-set! vec n e)
+                                                  ...)))]
+                                     [(vector-immutable e ...)
+                                      (let ([es (syntax->list #'(e ...))])
+                                        #`(begin
+                                            #,@(map (lambda (n e)
+                                                      (loop #`(vector-ref name #,n) e))
+                                                    (gen-n es)
+                                                    es)))]
+                                     [(make-x e ...)
+                                      (struct-decl-for (syntax make-x))
+                                      (let ([decl (struct-decl-for (syntax make-x))])
+                                        (syntax-case (reverse (list-ref decl 4)) ()
+                                          [() 
+                                           (syntax (void))]
+                                          [(setter ...) 
+                                           (syntax (begin (setter name e) ...))]))]
+                                     [_else (syntax (void))]))))
+                             names exprs))]
 		     [(check-expr ...)
 		      (if make-check-cdr
 			  (map (lambda (name expr)
-				 (syntax-case* expr (the-cons list box vector) same-special-id?
+				 (syntax-case* expr (the-cons) same-special-id?
 				   [(the-cons a d)
 				    (make-check-cdr name)]
 				   [_else (syntax #t)]))
 			       names exprs)
-			  null)])
-	 (syntax
-	  (letrec ([name init-expr] ...)
-	    finish-expr
-	    ...
-	    check-expr
-	    ...
-	    body1
-	    body
-	    ...)))))])
+			  null)]
+                     [(temp-id ...) temp-ids]
+                     [(placeholder-id ...) placeholder-ids]
+                     [(ph-used? ...)  (map unbox ph-used?s)]
+                     [(used-ph-id ...) (filter values
+                                               (map (lambda (ph ph-used?)
+                                                      (and (unbox ph-used?)
+                                                           ph))
+                                                    placeholder-ids ph-used?s))]
+                     [(maybe-ph-id ...) (map (lambda (ph ph-used?)
+                                               (and (unbox ph-used?)
+                                                    ph))
+                                             placeholder-ids ph-used?s)])
+         (with-syntax ([(ph-init ...) (filter values
+                                              (map (lambda (ph ph-used? graph-expr)
+                                                     (and (unbox ph-used?)
+                                                          #`(placeholder-set! #,ph #,graph-expr)))
+                                                   placeholder-ids ph-used?s
+                                                   (syntax->list #'(graph-expr ...))))])
+           (syntax/loc stx
+             (letrec-values ([(used-ph-id) (make-placeholder #f)] ...
+                             [(temp-id ...)
+                              (begin
+                                ph-init ...
+                                (apply values (make-reader-graph
+                                               (list maybe-ph-id ...))))]
+                             [(name) init-expr] ...)
+               finish-expr
+               ...
+               check-expr
+               ...
+               body1
+               body
+               ...))))))])

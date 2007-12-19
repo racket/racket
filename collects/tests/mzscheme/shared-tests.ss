@@ -1,4 +1,6 @@
 
+;; This file has to work for both "shared.ss" and "advanced.ss"
+
 ;; this writes values to strings and compares the strings
 ;; to implements an equal? predicate that works for cyclic
 ;; structures.
@@ -8,6 +10,8 @@
     (begin
       (write v p)
       (get-output-string p))))
+(define (x s)
+  (read (open-input-string s)))
 (define (stest expect expression)
   (test
    (gs expect)
@@ -18,14 +22,25 @@
 (stest #(1 2) '(shared ([x (vector 1 2)]) x))
 (stest (box 1) '(shared ([x (box 1)]) x))
 (stest '(1) '(shared ([x (cons 1 null)]) x))
+(stest (mcons 1 null) '(shared ([x (mcons 1 null)]) x))
 
-(stest '#1=(#1# 1) '(shared ([x (list x 1)]) x))
-(stest '#2=#(#2# 1) '(shared ([x (vector x 1)]) x))
-(stest '#3=#&#3# '(shared ([x (box x)]) x))
-(stest '#4=(#4#) '(shared ([x (cons x null)]) x))
-(stest '#5=(1 . #5#) '(shared ([x (cons 1 x)]) x))
+(stest (x "#1=(#1# 1)") '(shared ([x (list x 1)]) x))
+(stest (x "#2=#(#2# 1)") '(shared ([x (vector x 1)]) x))
+(stest (x "#2=#(#2# 1)") '(shared ([x (vector-immutable x 1)]) x))
+(stest (x "#3=#&#3#") '(shared ([x (box x)]) x))
+(stest (x "#3=#&#3#") '(shared ([x (box-immutable x)]) x))
+(stest (x "#4=(#4#)") '(shared ([x (cons x null)]) x))
+(stest (x "#5=(1 . #5#)") '(shared ([x (cons 1 x)]) x))
+(stest (let ([x (mcons 1 #f)]) 
+         (begin (set-mcdr! x x) 
+                x))
+       '(shared ([x (mcons 1 x)]) x))
 
-(stest '#11=(#11#) '(shared ([x `(,x)]) x))
+(stest (x "#11=(#11#)") '(shared ([x `(,x)]) x))
+
+(stest 1 '(shared ([x (list 1 x p)]
+                   [p (lambda () x)])
+             (car ((caddr x)))))
 
 (define-struct s (a b))
 (shared ([x (make-s 17 x)])

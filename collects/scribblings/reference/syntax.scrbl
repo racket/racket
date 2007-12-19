@@ -3,7 +3,7 @@
 
 @define[cvt (schemefont "CVT")]
 
-@title[#:tag "syntax" #:style 'toc]{Core Syntactic Forms}
+@title[#:tag "syntax" #:style 'toc]{Syntactic Forms}
 
 This section describes the core syntax forms that apear in a fully
 expanded expression, plus a many closely-related non-core forms.
@@ -523,6 +523,9 @@ within all @scheme[trans-expr]s.}
 Combines @scheme[letrec-syntaxes] with @scheme[letrec-values]: each
 @scheme[trans-id] and @scheme[val-id] is bound in all
 @scheme[trans-expr]s and @scheme[val-expr]s.}
+
+@;------------------------------------------------------------------------
+@include-section["shared.scrbl"]
 
 @;------------------------------------------------------------------------
 @section[#:tag "if"]{Conditionals: @scheme[if], @scheme[cond], @scheme[and], and @scheme[or]}

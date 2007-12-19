@@ -6,6 +6,7 @@
            scheme/pretty
            scheme/math
            scheme/match
+           scheme/shared
            scheme/tcp
            scheme/udp
            scheme/list
@@ -22,6 +23,7 @@
                          scheme/pretty
                          scheme/math
                          scheme/match
+                         scheme/shared
                          scheme/base
                          scheme/tcp
                          scheme/udp

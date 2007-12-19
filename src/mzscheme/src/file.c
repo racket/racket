@@ -5791,7 +5791,7 @@ find_system_path(int argc, Scheme_Object **argv)
 	  || (which == id_pref_file)) 
 	which_folder = CSIDL_APPDATA;
       else if (which == id_doc_dir) {
-#       ifndef CSIDL_MYDOCUMENTS
+#       ifndef CSIDL_PERSONAL
 #         define CSIDL_PERSONAL 0x0005
 #       endif
 	which_folder = CSIDL_PERSONAL;
