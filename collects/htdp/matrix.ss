@@ -1,88 +1,16 @@
-#lang scheme
+#lang scheme/gui
 
 ;; 4. integrate with snips
 
 (require (lib "matrix-sig.ss" "htdp")
+         (lib "matrix-render-sig.ss" "htdp")
          (lib "matrix-unit.ss" "htdp")
-         (lib "matrix-render.ss" "htdp"))
+         (lib "matrix-snip.ss" "mrlib"))
 
 (require (lib "class.ss")
          (lib "string.ss")
          (lib "mred.ss" "mred")
-         (lib "cache-image-snip.ss" "mrlib"))
-
-(provide (rename-out (matrix-snip-class snip-class))
-         matrix-snip-class%)
-
-;; ---------------------------------------------------------------------------
-;(define matrix-snip-class 'missing)
-;(define matrix-snip-class% 'missing)
-
-(define (v-m VM) (send VM get-M))
-(define (v? VM) (is-a? VM visible-matrix%))
-
-;; representing a matrix that renders itself as an image, as in image.ss
-(define visible-matrix%
-  (class cache-image-snip%
-    (inherit set-snipclass get-argb)
-    (inherit-field dc-proc argb-proc width height argb px py)
-    
-    (init-field M)
-    (define/public (get-M) M)
-        
-    ;; create a matrix from this instance 
-    (define/override (copy)
-      (new visible-matrix%
-	(M M)
-	(width width) (height height) (px px) (py py) (argb argb)
-	(dc-proc dc-proc)
-	(argb-proc argb-proc)))
-        
-    (define/override (write f)
-      (let ([str (string->bytes/utf-8
-		   (format "~s"
-		     (list (matrix->rectangle M)
-		       (list (argb-vector (get-argb))
-			 width
-			 px 
-			 py))))])
-	(send f put str)))
-        
-    (super-new)
-    (set-snipclass matrix-snip-class)))
-
-;; the snip class for matricies 
-(define matrix-snip-class% 
-  (class cache-image-snip-class% 
-    (super-new)
-    (define/override (read f)
-      (data->snip (read-from-string (send f get-bytes) (lambda () #f))))
-    (define/override (data->snip data) 
-      (define _ (unless data (error 'read "in matrix-snip-class% failed")))
-      (define new-cache-image-snip (super data->snip (cadr data)))
-      (define-values (w h) (send new-cache-image-snip get-size))
-      (define M (rectangle->matrix (car data)))
-      ;; .. but we need to produce a visible-matrix% instead
-      M
-      #;
-      (new visible-matrix% 
-	(M M)
-	(dc-proc (send new-cache-image-snip get-dc-proc))
-	(argb-proc (send new-cache-image-snip get-argb-proc))
-	(width w)
-	(height h)
-	(argb (get-argb new-cache-image-snip))
-	(px (get-px new-cache-image-snip))
-	(py (get-py new-cache-image-snip))))))
-(define get-argb (class-field-accessor cache-image-snip% argb))
-(define get-px (class-field-accessor cache-image-snip% px))
-(define get-py (class-field-accessor cache-image-snip% py))
-    
-;; setting up the 'snip class' 
-(define matrix-snip-class (new matrix-snip-class%))
-(send matrix-snip-class set-version 1)
-(send matrix-snip-class set-classname (format "~s" `(lib "matrix.ss" "htdp")))
-(send the-drscheme-snip-class #;(get-the-snip-class-list) add matrix-snip-class)
+         (lib "matrix-snip.ss" "mrlib"))
 
 ;; ---------------------------------------------------------------------------
 
@@ -138,7 +66,7 @@
         (define bm-mask (build-bitmap bm-mask-builder tw th))
         (overlay-bitmap argb dx dy bm-color bm-mask))
       (new visible-matrix%
-           [M M]
+           [M_0 M]
            [width tw] [height th] [px 0] [py 0]
            [dc-proc (lambda (dc dx dy) (draw-proc 'transparent dc dx dy))]
            [argb-proc argb-proc]))
@@ -194,7 +122,8 @@
                [dc (make-object bitmap-dc% bm)])
           (thread-cell-set! cached-bdc-for-text-size dc)))
       (let ([dc (thread-cell-ref cached-bdc-for-text-size)])
-        (let-values ([(w h _1 _2) (send dc get-text-extent string (get-font size))])
+        (let-values ([(w h _1 _2)
+                      (send dc get-text-extent string (get-font size))])
           (values (inexact->exact (ceiling w)) 
                   (inexact->exact (ceiling h))))))
     

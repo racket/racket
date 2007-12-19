@@ -1,16 +1,26 @@
-#lang scheme
+#lang scheme/unit
 
 (require (lib "matrix-sig.ss" "htdp")
-         (lib "matrix-render.ss" "htdp")
+         (lib "matrix-render-sig.ss" "htdp")
+         (lib "matrix-snip.ss" "mrlib")
          (lib "error.ss" "htdp")
          (lib "posn.ss" "lang")
          (lib "class.ss")
          (lib "pconvert.ss")
          (lib "pretty.ss"))
 
+(import matrix-render^)
+(export matrix^)
+
 ;; [Matrix X] = [BST X]
+
+(define matrix% 
+  (class* object% (matrix<%>)
+    (define/public (->rectangle) (matrix->rectangle this))
+    (super-new)))
+
 (define bmatrix%
-  (class object%
+  (class* matrix% (matrix<%>)
     (init-field n m mat)
     (define/public (get-n) n)
     (define/public (get-m) m)
@@ -19,7 +29,20 @@
     ;; s.t. (= (* n m)(vector-length vector))
     (super-new)))
 
-(define-struct imatrix (left i j info right) #:transparent)
+(define imatrix%
+  (class* matrix% (matrix<%>)
+    (init-field left i j info right)
+    (super-new)))
+
+(define imatrix-left (class-field-accessor imatrix% left))
+(define imatrix-i (class-field-accessor imatrix% i))
+(define imatrix-j (class-field-accessor imatrix% j))
+(define imatrix-info (class-field-accessor imatrix% info))
+(define imatrix-right (class-field-accessor imatrix% right))
+
+(define (make-imatrix left i j info right) 
+  (make-object imatrix% left i j info right))
+
 (define (set-imatrix-left n x)
   (make-imatrix x (imatrix-i n) (imatrix-j n) (imatrix-info n) (imatrix-right n)))
 (define (set-imatrix-right n x)
@@ -27,14 +50,7 @@
 (define (set-imatrix-info n x)
   (make-imatrix (imatrix-left n) (imatrix-i n) (imatrix-j n) x (imatrix-right n)))
 
-(provide matrix@)
-
-(define matrix@
-  (unit 
-    (import matrix-render^)
-    (export matrix^)
-
-(define (create-matrix n m mat) 
+(define (create-matrix n m mat)
   (new bmatrix% [n n] [m m] [mat mat]))
 
 (define (matrix-get-mat bm) (send bm get-mat))
@@ -58,25 +74,25 @@
 ;; bst-insert : [BST X] Nat Nat X -> [BST X]
 (define (bst-insert t i j x)
   (cond
-    [(imatrix? t)
+    [(is-a? t imatrix%)
      (cond
-       [(bst-< i j (imatrix-i t) (imatrix-j t)) (set-imatrix-left t (bst-insert (imatrix-left t) i j x))]
-       [(bst-= i j (imatrix-i t) (imatrix-j t)) (set-imatrix-info t x)]
-       [else ;; (bst-< i j (imatrix-i t) (imatrix-j t)) 
+       [(bst-< i j (imatrix-i t) (imatrix-j t)) 
+        (set-imatrix-left t (bst-insert (imatrix-left t) i j x))]
+       [(bst-= i j (imatrix-i t) (imatrix-j t)) 
+        (set-imatrix-info t x)]
+       [(bst-> i j (imatrix-i t) (imatrix-j t)) 
         (set-imatrix-right t (bst-insert (imatrix-right t) i j x))])]
     [else (make-imatrix t i j x t)]))
 
 ;; bst-lookup : [BST X] Nat Nat -> X
 (define (bst-lookup t i j)
   (cond
-    [(imatrix? t)
+    [(is-a? t imatrix%)
      (cond
        [(bst-< i j (imatrix-i t) (imatrix-j t)) (bst-lookup (imatrix-left t) i j)]
        [(bst-= i j (imatrix-i t) (imatrix-j t)) (imatrix-info t)]
-       [else (bst-lookup (imatrix-left t) i j)])]
+       [else (bst-lookup (imatrix-right t) i j)])]
     [else (inner-ref (matrix-get-mat t) (matrix-get-m t) i j)]))
-
-
 
 ;                                                   
 ;                                                   
@@ -93,13 +109,18 @@
 ;                                                   
 ;                                                   
 
-(define (matrix? x) (or (is-a? x bmatrix%) (imatrix? x)))
+(define (matrix? x)
+  (define m (if (visible? x) (visible-matrix x) x))
+  (internal-matrix? m))
 
-(define (matrix-n M*)
+(define (internal-matrix? m)
+  (or (is-a? m bmatrix%) (is-a? m imatrix%)))
+
+(define (matrix-rows M*)
   (define-values (M n m) (check-matrix 'matrix-n M* 0 0))
   n)
 
-(define (matrix-m M*)
+(define (matrix-cols M*)
   (define-values (M n m) (check-matrix 'matrix-n M* 0 0))
   m)
 
@@ -108,6 +129,12 @@
   (define n (length r))
   (define m (length (car r)))
   (make-matrix n m (apply append r)))
+
+(define (rectangle->imatrix r)
+  ;; check rectangleness of r 
+  (define n (length r))
+  (define m (length (car r)))
+  (make-matrix-aux n m (apply append r)))
 
 (define (matrix->rectangle M*)
   (define-values (M n m) (check-matrix 'matrix->rectangle M* 0 0))
@@ -124,15 +151,16 @@
                      (length l)
                      (* n m))
              "third" l)
-  (make-visible
-   (let ([mat (make-vector (* n m) 0)])
-     (let loop ([l l][i 0][j 0])
-       (cond
-         [(null? l) (create-matrix n m mat)]
-         [else (begin (vector-set! mat (+ (* i m) j) (car l))
-                      (if (< j (- m 1))
-                          (loop (cdr l) i (+ j 1))
-                          (loop (cdr l) (+ i 1) 0)))])))))
+  (make-visible (make-matrix-aux n m l)))
+(define (make-matrix-aux n m l)
+  (let ([mat (make-vector (* n m) 0)])
+    (let loop ([l l][i 0][j 0])
+      (cond
+        [(null? l) (create-matrix n m mat)]
+        [else (begin (vector-set! mat (+ (* i m) j) (car l))
+                     (if (< j (- m 1))
+                         (loop (cdr l) i (+ j 1))
+                         (loop (cdr l) (+ i 1) 0)))]))))
 
 (define (build-matrix n m f)
   (check-arg 'make-matrix (natural? n) 'Nat "first" n)
@@ -188,11 +216,11 @@
                        [(>= j* j) (matrix-ref M (+ i* 1) (+ j* 1))])]))))
 
 (define (matrix-set! M* i j x)
-  (define _ (when (imatrix? M)
+  (define _ (when (is-a? M imatrix%)
               (error 'matrix-set! "use functional updates instead")))
   (define-values (M n m) (check-matrix 'matrix-ref M* i j))
   (vector-set! (matrix-get-mat M) (+ (* i m) j) x)
-  M)
+  M*)
 
 ;                              
 ;                              
@@ -233,18 +261,19 @@
 ;; Symbol [Matrix X] Nat Nat ->* [Vectorof X] Nat Nat 
 ;; contract checking for teaching languages; compute properties of matrix
 (define (check-matrix tag M* i j)
-  (define M (cond
-	      [(matrix? M*) M*]
-	      [(visible? M*) (visible-matrix M*)]
-	      [else (error 'check-matrix "something is wrong: ~e ~e~e\n"
-		      M* (visible? M*) (send M* get-M))]))
-  (check-arg tag (matrix? M) 'matrix "first" M)
+  (define M (if (internal-matrix? M*)
+                M* 
+                (let ([r (visible-matrix M*)])
+                  (cond
+                    [(internal-matrix? r) r]
+                    [(pair? r) (rectangle->imatrix r)]
+                    [else (check-arg tag #f 'matrix "first" M)]))))
   (check-arg tag (natural? i) 'Nat "second" i)
   (check-arg tag (natural? j) 'Nat "third" j)
   ;; --- now that M is a matrix, i and j are natural numbers:
   (check-aux tag M i j))
 (define (check-aux tag M* i j)
-  (define M (let loop ([M M*]) (if (imatrix? M) (loop (imatrix-left M)) M)))
+  (define M (let loop ([M M*]) (if (is-a? M imatrix%) (loop (imatrix-left M)) M)))
   (define n (matrix-get-n M))
   (define m (matrix-get-m M))
   ;; i and j have to be in Nat
@@ -261,4 +290,4 @@
     [(= n 2) "nd"]
     [(> n 3) "th"]
     [else (error 'th "can't happen")]))
-))
+

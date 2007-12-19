@@ -1,8 +1,8 @@
 #lang scheme
 
 (require (lib "matrix-sig.ss" "htdp")
-         (lib "matrix-unit.ss" "htdp")
-         (lib "matrix-render.ss" "htdp"))
+         (lib "matrix-render-sig.ss" "htdp")
+         (lib "matrix-unit.ss" "htdp"))
 
 (define render@
   (unit (import)

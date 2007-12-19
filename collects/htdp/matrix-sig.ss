@@ -8,11 +8,11 @@
 matrix? 
 ;; is this a matrix?
 
-matrix-n ;; [Matrix X] -> Nat 
-;; what is n for an n x m Matrix 
+matrix-rows ;; [Matrix X] -> Nat 
+;; how many rows does this matrix have? 
 
-matrix-m ;; [Matrix X] -> Nat 
-;; what is m for an n x m Matrix 
+matrix-cols ;; [Matrix X] -> Nat 
+;; how many columns does this matrix have? 
 
 rectangle->matrix ;; [Rectangle X] -> [Matrix X]
 ;; create a matrix from a rectangle 
