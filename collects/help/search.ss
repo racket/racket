@@ -115,33 +115,42 @@
             search-regexps))
          (entry-words entry)))
 
+;; limit : exact-positive-integer
+;; maximum number of hits to display
+(define limit 500)
+
 ;; build-itemization : (listof entry) -> (listof <stuff>)
 (define (build-itemization title entries)
   (cond
     [(null? entries) '()]
     [else 
-     (list 
-      (bold title)
-      (apply itemize
-             (map
-              (λ (entry)
-                (apply item
-                       (make-link-element
-                        "indexlink"
-                        (entry-content entry)
-                        (entry-tag entry))
-                       (make-extra-content
-                        (entry-desc entry))))
-              (limit-length
-               500
-               (sort
-                entries
-                (λ (x y) (string-ci<=? (entry->sort-key x) (entry->sort-key y))))))))]))
+     (let ([entries 
+            (sort
+             entries
+             (λ (x y) (string-ci<=? (entry->sort-key x) (entry->sort-key y))))])
+       (list*
+        (bold title)
+        (apply itemize
+               (map
+                (λ (entry)
+                  (apply item
+                         (make-link-element
+                          "indexlink"
+                          (entry-content entry)
+                          (entry-tag entry))
+                         (make-extra-content
+                          (entry-desc entry))))
+                (limit-length
+                 limit
+                 entries)))
+        (if (<= (length entries) limit)
+            '()
+            (list (italic (format "Search truncated after ~a hits." limit))))))]))
 
 (define (limit-length n l)
   (cond
-    [(zero? n) '()]
     [(null? l) '()]
+    [(zero? n) '()]
     [else (cons (car l) (limit-length (- n 1) (cdr l)))]))
 
 (define (entry->sort-key e)
