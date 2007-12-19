@@ -432,15 +432,26 @@
            [(string? style) 
             `((span ([class ,style]) ,@(super render-element e part ri)))]
            [(and (pair? style)
-                 (eq? (car style) 'show-color))
-            `((font ((style ,(format "background-color: ~a"
-                                    (apply string-append "#"
-                                           (map (lambda (v) (let ([s (format "0~x" v)])
-                                                              (substring s (- (string-length s) 2))))
-                                                (cdr style))))))
-                    (tt nbsp nbsp nbsp nbsp nbsp))
-              nbsp
-              ,@(super render-element e part ri))]
+                 (or (eq? (car style) 'bg-color)
+                     (eq? (car style) 'color)))
+            (unless (and (list? style)
+                         (or (and (= 4 (length style))
+                                  (andmap byte? (cdr style)))
+                             (and (= 2 (length style))
+                                  (member (cadr style)
+                                          '("white" "black" "red" "green" "blue" "cyan" "magenta" "yellow")))))
+              (error 'render-font "bad color style: ~e"  style))
+            `((font ((style ,(format "~acolor: ~a"
+                                     (if (eq? (car style) 'bg-color)
+                                         "background-"
+                                         "")
+                                     (if (= 2 (length style))
+                                         (cadr style)
+                                         (apply string-append "#"
+                                                (map (lambda (v) (let ([s (format "0~x" v)])
+                                                                   (substring s (- (string-length s) 2))))
+                                                     (cdr style)))))))
+                    ,@(super render-element e part ri)))]
            [(target-url? style)
             (if (current-no-links)
                 (super render-element e part ri)

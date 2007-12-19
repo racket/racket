@@ -68,7 +68,11 @@
         (printf "\\newcommand{\\smaller}[1]{{\\footnotesize #1}}\n")
         (printf "\\definecolor{PaleBlue}{rgb}{0.90,0.90,1.0}\n")
         (printf "\\definecolor{LightGray}{rgb}{0.90,0.90,0.90}\n")
-        (printf "\\newcommand{\\schemeinput}[1]{\\colorbox{LightGray}{\\hspace{-0.5ex}\\schemeinputbg{#1}\\hspace{-0.5ex}}}\n")
+        (printf "\\newcommand{\\intextcolor}[2]{\\textcolor{#1}{#2}}\n")
+        (printf "\\newcommand{\\intextrgbcolor}[2]{\\textcolor[rgb]{#1}{#2}}\n")
+        (printf "\\newcommand{\\incolorbox}[2]{{\\fboxrule=0pt\\fboxsep=0pt\\colorbox{#1}{#2}}}\n")
+        (printf "\\newcommand{\\inrgbcolorbox}[2]{{\\fboxrule=0pt\\fboxsep=0pt\\colorbox[rgb]{#1}{#2}}}\n")
+        (printf "\\newcommand{\\schemeinput}[1]{\\incolorbox{LightGray}{\\schemeinputbg{#1}}}\n")
         (printf "\\newcommand{\\highlighted}[1]{\\colorbox{PaleBlue}{\\hspace{-0.5ex}\\schemeinputbg{#1}\\hspace{-0.5ex}}}\n")
         (printf "\\newcommand{\\plainlink}[1]{#1}\n")
         (printf "\\newcommand{\\techlink}[1]{#1}\n")
@@ -175,6 +179,23 @@
                   [else (error 'latex-render "unrecognzied style symbol: ~s" style)])]
                [(string? style)
                 (wrap e style (regexp-match? #px"^scheme(?!error)" style))]
+               [(and (pair? style)
+                     (or (eq? (car style) 'bg-color)
+                         (eq? (car style) 'color)))
+                (wrap e (format "~a{~a}"
+                                (format (if (eq? (car style) 'bg-color)
+                                            "in~acolorbox"
+                                            "intext~acolor")
+                                        (if (= (length style) 2)
+                                            ""
+                                            "rgb"))
+                                (if (= (length style) 2)
+                                    (cadr style)
+                                    (format "~a,~a,~a"
+                                            (/ (cadr style) 255.0)
+                                            (/ (caddr style) 255.0)
+                                            (/ (cadddr style) 255.0))))
+                      #f)]
                [(image-file? style) 
                 (let ([fn (install-file (image-file-path style))])
                   (printf "\\includegraphics{~a}" fn))]

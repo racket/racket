@@ -247,7 +247,11 @@ information@|details|, even if the editor currently has delayed refreshing (see
                    @elem{snip @techlink{position}}))
 
   (define (colorName name name2 r g b)
-    (make-element `(show-color ,r ,g ,b) (list (to-element (bytes->string/latin-1 name)))))
+    (make-element #f
+                  (list (make-element `(bg-color ,r ,g ,b)
+                                      (list (hspace 5)))
+                        (hspace 1)
+                        (bytes->string/latin-1 name))))
   
   (define (Resource s)
     @elem{@to-element[`(quote ,(string->symbol (string-append "MrEd:" s)))]

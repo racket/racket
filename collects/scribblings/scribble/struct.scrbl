@@ -342,6 +342,19 @@ The @scheme[style] field is normally either
        @scheme['subscript], @scheme['superscript], or
        @scheme['hspace];}
 
+ @item{a list of the form @scheme[(list 'color _name)] or
+       @scheme[(list 'color _byte _byte _byte)] to set the text color,
+       where @scheme[_name] is one of @scheme["white"],
+       @scheme["black"], @scheme["red"], @scheme["green"],
+       @scheme["blue"], @scheme["cyan"], @scheme["magenta"], or
+       @scheme["yellow"], or three @scheme[_byte]s specify RGB
+       values;}
+
+ @item{a list of the form @scheme[(list 'bg-color _name)] or
+       @scheme[(list 'bg-color _byte _byte _byte)] to set the text
+       background color (with the same constraints and meanings as for
+       @scheme['color]);}
+
  @item{an instance of @scheme[target-url] to generate a hyperlink; or}
 
  @item{an instance of @scheme[image-file] to support an inline image.}
