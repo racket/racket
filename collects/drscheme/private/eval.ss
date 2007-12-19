@@ -11,6 +11,7 @@
   ;; to ensure this guy is loaded (and the snipclass installed) in the drscheme namespace & eventspace
   ;; these things are for effect only!
   (require (lib "cache-image-snip.ss" "mrlib")
+           #;
            (prefix foo (lib "matrix.ss" "htdp")))
   
   (define op (current-output-port))
@@ -183,8 +184,7 @@
             '(lib "mzlib/foreign.ss")
             '(lib "mred/mred.ss")
             '(lib "mrlib/cache-image-snip.ss")
-	    ;; WOW:
-	    '(lib "htdp/matrix.ss")
+	    '(lib "mrlib/matrix-snip.ss")
             '(lib "mzlib/pconvert-prop.ss")))
     
     ;; ensure that they are all here.
