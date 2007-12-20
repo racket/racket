@@ -13,12 +13,11 @@ of the contract library does not change over time.
 (let ()
   
   (define contract-namespace 
-    (let ([n (make-base-namespace)])
+    (let ([n ((dynamic-require 'mzscheme 'make-namespace))])
       (parameterize ([current-namespace n])
-        (namespace-require '(for-syntax mzscheme))
-        (namespace-require '(for-template mzscheme))
         (namespace-require 'mzlib/contract)
         (namespace-require 'mzlib/class)
+        (namespace-require 'mzlib/etc)
         (namespace-require '(only mzscheme force delay)))
       n))
   
@@ -79,12 +78,6 @@ of the contract library does not change over time.
   (define (test/spec-failed name expression blame)
     (let ()
       (define (has-proper-blame? msg)
-        (printf ">> ~s\n"
-                (cond
-                  [(regexp-match #rx"(^| )([^ ]*) broke" msg) 
-                   =>
-                   (λ (x) (caddr x))]
-                  [else (format "no blame in error message: \"~a\"" msg)]))
         (equal?
          blame
          (cond
@@ -96,7 +89,7 @@ of the contract library does not change over time.
       (contract-eval
        `(,thunk-error-test 
           (lambda () ,expression)
-          (datum->syntax #'here ',expression)
+          (datum->syntax-object #'here ',expression)
           (lambda (exn)
             (and (exn? exn)
                  (,has-proper-blame? (exn-message exn))))))
@@ -105,7 +98,7 @@ of the contract library does not change over time.
           (contract-eval
            `(,thunk-error-test 
              (lambda () ,rewritten)
-             (datum->syntax #'here ',rewritten)
+             (datum->syntax-object #'here ',rewritten)
              (lambda (exn)
                (and (exn? exn)
                     (,has-proper-blame? (exn-message exn))))))))))
@@ -1969,7 +1962,7 @@ of the contract library does not change over time.
    '(contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
               (new (class object%
                      (define/public m
-                       (lambda (x [y 'a])
+                       (opt-lambda (x [y 'a])
                          x))
                      (super-new)))
               'pos
@@ -1980,7 +1973,7 @@ of the contract library does not change over time.
    '(contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
               (new (class object%
                      (define/public m
-                       (lambda (x y [z #t])
+                       (opt-lambda (x y [z #t])
                          x))
                      (super-new)))
               'pos
@@ -1991,7 +1984,7 @@ of the contract library does not change over time.
    '(contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
               (new (class object%
                      (define/public m
-                       (lambda (x [y 'a] [z #t])
+                       (opt-lambda (x [y 'a] [z #t])
                          x))
                      (super-new)))
               'pos
@@ -2002,7 +1995,7 @@ of the contract library does not change over time.
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
                     (new (class object%
                            (define/public m
-                             (lambda (x [y 'a] [z #t])
+                             (opt-lambda (x [y 'a] [z #t])
                                x))
                            (super-new)))
                     'pos
@@ -2016,7 +2009,7 @@ of the contract library does not change over time.
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
                     (new (class object%
                            (define/public m
-                             (lambda (x [y 'a] [z #t])
+                             (opt-lambda (x [y 'a] [z #t])
                                x))
                            (super-new)))
                     'pos
@@ -2031,7 +2024,7 @@ of the contract library does not change over time.
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
                     (new (class object%
                            (define/public m
-                             (lambda (x [y 'a] [z #t])
+                             (opt-lambda (x [y 'a] [z #t])
                                x))
                            (super-new)))
                     'pos
@@ -2047,7 +2040,7 @@ of the contract library does not change over time.
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
                     (new (class object%
                            (define/public m
-                             (lambda (x [y 'a] [z #t])
+                             (opt-lambda (x [y 'a] [z #t])
                                x))
                            (super-new)))
                     'pos
@@ -2060,7 +2053,7 @@ of the contract library does not change over time.
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
                     (new (class object%
                            (define/public m
-                             (lambda (x [y 'a] [z #t])
+                             (opt-lambda (x [y 'a] [z #t])
                                x))
                            (super-new)))
                     'pos
@@ -2074,7 +2067,7 @@ of the contract library does not change over time.
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
                     (new (class object%
                            (define/public m
-                             (lambda (x [y 'a] [z #t])
+                             (opt-lambda (x [y 'a] [z #t])
                                x))
                            (super-new)))
                     'pos
@@ -2089,7 +2082,7 @@ of the contract library does not change over time.
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number?))))
                     (new (class object%
                            (define/public m
-                             (lambda (x [y 'a] [z #t])
+                             (opt-lambda (x [y 'a] [z #t])
                                'x))
                            (super-new)))
                     'pos
@@ -2105,7 +2098,7 @@ of the contract library does not change over time.
                   (send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number? symbol?))))
                                   (new (class object%
                                          (define/public m
-                                           (lambda (x [y 'a] [z #t])
+                                           (opt-lambda (x [y 'a] [z #t])
                                              (values 1 'x)))
                                          (super-new)))
                                   'pos
@@ -2122,7 +2115,7 @@ of the contract library does not change over time.
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number? symbol?))))
                     (new (class object%
                            (define/public m
-                             (lambda (x [y 'a] [z #t])
+                             (opt-lambda (x [y 'a] [z #t])
                                (values 'x 'x)))
                            (super-new)))
                     'pos
@@ -2137,7 +2130,7 @@ of the contract library does not change over time.
    '(send (contract (object-contract (m (opt->* (integer?) (symbol? boolean?) (number? symbol?))))
                     (new (class object%
                            (define/public m
-                             (lambda (x [y 'a] [z #t])
+                             (opt-lambda (x [y 'a] [z #t])
                                (values 1 1)))
                            (super-new)))
                     'pos
@@ -3631,9 +3624,9 @@ of the contract library does not change over time.
   
   (contract-eval '(define-contract-struct node (val obj rank left right) (make-inspector)))
   (contract-eval '(define (compute-rank n)
-                    (cond
-                      [(not n) 0]
-                      [else (node-rank n)])))
+                    (if n 
+                        (node-rank n)
+                        0)))
   
   (contract-eval '(define-opt/c (leftist-heap-greater-than/rank/opt n r)
                     (or/c not
@@ -3783,7 +3776,7 @@ of the contract library does not change over time.
         (cond
           [(not t1) t2]
           [(not t2) t1]
-          [else
+          [#t
            (let ([t1-val (node-val t1)]
                  [t2-val (node-val t2)])
              (cond
@@ -3793,7 +3786,7 @@ of the contract library does not change over time.
                       (node-left t1)
                       (merge (node-right t1)
                              t2))]
-               [else
+               [#t
                 (pick t2-val 
                       (node-obj t2)
                       (node-left t2)
@@ -3806,7 +3799,7 @@ of the contract library does not change over time.
           (cond
             [(>= ra rb)
              (make-node x obj (+ rb 1) a b)]
-            [else
+            [#t
              (make-node x obj (+ ra 1) b a)])))
       (node-val
        (remove-min (ai (make-node 137 'x 1 

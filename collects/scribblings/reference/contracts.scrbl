@@ -316,8 +316,8 @@ A @deftech{function contract} wraps a procedure to delay
 checks for its arguments and results.
 
 @defform*/subs[#:literals (any values)
-               [(-> dom ... res-expr)
-                (-> dom ... (values res-expr ...))
+               [(-> dom ... range-expr)
+                (-> dom ... (values range-expr ...))
                 (-> dom ... any)]
                ([dom dom-expr (code:line keyword dom-expr)])]{
 
@@ -363,39 +363,52 @@ If @scheme[(values res-expr ...)] is used as the last sub-form of
 @scheme[->], the function must produce a result for each contract, and
 each values must match its respective contract.}
 
-@;{
+
 @defform*/subs[#:literals (any)
           [(->* (mandatory-dom ...) (optional-dom ...) rest-expr range)
            (->* (mandatory-dom ...) (optional-dom ...) range)]
           ([mandatory-dom dom-expr (code:line keyword dom-expr)]
            [optional-dom dom-expr (code:line keyword dom-expr)]
            [range (range-expr ...) any])]{
-new one
+
+The @scheme[->*] contract combinator produces contracts for
+functions that accept optional arguments (either keyword or
+positional) and or arbitrarily many arguments. The first
+clause of a @scheme[->*] contract describes the mandatory
+arguments, and is similar to the argument description of a
+@scheme[->] contract. The second clause describes the
+optional arguments. The last clause describes the range of
+the function. It can either be @scheme[any] or a
+sequence of contracts, indicating that the function must
+return multiple values. If present, the @scheme[rest-expr]
+contract governs the arguments in the rest parameter.
+
+As an example, the contract 
+@schemeblock[(->* () (boolean? #:x integer?) (listof symbol?) (symbol?))] 
+matches functions that optionally accept a boolean, an
+integer keyword argument @scheme[#:x] and arbitrarily more
+symbols, and that return a symbol.
+
 }
-}
+
 
 @defform*/subs[#:literals (any)
-          [(->* (dom ...) (res-expr ...))
-           (->* (dom ...) rest-expr (res-expr ...))
-           (->* (dom ...) any)
-           (->* (dom ...) rest-expr any)]
-          ([dom dom-expr (code:line keyword dom-expr)])]{
+[(->d (mandatory-dependent-dom ...) 
+      (optional-dependent-dom ...) 
+      pre-cond range post-cond)
+ (->d (mandatory-dependent-dom ...) 
+      (optional-dependent-dom ...) 
+      id rest-expr
+      pre-cond range post-cond)]
+([mandatory-dependent-dom [id dom-expr] (code:line keyword [id dom-expr])]
+ [optional-dependent-dom [id dom-expr] (code:line keyword [id dom-expr])]
+ [pre-cond (code:line) (code:line #:pre-cond boolean-expr)]
+ [post-cond (code:line) (code:line #:post-cond boolean-expr)]
+ [range (range-expr ...) any])]{
+Not yet implemented.
+}
 
-Like @scheme[->], but for functions that have ``rest''
-arguments. The @scheme[dom]s specify contracts on the
-initial arguments, and @scheme[rest-expr] (if supplied)
-specifies a contract on an additional ``rest'' argument,
-which is always a list. Each @scheme[res-expr] specifies a
-contract on a result from the function.
-
-For example, a function that accepts one or more integer arguments and
-returns one boolean would have the following contract:
-
-@schemeblock[
-((integer?) (listof integer?) . ->* . (boolean?))
-]}
-
-
+@;{
 @defform[(->d expr ... res-gen-expr)]{
 
 Like @scheme[->], but instead of a @scheme[_res-expr] to produce a
@@ -519,7 +532,7 @@ optional argument.}
 Like @scheme[opt->], but with support for multiple results as in
 @scheme[->*].}
 
-
+}
 @defform[(unconstrained-domain-> res-expr ...)]{
 
 Constructs a contract that accepts a function, but makes no constraint
@@ -534,10 +547,11 @@ For example, the contract
 
 @schemeblock[
 (provide/contract 
- [f (->r ([size natural-number/c]
+ [f (->d ([size natural-number/c]
           [proc (and/c (unconstrained-domain-> number?)
                        (lambda (p) 
                          (procedure-arity-includes? p size)))])
+         ()
          number?)])
 ]
 

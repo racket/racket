@@ -1,5 +1,14 @@
 #lang scheme/base
 
+#|
+
+differences from v3:
+. define/contract is no longer supported
+. ->d and ->* are different
+. ->r ->pp opt-> and opt->* are gone
+
+|#
+
 (require "private/contract.ss"
          "private/contract-arrow.ss"
          "private/contract-guts.ss"
@@ -13,7 +22,7 @@
  (except-out (all-from-out "private/contract-ds.ss")
              lazy-depth-to-look)
  
- (except-out (all-from-out "private/contract-arrow.ss"))
+ (all-from-out "private/contract-arrow.ss")
  (except-out (all-from-out "private/contract.ss")
              check-between/c
              check-unary-between/c))
@@ -135,7 +144,6 @@
   
   (provide provide/contract
            define-contract-struct
-           define/contract
            contract)
   
   (define mk*

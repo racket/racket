@@ -1,10 +1,79 @@
 #lang scheme/base
-(require scheme/contract)
-(provide (all-from-out scheme/contract))
 
-;; provide contracts for objects
-(require scheme/private/contract-object)
-(provide (all-from-out scheme/private/contract-object))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  provide arrow contracts from our local copy
+;;
+
+(require "private/contract-arrow.ss")
+(provide (all-from-out "private/contract-arrow.ss"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  provide contracts for objects
+;;
+(require "private/contract-object.ss")
+(provide (all-from-out "private/contract-object.ss"))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; provide everything from the scheme/ implementation
+;; except the arrow contracts
+;;
+
+(require scheme/private/contract
+         scheme/private/contract-guts
+         scheme/private/contract-ds
+         scheme/private/contract-opt-guts
+         scheme/private/contract-opt
+         scheme/private/contract-basic-opters)
+
+(provide 
+ opt/c define-opt/c ;(all-from "private/contract-opt.ss")
+ (except-out (all-from-out scheme/private/contract-ds)
+             lazy-depth-to-look)
  
+ (except-out (all-from-out scheme/private/contract)
+             check-between/c
+             check-unary-between/c))
 
+;; from contract-guts.ss
 
+(provide any
+         and/c
+         any/c
+         none/c
+         make-none/c 
+         
+         guilty-party
+         contract-violation->string
+         
+         contract?
+         contract-name
+         contract-proc
+         
+         flat-contract?
+         flat-contract
+         flat-contract-predicate
+         flat-named-contract
+         
+         contract-first-order-passes?
+         
+         ;; below need docs
+         
+         make-proj-contract
+         
+         contract-stronger?
+         
+         coerce-contract 
+         flat-contract/predicate?
+         
+         build-compound-type-name
+         raise-contract-error
+         
+         proj-prop proj-pred? proj-get
+         name-prop name-pred? name-get
+         stronger-prop stronger-pred? stronger-get
+         flat-prop flat-pred? flat-get
+         first-order-prop first-order-get)

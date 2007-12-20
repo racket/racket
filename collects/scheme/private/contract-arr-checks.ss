@@ -93,10 +93,10 @@
                           orig-str
                           "post-condition expression failure")))
 
-(define (check-procedure val dom-length mandatory-kwds src-info blame orig-str)
+(define (check-procedure val dom-length optionals mandatory-kwds optional-keywords src-info blame orig-str)
   (unless (and (procedure? val)
-               (procedure-arity-includes? val dom-length)
-               (equal? mandatory-kwds (get-mandatory-keywords val)))
+               (procedure-arity-includes?/optionals val dom-length optionals)
+               (keywords-match mandatory-kwds optional-keywords val))
     (raise-contract-error
      val
      src-info
@@ -106,6 +106,19 @@
      dom-length
      (keyword-error-text mandatory-kwds)
      val)))
+
+(define (procedure-arity-includes?/optionals f base optionals)
+  (cond
+    [(zero? optionals) (procedure-arity-includes? f base)]
+    [else (and (procedure-arity-includes? f (+ base optionals))
+               (procedure-arity-includes?/optionals f base (- optionals 1)))]))
+
+(define (keywords-match mandatory-kwds optional-kwds val)
+  (let-values ([(proc-mandatory proc-all) (procedure-keywords val)])
+    (and (equal? proc-mandatory mandatory-kwds)
+         (andmap (λ (kwd) (and (member kwd proc-all)
+                               (not (member kwd proc-mandatory))))
+                 optional-kwds))))
 
 (define (keyword-error-text mandatory-keywords)
   (cond
@@ -165,10 +178,10 @@
                           (procedure-arity val)
                           val)))
 
-(define (check-procedure/more val dom-length mandatory-kwds src-info blame orig-str)
+(define (check-procedure/more val dom-length mandatory-kwds optional-kwds src-info blame orig-str)
   (unless (and (procedure? val)
                (procedure-accepts-and-more? val dom-length)
-               (equal? mandatory-kwds (get-mandatory-keywords val)))
+               (keywords-match mandatory-kwds optional-kwds val))
     (raise-contract-error
      val
      src-info
