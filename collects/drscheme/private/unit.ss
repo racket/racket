@@ -26,6 +26,7 @@ module browser threading seems wrong.
            (lib "include-bitmap.ss" "mrlib")
            "drsig.ss"
            "auto-language.ss"
+           "insert-large-letters.ss"
            
            (prefix-in drscheme:arrow: "../arrow.ss")
            
@@ -3070,63 +3071,14 @@ module browser threading seems wrong.
                    (λ ()
                      (let ([edit (get-edit-target-object)])
                        (when edit
-                         (let ([str (get-text-from-user (string-constant large-semicolon-letters)
-                                                        (string-constant text-to-insert)
-                                                        this)])
-                           (when (and str
-                                      (not (equal? str "")))
-                             (let ()
-                               (define language-settings (send definitions-text get-next-settings))
-                               (define-values (comment-prefix comment-character)
-                                 (if language-settings
-                                     (send (drscheme:language-configuration:language-settings-language
-                                            language-settings)
-                                           get-comment-character)
-                                     (values ";" #\;)))
-                               (define bdc (make-object bitmap-dc% (make-object bitmap% 1 1 #t)))
-                               (define the-font (send (send (editor:get-standard-style-list)
-                                                            find-named-style
-                                                            "Standard")
-                                                      get-font))
-                               (define-values (tw th td ta) (send bdc get-text-extent str the-font))
-                               (define tmp-color (make-object color%))
-                               
-                               (define (get-char x y)
-                                 (send bdc get-pixel x y tmp-color)
-                                 (let ([red (send tmp-color red)])
-                                   (if (= red 0)
-                                       comment-character
-                                       #\space)))
-                               (define bitmap
-                                 (make-object bitmap% 
-                                   (inexact->exact tw)
-                                   (inexact->exact th) 
-                                   #t))
-                               
-                               (define (fetch-line y)
-                                 (let loop ([x (send bitmap get-width)]
-                                            [chars null])
-                                   (cond
-                                     [(zero? x) (apply string chars)]
-                                     [else (loop (- x 1) (cons (get-char (- x 1) y) chars))])))
-                               
-                               (send bdc set-bitmap bitmap)
-                               (send bdc clear)
-                               (send bdc set-font the-font)
-                               (send bdc draw-text str 0 0)
-                               
-                               (send edit begin-edit-sequence)
-                               (let ([start (send edit get-start-position)]
-                                     [end (send edit get-end-position)])
-                                 (send edit delete start end)
-                                 (send edit insert "\n" start start)
-                                 (let loop ([y (send bitmap get-height)])
-                                   (unless (zero? y)
-                                     (send edit insert (fetch-line (- y 1)) start start)
-                                     (send edit insert comment-prefix start start)
-                                     (send edit insert "\n" start start)
-                                     (loop (- y 1)))))
-                               (send edit end-edit-sequence)))))))]
+                         (let ([language-settings (send definitions-text get-next-settings)])
+                           (let-values ([(comment-prefix comment-character)
+                                         (if language-settings
+                                             (send (drscheme:language-configuration:language-settings-language
+                                                    language-settings)
+                                                   get-comment-character)
+                                             (values ";" #\;))])
+                             (insert-large-letters comment-prefix comment-character edit this))))))]
                   [c% (get-menu-item%)])
               
               (frame:add-snip-menu-items 
