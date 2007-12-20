@@ -67,7 +67,16 @@
          (determine-error (error-builder err:parse-intermediate find-intermediate-error lexed filename))
          (parse-intermediate my-get))
         ((intermediate+access)
-         (determine-error (error-builder err:parse-intermediate+access err:parse-intermediate+access
+         (determine-error (error-builder err:parse-intermediate+access 
+                                         (lambda ()
+                                           (printf "Syntax error detected~n")
+                                           (let ([result (!!! (err:parse-intermediate+access lexed filename))])
+                                             (raise-read-error (cadr result)
+                                                               (car (car result))
+                                                               (cadr (car result))
+                                                               (caddr (car result))
+                                                               (cadddr (car result))
+                                                               (car (cddddr (car result))))))
                                          #;(lambda () #t) lexed filename))
          (parse-intermediate+access my-get))
         ((advanced) 

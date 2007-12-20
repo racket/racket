@@ -100,11 +100,11 @@
         this.x = x;
       }
       int lessThan( int y) {
-         if (y < this.x) {
+         if (y < this.x) 
            return -1;
-         } else {
+          else 
            return 1;
-         }
+         
       }
     }" language #f "Class & interface, containing if statement")
   
@@ -212,7 +212,7 @@
    class B implements Z {
     B() { }
     int x() { return 3; }
-    int oX() { if (this.x() == 3) { return 5; } else { return 6; } }
+    int oX() { if (this.x() == 3)  return 5;  else  return 6;  }
    }
   foo"
    language #t "Parse-error test, mentioning foo")
@@ -380,15 +380,15 @@
        this.numPages = numPages;
      }
      String level() {
-       if ( this.numPages < 10 ) {
+       if ( this.numPages < 10 ) 
          return \"Apprentice\";
-       } else { 
-         if (this.numPages < 100) {
+        else 
+         if (this.numPages < 100) 
            return \"Journeyman\";
-         } else {
+          else 
            return \"Master\";
-         } 
-       }
+          
+       
      }
    }
    "
