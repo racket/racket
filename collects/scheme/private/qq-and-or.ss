@@ -275,9 +275,10 @@
 						(if (zero? level)
 						    (let-values
 							(((l) (normal l old-l)))
-						      (let-values
-							  ()
-							(list (quote-syntax qq-append) uqsd l)))
+                                                      (if (stx-null? l)
+                                                          uqsd
+                                                          (list (quote-syntax qq-append)
+                                                                uqsd l)))
 						    (let-values
 							(((restx) (qq-list rest (sub1 level))))
 						      (let-values

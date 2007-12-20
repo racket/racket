@@ -663,7 +663,7 @@
 (syntax-test #'(unquote-splicing 7))
 
 (syntax-test #'`(1 . ,@5))
-(error-test #'`(1 ,@5))
+(test (cons 1 5) 'qq `(1 ,@5))
 (error-test #'`(1 ,@5 2))
 
 (define (qq-test e)

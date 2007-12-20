@@ -33,7 +33,7 @@ Creates an empty font list.
                                    [underline any/c #f]
                                    [smoothing (one-of/c 'default 'partly-smoothed 'smoothed 'unsmoothed) 'default]
                                    [size-in-pixels? any/c #f])
-              void?])]{
+              (is-a?/c font%)])]{
 
 Finds an existing font in the list or creates a new one (that is
  automatically added to the list). The arguments are the same as for

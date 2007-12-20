@@ -66,22 +66,29 @@
 		     stx)]
 		   [((unsyntax-splicing x) . rest)
 		    (if (zero? depth)
-			(let ([rest-done-k
-			       (lambda (rest-v bindings)
-				 (with-syntax ([temp (car (generate-temporaries '(uqs)))]
-					       [ctx (datum->syntax #'x 'ctx #'x)])
-				   (convert-k (datum->syntax
-					       stx
-					       (list* (syntax temp)
-						      (quote-syntax ...)
-						      rest-v)
-					       stx)
-					      (cons #'[(temp (... ...)) (check-splicing-list x (quote-syntax ctx))]
-						    bindings))))])
-			  (loop (syntax rest) depth
-				(lambda ()
-				  (rest-done-k (syntax rest) null))
-				rest-done-k))
+                        (if (stx-null? (syntax rest))
+                            (with-syntax ([temp (car (generate-temporaries '(uqs1)))])
+                              (convert-k (datum->syntax
+                                          stx
+                                          (syntax temp)
+                                          stx)
+                                         (list #'[temp x])))
+                            (let ([rest-done-k
+                                   (lambda (rest-v bindings)
+                                     (with-syntax ([temp (car (generate-temporaries '(uqs)))]
+                                                   [ctx (datum->syntax #'x 'ctx #'x)])
+                                       (convert-k (datum->syntax
+                                                   stx
+                                                   (list* (syntax temp)
+                                                          (quote-syntax ...)
+                                                          rest-v)
+                                                   stx)
+                                                  (cons #'[(temp (... ...)) (check-splicing-list x (quote-syntax ctx))]
+                                                        bindings))))])
+                              (loop (syntax rest) depth
+                                    (lambda ()
+                                      (rest-done-k (syntax rest) null))
+                                    rest-done-k)))
 			(let ([mk-rest-done-k
 			       (lambda (x-v x-bindings)
 				 (lambda (rest-v rest-bindings)

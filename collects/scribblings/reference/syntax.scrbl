@@ -1013,12 +1013,18 @@ and the result of the @scheme[_expr] takes the place of the
 @scheme[(unquote-splicing _expr)] similarly escapes, but the
 @scheme[_expr] must produce a list, and its elements are spliced as
 multiple values place of the @scheme[(unquote-splicing _expr)], which
-must appear as the @scheme[car] or a quoted pair.
+must appear as the @scheme[car] or a quoted pair; if the @scheme[cdr]
+of the relevant quoted pair is empty, then @scheme[_expr] need not
+produce a list, and its result is used directly in place of the quoted
+pair (in the same way that @scheme[append] accepts a non-list final
+argument).
 
 @examples[
 (eval:alts (#,(scheme quasiquote) (0 1 2)) `(0 1 2))
-(eval:alts (#,(scheme quasiquote) (0 (#,(scheme unquote) (+ 1 2)) 4)) `(1 ,(+ 1 2) 4))
-(eval:alts (#,(scheme quasiquote) (0 (#,(scheme unquote-splicing) (list 1 2)) 4)) `(1 ,@(list 1 2) 4))
+(eval:alts (#,(scheme quasiquote) (0 (#,(scheme unquote) (+ 1 2)) 4)) `(0 ,(+ 1 2) 4))
+(eval:alts (#,(scheme quasiquote) (0 (#,(scheme unquote-splicing) (list 1 2)) 4)) `(0 ,@(list 1 2) 4))
+(eval:alts (#,(scheme quasiquote) (0 (#,(scheme unquote-splicing) 1) 4)) `(0 ,@1 4))
+(eval:alts (#,(scheme quasiquote) (0 (#,(scheme unquote-splicing) 1))) `(0 ,@1))
 ]
 
 A @scheme[quasiquote], @scheme[unquote], or @scheme[unquote-splicing]
