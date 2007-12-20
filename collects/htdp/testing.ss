@@ -7,7 +7,8 @@
            (lib "pconvert.ss")
            (lib "class.ss"))
   
-  (require-for-syntax (lib "shared.ss" "stepper" "private"))
+  (require-for-syntax (only (lib "list.ss") foldr)
+                      (lib "shared.ss" "stepper" "private"))
   
   (provide 
    check-expect ;; syntax : (check-expect <expression> <expression>)
@@ -15,6 +16,17 @@
    check-error  ;; syntax : (check-error <expression> <expression>)
    generate-report ;; -> true
    )
+  
+  ;; slap a bunch of syntax-properties related to the stepper on the body 
+  ;; expressions of check-expect forms.
+  (define-for-syntax (add-stepper-properties tag exp)
+    (foldr (lambda (pr exp)
+             (stepper-syntax-property exp (car pr) (cadr pr)))
+           exp
+           `((stepper-hint ,tag)
+             (stepper-no-retval-wrap #t)
+             (stepper-dont-show-reduction #t)
+             (stepper-render-completed-as ,#`(finished-test-case)))))
   
   (define INEXACT-NUMBERS-FMT
     "check-expect cannot compare inexact numbers. Try (check-within test ~a range).")
@@ -59,17 +71,14 @@
        (not (eq? (syntax-local-context) 'expression))
        (quasisyntax/loc stx
          (define #,(gensym 'test)
-           
-           #,(stepper-syntax-property
-              (stepper-syntax-property
-               #`(check-values-expected
-                  (lambda () test) actual (make-src #,@(list (syntax-source stx)
-                                                             (syntax-line stx)
-                                                             (syntax-column stx)
-                                                             (syntax-position stx)
-                                                             (syntax-span stx))))
-               `stepper-hint `comes-from-check-expect)
-              `stepper-no-retval-wrap #t))))
+           #,(add-stepper-properties
+              'comes-from-check-expect
+              #`(check-values-expected
+                 (lambda () test) actual (make-src #,@(list (syntax-source stx)
+                                                            (syntax-line stx)
+                                                            (syntax-column stx)
+                                                            (syntax-position stx)
+                                                            (syntax-span stx))))))))
       ((_ test)
        (not (eq? (syntax-local-context) 'expression))
        (raise-syntax-error 'check-expect CHECK-EXPECT-STR stx))
@@ -95,12 +104,14 @@
        (not (eq? (syntax-local-context) 'expression))
        (quasisyntax/loc stx
          (define #,(gensym 'test-within)
-           (check-values-within (lambda () test) actual within
-                                (make-src #,@(list (syntax-source stx)
-                                                   (syntax-line stx)
-                                                   (syntax-column stx)
-                                                   (syntax-position stx)
-                                                   (syntax-span stx)))))))
+           #,(add-stepper-properties
+              `comes-from-check-within
+              #`(check-values-within (lambda () test) actual within
+                                      (make-src #,@(list (syntax-source stx)
+                                                         (syntax-line stx)
+                                                         (syntax-column stx)
+                                                         (syntax-position stx)
+                                                         (syntax-span stx))))))))
       ((_ test actual)
        (not (eq? (syntax-local-context) 'expression))
        (raise-syntax-error 'check-within CHECK-WITHIN-STR stx))
@@ -125,11 +136,13 @@
        (not (eq? (syntax-local-context) 'expression))
        (quasisyntax/loc stx
          (define #,(gensym 'test-error)
-           (check-values-error (lambda () test) error (make-src #,@(list (syntax-source stx)
-                                                                         (syntax-line stx)
-                                                                         (syntax-column stx)
-                                                                         (syntax-position stx)
-                                                                         (syntax-span stx)))))))
+           #,(add-stepper-properties
+              `comes-from-check-error
+              #`(check-values-error (lambda () test) error (make-src #,@(list (syntax-source stx)
+                                                                              (syntax-line stx)
+                                                                              (syntax-column stx)
+                                                                              (syntax-position stx)
+                                                                              (syntax-span stx))))))))
       ((_ test)
        (not (eq? (syntax-local-context) 'expression))
        (raise-syntax-error 'check-error CHECK-ERROR-STR stx))
@@ -152,6 +165,10 @@
     (unless (pred? actual)
       (raise (make-exn:fail:contract (format fmt actual)
                                      (current-continuation-marks)))))
+  
+  
+
+  
   
   ;run-and-check: (scheme-val scheme-val scheme-val -> boolean) 
   ;               (scheme-val scheme-val scheme-val -> check-fail) 
