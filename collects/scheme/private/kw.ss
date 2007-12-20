@@ -592,7 +592,7 @@
     (let ([l (syntax->list stx)])
       (if (not (and l
                     (pair? (cdr l))
-                    (not (keyword? (cadr l)))
+                    (not (keyword? (syntax-e (cadr l))))
                     (ormap (lambda (x) (keyword? (syntax-e x)))
                            l)))
           ;; simple or erroneous app:
