@@ -192,8 +192,7 @@
                    (varref-skip-step? #`id-stx)]
                   [(#%app . terms)
                    (or
-                    ; don't halt for the reduction of a check-expect ... of course it's gross that this is here.
-                    (eq? (stepper-syntax-property expr 'stepper-hint) 'comes-from-check-expect)
+                    (stepper-syntax-property expr 'stepper-dont-show-reduction)
                     ; don't halt for proper applications of constructors
                    (let ([fun-val (lookup-binding mark-list (get-arg-var 0))])
                      (and (procedure? fun-val)
@@ -532,7 +531,7 @@
                              lifting-indices)])
              (vector (reconstruct-completed-define exp vars (vals-getter) render-settings) #f))])
         (let ([exp (skipto/auto exp 'discard (lambda (exp) exp))])
-          (cond 
+          (cond
             [(stepper-syntax-property exp 'stepper-define-struct-hint)
              ;; the hint contains the original syntax
              (vector (stepper-syntax-property exp 'stepper-define-struct-hint) #t)]
@@ -540,7 +539,8 @@
              (vector
               (kernel:kernel-syntax-case exp #f
                 [(define-values vars-stx body)
-                 (reconstruct-completed-define exp (syntax->list #`vars-stx) (vals-getter) render-settings)]
+                 (or (stepper-syntax-property #'body 'stepper-render-completed-as)
+                     (reconstruct-completed-define exp (syntax->list #`vars-stx) (vals-getter) render-settings))]
                 [else
                  (let* ([recon-vals (map (lambda (val)
                                            (recon-value val render-settings))

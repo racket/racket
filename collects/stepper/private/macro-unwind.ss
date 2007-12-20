@@ -117,24 +117,46 @@
                                      (error 'reconstruct
                                             "reconstruct fails on multiple-values define: ~v\n"
                                             (syntax-object->datum stx)))
-                                   (if (eq? (stepper-syntax-property #`body 'stepper-hint) 'comes-from-check-expect)
-                                       (kernel:kernel-syntax-case
-                                        (unwind #`body settings) #f
-                                         ;;hide the extra goo on a check-expect:
+                                   (cond 
+                                     [(eq? (stepper-syntax-property #`body 'stepper-hint) 'comes-from-check-expect)
+                                      (kernel:kernel-syntax-case
+                                          (unwind #`body settings) #f
+                                        ;;hide the extra goo on a check-expect:
                                         [(c-e (lambda () a1) a2 a3)
                                          #`(check-expect a1 a2)]
-                                         [((... ...) test-exp dots2)
-                                          (let ([evaled-args (stepper-syntax-property #'body 'stepper-evaled-args)])
-                                            #;(printf "~e\n" (lengevaled-args) #;(pair? (cdr evaled-args)))
-                                            (unless (= (length evaled-args) 4)
-                                              (error 'unwind-define "expected exactly four args in check-expect unwind"))
-                                            ;;(printf "~e\n" (syntax-object->datum (unwind ((list-ref evaled-args 2)) settings)))
-                                           ;;#`(ding ding ding)
-                                            
+                                        [((... ...) test-exp dots2)
+                                         (let ([evaled-args (stepper-syntax-property #'body 'stepper-evaled-args)])
+                                           (unless (= (length evaled-args) 4)
+                                             (error 'unwind-define "expected exactly four args in check-expect unwind"))
                                            (let ([expected (unwind ((list-ref evaled-args 2)) settings)])
-                                              #`(check-expect test-exp #,expected)))]
-                                        [else #`(c-e else)])
-                                       (let* ([printed-name
+                                             #`(check-expect test-exp #,expected)))]
+                                        [else (error 'check-expect-unwind "unexpected unwind result")])]
+                                     [(eq? (stepper-syntax-property #`body 'stepper-hint) 'comes-from-check-within)
+                                      (kernel:kernel-syntax-case
+                                          (unwind #`body settings) #f
+                                        [(c-e (lambda () a1) a2 a3 a4)
+                                         #`(check-within a1 a2 a3)]
+                                        [((... ...) test-exp dots2)
+                                         (let ([evaled-args (stepper-syntax-property #'body 'stepper-evaled-args)])
+                                           (unless (= (length evaled-args) 5)
+                                             (error 'unwind-define "expected exactly five args in check-within unwind"))
+                                           (let ([expected (unwind ((list-ref evaled-args 2)) settings)]
+                                                 [within (unwind ((list-ref evaled-args 3)) settings)])
+                                             #`(check-within test-exp #,expected #,within)))]
+                                        [else (error 'check-within-unwind "unexpected unwind result")])]
+                                     [(eq? (stepper-syntax-property #`body 'stepper-hint) 'comes-from-check-error)
+                                      (kernel:kernel-syntax-case
+                                          (unwind #`body settings) #f
+                                        [(c-e (lambda () a1) a2 a3)
+                                         #`(check-error a1 a2)]
+                                        [((... ...) test-exp dots2)
+                                         (let ([evaled-args (stepper-syntax-property #'body 'stepper-evaled-args)])
+                                           (unless (= (length evaled-args) 4)
+                                             (error 'unwind-define "expected exactly four args in check-errror unwind"))
+                                           (let ([expected (unwind ((list-ref evaled-args 2)) settings)])
+                                             #`(check-error test-exp #,expected)))]
+                                        [else (error 'check-error-unwind "unexpected unwind result")])]
+                                     [else (let* ([printed-name
                                                (or (stepper-syntax-property #`name 'stepper-lifted-name)
                                                    (stepper-syntax-property #'name 'stepper-orig-name)
                                                    #'name)]
@@ -172,7 +194,7 @@
                                               [else (error 'unwind-define
                                                            "expr with stepper-define-type is not a lambda: ~e"
                                                            (syntax-object->datum unwound-body))])
-                                             #`(define #,printed-name #,unwound-body)))))]
+                                             #`(define #,printed-name #,unwound-body)))]))]
                                 [else (error 'unwind-define
                                              "expression is not a define-values: ~e"
                                              (syntax-object->datum stx))]))

@@ -87,6 +87,9 @@ stepper-hint :
 		        box (inside an xml box)
  [ 'comes-from-recur ] : expression was expanded from a 'recur'
  [ 'comes-from-check-expect ] : expression was expanded from a 'check-expect'
+ comes-from-check-within 
+ comes-from-check-error
+ 
 
 stepper-define-type:
  this is attached to the right-hand sides of defines to indicate what
@@ -231,6 +234,12 @@ args-of-call [ADDED BY RECONSTRUCTOR] :
 
 stepper-no-retval-wrap:
   don't annotate this with a return-values-wrap
+
+stepper-render-completed-as:
+  use this syntax object to represent the completed expression
+
+stepper-dont-show-reduction:
+  don't show the reduction of this application
 
 STEPPER-HINT COLLISIONS
 
