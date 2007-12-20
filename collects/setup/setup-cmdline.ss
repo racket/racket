@@ -74,7 +74,14 @@
                  ;; A normal-form collection path matches a symbolic module path;
                  ;; this is a bit of a hack, but it's not entirely a coincidence:
                  (unless (module-path? (string->symbol v))
-                   (error (format "bad collection path: ~a" v)))
+                   (error (format "bad collection path~a: ~a" 
+                                  (cond
+                                   [(regexp-match? #rx"/$" v)
+                                    " (trailing slash not allowed)"]
+                                   [(regexp-match? #rx"\\\\" v)
+                                    " (backslash not allowed)"]
+                                   [else ""])
+                                  v)))
                  (list v))
                collections))
         '("Setup specific <collection>s only" "collection")]

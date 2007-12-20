@@ -227,87 +227,129 @@
                       (get-all-planet-packages)
                       (remove-falses (map planet-spec->planet-list x-specific-planet-dirs)))))
             null))
+
+      (define all-collections
+        (let ([ht (make-hash-table 'equal)])
+          (let loop ([collection-paths (current-library-collection-paths)])
+            (cond
+             [(null? collection-paths) 
+              (hash-table-map ht (lambda (k v) v))]
+             [else (let* ([cp (car collection-paths)]
+                          [cp-contents
+                           (if (directory-exists? cp)
+                               (directory-list cp)
+                               null)])
+                     (let loop ([collections (filter
+                                              (lambda (x)
+                                                (directory-exists?
+                                                 (build-path cp x)))
+                                              cp-contents)])
+                       (cond
+                        [(null? collections) (void)]
+                        [else (let* ([collection (car collections)])
+                                (hash-table-get
+                                 ht
+                                 collection
+                                 (lambda ()
+                                   (let ([cc (collection->cc (list collection))])
+                                     (when cc
+                                       (hash-table-put! 
+                                        ht
+                                        collection
+                                        cc))))))
+                              (loop (cdr collections))])))
+                   (loop (cdr collection-paths))]))))
       
+      ;; Close over sub-collections
+      (define (collection-closure collections-to-compile)
+        (let loop ([l collections-to-compile])
+          (if (null? l)
+              null
+              (let* ([cc (car l)]
+                     [info (cc-info cc)])
+                (append
+                 (map
+                  (lambda (subcol)
+                    (or
+                     (collection->cc (map string->path subcol))
+                     (cannot-compile subcol)))
+                  (call-info info 'compile-subcollections
+                             ;; Default: subdirs with info.ss files
+                             (lambda ()
+                               (map
+                                (lambda (l) (map path->string l))
+                                (map (lambda (x) (append (cc-collection cc) (list x)))
+                                     (filter
+                                      (lambda (p)
+                                        (let ((d (build-path (cc-path cc) p)))
+                                          (and (directory-exists? d)
+                                               (file-exists? (build-path d "info.ss")))))
+                                      (directory-list (cc-path cc))))))
+                             ;; Result checker:
+                             (lambda (x)
+                               (unless (and (list? x)
+                                            (andmap
+                                             (lambda (x)
+                                               (and (list? x)
+                                                    (andmap
+                                                     (lambda (x)
+                                                       (and (path-string? x)
+                                                            (relative-path? x)))
+                                                     x)))
+                                             x))
+                                 (error "result is not a list of relative path string lists:" x)))))
+                 (list cc)
+                 (loop (cdr l)))))))
+
+      (define (same-collection-name? cc-1 cc-2)
+        (let ([split (lambda (cc)
+                       (apply append
+                              (map (lambda (e)
+                                     (if (path? e)
+                                         (map path-element->string (explode-path e))
+                                         (regexp-split #rx"/" e)))
+                                   (cc-collection cc))))])
+          (equal? (split cc-1) (split cc-2))))
+
+      (define (check-again-all given-ccs)
+        (let ([all-collections
+               (collection-closure all-collections)])
+          (for-each (lambda (cc)
+                      (let ((f (build-path (cc-path cc) "info.ss")))
+                        (call-with-input-file* 
+                         f
+                         (lambda (given-info-port)
+                           (let ([given-id (port-file-identity given-info-port)])
+                             (for-each (lambda (found-cc)
+                                         (unless (same-collection-name? cc found-cc)
+                                           (let ((f (build-path (cc-path found-cc) "info.ss")))
+                                             (call-with-input-file* 
+                                              f
+                                              (lambda (found-info-port)
+                                                (when (eq? (port-file-identity found-info-port)
+                                                           given-id)
+                                                  (error 
+                                                   'setup-plt
+                                                   "given collection path: ~e refers to the same info file as another path: ~e"
+                                                   (apply build-path (cc-collection cc))
+                                                   (apply build-path (cc-collection found-cc)))))))))
+                                       all-collections))))))
+                    given-ccs)
+          given-ccs))
+                          
       (define collections-to-compile
 	(sort
 	 (if (and (null? x-specific-collections) (null? x-specific-planet-dirs))
-	     (let ([ht (make-hash-table 'equal)])
-	       (let loop ([collection-paths (current-library-collection-paths)])
-		 (cond
-                   [(null? collection-paths) 
-                    (hash-table-map ht (lambda (k v) v))]
-                   [else (let* ([cp (car collection-paths)]
-                                [cp-contents
-                                 (if (directory-exists? cp)
-                                     (directory-list cp)
-                                     null)])
-                           (let loop ([collections (filter
-                                                    (lambda (x)
-                                                      (directory-exists?
-                                                       (build-path cp x)))
-                                                    cp-contents)])
-                             (cond
-                               [(null? collections) (void)]
-                               [else (let* ([collection (car collections)])
-                                       (hash-table-get
-                                        ht
-                                        collection
-                                        (lambda ()
-                                          (let ([cc (collection->cc (list collection))])
-                                            (when cc
-                                              (hash-table-put! 
-                                               ht
-                                               collection
-                                               cc))))))
-                                     (loop (cdr collections))])))
-                         (loop (cdr collection-paths))])))
-	     (map
-	      (lambda (c)
-		(or (collection->cc (map string->path c))
-		    (cannot-compile c)))
-	      x-specific-collections))
+	     all-collections
+             (check-again-all
+              (map
+               (lambda (c)
+                 (or (collection->cc (map string->path c))
+                     (cannot-compile c)))
+               x-specific-collections)))
 	 (lambda (a b) (string-ci<? (cc-name a) (cc-name b)))))
-      
-      ;; Close over sub-collections
-      (set! collections-to-compile
-	    (let loop ([l collections-to-compile])
-	      (if (null? l)
-		  null
-		  (let* ([cc (car l)]
-			 [info (cc-info cc)])
-		    (append
-		     (map
-		      (lambda (subcol)
-			(or
-			 (collection->cc (map string->path subcol))
-			 (cannot-compile subcol)))
-		      (call-info info 'compile-subcollections
-				 ;; Default: subdirs with info.ss files
-				 (lambda ()
-				   (map
-				    (lambda (l) (map path->string l))
-				    (map (lambda (x) (append (cc-collection cc) (list x)))
-					 (filter
-					  (lambda (p)
-                                            (let ((d (build-path (cc-path cc) p)))
-                                              (and (directory-exists? d)
-                                                   (file-exists? (build-path d "info.ss")))))
-                                          (directory-list (cc-path cc))))))
-				 ;; Result checker:
-				 (lambda (x)
-				   (unless (and (list? x)
-						(andmap
-						 (lambda (x)
-						   (and (list? x)
-							(andmap
-							 (lambda (x)
-							   (and (path-string? x)
-								(relative-path? x)))
-							 x)))
-						 x))
-				     (error "result is not a list of relative path string lists:" x)))))
-		     (list cc)
-		     (loop (cdr l)))))))
+
+      (set! collections-to-compile (collection-closure collections-to-compile))
 
       (set! planet-dirs-to-compile
 	    (let loop ([l planet-dirs-to-compile])
