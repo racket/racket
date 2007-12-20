@@ -1337,13 +1337,39 @@
   (t1 check-expect
       (test-teachpack-sequence
        `((lib "testing.ss" "htdp"))
-       "(check-expect (+ 3 4) (+ 8 9))"
+       "(check-expect (+ 3 4) (+ 8 9)) (+ 4 5)"
        `((before-after ((check-expect (+ 3 4) (hilite (+ 8 9))))
                        ((check-expect (+ 3 4) (hilite 17))))
-         #;(ignore)
          (before-after ((check-expect (hilite (+ 3 4)) 17))
-                       ((check-expect (hilite 7) 17))))))
+                       ((check-expect (hilite 7) 17)))
+         (before-after ((finished-test-case) (hilite (+ 4 5)))
+                       ((finished-test-case) (hilite 9))))))
+  
+  (t1 check-within
+      (test-teachpack-sequence
+       `((lib "testing.ss" "htdp"))
+       "(check-within (+ 3 4) (+ 8 10) (+ 10 90)) (+ 4 5)"
+       `((before-after ((check-within (+ 3 4) (hilite (+ 8 10)) (+ 10 90)))
+                       ((check-within (+ 3 4) (hilite 18) (+ 10 90))))
+         (before-after ((check-within (+ 3 4) 18 (hilite (+ 10 90))))
+                       ((check-within (+ 3 4) 18 (hilite 100))))
+         (before-after ((check-within (hilite (+ 3 4)) 18 100))
+                       ((check-within (hilite 7) 18 100)))
+         (before-after ((finished-test-case) (hilite (+ 4 5)))
+                       ((finished-test-case) (hilite 9))))))
 
+  (t1 check-error
+      (test-teachpack-sequence
+       `((lib "testing.ss" "htdp"))
+       "(check-error (+ (+ 3 4) (rest empty)) (string-append \"b\" \"ogus\")) (+ 4 5)"
+       `((before-after ((check-error (+ (+ 3 4) (rest empty)) (hilite (string-append "b" "ogus"))))
+                       ((check-error (+ (+ 3 4) (rest empty)) (hilite "bogus"))))
+         (before-after ((check-error (+ (hilite (+ 3 4)) (rest empty)) "bogus"))
+                       ((check-error (+ (hilite 7) (rest empty)) "bogus")))
+         #;(before-after ((check-error (+ 7 (hilite (rest empty))) "bogus"))
+                       ((check-error-string "crunch!" "bogus")))
+         (before-after ((finished-test-case) (hilite (+ 4 5)))
+                       ((finished-test-case) (hilite 9))))))
 
   ; uses set-render-settings!
   ;(reconstruct:set-render-settings! fake-beginner-render-settings)
@@ -1614,7 +1640,7 @@
   ;; make sure to leave these off when saving, or the nightly tests will run these too...
   #;(run-all-tests)
   #;(parameterize ([store-steps? #t])
-    (run-tests '(check-expect)))
+    (run-tests '(check-error)))
   #;(parameterize ([display-only-errors #t])
     (run-all-tests-except '(prims qq-splice time set! local-set! lazy1 lazy2 lazy3)))
   
