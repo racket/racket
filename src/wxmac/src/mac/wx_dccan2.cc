@@ -1263,6 +1263,11 @@ Bool wxCanvasDC::GCBlit(double xdest, double ydest, double width, double height,
   CGrafPtr theMacGrafPort;
   RgnHandle rgn;
 
+  if (cMacDC->GetCG(TRUE)) {
+    /* The dc is in CG mode. Too bad; just give up. */
+    return FALSE;
+  }
+
   ::GetGWorld(&savep, &savegd);  
 
   theMacGrafPort = cMacDC->macGrafPort();
