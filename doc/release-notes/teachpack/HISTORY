@@ -1,4 +1,9 @@
 ------------------------------------------------------------------------
+VERSION 372  			          [Fri Dec 21 15:47:49 EST 2007]
+
+-- no changes -- 
+
+------------------------------------------------------------------------
 VERSION 371				  [Tue Aug  7 17:49:47 EDT 2007]
 
 * changed world.ss so that it exports both add-line from image.ss and
