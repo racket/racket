@@ -3702,6 +3702,14 @@ Scheme_Object *scheme_values(int argc, Scheme_Object *argv[])
   return SCHEME_MULTIPLE_VALUES;
 }
 
+void scheme_detach_multple_array(Scheme_Object **values)
+{
+  Scheme_Thread *t = scheme_current_thread;
+
+  if (SAME_OBJ(values, t->values_buffer))
+    t->values_buffer = NULL;
+}
+
 /*========================================================================*/
 /*                             continuations                              */
 /*========================================================================*/

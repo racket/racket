@@ -98,7 +98,8 @@ flags:
  @itemize{
 
   @item{@FlagFirst{e} @nonterm{expr} or @DFlagFirst{eval}
-        @nonterm{expr} : @scheme[eval]s @nonterm{expr}.}
+        @nonterm{expr} : @scheme[eval]s @nonterm{expr}. The results of
+        the evaluation are printed via @scheme[current-print].}
 
   @item{@FlagFirst{f} @nonterm{file} or @DFlagFirst{load}
         @nonterm{file} : @scheme[load]s @nonterm{file}.}
@@ -137,8 +138,9 @@ flags:
         @scheme[main] in the top-level environment. All of the
         command-line arguments that are not processed as options
         (i.e., the arguments put into
-        @scheme[current-command-line-args]) are passed as arguments to
-        @scheme[main].}
+        @scheme[current-command-line-arguments]) are passed as arguments to
+        @scheme[main]. The results of the call are printed via
+        @scheme[current-print].}
 
  }}
 

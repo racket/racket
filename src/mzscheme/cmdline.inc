@@ -292,7 +292,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 	save = p->error_buf;
 	p->error_buf = &newbuf;
 	if (!scheme_setjmp(newbuf)) {
-	  Scheme_Object *e, *a[2], *d2s, *nsi, *idb, *b;
+	  Scheme_Object *e, *a[2], *d2s, *nsi, *idb, *b, *cp;
 
           d2s = scheme_builtin_value("datum->syntax");
           a[0] = scheme_make_false();
@@ -317,7 +317,29 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
           e = scheme_make_pair(e, scheme_vector_to_list(fa->main_args));
           e = scheme_datum_to_kernel_stx(e);
           
-	  (void)scheme_eval_with_prompt(e, fa->global_env);
+	  e = scheme_eval_multi_with_prompt(e, fa->global_env);
+
+          if (SAME_OBJ(e, SCHEME_MULTIPLE_VALUES)) {
+            Scheme_Object **mv;
+            int cnt;
+            mv = p->ku.multiple.array;
+            cnt = p->ku.multiple.count;
+            scheme_detach_multple_array(mv);
+            e = scheme_null;
+            while (cnt--) {
+              e = scheme_make_pair(mv[cnt], e);
+            }
+          } else {
+            e = scheme_make_pair(e, scheme_make_null());
+          }
+
+          cp = scheme_get_param(scheme_current_config(), MZCONFIG_PRINT_HANDLER);
+          
+          while (!SCHEME_NULLP(e)) {
+            a[0] = SCHEME_CAR(e);
+            scheme_apply_multi(cp, 1, a);
+            e = SCHEME_CDR(e);
+          }
 	} else {
 	  exit_val = 1;
 	  p->error_buf = save;
@@ -1066,7 +1088,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -r <file>, --script <file> : Same as -f <file> -N <file> --\n" 
 	 "  -u <file>, --require-script <file> : Same as -t <file> -N <file> --\n" 
 	 "  -k <n> <m> : Load executable-embedded code from file offset <n> to <m>\n"
-	 "  -m, --main : Call `main' with command-line arguments\n"
+	 "  -m, --main : Call `main' with command-line arguments, print results\n"
 	 " Interaction options:\n"
          "  -i, --repl : Run interactive read-eval-print loop; implies -v\n"
 # ifdef CMDLINE_STDIO_FLAG

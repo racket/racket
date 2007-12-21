@@ -94,21 +94,30 @@ potentially return multiple values; all other evaluation and
 applications procedures return a single value or raise an exception.
 
 Multiple return values are represented by the
-@cppi{scheme_multiple_values} ``value''. This quasi-value has the type
-@cpp{Scheme_Object *}, but it is not a pointer or a fixnum. When the
+@cppi{scheme_multiple_values} ``value.'' This quasi-value has the type
+@cpp{Scheme_Object*}, but it is not a pointer or a fixnum. When the
 result of an evaluation or application is
 @cppi{scheme_multiple_values}, the number of actual values can be
-obtained as @cppi{scheme_multiple_count} and the array of
-@cpp{Scheme_Object*} values as @cppi{scheme_multiple_array}. If any
-application or evaluation procedure is called, the
-@cpp{scheme_multiple_count} and @cpp{scheme_multiple_array} variables
-may be modified, but the array previously referenced by
-@cpp{scheme_multiple_array} is never re-used and should never be
-modified.
+obtained as @cppi{scheme_multiple_count}, and the array of
+@cpp{Scheme_Object*} values as @cppi{scheme_multiple_array}. (Both of
+those identifiers are actually macros.) 
 
-The @cpp{scheme_multiple_count} and @cpp{scheme_multiple_array}
-variables only contain meaningful values when
-@cpp{scheme_multiple_values} is returned.
+A garbage collection must not occur between the return of a
+@cppi{scheme_multiple_values} ``value'' and the receipt of the values
+through @cppi{scheme_multiple_count} @cppi{scheme_multiple_array}.
+Furthermore, if @cpp{scheme_multiple_array} is to be used across a
+potential garbage collection, then it must be specifically received by
+calling @cpp{scheme_detach_multiple_array}; otherwise, a garbage
+collection or further evaluation may change the content of the array.
+Otherwise, if any application or evaluation procedure is called, the
+@cpp{scheme_multiple_count} and @cpp{scheme_multiple_array} variables
+may be modified (but the array previously referenced by
+@cpp{scheme_multiple_array} is never re-used if
+@cpp{scheme_detatch_multiple_array} is called).
+
+The @cpp{scheme_multiple_count} and
+@cpp{scheme_multiple_array} variables only contain meaningful values
+when @cpp{scheme_multiple_values} is returned.
 
 @; ----------------------------------------------------------------------
 
@@ -286,3 +295,8 @@ namespace.}
 Returns the given values together as multiple return values. Unless
 @var{n} is @cpp{1}, the result will always be
 @cpp{scheme_multiple_values}.}
+
+@function[(void scheme_detach_multiple_array
+           [Scheme_Object** args])]{
+
+Called to receive multiple-value results; see @secref["multiple"].}
