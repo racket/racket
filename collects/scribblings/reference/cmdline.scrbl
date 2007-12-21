@@ -282,7 +282,7 @@ specification is a list of three items:
  receive the flag. If the handler accepts arbitrarily many arguments,
  all of the remaining arguments are passed to the handler.  A handler
  procedure's arity must either be a number or an
- @scheme[arity-at-least] value (see \MzSecRef{arity}).
+ @scheme[arity-at-least] value.
 
  The return value from the handler is added to a list that is
  eventually passed to @scheme[finish-proc]. If the handler returns

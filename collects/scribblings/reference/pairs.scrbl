@@ -478,3 +478,85 @@ Like @scheme[assoc], but finds an element using the predicate
 @defproc[(eighth [lst list?]) any]{Returns the eighth element of the list.}
 
 @defproc[(last [lst list?]) any]{Returns the last element of the list.}
+
+@; ----------------------------------------
+@section{Immutable Cyclic Data}
+
+@defproc[(make-reader-graph [v any/c]) any/c]{
+
+Returns a value like @scheme[v], with placeholders created by
+@scheme[make-placeholder] replaced with the values that they contain,
+and with placeholders created by @scheme[make-hash-table-placeholder]
+with an immutable hash table. No part of @scheme[v] is mutated;
+instead, parts of @scheme[v] are copied as necessary to construct
+the resulting graph, where at most one copy is created for any given
+value.
+
+Since the copied vales can be immutable, and since the copy is also
+immutable, @scheme[make-reader-graph] can cycles involving only
+immutable pairs, vectors, boxes, and hash tables. 
+
+Only the following kinds of values are copied and traversed to detect
+placeholders:
+
+@itemize{
+
+ @item{pairs}
+
+ @item{immutable pairs (as created by @scheme[mcons])}
+
+ @item{vectors, both mutable and immutable}
+
+ @item{boxes, both mutable and immutable}
+
+ @item{hash tables, both mutable and immutable}
+
+ @item{placeholders created by @scheme[make-placeholder] and
+       @scheme[make-hash-table-placeholder]}
+
+}
+
+Due to these restrictions, @scheme[make-reader-graph] creates exactly
+the same sort of cyclic values as @scheme[read].
+
+@examples[
+(let* ([ph (make-placeholder #f)]
+       [x (cons 1 ph)])
+  (placeholder-set! ph x)
+  (make-reader-graph x))
+]}
+
+@defproc[(placeholder? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a placeholder created by
+@scheme[make-placeholder], @scheme[#f] otherwise.}
+
+
+@defproc[(make-placeholder [v any/c]) placeholder?]{
+
+Returns a placeholder for use with @scheme[placeholder-set!]  and
+@scheme[make-reader-graph]. The @scheme[v] argument supplies the
+initial value for the placeholder.}
+
+@defproc[(placeholder-set! [ph placeholder?] [datum any/c]) void?]{
+
+Changes the value of @scheme[ph] to @scheme[v].}
+
+@defproc[(placeholder-get [ph placeholder?]) any/c]{
+
+Returns the value of @scheme[ph].}
+
+
+@defproc[(hash-table-placeholder? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a placeholder created by
+@scheme[make-hash-table-placeholder], @scheme[#f] otherwise.}
+
+
+@defproc[(make-hash-table-placeholder [assocs (listof pair?)]
+                                      [flag (one-of/c 'equal)]
+                                      ...)
+         hash-table-placeholder?]{
+
+Like @scheme[make-immutable-hash-table], but produces a table
+placeholder for use with @scheme[make-reader-graph].}

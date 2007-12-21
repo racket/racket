@@ -9,7 +9,7 @@ A parameter that determines the current @deftech{evaluation handler}.
 The evaluation handler is a procedure that takes a top-level form and
 evaluates it, returning the resulting values. The @tech{evaluation
 handler} is called by @scheme[eval], @scheme[eval-syntax], the default
-load handler, and @scheme[read-eval-print-loop] to evaluate a
+@tech{load handler}, and @scheme[read-eval-print-loop] to evaluate a
 top-level form. The handler should evaluate its argument in tail
 position.
 
@@ -82,13 +82,17 @@ contain a module declaration), or @scheme[#f] for any other load.
  
 The default load handler reads forms from the file in
 @scheme[read-syntax] mode with line-counting enabled for the file
-port. It also @scheme[parameterize]s each read to set both
+port, unless the path has a @scheme[".zo"] suffix. It also
+@scheme[parameterize]s each read to set both
 @scheme[read-accept-compiled] and @scheme[read-accept-reader] to
-@scheme[#t]. After reading a single form, the form is passed to the
-current evaluation handler, wrapping the evaluation in a continuation
-prompt (see @scheme[call-with-continuation-prompt]) for the default
-continuation prompt tag with handler that propagates the abort to the
-continuation of the @scheme[load] call.
+@scheme[#t]. In addition, if @scheme[load-on-demand-enabled] is
+@scheme[#t], then @scheme[read-on-demand-source] is effectively set to
+the @tech{cleanse}d, absolute form of @scheme[path] during the
+@scheme[read-syntax] call. After reading a single form, the form is
+passed to the current evaluation handler, wrapping the evaluation in a
+continuation prompt (see @scheme[call-with-continuation-prompt]) for
+the default continuation prompt tag with handler that propagates the
+abort to the continuation of the @scheme[load] call.
 
 If the second argument to the load handler is a symbol, then:
 
@@ -374,3 +378,33 @@ Enforcing constants allows the compiler to inline some variable
 values, and it allows the native-code just-in-time compiler to
 generate code that skips certain run-time checks.}
 
+
+@defboolparam[compile-allow-set!-undefined allow?]{
+
+A parameter that determines how a @scheme[set!] expression is compiled
+when it mutates a global variable. If the value of this parameter is a
+true value, @scheme[set!] expressions for global variables are
+compiled so that the global variable is set even if it was not
+previously defined.  Otherwise, @scheme[set!] expressions for global
+variables are compiled to raise the
+@scheme[exn:fail:contract:variable] exception if the global variable
+is not defined at the time the @scheme[set!] is performed.  Note that
+this parameter is used when an expression is @italic{compiled}, not
+when it is @italic{evaluated}.}
+
+@defboolparam[eval-jit-enabled on?]{
+
+A parameter that determines whether the native-code just-in-time
+compiler (JIT) is enabled for code (compiled or not) that is passed to
+the default evaluation handler.  The default is @scheme[#t], unless
+the JIT is disabled through the @Flag{j}/@DFlag{no-jit} command-line
+flag to stand-alone MzScheme (or MrEd), or through the
+@as-index{@envvar{PLTNOMZJIT}} environment variable (set to any
+value).}
+
+@defboolparam[load-on-demand-enabled on?]{
+
+A parameter that determines whether the default @tech{load handler}
+sets @scheme[read-on-demand-source]. See @scheme[current-load] for
+more information. The default is @scheme[#t], unless it is disabled
+through the @Flag{d}/@DFlag{no-delay} command-line flag.}

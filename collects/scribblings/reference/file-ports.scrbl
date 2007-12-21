@@ -205,3 +205,17 @@ Like @scheme[call-with-output-file*], but instead of passing the newly
 opened port to the given procedure argument, the port is installed as
 the current output port (see @scheme[current-output-port]) using
 @scheme[parameterize] around the call to @scheme[thunk].}
+
+@defproc[(port-file-identity [port file-stream-port?]) any]{
+
+@index['("inode")]{Returns} an exact positive integer that represents
+the identity of the device and file read or written by
+@scheme[file-stream-port]. For two ports whose open times overlap, the
+result of @scheme[port-file-identity] is the same for both ports if
+and only if the ports access the same device and file. For ports whose
+open times do not overlap, no guarantee is provided for the port
+identities (even if the ports actually access the same file)---except
+as can be inferred through relationships with other ports. If
+@scheme[file-stream-port] is closed, the @exnraise[exn:fail].  Under
+Windows 95, 98, and Me, if @scheme[file-stream-port] is connected to a
+pipe instead of a file, the @exnraise[exn:fail:filesystem].}

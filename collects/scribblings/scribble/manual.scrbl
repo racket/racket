@@ -322,7 +322,8 @@ The @tech{decode}d @scheme[pre-flow] documents the procedure. In this
 description, a reference to any identifier in @scheme[datum] via
 @scheme[scheme], @scheme[schemeblock], @|etc| is typeset as a sub-form
 non-terminal. If @scheme[#:literals] clause is provided, however,
-instances of the @scheme[literal-id]s are typeset normally.
+instances of the @scheme[literal-id]s are typeset normally (i.e., as
+determined by the enclosing context).
 
 The typesetting of @scheme[(id . datum)] preserves the source
 layout, like @scheme[schemeblock].}

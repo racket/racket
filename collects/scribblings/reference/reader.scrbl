@@ -31,7 +31,7 @@ or @scheme[read-syntax] mode. In @scheme[read-syntax] mode, the result
 is always a @techlink{syntax object} that includes
 source-location and (initially empty) lexical information wrapped
 around the sort of datum that @scheme[read] mode would produce. In the
-case of pairs, vectors, and boxes, morever, the content is also
+case of pairs, vectors, and boxes, the content is also
 wrapped recursively as a syntax object. Unless specified otherwise,
 this section describes the reader's behavior in @scheme[read] mode,
 and @scheme[read-syntax] mode does the same modulo wrapping the final

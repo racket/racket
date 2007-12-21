@@ -110,7 +110,9 @@ static Scheme_Object *make_graph(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_placeholder(int argc, Scheme_Object *argv[]);
 static Scheme_Object *placeholder_set(int argc, Scheme_Object *argv[]);
 static Scheme_Object *placeholder_get(int argc, Scheme_Object *argv[]);
+static Scheme_Object *placeholder_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_table_placeholder(int argc, Scheme_Object *argv[]);
+static Scheme_Object *table_placeholder_p(int argc, Scheme_Object *argv[]);
 
 #define BOX "box"
 #define BOXP "box?"
@@ -546,10 +548,20 @@ scheme_init_list (Scheme_Env *env)
 						      "placeholder-set!",
 						      2, 2),
 			     env);
+  scheme_add_global_constant("placeholder?",
+			     scheme_make_folding_prim(placeholder_p,
+						      "placeholder?",
+						      1, 1, 1),
+			     env);
   scheme_add_global_constant("make-hash-table-placeholder",
 			     scheme_make_prim_w_arity(make_table_placeholder,
 						      "make-hash-table-placeholder",
 						      2, 3),
+			     env);
+  scheme_add_global_constant("hash-table-placeholder?",
+			     scheme_make_folding_prim(table_placeholder_p,
+						      "hash-table-placeholder?",
+						      1, 1, 1),
 			     env);
 
   REGISTER_SO(weak_symbol);
@@ -1974,6 +1986,13 @@ static Scheme_Object *placeholder_get(int argc, Scheme_Object *argv[])
   return SCHEME_PTR_VAL(argv[0]);
 }
 
+static Scheme_Object *placeholder_p(int c, Scheme_Object *p[])
+{
+  return (SAME_TYPE(SCHEME_TYPE(p[0]), scheme_placeholder_type)
+          ? scheme_true 
+          : scheme_false);
+}
+
 static Scheme_Object *make_table_placeholder(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *l, *a, *ph;
@@ -2002,6 +2021,15 @@ static Scheme_Object *make_table_placeholder(int argc, Scheme_Object *argv[])
 
   return ph;
 }
+
+static Scheme_Object *table_placeholder_p(int c, Scheme_Object *p[])
+{
+  return (SAME_TYPE(SCHEME_TYPE(p[0]), scheme_table_placeholder_type)
+          ? scheme_true 
+          : scheme_false);
+}
+
+
 
 /************************************************************/
 /*                      ephemerons                          */

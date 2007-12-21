@@ -942,6 +942,8 @@ variable}. If @scheme[id] refers to an imported binding, a syntax
 error is reported.  If @scheme[id] refers to a @tech{top-level
 variable} that has not been defined, the @exnraise[exn:fail:contract].
 
+See also @scheme[compile-allow-set!-undefined].
+
 @defexamples[
 (define x 12)
 (set! x (add1 x))

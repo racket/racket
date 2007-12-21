@@ -10,12 +10,12 @@
    The string and the separate X/Y/Z/W numbers must
    be updated consistently. */
 
-#define MZSCHEME_VERSION "3.99.0.5"
+#define MZSCHEME_VERSION "3.99.0.6"
 
 #define MZSCHEME_VERSION_X 3
 #define MZSCHEME_VERSION_Y 99
 #define MZSCHEME_VERSION_Z 0
-#define MZSCHEME_VERSION_W 5
+#define MZSCHEME_VERSION_W 6
 
 #define MZSCHEME_VERSION_MAJOR ((MZSCHEME_VERSION_X * 100) + MZSCHEME_VERSION_Y)
 #define MZSCHEME_VERSION_MINOR ((MZSCHEME_VERSION_Z * 1000) + MZSCHEME_VERSION_W)
