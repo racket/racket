@@ -229,8 +229,15 @@
          (iq-enqueue sig)
          sig))))
     
+  (define ht (make-hash-table))
+  
   (define (proc->signal thunk . producers)
     (build-signal make-signal thunk producers))
+     
+  (define (proc->signal/dont-gc-unless other-val thunk . producers)
+    (let ([result (build-signal make-signal thunk producers)])
+      (hash-table-put! ht other-val result)
+      result))
      
   (define (proc->signal:unchanged thunk . producers)
     (build-signal make-signal:unchanged thunk producers))

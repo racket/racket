@@ -367,7 +367,6 @@
                                 (current-milliseconds))
                           empty)]
              [head last]
-             [dummy 0]
              [producer (proc->signal
                         (lambda ()
                           (let* ([now (current-milliseconds)]
@@ -377,10 +376,9 @@
                                       (< now (+ ms (cdr (mcar (mcdr head))))))
                                   (car (mcar head))
                                   (begin
-                                    (set! dummy consumer) ;; just to prevent GC
                                     (set! head (mcdr head))
                                     (loop)))))))]
-             [consumer (proc->signal
+             [consumer (proc->signal/dont-gc-unless producer
                         (lambda ()
                           (let* ([now (current-milliseconds)]
                                  [new (deep-value-now beh)]
@@ -405,11 +403,8 @@
                [last-time (current-milliseconds)]
                [last-val (value-now b)]
                [last-alarm 0]
-               [dummy 0]
-               [producer (proc->signal (lambda ()
-                                         (set! dummy consumer) ;; just to prevent GC
-                                         accum))]
-               [consumer (proc->signal void b ms-b)])
+               [producer (proc->signal (lambda () accum))]
+               [consumer (proc->signal/dont-gc-unless producer void b ms-b)])
         (set-signal-thunk!
          consumer
          (lambda ()
