@@ -9,6 +9,8 @@
                          "stxloc.ss"))
 
   (-define (check-duplicate-identifier names)
+    (unless (and (list? names) (andmap identifier? names))
+      (raise-type-error 'check-duplicate-identifier "list of identifiers" names))
     (let/ec escape
       (let ([ht (make-hash-table)])
 	(for-each

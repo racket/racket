@@ -11667,16 +11667,16 @@ if test "${enable_shared}" = "yes" ; then
   MZOPTIONS="$MZOPTIONS -DMZ_USES_SHARED_LIB"
 else
   LIBSFX=a
-  MREDLINKER="$CXX"
+  MREDLINKER='$(CXX)'
   WXLIBS=WXLIBSNORM
   ICP=cp
   MRLIBINSTALL="install-no-lib"
   LIBFINISH=echo
   LTO="o"
   LTA="a"
-  MZLINKER="$CC"
+  MZLINKER='$(CC)'
   STATIC_AR="$AR"
-  PLAIN_CC="$CC"
+  PLAIN_CC='$(CC)'
   FOREIGN_CONVENIENCE=""
   FOREIGN_OBJSLIB="\$(FOREIGN_OBJS)"
 fi

@@ -84,6 +84,7 @@ void wxCommonInit(void)
   wxInitStandardTypes();
   wxREGGLOB(wxThePrintPaperDatabase);
   wxThePrintPaperDatabase = new WXGC_PTRS wxPrintPaperDatabase;
+  wxThePrintPaperDatabase->CreateDatabase();
   wxREGGLOB(wxWindow::gMouseWindow);
   wxRegisterAbortWindow();
   wxRegisterSplinePointList();

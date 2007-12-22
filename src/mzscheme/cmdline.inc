@@ -1158,3 +1158,86 @@ static int run_from_cmd_line(int argc, char *_argv[],
   return 1;
 #endif
 }
+
+#if defined(OS_X) && defined(MZ_PRECISE_GC)
+
+/* These declarations avoid linker problems when using
+   -mmacosx-version-min. See gc2/vm_osx.c for details. */
+
+START_XFORM_SKIP;
+
+#include <mach/mach.h>
+#include <mach/mach_error.h>
+
+# ifdef __cplusplus
+extern "C" {
+# endif
+
+extern kern_return_t GC_catch_exception_raise_state(mach_port_t port,
+                                                    exception_type_t exception_type,
+                                                    exception_data_t exception_data,
+                                                    mach_msg_type_number_t data_cnt,
+                                                    thread_state_flavor_t *flavor,
+                                                    thread_state_t in_state,
+                                                    mach_msg_type_number_t is_cnt,
+                                                    thread_state_t out_state,
+                                                    mach_msg_type_number_t os_cnt);
+extern kern_return_t GC_catch_exception_raise_state_identitity
+  (mach_port_t port,  mach_port_t thread_port, mach_port_t task_port,
+   exception_type_t exception_type, exception_data_t exception_data,
+   mach_msg_type_number_t data_count, thread_state_flavor_t *state_flavor,
+   thread_state_t in_state, mach_msg_type_number_t in_state_count,
+   thread_state_t out_state, mach_msg_type_number_t out_state_count);
+extern kern_return_t GC_catch_exception_raise(mach_port_t port,
+                                              mach_port_t thread_port,
+                                              mach_port_t task_port,
+                                              exception_type_t exception_type,
+                                              exception_data_t exception_data,
+                                              mach_msg_type_number_t data_count);
+
+kern_return_t catch_exception_raise_state(mach_port_t port,
+					  exception_type_t exception_type,
+					  exception_data_t exception_data,
+					  mach_msg_type_number_t data_cnt,
+					  thread_state_flavor_t *flavor,
+					  thread_state_t in_state,
+					  mach_msg_type_number_t is_cnt,
+					  thread_state_t out_state,
+					  mach_msg_type_number_t os_cnt)
+{
+  return GC_catch_exception_raise_state(port, exception_type, exception_data,
+                                        data_cnt, flavor,
+                                        in_state, is_cnt,
+                                        out_state, os_cnt);
+}
+
+kern_return_t catch_exception_raise_state_identitity
+  (mach_port_t port,  mach_port_t thread_port, mach_port_t task_port,
+   exception_type_t exception_type, exception_data_t exception_data,
+   mach_msg_type_number_t data_count, thread_state_flavor_t *state_flavor,
+   thread_state_t in_state, mach_msg_type_number_t in_state_count,
+   thread_state_t out_state, mach_msg_type_number_t out_state_count)
+{
+  return GC_catch_exception_raise_state_identitity(port, thread_port, task_port,
+                                                   exception_type, exception_data,
+                                                   data_count, state_flavor,
+                                                   in_state, in_state_count,
+                                                   out_state, out_state_count);
+}
+
+kern_return_t catch_exception_raise(mach_port_t port,
+				    mach_port_t thread_port,
+				    mach_port_t task_port,
+				    exception_type_t exception_type,
+				    exception_data_t exception_data,
+				    mach_msg_type_number_t data_count)
+{
+  return GC_catch_exception_raise(port, thread_port, task_port,
+                                  exception_type, exception_data, data_count);
+}
+
+# ifdef __cplusplus
+};
+# endif
+END_XFORM_SKIP;
+#endif

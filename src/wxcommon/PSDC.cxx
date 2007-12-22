@@ -2380,11 +2380,6 @@ void wxInitializePrintSetupData(Bool /* init */)
 {
   wxPrintSetupData *wxThePrintSetupData;
   
-#ifdef wx_mac
-  wxThePrintPaperDatabase = new WXGC_PTRS wxPrintPaperDatabase;
-  wxThePrintPaperDatabase->CreateDatabase();
-#endif
-  
   wxThePrintSetupData = new WXGC_PTRS wxPrintSetupData;
   
   wxThePrintSetupData->SetPrintPreviewCommand(PS_PREVIEW_COMMAND);

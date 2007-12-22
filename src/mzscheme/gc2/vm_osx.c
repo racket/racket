@@ -211,7 +211,27 @@ static unsigned long determine_max_heap_size()
 }
 #endif
 
-/* these are some less neat mach callbacks */
+/* The catch_exception_raise() functions are treated specially by the
+   linker, and Mach looks them up at run time. We provide
+   GC_... variants due to linker confusion when the implementaiton of
+   these are in a framework instead of the main binary, so that the
+   main binary needs to define them and jump to the implemenations
+   here. (This linker problem seems to occur when we use
+   -mmacosx-version-min.) */
+
+kern_return_t GC_catch_exception_raise_state(mach_port_t port,
+                                             exception_type_t exception_type,
+                                             exception_data_t exception_data,
+                                             mach_msg_type_number_t data_cnt,
+                                             thread_state_flavor_t *flavor,
+                                             thread_state_t in_state,
+                                             mach_msg_type_number_t is_cnt,
+                                             thread_state_t out_state,
+                                             mach_msg_type_number_t os_cnt)
+{
+  return KERN_FAILURE;
+}
+
 kern_return_t catch_exception_raise_state(mach_port_t port,
 					  exception_type_t exception_type,
 					  exception_data_t exception_data,
@@ -221,6 +241,19 @@ kern_return_t catch_exception_raise_state(mach_port_t port,
 					  mach_msg_type_number_t is_cnt,
 					  thread_state_t out_state,
 					  mach_msg_type_number_t os_cnt)
+{
+  return GC_catch_exception_raise_state(port, exception_type, exception_data,
+                                        data_cnt, flavor,
+                                        in_state, is_cnt,
+                                        out_state, os_cnt);
+}
+
+kern_return_t GC_catch_exception_raise_state_identitity
+  (mach_port_t port,  mach_port_t thread_port, mach_port_t task_port,
+   exception_type_t exception_type, exception_data_t exception_data,
+   mach_msg_type_number_t data_count, thread_state_flavor_t *state_flavor,
+   thread_state_t in_state, mach_msg_type_number_t in_state_count,
+   thread_state_t out_state, mach_msg_type_number_t out_state_count)
 {
   return KERN_FAILURE;
 }
@@ -232,15 +265,19 @@ kern_return_t catch_exception_raise_state_identitity
    thread_state_t in_state, mach_msg_type_number_t in_state_count,
    thread_state_t out_state, mach_msg_type_number_t out_state_count)
 {
-  return KERN_FAILURE;
+  return GC_catch_exception_raise_state_identitity(port, thread_port, task_port,
+                                                   exception_type, exception_data,
+                                                   data_count, state_flavor,
+                                                   in_state, in_state_count,
+                                                   out_state, out_state_count);
 }
 
-kern_return_t catch_exception_raise(mach_port_t port,
-				    mach_port_t thread_port,
-				    mach_port_t task_port,
-				    exception_type_t exception_type,
-				    exception_data_t exception_data,
-				    mach_msg_type_number_t data_count)
+kern_return_t GC_catch_exception_raise(mach_port_t port,
+                                       mach_port_t thread_port,
+                                       mach_port_t task_port,
+                                       exception_type_t exception_type,
+                                       exception_data_t exception_data,
+                                       mach_msg_type_number_t data_count)
 {
 #if GENERATIONS
   /* kernel return value is in exception_data[0], faulting address in
@@ -253,6 +290,17 @@ kern_return_t catch_exception_raise(mach_port_t port,
   } else 
 #endif
     return KERN_FAILURE;
+}
+
+kern_return_t catch_exception_raise(mach_port_t port,
+				    mach_port_t thread_port,
+				    mach_port_t task_port,
+				    exception_type_t exception_type,
+				    exception_data_t exception_data,
+				    mach_msg_type_number_t data_count)
+{
+  return GC_catch_exception_raise(port, thread_port, task_port,
+                                  exception_type, exception_data, data_count);
 }
 
 /* this is the thread which forwards of exceptions read from the exception

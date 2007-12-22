@@ -214,10 +214,10 @@
                             (list (list #f program-filename))
                             null
                             null
-                            (list (if gui? "-Zmvqe-" "-mvqe-")
-                                  (format "~s" `(require ,(string->symbol (path->string short-program-name)))))))))
+                            (list "-nqe-"
+                                  (format "~s" `(#%require ',(string->symbol (path->string short-program-name)))))))))
                       (let ([make-launcher (if gui? make-mred-launcher make-mzscheme-launcher)])
-                        (make-launcher (list "-mvqt-" (path->string program-filename))
+                        (make-launcher (list "-qt-" (path->string program-filename))
                                        executable-filename))))))))
         
         (super-new

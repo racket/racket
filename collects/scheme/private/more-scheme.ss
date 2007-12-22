@@ -258,10 +258,14 @@
       (values (wh #t) (wh #f))))
 
   (define (call-with-exception-handler exnh thunk)
-    (with-continuation-mark
-        exception-handler-key
-        exnh
-      (thunk)))
+    ;; The `begin0' ensures that we don't overwrite an enclosing
+    ;;  exception handler.
+    (begin0
+     (with-continuation-mark
+         exception-handler-key
+         exnh
+       (thunk))
+     (void)))
 
   (define-syntax set!-values
     (lambda (stx)

@@ -179,15 +179,13 @@ See also @scheme[error-print-source-location].}
 
 @defproc[(call-with-exception-handler [f (any/c . -> . any)][thunk (-> any)]) any]{
 
-Installs @scheme[f] as the @tech{exception handler} for the current
-continuation---i.e., for the dynamic extent of a call to
-@scheme[thunk].  The @scheme[thunk] is called in tail position with
-respect to the call to @scheme[call-with-exception-handler]. If an
-exception is raised during the evaluation of @scheme[thunk] (in an
-extension of the current continuation that does not have its own
-exception handler), then @scheme[f] is applied to the @scheme[raise]d
-value in the continuation of the @scheme[raise] call (but extended
-with a @tech{continuation barrier}; see @secref["prompt-model"]).
+Installs @scheme[f] as the @tech{exception handler} for the
+@tech{dynamic extent} of the call to @scheme[thunk]. If an exception
+is raised during the evaluation of @scheme[thunk] (in an extension of
+the current continuation that does not have its own exception
+handler), then @scheme[f] is applied to the @scheme[raise]d value in
+the continuation of the @scheme[raise] call (but extended with a
+@tech{continuation barrier}; see @secref["prompt-model"]).
 
 Any procedure that takes one argument can be an exception handler.  If
 the exception handler returns a value when invoked by @scheme[raise],
