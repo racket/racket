@@ -419,7 +419,7 @@
              (if (> now (+ last-time 20))
                  (begin
                    (when (not (number? last-val))
-                     (set! last-val dummy))
+                     (set! last-val 0))
                    (set! accum (+ accum
                                   (* last-val
                                      (- now last-time))))
