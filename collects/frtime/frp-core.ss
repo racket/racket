@@ -228,7 +228,7 @@
          (iq-enqueue sig)
          sig))))
     
-  (define ht (make-hash-table))
+  (define ht (make-hash-table 'weak))
   
   (define (proc->signal thunk . producers)
     (build-signal make-signal thunk producers))
