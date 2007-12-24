@@ -86,8 +86,28 @@
 
 (define handle-results
   (case-lambda
-    [(single) (values #t single)]
-    [multi (values #f multi)]))
+    [(single) (values #f single)]
+    [multi (values #t multi)]))
+
+(define (force-proc p root)
+  (define (return-vals vals)
+    ;; error here for "library approach" (see above URL)
+    (set-promise-val! root vals)
+    (apply values vals))
+  (let loop1 ([p p])
+    (let-values ([(multi? v) (call-with-values p handle-results)])
+      (if multi?
+        (return-vals v)
+        (if (promise? v)
+          (let loop2 ([promise* v])
+            (let ([p* (promise-val promise*)])
+              (set-promise-val! promise* root) ; share with root
+              (cond [(procedure? p*) (loop1 p*)]
+                    [(or (pair? p*) (null? p*)) (return-vals p*)]
+                    [(promise? p*) (loop2 p*)]
+                    [else p*])))
+          (return-vals
+           (if (or (null? v) (pair? v) (procedure? v)) (list v) v)))))))
 
 (define (force promise)
   (if (promise? promise)
@@ -96,38 +116,11 @@
         [(procedure? p)
          ;; mark root for cycle detection:
          (set-promise-val! promise running)
-         (with-handlers* ([void (lambda (e)
-                                  (set-promise-val! promise
-                                                    (lambda () (raise e)))
-                                  (raise e))])
-           (let-values ([(single? vals*) (call-with-values p handle-results)])
-             (if single?
-               (let loop1 ([val* vals*])
-                 (if (promise? val*)
-                   (let loop2 ([promise* val*])
-                     (let ([p* (promise-val promise*)])
-                       (set-promise-val! promise* promise) ; share with root
-                       (cond [(procedure? p*)
-                              (let-values ([(single? vals)
-                                            (call-with-values
-                                                p* handle-results)])
-                                (if single?
-                                  (loop1 vals)
-                                  (begin (set-promise-val! promise vals)
-                                         (apply values vals))))]
-                             [(or (pair? p*) (null? p*))
-                              (set-promise-val! promise p*)
-                              (apply values p*)]
-                             [(promise? p*) (loop2 p*)]
-                             [else p*])))
-                   (begin ; error here for "library approach" (see above URL)
-                     (if (or (null? val*) (pair? val*) (procedure? val*))
-                       (set-promise-val! promise (list val*))
-                       (set-promise-val! promise val*))
-                     val*)))
-               (begin ; error here for "library approach" (see above URL)
-                 (set-promise-val! promise vals*)
-                 (apply values vals*)))))]
+         (with-handlers*
+             ([void (lambda (e)
+                      (set-promise-val! promise (lambda () (raise e)))
+                      (raise e))])
+           (force-proc p promise))]
         [(or (pair? p) (null? p)) (apply values p)]
         [(promise? p) (loop (promise-val p))]
         [else p]))
