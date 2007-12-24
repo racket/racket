@@ -35,7 +35,7 @@
                    (let ([fmt (if write? ",~s" ",~a")])
                      (for-each (lambda (x) (fprintf port fmt x)) (cdr p))))
                  (display ">" port)]
-                [(promise? p) (loop p)] ; hide sharing
+                [(promise? p) (loop (p:ref p))] ; hide sharing
                 [(not p) (display "#<promise*active>" port)]
                 [else (error 'promise-printer "bad promise value: ~e" p)])))]
          [(s:promise promise promise? promise-ref promise-set!)
