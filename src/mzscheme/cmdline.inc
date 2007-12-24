@@ -325,7 +325,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
             mv = p->ku.multiple.array;
             cnt = p->ku.multiple.count;
             scheme_detach_multple_array(mv);
-            e = scheme_null;
+            e = scheme_make_null();
             while (cnt--) {
               e = scheme_make_pair(mv[cnt], e);
             }
@@ -335,7 +335,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 
           cp = scheme_get_param(scheme_current_config(), MZCONFIG_PRINT_HANDLER);
           
-          while (!SCHEME_NULLP(e)) {
+          while (SCHEME_PAIRP(e)) {
             a[0] = SCHEME_CAR(e);
             scheme_apply_multi(cp, 1, a);
             e = SCHEME_CDR(e);
