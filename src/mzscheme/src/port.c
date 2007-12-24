@@ -945,10 +945,12 @@ void scheme_forget_subthread(struct Scheme_Thread_Memory *tm)
 void scheme_suspend_remembered_threads(void)
 {
   Scheme_Thread_Memory *tm, *next, *prev = NULL;
+  int keep;
 
   for (tm = tm_start; tm; tm = next) {
     next = tm->next;
 
+    keep = 1;
     if (tm->autoclose) {
       if (WaitForSingleObject(tm->handle, 0) == WAIT_OBJECT_0) {
 	CloseHandle((HANDLE)tm->handle);
@@ -964,16 +966,20 @@ void scheme_suspend_remembered_threads(void)
 #ifdef MZ_PRECISE_GC
 	free(tm);
 #endif
+	keep = 0;
       }
     }
 
-    if (tm->handle) {
+    if (keep) {
       SuspendThread((HANDLE)tm->handle);
       if (tm->subhandle)
 	SuspendThread((HANDLE)tm->subhandle);
       prev = tm;
     }
   }
+
+  if (prev)
+    prev->next = NULL;
 }
 
 void scheme_resume_remembered_threads(void)
