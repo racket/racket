@@ -31,17 +31,14 @@
      [(null? p) (fprintf port "#<promise!(values)>")]
      [(pair? p)
       ;; single or multiple values
-      (fprintf port 
+      (fprintf port
                (if write? "#<promise!~a~s" "#<promise!~a~a")
-               (if (null? (cdr p))
-                   ""
-                   "(values ")
+               (if (null? (cdr p)) "" "(values ")
                (car p))
       (when (pair? (cdr p))
         (let ([fmt (if write? " ~s" " ~a")])
           (for-each (lambda (x) (fprintf port fmt x)) (cdr p))))
-      (unless (null? (cdr p))
-        (display ")" port))
+      (unless (null? (cdr p)) (display ")" port))
       (display ">" port)]
      [(promise? p) (loop (promise-val p))] ; hide sharing
      [else (loop (list p))])))
@@ -89,52 +86,50 @@
 
 (define handle-results
   (case-lambda
-   [(single) (values #t single)]
-   [multi (values #f multi)]))
+    [(single) (values #t single)]
+    [multi (values #f multi)]))
 
 (define (force promise)
   (if (promise? promise)
-      (let loop ([p (promise-val promise)])
-        (cond
-         [(procedure? p)
-          ;; mark root for cycle detection:
-          (set-promise-val! promise running)
-          (with-handlers* ([void (lambda (e)
-                                   (set-promise-val! promise (lambda () (raise e)))
-                                   (raise e))])
-            (let-values ([(single? vals*)
-                          (call-with-values p
-                            handle-results)])
-              (if single?
-                  (let loop1 ([val* vals*])
-                    (if (promise? val*)
-                        (let loop2 ([promise* val*])
-                          (let ([p* (promise-val promise*)])
-                            (set-promise-val! promise* promise) ; share with root
-                            (cond [(procedure? p*)
-                                   (let-values ([(single? vals) 
-                                                 (call-with-values p*
-                                                   handle-results)])
-                                     (if single?
-                                         (loop1 vals)
-                                         (begin
-                                           (set-promise-val! promise vals)
-                                           (apply values vals))))]
-                                  [(or (pair? p*) (null? p*))
-                                   (set-promise-val! promise p*)
-                                   (apply values p*)]
-                                  [(promise? p*) (loop2 p*)]
-                                  [else p*])))
-                        (begin ; error here for "library approach" (see above URL)
-                          (if (or (null? val*) (pair? val*) (procedure? val*))
-                              (set-promise-val! promise (list val*))
-                              (set-promise-val! promise val*))
-                          val*)))
-                  (begin ; error here for "library approach" (see above URL)
-                    (set-promise-val! promise vals*)
-                    (apply values vals*)))))]
-         [(or (pair? p) (null? p)) (apply values p)]
-         [(promise? p) (loop (promise-val p))]
-         [else p]))
-      ;; different from srfi-45: identity for non-promises
-      promise))
+    (let loop ([p (promise-val promise)])
+      (cond
+        [(procedure? p)
+         ;; mark root for cycle detection:
+         (set-promise-val! promise running)
+         (with-handlers* ([void (lambda (e)
+                                  (set-promise-val! promise
+                                                    (lambda () (raise e)))
+                                  (raise e))])
+           (let-values ([(single? vals*) (call-with-values p handle-results)])
+             (if single?
+               (let loop1 ([val* vals*])
+                 (if (promise? val*)
+                   (let loop2 ([promise* val*])
+                     (let ([p* (promise-val promise*)])
+                       (set-promise-val! promise* promise) ; share with root
+                       (cond [(procedure? p*)
+                              (let-values ([(single? vals)
+                                            (call-with-values
+                                                p* handle-results)])
+                                (if single?
+                                  (loop1 vals)
+                                  (begin (set-promise-val! promise vals)
+                                         (apply values vals))))]
+                             [(or (pair? p*) (null? p*))
+                              (set-promise-val! promise p*)
+                              (apply values p*)]
+                             [(promise? p*) (loop2 p*)]
+                             [else p*])))
+                   (begin ; error here for "library approach" (see above URL)
+                     (if (or (null? val*) (pair? val*) (procedure? val*))
+                       (set-promise-val! promise (list val*))
+                       (set-promise-val! promise val*))
+                     val*)))
+               (begin ; error here for "library approach" (see above URL)
+                 (set-promise-val! promise vals*)
+                 (apply values vals*)))))]
+        [(or (pair? p) (null? p)) (apply values p)]
+        [(promise? p) (loop (promise-val p))]
+        [else p]))
+    ;; different from srfi-45: identity for non-promises
+    promise))
