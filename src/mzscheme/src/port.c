@@ -862,8 +862,10 @@ extern MZ_DLLIMPORT void (*GC_collect_end_callback)(void);
 
 void scheme_init_thread_memory()
 {
+#ifndef MZ_PRECISE_GC
   REGISTER_SO(tm_start);
   REGISTER_SO(tm_next);
+#endif
 
   /* We start with a pre-allocated tm because we
      want to register a thread before performing any
