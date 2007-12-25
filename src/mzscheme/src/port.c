@@ -977,9 +977,6 @@ void scheme_suspend_remembered_threads(void)
       prev = tm;
     }
   }
-
-  if (prev)
-    prev->next = NULL;
 }
 
 void scheme_resume_remembered_threads(void)
