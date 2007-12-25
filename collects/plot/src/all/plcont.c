@@ -283,7 +283,7 @@ static void pl_drawcontlabel(PLFLT tpx, PLFLT tpy, char *flabel, PLFLT *distance
 static void plfloatlabel(PLFLT value, char *string)
 {
     PLINT  setpre, precis;
-    char   form[10], tmpstring[10];
+    char   form[32], tmpstring[32];
     PLINT  exponent = 0;
     PLFLT  mant, tmp;
 
