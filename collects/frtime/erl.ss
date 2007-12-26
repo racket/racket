@@ -129,12 +129,12 @@
   (define (receive-help timeout timeout-thunk matcher)
     ;(if (and timeout (negative? timeout))
         ;(timeout-thunk)
-        (let* ([start-time (current-milliseconds)]
+        (let* ([start-time (current-inexact-milliseconds)]
                [mb (hash-table-get mailboxes (tid-lid (self)))]
                [val (try-extract matcher (mailbox-old-head mb))])
           (if (eq? val match-fail)
               (let loop ()
-                (let* ([elapsed (- (current-milliseconds) start-time)]
+                (let* ([elapsed (- (current-inexact-milliseconds) start-time)]
                        [wait-time (cond
                                     [(not timeout) false]
                                     [(> elapsed timeout) 0]
