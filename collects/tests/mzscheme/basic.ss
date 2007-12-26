@@ -1433,13 +1433,14 @@
             (vector exn))
           (lambda ()
             (raise 'except))))))
-(test '(except) 'escape
+(test '#((except)) 'escape
       (with-handlers ([void (lambda (x) x)])
         (values
          (call-with-exception-handler
           (lambda (exn)
             (vector exn))
           (lambda ()
+            ;; (Used to replace enclosing, but not any more)
             (call-with-exception-handler
              (lambda (exn)
                (list exn))
