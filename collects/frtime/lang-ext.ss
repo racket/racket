@@ -182,7 +182,7 @@
                     [(value-now b) =>
                                    (lambda (v)
                                      (emit v)
-                                     (schedule-alarm (+ (value-now interval) (current-milliseconds)) ret))])))
+                                     (schedule-alarm (+ (value-now interval) (current-inexact-milliseconds)) ret))])))
               b)))
   
   ; ==> : event[a] (a -> b) -> event[b]
@@ -319,10 +319,10 @@
   
   ;; Deprecated
   (define (magic dtime thunk)
-    (let* ([last-time (current-milliseconds)]
+    (let* ([last-time (current-inexact-milliseconds)]
            [ret (let ([myself #f])
                   (event-producer
-                   (let ([now (current-milliseconds)])
+                   (let ([now (current-inexact-milliseconds)])
                      (snapshot (dtime)
                                (when (cons? the-args)
                                  (set! myself (first the-args)))
@@ -341,7 +341,7 @@
     (let ([ret (proc->signal void)])
       (set-signal-thunk! ret
                          (lambda ()
-                           (let ([t (current-milliseconds)])
+                           (let ([t (current-inexact-milliseconds)])
                              (schedule-alarm (+ (value-now ms) t) ret)
                              t)))
       (set-signal-value! ret ((signal-thunk ret)))
@@ -352,7 +352,7 @@
       (set-signal-thunk! ret
                          (lambda ()
                            (let ([s (current-seconds)]
-                                 [t (current-milliseconds)])
+                                 [t (current-inexact-milliseconds)])
                              (schedule-alarm (* 1000 (add1 (floor (/ t 1000)))) ret)
                              s)))
       (set-signal-value! ret ((signal-thunk ret)))
@@ -364,12 +364,12 @@
     (letrec ([last (mcons (cons (if (zero? (value-now ms-b))
                                     (value-now/no-copy beh)
                                     undefined)
-                                (current-milliseconds))
+                                (current-inexact-milliseconds))
                           empty)]
              [head last]
              [producer (proc->signal
                         (lambda ()
-                          (let* ([now (current-milliseconds)]
+                          (let* ([now (current-inexact-milliseconds)]
                                  [ms (value-now ms-b)])
                             (let loop ()
                               (if (or (empty? (mcdr head))
@@ -380,7 +380,7 @@
                                     (loop)))))))]
              [consumer (proc->signal/dont-gc-unless producer
                         (lambda ()
-                          (let* ([now (current-milliseconds)]
+                          (let* ([now (current-inexact-milliseconds)]
                                  [new (deep-value-now beh)]
                                  [ms (value-now ms-b)])
                             (when (not (equal? new (car (mcar last))))
@@ -400,7 +400,7 @@
   (define integral
     (opt-lambda (b [ms-b 20])
       (letrec ([accum 0]
-               [last-time (current-milliseconds)]
+               [last-time (current-inexact-milliseconds)]
                [last-val (value-now b)]
                [last-alarm 0]
                [producer (proc->signal (lambda () accum))]
@@ -408,7 +408,7 @@
         (set-signal-thunk!
          consumer
          (lambda ()
-           (let ([now (current-milliseconds)])
+           (let ([now (current-inexact-milliseconds)])
              (if (> now (+ last-time 20))
                  (begin
                    (when (not (number? last-val))
@@ -434,10 +434,10 @@
   ; derivative : signal[num] -> signal[num]
   (define (derivative b)
     (let* ([last-value (value-now b)]
-           [last-time (current-milliseconds)]
+           [last-time (current-inexact-milliseconds)]
            [thunk (lambda ()
                     (let* ([new-value (value-now b)]
-                           [new-time (current-milliseconds)]
+                           [new-time (current-inexact-milliseconds)]
                            [result (if (or (= new-value last-value)
                                            (= new-time last-time)
                                            (> new-time

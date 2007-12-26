@@ -797,7 +797,7 @@
                (receive [after (cond
                                  [(not (iq-empty?)) 0]
                                  [(not (alarms-empty?)) (- (alarms-peak-ms)
-                                                           (current-milliseconds))]
+                                                           (current-inexact-milliseconds))]
                                  [else #f])
                                (void)]
                         [(? signal? b)
@@ -855,7 +855,7 @@
              ;; enqueue expired timers for execution
              (let loop ()
                (unless (or (alarms-empty?)
-                           (< (current-milliseconds)
+                           (< (current-inexact-milliseconds)
                               (alarms-peak-ms)))
                  (let ([beh (alarms-dequeue-beh)])
                    (when (and beh (not (signal-stale? beh)))
