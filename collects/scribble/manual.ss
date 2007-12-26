@@ -440,7 +440,7 @@
 
   (provide declare-exporting
            deftogether
-           defproc defproc* defstruct defthing defthing* defparam defboolparam
+           defproc defproc* defstruct defthing defthing* defparam defparam* defboolparam
            defform defform* defform/subs defform*/subs defform/none
            defidform
            specform specform/subs 
@@ -688,6 +688,10 @@
     (syntax-rules ()
       [(_ id arg contract desc ...)
        (defproc* ([(id) contract] [(id [arg contract]) void?]) desc ...)]))
+  (define-syntax defparam*
+    (syntax-rules ()
+      [(_ id arg in-contract out-contract desc ...)
+       (defproc* ([(id) out-contract] [(id [arg in-contract]) void?]) desc ...)]))
   (define-syntax defboolparam
     (syntax-rules ()
       [(_ id arg desc ...)

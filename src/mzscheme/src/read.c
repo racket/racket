@@ -4187,6 +4187,7 @@ typedef struct Scheme_Load_Delay {
   Scheme_Object **symtab;
   long *shared_offsets;
   Scheme_Object *insp;
+  Scheme_Object *relto;
   Scheme_Unmarshal_Tables *ut;
   struct CPort *current_rp;
   int perma_cache;
@@ -4211,6 +4212,7 @@ typedef struct CPort {
   Scheme_Object **symtab;
   Scheme_Object *insp; /* inspector for module-variable access */
   Scheme_Object *magic_sym, *magic_val;
+  Scheme_Object *relto;
   long *shared_offsets;
   Scheme_Load_Delay *delay_info;
 } CPort;
@@ -4735,11 +4737,9 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 
 	if (scheme_is_relative_path(SCHEME_PATH_VAL(v), SCHEME_PATH_LEN(v), SCHEME_PLATFORM_PATH_KIND)) {
 	  /* Resolve relative path using the current load-relative directory: */
-	  Scheme_Object *dir;
-	  dir = scheme_get_param(scheme_current_config(), MZCONFIG_LOAD_DIRECTORY);
-	  if (SCHEME_PATHP(dir)) {
+	  if (SCHEME_PATHP(port->relto)) {
 	    Scheme_Object *a[2];
-	    a[0] = dir;
+	    a[0] = port->relto;
 	    a[1] = v;
 	    v = scheme_build_path(2, a);
 	  }
@@ -5109,7 +5109,9 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   Scheme_Hash_Table **local_ht;
   int all_short;
   int perma_cache = use_perma_cache;
-
+  Scheme_Object *dir;
+  Scheme_Config *config;
+	  
   if (USE_LISTSTACK(!p->list_stack))
     scheme_alloc_list_stack(p);
 
@@ -5242,8 +5244,13 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   rp->ht = local_ht;
   rp->symtab = symtab;
 
-  insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
+  config = scheme_current_config();
+
+  insp = scheme_get_param(config, MZCONFIG_CODE_INSPECTOR);
   rp->insp = insp;
+
+  dir = scheme_get_param(config, MZCONFIG_LOAD_DIRECTORY);
+  rp->relto = dir;
 
   rp->magic_sym = params->magic_sym;
   rp->magic_val = params->magic_val;
@@ -5276,6 +5283,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
     delay_info->symtab = rp->symtab;
     delay_info->shared_offsets = rp->shared_offsets;
     delay_info->insp = rp->insp;
+    delay_info->relto = rp->relto;
 
     if (perma_cache) {
       unsigned char *cache;
@@ -5417,6 +5425,7 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
   rp->ht = ht;
   rp->symtab = delay_info->symtab;
   rp->insp = delay_info->insp;
+  rp->relto = delay_info->relto;
   rp->shared_offsets = delay_info->shared_offsets;
   rp->delay_info = delay_info;
 

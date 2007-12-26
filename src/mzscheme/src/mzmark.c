@@ -4514,6 +4514,7 @@ static int mark_cport_MARK(void *p) {
   gcMARK(cp->ut);
   gcMARK(cp->symtab);
   gcMARK(cp->insp);
+  gcMARK(cp->relto);
   gcMARK(cp->magic_sym);
   gcMARK(cp->magic_val);
   gcMARK(cp->shared_offsets);
@@ -4530,6 +4531,7 @@ static int mark_cport_FIXUP(void *p) {
   gcFIXUP(cp->ut);
   gcFIXUP(cp->symtab);
   gcFIXUP(cp->insp);
+  gcFIXUP(cp->relto);
   gcFIXUP(cp->magic_sym);
   gcFIXUP(cp->magic_val);
   gcFIXUP(cp->shared_offsets);
@@ -4611,6 +4613,7 @@ static int mark_delay_load_MARK(void *p) {
   gcMARK(ld->symtab);
   gcMARK(ld->shared_offsets);
   gcMARK(ld->insp);
+  gcMARK(ld->relto);
   gcMARK(ld->ut);
   gcMARK(ld->current_rp);
   gcMARK(ld->cached);
@@ -4625,6 +4628,7 @@ static int mark_delay_load_FIXUP(void *p) {
   gcFIXUP(ld->symtab);
   gcFIXUP(ld->shared_offsets);
   gcFIXUP(ld->insp);
+  gcFIXUP(ld->relto);
   gcFIXUP(ld->ut);
   gcFIXUP(ld->current_rp);
   gcFIXUP(ld->cached);

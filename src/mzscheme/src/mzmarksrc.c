@@ -1840,6 +1840,7 @@ mark_cport {
   gcMARK(cp->ut);
   gcMARK(cp->symtab);
   gcMARK(cp->insp);
+  gcMARK(cp->relto);
   gcMARK(cp->magic_sym);
   gcMARK(cp->magic_val);
   gcMARK(cp->shared_offsets);
@@ -1877,6 +1878,7 @@ mark_delay_load {
   gcMARK(ld->symtab);
   gcMARK(ld->shared_offsets);
   gcMARK(ld->insp);
+  gcMARK(ld->relto);
   gcMARK(ld->ut);
   gcMARK(ld->current_rp);
   gcMARK(ld->cached);

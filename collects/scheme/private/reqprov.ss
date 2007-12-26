@@ -603,7 +603,10 @@
                                                                       (or (null? modes)
                                                                           (memq 'run modes))
                                                                       (memq 'syntax modes)
-                                                                      (memq 'label modes))])
+                                                                      (memq 'label modes))]
+                           [(ok-context?) (lambda (id id=?)
+                                            (id=? id
+                                                  (datum->syntax mp (syntax-e id))))]) 
                 (when (or (null? modes) 
                           (memq 'run modes))
                   (unless ids
@@ -626,25 +629,30 @@
                      "no corresponding for-label require"
                      stx
                      mp)))
-                (append
-                 (map (lambda (id)
-                        (make-export id (syntax-e id) 'syntax #f stx))
-                      (if (or (null? modes)
-                              (memq 'syntax modes))
-                          (or stx-ids null)
-                          null))
-                 (map (lambda (id)
-                        (make-export id (syntax-e id) 'label #f stx))
-                      (if (or (null? modes)
-                              (memq 'label modes))
-                          (or label-ids null)
-                          null))
-                 (map (lambda (id)
-                        (make-export id (syntax-e id) 'run #f stx))
-                      (if (or (null? modes)
-                              (memq 'run modes))
-                          ids
-                          null)))))
+                (filter
+                 values
+                 (append
+                  (map (lambda (id)
+                         (and (ok-context? id free-transformer-identifier=?)
+                              (make-export id (syntax-e id) 'syntax #f stx)))
+                       (if (or (null? modes)
+                               (memq 'syntax modes))
+                           (or stx-ids null)
+                           null))
+                  (map (lambda (id)
+                         (and (ok-context? id free-label-identifier=?)
+                              (make-export id (syntax-e id) 'label #f stx)))
+                       (if (or (null? modes)
+                               (memq 'label modes))
+                           (or label-ids null)
+                           null))
+                  (map (lambda (id)
+                         (and (ok-context? id free-identifier=?)
+                              (make-export id (syntax-e id) 'run #f stx)))
+                       (if (or (null? modes)
+                               (memq 'run modes))
+                           ids
+                           null))))))
             (syntax->list #'(mp ...))))]))))
   
   (define-syntax rename-out

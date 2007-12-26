@@ -1,3 +1,9 @@
+Version 372, December 2007
+
+Minor bug fixes
+
+----------------------------------------------------------------------
+
 Version 371, August 2007
 
 Fixed (get-face-list 'mono) for Mac OS X and X11

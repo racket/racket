@@ -1,7 +1,7 @@
 #lang scribble/doc
 @require["mz.ss"]
 
-@title{Environment and Runtime Information}
+@title[#:tag "runtime"]{Environment and Runtime Information}
 
 @defproc[(getenv [name string?]) (or/c string? false/c)]{
 
@@ -119,6 +119,14 @@ ends with a newline.}
 A parameter that is initialized with command-line arguments when
 Scheme starts (not including any command-line arguments that were
 treated as flags for the system).}
+
+
+@defparam[current-thread-initial-stack-size exact-positive-integer?]{
+
+A parameter that provides a hint about how much space to reserve for a
+newly created thread's local variables. The actual space used by a
+computation is affected by just-in-time (JIT) compilation, but it is
+otherwise platform-independent.}
 
 
 @defproc[(vector-set-performance-stats! [results (and/c vector?

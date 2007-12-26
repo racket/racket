@@ -163,7 +163,8 @@ transformer expression instead of a run-time expression.}
                        [stop-ids (or/c (listof identifier?) false/c)]
                        [intdef-ctx (or/c internal-definition-context?
                                          false/c)
-                                          #f])
+                                          #f]
+                       [lift-ctx any/c (gensym 'lifts)])
          syntax?]{
 
 Like @scheme[local-expand], but if
@@ -171,8 +172,12 @@ Like @scheme[local-expand], but if
 of @scheme[stx], the result is a syntax object that represents a
 @scheme[begin] expression; lifted expression appear with their
 identifiers in @scheme[define-values] forms, and the expansion of
-@scheme[stx] is the last expression in the @scheme[begin]. The lifted
-expressions are not expanded.}
+@scheme[stx] is the last expression in the @scheme[begin]. The
+@scheme[lift-ctx] value is reported by
+@scheme[syntax-local-lift-context] during local expansion. The lifted
+expressions are not expanded, but instead left as provided in the
+@scheme[begin] form.}
+
 
 @defproc[(local-transformer-expand/capture-lifts [stx syntax?]
                        [context-v (or/c (one-of 'expression 'top-level 'module
@@ -285,6 +290,21 @@ Other syntactic forms can capture lifts by using
 @transform-time[]}
 
 
+@defproc[(syntax-local-lift-context)
+         any/c]{
+
+Returns a value that represents the target for expressions lifted via
+@scheme[syntax-local-lift-expression]. That is, for different
+transformer calls for which this procedure returns the same value (as
+determined by @scheme[eq?]), lifted expressions for the two
+transformer are moved to the same place. Thus, the result is useful
+for caching lift information to avoid redundant lifts.
+
+@transform-time[]}
+
+
+
+
 @defproc[(syntax-local-lift-module-end-declaration [stx syntax?])
          void?]{
 
@@ -329,6 +349,19 @@ internal-definition context. Later values in the list similarly
 identify internal-definition contexts that are still being expanded,
 and that required the expansion of nested internal-definition
 contexts.
+
+@transform-time[]}
+
+
+@defproc[(syntax-local-module-exports [mod-path module-path?]) 
+         (values (listof symbol?) (listof symbol?) (listof symbol?))]{
+
+Returns three lists of symbols that represent the @scheme[provide]d
+bindings of the module named by @scheme[mod-path]. The first list
+corresponds to the @tech{phase level} 0 exports of the module, the
+second list corresponds to the @tech{phase level} -1 exports of the
+module, and the last list corresponds to the @tech{label phase level}
+exports of the module.
 
 @transform-time[]}
 
@@ -444,7 +477,7 @@ import sources.}
 @defproc[(make-require-transformer [proc ((syntax?) . ->* . ((listof import?) (listof import-source?)))])
          require-transformer?]{
 
-Creates a require transformer (i.e., a structure with the
+Creates a @tech{require transformer} (i.e., a structure with the
 @scheme[prop:require-transformer] property) using the given procedure
 as the transformer.}
 
@@ -551,7 +584,7 @@ single symbol.}
                                           . -> . (listof export?))])
          provide-transformer?]{
 
-Creates a provide transformer (i.e., a structure with the
+Creates a @deftech{provide transformer} (i.e., a structure with the
 @scheme[prop:provide-transformer] property) using the given procedure
 as the transformer.}
 
@@ -594,3 +627,58 @@ A structure representing a single imported identifier:
        exporting module.}
 
 }}
+
+
+@defproc[(syntax-local-transforming-module-provides?) boolean?]{
+
+Returns @scheme[#t] while a provide transformer is running or while a
+@schemeidfont{expand} sub-form of @scheme[#%provide] is expanded,
+@scheme[#f] otherwise.}
+
+
+@defproc[(syntax-local-module-defined-identifiers) 
+         (values (listof identifier?) (listof identifier?))]{
+
+Returns two lists of identifiers corresponding to all definitions
+within the module being expanded. This information is used for
+implementing @scheme[provide] sub-forms like @scheme[all-defined-out].
+
+The first result list corresponds to @tech{phase} 0 (i.e., normal)
+definitions, and the second corresponds to @tech{phase} -1 (i.e.,
+for-syntax) definitions.
+
+This procedure can be called only while
+@scheme[syntax-local-transforming-module-provides?] returns
+@scheme[#t].}
+
+
+@defproc[(syntax-local-module-required-identifiers
+          [mod-path module-path?]
+          [normal-imports? any/c]
+          [syntax-imports? any/c]
+          [label-imports? any/c])
+         (values (listof identifier?)
+                 (listof identifier?) 
+                 (listof identifier?))]{
+
+Returns three lists of identifiers corresponding to all bindings
+imported into the module being expanded using the module path
+@scheme[mod-path]. This information is used for implementing
+@scheme[provide] sub-forms like @scheme[all-from-out].
+
+The first result list corresponds to @tech{phase level} 0 (i.e.,
+normal) bindings, and the second list corresponds to @tech{phase
+level} -1 (i.e., for-syntax) bindings, and the last list corresponds
+corresponds to @tech{label phase level} (i.e., for-label) bindings.
+
+The @scheme[normal-imports?], @scheme[syntax-imports?], and
+@scheme[label-imports?] arguments determine whether each of normal,
+@scheme[for-syntax], and @scheme[for-label] @scheme[require]s are
+considered in building the result lists. Note that normal
+@scheme[require]s can add to all three lists, while
+@scheme[for-syntax] and @scheme[for-label] @scheme[require]s
+contribute only to one of the latter two lists, respectively.
+
+This procedure can be called only while
+@scheme[syntax-local-transforming-module-provides?] returns
+@scheme[#t].}

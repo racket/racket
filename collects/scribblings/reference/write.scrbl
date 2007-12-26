@@ -187,6 +187,20 @@ A parameter that controls printing values in an alternate syntax.  See
 @|HonuManual| for more information.}
 
 
+@defparam*[current-write-relative-directory path 
+                                            (or/c (and/c path-string? complete-path?) false/c)
+                                            (or/c (and/c path? complete-path?) false/c)]{
+
+A parameter that is used when writing compiled code that contains
+pathname literals, including source-location pathnames for procedure
+names. When not @scheme[#f], paths that syntactically extend the
+parameter's value are converted to relative paths; when the resulting
+compiled code is read, relative paths are converted back to complete
+paths using the @scheme[current-load-relative-directory] parameter (if
+it is not @scheme[#f], otherwise the path is left relative).}
+
+
+
 @defproc*[([(port-write-handler [out output-port?]) (any/c output-port? . -> . any)]
            [(port-write-handler [in input-port?]
                                 [proc (any/c output-port? . -> . any)])

@@ -55,7 +55,12 @@ it is sent to the @tech{evaluation handler}:
        @scheme[namespace-syntax-introduce] is applied to the entire
        syntax object.}
 
-}}
+}
+
+For interactive evaluation in the style of
+@scheme[read-eval-print-loop] and @scheme[load], wrap each expression
+with @schemeidfont{#%top-interaction}, which is normally bound to
+@scheme[#%top-interaction], before passing it to @scheme[eval].}
 
 
 @defproc[(eval-syntax [stx syntax?]
@@ -89,10 +94,11 @@ port, unless the path has a @scheme[".zo"] suffix. It also
 @scheme[#t], then @scheme[read-on-demand-source] is effectively set to
 the @tech{cleanse}d, absolute form of @scheme[path] during the
 @scheme[read-syntax] call. After reading a single form, the form is
-passed to the current evaluation handler, wrapping the evaluation in a
-continuation prompt (see @scheme[call-with-continuation-prompt]) for
-the default continuation prompt tag with handler that propagates the
-abort to the continuation of the @scheme[load] call.
+passed to the current @tech{evaluation handler}, wrapping the
+evaluation in a continuation prompt (see
+@scheme[call-with-continuation-prompt]) for the default continuation
+prompt tag with handler that propagates the abort to the continuation
+of the @scheme[load] call.
 
 If the second argument to the load handler is a symbol, then:
 
@@ -129,6 +135,12 @@ If the second argument to the load handler is a symbol, then:
        declaration independent of the current namespace's bindings.}
 
 }
+
+If the second argument to the load handler is @scheme[#f], then each
+expression read from the file is wrapped with
+@schemeidfont{#%top-interaction}, which is normally bound to
+@scheme[#%top-interaction], before passing it to the @tech{evaluation
+handler}.
 
 The return value from the default @tech{load handler} is the value of
 the last form from the loaded file, or @|void-const| if the file
@@ -248,7 +260,7 @@ immediately expanded (see @secref["pathutils"]) and converted to a
 path. (The directory need not exist.)}
 
 
-@defparam[use-compiled-file-paths paths (listof path?)]{
+@defparam*[use-compiled-file-paths paths (listof path-string?) (listof path?)]{
 
 A list of relative paths, which defaults to @scheme[(list
 (string->path "compiled"))]. It is used by the @tech{compiled-load
@@ -257,12 +269,14 @@ handler} (see @scheme[current-load/use-compiled]).}
 
 @defproc[(read-eval-print-loop) any]{
 
-Starts a new REPL using the current input, output, and error
-ports. The REPL wraps each evaluation with a continuation prompt using
-the default continuation prompt tag and prompt handler (see
-@scheme[call-with-continuation-prompt]). The REPL also wraps the read
-and print operations with a prompt for the default tag whose handler
-ignores abort arguments and continues the loop. The
+Starts a new @deftech{REPL} using the current input, output, and error
+ports. The REPL wraps each expression to evaluate with
+@schemeidfont{#%top-interaction}, which is normally bound to
+@scheme[#%top-interaction], and it wraps each evaluation with a
+continuation prompt using the default continuation prompt tag and
+prompt handler (see @scheme[call-with-continuation-prompt]). The REPL
+also wraps the read and print operations with a prompt for the default
+tag whose handler ignores abort arguments and continues the loop. The
 @scheme[read-eval-print-loop] procedure does not return until
 @scheme[eof] is read, at which point it returns @|void-const|.
 

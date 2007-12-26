@@ -1252,7 +1252,9 @@ pre-defined forms are as follows.
 
  @specsubform[module-path]{ Imports all exported bindings from the
   named module, using the export identifiers as the local identifiers.
-  (See below for information on @scheme[module-path].)}
+  (See below for information on @scheme[module-path].) The lexical
+  context of the @scheme[module-path] form determines the context of
+  the introduced identifiers.}
 
  @defsubform[(only-in require-spec id-maybe-renamed ...)]{
   Like @scheme[require-spec], but constrained to those exports for
@@ -1270,7 +1272,9 @@ pre-defined forms are as follows.
 
  @defsubform[(prefix-in prefix-id require-spec)]{ Like
   @scheme[require-spec], but adjusting each identifier to be bound by
-  prefixing it with @scheme[prefix-id].}
+  prefixing it with @scheme[prefix-id]. The lexical context of the
+  @scheme[prefix-id] is ignored, and instead preserved from the
+  identifiers before prefixing.}
 
  @defsubform[(rename-in require-spec [orig-id bind-id] ...)]{
   Like @scheme[require-spec], but replacing the identifier to
@@ -1410,13 +1414,15 @@ pre-defined forms are as follows.
  level} 0. The symbolic form of @scheme[id] is used as the external
  name.}
 
- @defsubform[(all-defined-out)]{ Exports
- all identifiers that are defined at @tech{phase level} 0 or
- @tech{phase level} 1 within the exporting module. The external name
- for each identifier is the symbolic form of the identifier; note that
- this can lead to an illegal multiple export for a single symbolic
- name in the case different identifier bindings have the same symbolic
- name.}
+ @defsubform[(all-defined-out)]{ Exports all identifiers that are
+ defined at @tech{phase level} 0 or @tech{phase level} 1 within the
+ exporting module, and that have the same lexical context as the
+ @scheme[(all-defined-out)] form. The external name for each
+ identifier is the symbolic form of the identifier. Only identifiers
+ accessible from the lexical context of the @scheme[(all-defined-out)]
+ form are included; that is, macro-introduced imports are not
+ re-exported, unless the @scheme[(all-defined-out)] form was
+ introduced at the same time.}
 
  @defsubform[(all-from-out module-path ...)]{ Exports all identifiers
  that are imported into the exporting module using a
@@ -1424,7 +1430,10 @@ pre-defined forms are as follows.
  @secref["require"]) with no @tech{phase-level} shift.  The symbolic
  name for export is derived from the name that is bound within the
  module, as opposed to the symbolic name of the export from each
- @scheme[module-path].}
+ @scheme[module-path]. Only identifiers accessible from the lexical
+ context of the @scheme[module-path] are included; that is,
+ macro-introduced imports are not re-exported, unless the
+ @scheme[module-path] was introduced at the same time.}
 
  @defsubform[(rename-out [orig-id export-id] ...)]{ Exports each
  @scheme[orig-id], which must be @tech{bound} within the module at
@@ -1483,12 +1492,109 @@ multiple symbolic names.}
 @defform[(for-template require-spec ...)]{See @scheme[require].}
 @defform[(for-label require-spec ...)]{See @scheme[require] and @scheme[provide].}
 
-@defform[(#%require raw-require-spec ...)]{
+@defform/subs[(#%require raw-require-spec ...)
+              ([raw-require-spec phaseless-require-spec
+                                 (#,(schemeidfont "for-syntax") phaseless-spec ...)
+                                 (#,(schemeidfont "for-template") phaseless-spec ...)
+                                 (#,(schemeidfont "for-label") phaseless-spec ...)]
+               [phaseless-spec raw-module-path
+                               (#,(schemeidfont "only") rw-module-path id ...)
+                               (#,(schemeidfont "prefix") prefix-id raw-module-path)
+                               (#,(schemeidfont "all-except") raw-module-path id ...)
+                               (#,(schemeidfont "prefix-all-except") prefix-id 
+                                                                     raw-module-path id ...)
+                               (#,(schemeidfont "rename") raw-module-path local-id exported-id)]
+               [raw-module-path (#,(schemeidfont "quote") id)
+                                rel-string
+                                (#,(schemeidfont "lib") rel-string ...)
+                                id
+                                (#,(schemeidfont "file") string)
+                                (#,(schemeidfont "planet") rel-string
+                                                           (user-string pkg-string vers ...))])]{
 
-A primitive import form, to which @scheme[require]
-expands. @italic{To be documented...}}
+The primitive import form, to which @scheme[require] expands. A
+@scheme[raw-require-spec] is similar to a @scheme[_require-spec] in a
+@scheme[require] form, except that the syntax is more constrained, not
+composable, and not extensible. Also, sub-form names like
+@schemeidfont{for-syntax} and @schemeidfont{lib} are recognized
+symbolically, instead of via bindings.
 
-@defform[(#%provide raw-require-spec ...)]{
+Each @scheme[raw-require-spec] corresponds to the obvious
+@scheme[_require-spec], but the @schemeidfont{rename} sub-form has the
+identifiers in reverse order compared to @scheme[rename-in].
 
-A primitive export form, to which @scheme[provide] expands. @italic{To be
-documented...}}
+For most @scheme[raw-require-spec]s, the lexical context of the
+@scheme[raw-require-spec] determines the context of introduced
+identifiers. The exception is the @schemeidfont{rename} sub-form,
+where the lexical context of the @scheme[local-id] is preserved.}
+
+
+@defform/subs[(#%provide raw-provide-spec ...)
+              ([raw-provide-spec phaseless-spec
+                                 (#,(schemeidfont "for-syntax") phaseless-spec)
+                                 (#,(schemeidfont "for-label") phaseless-spec)
+                                 (#,(schemeidfont "protect") raw-provide-spec)]
+               [phaseless-spec id 
+                               (#,(schemeidfont "rename") local-id export-id) 
+                               (#,(schemeidfont "struct") struct-id (field-id ...))
+                               (#,(schemeidfont "all-from") raw-module-path)
+                               (#,(schemeidfont "all-from-except") raw-module-path id ...)
+                               (#,(schemeidfont "all-defined"))
+                               (#,(schemeidfont "all-defined-except") id ...)
+                               (#,(schemeidfont "prefix-all-defined") prefix-id) 
+                               (#,(schemeidfont "prefix-all-defined-except") prefix-id id ...)
+                               (#,(schemeidfont "protect") phaseless-spec ...)
+                               (#,(schemeidfont "expand") (id . datum))])]{
+
+The primitive export form, to which @scheme[provide] expands.  A
+@scheme[_raw-module-path] is as for @scheme[#%require]. A
+@schemeidfont{protect} sub-form cannot appear within a
+@scheme[protect] sub-form.
+
+Like @scheme[#%require], the sub-form keywords for @scheme[#%provide]
+are recognized symbolically, and nearly every
+@scheme[raw-provide-spec] has an obvious equivalent
+@scheme[_provide-spec] via @scheme[provide], with the exception of the
+@schemeidfont{struct} and @schemeidfont{expand} sub-forms.
+
+A @scheme[(#,(schemeidfont "struct") struct-id (field-id ...))]
+sub-form expands to @scheme[struct-id],
+@schemeidfont{make-}@scheme[struct-id],
+@schemeidfont{struct:}@scheme[struct-id],
+@scheme[struct-id]@schemeidfont{?},
+@scheme[struct-id]@schemeidfont{-}@scheme[field-id] for each
+@scheme[field-id], and
+@schemeidfont{set-}@scheme[struct-id]@schemeidfont{-}@scheme[field-id]@schemeidfont{!}
+for each @scheme[field-id]. The lexical context of the
+@scheme[struct-id] is used for all generated identifiers.
+
+Unlike @scheme[#%require], the @scheme[#%provide] form is
+macro-extensible via an explicit @schemeidfont{expand} sub-form; the
+@scheme[(id . datum)] part is locally expanded as an expression (even
+though it is not actually an expression), stopping when a
+@scheme[begin] form is produced; if the expansion result is
+@scheme[(begin raw-provide-spec ...)], it is spliced in place of the
+@schemeidfont{expand} form, otherwise a syntax error is reported. The
+@schemeidfont{expand} sub-form is not normally used directly; it
+provides a hook for implementing @scheme[provide] and @tech{provide
+transformers}.
+
+The @schemeidfont{all-from} and @schemeidfont{all-from-except} forms
+re-export only identifiers that are accessible in lexical context of
+the @schemeidfont{all-from} or @schemeidfont{all-from-except} form
+itself. That is, macro-introduced imports are not re-exported, unless
+the @schemeidfont{all-from} or @schemeidfont{all-from-except} form was
+introduced at the same time. Similarly, @schemeidfont{all-defined} and
+its variants export only definitions accessible from the lexical
+context of the @scheme[phaseless-spec] form.}
+
+@;------------------------------------------------------------------------
+@section{Interaction Wrapper: @scheme[#%top-interaction]}
+
+@defform[(#%top-interaction . form)]{
+
+Expands to simply @scheme[form]. The @scheme[#%top-interaction] form
+is similar to @scheme[#%app] and @scheme[#%module-begin], in that it
+provides a hook to control interactive evaluation through
+@scheme[load] (more precisely, the default @tech{load handler}) or
+@scheme[read-eval-print-loop].}

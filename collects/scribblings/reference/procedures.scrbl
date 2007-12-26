@@ -315,3 +315,33 @@ property is not associated with a procedure structure type.
 
 (pairs 1 2 3 4)
 (pairs 5)]}
+
+@; ----------------------------------------------------------------------
+
+@section{Reflecting on Primitives}
+
+A @idefterm{primitive procedure} is a built-in procedure that is
+implemented in low-level language. Not all procedures of
+@schememodname[scheme/base] are primitives, but many are. The
+distinction is mainly useful to other low-level code.
+
+@defproc[(primitive? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a primitive procedure,
+@scheme[#f] otherwise.}
+
+@defproc[(primitive-closure? [v any/c]) boolean]{
+
+Returns @scheme[#t] if @scheme[v] is internally implemented as a
+primitive closure rather than a simple primitive procedure,
+@scheme[#f] otherwise.}
+
+
+@defproc[(primitive-result-arity [prim primitive?]) procedure-arity?]{
+
+Returns the arity of the result of the primitive procedure
+@scheme[prim] (as opposed to the procedure's input arity as returned
+by @scheme[arity]). For most primitives, this procedure returns
+@scheme[1], since most primitives return a single value when
+applied.}
+

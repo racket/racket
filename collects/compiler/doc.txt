@@ -8,8 +8,8 @@ The _compiler.ss_ library defines the following functions (plus a few
 signatures).  Options that control the compiler are documented in the
 next section.
 
- Single-file extension compilation
- ---------------------------------
+ Extension compilation
+ ---------------------
 
 >  ((compile-extensions expr) scheme-file-list dest-dir)
 
