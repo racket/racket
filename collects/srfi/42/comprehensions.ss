@@ -1,4 +1,6 @@
 ; SRFI 42 as a module in PLT -----------------------------------------------
+; sebastian_egner@yahoo.com, 26-Dec-2007, PLT 371.
+;   + bugs found by sunnan and jens axel soegaard fixed
 ; Sebastian.Egner@philips.com, 15-May-2003, PLT 204.
 ; For running demos: (require (lib "examples.ss" "srfi" "42"))
 ; For anything else: http://srfi.schemers.org/srfi-42/
@@ -305,7 +307,7 @@
   (syntax-rules ()
     ((:while cc (g arg1 arg ...) test)
      (g (:while-1 cc test) arg1 arg ...) )))
-  
+
 (define-syntax :while-1
   (syntax-rules (:do let)
     ((:while-1 cc test (:do olet lbs ne1? ilet ne2? lss))
@@ -313,27 +315,27 @@
 
 (define-syntax :while-2
   (syntax-rules (:do let)
-    ((:while-2 cc
-               test
+    ((:while-2 cc 
+               test 
                (ib-let     ...)
                (ib-save    ...)
                (ib-restore ...)
-               (:do olet
-                    lbs
-                    ne1?
+               (:do olet 
+                    lbs 
+                    ne1? 
                     (let ((ib-var ib-rhs) ib ...) ic ...)
-                    ne2?
+                    ne2? 
                     lss))
-     (:while-2 cc
-               test
+     (:while-2 cc 
+               test 
                (ib-let     ... (ib-tmp #f))
                (ib-save    ... (ib-var ib-rhs))
                (ib-restore ... (ib-var ib-tmp))
-               (:do olet
-                    lbs
-                    ne1?
-                    (let (ib ...) ic ... (set! ib-tmp ib-var))
-                    ne2?
+               (:do olet 
+                    lbs 
+                    ne1? 
+                    (let (ib ...) ic ... (set! ib-tmp ib-var)) 
+                    ne2? 
                     lss)))
     ((:while-2 cc
                test
@@ -345,9 +347,10 @@
           (let (ob ... ib-let ...) oc ...)
           lbs
           (let ((ne1?-value ne1?))
-            (let (ib-save ...)
-                ic ...
-                (and ne1?-value test)))
+	    (and ne1?-value
+		 (let (ib-save ...)
+		   ic ...
+		   test)))
           (let (ib-restore ...))
           ne2?
           lss))))
