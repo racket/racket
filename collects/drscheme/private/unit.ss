@@ -1160,6 +1160,7 @@ module browser threading seems wrong.
     
     (define -frame<%>
       (interface (drscheme:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
+        get-insert-menu
         get-special-menu
         get-interactions-text
         get-definitions-text
@@ -2836,8 +2837,17 @@ module browser threading seems wrong.
         
         (define language-menu 'uninited-language-menu)
         (define scheme-menu 'scheme-menu-not-yet-init)
-        (define special-menu 'special-menu-not-yet-init)
-        (define/public (get-special-menu) special-menu)
+        (define insert-menu 'insert-menu-not-yet-init)
+        (define/public (get-insert-menu) insert-menu)
+        (define/public (get-special-menu) 
+          (define context (continuation-mark-set->context (current-continuation-marks)))
+          (fprintf (current-error-port) 
+                   "called get-special-menu: ~a\n"
+                   (if (and (pair? context)
+                            (pair? (cdr context)))
+                       (format "~s ~s" (car (cadr context)) (cdr (cadr context)))
+                       "<<unknown caller>>"))
+          insert-menu)
         
         (define/public (choose-language-callback)
           (let ([new-settings (drscheme:language-configuration:language-dialog
@@ -3037,12 +3047,12 @@ module browser threading seems wrong.
                              [else (send text uncomment-selection)]))]
                         [else (send text uncomment-selection)]))))))
             
-            (set! special-menu
+            (set! insert-menu
                   (new (get-menu%)
-                       [label (string-constant special-menu)]
+                       [label (string-constant insert-menu)]
                        [parent mb]
                        [demand-callback
-                        (λ (special-menu)
+                        (λ (insert-menu)
                           ;; just here for convience -- it actually works on all menus, not just the special menu
                           (show/hide-capability-menus))]))
             
@@ -3082,36 +3092,36 @@ module browser threading seems wrong.
                   [c% (get-menu-item%)])
               
               (frame:add-snip-menu-items 
-               special-menu 
+               insert-menu 
                c%
                (λ (item)
                  (let ([label (send item get-label)])
                    (cond
                      [(equal? label (string-constant insert-comment-box-menu-item-label))
-                      (register-capability-menu-item 'drscheme:special:insert-comment-box special-menu)]
+                      (register-capability-menu-item 'drscheme:special:insert-comment-box insert-menu)]
                      [(equal? label (string-constant insert-image-item))
-                      (register-capability-menu-item 'drscheme:special:insert-image special-menu)]))))
+                      (register-capability-menu-item 'drscheme:special:insert-image insert-menu)]))))
               
               (make-object c% (string-constant insert-fraction-menu-item-label)
-                special-menu callback 
+                insert-menu callback 
                 #f #f
                 has-editor-on-demand)
-              (register-capability-menu-item 'drscheme:special:insert-fraction special-menu)
+              (register-capability-menu-item 'drscheme:special:insert-fraction insert-menu)
               
               (make-object c% (string-constant insert-large-letters...)
-                special-menu
+                insert-menu
                 (λ (x y) (insert-large-semicolon-letters))
                 #f #f
                 has-editor-on-demand)
-              (register-capability-menu-item 'drscheme:special:insert-large-letters special-menu)
+              (register-capability-menu-item 'drscheme:special:insert-large-letters insert-menu)
               
               (make-object c% (string-constant insert-lambda)
-                special-menu
+                insert-menu
                 (λ (x y) (insert-lambda))
                 #\\
                 #f
                 has-editor-on-demand)
-              (register-capability-menu-item 'drscheme:special:insert-lambda special-menu))
+              (register-capability-menu-item 'drscheme:special:insert-lambda insert-menu))
             
             (make-object separator-menu-item% (get-show-menu))
             

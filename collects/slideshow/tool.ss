@@ -624,9 +624,9 @@ pict snip :
           
           (super-new)
           
-          (inherit get-special-menu register-capability-menu-item)
-          (add-special-menu-item (get-special-menu) this)
-          (register-capability-menu-item 'drscheme:special:slideshow-menu-item (get-special-menu))))
+          (inherit get-insert-menu register-capability-menu-item)
+          (add-special-menu-item (get-insert-menu) this)
+          (register-capability-menu-item 'drscheme:special:slideshow-menu-item (get-insert-menu))))
       
       (define slideshow-dragable%
         (class panel:horizontal-dragable%

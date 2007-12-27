@@ -1113,8 +1113,8 @@ please adhere to these guidelines:
  ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
  (version:now-available-at   "is now available at")
 
- ;; special menu
- (special-menu "S&pecial")
+ ;; insert menu
+ (insert-menu "&Insert")
  
  ;; large semi colon letters
  (insert-large-letters... "Insert Large Letters...")
