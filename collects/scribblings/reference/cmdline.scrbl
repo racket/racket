@@ -15,11 +15,11 @@
                                    (code:line #:name name-expr)]
                [optional-argv-expr code:blank
                                    (code:line #:argv argv-expr)]
-               [clause (code:line #:multi flag-spec ...)
-                       (code:line #:once-each flag-spec ...)
-                       (code:line #:once-any flag-spec ...)
-                       (code:line #:final flag-spec ...)
-                       (code:line #:help-labels string ...)]
+               [flag-clause (code:line #:multi flag-spec ...)
+                            (code:line #:once-each flag-spec ...)
+                            (code:line #:once-any flag-spec ...)
+                            (code:line #:final flag-spec ...)
+                            (code:line #:help-labels string ...)]
                 [flag-spec (flags id ... help-spec body ...+) 
                            (flags => handler-expr help-expr)]
                 [flags flag-string
@@ -38,7 +38,7 @@
                                            unknown-expr)])]{
 
 Parses a command line according to the specification in the
-@scheme[clause]s.
+@scheme[flag-clause]s.
 
 The @scheme[name-expr], if provided, should produce a path or string
 to be used as the program name for reporting errors when the
