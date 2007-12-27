@@ -6,19 +6,7 @@
 #ifdef DO_STACK_CHECK
       {
 #include "mzstkchk.h"
-	{
-          Scheme_Object *nv;
-	  long val;
-#ifndef ERROR_ON_OVERFLOW
-	  Scheme_Thread *p = scheme_current_thread;
-	  p->ku.k.p1 = (void *)o;
-          p->ku.k.i1 = MZ_HASH_I1;
-          p->ku.k.i2 = MZ_HASH_I2;
-#endif
-	  nv = scheme_handle_stack_overflow(MZ_HASH_K);
-	  scheme_get_int_val(nv, &val);
-          return val;
-	}
+        return OVERFLOW_HASH();
       }
 #endif
     }

@@ -728,4 +728,73 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define-struct t1 (a b) #:transparent)
+  (define-struct t2 (c d) #:transparent #:mutable)
+  (define-struct o (x y z)
+    #:property prop:equal+hash (list
+                                (lambda (a b equal?)
+                                  (and (equal? (o-x a) (o-x b))
+                                       (equal? (o-z a) (o-z b))))
+                                (lambda (a hash)
+                                  (+ (hash (o-x a)) (* 9 (hash (o-z a)))))
+                                (lambda (a hash)
+                                  (+ (hash (o-x a)) (hash (o-z a)))))
+    #:mutable)
+
+  (test #f equal? (make-t1 0 1) (make-t2 0 1))
+  (test #t equal? (make-t1 0 1) (make-t1 0 1))
+  (test #t equal? (make-t2 0 1) (make-t2 0 1))
+  (test #t equal? 
+        (shared ([t (make-t2 0 t)]) t) 
+        (shared ([t (make-t2 0 t)]) t))
+  (test #f equal?
+        (shared ([t (make-t2 0 t)]) t) 
+        (shared ([t (make-t2 1 t)]) t))
+  (test #t = 
+        (equal-hash-code (make-t1 0 1))
+        (equal-hash-code (make-t1 0 1)))
+  (test #t =
+        (equal-hash-code (shared ([t (make-t2 0 t)]) t))
+        (equal-hash-code (shared ([t (make-t2 0 t)]) t)))
+  (test #t = 
+        (equal-secondary-hash-code (make-t1 0 1))
+        (equal-secondary-hash-code (make-t1 0 1)))
+  (test #t =
+        (equal-secondary-hash-code (shared ([t (make-t2 0 t)]) t))
+        (equal-secondary-hash-code (shared ([t (make-t2 0 t)]) t)))
+  
+  (test #t equal? (make-o 1 2 3) (make-o 1 20 3))
+  (test #f equal? (make-o 10 2 3) (make-o 1 2 3))
+  (test #f equal? (make-o 1 2 3) (make-o 1 2 30))
+  (test #t equal? 
+        (shared ([t (make-o t 0 t)]) t) 
+        (shared ([t (make-o t 0 t)]) t))
+  (test #t equal?
+        (shared ([t (make-o t 0 t)]) t) 
+        (shared ([t (make-o t 1 t)]) t))
+  (test #f equal?
+        (shared ([t (make-o t 0 0)]) t) 
+        (shared ([t (make-o t 0 1)]) t))
+
+  (test #t = 
+        (equal-hash-code (make-o 1 2 3))
+        (equal-hash-code (make-o 1 20 3)))
+  (test #t =
+        (equal-hash-code (shared ([t (make-o t 0 t)]) t))
+        (equal-hash-code (shared ([t (make-o t 0 t)]) t)))
+  (test #t =
+        (equal-hash-code (shared ([t (make-o t 1 t)]) t))
+        (equal-hash-code (shared ([t (make-o t 1 t)]) t)))
+  (test #t =
+        (equal-secondary-hash-code (shared ([t (make-o t 0 t)]) t))
+        (equal-secondary-hash-code (shared ([t (make-o t 0 t)]) t)))
+  (test #t =
+        (equal-secondary-hash-code (shared ([t (make-o t 1 t)]) t))
+        (equal-secondary-hash-code (shared ([t (make-o t 1 t)]) t)))
+
+  (void))
+
+;; ----------------------------------------
+
 (report-errs)

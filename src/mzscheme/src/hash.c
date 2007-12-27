@@ -84,8 +84,10 @@ static void string_hash_indices(void *_key, long *_h, long *_h2)
     h2 += c;
   }
 
-  *_h = h;
-  *_h2 = h2;
+  if (_h)
+    *_h = h;
+  if (_h2)
+    *_h2 = h2;
 }
 
 #ifdef PALMOS_STUFF
@@ -104,8 +106,10 @@ static void id_hash_indices(void *_key, long *_h, long *_h2)
     key = SCHEME_STX_VAL(key);
     
   lkey = PTR_TO_LONG((Scheme_Object *)key);
-  *_h = (lkey >> 2);
-  *_h2 = (lkey >> 3);
+  if (_h)
+    *_h = (lkey >> 2);
+  if (_h2)
+    *_h2 = (lkey >> 3);
 }
 
 static int not_stx_bound_eq(char *a, char *b)
@@ -156,17 +160,15 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
   mask = table->size - 1;
 
   if (table->make_hash_indices) {
-    table->make_hash_indices((void *)key, (long *)&h, (long *)&h2);
+    table->make_hash_indices((void *)key, (long *)&h, NULL);
     h = h & mask;
-    h2 = h2 & mask;
+    h2 = 0;
   } else {
     unsigned long lkey;
     lkey = (unsigned long)PTR_TO_LONG((Scheme_Object *)key);
     h = (lkey >> 2) & mask;
-    h2 = (lkey >> 3) & mask;
+    h2 = ((lkey >> 3) & mask) | 1;
   }
-
-  h2 |= 1;
 
   keys = table->keys;
   
@@ -190,6 +192,10 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
 	  return table->vals[h];
       }
       scheme_hash_iteration_count++;
+      if (!h2) {
+        table->make_hash_indices((void *)key, NULL, (long *)&h2);
+        h2 = (h2 & (table->size - 1)) | 1;
+      }
       h = (h + h2) & mask;
     }
   } else {
@@ -846,18 +852,38 @@ END_XFORM_SKIP;
 /*                           equal? hashing                               */
 /*========================================================================*/
 
-static long equal_hash_key(Scheme_Object *o, long k, long depth);
-static long equal_hash_key2(Scheme_Object *o, long depth);
+typedef struct Hash_Info {
+  long depth; /* always odd */
+  Scheme_Object *recur;
+} Hash_Info;
+
+static long equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi);
+static long equal_hash_key2(Scheme_Object *o, Hash_Info *hi);
+
+static Scheme_Object *hash_recur(int argc, Scheme_Object **argv, Scheme_Object *prim)
+{
+  long v;
+  Hash_Info *hi;
+
+  hi = (Hash_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
+  hi->depth += 2;
+
+  v = equal_hash_key(argv[0], 0, hi);
+  
+  return scheme_make_integer(v);
+}
 
 static Scheme_Object *hash_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *v = (Scheme_Object *)p->ku.k.p1;
+  Hash_Info *hi = (Hash_Info *)p->ku.k.p2;
   long nv;
 
   p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
   
-  nv = equal_hash_key(v, p->ku.k.i1, p->ku.k.i2);
+  nv = equal_hash_key(v, p->ku.k.i1, hi);
 
   return scheme_make_integer_value(nv);
 }
@@ -866,15 +892,35 @@ static Scheme_Object *hash_k(void)
    paying for a stack check. */
 #define HASH_COUNT_START 20
 
-#define MZ_HASH_K hash_k
-#define MZ_HASH_I1 (k - t)
-#define MZ_HASH_I2 depth
+static long overflow_equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
+{
+  Scheme_Object *nv;
+  long val;
+  Hash_Info *hi2;
+  Scheme_Thread *p = scheme_current_thread;
+
+  hi2 = (Hash_Info *)scheme_malloc(sizeof(Hash_Info));
+  memcpy(hi2, hi, sizeof(Hash_Info));
+
+  p->ku.k.p1 = (void *)o;
+  p->ku.k.p2 = (void *)hi2;
+  p->ku.k.i1 = k;
+
+  nv = scheme_handle_stack_overflow(hash_k);
+  scheme_get_int_val(nv, &val);
+
+  memcpy(hi, hi2, sizeof(Hash_Info));
+
+  return val;
+}
+
+#define OVERFLOW_HASH() overflow_equal_hash_key(o, k - t, hi)
 
 /* Based on Bob Jenkins's one-at-a-time hash function at
    http://www.burtleburtle.net/bob/hash/doobs.html: */
 #define MZ_MIX(k) (k += (k << 10), k ^= (k >> 6))
 
-static long equal_hash_key(Scheme_Object *o, long k, long depth)
+static long equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
 {
   Scheme_Type t;
   static int hash_counter = HASH_COUNT_START;
@@ -883,7 +929,7 @@ static long equal_hash_key(Scheme_Object *o, long k, long depth)
   t = SCHEME_TYPE(o);
   k += t;
 
-  if (depth > MAX_HASH_DEPTH)
+  if (hi->depth > (MAX_HASH_DEPTH << 1))
     return k;
   
   switch(t) {
@@ -930,7 +976,7 @@ static long equal_hash_key(Scheme_Object *o, long k, long depth)
     break;
   case scheme_rational_type:
     {
-      k += equal_hash_key(scheme_rational_numerator(o), 0, depth);
+      k += equal_hash_key(scheme_rational_numerator(o), 0, hi);
       o = scheme_rational_denominator(o);
       break;
     }
@@ -938,23 +984,23 @@ static long equal_hash_key(Scheme_Object *o, long k, long depth)
   case scheme_complex_izi_type:
     {
       Scheme_Complex *c = (Scheme_Complex *)o;
-      k += equal_hash_key(c->r, 0, depth);
+      k += equal_hash_key(c->r, 0, hi);
       o = c->i;
       break;
     }
   case scheme_pair_type:
     {
 #     include "mzhashchk.inc"
-      depth++;
-      k += equal_hash_key(SCHEME_CAR(o), 0, depth);
+      hi->depth += 2;
+      k += equal_hash_key(SCHEME_CAR(o), 0, hi);
       o = SCHEME_CDR(o);
       break;
     }
   case scheme_mutable_pair_type:
     {
 #     include "mzhashchk.inc"
-      depth++;
-      k += equal_hash_key(SCHEME_CAR(o), 0, depth);
+      hi->depth += 2;
+      k += equal_hash_key(SCHEME_CAR(o), 0, hi);
       o = SCHEME_CDR(o);
       break;
     }
@@ -967,11 +1013,11 @@ static long equal_hash_key(Scheme_Object *o, long k, long depth)
       if (!len)
 	return k + 1;
       
-      depth++;
+      hi->depth += 2;
       --len;
       for (i = 0; i < len; i++) {
 	SCHEME_USE_FUEL(1);
-	val = equal_hash_key(SCHEME_VEC_ELS(o)[i], 0, depth);
+	val = equal_hash_key(SCHEME_VEC_ELS(o)[i], 0, hi);
 	k = (k << 5) + k + val;
       }
       
@@ -1009,32 +1055,74 @@ static long equal_hash_key(Scheme_Object *o, long k, long depth)
   case scheme_structure_type:
   case scheme_proc_struct_type:
     {
-      Scheme_Object *insp;
-      insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
-      if (scheme_inspector_sees_part(o, insp, -2)) {
-	int i;
-	Scheme_Structure *s1 = (Scheme_Structure *)o;
-	
-#       include "mzhashchk.inc"
-	
-        depth++;
+      Scheme_Object *procs;
 
-	for (i = SCHEME_STRUCT_NUM_SLOTS(s1); i--; ) {
-	  k += equal_hash_key(s1->slots[i], 0, depth);
-          MZ_MIX(k);
-	}
+      procs = scheme_struct_type_property_ref(scheme_equal_property, o);
+      if (procs) {
+        Scheme_Object *a[2], *recur, *v;
+        Hash_Info *hi2;
+
+#       include "mzhashchk.inc"
+
+        /* Create/cache closure to use for recursive hashing: */
+        if (hi->recur) {
+          recur = hi->recur;
+          hi2 = (Hash_Info *)SCHEME_PRIM_CLOSURE_ELS(recur)[0];
+        } else {
+          hi2 = (Hash_Info *)scheme_malloc(sizeof(Hash_Info));
+          a[0] = (Scheme_Object *)hi2;
+          recur = scheme_make_prim_closure_w_arity(hash_recur,
+                                                   1, a,
+                                                   "equal-hash-code/recur",
+                                                   1, 1);
+          hi->recur = recur;
+        }
+        memcpy(hi2, hi, sizeof(Hash_Info));
+
+        a[0] = o;
+        a[1] = recur;
+        
+        procs = SCHEME_VEC_ELS(procs)[2];
+        
+        v = _scheme_apply(procs, 2, a);
+
+        if (SCHEME_INTP(v))
+          return k + SCHEME_INT_VAL(v);
+        else if (SCHEME_BIGNUMP(v)) {
+          return k + (long)((Scheme_Bignum *)v)->digits[0];
+        } else {
+          scheme_arg_mismatch("equal-hash-code",
+                              "hash procedure returned a value other than an exact integer: ",
+                              v);
+          return 0;
+        }
+      } else {
+        Scheme_Object *insp;
+        insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
+        if (scheme_inspector_sees_part(o, insp, -2)) {
+          int i;
+          Scheme_Structure *s1 = (Scheme_Structure *)o;
 	
-	return k;
-      } else
-	return k + (PTR_TO_LONG(o) >> 4);
-      break;
+#         include "mzhashchk.inc"
+	
+          hi->depth += 2;
+
+          for (i = SCHEME_STRUCT_NUM_SLOTS(s1); i--; ) {
+            k += equal_hash_key(s1->slots[i], 0, hi);
+            MZ_MIX(k);
+          }
+	
+          return k;
+        } else
+          return k + (PTR_TO_LONG(o) >> 4);
+      }
     }
   case scheme_box_type:
     {
       SCHEME_USE_FUEL(1);
       k += 1;
       o = SCHEME_BOX_VAL(o);
-      depth++;
+      hi->depth += 2;
       break;
     }
   case scheme_hash_table_type:
@@ -1047,15 +1135,15 @@ static long equal_hash_key(Scheme_Object *o, long k, long depth)
 #     include "mzhashchk.inc"
 
       k = (k << 1) + 3;
-      depth++;
+      hi->depth += 2;
       
       keys = ht->keys;
       vals = ht->vals;
       for (i = ht->size; i--; ) {
 	if (vals[i]) {
-          vk = equal_hash_key(keys[i], 0, depth);
+          vk = equal_hash_key(keys[i], 0, hi);
           MZ_MIX(vk);
-	  vk += equal_hash_key(vals[i], 0, depth);
+	  vk += equal_hash_key(vals[i], 0, hi);
           MZ_MIX(vk);
           k += vk;  /* can't mix k, because the key order shouldn't matter */
 	}
@@ -1075,7 +1163,7 @@ static long equal_hash_key(Scheme_Object *o, long k, long depth)
 
       buckets = ht->buckets;
       weak = ht->weak;
-      depth++;
+      hi->depth += 2;
       
       k = (k << 1) + 7;
       
@@ -1088,9 +1176,9 @@ static long equal_hash_key(Scheme_Object *o, long k, long depth)
 	    key = bucket->key;
 	  }
 	  if (key) {
-	    vk = equal_hash_key((Scheme_Object *)bucket->val, 0, depth);
+	    vk = equal_hash_key((Scheme_Object *)bucket->val, 0, hi);
             MZ_MIX(vk);
-	    vk += equal_hash_key((Scheme_Object *)key, 0, depth);
+	    vk += equal_hash_key((Scheme_Object *)key, 0, hi);
             MZ_MIX(vk);
             k += vk; /* can't mix k, because the key order shouldn't matter */
 	  }
@@ -1133,7 +1221,7 @@ static long equal_hash_key(Scheme_Object *o, long k, long depth)
     {
       Scheme_Primary_Hash_Proc h1 = scheme_type_hash1s[t];
       if (h1)
-        return h1(o, k, scheme_make_integer(depth));
+        return h1(o, k, hi);
       else
         return k + (PTR_TO_LONG(o) >> 4);
     }
@@ -1145,34 +1233,77 @@ static long equal_hash_key(Scheme_Object *o, long k, long depth)
 
 long scheme_equal_hash_key(Scheme_Object *o)
 {
-  return equal_hash_key(o, 0, 0);
+  Hash_Info hi;
+
+  hi.depth = 1;
+  hi.recur = NULL;
+
+  return equal_hash_key(o, 0, &hi);
 }
 
 long scheme_equal_hash_key2(Scheme_Object *o)
 {
-  return equal_hash_key2(o, 0);
+  Hash_Info hi;
+
+  hi.depth = 1;
+  hi.recur = NULL;
+
+  return equal_hash_key2(o, &hi);
+}
+
+static Scheme_Object *hash2_recur(int argc, Scheme_Object **argv, Scheme_Object *prim)
+{
+  long v;
+  Hash_Info *hi;
+
+  hi = (Hash_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
+  hi->depth += 2;
+
+  v = equal_hash_key2(argv[0], hi);
+  
+  return scheme_make_integer(v);
 }
 
 static Scheme_Object *hash2_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *v = (Scheme_Object *)p->ku.k.p1;
+  Hash_Info *hi = (Hash_Info *)p->ku.k.p2;
   long nv;
 
   p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
   
-  nv = equal_hash_key2(v, p->ku.k.i2);
+  nv = equal_hash_key2(v, hi);
 
   return scheme_make_integer(nv);
 }
 
-#undef MZ_HASH_K
-#undef MZ_HASH_I1
-#define MZ_HASH_K hash2_k
-#define MZ_HASH_I1 0
-#define MZ_HASH_I2 depth
+static long overflow_equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
+{
+  Scheme_Object *nv;
+  long val;
+  Hash_Info *hi2;
+  Scheme_Thread *p = scheme_current_thread;
 
-static long equal_hash_key2(Scheme_Object *o, long depth)
+  hi2 = (Hash_Info *)scheme_malloc(sizeof(Hash_Info));
+  memcpy(hi2, hi, sizeof(Hash_Info));
+
+  p->ku.k.p1 = (void *)o;
+  p->ku.k.p2 = (void *)hi2;
+
+  nv = scheme_handle_stack_overflow(hash2_k);
+  scheme_get_int_val(nv, &val);
+
+  memcpy(hi, hi2, sizeof(Hash_Info));
+
+  return val;
+}
+
+#undef OVERFLOW_HASH
+#define OVERFLOW_HASH() overflow_equal_hash_key2(o, hi)
+
+static long equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 {
   Scheme_Type t;
   static int hash_counter = HASH_COUNT_START;
@@ -1180,7 +1311,7 @@ static long equal_hash_key2(Scheme_Object *o, long depth)
  top:
   t = SCHEME_TYPE(o);
 
-  if (depth > MAX_HASH_DEPTH)
+  if (hi->depth > (MAX_HASH_DEPTH << 1))
     return t;
   
   switch(t) {
@@ -1208,30 +1339,32 @@ static long equal_hash_key2(Scheme_Object *o, long depth)
   case scheme_bignum_type:
     return SCHEME_BIGDIG(o)[0];
   case scheme_rational_type:
-    return equal_hash_key2(scheme_rational_numerator(o), depth);
+    return equal_hash_key2(scheme_rational_numerator(o), hi);
   case scheme_complex_type:
   case scheme_complex_izi_type:
     {
       long v1, v2;
       Scheme_Complex *c = (Scheme_Complex *)o;
-      v1 = equal_hash_key2(c->r, depth);
-      v2 = equal_hash_key2(c->i, depth);
+      v1 = equal_hash_key2(c->r, hi);
+      v2 = equal_hash_key2(c->i, hi);
       return v1 + v2;
     }
   case scheme_pair_type:
     {
       long v1, v2;
 #     include "mzhashchk.inc"
-      v1 = equal_hash_key2(SCHEME_CAR(o), depth + 1);
-      v2 = equal_hash_key2(SCHEME_CDR(o), depth + 1);
+      hi->depth += 2;
+      v1 = equal_hash_key2(SCHEME_CAR(o), hi);
+      v2 = equal_hash_key2(SCHEME_CDR(o), hi);
       return v1 + v2;
     }
   case scheme_mutable_pair_type:
     {
       long v1, v2;
 #     include "mzhashchk.inc"
-      v1 = equal_hash_key2(SCHEME_CAR(o), depth + 1);
-      v2 = equal_hash_key2(SCHEME_CDR(o), depth + 1);
+      hi->depth += 2;
+      v1 = equal_hash_key2(SCHEME_CAR(o), hi);
+      v2 = equal_hash_key2(SCHEME_CDR(o), hi);
       return v1 + v2;
     }
   case scheme_vector_type:
@@ -1242,11 +1375,11 @@ static long equal_hash_key2(Scheme_Object *o, long depth)
 
 #     include "mzhashchk.inc"
 
-      depth++;
+      hi->depth += 2;
 
       for (i = 0; i < len; i++) {
 	SCHEME_USE_FUEL(1);
-	k += equal_hash_key2(SCHEME_VEC_ELS(o)[i], depth);
+	k += equal_hash_key2(SCHEME_VEC_ELS(o)[i], hi);
       }
       
       return k;
@@ -1280,28 +1413,71 @@ static long equal_hash_key2(Scheme_Object *o, long depth)
   case scheme_structure_type:
   case scheme_proc_struct_type:
     {
-      Scheme_Object *insp;
-      insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
-      if (scheme_inspector_sees_part(o, insp, -2)) {
-	int i;
-	long k = 0;
-	Scheme_Structure *s1 = (Scheme_Structure *)o;
-	
-#       include "mzhashchk.inc"
-	
-        depth++;
+      Scheme_Object *procs;
 
-	for (i = SCHEME_STRUCT_NUM_SLOTS(s1); i--; ) {
-	  k += equal_hash_key2(s1->slots[i], depth);
-	}
+      procs = scheme_struct_type_property_ref(scheme_equal_property, o);
+      if (procs) {
+        Scheme_Object *a[2], *v, *recur;
+        Hash_Info *hi2;
+
+#       include "mzhashchk.inc"
+
+        /* Create/cache closure to use for recursive hashing: */
+        if (hi->recur) {
+          recur = hi->recur;
+          hi2 = (Hash_Info *)SCHEME_PRIM_CLOSURE_ELS(recur)[0];
+        } else {
+          hi2 = (Hash_Info *)scheme_malloc(sizeof(Hash_Info));
+          a[0] = (Scheme_Object *)hi2;
+          recur = scheme_make_prim_closure_w_arity(hash2_recur,
+                                                   1, a,
+                                                   "equal-secondary-hash-code/recur",
+                                                   1, 1);
+          hi->recur = recur;
+        }
+        memcpy(hi2, hi, sizeof(Hash_Info));
+        
+        a[0] = o;
+        a[1] = recur;
+        
+        procs = SCHEME_VEC_ELS(procs)[3];
+        
+        v = _scheme_apply(procs, 2, a);
+
+        if (SCHEME_INTP(v))
+          return SCHEME_INT_VAL(v);
+        else if (SCHEME_BIGNUMP(v)) {
+          return (long)((Scheme_Bignum *)v)->digits[0];
+        } else {
+          scheme_arg_mismatch("equal-secondary-hash-code",
+                              "hash procedure returned a value other than an exact integer: ",
+                              v);
+          return 0;
+        }
+      } else {
+        Scheme_Object *insp;
+        insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
+        if (scheme_inspector_sees_part(o, insp, -2)) {
+          int i;
+          long k = 0;
+          Scheme_Structure *s1 = (Scheme_Structure *)o;
+          
+#         include "mzhashchk.inc"
 	
-	return k;
-      } else
-	return t;
+          hi->depth += 2;
+
+          for (i = SCHEME_STRUCT_NUM_SLOTS(s1); i--; ) {
+            k += equal_hash_key2(s1->slots[i], hi);
+          }
+          
+          return k;
+        } else
+          return t;
+      }
     }
   case scheme_box_type:
     o = SCHEME_BOX_VAL(o);
-    depth++;
+    hi->depth += 2;
     goto top;
   case scheme_hash_table_type:
     {
@@ -1312,14 +1488,14 @@ static long equal_hash_key2(Scheme_Object *o, long depth)
       
 #     include "mzhashchk.inc"
 
-      depth++;
+      hi->depth += 2;
 
       keys = ht->keys;
       vals = ht->vals;
       for (i = ht->size; i--; ) {
 	if (vals[i]) {
-	  k += equal_hash_key2(keys[i], depth);
-	  k += equal_hash_key2(vals[i], depth);
+	  k += equal_hash_key2(keys[i], hi);
+	  k += equal_hash_key2(vals[i], hi);
 	}
       }
       
@@ -1338,7 +1514,7 @@ static long equal_hash_key2(Scheme_Object *o, long depth)
       buckets = ht->buckets;
       weak = ht->weak;
       
-      depth++;
+      hi->depth += 2;
 
       for (i = ht->size; i--; ) {
 	bucket = buckets[i];
@@ -1349,8 +1525,8 @@ static long equal_hash_key2(Scheme_Object *o, long depth)
 	    key = bucket->key;
 	  }
 	  if (key) {
-	    k += equal_hash_key2((Scheme_Object *)bucket->val, depth);
-	    k += equal_hash_key2((Scheme_Object *)key, depth);
+	    k += equal_hash_key2((Scheme_Object *)bucket->val, hi);
+	    k += equal_hash_key2((Scheme_Object *)key, hi);
 	  }
 	}
       }
@@ -1365,7 +1541,7 @@ static long equal_hash_key2(Scheme_Object *o, long depth)
     {
       Scheme_Secondary_Hash_Proc h2 = scheme_type_hash2s[t];
       if (h2)
-        return h2(o, scheme_make_integer(depth));
+        return h2(o, hi);
       else
         return t;
     }
@@ -1374,10 +1550,10 @@ static long equal_hash_key2(Scheme_Object *o, long depth)
 
 long scheme_recur_equal_hash_key(Scheme_Object *o, void *cycle_data)
 {
-  return equal_hash_key(o, 0, SCHEME_INT_VAL(cycle_data));
+  return equal_hash_key(o, 0, (Hash_Info *)cycle_data);
 }
 
 long scheme_recur_equal_hash_key2(Scheme_Object *o, void *cycle_data)
 {
-  return equal_hash_key2(o, SCHEME_INT_VAL(cycle_data));
+  return equal_hash_key2(o, (Hash_Info *)cycle_data);
 }

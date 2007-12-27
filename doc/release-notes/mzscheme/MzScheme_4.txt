@@ -109,12 +109,16 @@ in several significant ways:
    native-code extensions is no longer supported.
 
  - Windows console binary names are converted like Unix binary names:
-   downcased with " " replaced by "-".
+   downcased and " " replaced by "-".
 
- - The contract library (in scheme/contract) no longer
-   exports object or mixin contracts. Instead they are
-   exported from scheme/class. (The libraries in mzlib
-   remain the same as before.)
+ - The `equal?' and hashing functions work on cyclic data, and a new
+   `prop:equal+hash' property allows customization of `equal?' for a
+   structure type.
+
+ - The contract library (in `scheme/contract') no longer exports
+   object or mixin contracts. Instead they are exported from
+   `scheme/class'. (The libraries in "mzlib" remain the same as
+   before.)
 
 ======================================================================
  Immutable and Mutable Pairs

@@ -97,6 +97,7 @@ static Scheme_Object *hash_table_iterate_value(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_iterate_key(int argc, Scheme_Object *argv[]);
 static Scheme_Object *eq_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_hash_code(int argc, Scheme_Object *argv[]);
+static Scheme_Object *equal_hash2_code(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *make_weak_box(int argc, Scheme_Object *argv[]);
 static Scheme_Object *weak_box_value(int argc, Scheme_Object *argv[]);
@@ -493,6 +494,11 @@ scheme_init_list (Scheme_Env *env)
   scheme_add_global_constant("equal-hash-code",
 			     scheme_make_noncm_prim(equal_hash_code,
 						    "equal-hash-code",
+						    1, 1),
+			     env);
+  scheme_add_global_constant("equal-secondary-hash-code",
+			     scheme_make_noncm_prim(equal_hash2_code,
+						    "equal-secondary-hash-code",
 						    1, 1),
 			     env);
 
@@ -1359,8 +1365,10 @@ static int compare_equal(void *v1, void *v2)
 
 static void make_hash_indices_for_equal(void *v, long *_stk_h1, long *_stk_h2)
 {
-  *_stk_h1 = scheme_equal_hash_key((Scheme_Object *)v);
-  *_stk_h2 = scheme_equal_hash_key2((Scheme_Object *)v);
+  if (_stk_h1)
+    *_stk_h1 = scheme_equal_hash_key((Scheme_Object *)v);
+  if (_stk_h2)
+    *_stk_h2 = scheme_equal_hash_key2((Scheme_Object *)v);
 }
 
 static void check_hash_table_flags(const char *name, int i, int argc, Scheme_Object **argv, int *flags)
@@ -1904,6 +1912,15 @@ static Scheme_Object *equal_hash_code(int argc, Scheme_Object *argv[])
     return argv[0];
 
   v = scheme_equal_hash_key(argv[0]);
+
+  return scheme_make_integer(v);
+}
+
+static Scheme_Object *equal_hash2_code(int argc, Scheme_Object *argv[])
+{
+  long v;
+
+  v = scheme_equal_hash_key2(argv[0]);
 
   return scheme_make_integer(v);
 }

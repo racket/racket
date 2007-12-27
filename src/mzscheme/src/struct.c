@@ -28,6 +28,7 @@ Scheme_Object *scheme_arity_at_least, *scheme_date;
 Scheme_Object *scheme_make_arity_at_least;
 Scheme_Object *scheme_source_property;
 Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
+Scheme_Object *scheme_equal_property;
 Scheme_Object *scheme_make_struct_type_proc;
 Scheme_Object *scheme_current_inspector_proc;
 
@@ -64,6 +65,7 @@ static Scheme_Object *current_code_inspector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_struct_type_property(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_type_property_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[]);
+static Scheme_Object *check_equal_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_write_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_input_port_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Object *argv[]);
@@ -280,6 +282,17 @@ scheme_init_struct (Scheme_Env *env)
     REGISTER_SO(proc_property);
     proc_property = scheme_make_struct_type_property(scheme_intern_symbol("procedure"));
     scheme_add_global_constant("prop:procedure", proc_property, env);
+  }
+
+  {
+    Scheme_Object *guard;
+    guard = scheme_make_prim_w_arity(check_equal_property_value_ok,
+				     "guard-for-prop:equal+hash",
+				     2, 2);
+    REGISTER_SO(scheme_equal_property);
+    scheme_equal_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("equal+hash"),
+                                                                     guard);
+    scheme_add_global_constant("prop:equal+hash", scheme_equal_property, env);
   }
 
   {
@@ -1014,6 +1027,48 @@ static Scheme_Object *check_input_port_property_value_ok(int argc, Scheme_Object
 static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Object *argv[])
 {
   return check_port_property_value_ok("guard-for-prop:output-port", 0, argc, argv);
+}
+
+/*========================================================================*/
+/*                         equal+hash property                            */
+/*========================================================================*/
+
+static Scheme_Object *check_equal_property_value_ok(int argc, Scheme_Object *argv[])
+/* This is the guard for prop:equal+hash */
+{
+  Scheme_Object *v, *p;
+
+  v = argv[0];
+
+  if (scheme_proper_list_length(v) != 3) {
+    v = NULL;
+  } else {
+    v = scheme_make_pair(scheme_make_symbol("tag"), v);
+    v = scheme_list_to_vector(v);
+    p = SCHEME_VEC_ELS(v)[1];
+    if (!scheme_check_proc_arity(NULL, 3, 0, 1, &p)) {
+      v = NULL;
+    } else {
+      p = SCHEME_VEC_ELS(v)[2];
+      if (!scheme_check_proc_arity(NULL, 2, 0, 1, &p)) {
+        v = NULL;
+      } else {
+        p = SCHEME_VEC_ELS(v)[3];
+        if (!scheme_check_proc_arity(NULL, 2, 0, 1, &p)) {
+          v = NULL;
+        }
+      }
+    }
+  }
+
+  if (!v) {
+    scheme_arg_mismatch("guard-for-prop:equal+hash",
+                        "expected a list containing a recursive-equality procedure (arity 2)"
+                        " and two recursive hash-code procedures (arity 2), given: ",
+                        argv[0]);
+  }
+
+  return v;
 }
 
 /*========================================================================*/

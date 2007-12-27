@@ -188,7 +188,8 @@ set to arbitrary hashing and comparison functions (before any mapping
 is installed into the table). A hash function should fill @var{h1}
 with a primary hash value and @var{h2} with a secondary hash value;
 the values are for double-hashing, where the caller takes appropriate
-modulos.
+modulos. Either @var{h1} or @var{h2} can be @cpp{NULL} if the
+corresponding hash code is not needed.
 
 To traverse the hash table content, iterate over @var{keys} and
 @var{vals} in parallel from @cpp{0} to @cpp{size-1}, and ignore

@@ -41,7 +41,7 @@ strings, byte strings, numbers, pairs, mutable pairs, vectors, hash
 tables, and inspectable structures. In the last five cases, equality
 is recursively defined; if both @scheme[v1] and @scheme[v2] contain
 reference cycles, they are equal when the infinite unfoldings of the
-values would be equal.}
+values would be equal. See also @scheme[prop:equal+hash].}
 
 
 @defproc[(eqv? [v1 any/c] [v2 any/c]) boolean?]{
@@ -63,6 +63,69 @@ object, @scheme[#f] otherwise. See also @secref["model-eq"].}
 
 Returns @scheme[#t] if @scheme[v] is an immutable string, byte string,
 vector, or box, @scheme[#f] otherwise.}
+
+@defthing[prop:equal+hash struct-type-property?]{
+
+A @tech{structure type property} (see @secref["structprops"]) that
+supplies an equality predicate and hashing functions for a structure
+type. The property value must be a list of three procedures:
+
+@itemize{
+
+ @item{@scheme[_equal-proc : (any/c any/c (any/c any/c . ->
+        . boolean?)  . -> . any/c)] --- tests whether the first two
+        arguments are equal, where both values are instances of the
+        structure type to which the property is associated (or a
+        subtype of the structure type).
+
+        The third argument is an @scheme[equal?]  predicate to use for
+        recursive equality checks; use the given predicate instead of
+        @scheme[equal?] to ensure that data cycles are handled
+        properly.
+
+        The @scheme[_equal-proc] is called for a pair of structures
+        only when they are not @scheme[eq?], and only when they both
+        have a @scheme[prop:equal+hash] value inherited from the same
+        structure type. With this strategy, the order in which
+        @scheme[equal?] receives two structures does not matter. It
+        also means that, by default, a structure sub-type inherits the
+        equality predicate of its parent, if any.}
+
+ @item{@scheme[_hash-proc : (any/c (any/c . -> . exact-integer?) . ->
+       . exact-integer?)] --- computes a hash code for the given
+       structure, like @scheme[equal-hash-code]. The first argument is
+       an instance of the structure type (or one of its subtypes) to
+       which the property is associated.
+
+       The second argument is a @scheme[equal-hash-code]-like
+       procedure to use for recursive hash-code computation; use the
+       given procedure instead of @scheme[equal-hash-code] to ensure
+       that data cycles are handled properly.}
+
+ @item{@scheme[_hash2-proc : (any/c (any/c . -> . exact-integer?) . ->
+       . exact-integer?)] --- computes a secondary hash code for the
+       given structure. This procedure is like @scheme[_hash-proc],
+       but analogous to @scheme[equal-secondary-hash-code].}
+
+}
+
+Take care to ensure that @scheme[_hash-proc] and @scheme[_hash2-proc]
+are consistent with @scheme[_equal-proc]. Specifically,
+@scheme[_hash-proc] and @scheme[_hash2-proc] should produce the same
+value for any two structures for which @scheme[_equal-proc] produces a
+true value.
+
+When a structure type has no @scheme[prop:equal+hash] property, then
+transparent structures (i.e., structures with an @tech{inspector} that
+is controlled by the current @tech{inspector}) are @scheme[equal?]
+when they are instances of the same structure type (not counting
+sub-types), and when they have @scheme[equal?] field values.  For
+transparent structures, @scheme[equal-hash-code] and
+@scheme[equal-secondary-hash-code] derive hash code using the field
+values. For opaque structure types, @scheme[equal?] is the same as
+@scheme[eq?], and @scheme[equal-hash-code] and
+@scheme[equal-secondary-hash-code] results are based only on
+@scheme[eq-hash-code].}
 
 @; ------------------------------------------------------------
 @include-section["numbers.scrbl"]
@@ -556,7 +619,12 @@ returned integer is the same.  Furthermore, for the result integer
 @scheme[k] and any other exact integer @scheme[j], @scheme[(= k j)]
 implies @scheme[(eq? k j)]. A has code is computed even when
 @scheme[v] contains a cycle through pairs, vectors, boxes, and/or
-inspectable structure fields.}
+inspectable structure fields. See also @scheme[prop:equal+hash].}
+
+@defproc[(equal-secondary-hash-code [v any/c]) exact-integer?]{
+
+Like @scheme[equal-hash-code], but computes a secondary value suitable
+for use in double hashing.}
 
 @; ----------------------------------------------------------------------
 @include-section["sequences.scrbl"]

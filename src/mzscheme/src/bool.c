@@ -53,6 +53,7 @@ typedef struct Equal_Info {
   long depth; /* always odd */
   long car_depth; /* always odd */
   Scheme_Hash_Table *ht;
+  Scheme_Object *recur;
 } Equal_Info;
 
 static int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql);
@@ -128,6 +129,7 @@ equal_prim (int argc, Scheme_Object *argv[])
   eql.depth = 1;
   eql.car_depth = 1;
   eql.ht = NULL;
+  eql.recur = NULL;
 
   return (is_equal(argv[0], argv[1], &eql) ? scheme_true : scheme_false);
 }
@@ -219,6 +221,7 @@ int scheme_equal (Scheme_Object *obj1, Scheme_Object *obj2)
   eql.depth = 1;
   eql.car_depth = 1;
   eql.ht = NULL;
+  eql.recur = NULL;
 
   return is_equal(obj1, obj2, &eql);
 }
@@ -281,6 +284,15 @@ static Scheme_Object *equal_k()
   p->ku.k.p3 = NULL;
 
   return is_equal(v1, v2, eql) ? scheme_true : scheme_false;
+}
+
+static Scheme_Object *equal_recur(int argc, Scheme_Object **argv, Scheme_Object *prim)
+{
+  Equal_Info *eql = (Equal_Info *)SCHEME_PRIM_CLOSURE_ELS(prim)[0];
+
+  return (is_equal(argv[0], argv[1], eql)
+          ? scheme_true
+          : scheme_false);
 }
 
 static int is_equal_overflow(Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
@@ -359,9 +371,60 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     return ((l1 == l2)
 	    && !memcmp(SCHEME_CHAR_STR_VAL(obj1), SCHEME_CHAR_STR_VAL(obj2), l1 * sizeof(mzchar)));
   } else if (SCHEME_STRUCTP(obj1)) {
-    if (SCHEME_STRUCT_TYPE(obj1) != SCHEME_STRUCT_TYPE(obj2))
+    Scheme_Struct_Type *st1, *st2;
+    Scheme_Object *procs1, *procs2;
+
+    st1 = SCHEME_STRUCT_TYPE(obj1);
+    st2 = SCHEME_STRUCT_TYPE(obj2);
+
+    procs1 = scheme_struct_type_property_ref(scheme_equal_property, (Scheme_Object *)st1);
+    if (procs1 && (st1 != st2)) {
+      procs2 = scheme_struct_type_property_ref(scheme_equal_property, (Scheme_Object *)st2);
+      if (!procs2
+          || !SAME_OBJ(SCHEME_VEC_ELS(procs1)[0], SCHEME_VEC_ELS(procs2)[0]))
+        procs1 = NULL;
+    }
+
+    if (procs1) {
+      /* Has an equality property: */
+      Scheme_Object *a[3], *recur;
+      Equal_Info *eql2;
+#     include "mzeqchk.inc"
+
+      if (union_check(obj1, obj2, eql))
+        return 1;
+
+      /* Create/cache closure to use for recursive equality checks: */
+      if (eql->recur) {
+        recur = eql->recur;
+        eql2 = (Equal_Info *)SCHEME_PRIM_CLOSURE_ELS(recur)[0];
+      } else {
+        eql2 = (Equal_Info *)scheme_malloc(sizeof(Equal_Info));
+        a[0] = (Scheme_Object *)eql2;
+        recur = scheme_make_prim_closure_w_arity(equal_recur,
+                                                 1, a,
+                                                 "equal?/recur",
+                                                 2, 2);
+        eql->recur = recur;
+      }
+      memcpy(eql2, eql, sizeof(Equal_Info));
+
+      a[0] = obj1;
+      a[1] = obj2;
+      a[2] = recur;
+
+      procs1 = SCHEME_VEC_ELS(procs1)[1];
+
+      recur = _scheme_apply(procs1, 3, a);
+
+      memcpy(eql, eql2, sizeof(Equal_Info));
+
+      return SCHEME_TRUEP(recur);
+    } else if (st1 != st2) {
       return 0;
-    else {
+    } else {
+      /* Same types, but doesn't have an equality property, 
+         so check transparency: */
       Scheme_Object *insp;
       insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
       if (scheme_inspector_sees_part(obj1, insp, -2)

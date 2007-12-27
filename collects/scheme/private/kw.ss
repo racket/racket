@@ -523,13 +523,13 @@
        ;; This case only happens when there are no optional arguments
        (case-lambda
          [(base ... . rest-id)
-          (apply fail ... base ... rest)])]
+          (apply fail ... base ... . rest)])]
       [(_ (fail ...) (opt-id) (base ...) (done ...) (rest-id . rest) clauses)
        ;; Handle the last optional argument and the rest args (if any)
        ;; at the same time.
        (case-lambda
          [(base ...) (fail ... base ...)]
-         [(base ... done ... opt-id . rest-id) (apply fail ... base ... done ... opt-id rest)]
+         [(base ... done ... opt-id . rest-id) (apply fail ... base ... done ... opt-id . rest)]
          . clauses)]
       [(_ (fail ...) (opt-id more ...) (base ...) (done ...) (rest-id . rest) clauses)
        ;; Handle just one more optional argument:
