@@ -37,10 +37,10 @@
 	    (let* ([cnt (read-ulong p)]
 		   [cmdssz (read-ulong p)]
 		   [min-used (round-up-page cmdssz)]
-		   [sym-tab-pos 0]
-		   [dysym-pos 0]
-		   [hints-pos 0]
-		   [link-edit-pos 0]
+		   [sym-tab-pos #f]
+		   [dysym-pos #f]
+		   [hints-pos #f]
+		   [link-edit-pos #f]
 		   [link-edit-addr 0]
 		   [link-edit-offset 0]
 		   [link-edit-len 0])
@@ -134,12 +134,19 @@
 		(write-ulong 0 out)
 		(write-ulong 4 out) ; 4 means SG_NORELOC
 		;; Shift command positions
+                (unless sym-tab-pos
+                  (error 'mach-o "symtab position not found"))
 		(when (sym-tab-pos . > . link-edit-pos)
 		  (set! sym-tab-pos (+ sym-tab-pos 56)))
+		(unless dysym-pos
+                  (error 'mach-o "dysym position not found"))
 		(when (dysym-pos . > . link-edit-pos)
 		  (set! dysym-pos (+ dysym-pos 56)))
-		(when (hints-pos . > . link-edit-pos)
-		  (set! hints-pos (+ hints-pos 56)))
+                (when hints-pos
+                  (when (hints-pos . > . link-edit-pos)
+                    (set! hints-pos (+ hints-pos 56))))
+                (unless link-edit-pos
+                  (error 'mach-o "link-edit position not found"))
 		(set! link-edit-pos (+ link-edit-pos 56))
 		(when move-link-edit?
 		  ;; Update link-edit segment entry:
@@ -170,10 +177,11 @@
 				  (write-ulong (+ offset outlen) out))))
 			    '(32 40 48 56 64 72))
 		  ;; Shift hints pointer:
-		  (file-position p (+ hints-pos 8))
-		  (let ([hints-offset (read-ulong p)])
-		    (file-position out (+ hints-pos 8))
-		    (write-ulong (+ hints-offset outlen) out)))
+                  (when hints-pos
+                    (file-position p (+ hints-pos 8))
+                    (let ([hints-offset (read-ulong p)])
+                      (file-position out (+ hints-pos 8))
+                      (write-ulong (+ hints-offset outlen) out))))
 		;; Write segdata to former link-data offset:
 		(file-position out out-offset)
 		(display segdata out)
