@@ -66,6 +66,8 @@ typedef int (*Hash_Compare_Proc)(void*, void*);
 
 typedef unsigned long hash_v_t;
 
+#define MAX_HASH_DEPTH 128
+
 /*========================================================================*/
 /*                         hashing functions                              */
 /*========================================================================*/
@@ -844,7 +846,8 @@ END_XFORM_SKIP;
 /*                           equal? hashing                               */
 /*========================================================================*/
 
-static long equal_hash_key(Scheme_Object *o, long k);
+static long equal_hash_key(Scheme_Object *o, long k, long depth);
+static long equal_hash_key2(Scheme_Object *o, long depth);
 
 static Scheme_Object *hash_k(void)
 {
@@ -854,7 +857,7 @@ static Scheme_Object *hash_k(void)
 
   p->ku.k.p1 = NULL;
   
-  nv = equal_hash_key(v, p->ku.k.i1);
+  nv = equal_hash_key(v, p->ku.k.i1, p->ku.k.i2);
 
   return scheme_make_integer_value(nv);
 }
@@ -865,12 +868,13 @@ static Scheme_Object *hash_k(void)
 
 #define MZ_HASH_K hash_k
 #define MZ_HASH_I1 (k - t)
+#define MZ_HASH_I2 depth
 
 /* Based on Bob Jenkins's one-at-a-time hash function at
    http://www.burtleburtle.net/bob/hash/doobs.html: */
 #define MZ_MIX(k) (k += (k << 10), k ^= (k >> 6))
 
-static long equal_hash_key(Scheme_Object *o, long k)
+static long equal_hash_key(Scheme_Object *o, long k, long depth)
 {
   Scheme_Type t;
   static int hash_counter = HASH_COUNT_START;
@@ -878,6 +882,9 @@ static long equal_hash_key(Scheme_Object *o, long k)
  top:
   t = SCHEME_TYPE(o);
   k += t;
+
+  if (depth > MAX_HASH_DEPTH)
+    return k;
   
   switch(t) {
   case scheme_integer_type:
@@ -923,7 +930,7 @@ static long equal_hash_key(Scheme_Object *o, long k)
     break;
   case scheme_rational_type:
     {
-      k += equal_hash_key(scheme_rational_numerator(o), 0);
+      k += equal_hash_key(scheme_rational_numerator(o), 0, depth);
       o = scheme_rational_denominator(o);
       break;
     }
@@ -931,21 +938,23 @@ static long equal_hash_key(Scheme_Object *o, long k)
   case scheme_complex_izi_type:
     {
       Scheme_Complex *c = (Scheme_Complex *)o;
-      k += equal_hash_key(c->r, 0);
+      k += equal_hash_key(c->r, 0, depth);
       o = c->i;
       break;
     }
   case scheme_pair_type:
     {
 #     include "mzhashchk.inc"
-      k += equal_hash_key(SCHEME_CAR(o), 0);
+      depth++;
+      k += equal_hash_key(SCHEME_CAR(o), 0, depth);
       o = SCHEME_CDR(o);
       break;
     }
   case scheme_mutable_pair_type:
     {
 #     include "mzhashchk.inc"
-      k += equal_hash_key(SCHEME_CAR(o), 0);
+      depth++;
+      k += equal_hash_key(SCHEME_CAR(o), 0, depth);
       o = SCHEME_CDR(o);
       break;
     }
@@ -958,10 +967,11 @@ static long equal_hash_key(Scheme_Object *o, long k)
       if (!len)
 	return k + 1;
       
+      depth++;
       --len;
       for (i = 0; i < len; i++) {
 	SCHEME_USE_FUEL(1);
-	val = equal_hash_key(SCHEME_VEC_ELS(o)[i], 0);
+	val = equal_hash_key(SCHEME_VEC_ELS(o)[i], 0, depth);
 	k = (k << 5) + k + val;
       }
       
@@ -1007,8 +1017,10 @@ static long equal_hash_key(Scheme_Object *o, long k)
 	
 #       include "mzhashchk.inc"
 	
+        depth++;
+
 	for (i = SCHEME_STRUCT_NUM_SLOTS(s1); i--; ) {
-	  k += equal_hash_key(s1->slots[i], 0);
+	  k += equal_hash_key(s1->slots[i], 0, depth);
           MZ_MIX(k);
 	}
 	
@@ -1022,6 +1034,7 @@ static long equal_hash_key(Scheme_Object *o, long k)
       SCHEME_USE_FUEL(1);
       k += 1;
       o = SCHEME_BOX_VAL(o);
+      depth++;
       break;
     }
   case scheme_hash_table_type:
@@ -1034,14 +1047,15 @@ static long equal_hash_key(Scheme_Object *o, long k)
 #     include "mzhashchk.inc"
 
       k = (k << 1) + 3;
+      depth++;
       
       keys = ht->keys;
       vals = ht->vals;
       for (i = ht->size; i--; ) {
 	if (vals[i]) {
-          vk = equal_hash_key(keys[i], 0);
+          vk = equal_hash_key(keys[i], 0, depth);
           MZ_MIX(vk);
-	  vk += equal_hash_key(vals[i], 0);
+	  vk += equal_hash_key(vals[i], 0, depth);
           MZ_MIX(vk);
           k += vk;  /* can't mix k, because the key order shouldn't matter */
 	}
@@ -1061,6 +1075,7 @@ static long equal_hash_key(Scheme_Object *o, long k)
 
       buckets = ht->buckets;
       weak = ht->weak;
+      depth++;
       
       k = (k << 1) + 7;
       
@@ -1073,9 +1088,9 @@ static long equal_hash_key(Scheme_Object *o, long k)
 	    key = bucket->key;
 	  }
 	  if (key) {
-	    vk = equal_hash_key((Scheme_Object *)bucket->val, 0);
+	    vk = equal_hash_key((Scheme_Object *)bucket->val, 0, depth);
             MZ_MIX(vk);
-	    vk += equal_hash_key((Scheme_Object *)key, 0);
+	    vk += equal_hash_key((Scheme_Object *)key, 0, depth);
             MZ_MIX(vk);
             k += vk; /* can't mix k, because the key order shouldn't matter */
 	  }
@@ -1118,7 +1133,7 @@ static long equal_hash_key(Scheme_Object *o, long k)
     {
       Scheme_Primary_Hash_Proc h1 = scheme_type_hash1s[t];
       if (h1)
-        return h1(o, k);
+        return h1(o, k, scheme_make_integer(depth));
       else
         return k + (PTR_TO_LONG(o) >> 4);
     }
@@ -1130,7 +1145,12 @@ static long equal_hash_key(Scheme_Object *o, long k)
 
 long scheme_equal_hash_key(Scheme_Object *o)
 {
-  return equal_hash_key(o, 0);
+  return equal_hash_key(o, 0, 0);
+}
+
+long scheme_equal_hash_key2(Scheme_Object *o)
+{
+  return equal_hash_key2(o, 0);
 }
 
 static Scheme_Object *hash2_k(void)
@@ -1141,7 +1161,7 @@ static Scheme_Object *hash2_k(void)
 
   p->ku.k.p1 = NULL;
   
-  nv = scheme_equal_hash_key2(v);
+  nv = equal_hash_key2(v, p->ku.k.i2);
 
   return scheme_make_integer(nv);
 }
@@ -1150,8 +1170,9 @@ static Scheme_Object *hash2_k(void)
 #undef MZ_HASH_I1
 #define MZ_HASH_K hash2_k
 #define MZ_HASH_I1 0
+#define MZ_HASH_I2 depth
 
-long scheme_equal_hash_key2(Scheme_Object *o)
+static long equal_hash_key2(Scheme_Object *o, long depth)
 {
   Scheme_Type t;
   static int hash_counter = HASH_COUNT_START;
@@ -1159,6 +1180,9 @@ long scheme_equal_hash_key2(Scheme_Object *o)
  top:
   t = SCHEME_TYPE(o);
 
+  if (depth > MAX_HASH_DEPTH)
+    return t;
+  
   switch(t) {
   case scheme_integer_type:
     return t;
@@ -1184,30 +1208,30 @@ long scheme_equal_hash_key2(Scheme_Object *o)
   case scheme_bignum_type:
     return SCHEME_BIGDIG(o)[0];
   case scheme_rational_type:
-    return scheme_equal_hash_key2(scheme_rational_numerator(o));
+    return equal_hash_key2(scheme_rational_numerator(o), depth);
   case scheme_complex_type:
   case scheme_complex_izi_type:
     {
       long v1, v2;
       Scheme_Complex *c = (Scheme_Complex *)o;
-      v1 = scheme_equal_hash_key2(c->r);
-      v2 = scheme_equal_hash_key2(c->i);
+      v1 = equal_hash_key2(c->r, depth);
+      v2 = equal_hash_key2(c->i, depth);
       return v1 + v2;
     }
   case scheme_pair_type:
     {
       long v1, v2;
 #     include "mzhashchk.inc"
-      v1 = scheme_equal_hash_key2(SCHEME_CAR(o));
-      v2 = scheme_equal_hash_key2(SCHEME_CDR(o));
+      v1 = equal_hash_key2(SCHEME_CAR(o), depth + 1);
+      v2 = equal_hash_key2(SCHEME_CDR(o), depth + 1);
       return v1 + v2;
     }
   case scheme_mutable_pair_type:
     {
       long v1, v2;
 #     include "mzhashchk.inc"
-      v1 = scheme_equal_hash_key2(SCHEME_CAR(o));
-      v2 = scheme_equal_hash_key2(SCHEME_CDR(o));
+      v1 = equal_hash_key2(SCHEME_CAR(o), depth + 1);
+      v2 = equal_hash_key2(SCHEME_CDR(o), depth + 1);
       return v1 + v2;
     }
   case scheme_vector_type:
@@ -1218,9 +1242,11 @@ long scheme_equal_hash_key2(Scheme_Object *o)
 
 #     include "mzhashchk.inc"
 
+      depth++;
+
       for (i = 0; i < len; i++) {
 	SCHEME_USE_FUEL(1);
-	k += scheme_equal_hash_key2(SCHEME_VEC_ELS(o)[i]);
+	k += equal_hash_key2(SCHEME_VEC_ELS(o)[i], depth);
       }
       
       return k;
@@ -1263,8 +1289,10 @@ long scheme_equal_hash_key2(Scheme_Object *o)
 	
 #       include "mzhashchk.inc"
 	
+        depth++;
+
 	for (i = SCHEME_STRUCT_NUM_SLOTS(s1); i--; ) {
-	  k += scheme_equal_hash_key2(s1->slots[i]);
+	  k += equal_hash_key2(s1->slots[i], depth);
 	}
 	
 	return k;
@@ -1273,6 +1301,7 @@ long scheme_equal_hash_key2(Scheme_Object *o)
     }
   case scheme_box_type:
     o = SCHEME_BOX_VAL(o);
+    depth++;
     goto top;
   case scheme_hash_table_type:
     {
@@ -1283,12 +1312,14 @@ long scheme_equal_hash_key2(Scheme_Object *o)
       
 #     include "mzhashchk.inc"
 
+      depth++;
+
       keys = ht->keys;
       vals = ht->vals;
       for (i = ht->size; i--; ) {
 	if (vals[i]) {
-	  k += scheme_equal_hash_key2(keys[i]);
-	  k += scheme_equal_hash_key2(vals[i]);
+	  k += equal_hash_key2(keys[i], depth);
+	  k += equal_hash_key2(vals[i], depth);
 	}
       }
       
@@ -1307,6 +1338,8 @@ long scheme_equal_hash_key2(Scheme_Object *o)
       buckets = ht->buckets;
       weak = ht->weak;
       
+      depth++;
+
       for (i = ht->size; i--; ) {
 	bucket = buckets[i];
 	if (bucket) {
@@ -1316,8 +1349,8 @@ long scheme_equal_hash_key2(Scheme_Object *o)
 	    key = bucket->key;
 	  }
 	  if (key) {
-	    k += scheme_equal_hash_key((Scheme_Object *)bucket->val);
-	    k += scheme_equal_hash_key((Scheme_Object *)key);
+	    k += equal_hash_key2((Scheme_Object *)bucket->val, depth);
+	    k += equal_hash_key2((Scheme_Object *)key, depth);
 	  }
 	}
       }
@@ -1332,9 +1365,19 @@ long scheme_equal_hash_key2(Scheme_Object *o)
     {
       Scheme_Secondary_Hash_Proc h2 = scheme_type_hash2s[t];
       if (h2)
-        return h2(o);
+        return h2(o, scheme_make_integer(depth));
       else
         return t;
     }
   }
+}
+
+long scheme_recur_equal_hash_key(Scheme_Object *o, void *cycle_data)
+{
+  return equal_hash_key(o, 0, SCHEME_INT_VAL(cycle_data));
+}
+
+long scheme_recur_equal_hash_key2(Scheme_Object *o, void *cycle_data)
+{
+  return equal_hash_key2(o, SCHEME_INT_VAL(cycle_data));
 }

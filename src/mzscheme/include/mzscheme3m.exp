@@ -508,7 +508,10 @@ scheme_equal
 scheme_hash_key
 scheme_equal_hash_key
 scheme_equal_hash_key2
+scheme_recur_equal_hash_key
+scheme_recur_equal_hash_key2
 scheme_set_type_equality
+scheme_recur_equal
 scheme_build_list
 scheme_build_list_offset
 scheme_is_list

@@ -319,9 +319,9 @@ typedef struct Scheme_Vector {
 typedef struct Scheme_Print_Params Scheme_Print_Params;
 typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Print_Params *pp);
 
-typedef int (*Scheme_Equal_Proc)(Scheme_Object *obj1, Scheme_Object *obj2);
-typedef long (*Scheme_Primary_Hash_Proc)(Scheme_Object *obj, long base);
-typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj);
+typedef int (*Scheme_Equal_Proc)(Scheme_Object *obj1, Scheme_Object *obj2, void *cycle_data);
+typedef long (*Scheme_Primary_Hash_Proc)(Scheme_Object *obj, long base, void *cycle_data);
+typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data);
 
 /* This file defines all the built-in types */
 #ifdef INCLUDE_WITHOUT_PATHS

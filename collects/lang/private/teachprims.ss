@@ -185,56 +185,79 @@ namespace.
   (define-teach beginner exit
     (lambda () (exit)))
   
-  ;; This equality predicate doesn't handle hash tables.
-  ;; (It could, but there are no hash tables in the teaching
-  ;;  languages.)
   (define (tequal? a b epsilon)
-    (let ? ([a a][b b])
-      (or (equal? a b)
-	  (cond
-	    [(box? a)
-	     (and (box? b)
-	       (? (unbox a) (unbox b)))]
-	    [(pair? a)
-	     (and (pair? b)
-	       (? (car a) (car b))
-	       (? (cdr a) (cdr b)))]
-	    [(vector? a)
-	     (and (vector? b)
-	       (= (vector-length a) (vector-length b))
-	       (andmap ?
-		 (vector->list a)
-		 (vector->list b)))]
-	    [(image? a)
-	     (and (image? b)
-	       (image=? a b))]
-	    [(real? a)
-	     (and epsilon
-	       (real? b)
-	       (beginner-=~ a b epsilon))]
-	    [(struct? a)
-	     (and (struct? b)
-	       (let-values ([(ta sa?) (struct-info a)]
-			    [(tb sb?) (struct-info b)])
-		 (and (not sa?)
-		   (not sb?)
-		   (eq? ta tb)
-		   (? (struct->vector a)
-		      (struct->vector b)))))]
-	    [(hash-table? a)
-	     (and (hash-table? b)
-	       (eq? (immutable? a) (immutable? b))
-	       (eq? (hash-table? a 'weak) (hash-table? b 'weak))
-	       (eq? (hash-table? a 'equal) (hash-table? b 'equal))
-	       (let ([al (hash-table-map a cons)]
-		     [bl (hash-table-map b cons)])
-		 (and (= (length al) (length bl))
-		   (for-each 
-		     (lambda (ai)
-		       (? (hash-table-get b (car ai) (lambda () (not (cdr ai))))
-			  (cdr ai)))
-		     al))))]
-	    [else #f]))))
+    (let* ([ht (make-hash-table)]
+           [union-find (lambda (a)
+                         (let loop ([prev a]
+                                    [prev-prev a])
+                           (let ([v (hash-table-get ht prev #f)])
+                             (if v
+                                 (loop v prev)
+                                 (begin
+                                   (let loop ([a a])
+                                     (unless (eq? a prev-prev)
+                                       (let ([v (hash-table-get ht a)])
+                                         (hash-table-put! ht a prev)
+                                         (loop v))))
+                                   prev)))))]
+           [union-equal? (lambda (a b)
+                           (let ([a (union-find a)]
+                                 [b (union-find b)])
+                             (if (eq? a b)
+                                 #t
+                                 (begin
+                                   (hash-table-put! ht b a)
+                                   #f))))])
+      (let ? ([a a][b b])
+        (or (eqv? a b)
+            (cond
+             [(box? a)
+              (and (box? b)
+                   (? (unbox a) (unbox b)))]
+             [(pair? a)
+              (and (pair? b)
+                   (or (union-equal? a b)
+                       (and (? (car a) (car b))
+                            (? (cdr a) (cdr b)))))]
+             [(vector? a)
+              (and (vector? b)
+                   (= (vector-length a) (vector-length b))
+                   (or (union-equal? a b)
+                       (andmap ?
+                               (vector->list a)
+                               (vector->list b))))]
+             [(image? a)
+              (and (image? b)
+                   (image=? a b))]
+             [(real? a)
+              (and epsilon
+                   (real? b)
+                   (beginner-=~ a b epsilon))]
+             [(struct? a)
+              (and (struct? b)
+                   (let-values ([(ta sa?) (struct-info a)]
+                                [(tb sb?) (struct-info b)])
+                     (and (not sa?)
+                          (not sb?)
+                          (eq? ta tb)
+                          (or (union-equal? a b)
+                              (? (struct->vector a)
+                                 (struct->vector b))))))]
+             [(hash-table? a)
+              (and (hash-table? b)
+                   (eq? (immutable? a) (immutable? b))
+                   (eq? (hash-table? a 'weak) (hash-table? b 'weak))
+                   (eq? (hash-table? a 'equal) (hash-table? b 'equal))
+                   (let ([al (hash-table-map a cons)]
+                         [bl (hash-table-map b cons)])
+                     (and (= (length al) (length bl))
+                          (or (union-equal? a b)
+                              (andmap
+                               (lambda (ai)
+                                 (? (hash-table-get b (car ai) (lambda () (not (cdr ai))))
+                                    (cdr ai)))
+                               al)))))]
+             [else (equal? a b)])))))
 
   (define-teach beginner equal?
     (lambda (a b)

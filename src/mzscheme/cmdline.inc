@@ -1159,7 +1159,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #endif
 }
 
-#if defined(OS_X) && defined(MZ_PRECISE_GC)
+#if defined(OS_X) && defined(MZ_PRECISE_GC) && defined(EXTRA_EXCEPTION_STUBS)
 
 /* These declarations avoid linker problems when using
    -mmacosx-version-min. See gc2/vm_osx.c for details. */

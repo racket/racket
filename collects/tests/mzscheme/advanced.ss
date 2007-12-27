@@ -193,13 +193,20 @@
 (load (build-path (collection-path "tests" "mzscheme") "shared-tests.ss"))
 
 (htdp-test #t 'equal? (equal? (vector (list 10) 'apple) (vector (list 10) 'apple)))
+(htdp-test #t 'equal? (equal?  (shared ([x (cons 10 x)]) x) (shared ([x (cons 10 x)]) x)))
+(htdp-test #t 'equal? (equal?  (shared ([x (cons (vector x) x)]) x) (shared ([x (cons (vector x) x)]) x)))
+(htdp-test #f 'equal? (equal?  (shared ([x (cons 10 x)]) x) (shared ([x (cons 10 (cons 11 x))]) x)))
+(htdp-test #f 'equal? (equal?  (shared ([x (cons (vector x) x)]) x) (shared ([x (cons (box x) x)]) x)))
+
 (htdp-test #t 'equal~? (equal~? (vector (list 10) 'apple) (vector (list 10) 'apple) 0.1))
 (htdp-test #t 'equal~? (equal~? (vector (list 10) 'apple) (vector (list 10.02) 'apple) 0.1))
 (htdp-test #f 'equal~? (equal~? (vector (list 10) 'apple) (vector (list 10.2) 'apple) 0.1))
 (htdp-test #t 'equal? (equal? (box (list 10)) (box (list 10))))
 (htdp-test #t 'equal~? (equal~? (box (list 10)) (box (list 10)) 0.1))
 (htdp-test #t 'equal~? (equal~? (box (list 10)) (box (list 10.02)) 0.1))
-(htdp-test #f 'equal~? (equal~? (box (list 10)) (box (list 10.2)) 0.1))
+
+(htdp-test #t 'equal~? (equal~?  (shared ([x (cons 10 x)]) x) (shared ([x (cons 10.02 x)]) x) 0.1))
+(htdp-test #f 'equal~? (equal~?  (shared ([x (cons 10 x)]) x) (shared ([x (cons 10.2 x)]) x) 0.1))
 
 ;; Simulate set! in the repl
 (module my-advanced-module (lib "htdp-advanced.ss" "lang")

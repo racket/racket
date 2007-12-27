@@ -552,7 +552,10 @@
 #endif
   scheme_extension_table->scheme_equal_hash_key = scheme_equal_hash_key;
   scheme_extension_table->scheme_equal_hash_key2 = scheme_equal_hash_key2;
+  scheme_extension_table->scheme_recur_equal_hash_key = scheme_recur_equal_hash_key;
+  scheme_extension_table->scheme_recur_equal_hash_key2 = scheme_recur_equal_hash_key2;
   scheme_extension_table->scheme_set_type_equality = scheme_set_type_equality;
+  scheme_extension_table->scheme_recur_equal = scheme_recur_equal;
   scheme_extension_table->scheme_build_list = scheme_build_list;
   scheme_extension_table->scheme_build_list_offset = scheme_build_list_offset;
   scheme_extension_table->scheme_is_list = scheme_is_list;

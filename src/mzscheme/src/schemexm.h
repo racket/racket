@@ -552,7 +552,10 @@
 #endif
 #define scheme_equal_hash_key (scheme_extension_table->scheme_equal_hash_key)
 #define scheme_equal_hash_key2 (scheme_extension_table->scheme_equal_hash_key2)
+#define scheme_recur_equal_hash_key (scheme_extension_table->scheme_recur_equal_hash_key)
+#define scheme_recur_equal_hash_key2 (scheme_extension_table->scheme_recur_equal_hash_key2)
 #define scheme_set_type_equality (scheme_extension_table->scheme_set_type_equality)
+#define scheme_recur_equal (scheme_extension_table->scheme_recur_equal)
 #define scheme_build_list (scheme_extension_table->scheme_build_list)
 #define scheme_build_list_offset (scheme_extension_table->scheme_build_list_offset)
 #define scheme_is_list (scheme_extension_table->scheme_is_list)

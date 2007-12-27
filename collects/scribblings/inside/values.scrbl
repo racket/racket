@@ -727,21 +727,36 @@ Writes the content of @var{str} --- starting from @var{offset} and
            [Scheme_Secondary_Hash_Proc hash2])]{
 
 Installs an equality predicate and associated hash functions for
- values that have the type tag @var{type}. The @var{equalp} predicate is
- only applied to values that both have tag @var{type}.
+values that have the type tag @var{type}. The @var{equalp} predicate
+is only applied to values that both have tag @var{type}.
 
-The type of @var{equalp}, @var{hash1}, and @var{hash2} are defined as follows:
+The type of @var{equalp}, @var{hash1}, and @var{hash2} are defined as
+follows:
 
 @verbatim[#<<EOS
- typedef int (*Scheme_Equal_Proc)(Scheme_Object *obj1, 
-                                  Scheme_Object *obj2);
- typedef long (*Scheme_Primary_Hash_Proc)(Scheme_Object *obj, 
-                                          long base);
- typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj);
+ typedef int (*Scheme_Equal_Proc)(Scheme_Object* obj1, 
+                                  Scheme_Object* obj2,
+                                  void* cycle_data);
+ typedef long (*Scheme_Primary_Hash_Proc)(Scheme_Object* obj, 
+                                          long base,
+                                          void* cycle_data);
+ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object* obj,
+                                           void* cycle_data);
 EOS
 ]
 
 The two hash functions are use to generate primary and secondary keys
 for double hashing in an @scheme[equal?]-based hash table. The result
 of the primary-key function should depend on both @var{obj} and
-@var{base}.}
+@var{base}.
+
+The @var{cycle_data} argument in each case allows checking and hashing
+on cyclic values. It is intended for use in recursive checking or
+hashing via @cpp{scheme_recur_equal},
+@cpp{scheme_recur_equal_hash_key}, and
+@cpp{scheme_recur_equal_hash_key}. That is, do not call plain
+@cpp{scheme_equal}, @cpp{scheme_equal_hash_key}, or
+@cpp{scheme_equal_hash_key} for recursive checking or hashing on
+sub-elements of the given value(s).}
+
+

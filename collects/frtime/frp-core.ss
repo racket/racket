@@ -543,8 +543,6 @@
               (lambda () (heap-empty? heap)))))
   
   (define (schedule-alarm ms beh)
-    (when (> ms 1073741824)
-      (set! ms (- ms 2147483647)))
     (if (eq? (self) man)
         (alarms-enqueue ms beh)
         (! man (make-alarm ms beh))))

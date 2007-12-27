@@ -811,10 +811,13 @@ long (*scheme_hash_key)(Scheme_Object *o);
 #endif
 long (*scheme_equal_hash_key)(Scheme_Object *o);
 long (*scheme_equal_hash_key2)(Scheme_Object *o);
+long (*scheme_recur_equal_hash_key)(Scheme_Object *o, void *cycle_data);
+long (*scheme_recur_equal_hash_key2)(Scheme_Object *o, void *cycle_data);
 void (*scheme_set_type_equality)(Scheme_Type type, 
                                         Scheme_Equal_Proc f,
                                         Scheme_Primary_Hash_Proc hash1,
                                         Scheme_Secondary_Hash_Proc hash2);
+int (*scheme_recur_equal)(Scheme_Object *obj1, Scheme_Object *obj2, void *cycle_info);
 Scheme_Object *(*scheme_build_list)(int argc, Scheme_Object **argv);
 Scheme_Object *(*scheme_build_list_offset)(int argc, Scheme_Object **argv, int delta);
 int (*scheme_is_list)(Scheme_Object *obj1);

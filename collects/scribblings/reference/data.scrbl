@@ -36,8 +36,12 @@ Returns @scheme[#t] if @scheme[v] is @scheme[#f], @scheme[#f] otherwise.
 Two values are @scheme[equal?] if and only if they are @scheme[eqv?],
 unless otherwise specified for a particular datatype.
 
-Datatypes with further specification of @scheme[equal?] include strings,
-byte strings, numbers, pairs, vectors, and hash tables.}
+Datatypes with further specification of @scheme[equal?] include
+strings, byte strings, numbers, pairs, mutable pairs, vectors, hash
+tables, and inspectable structures. In the last five cases, equality
+is recursively defined; if both @scheme[v1] and @scheme[v2] contain
+reference cycles, they are equal when the infinite unfoldings of the
+values would be equal.}
 
 
 @defproc[(eqv? [v1 any/c] [v2 any/c]) boolean?]{
@@ -550,10 +554,9 @@ implies @scheme[(eq? k j)].}
 Returns an exact integer; for any two @scheme[equal?] values, the
 returned integer is the same.  Furthermore, for the result integer
 @scheme[k] and any other exact integer @scheme[j], @scheme[(= k j)]
-implies @scheme[(eq? k j)]. If @scheme[v] contains a cycle through
-pairs, vectors, boxes, and/or inspectable structure fields, then
-@scheme[equal-hash-code] applied to @scheme[v] will loop
-indefinitely.}
+implies @scheme[(eq? k j)]. A has code is computed even when
+@scheme[v] contains a cycle through pairs, vectors, boxes, and/or
+inspectable structure fields.}
 
 @; ----------------------------------------------------------------------
 @include-section["sequences.scrbl"]

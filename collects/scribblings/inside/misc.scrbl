@@ -26,9 +26,46 @@ Returns 1 if the Scheme values are @scheme[eqv?].}
 
 Returns 1 if the Scheme values are @scheme[equal?].}
 
+@function[(int scheme_recur_equal
+           [Scheme_Object* obj1]
+           [Scheme_Object* obj2]
+           [void* cycle_data])]{
+
+Like @cpp{scheme_equal}, but accepts an extra value for cycle
+tracking. This procedure is meant to be called by a procedure
+installed with @cpp{scheme_set_type_equality}.}
+
+Returns 1 if the Scheme values are @scheme[equal?].}
+
 @function[(long scheme_equal_hash_key
+           [Scheme_Object* obj])]{
+
+Returns the primary @scheme[equal?]-hash key for \var{obj}.}
+
+@function[(long scheme_equal_hash_key2
+           [Scheme_Object* obj])]{
+
+Returns the secondary @scheme[equal?]-hash key for \var{obj}.}
+
+@function[(long scheme_recur_equal_hash_key
            [Scheme_Object* obj]
+           [void* cycle_data])]{
+
+Like @cpp{scheme_equal_hash_key}, but accepts an extra value for cycle
+tracking. This procedure is meant to be called by a hasing procedure
+installed with @cpp{scheme_set_type_equality}.}
+
+Returns the primary @scheme[equal?]-hash key for \var{obj}.}
+
+@function[(long scheme_recur_equal_hash_key2
            [Scheme_Object* obj]
+           [void* cycle_data])]{
+
+Like @cpp{scheme_equal_hash_key2}, but accepts an extra value for
+cycle tracking. This procedure is meant to be called by a secondary
+hashing procedure installed with @cpp{scheme_set_type_equality}.}
+
+@function[(long scheme_build_list
            [int c]
            [Scheme_Object** elems])]{
 
