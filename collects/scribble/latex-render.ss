@@ -82,7 +82,10 @@
         (when (part-title-content d)
           (printf "\\title{")
           (render-content (part-title-content d) d ri)
-          (printf "}\\maketitle\n"))
+          (printf "\\\\{\\normalsize Version ~a}}\\maketitle\n"
+                  (or (and (versioned-part? d)
+                           (versioned-part-version d))
+                      (version))))
         (render-part d ri)
         (printf "\\end{document}\n"))
 
