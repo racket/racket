@@ -92,7 +92,7 @@
                     (set! libs (append libs (exported-index-desc-from-libs (entry-desc entry)))))))
               idx)
     (if (null? libs)
-        (printf "Not found in any library's documentation: ~a" sym)
+        (printf "Not found in any library's documentation: ~a\n" sym)
         (begin
           (printf "No documentation for current binding, but provided by:\n")
           (let loop ([libs libs])
