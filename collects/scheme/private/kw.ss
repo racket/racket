@@ -338,7 +338,11 @@
                                                      #'rest)]
                                       [rest-empty (if (null? (syntax-e #'rest))
                                                       '()
-                                                      '(null))])
+                                                      '(null))]
+                                      [fail-rest (if (null? (syntax-e #'rest))
+                                                     '(null)
+                                                     #'rest)])
+                                      
                           (let ([with-core 
                                  (lambda (result)
                                    ;; body of procedure, where all keyword and optional
@@ -402,7 +406,7 @@
                                    ;; struct-type entry point for no keywords when a keyword is required
                                    (syntax/loc stx
                                      (fail-opt-cases (missing-kw) (opt-id ...) (self plain-id ...) 
-                                                     () (rest-id . rest)
+                                                     () (rest-id . fail-rest)
                                                      ())))])
                             (cond
                              [(null? kws)

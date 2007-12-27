@@ -89,13 +89,13 @@
                                                                   (identifier? #'id))
                                                              (begin
                                                                (check-kw #'kw)
-                                                               (cons #'id (loop #'more #t)))]
+                                                               (cons #'id (loop #'more need-def?)))]
                                                             [(kw [id def-expr] . more)
                                                              (and (keyword? (syntax-e #'kw))
                                                                   (identifier? #'id))
                                                              (begin
                                                                (check-kw #'kw)
-                                                               (cons #'id (loop #'more #t)))]
+                                                               (cons #'id (loop #'more need-def?)))]
                                                             [(kw . more)
                                                              (keyword? (syntax-e #'kw))
                                                              (raise-syntax-error #f
