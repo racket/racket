@@ -49,8 +49,8 @@
 #define JIT_FPR_NUM	       6
 #define JIT_FPR(i)	       (i)
 
-#define jit_fxch(rs, op)       (((rs) != 0 ? FXCHr(rs) : 0),   \
-                                op, ((rs) != 0 ? FXCHr(rs) : 0))
+#define jit_fxch(rs, op)       (((rs) != 0 ? FXCHr(rs) : (void)0),      \
+                                op, ((rs) != 0 ? FXCHr(rs) : (void)0))
 
 #define jit_fp_unary(rd, s1, op)                       \
        ((rd) == (s1) ? jit_fxch ((rd), op)             \
@@ -62,7 +62,7 @@
           ((s2) == 0 ? opr(0, (rd))                    \
            : (s2) == (s1) ? jit_fxch((rd), op(0, 0))   \
            : jit_fxch((rd), op((s2), 0)))              \
-        : (rd) == (s2) ? jit_fxch((s1), opr(0, (rd) == 0 ? (s1) : (rd)))       \
+        : (rd) == (s2) ? jit_fxch((s1), op(0, (rd) == 0 ? (s1) : (rd)))       \
         : (FLDr (s1), op(0, (s2)+1), FSTPr((rd)+1)))
 
 #define jit_addr_d(rd,s1,s2)    jit_fp_binary((rd),(s1),(s2),FADDrr,FADDrr)
@@ -255,7 +255,7 @@ union jit_double_imm {
         ((_and) ? ANDLir ((_and), _EAX) : 0),                  \
         ((cmp) ? CMPLir ((cmp), _AL) : 0),                     \
         POPLr(_EAX),                                           \
-        res ((d), 0, 0, 0))
+        res ((d), 0, 0, 0), _jit.x.pc)
 
 #define jit_nothing_needed(x)
 

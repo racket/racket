@@ -106,15 +106,7 @@ printed output.
 @subsection[#:tag "ephemerons"]{Ephemerons}
 
 @; ----------------------------------------------------------------------
-@section[#:tag "performance"]{Performance}
-
-Every definition or expression is compiled to an internal bytecode
-format. Standard optimizations are applied when compiling the
-bytecode. For example, in an environment where @scheme[+] has its
-usual binding, the expression @scheme[(let ([x 1][y (lambda () 4)]) (+
-1 (y)))] is compiled the same as the constant @scheme[5] due to
-constant propagation, constant folding, and inlining optimizations.
-
+@include-section["performance.scrbl"]
 
 @; ----------------------------------------------------------------------
 @section[#:tag "ffi"]{Foreign-Function Interface@aux-elem{ (FFI)}}

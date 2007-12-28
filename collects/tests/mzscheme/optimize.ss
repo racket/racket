@@ -65,12 +65,23 @@
 		      (bin0 v op arg1 arg2))]
 	 [bin (lambda (v op arg1 arg2)
 		(bin-exact v op arg1 arg2)
-		(let ([iv (if (number? v)
-			      (exact->inexact v)
-			      v)])
+		(let* ([iv (if (number? v)
+                               (exact->inexact v)
+                               v)]
+                       [iv0 (if (and (memq op '(* /)) (zero? iv))
+                                0
+                                iv)])
 		  (bin0 iv op (exact->inexact arg1) arg2)
-		  (bin0 iv op arg1 (exact->inexact arg2))
-		  (bin0 iv op (exact->inexact arg1) (exact->inexact arg2))))]
+		  (bin0 iv0 op arg1 (exact->inexact arg2))
+		  (bin0 iv op (exact->inexact arg1) (exact->inexact arg2)))
+                (let ([iv (if (number? v)
+                              (if (eq? op '*)
+                                  (/ v (* 33333 33333))
+                                  (if (eq? op '/)
+                                      v
+                                      (/ v 33333)))
+			      v)])
+		  (bin0 iv op (/ arg1 33333) (/ arg2 33333))))]
 	 [tri0 (lambda (v op get-arg1 arg2 arg3 check-effect)
 		 ;; (printf "Trying ~a ~a ~a\n" op (get-arg1) arg2 arg3);
 		 (let ([name `(,op ,get-arg1 ,arg2, arg3)])
@@ -201,6 +212,19 @@
     (un -5 'sub1 -4)
     (un (- (expt 2 30)) 'sub1 (- 1 (expt 2 30)))
 
+    (un -1 '- 1)
+    (un 1 '- -1)
+    (un (- (expt 2 30)) '- (expt 2 30))
+    (un (expt 2 30) '- (- (expt 2 30)))
+    (un -0.0 '- 0.0)
+    (un 0.0 '- -0.0)
+
+    (un 0 'abs 0)
+    (un 1 'abs 1)
+    (un 1 'abs -1)
+    (un (sub1 (expt 2 31)) 'abs (sub1 (expt 2 31)))
+    (un (sub1 (expt 2 31)) 'abs (add1 (expt -2 31)))
+
     (bin 11 '+ 4 7)
     (bin -3 '+ 4 -7)
     (bin (expt 2 30) '+ (expt 2 29) (expt 2 29))
@@ -212,6 +236,21 @@
     (bin (expt 2 30) '- (expt 2 29) (- (expt 2 29)))
     (bin (- (expt 2 30)) '- (- (expt 2 29)) (expt 2 29))
     (bin (- 2 (expt 2 31)) '- (- 1 (expt 2 30)) (sub1 (expt 2 30)))
+
+    (bin 4 '* 1 4)
+    (bin 0 '* 0 4)
+    (bin 12 '* 3 4)
+    (bin -12 '* -3 4)
+    (bin -12 '* 3 -4)
+    (bin 12 '* -3 -4)
+
+    (bin 0 '/ 0 4)
+    (bin 1/4 '/ 1 4)
+    (bin 4 '/ 4 1)
+    (bin 4 '/ 16 4)
+    (bin -4 '/ -16 4)
+    (bin -4 '/ 16 -4)
+    (bin 4 '/ -16 -4)
 
     (bin 3 'min 3 300)
     (bin -300 'min 3 -300)

@@ -39,7 +39,7 @@
 		  (ziq (* zi zi)))
 	      (cond
 	       ((> (+ zrq ziq) +limit-sqr+) 0)
-	       (else (loop (add1 i) (+ (- zrq ziq) cr) (+ (* 2.0 zr zi) ci)))))))))
+	       (else (loop (add1 i) (+ (- zrq ziq) cr) (+ (* 2.0 (* zr zi)) ci)))))))))
   
   ;; -------------------------------
   

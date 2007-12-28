@@ -45,7 +45,7 @@ greeted
 ]
 
 @;------------------------------------------------------------------------
-@section{Guidelines for Using Assignment}
+@section[#:tag "using-set!"]{Guidelines for Using Assignment}
 
 Although using @scheme[set!] is sometimes appropriate, Scheme style
 generally discourages the use of @scheme[set!]. The following
