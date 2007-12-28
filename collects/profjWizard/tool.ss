@@ -32,7 +32,7 @@
       
       (define (java-class-wizard-mixin %)
         (class %
-          (inherit get-special-menu #;get-insert-menu get-edit-target-object register-capability-menu-item)
+          (inherit get-insert-menu get-edit-target-object register-capability-menu-item)
           
           (super-new)
           
@@ -87,18 +87,16 @@
               (send mi enable ((get-edit-target-object) . is-a? . text%)))
             (new menu-item% 
                  (label descr) 
-                 (parent (get-special-menu)) ;; (parent (get-insert-menu))
+		 (parent (get-insert-menu))
                  (callback A)
                  (demand-callback enable)))
           
           (make-menu-item% (string-constant profjWizward-insert-java-class) get-class-info make-class class-draw)
           (register-capability-menu-item 'profjWizard:special:java-class
-	    (get-special-menu)
-	    #;(get-insert-menu))
+	    (get-insert-menu))
           (make-menu-item% (string-constant profjWizard-insert-java-union) get-union-info make-union dt-draw)
           (register-capability-menu-item 'profjWizard:special:java-union
-	    (get-special-menu)
-	    #;(get-insert-menu))))
+	    (get-insert-menu))))
       
       (drscheme:get/extend:extend-unit-frame java-class-wizard-mixin)
       (drscheme:language:register-capability 'profjWizard:special:java-class 
