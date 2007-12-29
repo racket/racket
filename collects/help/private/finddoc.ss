@@ -16,7 +16,7 @@
     (match (lookup manual index-key label) 
       [(docdir index-key filename anchor title)
        `(a ((href ,(string-append 
-                    "file:" (build-path docdir filename))))
+                    "file:" (path->string (build-path docdir filename)))))
            ,label)]
       [m m]))
   
