@@ -180,7 +180,7 @@ documentation.
 > (finddoc manual index-key label)
   This procedure accepts three strings. The first is the name of 
   a doc collection, the second is an index entry in that manual, and 
-  the final is a descriptive string. It returns a string representation 
+  the final is a descriptive string. It returns a xexpr representation 
   of an anchor (in HTML) that points to that index entry in the manual.
   If the manual is not found, or the index-key is not in the manual,
   it returns html code that shows an error. Because the link is
