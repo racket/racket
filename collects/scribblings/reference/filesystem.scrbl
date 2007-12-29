@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label framework/preferences))
+          (for-label framework/preferences
+                     scheme/runtime-path
+                     setup/dirs))
 
 @title{Filesystem}
 
@@ -365,7 +367,160 @@ Returns a list of all current root directories. Obtaining this list
 can be particularly slow under Windows.}
 
 @;------------------------------------------------------------------------
-@section{More File and Directory Utilities}
+@section[#:tag "runtime-path"]{Declaring Paths Needed at Run Time}
+
+@note-lib-only[scheme/runtime-path]
+
+The @schememodname[scheme/runtime-path] library provides forms for
+accessing files and directories at run time using a path that are
+usually relative to an enclosing source file. Unlike using
+@scheme[collection-path], @scheme[define-runtime-path] exposes each
+run-time path to tools like the executable and distribution creators,
+so that files and directories needed at run time are carried along in
+a distribution.
+
+@defform[(define-runtime-path id expr)]{
+
+Uses @scheme[expr] as both a compile-time (i.e., @tech{phase} 1)
+expression and a run-time (i.e., @tech{phase} 0) expression. In either
+context, @scheme[expr] should produce a path, a string that represents
+a path, a list of the form @scheme[(list 'lib _str ...+)], or a list
+of the form @scheme[(list 'so _str)].
+
+For run time, @scheme[id] is bound to a path that is based on the
+result of @scheme[expr]. The path is normally computed by taking a
+relative path result from @scheme[expr] and adding it to a path for
+the enclosing file (which is computed as described below). However,
+tools like the executable creator can also arrange (by colluding with
+@schememodname[scheme/runtime-path]) to have a different base path
+substituted in a generated executable. If @scheme[expr] produces an
+absolute path, it is normally returned directly, but again may be
+replaced by an executable creator. In all cases, the executable
+creator preserves the relative locations of all paths.  When
+@scheme[expr] produces a relative or absolute path, then the path
+bound to @scheme[id] is always an absolute path.
+
+If @scheme[expr] produces a list of the form @scheme[(list 'lib _str
+...+)], the value bound to @scheme[id] is an absolute path. The path
+refers to a collection-based file similar to using the value as a
+@tech{module path}.
+
+If @scheme[expr] produces a list of the form @scheme[(list 'so _str)],
+the value bound to @scheme[id] can be either @scheme[_str] or an
+absolute path; it is an absolute path when adding the
+platform-specific shared-library extension --- as produced by
+@scheme[(system-type 'so-suffix)] --- and then searching in the
+PLT-specific shared-object library directories (as determined by
+@scheme[find-dll-dirs]) locates the path. In this way, shared-object
+libraries that are installed specifically for PLT Scheme get carried
+along in distributions.
+
+For compile-time, the @scheme[expr] result is used by an executable
+creator---but not the result when the containing module is
+compiled. Instead, @scheme[expr] is preserved in the module as a
+compile-time expression (in the sense of
+@scheme[begin-for-syntax]). Later, at the time that an executable is
+created, the compile-time portion of the module is executed (again),
+and the result of @scheme[expr] is the file to be included with the
+executable. The reason for the extra compile-time execution is that
+the result of @scheme[expr] might be platform-dependent, so the result
+should not be stored in the (platform-independent) bytecode form of
+the module; the platform at executable-creation time, however, is the
+same as at run time for the executable. Note that @scheme[expr] is
+still evaluated at run-time; consequently, avoid procedures like
+@scheme[collection-path], which depends on the source installation,
+and instead use relative paths and forms like @scheme[(list 'lib _str
+...+)].
+
+If a path is needed only on some platforms and not on others, use
+@scheme[define-runtime-path-list] with an @scheme[expr] that produces an
+empty list on platforms where the path is not needed.
+
+The enclosing path for a @scheme[define-runtime-path] is determined as
+follows from the @scheme[define-runtime-path] syntactic form:
+
+@itemize{
+
+ @item{If the form has a source module according to
+       @scheme[syntax-source-module], then the source location is
+       determined by preserving the original expression as a syntax
+       object, extracting its source module path at run time (again
+       using @scheme[syntax-source-module]), and then resolving the
+       resulting module path index.}
+
+ @item{If the expression has no source module, the
+       @scheme[syntax-source] location associated with the form is
+       used, if is a string or path.}
+
+ @item{If no source module is available, and @scheme[syntax-source]
+       produces no path, then @scheme[current-load-relative-directory]
+       is used if it is not @scheme[#f]. Finally,
+       @scheme[current-directory] is used if all else fails.}
+
+}
+
+In the latter two cases, the path is normally preserved in
+(platform-specific) byte form. If it is is within the result of
+@scheme[find-collects-dir], however, it the path is recorded relative
+to @scheme[(find-collects-dir)], and it is reconstructed using
+@scheme[(find-collects-dir)] at run time.
+
+Examples:
+
+@schemeblock[
+(code:comment #, @t{Access a file @filepath{data.txt} at run-time that is originally})
+(code:comment #, @t{located in the same directory as the module source file:})
+(define-runtime-path data-file "data.txt")
+(define (read-data) 
+  (with-input-from-file data-file 
+    (lambda () 
+      (read-bytes (file-size data-file)))))
+
+(code:comment #, @t{Load a platform-specific shared object (using @scheme[ffi-lib])})
+(code:comment #, @t{that is located in a platform-specific sub-directory of the})
+(code:comment #, @t{module's source directory:})
+(define-runtime-path libfit-path
+  (build-path "compiled" "native" (system-library-subpath #f)
+              (path-replace-suffix "libfit" 
+                                   (system-type 'so-suffix))))
+(define libfit (ffi-lib libfit-path))
+
+(code:comment #, @t{Load a platform-specific shared object that might be installed})
+(code:comment #, @t{as part of the operating system, or might be installed})
+(code:comment #, @t{specifically for PLT Scheme:})
+(define-runtime-path libssl-so
+  (case (system-type)
+    [(windows) '(so "ssleay32")]
+    [else '(so "libssl")]))
+(define libssl (ffi-lib libssl-so))
+]}
+
+
+@defform[(define-runtime-paths (id ...) expr)]{
+
+Like @scheme[define-runtime-path], but declares and binds multiple
+paths at once. The @scheme[expr] should produce as many values as
+@scheme[id]s.}
+
+
+@defform[(define-runtime-path-list id expr)]{
+
+Like @scheme[define-runtime-path], but @scheme[expr] should produce a
+list of paths.}
+
+
+@defform[(runtime-paths module-path)]{
+
+This form is mainly for use by tools such as executable builders. It
+expands to a quoted list containing the run-time paths declared by
+@scheme[module-path], returning the compile-time results of the
+declaration @scheme[expr]s, except that paths are converted to byte
+strings. The enclosing module must require (directly or indirectly)
+the module specified by @scheme[module-path], which is an unquoted
+module path.}
+
+@;------------------------------------------------------------------------
+@section[#:tag "file-lib"]{More File and Directory Utilities}
 
 @note-lib[scheme/file]
 
