@@ -3637,7 +3637,7 @@ module browser threading seems wrong.
     ;; lambda-snipclass is for backwards compatibility
     ;;
     (define lambda-snipclass
-      (make-object (class snip-class% ()
+      (make-object (class snip-class%
                      (define/override (read p) (make-object string-snip% "λ"))
                      (super-new))))
     (send lambda-snipclass set-version 1)

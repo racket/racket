@@ -265,18 +265,17 @@ input port.
 When matching an input port, a match failure reads up to
 @scheme[end-pos] bytes (or end-of-file), even if @scheme[pattern]
 begins with a start-of-string @litchar{^}; see also
-@scheme[regexp-match/fail-without-reading]. On success, all bytes up
-to and including the match are eventually read from the port, but
-matching proceeds by first peeking bytes from the port (using
-@scheme[peek-bytes-avail!]), and then (re-)reading matching bytes to
-discard them after the match result is determined. Non-matching bytes
-may be read and discarded before the match is determined. The matcher
-peeks in blocking mode only as far as necessary to determine a match,
-but it may peek extra bytes to fill an internal buffer if immediately
-available (i.e., without blocking). Greedy repeat operators in
-@scheme[pattern], such as @litchar{*} or @litchar{+}, tend to force
-reading the entire content of the port (up to @scheme[end-pos]) to
-determine a match.
+@scheme[regexp-try-match]. On success, all bytes up to and including
+the match are eventually read from the port, but matching proceeds by
+first peeking bytes from the port (using @scheme[peek-bytes-avail!]),
+and then (re-)reading matching bytes to discard them after the match
+result is determined. Non-matching bytes may be read and discarded
+before the match is determined. The matcher peeks in blocking mode
+only as far as necessary to determine a match, but it may peek extra
+bytes to fill an internal buffer if immediately available (i.e.,
+without blocking). Greedy repeat operators in @scheme[pattern], such
+as @litchar{*} or @litchar{+}, tend to force reading the entire
+content of the port (up to @scheme[end-pos]) to determine a match.
 
 If the input port is read simultaneously by another thread, or if the
 port is a custom port with inconsistent reading and peeking procedures
@@ -324,7 +323,7 @@ port).
 ]}
 
 
-@defproc[(regexp-match/fail-without-reading 
+@defproc[(regexp-try-match
                        [pattern (or/c string? bytes? regexp? byte-regexp?)]
                        [input input-port?]
                        [start-pos nonnegative-exact-integer? 0]

@@ -11,7 +11,7 @@
 (quasi-read-style-printing #f)
 
 (define (xl) 1)
-(define (xc) (class object% () (sequence (super-init))))
+(define (xc) (class object% (sequence (super-init))))
 
 (let ()
   (define-struct pctest (value constructor-sexp
@@ -183,8 +183,8 @@
                        xl-ID-BETTER-NOT-BE-DEFINED)
                      '(lambda () ...))
      (make-same-test xc 'xc)
-     (make-same-test (letrec ([xc (class object% ())]) xc) '(class ...))
-     (make-same-test (letrec ([xc-ID-BETTER-NOT-BE-DEFINED (class object% ())]) 
+     (make-same-test (letrec ([xc (class object%)]) xc) '(class ...))
+     (make-same-test (letrec ([xc-ID-BETTER-NOT-BE-DEFINED (class object%)]) 
                        xc-ID-BETTER-NOT-BE-DEFINED)
                      '(class ...))
      (make-same-test (lambda (x) x) '(lambda (a1) ...))
@@ -212,7 +212,7 @@
                        (hash-table-put! ht 'x 1)
                        ht)
                      '(hash-table ('x 1)))
-     (make-pctest (list 'a (box (list ())) (cons 1 '()))
+     (make-pctest (list 'a (box (list '())) (cons 1 '()))
                   '(list (quote a) (box (list empty)) (list 1))
                   '(list (quote a) (box (list empty)) (list 1))
                   '(list (quote a) (box (list empty)) (list 1))
@@ -346,7 +346,7 @@
   (test-not-shared 'x ''x)
   (test-shared (lambda (x) x) '(lambda (a1) ...))
   (test-shared (delay 1) '(delay ...))
-  (test-shared (class object% ()) '(class ...))
+  (test-shared (class object%) '(class ...))
   (test-shared (new (class object% (super-new))) '(instantiate (class ...) ...))
   
   (test-shared "abc" "abc")

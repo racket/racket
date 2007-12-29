@@ -130,7 +130,7 @@
       (raise-type-error who "list" list))
     (let loop ([list list])
       (cond 
-       [(null? list) ()]
+       [(null? list) null]
        [(equal? item (car list)) (cdr list)]
        [else (cons (car list) (loop (cdr list)))])))
 

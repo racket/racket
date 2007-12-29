@@ -642,7 +642,7 @@
 	(let ((name1 'x) (name2 'y)) `(a `(b ,,name1 ,',name2 d) e)))
 (test '(list 3 4) 'quasiquote (quasiquote (list (unquote (+ 1 2)) 4)))
 (test '`(list ,(+ 1 2) 4) 'quasiquote '(quasiquote (list (unquote (+ 1 2)) 4)))
-(test '(()) 'qq `((,@())))
+(test '(()) 'qq `((,@'())))
 (define x 5)
 (test '(quasiquote (unquote x)) 'qq ``,x)
 (test '(quasiquote (unquote 5)) 'qq ``,,x)
@@ -995,7 +995,8 @@
 		 (+ 1 2)))
 
 (test 3 '#%app (#%app + 1 2))
-(test null '#%app (#%app))
+(syntax-test #'())
+(syntax-test #'(#%app))
 
 (syntax-test #'#%top)
 (syntax-test #'(#%top 1))

@@ -1058,7 +1058,7 @@
 (syntax-test #'(new x ("a" x)))
 
 (test #t object? (new object%))
-(test #t object? (new (class object% () (init-field x) (super-instantiate ())) (x 1)))
+(test #t object? (new (class object% (init-field x) (super-instantiate ())) (x 1)))
 
 ;; ------------------------------------------------------------
 ;; `field' tests

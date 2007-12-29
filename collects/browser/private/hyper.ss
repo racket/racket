@@ -168,7 +168,7 @@ A test case:
            (let ([new-tag (make-hypertag name pos)])
              (set! hypertags-list
                    (let insert-loop ([tags-left hypertags-list])
-                     (cond [(null? tags-left)(cons new-tag ())]
+                     (cond [(null? tags-left)(cons new-tag '())]
                            [(> pos (hypertag-position (car tags-left)))
                             (cons new-tag tags-left)]
                            [else (cons (car tags-left)

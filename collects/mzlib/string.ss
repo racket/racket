@@ -8,7 +8,7 @@
                  regexp-match-peek-positions*
                  regexp-split
                  regexp-match-exact?
-                 regexp-match/fail-without-reading)
+                 regexp-try-match)
            "kw.ss")
 
   (provide string-lowercase!
@@ -17,7 +17,8 @@
            read-from-string
            read-from-string-all
            expr->string
-           (all-from scheme/base)
+           (all-from-except scheme/base regexp-try-match)
+           (rename regexp-try-match regexp-match/fail-without-reading)
            glob->regexp)
 
 

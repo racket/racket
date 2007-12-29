@@ -417,7 +417,7 @@
 (test #t unit? (unit 
 		 (import x)
 		 (export)
-		 (class object% ()
+		 (class object%
 		   (field
 		     [x 10])
 		   (set! x 5))))

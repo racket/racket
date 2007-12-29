@@ -20,7 +20,7 @@
         (set! can?-callbacks
               (let loop ([cb-list can?-callbacks])
                 (cond
-                  [(null? cb-list) ()]
+                  [(null? cb-list) '()]
                   [(eq? cb (car cb-list)) (cdr cb-list)]
                   [else (cons (car cb-list) (loop (cdr cb-list)))]))))))
   
@@ -31,7 +31,7 @@
         (set! on-callbacks
               (let loop ([cb-list on-callbacks])
                 (cond
-                  [(null? cb-list) ()]
+                  [(null? cb-list) '()]
                   [(eq? cb (car cb-list)) (cdr cb-list)]
                   [else (cons (car cb-list) (loop (cdr cb-list)))]))))))
   

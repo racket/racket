@@ -8,7 +8,7 @@
            regexp-match-peek-positions*
            regexp-split
            regexp-match-exact?
-           regexp-match/fail-without-reading)
+           regexp-try-match)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -59,12 +59,12 @@
         (regexp-replace* #rx#"[&\\]" s #"\\\\&")
         (regexp-replace* #rx"[&\\]"  s "\\\\&"))))
 
-  (define (regexp-match/fail-without-reading pattern input-port [start-k 0] [end-k #f] [out #f])
+  (define (regexp-try-match pattern input-port [start-k 0] [end-k #f] [out #f])
     (unless (input-port? input-port)
-      (raise-type-error 'regexp-match/fail-without-reading
+      (raise-type-error 'regexp-try-match
                         "input port" input-port))
     (unless (or (not out) (output-port? out))
-      (raise-type-error 'regexp-match/fail-without-reading
+      (raise-type-error 'regexp-try-match
                         "output port or #f" out))
     (let ([m (regexp-match-peek-positions pattern input-port start-k end-k)])
       (and m

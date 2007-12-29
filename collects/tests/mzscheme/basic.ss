@@ -6,7 +6,7 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test '() 'null null)
-(test '() 'null ())
+(test '() 'null '())
 
 (let ([f (lambda () #&7)])
   (test #t eq? (f) (f)))

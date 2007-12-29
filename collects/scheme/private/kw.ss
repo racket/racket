@@ -605,8 +605,14 @@
                #f
                "illegal use"
                stx)
-              (quasisyntax/loc stx
-                (#%app . #,(cdr (syntax-e stx)))))
+              (if (and (pair? l)
+                       (null? (cdr l)))
+                  (raise-syntax-error
+                   #f
+                   "missing procedure expression; probably originally (), which is an illegal empty application"
+                   stx)
+                  (quasisyntax/loc stx
+                    (#%app . #,(cdr (syntax-e stx))))))
           ;; keyword app (maybe)
           (let ([exprs
                  (let ([kw-ht (make-hash-table)])

@@ -334,6 +334,8 @@ with some syntactic and name changes.
 
  * One-armed `if' is prohibited; use `when', instead.
 
+ * Empty applications, (), are disallowed, instead of producing '().
+
  * Some popular procedures formerly in libraries have been moved into
    `scheme/base', including `filter', `remq', and `regexp-split'.
 
