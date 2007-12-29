@@ -21,7 +21,7 @@
 	(drscheme:get/extend:extend-unit-frame 
 	 (lambda (drs:frame%)
 	   (class drs:frame%
-	     (inherit get-special-menu get-edit-target-object)
+	     (inherit get-insert-menu get-edit-target-object)
 
 	     (define toolbar #f)
 	     (define toolbar-shown? #f)
@@ -59,7 +59,7 @@
 
 	     (super-new)
 
-	     (make-object menu-item% (string-constant gui-tool-insert-gui) (get-special-menu)
+	     (make-object menu-item% (string-constant gui-tool-insert-gui) (get-insert-menu)
 			  (lambda (b e)
 			    (let ([e (get-edit-target-object)])
 			      (when e
@@ -69,6 +69,6 @@
 				  (send gb create-main-panel)
 				  (send gb set-caret-owner #f 'display))))))
              (inherit register-capability-menu-item)
-             (register-capability-menu-item 'drscheme:special:insert-gui-tool (get-special-menu))))))
+             (register-capability-menu-item 'drscheme:special:insert-gui-tool (get-insert-menu))))))
       
       (drscheme:language:register-capability 'drscheme:special:insert-gui-tool (flat-contract boolean?) #t))))

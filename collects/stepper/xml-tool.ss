@@ -361,11 +361,11 @@
       
       (define (xml-box-frame-extension super%)
         (class super%
-          (inherit get-editor register-capability-menu-item get-special-menu get-edit-target-object)
+          (inherit get-editor register-capability-menu-item get-insert-menu get-edit-target-object)
           
           (super-new)
           
-          (let* ([menu (get-special-menu)]
+          (let* ([menu (get-insert-menu)]
                  [find-insertion-point ;; -> (union #f editor<%>)
                   ;; returns the editor (if there is one) with the keyboard focus
                   (lambda ()
@@ -400,7 +400,7 @@
                     (instantiate xml-snip% ()
                       [eliminate-whitespace-in-empty-tags?
                        (preferences:get 'drscheme:xml-eliminate-whitespace)]))))))
-            (register-capability-menu-item 'drscheme:special:xml-menus (get-special-menu))
+            (register-capability-menu-item 'drscheme:special:xml-menus (get-insert-menu))
             (instantiate menu:can-restore-menu-item% ()
               (label (string-constant xml-tool-insert-scheme-box))
               (parent menu)
@@ -409,7 +409,7 @@
                (lambda (menu evt)
                  (insert-snip 
                   (lambda () (instantiate scheme-snip% () (splice? #f)))))))
-            (register-capability-menu-item 'drscheme:special:xml-menus (get-special-menu))
+            (register-capability-menu-item 'drscheme:special:xml-menus (get-insert-menu))
             (instantiate menu:can-restore-menu-item% ()
               (label (string-constant xml-tool-insert-scheme-splice-box))
               (parent menu)
@@ -418,7 +418,7 @@
                (lambda (menu evt)
                  (insert-snip
                   (lambda () (instantiate scheme-snip% () (splice? #t)))))))
-            (register-capability-menu-item 'drscheme:special:xml-menus (get-special-menu)))
+            (register-capability-menu-item 'drscheme:special:xml-menus (get-insert-menu)))
           
           (frame:reorder-menus this)))
       
