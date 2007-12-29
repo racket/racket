@@ -422,8 +422,10 @@ static void widget_hash_indices(void *_key, long *_h, long *_h2)
   h = (lkey >> 2);
   h2 = (lkey >> 3);
 
-  *_h = h;
-  *_h2 = h2;
+  if (_h)
+    *_h = h;
+  if (_h2)
+    *_h2 = h2;
 }
 #endif
 
