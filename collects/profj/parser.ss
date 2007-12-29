@@ -1,4 +1,4 @@
-#cs
+
 (module parser mzscheme
   (require "parsers/full-parser.ss"
            "parsers/advanced-parser.ss"

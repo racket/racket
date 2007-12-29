@@ -22,47 +22,47 @@
     
     (define (output-map x)
       #;(!!! (printf "in output-map ~a~n" x))
-      (!!! (when (position-token? x)
-             (set! x (position-token-token x))))
-      (!!! (case (token-name x)
-             [(PIPE) "|"]
-             [(OR) "||"]
-             [(OREQUAL) "|="]
-             [(EQUAL) "="]
-             [(GT) ">"]
-             [(LT) "<"]
-             [(LTEQ) "<="]
-             [(GTEQ) ">="]
-             [(PLUS) "+"]
-             [(MINUS) "-"]
-             [(TIMES) "*"]
-             [(DIVIDE) "/"]
-             [(^T) "^"]
-             [(O_PAREN) "("]
-             [(C_PAREN) ")"]
-             [(O_BRACE) "{"]
-             [(C_BRACE) "}"]
-             [(O_BRACKET) "["]
-             [(C_BRACKET) "]"]
-             [(SEMI_COLON) ";"]
-             [(PERIOD) "."]
-             [(COMMA) ","]
-             [(NULL_LIT) "null"]
-             [(TRUE_LIT) "true"]
-             [(FALSE_LIT) "false"]
-             [(EOF) "end of input"]
-             [(caseT) "case"]
-             [(doT) "do"]
-             [(elseT) "else"]
-             [(ifT) "if"]
-             [(voidT) "void"]
-             [(STRING_LIT) (format "\"~a\"" (token-value x))]
-             [(CHAR_LIT) (format "'~a'" (token-value x))]
-             [(INTEGER_LIT LONG_LIT FLOAT_LIT DOUBLE_LIT
-                           HEX_LIT OCT_LIT HEXL_LIT OCTL_LIT) (token-value x)]
-             [(IDENTIFIER) (format "identifier ~a" (token-value x))]
-             [(STRING_ERROR) (format "misformatted string ~a" (token-value x))]
-             [else (token-name x)])))
+      (! (when (position-token? x)
+           (set! x (position-token-token x))))
+      (! (case (token-name x)
+           [(PIPE) "|"]
+           [(OR) "||"]
+           [(OREQUAL) "|="]
+           [(EQUAL) "="]
+           [(GT) ">"]
+           [(LT) "<"]
+           [(LTEQ) "<="]
+           [(GTEQ) ">="]
+           [(PLUS) "+"]
+           [(MINUS) "-"]
+           [(TIMES) "*"]
+           [(DIVIDE) "/"]
+           [(^T) "^"]
+           [(O_PAREN) "("]
+           [(C_PAREN) ")"]
+           [(O_BRACE) "{"]
+           [(C_BRACE) "}"]
+           [(O_BRACKET) "["]
+           [(C_BRACKET) "]"]
+           [(SEMI_COLON) ";"]
+           [(PERIOD) "."]
+           [(COMMA) ","]
+           [(NULL_LIT) "null"]
+           [(TRUE_LIT) "true"]
+           [(FALSE_LIT) "false"]
+           [(EOF) "end of input"]
+           [(caseT) "case"]
+           [(doT) "do"]
+           [(elseT) "else"]
+           [(ifT) "if"]
+           [(voidT) "void"]
+           [(STRING_LIT) (format "\"~a\"" (token-value x))]
+           [(CHAR_LIT) (format "'~a'" (token-value x))]
+           [(INTEGER_LIT LONG_LIT FLOAT_LIT DOUBLE_LIT
+                         HEX_LIT OCT_LIT HEXL_LIT OCTL_LIT) (token-value x)]
+           [(IDENTIFIER) (format "identifier ~a" (token-value x))]
+           [(STRING_ERROR) (format "misformatted string ~a" (token-value x))]
+           [else (token-name x)])))
     
     (define (java-keyword? t)
       (memq  t `(? this super new instanceof while try throw synchronized switch return ifT goto for finally

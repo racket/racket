@@ -596,7 +596,7 @@
                  (let ((end? (eof-object? (peek-char-or-special port))))
                    (if end? 
                        eof 
-                       (datum->syntax #f `(parse-java-full-program ,(parse port name level)
+                       (datum->syntax #f `(parse-java-full-program ,(parse port (quote name) level)
                                                                    ,name) #f)))))))
           (define/public (front-end/interaction port settings)
             (mred? #t)
@@ -769,7 +769,7 @@
                         (syntax-case exp (parse-java-full-program parse-java-interactions)
                           ((parse-java-full-program ex s)
                            (let ((exp (old-current-eval (syntax ex)))
-                                 (src (old-current-eval (syntax s))))
+                                 (src (old-current-eval (syntax (quote s)))))
                              (execution? #t)
                              (set! execute-types (create-type-record))
                              (let* ((compilation-units (compile-ast exp level execute-types))
@@ -825,7 +825,7 @@
                                      (require? 
                                       (old-current-eval 
                                        (syntax-as-top (with-syntax ([name name-to-require])
-                                                        (syntax (require name)))))
+                                                        (syntax (require (quote name))))))
                                       (loop mods extras #f))
                                      (else 
                                       (let-values (((name syn) (get-module-name (expand (car mods)))))
@@ -1031,12 +1031,14 @@
           
       (define (java-comment-box-mixin %)
         (class %
-          (inherit get-special-menu get-edit-target-object register-capability-menu-item)
+          (inherit
+            get-insert-menu
+            get-special-menu get-edit-target-object register-capability-menu-item)
           
           (super-new)
           (new menu-item%
             (label  (string-constant profj-insert-java-comment-box))
-            (parent (get-special-menu))
+            (parent (get-insert-menu))
             (callback
              (lambda (menu event)
                (let ([c-box (new java-comment-box%)]
@@ -1046,7 +1048,7 @@
             (demand-callback
              (lambda (mi)
                (send mi enable ((get-edit-target-object) . is-a? . text%)))))
-          (register-capability-menu-item 'profj:special:java-comment-box (get-special-menu))
+          (register-capability-menu-item 'profj:special:java-comment-box (get-insert-menu))
           ))
       
       (drscheme:get/extend:extend-unit-frame java-comment-box-mixin)
@@ -1134,19 +1136,20 @@
       
       (define (java-interactions-box-mixin %)
         (class %
-          (inherit get-special-menu get-edit-target-object register-capability-menu-item)
+          (inherit get-insert-menu
+                   get-special-menu get-edit-target-object register-capability-menu-item)
           
           (super-new)
           (new menu-item%
                (label (string-constant profj-insert-java-interactions-box))
-               (parent (get-special-menu))
+               (parent (get-insert-menu))
                (callback
                 (lambda (menu event)
                   (let ([i-box (new java-interactions-box%)]
                         [text (get-edit-target-object)])
                     (send text insert i-box)
                     (send text set-caret-owner i-box 'global)))))
-          (register-capability-menu-item 'profj:special:java-interactions-box (get-special-menu))
+          (register-capability-menu-item 'profj:special:java-interactions-box (get-insert-menu))
           ))
       
       (drscheme:get/extend:extend-definitions-text defs-text-mixin)

@@ -192,6 +192,7 @@
       (init-field (current-tab #f))
       
       (define/public (pop-up-window test-results)
+        (when (and drscheme-frame current-tab)
         (let* ((curr-win (send current-tab get-test-window))
                (window 
                 (if curr-win
@@ -217,7 +218,7 @@
           (if (get-preference 'profj:test-window:docked? 
                               (lambda () (put-preferences '(profj:test-window:docked?) '(#f)) #f))
               (send drscheme-frame display-test-panel content)
-              (send window show #t))))
+              (send window show #t)))))
       
       (define/private (fill-in editor test-results)
         (let-values (((tested-classes covered nearly-tested-classes total-tests 

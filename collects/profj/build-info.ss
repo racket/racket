@@ -45,7 +45,7 @@
                        (htdch-lib? 
                         `(lib ,name "htdch" ,@(if scheme? (cdddr path) path)))
                        (scheme-lib? `(lib ,name ,@(cddr path)))
-                       ((and local? (not (to-file))) name)
+                       ((and local? (not (to-file))) `(quote ,name))
                        (else `(file ,(path->string (build-path dir name)))))))
            (make-name (lambda ()
                         (let ((n (if scheme? (java-name->scheme name) name)))
