@@ -43,9 +43,22 @@
 
 @title[#:tag "pairs"]{Pairs and Lists}
 
+A @deftech{pair} combines exactly two values. The first value is
+accessed with the @scheme[car] procedure, and the second value is
+accessed with the @scheme[cdr] procedure. Pairs are not mutable (but
+see @secref["mpairs"]).
+
+A @deftech{list} is recursively defined: it is either the constant
+@scheme[null], or it is a pair whose second value is a list.
+
 A list can be used as a single-valued sequence (see
 @secref["sequences"]). The elements of the list serve as elements
 of the sequence. See also @scheme[in-list].
+
+Cyclic data structures can be created using only immutable pairs via
+@scheme[read] or @scheme[make-reader-graph]. If starting with a pair
+and using some number of @scheme[cdr]s returns to the starting pair,
+then the pair is not a list.
 
 @; ----------------------------------------
 @section{Pair Constructors and Selectors}
@@ -70,7 +83,7 @@ pair @scheme[p].}
 
 @defproc[(list? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v]
  is a list: either the empty list, or a pair whose second element is a
- list.}
+ list. This procedure takes amortized constant time.}
 
 @defproc[(list [v any/c] ...) list?]{Returns a newly allocated list
 containing the @scheme[v]s as its elements.}
@@ -96,35 +109,6 @@ is the value produced by @scheme[(proc _i)].
 ]}
 
 @; ----------------------------------------
-@section{Mutable Pair Operations}
-
-@defproc[(mpair? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
-a mutable pair, @scheme[#f] otherwise.}
-
-@defproc[(mcons [a any/c] [d any/c]) pair?]{Returns a mutable pair whose first
-element is @scheme[a] and second element is @scheme[d].}
-
-@defproc[(mcar [p mpair?]) any/c]{Returns the first element of the
-mutable pair @scheme[p].}
-
-@defproc[(mcdr [p mpair?]) any/c]{Returns the second element of the
-mutable pair @scheme[p].}
-
-
-@defproc[(set-mcar! [p mpair?] [v any/v]) 
-         void?]{
-
-Changes the mutable pair @scheme[p] so that its first element is
-@scheme[v].}
-
-@defproc[(set-mcdr! [p mpair?] [v any/v]) 
-         void?]{
-
-Changes the mutable pair @scheme[p] so that its second element is
-@scheme[v].}
-
-
-@; ----------------------------------------
 @section{List Operations}
 
 @defproc[(length [lst list?])
@@ -136,7 +120,7 @@ Returns the number of elements in @scheme[lst].}
 @defproc[(list-ref [lst list?][pos nonnegative-exact-integer?])
          any/c]{
 
-Returns the element of @scheme[vec] at position @scheme[pos], where
+Returns the element of @scheme[lst] at position @scheme[pos], where
 the list's first element is position @scheme[0]. If the list has
 @scheme[pos] or fewer elements, then the
 @exnraise[exn:fail:contract].}

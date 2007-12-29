@@ -1589,7 +1589,7 @@ its variants export only definitions accessible from the lexical
 context of the @scheme[phaseless-spec] form.}
 
 @;------------------------------------------------------------------------
-@section{Interaction Wrapper: @scheme[#%top-interaction]}
+@section[#:tag "#%top-interaction"]{Interaction Wrapper: @scheme[#%top-interaction]}
 
 @defform[(#%top-interaction . form)]{
 

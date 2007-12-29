@@ -1,7 +1,7 @@
 #lang scribble/doc
 @require["mz.ss"]
 
-@title[#:style 'toc]{Primitive Datatypes}
+@title[#:style 'toc #:tag "data"]{Primitive Datatypes}
 
 Each of the built-in datatypes comes with a set of procedures for
 manipulating members of the datatype.
@@ -239,6 +239,9 @@ for each pair of keywords is the same as using
 
 @; ----------------------------------------------------------------------
 @include-section["pairs.scrbl"]
+
+@; ----------------------------------------------------------------------
+@include-section["mpairs.scrbl"]
 
 @; ------------------------------------------------------------
 @section[#:tag "vectors"]{Vectors}
