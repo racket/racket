@@ -471,9 +471,9 @@
         (define _ (send this begin-container-sequence))
         (define x (make-text-field this (if button-or-false "," "") void pt))
         (set! pa* (append pa* (list x)))
-        (send this change-children 
-              (lambda (y)
-                (remq y pa+)))
+        (send this change-children
+	  (lambda (y)
+	    (remq y pa*)))
         (send this end-container-sequence))
       
       ;; re-establish this pane so that programmers can edit the method info
