@@ -1,7 +1,8 @@
 #lang scribble/doc
-@require["mz.ss"]
-@require[scheme/class]
-@require[(for-syntax scheme/base)]
+@(require "mz.ss"
+          scheme/class
+          (for-syntax scheme/base)
+          (for-label scheme/trait))
 
 @begin[
 
@@ -704,7 +705,7 @@ method. The internal name is used to access the method directly within
 the class expression (including within @scheme[super] or
 @scheme[inner] forms), while the external name is used with
 @scheme[send] and @scheme[generic] (see @secref["ivaraccess"]).  If
-a single @scheme[identifier] is provided for a method declaration, the
+a single @scheme[id] is provided for a method declaration, the
 identifier is used for both the internal and external names.
 
 Method inheritance, overriding, and augmentation are based external
@@ -1151,6 +1152,206 @@ the mixin.
 Evaluation of a @scheme[mixin] form checks that the
 @scheme[class-clause]s are consistent with both sets of
 @scheme[interface-expr]s.}
+
+@; ------------------------------------------------------------------------
+
+@section[#:tag "trait"]{Traits}
+
+@note-lib-only[scheme/trait]
+
+A @deftech{trait} is a collection of methods that can be converted to
+a @tech{mixin} and then applied to a @tech{class}. Before a trait is
+converted to a mixin, the methods of a trait can be individually
+renamed, and multiple traits can be merged to form a new trait.
+
+@defform/subs[#:literals (public pubment public-final override override-final overment augment augride
+                          augment-final private inherit inherit/super inherit/inner rename-super
+                          inherit-field)
+
+              (trait trait-clause ...)
+              ([trait-clause (public maybe-renamed ...)
+                             (pubment maybe-renamed ...)
+                             (public-final maybe-renamed ...)
+                             (override maybe-renamed ...)
+                             (overment maybe-renamed ...)
+                             (override-final maybe-renamed ...)
+                             (augment maybe-renamed ...)
+                             (augride maybe-renamed ...)
+                             (augment-final maybe-renamed ...)
+                             (inherit maybe-renamed ...)
+                             (inherit/super maybe-renamed ...)
+                             (inherit/inner maybe-renamed ...)
+                             method-definition
+                             (field field-declaration ...)
+                             (inherit-field maybe-renamed ...)])]{
+
+Creates a @tech{trait}.  The body of a @scheme[trait] form is similar to the
+body of a @scheme[class*] form, but restricted to non-private method
+definitions.  In particular, the grammar of
+@scheme[maybe-renamed], @scheme[method-definition], and
+@scheme[field-declaration] are the same as for @scheme[class*], and
+every @scheme[method-definition] must have a corresponding declaration
+(one of @scheme[public], @scheme[override], etc.).  As in
+@scheme[class], uses of method names in direct calls, @scheme[super]
+calls, and @scheme[inner] calls depend on bringing method names into
+scope via @scheme[inherit], @scheme[inherit/super],
+@scheme[inherit/inner], and other method declarations in the same
+trait; an exception, compared to @scheme[class] is that
+@scheme[overment] binds a method name only in the corresponding
+method, and not in other methods of the same trait. Finally, macros
+such as @scheme[public*] and @scheme[define/public] work in
+@scheme[trait] as in @scheme[class].
+
+External identifiers in @scheme[trait], @scheme[trait-exclude],
+@scheme[trait-exclude-field], @scheme[trait-alias],
+@scheme[trait-rename], and @scheme[trait-rename-field] forms are
+subject to binding via @scheme[define-member-name] and
+@scheme[define-local-member-name]. Although @scheme[private] methods
+or fields are not allowed in a @scheme[trait] form, they can be
+simulated by using a @scheme[public] or @scheme[field] declaration and
+a name whose scope is limited to the @scheme[trait] form.}
+
+
+@defproc[(trait? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a trait, @scheme[#f] otherwise.}
+
+
+@defproc[(trait->mixin [tr trait?]) (class? . -> . class?)]{
+
+Converts a @tech{trait} to a @tech{mixin}, which can be applied to a
+@tech{class} to produce a new @tech{class}. An expression of the form
+
+@schemeblock[
+(trait->mixin
+ (trait
+   trait-clause ...))
+]
+
+is equivalent to
+
+@schemeblock[
+(lambda (%)
+  (class %
+    trait-clause ...
+    (super-new)))
+]
+
+Normally, however, a trait's methods are changed and combined with
+other traits before converting to a mixin.}
+
+
+@defproc[(trait-sum [tr trait?] ...+) trait?]{
+
+Produces a @tech{trait} that combines all of the methods of the given
+@scheme[tr]s. For example,
+
+@schemeblock[
+(define t1
+ (trait
+  (define/public (m1) 1)))
+(define t2
+ (trait
+  (define/public (m2) 2)))
+(define t3 (trait-sum t1 t2))
+]
+
+creates a trait @scheme[t3] that is equivalent to
+
+@schemeblock[
+(trait
+ (define/public (m1) 1)
+ (define/public (m2) 2))
+]
+
+but @scheme[t1] and @scheme[t2] can still be used individually or
+combined with other traits.
+
+When traits are combined with @scheme[trait-sum], the combination
+drops @scheme[inherit], @scheme[inherit/super],
+@scheme[inherit/inner], and @scheme[inherit-field] declarations when a
+definition is supplied for the same method or field name by another
+trait. The @scheme[trait-sum] operation fails (the
+@exnraise[exn:fail:contract]) if any of the traits to combine define a
+method or field with the same name, or if an @scheme[inherit/super] or
+@scheme[inherit/inner] declaration to be dropped is inconsistent with
+the supplied definition. In other words, declaring a method with
+@scheme[inherit], @scheme[inherit/super], or @scheme[inherit/inner],
+does not count as defining the method; at the same time, for example,
+a trait that contains an @scheme[inherit/super] declaration for a
+method @scheme[m] cannot be combinaed with a trait that defines
+@scheme[m] as @scheme[augment], since no class could satisfy the
+requirements of both @scheme[augment] and @scheme[inherit/super] when
+the trait is later converted to a mixin and applied to a class.}
+
+
+@defform[(trait-exclude trait-expr id)]{
+
+Produces a new @tech{trait} that is like the @tech{trait} result of
+@scheme[trait-expr], but with the definition of a method named by
+@scheme[id] removed; as the method definition is removed, either a
+@scheme[inherit], @scheme[inherit/super], or @scheme[inherit/inner]
+declaration is added:
+
+@itemize{
+
+ @item{A method declared with @scheme[public], @scheme[pubment], or
+  @scheme[public-final] is replaced with a @scheme[inherit]
+  declaration.}
+
+ @item{A method declared with @scheme[override] or @scheme[override-final]
+ is replaced with a @scheme[inherit/super] declaration.}
+
+  @item{A method declared with @scheme[augment], @scheme[augride], or
+  @scheme[augment-final] is replaced with a @scheme[inherit/inner] declaration.}
+
+ @item{A method declared with @scheme[overment] is not replaced
+  with any @scheme[inherit] declaration.}
+
+}
+
+If the trait produced by @scheme[trait-expr] has no method definition for
+@scheme[id], the @exnraise[exn:fail:contract].}
+
+
+@defform[(trait-exclude-field trait-expr id)]{
+
+Produces a new @tech{trait} that is like the @tech{trait} result of
+@scheme[trait-expr], but with the definition of a field named by
+@scheme[id] removed; as the field definition is removed, an
+@scheme[inherit-field] declaration is added.}
+
+
+@defform[(trait-alias trait-expr id new-id)]{
+
+Produces a new @tech{trait} that is like the @tech{trait} result of
+@scheme[trait-expr], but the definition and declaration of the method
+named by @scheme[id] is duplicated with the name @scheme[new-id]. The
+consistency requirements for the resulting trait are the same as for
+@scheme[trait-sum], otherwise the @exnraise[exn:fail:contract]. This
+operation does not rename any other use of @scheme[id], such as in
+method calls (even method calls to @scheme[identifer] in the cloned
+definition for @scheme[new-id]).}
+
+
+@defform[(trait-rename trait-expr id new-id)]{
+
+Produces a new @tech{trait} that is like the @tech{trait} result of
+@scheme[trait-expr], but all definitions and references to methods
+named @scheme[id] are replaced by definitions and references to
+methods named by @scheme[new-id]. The consistency requirements for the
+resulting trait is the same as for @scheme[trait-sum], otherwise the
+@exnraise[exn:fail:contract].}
+
+
+@defform[(trait-rename-field trait-expr id new-id)]{
+
+Produces a new @tech{trait} that is like the @tech{trait} result of
+@scheme[trait-expr], but all definitions and references to fields
+named @scheme[id] are replaced by definitions and references to fields
+named by @scheme[new-id]. The consistency requirements for the
+resulting trait is the same as for @scheme[trait-sum], otherwise the
+@exnraise[exn:fail:contract].}
 
 @; ------------------------------------------------------------------------
 
