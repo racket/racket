@@ -531,6 +531,16 @@
       [else
        #'#f]))
 
+  (define-syntax (result-contract stx)
+    (syntax-case stx ()
+      [(_ c)
+       (if (string? (syntax-e #'c))
+           (raise-syntax-error
+            'defproc
+            "expected a result contract, found a string"
+            #'c)
+           #'(schemeblock0 c))]))
+
   (define-syntax defproc 
     (syntax-rules ()
       [(_ (id arg ...) result desc ...)
@@ -545,7 +555,7 @@
                  '[(id arg ...) ...] 
                  (list (list (lambda () (arg-contract arg)) ...) ...)
                  (list (list (lambda () (arg-default arg)) ...) ...)
-                 (list (lambda () (schemeblock0 result)) ...)
+                 (list (lambda () (result-contract result)) ...)
                  (lambda () (list desc ...)))]))
   (define-syntax defstruct
     (syntax-rules ()

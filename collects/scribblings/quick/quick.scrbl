@@ -109,15 +109,16 @@ it looks like this:
 @mr-interaction[(hc-append (circle 10) (rectangle 10 20))]
 
 The hyphen in the name @scheme[hc-append] is just a part of the
-identifier; it's not @scheme[hc] minus @scheme[append]. The function
-name starts with @scheme[h] because it combines pictures horizontally,
-and the next letter is @scheme[c] because the pictures are centered
-vertically. If you wonder what other functions exist (perhaps a way to
-stack pictures vertically and left-aligned), move the text caret to
-the name @scheme[hc-append] and press the F1 key in DrScheme. A Help
-Desk window will appear, and it will give you a link to the
-documentation for @scheme[hc-append]. Click the link, and you'll see
-lots of other functions.
+identifier; it's not @schemeidfont{hc} minus
+@schemeidfont{append}. The function name starts with @scheme[h]
+because it combines pictures horizontally, and the next letter is
+@scheme[c] because the pictures are centered vertically. If you wonder
+what other functions exist (perhaps a way to stack pictures vertically
+and left-aligned), move the text caret to the name @scheme[hc-append]
+and press the F1 key in DrScheme. A Help Desk window will appear, and
+it will give you a link to the documentation for
+@scheme[hc-append]. Click the link, and you'll see lots of other
+functions.
 
 @; ----------------------------------------------------------------------
 @section{Definitions}

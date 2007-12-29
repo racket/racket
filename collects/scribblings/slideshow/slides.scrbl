@@ -226,7 +226,8 @@ Cancels the most recently created slide, and also returns a slide
 structure that be supplied to @scheme[re-slide] to restore the slide
 (usually in a later position).}
 
-@defproc[(re-slide [slide slide?] [pict pict? (blank)])]{
+@defproc[(re-slide [slide slide?] [pict pict? (blank)])
+         void?]{
 
 Re-inserts a slide, @scheme[lt-superimpose]ing the given additional
 @scheme[pict].}
@@ -240,7 +241,7 @@ Returns @scheme[#t] if @scheme[v] is a slide produced by
 
 @section{Viewer Control}
 
-@defproc[(start-at-recent-slide)]{
+@defproc[(start-at-recent-slide) void?]{
 
 Sets the starting slide for the talk to the most recently created
 slide. If this function is used multiple times, the last use overrides

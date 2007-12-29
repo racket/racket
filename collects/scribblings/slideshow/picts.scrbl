@@ -621,7 +621,8 @@ Creates a fluffy cloud.}
 @defproc[(file-icon [w real?]
                     [h real?] 
                     [color (or/c string? (is-a?/c color%) any/c)]
-                    [shaded? any/c #f])]{
+                    [shaded? any/c #f])
+         pict?]{
 
 Creates a Mac-like file icon, optionally shaded. If @scheme[color] is
 not a string or @scheme[color%] object, it is treated as a boolean, in

@@ -121,7 +121,7 @@ Scheme starts (not including any command-line arguments that were
 treated as flags for the system).}
 
 
-@defparam[current-thread-initial-stack-size exact-positive-integer?]{
+@defparam[current-thread-initial-stack-size size exact-positive-integer?]{
 
 A parameter that provides a hint about how much space to reserve for a
 newly created thread's local variables. The actual space used by a

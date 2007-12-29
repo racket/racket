@@ -21,6 +21,12 @@
 
   (define GifVersionPrefix #"GIF89a")
 
+  (provide gif-stream?
+           image-ready-gif-stream?
+           image-or-control-ready-gif-stream?
+           empty-gif-stream?
+           (rename color-map? gif-colormap?))
+
   (define-struct gif-stream (port 
                              SWidth
                              SHeight
