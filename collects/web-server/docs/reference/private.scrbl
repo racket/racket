@@ -108,6 +108,7 @@ for doing this.
 @section[#:tag "dispatch-server-unit.ss"]{Dispatching Server}
 @require[(for-label web-server/private/dispatch-server-unit)]
 @require[(for-label web-server/private/dispatch-server-sig)]
+@require[(for-label web-server/web-server-sig)]
 
 The @web-server is just a configuration of a dispatching server.
 This dispatching server component is useful on its own.
@@ -116,20 +117,11 @@ This dispatching server component is useful on its own.
 
 @defmodule[web-server/private/dispatch-server-sig]
 
-The @schememodname[web-server/private/dispatch-server-sig] module
+The @schememodname[web-server/private/dispatch-server-sig] library
 provides two signatures.
 
-@defsignature[dispatch-server^ ()]{
- @defproc[(serve)
-          (-> void)]{
-  Runs and returns a shutdown procedure.
- }
- @defproc[(serve-ports [i input-port?]
-                       [o output-port?])
-          void]{
-  Serves a single connection with @scheme[i] and @scheme[o].
- }
-}
+The @scheme[dispatch-server^] signature is an alias for
+@scheme[web-server^].
 
 @defsignature[dispatch-server-config^ ()]{
 

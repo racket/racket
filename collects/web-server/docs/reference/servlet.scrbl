@@ -218,8 +218,9 @@ transmission that the server will not catch.}
 @section[#:tag "web.ss"]{Web}
 @require[(for-label web-server/servlet/web)]
 
-@filepath{servlet/web.ss} provides the primary functions of interest for the
-servlet developer.
+@defmodule[web-server/servlet/web]{The
+@schememodname[web-server/servlet/web] library provides the primary
+functions of interest for the servlet developer.}
 
 @defproc[(send/back [response response?])
          void?]{
@@ -369,7 +370,9 @@ implementation of HTTP Basic Authentication.
 @section[#:tag "web-cells.ss"]{Web Cells}
 @require[(for-label web-server/servlet/web-cells)]
 
-@filepath{servlet/web-cells.ss} provides the interface to web cells.
+@defmodule[web-server/servlet/web-cells]{The
+@schememodname[web-server/servlet/web-cells] library provides the
+interface to web cells.}
 
 A web cell is a kind of state defined relative to the @defterm{frame tree}.
 The frame-tree is a mirror of the user's browsing session. Every time a
@@ -378,7 +381,8 @@ created as a child of the current frame when the continuation was captured.
 
 You should use web cells if you want an effect to be encapsulated in all
 interactions linked from (in a transitive sense) the HTTP response being
-generated. For more information on their semantics, consult the paper @href-link["http://www.cs.brown.edu/~sk/Publications/Papers/Published/mk-int-safe-state-web/"
+generated. For more information on their semantics, consult the paper 
+@href-link["http://www.cs.brown.edu/~sk/Publications/Papers/Published/mk-int-safe-state-web/"
 "\"Interaction-Safe State for the Web\""].
 
 @; XXX Document with-frame and with-frame-after?

@@ -178,10 +178,19 @@ In the future, we will offer the facilities to:
 @section[#:tag "lang/web-extras.ss"]{Web Extras}
 @require[(for-label web-server/lang/web-extras)]
 
-@filepath{lang/web-extras.ss} provides @scheme[send/suspend/dispatch] and
-@scheme[redirect/get] as @secref["web.ss"], except they use
-@scheme[embed-proc/url] + @scheme[extract-proc/url] and
-@scheme[send/suspend/url] respectively.
+@defmodule[web-server/lang/web-extras]{The
+@schememodname[web-server/lang/web-extras] library provides
+@scheme[send/suspend/dispatch] and @scheme[redirect/get] as
+@schememodname[web-server/servlet/web], except they use
+@scheme[embed-proc/url] plus @scheme[extract-proc/url] and
+@scheme[send/suspend/url], respectively.}
+
+@deftogether[(
+@defform[(send/suspend/dispatch response-proc-expr)]
+@defproc[(redirect/get) request?]
+)]{
+
+See @schememodname[web-server/servlet/web].}
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/file-box.ss"]{File Boxes}
@@ -253,6 +262,21 @@ things in the Web Language, they are sensitive to source code modification.
 @section[#:tag "lang/web-cells.ss"]{Web Cells}
 @require[(for-label web-server/lang/web-cells)]
 
-@filepath{lang/web-cells.ss} provides the same API as @secref["web-cells.ss"],
-but in a way compatible with the Web Language. The one difference is that
-@scheme[make-web-cell] is syntax, rather than a function.
+@defmodule[web-server/lang/web-cells]{The
+@schememodname[web-server/lang/web-cells] library provides the same
+API as @schememodname[web-server/servlet/web-cells], but in a way
+compatible with the Web Language. The one difference is that
+@scheme[make-web-cell] is syntax, rather than a function.}
+
+@deftogether[(
+@defproc[(web-cell? [v any/c])
+         boolean?]
+@defform[(make-web-cell default-expr)]
+@defproc[(web-cell-ref [wc web-cell?])
+         any/c]
+@defproc[(web-cell-shadow [wc web-cell?]
+                          [v any/c])
+         void]
+)]{
+
+See @schememodname[web-server/servlet/web-cells].}
