@@ -83,6 +83,8 @@
         (make-shaped-parens s val)
         s))
 
+  (define-code schemeblockelem to-element)
+
   (define-code scheme to-element unsyntax keep-s-expr add-sq-prop)
   (define-code SCHEME to-element UNSYNTAX keep-s-expr add-sq-prop)
   (define-code schemeresult to-element/result unsyntax keep-s-expr add-sq-prop)
@@ -874,7 +876,7 @@
                                      dots1]
                                     [(eq? (arg-id arg) '...)
                                      dots0]
-                                    [else (arg-id arg)])]
+                                    [else (to-element (arg-id arg))])]
                                 [e (if (arg-ends-optional? arg)
                                        (make-element #f (list e "]"))
                                        e)]
@@ -1084,7 +1086,7 @@
                                        tagged)
                                       (if (null? args)
                                           (list
-                                           (schemeparenfont (make-string (add1 (prototype-depth prototype)) #\))))
+                                           (schemeparenfont (make-string (prototype-depth prototype) #\))))
                                           (apply
                                            append
                                            (map
@@ -1812,6 +1814,8 @@
            defclass/title
            definterface
            definterface/title
+           defmixin
+           defmixin/title
            defconstructor
            defconstructor/make
            defconstructor*/make
@@ -1824,7 +1828,7 @@
 
   (define-syntax-parameter current-class #f)
 
-  (define-struct decl (name super intfs mk-head body))
+  (define-struct decl (name super intfs ranges mk-head body))
   (define-struct constructor (def))
   (define-struct meth (name mode desc def))
   (define-struct spec (def))
@@ -1949,7 +1953,7 @@
           (decode-flow
            (build-body decl (decl-body decl))))))))))
 
-  (define (*class-doc stx-id super intfs whole-page? make-index-desc)
+  (define (*class-doc kind stx-id super intfs ranges whole-page? make-index-desc)
     (let ([spacer (hspace 1)])
       (make-table
        'boxed
@@ -1976,33 +1980,43 @@
                                tag)
                               (car content)))
                         spacer ":" spacer
-                        (if super
-                            (scheme class?)
-                            (scheme interface?))))))))
+                        (case kind
+                          [(class) (scheme class?)]
+                          [(interface) (scheme interface?)]
+                          [(mixin) (schemeblockelem (class? . -> . class?))])))))))
         (if super
             (list
              (list (make-flow
                     (list
                      (t (hspace 2) "superclass:" spacer (to-element super))))))
             null)
-        (if (null? intfs)
-            null
-            (list
-             (list
-              (make-flow
-               (list
-                (make-table #f
-                            (cons
-                             (list (make-flow (list (make-paragraph (list (hspace 2) 
-                                                                          (if super
-                                                                              "implements:" 
-                                                                              "extends:")
-                                                                          spacer))))
-                                   (make-flow (list (make-paragraph (list (to-element (car intfs)))))))
-                             (map (lambda (i)
-                                    (list (make-flow (list (make-paragraph (list spacer))))
-                                          (make-flow (list (make-paragraph (list (to-element i)))))))
-                                  (cdr intfs)))))))))))))
+        (let ([show-intfs
+               (lambda (intfs range?)
+                 (if (null? intfs)
+                     null
+                     (list
+                      (list
+                       (make-flow
+                        (list
+                         (make-table #f
+                                     (cons
+                                      (list (make-flow (list (make-paragraph (list (hspace 2) 
+                                                                                   (case kind
+                                                                                     [(interface) "implements:"]
+                                                                                     [(class) "extends:"]
+                                                                                     [(mixin) 
+                                                                                      (if range?
+                                                                                          "result implements:"
+                                                                                          "argument extends/implements:")])
+                                                                                   spacer))))
+                                            (make-flow (list (make-paragraph (list (to-element (car intfs)))))))
+                                      (map (lambda (i)
+                                             (list (make-flow (list (make-paragraph (list spacer))))
+                                                   (make-flow (list (make-paragraph (list (to-element i)))))))
+                                           (cdr intfs))))))))))])
+          (append
+           (show-intfs intfs #f)
+           (show-intfs ranges #t)))))))
 
   (define-syntax *defclass
     (syntax-rules ()
@@ -2012,11 +2026,14 @@
           (make-decl (quote-syntax/loc name)
                      (quote-syntax/loc super)
                      (list (quote-syntax/loc intf) ...)
+                     null
                      (lambda (whole-page?)
                        (list
-                        (*class-doc (quote-syntax/loc name)
+                        (*class-doc 'class
+                                    (quote-syntax/loc name)
                                     (quote-syntax super)
                                     (list (quote-syntax intf) ...)
+                                    null
                                     whole-page?
                                     make-class-index-desc)))
                      (list body ...))))]))
@@ -2039,11 +2056,14 @@
           (make-decl (quote-syntax/loc name)
                      #f
                      (list (quote-syntax/loc intf) ...)
+                     null
                      (lambda (whole-page?)
                        (list
-                        (*class-doc (quote-syntax/loc name)
+                        (*class-doc 'interface
+                                    (quote-syntax/loc name)
                                     #f
                                     (list (quote-syntax intf) ...)
+                                    null
                                     whole-page?
                                     make-interface-index-desc)))
                      (list body ...))))]))
@@ -2057,6 +2077,36 @@
     (syntax-rules ()
       [(_ name (intf ...) body ...)
        (*definterface *include-class/title name (intf ...) body ...)]))
+
+  (define-syntax *defmixin
+    (syntax-rules ()
+      [(_ *include-class name (domain ...) (range ...) body ...)
+       (*include-class
+        (syntax-parameterize ([current-class (quote-syntax name)])
+          (make-decl (quote-syntax/loc name)
+                     #f
+                     (list (quote-syntax/loc domain) ...)
+                     (list (quote-syntax/loc range) ...)
+                     (lambda (whole-page?)
+                       (list
+                        (*class-doc 'mixin
+                                    (quote-syntax/loc name)
+                                    #f
+                                    (list (quote-syntax domain) ...)
+                                    (list (quote-syntax range) ...)
+                                    whole-page?
+                                    make-mixin-index-desc)))
+                     (list body ...))))]))
+
+  (define-syntax defmixin
+    (syntax-rules ()
+      [(_ name (domain ...) (range ...) body ...)
+       (*defmixin *include-class name (domain ...) (range ...) body ...)]))
+
+  (define-syntax defmixin/title
+    (syntax-rules ()
+      [(_ name (domain ...) (range ...) body ...)
+       (*defmixin *include-class/title name (domain ...) (range ...) body ...)]))
 
   (define-syntax (defconstructor*/* stx)
     (syntax-case stx ()
@@ -2176,7 +2226,7 @@
          (let loop ([search (get d ri ctag)])
            (cond
             [(null? search)
-             (make-element #f "<method not found>")]
+             (list (make-element #f '("<method not found>")))]
             [(not (car search))
              (loop (cdr search))]
             [else

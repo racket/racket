@@ -197,6 +197,7 @@
            [h (send bm get-height)]
            [new-bm (make-object bitmap% w h)]
            [bdc (make-object bitmap-dc% new-bm)])
+      (send bdc clear)
       (send bdc draw-bitmap bm 0 0 'solid 
             (send the-color-database find-color "black")
             (send bm get-loaded-mask))

@@ -11,9 +11,7 @@ multiple images and controls (such as animated GIFs).}
 
 This library does not rely on @schememodname[scheme/gui]. See
 @scheme[bitmap%] (which is part of @schememodname[scheme/gui]) to read
-a GIF file. Also @xmethod[bitmap% save-file] can write a GIF file
-without animations or other controls, but with typically better
-quantization.
+a GIF file. See also @schememodname[mrlib/gif].
 
 @defproc[(gif-start [out output-port?]
                     [width (integer-in 0 #xFFFFFFFF)]

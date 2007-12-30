@@ -166,24 +166,6 @@ Accepts any number of symbols and returns a flat contract that
 recognizes those symbols.}
 
 
-@defproc[(is-a?/c [type (or/c class? interface?)]) flat-contract?]{
-
-Accepts a class or interface and returns a flat contract that
-recognizes objects that instantiate the class/interface.}
-
-
-@defproc[(implementation?/c [interface interface?]) flat-contract?]{
-
-Returns a flat contract that recognizes classes that implement
-@scheme[interface].}
-
-
-@defproc[(subclass?/c [class class?]) flat-contract?]{
-
-Returns a flat-contract that recognizes classes that
-are subclasses of @scheme[class].}
-
-
 @defproc[(vectorof [c (or/c flat-contract? (any/c . -> . any/c))]) flat-contract?]{
 
 Accepts a @tech{flat contract} (or a predicate that is converted to a

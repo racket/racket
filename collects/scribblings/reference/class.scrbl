@@ -1424,6 +1424,24 @@ Produces a @tech{function contract} that guarantees the input to the
 function is a class that implements/subclasses each @scheme[type], and
 that the result of the function is a subclass of the input.}
 
+@defproc[(is-a?/c [type (or/c class? interface?)]) flat-contract?]{
+
+Accepts a class or interface and returns a flat contract that
+recognizes objects that instantiate the class/interface.}
+
+
+@defproc[(implementation?/c [interface interface?]) flat-contract?]{
+
+Returns a flat contract that recognizes classes that implement
+@scheme[interface].}
+
+
+@defproc[(subclass?/c [class class?]) flat-contract?]{
+
+Returns a flat-contract that recognizes classes that
+are subclasses of @scheme[class].}
+
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "objectserialize"]{Object Serialization}

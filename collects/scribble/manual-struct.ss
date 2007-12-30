@@ -14,7 +14,8 @@
  [(struct-index-desc exported-index-desc) ()]
  [(form-index-desc exported-index-desc) ()]
  [(class-index-desc exported-index-desc) ()]
- [(interface-index-desc exported-index-desc) ()])
+ [(interface-index-desc exported-index-desc) ()]
+ [(mixin-index-desc exported-index-desc) ()])
 
  
  
