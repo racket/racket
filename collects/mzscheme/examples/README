@@ -25,7 +25,7 @@ end use the mzc `c-lambda', etc. forms.
    changes, but `mzc --xform' works on "makeadder.c" without changes.
 
  * catch.c - defined `eval-string/catch-error', which catches
-   excpetions whil evaluating a string. Demonstrates how to catch
+   exceptions while evaluating a string. Demonstrates how to catch
    exceptions from C code.
 
  * bitmatrix.c - implements two-dimentional bit matrixes with some
@@ -48,12 +48,14 @@ end use the mzc `c-lambda', etc. forms.
 
 
  * fmod-ez.ss - same as fmod.c, but with 10% of the code. Demonstrates
-   `c-lambda'. (Does not work with 3m.)
+   `c-lambda'.
 
  * cfile.ss - simple (and unsafe) glue to the fopen(), fread(),
    fwrite(), and fclose() C library functions. Demonstrates the use of
-   `(pointer ...)' types. (Does not work with 3m.)
+   `(pointer ...)' types. Technically, this example is broken for 3m,
+   because fclose() frees the FILE* pointer, and it's possible that
+   the GC will later try to use the same memory.
 
  * msgbox.ss - a Windows-only example, provides a `message-box'
    procedure. Demonstrates some of the limitations of `c-lambda' and
-   how to work around them. (Does not work with 3m.)
+   how to work around them.

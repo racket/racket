@@ -531,6 +531,39 @@
       [else
        #'#f]))
 
+  (define-syntax (extract-proc-id stx)
+    (syntax-case stx ()
+      [(_ id)
+       (identifier? #'id)
+       #`(quote-syntax/loc id)]
+      [(_ (proto arg ...))
+       #'(extract-proc-id proto)]
+      [(_ thing)
+       (raise-syntax-error
+        'defproc
+        "bad prototype"
+        #'thing)]))
+  
+  (define-syntax (arg-contracts stx)
+    (syntax-case stx ()
+      [(_ id arg ...)
+       (identifier? #'id)
+       #'(list (lambda () (arg-contract arg)) ...)]
+      [(_ (proto arg1 ...) arg ...)
+       #'(arg-contracts proto arg1 ... arg ...)]
+      [_
+       (raise-syntax-error 'defproc "bad prototype" stx)]))
+  
+  (define-syntax (arg-defaults stx)
+    (syntax-case stx ()
+      [(_ id arg ...)
+       (identifier? #'id)
+       #'(list (lambda () (arg-default arg)) ...)]
+      [(_ (proto arg1 ...) arg ...)
+       #'(arg-defaults proto arg1 ... arg ...)]
+      [_
+       (raise-syntax-error 'defproc "bad prototype" stx)]))
+
   (define-syntax (result-contract stx)
     (syntax-case stx ()
       [(_ c)
@@ -547,14 +580,14 @@
        (defproc* [[(id arg ...) result]] desc ...)]))
   (define-syntax defproc*
     (syntax-rules ()
-      [(_ [[(id arg ...) result] ...] desc ...)
-       (defproc* #:mode procedure #:within #f [[(id arg ...) result] ...] desc ...)]
-      [(_ #:mode m #:within cl [[(id arg ...) result] ...] desc ...)
+      [(_ [[proto result] ...] desc ...)
+       (defproc* #:mode procedure #:within #f [[proto result] ...] desc ...)]
+      [(_ #:mode m #:within cl [[proto result] ...] desc ...)
        (*defproc 'm (quote-syntax/loc cl)
-                 (list (quote-syntax/loc id) ...)
-                 '[(id arg ...) ...] 
-                 (list (list (lambda () (arg-contract arg)) ...) ...)
-                 (list (list (lambda () (arg-default arg)) ...) ...)
+                 (list (extract-proc-id proto) ...)
+                 '[proto ...] 
+                 (list (arg-contracts proto) ...)
+                 (list (arg-defaults proto) ...)
                  (list (lambda () (result-contract result)) ...)
                  (lambda () (list desc ...)))]))
   (define-syntax defstruct
@@ -809,6 +842,8 @@
 
   (define-syntax-rule (deftogether (box ...) . body)
     (*deftogether (list box ...) (lambda () (list . body))))
+
+  (define-struct arg (special? kw id optional? starts-optional? ends-optional? num-closers))
     
   (define (*defproc mode within-id
                     stx-ids prototypes arg-contractss arg-valss result-contracts content-thunk)
@@ -820,47 +855,130 @@
                                                         2))))]
           [to-flow (lambda (e)
                      (make-flow (list (make-paragraph (list e)))))]
-          [arg->elem (lambda (v)
-                       (cond
-                        [(pair? v)
-                         (if (keyword? (car v))
-                             (if (eq? mode 'new)
-                                 (make-element #f (list (schemeparenfont "[")
-                                                        (schemeidfont (keyword->string (car v)))
-                                                        (hspace 1)
-                                                        (to-element (cadr v))
-                                                        (schemeparenfont "]")))
-                                 (make-element #f (list (to-element (car v))
-                                                        (hspace 1)
-                                                        (to-element (cadr v)))))
-                             (to-element (car v)))]
-                        [(eq? v '...+)
-                         dots1]
-                        [(eq? v '...)
-                         dots0]
-                        [else v]))]
-          [prototype-size (lambda (s first-combine next-combine)
-                            (let loop ([s s][combine first-combine])
-                              (if (null? s)
-                                  0
-                                  (combine
-                                   (loop (cdr s) next-combine)
-                                   (cond
-                                    [(symbol? (car s)) (string-length (symbol->string (car s)))]
-                                    [(pair? (car s)) 
-                                     (if (keyword? (caar s))
-                                         (+ (if (eq? mode 'new) 2 0)
-                                            (string-length (keyword->string (caar s)))
-                                            3
-                                            (string-length (symbol->string (cadar s))))
-                                         (string-length (symbol->string (caar s))))]
-                                    [else 0])))))])
-      (let ([var-list (map (lambda (i)
-                             (and (pair? i)
-                                  (if (keyword? (car i))
-                                      (cadr i)
-                                      (car i))))
-                           (apply append (map cdr prototypes)))])
+          [arg->elem (lambda (show-opt-start?)
+                       (lambda (arg)
+                         (let* ([e (cond
+                                    [(not (arg-special? arg))
+                                     (if (arg-kw arg)
+                                         (if (eq? mode 'new)
+                                             (make-element #f (list (schemeparenfont "[")
+                                                                    (schemeidfont (keyword->string (arg-kw arg)))
+                                                                    (hspace 1)
+                                                                    (to-element (arg-id arg))
+                                                                    (schemeparenfont "]")))
+                                             (make-element #f (list (to-element (arg-kw arg))
+                                                                    (hspace 1)
+                                                                    (to-element (arg-id arg)))))
+                                         (to-element (arg-id arg)))]
+                                    [(eq? (arg-id arg) '...+)
+                                     dots1]
+                                    [(eq? (arg-id arg) '...)
+                                     dots0]
+                                    [else (arg-id arg)])]
+                                [e (if (arg-ends-optional? arg)
+                                       (make-element #f (list e "]"))
+                                       e)]
+                                [e (if (zero? (arg-num-closers arg))
+                                       e
+                                       (make-element #f
+                                                     (list e
+                                                           (schemeparenfont (make-string (arg-num-closers arg) #\))))))])
+                           (if (and show-opt-start?
+                                    (arg-starts-optional? arg))
+                               (make-element #f (list "[" e))
+                               e))))]
+           [prototype-depth (lambda (p)
+                              (let loop ([p (car p)])
+                                (if (symbol? p)
+                                    0
+                                    (+ 1 (loop (car p))))))]
+           [prototype-args (lambda (p)
+                             (let ([parse-arg (lambda (v in-optional? depth next-optional? next-special?)
+                                                (let* ([id (if (pair? v)
+                                                               (if (keyword? (car v))
+                                                                   (cadr v)
+                                                                   (car v))
+                                                               v)]
+                                                       [kw (if (and (pair? v)
+                                                                    (keyword? (car v)))
+                                                               (car v)
+                                                               #f)]
+                                                       [default? (and (pair? v)
+                                                                      (let ([p (if kw
+                                                                                   (cdddr v)
+                                                                                   (cddr v))])
+                                                                        (pair? p)))])
+                                                  (make-arg (symbol? v)
+                                                            kw
+                                                            id
+                                                            default?
+                                                            (and default?
+                                                                 (not in-optional?))
+                                                            (or (and (not default?)
+                                                                     in-optional?) ; => must be special
+                                                                (and default?
+                                                                     (not next-optional?)
+                                                                     (not next-special?)))
+                                                            depth)))])
+                               (let loop ([p p][last-depth 0])
+                                 (append (if (symbol? (car p))
+                                             null
+                                             (loop (car p) (add1 last-depth)))
+                                         (let loop ([p (cdr p)][in-optional? #f])
+                                           (cond
+                                            [(null? p) null]
+                                            [(null? (cdr p))
+                                             (list (parse-arg (car p) 
+                                                              in-optional? 
+                                                              last-depth
+                                                              #f
+                                                              #f))]
+                                            [else
+                                             (let ([a (parse-arg (car p) 
+                                                                 in-optional? 
+                                                                 0
+                                                                 (let ([v (cadr p)])
+                                                                   (and (pair? v)
+                                                                        (not
+                                                                         (null?
+                                                                          ((if (keyword? (car v))
+                                                                               cdddr
+                                                                               cddr)
+                                                                           v)))))
+                                                                 (not (pair? (cadr p))))])
+                                               (cons a
+                                                     (loop (cdr p)
+                                                           (and (arg-optional? a)
+                                                                (not (arg-ends-optional? a))))))]))))))]
+           [prototype-size (lambda (args first-combine next-combine)
+                             (let loop ([s args][combine first-combine])
+                               (if (null? s)
+                                   0
+                                   (combine
+                                    (loop (cdr s) next-combine)
+                                    (let ([a (car s)])
+                                      (+ (arg-num-closers a)
+                                         (cond
+                                          [(arg-special? a)
+                                           (string-length (symbol->string (arg-id a)))]
+                                          [else
+                                           (+ (if (arg-kw a)
+                                                  (+ (if (eq? mode 'new) 2 0)
+                                                     (string-length (keyword->string (arg-kw a)))
+                                                     3
+                                                     (string-length (symbol->string (arg-id a))))
+                                                  (string-length (symbol->string (arg-id a)))))])))))))]
+           [extract-id (lambda (p)
+                           (let loop ([p p])
+                             (if (symbol? (car p))
+                                 (car p)
+                                 (loop (car p)))))])
+      (let* ([all-args (map prototype-args prototypes)]
+             [var-list (filter values
+                               (map (lambda (a)
+                                      (and (not (arg-special? a))
+                                           (arg-id a)))
+                                    (apply append all-args)))])
         (parameterize ([current-variable-list var-list])
           (make-box-splice
            (cons
@@ -869,24 +987,8 @@
              (apply 
               append
               (map 
-               (lambda (stx-id prototype arg-contracts arg-vals result-contract first?)
-                 (let*-values ([(required optional more-required)
-                                (let loop ([a (cdr prototype)][r-accum null])
-                                  (if (or (null? a)
-                                          (and (has-optional? (car a))))
-                                      (let ([req (reverse r-accum)])
-                                        (let loop ([a a][o-accum null])
-                                          (if (or (null? a)
-                                                  (and (not (has-optional? (car a)))
-                                                       ;; A repeat after an optional argument is
-                                                       ;; effectively optional:
-                                                       (not (memq (car a) '(...)))
-                                                       (or (null? (cdr a))
-                                                           (not (memq (cadr a) '(...))))))
-                                              (values req (reverse o-accum) a)
-                                              (loop (cdr a) (cons (car a) o-accum)))))
-                                      (loop (cdr a) (cons (car a) r-accum))))]
-                               [(tagged) (cond
+               (lambda (stx-id prototype args arg-contracts arg-vals result-contract first?)
+                 (let*-values ([(tagged) (cond
                                           [(eq? mode 'new)
                                            (make-element #f
                                                          (list (scheme new)
@@ -904,7 +1006,7 @@
                                                                (name-this-object (syntax-e within-id))
                                                                (hspace 1)
                                                                (if first?
-                                                                   (let* ([mname (car prototype)]
+                                                                   (let* ([mname (extract-id prototype)]
                                                                           [ctag (id-to-tag within-id)]
                                                                           [tag (method-tag ctag mname)]
                                                                           [content (list (*method mname within-id))])
@@ -925,45 +1027,46 @@
                                                                                                         ctag)))))
                                                                           tag)
                                                                          (car content)))
-                                                                   (*method (car prototype) within-id))))]
+                                                                   (*method (extract-id prototype) within-id))))]
                                           [else
                                            (if first?
                                                (let ([tag (id-to-tag stx-id)]
-                                                     [content (list (definition-site (car prototype) stx-id #f))])
+                                                     [content (list (definition-site (extract-id prototype) stx-id #f))])
                                                  (if tag
                                                      (make-toc-target-element
                                                       #f
                                                       (list (make-index-element #f
                                                                                 content
                                                                                 tag
-                                                                                (list (symbol->string (car prototype)))
+                                                                                (list (symbol->string (extract-id prototype)))
                                                                                 content
                                                                                 (with-exporting-libraries
                                                                                  (lambda (libs)
                                                                                    (make-procedure-index-desc
-                                                                                    (car prototype)
+                                                                                    (extract-id prototype)
                                                                                     libs)))))
                                                       tag)
                                                      (car content)))
                                                (annote-exporting-library
-                                                (to-element (make-just-context (car prototype)
+                                                (to-element (make-just-context (extract-id prototype)
                                                                                stx-id))))])]
-                               [(flat-size) (+ (prototype-size (cdr prototype) + +)
+                               [(flat-size) (+ (prototype-size args + +)
+                                               (prototype-depth prototype)
                                                (element-width tagged))]
                                [(short?) (or (flat-size . < . 40)
-                                             ((length prototype) . < . 3))]
+                                             ((length args) . < . 2))]
                                [(res) (result-contract)]
                                [(result-next-line?) ((+ (if short? 
                                                             flat-size
-                                                            (+ (prototype-size (cdr prototype) max max)
+                                                            (+ (prototype-size args max max)
+                                                               (prototype-depth prototype)
                                                                (element-width tagged)))
                                                         (flow-element-width res))
                                                      . >= . (- max-proto-width 7))]
                                [(end) (list (to-flow spacer)
                                             (to-flow 'rarr)
                                             (to-flow spacer)
-                                            (make-flow (list res)))]
-                               [(opt-cnt) (length optional)])
+                                            (make-flow (list res)))])
                    (append
                     (list
                      (list (make-flow
@@ -973,18 +1076,24 @@
                                  (list
                                   (cons
                                    (to-flow
-                                    (to-element (append
-                                                 (list tagged)
-                                                 (map arg->elem required)
-                                                 (if (null? optional)
-                                                     null
-                                                     (list
-                                                      (to-element
-                                                       (syntax-property
-                                                        (syntax-ize (map arg->elem optional) 0)
-                                                        'paren-shape
-                                                        #\?))))
-                                                 (map arg->elem more-required))))
+                                    (make-element
+                                     #f
+                                     (append
+                                      (list
+                                       (schemeparenfont (make-string (add1 (prototype-depth prototype)) #\())
+                                       tagged)
+                                      (if (null? args)
+                                          (list
+                                           (schemeparenfont (make-string (add1 (prototype-depth prototype)) #\))))
+                                          (apply
+                                           append
+                                           (map
+                                            (lambda (arg)
+                                              (list
+                                               spacer
+                                               ((arg->elem #t) arg)))
+                                            args)))
+                                      (list (schemeparenfont ")")))))
                                    (if result-next-line?
                                        null
                                        end))))
@@ -1002,48 +1111,36 @@
                                      (list* (to-flow (make-element
                                                       #f
                                                       (list
-                                                       (schemeparenfont "(")
+                                                       (schemeparenfont (make-string (add1 (prototype-depth prototype)) #\())
                                                        tagged)))
                                             (cond
-                                             [(null? required)
+                                             [(arg-starts-optional? (car args))
                                               (to-flow (make-element #f (list spacer "[")))]
                                              [else
                                               (to-flow spacer)])
                                             (to-flow
-                                             (if (null? required)
-                                                 (arg->elem (car optional))
-                                                 (arg->elem (car required))))
+                                             ((arg->elem #f) (car args)))
                                             not-end)
-                                     (let loop ([args (cdr (append required optional more-required))]
-                                                [req (sub1 (length required))])
+                                     (let loop ([args (cdr args)])
                                        (if (null? args)
                                            null
                                            (let ([dots-next? (or (and (pair? (cdr args))
-                                                                      (or (eq? (cadr args) '...)
-                                                                          (eq? (cadr args) '...+))))])
+                                                                      (arg-special? (cadr args))))])
                                              (cons (list* (to-flow spacer)
-                                                          (if (zero? req)
+                                                          (if (arg-starts-optional? (car args))
                                                               (to-flow (make-element #f (list spacer "[")))
                                                               (to-flow spacer))
-                                                          (let ([a (arg->elem (car args))]
+                                                          (let ([a ((arg->elem #f) (car args))]
                                                                 [next (if dots-next?
                                                                           (make-element #f (list (hspace 1)
-                                                                                                 (arg->elem (cadr args))))
+                                                                                                 ((arg->elem #f) (cadr args))))
                                                                           "")])
                                                             (to-flow 
                                                              (cond
                                                               [(null? ((if dots-next? cddr cdr) args))
-                                                               (if (or (null? optional)
-                                                                       (not (null? more-required)))
-                                                                   (make-element 
-                                                                    #f 
-                                                                    (list a next (schemeparenfont ")")))
-                                                                   (make-element 
-                                                                    #f 
-                                                                    (list a next "]" (schemeparenfont ")"))))]
-                                                              [(and (pair? more-required)
-                                                                    (= (- 1 req) (length optional)))
-                                                               (make-element #f (list a next "]"))]
+                                                               (make-element 
+                                                                #f 
+                                                                (list a next (schemeparenfont ")")))]
                                                               [(equal? next "") a]
                                                               [else
                                                                (make-element #f (list a next))])))
@@ -1051,30 +1148,27 @@
                                                                    (not result-next-line?))
                                                               end
                                                               not-end))
-                                                   (loop ((if dots-next? cddr cdr) args) (sub1 req))))))))))))))
+                                                   (loop ((if dots-next? cddr cdr) args))))))))))))))
                     (if result-next-line?
                         (list (list (make-flow (make-table-if-necessary
                                                 "prototype" 
                                                 (list end)))))
                         null)
                     (apply append
-                           (map (lambda (v arg-contract arg-val)
+                           (map (lambda (arg arg-contract arg-val)
                                   (cond
-                                   [(pair? v)
-                                    (let* ([v (if (keyword? (car v)) 
-                                                  (cdr v)
-                                                  v)]
-                                           [arg-cont (arg-contract)]
-                                           [base-len (+ 5 (string-length (symbol->string (car v)))
+                                   [(not (arg-special? arg))
+                                    (let* ([arg-cont (arg-contract)]
+                                           [base-len (+ 5 (string-length (symbol->string (arg-id arg)))
                                                         (flow-element-width arg-cont))]
                                            [arg-val (and arg-val (arg-val))]
-                                           [def-len (if (has-optional? v)
+                                           [def-len (if (arg-optional? arg)
                                                         (flow-element-width arg-val)
                                                         0)]
                                            [base-list
                                             (list
                                              (to-flow (hspace 2))
-                                             (to-flow (arg->elem v))
+                                             (to-flow (to-element (arg-id arg)))
                                              (to-flow spacer)
                                              (to-flow ":")
                                              (to-flow spacer)
@@ -1082,7 +1176,7 @@
                                       (list
                                        (list
                                         (make-flow
-                                         (if (and (has-optional? v)
+                                         (if (and (arg-optional? arg)
                                                   ((+ base-len 3 def-len) . >= . max-proto-width))
                                              (list
                                               (make-table
@@ -1101,7 +1195,7 @@
                                               (list
                                                (append
                                                 base-list
-                                                (if (and (has-optional? v)
+                                                (if (and (arg-optional? arg)
                                                          ((+ base-len 3 def-len) . < . max-proto-width))
                                                     (list (to-flow spacer)
                                                           (to-flow "=")
@@ -1109,22 +1203,23 @@
                                                           (make-flow (list arg-val)))
                                                     null)))))))))]
                                    [else null]))
-                                (cdr prototype)
+                                args
                                 arg-contracts
                                 arg-vals)))))
                stx-ids
                prototypes
+               all-args
                arg-contractss
                arg-valss
                result-contracts
                (let loop ([ps prototypes][accum null])
                  (cond
                   [(null? ps) null]
-                  [(ormap (lambda (a) (eq? (caar ps) a)) accum)
+                  [(ormap (lambda (a) (eq? (extract-id (car ps)) a)) accum)
                    (cons #f (loop (cdr ps) accum))]
                   [else
                    (cons #t (loop (cdr ps)
-                                  (cons (caar ps) accum)))])))))
+                                  (cons (extract-id (car ps)) accum)))])))))
             (content-thunk))
            var-list)))))
 

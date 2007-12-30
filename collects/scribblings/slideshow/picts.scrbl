@@ -697,7 +697,7 @@ extract the location of the spike point. More typically, the
 @scheme[pin-balloon] function is used to add a balloon to a pict.}
 
 @defproc[(pip-wrap-balloon [pict pict?]
-                           [spike one-of/c ('n 's 'e 'w 'ne 'se 'sw 'nw)]
+                           [spike (one-of/c ('n 's 'e 'w 'ne 'se 'sw 'nw))]
                            [dx real?]
                            [dy real?]
                            [color (or/c string? (is-a?/c color%)) balloon-color]
@@ -733,7 +733,7 @@ The resulting pict has the same bounding box, descent, and ascent as
 @defproc[(balloon [w real?]
                   [h real?]
                   [corner-radius (and/c real? (not/c negative?))]
-                  [spike one-of/c ('n 's 'e 'w 'ne 'se 'sw 'nw)]
+                  [spike (one-of/c ('n 's 'e 'w 'ne 'se 'sw 'nw))]
                   [dx real?]
                   [dy real?]
                   [color (or/c string? (is-a?/c color%)) balloon-color])

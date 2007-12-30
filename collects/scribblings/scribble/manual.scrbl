@@ -237,21 +237,25 @@ hovers the mouse over one of the bindings defined within the section.}
 @; ------------------------------------------------------------------------
 @section{Documenting Forms, Functions, Structure Types, and Values}
 
-@defform/subs[(defproc (id arg-spec ...)
+@defform/subs[(defproc prototype
                        result-contract-expr-datum
                        pre-flow ...)
-              ([arg-spec (arg-id contract-expr-datum)
+              ([prototype id
+                          (prototype arg-spec ...)]
+               [arg-spec (arg-id contract-expr-datum)
                          (arg-id contract-expr-datum default-expr)
                          (keyword arg-id contract-expr-datum)
                          (keyword arg-id contract-expr-datum default-expr)])]{
 
-Produces a sequence of flow elements (encapsulated in a @scheme[splice])
-to document a procedure named @scheme[id]. The @scheme[id] is indexed,
-and it also registered so that @scheme[scheme]-typeset uses of the
-identifier (with the same for-label binding) are hyperlinked to this
-documentation. The @scheme[id] should have a for-label binding (as
-introduced by @scheme[require-for-label]) that determines the module
-binding being defined.
+Produces a sequence of flow elements (encapsulated in a
+@scheme[splice]) to document a procedure named @scheme[id]. Nesting
+@scheme[prototype]s corresponds to a curried function, as in
+@scheme[define]. The @scheme[id] is indexed, and it also registered so
+that @scheme[scheme]-typeset uses of the identifier (with the same
+for-label binding) are hyperlinked to this documentation. The
+@scheme[id] should have a for-label binding (as introduced by
+@scheme[require-for-label]) that determines the module binding being
+defined.
 
 Each @scheme[arg-spec] must have one of the following forms:
 
@@ -291,7 +295,7 @@ ignores the source layout, except that the local formatting is
 preserved for contracts and default-values expressions.}
 
 
-@defform[(defproc* ([(id arg-spec ...)
+@defform[(defproc* ([prototype
                      result-contract-expr-datum] ...)
                    pre-flow ...)]{
 

@@ -200,11 +200,11 @@ trio of arguments defines a section for the outline:
 
 }}
 
-@defproc[(comment (or/c string? pict?) ...)
+@defproc[(comment [text (or/c string? pict?)] ...)
          comment?]{
 
 Combines strings and picts to be used as a slide element for (usually
-hidden) commentary. Use the result as an argument to @scheme[slide]}
+hidden) commentary. Use the result as an argument to @scheme[slide].}
 
 @defproc[(comment? [v any/c]) boolean?]{
 
