@@ -160,9 +160,17 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
   mask = table->size - 1;
 
   if (table->make_hash_indices) {
-    table->make_hash_indices((void *)key, (long *)&h, NULL);
+    GC_CAN_IGNORE hash_v_t *_h2;
+    if (table->compare) {
+      h2 = 0;
+      _h2 = NULL;
+    } else
+      _h2 = &h2;
+    table->make_hash_indices((void *)key, (long *)&h, (long *)_h2);
     h = h & mask;
-    h2 = 0;
+    if (_h2) {
+      h2 = (h2 & mask) | 1;
+    }
   } else {
     unsigned long lkey;
     lkey = (unsigned long)PTR_TO_LONG((Scheme_Object *)key);
