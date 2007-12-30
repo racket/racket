@@ -2,11 +2,11 @@
 (require "contract-arrow.ss"
          scheme/private/contract-guts
          scheme/private/class-internal
-         scheme/private/contract-arr-checks)
+         "contract-arr-checks.ss")
 
 (require (for-syntax scheme/base
                      scheme/private/contract-helpers
-                     scheme/private/contract-arr-obj-helpers))
+                     "contract-arr-obj-helpers.ss"))
 
 (provide mixin-contract
          make-mixin-contract

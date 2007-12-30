@@ -1,12 +1,12 @@
 #lang scheme/base
 
 (require scheme/private/contract-guts
-         scheme/private/contract-arr-checks
-         scheme/private/contract-opt)
+         scheme/private/contract-opt
+         "contract-arr-checks.ss")
 (require (for-syntax scheme/base)
          (for-syntax scheme/private/contract-opt-guts)
          (for-syntax scheme/private/contract-helpers)
-         (for-syntax scheme/private/contract-arr-obj-helpers)
+         (for-syntax "contract-arr-obj-helpers.ss")
          (for-syntax syntax/stx)
          (for-syntax syntax/name))
 

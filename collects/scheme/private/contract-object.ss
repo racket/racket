@@ -398,10 +398,12 @@
                         "expected an object with field ~s"
                         field-name))
 
+(define-syntax (old->d stx) (make-/proc #f ->d/h stx)) ;; just here for now so the mixin contracts work.
+
 (define (make-mixin-contract . %/<%>s)
   ((and/c (flat-contract class?)
           (apply and/c (map sub/impl?/c %/<%>s)))
-   . ->d .
+   . old->d .
    subclass?/c))
 
 (define (subclass?/c %)
@@ -440,4 +442,4 @@
        [else `(is-a?/c unknown<%>)])
      (lambda (x) (is-a? x <%>)))))
 
-(define mixin-contract (class? . ->d . subclass?/c))
+(define mixin-contract (class? . old->d . subclass?/c))

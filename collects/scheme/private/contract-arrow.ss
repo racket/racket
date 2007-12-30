@@ -10,8 +10,16 @@ v4 done:
 v4 todo:
 
 - rewrite ->d
+  - to test:
+    ->d first-order
+
+- rewrite case->
+
+- rewrite object-contract to use new function combinators.
 
 - remove opt-> opt->* ->pp ->pp-rest ->r ->d*
+
+- change mzlib/contract to rewrite into scheme/contract (maybe?)
 
 - raise-syntax-errors
   . multiple identical keywords syntax error, sort-keywords
@@ -30,16 +38,10 @@ v4 todo:
          (for-syntax syntax/name))
 
 (provide ->
-         ->d
          ->*
-         ->d*
-         ->r
-         ->pp
-         ->pp-rest
-         case->
-         opt->
-         opt->*
-         unconstrained-domain->)
+         ->d
+         unconstrained-domain->
+         the-unsupplied-arg)
 
 (define-syntax (unconstrained-domain-> stx)
   (syntax-case stx ()
@@ -65,6 +67,23 @@ v4 todo:
                                               orig-str
                                               "expected a procedure")))))
               procedure?))))]))
+
+
+;              
+;              
+;              
+;         ;    
+;          ;   
+;           ;  
+;   ;;;;;;;;;; 
+;           ;  
+;          ;   
+;         ;    
+;              
+;              
+;              
+;              
+
 
 (define (build--> name
                   doms/c-or-p optional-doms/c-or-p doms-rest/c-or-p-or-f 
@@ -170,7 +189,10 @@ v4 todo:
      (let ([range
             (cond
               [rng-any? 'any]
-              [else (apply build-compound-type-name rngs)])])
+              [(and (pair? rngs)
+                    (null? (cdr rngs)))
+               (car rngs)]
+              [else (apply build-compound-type-name 'values rngs)])])
        (apply
         build-compound-type-name 
         '->*
@@ -216,6 +238,10 @@ v4 todo:
       [(null? pairs) null]
       [else (insert (car pairs) (loop (cdr pairs)))])))
 
+;; split-doms : syntax identifier syntax -> syntax
+;; given a sequence of keywords interpersed with other
+;; stuff, splits out the keywords and sorts them,
+;; and leaves the rest of the stuff in a row.
 (define-for-syntax (split-doms stx name raw-doms)
   (let loop ([raw-doms raw-doms]
              [doms '()]
@@ -233,13 +259,13 @@ v4 todo:
        (and (keyword? (syntax-e #'kwd))
             (keyword? (syntax-e #'arg)))
        (raise-syntax-error name
-                           "expected a keyword followed by a contract"
+                           "cannot have two keywords in a row"
                            stx
                            #'kwd)]
       [(kwd)
        (keyword? (syntax-e #'kwd))
        (raise-syntax-error name
-                           "expected a keyword to be followed by a contract"
+                           "cannot have a keyword at the end"
                            stx
                            #'kwd)]
       [(x . rest)
@@ -329,139 +355,6 @@ v4 todo:
   (let-values ([(stx _1 _2) (->/proc/main stx)])
     stx))
 
-(define unspecified-dom (gensym 'unspecified-keyword))
-
-;; check-duplicate-kwds : syntax (listof syntax[keyword]) -> void
-(define-for-syntax (check-duplicate-kwds stx kwds)
-  (let loop ([kwds kwds])
-    (unless (null? kwds)
-      (when (member (syntax-e (car kwds)) (map syntax-e (cdr kwds)))
-        (raise-syntax-error #f "duplicate keyword" stx (car kwds))))))
-
-;; ->*/proc/main : syntax -> (values syntax[contract-record] syntax[args/lambda-body] syntax[names])
-(define-for-syntax (->*/proc/main stx)
-  (syntax-case* stx (->* any) module-or-top-identifier=?
-    [(->* (raw-mandatory-dom ...) (raw-optional-dom ...) . rst)
-     (with-syntax ([((mandatory-dom ...) ((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...))
-                    (split-doms stx '->* #'(raw-mandatory-dom ...))]
-                   [((optional-dom ...) ((optional-dom-kwd optional-dom-kwd-ctc) ...))
-                    (split-doms stx '->* #'(raw-optional-dom ...))])
-       ;(check-duplicate-kwds stx (syntax->list #'(mandatory-dom-kwd ... optional-dom-kwd ...)))
-       (with-syntax ([(mandatory-dom-proj ...) (generate-temporaries #'(mandatory-dom ...))]
-                     [(mandatory-dom-arg ...) (generate-temporaries #'(mandatory-dom ...))]
-                     [(mandatory-dom-kwd-proj ...) (generate-temporaries #'(mandatory-dom-kwd ...))]
-                     [(mandatory-dom-kwd-arg ...) (generate-temporaries #'(mandatory-dom-kwd ...))]
-                     
-                     [(optional-dom-proj ...) (generate-temporaries #'(optional-dom ...))]
-                     [(optional-dom-arg ...) (generate-temporaries #'(optional-dom ...))]
-                     [(optional-dom-kwd-proj ...) (generate-temporaries #'(optional-dom-kwd ...))]
-                     [(optional-dom-kwd-arg ...) (generate-temporaries #'(optional-dom-kwd ...))])
-         (with-syntax ([(mandatory-dom-kwd/var-seq ...) (apply append 
-                                                               (map list
-                                                                    (syntax->list #'(mandatory-dom-kwd ...)) 
-                                                                    (syntax->list #'(mandatory-dom-kwd-arg ...))))]
-                       [(optional-dom-kwd/var-seq ...) (apply append 
-                                                              (map list 
-                                                                   (syntax->list #'(optional-dom-kwd ...)) 
-                                                                   (syntax->list #'([optional-dom-kwd-arg unspecified-dom] ...))))]
-                       [(mandatory-dom-kwd-proj-apps ...) (apply append 
-                                                                 (map list
-                                                                      (syntax->list #'(mandatory-dom-kwd ...)) 
-                                                                      (syntax->list #'((mandatory-dom-kwd-proj mandatory-dom-kwd-arg) ...))))]
-                       [((sorted-dom-kwd sorted-dom-kwd-arg sorted-dom-kwd-proj) ...) 
-                        (sort-keywords stx (syntax->list
-                                            #'((mandatory-dom-kwd mandatory-dom-kwd-arg mandatory-dom-kwd-proj) ...
-                                               (optional-dom-kwd optional-dom-kwd-arg optional-dom-kwd-proj) ...)))])
-           (with-syntax ([((rev-sorted-dom-kwd rev-sorted-dom-kwd-arg rev-sorted-dom-kwd-proj) ...)
-                          (reverse (syntax->list #'((sorted-dom-kwd sorted-dom-kwd-arg sorted-dom-kwd-proj) ...)))]
-                         [(rev-optional-dom-arg ...) (reverse (syntax->list #'(optional-dom-arg ...)))]
-                         [(rev-optional-dom-proj ...) (reverse (syntax->list #'(optional-dom-proj ...)))])
-             
-             
-             (let-values ([(rest-ctc rng-ctc)
-                           ;; rest-ctc (or/c #f syntax) -- #f means no rest contract, syntax is the contract
-                           ;; rng-ctc (or/c #f syntax) -- #f means `any', syntax is a sequence of result values
-                           (syntax-case #'rst (any)
-                             [(any) (values #f #f)]
-                             [(rest-expr any) (values #'rest-expr #f)]
-                             [((res-ctc ...)) (values #f #'(res-ctc ...))]
-                             [(rest-expr (res-ctc ...)) (values #'rest-expr #'(res-ctc ...))]
-                             [_ (raise-syntax-error #f "bad syntax" stx)])])
-               (with-syntax ([(rng-proj ...) (generate-temporaries (or rng-ctc '()))]
-                             [(rng ...) (generate-temporaries (or rng-ctc '()))])
-                 #`(build-->
-                    '->*
-                    (list mandatory-dom ...)
-                    (list optional-dom ...)
-                    #,rest-ctc
-                    (list mandatory-dom-kwd-ctc ...)
-                    '(mandatory-dom-kwd ...)
-                    (list optional-dom-kwd-ctc ...)
-                    '(optional-dom-kwd ...)
-                    #,(if rng-ctc
-                          (with-syntax ([(rng-ctc ...) rng-ctc])
-                            #'(list rng-ctc ...))
-                          #''())
-                    #,(if rng-ctc #f #t)
-                    (λ (chk mandatory-dom-proj ...  
-                            #,@(if rest-ctc
-                                   #'(rest-proj)
-                                   #'())
-                            optional-dom-proj ... 
-                            mandatory-dom-kwd-proj ... 
-                            optional-dom-kwd-proj ... 
-                            rng-proj ...)
-                      (λ (f)
-                        (chk f)
-                        #,(add-name-prop
-                           (syntax-local-infer-name stx)
-                           #`(λ (mandatory-dom-arg ... 
-                                 [optional-dom-arg unspecified-dom] ... 
-                                 mandatory-dom-kwd/var-seq ... 
-                                 optional-dom-kwd/var-seq ...
-                                 #,@(if rest-ctc #'rest #'()))
-                               (let*-values ([(kwds kwd-args) (values '() '())]
-                                             [(kwds kwd-args) (if (eq? unspecified-dom rev-sorted-dom-kwd-arg)
-                                                                  (values kwds kwd-args)
-                                                                  (values (cons 'rev-sorted-dom-kwd kwds)
-                                                                          (cons (rev-sorted-dom-kwd-proj rev-sorted-dom-kwd-arg)
-                                                                                kwd-args)))] 
-                                             ...
-                                             [(opt-args) #,(if rest-ctc 
-                                                               #'(rest-proj rest)
-                                                               #''())]
-                                             [(opt-args) (if (eq? unspecified-dom rev-optional-dom-arg)
-                                                             opt-args
-                                                             (cons (rev-optional-dom-proj rev-optional-dom-arg) opt-args))]
-                                             ...)
-                                 #,(let ([call #'(keyword-apply f kwds kwd-args (mandatory-dom-proj mandatory-dom-arg) ... opt-args)])
-                                     (if rng-ctc
-                                         #`(let-values ([(rng ...) #,call])
-                                             (values (rng-proj rng) ...))
-                                         call))))))))))))))]))
-           
-(define-syntax (->* stx) (->*/proc/main stx))
-
-(define-for-syntax (select/h stx err-name ctxt-stx)
-  (syntax-case stx (-> ->* ->d ->d* ->r ->pp ->pp-rest)
-    [(-> . args) ->/h]
-    [(->* . args) ->*/h]
-    [(->d . args) ->d/h]
-    [(->d* . args) ->d*/h]
-    [(->r . args) ->r/h]
-    [(->pp . args) ->pp/h]
-    [(->pp-rest . args) ->pp-rest/h]
-    [(xxx . args) (raise-syntax-error err-name "unknown arrow constructor" ctxt-stx (syntax xxx))]
-    [_ (raise-syntax-error err-name "malformed arrow clause" ctxt-stx stx)]))
-
-(define-syntax (->d stx) (make-/proc #f ->d/h stx))
-(define-syntax (->d* stx) (make-/proc #f ->d*/h stx))
-(define-syntax (->r stx) (make-/proc #f ->r/h stx))
-(define-syntax (->pp stx) (make-/proc #f ->pp/h stx))
-(define-syntax (->pp-rest stx) (make-/proc #f ->pp-rest/h stx))
-(define-syntax (case-> stx) (make-case->/proc #f stx stx select/h))
-(define-syntax (opt-> stx) (make-opt->/proc #f stx select/h #'case-> #'->))
-(define-syntax (opt->* stx) (make-opt->*/proc #f stx stx select/h #'case-> #'->))
 
 ;;
 ;; arrow opter
@@ -607,3 +500,477 @@ v4 todo:
          (opt/unknown opt/i opt/info stx) ;; give up if there is a mandatory keyword 
          (opt/arrow-ctc (syntax->list (syntax (dom ...)))
                         (list #'rng)))]))
+
+
+
+;                     
+;                     
+;                     
+;         ;       ;   
+;          ;      ;   
+;           ;   ;;;;; 
+;   ;;;;;;;;;;   ;;   
+;           ;    ; ;  
+;          ;          
+;         ;           
+;                     
+;                     
+;                     
+;                     
+
+
+(define unspecified-dom (gensym 'unspecified-keyword))
+
+;; check-duplicate-kwds : syntax (listof syntax[keyword]) -> void
+(define-for-syntax (check-duplicate-kwds stx kwds)
+  (let loop ([kwds kwds])
+    (unless (null? kwds)
+      (when (member (syntax-e (car kwds)) (map syntax-e (cdr kwds)))
+        (raise-syntax-error #f "duplicate keyword" stx (car kwds))))))
+
+;; ->*/proc/main : syntax -> (values syntax[contract-record] syntax[args/lambda-body] syntax[names])
+(define-for-syntax (->*/proc/main stx)
+  (syntax-case* stx (->* any) module-or-top-identifier=?
+    [(->* (raw-mandatory-dom ...) (raw-optional-dom ...) . rst)
+     (with-syntax ([((mandatory-dom ...) ((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...))
+                    (split-doms stx '->* #'(raw-mandatory-dom ...))]
+                   [((optional-dom ...) ((optional-dom-kwd optional-dom-kwd-ctc) ...))
+                    (split-doms stx '->* #'(raw-optional-dom ...))])
+       ;(check-duplicate-kwds stx (syntax->list #'(mandatory-dom-kwd ... optional-dom-kwd ...)))
+       (with-syntax ([(mandatory-dom-proj ...) (generate-temporaries #'(mandatory-dom ...))]
+                     [(mandatory-dom-arg ...) (generate-temporaries #'(mandatory-dom ...))]
+                     [(mandatory-dom-kwd-proj ...) (generate-temporaries #'(mandatory-dom-kwd ...))]
+                     [(mandatory-dom-kwd-arg ...) (generate-temporaries #'(mandatory-dom-kwd ...))]
+                     
+                     [(optional-dom-proj ...) (generate-temporaries #'(optional-dom ...))]
+                     [(optional-dom-arg ...) (generate-temporaries #'(optional-dom ...))]
+                     [(optional-dom-kwd-proj ...) (generate-temporaries #'(optional-dom-kwd ...))]
+                     [(optional-dom-kwd-arg ...) (generate-temporaries #'(optional-dom-kwd ...))])
+         (with-syntax ([(mandatory-dom-kwd/var-seq ...) (apply append 
+                                                               (map list
+                                                                    (syntax->list #'(mandatory-dom-kwd ...)) 
+                                                                    (syntax->list #'(mandatory-dom-kwd-arg ...))))]
+                       [(optional-dom-kwd/var-seq ...) (apply append 
+                                                              (map list 
+                                                                   (syntax->list #'(optional-dom-kwd ...)) 
+                                                                   (syntax->list #'([optional-dom-kwd-arg unspecified-dom] ...))))]
+                       [(mandatory-dom-kwd-proj-apps ...) (apply append 
+                                                                 (map list
+                                                                      (syntax->list #'(mandatory-dom-kwd ...)) 
+                                                                      (syntax->list #'((mandatory-dom-kwd-proj mandatory-dom-kwd-arg) ...))))]
+                       [((sorted-dom-kwd sorted-dom-kwd-arg sorted-dom-kwd-proj) ...) 
+                        (sort-keywords stx (syntax->list
+                                            #'((mandatory-dom-kwd mandatory-dom-kwd-arg mandatory-dom-kwd-proj) ...
+                                               (optional-dom-kwd optional-dom-kwd-arg optional-dom-kwd-proj) ...)))])
+           (with-syntax ([((rev-sorted-dom-kwd rev-sorted-dom-kwd-arg rev-sorted-dom-kwd-proj) ...)
+                          (reverse (syntax->list #'((sorted-dom-kwd sorted-dom-kwd-arg sorted-dom-kwd-proj) ...)))]
+                         [(rev-optional-dom-arg ...) (reverse (syntax->list #'(optional-dom-arg ...)))]
+                         [(rev-optional-dom-proj ...) (reverse (syntax->list #'(optional-dom-proj ...)))])
+             
+             
+             (let-values ([(rest-ctc rng-ctc)
+                           ;; rest-ctc (or/c #f syntax) -- #f means no rest contract, syntax is the contract
+                           ;; rng-ctc (or/c #f syntax) -- #f means `any', syntax is a sequence of result values
+                           (syntax-case #'rst (any values)
+                             [(any) (values #f #f)]
+                             [(rest-expr any) (values #'rest-expr #f)]
+                             [((values res-ctc ...)) (values #f #'(res-ctc ...))]
+                             [(rest-expr (values res-ctc ...)) (values #'rest-expr #'(res-ctc ...))]
+                             [(res-ctc) (values #f #'(res-ctc))]
+                             [(rest-expr res-ctc) (values #'rest-expr #'(res-ctc))]
+                             [_ (raise-syntax-error #f "bad syntax" stx)])])
+               (with-syntax ([(rng-proj ...) (generate-temporaries (or rng-ctc '()))]
+                             [(rng ...) (generate-temporaries (or rng-ctc '()))])
+                 #`(build-->
+                    '->*
+                    (list mandatory-dom ...)
+                    (list optional-dom ...)
+                    #,rest-ctc
+                    (list mandatory-dom-kwd-ctc ...)
+                    '(mandatory-dom-kwd ...)
+                    (list optional-dom-kwd-ctc ...)
+                    '(optional-dom-kwd ...)
+                    #,(if rng-ctc
+                          (with-syntax ([(rng-ctc ...) rng-ctc])
+                            #'(list rng-ctc ...))
+                          #''())
+                    #,(if rng-ctc #f #t)
+                    (λ (chk mandatory-dom-proj ...  
+                            #,@(if rest-ctc
+                                   #'(rest-proj)
+                                   #'())
+                            optional-dom-proj ... 
+                            mandatory-dom-kwd-proj ... 
+                            optional-dom-kwd-proj ... 
+                            rng-proj ...)
+                      (λ (f)
+                        (chk f)
+                        #,(add-name-prop
+                           (syntax-local-infer-name stx)
+                           #`(λ (mandatory-dom-arg ... 
+                                 [optional-dom-arg unspecified-dom] ... 
+                                 mandatory-dom-kwd/var-seq ... 
+                                 optional-dom-kwd/var-seq ...
+                                 #,@(if rest-ctc #'rest #'()))
+                               (let*-values ([(kwds kwd-args) (values '() '())]
+                                             [(kwds kwd-args) (if (eq? unspecified-dom rev-sorted-dom-kwd-arg)
+                                                                  (values kwds kwd-args)
+                                                                  (values (cons 'rev-sorted-dom-kwd kwds)
+                                                                          (cons (rev-sorted-dom-kwd-proj rev-sorted-dom-kwd-arg)
+                                                                                kwd-args)))] 
+                                             ...
+                                             [(opt-args) #,(if rest-ctc 
+                                                               #'(rest-proj rest)
+                                                               #''())]
+                                             [(opt-args) (if (eq? unspecified-dom rev-optional-dom-arg)
+                                                             opt-args
+                                                             (cons (rev-optional-dom-proj rev-optional-dom-arg) opt-args))]
+                                             ...)
+                                 #,(let ([call (if (null? (syntax->list #'(rev-sorted-dom-kwd ...)))
+                                                   #'(apply f (mandatory-dom-proj mandatory-dom-arg) ... opt-args)
+                                                   #'(keyword-apply f kwds kwd-args (mandatory-dom-proj mandatory-dom-arg) ... opt-args))])
+                                     (if rng-ctc
+                                         #`(let-values ([(rng ...) #,call])
+                                             (values (rng-proj rng) ...))
+                                         call))))))))))))))]))
+           
+(define-syntax (->* stx) (->*/proc/main stx))
+
+
+
+;                     
+;                     
+;                     
+;         ;       ;;; 
+;          ;       ;; 
+;           ;      ;; 
+;   ;;;;;;;;;;  ;;;;; 
+;           ;  ;;  ;; 
+;          ;   ;;  ;; 
+;         ;    ;;  ;; 
+;               ;;;;;;
+;                     
+;                     
+;                     
+
+;; parses everything after the mandatory and optional doms in a ->d contract
+(define-for-syntax (parse-leftover stx leftover)
+  (let*-values ([(id/rest-id leftover) 
+                 (syntax-case leftover ()
+                   [(id rest-expr . leftover)
+                    (and (identifier? #'id)
+                         (not (keyword? (syntax-e #'rest-expr))))
+                    (values #'(id rest-expr) #'leftover)]
+                   [_ (values #f leftover)])]
+                [(pre-cond leftover)
+                 (syntax-case leftover ()
+                   [(#:pre-cond pre-cond . leftover)
+                    (values #'pre-cond #'leftover)]
+                   [_ (values #f leftover)])]
+                [(range leftover) 
+                 (syntax-case leftover ()
+                   [(range . leftover) (values #'range #'leftover)]
+                   [_
+                    (raise-syntax-error #f "bad syntax" stx)])]
+                [(post-cond leftover) 
+                 (syntax-case leftover ()
+                   [(#:post-cond post-cond . leftover)
+                    (values #'post-cond #'leftover)]
+                   [_ (values #f leftover)])])
+    (syntax-case leftover ()
+      [() 
+       (values id/rest-id pre-cond range post-cond)]
+      [_ 
+       (raise-syntax-error #f "bad syntax" stx)])))
+
+;; verify-->d-structure : syntax syntax -> syntax
+;; returns the second argument when it has the proper shape for the first two arguments to ->d*
+;; otherwise, raises a syntax error.
+(define-for-syntax (verify-->d-structure stx doms)
+  (syntax-case doms ()
+    [((regular ...) (kwd ...))
+     (let ([check-pair-shape
+            (λ (reg)
+              (syntax-case reg ()
+                [(id dom)
+                 (identifier? #'id)
+                 (void)]
+                [(a b)
+                 (raise-syntax-error #f "expected an identifier" stx #'a)]
+                [_
+                 (raise-syntax-error #f "expected an identifier and a contract-expr" stx reg)]))])
+       (for-each check-pair-shape (syntax->list #'(regular ...)))
+       (for-each
+        (λ (kwd)
+          (syntax-case kwd ()
+            [(kwd ps)
+             (check-pair-shape #'ps)]))
+        (syntax->list #'(kwd ...))))])
+  doms)
+
+(define-syntax (->d stx)
+  (syntax-case stx ()
+    [(_ (raw-mandatory-doms ...)
+        (raw-optional-doms ...)
+        .
+        leftover)
+     (with-syntax ([(([mandatory-regular-id mandatory-doms] ... ) ([mandatory-kwd (mandatory-kwd-id mandatory-kwd-dom)] ...)) 
+                    (verify-->d-structure stx (split-doms stx '->d #'(raw-mandatory-doms ...)))]
+                   [(([optional-regular-id optional-doms] ... ) ([optional-kwd (optional-kwd-id optional-kwd-dom)] ...))
+                    (verify-->d-structure stx (split-doms stx '->d #'(raw-optional-doms ...)))])
+       (with-syntax ([((kwd kwd-id) ...)
+                      (sort-keywords 
+                       stx
+                       (syntax->list
+                        #'((optional-kwd optional-kwd-id) ...
+                           (mandatory-kwd mandatory-kwd-id) ...)))])
+         (let-values ([(id/rest pre-cond range post-cond) (parse-leftover stx #'leftover)])
+           (with-syntax ([(dom-params ...)
+                          #`(mandatory-regular-id ... 
+                             optional-regular-id ... 
+                             #,@(if id/rest 
+                                    (with-syntax ([(id rst-ctc) id/rest])
+                                      #'(id))
+                                    #'())
+                             kwd-id ...)])
+             (with-syntax ([((rng-params ...) rng-ctcs)
+                            (syntax-case range (any values)
+                              [(values [id ctc] ...) #'((id ...) (ctc ...))]
+                              [(values [id ctc] ... x . y) (raise-syntax-error #f "expected binding pair" stx #'x)]
+                              [any #'(() #f)]
+                              [[id ctc] #'((id) (ctc))]
+                              [x (raise-syntax-error #f "expected binding pair or any" stx #'x)])])
+               (let ([dup (check-duplicate-identifier (syntax->list #'(dom-params ... rng-params ...)))])
+                 (when dup
+                   (raise-syntax-error #f "duplicate identifier" stx dup)))
+               #`(build-->d (list (λ (dom-params ...) mandatory-doms) ...)
+                            (list (λ (dom-params ...) optional-doms) ...)
+                            (list (λ (dom-params ...) mandatory-kwd-dom) ...)
+                            (list (λ (dom-params ...) optional-kwd-dom) ...)
+                            #,(if id/rest 
+                                  (with-syntax ([(id rst-ctc) id/rest])
+                                    #`(λ (dom-params ...) rst-ctc))
+                                  #f)
+                            #,(if pre-cond
+                                  #`(λ (dom-params ...) #,pre-cond)
+                                  #f)
+                            #,(syntax-case #'rng-ctcs ()
+                                [#f #f]
+                                [(ctc ...) #'(list (λ (rng-params ... dom-params ...) ctc) ...)])
+                            #,(if post-cond
+                                  #`(λ (rng-params ... dom-params ...) #,post-cond)
+                                  #f)
+                            '(mandatory-kwd ...)
+                            '(optional-kwd ...)
+                            (λ (f) 
+                              #,(add-name-prop
+                                 (syntax-local-infer-name stx)
+                                 #`(λ args (apply f args))))))))))]))
+
+(define (->d-proj ->d-stct)
+  (let ([non-kwd-ctc-count (+ (length (->d-mandatory-dom-ctcs ->d-stct))
+                              (length (->d-optional-dom-ctcs ->d-stct)))])
+    (λ (pos-blame neg-blame src-info orig-str)
+      (λ (val)
+        (check-procedure val
+                         (length (->d-mandatory-dom-ctcs ->d-stct)) ;dom-length
+                         (length (->d-optional-dom-ctcs ->d-stct)) ; optionals-length
+                         (->d-mandatory-keywords ->d-stct)
+                         (->d-optional-keywords ->d-stct)
+                         src-info pos-blame orig-str)
+        (let ([kwd-proc
+               (λ (kwd-args kwd-arg-vals . orig-args)
+                 (let* ([dep-pre-args
+                         (build-dep-ctc-args non-kwd-ctc-count orig-args (->d-rest-ctc ->d-stct)
+                                             (->d-keywords ->d-stct) kwd-args kwd-arg-vals)]
+                        [thnk
+                         (λ ()
+                           (when (->d-pre-cond ->d-stct)
+                             (unless (apply (->d-pre-cond ->d-stct) dep-pre-args)
+                               (raise-contract-error val
+                                                     src-info
+                                                     neg-blame
+                                                     orig-str
+                                                     "#:pre-cond violation")))
+                           (keyword-apply
+                            val
+                            kwd-args
+                            
+                            ;; contracted keyword arguments
+                            (let loop ([all-kwds (->d-keywords ->d-stct)]
+                                       [kwd-ctcs (->d-keyword-ctcs ->d-stct)] 
+                                       [building-kwd-args kwd-args]
+                                       [building-kwd-arg-vals kwd-arg-vals])
+                              (cond
+                                [(or (null? building-kwd-args) (null? all-kwds)) '()]
+                                [else (if (eq? (car all-kwds)
+                                               (car building-kwd-args))
+                                          (cons (invoke-dep-ctc (car kwd-ctcs) dep-pre-args (car building-kwd-arg-vals) neg-blame pos-blame src-info orig-str)
+                                                (loop (cdr all-kwds) (cdr kwd-ctcs) (cdr building-kwd-args) (cdr building-kwd-arg-vals)))
+                                          (loop (cdr all-kwds) (cdr kwd-ctcs) building-kwd-args building-kwd-arg-vals))]))
+                            
+                            ;; contracted ordinary arguments
+                            (let loop ([args orig-args]
+                                       [non-kwd-ctcs (append (->d-mandatory-dom-ctcs ->d-stct)
+                                                             (->d-optional-dom-ctcs ->d-stct))])
+                              (cond
+                                [(null? args) 
+                                 (if (->d-rest-ctc ->d-stct)
+                                     (invoke-dep-ctc (->d-rest-ctc ->d-stct) dep-pre-args '() neg-blame pos-blame src-info orig-str)
+                                     '())]
+                                [(null? non-kwd-ctcs) 
+                                 (if (->d-rest-ctc ->d-stct)
+                                     (invoke-dep-ctc (->d-rest-ctc ->d-stct) dep-pre-args args neg-blame pos-blame src-info orig-str)
+                                     
+                                     ;; ran out of arguments, but don't have a rest parameter.
+                                     ;; procedure-reduce-arity (or whatever the new thing is
+                                     ;; going to be called) should ensure this doesn't happen.
+                                     (error 'shouldnt\ happen))]
+                                [else (cons (invoke-dep-ctc (car non-kwd-ctcs) dep-pre-args (car args) neg-blame pos-blame src-info orig-str)
+                                            (loop (cdr args)
+                                                  (cdr non-kwd-ctcs)))]))))])
+                   (if (->d-range ->d-stct)
+                       (call-with-values
+                        thnk
+                        (λ orig-results
+                          (let* ([range-count (length (->d-range ->d-stct))]
+                                 [post-args (append orig-results orig-args)]
+                                 [post-non-kwd-arg-count (+ non-kwd-ctc-count range-count)]
+                                 [dep-post-args (build-dep-ctc-args post-non-kwd-arg-count post-args (->d-rest-ctc ->d-stct)
+                                                                    (->d-keywords ->d-stct) kwd-args kwd-arg-vals)])
+                            (when (->d-post-cond ->d-stct)
+                              (unless (apply (->d-post-cond ->d-stct) dep-post-args)
+                                (raise-contract-error val
+                                                      src-info
+                                                      pos-blame
+                                                      orig-str
+                                                      "#:post-cond violation")))
+                            
+                            (unless (= range-count (length orig-results))
+                              (raise-contract-error val
+                                                    src-info
+                                                    pos-blame
+                                                    orig-str
+                                                    "expected ~a results, got ~a"
+                                                    range-count
+                                                    (length orig-results)))
+                            (apply
+                             values
+                             (let loop ([results orig-results]
+                                        [result-contracts (->d-range ->d-stct)])
+                               (cond
+                                 [(null? result-contracts) '()]
+                                 [else
+                                  (cons (invoke-dep-ctc (car result-contracts) dep-post-args (car results) pos-blame neg-blame src-info orig-str)
+                                        (loop (cdr results) (cdr result-contracts)))]))))))
+                       (thnk))))])
+        (make-keyword-procedure kwd-proc
+                                ((->d-name-wrapper ->d-stct)
+                                 (λ args
+                                   (apply kwd-proc '() '() args)))))))))
+
+;; invoke-dep-ctc : (...? -> ctc) (listof tst) val pos-blame neg-blame src-info orig-src -> tst
+(define (invoke-dep-ctc dep-ctc dep-args val pos-blame neg-blame src-info orig-str)
+  (let ([ctc (coerce-contract '->d (apply dep-ctc dep-args))]) 
+    ((((proj-get ctc) ctc) pos-blame neg-blame src-info orig-str) val)))
+
+;; build-dep-ctc-args : number (listof any) boolean (listof keyword) (listof keyword) (listof any)
+(define (build-dep-ctc-args non-kwd-ctc-count args rest-arg? all-kwds supplied-kwds supplied-args)
+  (append 
+   
+   ;; ordinary args
+   (let loop ([count non-kwd-ctc-count]
+              [args args])
+     (cond
+       [(zero? count) 
+        (if rest-arg?
+            (list args)
+            '())]
+       [(null? args) (cons the-unsupplied-arg (loop (- count 1) null))]
+       [else (cons (car args) (loop (- count 1) (cdr args)))]))
+   
+   ;; kwd args
+   (let loop ([all-kwds all-kwds]
+              [kwds supplied-kwds]
+              [args supplied-args])
+     (cond
+       [(null? all-kwds) null]
+       [else (let* ([kwd (car all-kwds)]
+                    [kwd-matches? (and (not (null? kwds)) (eq? (car kwds) kwd))])
+               (if kwd-matches?
+                   (cons (car args) (loop (cdr all-kwds) (cdr kwds) (cdr args)))
+                   (cons the-unsupplied-arg (loop (cdr all-kwds) kwds args))))]))))
+
+(define-struct unsupplied-arg ())
+(define the-unsupplied-arg (make-unsupplied-arg))
+
+(define (build-->d mandatory-dom-ctcs optional-dom-ctcs
+                   mandatory-kwd-dom-ctcs optional-kwd-dom-ctcs
+                   rest-ctc pre-cond range post-cond
+                   mandatory-kwds optional-kwds
+                   name-wrapper)
+  (let ([kwd/ctc-pairs (sort
+                        (map cons 
+                             (append mandatory-kwds optional-kwds)
+                             (append mandatory-kwd-dom-ctcs optional-kwd-dom-ctcs))
+                        (λ (x y) (keyword<? (car x) (car y))))])
+    (make-->d mandatory-dom-ctcs optional-dom-ctcs
+              (map cdr kwd/ctc-pairs)
+              rest-ctc pre-cond range post-cond
+              (map car kwd/ctc-pairs)
+              mandatory-kwds
+              optional-kwds
+              name-wrapper)))
+
+(define-struct/prop ->d (mandatory-dom-ctcs  ;; (listof (-> ??? ctc))
+                         optional-dom-ctcs   ;; (listof (-> ??? ctc))
+                         keyword-ctcs        ;; (listof (-> ??? ctc))
+                         rest-ctc            ;; (or/c false/c (-> ??? ctc))
+                         pre-cond            ;; (-> ??? boolean)
+                         range               ;; (or/c false/c (-> ??? ctc))
+                         post-cond           ;; (-> ??? boolean)
+                         keywords            ;; (listof keywords) -- sorted by keyword<
+                         mandatory-keywords  ;; (listof keywords) -- sorted by keyword<
+                         optional-keywords   ;; (listof keywords) -- sorted by keyword<
+                         name-wrapper)       ;; (-> proc proc) 
+  ((proj-prop ->d-proj)
+   (name-prop (λ (ctc) 
+                (let* ([counting-id 'x]
+                       [ids '(x y z w)]
+                       [next-id
+                        (λ ()
+                          (cond
+                            [(pair? ids)
+                             (begin0 (car ids)
+                                     (set! ids (cdr ids)))]
+                            [(null? ids)
+                             (begin0 
+                               (string->symbol (format "~a0" counting-id))
+                               (set! ids 1))]
+                            [else
+                             (begin0 
+                               (string->symbol (format "~a~a" counting-id ids))
+                               (set! ids (+ ids 1)))]))])
+                  `(->d (,@(map (λ (x) `(,(next-id) ...)) (->d-mandatory-dom-ctcs ctc))
+                         ,@(apply append (map (λ (kwd) (list kwd `(,(next-id) ...))) (->d-mandatory-keywords ctc))))
+                        (,@(map (λ (x) `(,(next-id) ...)) (->d-optional-dom-ctcs ctc))
+                         ,@(apply append (map (λ (kwd) (list kwd `(,(next-id) ...))) (->d-optional-keywords ctc))))
+                        ,@(if (->d-rest-ctc ctc)
+                              (list (next-id) '...)
+                              '())
+                        ,@(if (->d-pre-cond ctc)
+                              (list '#:pre-cond '...)
+                              (list))
+                        ,(let ([range (->d-range ctc)])
+                           (cond
+                             [(not range) 'any]
+                             [(and (not (null? range))
+                                  (null? (cdr range)))
+                              `[,(next-id) ...]]
+                            [else
+                             `(values ,@(map (λ (x) `(,(next-id) ...)) range))]))
+                        ,@(if (->d-post-cond ctc)
+                              (list '#:post-cond '...)
+                              (list))))))
+   (first-order-prop (λ (ctc) (λ (x) #f)))
+   (stronger-prop (λ (this that) (eq? this that)))))
