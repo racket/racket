@@ -21,26 +21,18 @@ A @defterm{servlet} is a module that provides the following:
  to. This influences the other provided identifiers.
 }
 
-If @scheme[interface-version] is @scheme['v1], then the servlet
-provides:
-
 @defthing[timeout integer?]{
+ Only if @scheme[interface-version] is @scheme['v1].
+
  This number is used as the @scheme[continuation-timeout] argument to
  a timeout-based continuation manager used for this servlet. (See
  @secref["timeouts.ss"].) (i.e., you do not have a choice of the manager
  for this servlet and will be given a timeout-based manager.)
 }
 
-@defproc[(start [initial-request request?])
-         response?]{
- This function is called when an instance of this servlet is started.
- The argument is the HTTP request that initiated the instance.
-}
-
-If @scheme[interface-version] is @scheme['v2], then the servlet
-provides:
-
 @defthing[manager manager?]{
+ Only if @scheme[interface-version] is @scheme['v2].
+
  The manager for the continuations of this servlet.
 }
 
@@ -336,7 +328,8 @@ servlet developer.
 @defthing[see-other redirection-status?]{A @scheme[redirection-status?] for "see-other" redirections.}
 
 @defproc[(with-errors-to-browser [send/finish-or-back (response? . -> . void?)]
-                                 [thunk (-> any)])]{
+                                 [thunk (-> any)])
+         any]{
  Calls @scheme[thunk] with an exception handler that generates an HTML error page
  and calls @scheme[send/finish-or-back].
 }

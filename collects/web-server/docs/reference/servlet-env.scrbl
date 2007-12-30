@@ -16,10 +16,12 @@ as well as the following:
  By default this is from @scheme[(lib "sendurl.ss" "net")].
 }
 
-@defform[(on-web servlet-expr)]{This expands to @scheme[(on-web 8000 servlet-expr)].}
+@defform*[[(on-web servlet-expr)
+           (on-web port servlet-expr)]]{
 
-@defform[(on-web port servlet-expr)]{
- This constructs a small servlet, where the body of the @scheme[start] procedure is
+ The first form expands to @scheme[(on-web 8000 servlet-expr)].
+
+ Constructs a small servlet, where the body of the @scheme[start] procedure is
  @scheme[servlet-expr], runs the @web-server on port @scheme[port], and calls
  @scheme[send-url] with a URL for the constructed servlet. The call blocks until the
  servlet finishes its computation, i.e. @scheme[servlet-expr] is evaluated, and
