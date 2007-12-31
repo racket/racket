@@ -3,7 +3,7 @@
  * Purpose:     wxKeymap implementation
  * Author:      Matthew Flatt
  * Created:     1995
- * Copyright:   (c) 2004-2007 PLT Scheme Inc.
+ * Copyright:   (c) 2004-2008 PLT Scheme Inc.
  * Copyright:   (c) 1995, Matthew Flatt
 
     This library is free software; you can redistribute it and/or

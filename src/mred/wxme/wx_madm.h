@@ -3,7 +3,7 @@
  * Purpose:     wxMediaAdmins
  * Author:      Matthew Flatt
  * Created:     1997
- * Copyright:   (c) 2004-2007 PLT Scheme Inc.
+ * Copyright:   (c) 2004-2008 PLT Scheme Inc.
  * Copyright:   (c) 1997, Matthew Flatt
  */
 

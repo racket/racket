@@ -3,7 +3,7 @@
  * Purpose:     MrEd Windows event loop
  * Author:      Matthew Flatt
  * Created:     1996
- * Copyright:   (c) 2004-2007 PLT Scheme Inc.
+ * Copyright:   (c) 2004-2008 PLT Scheme Inc.
  * Copyright:   (c) 1996, Matthew Flatt
  */
 

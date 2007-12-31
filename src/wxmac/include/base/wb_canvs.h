@@ -5,7 +5,7 @@
  * Created:	1993
  * Updated:	
  *  7/3/95 pulled in some 16.2 changes - Cecil Coupe
- * Copyright:	(c) 2004-2007 PLT Scheme Inc.
+ * Copyright:	(c) 2004-2008 PLT Scheme Inc.
  * Copyright:	(c) 1993, AIAI, University of Edinburgh
  */
 

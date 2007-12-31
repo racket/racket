@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2007 PLT Scheme Inc.
+ * Copyright 2004-2008 PLT Scheme Inc.
  * Copyright 1992 The University of Newcastle upon Tyne
  * 
  * Permission to use, copy, modify and distribute this software and its

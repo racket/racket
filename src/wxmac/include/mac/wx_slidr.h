@@ -4,7 +4,7 @@
  * Author:	Julian Smart (Cecil Coupe)
  * Created:	1993
  * Updated:	
- * Copyright:	(c) 2004-2007 PLT Scheme Inc.
+ * Copyright:	(c) 2004-2008 PLT Scheme Inc.
  * Copyright:	(c) 1993, AIAI, University of Edinburgh
  */
 

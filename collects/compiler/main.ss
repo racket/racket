@@ -413,7 +413,7 @@
 		   (void)))))))
      (list "file/directory/collection" "file/directory/sub-collection")))
 
-  (printf "mzc v~a [~a], Copyright (c) 2004-2007 PLT Scheme Inc.~n"
+  (printf "mzc v~a [~a], Copyright (c) 2004-2008 PLT Scheme Inc.~n"
 	  (version)
           (system-type 'gc))
 
