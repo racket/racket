@@ -572,25 +572,28 @@ used.
 @; ------------------------------------------------------------------------
 @section{Random Numbers}
 
-@defproc*[([(random [k (and/c positive-exact-integer?
-                              (integer-in 1 (sub1 (expt 2 31))))])
+@defproc*[([(random [k (integer-in 1 4294967087)]
+                    [generator pseudo-random-generator?
+                               (current-pseudo-random-generator)])
             nonnegative-exact-integer?]
-           [(random) (and/c real? inexact? (>/c 0) (</c 1))])]{  
+           [(random [generator pseudo-random-generator?
+                               (current-pseudo-random-generator)]) 
+            (and/c real? inexact? (>/c 0) (</c 1))])]{  
 
-When called with one argument, returns a random exact integer in the
-range @scheme[0] to @math{@scheme[k]-1}. The number is provided by the
-current pseudo-random number generator (see
-@scheme[current-pseudo-random-generator]), which maintains an internal
-state for generating numbers. The random number generator uses a
-54-bit version of L'Ecuyer's MRG32k3a algorithm.
+When called with and integer argument @scheme[k], returns a random
+exact integer in the range @scheme[0] to @math{@scheme[k]-1}. When
+called with zero arguments, returns a random inexact number between
+@scheme[0] and @scheme[1], exclusive.
 
-When called with zero arguments, returns a random inexact number
-between @scheme[0] and @scheme[1], exclusive, using the current
-pseudo-random number generator.}
+In each case, the number is provided by the given pseudo-random number
+generator (which defaults to the current one, as produced by
+@scheme[current-pseudo-random-generator]). The generator maintains an
+internal state for generating numbers. The random number generator
+uses a 54-bit version of L'Ecuyer's MRG32k3a algorithm
+@cite["L'Ecuyer02"].}
 
 
-@defproc[(random-seed [k (and/c nonnegative-exact-integer?
-                                (integer-in 1 (sub1 (expt 2 31))))])
+@defproc[(random-seed [k (integer-in 1 (sub1 (expt 2 31)))])
           void?]{
 
 Seeds the current pseudo-random number generator with
@@ -638,6 +641,14 @@ must be in the range @scheme[0] to @scheme[4294944442], inclusive; at
 least one of the first three integers must be non-zero; and at least
 one of the last three integers must be non-zero.}
 
+@defproc[(vector->pseudo-random-generator! [generator pseudo-random-generator?]
+                                           [vec vector?])
+         void?]{
+
+Like @scheme[vector->pseudo-random-generator], but changes
+@scheme[generator] to the given state, instead of creating a new
+generator.}
+
 @; ------------------------------------------------------------------------
 @section{Number--String Conversions}
 
@@ -657,13 +668,15 @@ one of the last three integers must be non-zero.}
 @examples[(number->string 3.0) (number->string 255 8)]}
 
 
-@defproc[(string->number [s string?] [radix (exact-integer-in/c 2 16)
- 10]) (or/c number? false/c)]{ Reads and returns a number datum from
- @scheme[s] (see @secref["parse-number"]), returning @scheme[#f] if
- @scheme[s] does not parse exactly as a number datum (with no
- whitespace). The optional @scheme[radix] argument specifies the default
- base for the number, which can be overriden by @litchar{#b},
- @litchar{#o}, @litchar{#d}, or @litchar{#x} in the string.
+@defproc[(string->number [s string?] [radix (integer-in 2 16) 10]) 
+         (or/c number? false/c)]{
+
+Reads and returns a number datum from @scheme[s] (see
+@secref["parse-number"]), returning @scheme[#f] if @scheme[s] does not
+parse exactly as a number datum (with no whitespace). The optional
+@scheme[radix] argument specifies the default base for the number,
+which can be overriden by @litchar{#b}, @litchar{#o}, @litchar{#d}, or
+@litchar{#x} in the string.
 
 @examples[(string->number "3.0+2.5i") (string->number "hello")
           (string->number "111" 7)  (string->number "#b111" 7)]

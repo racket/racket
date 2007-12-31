@@ -76,6 +76,12 @@ where @schememodname[scheme] includes all of
              #:location "Principles and Practice of Parallel Programming"
              #:date "1990")
 
+ (bib-entry #:key "L'Ecuyer02"
+            #:author "Pierre L'Ecuyer, Richard Simard, E. Jack Chen, and W. David Kelton"
+            #:title "An Object-Oriented Random-Number Package With Many Long Streams and Substreams"
+            #:location "Operations Research, 50(6)"
+            #:date "2002")
+
   (bib-entry #:key "Queinnec91"
              #:author "Queinnec and Serpette"
              #:title "A Dynamic Extent Control Operator for Partial Continuations"

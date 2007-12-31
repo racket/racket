@@ -477,7 +477,7 @@ import sources.}
 @defproc[(make-require-transformer [proc ((syntax?) . ->* . ((listof import?) (listof import-source?)))])
          require-transformer?]{
 
-Creates a @tech{require transformer} (i.e., a structure with the
+Creates a @deftech{require transformer} (i.e., a structure with the
 @scheme[prop:require-transformer] property) using the given procedure
 as the transformer.}
 

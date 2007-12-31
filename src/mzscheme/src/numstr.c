@@ -52,6 +52,7 @@ static Scheme_Object *current_sched_pseudo_random_generator(int argc, Scheme_Obj
 static Scheme_Object *pseudo_random_generator_p(int argc, Scheme_Object **argv);
 static Scheme_Object *sch_unpack(int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_pack(int argc, Scheme_Object *argv[]);
+static Scheme_Object *sch_pack_bang(int argc, Scheme_Object *argv[]);
 
 static char *number_to_allocated_string(int radix, Scheme_Object *obj, int alloc);
 
@@ -114,7 +115,7 @@ void scheme_init_numstr(Scheme_Env *env)
   scheme_add_global_constant("random", 
 			     scheme_make_prim_w_arity(sch_random,
 						      "random",
-						      0, 1),
+						      0, 2),
 			     env);
   scheme_add_global_constant("random-seed", 
 			     scheme_make_prim_w_arity(random_seed,
@@ -130,6 +131,11 @@ void scheme_init_numstr(Scheme_Env *env)
 			     scheme_make_prim_w_arity(sch_pack,
 						      "vector->pseudo-random-generator", 
 						      1, 1), 
+			     env);
+  scheme_add_global_constant("vector->pseudo-random-generator!",
+			     scheme_make_prim_w_arity(sch_pack_bang,
+						      "vector->pseudo-random-generator!", 
+						      2, 2), 
 			     env);
   scheme_add_global_constant("pseudo-random-generator->vector",
 			     scheme_make_prim_w_arity(sch_unpack,
@@ -2047,21 +2053,44 @@ sch_random(int argc, Scheme_Object *argv[])
     rand_state = scheme_get_param(scheme_current_config(), MZCONFIG_RANDOM_STATE);
     v = sch_double_rand((Scheme_Random_State *)rand_state);
     return scheme_make_double(v);
+  } else if ((argc == 1)
+             && SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_random_state_type)) {
+    double v;
+    Scheme_Object *rand_state;
+    
+    rand_state = argv[0];
+    v = sch_double_rand((Scheme_Random_State *)rand_state);
+    return scheme_make_double(v);
   } else {
     unsigned long i, v;
     Scheme_Object *o, *rand_state;
 
     o = argv[0];
     if (scheme_get_unsigned_int_val(o,  &i)) {
-      if (i > 2147483647)
+      if (i > 4294967087UL)
 	i = 0;
     } else
       i = 0;
     
-    if (!i)
-      scheme_wrong_type("random", "exact integer in [1, 2147483647]", 0, argc, argv);
-    
-    rand_state = scheme_get_param(scheme_current_config(), MZCONFIG_RANDOM_STATE);
+    if (!i) {
+      scheme_wrong_type("random", 
+                        ((argc == 1)
+                         ? "exact integer in [1, 4294967087] or pseudo-random-generator"
+                         : "exact integer in [1, 4294967087]"), 
+                        0, argc, argv);
+      return NULL;
+    }
+
+    if (argc == 2) {
+      rand_state = argv[1];
+      if (!SAME_TYPE(SCHEME_TYPE(rand_state), scheme_random_state_type)) {
+        scheme_wrong_type("random", "pseudo-random-generator", 1, argc, argv);
+        return NULL;
+      }
+    } else {
+      rand_state = scheme_get_param(scheme_current_config(), MZCONFIG_RANDOM_STATE);
+    }
+
     v = sch_int_rand(i, (Scheme_Random_State *)rand_state);
     
     return scheme_make_integer_value_from_unsigned(v);
@@ -2069,22 +2098,54 @@ sch_random(int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-sch_pack(int argc, Scheme_Object *argv[])
+do_pack(const char *name, int argc, Scheme_Object *argv[], int set)
 {
   Scheme_Object *s;
+  GC_CAN_IGNORE Scheme_Random_State rs;
 
-  if (SCHEME_VECTORP(argv[0]))
-    s = pack_rand_state(argv[0]);
+  if (set) {
+    s = argv[0];
+    if (!SAME_TYPE(SCHEME_TYPE(s), scheme_random_state_type)) {
+      scheme_wrong_type(name, "pseudo-random-generator", 0, argc, argv);
+    }
+  }
+
+  if (SCHEME_VECTORP(argv[set]))
+    s = pack_rand_state(argv[set], (set ? &rs : NULL));
   else
     s = NULL;
 
   if (!s)
-    scheme_wrong_type("vector->pseudo-random-generator",
+    scheme_wrong_type(name,
 		      "vector of six elements, three in [0, 4294967086] and three in [0, 4294944442], "
 		      "at least one non-zero in each set of three",
-		      0, argc, argv);
+		      set, argc, argv);
 
-  return s;
+  if (set) {
+    s = argv[0];
+    ((Scheme_Random_State *)s)->x10 = rs.x10;
+    ((Scheme_Random_State *)s)->x11 = rs.x11;
+    ((Scheme_Random_State *)s)->x12 = rs.x12;
+    ((Scheme_Random_State *)s)->x20 = rs.x20;
+    ((Scheme_Random_State *)s)->x21 = rs.x21;
+    ((Scheme_Random_State *)s)->x22 = rs.x22;
+
+    return scheme_void;
+  } else {
+    return s;
+  }
+}
+
+static Scheme_Object *
+sch_pack(int argc, Scheme_Object *argv[])
+{
+  return do_pack("vector->pseudo-random-generator", argc, argv, 0);
+}
+
+static Scheme_Object *
+sch_pack_bang(int argc, Scheme_Object *argv[])
+{
+  return do_pack("vector->pseudo-random-generator!", argc, argv, 1);
 }
 
 static Scheme_Object *

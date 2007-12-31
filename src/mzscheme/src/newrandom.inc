@@ -75,13 +75,13 @@ static double mrg32k3a(Scheme_Random_State *s) { /* (double), in {0..m1-1} */
 
 /**************************************************/
 
-static Scheme_Object *pack_rand_state(Scheme_Object *vec)
+static Scheme_Object *pack_rand_state(Scheme_Object *vec, Scheme_Random_State *s)
 {
-  Scheme_Random_State *s;
+  if (!s) {
+    s = (Scheme_Random_State *)scheme_malloc_atomic_tagged(sizeof(Scheme_Random_State));
+    s->so.type = scheme_random_state_type;
 
-  s = (Scheme_Random_State *)scheme_malloc_atomic_tagged(sizeof(Scheme_Random_State));
-  s->so.type = scheme_random_state_type;
-
+  }
 #define REF(r, i, top) \
   { \
     unsigned long l; \
@@ -196,7 +196,7 @@ static void sch_srand(unsigned int x, Scheme_Random_State *s)
 
 /**************************************************/
 
-static long sch_int_rand(long n, Scheme_Random_State *rs)
+static unsigned long sch_int_rand(unsigned long n, Scheme_Random_State *rs)
 {
   double  x, q, qn, xq;
 
@@ -209,7 +209,7 @@ static long sch_int_rand(long n, Scheme_Random_State *rs)
   xq = x / q;
 
   /* return result */
-  return (long)xq;
+  return (unsigned long)xq;
 }
 
 static double sch_double_rand(Scheme_Random_State *rs)
