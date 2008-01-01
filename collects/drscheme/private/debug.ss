@@ -64,6 +64,16 @@ profile todo:
     
     (define (get-cm-key) cm-key)
     
+    ;; cms->srclocs : continuation-marks -> (listof srcloc)
+    (define (cms->srclocs cms)
+      (map 
+       (λ (x) (make-srcloc (list-ref x 0)
+                           (list-ref x 1)
+                           (list-ref x 2)
+                           (list-ref x 3)
+                           (list-ref x 4)))
+       (continuation-mark-set->list cms cm-key)))
+    
     ;; error-delta : (instanceof style-delta%)
     (define error-delta (make-object style-delta% 'change-style 'italic))
     (send error-delta set-delta-foreground (make-object color% 255 0 0))
@@ -271,9 +281,7 @@ profile todo:
       (let ([cms
              (and (exn? exn) 
                   (continuation-mark-set? (exn-continuation-marks exn))
-                  (continuation-mark-set->list 
-                   (exn-continuation-marks exn)
-                   cm-key))])
+                  (cms->srclocs (exn-continuation-marks exn)))])
         (when (and cms
                    (pair? cms))
           (print-bug-to-stderr msg cms))
@@ -290,16 +298,7 @@ profile todo:
           ;; don't get erased if this output were to happen after the insertion
           (flush-output (current-error-port))
           
-          (highlight-errors srcs-to-display
-                            (and cms
-                                 (filter 
-                                  (λ (x)
-                                    (and (pair? x)
-                                         (is-a? (car x) text:basic<%>)
-                                         (pair? (cdr x))
-                                         (number? (cadr x))
-                                         (number? (cddr x))))
-                                  cms))))))
+          (highlight-errors srcs-to-display cms))))
     
     ;; display-srcloc-in-error : src-loc -> void
     ;; prints out the src location information for src-to-display
@@ -334,7 +333,7 @@ profile todo:
                (fprintf (current-error-port) "::~a" pos)]))
           (display ": " (current-error-port)))))
     
-    ;; find-src-to-display : exn (union #f (listof (list* <src> number number)))
+    ;; find-src-to-display : exn (union #f (listof srcloc))
     ;;                    -> (listof srclocs)
     ;; finds the source location to display, choosing between
     ;; the stack trace and the exception record.
@@ -351,13 +350,7 @@ profile todo:
           [(and (exn:srclocs? exn)
                 (ormap has-info? ((exn:srclocs-accessor exn) exn)))
            ((exn:srclocs-accessor exn) exn)]
-          [(pair? cms)
-           (let ([fst (car cms)])
-             (list (make-srcloc (car fst)
-                                #f
-                                #f
-                                (cadr fst)
-                                (cddr fst))))]
+          [(pair? cms) (list (car cms))]
           [else '()])))
     
     
@@ -431,10 +424,12 @@ profile todo:
                        (syntax-source src-stx)]
                       [else #f])]
             [position (or (syntax-position src-stx) 0)]
-            [span (or (syntax-span src-stx) 0)])
+            [span (or (syntax-span src-stx) 0)]
+            [line (or (syntax-line src-stx) 0)]
+            [column (or (syntax-column src-stx) 0)])
         (if source
             (with-syntax ([expr expr]
-                          [mark (list* source position span)]
+                          [mark (list source line column position span)]
                           [cm-key cm-key])
               (syntax
                (with-continuation-mark 'cm-key
@@ -489,7 +484,7 @@ profile todo:
         (super-new)))
     
     ;; show-backtrace-window : string
-    ;;                         (listof mark?)
+    ;;                         (listof srcloc?)
     ;;                         -> 
     ;;                         void
     (define (show-backtrace-window error-text dis)
@@ -580,14 +575,16 @@ profile todo:
     ;;              void 
     ;; shows one frame of the continuation
     (define (show-frame editor-canvas text di)
-      (let* ([debug-source (car di)]
-             [start (cadr di)]
-             [span (cddr di)]
+      (let* ([debug-source (srcloc-source di)]
+             [line (srcloc-line di)]
+             [column (srcloc-column di)]
+             [start (srcloc-position di)]
+             [span (srcloc-span di)]
              [fn (get-filename debug-source)]
              [start-pos (send text last-position)])
         
         ;; make hyper link to the file
-        (send text insert (format "~a: ~a-~a" fn start (+ start span)))
+        (send text insert (format "~a: ~a:~a" fn line column))
         (let ([end-pos (send text last-position)])
           (send text insert " ")
           (send text change-style 

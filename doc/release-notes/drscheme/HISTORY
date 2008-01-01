@@ -4,6 +4,9 @@
 
   . renamed the get-special-menu method to get-insert-menu
 
+  . drscheme:debug:show-backtrace-window
+    now accepts srcloc structures.
+
 ------------------------------
         Version 372
 ------------------------------

@@ -653,8 +653,8 @@ module browser threading seems wrong.
                   (send dc set-pen old-pen)))))
           
           (define/private (draw-arrow dc dx dy pt1 pt2)
-            (let-values ([(x1 y1) (find-poss (car pt1) (cadr pt1) (+ (cadr pt1) 1))]
-                         [(x2 y2) (find-poss (car pt2) (cadr pt2) (+ (cadr pt2) 1))])
+            (let-values ([(x1 y1) (find-poss (srcloc-source pt1) (- (srcloc-position pt1) 1) (srcloc-position pt1))]
+                         [(x2 y2) (find-poss (srcloc-source pt2) (- (srcloc-position pt2) 1) (srcloc-position pt2))])
               (drscheme:arrow:draw-arrow dc x1 y1 x2 y2 dx dy)))
           
           (inherit dc-location-to-editor-location)
@@ -677,7 +677,7 @@ module browser threading seems wrong.
             (set! error-arrows arrows)
             (invalidate-bitmap-cache))
           
-          (field [error-arrows #f])
+          (define error-arrows #f)
           
           (super-new)
           

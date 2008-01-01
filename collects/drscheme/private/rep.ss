@@ -33,6 +33,8 @@ TODO
            (lib "default-lexer.ss" "syntax-color"))
   
   (provide rep@)
+
+  (define-struct unsaved-editor (editor))
   
   (define-syntax stacktrace-name (string->uninterned-symbol "this-is-the-funny-name"))
   
@@ -234,9 +236,7 @@ TODO
             (parameterize ([current-eventspace drscheme:init:system-eventspace])
               (queue-callback
                (λ ()
-                 (send rep highlight-errors
-                       src-locs 
-                       (filter (λ (x) (is-a? (car x) text%)) stack)))))))))
+                 (send rep highlight-errors src-locs stack))))))))
     
     (define (main-user-eventspace-thread?)
       (let ([rep (current-rep)])
@@ -725,8 +725,6 @@ TODO
         
         ;; error-ranges : (union false? (cons (list file number number) (listof (list file number number))))
         (define error-ranges #f)
-        ;; error-arrows : (union #f (listof (cons editor<%> number)))
-        (define error-arrows #f)
         (define/public (get-error-ranges) error-ranges)
         (define internal-reset-callback void)
         (define internal-reset-error-arrows-callback void)
@@ -749,21 +747,32 @@ TODO
         
         ;; =Kernel= =handler=
         ;; highlight-errors :    (listof srcloc)
-        ;;                       (union #f (listof (list (is-a?/c text:basic<%>) number number)))
+        ;;                       (union #f (listof srcloc))
         ;;                    -> (void)
-        (define/public (highlight-errors raw-locs error-arrows)
-          (let ([locs (filter (λ (loc) (and (is-a? (srcloc-source loc) text:basic<%>)
-                                            (number? (srcloc-position loc))
-                                            (number? (srcloc-span loc))))
-                              (map (λ (srcloc)
-                                     (if (send definitions-text port-name-matches? (srcloc-source srcloc))
-                                         (make-srcloc definitions-text
-                                                      (srcloc-line srcloc)
-                                                      (srcloc-column srcloc)
-                                                      (srcloc-position srcloc)
-                                                      (srcloc-span srcloc))
-                                         srcloc))
-                                   raw-locs))])
+        (define/public (highlight-errors raw-locs raw-error-arrows)
+          (let* ([cleanup-locs
+                  (λ (locs)
+                    (filter (λ (loc) (and (is-a? (srcloc-source loc) text:basic<%>)
+                                          (number? (srcloc-position loc))
+                                          (number? (srcloc-span loc))))
+                            (map (λ (srcloc)
+                                   (cond
+                                     [(send definitions-text port-name-matches? (srcloc-source srcloc))
+                                      (make-srcloc definitions-text
+                                                   (srcloc-line srcloc)
+                                                   (srcloc-column srcloc)
+                                                   (srcloc-position srcloc)
+                                                   (srcloc-span srcloc))]
+                                     [(unsaved-editor? (srcloc-source srcloc))
+                                      (make-srcloc (unsaved-editor-editor (srcloc-source srcloc))
+                                                   (srcloc-line srcloc)
+                                                   (srcloc-column srcloc)
+                                                   (srcloc-position srcloc)
+                                                   (srcloc-span srcloc))]
+                                     [else srcloc]))
+                                 locs)))]
+                 [locs (cleanup-locs raw-locs)]
+                 [error-arrows (and raw-error-arrows (cleanup-locs raw-error-arrows))])
             (reset-highlighting)
             
             (set! error-ranges locs)
@@ -784,8 +793,7 @@ TODO
                   (let ([filtered-arrows
                          (remove-duplicate-error-arrows
                           (filter
-                           (λ (arr)
-                             (embedded-in? (car arr) definitions-text))
+                           (λ (arr) (embedded-in? (srcloc-source arr) definitions-text))
                            error-arrows))])
                     (send definitions-text set-error-arrows filtered-arrows)))
                 

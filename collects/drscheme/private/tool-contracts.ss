@@ -353,7 +353,7 @@
   
   (drscheme:debug:show-backtrace-window
    (string?
-    (listof any/c)
+    (listof srcloc?)
     . -> .
     void?)
    (error-message dis)
@@ -372,10 +372,8 @@
    "Returns a key used with \\scheme|contination-mark-set->list|."
    "The contination mark set attached to an exception record"
    "for the user's program may use this mark. If it does,"
-   "each mark on the continuation is the same type as"
-   "the input to"
-   "@flink drscheme:debug:open-and-highlight-in-file %"
-   ".")
+   "each mark on the continuation is a list of the fields"
+   "of a srcloc object.")
   
   ;                           
   ;                           
