@@ -1962,15 +1962,38 @@
                         (bell))
                       #f)]
                    [found
-                    (λ (edit first-pos)
+                    (λ (text first-pos)
                       (let ([last-pos ((if (eq? searching-direction 'forward) + -)
                                        first-pos (string-length string))])
-                        (send* edit 
-                          (set-caret-owner #f 'display)
-                          (set-position
-                           (min first-pos last-pos)
-                           (max first-pos last-pos)
-                           #f #t 'local))
+                        (send text begin-edit-sequence)
+                        (send text set-caret-owner #f 'display)
+                        (send text set-position
+                              (min first-pos last-pos)
+                              (max first-pos last-pos)
+                              #f #f 'local)
+                        
+                        
+                        ;; scroll to the middle if the search result isn't already visible
+                        (let ([search-result-line (send text position-line (send text get-start-position))]
+                              [bt (box 0)]
+                              [bb (box 0)])
+                          (send text get-visible-line-range bt bb #f)
+                          (unless (<= (unbox bt) search-result-line (unbox bb))
+                            (let* ([half (sub1 (quotient (- (unbox bb) (unbox bt)) 2))]
+                                   [last-pos (send text position-line (send text last-position))]
+                                   [top-pos (send text line-start-position 
+                                                  (max (min (- search-result-line half) last-pos) 0))]
+                                   [bottom-pos (send text line-start-position 
+                                                     (max 0
+                                                          (min (+ search-result-line half)
+                                                               last-pos)))])
+                              (send text scroll-to-position 
+                                    top-pos
+                                    #f
+                                    bottom-pos))))
+                        
+                        (send text end-edit-sequence)
+                        
                         #t))])
               (if (string=? string "")
                   (not-found top-searching-edit #t)
