@@ -1462,7 +1462,7 @@ module browser threading seems wrong.
                          (cons tabs-panel l))]))))
         
         (define/private (update-tab-label tab)
-          (let ([label (get-defs-tab-label (send tab get-defs) tab)])
+          (let ([label (gui-utils:trim-string (get-defs-tab-label (send tab get-defs) tab) 200)])
             (unless (equal? label (send tabs-panel get-item-label (send tab get-i)))
               (send tabs-panel set-item-label (send tab get-i) label))))
         
@@ -2177,9 +2177,12 @@ module browser threading seems wrong.
                    [ints (make-object (drscheme:get/extend:get-interactions-text) new-tab)])
               (send new-tab set-ints ints)
               (set! tabs (append tabs (list new-tab)))
-              (send tabs-panel append (if filename
-                                          (get-tab-label-from-filename filename)
-                                          (get-defs-tab-label defs #f)))
+              (send tabs-panel append 
+                    (gui-utils:trim-string
+                     (if filename
+                         (get-tab-label-from-filename filename)
+                         (get-defs-tab-label defs #f))
+                     200))
               (init-definitions-text new-tab)
               (when filename (send defs load-file filename))
               (change-to-nth-tab (- (send tabs-panel get-number) 1))
@@ -3266,6 +3269,8 @@ module browser threading seems wrong.
                     (send definitions-canvas focus)))))
         
         (set! name-message (new drs-name-message% [parent name-panel]))
+        (send name-message stretchable-width #t)
+        (send name-message set-allow-shrinking 200)
         [define teachpack-items null]
         [define break-button (void)]
         [define execute-button (void)]
