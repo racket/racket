@@ -8,7 +8,7 @@
   
   ;; syntax:
   (provide (rename-out
-            [intermediate-define define]
+            [intermediate-lambda-define define]
             [intermediate-define-struct define-struct]
             [intermediate-lambda lambda]
             [advanced-app #%app]

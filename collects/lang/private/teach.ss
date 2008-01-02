@@ -143,18 +143,21 @@
 			      
 			      intermediate-define
 			      intermediate-define-struct
+                              intermediate-pre-lambda
 			      intermediate-local
 			      intermediate-letrec
 			      intermediate-let
 			      intermediate-let*
 			      intermediate-recur
-			      intermediate-lambda
 			      intermediate-app
 			      intermediate-quote
 			      intermediate-quasiquote
 			      intermediate-unquote
 			      intermediate-unquote-splicing
 			      intermediate-time
+
+                              intermediate-lambda-define
+			      intermediate-lambda
 
 			      advanced-define
 			      advanced-lambda
@@ -408,7 +411,7 @@
     ;; define (beginner)
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    (define (define/proc first-order? assign? stx)
+    (define (define/proc first-order? assign? stx lambda-stx)
 
       (define (wrap-func-definition name argc k)
 	(wrap-func-definitions first-order? 
@@ -440,7 +443,8 @@
 	 (identifier/non-kw? (syntax name))
 	 (let ([lam (syntax expr)])
 	   (check-defined-lambda lam)
-	   (syntax-case (syntax expr) (beginner-lambda)
+	   (syntax-case* (syntax expr) (beginner-lambda) (lambda (a b)
+                                                           (module-identifier=? a lambda-stx))
 	     ;; Well-formed lambda def:
 	     [(beginner-lambda arg-seq lexpr ...)
               (begin
@@ -573,10 +577,14 @@
 	 (bad-use-error 'define stx)]))
 
     (define (beginner-define/proc stx)
-      (define/proc #t #f stx))
+      (define/proc #t #f stx #'beginner-lambda))
 
     (define (intermediate-define/proc stx)
-      (define/proc #f #f stx))
+      (define/proc #f #f stx #'intermediate-pre-lambda))
+
+    (define (intermediate-lambda-define/proc stx)
+      ;; no special treatment of intermediate-lambda:
+      (define/proc #f #f stx #'beginner-lambda))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; lambda (beginner; only works with define)
@@ -593,10 +601,12 @@
 	[_else
 	 (bad-use-error 'lambda stx)]))
 
+    (define (intermediate-pre-lambda/proc stx)
+      (beginner-lambda/proc stx))
 
     (define (check-defined-lambda lam)
-      (syntax-case lam (beginner-lambda)
-	[(beginner-lambda arg-seq lexpr ...)
+      (syntax-case lam (intermediate-pre-lambda)
+	[(intermediate-pre-lambda arg-seq lexpr ...)
 	 (syntax-case (syntax arg-seq) () [(arg ...) #t][_else #f])
 	 (let ([args (syntax->list (syntax arg-seq))])
 	   (for-each (lambda (arg)
@@ -628,7 +638,7 @@
 				     args)
 	   'ok)]
 	;; Bad lambda because bad args:
-	[(beginner-lambda args . _)
+	[(intermediate-pre-lambda args . _)
 	 (teach-syntax-error
 	  'lambda
 	  lam
@@ -636,7 +646,7 @@
 	  "expected a sequence of function arguments after `lambda', but found ~a"
 	  (something-else (syntax args)))]
 	;; Bad lambda, no args:
-	[(beginner-lambda)
+	[(intermediate-pre-lambda)
 	 (teach-syntax-error
 	  'lambda
 	  lam
@@ -1507,20 +1517,20 @@
 	       'comes-from-let*))]
 	   [_else (bad-let-form 'let* stx stx)]))))
 
-    ;; Helper function: allows `beginner-lambda' instead
+    ;; Helper function: allows `intermediate-pre-lambda' instead
     ;; of rejecting it:
     (define (allow-local-lambda stx)
-      (syntax-case stx (beginner-lambda)
-	[(beginner-lambda . rest)
+      (syntax-case stx (intermediate-pre-lambda)
+	[(intermediate-pre-lambda . rest)
 	 (begin
 	   (check-defined-lambda stx)
 	   ;; pattern-match again to pull out the formals:
 	   (syntax-case stx ()
 	     [(_ formals . rest)
 	      (quasisyntax/loc stx (lambda formals #,(stepper-syntax-property
-                                                    #`make-lambda-generative
-                                                    'stepper-skip-completely
-                                                    #t) 
+                                                      #`make-lambda-generative
+                                                      'stepper-skip-completely
+                                                      #t)
                                      . rest))]))]
 	[_else stx]))
 

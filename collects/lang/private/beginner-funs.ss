@@ -273,9 +273,6 @@
     
       (list (any ... -> (listof any)) "to construct a list of its arguments")
 
-      (list (any ... (listof any) -> (listof any)) 
-	"to construct a list of its arguments, building on the last argument")
-
       ((beginner-list* list*) (any ... (listof any) -> (listof any)) 
        "to construct a list by adding multiple items to a list")
 

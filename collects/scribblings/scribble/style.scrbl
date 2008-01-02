@@ -19,6 +19,14 @@ typeset a library or language name is called @scheme[schememodname]).
 Do not call an identifier (i.e., a syntactic element) a ``variable''
 or a ``symbol.''
 
+Avoid cut-and-paste for descriptive text. If two functions are
+similar, consider documenting them together with
+@scheme[deftogether]. To abstract a description, consider using
+explicit prose abstraction, such as ``@scheme[x] is like @scheme[@y],
+except that ...,'' instead of abstracting the source and instantiating
+it multiple times; often, a prose abstraction is clearer to the reader
+than a hidden abstraction in the document implementation.
+
 Use @schemeidfont{id} or a name that ends @schemeidfont{-id} in
 @scheme[defform] to mean an identifier, not @schemeidfont{identifier},
 @schemeidfont{variable}, @schemeidfont{name}, or
@@ -69,10 +77,13 @@ specific sequence of characters.
 Refrain from referring to documentation ``above'' or ``below,'' and
 instead have a hyperlink point to the right place.
 
-Use American style for quotation marks and punctuation at the end of
-quotation marks (i.e., a sentence-terminating period goes inside the
-quotation marks). Of course, this rule does not apply for quotation
-marks that are part of code.
+In prose, use @litchar{``} and @litchar{''} quotation marks instead of
+@litchar{"}. Use @litchar{---} for an em-dash, and do not include
+spaces on either side, though it will typeset as an en-dash and spaces
+in HTML output. Use American style for quotation marks and punctuation
+at the end of quotation marks (i.e., a sentence-terminating period
+goes inside the quotation marks). Of course, this rule does not apply
+for quotation marks that are part of code.
 
 Do not use a citation reference (as created by @scheme[cite]) as a
-noun. Use it as an annotation.
+noun; use it as an annotation.

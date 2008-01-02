@@ -222,6 +222,7 @@
   
   (provide schemeblock SCHEMEBLOCK schemeblock/form
            schemeblock0 SCHEMEBLOCK0 schemeblock0/form
+           schemeblockelem
            schemeinput
            schememod
            scheme SCHEME scheme/form schemeresult schemeid schememodname
@@ -442,7 +443,9 @@
 
   (provide declare-exporting
            deftogether
-           defproc defproc* defstruct defthing defthing* defparam defparam* defboolparam
+           defproc defproc* defstruct 
+           defthing defthing* defthing/proc
+           defparam defparam* defboolparam
            defform defform* defform/subs defform*/subs defform/none
            defidform
            specform specform/subs 
@@ -761,6 +764,10 @@
   (define-syntax svar
     (syntax-rules ()
       [(_ id) (*var 'id)]))
+
+  (define (defthing/proc id contract descs)
+    (*defthing (list id) (list (syntax-e id)) #f (list contract)
+               (lambda () descs)))
 
   (define (into-blockquote s)
     (cond
