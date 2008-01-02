@@ -18,7 +18,7 @@ differences from v3:
          "private/contract-basic-opters.ss")
 
 (provide 
- opt/c define-opt/c ;(all-from "private/contract-opt.ss")
+ opt/c define-opt/c ;(all-from-out "private/contract-opt.ss")
  (except-out (all-from-out "private/contract-ds.ss")
              lazy-depth-to-look)
  

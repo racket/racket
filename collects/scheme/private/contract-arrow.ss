@@ -6,18 +6,16 @@ v4 done:
 
 - added mandatory keywords to ->
 - rewrote ->* using new notation
+- rewrote ->d using new notation
+- rewrote case->
 
 v4 todo:
-
-- rewrite ->d
-  - to test:
-    ->d first-order
-
-- rewrite case->
 
 - rewrite object-contract to use new function combinators.
 
 - remove opt-> opt->* ->pp ->pp-rest ->r ->d*
+
+- remove extra checks from contract-arr-checks.ss (after object-contract is done).
 
 - change mzlib/contract to rewrite into scheme/contract (maybe?)
 
@@ -40,6 +38,7 @@ v4 todo:
 (provide ->
          ->*
          ->d
+         case->
          unconstrained-domain->
          the-unsupplied-arg)
 
@@ -974,3 +973,173 @@ v4 todo:
                               (list))))))
    (first-order-prop (λ (ctc) (λ (x) #f)))
    (stronger-prop (λ (this that) (eq? this that)))))
+
+
+;                                               
+;                                               
+;                                               
+;                                               
+;                                        ;      
+;    ;;;;; ;;;;;;;   ;;;;;   ;;;         ;;;    
+;   ;;;;;; ;;;;;;;; ;;;;;;  ;;;;;         ;;;;  
+;  ;;;;;;;     ;;;; ;;;;   ;;;; ;;          ;;; 
+;  ;;;;     ;;;;;;;  ;;;;  ;;;;;;; ;;;;;    ;;; 
+;  ;;;;;;; ;;  ;;;;   ;;;; ;;;;;   ;;;;;  ;;;;  
+;   ;;;;;; ;;;;;;;; ;;;;;;  ;;;;;;       ;;;    
+;    ;;;;;  ;; ;;;; ;;;;;    ;;;;        ;      
+;                                               
+;                                               
+;                                               
+
+
+(define-for-syntax (parse-rng stx rng)
+  (syntax-case rng (any values)
+    [any #f]
+    [(values x ...) #'(x ...)]
+    [x #'(x)]))
+
+(define-for-syntax (separate-out-doms/rst/rng stx case)
+  (syntax-case case (->)
+    [(-> doms ... #:rest rst rng)
+     (values #'(doms ...) #'rst (parse-rng stx #'rng))]
+    [(-> doms ... rng)
+     (values #'(doms ...) #f (parse-rng stx #'rng))]
+    [(x y ...)
+     (raise-syntax-error #f "expected ->" stx #'x)]
+    [_
+     (raise-syntax-error #f "expected ->" stx case)]))
+
+(define-for-syntax (parse-out-case stx case)
+  (let-values ([(doms rst rng) (separate-out-doms/rst/rng stx case)])
+    (with-syntax ([(dom-proj-x  ...) (generate-temporaries doms)]
+                  [(rst-proj-x) (generate-temporaries '(rest-proj-x))]
+                  [(rng-proj-x ...) (generate-temporaries (if rng rng '()))])
+      (with-syntax ([(dom-formals ...) (generate-temporaries doms)]
+                    [(rst-formal) (generate-temporaries '(rest-param))]
+                    [(rng-id ...) (if rng
+                                      (generate-temporaries rng)
+                                      '())])
+        #`(#,doms
+           #,rst
+           #,(if rng #`(list #,@rng) #f)
+           #,(length (syntax->list doms)) ;; spec
+           (dom-proj-x ... #,@(if rst #'(rst-proj-x) #'()))
+           (rng-proj-x ...)
+           (dom-formals ... . #,(if rst #'rst-formal '()))
+           #,(cond
+               [rng
+                (with-syntax ([(rng-exp ...) #'((rng-proj-x rng-id) ...)])
+                  (with-syntax ([rng (if (= 1 (length (syntax->list #'(rng-exp ...))))
+                                         (car (syntax->list #'(rng-exp ...)))
+                                         #`(values rng-exp ...))])
+                    (if rst
+                        #`(let-values ([(rng-id ...) (apply f (dom-proj-x dom-formals) ... (rst-proj-x rst-formal))])
+                            rng)
+                        #`(let-values ([(rng-id ...) (f (dom-proj-x dom-formals) ...)])
+                            rng))))]
+               [rst
+                #`(apply f (dom-proj-x dom-formals) ... (rst-proj-x rst-formal))]
+               [else
+                #`(f (dom-proj-x dom-formals) ...)]))))))
+
+(define-syntax (case-> stx)
+  (syntax-case stx ()
+    [(_ cases ...)
+     (begin 
+       (with-syntax ([(((dom-proj ...)
+                        rst-proj
+                        rng-proj
+                        spec
+                        (dom-proj-x ...)
+                        (rng-proj-x ...)
+                        formals
+                        body) ...)
+                      (map (λ (x) (parse-out-case stx x)) (syntax->list #'(cases ...)))])
+         #`(build-case-> (list (list dom-proj ...) ...)
+                         (list rst-proj ...)
+                         (list rng-proj ...)
+                         '(spec ...)
+                         (λ (chk
+                             #,@(apply append (map syntax->list (syntax->list #'((dom-proj-x ...) ...))))
+                             #,@(apply append (map syntax->list (syntax->list #'((rng-proj-x ...) ...)))))
+                           (λ (f)
+                             (chk f)
+                             (case-lambda
+                               [formals body] ...))))))]))
+
+;; dom-ctcs : (listof (listof contract))
+;; rst-ctcs : (listof contract)
+;; rng-ctcs : (listof (listof contract))
+;; specs : (listof (list boolean exact-positive-integer)) ;; indicates the required arities of the input functions
+;; wrapper : (->* () () (listof contract?) (-> procedure? procedure?)) -- generates a wrapper from projections
+(define-struct/prop case-> (dom-ctcs rst-ctcs rng-ctcs specs wrapper)
+  ((proj-prop
+    (λ (ctc)
+      (let* ([to-proj (λ (c) ((proj-get c) c))]
+             [dom-ctcs (map to-proj (get-case->-dom-ctcs ctc))]
+             [rng-ctcs (map to-proj (get-case->-rng-ctcs ctc))]
+             [rst-ctcs (case->-rst-ctcs ctc)]
+             [specs (case->-specs ctc)])
+        (λ (pos-blame neg-blame src-info orig-str)
+          (let ([projs (append (map (λ (f) (f neg-blame pos-blame src-info orig-str)) dom-ctcs)
+                               (map (λ (f) (f pos-blame neg-blame src-info orig-str)) rng-ctcs))]
+                [chk
+                 (λ (val) 
+                   (cond
+                     [(null? specs)
+                      (unless (procedure? val)
+                        (raise-contract-error val
+                                              src-info
+                                              pos-blame
+                                              orig-str
+                                              "expected a procedure"))]
+                     [else
+                      (for-each 
+                       (λ (dom-length has-rest?)
+                         (if has-rest?
+                             (check-procedure/more val dom-length '() '() src-info pos-blame orig-str)
+                             (check-procedure val dom-length 0 '() '() src-info pos-blame orig-str)))
+                       specs rst-ctcs)]))])
+            (apply (case->-wrapper ctc)
+                   chk
+                   projs))))))
+   (name-prop (λ (ctc) (apply
+                        build-compound-type-name
+                        'case->
+                        (map (λ (dom rst range)
+                               (apply 
+                                build-compound-type-name 
+                                '-> 
+                                (append dom
+                                        (if rst
+                                            (list '#:rest rst)
+                                            '())
+                                        (list
+                                         (cond
+                                           [(not range) 'any]
+                                           [(and (pair? range) (null? (cdr range)))
+                                            (car range)]
+                                           [else (apply build-compound-type-name 'values range)])))))
+                             (case->-dom-ctcs ctc)
+                             (case->-rst-ctcs ctc)
+                             (case->-rng-ctcs ctc)))))
+   (first-order-prop (λ (ctc) #f))
+   (stronger-prop (λ (this that) #f))))
+
+(define (build-case-> dom-ctcs rst-ctcs rng-ctcs specs wrapper)
+  (make-case-> (map (λ (l) (map (λ (x) (coerce-contract 'case-> x)) l)) dom-ctcs)
+               (map (λ (x) (and x (coerce-contract 'case-> x))) rst-ctcs)
+               (map (λ (l) (and l (map (λ (x) (coerce-contract 'case-> x)) l))) rng-ctcs)
+               specs
+               wrapper))
+  
+
+(define (get-case->-dom-ctcs ctc)
+  (apply append
+         (map (λ (doms rst) (if rst
+                                (append doms (list rst))
+                                doms))
+              (case->-dom-ctcs ctc)
+              (case->-rst-ctcs ctc))))
+
+(define (get-case->-rng-ctcs ctc) (apply append (case->-rng-ctcs ctc)))

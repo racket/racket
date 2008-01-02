@@ -1302,18 +1302,18 @@
      2)
    1)
 
-(test/spec-passed/result
- '->d28
- '(call-with-values
-   (λ ()
-     ((contract (->d ((i number?) (j (and/c number? (>=/c i)))) () rest-args any/c (values [x number?] [y number?]))
-                (λ (i j . z) (values 1 2))
-                'pos
-                'neg)
-      1
-      2))
-   list)
- '(1 2))
+  (test/spec-passed/result
+   '->d28
+   '(call-with-values
+     (λ ()
+       ((contract (->d ((i number?) (j (and/c number? (>=/c i)))) () rest-args any/c (values [x number?] [y number?]))
+                  (λ (i j . z) (values 1 2))
+                  'pos
+                  'neg)
+        1
+        2))
+     list)
+   '(1 2))
   
   (test/neg-blame
    '->d30
@@ -1321,6 +1321,46 @@
                (λ (x . rst) (values 4 5))
                'pos
                'neg)))
+  
+  (test/pos-blame
+   '->d-arity1
+   '(contract (->d ([x number?]) () any) (λ () 1) 'pos 'neg))
+  
+  (test/pos-blame
+   '->d-arity2
+   '(contract (->d ([x number?]) () any) (λ (x #:y y) 1) 'pos 'neg))
+  
+  (test/spec-passed
+   '->d-arity3
+   '(contract (->d ([x number?] #:y [y integer?]) () any) (λ (x #:y y) 1) 'pos 'neg))
+  
+  (test/pos-blame
+   '->d-arity4
+   '(contract (->d () ([x integer?]) any) (λ (x) 1) 'pos 'neg))
+  
+  (test/pos-blame
+   '->d-arity5
+   '(contract (->d () ([x integer?]) any) (λ () 1) 'pos 'neg))
+  
+  (test/spec-passed
+   '->d-arity6
+   '(contract (->d () ([x integer?]) any) (λ ([x 1]) 1) 'pos 'neg))
+  
+  (test/pos-blame
+   '->d-arity7
+   '(contract (->d () (#:x [x integer?]) any) (λ ([x 1]) 1) 'pos 'neg))
+  
+  (test/pos-blame
+   '->d-arity8
+   '(contract (->d () (#:x [x integer?]) any) (λ () 1) 'pos 'neg))
+  
+  (test/pos-blame
+   '->d-arity8
+   '(contract (->d () (#:x [x integer?]) any) (λ (#:x x) 1) 'pos 'neg))
+  
+  (test/spec-passed
+   '->d-arity10
+   '(contract (->d () (#:x [x integer?]) any) (λ (#:x [x 1]) 1) 'pos 'neg))
     
   (test/pos-blame
    '->d-pp1
@@ -1434,6 +1474,18 @@
                'neg)
      1))
 
+  (test/neg-blame
+   '->d-protect-shared-state
+   '(let ([x 1])
+      ((contract (let ([save #f]) 
+                   (-> (->d () () #:pre-cond (set! save x) [range any/c] #:post-cond (= save x))
+                       any))
+                 (λ (t) (t))
+                 'pos
+                 'neg)
+       (lambda () (set! x 2)))))
+  
+  
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;;  make sure the variables are all bound properly
@@ -1533,8 +1585,6 @@
                'pos
                'neg)))
   
-#|
-  
 ;                                               
 ;                                               
 ;                                               
@@ -1551,15 +1601,15 @@
 ;                                               
 ;                                               
 
-  
-  (test/pos-blame
+
+  (test/spec-passed
    'contract-case->0a
    '(contract (case->)
               (lambda (x) x)
               'pos
               'neg))
   
-  (test/pos-blame
+  (test/spec-passed
    'contract-case->0b
    '(contract (case->)
               (lambda () 1)
@@ -1579,6 +1629,7 @@
               (case-lambda)
               'pos
               'neg))
+  
   
   (test/pos-blame
    'contract-case->1
@@ -1636,18 +1687,19 @@
                'pos
                'neg)
      #t))
-  
+
   (test/pos-blame
    'contract-case->7
-   '((contract (case-> (integer? integer? . -> . integer?) (->* (integer?) any/c (boolean?)))
+   '((contract (case-> (integer? integer? . -> . integer?) (-> integer? #:rest any/c boolean?))
                (lambda x #\a)
                'pos
                'neg)
      1 2))
+
   
   (test/pos-blame
    'contract-case->8
-   '((contract (case-> (integer? integer? . -> . integer?) (->* (integer?) any/c (boolean?)))
+   '((contract (case-> (integer? integer? . -> . integer?) (-> integer? #:rest any/c boolean?))
                (lambda x #t)
                'pos
                'neg)
@@ -1655,47 +1707,12 @@
  
   (test/spec-passed
    'contract-case->8
-   '((contract (case-> (integer? integer? . -> . integer?) (->* (integer?) any/c (boolean?)))
+   '((contract (case-> (integer? integer? . -> . integer?) (-> integer? #:rest any/c boolean?))
                (lambda x 1)
                'pos
                'neg)
      1 2))
   
-  (test/spec-passed
-   'contract-case->9
-   '((contract (case-> (->r ([x number?]) (<=/c x)))
-               (lambda (x) (- x 1))
-               'pos
-               'neg)
-     1))
-  
-  (test/spec-passed
-   'contract-case->9b
-   '((contract (case-> (->r ([x number?]) (<=/c x)) (-> integer? integer? integer?))
-               (case-lambda 
-                 [(x) (- x 1)]
-                 [(x y) x])
-               'pos
-               'neg)
-     1))
-  
-  (test/pos-blame 
-   'contract-case->10
-   '((contract (case-> (->r ([x number?]) (<=/c x)))
-               (lambda (x) (+ x 1))
-               'pos
-               'neg)
-     1))
-  
-  (test/pos-blame 
-   'contract-case->10b
-   '((contract (case-> (->r ([x number?]) (<=/c x)) (-> number? number? number?))
-               (case-lambda
-                 [(x) (+ x 1)]
-                 [(x y) x])
-               'pos
-               'neg)
-     1))
   
   (test/spec-passed/result
    'contract-case->11
@@ -1714,37 +1731,6 @@
             (f 1)
             (f 'x (open-input-string (format "~s" "string")))))
    (list #\a #f "xstring"))
- 
-  (test/neg-blame
-   'contract-d-protect-shared-state
-   '(let ([x 1])
-      ((contract ((->d (lambda () (let ([pre-x x]) (lambda (res) (= x pre-x)))))
-                  . -> .
-                  (lambda (x) #t))
-                 (lambda (thnk) (thnk))
-                 'pos
-                 'neg)
-       (lambda () (set! x 2)))))
-  
-  #;
-  (test/neg-blame
-   'combo1
-   '(let ([cf (contract (case->
-                         ((class? . ->d . (lambda (%) (lambda (x) #f))) . -> . void?)
-                         ((class? . ->d . (lambda (%) (lambda (x) #f))) boolean? . -> . void?))
-                        (letrec ([c% (class object% (super-instantiate ()))]
-                                 [f
-                                  (case-lambda
-                                    [(class-maker) (f class-maker #t)]
-                                    [(class-maker b) 
-                                     (class-maker c%)
-                                     (void)])])
-                          f)
-                        'pos
-                        'neg)])
-      (cf (lambda (x%) 'going-to-be-bad))))   
-
-  
     
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                                                        ;;
@@ -1756,17 +1742,7 @@
   (test/well-formed '(case-> (-> integer? integer?) (-> integer? integer? integer?)))
   (test/well-formed '(case-> (-> integer? integer?) (-> integer? integer? any)))
   (test/well-formed '(case-> (-> integer? any) (-> integer? integer? any)))
-  
-  (test/well-formed '(case-> (->d (lambda x any/c)) (-> integer? integer?)))
-
-  (test/well-formed '(case-> (->* (any/c any/c) (integer?)) (-> integer? integer?)))
-  (test/well-formed '(case-> (->* (any/c any/c) any/c (integer?)) (-> integer? integer?)))
-  (test/well-formed '(case-> (->* (any/c any/c) any/c any) (-> integer? integer?)))
-  
-  (test/well-formed '(case-> (->d* (any/c any/c) (lambda x any/c)) (-> integer? integer?)))
-  (test/well-formed '(case-> (->d* (any/c any/c) any/c (lambda x any/c)) (-> integer? integer?)))
-|#
-  
+    
 ;                                                                                                                 
 ;                                                                                                                 
 ;                                                                                                                 
@@ -1812,19 +1788,18 @@
    'unconstrained-domain->4
    '((contract (unconstrained-domain-> number?) (λ (x) x) 'pos 'neg) #f))
   
-#|
   (test/spec-passed/result
    'unconstrained-domain->5
-   '((contract (->r ([size natural-number/c]
+   '((contract (->d ([size natural-number/c]
                      [proc (and/c (unconstrained-domain-> number?)
                                   (λ (p) (procedure-arity-includes? p size)))])
-                    number?)
+                    ()
+                    [range number?])
                (λ (i f) (apply f (build-list i add1)))
                'pos
                'neg)
      10 +)
    55)
-|#
   
 ;                              
 ;                              
@@ -4695,20 +4670,15 @@ so that propagation occurs.
   (test-name '(->d () () #:pre-cond ... [x ...] #:post-cond ...) (->d () () #:pre-cond #t [q number?] #:post-cond #t))
   (test-name '(->d () () [x ...] #:post-cond ...) (->d () () [q number?] #:post-cond #t))
   
-#|
-  (test-name '(case-> (->r ((x ...)) ...) (-> integer? integer? integer?))
-             (case-> (->r ((x number?)) number?) (-> integer? integer? integer?)))
-  (test-name '(->r ((x ...) (y ...) (z ...)) ...)
-             (case-> (->r ((x number?) (y boolean?) (z pair?)) number?)))
-  (test-name '(case-> (->r ((x ...) (y ...) (z ...)) ...)
-                      (-> integer? integer? integer?))
-             (case-> (->r ((x number?) (y boolean?) (z pair?)) number?)
-                     (-> integer? integer? integer?)))
   (test-name '(case->) (case->))
-  
+  (test-name '(case-> (-> integer? any) (-> boolean? boolean? any) (-> char? char? char? any))
+             (case-> (-> integer? any) (-> boolean? boolean? any) (-> char? char? char? any)))
   (test-name '(case-> (-> integer? integer?) (-> integer? integer? integer?))
              (case-> (-> integer? integer?) (-> integer? integer? integer?)))
-|#
+  (test-name '(case-> (-> integer? #:rest any/c any)) (case-> (-> integer? #:rest any/c any)))
+  (test-name '(case-> (-> integer? #:rest any/c (values boolean? char? number?))) 
+             (case-> (-> integer? #:rest any/c (values boolean? char? number?))))
+  (test-name '(case-> (-> integer? (values))) (case-> (-> integer? (values))))
   
   (test-name '(unconstrained-domain-> number?) (unconstrained-domain-> number?))
   

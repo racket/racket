@@ -426,15 +426,19 @@ argument) is visible in all of the sub-expressions of
 visible in the subexpressions of the @scheme[dep-range].
 }
 
-@;{
-@defform*/subs[#:literals (any values)
+@defform*/subs[#:literals (any values ->)
 [(case-> (-> dom-expr ... rest range) ...)]
 ([rest (code:line) (code:line #:rest rest-expr)]
- [range range-expr (values range-expr ...) any])]
-{
-case->.
+ [range range-expr (values range-expr ...) any])]{
+This contract form is designed to match
+@scheme[case-lambda]. Each argument to @scheme[case->] is a
+contract that governs a clause in the
+@scheme[case-lambda]. If the @scheme[#:rest] keyword is
+present, the corresponding clause must accept an arbitrary
+number of arguments. The @scheme[range] specification is
+just like that for @scheme[->] and @scheme[->*]. 
 }
-}
+
 
 @defform[(unconstrained-domain-> res-expr ...)]{
 
