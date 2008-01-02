@@ -1,5 +1,3 @@
-;;Kathy Gray, December 2001
-;;Abstract syntax tree for Java
 (module ast mzscheme
   
   ;Macro to allow structure definition and provision
