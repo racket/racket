@@ -454,26 +454,26 @@
 						      bcons)) ()
 			       [(mod m mz (#%mod-beg req (app call-with-values (lambda () cons) print) void))
 				(let ([s (syntax cons)])
-				  (test 'bcons syntax-e s)
+				  (test 'beginner:cons syntax-e s) ; 'was 'bcons
 				  s)]))])
   (let-values ([(real real-base) (module-path-index-split (car b))]
 	       [(nominal nominal-base) (module-path-index-split (caddr b))])
     (test '"teachprims.ss" values real)
     (test 'beginner-cons cadr b)
-    (test '(lib "lang/htdp-intermediate.ss") values nominal)
+    (test 'lang/private/beginner-funs values nominal) ; was '(lib "lang/htdp-intermediate.ss")
     (test 'cons cadddr b)))
 
 (let ([b (identifier-binding (syntax-case (expand #'(module m (lib "lang/htdp-intermediate.ss")
 						      cons)) ()
 			       [(mod m beg (#%mod-beg cons))
 				(let ([s (syntax cons)])
-				  (test 'cons syntax-e s)
+				  (test 'beginner:cons syntax-e s) ; was 'cons
 				  s)]))])
   (let-values ([(real real-base) (module-path-index-split (car b))]
 	       [(nominal nominal-base) (module-path-index-split (caddr b))])
     (test '"teachprims.ss" values real)
     (test 'beginner-cons cadr b)
-    (test '(lib "lang/htdp-intermediate.ss") values nominal)
+    (test 'lang/private/beginner-funs values nominal) ; was '(lib "lang/htdp-intermediate.ss")
     (test 'cons cadddr b)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
