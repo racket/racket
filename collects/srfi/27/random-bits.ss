@@ -132,10 +132,17 @@
                     (-> random-source? any)
                     (-> random-source? (and/c (>/c 0) (</c 1)) any))))
 
+(define mrg32k3a-initial-state ; 0 3 6 9 12 15 of A^16, see below
+  '#( 1062452522
+      2961816100 
+       342112271 
+      2854655037 
+      3321940838 
+      3542344109))
+
 (define (make-random-source)
   (let ([new (make-pseudo-random-generator)])
-    (parameterize ([current-pseudo-random-generator new])
-      (random-seed 0))
+    (vector->pseudo-random-generator! new mrg32k3a-initial-state)
     new))
 
 (define default-random-source (make-random-source))
@@ -242,14 +249,6 @@
 
 (define mrg32k3a-m1 4294967087) ; modulus of component 1
 (define mrg32k3a-m2 4294944443) ; modulus of component 2
-
-(define mrg32k3a-initial-state ; 0 3 6 9 12 15 of A^16, see below
-  '#( 1062452522
-      2961816100 
-       342112271 
-      2854655037 
-      3321940838 
-      3542344109))
 
 (define mrg32k3a-generators #f) ; computed when needed
 
