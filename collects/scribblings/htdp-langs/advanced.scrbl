@@ -294,21 +294,21 @@ The same as Intermediate's @|intm-local|, @|intm-letrec|, and
 @defidform[else]
 )]{
 
-The same as Beginner's @|beg-cond|, except that @scheme[else] can be
+The same as Beginning's @|beg-cond|, except that @scheme[else] can be
 used with @scheme[case].}
 
 
 
 @defform[(if expr expr expr)]{
 
-The same as Beginner's @|beg-if|.}
+The same as Beginning's @|beg-if|.}
 
 @deftogether[(
 @defform[(and expr expr expr ...)]
 @defform[(or expr expr expr ...)]
 )]{
 
-The same as Beginner's @|beg-and| and @|beg-or|.}
+The same as Beginning's @|beg-and| and @|beg-or|.}
 
 
 @defform[(time expr)]{
@@ -326,4 +326,4 @@ Constants for the empty list, true, and false.}
 
 @defform[(require string)]{
 
-The same as Beginner's @|beg-require|.}
+The same as Beginning's @|beg-require|.}

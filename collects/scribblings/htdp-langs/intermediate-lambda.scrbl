@@ -100,7 +100,7 @@ and whose body is @scheme[expr].}
 
 @defform/none[(expr expr expr ...)]{
 
-Like a Beginner @seclink["beginner-call"]{function call}, except that
+Like a Beginning @seclink["beginner-call"]{function call}, except that
 the function position can be an arbitrary expression---perhaps a
 @scheme[lambda] expression or a @scheme[_prim-op].}
 
@@ -146,20 +146,20 @@ and @|intm-let*|.}
 @defidform[else]
 )]{
 
-The same as Beginner's @|beg-cond|.}
+The same as Beginning's @|beg-cond|.}
 
 
 
 @defform[(if expr expr expr)]{
 
-The same as Beginner's @|beg-if|.}
+The same as Beginning's @|beg-if|.}
 
 @deftogether[(
 @defform[(and expr expr expr ...)]
 @defform[(or expr expr expr ...)]
 )]{
 
-The same as Beginner's @|beg-and| and @|beg-or|.}
+The same as Beginning's @|beg-and| and @|beg-or|.}
 
 
 @defform[(time expr)]{
@@ -177,4 +177,4 @@ Constants for the empty list, true, and false.}
 
 @defform[(require string)]{
 
-The same as Beginner's @|beg-require|.}
+The same as Beginning's @|beg-require|.}

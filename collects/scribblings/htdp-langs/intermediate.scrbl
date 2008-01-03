@@ -74,11 +74,11 @@
               (define id (lambda (id id ...) expr))]
 )]{
 Besides working in @scheme[local], definition forms are
-the same as Beginner's @|beg-define|.}
+the same as Beginning's @|beg-define|.}
 
 @defidform[lambda]{
 
-As in Beginner, @scheme[lambda] keyword can only be used with
+As in Beginning, @scheme[lambda] keyword can only be used with
 @scheme[define] in the alternative function-definition syntax.}
 
 @; ----------------------------------------------------------------------
@@ -87,7 +87,7 @@ As in Beginner, @scheme[lambda] keyword can only be used with
 
 @defform[(define-struct structid (fieldid ...))]{
 
-Besides working in @scheme[local], this form is the same as Beginner's
+Besides working in @scheme[local], this form is the same as Beginning's
 @|beg-define-struct|.}
 
 @; ----------------------------------------------------------------------
@@ -141,7 +141,7 @@ Like @scheme[let], but each @scheme[id] can be used in any subsequent
 
 @defform/none[(id expr expr ...)]{
 
-A function call in Intermediate is the same as a Beginner
+A function call in Intermediate is the same as a Beginning
 @seclink["beginner-call"]{function call}, except that it can also call
 @scheme[local]ly defined functions or functions passed as
 arguments. That is, @scheme[id] can be a function defined in
@@ -196,19 +196,19 @@ the function's body.}
 @defidform[else]
 )]{
 
-The same as Beginner's @|beg-cond|.}
+The same as Beginning's @|beg-cond|.}
 
 
 @defform[(if expr expr expr)]{
 
-The same as Beginner's @|beg-if|.}
+The same as Beginning's @|beg-if|.}
 
 @deftogether[(
 @defform[(and expr expr expr ...)]
 @defform[(or expr expr expr ...)]
 )]{
 
-The same as Beginner's @|beg-and| and @|beg-or|.}
+The same as Beginning's @|beg-and| and @|beg-or|.}
 
 @deftogether[(
 @defthing[empty empty?]
@@ -220,4 +220,4 @@ Constants for the empty list, true, and false.}
 
 @defform[(require string)]{
 
-The same as Beginner's @|beg-require|.}
+The same as Beginning's @|beg-require|.}

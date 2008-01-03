@@ -17,7 +17,7 @@
 @(bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-require)
 
 
-@title[#:style 'toc]{Beginner Student with List Abbreviations}
+@title[#:style 'toc]{Beginning Student with List Abbreviations}
 
 @declare-exporting[lang/htdp-beginner-abbr]
 
@@ -138,12 +138,12 @@ also be written with @scheme[unquote-splicing].}
 @defidform[lambda]
 )]{
 
-The same as Beginner's @|beg-define|.}
+The same as Beginning's @|beg-define|.}
 
 
 @defform[(define-struct structid (fieldid ...))]{
 
-The same as Beginner's @|beg-define-struct|.}
+The same as Beginning's @|beg-define-struct|.}
 
 
 @deftogether[(
@@ -151,18 +151,18 @@ The same as Beginner's @|beg-define-struct|.}
 @defidform[else]
 )]{
 
-The same as Beginner's @|beg-cond|.}
+The same as Beginning's @|beg-cond|.}
 
 @defform[(if expr expr expr)]{
 
-The same as Beginner's @|beg-if|.}
+The same as Beginning's @|beg-if|.}
 
 @deftogether[(
 @defform[(and expr expr expr ...)]
 @defform[(or expr expr expr ...)]
 )]{
 
-The same as Beginner's @|beg-and| and @|beg-or|.}
+The same as Beginning's @|beg-and| and @|beg-or|.}
 
 @deftogether[(
 @defthing[empty empty?]
@@ -174,4 +174,4 @@ Constants for the empty list, true, and false.}
 
 @defform[(require string)]{
 
-The same as Beginner's @|beg-require|.}
+The same as Beginning's @|beg-require|.}
