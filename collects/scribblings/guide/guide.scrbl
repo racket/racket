@@ -31,14 +31,9 @@ precise details to @|MzScheme| and other reference manuals.
 
 @include-section["modules.scrbl"]
 
+@include-section["contracts.scrbl"]
+
 @include-section["io.scrbl"]
-
-@; ----------------------------------------------------------------------
-@section[#:tag "contracts"]{Contracts}
-
-In the reference manual, the documentation for each procedure
-describes the acceptable arguments and the result of the procedure
-using @idefterm{contracts}.
 
 @; ----------------------------------------------------------------------
 @include-section["class.scrbl"]
