@@ -1358,7 +1358,7 @@ resulting trait is the same as for @scheme[trait-sum], otherwise the
 @section{Object and Class Contracts}
 
 @defform/subs[
-#:literals (field opt-> opt->* case-> -> ->* ->d ->d* ->r ->pp ->pp-rest)
+#:literals (field -> ->* ->d)
 
 (object-contract member-spec ...)
 
@@ -1367,49 +1367,42 @@ resulting trait is the same as for @scheme[trait-sum], otherwise the
   (field field-id contract-expr)]
 
  [method-contract
-   (opt-> (required-contract-expr ...)
-          (optional-contract-expr ...)
-          any)
-   (opt-> (required-contract-expr ...)
-          (optional-contract-expr ...)
-          result-contract-expr)
-   (opt->* (required-contract-expr ...)
-           (optional-contract-expr ...)
-           (result-contract-expr ...))
-   (case-> arrow-contract ...)
-   arrow-contract]
+  (-> dom ... range)
+  (->* (mandatory-dom ...)
+       (optional-dom ...)
+       rest
+       range)
+  (->d (mandatory-dependent-dom ...) 
+       (optional-dependent-dom ...) 
+       dependent-rest
+       pre-cond
+       dep-range)]
 
- [arrow-contract
-   (-> expr ... res-expr)
-   (-> expr ... (values res-expr ...))
-   (->* (expr ...) (res-expr ...))
-   (->* (expr ...) rest-expr (res-expr ...))
-   (->d expr ... res-proc-expr)
-   (->d* (expr ...) res-proc-expr)
-   (->d* (expr ...) rest-expr res-gen-expr)
-   (->r ((id expr) ...) expr)
-   (->r ((id expr) ...) id expr expr)
-   (->pp ((id expr) ...) pre-expr 
-              res-expr res-id post-expr)
-   (->pp ((id expr) ...) pre-expr any)
-   (->pp ((id expr) ...) pre-expr 
-              (values (id expr) ...) post-expr)
-   (->pp-rest ((id expr) ...) id expr pre-expr 
-              res-expr res-id post-expr)
-   (->pp-rest ((id expr) ...) id expr pre-expr any)
-   (->pp-rest ((id expr) ...) id expr pre-expr 
-              (values (id expr) ...) post-expr)])]{
+ [dom dom-expr (code:line keyword dom-expr)]
+ [range range-expr (values range-expr ...) any]
+ [mandatory-dom dom-expr (code:line keyword dom-expr)]
+ [optional-dom dom-expr (code:line keyword dom-expr)]
+ [rest (code:line) (code:line #:rest rest-expr)]
+ [mandatory-dependent-dom [id dom-expr] (code:line keyword [id dom-expr])]
+ [optional-dependent-dom [id dom-expr] (code:line keyword [id dom-expr])]
+ [dependent-rest (code:line) (code:line #:rest id rest-expr)]
+ [pre-cond (code:line) (code:line #:pre-cond boolean-expr)]
+ [dep-range any
+            (code:line [id range-expr] post-cond)
+            (code:line (values [id range-expr] ...) post-cond)]
+ [post-cond (code:line) (code:line #:post-cond boolean-expr)]
+)]{
 
 Produces a contract for an object.
 
-Each of the contracts for a method has the same semantics as the
-corresponding function contract, but the syntax of the method contract
-must be written directly in the body of the object-contract---much
-like the way that methods in class definitions use the same syntax as
-regular function definitions, but cannot be arbitrary procedures.  The
-only exception is that the @scheme[->r], @scheme[->pp], and
-@scheme[->pp-rest] contracts implicitly bind @scheme[this] to the
-object itself.}
+Each of the contracts for a method has the same semantics as
+the corresponding function contract, but the syntax of the
+method contract must be written directly in the body of the
+object-contract---much like the way that methods in class
+definitions use the same syntax as regular function
+definitions, but cannot be arbitrary procedures.  The only
+exception is that @scheme[->d] contracts implicitly bind
+@scheme[this] to the object itself.}
 
 
 @defthing[mixin-contract contract?]{

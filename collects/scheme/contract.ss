@@ -22,7 +22,11 @@ differences from v3:
  (except-out (all-from-out "private/contract-ds.ss")
              lazy-depth-to-look)
  
- (all-from-out "private/contract-arrow.ss")
+ (except-out (all-from-out "private/contract-arrow.ss") 
+             making-a-method
+             procedure-accepts-and-more?
+             check-procedure
+             check-procedure/more)
  (except-out (all-from-out "private/contract.ss")
              check-between/c
              check-unary-between/c))

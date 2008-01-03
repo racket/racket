@@ -3363,8 +3363,9 @@
   
   ;; make-wrapper-class :   symbol
   ;;                        (listof symbol)
-  ;;                        (listof (selector -> method-func-spec[object args -> result]))
+  ;;                        method-spec [depends on the boolean what it is]
   ;;                        (listof symbol)
+  ;;                        boolean
   ;;                     -> class
   ;; the resulting class is the "proxy" class for the contracted version of an
   ;; object with contracts on the method-ids. 
@@ -3379,7 +3380,7 @@
   ;; The class accepts one initialization argument per method and
   ;; one init arg per field (in that order) using the make-object style
   ;; initialization.
-  (define (make-wrapper-class class-name method-ids methods field-ids)
+  (define (make-wrapper-class class-name method-ids methods field-ids old-style?)
     (let* ([supers (vector object% #f)]
            [method-ht (make-hash-table)]
            [method-count (length method-ids)]
@@ -3403,7 +3404,9 @@
                         (list->vector (map (lambda (x) 'final) method-ids))
 			'dont-use-me!
                         
-                        (+ 1 field-count method-count)
+                        (if old-style?
+                            (+ field-count method-count 1)
+                            field-count)
                         field-ht
                         field-ids
                         
@@ -3423,7 +3426,9 @@
                     (make-struct-type 'wrapper-object
                                       struct:wrapper-object
                                       0
-                                      (+ (length field-ids) (length method-ids))
+                                      (if old-style?
+                                          (+ (length field-ids) (length method-ids))
+                                          (length field-ids))
                                       undefined
                                       (list (cons prop:object cls))
                                       insp)])
@@ -3435,11 +3440,8 @@
 
         (let ([init
                (lambda (o continue-make-super c inited? named-args leftover-args)
-                 ;; leftover args will contain:
-                 ;; the original object,
-                 ;; all of the contract-ized versions of the methods,
-                 ;; and all of the contract-ized versions of the fields
-                 ;; just fill them into `o'.
+                 ;; leftover args will contain the original object and new field values
+                 ;; fill the original object in and then fill in the fields.
                  (set-wrapper-object-wrapped! o (car leftover-args))
                  (let loop ([leftover-args (cdr leftover-args)]
                             [i 0])
@@ -3450,27 +3452,24 @@
                  (continue-make-super o c inited? '() '() '()))])
           (set-class-init! cls init))
         
-        ;; fill in the methods vector
+        ;; fill in the methods vector & methods-ht
         (let loop ([i 0]
-                   [methods methods])
-          (when (< i method-count)
-            (vector-set! methods-vec i ((car methods) field-ref))
-            (loop (+ i 1)
-                  (cdr methods))))
-        
-        ;; fill in the methods-ht
-        (let loop ([i 0]
+                   [methods methods]
                    [method-ids method-ids])
           (when (< i method-count)
+            (vector-set! methods-vec i (if old-style? 
+                                           ((car methods) field-ref)
+                                           (car methods)))
             (hash-table-put! method-ht (car method-ids) i)
             (loop (+ i 1)
+                  (cdr methods)
                   (cdr method-ids))))
         
         ;; fill in the fields-ht
         (let loop ([i 0]
                    [field-ids field-ids])
           (when (< i field-count)
-            (hash-table-put! field-ht (car field-ids) (cons cls (+ i method-count)))
+            (hash-table-put! field-ht (car field-ids) (cons cls i))
             (loop (+ i 1)
                   (cdr field-ids))))
         
@@ -3655,7 +3654,8 @@
   (provide (protect-out make-wrapper-class
                         wrapper-object-wrapped
                         extract-vtable
-                        extract-method-ht)
+                        extract-method-ht
+                        get-field/proc)
            
            (rename-out [_class class]) class* class/derived
            define-serializable-class define-serializable-class*

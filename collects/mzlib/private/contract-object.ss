@@ -338,7 +338,8 @@
                   (let ([cls (make-wrapper-class 'wrapper-class 
                                                  '(method-name ...)
                                                  (list methods ...)
-                                                 '(field-name ...))])
+                                                 '(field-name ...)
+                                                 #t)])
                     (make-proj-contract
                      `(object-contract 
                        ,(build-compound-type-name 'method-name method-ctc-var) ...

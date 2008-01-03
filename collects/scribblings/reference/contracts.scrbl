@@ -290,6 +290,12 @@ The @scheme[any] form can only be used in a result position of
 contracts like @scheme[->]. Using @scheme[any] elsewhere is a syntax
 error.}
 
+@defform[(promise/c expr)]{
+
+Constructs a contract on a promise. The contract does not force the
+promise, but when the promise is forced, the contract checks that the
+result value meets the contract produced by @scheme[expr].}
+
 @; ------------------------------------------------------------------------
 
 @section{Function Contracts}
@@ -308,7 +314,11 @@ because it requires delaying the evaluation of the contract
 expressions for the domain and range until the function
 itself is called or returns.
 
-The @scheme[case->] contract ...
+The @scheme[case->] contract is a specialized contract,
+designed to match @scheme[case-lambda] and
+@scheme[unconstrained-domain->] allows range checking
+without requiring that the domain have any particular shape
+(see below for an exmaple use).
 
 @defform*/subs[#:literals (any values)
                [(-> dom ... range)]
@@ -359,10 +369,10 @@ each values must match its respective contract.}
 
 
 @defform*/subs[#:literals (any)
-          [(->* (mandatory-dom ...) (optional-dom ...) rest-expr range)
-           (->* (mandatory-dom ...) (optional-dom ...) range)]
+          [(->* (mandatory-dom ...) (optional-dom ...) rest range)]
           ([mandatory-dom dom-expr (code:line keyword dom-expr)]
            [optional-dom dom-expr (code:line keyword dom-expr)]
+           [rest (code:line) (code:line #:rest rest-expr)]
            [range range-expr (values range-expr ...) any])]{
 
 The @scheme[->*] contract combinator produces contracts for
@@ -388,12 +398,12 @@ symbols, and that return a symbol.
 @defform*/subs[#:literals (any values)
 [(->d (mandatory-dependent-dom ...) 
       (optional-dependent-dom ...) 
-      rest
+      dependent-rest
       pre-cond
       dep-range)]
 ([mandatory-dependent-dom [id dom-expr] (code:line keyword [id dom-expr])]
  [optional-dependent-dom [id dom-expr] (code:line keyword [id dom-expr])]
- [rest (code:line) (code:line id rest-expr)]
+ [dependent-rest (code:line) (code:line #:rest id rest-expr)]
  [pre-cond (code:line) (code:line #:pre-cond boolean-expr)]
  [dep-range any
             (code:line [id range-expr] post-cond)
@@ -476,12 +486,6 @@ be blamed using the above contract:
   (apply g (build-list i add1)))
 ]}
 
-
-@defform[(promise/c expr)]{
-
-Constructs a contract on a promise. The contract does not force the
-promise, but when the promise is forced, the contract checks that the
-result value meets the contract produced by @scheme[expr].}
 
 @; ------------------------------------------------------------------------
 
