@@ -57,10 +57,10 @@
                                     ...))]))))])))))
 
 (provide* ctype-sizeof ctype-alignof compiler-sizeof
-          (unsafe malloc) (unsafe free) end-stubborn-change
+          (unsafe malloc) (unsafe free) (unsafe end-stubborn-change)
           cpointer? ptr-equal? ptr-add (unsafe ptr-ref) (unsafe ptr-set!)
           ptr-offset ptr-add! offset-ptr? set-ptr-offset!
-          ctype? make-ctype make-cstruct-type make-sized-byte-string
+          ctype? make-ctype make-cstruct-type (unsafe make-sized-byte-string)
           _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64
           _fixint _ufixint _fixnum _ufixnum
           _float _double _double*
@@ -138,8 +138,8 @@
 (define lib-suffix (bytes->string/latin-1 (subbytes (system-type 'so-suffix) 1)))
 (define lib-suffix-re (regexp (string-append "\\." lib-suffix "$")))
 
-(provide (rename-out [get-ffi-lib ffi-lib])
-         ffi-lib? ffi-lib-name)
+(provide* (unsafe (rename-out [get-ffi-lib ffi-lib]))
+          ffi-lib? ffi-lib-name)
 (define get-ffi-lib
   (case-lambda
    [(name) (get-ffi-lib name "")]
@@ -204,7 +204,7 @@
     (ptr-set! ffi-obj type new)))
 
 ;; This is better handled with `make-c-parameter'
-(provide* ffi-obj-ref)
+(provide* (unsafe ffi-obj-ref))
 (define ffi-obj-ref
   (case-lambda
    [(name lib) (ffi-obj-ref name lib #f)]
@@ -1559,7 +1559,8 @@
 (define killer-executor (make-will-executor))
 (define killer-thread #f)
 
-(define* (register-finalizer obj finalizer)
+(provide* (unsafe register-finalizer))
+(define (register-finalizer obj finalizer)
   (unless killer-thread
     (set! killer-thread (thread (lambda () (let loop () (will-execute killer-executor) (loop))))))
   (will-register killer-executor obj finalizer))

@@ -39,17 +39,67 @@ get all cross-reference information for installed documentation.}
 
 
 @defproc[(xref-binding->definition-tag [xref xref?]
-                                       [mod (or/c module-path?
-                                                  module-path-index?
-                                                  path?
-                                                  resolved-module-path?)]
-                                       [sym symbol?])
+                                       [binding (or/c identifier?
+                                                      (list/c (or/c module-path?
+                                                                    module-path-index?
+                                                                    path?
+                                                                    resolved-module-path?)
+                                                              symbol?)
+                                                      (listof module-path-index?
+                                                              symbol?
+                                                              module-path-index?
+                                                              symbol?
+                                                              boolean?
+                                                              (one-of/c #f 'for-syntax 'for-label))
+                                                      (list/c (or/c module-path?
+                                                                    module-path-index?
+                                                                    path?
+                                                                    resolved-module-path?)
+                                                              symbol?
+                                                              (one-of/c #f 'for-syntax 'for-label)))]
+                                       [mode (one-of/c #f 'for-syntax 'for-label)])
          (or/c tag? false/c)]{
 
-Locates a tag in @scheme[xref] that documents @scheme[sym] as defined
-by @scheme[mod]. The @scheme[sym] and @scheme[mod] combination
-correspond to the first two elements of a @scheme[identifier-binding]
-list result.
+Locates a tag in @scheme[xref] that documents a module export. The
+binding is specified in one of several ways, as described below; all
+possibilities encode an exporting module and a symbolic name. The name
+must be exported from the specified module. Documentation is found
+either for the specified module or, if the exported name is
+re-exported from other other module, for the other module
+(transitively).
+
+The @scheme[mode] argument specifies more information about the
+binding: whether it refers to a normal binding, a @scheme[for-syntax]
+binding, or a @scheme[for-label] binding.
+
+The @scheme[binding] is specified in one of four ways:
+
+@itemize{
+
+ @item{If @scheme[binding] is an identifier, then
+       @scheme[identifier-binding],
+       @scheme[identifier-transformer-binding], or
+       @scheme[identifier-label-binding] is used to determine the
+       binding, depending on the value of @scheme[mode].}
+
+ @item{If @scheme[binding] is a two-element list, then the first
+       element provides the exporting module and the second the
+       exported name. The @scheme[mode] argument is effectively
+       ignored.}
+
+ @item{If @scheme[binding] is a six-element list, then it corresponds
+       to a result from @scheme[identifier-binding],
+       @scheme[identifier-transformer-binding], or
+       @scheme[identifier-label-binding], depending on the value of
+       @scheme[mode].}
+
+ @item{If @scheme[binding] is a three-element list, then the first
+       element is as for the 2-element-list case, the second element
+       is like the fourth element of the six-element case, and the
+       third element is like the sixth element of the six-element
+       case.}
+
+}
 
 If a documentation point exists in @scheme[xref], a tag is returned,
 which might be used with @scheme[xref-tag->path+anchor] or embedded in

@@ -17,7 +17,7 @@
   (define verbose (make-parameter #t))
 
   (define-struct doc (src-dir src-file dest-dir flags))
-  (define-struct info (doc sci provides undef deps 
+  (define-struct info (doc sci provides undef searches deps 
                            build? time out-time need-run? 
                            need-in-write? need-out-write?
                            vers rendered?)
@@ -71,7 +71,7 @@
                                  null))))
                        infos dirs))])
       (when (ormap (can-build? only-dirs) docs)
-        (let ([infos (map (get-doc-info only-dirs latex-dest) docs)])
+        (let ([infos (filter values (map (get-doc-info only-dirs latex-dest) docs))])
           (let loop ([first? #t][iter 0])
             (let ([ht (make-hash-table 'equal)])
               ;; Collect definitions
@@ -116,22 +116,33 @@
                                                       (printf " [Removed Dependency: ~a]\n"
                                                               (doc-src-file (info-doc info))))))))
                                           (info-deps info))
-                                (for-each (lambda (k)
-                                            (let ([i (hash-table-get ht k #f)])
-                                              (if i
-                                                  (when (not (hash-table-get deps i #f))
-                                                    (set! added? #t)
-                                                    (hash-table-put! deps i #t))
-                                                  (when first?
-                                                    (unless one?
-                                                      (fprintf (current-error-port)
-                                                               "In ~a:\n"
-                                                               (doc-src-file (info-doc info)))
-                                                      (set! one? #t))
-                                                    (fprintf (current-error-port)
-                                                             "  undefined tag: ~s\n"
-                                                             k)))))
-                                          (info-undef info))
+                                (let ([not-found
+                                       (lambda (k)
+                                         (unless one?
+                                           (fprintf (current-error-port)
+                                                    "In ~a:\n"
+                                                    (doc-src-file (info-doc info)))
+                                           (set! one? #t))
+                                         (fprintf (current-error-port)
+                                                  "  undefined tag: ~s\n"
+                                                  k))])
+                                  (for-each (lambda (k)
+                                              (let ([i (hash-table-get ht k #f)])
+                                                (if i
+                                                    (when (not (hash-table-get deps i #f))
+                                                      (set! added? #t)
+                                                      (hash-table-put! deps i #t))
+                                                    (when first?
+                                                      (unless (eq? (car k) 'dep)
+                                                        (not-found k))))))
+                                            (info-undef info))
+                                  (when first?
+                                    (hash-table-for-each (info-searches info)
+                                                         (lambda (s-key s-ht)
+                                                           (unless (ormap
+                                                                    (lambda (k) (hash-table-get ht k #f))
+                                                                    (hash-table-map s-ht (lambda (k v) k)))
+                                                             (not-found s-key))))))
                                 (when added?
                                   (when (verbose)
                                     (printf " [Added Dependency: ~a]\n"
@@ -265,7 +276,11 @@
                          (max aux-time
                               (file-or-directory-modify-seconds src-zo #f (lambda () +inf.0))))))])
           (printf " [~a ~a]\n"
-                  (if up-to-date? "Using" "Running")
+                  (if up-to-date? 
+                      "Using" 
+                      (if can-run?
+                          "Running"
+                          "Skipping"))
                   (doc-src-file doc))
           (if up-to-date?
               ;; Load previously calculated info:
@@ -285,50 +300,55 @@
                              (list-ref v-out 1) ; sci
                              (list-ref v-out 2) ; provides
                              (list-ref v-in 1)  ; undef
+                             (list-ref v-in 3)  ; searches
                              (map string->path (list-ref v-in 2)) ; deps, in case we don't need to build...
                              can-run?
                              my-time info-out-time #f
                              #f #f
                              vers
                              #f)))
-              ;; Run the doc once:
-              (parameterize ([current-directory (doc-src-dir doc)])
-                (let ([v (ensure-doc-prefix (dynamic-require-doc (doc-src-file doc))
-                                            (doc-src-file doc))]
-                      [dest-dir (pick-dest latex-dest doc)])
-                  (let* ([ci (send renderer collect (list v) (list dest-dir))])
-                    (let ([ri (send renderer resolve (list v) (list dest-dir) ci)]
-                          [out-v (and info-out-time
-                                      (with-handlers ([exn? (lambda (exn) #f)])
-                                        (let ([v (with-input-from-file info-out-file read)])
-                                          (unless (equal? (car v) (list vers (doc-flags doc)))
-                                            (error "old info has wrong version or flags"))
-                                          v)))])
-                      (let ([sci (send renderer serialize-info ri)]
-                            [defs (send renderer get-defined ci)])
-                        (let ([need-out-write?
-                               (or (not (equal? (list (list vers (doc-flags doc)) sci defs)
-                                                out-v))
-                                   (info-out-time . > . (current-seconds)))])
-                          (when (verbose)
-                            (when need-out-write?
-                              (fprintf (current-error-port)
-                                       " [New out ~a]\n"
-                                       (doc-src-file doc))))
-                          (make-info doc
-                                     sci
-                                     defs
-                                     (send renderer get-undefined ri)
-                                     null ; no deps, yet
-                                     can-run?
-                                     -inf.0
-                                     (if need-out-write?
-                                         (/ (current-inexact-milliseconds) 1000)
-                                         info-out-time)
-                                     #t
-                                     can-run? need-out-write?
-                                     vers
-                                     #f))))))))))))
+              (if can-run?
+                  ;; Run the doc once:
+                  (parameterize ([current-directory (doc-src-dir doc)])
+                    (let ([v (ensure-doc-prefix (dynamic-require-doc (doc-src-file doc))
+                                                (doc-src-file doc))]
+                          [dest-dir (pick-dest latex-dest doc)])
+                      (let* ([ci (send renderer collect (list v) (list dest-dir))])
+                        (let ([ri (send renderer resolve (list v) (list dest-dir) ci)]
+                              [out-v (and info-out-time
+                                          (with-handlers ([exn? (lambda (exn) #f)])
+                                            (let ([v (with-input-from-file info-out-file read)])
+                                              (unless (equal? (car v) (list vers (doc-flags doc)))
+                                                (error "old info has wrong version or flags"))
+                                              v)))])
+                          (let ([sci (send renderer serialize-info ri)]
+                                [defs (send renderer get-defined ci)]
+                                [searches (resolve-info-searches ri)])
+                            (let ([need-out-write?
+                                   (or (not (equal? (list (list vers (doc-flags doc)) sci defs)
+                                                    out-v))
+                                       (info-out-time . > . (current-seconds)))])
+                              (when (verbose)
+                                (when need-out-write?
+                                  (fprintf (current-error-port)
+                                           " [New out ~a]\n"
+                                           (doc-src-file doc))))
+                              (make-info doc
+                                         sci
+                                         defs
+                                         (send renderer get-undefined ri)
+                                         searches
+                                         null ; no deps, yet
+                                         can-run?
+                                         -inf.0
+                                         (if need-out-write?
+                                             (/ (current-inexact-milliseconds) 1000)
+                                             info-out-time)
+                                         #t
+                                         can-run? need-out-write?
+                                         vers
+                                         #f)))))))
+                  #f))))))
   
   (define (build-again! latex-dest info)
     (let* ([doc (info-doc info)]
@@ -432,7 +452,8 @@
                          (info-undef info)
                          (map (lambda (i)
                                 (path->string (doc-src-file (info-doc i))))
-                              (info-deps info)))))))))))
+                              (info-deps info))
+                         (info-searches info))))))))))
 
   (define (write-out info)
     (make-directory* (doc-dest-dir (info-doc info)))

@@ -121,10 +121,11 @@ typedef struct Module_Renames {
   Scheme_Hash_Table *ht; /* localname ->  modidx  OR
                                           (cons modidx exportname) OR
                                           (cons modidx nominal_modidx) OR
-                                          (list* modidx exportname nominal_modidx nominal_exportname) OR
-                                          (list* modidx mod-phase exportname nominal_modidx nominal_exportname) */
+                                          (list* modidx exportname nominal_modidx_plus_phase nominal_exportname) OR
+                                          (list* modidx mod-phase exportname nominal_modidx_plus_phase nominal_exportname)
+                            nominal_modix_plus_phase -> nominal_modix | (cons nominal_modix phase-index-int) */
   Scheme_Hash_Table *nomarshal_ht; /* like ht, but dropped on marshal */
-  Scheme_Object *shared_pes; /* list of (cons modidx phase_export) like nomarshal ht, but shared from provider */
+  Scheme_Object *shared_pes; /* list of (cons modidx (cons phase_export phase-index-int)) like nomarshal ht, but shared from provider */
   Scheme_Hash_Table *marked_names; /* shared with module environment while compiling the module;
 				      this table maps a top-level-bound identifier with a non-empty mark
 				      set to a gensym created for the binding */
@@ -1065,6 +1066,16 @@ void scheme_extend_module_rename_with_kernel(Scheme_Object *mrn, Scheme_Object *
   ((Module_Renames *)mrn)->plus_kernel_nominal_source = nominal_mod;
 }
 
+static int phase_to_index(int phase)
+{
+  if (phase == MZ_LABEL_PHASE)
+    return 2;
+  else if (phase == -1)
+    return 3;
+  else
+    return phase;
+}
+
 void scheme_extend_module_rename(Scheme_Object *mrn,
 				 Scheme_Object *modname,     /* actual source module */
 				 Scheme_Object *localname,   /* name in local context */
@@ -1072,20 +1083,28 @@ void scheme_extend_module_rename(Scheme_Object *mrn,
 				 Scheme_Object *nominal_mod, /* nominal source module */
 				 Scheme_Object *nominal_ex,  /* nominal import before local renaming */
 				 int mod_phase,              /* phase of source defn */
+                                 int src_phase_index,        /* nominal import phase */
 				 int unmarshal_drop)         /* 1 => can be reconstructed from unmarshal info */
 {
   Scheme_Object *elem;
+  int phase_index;
+
+  phase_index = phase_to_index(((Module_Renames *)mrn)->phase);
+  if (src_phase_index < 0)
+    src_phase_index = phase_index;
 
   if (SAME_OBJ(modname, nominal_mod)
       && SAME_OBJ(exname, nominal_ex)
-      && !mod_phase) {
+      && !mod_phase
+      && src_phase_index == phase_index) {
     if (SAME_OBJ(localname, exname))
       elem = modname;
     else
       elem = CONS(modname, exname);
   } else if (SAME_OBJ(exname, nominal_ex)
 	     && SAME_OBJ(localname, exname)
-	     && !mod_phase) {
+	     && !mod_phase
+             && src_phase_index == phase_index) {
     /* It's common that a sequence of similar mappings shows up,
        e.g., '(#%kernel . mzscheme) */
     if (nominal_ipair_cache
@@ -1097,7 +1116,11 @@ void scheme_extend_module_rename(Scheme_Object *mrn,
       nominal_ipair_cache = elem;
     }
   } else {
-    elem = CONS(exname, CONS(nominal_mod, nominal_ex));
+    if (src_phase_index == phase_index)
+      elem = nominal_mod;
+    else
+      elem = CONS(nominal_mod, scheme_make_integer(src_phase_index));
+    elem = CONS(exname, CONS(elem, nominal_ex));
     if (mod_phase)
       elem = CONS(scheme_make_integer(mod_phase), elem);
     elem = CONS(modname, elem);
@@ -1116,17 +1139,21 @@ void scheme_extend_module_rename(Scheme_Object *mrn,
 
 void scheme_extend_module_rename_with_shared(Scheme_Object *rn, Scheme_Object *modidx, 
                                              Scheme_Module_Phase_Exports *pt, int k,
+                                             int src_phase_index,
                                              int save_unmarshal)
 {
   Module_Renames *mrn = (Module_Renames *)rn;
   Scheme_Object *pr;
 
-  pr = scheme_make_pair(scheme_make_pair(modidx, (Scheme_Object *)pt),
+  pr = scheme_make_pair(scheme_make_pair(modidx, 
+                                         scheme_make_pair((Scheme_Object *)pt,
+                                                          scheme_make_integer(src_phase_index))),
                         mrn->shared_pes);
   mrn->shared_pes = pr;
 
   if (save_unmarshal) {
-    pr = scheme_make_pair(scheme_make_pair(modidx, scheme_make_integer(k)),
+    pr = scheme_make_pair(scheme_make_pair(modidx, scheme_make_pair(scheme_make_integer(k),
+                                                                    scheme_make_integer(src_phase_index))),
                           mrn->unmarshal_info);
     mrn->unmarshal_info = pr;
   }
@@ -1195,7 +1222,7 @@ static void do_append_module_rename(Scheme_Object *src, Scheme_Object *dest,
 	  /* Shift the modidx part */
 	  if (SCHEME_PAIRP(v)) {
 	    if (SCHEME_PAIRP(SCHEME_CDR(v))) {
-	      /* (list* modidx [mod-phase] exportname nominal_modidx nominal_exportname) */
+	      /* (list* modidx [mod-phase] exportname nominal_modidx+index nominal_exportname) */
 	      Scheme_Object *midx1, *midx2;
 	      int mod_phase;
 	      midx1 = SCHEME_CAR(v);
@@ -1207,7 +1234,12 @@ static void do_append_module_rename(Scheme_Object *src, Scheme_Object *dest,
 		mod_phase = 0;
 	      midx2 = SCHEME_CAR(SCHEME_CDR(v));
 	      midx1 = scheme_modidx_shift(midx1, old_midx, new_midx);
-	      midx2 = scheme_modidx_shift(midx2, old_midx, new_midx);
+              if (SCHEME_PAIRP(midx2)) {
+                midx2 = scheme_make_pair(scheme_modidx_shift(SCHEME_CAR(midx2), old_midx, new_midx),
+                                         SCHEME_CDR(midx2));
+              } else {
+                midx2 = scheme_modidx_shift(midx2, old_midx, new_midx);
+              }
 	      v = CONS(SCHEME_CAR(v), CONS(midx2, SCHEME_CDR(SCHEME_CDR(v))));
 	      if (mod_phase)
 		v = CONS(scheme_make_integer(mod_phase), v);
@@ -1278,7 +1310,7 @@ void scheme_list_module_rename(Scheme_Object *src, Scheme_Hash_Table *ht)
   }
 
   for (pr = ((Module_Renames *)src)->shared_pes; !SCHEME_NULLP(pr); pr = SCHEME_CDR(pr)) {
-    pt = (Scheme_Module_Phase_Exports *)SCHEME_CDR(SCHEME_CAR(pr));
+    pt = (Scheme_Module_Phase_Exports *)SCHEME_CADR(SCHEME_CAR(pr));
     for (i = pt->num_provides; i--; ) {
       scheme_hash_set(ht, pt->provides[i], scheme_false);
     }
@@ -2686,7 +2718,7 @@ static Scheme_Object *scheme_search_shared_pes(Scheme_Object *shared_pes, Scheme
   int i, phase;
 
   for (pr = shared_pes; !SCHEME_NULLP(pr); pr = SCHEME_CDR(pr)) {
-    pt = (Scheme_Module_Phase_Exports *)SCHEME_CDR(SCHEME_CAR(pr));
+    pt = (Scheme_Module_Phase_Exports *)SCHEME_CADR(SCHEME_CAR(pr));
 
     if (!pt->ht) {
       /* Lookup table (which is created lazily) not yet created, so do that now... */
@@ -2715,8 +2747,8 @@ static Scheme_Object *scheme_search_shared_pes(Scheme_Object *shared_pes, Scheme
       if (get_names) {
         /* If module bound, result is module idx, and get_names[0] is set to source name,
            get_names[1] is set to the nominal source module, get_names[2] is set to
-           the nominal source module's export, and get_names[3] is set to the phase of
-           the source definition */
+           the nominal source module's export, get_names[3] is set to the phase of
+           the source definition, and get_names[4] is set to the nominal phase index */
 
         if (pt->provide_src_phases)
           phase = pt->provide_src_phases[i];
@@ -2727,6 +2759,7 @@ static Scheme_Object *scheme_search_shared_pes(Scheme_Object *shared_pes, Scheme
         get_names[1] = idx;
         get_names[2] = glob_id;
         get_names[3] = scheme_make_integer(phase);
+        get_names[4] = SCHEME_CDR(SCHEME_CDR(SCHEME_CAR(pr)));
       }
 
       if (SCHEME_FALSEP(src)) {
@@ -2749,6 +2782,7 @@ static Scheme_Object *scheme_search_shared_pes(Scheme_Object *shared_pes, Scheme
           get_names[1] = idx;
           get_names[2] = glob_id;
           get_names[3] = scheme_make_integer(0);
+          get_names[4] = scheme_make_integer(pt->phase_index);
         }
         return scheme_get_kernel_modidx();
       }
@@ -2779,8 +2813,8 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 /* Module binding ignored if w_mod is 0.
    If module bound, result is module idx, and get_names[0] is set to source name,
      get_names[1] is set to the nominal source module, get_names[2] is set to
-     the nominal source module's export, and get_names[3] is set to the phase of
-     the source definition
+     the nominal source module's export, get_names[3] is set to the phase of
+     the source definition, and get_names[4] is set to the nominal phase index.
    If lexically bound, result is env id, and a get_names[0] is set to scheme_undefined.
    If neither, result is #f and get_names[0] is either unchanged or NULL. */
 {
@@ -2914,43 +2948,67 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 					    modidx_shift_from,
 					    modidx_shift_to);
 
-	    if (get_names && !get_names_done) {
-	      if (SCHEME_PAIRP(rename)) {
-		if (nom_mod_p(rename)) {
-		  /* (cons modidx nominal_modidx) case */
-		  get_names[0] = glob_id;
-		  get_names[1] = SCHEME_CDR(rename);
-		  get_names[2] = get_names[0];
-		} else {
-		  rename = SCHEME_CDR(rename);
-		  if (SCHEME_PAIRP(rename)) {
-		    /* (list* modidx [mod-phase] exportname nominal_modidx nominal_exportname) case */
-		    if (SCHEME_INTP(SCHEME_CAR(rename))) {
-		      get_names[3] = SCHEME_CAR(rename);
-		      rename = SCHEME_CDR(rename);
-		    }
-		    get_names[0] = SCHEME_CAR(rename);
-		    get_names[1] = SCHEME_CADR(rename);
-		    get_names[2] = SCHEME_CDDR(rename);
-		  } else {
-		    /* (cons modidx exportname) case */
-		    get_names[0] = rename;
-		    get_names[2] = NULL; /* finish below */
-		  }
-		}
-	      } else {
-		get_names[0] = glob_id;
-		get_names[2] = NULL; /* finish below */
-	      }
+	    if (get_names) {
+              int no_shift = 0;
 
-	      if (!get_names[2]) {
-		get_names[2] = get_names[0];
-		if (nominal)
-		  get_names[1] = nominal;
-		else
-		  get_names[1] = mresult;
-	      }
-	    }
+              if (!get_names_done) {
+                if (SCHEME_PAIRP(rename)) {
+                  if (nom_mod_p(rename)) {
+                    /* (cons modidx nominal_modidx) case */
+                    get_names[0] = glob_id;
+                    get_names[1] = SCHEME_CDR(rename);
+                    get_names[2] = get_names[0];
+                  } else {
+                    rename = SCHEME_CDR(rename);
+                    if (SCHEME_PAIRP(rename)) {
+                      /* (list* modidx [mod-phase] exportname nominal_modidx nominal_exportname) case */
+                      if (SCHEME_INTP(SCHEME_CAR(rename))) {
+                        get_names[3] = SCHEME_CAR(rename);
+                        rename = SCHEME_CDR(rename);
+                      }
+                      get_names[0] = SCHEME_CAR(rename);
+                      get_names[1] = SCHEME_CADR(rename);
+                      if (SCHEME_PAIRP(get_names[1])) {
+                        get_names[4] = SCHEME_CDR(get_names[1]);
+                        get_names[1] = SCHEME_CAR(get_names[1]);
+                      }
+                      get_names[2] = SCHEME_CDDR(rename);
+                    } else {
+                      /* (cons modidx exportname) case */
+                      get_names[0] = rename;
+                      get_names[2] = NULL; /* finish below */
+                    }
+                  }
+                } else {
+                  get_names[0] = glob_id;
+                  get_names[2] = NULL; /* finish below */
+                }
+
+                if (!get_names[2]) {
+                  get_names[2] = get_names[0];
+                  if (nominal)
+                    get_names[1] = nominal;
+                  else {
+                    no_shift = 1;
+                    get_names[1] = mresult;
+                  }
+                }
+                if (!get_names[4]) {
+                  GC_CAN_IGNORE Scheme_Object *pi;
+                  pi = scheme_make_integer(phase_to_index(mrn->phase));
+                  get_names[4] = pi;
+                }
+              }
+
+              if (modidx_shift_from && !no_shift) {
+                Scheme_Object *nom;
+                nom = get_names[1];
+                nom = scheme_modidx_shift(nom,
+                                          modidx_shift_from,
+                                          modidx_shift_to);
+                get_names[1] = nom;
+              }
+            }
 	  } else {
 	    mresult = scheme_false;
 	    if (get_names)
@@ -3264,16 +3322,17 @@ int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, long phase)
 Scheme_Object *scheme_stx_module_name(Scheme_Object **a, long phase, 
 				      Scheme_Object **nominal_modidx,
 				      Scheme_Object **nominal_name,
-				      int *mod_phase)
+				      int *mod_phase, int *src_phase_index)
      /* If module bound, result is module idx, and a is set to source name.
 	If lexically bound, result is scheme_undefined and a is unchanged. 
 	If neither, result is NULL and a is unchanged. */
 {
   if (SCHEME_STXP(*a)) {
-    Scheme_Object *modname, *names[4];
+    Scheme_Object *modname, *names[5];
 
     names[0] = NULL;
     names[3] = scheme_make_integer(0);
+    names[4] = NULL;
 
     modname = resolve_env(NULL, *a, phase, 1, names, NULL);
     
@@ -3288,6 +3347,8 @@ Scheme_Object *scheme_stx_module_name(Scheme_Object **a, long phase,
 	  *nominal_name = names[2];
 	if (mod_phase)
 	  *mod_phase = SCHEME_INT_VAL(names[3]);
+        if (src_phase_index)
+	  *src_phase_index = SCHEME_INT_VAL(names[4]);
 	return modname;
       }
     } else
@@ -4135,7 +4196,7 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 	    if (!local_key) {
 	      /* Convert hash table to vector: */
 	      int i, j, count = 0;
-	      Scheme_Object *l, *idi;
+	      Scheme_Object *l;
 	    
 	      count = mrn->ht->count;
 
@@ -4144,21 +4205,7 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 	      for (i = mrn->ht->size, j = 0; i--; ) {
 		if (mrn->ht->vals[i]) {
 		  SCHEME_VEC_ELS(l)[j++] = mrn->ht->keys[i];
-		  idi = mrn->ht->vals[i];
-		  /* Drop info on nominals, if any: */
-		  if (SCHEME_PAIRP(idi)) {
-		    if (nom_mod_p(idi))
-		      idi = SCHEME_CAR(idi);
-		    else if (SCHEME_PAIRP(SCHEME_CDR(idi))) {
-		      if (SCHEME_INTP(SCHEME_CADR(idi))) {
-			idi = CONS(SCHEME_CAR(idi), 
-				   CONS(SCHEME_CADR(idi),
-					SCHEME_CADR(SCHEME_CDR(idi))));
-		      } else
-			idi = CONS(SCHEME_CAR(idi), SCHEME_CADR(idi));
-		    }
-		  }
-		  SCHEME_VEC_ELS(l)[j++] = idi;
+		  SCHEME_VEC_ELS(l)[j++] = mrn->ht->vals[i];
 		}
 	      }
 
@@ -4184,7 +4231,7 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 	      l = CONS(scheme_make_integer(mrn->phase), l);
 	      if (mrn->plus_kernel) {
 		l = CONS(scheme_true,l);
-		/* note: information on nominals intentially omitted */
+		/* FIXME: plus-kernel nominal omitted */
 	      }
 	    
               local_key = scheme_marshal_lookup(mt, a);
@@ -4773,7 +4820,6 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 
       mrn = (Module_Renames *)scheme_make_module_rename(phase, kind, NULL);
       mrn->plus_kernel = plus_kernel;
-      /* note: information on nominals has been dropped */
 
       if (!SCHEME_PAIRP(a)) return_NULL;
       mns = SCHEME_CDR(a);
@@ -4793,18 +4839,31 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 	    return_NULL;
 	  mli = SCHEME_CDR(mli);
 
-          if (SCHEME_INTP(mli)) {
-            /* For a shared table */
+          if (!SCHEME_PAIRP(mli)) return_NULL;
+
+          /* A phase/dimension index */
+          p = SCHEME_CAR(mli);
+          if ((SCHEME_INT_VAL(p) < 0)
+              || (SCHEME_INT_VAL(p) > 2))
+            return_NULL;
+          
+          p = SCHEME_CDR(mli);
+          if (SCHEME_INTP(p)) {
+            /* For a shared table: (cons k src-phase-index) */
+            if ((SCHEME_INT_VAL(p) < 0)
+                || (SCHEME_INT_VAL(p) > 3))
+              return_NULL;
           } else {
+            mli = p;
             if (!SCHEME_PAIRP(mli)) return_NULL;
 
-            /* A phase/dimension index (temporarily optional) */
+            /* For a shared table: (cons k src-phase-index) */
             p = SCHEME_CAR(mli);
-            if ((SCHEME_INT_VAL(p) < 0)
-                || (SCHEME_INT_VAL(p) > 2))
+            if (!SCHEME_INTP(p)
+                || (SCHEME_INT_VAL(p) < 0)
+                || (SCHEME_INT_VAL(p) > 3))
               return_NULL;
             mli = SCHEME_CDR(mli);
-            if (!SCHEME_PAIRP(mli)) return_NULL;
 
             /* A list of symbols: */
             p = SCHEME_CAR(mli);
@@ -4842,29 +4901,59 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 	
 	if (!SCHEME_SYMBOLP(key)) return_NULL;
 
-	if (SCHEME_SYMBOLP(p)
-	    || SAME_TYPE(SCHEME_TYPE(p), scheme_module_index_type)) {
+	if (SAME_TYPE(SCHEME_TYPE(p), scheme_module_index_type)) {
 	  /* Ok */
 	} else if (SCHEME_PAIRP(p)) {
 	  Scheme_Object *midx;
 
 	  midx = SCHEME_CAR(p);
-	  if (!SCHEME_SYMBOLP(midx)
-	      && !SAME_TYPE(SCHEME_TYPE(midx), scheme_module_index_type))
+	  if (!SAME_TYPE(SCHEME_TYPE(midx), scheme_module_index_type))
 	    return_NULL;
 
 	  if (SCHEME_SYMBOLP(SCHEME_CDR(p))) {
 	    /* Ok */
+	  } else if (SAME_TYPE(SCHEME_TYPE(SCHEME_CDR(p)), scheme_module_index_type)) {
+	    /* Ok */
 	  } else {
-	    if (!SCHEME_PAIRP(SCHEME_CDR(p)))
+            Scheme_Object *ap, *bp;
+
+            ap = SCHEME_CDR(p);
+	    if (!SCHEME_PAIRP(ap))
 	      return_NULL;
-	    if (!SCHEME_INTP(SCHEME_CADR(p)))
+
+            /* mod-phase, maybe */
+            if (SCHEME_INTP(SCHEME_CAR(ap))) {
+              bp = SCHEME_CDR(ap);
+            } else
+              bp = ap;
+            
+            /* exportname */
+            if (!SCHEME_PAIRP(bp))
 	      return_NULL;
-	    if (!SCHEME_SYMBOLP(SCHEME_CDDR(p)))
+            ap = SCHEME_CAR(bp);
+            if (!SCHEME_SYMBOLP(ap))
+              return_NULL;
+            
+            /* nominal_modidx_plus_phase */
+            bp = SCHEME_CDR(bp);
+            if (!SCHEME_PAIRP(bp))
 	      return_NULL;
-	    p = CONS(midx, CONS(SCHEME_CADR(p),
-				CONS(SCHEME_CDDR(p),
-				     CONS(midx, SCHEME_CDDR(p)))));
+            ap = SCHEME_CAR(bp);
+            if (SAME_TYPE(SCHEME_TYPE(ap), scheme_module_index_type)) {
+              /* Ok */
+            } else if (SCHEME_PAIRP(ap)) {
+              if (!SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(ap)), scheme_module_index_type))
+                return_NULL;
+              ap = SCHEME_CDR(ap);
+              if ((SCHEME_INT_VAL(ap) < 0) || (SCHEME_INT_VAL(ap) > 3))
+                return_NULL;
+            } else
+              return_NULL;
+
+            /* nominal_exportname */
+            ap = SCHEME_CDR(bp);
+            if (!SCHEME_SYMBOLP(ap))
+              return_NULL;
 	  }
 	} else
 	  return_NULL;
@@ -5984,7 +6073,7 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *a, *m, *nom_mod, *nom_a;
-  int mod_phase;
+  int mod_phase, src_phase_index;
 
   a = argv[0];
 
@@ -5998,7 +6087,8 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
 					   ? p->current_local_env->genv->phase
 					   : p->current_phase_shift))),
 			     &nom_mod, &nom_a,
-			     &mod_phase);
+			     &mod_phase,
+                             &src_phase_index);
 
   if (!m)
     return scheme_false;
@@ -6008,7 +6098,8 @@ static Scheme_Object *do_module_binding(char *name, int argc, Scheme_Object **ar
     return CONS(m, CONS(a, CONS(nom_mod, 
                                 CONS(nom_a, 
                                      CONS(mod_phase ? scheme_true : scheme_false, 
-                                          scheme_null)))));
+                                          CONS(scheme_phase_index_symbol(src_phase_index), 
+                                               scheme_null))))));
 }
 
 static Scheme_Object *module_binding(int argc, Scheme_Object **argv)

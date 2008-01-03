@@ -14,6 +14,8 @@ of these servlets. This API is provided by @filepath{servlet.ss}.
 @section[#:tag "module-servlets"]{Definition}
 @require[(for-label "dummy-servlet.ss")] ; to give a binding context
 
+@declare-exporting[web-server/docs/reference/dummy-servlet]
+
 A @defterm{servlet} is a module that provides the following:
 
 @defthing[interface-version (or/c 'v1 'v2)]{
@@ -46,6 +48,8 @@ A @defterm{servlet} is a module that provides the following:
 @section[#:tag "servlet-structs.ss"]{Contracts}
 @require[(for-label web-server/servlet/servlet-structs)]
 
+@defmodule[web-server/servlet/servlet-structs]
+
 @filepath{servlet/servlet-structs.ss} provides a number of contracts
 for use in servlets.
 
@@ -62,6 +66,8 @@ for use in servlets.
 @; ------------------------------------------------------------
 @section[#:tag "request-structs.ss"]{HTTP Requests}
 @require[(for-label web-server/private/request-structs)]
+
+@defmodule[web-server/private/request-structs]
 
 @; XXX Create http sub-directory
 @; XXX Have this include read-request and write-response
@@ -118,6 +124,8 @@ related to HTTP request data structures.
 @section[#:tag "bindings.ss"]{Request Bindings}
 @require[(for-label web-server/servlet/bindings)]
 
+@defmodule[web-server/servlet/bindings]
+
 @filepath{servlet/bindings.ss} provides a number of helper functions
 for accessing request bindings.
 
@@ -168,6 +176,8 @@ you lose the filename.
 @; ------------------------------------------------------------
 @section[#:tag "response-structs.ss"]{HTTP Responses}
 @require[(for-label web-server/private/response-structs)]
+
+@defmodule[web-server/private/response-structs]
 
 @filepath{private/response-structs.ss} provides structures and functions related to
 HTTP responses.
@@ -305,6 +315,8 @@ functions of interest for the servlet developer.}
 @section[#:tag "helpers.ss"]{Helpers}
 @require[(for-label web-server/servlet/helpers)]
 
+@defmodule[web-server/servlet/helpers]
+
 @filepath{servlet/helpers.ss} provides functions built on
 @filepath{servlet/web.ss} that are useful in many servlets.
 
@@ -340,6 +352,8 @@ functions of interest for the servlet developer.}
 @section[#:tag "servlet-url.ss"]{Servlet URLs}
 @require[(for-label web-server/servlet/servlet-url)]
 
+@defmodule[web-server/servlet/servlet-url]
+
 @filepath{servlet/servlet-url.ss} provides functions that might be useful to you.
 They may eventually provided by another module.
 
@@ -356,6 +370,8 @@ They may eventually provided by another module.
 @; ------------------------------------------------------------
 @section[#:tag "basic-auth.ss"]{Basic Authentication}
 @require[(for-label web-server/servlet/basic-auth)]
+
+@defmodule[web-server/servlet/basic-auth]
 
 @filepath{servlet/basic-auth.ss} provides a function for helping with
 implementation of HTTP Basic Authentication.

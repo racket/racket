@@ -292,7 +292,9 @@ hyperlinks.
 To document a @scheme[my-helper] procedure that is exported by
 @filepath{helper.ss} in the collection that contains
 @filepath{manual.scrbl}, first use @scheme[(require (for-label ....))]
-to import the binding information of @filepath{helper.ss}. Then use
+to import the binding information of @filepath{helper.ss}. Then add a
+@scheme[defmodule] declaration, which connects the @scheme[for-label]
+binding with the module path as seen by a reader. Finally, use
 @scheme[defproc] to document the procedure:
 
 @verbatim[#<<EOS
@@ -302,6 +304,8 @@ to import the binding information of @filepath{helper.ss}. Then use
                        "helper.ss"))
 
   @title{My Library}
+
+  @defmodule[my-lib/helper]
 
   @defproc[(my-helper [lst list?])
            (listof 
@@ -319,30 +323,6 @@ the closing parenthesis that ends the argument sequence, the contract
 of the result must be given; in this case, @scheme[my-helper]
 guarantees a result that is a list where none of the elements are
 @scheme['cow].
-
-Finally, the documentation should declare the module that is being
-defined. Use @scheme[defmodule] to declare the module name before any
-other definitions.
-
-@verbatim[#<<EOS
-  #lang scribble/doc
-  @(require scribble/manual
-            (for-label scheme
-                       "helper.ss"))
-
-  @title{My Library}
-
-  @defmodule[my-lib/helper]{The @schememodname[my-lib/helper]
-  module---now with extra cows!}
-
-  @defproc[(my-helper [lst list?])
-           (listof 
-            (not/c (one-of/c 'cow)))]{
-
-   Replaces each @scheme['cow] in @scheme[lst] with
-   @scheme['aardvark].}
-EOS
-]
 
 Some things to notice in this example and the documentation that it
 generates:

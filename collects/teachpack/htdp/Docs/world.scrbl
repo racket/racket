@@ -8,6 +8,8 @@
 
 @title[#:tag "world"]{Simulations and Animations: world.ss}
 
+@declare-exporting[teachpack/htdp/world]
+
 The teachpack provides two kinds of functions. The first five allow
 students to simulate a small world of animated drawings and games: 
 

@@ -4,7 +4,7 @@
            scribble/manual
            scribble/scheme
            scribble/decode
-           (for-label mred))
+           (for-label scheme/gui/base))
 
   (provide (except-out (all-defined-out) p))
 

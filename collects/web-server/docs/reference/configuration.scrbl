@@ -13,6 +13,8 @@ configuring the @web-server .
 @section[#:tag "configuration-table-structs.ss"]{Configuration Table Structure}
 @require[(for-label web-server/configuration/configuration-table-structs)]
 
+@defmodule[web-server/configuration/configuration-table-structs]
+
 @filepath{configuration/configuration-table-structs.ss} provides the following structures that
 represent a standard configuration (see @secref["web-server-unit.ss"]) of the @web-server .
 The contracts on this structure influence the valid types of values in
@@ -80,6 +82,8 @@ the configuration table S-expression file format described in
 @; ------------------------------------------------------------
 @section[#:tag "configuration-table.ss"]{Configuration Table}
 @require[(for-label web-server/configuration/configuration-table)]
+
+@defmodule[web-server/configuration/configuration-table]
 
 @filepath{configuration/configuration-table.ss} provides functions for
 reading, writing, parsing, and printing @scheme[configuration-table]
@@ -152,6 +156,8 @@ This function writes a @scheme[configuration-table] to @scheme[path].
 @section[#:tag "namespace.ss"]{Servlet Namespaces}
 @require[(for-label web-server/configuration/namespace)]
 
+@defmodule[web-server/configuration/namespace]
+
 @filepath{configuration/namespace.ss} provides a function to help create the
 @scheme[make-servlet-namespace] procedure needed by the @scheme[make] functions
 of @filepath{dispatchers/dispatch-servlets.ss} and @filepath{dispatchers/dispatch-lang.ss}.
@@ -192,6 +198,8 @@ of servlets can share different sets of modules.
 @; ------------------------------------------------------------
 @section[#:tag "responders.ss"]{Standard Responders}
 @require[(for-label web-server/configuration/responders)]
+
+@defmodule[web-server/configuration/responders]
 
 @filepath{configuration/responders.ss} provides some functions that help constructing HTTP responders.
 These functions are used by the default dispatcher constructor (see @secref["web-server-unit.ss"]) to

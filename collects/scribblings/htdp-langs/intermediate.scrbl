@@ -4,15 +4,21 @@
           "prim-ops.ss"
           (for-label lang/htdp-intermediate))
 
-@(define-syntax-rule (bd beg-define beg-define-struct)
+@(define-syntax-rule (bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-require)
    (begin
     (require (for-label lang/htdp-beginner))
     (define beg-define (scheme define))
-    (define beg-define-struct (scheme define-struct))))
-@(bd beg-define beg-define-struct)
-
+    (define beg-define-struct (scheme define-struct))
+    (define beg-cond (scheme cond))
+    (define beg-if (scheme if))
+    (define beg-and (scheme and))
+    (define beg-or (scheme or))
+    (define beg-require (scheme require))))
+@(bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-require)
 
 @title[#:style 'toc]{Intermediate Student}
+
+@declare-exporting[lang/htdp-intermediate]
 
 @schemegrammar*+qq[
 #:literals (define define-struct lambda cond else if and or empty true false require lib planet
@@ -179,6 +185,39 @@ The name of a primitive operation can be used as an expression. If it
 is passed to a function, then it can be used in a function call within
 the function's body.}
 
-@prim-op-defns['(lib "htdp-intermediate.ss" "lang")
-               #'here
-               '((lib "htdp-beginner.ss" "lang"))]
+@prim-op-defns['(lib "htdp-intermediate.ss" "lang") #'here '()]
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "intermediate-unchanged"]{Unchanged Forms}
+
+@deftogether[(
+@defform[(cond [expr expr] ... [expr expr])]
+@defidform[else]
+)]{
+
+The same as Beginner's @|beg-cond|.}
+
+
+@defform[(if expr expr expr)]{
+
+The same as Beginner's @|beg-if|.}
+
+@deftogether[(
+@defform[(and expr expr expr ...)]
+@defform[(or expr expr expr ...)]
+)]{
+
+The same as Beginner's @|beg-and| and @|beg-or|.}
+
+@deftogether[(
+@defthing[empty empty?]
+@defthing[true boolean?]
+@defthing[false boolean?]
+)]{
+
+Constants for the empty list, true, and false.}
+
+@defform[(require string)]{
+
+The same as Beginner's @|beg-require|.}

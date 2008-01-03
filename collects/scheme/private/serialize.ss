@@ -38,7 +38,8 @@
 	(box? v)
 	(void? v)
 	(date? v)
-	(arity-at-least? v)))
+	(arity-at-least? v)
+        (module-path-index? v)))
 
   ;; If a module is dynamic-required through a path,
   ;;  then it can cause simplified module paths to be paths;
@@ -192,6 +193,10 @@
 				     (loop v)))]
 	   [(arity-at-least? v)
 	    (loop (arity-at-least-value v))]
+	   [(module-path-index? v)
+            (let-values ([(path base) (module-path-index-split v)])
+              (loop path)
+              (loop base))]
 	   [else (raise-type-error
 		  'serialize
 		  "serializable object"
@@ -262,6 +267,11 @@
        [(arity-at-least? v)
 	(cons 'arity-at-least
 	      ((serial #t) (arity-at-least-value v)))]
+       [(module-path-index? v)
+        (let-values ([(path base) (module-path-index-split v)])
+          (cons 'mpi
+                (cons ((serial #t) path)
+                      ((serial #t) base))))]
        [else (error 'serialize "shouldn't get here")]))
     ((serial check-share?) v))
   
@@ -389,6 +399,8 @@
 		     (apply make-immutable-hash-table al (caddr v))))]
 	  [(date) (apply make-date (map loop (cdr v)))]
 	  [(arity-at-least) (make-arity-at-least (loop (cdr v)))]
+	  [(mpi) (module-path-index-join (loop (cadr v))
+                                         (loop (cddr v)))]
 	  [else (error 'serialize "ill-formed serialization")])])))
 
   (define (deserial-shell v mod-map fixup n)
@@ -442,7 +454,9 @@
 	[(date)
          (error 'deserialize "cannot restore date in cycle")]
 	[(arity-at-least)
-         (error 'deserialize "cannot restore arity-at-least in cycle")])]))
+         (error 'deserialize "cannot restore arity-at-least in cycle")]
+	[(mpi)
+         (error 'deserialize "cannot restore module-path-index in cycle")])]))
 
   (define (deserialize l)
     (let-values ([(vers l)

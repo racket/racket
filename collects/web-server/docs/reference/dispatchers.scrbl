@@ -34,6 +34,8 @@ documentation will be useful.
 @section[#:tag "dispatch.ss"]{General}
 @require[(for-label web-server/dispatchers/dispatch)]
 
+@defmodule[web-server/dispatchers/dispatch]
+
 @filepath{dispatchers/dispatch.ss} provides a few functions for dispatchers in general.
 
 @defthing[dispatcher? contract?]{
@@ -76,6 +78,8 @@ Consider the following example dispatcher, that captures the essence of URL rewr
 @; ------------------------------------------------------------
 @section[#:tag "filesystem-map.ss"]{Mapping URLs to Paths}
 @require[(for-label web-server/dispatchers/filesystem-map)]
+
+@defmodule[web-server/dispatchers/filesystem-map]
 
 @filepath{dispatchers/filesystem-map.ss} provides a means of mapping
 URLs to paths on the filesystem.

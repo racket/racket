@@ -4,7 +4,22 @@
           "prim-ops.ss"
           (for-label lang/htdp-beginner-abbr))
 
+@(define-syntax-rule (bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-require)
+   (begin
+    (require (for-label lang/htdp-beginner))
+    (define beg-define (scheme define))
+    (define beg-define-struct (scheme define-struct))
+    (define beg-cond (scheme cond))
+    (define beg-if (scheme if))
+    (define beg-and (scheme and))
+    (define beg-or (scheme or))
+    (define beg-require (scheme require))))
+@(bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-require)
+
+
 @title[#:style 'toc]{Beginner Student with List Abbreviations}
+
+@declare-exporting[lang/htdp-beginner-abbr]
 
 @schemegrammar*+qq[
 #:literals (define define-struct lambda cond else if and or empty true false require lib planet)
@@ -102,3 +117,61 @@ that is, it decrements the quasiquote count by one.
 
 Normally, a splicing unquote is written with @litchar{,}, but it can
 also be written with @scheme[unquote-splicing].}
+
+
+@; ----------------------------------------
+
+@section[#:tag "beginner-abbr-prim-ops"]{Primitive Operations}
+
+@prim-op-defns['(lib "htdp-beginner-abbr.ss" "lang") #'here '()]
+
+@; ----------------------------------------------------------------------
+
+@section{Unchanged Forms}
+
+@deftogether[(
+@defform[(define (id id id ...) expr)]
+@defform/none[#:literals (define)
+              (define id expr)]
+@defform/none[#:literals (define lambda)
+              (define id (lambda (id id ...) expr))]
+@defidform[lambda]
+)]{
+
+The same as Beginner's @|beg-define|.}
+
+
+@defform[(define-struct structid (fieldid ...))]{
+
+The same as Beginner's @|beg-define-struct|.}
+
+
+@deftogether[(
+@defform[(cond [expr expr] ... [expr expr])]
+@defidform[else]
+)]{
+
+The same as Beginner's @|beg-cond|.}
+
+@defform[(if expr expr expr)]{
+
+The same as Beginner's @|beg-if|.}
+
+@deftogether[(
+@defform[(and expr expr expr ...)]
+@defform[(or expr expr expr ...)]
+)]{
+
+The same as Beginner's @|beg-and| and @|beg-or|.}
+
+@deftogether[(
+@defthing[empty empty?]
+@defthing[true boolean?]
+@defthing[false boolean?]
+)]{
+
+Constants for the empty list, true, and false.}
+
+@defform[(require string)]{
+
+The same as Beginner's @|beg-require|.}

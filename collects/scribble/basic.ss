@@ -47,20 +47,20 @@
                        style
                        content)))
 
-  (define (subsection #:tag [tag #f] #:tag-prefix [prefix #f] . str)
+  (define (subsection #:tag [tag #f] #:tag-prefix [prefix #f] #:style [style #f] . str)
     (let ([content (decode-content str)])
       (make-part-start 1 
                        (prefix->string prefix)
                        (convert-tag tag content)
-                       #f 
+                       style
                        content)))
 
-  (define (subsubsection #:tag [tag #f] #:tag-prefix [prefix #f] . str)
+  (define (subsubsection #:tag [tag #f] #:tag-prefix [prefix #f] #:style [style #f] . str)
     (let ([content (decode-content str)])
       (make-part-start 2 
                        (prefix->string prefix)
                        (convert-tag tag content)
-                       #f
+                       style
                        content)))
 
   (define (subsubsub*section #:tag [tag #f] . str)

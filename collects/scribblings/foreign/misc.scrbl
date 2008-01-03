@@ -46,6 +46,16 @@ using values from @scheme[lst] and the given @scheme[type].  The
 according to the given @scheme[type].}
 
 
+@defproc[(vector->cblock [vector any/c][type type?]) any]{
+
+Like @scheme[list->cblock], but for Scheme vectors.}
+
+@; ----------------------------------------------------------------------
+
+@section{Unsafe Miscellaneous Operations}
+
+@declare-exporting[scribblings/foreign/unsafe-foreign]
+
 @defproc[(cblock->list [cblock any/c][type ctype?][length nonnegative-exact-integer?])
          list?]{
 
@@ -53,11 +63,6 @@ Converts C @scheme[cblock], which is a vector of @scheme[type]s, to a
 Scheme list.  The arguments are the same as in the
 @scheme[list->cblock]. The @scheme[length] must be specified because
 there is no way to know where the block ends.}
-
-
-@defproc[(vector->cblock [vector any/c][type type?]) any]{
-
-Like @scheme[list->cblock], but for Scheme vectors.}
 
 
 @defproc[(cblock->vector [cblock any/c][type ctype?][length nonnegative-exact-integer?])

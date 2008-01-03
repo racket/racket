@@ -1121,6 +1121,7 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
 				  env->module->self_modidx,
 				  n,
 				  env->mod_phase,
+                                  -1,
 				  0);
     }
   }
@@ -1844,7 +1845,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
        existing rename. */
     if (!SCHEME_HASHTP((Scheme_Object *)env) && env->module && (is_def != 2)) {
       Scheme_Object *mod, *nm = id;
-      mod = scheme_stx_module_name(&nm, env->phase, NULL, NULL, NULL);
+      mod = scheme_stx_module_name(&nm, env->phase, NULL, NULL, NULL, NULL);
       if (mod /* must refer to env->module, otherwise there would
 		 have been an error before getting here */
 	  && NOT_SAME_OBJ(nm, sym))
@@ -2445,7 +2446,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   }
 
   src_find_id = find_id;
-  modidx = scheme_stx_module_name(&find_id, phase, NULL, NULL, &mod_defn_phase);
+  modidx = scheme_stx_module_name(&find_id, phase, NULL, NULL, &mod_defn_phase, NULL);
 
   /* Used out of context? */
   if (SAME_OBJ(modidx, scheme_undefined)) {
@@ -2708,7 +2709,7 @@ int scheme_check_context(Scheme_Env *env, Scheme_Object *name, Scheme_Object *ok
   if (mod && SCHEME_TRUEP(mod) && NOT_SAME_OBJ(ok_modidx, mod)) {
     return 1;
   } else {
-    mod = scheme_stx_module_name(&id, env->phase, NULL, NULL, NULL);
+    mod = scheme_stx_module_name(&id, env->phase, NULL, NULL, NULL, NULL);
     if (SAME_OBJ(mod, scheme_undefined))
       return 1;
   }

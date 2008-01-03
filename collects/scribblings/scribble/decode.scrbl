@@ -2,7 +2,7 @@
 @require[scribble/manual]
 @require["utils.ss"]
 
-@title[#:tag "decode"]{Text Decoder}
+@title[#:tag "decode"]{Decoding Text}
 
 @defmodule[scribble/decode]{The @schememodname[scribble/decode]
 library helps you write document content in a natural way---more like

@@ -106,7 +106,7 @@ probably will not).}
 
 @section{SMTP Unit}
 
-@defmodule[net/SMTP-unit]
+@defmodule[net/smtp-unit]
 
 @defthing[smtp@ unit?]{
 

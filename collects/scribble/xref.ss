@@ -4,6 +4,7 @@
          scribble/manual-struct
          scribble/decode-struct
          scribble/base-render
+         scribble/search
          (prefix-in html: scribble/html-render)
          scheme/class
          mzlib/serialize
@@ -74,46 +75,50 @@
       (void))))
 
 ;; Returns (values <tag-or-#f> <form?>)
-(define (xref-binding-tag xrefs src id)
-  (let ([search
-         (lambda (src)
-           (let ([base (format ":~a:~a" 
-                               (if (path? src)
-                                   (path->main-collects-relative src)
-                                   src)
-                               id)]
-                 [ht (collect-info-ext-ht (resolve-info-ci (xrefs-ri xrefs)))])
-             (let ([form-tag `(form ,base)]
-                   [val-tag `(def ,base)])
-               (if (hash-table-get ht form-tag #f)
-                   (values form-tag #t)
-                   (if (hash-table-get ht val-tag #f)
-                       (values val-tag #f)
-                       (values #f #f))))))])
-    (let loop ([src src])
+(define xref-binding-tag
+  (case-lambda
+   [(xrefs id/binding mode)
+    (let ([search
+           (lambda (id/binding)
+             (let ([tag (find-scheme-tag #f (xrefs-ri xrefs) id/binding mode)])
+               (if tag
+                   (values tag (eq? (car tag) 'form))
+                   (values #f #f))))])
       (cond
-       [(path? src)
-        (if (complete-path? src)
-            (search src)
-            (loop (path->complete-path src)))]
-       [(path-string? src)
-        (loop (path->complete-path src))]
-       [(resolved-module-path? src)
-        (let ([n (resolved-module-path-name src)])
-          (if (pair? n)
-              (loop n)
-              (search n)))]
-       [(module-path-index? src)
-        (loop (module-path-index-resolve src))]
-       [(module-path? src)
-        (loop (module-path-index-join src #f))]
-       [else
-        (raise-type-error 'xref-binding-definition->tag
-                          "module path, resolved module path, module path index, path, or string"
-                          src)]))))
+       [(identifier? id/binding)
+        (search id/binding)]
+       [(and (list? id/binding)
+             (= 6 (length id/binding)))
+        (search id/binding)]
+       [(and (list? id/binding)
+             (= 2 (length id/binding)))
+        (let loop ([src (car id/binding)])
+          (cond
+           [(path? src)
+            (if (complete-path? src)
+                (search (list src (cadr id/binding)))
+                (loop (path->complete-path src)))]
+           [(path-string? src)
+            (loop (path->complete-path src))]
+           [(resolved-module-path? src)
+            (let ([n (resolved-module-path-name src)])
+              (if (pair? n)
+                  (loop n)
+                  (search n)))]
+           [(module-path-index? src)
+            (loop (module-path-index-resolve src))]
+           [(module-path? src)
+            (loop (module-path-index-join src #f))]
+           [else
+            (raise-type-error 'xref-binding-definition->tag
+                              "list starting with module path, resolved module path, module path index, path, or string"
+                              src)]))]
+       [else (raise-type-error 'xref-binding-definition->tag
+                               "identifier, 2-element list, or 6-element list"
+                               id/binding)]))]))
 
-(define (xref-binding->definition-tag xrefs src id)
-  (let-values ([(tag form?) (xref-binding-tag xrefs src id)])
+(define (xref-binding->definition-tag xrefs id/binding mode)
+  (let-values ([(tag form?) (xref-binding-tag xrefs id/binding mode)])
     tag))
 
 (define (xref-tag->path+anchor xrefs tag #:render% [render% (html:render-mixin render%)])

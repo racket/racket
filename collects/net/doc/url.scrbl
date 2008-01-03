@@ -27,10 +27,10 @@ library.
 
 @section{URL Structure}
 
-@declare-exporting[net/url-struct net/url]
+@declare-exporting[net/url-structs net/url]
 
-@defmodule*/no-declare[(net/url-struct)]{The URL structure types are
-provided by the @schememodname[net/url-struct] library, and
+@defmodule*/no-declare[(net/url-structs)]{The URL structure types are
+provided by the @schememodname[net/url-structs] library, and
 re-exported by @schememodname[net/url].}
 
 @; ----------------------------------------
@@ -43,7 +43,7 @@ re-exported by @schememodname[net/url].}
                 [path-absolute? boolean?]
                 [path (listof path/param?)]
                 [query (listof (cons/c symbol? (or/c false/c string?)))]
-                [fragment (union false/c string?)])]{
+                [fragment (or/c false/c string?)])]{
 
 The basic structure for all URLs, hich is explained in RFC 3986
 @cite["RFC3986"]. The following diagram illustrates the parts:

@@ -2,7 +2,7 @@
 @(require "mz.ss"
           scheme/sandbox
           (for-label scheme/sandbox
-                     (only-in mred/mred make-gui-namespace)
+                     (only-in scheme/gui make-gui-namespace)
                      scheme/gui/dynamic))
 
 @title{Sandboxed Evaluation}

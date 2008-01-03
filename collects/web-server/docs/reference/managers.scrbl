@@ -17,6 +17,8 @@ pluggable through the manager interface.
 @section[#:tag "manager.ss"]{General}
 @require[(for-label web-server/managers/manager)]
 
+@defmodule[web-server/managers/manager]
+
 @filepath{managers/manager.ss} defines the manager interface. It is required by
 the users and implementers of managers.
 
@@ -61,6 +63,8 @@ the users and implementers of managers.
 @section[#:tag "none.ss"]{No Continuations}
 @require[(for-label web-server/managers/none)]
 
+@defmodule[web-server/managers/none]
+
 @filepath{managers/none.ss} defines a manager constructor:
 
 @defproc[(create-none-manager (instance-expiration-handler expiration-handler?))
@@ -77,6 +81,8 @@ Web Language. (See @secref["lang"].)
 @; ------------------------------------------------------------
 @section[#:tag "timeouts.ss"]{Timeouts}
 @require[(for-label web-server/managers/timeouts)]
+
+@defmodule[web-server/managers/timeouts]
 
 @filepath{managers/timeouts.ss} defines a manager constructor:
 
@@ -105,6 +111,8 @@ deployments of the @web-server .
 @; ------------------------------------------------------------
 @section[#:tag "lru.ss"]{LRU}
 @require[(for-label web-server/managers/lru)]
+
+@defmodule[web-server/managers/lru]
 
 @filepath{managers/lru.ss} defines a manager constructor:
 

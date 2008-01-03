@@ -1889,7 +1889,7 @@
 	 ;; new syntax object that is an `intermediate-define' form;
 	 ;; that's important for syntax errors, so that they
 	 ;; report `advanced-define' as the source.
-	 (define/proc #f #t stx)]
+	 (define/proc #f #t stx #'beginner-lambda)]
 	[_else
 	 (bad-use-error 'define stx)]))
 

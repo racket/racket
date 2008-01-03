@@ -2421,6 +2421,7 @@ static int module_phase_exports_val_MARK(void *p) {
   gcMARK(m->provides);
   gcMARK(m->provide_srcs);
   gcMARK(m->provide_src_names);
+  gcMARK(m->provide_nominal_srcs);
   gcMARK(m->provide_src_phases);
 
   gcMARK(m->kernel_exclusion);
@@ -2440,6 +2441,7 @@ static int module_phase_exports_val_FIXUP(void *p) {
   gcFIXUP(m->provides);
   gcFIXUP(m->provide_srcs);
   gcFIXUP(m->provide_src_names);
+  gcFIXUP(m->provide_nominal_srcs);
   gcFIXUP(m->provide_src_phases);
 
   gcFIXUP(m->kernel_exclusion);

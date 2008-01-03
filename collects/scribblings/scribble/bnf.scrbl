@@ -3,7 +3,7 @@
           "utils.ss"
           (for-label scribble/bnf))
 
-@title[#:tag "bnf"]{Typesetting Grammars}
+@title[#:tag "bnf"]{BNF Grammars}
 
 @defmodule[scribble/bnf]{The @scheme[scribble/bnf] library
 provides utilities for typesetting grammars.}

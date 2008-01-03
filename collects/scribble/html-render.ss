@@ -251,8 +251,11 @@
                                                     (append (loop (element-content a))
                                                             (loop (cdr c)))]
                                                    [(delayed-element? a)
-                                                    (loop (cons (delayed-element-content a ri)
-                                                                (cdr c)))]
+                                                    (loop (append (delayed-element-content a ri)
+                                                                  (cdr c)))]
+                                                   [(part-relative-element? a)
+                                                    (loop (append (part-relative-element-content a ri)
+                                                                  (cdr c)))]
                                                    [else
                                                     (loop (cdr c))]))])))]
                                     [table-targets

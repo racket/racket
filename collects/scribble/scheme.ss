@@ -1,10 +1,12 @@
 (module scheme scheme/base
   (require "struct.ss"
            "basic.ss"
+           "search.ss"
            mzlib/class
            mzlib/for
            setup/main-collects
            syntax/modresolve
+           syntax/modcode
            (for-syntax scheme/base))
   
   (provide define-code
@@ -12,8 +14,6 @@
            to-element/no-color
            to-paragraph
            to-paragraph/prefix
-           register-scheme-definition
-           register-scheme-form-definition
            syntax-ize
            syntax-ize-hook
            current-keyword-list
@@ -73,28 +73,30 @@
                            (values (substring s 1) #t #f)
                            (values s #f #f))))])
       (if (or (element? (syntax-e c))
-              (delayed-element? (syntax-e c)))
+              (delayed-element? (syntax-e c))
+              (part-relative-element? (syntax-e c)))
           (out (syntax-e c) #f)
           (out (if (and (identifier? c)
                         color?
                         (quote-depth . <= . 0)
                         (not (or it? is-var?)))
-                   (let ([tag (register-scheme c)])
-                     (if tag
-                         (make-delayed-element
-                          (lambda (renderer sec ri)
-                            (let* ([vtag `(def ,tag)]
-                                   [stag `(form ,tag)]
-                                   [sd (resolve-get/tentative sec ri stag)])
-                              (list
-                               (cond
-                                [sd 
-                                 (make-link-element "schemesyntaxlink" (list s) stag)]
-                                [else
-                                 (make-link-element "schemevaluelink" (list s) vtag)]))))
-                          (lambda () s)
-                          (lambda () s))
-                         s))
+                   (if (pair? (identifier-label-binding c))
+                       (make-delayed-element
+                        (lambda (renderer sec ri)
+                          (let* ([tag (find-scheme-tag sec ri c 'for-label)])
+                            (if tag
+                                (list
+                                 (case (car tag)
+                                   [(form)
+                                    (make-link-element "schemesyntaxlink" (list s) tag)]
+                                   [else
+                                    (make-link-element "schemevaluelink" (list s) tag)]))
+                                (list 
+                                 (make-element "badlink"
+                                               (list (make-element "schemevaluelink" (list s))))))))
+                        (lambda () s)
+                        (lambda () s))
+                       s)
                    (literalize-spaces s))
                (cond
                 [(positive? quote-depth) value-color]
@@ -154,6 +156,8 @@
                         [(element? v)
                          (element-width v)]
                         [(delayed-element? v)
+                         (element-width v)]
+                        [(part-relative-element? v)
                          (element-width v)]
                         [(spaces? v)
                          (+ (sz-loop (car (element-content v)))
@@ -538,41 +542,6 @@
       [(_ code typeset-code) #'(define-code code typeset-code unsyntax)]))
 
   
-  (define (register-scheme stx [warn-if-no-label? #f])
-    (unless (identifier? stx)
-      (error 'register-scheme-definition "not an identifier: ~e" (syntax->datum stx)))
-    (let ([b (identifier-label-binding stx)])
-      (if (or (not b)
-              (eq? b 'lexical))
-          (if warn-if-no-label?
-              (begin
-                (fprintf (current-error-port)
-                         "~a\n"
-                         ;; Call raise-syntax-error to capture error message:
-                         (with-handlers ([exn:fail:syntax? (lambda (exn)
-                                                             (exn-message exn))])
-                           (raise-syntax-error 'WARNING
-                                               "no for-label binding of identifier"
-                                               stx)))
-                (format ":NOLABEL:~a" (syntax-e stx)))
-              #f)
-          (format ":~a:~a" 
-                  (let ([p (resolve-module-path-index (car b) #f)])
-                    (if (path? p)
-                        (path->main-collects-relative p)
-                        p))
-                  (cadr b)))))
-
-  (define (register-scheme/invent stx warn-if-no-label?)
-    (or (register-scheme stx warn-if-no-label?)
-        (format ":UNKNOWN:~a" (syntax-e stx))))
-
-  (define (register-scheme-definition stx [warn-if-no-label? #f])
-    `(def ,(register-scheme/invent stx warn-if-no-label?)))
-
-  (define (register-scheme-form-definition stx [warn-if-no-label? #f])
-    `(form ,(register-scheme/invent stx warn-if-no-label?)))
-
   (define syntax-ize-hook (make-parameter (lambda (v col) #f)))
 
   (define (vector->short-list v extract)

@@ -6,8 +6,8 @@
 
   ;; ----------------------------------------
   
-  (define-struct collect-info (ht ext-ht parts tags gen-prefix))
-  (define-struct resolve-info (ci delays undef))
+  (define-struct collect-info (ht ext-ht parts tags gen-prefix relatives parents))
+  (define-struct resolve-info (ci delays undef searches))
 
   (define (part-collected-info part ri)
     (hash-table-get (collect-info-parts (resolve-info-ci ri))
@@ -49,6 +49,18 @@
                          #t))
       v))
 
+  (define (resolve-search search-key part ri key)
+    (let ([s-ht (hash-table-get (resolve-info-searches ri)
+                                search-key
+                                (lambda ()
+                                  (let ([s-ht (make-hash-table 'equal)])
+                                    (hash-table-put! (resolve-info-searches ri)
+                                                     search-key
+                                                     s-ht)
+                                    s-ht)))])
+      (hash-table-put! s-ht key #t))
+    (resolve-get part ri key))
+
   (define (resolve-get/tentative part ri key)
     (let-values ([(v ext?) (resolve-get/where part ri key)])
       v))
@@ -69,6 +81,7 @@
    part-collected-info
    collect-put!
    resolve-get
+   resolve-search
    resolve-get/tentative
    resolve-get-keys)
 
@@ -163,12 +176,11 @@
 
    [target-url ([addr string?])]
    [image-file ([path path-string?])])
-  
+
   ;; ----------------------------------------
 
   ;; Delayed element has special serialization support:
   (define-struct delayed-element (resolve sizer plain)
-    #:mutable
     #:property 
     prop:serializable 
     (make-serialize-info
@@ -207,6 +219,47 @@
 
   (provide current-serialize-resolve-info)
   (define current-serialize-resolve-info (make-parameter #f))
+
+  ;; ----------------------------------------
+
+  ;; part-relative element has special serialization support:
+  (define-struct part-relative-element (collect sizer plain)
+    #:property 
+    prop:serializable 
+    (make-serialize-info
+     (lambda (d)
+       (let ([ri (current-serialize-resolve-info)])
+         (unless ri
+           (error 'serialize-part-relative-element
+                  "current-serialize-resolve-info not set"))
+         (with-handlers ([exn:fail:contract?
+                          (lambda (exn)
+                            (error 'serialize-part-relative-element
+                                   "serialization failed (wrong resolve info?); ~a"
+                                   (exn-message exn)))])
+           (vector
+            (make-element #f (part-relative-element-content d ri))))))
+     #'deserialize-part-relative-element
+     #f
+     (or (current-load-relative-directory) (current-directory))))
+
+  (provide/contract
+   (struct part-relative-element ([collect (collect-info? . -> . list?)]
+                                  [sizer (-> any)]
+                                  [plain (-> any)])))
+  
+  (provide deserialize-part-relative-element)
+  (define deserialize-part-relative-element
+    (make-deserialize-info values values))
+  
+  (provide part-relative-element-content)
+  (define (part-relative-element-content e ci/ri)
+    (hash-table-get (collect-info-relatives (if (resolve-info? ci/ri)
+                                                (resolve-info-ci ci/ri)
+                                                ci/ri))
+                    e))
+
+  (provide collect-info-parents)
 
   ;; ----------------------------------------
 
@@ -336,6 +389,7 @@
      [(c)
       (cond
        [(element? c) (content->string (element-content c))]
+       [(part-relative-element? c) (element->string ((part-relative-element-plain c)))]
        [(delayed-element? c) (element->string ((delayed-element-plain c)))]
        [(string? c) c]
        [else (case c
@@ -355,6 +409,9 @@
        [(element? c) (content->string (element-content c) renderer sec ri)]
        [(delayed-element? c) 
         (content->string (delayed-element-content c ri)
+                         renderer sec ri)]
+       [(part-relative-element? c) 
+        (content->string (part-relative-element-content c ri)
                          renderer sec ri)]
        [else (element->string c)])]))
 
@@ -376,6 +433,7 @@
      [(string? s) (string-length s)]
      [(element? s) (apply + (map element-width (element-content s)))]
      [(delayed-element? s) (element-width ((delayed-element-sizer s)))]
+     [(part-relative-element? s) (element-width ((part-relative-element-sizer s)))]
      [else 1]))
 
   (define (paragraph-width s)

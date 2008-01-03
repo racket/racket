@@ -4,17 +4,35 @@
           "prim-ops.ss"
           (for-label lang/htdp-advanced))
 
-@(define-syntax-rule (bd intm-define intm-define-struct intm-lambda intm-let)
+@(define-syntax-rule (bd intm-define intm-define-struct intm-lambda intm-local intm-letrec intm-let intm-let* intm-time)
    (begin
-    (require (for-label lang/htdp-intermediate-lambda))
+    (require (for-label lang/htdp-intermediate))
     (define intm-define (scheme define))
     (define intm-define-struct (scheme define-struct))
     (define intm-lambda (scheme lambda))
-    (define intm-let (scheme let))))
-@(bd intm-define intm-define-struct intm-lambda intm-let)
+    (define intm-local (scheme local))
+    (define intm-letrec (scheme letrec))
+    (define intm-let (scheme let))
+    (define intm-let* (scheme let*))
+    (define intm-time (scheme time))))
+@(bd intm-define intm-define-struct intm-lambda intm-local intm-letrec intm-let intm-let* intm-time)
+
+@(define-syntax-rule (bbd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-require)
+   (begin
+    (require (for-label lang/htdp-beginner))
+    (define beg-define (scheme define))
+    (define beg-define-struct (scheme define-struct))
+    (define beg-cond (scheme cond))
+    (define beg-if (scheme if))
+    (define beg-and (scheme and))
+    (define beg-or (scheme or))
+    (define beg-require (scheme require))))
+@(bbd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-require)
 
 
 @title[#:style 'toc]{Advanced Student}
+
+@declare-exporting[lang/htdp-advanced]
 
 @schemegrammar*+qq[
 #:literals (define define-struct lambda cond else if and or empty true false require lib planet
@@ -255,9 +273,57 @@ first @scheme[expr] produces @scheme[false] instead of @scheme[true].}
 
 @section[#:tag "advanced-prim-ops"]{Primitive Operations}
 
-The following primitives extend the set available though
-@seclink["intermediate-prim-op"]{Intermediate}.
+@prim-op-defns['(lib "htdp-advanced.ss" "lang") #'here '()]
 
-@prim-op-defns['(lib "htdp-advanced.ss" "lang") 
-               #'here
-               '((lib "htdp-beginner.ss" "lang") (lib "htdp-intermediate.ss" "lang"))]
+@; ----------------------------------------------------------------------
+
+@section[#:tag "advanced-unchanged"]{Unchanged Forms}
+
+@deftogether[(
+@defform[(local [definition ...] expr)]
+@defform[(letrec ([id expr-for-let] ...) expr)]
+@defform[(let* ([id expr-for-let] ...) expr)]
+)]{
+
+The same as Intermediate's @|intm-local|, @|intm-letrec|, and
+@|intm-let*|.}
+
+
+@deftogether[(
+@defform[(cond [expr expr] ... [expr expr])]
+@defidform[else]
+)]{
+
+The same as Beginner's @|beg-cond|, except that @scheme[else] can be
+used with @scheme[case].}
+
+
+
+@defform[(if expr expr expr)]{
+
+The same as Beginner's @|beg-if|.}
+
+@deftogether[(
+@defform[(and expr expr expr ...)]
+@defform[(or expr expr expr ...)]
+)]{
+
+The same as Beginner's @|beg-and| and @|beg-or|.}
+
+
+@defform[(time expr)]{
+
+The same as Intermediate's @|intm-time|.}
+
+
+@deftogether[(
+@defthing[empty empty?]
+@defthing[true boolean?]
+@defthing[false boolean?]
+)]{
+
+Constants for the empty list, true, and false.}
+
+@defform[(require string)]{
+
+The same as Beginner's @|beg-require|.}

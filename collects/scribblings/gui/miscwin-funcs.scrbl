@@ -268,7 +268,7 @@ The result depends on @scheme[what], and a @scheme[#f] result is only
 }
 
 @defproc[(graphical-read-eval-print-loop [eval-eventspace eventspace #f]
-                                         [redirect-ports? any/c @scheme[(not @scheme[eval-eventspace])]])
+                                         [redirect-ports? any/c (not eval-eventspace)])
          void?]{
 
 Similar to MzScheme's @scheme[read-eval-print-loop], except that none of

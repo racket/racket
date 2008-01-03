@@ -966,6 +966,7 @@ module_phase_exports_val {
   gcMARK(m->provides);
   gcMARK(m->provide_srcs);
   gcMARK(m->provide_src_names);
+  gcMARK(m->provide_nominal_srcs);
   gcMARK(m->provide_src_phases);
 
   gcMARK(m->kernel_exclusion);

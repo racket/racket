@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "ss.ss"
-          (for-label mred
+          (for-label scheme/gui
                      slideshow/code
                      slideshow/flash
                      slideshow/face

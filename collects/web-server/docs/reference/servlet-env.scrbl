@@ -5,6 +5,8 @@
        #:style 'toc]{Environment}
 @require[(for-label web-server/servlet-env)]
 
+@defmodule[web-server/servlet-env]
+
 The @web-server provides a means of running Scheme servlets
 from within DrScheme, or any other REPL.
 

@@ -8,14 +8,8 @@
 	   "../posn.ss"
            (for-syntax scheme/base))
 
-  (define-syntax (freshen-export stx)
-    (syntax-case stx ()
-      [(_ new-name orig-name)
-       #'(define-syntax new-name (make-rename-transformer #'orig-name))]))
-
-  (provide-and-document/wrap
+  (provide-and-document
    procedures
-   freshen-export
 
    ("Reading and Printing"
     (print (any -> void)

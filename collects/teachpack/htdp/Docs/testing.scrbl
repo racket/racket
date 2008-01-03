@@ -8,6 +8,8 @@
 
 @title[#:tag "testing"]{Testing: testing.ss}
 
+@declare-exporting[teachpack/htdp/testing]
+
 The @scheme[testing.ss] teachpack provides forms for formulating test cases
 and a primitive for reporting on test cases. 
 

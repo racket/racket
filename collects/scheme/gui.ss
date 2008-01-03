@@ -1,4 +1,4 @@
 (module gui scheme
-  (require mred)
+  (require scheme/gui/base)
   (provide (all-from-out scheme)
-           (all-from-out mred)))
+           (all-from-out scheme/gui/base)))

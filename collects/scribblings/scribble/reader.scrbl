@@ -5,7 +5,7 @@
 @require["utils.ss"]
 @require[(for-syntax scheme/base)]
 
-@title[#:tag "reader"]{The Scribble Reader}
+@title[#:tag "reader"]{@"@"-Reader}
 
 The Scribble @"@"-reader is designed to be a convenient facility for
 using free-form text in Scheme code, where ``@"@"'' is chosen as one of

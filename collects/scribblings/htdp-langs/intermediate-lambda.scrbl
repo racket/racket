@@ -4,14 +4,34 @@
           "prim-ops.ss"
           (for-label lang/htdp-intermediate-lambda))
 
-@(define-syntax-rule (bd intm-define)
+@(define-syntax-rule (bd intm-define intm-define-struct intm-local intm-letrec intm-let intm-let* intm-time)
    (begin
     (require (for-label lang/htdp-intermediate))
-    (define intm-define (scheme define))))
-@(bd intm-define)
+    (define intm-define (scheme define))
+    (define intm-define-struct (scheme define-struct))
+    (define intm-local (scheme local))
+    (define intm-letrec (scheme letrec))
+    (define intm-let (scheme let))
+    (define intm-let* (scheme let*))
+    (define intm-time (scheme time))))
+@(bd intm-define intm-define-struct intm-local intm-letrec intm-let intm-let* intm-time)
+
+@(define-syntax-rule (bbd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-require)
+   (begin
+    (require (for-label lang/htdp-beginner))
+    (define beg-define (scheme define))
+    (define beg-define-struct (scheme define-struct))
+    (define beg-cond (scheme cond))
+    (define beg-if (scheme if))
+    (define beg-and (scheme and))
+    (define beg-or (scheme or))
+    (define beg-require (scheme require))))
+@(bbd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-require)
 
 
 @title[#:style 'toc]{Intermediate Student with Lambda}
+
+@declare-exporting[lang/htdp-intermediate-lambda]
 
 @schemegrammar*+qq[
 #:literals (define define-struct lambda cond else if and or empty true false require lib planet
@@ -97,3 +117,64 @@ practically never written that way.}
 
 The name of a primitive operation can be used as an expression. It
 produces a function version of the operation.}
+
+@prim-op-defns['(lib "htdp-intermediate-lambda.ss" "lang") #'here '()]
+
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "intermediate-lambda-unchanged"]{Unchanged Forms}
+
+@defform[(define-struct structid (fieldid ...))]{
+
+The same as Intermediate's @|intm-define-struct|.}
+
+
+@deftogether[(
+@defform[(local [definition ...] expr)]
+@defform[(letrec ([id expr-for-let] ...) expr)]
+@defform[(let ([id expr-for-let] ...) expr)]
+@defform[(let* ([id expr-for-let] ...) expr)]
+)]{
+
+The same as Intermediate's @|intm-local|, @|intm-letrec|, @|intm-let|,
+and @|intm-let*|.}
+
+
+@deftogether[(
+@defform[(cond [expr expr] ... [expr expr])]
+@defidform[else]
+)]{
+
+The same as Beginner's @|beg-cond|.}
+
+
+
+@defform[(if expr expr expr)]{
+
+The same as Beginner's @|beg-if|.}
+
+@deftogether[(
+@defform[(and expr expr expr ...)]
+@defform[(or expr expr expr ...)]
+)]{
+
+The same as Beginner's @|beg-and| and @|beg-or|.}
+
+
+@defform[(time expr)]{
+
+The same as Intermediate's @|intm-time|.}
+
+
+@deftogether[(
+@defthing[empty empty?]
+@defthing[true boolean?]
+@defthing[false boolean?]
+)]{
+
+Constants for the empty list, true, and false.}
+
+@defform[(require string)]{
+
+The same as Beginner's @|beg-require|.}

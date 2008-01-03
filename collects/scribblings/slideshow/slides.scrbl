@@ -1,6 +1,6 @@
 #lang scribble/doc
 @require["ss.ss"]
-@require[(for-label mred
+@require[(for-label scheme/gui
                     slideshow/step
                     slideshow/slides-to-picts)]
 

@@ -1,12 +1,12 @@
 #lang scribble/doc
 @require[scribble/manual
-         (for-label "cards.ss"
-                    mred)]
+         (for-label "main.ss"
+                    scheme/gui/base)]
 
 @title{Virtual Playing Cards Library}
 
-@defmodule[games/cards]{The @scheme[games/cards] module provides a
-toolbox for creating cards games.}
+@defmodule[games/cards/main]{The @schememodname[games/cards/main]
+module provides a toolbox for creating cards games.}
 
 @; ----------------------------------------------------------------------
 @section{Creating Tables and Cards}

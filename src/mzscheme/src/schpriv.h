@@ -662,9 +662,10 @@ Scheme_Object *scheme_make_module_rename(long phase, int kind, Scheme_Hash_Table
 void scheme_extend_module_rename(Scheme_Object *rn, Scheme_Object *modname,
 				 Scheme_Object *locname, Scheme_Object *exname,
 				 Scheme_Object *nominal_src, Scheme_Object *nominal_ex,
-				 int mod_phase, int drop_for_marshal);
+				 int mod_phase, int src_phase_index, int drop_for_marshal);
 void scheme_extend_module_rename_with_shared(Scheme_Object *rn, Scheme_Object *modidx, 
                                              struct Scheme_Module_Phase_Exports *pt, int k,
+                                             int src_phase_index, 
                                              int save_unmarshal);
 void scheme_extend_module_rename_with_kernel(Scheme_Object *rn, Scheme_Object *nominal_src);
 void scheme_save_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info);
@@ -689,7 +690,7 @@ int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, long phase);
 Scheme_Object *scheme_stx_module_name(Scheme_Object **name, long phase,
 				      Scheme_Object **nominal_modidx,
 				      Scheme_Object **nominal_name,
-				      int *mod_phase);
+				      int *mod_phase, int *src_phase_index);
 Scheme_Object *scheme_stx_moduleless_env(Scheme_Object *a, long phase);
 int scheme_stx_parallel_is_used(Scheme_Object *sym, Scheme_Object *stx);
 
@@ -747,6 +748,8 @@ int scheme_stx_has_more_certs(Scheme_Object *id, Scheme_Object *certs,
 			      Scheme_Object *than_id, Scheme_Object *than_certs);
 
 Scheme_Object *scheme_delayed_rename(Scheme_Object **o, long i);
+
+XFORM_NONGCING Scheme_Object *scheme_phase_index_symbol(int src_phase_index);
 
 Scheme_Object *scheme_explode_syntax(Scheme_Object *stx, Scheme_Hash_Table *ht);
 
@@ -2408,11 +2411,14 @@ typedef struct Scheme_Module_Phase_Exports
 {
   MZTAG_IF_REQUIRED
 
+  int phase_index;
+
   Scheme_Object *src_modidx;  /* same as in enclosing Scheme_Module_Exports */
 
   Scheme_Object **provides;          /* symbols (extenal names) */
   Scheme_Object **provide_srcs;      /* module access paths, #f for self */
   Scheme_Object **provide_src_names; /* symbols (original internal names) */
+  Scheme_Object **provide_nominal_srcs;      /* import source if re-exported; NULL or array of lists */
   char *provide_src_phases;          /* NULL, or src phase for for-syntax import */
   int num_provides;
   int num_var_provides;              /* non-syntax listed first in provides */

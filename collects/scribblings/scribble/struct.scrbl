@@ -3,7 +3,7 @@
           "utils.ss"
           (for-label scribble/manual-struct))
 
-@title[#:tag "struct"]{Document Structures And Processing}
+@title[#:tag "struct"]{Structures And Processing}
 
 @defmodule[scribble/struct]
 

@@ -15,6 +15,7 @@ called.
 @include-section["stx-ops.scrbl"]
 @include-section["stx-comp.scrbl"]
 @include-section["stx-trans.scrbl"]
+@include-section["stx-param.scrbl"]
 @include-section["stx-props.scrbl"]
 @include-section["stx-certs.scrbl"]
 @include-section["stx-expand.scrbl"]

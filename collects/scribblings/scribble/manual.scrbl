@@ -4,7 +4,7 @@
           (for-syntax scheme/base)
           (for-label scribble/manual-struct))
 
-@title[#:tag "manual"]{PLT Manual Forms}
+@title[#:tag "manual"]{Manual Forms}
 
 @defmodule[scribble/manual]{The @schememodname[scribble/manual]
 library provides all of @schememodname[scribble/basic], plus
@@ -39,9 +39,9 @@ because that's the way it is idented the use of @scheme[schemeblock].
 Furthermore, @scheme[define] is typeset as a keyword (bold and black)
 and as a hyperlink to @scheme[define]'s definition in the reference
 manual, because this document was built using a for-label binding of
-@scheme[define] (in the source) that matches the for-label binding of
-the definition in the reference manual. Similarly, @scheme[not] is a
-hyperlink to the its definition in the reference manual.
+@scheme[define] (in the source) that matches a definition in the
+reference manual. Similarly, @scheme[not] is a hyperlink to the its
+definition in the reference manual.
 
 Use @scheme[unsyntax] to escape back to an expression that produces an
 @scheme[element]. For example,
@@ -252,10 +252,14 @@ Produces a sequence of flow elements (encapsulated in a
 @scheme[prototype]s corresponds to a curried function, as in
 @scheme[define]. The @scheme[id] is indexed, and it also registered so
 that @scheme[scheme]-typeset uses of the identifier (with the same
-for-label binding) are hyperlinked to this documentation. The
-@scheme[id] should have a for-label binding (as introduced by
-@scheme[require-for-label]) that determines the module binding being
-defined.
+for-label binding) are hyperlinked to this documentation.
+
+A @scheme[defmodule] or @scheme[declare-exporting] form (or one of the
+variants) in an enclosing section determines the @scheme[id] binding
+that is being defined. The @scheme[id] should also have a for-label
+binding (as introduced by @scheme[(require (for-label ...))]) that
+matches the definition binding; otherwise, the defined @scheme[id]
+will not typeset correctly within the definition.
 
 Each @scheme[arg-spec] must have one of the following forms:
 
@@ -317,10 +321,11 @@ Produces a a sequence of flow elements (encaptured in a
 @scheme[splice]) to document a syntatic form named by @scheme[id]. The
 @scheme[id] is indexed, and it is also registered so that
 @scheme[scheme]-typeset uses of the identifier (with the same
-for-label binding) are hyperlinked to this documentation.  The
-@scheme[id] should have a for-label binding (as introduced by
-@scheme[require-for-label]) that determines the module binding being
-defined.
+for-label binding) are hyperlinked to this documentation. 
+
+The @scheme[defmodule] or @scheme[declare-exporting] requires, as well
+as the binding requirements for @scheme[id], are the same as for
+@scheme[defproc].
 
 The @tech{decode}d @scheme[pre-flow] documents the procedure. In this
 description, a reference to any identifier in @scheme[datum] via
@@ -502,6 +507,19 @@ Like @scheme[defclass], but for an interfaces. Naturally,
 @defform[(definterface/title id (intf-id ...) pre-flow ...)]{
 
 Like @scheme[definterface], but for single-page rendering as in
+@scheme[defclass/title].}
+
+@defform[(defmixin id (domain-id ...) (range-id ...) pre-flow ...)]{
+
+Like @scheme[defclass], but for a mixin. Any number of
+@scheme[domain-id] classes and interfaces are specified for the
+mixin's input requires, and any number of result classes and (more
+likely) interfaces are specified for the @scheme[range-id]. The
+@scheme[domain-id]s supply inherited methods.}
+
+@defform[(defmixin/title id (domain-id ...) (range-id ...) pre-flow ...)]{
+
+Like @scheme[defmixin], but for single-page rendering as in
 @scheme[defclass/title].}
 
 @defform/subs[(defconstructor (arg-spec ...) pre-flow ...)
@@ -866,6 +884,11 @@ class via @scheme[defclass] and company.}
 
 Indicates that the index entry corresponds to the definition of an
 interface via @scheme[definterface] and company.}
+
+@defstruct[(mixin-index-desc exported-index-desc) ()]{
+
+Indicates that the index entry corresponds to the definition of a
+mixin via @scheme[defmixin] and company.}
 
 @defstruct[(method-index-desc exported-index-desc) ([method-name symbol?]
                                                     [class-tag tag?])]{

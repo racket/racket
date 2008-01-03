@@ -11,6 +11,63 @@ strings (used as memory blocks), some additional internal objects
 (@scheme[ffi-obj]s and callbacks, see @secref["foreign:c-only"]).
 Returns @scheme[#f] for other values.}
 
+@defproc[(ptr-equal? [cptr1 cpointer?][cptr2 cpointer?]) boolean?]{
+
+Compares the values of the two pointers. Two different Scheme
+pointer objects can contain the same pointer.}
+
+
+@defproc[(ptr-add [cptr cpointer?][offset exact-integer?][type ctype? _byte]) 
+         cpointer?]{
+
+Returns a cpointer that is like @scheme[cptr] offset by
+@scheme[offset] instances of @scheme[ctype].
+
+The resulting cpointer keeps the base pointer and offset separate. The
+two pieces are combined at the last minute before any operation on the
+pointer, such as supplying the pointer to a foreign function. In
+particular, the pointer and offset are not combined until after all
+allocation leading up to a foreign-function call; if the called
+function does not itself call anything that can trigger a garbage
+collection, it can safely use pointers that are offset into the middle
+of a GCable object.}
+
+
+@defproc[(offset-ptr? [cptr cpointer?]) boolean?]{
+
+A predicate for cpointers that have an offset, such as pointers that
+were created using @scheme[ptr-add].  Returns @scheme[#t] even if such
+an offset happens to be 0.  Returns @scheme[#f] for other cpointers
+and non-cpointers.}
+
+
+@defproc[(ptr-offset [cptr cpointer?]) exact-integer?]{
+
+Returns the offset of a pointer that has an offset. The resulting
+offset is always in bytes.}
+
+@; ----------------------------------------------------------------------
+
+@section{Unsafe Pointer Operations}
+
+@declare-exporting[scribblings/foreign/unsafe-foreign]
+
+@defproc[(set-ptr-offset! [cptr cpointer?][offset exact-integer?][ctype ctype? _byte]) 
+         void?]{
+
+Sets the offset component of an offset pointer.  The arguments are
+used in the same way as @scheme[ptr-add].  If @scheme[cptr] has no
+offset, the @scheme[exn:fail:contract] exception is raised.}
+
+
+@defproc[(ptr-add! [cptr cpointer?][offset exact-integer?][ctype ctype? _byte]) 
+         void?]{
+
+Like @scheme[ptr-add], but destructively modifies the offset contained
+in a pointer.  The same operation could be performed using
+@scheme[ptr-offset] and @scheme[set-ptr-offset!].}
+
+
 @defproc*[([(ptr-ref [cptr cpointer?]
                      [type ctype?]
                      [offset exact-nonnegative-integer? 0])
@@ -66,74 +123,6 @@ appropriate.  For example, on a little-endian machine:
 In addition, @scheme[ptr-ref] and @scheme[ptr-set!] cannot detect when
 offsets are beyond an object's memory bounds; out-of-bounds access can
 easily lead to a segmentation fault or memory corruption.}
-
-
-@defproc[(ptr-equal? [cptr1 cpointer?][cptr2 cpointer?]) boolean?]{
-
-Compares the values of the two pointers. Two different Scheme
-pointer objects can contain the same pointer.}
-
-
-@defproc[(ptr-add [cptr cpointer?][offset exact-integer?][type ctype? _byte]) 
-         cpointer?]{
-
-Returns a cpointer that is like @scheme[cptr] offset by
-@scheme[offset] instances of @scheme[ctype].
-
-The resulting cpointer keeps the base pointer and offset separate. The
-two pieces are combined at the last minute before any operation on the
-pointer, such as supplying the pointer to a foreign function. In
-particular, the pointer and offset are not combined until after all
-allocation leading up to a foreign-function call; if the called
-function does not itself call anything that can trigger a garbage
-collection, it can safely use pointers that are offset into the middle
-of a GCable object.}
-
-
-@defproc[(offset-ptr? [cptr cpointer?]) boolean?]{
-
-A predicate for cpointers that have an offset, such as pointers that
-were created using @scheme[ptr-add].  Returns @scheme[#t] even if such
-an offset happens to be 0.  Returns @scheme[#f] for other cpointers
-and non-cpointers.}
-
-
-@defproc[(ptr-offset [cptr cpointer?]) exact-integer?]{
-
-Returns the offset of a pointer that has an offset. The resulting
-offset is always in bytes.}
-
-
-@defproc[(set-ptr-offset! [cptr cpointer?][offset exact-integer?][ctype ctype? _byte]) 
-         void?]{
-
-Sets the offset component of an offset pointer.  The arguments are
-used in the same way as @scheme[ptr-add].  If @scheme[cptr] has no
-offset, the @scheme[exn:fail:contract] exception is raised.}
-
-
-@defproc[(ptr-add! [cptr cpointer?][offset exact-integer?][ctype ctype? _byte]) 
-         void?]{
-
-Like @scheme[ptr-add], but destructively modifies the offset contained
-in a pointer.  The same operation could be performed using
-@scheme[ptr-offset] and @scheme[set-ptr-offset!].}
-
-
-@defproc[(cpointer-tag [cptr cpointer?]) any]{
-
-Returns the Scheme object that is the tag of the given @scheme[cptr]
-pointer.}
-
-
-@defproc[(set-cpointer-tag! [cptr cpointer?][tag any/c]) void?]{
-
-Sets the tag of the given @scheme[cptr]. The @scheme[tag] argument can
-be any arbitrary value; other pointer operations ignore it.  When a
-cpointer value is printed, its tag is shown if it is a symbol, a byte
-string, a string. In addition, if the tag is a pair holding one of
-these in its @scheme[car], the @scheme[car] is shown (so that the tag
-can contain other information).}
 
 
 @defproc*[([(memmove [cptr cpointer?]
@@ -200,9 +189,27 @@ Similar to @scheme[memmove], but the destination is uniformly filled
 with @scheme[byte] (i.e., an exact integer between 0 and 255
 inclusive).}
 
+@defproc[(cpointer-tag [cptr cpointer?]) any]{
+
+Returns the Scheme object that is the tag of the given @scheme[cptr]
+pointer.}
+
+
+@defproc[(set-cpointer-tag! [cptr cpointer?][tag any/c]) void?]{
+
+Sets the tag of the given @scheme[cptr]. The @scheme[tag] argument can
+be any arbitrary value; other pointer operations ignore it.  When a
+cpointer value is printed, its tag is shown if it is a symbol, a byte
+string, a string. In addition, if the tag is a pair holding one of
+these in its @scheme[car], the @scheme[car] is shown (so that the tag
+can contain other information).}
+
+
 @; ------------------------------------------------------------
 
-@section{Memory Management}
+@section{Unsafe Memory Management}
+
+@declare-exporting[scribblings/foreign/unsafe-foreign]
 
 For general information on C-level memory management with PLT Scheme,
 see @|InsideMzScheme|.

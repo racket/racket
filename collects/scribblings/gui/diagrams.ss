@@ -2,7 +2,7 @@
   (require scribble/struct
            scribble/scheme
            scribble/manual
-           (for-label mred))
+           (for-label scheme/gui/base))
 
   (provide diagram->table
            short-windowing-diagram

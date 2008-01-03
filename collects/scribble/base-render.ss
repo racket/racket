@@ -4,7 +4,8 @@
            mzlib/class
            mzlib/serialize
            scheme/file
-           scheme/path)
+           scheme/path
+           setup/main-collects)
 
   (provide render%)
 
@@ -74,7 +75,9 @@
                                      (make-hash-table 'equal)
                                      (make-hash-table)
                                      (make-hash-table)
-                                     "")])
+                                     ""
+                                     (make-hash-table)
+                                     null)])
           (start-collect ds fns ci)
           ci))
 
@@ -92,7 +95,9 @@
                                            (string-append (collect-info-gen-prefix ci)
                                                           (part-tag-prefix d)
                                                           ":")
-                                           (collect-info-gen-prefix ci)))])
+                                           (collect-info-gen-prefix ci))
+                                       (collect-info-relatives ci)
+                                       (cons d (collect-info-parents ci)))])
           (when (part-title-content d)
             (collect-content (part-title-content d) p-ci))
           (collect-part-tags d p-ci number)
@@ -184,16 +189,28 @@
                   (blockquote-paragraphs i)))
 
       (define/public (collect-element i ci)
-        (when (target-element? i)
-          (collect-target-element i ci))
-        (when (index-element? i)
-          (collect-index-element i ci))
-        (when (collect-element? i)
-          ((collect-element-collect i) ci))
-        (when (element? i)
-          (for-each (lambda (e)
-                      (collect-element e ci))
-                    (element-content i))))
+        (if (part-relative-element? i)
+            (let ([content 
+                   (or (hash-table-get (collect-info-relatives ci)
+                                       i
+                                       #f)
+                       (let ([v ((part-relative-element-collect i) ci)])
+                         (hash-table-put! (collect-info-relatives ci)
+                                          i
+                                          v)
+                         v))])
+              (collect-content content ci))
+            (begin
+              (when (target-element? i)
+                (collect-target-element i ci))
+              (when (index-element? i)
+                (collect-index-element i ci))
+              (when (collect-element? i)
+                ((collect-element-collect i) ci))
+              (when (element? i)
+                (for-each (lambda (e)
+                            (collect-element e ci))
+                          (element-content i))))))
 
       (define/public (collect-target-element i ci)
         (collect-put! ci
@@ -213,6 +230,7 @@
       (define/public (resolve ds fns ci)
         (let ([ri (make-resolve-info ci
                                      (make-hash-table)
+                                     (make-hash-table 'equal)
                                      (make-hash-table 'equal))])
           (start-resolve ds fns ri)
           ri))
@@ -269,6 +287,8 @@
 
       (define/public (resolve-element i d ri)
         (cond
+         [(part-relative-element? i)
+          (resolve-content (part-relative-element-content i ri) d ri)]
          [(delayed-element? i)
           (resolve-content (or (hash-table-get (resolve-info-delays ri)
                                                i
@@ -372,6 +392,8 @@
           (render-content (element-content i) part ri)]
          [(delayed-element? i)
           (render-content (delayed-element-content i ri) part ri)]
+         [(part-relative-element? i)
+          (render-content (part-relative-element-content i ri) part ri)]
          [else
           (render-other i part ri)]))
 

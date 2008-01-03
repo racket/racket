@@ -14,6 +14,8 @@ is different and what API is provided.
 @section[#:tag "lang-servlets"]{Definition}
 @require[(for-label "dummy-language-servlet.ss")] ; to give a binding context
 
+@declare-exporting[web-server/docs/reference/dummy-language-servlet]
+
 A @defterm{Web language servlet} is a module written in the
 @scheme[(lib "lang.ss" "web-server")] module language. It should provide
 the following identifier:
@@ -102,6 +104,8 @@ by the Web language API.
 @section[#:tag "lang/web.ss"]{Web}
 @require[(for-label web-server/lang/web)]
 
+@defmodule[web-server/lang/web]
+
 @filepath{lang/web.ss} provides the most basic Web functionality.
 
 @defproc[(send/suspend/url [response-generator (url? . -> . response?)])
@@ -141,6 +145,8 @@ by the Web language API.
 @; ------------------------------------------------------------
 @section[#:tag "lang/stuff-url.ss"]{Stuff URL}
 @require[(for-label web-server/lang/stuff-url)]
+
+@defmodule[web-server/lang/stuff-url]
 
 @filepath{lang/stuff-url.ss} provides an interface for "stuffing"
 serializable values into URLs. Currently there is a particular
@@ -196,6 +202,8 @@ See @schememodname[web-server/servlet/web].}
 @section[#:tag "lang/file-box.ss"]{File Boxes}
 @require[(for-label web-server/lang/file-box)]
 
+@defmodule[web-server/lang/file-box]
+
 As mentioned earlier, it is dangerous to rely on the store in
 Web Language servlets, due to the deployment scenarios available
 to them. @filepath{lang/file-box.ss} provides a simple API to replace
@@ -233,6 +241,8 @@ are on a shared medium.}
 @; ------------------------------------------------------------
 @section[#:tag "lang/web-param.ss"]{Web Parameters}
 @require[(for-label web-server/lang/web-param)]
+
+@defmodule[web-server/lang/web-param]
 
 As mentioned earlier, it is not easy to use @scheme[parameterize] in the
 Web Language. @filepath{lang/web-param.ss} provides (roughly) the same

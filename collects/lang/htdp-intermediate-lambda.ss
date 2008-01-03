@@ -45,4 +45,4 @@
   ;; procedures:
   (provide-and-document
    procedures
-   (all-from beginner: lang/htdp-intermediate procedures)))
+   (all-from intermediate: lang/htdp-intermediate procedures)))

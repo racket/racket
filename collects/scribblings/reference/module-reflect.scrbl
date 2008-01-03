@@ -244,21 +244,55 @@ the module's declared name.}
 @defproc[(module-compiled-imports [compiled-module-code compiled-module-expression?])
          (values (listof module-path-index?)
                  (listof module-path-index?)
+                 (listof module-path-index?)
                  (listof module-path-index?))]{
 
-Takes a module declaration in compiled form and returns three values:
-a list of module references for the module's explicit imports, a list
-of module references for the module's explicit for-syntax imports, and
-a list of module references for the module's explicit for-template
+Takes a module declaration in compiled form and returns four values: a
+list of module references for the module's explicit imports, a list of
+module references for the module's explicit for-syntax imports, a list
+of module references for the module's explicit for-template imports,
+and a list of module references for the module's explicit for-label
 imports.}
 
 @defproc[(module-compiled-exports [compiled-module-code compiled-module-expression?])
-         (values (listof symbol?)
-                 (listof symbol?))]{
+         (values list? list? list? list? list? list?)]{
 
-Takes a module declaration in compiled form and returns two values: a
-list of symbols for the module's explicit variable exports, a list
-symbols for the module's explicit syntax exports.}
+Returns six lists: one for the module's explicit variable exports, one
+for the module's explicit syntax exports, one for the module's
+explicit @scheme[for-syntax] variable exports, one for the module's
+explicit @scheme[for-syntax] syntax exports, one for the module's
+explicit @scheme[for-label] variable exports, one for the module's
+explicit @scheme[for-label] syntax exports.
+
+Each list more precisely matches the contract
+
+@schemeblock[
+(listof (list/c symbol?
+                (listof 
+                 (or/c module-path-index?
+                       (list/c module-path-index?
+                               (one-of/c #f 'for-syntax 'for-label)
+                               symbol?)))))
+]
+
+For each element of the list, the leading symbol is the name of the
+export.
+
+The second part---the list of @tech{module path index} values,
+etc.---describes the origin of the exported identifier. If the origin
+list is @scheme[null], then the exported identifier is defined in the
+module. If the exported identifier is re-exported, instead, then the
+origin list provides information on the import that was re-exported.
+The origin list has more than one element if the binding was imported
+multiple times from (possibly) different sources.
+
+For each origin, a @tech{module path index} by itself means that the
+binding was imported with a plain @scheme[require] (not
+@scheme[for-syntax] or @scheme[for-label]), and imported identifier
+has the same name as the re-exported name. An origin represented with
+a list indicates explicitly the import, the import mode (plain
+@scheme[require], @scheme[for-syntax], or @scheme[for-label]) and the
+original export name of the re-exported binding.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "dynreq"]{Dynamic Module Access}

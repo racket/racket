@@ -15,7 +15,7 @@
           "mred-doc.ss"
 
           (for-label scheme/base
-                     mred/mred
+                     scheme/gui/base
                      scheme/class
                      slideshow)
 

@@ -26,7 +26,9 @@ itself protected; see @secref[#:doc '(lib
 "scribblings/reference/reference.scrbl") "modprotect"].)  Using this
 macro should be considered as a declaration that your code is itself
 unsafe, therefore can lead to serious problems in case of bugs: it is
-your responsibility to provide a safe interface.
+your responsibility to provide a safe interface. Bindings that become
+available only via @scheme[unsafe!] are documented in this manual in
+sections with titles starting ``Unsafe.''
 
 For examples of common FFI usage patterns, see the defined interfaces
 in the @filepath{ffi} collection.

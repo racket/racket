@@ -4,14 +4,10 @@
           "prim-ops.ss"
           (for-label lang/htdp-beginner))
 
-@(define-syntax-rule (bd intm-case)
-   (begin
-    (require (for-label lang/htdp-advanced))
-    (define intm-case (scheme case))))
-@(bd adv-case)
-
 
 @title[#:style 'toc]{Beginner Student}
+
+@declare-exporting[lang/htdp-beginner]
 
 @schemegrammar*+library[
 #:literals (define define-struct lambda cond else if and or empty true false require lib planet)
@@ -175,8 +171,7 @@ end'' of the @scheme[cond] form.}
 
 @defidform[else]{
 
-The @scheme[else] keyword can be used only with @scheme[cond], or in
-Advanced language, with @|adv-case|.}
+The @scheme[else] keyword can be used only with @scheme[cond].}
 
 @; ----------------------------------------------------------------------
 

@@ -445,6 +445,61 @@ mark}. Multiple applications of the same
 @scheme[make-syntax-introducer] result procedure use the same mark,
 and different result procedures use distinct marks.}
 
+
+@defproc[(syntax-local-transforming-module-provides?) boolean?]{
+
+Returns @scheme[#t] while a @tech{provide transformer} is running (see
+@scheme[make-provide-transformer]) or while a @schemeidfont{expand} sub-form of
+@scheme[#%provide] is expanded, @scheme[#f] otherwise.}
+
+
+@defproc[(syntax-local-module-defined-identifiers) 
+         (values (listof identifier?) (listof identifier?))]{
+
+Can be called only while
+@scheme[syntax-local-transforming-module-provides?] returns
+@scheme[#t].
+
+It returns two lists of identifiers corresponding to all definitions
+within the module being expanded. This information is used for
+implementing @scheme[provide] sub-forms like @scheme[all-defined-out].
+
+The first result list corresponds to @tech{phase} 0 (i.e., normal)
+definitions, and the second corresponds to @tech{phase} -1 (i.e.,
+for-syntax) definitions.}
+
+
+@defproc[(syntax-local-module-required-identifiers
+          [mod-path module-path?]
+          [normal-imports? any/c]
+          [syntax-imports? any/c]
+          [label-imports? any/c])
+         (values (listof identifier?)
+                 (listof identifier?) 
+                 (listof identifier?))]{
+
+Can be called only while
+@scheme[syntax-local-transforming-module-provides?] returns
+@scheme[#t].
+
+It returns three lists of identifiers corresponding to all bindings
+imported into the module being expanded using the module path
+@scheme[mod-path]. This information is used for implementing
+@scheme[provide] sub-forms like @scheme[all-from-out].
+
+The first result list corresponds to @tech{phase level} 0 (i.e.,
+normal) bindings, and the second list corresponds to @tech{phase
+level} -1 (i.e., for-syntax) bindings, and the last list corresponds
+corresponds to @tech{label phase level} (i.e., for-label) bindings.
+
+The @scheme[normal-imports?], @scheme[syntax-imports?], and
+@scheme[label-imports?] arguments determine whether each of normal,
+@scheme[for-syntax], and @scheme[for-label] @scheme[require]s are
+considered in building the result lists. Note that normal
+@scheme[require]s can add to all three lists, while
+@scheme[for-syntax] and @scheme[for-label] @scheme[require]s
+contribute only to one of the latter two lists, respectively.}
+
 @; ----------------------------------------------------------------------
 
 @section[#:tag "require-trans"]{@scheme[require] Transformers}
@@ -529,6 +584,7 @@ A structure representing a single imported identifier:
        value.}
 
 }}
+
 
 @defstruct[import-source ([mod-path-stx (and/c syntax?
                                                (lambda (x)
@@ -627,58 +683,3 @@ A structure representing a single imported identifier:
        exporting module.}
 
 }}
-
-
-@defproc[(syntax-local-transforming-module-provides?) boolean?]{
-
-Returns @scheme[#t] while a provide transformer is running or while a
-@schemeidfont{expand} sub-form of @scheme[#%provide] is expanded,
-@scheme[#f] otherwise.}
-
-
-@defproc[(syntax-local-module-defined-identifiers) 
-         (values (listof identifier?) (listof identifier?))]{
-
-Returns two lists of identifiers corresponding to all definitions
-within the module being expanded. This information is used for
-implementing @scheme[provide] sub-forms like @scheme[all-defined-out].
-
-The first result list corresponds to @tech{phase} 0 (i.e., normal)
-definitions, and the second corresponds to @tech{phase} -1 (i.e.,
-for-syntax) definitions.
-
-This procedure can be called only while
-@scheme[syntax-local-transforming-module-provides?] returns
-@scheme[#t].}
-
-
-@defproc[(syntax-local-module-required-identifiers
-          [mod-path module-path?]
-          [normal-imports? any/c]
-          [syntax-imports? any/c]
-          [label-imports? any/c])
-         (values (listof identifier?)
-                 (listof identifier?) 
-                 (listof identifier?))]{
-
-Returns three lists of identifiers corresponding to all bindings
-imported into the module being expanded using the module path
-@scheme[mod-path]. This information is used for implementing
-@scheme[provide] sub-forms like @scheme[all-from-out].
-
-The first result list corresponds to @tech{phase level} 0 (i.e.,
-normal) bindings, and the second list corresponds to @tech{phase
-level} -1 (i.e., for-syntax) bindings, and the last list corresponds
-corresponds to @tech{label phase level} (i.e., for-label) bindings.
-
-The @scheme[normal-imports?], @scheme[syntax-imports?], and
-@scheme[label-imports?] arguments determine whether each of normal,
-@scheme[for-syntax], and @scheme[for-label] @scheme[require]s are
-considered in building the result lists. Note that normal
-@scheme[require]s can add to all three lists, while
-@scheme[for-syntax] and @scheme[for-label] @scheme[require]s
-contribute only to one of the latter two lists, respectively.
-
-This procedure can be called only while
-@scheme[syntax-local-transforming-module-provides?] returns
-@scheme[#t].}

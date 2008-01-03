@@ -15,6 +15,8 @@ Some of these are documented here.
 @section[#:tag "timer.ss"]{Timers}
 @require[(for-label web-server/private/timer)]
 
+@defmodule[web-server/private/timer]
+
 @filepath{private/timer.ss} provides a functionality for running
 procedures after a given amount of time, that may be extended.
 
@@ -60,6 +62,8 @@ procedures after a given amount of time, that may be extended.
 @; ------------------------------------------------------------
 @section[#:tag "connection-manager.ss"]{Connection Manager}
 @require[(for-label web-server/private/connection-manager)]
+
+@defmodule[web-server/private/connection-manager]
 
 @filepath{private/connection-manager.ss} provides functionality for managing pairs of
 input and output ports. We have plans to allow a number of different strategies
@@ -120,8 +124,22 @@ This dispatching server component is useful on its own.
 The @schememodname[web-server/private/dispatch-server-sig] library
 provides two signatures.
 
+@defsignature[dispatch-server^ ()]{
+
 The @scheme[dispatch-server^] signature is an alias for
 @scheme[web-server^].
+
+ @defproc[(serve) (-> void)]{
+  Runs the server and returns a procedure that shuts down the server.
+ }
+
+ @defproc[(serve-ports [ip input-port?]
+                       [op output-port?])
+          void]{
+ Serves a single connection represented by the ports @scheme[ip] and
+ @scheme[op].
+ }
+}
 
 @defsignature[dispatch-server-config^ ()]{
 
@@ -160,6 +178,8 @@ provides the unit that actually implements a dispatching server.
 @require[(for-label web-server/private/closure)]
 @require[(for-label web-server/private/define-closure)]
 
+@defmodule[web-server/private/closure]
+
 The defunctionalization process of the Web Language (see @secref["lang"])
 requires an explicit representation of closures that is serializable.
 @filepath{private/closure.ss} is this representation. It provides:
@@ -183,6 +203,9 @@ requires an explicit representation of closures that is serializable.
 These are difficult to use directly, so @filepath{private/define-closure.ss}
 defines a helper form:
 
+@subsection[#:style 'hidden]{Define Closure}
+@defmodule[web-server/private/define-closure]
+
 @defform[(define-closure tag formals (free-vars ...) body)]{
  Defines a closure, constructed with @scheme[make-tag] that accepts
  @scheme[freevars ...], that when invoked with @scheme[formals]
@@ -194,6 +217,8 @@ defines a helper form:
 @; ------------------------------------------------------------
 @section[#:tag "cache-table.ss"]{Cache Table}
 @require[(for-label web-server/private/cache-table)]
+
+@defmodule[web-server/private/cache-table]
 
 @filepath{private/cache-table.ss} provides a set of caching hash table
 functions.
@@ -225,6 +250,8 @@ functions.
 @section[#:tag "mime-types.ss"]{MIME Types}
 @require[(for-label web-server/private/mime-types)]
 
+@defmodule[web-server/private/mime-types]
+
 @filepath{private/mime-types.ss} provides function for dealing with @filepath{mime.types}
 files.
 
@@ -245,8 +272,11 @@ files.
 @section[#:tag "mod-map.ss"]{Serialization Utilities}
 @require[(for-label web-server/private/mod-map)]
 
-@scheme[(lib "serialize.ss")] provides the functionality of serializing
-values. @filepath{private/mod-map.ss} compresses the serialized representation.
+@defmodule[web-server/private/mod-map]
+
+The @schememodname[scheme/serialize] library provides the
+functionality of serializing values. @filepath{private/mod-map.ss}
+compresses the serialized representation.
 
 @defproc[(compress-serial [sv serialized-value?])
          compressed-serialized-value?]{
@@ -263,6 +293,8 @@ values. @filepath{private/mod-map.ss} compresses the serialized representation.
 @; ------------------------------------------------------------
 @section[#:tag "url-param.ss"]{URL Param}
 @require[(for-label web-server/private/url-param)]
+
+@defmodule[web-server/private/url-param]
 
 The @web-server needs to encode information in URLs. If this data
 is stored in the query string, than it will be overridden by browsers that
@@ -288,6 +320,8 @@ with this process.
 @; ------------------------------------------------------------
 @section[#:tag "util.ss"]{Miscellaneous Utilities}
 @require[(for-label web-server/private/util)]
+
+@defmodule[web-server/private/util]
 
 There are a number of other miscellaneous utilities the @web-server
 needs. They are provided by @filepath{private/util.ss}.

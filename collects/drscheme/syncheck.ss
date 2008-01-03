@@ -2380,9 +2380,7 @@ If the namespace does not, they are colored the unbound color.
                          (syntax-span stx))
                 (let* ([start (- (syntax-position stx) 1)]
                        [fin (+ start (syntax-span stx))]
-                       [source-mod (list-ref binding-info 0)]
-                       [source-id (list-ref binding-info 1)]
-                       [definition-tag (xref-binding->definition-tag (get-xref) source-mod source-id)])
+                       [definition-tag (xref-binding->definition-tag (get-xref) binding-info #f)])
                   (when definition-tag
                     (let-values ([(path tag) (xref-tag->path+anchor (get-xref) definition-tag)])
                       (when path

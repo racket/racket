@@ -5,30 +5,8 @@
 
 @section[#:tag "foreign:tagged-pointers"]{Tagged C Pointer Types}
 
-@defproc*[([(cpointer-has-tag? [cptr any/c][tag any/c]) boolean?]
-           [(cpointer-push-tag! [cptr any/c][tag any/c]) void])]{
-
-These two functions treat pointer tags as lists of tags.  As described
-in @secref["foreign:pointer-funcs"], a pointer tag does not have any
-role, except for Scheme code that uses it to distinguish pointers;
-these functions treat the tag value as a list of tags, which makes it
-possible to construct pointer types that can be treated as other
-pointer types, mainly for implementing inheritance via upcasts (when a
-struct contains a super struct as its first element).
-
-The @scheme[cpointer-hash-tag] function checks whether if the given
-@scheme[cptr] has the @scheme[tag]. A pointer has a tag @scheme[tag]
-when its tag is either @scheme[eq?] to @scheme[tag] or a list that
-contains (@scheme[memq]) @scheme[t].
-
-The @scheme[cpointer-push-tag!] function pushes the given @scheme[tag]
-value on @scheme[cptr]'s tags.  The main properties of this operation
-are: (a) pushing any tag will make later calls to
-@scheme[cpointer-has-tag?] succeed with this tag, and (b) the pushed tag
-will be used when printing the pointer (until a new value is pushed).
-Technically, pushing a tag will simply set it if there is no tag set,
-otherwise push it on an existing list or an existing value (treated as
-a single-element list).}
+The unsafe @scheme[cpointer-has-tag?] and @scheme[cpointer-push-tag!]
+operations manage tags to distinguish pointer types.
 
 @defproc*[([(_cpointer [tag any/c]
                        [ptr-type ctype? _pointer]
@@ -82,12 +60,43 @@ type produced by @scheme[_cpointer/null] type. Finally,
 @schemevarfont{id}@schemeidfont{-tag} is defined as an accessor to
 obtain a tag. The tag is the string form of @schemevarfont{id}.}
 
+@; ----------------------------------------
+
+@subsection{Unsafe Tagged C Pointer Functions}
+
+@declare-exporting[scribblings/foreign/unsafe-foreign]
+
+@defproc*[([(cpointer-has-tag? [cptr any/c][tag any/c]) boolean?]
+           [(cpointer-push-tag! [cptr any/c][tag any/c]) void])]{
+
+These two functions treat pointer tags as lists of tags.  As described
+in @secref["foreign:pointer-funcs"], a pointer tag does not have any
+role, except for Scheme code that uses it to distinguish pointers;
+these functions treat the tag value as a list of tags, which makes it
+possible to construct pointer types that can be treated as other
+pointer types, mainly for implementing inheritance via upcasts (when a
+struct contains a super struct as its first element).
+
+The @scheme[cpointer-hash-tag] function checks whether if the given
+@scheme[cptr] has the @scheme[tag]. A pointer has a tag @scheme[tag]
+when its tag is either @scheme[eq?] to @scheme[tag] or a list that
+contains (@scheme[memq]) @scheme[t].
+
+The @scheme[cpointer-push-tag!] function pushes the given @scheme[tag]
+value on @scheme[cptr]'s tags.  The main properties of this operation
+are: (a) pushing any tag will make later calls to
+@scheme[cpointer-has-tag?] succeed with this tag, and (b) the pushed tag
+will be used when printing the pointer (until a new value is pushed).
+Technically, pushing a tag will simply set it if there is no tag set,
+otherwise push it on an existing list or an existing value (treated as
+a single-element list).}
+
 @; ------------------------------------------------------------
 
 @section[#:tag "foreign:cvector"]{Safe C Vectors}
 
 The @scheme[cvector] form can be used as a type C vectors (i.e., a the
-pointer to the memory block)
+pointer to the memory block).
 
 @defproc[(make-cvector [type ctype?][length exact-nonnegative-integer?]) cvector?]{
 
@@ -139,6 +148,11 @@ Converts the @scheme[cvec] C vector object to a list of values.}
 Converts the list @scheme[lst] to a C vector of the given
 @scheme[type].}
 
+@; ----------------------------------------
+
+@subsection{Unsafe C Vector Construction}
+
+@declare-exporting[scribblings/foreign/unsafe-foreign]
 
 @defproc[(make-cvector* [cptr any/c][type ctype?][length exact-nonnegative-integer?]) cvector?]{
 
@@ -237,11 +251,10 @@ just aliases for byte-string bindings: @scheme[make-u8vector],
                  "Like " (scheme _cvector) ", but for vectors of " (scheme elem) " elements."))))])))
 
 
-@defform*[[(_u8vector mode type maybe-len)
-           _u8vector]]{
+@srfi-4-vector/desc[u8 _uint8]{
 
-Like @scheme[_cvector], but for vectors of @scheme[_byte] elements.}
-
+Like @scheme[_cvector], but for vectors of @scheme[_byte] elements. These are
+aliases for @schemeidfont{byte} operations.}
 
 @srfi-4-vector[s8 _int8]
 @srfi-4-vector[s16 _int16]

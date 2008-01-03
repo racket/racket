@@ -9,6 +9,19 @@ from @as-index{shared objects} (a.k.a. @defterm{@as-index{shared
 libraries}} or @defterm{@as-index{dynamically loaded libraries}}). The
 @scheme[ffi-lib] function loads a shared object.
 
+@defproc[(ffi-lib? [v any/c]) boolean>]{
+
+Returns @scheme[#t] if @scheme[v] is the result of @scheme[ffi-lib],
+@scheme[#f] otherwise.}
+
+
+@; ----------------------------------------------------------------------
+
+@section{Unsafe Library Functions}
+
+@declare-exporting[scribblings/foreign/unsafe-foreign]
+
+
 @defproc[(ffi-lib [path (or/c path-string? false/c)]
                   [version (or/c string? (listof string?) false/c) #f]) any]{
 
@@ -47,12 +60,6 @@ once because of the missing symbol, and eventually produce an error
 message that comes from @cpp{dlopen("foo.so")} which will look like
 the file is not found.  In such cases try to specify a full or
 relative path (containing slashes, e.g., @filepath{./foo.so}).}
-
-
-@defproc[(ffi-lib? [v any/c]) boolean>]{
-
-Returns @scheme[#t] if @scheme[v] is the result of @scheme[ffi-lib],
-@scheme[#f] otherwise.}
 
 
 @defproc[(get-ffi-obj [objname (or/c string? bytes? symbol?)]

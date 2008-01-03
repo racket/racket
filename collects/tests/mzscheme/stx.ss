@@ -443,37 +443,37 @@
                (cdddr b))
         b)))
 
-(test '('#%kernel case-lambda scheme/init case-lambda #f)  identifier-binding* #'case-lambda)
-(test '(scheme/promise delay scheme/init delay #f)  identifier-binding* #'delay)
-(test '('#%kernel #%module-begin scheme/init #%plain-module-begin #f)  identifier-binding* #'#%plain-module-begin)
+(test '('#%kernel case-lambda scheme/init case-lambda #f #f)  identifier-binding* #'case-lambda)
+(test '(scheme/promise delay scheme/init delay #f #f)  identifier-binding* #'delay)
+(test '('#%kernel #%module-begin scheme/init #%plain-module-begin #f #f)  identifier-binding* #'#%plain-module-begin)
 (require (only-in scheme/base [#%plain-module-begin #%pmb]))
-(test '('#%kernel #%module-begin scheme/base #%plain-module-begin #f)  identifier-binding* #'#%pmb)
+(test '('#%kernel #%module-begin scheme/base #%plain-module-begin #f #f)  identifier-binding* #'#%pmb)
 
 (let ([b (identifier-binding (syntax-case (expand #'(module m scheme/base
 						      (require (only-in (lib "lang/htdp-intermediate.ss") [cons bcons]))
 						      bcons)) ()
 			       [(mod m mz (#%mod-beg req (app call-with-values (lambda () cons) print) void))
 				(let ([s (syntax cons)])
-				  (test 'beginner:cons syntax-e s) ; 'was 'bcons
+				  (test 'bcons syntax-e s)
 				  s)]))])
   (let-values ([(real real-base) (module-path-index-split (car b))]
 	       [(nominal nominal-base) (module-path-index-split (caddr b))])
     (test '"teachprims.ss" values real)
     (test 'beginner-cons cadr b)
-    (test 'lang/private/beginner-funs values nominal) ; was '(lib "lang/htdp-intermediate.ss")
+    (test '(lib "lang/htdp-intermediate.ss") values nominal)
     (test 'cons cadddr b)))
 
 (let ([b (identifier-binding (syntax-case (expand #'(module m (lib "lang/htdp-intermediate.ss")
 						      cons)) ()
 			       [(mod m beg (#%mod-beg cons))
 				(let ([s (syntax cons)])
-				  (test 'beginner:cons syntax-e s) ; was 'cons
+				  (test 'cons syntax-e s)
 				  s)]))])
   (let-values ([(real real-base) (module-path-index-split (car b))]
 	       [(nominal nominal-base) (module-path-index-split (caddr b))])
     (test '"teachprims.ss" values real)
     (test 'beginner-cons cadr b)
-    (test 'lang/private/beginner-funs values nominal) ; was '(lib "lang/htdp-intermediate.ss")
+    (test '(lib "lang/htdp-intermediate.ss") values nominal)
     (test 'cons cadddr b)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

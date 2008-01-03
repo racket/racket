@@ -27,7 +27,8 @@
    [splice ([run list?])]
    [part-index-decl ([plain-seq (listof string?)]
                      [entry-seq list?])]
-   [part-collect-decl ([element element?])]
+   [part-collect-decl ([element (or/c element?
+                                      part-relative-element?)])]
    [part-tag-decl ([tag tag?])])
 
   (define (decode-string s)

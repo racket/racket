@@ -2,9 +2,9 @@
 @require[scribble/manual]
 @require["utils.ss"]
 
-@title[#:tag "doclang"]{Document Module Language}
+@title[#:tag "doclang"]{Document Language}
 
-@defmodule[scribble/doclang]{The @schememodname[scribble/doclang]
+@defmodulelang[scribble/doclang]{The @schememodname[scribble/doclang]
 language provides everything from @scheme[scheme/base], except that it
 replaces the @scheme[#%module-begin] form.}
 

@@ -34,6 +34,8 @@ the server runs until the process is killed.
 @section[#:tag "web-server.ss"]{Functional}
 @require[(for-label web-server/web-server)]
 
+@defmodule[web-server/web-server]
+
 @filepath{web-server.ss} provides a number of functions for easing embedding
 of the @web-server in other applications, or loading a custom
 dispatcher. See @filepath{run.ss} for an example of such a script.

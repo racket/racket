@@ -3,6 +3,7 @@
   (require "decode.ss"
            "struct.ss"
            "scheme.ss"
+           "search.ss"
            "config.ss"
            "basic.ss"
            "manual-struct.ss"
@@ -10,6 +11,7 @@
            scheme/class
            scheme/stxparam
            mzlib/serialize
+           setup/main-collects
            (for-syntax scheme/base)
            (for-label scheme/base
                       scheme/class))
@@ -309,34 +311,74 @@
 
   ;; ----------------------------------------
 
-  (define-struct sig (tagstr))
+  (define (gen-absolute-tag)
+    `(abs ,(make-generated-tag)))
+
+  (define-struct sig (id))
 
   (define (definition-site name stx-id form?)
     (let ([sig (current-signature)])
       (if sig
-          (make-link-element (if form?
-                                 "schemesyntaxlink" 
-                                 "schemevaluelink")
-                             (list (schemefont (symbol->string name)))
-                             `(,(if form? 'sig-form 'sig-val)
-                               ,(format "~a::~a" (sig-tagstr sig) name)))
+          (*sig-elem (sig-id sig) name)
           (annote-exporting-library
            (to-element (make-just-context name stx-id))))))
 
-  (define (id-to-tag id)
-    (add-signature-tag id #f))
+  (define (libs->str libs)
+    (and (pair? libs)
+         (format "~a"
+                 (let ([p (resolved-module-path-name
+                           (module-path-index-resolve
+                            (module-path-index-join (car libs) #f)))])
+                   (if (path? p)
+                       (path->main-collects-relative p)
+                       p)))))
 
-  (define (id-to-form-tag id)
-    (add-signature-tag id #t))
+  (define (id-to-target-maker id dep?)
+    (*id-to-target-maker 'def id dep?))
 
-  (define (add-signature-tag id form?)
+  (define (id-to-form-target-maker id dep?)
+    (*id-to-target-maker 'form id dep?))
+  
+  (define (*id-to-target-maker sym id dep?)
     (let ([sig (current-signature)])
-      (if sig
-          `(,(if form? 'sig-form 'sig-val)
-            ,(format "~a::~a" (sig-tagstr sig) (syntax-e id)))
-          (if form?
-              (register-scheme-form-definition id)
-              (register-scheme-definition id #t)))))
+      (lambda (content mk)
+        (make-part-relative-element
+         (lambda (ci)
+           (let ([e (ormap (lambda (p)
+                             (ormap (lambda (e)
+                                      (and (exporting-libraries? e) e))
+                                    (part-to-collect p)))
+                           (collect-info-parents ci))])
+             (unless e
+               ;; Call raise-syntax-error to capture error message:
+               (with-handlers ([exn:fail:syntax? (lambda (exn)
+                                                   (fprintf (current-error-port)
+                                                            "~a\n"
+                                                            (exn-message exn)))])
+                 (raise-syntax-error 'WARNING
+                                     "no declared exporting libraries for definition"
+                                     id)))
+             (if e
+                 (let* ([lib-str (libs->str (exporting-libraries-libs e))]
+                        [tag (list (if sig
+                                       (case sym
+                                         [(def) 'sig-val]
+                                         [(form) 'sig-def])
+                                       sym)
+                                   (format "~a::~a~a~a"
+                                           lib-str
+                                           (if sig (syntax-e (sig-id sig)) "")
+                                           (if sig "::" "")
+                                           (syntax-e id)))])
+                   (if (or sig (not dep?))
+                       (list (mk tag))
+                       (list (make-target-element
+                              #f
+                              (list (mk tag))
+                              `(dep ,(format "~a::~a" lib-str (syntax-e id)))))))
+                 content)))
+         (lambda () (car content))
+         (lambda () (car content))))))
 
   (define current-signature (make-parameter #f))
 
@@ -344,21 +386,25 @@
     (*sig-elem (quote-syntax sig) 'elem))
 
   (define (*sig-elem sig elem)
-    (let ([s (to-element elem)]
-          [tag (format "~a::~a" 
-                       (register-scheme-form-definition sig #t)
-                       elem)])
+    (let ([s (to-element/no-color elem)])
       (make-delayed-element
        (lambda (renderer sec ri)
-         (let* ([vtag `(sig-val ,tag)]
-                [stag `(sig-form ,tag)]
-                [sd (resolve-get/tentative sec ri stag)])
+         (let* ([tag (find-scheme-tag sec ri sig 'for-label)]
+                [str (and tag (format "~a::~a" (cadr tag) elem))]
+                [vtag (and tag `(sig-val ,str))]
+                [stag (and tag `(sig-form ,str))]
+                [sd (and stag (resolve-get/tentative sec ri stag))])
            (list
-            (cond
-             [sd 
-              (make-link-element "schemesyntaxlink" (list s) stag)]
-             [else
-              (make-link-element "schemevaluelink" (list s) vtag)]))))
+            (make-element
+             "schemesymbol"
+             (list
+              (cond
+               [sd 
+                (make-link-element "schemesyntaxlink" (list s) stag)]
+               [vtag
+                (make-link-element "schemevaluelink" (list s) vtag)]
+               [else
+                s]))))))
        (lambda () s)
        (lambda () s))))
 
@@ -379,15 +425,29 @@
        (elem (method a b) " in " (scheme a))]))
 
   (define (*method sym id)
-    (**method sym (id-to-tag id)))
+    (**method sym id))
 
-  (define (**method sym tag)
-    (make-element
-     "schemesymbol"
-     (list (make-link-element
-            "schemevaluelink"
-            (list (symbol->string sym))
-            (method-tag tag sym)))))
+  (define (**method sym id/tag)
+    (let ([content (list (symbol->string sym))])
+      ((if (identifier? id/tag)
+           (lambda (c mk)
+             (make-delayed-element
+              (lambda (ren p ri)
+                (let ([tag (find-scheme-tag p ri id/tag 'for-label)])
+                  (if tag
+                      (list (mk tag))
+                      content)))
+              (lambda () (car content))
+              (lambda () (car content))))
+           (lambda (c mk) (mk id/tag)))
+       content
+       (lambda (tag)
+         (make-element
+          "schemesymbol"
+          (list (make-link-element
+                 "schemevaluelink"
+                 content
+                 (method-tag tag sym))))))))
 
   (define (method-tag vtag sym)
     (list 'meth
@@ -458,12 +518,18 @@
     (syntax-rules ()
       [(_ lib ...) (*declare-exporting '(lib ...))]))
 
+  (define-struct (exporting-libraries element) (libs))
+
   (define (*declare-exporting libs)
-    (make-part-collect-decl
-     (make-collect-element #f
-                           null
-                           (lambda (ri)
-                             (collect-put! ri '(exporting-libraries #f)libs)))))
+    (make-splice
+     (list
+      (make-part-collect-decl
+       (make-collect-element #f
+                             null
+                             (lambda (ri)
+                               (collect-put! ri '(exporting-libraries #f) libs))))
+      (make-part-collect-decl
+       (make-exporting-libraries #f null libs)))))
 
   (define-syntax (quote-syntax/loc stx)
     (syntax-case stx ()
@@ -1016,45 +1082,51 @@
                                                                (hspace 1)
                                                                (if first?
                                                                    (let* ([mname (extract-id prototype)]
-                                                                          [ctag (id-to-tag within-id)]
-                                                                          [tag (method-tag ctag mname)]
+                                                                          [target-maker (id-to-target-maker within-id #f)]
                                                                           [content (list (*method mname within-id))])
-                                                                     (if tag
-                                                                         (make-toc-target-element
-                                                                          #f
-                                                                          (list (make-index-element #f
-                                                                                                    content
-                                                                                                    tag
-                                                                                                    (list (symbol->string mname))
-                                                                                                    content
-                                                                                                    (with-exporting-libraries
-                                                                                                     (lambda (libs)
-                                                                                                       (make-method-index-desc 
-                                                                                                        (syntax-e within-id)
-                                                                                                        libs
-                                                                                                        mname
-                                                                                                        ctag)))))
-                                                                          tag)
+                                                                     (if target-maker
+                                                                         (target-maker
+                                                                          content
+                                                                          (lambda (ctag)
+                                                                            (let ([tag (method-tag ctag mname)])
+                                                                              (make-toc-target-element
+                                                                               #f
+                                                                               (list (make-index-element #f
+                                                                                                         content
+                                                                                                         tag
+                                                                                                         (list (symbol->string mname))
+                                                                                                         content
+                                                                                                         (with-exporting-libraries
+                                                                                                          (lambda (libs)
+                                                                                                            (make-method-index-desc 
+                                                                                                             (syntax-e within-id)
+                                                                                                             libs
+                                                                                                             mname
+                                                                                                             ctag)))))
+                                                                               tag))))
                                                                          (car content)))
                                                                    (*method (extract-id prototype) within-id))))]
                                           [else
                                            (if first?
-                                               (let ([tag (id-to-tag stx-id)]
+                                               (let ([target-maker (id-to-target-maker stx-id #t)]
                                                      [content (list (definition-site (extract-id prototype) stx-id #f))])
-                                                 (if tag
-                                                     (make-toc-target-element
-                                                      #f
-                                                      (list (make-index-element #f
-                                                                                content
-                                                                                tag
-                                                                                (list (symbol->string (extract-id prototype)))
-                                                                                content
-                                                                                (with-exporting-libraries
-                                                                                 (lambda (libs)
-                                                                                   (make-procedure-index-desc
-                                                                                    (extract-id prototype)
-                                                                                    libs)))))
-                                                      tag)
+                                                 (if target-maker
+                                                     (target-maker
+                                                      content
+                                                      (lambda (tag)
+                                                        (make-toc-target-element
+                                                         #f
+                                                         (list (make-index-element #f
+                                                                                   content
+                                                                                   tag
+                                                                                   (list (symbol->string (extract-id prototype)))
+                                                                                   content
+                                                                                   (with-exporting-libraries
+                                                                                    (lambda (libs)
+                                                                                      (make-procedure-index-desc
+                                                                                       (extract-id prototype)
+                                                                                       libs)))))
+                                                         tag)))
                                                      (car content)))
                                                (annote-exporting-library
                                                 (to-element (make-just-context (extract-id prototype)
@@ -1241,27 +1313,31 @@
          (let* ([name
                  (apply string-append
                         (map symbol->string (cdar wrappers)))]
-                [tag 
-                 (id-to-tag
+                [target-maker
+                 (id-to-target-maker
                   (datum->syntax stx-id
                                  (string->symbol
-                                  name)))])
-           (if tag
-               (inner-make-target-element
-                #f
-                (list
-                 (make-index-element #f
-                                     (list content)
-                                     tag
-                                     (list name)
-                                     (list (schemeidfont (make-element "schemevaluelink" (list name))))
-                                     (with-exporting-libraries
-                                      (lambda (libs)
-                                        (let ([name (string->symbol name)])
-                                          (if (eq? 'info (caar wrappers))
-                                              (make-struct-index-desc name libs)
-                                              (make-procedure-index-desc name libs)))))))
-                tag)
+                                  name))
+                  #t)])
+           (if target-maker
+               (target-maker
+                (list content)
+                (lambda (tag)
+                  (inner-make-target-element
+                   #f
+                   (list
+                    (make-index-element #f
+                                        (list content)
+                                        tag
+                                        (list name)
+                                        (list (schemeidfont (make-element "schemevaluelink" (list name))))
+                                        (with-exporting-libraries
+                                         (lambda (libs)
+                                           (let ([name (string->symbol name)])
+                                             (if (eq? 'info (caar wrappers))
+                                                 (make-struct-index-desc name libs)
+                                                 (make-procedure-index-desc name libs)))))))
+                   tag)))
                content))
          (cdr wrappers))))
 
@@ -1454,20 +1530,24 @@
                   (list (make-flow
                          (list
                           (make-paragraph
-                           (list (let ([tag ((if form? id-to-form-tag id-to-tag) stx-id)]
+                           (list (let ([target-maker ((if form? id-to-form-target-maker id-to-target-maker) stx-id #t)]
                                        [content (list (definition-site name stx-id form?))])
-                                   (if tag
-                                       (make-toc-target-element
-                                        #f
-                                        (list (make-index-element #f
-                                                                  content
-                                                                  tag
-                                                                  (list (symbol->string name))
-                                                                  content
-                                                                  (with-exporting-libraries
-                                                                   (lambda (libs)
-                                                                     (make-thing-index-desc name libs)))))
-                                        tag)
+                                   (if target-maker
+                                       (target-maker
+                                        content
+                                        (lambda (tag)
+                                          (make-toc-target-element
+                                           #f
+                                           (list
+                                            (make-index-element #f
+                                                                content
+                                                                tag
+                                                                (list (symbol->string name))
+                                                                content
+                                                                (with-exporting-libraries
+                                                                 (lambda (libs)
+                                                                   (make-thing-index-desc name libs)))))
+                                           tag)))
                                        (car content)))
                                  spacer ":" spacer))))
                         (make-flow
@@ -1520,31 +1600,29 @@
                                 `(,x . ,(cdr form)))))))
                        (and kw-id
                             (eq? form (car forms))
-                            (let ([tag (id-to-tag kw-id)]
-                                  [stag (id-to-form-tag kw-id)]
+                            (let ([target-maker (id-to-form-target-maker kw-id #t)]
                                   [content (list (definition-site (if (pair? form)
                                                                       (car form) 
                                                                       form)
                                                    kw-id
                                                    #t))])
-                              (if tag
-                                  (make-target-element
-                                   #f
-                                   (list
-                                    (make-toc-target-element
-                                     #f
-                                     (if kw-id
-                                         (list (make-index-element #f
-                                                                   content
-                                                                   tag
-                                                                   (list (symbol->string (syntax-e kw-id)))
-                                                                   content
-                                                                   (with-exporting-libraries
-                                                                    (lambda (libs)
-                                                                      (make-form-index-desc (syntax-e kw-id) libs)))))
-                                         content)
-                                     stag))
-                                   tag)
+                              (if target-maker
+                                  (target-maker
+                                   content
+                                   (lambda (tag)
+                                     (make-toc-target-element
+                                      #f
+                                      (if kw-id
+                                          (list (make-index-element #f
+                                                                    content
+                                                                    tag
+                                                                    (list (symbol->string (syntax-e kw-id)))
+                                                                    content
+                                                                    (with-exporting-libraries
+                                                                     (lambda (libs)
+                                                                       (make-form-index-desc (syntax-e kw-id) libs)))))
+                                          content)
+                                      tag)))
                                   (car content)))))))))
                  forms form-procs)
             (if (null? sub-procs)
@@ -1680,9 +1758,19 @@
     (make-link-element (if u? #f "plainlink") null `(part ,(doc-prefix doc s))))
   (define (seclink tag #:underline? [u? #t] #:doc [doc #f] . s)
     (make-link-element (if u? #f "plainlink") (decode-content s) `(part ,(doc-prefix doc tag))))
+
   (define (*schemelink stx-id id . s)
-    (make-link-element #f (decode-content s) (or (register-scheme-definition stx-id)
-                                                 (format "--UNDEFINED:~a--" (syntax-e stx-id)))))
+    (let ([content (decode-content s)])
+      (make-delayed-element
+       (lambda (r p ri)
+         (list
+          (make-link-element #f 
+                             content
+                             (or (find-scheme-tag p ri stx-id 'for-label)
+                                 (format "--UNDEFINED:~a--" (syntax-e stx-id))))))
+       (lambda () content)
+       (lambda () content))))
+     
   (define-syntax schemelink
     (syntax-rules ()
       [(_ id . content) (*schemelink (quote-syntax id) 'id . content)]))
@@ -1841,28 +1929,45 @@
   (define-struct spec (def))
   (define-struct impl (def))
 
+  (define (id-info id)
+    (let ([b (identifier-label-binding id)])
+      (list (let ([p (resolved-module-path-name (module-path-index-resolve (caddr b)))])
+              (if (path? p)
+                  (path->main-collects-relative p)
+                  p))
+            (cadddr b)
+            (list-ref b 5))))
+
   (define-serializable-struct cls/intf (name-element super intfs methods))
 
   (define (make-inherited-table r d ri decl)
-    (let* ([start (let ([key (register-scheme-definition (decl-name decl))])
-                    (list (cons key (lookup-cls/intf d ri key))))]
-           [supers (cdr
-                    (let loop ([supers start][accum null])
-                      (cond
-                       [(null? supers) (reverse accum)]
-                       [(memq (car supers) accum)
-                        (loop (cdr supers) accum)]
-                       [else
-                        (let ([super (car supers)])
-                          (loop (append (map (lambda (i)
-                                               (cons i (lookup-cls/intf d ri i)))
-                                             (reverse (cls/intf-intfs (cdr super))))
-                                        (let ([s (cls/intf-super (cdr super))])
-                                          (if s
-                                              (list (cons s (lookup-cls/intf d ri s)))
-                                              null))
-                                        (cdr supers))
-                                (cons super accum)))])))]
+    (let* ([start (let ([key (find-scheme-tag d ri (decl-name decl) 'for-label)])
+                    (if key
+                        (list (cons key (lookup-cls/intf d ri key)))
+                        null))]
+           [supers (if (null? start)
+                       null
+                       (cdr
+                        (let loop ([supers start][accum null])
+                          (cond
+                           [(null? supers) (reverse accum)]
+                           [(memq (car supers) accum)
+                            (loop (cdr supers) accum)]
+                           [else
+                            (let ([super (car supers)])
+                              (loop (append (filter values
+                                                    (map (lambda (i)
+                                                           (let ([key (find-scheme-tag d ri i 'for-label)])
+                                                             (and key
+                                                                  (cons key (lookup-cls/intf d ri key)))))
+                                                         (reverse (cls/intf-intfs (cdr super)))))
+                                            (let ([s (and (cls/intf-super (cdr super))
+                                                          (find-scheme-tag d ri (cls/intf-super (cdr super)) 'for-label))])
+                                              (if s
+                                                  (list (cons s (lookup-cls/intf d ri s)))
+                                                  null))
+                                            (cdr supers))
+                                    (cons super accum)))]))))]
            [ht (let ([ht (make-hash-table)])
                  (for-each (lambda (i)
                              (when (meth? i) 
@@ -1902,27 +2007,29 @@
 
   (define (make-decl-collect decl)
     (make-part-collect-decl
-     (make-collect-element
-      #f null
-      (lambda (ci)
-        (let ([tag (register-scheme-definition (decl-name decl))])
-          (collect-put! ci 
-                        `(cls/intf ,tag)
-                        (make-cls/intf
-                         (make-element
-                          "schemesymbol"
-                          (list (make-link-element
-                                 "schemevaluelink"
-                                 (list (symbol->string (syntax-e (decl-name decl))))
-                                 tag)))
-                         (and (decl-super decl)
-                              (not (free-label-identifier=? (quote-syntax object%)
-                                                            (decl-super decl)))
-                              (register-scheme-definition (decl-super decl)))
-                         (map register-scheme-definition (decl-intfs decl))
-                         (map (lambda (m)
-                                (meth-name m))
-                              (filter meth? (decl-body decl))))))))))
+     ((id-to-target-maker (decl-name decl) #f)
+      (list "ignored")
+      (lambda (tag)
+        (make-collect-element
+         #f null
+         (lambda (ci)
+           (collect-put! ci 
+                         `(cls/intf ,(cadr tag))
+                         (make-cls/intf
+                          (make-element
+                           "schemesymbol"
+                           (list (make-link-element
+                                  "schemevaluelink"
+                                  (list (symbol->string (syntax-e (decl-name decl))))
+                                  tag)))
+                          (and (decl-super decl)
+                               (not (free-label-identifier=? (quote-syntax object%)
+                                                             (decl-super decl)))
+                               (id-info (decl-super decl)))
+                          (map id-info (decl-intfs decl))
+                          (map (lambda (m)
+                                 (meth-name m))
+                               (filter meth? (decl-body decl)))))))))))
 
   (define (build-body decl body)
     (append
@@ -1969,22 +2076,26 @@
          (list (make-flow 
                 (list
                  (make-paragraph
-                  (list (let ([tag (id-to-tag stx-id)]
+                  (list (let ([target-maker (id-to-target-maker stx-id #t)]
                               [content (list (annote-exporting-library (to-element stx-id)))])
-                          (if tag
-                              ((if whole-page? 
-                                   make-page-target-element
-                                   make-toc-target-element)
-                               #f
-                               (list (make-index-element #f
-                                                         content
-                                                         tag
-                                                         (list (symbol->string (syntax-e stx-id)))
-                                                         content
-                                                         (with-exporting-libraries
-                                                          (lambda (libs)
-                                                            (make-index-desc (syntax-e stx-id) libs)))))
-                               tag)
+                          (if target-maker
+                              (target-maker
+                               content
+                               (lambda (tag)
+                                 ((if whole-page? 
+                                      make-page-target-element
+                                      make-toc-target-element)
+                                  #f
+                                  (list
+                                   (make-index-element #f
+                                                       content
+                                                       tag
+                                                       (list (symbol->string (syntax-e stx-id)))
+                                                       content
+                                                       (with-exporting-libraries
+                                                        (lambda (libs)
+                                                          (make-index-desc (syntax-e stx-id) libs)))))
+                                  tag)))
                               (car content)))
                         spacer ":" spacer
                         (case kind
@@ -2222,36 +2333,38 @@
   (define (*xmethod/super cname name)
     (let ([get
            (lambda (d ri key)
-             (let ([v (lookup-cls/intf d ri key)])
-               (if v
-                   (cons (cls/intf-super v)
-                         (cls/intf-intfs v))
-                   null)))]
-          [ctag (id-to-tag cname)])
+             (if key
+                 (let ([v (lookup-cls/intf d ri key)])
+                   (if v
+                       (cons (cls/intf-super v)
+                             (cls/intf-intfs v))
+                       null))
+                 null))])
       (make-delayed-element
        (lambda (r d ri)
-         (let loop ([search (get d ri ctag)])
+         (let loop ([search (get d ri (find-scheme-tag d ri cname 'for-label))])
            (cond
             [(null? search)
              (list (make-element #f '("<method not found>")))]
             [(not (car search))
              (loop (cdr search))]
             [else
-             (let ([v (lookup-cls/intf d ri (car search))])
+             (let* ([a-key (find-scheme-tag d ri (car search) 'for-label)]
+                    [v (and a-key (lookup-cls/intf d ri a-key))])
                (if v
                    (if (member name (cls/intf-methods v))
                        (list
                         (make-element #f
-                                      (list (**method name (car search))
+                                      (list (**method name a-key)
                                             " in " 
                                             (cls/intf-name-element v))))
-                       (loop (append (cdr search) (get d ri (car search)))))
+                       (loop (append (cdr search) (get d ri (find-scheme-tag d ri (car search) 'for-label)))))
                    (loop (cdr search))))])))
        (lambda () (format "~a in ~a" (syntax-e cname) name))
        (lambda () (format "~a in ~a" (syntax-e cname) name)))))
 
-  (define (lookup-cls/intf d ri name)
-    (let ([v (resolve-get d ri `(cls/intf ,name))])
+  (define (lookup-cls/intf d ri tag)
+    (let ([v (resolve-get d ri `(cls/intf ,(cadr tag)))])
       (or v
           (make-cls/intf "unknown"
                          #f
@@ -2294,8 +2407,7 @@
                #t 
                (list (make-element #f '("signature")))
                (lambda ()
-                 (let ([in (parameterize ([current-signature (make-sig
-                                                              (id-to-form-tag stx-id))])
+                 (let ([in (parameterize ([current-signature (make-sig stx-id)])
                              (body-thunk))])
                    (if indent?
                        (let-values ([(pre-body post-body)
