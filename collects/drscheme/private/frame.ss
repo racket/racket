@@ -475,18 +475,36 @@
                   (height (cdr (preferences:get 'drscheme:keybindings-window-size)))
                   (style '(resize-border)))]
              [bp (make-object horizontal-panel% f)]
+             [search-field (new text-field% 
+                                [parent f]
+                                [label (string-constant mfs-search-string)]
+                                [callback (λ (a b) (update-bindings))])]
              [b-name (make-object button% (string-constant keybindings-sort-by-name)
-                       bp (λ x (update-bindings #f)))]
+                       bp (λ x 
+                            (set! by-key? #f)
+                            (update-bindings)))]
              [b-key (make-object button% (string-constant keybindings-sort-by-key)
-                      bp (λ x (update-bindings #t)))]
+                      bp (λ x 
+                           (set! by-key? #t)
+                           (update-bindings)))]
              [lb
               (make-object list-box% #f null f void)]
              [bp2 (make-object horizontal-panel% f)]
              [cancel (make-object button% (string-constant close)
                        bp2 (λ x (send f show #f)))]
              [space (make-object grow-box-spacer-pane% bp2)]
+             [filter-search
+              (λ (bindings)
+                (let ([str (send search-field get-value)])
+                  (if (equal? str "")
+                      bindings
+                      (let ([reg (regexp (regexp-quote str #f))])
+                        (filter (λ (x) (or (regexp-match reg (cadr x))
+                                           (regexp-match reg (format "~a" (car x)))))
+                                bindings)))))]
+             [by-key? #f]
              [update-bindings
-              (λ (by-key?)
+              (λ ()
                 (let ([format-binding/name
                        (λ (b) (format "~a (~a)" (cadr b) (car b)))]
                       [format-binding/key
@@ -498,13 +516,14 @@
                        (λ (a b) (string-ci<=? (cadr a) (cadr b)))])
                   (send lb set
                         (if by-key?
-                            (map format-binding/key (sort bindings predicate/key))
-                            (map format-binding/name (sort bindings predicate/name))))))])
+                            (map format-binding/key (sort (filter-search bindings) predicate/key))
+                            (map format-binding/name (sort (filter-search bindings) predicate/name))))))])
+      (send search-field focus)
       (send bp stretchable-height #f)
       (send bp set-alignment 'center 'center)
       (send bp2 stretchable-height #f)
       (send bp2 set-alignment 'right 'center)
-      (update-bindings #f)
+      (update-bindings)
       (send f show #t)))
   
   (define <%>
