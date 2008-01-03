@@ -42,7 +42,7 @@ BEGIN
             VALUE "FileVersion", "371, 0, 0, 0\0"
             VALUE "LegalCopyright", "Copyright © 1995-2008\0"
             VALUE "OriginalFilename", "MrEd.exe\0"
-            VALUE "ProductName", "PLT Scheme\0"
+            VALUE "ProductName", "MrEd\0"
             VALUE "ProductVersion", "371, 0, 0, 0\0"
         END
     END
