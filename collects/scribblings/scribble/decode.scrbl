@@ -10,9 +10,9 @@ plain text, except for @litchar["@"] escapes.  Roughly, it processes a
 stream of strings to produces instances of the
 @schememodname[scribble/struct] datatypes (see @secref["struct"]).}
 
-At the flow level, decoding recognizes a blank line as a paragraph
-separator. At the paragraph-content level, decoding makes just a few
-special text conversions:
+At the @tech{flow} level, decoding recognizes a blank line as a
+@tech{paragraph} separator. At the @tech{paragraph}-content level,
+decoding makes just a few special text conversions:
 
 @itemize{
 
