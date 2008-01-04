@@ -215,7 +215,8 @@ means? Hint: it is a contract!
 
 Consider a utility module for creating strings from banking records: 
 
-@schememod[scheme/base
+@schememod[
+scheme/base
 (require scheme/contract)
   
 (provide/contract
@@ -246,7 +247,8 @@ dot.
 
 @question[#:tag "exercise1"]{Solution to Exercise 1}
 
-@schememod[scheme/base
+@schememod[
+scheme/base
 (require scheme/contract)
 
 (define (digit-char? x) 
