@@ -60,7 +60,7 @@ END_XFORM_ARITH;
 #endif
 
 #ifdef MZ_USE_JIT_I386
-/* # define JIT_USE_FP_OPS */
+# define JIT_USE_FP_OPS
 #endif
 
 #ifdef MZ_USE_JIT_X86_64
@@ -1013,7 +1013,9 @@ long GC_initial_word(int sizeb);
 long GC_compute_alloc_size(long sizeb);
 long GC_alloc_alignment(void);
 
-static void *retry_alloc_code, *retry_alloc_code_keep_r0_r1;
+static void *retry_alloc_code;
+static void *retry_alloc_code_keep_r0_r1;
+static void *retry_alloc_code_keep_fpr1;
 
 static void *retry_alloc_r1; /* set by prepare_retry_alloc() */
 
@@ -1061,7 +1063,8 @@ static long initial_tag_word(Scheme_Type tag)
   return scheme_read_first_word((void *)&sp);
 }
 
-static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int keep_r0_r1)
+static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, 
+			int keep_r0_r1, int keep_fpr1)
 /* Puts allocated result at JIT_V1; first word is GC tag.
    Uses JIT_R2 as temporary. The allocated memory is "dirty" (i.e., not 0ed).
    Save FP0 when FP ops are enabled. */
@@ -1084,6 +1087,8 @@ static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int keep_
   /* Failure handling */
   if (keep_r0_r1) {
     (void)jit_calli(retry_alloc_code_keep_r0_r1);
+  } else if (keep_fpr1) {
+    (void)jit_calli(retry_alloc_code_keep_fpr1);
   } else {
     (void)jit_calli(retry_alloc_code);
   }
@@ -2576,7 +2581,7 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
       if (!no_alloc) {
 #ifdef INLINE_FP_OPS
 # ifdef CAN_INLINE_ALLOC
-        inline_alloc(jitter, sizeof(Scheme_Double), scheme_double_type, 0);
+        inline_alloc(jitter, sizeof(Scheme_Double), scheme_double_type, 0, 1);
         CHECK_LIMIT();
         jit_addi_p(JIT_R0, JIT_V1, sizeof(long));
         (void)jit_stxi_d_fppop(&((Scheme_Double *)0x0)->double_val, JIT_R0, JIT_FPR1);
@@ -3990,7 +3995,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
 #ifdef CAN_INLINE_ALLOC
       /* Inlined alloc */
-      inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_pair_type, 1);
+      inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_pair_type, 1, 0);
       CHECK_LIMIT();
 
       jit_stxi_p((long)&SCHEME_CAR(0x0) + sizeof(long), JIT_V1, JIT_R0);
@@ -4019,7 +4024,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
 #ifdef CAN_INLINE_ALLOC
       /* Inlined alloc */
-      inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_mutable_pair_type, 1);
+      inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_mutable_pair_type, 1, 0);
       CHECK_LIMIT();
 
       jit_stxi_p((long)&SCHEME_CAR(0x0) + sizeof(long), JIT_V1, JIT_R0);
@@ -4226,7 +4231,7 @@ static int generate_closure(Scheme_Closure_Data *data,
 # ifdef CAN_INLINE_ALLOC
     if (immediately_filled) {
       /* Inlined alloc */
-      inline_alloc(jitter, sz, scheme_native_closure_type, 0);
+      inline_alloc(jitter, sz, scheme_native_closure_type, 0, 0);
       CHECK_LIMIT();
       jit_addi_p(JIT_R0, JIT_V1, sizeof(long));
     } else
@@ -6388,21 +6393,25 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   }
 
 #ifdef CAN_INLINE_ALLOC
-  /* *** retry_alloc_code[_keep_r0_r1] *** */
-  for (i = 0; i < 2; i++) { 
-    if (i)
+  /* *** retry_alloc_code[{_keep_r0_r1,_keep_fpr1}] *** */
+  for (i = 0; i < 3; i++) { 
+    if (!i)
+      retry_alloc_code = jit_get_ip().ptr;
+    else if (i == 1)
       retry_alloc_code_keep_r0_r1 = jit_get_ip().ptr;
     else
-      retry_alloc_code = jit_get_ip().ptr;
+      retry_alloc_code_keep_fpr1 = jit_get_ip().ptr;
 
     mz_prolog(JIT_V1);
 #ifdef JIT_USE_FP_OPS
-    (void)jit_sti_d_fppop(&save_fp, JIT_FPR1);
+    if (i == 2) {
+      (void)jit_sti_d_fppop(&save_fp, JIT_FPR1);
+    }
 #endif
     JIT_UPDATE_THREAD_RSPTR();
     jit_prepare(2);
     CHECK_LIMIT();
-    if (i) {
+    if (i == 1) {
       jit_pusharg_p(JIT_R1);
       jit_pusharg_p(JIT_R0);
     } else {
@@ -6412,11 +6421,13 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     }
     (void)mz_finish(prepare_retry_alloc);
     jit_retval(JIT_R0);
-    if (i) {
+    if (i == 1) {
       jit_ldi_l(JIT_R1, &retry_alloc_r1);
     }
 #ifdef JIT_USE_FP_OPS
-    (void)jit_ldi_d_fppush(JIT_FPR1, &save_fp);
+    if (i == 2) {
+      (void)jit_ldi_d_fppush(JIT_FPR1, &save_fp);
+    }
 #endif
     mz_epilog(JIT_V1);
     CHECK_LIMIT();
