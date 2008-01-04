@@ -62,7 +62,7 @@
           ((s2) == 0 ? opr(0, (rd))                    \
            : (s2) == (s1) ? jit_fxch((rd), op(0, 0))   \
            : jit_fxch((rd), op((s2), 0)))              \
-        : (rd) == (s2) ? jit_fxch((s1), op(0, (rd) == 0 ? (s1) : (rd)))       \
+        : (rd) == (s2) ? ((s1) == 0 ? op((s1), (s2)) : jit_fxch((s2), op((s1), 0))) \
         : (FLDr (s1), op(0, (s2)+1), FSTPr((rd)+1)))
 
 #define jit_addr_d(rd,s1,s2)    jit_fp_binary((rd),(s1),(s2),FADDrr,FADDrr)

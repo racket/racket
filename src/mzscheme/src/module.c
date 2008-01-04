@@ -1842,10 +1842,10 @@ int scheme_is_module_path(Scheme_Object *obj)
         return 1;
       }
     } else if (SAME_OBJ(SCHEME_CAR(obj), planet_symbol)) {
-      Scheme_Object *a;
+      Scheme_Object *a, *subs;
       int len;
       
-      if (scheme_proper_list_length(obj) != 3)
+      if (scheme_proper_list_length(obj) < 3)
         return 0;
       obj = SCHEME_CDR(obj);
       a = SCHEME_CAR(obj);
@@ -1854,6 +1854,7 @@ int scheme_is_module_path(Scheme_Object *obj)
       if (!ok_path_string(a, 0, 1, 1))
         return 0;
       obj = SCHEME_CDR(obj);
+      subs = SCHEME_CDR(obj);
       obj = SCHEME_CAR(obj);
       len = scheme_proper_list_length(obj);
       if (len < 2)
@@ -1898,6 +1899,12 @@ int scheme_is_module_path(Scheme_Object *obj)
           } else
             return 0;
         } else
+          return 0;
+      }
+
+      for (; !SCHEME_NULLP(subs); subs = SCHEME_CDR(subs)) {
+        a = SCHEME_CAR(subs);
+        if (!ok_path_string(a, 0, 0, 0))
           return 0;
       }
 
