@@ -848,6 +848,10 @@ regpiece(int *flagp, int parse_flags, int at_start)
     } else
       *flagp = (op != '+') ? WORST : HASWIDTH;
     *flagp |= SPSTART;
+    if ((op == '?') && (flags & SPFIXED)) {
+      *flagp |= SPFIXED;
+      regmatchmin = 0;
+    }
 
     if (regparsestr[regparse+1] == '?') {
       greedy = 0;
