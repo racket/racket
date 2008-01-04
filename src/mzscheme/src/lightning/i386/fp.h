@@ -281,9 +281,9 @@ union jit_double_imm {
         PUSHLr(_EAX),                                          \
         FNSTSWr(_EAX),                                         \
         SHRLir(n, _EAX),                                       \
-        ((_and) ? ANDLir ((_and), _EAX) : 0),                  \
+        (void)((_and) ? ANDLir ((_and), _EAX) : 0),            \
         ((cmp) ? CMPLir ((cmp), _AL) : 0),                     \
-        POPLr(_EAX),                                           \
+        (void) POPLr(_EAX),                                     \
         res ((d), 0, 0, 0), _jit.x.pc)
 
 #define jit_fp_test_fppop(d, n, _and, res)                       \
@@ -295,13 +295,13 @@ union jit_double_imm {
         res,                                                   \
         ((d) != _EAX ? _O (0x90 + ((d) & 7)) : 0))     /* xchg */
 
-#define jit_fp_btest_fppop(d, n, _and, cmp, res)                 \
+#define jit_fp_btest_fppop(d, n, _and, cmp, res)               \
        (FUCOMPPr(1),                                           \
         PUSHLr(_EAX),                                          \
         FNSTSWr(_EAX),                                         \
         SHRLir(n, _EAX),                                       \
-        ((_and) ? ANDLir ((_and), _EAX) : 0),                  \
-        ((cmp) ? CMPLir ((cmp), _AL) : 0),                     \
+        (void)((_and) ? ANDLir ((_and), _EAX) : 0),            \
+        (void)((cmp) ? CMPLir ((cmp), _AL) : 0),               \
         POPLr(_EAX),                                           \
         res ((d), 0, 0, 0), _jit.x.pc)
 
