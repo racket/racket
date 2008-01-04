@@ -13,7 +13,7 @@ terminated by an end-of-file, but also because the longhand expansion
 of @litchar{#lang} depends on the name of the enclosing file.
 
 @;------------------------------------------------------------------------
-@section{The @scheme[module] Form}
+@section[#:tag "module-syntax"]{The @scheme[module] Form}
 
 The longhand form of a module declaration, which works in a
 @tech{REPL} as well as a file, is

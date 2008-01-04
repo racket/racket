@@ -1091,6 +1091,8 @@ information} and source-location information attached to
 @;------------------------------------------------------------------------
 @section[#:tag "module"]{Modules: @scheme[module], ...}
 
+@guideintro["module-syntax"]{@scheme[module]}
+
 @defform[(module id require-spec form ...)]{
 
 Declares a module named by combining @scheme[(#,(scheme quote) id)]
@@ -1204,6 +1206,8 @@ Legal only in a @tech{module begin context}, and handled by the
 @section-index["modules" "imports"]
 @section-index["modules" "exports"]
 
+@guideintro["module-require"]{@scheme[require]}
+
 @defform/subs[#:literals (only-in prefix-in except-in rename-in lib file planet + - =
                           for-syntax for-template for-label quote)
               (require require-spec ...)
@@ -1218,11 +1222,12 @@ Legal only in a @tech{module begin context}, and handled by the
                              derived-require-spec]
                [module-path (#,(scheme quote) id)
                             rel-string
-                            (lib rel-string ...)
+                            (lib rel-string ...+)
                             id
                             (file string)
                             (planet rel-string
-                                    (user-string pkg-string vers ...))]
+                                    (user-string pkg-string vers ...)
+                                    rel-string ...)]
                [id-maybe-renamed id
                                  [orig-id bind-id]]
                [vers nat
@@ -1302,6 +1307,8 @@ pre-defined forms are as follows.
  @specsubform[derived-require-spec]{See @secref["require-trans"] for
  information on expanding the set of @scheme[require-spec] forms.}
 
+@guideintro["module-paths"]{module paths}
+
 A @scheme[module-path] identifies a module, either through a concrete
 name in the form of an identifier, or through an indirect name that
 can trigger automatic loading of the module declaration. Except for
@@ -1310,8 +1317,10 @@ the @scheme[id] case below, the actual resolution is up to the current
 @scheme[current-module-name-resolver]), and the description below
 corresponds to the default @tech{module name resolver}.
 
- @specsubform[(#,(scheme quote) id)]{ Refers to a module previously declared
- interactively with the name @scheme[id].}
+ @specsubform[#:literals (quote)
+              (#,(scheme quote) id)]{
+ Refers to a module previously declared interactively with the name
+ @scheme[id].}
 
  @specsubform[rel-string]{A path relative to the containing source (as
  determined by @scheme[current-load-relative-directory] or
@@ -1325,7 +1334,7 @@ corresponds to the default @tech{module name resolver}.
  and the only allowed characters are ASCII letters, ASCII digits,
  @litchar{-}, @litchar{+}, @litchar{_}, @litchar{.}, and @litchar{/}.}
 
- @defsubform[(lib rel-string ...)]{A path to a module installed into
+ @defsubform[(lib rel-string ...+)]{A path to a module installed into
  a @tech{collection} (see @secref["collects"]). The @scheme[rel-string]s in
  @scheme[lib] are constrained similar to the plain @scheme[rel-string]
  case, with the additional constraint that a @scheme[rel-string]
@@ -1339,7 +1348,7 @@ corresponds to the default @tech{module name resolver}.
     @item{If a single @scheme[rel-string] is provided, and if it
     consists of a single element (i.e., no @litchar{/}) with no file
     suffix (i.e, no @litchar{.}), then @scheme[rel-string] names a
-    collection, and @filepath{main.ss} is the library file name.}
+    @tech{collection}, and @filepath{main.ss} is the library file name.}
 
     @item{If a single @scheme[rel-string] is provided, and if it
     consists of multiple @litchar{/}-separated elements, then each
@@ -1350,8 +1359,8 @@ corresponds to the default @tech{module name resolver}.
     @item{If a single @scheme[rel-string] is provided, and if it
     consists of a single element @italic{with} a file suffix (i.e, no
     @litchar{.}), then @scheme[rel-string] names a file within the
-    @filepath{mzlib} collection. (This convention is for compatibility
-    with older version of PLT Scheme.)}
+    @filepath{mzlib} @tech{collection}. (This convention is for
+    compatibility with older version of PLT Scheme.)}
 
     @item{Otherwise, when multiple @scheme[rel-string]s are provided,
     the first @scheme[rel-string] is effectively moved after the
@@ -1372,8 +1381,12 @@ corresponds to the default @tech{module name resolver}.
  case, but @scheme[string] is a path---possibly absolute---using the
  current platform's path conventions.}
 
- @defsubform[(planet rel-string (user-string pkg-string vers ...))]{
- Specifies a library available via the @PLaneT server.}
+ @defsubform[(planet rel-string (user-string pkg-string vers ...)
+                     rel-string ...)]{
+ Specifies a library available via the @PLaneT server. The
+ @scheme[rel-string]s are similar to the @scheme[lib] form, except
+ that the @scheme[(user-string pkg-string vers ...)]  names a
+ @|PLaneT|-based package instead of a @tech{collection}.}
 
 No identifier can be bound multiple times in a given @tech{phase
 level} by an import, unless all of the bindings refer to the same
@@ -1381,6 +1394,8 @@ original definition in the same module.  In a @tech{module context},
 an identifier can be either imported or defined for a given
 @tech{phase level}, but not both.}
 
+
+@guideintro["module-provide"]{@scheme[provide]}
 
 @defform/subs[#:literals (protect-out all-defined-out all-from-out rename-out 
                           except-out prefix-out struct-out
