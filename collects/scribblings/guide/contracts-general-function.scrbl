@@ -1,201 +1,124 @@
 #lang scribble/doc
 @require[scribble/manual]
 @require[scribble/eval]
+@require[scribble/struct]
 @require["guide-utils.ss"]
 @require["contracts-utils.ss"]
 @(require (for-label scheme/contract))
 
-<section title="Contracts on Functions in General" tag="genfunc" />
+@title{Contracts on Functions in General}
 
-<question title="Why do the error messages contain "..."?" tag="flat-named-contract">
+@question[#:tag "flat-named-contracts"]{Why do the error messages contain "..."?}
 
-<p>You wrote your module. You added contracts. You put them into the interface
+You wrote your module. You added contracts. You put them into the interface
 so that client programmers have all the information from interfaces. It's a
 piece of art: 
-<scheme>
-(module myaccount mzscheme
-  (require (lib "contract.ss"))
+@schememod[
+scheme/base
+(require scheme/contract)
 
-  (provide/contract
-   [deposit (-> (lambda (x)
-		  (and (number? x) (integer? x) (>= x 0)))
-		any)])
+(provide/contract
+ [deposit (-> (lambda (x)
+                (and (number? x) (integer? x) (>= x 0)))
+              any)])
   
-  (define this 0)
-  (define (deposit a) ...))
-</scheme>
+(define this 0)
+(define (deposit a) ...)
+]
 
-Several clients used your module. Others used their modules. And all of a sudden
-one of them sees this error message: 
+Several clients used your module. Others used their
+modules. And all of a sudden one of them sees this error
+message:
 
-<blockquote>
-<pre><font color="red">
-bank-client broke the contract (-> ??? any)
+@(make-element "schemeerror" 
+'("bank-client broke the contract (-> ??? any)
 it had with myaccount on deposit; 
-expected &lt;???>, given: -10
-</font></pre>
-</blockquote>
+expected <???>, given: -10"))
 
-Clearly, @scheme[bank-client] is a module that uses @scheme[myaccount]
-but what are the '?' doing there? Wouldn't it be nice if we had a name for this
-class of data much like we have string, number, and so on? 
+Clearly, @scheme[bank-client] is a module that uses
+@scheme[myaccount] but what are the @tt{?}s doing there?
+Wouldn't it be nice if we had a name for this class of data
+much like we have string, number, and so on?
 
-<p>For this situation, PLT Scheme provides "flat named contracts". The use of
+For this situation, PLT Scheme provides "flat named contracts". The use of
 "contract" shows that contracts are first-class values. The "flat" means that
 the collection of data is a subset of the built-in atomic classes of data; they
 are described by a predicate that consumes all Scheme values and produces a
 boolean. The "named" part says what we want to do: name the contract so that
 error messages become intelligible: 
 
-<scheme>
-(module myaccount mzscheme
-  (require (lib "contract.ss"))
+@schememod[
+scheme/base
+(require scheme/contract)
 
-  (define (amount? x) (and (number? x) (integer? x) (>= x 0)))
-  (define amount (flat-named-contract 'amount amount?))
+(define (amount? x) (and (number? x) (integer? x) (>= x 0)))
+(define amount (flat-named-contract 'amount amount?))
   
-  (provide/contract
-   [deposit (amount . -> . any)])
+(provide/contract
+ [deposit (amount . -> . any)])
   
-  (define this 0)
-  (define (deposit a) ...))
-</scheme>
+(define this 0)
+(define (deposit a) ...)
+]
 
-With this little change, the error message becomes all of sudden quite readable: 
+With this little change, the error message becomes all of
+sudden quite readable:
 
-<blockquote>
-<pre><font color="red">
-bank-client broke the contract (-> amount any)
+@(make-element "schemeerror" 
+'("bank-client broke the contract (-> amount any)
 it had with myaccount on deposit; 
-expected &lt;amount>, given: -10
-</font></pre>
-</blockquote>
+expected <amount>, given: -10"))
 
-</question>
+@question[#:tag "optionals"]{Can a contract specify what the values of optional arguments to a function must be?}
 
-<question title="Can a contract specify that the result depends on the arguments?" tag="arrow-d">
+Sure, using the @scheme[->*] contract. For example, 
 
-<p>Here is an excerpt from an imaginary (pardon the pun) <a
-name="numerics-module">numerics module</a>:
+@question[#:tag "arrow-d"]{Can a contract specify that the result depends on the arguments?}
 
-<scheme>
-(module numerics mzscheme 
-  (require (lib "contract.ss"))
+Here is an excerpt from an imaginary (pardon the pun) numerics module:
 
-  (provide/contract 
-   [sqrt.v1 (->d (lambda (x) (>= x 1))
-                 (lambda (argument) 
-                   (lambda (result)
-                     (<= result argument))))]
-    ...)
- ...)  
-</scheme>
+@schememod[
+scheme/base
+(require scheme/contract)
+
+(provide/contract 
+ [sqrt.v1 (->d ([argument (>=/c 1)])
+               ()
+               [result (<=/c argument)])])
+...
+]
 
 The contract for the exported function @scheme[sqrt.v1] uses the
 @scheme[->d] rather than @scheme[->] function contract. The "d"
 stands for <em>dependent</em> contract, meaning the contract for the
 function range depends on the value of the argument. 
 
-<p>In this particular case, the argument of @scheme[sqrt.v1] is greater
+In this particular case, the argument of @scheme[sqrt.v1] is greater
 or equal to 1. Hence a very basic correctness check is that the result is
-smaller than the argument. [Naturally, if this function is critical, one
-could strengthen this check with additional clauses.]
+smaller than the argument. (Naturally, if this function is critical, one
+could strengthen this check with additional clauses.)
 
-<p>In general, a dependent function contract checks the argument, then
-applies the function in the range position to the argument, and uses the
-result of this application (usually a closure) as the range check. 
+In general, a dependent function contract looks just like
+the more general @scheme[->*] contract, but with names added
+that can be used elsewhere in the contract.
 
-<p>Let's look at a second example to see how this closure creating business
-works so well here. Take a look at the following module, which exports
-(among other things) a @scheme[deposit] function for a bank
-account. Whether the programmer implements this bank account imperatively
-or functionally, the balance of the account should increase when a customer
-deposits money: 
-
-<a name="deposit" />
-<scheme>
-(module account mzscheme 
-  (require (lib "contract.ss"))
-
-  (define-struct account (balance))
-  (define amount natural-number/c)
-
-  (provide/contract
-   ;; create an account with the given initial deposit 
-   [create (amount . -> . account?)]
-
-   ;; what is the current balance of the account?
-   [balance (account . -> . amount)]
-
-   ;; deposit the given amount into the given account 
-   ;; account? amount -> account?
-   [deposit (->d account? 
-                 amount
-                 (lambda (account amount)
-                   (let ([balance0 (balance account)])
-                     (lambda (result)
-                       (and (account? result) 
-                            (<= balance0 (balance result)))))))]
-    ... )
-  
-  ...
-  )
-</scheme>
-
-<p>The module implements the creation of accounts, balance checks, account
-deposits, and many other functions presumably. In principle, the
-@scheme[deposit] function consumes an account and an amount, adds the
-amount to the account, and returns the (possibly modified) account. 
-
-<p>To ensure the increase in the account's balance, the contract is a
-dependent contract. The function on the right of the @scheme[->d]
-contract combinator consumes the two argument values: an account and an
-amount. It then returns a function that checks @scheme[deposit]'s
-result. In this case, it checks whether the result is an account and
-whether @scheme[balance0] is smaller than the account's balance. Note
-that @scheme[balance0] is the value that @scheme[balance] extracted
-from the given account <em>before</em> the range-checking function was
-produced. 
-
-</question>
-
-<question title="See: currying would help with contracts!" tag="curry">
-
-<p>Exactly!
-
-<p>The contract for @scheme[sqrt.v1] suggests that curried versions of
-the numeric comparison operators would come in handy for defining contracts
-and combining them with contract combinators such as @scheme[->d]. 
-
-<p>Here is a revision of <a href="#numerics-module">the
-@scheme[numerics] module</a> that exploits these special contract
-combinators: 
-
-<scheme>
-(module numerics mzscheme 
-  (require (lib "contract.ss"))
-
-  (provide/contract 
-   [sqrt.2 (->d (>=/c 1.0) <=/c)]
-   ...)
- ...)  
-</scheme>
-
-The combinator @scheme[>=/c] consumes a number @scheme[x] and
-produces a contract. This contract also consumes a second number, say
-@scheme[y], and makes sure that @scheme[(>= y x)] holds. The
-contract combinator @scheme[<=/c] works in an analogous fashion. 
-
-<p>Thus in the above example, the contract for @scheme[sqrt.v2] makes
-sure that its argument is greater or equal to 1.0 and that its result is
-less than or equal to its argument. 
-
-<p>Yes, there are many other contract combinators such as @scheme[<=/c]
+Yes, there are many other contract combinators such as @scheme[<=/c]
 and @scheme[>=/c], and it pays off to look them up in the contract
-report section (of the mzlib manual). They simplify contracts tremendously
+section of the reference manual. They simplify contracts tremendously
 and make them more accessible to potential clients. 
 
-</question>
+@;{
+
+To add: keywords, optional arguments.
+
+in dependent contracts, discuss what happens when a
+dependent contract with optional arguments doesn't appear at
+the call site.
+
+}
+
+
+@;{
 
 <question title="Can a contract specify that arguments depend on each other?" tag="arrow-r">
 
@@ -665,3 +588,4 @@ To specify such contracts combine @scheme[case->] with
 the other function contract combinators, like we did in
 the @scheme[substring1] function above.
 
+}

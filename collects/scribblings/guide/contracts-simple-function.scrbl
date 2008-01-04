@@ -178,7 +178,7 @@ scheme/base
 
 Lesson: look up the built-in contracts. 
 
-@question[#:tag "and-or"]{Are and/c and or/c contract combinators? What of listof?}
+@question[#:tag "and-or"]{Are @scheme[and/c] and @scheme[or/c] contract combinators? What of @scheme[listof]?}
 
 The short answer is yes. Both @scheme[and/c] and @scheme[or/c]
 ombine contracts and they do what you expect them to do. 

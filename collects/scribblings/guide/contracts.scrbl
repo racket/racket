@@ -9,8 +9,8 @@
 
 @include-section["contracts-intro.scrbl"]
 @include-section["contracts-simple-function.scrbl"]
-@;{
 @include-section["contracts-general-function.scrbl"]
+@;{
 @include-section["contracts-structure.scrbl"]
 @include-section["contracts-class.scrbl"]
 @include-section["contracts-example.scrbl"]
