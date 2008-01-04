@@ -1,4 +1,4 @@
 
 (module info setup/infotab
   (define name "MzScheme")
-  (define version '(370)))
+  (define version '(400)))
