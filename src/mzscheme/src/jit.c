@@ -60,7 +60,7 @@ END_XFORM_ARITH;
 #endif
 
 #ifdef MZ_USE_JIT_I386
-# define JIT_USE_FP_OPS
+/* # define JIT_USE_FP_OPS */
 #endif
 
 #ifdef MZ_USE_JIT_X86_64
