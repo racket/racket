@@ -60,7 +60,7 @@ END_XFORM_ARITH;
 #endif
 
 #ifdef MZ_USE_JIT_I386
-/* # define JIT_USE_FP_OPS */
+# define JIT_USE_FP_OPS
 #endif
 
 #ifdef MZ_USE_JIT_X86_64
@@ -1017,6 +1017,10 @@ static void *retry_alloc_code, *retry_alloc_code_keep_r0_r1;
 
 static void *retry_alloc_r1; /* set by prepare_retry_alloc() */
 
+#ifdef JIT_USE_FP_OPS
+static double save_fp;
+#endif
+
 static void *prepare_retry_alloc(void *p, void *p2)
 {
   /* Alocate enough to trigger a new page */
@@ -1059,7 +1063,8 @@ static long initial_tag_word(Scheme_Type tag)
 
 static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int keep_r0_r1)
 /* Puts allocated result at JIT_V1; first word is GC tag.
-   Uses JIT_R2 as temporary. The allocated memory is "dirty" (i.e., not 0ed). */
+   Uses JIT_R2 as temporary. The allocated memory is "dirty" (i.e., not 0ed).
+   Save FP0 when FP ops are enabled. */
 {
   GC_CAN_IGNORE jit_insn *ref, *reffail;
   long a_word, sz, algn;
@@ -2436,6 +2441,41 @@ static int can_fast_double(int arith, int cmp, int two_args)
   return 0;
 }
 
+/* The following FP-generation code is written to work both with a FP
+   stack (i387) and normal FP regsiters (everything else), though the
+   double-agent operations that end in _fppop() and _fppush(). In
+   FP-stack mode, the register names don't actually matter, but the
+   pushes and pops much balance. The popping branch operations pop
+   both arguments before branching. */
+
+#if !defined(MZ_USE_JIT_I386) || defined(JIT_X86_64)
+/* Not FP stack, so use normal variants. */
+#define jit_movi_d_fppush(rd,immd)    jit_movi_d(rd,immd)
+#define jit_ldi_d_fppush(rd, is)      jit_ldi_d(rd, is)
+#define jit_ldr_d_fppush(rd, rs)      jit_ldr_d(rd, rs)
+#define jit_ldxi_d_fppush(rd, rs, is) jit_ldxi_d(rd, rs, is)
+#define jit_addr_d_fppop(rd,s1,s2)    jit_addr_d(rd,s1,s2)
+#define jit_subr_d_fppop(rd,s1,s2)    jit_subr_d(rd,s1,s2)
+#define jit_subrr_d_fppop(rd,s1,s2)   jit_subrr_d(rd,s1,s2)
+#define jit_mulr_d_fppop(rd,s1,s2)    jit_mulr_d(rd,s1,s2)
+#define jit_divr_d_fppop(rd,s1,s2)    jit_divr_d(rd,s1,s2)
+#define jit_divrr_d_fppop(rd,s1,s2)   jit_divrr_d(rd,s1,s2)
+#define jit_negr_d_fppop(rd,rs)       jit_negr_d(rd,rs)
+#define jit_abs_d_fppop(rd,rs)        jit_abs_d(rd,rs)
+#define jit_sti_d_fppop(id, rs)       jit_sti_d(id, rs)
+#define jit_stxi_d_fppop(id, rd, rs)  jit_stxi_d(id, rd, rs)
+#define jit_bger_d_fppop(d, s1, s2)   jit_bger_d(d, s1, s2)
+#define jit_bantiger_d_fppop(d, s1, s2) jit_bantiger_d(d, s1, s2)
+#define jit_bler_d_fppop(d, s1, s2)   jit_bler_d(d, s1, s2)
+#define jit_bantiler_d_fppop(d, s1, s2) jit_bantiler_d(d, s1, s2)
+#define jit_bgtr_d_fppop(d, s1, s2)   jit_bgtr_d(d, s1, s2)
+#define jit_bantigtr_d_fppop(d, s1, s2) jit_bantigtr_d(d, s1, s2)
+#define jit_bltr_d_fppop(d, s1, s2)   jit_bltr_d(d, s1, s2)
+#define jit_bantiltr_d_fppop(d, s1, s2) jit_bantiltr_d(d, s1, s2)
+#define jit_beqr_d_fppop(d, s1, s2)   jit_beqr_d(d, s1, s2)
+#define jit_bner_d_fppop(d, s1, s2)   jit_bner_d(d, s1, s2)
+#endif
+
 static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int reversed, int two_args, int second_const,
                                  jit_insn **_refd, jit_insn **_refdt,
                                  int branch_short)
@@ -2467,51 +2507,57 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
     __END_SHORT_JUMPS__(1);
 
     /* Yes, they're doubles. */
-    jit_ldxi_d(JIT_FPR0, JIT_R0, &((Scheme_Double *)0x0)->double_val);
+    jit_ldxi_d_fppush(JIT_FPR1, JIT_R0, &((Scheme_Double *)0x0)->double_val);
     if (two_args) {
-      jit_ldxi_d(JIT_FPR1, JIT_R1, &((Scheme_Double *)0x0)->double_val);
+      jit_ldxi_d_fppush(JIT_FPR0, JIT_R1, &((Scheme_Double *)0x0)->double_val);
     } else if ((arith == -1) && !second_const && reversed) {
       reversed = 0;
+    } else if (arith == 11) {
+      /* abs needs no extra number */
     } else {
       double d = second_const;      
-      jit_movi_d(JIT_FPR1, d);
+      jit_movi_d_fppush(JIT_FPR0, d);
       reversed = !reversed;
       cmp = -cmp;
     }
     if (arith) {
       switch (arith) {
       case 1:
-        jit_addr_d(JIT_FPR0, JIT_FPR0, JIT_FPR1);
+        jit_addr_d_fppop(JIT_FPR1, JIT_FPR0, JIT_FPR1);
         break;
       case 2:
-        jit_mulr_d(JIT_FPR0, JIT_FPR0, JIT_FPR1);
+        jit_mulr_d_fppop(JIT_FPR1, JIT_FPR0, JIT_FPR1);
         break;
       case -2:
         if (reversed)
-          jit_divr_d(JIT_FPR0, JIT_FPR0, JIT_FPR1);
+          jit_divrr_d_fppop(JIT_FPR1, JIT_FPR0, JIT_FPR1);
         else
-          jit_divr_d(JIT_FPR0, JIT_FPR1, JIT_FPR0);
+          jit_divr_d_fppop(JIT_FPR1, JIT_FPR0, JIT_FPR1);
         break;
       case -1:
         {
           if (!two_args && !second_const && !reversed) {
             /* Need a special case to make sure that (- 0.0) => -0.0 */
-            jit_negr_d(JIT_FPR0, JIT_FPR0);
+            jit_negr_d_fppop(JIT_FPR1, JIT_FPR1);
           } else if (reversed)
-            jit_subr_d(JIT_FPR0, JIT_FPR0, JIT_FPR1);
+            jit_subrr_d_fppop(JIT_FPR1, JIT_FPR0, JIT_FPR1);
           else
-            jit_subr_d(JIT_FPR0, JIT_FPR1, JIT_FPR0);
+            jit_subr_d_fppop(JIT_FPR1, JIT_FPR0, JIT_FPR1);
         }
         break;
       case 9: /* min */
       case 10: /* max */
         {
-          GC_CAN_IGNORE jit_insn *refc;
+          GC_CAN_IGNORE jit_insn *refc, *refn;
           __START_SHORT_JUMPS__(1);
+	  /* If R0 is nan, then copy to R1, ensuring nan result */
+	  refn = jit_beqr_d(jit_forward(), JIT_FPR1, JIT_FPR1);
+          jit_movr_p(JIT_R1, JIT_R0);
+	  mz_patch_branch(refn);
           if (arith == 9) {
-            refc = jit_bler_d(jit_forward(), JIT_FPR0, JIT_FPR1);
+            refc = jit_bger_d_fppop(jit_forward(), JIT_FPR0, JIT_FPR1);
           } else {
-            refc = jit_bger_d(jit_forward(), JIT_FPR0, JIT_FPR1);
+	    refc = jit_bltr_d_fppop(jit_forward(), JIT_FPR0, JIT_FPR1);
           }
           jit_movr_p(JIT_R0, JIT_R1);
           mz_patch_branch(refc);
@@ -2520,10 +2566,7 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
         }
         break;
       case 11: /* abs */
-        __START_SHORT_JUMPS__(1);
-        refskip = jit_bger_d(jit_forward(), JIT_FPR0, JIT_FPR1);
-        jit_subr_d(JIT_FPR0, JIT_FPR1, JIT_FPR0);
-        __END_SHORT_JUMPS__(1);
+        jit_abs_d_fppop(JIT_FPR1, JIT_FPR1);
         break;
       default:
         break;
@@ -2536,8 +2579,9 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
         inline_alloc(jitter, sizeof(Scheme_Double), scheme_double_type, 0);
         CHECK_LIMIT();
         jit_addi_p(JIT_R0, JIT_V1, sizeof(long));
+        (void)jit_stxi_d_fppop(&((Scheme_Double *)0x0)->double_val, JIT_R0, JIT_FPR1);
 # else
-        (void)jit_sti_d(&double_result, JIT_FPR0);    
+        (void)jit_sti_d_fppop(&double_result, JIT_FPR1);    
         JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
         mz_prepare(0);
         (void)mz_finish(malloc_double);
@@ -2546,46 +2590,47 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
 #endif
         CHECK_LIMIT();
         
-        (void)jit_stxi_d(&((Scheme_Double *)0x0)->double_val, JIT_R0, JIT_FPR0);    
-
         if (refskip) {
           __START_SHORT_JUMPS__(1);
           mz_patch_branch(refskip);
           __END_SHORT_JUMPS__(1);
         }
       }
+
     } else {
+      /* The "anti" variants below invert the branch. Unlike the "un" 
+         variants, the "anti" variants invert the comparison result
+         after the layer where +nan.0 always generates false. */
       __START_SHORT_JUMPS__(branch_short);
       switch (cmp) {
       case -2:
-        refdt = jit_bltr_d(jit_forward(), JIT_FPR1, JIT_FPR0);
+        refd = jit_bantiltr_d_fppop(jit_forward(), JIT_FPR0, JIT_FPR1);
         break;
       case -1:
-        refdt = jit_bler_d(jit_forward(), JIT_FPR1, JIT_FPR0);
+        refd = jit_bantiler_d_fppop(jit_forward(), JIT_FPR0, JIT_FPR1);
         break;
       case 0:
-        refdt = jit_beqr_d(jit_forward(), JIT_FPR1, JIT_FPR0);
+        refd = jit_bantieqr_d_fppop(jit_forward(), JIT_FPR0, JIT_FPR1);
         break;
       case 1:
-        refdt = jit_bger_d(jit_forward(), JIT_FPR1, JIT_FPR0);
+        refd = jit_bantiger_d_fppop(jit_forward(), JIT_FPR0, JIT_FPR1);
         break;
       case 2:
-        refdt = jit_bgtr_d(jit_forward(), JIT_FPR1, JIT_FPR0);
+        refd = jit_bantigtr_d_fppop(jit_forward(), JIT_FPR0, JIT_FPR1);
         break;
       default:
-        refdt = NULL;
+        refd = NULL;
         break;
       }
       __END_SHORT_JUMPS__(branch_short);
-      *_refdt = refdt;
+      *_refd = refd;
     }
-
     __START_SHORT_JUMPS__(1);
   }
 
-  /* Jump to return result or false branch: */
-  refd = jit_jmpi(jit_forward());
-  *_refd = refd;
+  /* Jump to return result or true branch: */
+  refdt = jit_jmpi(jit_forward());
+  *_refdt = refdt;
 
   /* No, they're not both doubles. */
   if (two_args) {
@@ -3002,8 +3047,8 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         }
       }
     }
-    if (refd)
-      mz_patch_ucbranch(refd);
+    if (refdt)
+      mz_patch_ucbranch(refdt);
     jit_patch_movi(ref, (_jit.x.pc));
   } else {
     /* If second is constant, first arg is in JIT_R0. */
@@ -3060,7 +3105,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       ref2 = jit_jmpi(jit_forward());
       mz_patch_branch(ref3);
       if (refd)
-        mz_patch_ucbranch(refd);
+        mz_patch_branch(refd);
       (void)jit_movi_p(JIT_R0, scheme_false);
       mz_patch_ucbranch(ref2);
       jit_patch_movi(ref, (_jit.x.pc));
@@ -4940,7 +4985,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
   case scheme_branch_type:
     {	
       Scheme_Branch_Rec *branch = (Scheme_Branch_Rec *)obj;
-      jit_insn *refs[5], *ref2;
+      jit_insn *refs[6], *ref2;
       int nsrs, nsrs1, g1, g2, amt;
 #ifdef NEED_LONG_JUMPS
       int then_short_ok, else_short_ok;
@@ -4966,6 +5011,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       refs[2] = NULL; /* a movi patch, instead of a branch */
       refs[3] = NULL;
       refs[4] = NULL;
+      refs[5] = NULL; /* a jmpi instead of a test branch */
 
       if (!generate_inlined_test(jitter, branch->test, then_short_ok, refs)) {
 	CHECK_LIMIT();
@@ -5017,6 +5063,9 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       }
       if (refs[4]) {
 	mz_patch_branch(refs[4]);
+      }
+      if (refs[5]) {
+	mz_patch_ucbranch(refs[5]);
       }
       __END_SHORT_JUMPS__(then_short_ok);
       PAUSE_JIT_DATA();
@@ -6347,6 +6396,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       retry_alloc_code = jit_get_ip().ptr;
 
     mz_prolog(JIT_V1);
+#ifdef JIT_USE_FP_OPS
+    (void)jit_sti_d_fppop(&save_fp, JIT_FPR1);
+#endif
     JIT_UPDATE_THREAD_RSPTR();
     jit_prepare(2);
     CHECK_LIMIT();
@@ -6363,6 +6415,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     if (i) {
       jit_ldi_l(JIT_R1, &retry_alloc_r1);
     }
+#ifdef JIT_USE_FP_OPS
+    (void)jit_ldi_d_fppush(JIT_FPR1, &save_fp);
+#endif
     mz_epilog(JIT_V1);
     CHECK_LIMIT();
   }

@@ -67,12 +67,23 @@
 
 #define jit_addr_d(rd,s1,s2)    jit_fp_binary((rd),(s1),(s2),FADDrr,FADDrr)
 #define jit_subr_d(rd,s1,s2)    jit_fp_binary((rd),(s1),(s2),FSUBrr,FSUBRrr)
+#define jit_subrr_d(rd,s1,s2)   jit_fp_binary((rd),(s1),(s2),FSUBRrr,FSUBrr)
 #define jit_mulr_d(rd,s1,s2)    jit_fp_binary((rd),(s1),(s2),FMULrr,FMULrr)
 #define jit_divr_d(rd,s1,s2)    jit_fp_binary((rd),(s1),(s2),FDIVrr,FDIVRrr)
+#define jit_divrr_d(rd,s1,s2)   jit_fp_binary((rd),(s1),(s2),FDIVRrr,FDIVrr)
 
 #define jit_abs_d(rd,rs)       jit_fp_unary ((rd), (rs), _OO (0xd9e1))
 #define jit_negr_d(rd,rs)      jit_fp_unary ((rd), (rs), _OO (0xd9e0))
 #define jit_sqrt_d(rd,rs)      jit_fp_unary ((rd), (rs), _OO (0xd9fa))
+
+#define jit_addr_d_fppop(rd,s1,s2)  (FADDPr(1))
+#define jit_subr_d_fppop(rd,s1,s2)  (FSUBPr(1))
+#define jit_subrr_d_fppop(rd,s1,s2) (FSUBRPr(1))
+#define jit_mulr_d_fppop(rd,s1,s2)  (FMULPr(1))
+#define jit_divr_d_fppop(rd,s1,s2)  (FDIVPr(1))
+#define jit_divrr_d_fppop(rd,s1,s2) (FDIVRPr(1))
+#define jit_negr_d_fppop(rd,rs)     ( _OO (0xd9e0))
+#define jit_abs_d_fppop(rd,rs)      ( _OO (0xd9e1))
 
 /* - moves:
 
@@ -127,6 +138,15 @@ union jit_double_imm {
         jit_ldr_d((rd), _ESP),                                                         \
         ADDLir(8, _ESP))
 
+#define jit_movi_d_fppush(rd,immd)                                                            \
+        (_O (0x68),                                                                    \
+         _jit.x.uc_pc[4] = 0x68,                                                       \
+         ((union jit_double_imm *) (_jit.x.uc_pc + 5))->d = (double) immd,             \
+         *((int *) _jit.x.uc_pc) = ((union jit_double_imm *) (_jit.x.uc_pc + 5))->i[1],        \
+         _jit.x.uc_pc += 9,                                                            \
+        jit_ldr_d_fppush((rd), _ESP),                                                         \
+        ADDLir(8, _ESP))
+
 #define jit_ldi_f(rd, is)                              \
   ((rd) == 0 ? (FSTPr (0), FLDSm((is), 0, 0, 0))       \
    : (FLDSm((is), 0, 0, 0), FSTPr ((rd) + 1)))
@@ -134,6 +154,8 @@ union jit_double_imm {
 #define jit_ldi_d(rd, is)                              \
   ((rd) == 0 ? (FSTPr (0), FLDLm((is), 0, 0, 0))       \
    : (FLDLm((is), 0, 0, 0), FSTPr ((rd) + 1)))
+
+#define jit_ldi_d_fppush(rd, is) FLDLm((is), 0, 0, 0)
 
 #define jit_ldr_f(rd, rs)                              \
   ((rd) == 0 ? (FSTPr (0), FLDSm(0, (rs), 0, 0))       \
@@ -143,6 +165,8 @@ union jit_double_imm {
   ((rd) == 0 ? (FSTPr (0), FLDLm(0, (rs), 0, 0))       \
    : (FLDLm(0, (rs), 0, 0), FSTPr ((rd) + 1)))
 
+#define jit_ldr_d_fppush(rd, rs) FLDLm(0, (rs), 0, 0)
+
 #define jit_ldxi_f(rd, rs, is)                         \
   ((rd) == 0 ? (FSTPr (0), FLDSm((is), (rs), 0, 0))    \
    : (FLDSm((is), (rs), 0, 0), FSTPr ((rd) + 1)))
@@ -150,6 +174,8 @@ union jit_double_imm {
 #define jit_ldxi_d(rd, rs, is)                         \
   ((rd) == 0 ? (FSTPr (0), FLDLm((is), (rs), 0, 0))    \
    : (FLDLm((is), (rs), 0, 0), FSTPr ((rd) + 1)))
+
+#define jit_ldxi_d_fppush(rd, rs, is) FLDLm((is), (rs), 0, 0)
 
 #define jit_ldxr_f(rd, s1, s2)                         \
   ((rd) == 0 ? (FSTPr (0), FLDSm(0, (s1), (s2), 1))    \
@@ -172,6 +198,9 @@ union jit_double_imm {
 #define jit_str_f(rd, rs)      jit_fxch ((rs), FSTSm(0,    (rd), 0, 0))
 #define jit_sti_d(id, rs)      jit_fxch ((rs), FSTLm((id), 0,    0, 0))
 #define jit_str_d(rd, rs)      jit_fxch ((rs), FSTLm(0,    (rd), 0, 0))
+
+#define jit_sti_d_fppop(id, rs)      FSTPLm((id), 0,    0, 0)
+#define jit_stxi_d_fppop(id, rd, rs) FSTPLm((id), (rd), 0, 0)
 
 /* Assume round to near mode */
 #define jit_floorr_d_i(rd, rs) \
@@ -248,7 +277,26 @@ union jit_double_imm {
         ((d) != _EAX ? _O (0x90 + ((d) & 7)) : 0))     /* xchg */
 
 #define jit_fp_btest(d, s1, s2, n, _and, cmp, res)             \
-       (((s1) == 0 ? FUCOMr((s2)) : (FLDr((s1)), FUCOMPr((s2) + 1))),    \
+       (((s1) == 0 ? FCOMr((s2)) : (FLDr((s1)), FUCOMPr((s2) + 1))),    \
+        PUSHLr(_EAX),                                          \
+        FNSTSWr(_EAX),                                         \
+        SHRLir(n, _EAX),                                       \
+        ((_and) ? ANDLir ((_and), _EAX) : 0),                  \
+        ((cmp) ? CMPLir ((cmp), _AL) : 0),                     \
+        POPLr(_EAX),                                           \
+        res ((d), 0, 0, 0), _jit.x.pc)
+
+#define jit_fp_test_fppop(d, n, _and, res)                       \
+       (FUCOMPPr(1),                                           \
+        ((d) != _EAX ? MOVLrr(_EAX, (d)) : 0),                 \
+        FNSTSWr(_EAX),                                         \
+        SHRLir(n, _EAX),                                       \
+        ((_and) ? ANDLir((_and), _EAX) : MOVLir(0, _EAX)),     \
+        res,                                                   \
+        ((d) != _EAX ? _O (0x90 + ((d) & 7)) : 0))     /* xchg */
+
+#define jit_fp_btest_fppop(d, n, _and, cmp, res)                 \
+       (FUCOMPPr(1),                                           \
         PUSHLr(_EAX),                                          \
         FNSTSWr(_EAX),                                         \
         SHRLir(n, _EAX),                                       \
@@ -298,21 +346,38 @@ union jit_double_imm {
 #define jit_uneqr_d(d, s1, s2)          jit_fp_test((d), (s1), (s2), 15, 0, ADCBir (0, _AL))
 #define jit_ordr_d(d, s1, s2)           jit_fp_test((d), (s1), (s2), 11, 0, SBBBir (-1, _AL))
 #define jit_unordr_d(d, s1, s2)         jit_fp_test((d), (s1), (s2), 11, 0, ADCBir (0, _AL))
-
 #define jit_bgtr_d(d, s1, s2)           jit_fp_btest((d), (s1), (s2), 8, 0x45, 0, JZm)
 #define jit_bger_d(d, s1, s2)           jit_fp_btest((d), (s1), (s2), 9, 0, 0, JNCm)
+#define jit_bantigtr_d(d, s1, s2)       jit_fp_btest((d), (s1), (s2), 8, 0x45, 0, JNZm)
+#define jit_bantiger_d(d, s1, s2)       jit_fp_btest((d), (s1), (s2), 9, 0, 0, JCm)
 #define jit_bunler_d(d, s1, s2)         jit_fp_btest((d), (s1), (s2), 8, 0x45, 0, JNZm)
 #define jit_bunltr_d(d, s1, s2)         jit_fp_btest((d), (s1), (s2), 9, 0, 0, JCm)
 #define jit_bltr_d(d, s1, s2)           jit_fp_btest((d), (s2), (s1), 8, 0x45, 0, JZm)
 #define jit_bler_d(d, s1, s2)           jit_fp_btest((d), (s2), (s1), 9, 0, 0, JNCm)
+#define jit_bantiltr_d(d, s1, s2)       jit_fp_btest((d), (s2), (s1), 8, 0x45, 0, JNZm)
+#define jit_bantiler_d(d, s1, s2)       jit_fp_btest((d), (s2), (s1), 9, 0, 0, JCm)
 #define jit_bunger_d(d, s1, s2)         jit_fp_btest((d), (s2), (s1), 8, 0x45, 0, JNZm)
 #define jit_bungtr_d(d, s1, s2)         jit_fp_btest((d), (s2), (s1), 9, 0, 0, JCm)
 #define jit_beqr_d(d, s1, s2)           jit_fp_btest((d), (s1), (s2), 8, 0x45, 0x40, JZm)
+#define jit_bantieqr_d(d, s1, s2)       jit_fp_btest((d), (s1), (s2), 8, 0x45, 0x40, JNZm)
 #define jit_bner_d(d, s1, s2)           jit_fp_btest((d), (s1), (s2), 8, 0x45, 0x40, JNZm)
 #define jit_bltgtr_d(d, s1, s2)         jit_fp_btest((d), (s1), (s2), 15, 0, 0, JNCm)
 #define jit_buneqr_d(d, s1, s2)         jit_fp_btest((d), (s1), (s2), 15, 0, 0, JCm)
 #define jit_bordr_d(d, s1, s2)          jit_fp_btest((d), (s1), (s2), 11, 0, 0, JNCm)
 #define jit_bunordr_d(d, s1, s2)        jit_fp_btest((d), (s1), (s2), 11, 0, 0, JCm)
+
+#define jit_bger_d_fppop(d, s1, s2)       jit_fp_btest_fppop((d), 9, 0, 0, JNCm)
+#define jit_bantiger_d_fppop(d, s1, s2)   jit_fp_btest_fppop((d), 9, 0, 0, JCm)
+#define jit_bler_d_fppop(d, s1, s2)       (FXCHr(1), jit_bger_d_fppop(d, s1, s2))
+#define jit_bantiler_d_fppop(d, s1, s2)   (FXCHr(1), jit_bantiger_d_fppop(d, s1, s2))
+
+#define jit_bgtr_d_fppop(d, s1, s2)       jit_fp_btest_fppop((d), 8, 0x45, 0, JZm)
+#define jit_bantigtr_d_fppop(d, s1, s2)   jit_fp_btest_fppop((d), 8, 0x45, 0, JNZm)
+#define jit_bltr_d_fppop(d, s1, s2)       (FXCHr(1), jit_bgtr_d_fppop(d, s1, s2))
+#define jit_bantiltr_d_fppop(d, s1, s2)   (FXCHr(1), jit_bantigtr_d_fppop(d, s1, s2))
+
+#define jit_beqr_d_fppop(d, s1, s2)       jit_fp_btest_fppop((d), 8, 0x45, 0x40, JZm)
+#define jit_bantieqr_d_fppop(d, s1, s2)   jit_fp_btest_fppop((d), 8, 0x45, 0x40, JNZm)
 
 #define jit_getarg_f(rd, ofs)        jit_ldxi_f((rd), JIT_FP,(ofs))
 #define jit_getarg_d(rd, ofs)        jit_ldxi_d((rd), JIT_FP,(ofs))

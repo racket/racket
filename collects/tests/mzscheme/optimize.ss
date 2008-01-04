@@ -81,7 +81,12 @@
                                       v
                                       (/ v 33333)))
 			      v)])
-		  (bin0 iv op (/ arg1 33333) (/ arg2 33333))))]
+		  (bin0 iv op (/ arg1 33333) (/ arg2 33333)))
+                (let ([iv (if (number? v) +nan.0 #f)])
+                  (bin0 iv op (exact->inexact arg1) +nan.0)
+                  (bin0 iv op +nan.0 (exact->inexact arg2))
+                  (unless (eq? op 'eq?)
+                    (bin0 iv op +nan.0 +nan.0))))]
 	 [tri0 (lambda (v op get-arg1 arg2 arg3 check-effect)
 		 ;; (printf "Trying ~a ~a ~a\n" op (get-arg1) arg2 arg3);
 		 (let ([name `(,op ,get-arg1 ,arg2, arg3)])
@@ -203,6 +208,7 @@
     (bin #f '= 200 100)
     (bin #t '= 100 100)
     (bin #f '= -200 100)
+    (bin #f '= +nan.0 +nan.0)
 
     (un 3 'add1 2)
     (un -3 'add1 -4)
