@@ -1,5 +1,5 @@
 .\" dummy line
-.TH DRSCHEME 1 "February 2007"
+.TH DRSCHEME 1 "January 2008"
 .UC 4
 .SH NAME
 drscheme \- The PLT Scheme programming environment
@@ -12,20 +12,14 @@ drscheme \- The PLT Scheme programming environment
 .I file ...
 ]
 .SH DESCRIPTION
-.I DrScheme
+DrScheme
 is the PLT Scheme
 programming environment.
 .PP
-.I DrScheme
-opens the files given as command-line arguments.
-.pp
-For further information on
-.IR DrScheme ,
-please consult the on-line
-documentation and other information available at
-.PP
-.ce 1
-http://www.drscheme.org/
+The
+.B drscheme
+program treats non-switch command-line arguments as files to open.
+
 .SH X OPTIONS
 When running in X11, DrScheme accepts the following standard
 .IR Xoption s:
@@ -71,29 +65,24 @@ arguments are treated as file names and sent to the
 existing instance.
 .PP
 
-.SH FILES
-.I DrScheme
-looks for its libraries using the environment variable
-PLTCOLLECTS.  If this variable is not defined,
-the installation directory is found automatically.
-See the documentation for details.
+.SH MORE INFORMATION
+For further information, run
 .PP
-Please consult your local administrator to determine whether
-the on-line documentation has been installed locally.
-.SH BUGS
-Submit bug reports via
+   plt-help
+.PP
+to open installed documentation in your web browser.
+
+.PP
+Alternately, consult the on-line
+documentation and other information available at
+.PP
 .ce 1
-drscheme (encouraged),
-or via the web
-.ce 1
-http://bugs.plt-scheme.org/ (discouraged)
-or by e-mail to
-.ce 1
-bugs@plt-scheme.org (discouraged)
+http://www.drscheme.org/
+
 .SH AUTHOR
 .I DrScheme
-was implemented by PLT.
+was implemented by PLT, http://www.plt-cheme.org/.
 .SH SEE ALSO
 .BR plt-help(1),
-.BR mred(1),
-.BR mzscheme(1)
+.BR mzscheme(1),
+.BR mred(1)

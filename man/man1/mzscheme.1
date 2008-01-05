@@ -1,5 +1,5 @@
 .\" dummy line
-.TH MZSCHEME 1 "November 2007"
+.TH MZSCHEME 1 "January 2008"
 .UC 4
 .SH NAME
 mzscheme \- The PLT Scheme implementation
@@ -11,257 +11,49 @@ mzscheme \- The PLT Scheme implementation
 .I argument ...
 ]
 .SH DESCRIPTION
-.I MzScheme
+MzScheme
 is the PLT
-Scheme implementation.  It implements the language as
-described in the
-.I Revised^5 Report on
-.I the Algorithmic Language Scheme
-and adds numerous extensions.
-.PP
-.I MrEd
-embeds and extends MzScheme with a graphical user interface (GUI) toolbox.
-.PP
-.I DrScheme
-is the graphical development environment for creating
-.I MzScheme
-and
-.I MrEd
-applications.
+Scheme implementation.
 
-.SH STARTUP FILE AND EXPRESSION OPTIONS
+.PP
+Run
+.PP
+   mzscheme --help
+.PP
+for a list of command-line options and other start-up information.
 
-.TP
-.BI \-e \ exprs\fR,\ \fP \-\^\-eval \ exprs
-Evaluates
-.I exprs
-and prints each result.
-.TP
-.BI \-f \ file\fR,\ \fP \-\^\-load \ file
-Loads
-.I file
-and prints the last result from the file.
-.TP
-.BI \-t \ file\fR,\ \fP \-\^\-require \ file
-Requires
-.I file
-.TP
-.BI \-l \ path\fR,\ \fP \-\^\-lib \ path
-Same as
-.BR -e \ '(require\ (lib\ "\|\c
-.I path\|\c
-"))'.
-.TP
-.BI \-p \ file \  user \  package
-Same as
-.BR -e \ '(require\ (planet\ "\|\c
-.I file\|\c
-\|" "\|\c
-.I user\|\c
-\|" "\|\c
-.I package\|\c
-"))'.
-.TP
-.TP
-.B \-r\fR,\fP \-\^\-script
-Script mode; same as
-.BR -f- .
-.TP
-.B \-u\fR,\fP \-\^\-require-script
-Module script mode; same as
-.BR -t- .
-.TP
-.BI \-k \ n \  m\ 
-Load executable-embedded code from file offset
-.I n
-to
-.IR m .
-.TP
-.B \-m\fR,\fP \-\^\-main
-Calls `main' with command-line arguments.
 .PP
+Supplying no arguments to
+.B mzscheme
+is the same as supplying the
+.B -i
+option for interactive evaluation.
 
-.SH INITIALIZATION OPTIONS
-.TP
-.BI \-X \ dir\fR,\ \fP \-\^\-collects \ dir
-Sets
-.I dir 
-as the location of the main "collects" directory. If
-.I dir
-is relative, it is relative to the executable.
-.TP
-.BI \-S \ dir
-.TP
-.BI \-\^\-search \ dir
-Adds 
-.I dir
-to the search path for library collections. If 
-.I dir
-is relative, it is relative to the executable.
-.TP
-.B \-U\fR,\fP \-\^\-no-user-path
-Ignores PLTHOME, and omits the user-specific "collects" directory
-from the search path for library collections.
-.TP
-.B \-x\fR,\fP \-\^\-no-lib-path
-Skips trying to set current-library-collection-paths.
-.TP
-.B \-q\fR,\fP \-\^\-no-init-file
-Skips trying to load "~/.mzschemerc".
-.TP
-.BI \-N \ file\fR,\ \fP \-\^\-name \ file
-Sets the program name to
-.IR name .
-.TP
-.B \-A\fR,\fP \-\^\-no-argv
-Skips defining `argv' and `program'.
 .PP
-
-.SH LANGUAGE SETTING OPTIONS
-.TP
-.B \-Q\fR,\fP \-\^\-prim
-Assume primitive bindings at top level by initializing the environment with
-`(require mzscheme)'.
-.TP
-.B \-g\fR,\fP \-\^\-case-sens
-Identifiers and symbols are initially case-sensitive (the default).
-.TP
-.B \-G\fR,\fP \-\^\-case-insens
-Identifiers and symbols are initially case-insensitive.
-.TP
-.B \-s\fR,\fP \-\^\-set-undef
-Set! works on undefined identifiers.
-.PP
-
-.SH MISCELLANEOUS OPTIONS
-.TP
-.B \-\^\-
-.br
-No argument following this switch is used as a switch.
-.TP
-.B \-p\fR,\fP \-\^\-persistent
-Catches AIX SIGDANGER (low page space) signal. (AIX only)
-.TP
-.B \-m\fR,\fP \-\^\-mute-banner
-Suppresses the startup banner.
-.TP
-.B \-v\fR,\fP \-\^\-version
-Suppresses the read-eval-print loop.
-.TP
-.B \-h\fR,\fP \-\^\-help
-Shows help for command-line arguments.
-
-.SH COMMAND-LINE CONVENTIONS
-
-Multiple single-letter switches can be collapsed, with arguments placed
-after the collapsed swicthes; the first collapsed switch cannot be
-.BR -- .
-E.g.:
-.B -vfme
-.I file
-.I expr
-is the same as
-.B -v -f
-.I file
-.B -m -e
-.IR expr .
-.PP
-Extra arguments following the last option are put into the Scheme global
-variable `argv' as a vector of strings. The name used to start 
-.I MzScheme
-is put into the global variable `program' as a string.
-.PP
-Expressions/files are evaluated/loaded in order as provided, including
-calls to
-.B main
-implied by
-.BR --main ,
-embedded segments loaded by
-.BR -k ,
-and so on. An uncaught exception during an evaluation/load causes later
-evaluations/loads to be skipped.
-.PP
-The current-library-collections-paths parameter is automatically set before any
-expressions/files are evaluated/loaded, unless the
-.B -x
-or
-.B --no-lib-path
-option is used.  
-
-.SH EXECUTABLE NAME
-If the executable name has the form scheme-\|\c
-.I dialect\|\c
-, then the command line is effectively prefixed with
-.ce 1
--qAeC '(require (lib "init.ss" "script-lang" "\|\c
-.I dialect\|\c
-"))'
-The first actual command-line argument thus serves as the name of a file
-to load. The file should define
-.BR main ,
-which is called with the command-line arguments---starting with the
-loaded file name---as a list of immutable strings.
-
-.SH FILES
-The file "~/.mzschemerc" is loaded before any provided
-expressions/files are evaluated/loaded, unless the
-.B -q 
-or 
-.B --no-init-file 
-option is used.
-.PP
-Unless the
-.B -U
-or
-.B --no-user-path
-option is provided, the library collections search
-path is read from the PLTCOLLECTS environment variable
-(as a colon-separated list of paths). Where the empty path
-appears in PLTCOLLECTS, it is replaced with the default
-collections directory search path.
-
-.SH EXECUTABLE SCRIPTS
-The most flexible way to create an executable script file is to
-trampoline through /bin/sh, using a #| ... |# block-comment trick to make the first few lines
-parseable by both /bin/sh and mzscheme. Here's an example:
-.PP
-.PD 0
-.PP
-  #! /bin/sh
-.PP
-  #|
-.PP
-  exec mzscheme -qr "$0" ${1+"$@"}
-.PP
-  |#
-.PP
-  (display "Hello, world!")
-.PP
-  (newline)
-.PD
+Supplying a single non-switch argument to
+.B mzscheme
+is the same as putting
+.B -u
+before the argument to run it as a module-based script.
 
 .SH MORE INFORMATION
-For further information on
-.IR MzScheme ,
-please consult the on-line
+For further information, run
+.PP
+   plt-help
+.PP
+to open installed documentation in your web browser.
+
+.PP
+Alternately, consult the on-line
 documentation and other information available at
 .PP
 .ce 1
 http://www.plt-scheme.org/software/mzscheme/
 
-.SH BUGS
-Submit bug reports via
-.ce 1
-http://bugs.plt-scheme.org/ (encouraged)
-or by e-mail to
-.ce 1
-bugs@plt-scheme.org (discouraged)
 .SH AUTHOR
-.I MzScheme
+MzScheme
 was implemented by Matthew Flatt (mflatt@plt-scheme.org).
-It uses the conservative garbage collector implemented by Hans 
-Boehm and extended by John Ellis. MzScheme was originally based 
-on libscheme, written by Brent Benson.
+It was originally based on libscheme, written by Brent Benson.
 .SH SEE ALSO
 .BR plt-help(1),
 .BR drscheme(1),

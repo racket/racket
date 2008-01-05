@@ -1,13 +1,10 @@
 \" dummy line
-.TH MRED 1 "February 2007"
+.TH MRED 1 "January 2008"
 .UC 4
 .SH NAME
 mred \- The PLT Graphical Scheme implementation
 .SH SYNOPSIS
 .B mred
-[
-.I Xoption ...
-]
 [
 .I option ...
 ] [
@@ -15,364 +12,55 @@ mred \- The PLT Graphical Scheme implementation
 ]
 
 .SH DESCRIPTION
-.I MrEd
-is the PLT's graphical Scheme
+MrEd
+is the PLT graphical Scheme
 implementation.
 It embeds and extends 
-.I MzScheme
+MzScheme
 with a graphical user interface (GUI) toolbox.
+
 .PP
-.I DrScheme
-is the graphical development environment for creating
-.I MzScheme
-and
-.I MrEd
-applications.
-
-.SH X OPTIONS
-
-When running in X11, MrEd accepts the following standard
-.IR Xoption s:
-.B -display
-.IR disp ,
-.B -geometry
-.IR geom ,
-.B -bg
-.IR color ,
-.B -background
-.IR color ,
-.B -fg
-.IR color ,
-.B -foreground
-.IR color ,
-.B -fn
-.IR font ,
-.B -font
-.IR font ,
-.BR -iconic ,
-.B -name
-.IR name ,
-.BR -rv ,
-.BR -reverse ,
-.BR +rv ,
-.B -selectionTimeout
-.IR time ,
-.BR -synchronous ,
-.B -title
-.IR name ,
-.B -xnllanguage
-.IR lang ,
-.B -xrm
-.IR file .
-These options must appear before all other options.
+Run
 .PP
-In addition, the option
-.B -singleInstance
-is treated like an X option (it must appear before all other
-options), and it runs MrEd in single-instance mode.
-In single-instance mode, when an existing instance
-is running with the same host and executable name, all non-option
-arguments are treated as file names and sent to the 
-existing instance.
+   mred --help
 .PP
+for a list of command-line options and other start-up information.
 
-.SH STARTUP FILE AND EXPRESSION OPTIONS
-
-.TP
-.BI \-e \ expr\fR,\ \fP \-\^\-eval \ expr
-Evaluates
-.I expr
-after
-.I MrEd
-starts.
-.TP
-.BI \-f \ file\fR,\ \fP \-\^\-load \ file
-Loads
-.I file
-after
-.I MrEd
-starts.
-.TP
-.BI \-d \ file\fR,\ \fP \-\^\-load-cd \ file
-Load/cds
-.I file
-after
-.I MrEd
-starts.
-.TP
-.BI \-t \ file\fR,\ \fP \-\^\-require \ file
-Requires
-.I file
-after
-.I MrEd
-starts.
-.TP
-.B \-F\fR,\fP \-\^\-Load
-.br
-Loads all remaining arguments after
-.I MrEd
-starts.
-.TP
-.B \-D\fR,\fP \-\^\-Load-cd
-.br
-Load/cds all remaining arguments after
-.I MrEd
-starts.
-.TP
-.B \-T\fR,\fP \-\^\-Require
-.br
-Requires all remaining arguments after
-.I MrEd
-starts.
-.TP
-.BI \-l \ file\fR,\ \fP \-\^\-mzlib \ file
-Same as
-.BR -e \ '(require\ (lib\ "\|\c
-.I file\|\c
-"))'.
-.TP
-.BI \-L \ file \  coll
-Same as
-.BR -e \ '(require\ (lib\ "\|\c
-.I file\|\c
-" "\|\c
-.I coll\|\c
-"))'.
-.TP
-.BI \-M \ coll
-Same as
-.BR -e \ '(require\ (lib\ "\|\c
-.I coll\|\c
-\|.ss" "\|\c
-.I coll\|\c
-"))'.
-.TP
-.BI \-p \ file \  user \  package
-Same as
-.BR -e \ '(require\ (planet\ "\|\c
-.I file\|\c
-\|" "\|\c
-.I user\|\c
-\|" "\|\c
-.I package\|\c
-"))'.
-.TP
-.BI \-P \ name \  user
-Same as
-.BR -e \ '(require\ (planet\ "\|\c
-.I name\|\c
-\|.ss" "\|\c
-.I user\|\c
-\|" "\|\c
-.I name\|\c
-\|.plt"))'.
-.TP
-.B \-r\fR,\fP \-\^\-script
-Script mode: use as last flag for scripts.
-Same as
-.BR -fmv- .
-.TP
-.B \-i\fR,\fP \-\^\-script-cd
-Like -r, but also sets the directory.
-Same as 
-.BR -dmv- .
-.TP
-.B \-u\fR,\fP \-\^\-require-script
-Like -r, but requires a module.
-Same as
-.BR -tmv- .
-.TP
-.B \-Z\fR,\fP \-\^\-nogui
-Skip "class.ss" and "mred.ss" require.
-.TP
-.B \-z\fR,\fP \-\^\-stdio
-Use stdio REPL. Same as
-.BR -ve \ '(read-eval-print-loop)'.
-.TP
-.B \-K\fR,\fP \-\^\-back
-Under Mac OS X, skip bringing the application to
-the foreground (in case it was started from a command line).
-.B \-w\fR,\fP \-\^\-awk
-Same as
-.B -l
-.BR awk.ss .
-.TP
-.BI \-k \ n \  m\ 
-Load executable-embedded code from file offset
-.I n
-to
-.IR m .
-.TP
-.B \-C\fR,\fP \-\^\-main
-Like -r, then calls `main' with a list of argument strings. The first 
-string in the list is the name of the loaded file, and
-the rest of the list contains leftover command-line arguments.
 .PP
+Supplying no arguments to
+.B mred
+is the same as supplying the
+.B -i
+option for interactive evaluation.
 
-.SH INITIALIZATION OPTIONS
-.TP
-.BI \-X \ dir\fR,\ \fP \-\^\-collects \ dir
-Sets
-.I dir 
-as the location of the main "collects" directory. If
-.I dir
-is relative, it is relative to the executable.
-.TP
-.BI \-S \ dir
-.TP
-.BI \-\^\-search \ dir
-Adds 
-.I dir
-to the search path for library collections. If 
-.I dir
-is relative, it is relative to the executable.
-.TP
-.B \-U\fR,\fP \-\^\-no-user-path
-Ignores PLTHOME, and omits the user-specific "collects" directory
-from the search path for library collections.
-.TP
-.B \-x\fR,\fP \-\^\-no-lib-path
-Skips trying to set current-library-collection-paths.
-.TP
-.B \-q\fR,\fP \-\^\-no-init-file
-Skips trying to load "~/.mredrc".
-.TP
-.BI \-N \ file\fR,\ \fP \-\^\-name \ file
-Sets the program name to
-.IR name .
-.TP
-.B \-A\fR,\fP \-\^\-no-argv
-Skips defining `argv' and `program'.
 .PP
+Supplying a single non-switch argument to
+.B mred
+is the same as putting
+.B -u
+before the argument to run it as a module-based script.
 
-.SH LANGUAGE SETTING OPTIONS
-.TP
-.B \-Q\fR,\fP \-\^\-prim
-Assume primitive bindings at top level by initializing the environment with
-`(require mzscheme)'.
-.TP
-.B \-g\fR,\fP \-\^\-case-sens
-Identifiers and symbols are initially case-sensitive (the default).
-.TP
-.B \-G\fR,\fP \-\^\-case-insens
-Identifiers and symbols are initially case-insensitive.
-.TP
-.B \-s\fR,\fP \-\^\-set-undef
-Set! works on undefined identifiers.
+.SH MORE INFORMATION
+For further information, run
 .PP
-
-.SH MISCELLANEOUS OPTIONS
-.TP
-.B \-\^\-
-.br
-No argument following this switch is used as a switch.
-.TP
-.B \-p\fR,\fP \-\^\-persistent
-Catches AIX SIGDANGER (low page space) signal. (AIX only)
-.TP
-.B \-m\fR,\fP \-\^\-mute-banner
-Suppresses the startup banner.
-.TP
-.B \-v\fR,\fP \-\^\-version
-Suppresses the read-eval-print loop.
-.TP
-.B \-V\fR,\fP \-\^\-yield
-Like -v, also suppresses (yield 'wait).
-.TP
-.B \-h\fR,\fP \-\^\-help
-Shows help for command-line arguments.
-
-.SH COMMAND-LINE CONVENTIONS
-
-Multiple single-letter switches can be collapsed, with arguments placed
-after the collapsed switches; the first collapsed switch cannot be
-.BR -- .
-E.g.:
-.B -vfme
-.I file
-.I expr
-is the same as
-.B -v -f
-.I file
-.B -m -e
-.IR expr .
+   plt-help
 .PP
-Extra arguments following the last option are put into the Scheme global
-variable `argv' as a vector of strings. The name used to start 
-.I MrEd
-is put into the global variable `program' as a string.
-.PP
-Expressions/files are evaluated/loaded in order as provided, including
-calls to
-.B main
-implied by
-.BR --main ,
-embedded segments loaded by
-.BR -k ,
-and so on. An uncaught exception during an evaluation/load causes later
-evaluations/loads to be skipped.
-.PP
-The current-library-collections-paths parameter is automatically set before any
-expressions/files are evaluated/loaded, unless the
-.B -x
-or
-.B --no-lib-path
-option is used.  
+to open installed documentation in your web browser.
 
-.SH EXECUTABLE NAME
-If the executable name has the form scheme-\|\c
-.I dialect\|\c
-, then the command line is effectively prefixed with
-.ce 1
--qAeC '(require (lib "init.ss" "script-lang" "\|\c
-.I dialect\|\c
-"))'
-The first actual command-line argument thus serves as the name of a file
-to load. The file should define
-.BR main ,
-which is called with the command-line arguments---starting with the
-loaded file name---as a list of immutable strings.
-
-.SH FILES
-The file "~/.mredrc" is loaded before any provided
-expressions/files are evaluated/loaded, unless the
-.B -q 
-or 
-.B --no-init-file 
-option is used.
 .PP
-Unless the
-.B -U
-or
-.B --no-user-path
-option is provided, the library collections search
-path is read from the PLTCOLLECTS environment variable
-(as a colon-separated list of paths). Where the empty path
-appears in PLTCOLLECTS, it is replaced with the default
-collections directory search path.
-
-.SH FURTHER INFORMATION
-For further information on
-.IR MrEd ,
-please consult the on-line
+Alternately, consult the on-line
 documentation and other information available at
 .PP
 .ce 1
 http://www.plt-scheme.org/software/mred/
-.SH BUGS
-Submit bug reports via
-.ce 1
-http://bugs.plt-scheme.org/ (encouraged)
-or by e-mail to
-.ce 1
-bugs@plt-scheme.org (discouraged)
+
 .SH AUTHOR
-.I MrEd
-was implemented by Matthew Flatt (mflatt@plt-scheme.org),
+MrEd was implemented by Matthew Flatt (mflatt@plt-scheme.org),
 Robert Bruce Findler (robby@plt-scheme.org), and
 John Clements (clements@plt-scheme.org), based on
 MzScheme.
+
 .SH SEE ALSO
 .BR plt-help(1),
-.BR mzscheme(1),
-.BR drscheme(1)
+.BR drscheme(1),
+.BR mzscheme(1)

@@ -5,39 +5,26 @@
 plt-help \- The PLT Scheme documentation center
 .SH SYNOPSIS
 .B plt-help
-.I [-x --exact] term ...
+[\c
+.I -x\c
+] [\c
+.I --exact\c
+] [\c
+.IR term \ ...]
 .SH DESCRIPTION
-.I PLT Help 
-searches for term in the PLT Scheme documentation and opens an html document in a web browser with the results of the search.
+PLT Help 
+searches for term in the PLT Scheme documentation.
+It opens a locally generated HTML document in a web
+browser with results of a search.
 .PP
-For further information on
-.I PLT Help,
-please consult the on-line
+For further information on PLT Help, run it. Alternately, consult the on-line
 documentation and other information available at
 .PP
 .ce 1
 http://www.drscheme.org/
-.SH FILES
-.I PLT Help
-looks for its libraries using the environment variable
-PLTCOLLECTS.  If this variable is not defined,
-the installation directory is found automatically.
-See the documentation for details.
-.PP
-Please consult your local administrator to determine whether
-the on-line documentation has been installed locally.
-.SH BUGS
-Submit bug reports via
-.ce 1
-drscheme (encouraged),
-or via the web
-.ce 1
-http://bugs.plt-scheme.org/ (discouraged)
-or by e-mail to
-.ce 1
-bugs@plt-scheme.org (discouraged)
 .SH AUTHOR
-PLT.
+PLT Help is implemented by PLT, http://www.plt-scheme.org/.
 .SH SEE ALSO
+.BR drscheme(1),
 .BR mzscheme(1),
-.BR drscheme(1)
+.BR mred(1)
