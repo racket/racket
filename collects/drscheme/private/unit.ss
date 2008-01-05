@@ -140,14 +140,7 @@ module browser threading seems wrong.
                               str 
                               (- 200 (string-length (string-constant search-help-desk-for)))))
                      menu
-                     (λ x (help-desk:help-desk str #f 'keyword+index 'contains language)))
-                   (make-object menu-item%
-                     (gui-utils:format-literal-label (string-constant exact-lucky-search-help-desk-for) 
-                             (shorten-str 
-                              str 
-                              (- 200 (string-length (string-constant exact-lucky-search-help-desk-for)))))
-                     menu
-                     (λ x (help-desk:help-desk str #t 'keyword+index 'exact language)))
+                     (λ x (help-desk:help-desk str)))
                    (void)))))))))
     
     ;; find-symbol : number -> string

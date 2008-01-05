@@ -10,11 +10,17 @@
          (prefix-in scheme: scribble/scheme)
          net/sendurl
          net/uri-codec
-         mzlib/contract)
+         mzlib/contract
+         setup/dirs)
 
 (provide/contract
  [generate-search-results (-> (listof string?) void?)]
- [send-exact-results (-> string? void?)])
+ [send-exact-results (-> string? void?)]
+ [send-main-page (-> void?)])
+
+(define (send-main-page)
+  (let ([dest-path (build-path (find-doc-dir) "start" "index.html")])
+    (send-url (format "file://~a" (path->string dest-path)))))
 
 ;; if there is exactly one exact match for this search key, go directly
 ;; to that place. Otherwise, go to a page that lists all of the matches.
@@ -58,9 +64,14 @@
                           [matching-entries (filter (has-match search-regexps) index)]
                           [exact-matches (filter (has-match exact-search-regexps) matching-entries)]
                           [inexact-matches (filter (compose not (has-match exact-search-regexps))  matching-entries)])
-                     (append
-                      (build-itemization "Exact matches" exact-matches)
-                      (build-itemization "Containing matches" inexact-matches)))))
+                     (cond
+                       [(and (null? exact-matches)
+                             (null? inexact-matches))
+                        (list (make-element "schemeerror" (list "No results found.")))]
+                       [else
+                        (append
+                         (build-itemization "Exact matches" exact-matches)
+                         (build-itemization "Containing matches" inexact-matches))]))))
        file)
       (send-url (format "file://~a" (path->string file)))
       (void))))

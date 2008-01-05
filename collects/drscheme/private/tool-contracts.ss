@@ -1306,53 +1306,6 @@
    "Constructs a vector whose elements are the fields of \\var{simple-settings}.")
   
   
-  ;                                                                   
-  ;                                                                   
-  ;                                                                   
-  ;   ;              ;                       ;                 ;      
-  ;   ;              ;                       ;                 ;      
-  ;   ;              ;                       ;                 ;      
-  ;   ; ;;     ;;;   ;   ; ;;             ;; ;    ;;;    ;;;   ;   ;  
-  ;   ;;  ;   ;   ;  ;   ;;  ;           ;  ;;   ;   ;  ;      ;  ;   
-  ;   ;   ;  ;    ;  ;   ;    ;         ;    ;  ;    ;  ;;     ; ;    
-  ;   ;   ;  ;;;;;;  ;   ;    ;  ;;;;;; ;    ;  ;;;;;;   ;;    ;;;    
-  ;   ;   ;  ;       ;   ;    ;         ;    ;  ;          ;   ;  ;   
-  ;   ;   ;   ;      ;   ;;  ;           ;  ;;   ;         ;   ;   ;  
-  ;   ;   ;    ;;;;  ;   ; ;;             ;; ;    ;;;;  ;;;    ;    ; 
-  ;                      ;                                            
-  ;                      ;                                            
-  ;                      ;                                            
-  
-  (drscheme:help-desk:help-desk
-   (case->
-    (-> void?)
-    (string? boolean? (symbols 'keyword 'keyword+index 'all) (symbols 'exact 'contains 'regexp)
-             . -> .
-             void?)
-    (string? boolean? (symbols 'keyword 'keyword+index 'all) . -> . void?)
-    (string? boolean? . -> . void?))
-   (()
-    (key lucky? type mode)
-    (key lucky? type)
-    (key lucky?))
-   
-   "This function opens a help desk window, or brings an already open help"
-   "desk window to the front. If an argument is specified, that key is"
-   "searched for."
-   ""
-   "If no arguments are supplied, this function"
-   "opens a help-desk window to the starting page, or just brings a"
-   "help-desk window to the front (without changing what page it is"
-   "viewing)."
-   ""
-   "If any arguments are supplied, this function"
-   "opens a help-desk window and searches for \\var{key}, according to "
-   "\\var{lucky?}, \\var{type}, and \\var{mode}."
-   "If the second, third, fourth, and/or fifth arguments are omitted, "
-   "they default to \\scmc{\\#t} \\Symbol{keyword+index} and \\Symbol{exact},"
-   "and \\Symbol{all} respectively.")
-  
-  
   
   
   ;                                                     

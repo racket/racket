@@ -302,7 +302,7 @@ TODO
                                               (and (is-a? tlw drscheme:unit:frame<%>)
                                                    (send (send tlw get-definitions-text)
                                                          get-next-settings)))))])
-                       (drscheme:help-desk:help-desk str #f 'keyword+index 'contains language))))]
+                       (drscheme:help-desk:help-desk str))))]
               [else                   
                (drscheme:help-desk:help-desk)])))
     (let ([with-drs-frame

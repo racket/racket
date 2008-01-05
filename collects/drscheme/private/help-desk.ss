@@ -78,11 +78,5 @@
 
 (define help-desk
   (case-lambda
-    [() (void)]
-    [(key) (help-desk key #f)]
-    [(key lucky?) (help-desk key lucky? 'keyword+index)]
-    [(key lucky? type) (help-desk key lucky? type 'contains)]
-    [(key lucky? type mode) (help-desk key lucky? type mode #f)]
-    [(key lucky? type mode language)
-     (generate-search-results (list key))
-     (void)]))
+    [() (send-main-page)]
+    [(key) (generate-search-results (list key))]))

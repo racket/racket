@@ -1,8 +1,6 @@
 #lang scheme/base
 
 (require "search.ss"
-         net/sendurl
-         setup/dirs
          scheme/cmdline)
 
 (define exact-search? #f)
@@ -18,7 +16,6 @@
       (error 'plt-help "expected a single search term, got ~s" search-term))
     (send-exact-results (car search-term))]
    [(null? search-term)
-    (let ([dest-path (build-path (find-doc-dir) "start" "index.html")])
-      (send-url (format "file://~a" (path->string dest-path))))]
+    (send-main-page)]
    [else
     (generate-search-results search-term)]))
