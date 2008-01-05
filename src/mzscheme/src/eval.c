@@ -2385,7 +2385,9 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
     }
     if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)) {
       int offset;
-      if (scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(app->rand), &offset)) {
+      Scheme_Object *expr;
+      expr = scheme_optimize_reverse(info, SCHEME_LOCAL_POS(app->rand), 0);
+      if (scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(expr), &offset)) {
         info->preserves_marks = 1;
         info->single_result = 1;
         return scheme_true;

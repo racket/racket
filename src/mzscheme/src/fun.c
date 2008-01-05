@@ -988,7 +988,7 @@ Scheme_Object *scheme_clone_closure_compilation(int dup_ok, Scheme_Object *_data
   int *flags, sz;
 
   data = (Scheme_Closure_Data *)_data;
-  
+
   body = scheme_optimize_clone(dup_ok, data->code, info, delta, closure_depth + data->num_params);
   if (!body) return NULL;
 
@@ -1000,6 +1000,9 @@ Scheme_Object *scheme_clone_closure_compilation(int dup_ok, Scheme_Object *_data
   cl = MALLOC_ONE_RT(Closure_Info);
   memcpy(cl, data->closure_map, sizeof(Closure_Info));
   data2->closure_map = (mzshort *)cl;
+
+  /* We don't have to update base_closure_map, because
+     it will get re-computed as the closure is re-optimized. */
 
   sz = sizeof(int) * data2->num_params;
   flags = (int *)scheme_malloc_atomic(sz);
