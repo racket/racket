@@ -227,6 +227,7 @@
            schemeblockelem
            schemeinput
            schememod
+           schemeerror
            scheme SCHEME scheme/form schemeresult schemeid schememodname
            defmodule defmodule* defmodulelang defmodulelang*
            defmodule*/no-declare defmodulelang*/no-declare
@@ -305,6 +306,9 @@
   (define (link url . str)
     (make-element (make-target-url url) (decode-content str)))
 
+  (define (schemeerror . str)
+    (make-element "schemeerror" (decode-content str)))
+  
   (provide t)
   (define (t . str)
     (decode-paragraph str))

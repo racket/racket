@@ -1,7 +1,6 @@
 #lang scribble/doc
 @require[scribble/manual]
 @require[scribble/eval]
-@require[scribble/struct]
 @require["guide-utils.ss"]
 @require["contracts-utils.ss"]
 @(require (for-label scheme/contract))
@@ -30,10 +29,9 @@ Several clients used your module. Others used their
 modules. And all of a sudden one of them sees this error
 message:
 
-@(make-element "schemeerror" 
-'("bank-client broke the contract (-> ??? any)
+@schemeerror{bank-client broke the contract (-> ??? any)
 it had with myaccount on deposit; 
-expected <???>, given: -10"))
+expected <???>, given: -10}
 
 Clearly, @scheme[bank-client] is a module that uses
 @scheme[myaccount] but what are the @tt{?}s doing there?
@@ -64,10 +62,9 @@ scheme/base
 With this little change, the error message becomes all of
 sudden quite readable:
 
-@(make-element "schemeerror" 
-'("bank-client broke the contract (-> amount any)
+@schemeerror{bank-client broke the contract (-> amount any)
 it had with myaccount on deposit; 
-expected <amount>, given: -10"))
+expected <amount>, given: -10"}
 
 @question[#:tag "optionals"]{Can a contract specify what the values of optional arguments to a function must be?}
 

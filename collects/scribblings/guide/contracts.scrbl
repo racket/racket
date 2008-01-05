@@ -7,6 +7,14 @@
 
 @local-table-of-contents[]
 
+@;{
+
+Somewhere, discuss eq? and its impact on lists and
+procedures. Also, discuss difference between contracts on
+mutable datastructures & contracts on immutable ones.
+
+}
+
 @include-section["contracts-intro.scrbl"]
 @include-section["contracts-simple-function.scrbl"]
 @include-section["contracts-general-function.scrbl"]
