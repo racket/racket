@@ -1031,6 +1031,17 @@ static Scheme_Object *try_apply(Scheme_Object *f, Scheme_Object *args)
   return result;
 }
 
+static int foldable_body(Scheme_Object *f)
+{
+  Scheme_Closure_Data *d;
+  
+  d = SCHEME_COMPILED_CLOS_CODE(f);
+
+  scheme_delay_load_closure(d);
+
+  return (SCHEME_TYPE(d->code) > _scheme_values_types_);
+}
+
 static Scheme_Object *make_application(Scheme_Object *v)
 {
   Scheme_Object *o;
@@ -1060,8 +1071,7 @@ static Scheme_Object *make_application(Scheme_Object *v)
 	|| (SCHEME_CLSD_PRIMP(f) 
 	    && (((Scheme_Closed_Primitive_Proc *)f)->pp.flags & SCHEME_PRIM_IS_FOLDING))
 	|| (SAME_TYPE(SCHEME_TYPE(f), scheme_closure_type)
-	    && ((SCHEME_CLOSURE_DATA_FLAGS(SCHEME_COMPILED_CLOS_CODE(f)))
-		& CLOS_FOLDABLE))) {
+	    && (foldable_body(f)))) {
       f = try_apply(f, SCHEME_CDR(v));
       
       if (f)

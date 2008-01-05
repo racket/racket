@@ -1408,9 +1408,6 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
         data->code = bcode;
       }
     }
-    
-    if (SCHEME_TYPE(data->code) > _scheme_compiled_values_types_)
-      SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_FOLDABLE;
   }
 
   if ((closure_size == 1)
@@ -8067,12 +8064,6 @@ static Scheme_Object *read_compiled_closure(Scheme_Object *obj)
   if (!(SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REF_ARGS))
     data->closure_size = SCHEME_SVEC_LEN(v);
   data->closure_map = SCHEME_SVEC_VEC(v);
-
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_FOLDABLE)
-    SCHEME_CLOSURE_DATA_FLAGS(data) -= CLOS_FOLDABLE;
-
-  if (SCHEME_TYPE(data->code) > _scheme_values_types_)
-    SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_FOLDABLE;
 
   /* If the closure is empty, create the closure now */
   if (!data->closure_size)
