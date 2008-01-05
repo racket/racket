@@ -849,10 +849,12 @@
                                          tmp-dir)
                   (parameterize ([current-directory tmp-dir])
                     (for-each (lambda (f)
+                                (define cmd (format "pdflatex \"~a\"" f))
                                 (when (regexp-match? #rx#"[.]tex$" (path-element->bytes f))
                                   (let loop ([n 3])
                                     (unless (zero? n)
-                                      (unless (system (format "pdflatex ~a" f))
+                                      (setup-printf "running ~a" cmd)
+                                      (unless (system cmd)
                                         (error 'setup-plt "pdflatex failed"))
                                       (loop (sub1 n))))
                                   (let* ([f (path-replace-suffix f #".pdf")]
