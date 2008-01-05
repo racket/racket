@@ -54,6 +54,7 @@
 #    include <sys/types.h>
 #    include <sys/time.h>
 #    include <sys/resource.h>
+#    include <errno.h>
 #   endif /* USE_GETRUSAGE */
 #   ifdef USE_SYSCALL_GETRUSAGE
 #    include <sys/syscall.h>
@@ -7473,7 +7474,10 @@ long scheme_get_process_milliseconds(void)
   struct rusage use;
   long s, u;
 
-  getrusage(RUSAGE_SELF, &use);
+  do {
+    if (!getrusage(RUSAGE_SELF, &use))
+      break;
+  } while (errno == EINTR);
 
   s = use.ru_utime.tv_sec + use.ru_stime.tv_sec;
   u = use.ru_utime.tv_usec + use.ru_stime.tv_usec;

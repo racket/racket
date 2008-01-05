@@ -56,36 +56,35 @@ especially on Unix platforms; consult the system documentation
 
 @defproc[(current-milliseconds) exact-integer?]{
 
-Returns the current ``time'' in fixnum milliseconds (possibly
+Returns the current ``time'' in @tech{fixnum} milliseconds (possibly
 negative). This time is based on a platform-specific starting date or
-on the machine's startup time. Since the result is a fixnum, the value
-increases only over a limited (though reasonably long) time.}
+on the machine's startup time. Since the result is a @tech{fixnum},
+the value increases only over a limited (though reasonably long)
+time.}
 
 
 @defproc[(current-inexact-milliseconds) real?]{
 
-Returns the current ``time'' in positive milliseconds, not necessarily
-an integer. This time is based on a platform-specific starting date or
-on the machine's startup time, but it never decreases (until the
-machine is turned off).}
+Like @scheme[current-milliseconds], but the result never decreases
+(until the machine is turned off).}
 
 
 @defproc[(current-process-milliseconds) exact-integer?]{
 
-Returns the amount of processor time in fixnum milliseconds that has
-been consumed by the Scheme process on the underlying operating
-system. (Under @|AllUnix|, this includes both user and system time.)
-The precision of the result is platform-specific, and since the result
-is a fixnum, the value increases only over a limited (though
-reasonably long) time.}
+Returns the amount of processor time in @tech{fixnum} milliseconds
+that has been consumed by the Scheme process on the underlying
+operating system. (Under @|AllUnix|, this includes both user and
+system time.)  The precision of the result is platform-specific, and
+since the result is a @tech{fixnum}, the value increases only over a
+limited (though reasonably long) time.}
 
 
 @defproc[(current-gc-milliseconds) exact-integer?]{
 
-Returns the amount of processor time in fixnum milliseconds that has
-been consumed by Scheme's garbage collection so far. This time is a
-portion of the time reported by
-@scheme[(current-process-milliseconds)].}
+Returns the amount of processor time in @tech{fixnum} milliseconds
+that has been consumed by Scheme's garbage collection so far. This
+time is a portion of the time reported by
+@scheme[(current-process-milliseconds)], and is similarly limited.}
 
 
 @defproc[(time-apply [proc procedure?]

@@ -60,7 +60,7 @@ cases where IEEE provides no specification (e.g., @scheme[(angle
 +inf.0+inf.0)]), the result corresponds to the limit approaching
 infinity, or @scheme[+nan.0] if no such limit exists.
 
-A @pidefterm{fixnum} is an exact integer whose two's complement
+A @deftech{fixnum} is an exact integer whose two's complement
 representation fit into 31 bits on a 32-bit platform or 63 bits on a
 64-bit platform. Two fixnums that are @scheme[=] are also the same
 according to @scheme[eq?]. Otherwise, the result of @scheme[eq?]
