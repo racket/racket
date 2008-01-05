@@ -7,6 +7,9 @@
   . drscheme:debug:show-backtrace-window
     now accepts srcloc structures.
 
+  . removed help-desk:help-desk from the tools interface.
+    Use the help collection instead.
+
 ------------------------------
         Version 372
 ------------------------------
