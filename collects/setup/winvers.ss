@@ -36,7 +36,7 @@
          (subprocess
           (current-output-port) (current-input-port) (current-error-port)
           exe "--collects" collects-dir
-          "-mvqL-" "winvers.ss" "setup" "patch"))]
+          "-l" "setup/winvers" "patch"))]
       [(equal? argv #("patch"))
        (sleep 1) ; time for other process to end
        (patch-files)
@@ -44,7 +44,7 @@
        (subprocess
         (current-output-port) (current-input-port) (current-error-port)
         (build-path (find-console-bin-dir) "mzscheme.exe")
-        "-mvqL-" "winvers.ss" "setup" "finish")]
+        "-l" "setup/winvers" "finish")]
       [(equal? argv #("finish"))
        (sleep 1) ; time for other process to end
        (delete-directory/files

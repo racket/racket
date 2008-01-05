@@ -164,7 +164,7 @@ be replaced with a specific version.
 
 To replace the "xxxxxxx" with a specific version, run
 
-  mzscheme -l setup/winvers.ss
+  mzscheme -l setup/winvers
 
 in a shell.
 
