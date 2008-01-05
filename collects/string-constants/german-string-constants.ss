@@ -1009,8 +1009,8 @@
  ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
  (version:now-available-at   "ist jetzt verfügbar bei")
 
- ;; special menu
- (special-menu "S&pezial")
+ ;; insert menu
+ (insert-menu "E&infügen")
  
  ;; large semi colon letters
  (insert-large-letters... "Große Buchstaben einfügen...")
