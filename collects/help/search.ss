@@ -5,7 +5,6 @@
          scribble/struct
          scribble/manual-struct
          scribble/decode
-         scribble/basic
          scribble/manual
          (prefix-in scheme: scribble/scheme)
          net/sendurl
