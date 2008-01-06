@@ -1080,8 +1080,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #  endif
 # endif
 	 " File and expression options:\n"
-	 "  -e <exprs>, --eval <exprs> : Evaluates <exprs>, prints results\n"
-	 "  -f <file>, --load <file> : Like -e '(load \"<file>\")'\n"
+	 "  -e <exprs>, --eval <exprs> : Evaluate <exprs>, prints results\n"
+	 "  -f <file>, --load <file> : Like -e '(load \"<file>\")' without printing\n"
 	 "  -t <file>, --require <file> : Like -e '(require (file \"<file>\"))'\n"
 	 "  -l <path>, --lib <path> : Like -e '(require (lib \"<path>\"))'\n"
 	 "  -p <fl> <u> <pkg> : Like -e '(require (planet \"<fl>\" (\"<u>\" \"<pkg>\"))'\n"

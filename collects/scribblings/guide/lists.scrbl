@@ -8,6 +8,9 @@
 
 @(define step @elem{=})
 
+@(define list-eval (make-base-eval))
+@interaction-eval[#:eval list-eval (require scheme/list)]
+
 @title{Lists, Iteration, and Recursion}
 
 Scheme is a dialect of the language Lisp, whose name originally stood
@@ -131,6 +134,7 @@ non-empty list are
 }
 
 @examples[
+#:eval list-eval
 (first (list 1 2 3))
 (rest (list 1 2 3))
 ]
@@ -141,6 +145,7 @@ of the list---use the @scheme[cons] function, which is short for
 @scheme[empty] constant:
 
 @interaction[
+#:eval list-eval
 empty
 (cons "head" empty)
 (cons "dead" (cons "head" empty))
@@ -152,6 +157,7 @@ non-empty lists. The @scheme[empty?] function detects empty lists,
 and @scheme[cons?] detects non-empty lists:
 
 @interaction[
+#:eval list-eval
 (empty? empty)
 (empty? (cons "head" empty))
 (cons? empty)
@@ -162,6 +168,7 @@ With these pieces, you can write your own versions of the
 @scheme[length] function, @scheme[map] function, and more.
 
 @defexamples[
+#:eval list-eval
 (define (my-length lst)
   (cond
    [(empty? lst) 0]
@@ -170,6 +177,7 @@ With these pieces, you can write your own versions of the
 (my-length (list "a" "b" "c"))
 ]
 @def+int[
+#:eval list-eval
 (define (my-map f lst)
   (cond
    [(empty? lst) empty]
@@ -211,6 +219,7 @@ local function @scheme[iter] that accumulates the length in an
 argument @scheme[len]:
 
 @schemeblock[
+#:eval list-eval
 (define (my-length lst)
   (code:comment #, @t{local function @scheme[iter]:})
   (define (iter lst len)
@@ -253,6 +262,7 @@ accumulating the result list. The only catch is that the accumulated
 list will be backwards, so you'll have to reverse it at the very end:
 
 @schemeblock[
+#:eval list-eval
 (define (my-map f lst)
   (define (iter lst backward-result)
     (cond
@@ -302,6 +312,7 @@ remembers the previous element for each iteration, a Scheme programmer
 would more likely just write the following:
 
 @def+int[
+#:eval list-eval
 (define (remove-dups l)
   (cond
    [(empty? l) empty]

@@ -4,17 +4,12 @@
    floatng-point optimizations in the rest of the program, so we use a
    little function to defeat the optimization: */
 
-#ifdef MZ_PRECISE_GC
-START_XFORM_SKIP;
-#endif
-
 static FP_TYPE DO_FLOAT_DIV(FP_TYPE n, FP_TYPE d)
 {
   return n / d;
 }
 
 
-/* Must not trigger GC! (Required by xform in number.c) */
 FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
 {
   Scheme_Rational *r = (Scheme_Rational *)o;
@@ -33,24 +28,74 @@ FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
   } else
     d = SCHEME_BIGNUM_TO_FLOAT_INF_INFO(r->denom, 0, &ds);
 
-  if (ns && ds) {
-    /* Dividing now would give NaN. Use ns & ds (number of bignum
-       digits not needed before encountering infinity) to scale num & denom
-       and get a useful value. */
-    int m;
+  if (ns || ds) {
+    /* Quick path doesn't necessarily work. The more general
+       way is adpated from Gambit-C 4.1. */
+    long nl, dl, p, shift;
+    Scheme_Object *a[2], *n, *d;
+    FP_TYPE res;
 
-    m = (ns < ds) ? ds : ns;
+    a[0] = r->num;
+    n = scheme_abs(1, a);
 
-    n = SCHEME_BIGNUM_TO_FLOAT_INF_INFO(r->num, m, NULL);
-    d = SCHEME_BIGNUM_TO_FLOAT_INF_INFO(r->denom, m, NULL);
+    d = r->denom;
+
+    nl = scheme_integer_length(n);
+    dl = scheme_integer_length(d);
+
+    p = nl - dl;
+    if (p < 0) {
+      a[0] = n;
+      a[1] = scheme_make_integer(-p);
+      
+      n = scheme_bitwise_shift(2, a);
+    } else {
+      a[0] = d;
+      a[1] = scheme_make_integer(p);
+      
+      d = scheme_bitwise_shift(2, a);
+    }
+
+    if (scheme_bin_lt(n, d)) {
+      a[0] = n;
+      a[1] = scheme_make_integer(1);
+      
+      n = scheme_bitwise_shift(2, a);
+      --p;
+    }
+
+    shift = p - FLOAT_E_MIN;
+    if (shift > FLOAT_M_BITS) {
+      shift = FLOAT_M_BITS;
+    }
+    
+    a[0] = n;
+    a[1] = scheme_make_integer(shift);
+    n = scheme_bitwise_shift(2, a);
+
+    n = scheme_bin_div(n, d);
+    if (SCHEME_RATIONALP(n))
+      n = scheme_rational_round(n);
+    
+    if (SCHEME_INTP(n))
+      res = (FP_TYPE)SCHEME_INT_VAL(n);
+    else
+      res = SCHEME_BIGNUM_TO_FLOAT_INF_INFO(n, 0, NULL);
+
+    res = res * pow(2, p - shift);
+
+    if (SCHEME_INTP(r->num)) {
+      if (SCHEME_INT_VAL(r->num) < 0)
+        res = -res;
+    } else if (!SCHEME_BIGPOS(r->num)) {
+      res = -res;
+    }
+
+    return res;
   }
 
   return DO_FLOAT_DIV(n, d);
 }
-
-#ifdef MZ_PRECISE_GC
-END_XFORM_SKIP;
-#endif
 
 Scheme_Object *SCHEME_RATIONAL_FROM_FLOAT(FP_TYPE d)
 {

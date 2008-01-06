@@ -2552,3 +2552,11 @@ integer_length(int argc, Scheme_Object *argv[])
 
   return scheme_make_integer(base);
 }
+
+long scheme_integer_length(Scheme_Object *n)
+{
+  Scheme_Object *a[1], *r;
+  a[0] = n;
+  r = integer_length(1, a);
+  return SCHEME_INT_VAL(r);
+}

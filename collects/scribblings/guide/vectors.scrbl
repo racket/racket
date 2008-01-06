@@ -25,21 +25,6 @@ represent symbols and lists.
 (vector-ref #(name (that tune)) 1)
 ]
 
-When the last @math{n} vector elements of a vector are the same value
-(as determined by @scheme[eq?]), then the last @math{n-1} instances
-are omitted from the printed form. The vector length shown after the
-leading @litchar{#} effectively indicates when repeated trailing
-elements are omitted. The same conventions apply for vectors as
-expressions.
-
-@examples[
-(define v (make-vector 100 "."))
-v
-(vector-set! v 1 "!")
-v
-(vector-ref #10("." "?") 8)
-]
-
 Like strings, a vector is either mutable or immutable, and vectors
 written directly as expressions are immutable.
 

@@ -5,6 +5,9 @@
 @require["utils.ss"]
 @require[(for-syntax scheme/base)]
 
+@(define read-eval (make-base-eval))
+@interaction-eval[#:eval read-eval (require (for-syntax scheme/base))]
+
 @title[#:tag "reader"]{@"@"-Reader}
 
 The Scribble @"@"-reader is designed to be a convenient facility for
@@ -649,6 +652,7 @@ example, implicitly quoted keywords:
 
 @; FIXME: a bit of code duplication here
 @def+int[
+  #:eval read-eval 
   (define-syntax (foo stx)
     (let ([p (syntax-property stx 'scribble)])
       (syntax-case stx ()
@@ -687,6 +691,7 @@ an example of this.
 
 @; FIXME: a bit of code duplication here
 @def+int[
+  #:eval read-eval 
   (define-syntax (verb stx)
     (syntax-case stx ()
       [(_ cmd item ...)

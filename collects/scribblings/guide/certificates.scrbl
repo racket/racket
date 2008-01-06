@@ -20,7 +20,7 @@ expands to a use of @scheme[unchecked-go]:
   (define (unchecked-go n x) 
     ;; to avoid disaster, @scheme[n] must be a number
     (+ n 17))
-  (define-syntaxKW (go stx)
+  (define-syntax (go stx)
     (syntax-case stx ()
      [(_ x)
       #'(unchecked-go 8 x)])))
@@ -66,7 +66,7 @@ output. Building on the previous example,
   (require m)
   (provide go-more)
   (define y 'hello)
-  (define-syntaxKW (go-more stx)
+  (define-syntax (go-more stx)
     #'(go y)))
 ]
 
@@ -106,10 +106,10 @@ a macro:
   (provide def-go)
   (define (unchecked-go n x) 
     (+ n 17))
-  (define-syntaxKW (def-go stx)
+  (define-syntax (def-go stx)
    (syntax-case stx ()
      [(_ go)
-      #'(define-syntaxKW (go stx)
+      #'(define-syntax (go stx)
           (syntax-case stx ()
            [(_ x)
             #'(unchecked-go 8 x)]))])))
@@ -144,10 +144,10 @@ inactive certificate instead of an active one, it's helpful to write
 the @scheme[def-go] macro as follows:
 
 @schemeblock[
-(define-syntaxKW (def-go stx)
+(define-syntax (def-go stx)
  (syntax-case stx ()
    [(_ go)
-    #'(define-syntaxKW (go stx)
+    #'(define-syntax (go stx)
         (syntax-case stx ()
          [(_ x)
           (with-syntax ([ug (quote-syntax unchecked-go)])

@@ -3,6 +3,9 @@
          "match-grammar.ss"
          scheme/match]
 
+@(define match-eval (make-base-eval))
+@interaction-eval[#:eval match-eval (require scheme/match)]
+
 @title[#:tag "match"]{Pattern Matching}
 
 The @scheme[match] form and related forms support general pattern
@@ -50,6 +53,7 @@ In more detail, patterns match as follows:
        @schemeidfont{not} sub-patterns are independent.
 
        @examples[
+       #:eval match-eval
        (match '(1 2 3)
          [(list a b a) (list a b)]
          [(list a b c) (list c b a)])
@@ -62,6 +66,7 @@ In more detail, patterns match as follows:
        identifiers.
 
        @examples[
+       #:eval match-eval
        (match '(1 2 3)
          [(list _ _ a) a])
        ]}
@@ -71,6 +76,7 @@ In more detail, patterns match as follows:
        --- matches an @scheme[equal?] constant.
 
        @examples[
+       #:eval match-eval
        (match "yes"
          ["no" #f]
          ["yes" #t])
@@ -91,6 +97,7 @@ In more detail, patterns match as follows:
        operators are bound to lists of matching forms.
 
        @examples[
+       #:eval match-eval
        (match '(1 2 3)
          [(list a b c) (list c b a)])
        (match '(1 2 3)
@@ -117,6 +124,7 @@ In more detail, patterns match as follows:
        matches non-list values.
 
       @examples[
+       #:eval match-eval
       (match '(1 2 3 . 4)
         [(list-rest a b c d) d])
       (match '(1 2 3 . 4)
@@ -128,6 +136,7 @@ In more detail, patterns match as follows:
        match each @scheme[_pat] can appear in the list in any order.
 
        @examples[
+       #:eval match-eval
        (match '(1 2 3)
          [(list-no-order 3 2 x) x])
        ]}
@@ -138,6 +147,7 @@ In more detail, patterns match as follows:
        any order with matches for the other patterns.
 
        @examples[
+       #:eval match-eval
        (match '(1 2 3 4 5 6)
          [(list-no-order 6 2 y ...) y])
        ]}
@@ -146,6 +156,7 @@ In more detail, patterns match as follows:
        @schemeidfont{list} pattern, but matching a vector.
 
        @examples[
+       #:eval match-eval
        (match #(1 (2) (2) (2) 5)
          [(vector 1 (list a) ..3 5) a])
        ]}
@@ -155,6 +166,7 @@ In more detail, patterns match as follows:
        hash table's key--value pairs.
 
        @examples[
+       #:eval match-eval
        (match #hash(("a" . 1) ("b" . 2))
          [(hash-table ("b" b) ("a" a)) (list b a)])
        ]}
@@ -164,6 +176,7 @@ In more detail, patterns match as follows:
        repeating pattern.
 
        @examples[
+       #:eval match-eval
        (match #hash(("a" . 1) ("b" . 2))
          [(hash-table (key val) ...) key])
        ]}
@@ -171,6 +184,7 @@ In more detail, patterns match as follows:
  @item{@scheme[(#,(schemeidfont "box") _pat)] --- matches a boxed value.
 
        @examples[
+       #:eval match-eval
        (match #&1
          [(box a) a])
        ]}
@@ -192,6 +206,7 @@ In more detail, patterns match as follows:
        information.
 
        @defexamples[
+       #:eval match-eval
        (define-struct tree (val left right))
        (match (make-tree 0 (make-tree 1 #f #f) #f)
          [(struct tree (a (struct tree (b  _ _)) _)) (list a b)])
@@ -203,6 +218,7 @@ In more detail, patterns match as follows:
        about regexps.
 
        @examples[
+       #:eval match-eval
        (match "apple"
          [(regexp #rx"p+") 'yes]
          [_ 'no])
@@ -217,6 +233,7 @@ In more detail, patterns match as follows:
        @scheme[_pat].
 
        @examples[
+       #:eval match-eval
        (match "apple"
          [(regexp #rx"p+(.)" (list _ "l")) 'yes]
          [_ 'no])
@@ -237,6 +254,7 @@ In more detail, patterns match as follows:
        to the entire value that matches @scheme[pat].
 
        @examples[
+       #:eval match-eval
        (match '(1 (2 3) 4)
         [(list _ (and a (list _ ...)) _) a])
        ]}
@@ -250,6 +268,7 @@ In more detail, patterns match as follows:
        must include the binding.
 
        @examples[
+       #:eval match-eval
        (match '(1 2)
         [(or (list a 1) (list a 2)) a])
        ]}
@@ -258,6 +277,7 @@ In more detail, patterns match as follows:
        none of the @scheme[_pat]s match, and binds no identifiers.
 
        @examples[
+       #:eval match-eval
        (match '(1 2 3)
         [(list (not 4) ...) 'yes]
         [_ 'no])
@@ -271,6 +291,7 @@ In more detail, patterns match as follows:
        application is matched again @scheme[_pat].
 
        @examples[
+       #:eval match-eval
        (match '(1 2)
         [(app length 2) 'yes])
        ]}
@@ -282,6 +303,7 @@ In more detail, patterns match as follows:
        application and an @schemeidfont{and} pattern).
 
        @examples[
+       #:eval match-eval
        (match '(1 3 5)
         [(list (? odd?) ...) 'yes])
        ]}
@@ -294,6 +316,7 @@ In more detail, patterns match as follows:
        @schemeidfont{struct} pattern.
 
        @examples[
+       #:eval match-eval
        (define v (vector 1 2 3))
        (match v
         [(vector _ (set! s!) _) (s! 0)])
@@ -307,6 +330,7 @@ In more detail, patterns match as follows:
        only in the same places as the @schemeidfont{set!} pattern.
 
        @examples[
+       #:eval match-eval
        (define v (vector 1 2 3))
        (define g
          (match v
@@ -322,6 +346,7 @@ In more detail, patterns match as follows:
         patterns.
         
         @examples[
+       #:eval match-eval
         (match '(1 2 3)
           [`(1 ,a ,(? odd? b)) (list a b)])
         ]}
@@ -353,6 +378,7 @@ match must succeed), and the bindings that @scheme[pat] introduces are
 visible in the @scheme[body]s.
 
 @examples[
+#:eval match-eval
 (match-let ([(list a b) '(1 2)]
             [(vector x ...) #(1 2 3 4)])
   (list b a x))
@@ -365,6 +391,7 @@ bindings of each @scheme[pat] are available in each subsequent
 @scheme[expr].
 
 @examples[
+#:eval match-eval
 (match-let* ([(list a b) '(#(1 2 3 4) 2)]
              [(vector x ...) a])
   x)
@@ -381,6 +408,7 @@ Defines the names bound by @scheme[pat] to the values produced by
 matching against the result of @scheme[expr].
 
 @examples[
+#:eval match-eval
 (match-define (list a b) '(1 2))
 b
 ]}

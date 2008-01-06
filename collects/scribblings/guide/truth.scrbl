@@ -6,6 +6,9 @@
 
           (for-label scheme/list))
 
+@(define list-eval (make-base-eval))
+@interaction-eval[#:eval list-eval (require scheme/list)]
+
 @title{Pairs, Lists, and Scheme Syntax}
 
 The @scheme[cons] function actually accepts any two values, not just
@@ -29,6 +32,7 @@ names are also nonsense. Just remember that ``a'' comes before ``d,''
 and @scheme[cdr] is pronounced ``could-er.'')
 
 @examples[
+#:eval list-eval
 (car (cons 1 2))
 (cdr (cons 1 2))
 (pair? empty)

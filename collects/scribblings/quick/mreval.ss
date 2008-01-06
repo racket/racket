@@ -44,7 +44,7 @@
     (if mred?
         (let ([eh (scribble-eval-handler)]
               [log-file (open-output-file exprs-dat-file 'truncate/replace)])
-          (lambda (catching-exns? expr)
+          (lambda (ev catching-exns? expr)
             (write (serialize (syntax-object->datum expr)) log-file)
             (newline log-file)
             (flush-output log-file)
@@ -52,7 +52,7 @@
                    (with-handlers ([exn:fail?
                                     (lambda (exn)
                                       (make-mr-exn (exn-message exn)))])
-                     (eh catching-exns? expr))])
+                     (eh ev catching-exns? expr))])
               (let ([result (fixup-picts result)])
                 (write (serialize result) log-file)
                 (newline log-file)
@@ -66,7 +66,7 @@
                                          (lambda (exn)
                                            (open-input-string ""))])
                           (open-input-file exprs-dat-file))])
-          (lambda (catching-exns? expr)
+          (lambda (ev catching-exns? expr)
             (with-handlers ([exn:fail? (lambda (exn)
                                          (if catching-exns?
                                              (raise exn)

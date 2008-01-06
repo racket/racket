@@ -74,7 +74,7 @@ If a window receives multiple kinds of events, the events are
     (code:comment #, @t{Define overriding method to handle keyboard events})
     (define/override (#,(:: canvas<%> on-char) event)
       (send msg #,(:: message% set-label) "Canvas keyboard"))
-    (code:comment #, @t{Call the superclass initialization (and pass on all init args)})
+    (code:comment #, @t{Call the superclass init, passing on all init args})
     (super-new)))
 
 (code:comment #, @t{Make a canvas that handles events in the frame})

@@ -65,10 +65,13 @@
               (scheme (begin (#,(scheme form) id) (define (id . formals) body ...+)))))))]
      [(_ form ...)
       #'(begin (defdefshorthands form) ...)]))
-       
+ 
+(define class-eval (make-base-eval))
 
 ]
-  
+
+@interaction-eval[#:eval class-eval (require scheme/class)]
+
 
 @title[#:tag "mzlib:class" #:style 'toc]{Classes and Objects}
 
@@ -773,6 +776,7 @@ hidden name (except as a top-level definitions). The
 names.
 
 @defexamples[
+#:eval class-eval
 (define-values (r o)
   (let ()
     (define-local-member-name m)
@@ -826,6 +830,7 @@ Produces an integer hash code consistent with
 @scheme[equal-hash-code].}
 
 @defexamples[
+#:eval class-eval
 (define (make-c% key)
   (define-member-name m key)
   (class object% 
@@ -838,6 +843,7 @@ Produces an integer hash code consistent with
 ]
 
 @defs+int[
+#:eval class-eval
 [(define (fresh-c%)
    (let ([key (generate-member-key)])
      (values (make-c% key) key)))

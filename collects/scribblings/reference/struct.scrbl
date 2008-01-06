@@ -2,6 +2,8 @@
 @require["mz.ss"
          (for-label scheme/struct-info)]
 
+@(define struct-eval (make-base-eval))
+
 @title[#:tag "structures"]{Structures}
 
 @guideintro["define-struct"]{structure types via @scheme[define-struct]}
@@ -156,6 +158,7 @@ The result of @scheme[make-struct-type] is five values:
 }
 
 @examples[
+#:eval struct-eval
 (define-values (struct:a make-a a? a-ref a-set!)
   (make-struct-type 'a #f 2 1 'uninitialized))
 (define an-a (make-a 'x 'y))
@@ -166,6 +169,7 @@ The result of @scheme[make-struct-type] is five values:
 ]
 
 @interaction[
+#:eval struct-eval
 (define-values (struct:b make-b b? b-ref b-set!)
   (make-struct-type 'b struct:a 1 2 'b-uninitialized))
 (define a-b (make-b 'x 'y 'z))
@@ -177,6 +181,7 @@ The result of @scheme[make-struct-type] is five values:
 ]
 
 @interaction[
+#:eval struct-eval
 (define-values (struct:c make-c c? c-ref c-set!)
   (make-struct-type
    'c struct:b 0 0 #f null (make-inspector) #f null
@@ -278,6 +283,7 @@ exception. Such an exception prevents @scheme[make-struct-type] from
 returning a structure type descriptor.
 
 @examples[
+#:eval struct-eval
 (define-values (prop:p p? p-ref) (make-struct-type-property 'p))
 
 (define-values (struct:a make-a a? a-ref a-set!)

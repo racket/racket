@@ -3,6 +3,9 @@
          scheme/serialize
          (for-label scheme/serialize)]
 
+@(define ser-eval (make-base-eval))
+@interaction-eval[#:eval ser-eval (require scheme/serialize)]
+
 @title[#:tag "serialization"]{Serialization}
 
 @note-lib-only[scheme/serialize]
@@ -319,6 +322,7 @@ purposes of marshaling (so cycles involving only instances of the
 structure type cannot be handled by the deserializer).
 
 @examples[
+#:eval ser-eval
 (define-serializable-struct point (x y))
 (point-x (deserialize (serialize (make-point 1 2))))
 ]}
@@ -349,6 +353,7 @@ values: an instance @scheme[x] of @scheme[id] (typically with
 instance of @scheme[id] and copies its field values into @scheme[x].
 
 @examples[
+#:eval ser-eval
 (define-serializable-struct point (x y) #:mutable #:transparent)
 (define ps (serialize (make-point 1 2)))
 (deserialize ps)

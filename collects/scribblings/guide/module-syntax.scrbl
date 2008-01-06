@@ -3,6 +3,8 @@
 @require[scribble/eval]
 @require["guide-utils.ss"]
 
+@(define cake-eval (make-base-eval))
+
 @title{Module Syntax}
 
 The @litchar{#lang} at the start of a module file begins a shorthand
@@ -44,6 +46,7 @@ For example, the @filepath{cake.ss} example of the
 @seclink["module-basics"]{previous section} could be written as
 
 @schemeblock+eval[
+#:eval cake-eval
 (module cake scheme
   (provide print-cake)
 
@@ -60,6 +63,7 @@ with any file. To refer to such an unassociated module, quote the
 module name:
 
 @examples[
+#:eval cake-eval
 (require 'cake)
 (eval:alts (print-cake 3) (eval '(print-cake 3)))
 ]

@@ -1340,6 +1340,8 @@ XFORM_NONGCING float scheme_bignum_to_float_inf_info(const Scheme_Object *n, int
 
 void scheme_clear_bignum_cache(void);
 
+long scheme_integer_length(Scheme_Object *n);
+
 /****** Rational numbers *******/
 
 typedef struct {

@@ -24,9 +24,12 @@ FP_TYPE SCHEME_BIGNUM_TO_FLOAT_INFO(const Scheme_Object *n, int skip, int *_skip
 
   skipped = nl;
 
-  if (skip >= nl)
-    return 0.0;
-  else
+  if (skip >= nl) {
+    if (SCHEME_BIGPOS(n))
+      return 0.0;
+    else
+      return scheme_floating_point_nzero;
+  } else
     nl -= skip;
 	
   d = 0;

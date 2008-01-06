@@ -5,6 +5,7 @@
            "scheme.ss"
            "decode.ss"
            scheme/file
+           scheme/sandbox
            mzlib/string
            (for-syntax scheme/base))
 
@@ -20,14 +21,14 @@
            defexamples
            defexamples*
            as-examples
-
-           current-int-namespace
-           eval-example-string
+           
+           make-base-eval
 
            scribble-eval-handler)
 
-  (define current-int-namespace (make-parameter (current-namespace)))
-  (define scribble-eval-handler (make-parameter (lambda (c? x) (eval x))))
+  (define scribble-eval-handler (make-parameter 
+                                 (lambda (ev c? x)
+                                   (ev x))))
 
   (define image-counter 0)
 
@@ -123,27 +124,23 @@
                    (cdr val-list+outputs)
                     #f)))))))
 
-  (define (do-eval s)
+  (define ((do-eval ev) s)
     (syntax-case s (code:comment eval:alts)
      [(code:line v (code:comment . rest))
-      (do-eval #'v)]
+      ((do-eval ev) #'v)]
      [(code:comment . rest)
       (list (list (void)) "" "")]
      [(eval:alts p e)
-      (do-eval #'e)]
+      ((do-eval ev) #'e)]
      [else
-      (let ([o (open-output-string)]
-            [o2 (open-output-string)])
-        (parameterize ([current-output-port o]
-                       [current-error-port o2])
-          (with-handlers ([exn? (lambda (e)
-                                  (list (exn-message e)
-                                        (get-output-string o)
-                                        (get-output-string o2)))])
-            (list (let ([v (do-plain-eval s #t)])
-                    (make-reader-graph (copy-value v (make-hash-table))))
-                  (get-output-string o)
-                  (get-output-string o2)))))]))
+      (with-handlers ([exn? (lambda (e)
+                              (list (exn-message e)
+                                    (get-output ev)
+                                    (get-error-output ev)))])
+        (list (let ([v (do-plain-eval ev s #t)])
+                (make-reader-graph (copy-value v (make-hash-table))))
+              (get-output ev)
+              (get-error-output ev)))]))
 
   (define (install ht v v2)
     (hash-table-put! ht v v2)
@@ -184,64 +181,78 @@
      [else v]))
             
   (define (strip-comments stx)
-    (syntax-case stx (code:comment code:blank)
-     [((code:comment . _) . rest)
-      (strip-comments #'rest)]
-     [(a . b)
+    (cond
+     [(syntax? stx)
       (datum->syntax stx
-                     (cons (strip-comments #'a)
-                           (strip-comments #'b))
+                     (strip-comments (syntax-e stx))
                      stx
                      stx
                      stx)]
-     [code:blank #'(void)]
-     [else stx]))
-      
+      [(pair? stx)
+       (let ([a (car stx)]
+             [comment? (lambda (a)
+                         (and (pair? a)
+                              (or (eq? (car a) 'code:comment)
+                                  (and (identifier? a)
+                                       (eq? (syntax-e (car a)) 'code:comment)))))])
+         (if (or (comment? a)
+                 (and (syntax? a) (comment? (syntax-e a))))
+             (strip-comments (cdr stx))
+             (cons (strip-comments a)
+                   (strip-comments (cdr stx)))))]
+      [(eq? stx 'code:blank) (void)]
+      [else stx]))
 
-  (define (do-plain-eval s catching-exns?)
-    (parameterize ([current-namespace (current-int-namespace)])
-        (call-with-values (lambda () 
-                            ((scribble-eval-handler) 
-                             catching-exns? 
-                             (let ([s (strip-comments s)])
+  (define (make-base-eval)
+    (parameterize ([sandbox-security-guard (current-security-guard)]
+                   [sandbox-output 'string]
+                   [sandbox-error-output 'string]
+                   [sandbox-eval-limits #f]
+                   [sandbox-make-inspector current-inspector])
+      (make-evaluator 'scheme/base)))
+      
+  (define (do-plain-eval ev s catching-exns?)
+    (call-with-values (lambda () 
+                        ((scribble-eval-handler) 
+                         ev
+                         catching-exns? 
+                         (let ([s (strip-comments s)])
+                           (if (syntax? s)
                                (syntax-case s (module)
                                  [(module . _rest)
                                   (syntax->datum s)]
-                                 [_else s]))))
-          list)))
+                                 [_else s])
+                               s))))
+      list))
+
+  (define-syntax-rule (quote-expr e) 'e)
+
+  (define (do-interaction-eval ev e)
+    (parameterize ([current-command-line-arguments #()])
+      (do-plain-eval (or ev (make-base-eval)) e #f))
+    "")
 
   (define-syntax interaction-eval
     (syntax-rules ()
-      [(_ e) (#%expression
-              (begin (parameterize ([current-command-line-arguments #()])
-                       (do-plain-eval (quote-syntax e) #f))
-                     ""))]))
+      [(_ #:eval ev e) (do-interaction-eval ev (quote-expr e))]
+      [(_ e) (do-interaction-eval #f (quote-expr e))]))
 
 
   (define (show-val v)
     (span-class "schemeresult"
                 (to-element/no-color v)))
 
+  (define (do-interaction-eval-show ev e)
+    (parameterize ([current-command-line-arguments #()])
+      (show-val (car (do-plain-eval (or ev (make-base-eval)) e #f)))))
+
   (define-syntax interaction-eval-show
     (syntax-rules ()
-      [(_ e) (#%expression
-              (parameterize ([current-command-line-arguments #()])
-                (show-val (car (do-plain-eval (quote-syntax e) #f)))))]))
-
-  (define (eval-example-string s)
-    (eval (read (open-input-string s))))
-
-  (parameterize ([current-namespace (current-int-namespace)])
-    (eval `(define eval-example-string ,eval-example-string)))
+      [(_ #:eval ev e) (do-interaction-eval-show ev (quote-expr e))]
+      [(_ e) (do-interaction-eval-show #f (quote-expr e))]))
 
   (define-syntax schemeinput*
-    (syntax-rules (eval-example-string eval:alts code:comment)
-      [(_ (eval-example-string s))
-       (make-paragraph
-        (list
-         (hspace 2)
-         (tt "> ")
-         (span-class "schemevalue" (schemefont s))))]
+    (syntax-rules (eval:alts code:comment)
       [(_ (code:comment . rest)) (schemeblock (code:comment . rest))]
       [(_ (eval:alts a b)) (schemeinput* a)]
       [(_ e) (schemeinput e)]))
@@ -266,61 +277,87 @@
       [(_ (code:line (define . rest) . rest2))
        (syntax-case stx ()
          [(_ e) #'(schemeblock+line e)])]
-      [(_ e) #'(schemeinput e)]))
+      [(_ e) #'(schemeinput* e)]))
+
+  (define (do-titled-interaction ev t shows evals)
+    (interleave t
+                shows
+                (map (do-eval ev) evals)))
 
   (define-syntax titled-interaction
     (syntax-rules ()
+      [(_ #:eval ev t schemeinput* e ...)
+       (do-titled-interaction ev t (list (schemeinput* e) ...) (list (quote-expr e) ...))]
       [(_ t schemeinput* e ...)
-       (interleave t
-                   (list (schemeinput* e) ...)
-                   (map do-eval (list (quote-syntax e) ...)))]))
+       (titled-interaction #:eval (make-base-eval) t schemeinput* e ...)]))
 
     (define-syntax interaction
       (syntax-rules ()
+        [(_ #:eval ev e ...) (titled-interaction #:eval ev #f schemeinput* e ...)]
         [(_ e ...) (titled-interaction #f schemeinput* e ...)]))
 
   (define-syntax schemeblock+eval
     (syntax-rules ()
+      [(_ #:eval ev e ...)
+       (let ([eva ev])
+         (#%expression
+          (begin (interaction-eval #:eval eva e) ...
+                 (schemeblock e ...))))]
       [(_ e ...)
-       (#%expression
-        (begin (interaction-eval e) ...
-               (schemeblock e ...)))]))
+       (schemeblock+eval #:eval (make-base-eval) e ...)]))
 
   (define-syntax schememod+eval
     (syntax-rules ()
+      [(_ #:eval ev name e ...)
+       (let ([eva ev])
+         (#%expression
+          (begin (interaction-eval #:eval eva e) ...
+                 (schememod name e ...))))]
       [(_ name e ...)
-       (#%expression
-        (begin (interaction-eval e) ...
-               (schememod name e ...)))]))
+       (schememod+eval #:eval (make-base-eval) name e ...)]))
 
   (define-syntax def+int
     (syntax-rules ()
-      [(_ def e ...)
-       (make-splice (list (schemeblock+eval def)
-                          (interaction e ...)))]))
+      [(_ #:eval ev def e ...)
+       (let ([eva ev])
+         (make-splice (list (schemeblock+eval #:eval eva def)
+                            (interaction #:eval eva e ...))))]
+      [(_ def e ...) 
+       (def+int #:eval (make-base-eval) def e ...)]))
 
   (define-syntax defs+int
     (syntax-rules ()
+      [(_ #:eval ev [def ...] e ...)
+       (let ([eva ev])
+         (make-splice (list (schemeblock+eval #:eval eva def ...)
+                            (interaction #:eval eva e ...))))]
       [(_ [def ...] e ...)
-       (make-splice (list (schemeblock+eval def ...)
-                          (interaction e ...)))]))
+       (defs+int #:eval (make-base-eval) [def ...] e ...)]))
 
   (define example-title
     (make-paragraph (list "Examples:")))
   (define-syntax examples
     (syntax-rules ()
+      [(_ #:eval ev e ...)
+       (titled-interaction #:eval ev example-title schemeinput* e ...)]
       [(_ e ...)
        (titled-interaction example-title schemeinput* e ...)]))
   (define-syntax examples*
     (syntax-rules ()
+      [(_ #:eval ev example-title e ...)
+       (titled-interaction #:eval ev example-title schemeinput* e ...)]
       [(_ example-title e ...)
        (titled-interaction example-title schemeinput* e ...)]))
   (define-syntax defexamples
     (syntax-rules ()
+      [(_ #:eval ev e ...)
+       (titled-interaction #:eval ev example-title schemedefinput* e ...)]
       [(_ e ...)
        (titled-interaction example-title schemedefinput* e ...)]))
   (define-syntax defexamples*
     (syntax-rules ()
+      [(_ #:eval ev example-title e ...)
+       (titled-interaction #:eval ev example-title schemedefinput* e ...)]
       [(_ example-title e ...)
        (titled-interaction example-title schemedefinput* e ...)]))
 

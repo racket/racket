@@ -605,10 +605,10 @@ XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_bignum_normalize(const Scheme_Obj
 /*========================================================================*/
 
 MZ_EXTERN Scheme_Object *scheme_make_rational(const Scheme_Object *r, const Scheme_Object *d);
-XFORM_NONGCING MZ_EXTERN double scheme_rational_to_double(const Scheme_Object *n);
+MZ_EXTERN double scheme_rational_to_double(const Scheme_Object *n);
 MZ_EXTERN Scheme_Object *scheme_rational_from_double(double d);
 #ifdef MZ_USE_SINGLE_FLOATS
-XFORM_NONGCING MZ_EXTERN float scheme_rational_to_float(const Scheme_Object *n);
+MZ_EXTERN float scheme_rational_to_float(const Scheme_Object *n);
 MZ_EXTERN Scheme_Object *scheme_rational_from_float(float d);
 #else
 # define scheme_rational_to_float scheme_rational_to_double

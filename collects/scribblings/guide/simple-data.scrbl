@@ -48,6 +48,6 @@ results are printed in blue instead of green to highlight the
 difference between an input expression and a printed result.
 
 @examples[
-(eval-example-string "1.0000")
-(eval-example-string "\"A \\u0022fancy\\u0022 string\"")
+(eval:alts (unsyntax (schemevalfont "1.0000")) 1.0000)
+(eval:alts (unsyntax (schemevalfont "\"A \\u0022fancy\\u0022 string\"")) "A \u0022fancy\u0022 string")
 ]

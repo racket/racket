@@ -3,6 +3,8 @@
          scribble/eval]
 @require["guide-utils.ss"]
 
+@(define piece-eval (make-base-eval))
+
 @title[#:tag "intro"]{Welcome to PLT Scheme}
 
 Depending on how you look at it, @bold{PLT Scheme} is
@@ -94,6 +96,7 @@ You can define your own functions that work like @scheme[substring] by
 using the @scheme[define] form, like this:
 
 @def+int[
+#:eval piece-eval
 (define (piece str)
   (substring str 0 5))
 (piece "howdy universe")
@@ -126,6 +129,7 @@ favorite editor. If you save it as @filepath{piece.ss}, then after starting
 sequence:
 
 @interaction[
+#:eval piece-eval
 (eval:alts (enter! "piece.ss") (void))
 (piece "howdy universe")
 ]
@@ -148,6 +152,7 @@ tempted to put just
 into @filepath{piece.ss} and run @exec{mzscheme} with
 
 @interaction[
+#:eval piece-eval
 (eval:alts (load "piece.ss") (void))
 (piece "howdy universe")
 ]

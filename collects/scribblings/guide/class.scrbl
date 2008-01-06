@@ -6,6 +6,11 @@
 
           (for-label scheme/class))
 
+@(define class-eval
+   (let ([e (make-base-eval)])
+     (e '(require scheme/class))
+     e))
+
 @; FIXME: at some point, discuss classes vs. units vs. modules
 
 @title[#:tag "classes"]{Classes and Objects}
@@ -46,17 +51,18 @@ public methods @scheme[get-size], @scheme[grow], and @scheme[eat]:
 ]
 
 @interaction-eval[
+#:eval class-eval
 (define fish%
-(class object%
-  (init size)
-  (define current-size size)
-  (super-new)
-  (define/public (get-size)
-    current-size)
-  (define/public (grow amt)
-    (set! current-size (+ amt current-size)))
-  (define/public (eat other-fish)
-    (grow (send other-fish get-size)))))]
+  (class object%
+    (init size)
+    (define current-size size)
+    (super-new)
+    (define/public (get-size)
+      current-size)
+    (define/public (grow amt)
+      (set! current-size (+ amt current-size)))
+    (define/public (eat other-fish)
+      (grow (send other-fish get-size)))))]
 
 The @scheme[size] initialization argument must be supplied via a named
  argument when instantiating the class through the @scheme[new] form:
@@ -72,7 +78,9 @@ Of course, we can also name the class and its instance:
 (define charlie (new fish% [size 10]))
 ]
 
-@interaction-eval[(define charlie (new fish% [size 10]))]
+@interaction-eval[
+#:eval class-eval
+(define charlie (new fish% [size 10]))]
 
 In the definition of @scheme[fish%], @scheme[current-size] is a
 private field that starts out with the value of the @scheme[size]
@@ -108,6 +116,7 @@ independent function.  A call to the @scheme[grow] method of a
 @scheme[fish%] object requires the @scheme[send] form:
 
 @interaction[
+#:eval class-eval
 (send charlie grow 6)
 (send charlie get-size)
 ]
@@ -123,6 +132,7 @@ but not overridden. In that case, the class can use @scheme[send]
 with @scheme[this] to access the method:
 
 @def+int[
+#:eval class-eval
 (define hungry-fish% (class fish% (super-new)
                        (define/public (eat-more fish1 fish2)
                          (send this eat fish1)
@@ -133,6 +143,7 @@ Alternately, the class can declare the existence of a method using @scheme[inher
 which brings the method name into scope for a direct call:
 
 @def+int[
+#:eval class-eval
 (define hungry-fish% (class fish% (super-new)
                        (inherit eat)
                        (define/public (eat-more fish1 fish2)
@@ -161,6 +172,7 @@ invoking a method from outside the method's class, the programmer must use the
 @defterm{generic method} to be invoked with @scheme[send-generic]:
 
 @def+int[
+#:eval class-eval
 (define get-fish-size (generic fish% get-size))
 (send-generic charlie get-fish-size)
 (send-generic (new hungry-fish% [size 32]) get-fish-size)
@@ -177,6 +189,7 @@ through a generic method,
 or through @scheme[send], method overriding works in the usual way:
 
 @defs+int[
+#:eval class-eval
 [
 (define picky-fish% (class fish% (super-new)
                       (define/override (grow amt)
@@ -212,6 +225,7 @@ example, the following @scheme[size-10-fish%] class always generates
 fish of size 10:
 
 @def+int[
+#:eval class-eval
 (define size-10-fish% (class fish% (super-new [size 10])))
 (send (new size-10-fish%) get-size)
 ]
@@ -228,6 +242,7 @@ class accepts a @scheme[size] initialization argument, but its value defaults to
 10 if no value is supplied on instantiation:
 
 @def+int[
+#:eval class-eval
 (define default-10-fish% (class fish%
                            (init [size 10])
                            (super-new [size size])))

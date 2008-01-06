@@ -3,6 +3,8 @@
 @require[scribble/eval]
 @require["guide-utils.ss"]
 
+@(define def-eval (make-base-eval))
+
 @title[#:tag "define"]{Definitions: @scheme[define]}
 
 A basic definition has the form
@@ -13,6 +15,7 @@ in which case @scheme[_id] is bound to the result of
 @scheme[_expr].
 
 @defexamples[
+#:eval def-eval
 (define salutation (list-ref '("Hi" "Hello") (random 2)))
 salutation
 ]
@@ -32,12 +35,14 @@ which is a shorthand for
 ]
 
 @defexamples[
+#:eval def-eval
 (define (greet name)
   (string-append salutation ", " name))
 (greet "John")
 ]
 
 @def+int[
+#:eval def-eval
 (define (greet first [surname "Smith"] #:hi [hi salutation])
   (string-append hi ", " first " " surname))
 (greet "John")
@@ -58,6 +63,7 @@ which is a shorthand
 ]
 
 @defexamples[
+#:eval def-eval
 (define (avg . l)
   (/ (apply + l) (length l)))
 (avg 1 2 3)
@@ -70,6 +76,7 @@ Consider the following @scheme[make-add-suffix] function that takes a
 string and returns another function that takes a string:
 
 @def+int[
+#:eval def-eval
 (define make-add-suffix
   (lambda (s2)
     (lambda (s) (string-append s s2))))
@@ -79,6 +86,7 @@ Although it's not common, result of @scheme[make-add-suffix] could be
 called directly, like this:
 
 @interaction[
+#:eval def-eval
 ((make-add-suffix "!") "hello")
 ]
 
@@ -101,11 +109,13 @@ supports a shorthand for defining curried functions that reflects
 nested function calls:
 
 @def+int[
+#:eval def-eval
 (define ((make-add-suffix s2) s)
   (string-append s s2))
 ((make-add-suffix "!") "hello")
 ]
 @defs+int[
+#:eval def-eval
 [(define louder (make-add-suffix "!"))
  (define less-sure (make-add-suffix "?"))]
 (less-sure "really")
@@ -134,6 +144,7 @@ expressions can produce multiple results. For example,
 but @scheme[quotient/remainder] produces the same two values at once:
 
 @interaction[
+#:eval def-eval
 (quotient 13 3)
 (remainder 13 3)
 (quotient/remainder 13 3)
@@ -147,9 +158,11 @@ Multiple-valued functions can be implemented in terms of the
 returns them as the results:
 
 @interaction[
+#:eval def-eval
 (values 1 2 3)
 ]
 @def+int[
+#:eval def-eval
 (define (split-name name)
   (let ([parts (regexp-split " " name)])
     (if (= (length parts) 2)
@@ -167,6 +180,7 @@ The number of results produced by the @scheme[_expr] must match the
 number of @scheme[_id]s.
 
 @defexamples[
+#:eval def-eval
 (define-values (given surname) (split-name "Adam Smith"))
 given
 surname

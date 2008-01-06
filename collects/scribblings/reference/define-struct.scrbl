@@ -3,6 +3,8 @@
           (for-syntax scheme/base)
           (for-label scheme/serialize))
 
+@(define posn-eval (make-base-eval))
+
 @title[#:tag "define-struct"]{Defining Structure Types: @scheme[define-struct]}
 
 @guideintro["define-struct"]{@scheme[define-struct]}
@@ -120,6 +122,7 @@ error is reported. If any @scheme[field-option] or
 For serialization, see @scheme[define-serializable-struct].
 
 @defexamples[
+#:eval posn-eval
 (define-struct posn (x y [z #:auto])
                #:auto-value 0
                #:transparent)
@@ -129,6 +132,7 @@ For serialization, see @scheme[define-serializable-struct].
 ]
 
 @defs+int[
+#:eval posn-eval
 [(define-struct (color-posn posn) (hue) #:mutable)
  (define cp (make-color-posn 1 2 "blue"))]
 (color-posn-hue cp)
@@ -144,6 +148,7 @@ This form can only appear as an expression within a
 @scheme[prop:procedure]. The result of
 
 @defexamples[
+#:eval posn-eval
 (define-struct mood-procedure ([base] rating)
                #:property prop:procedure (struct-field-index base))
 (define happy+ (make-mood-procedure add1 10))
@@ -161,6 +166,7 @@ and the only constraint on the form is that it starts with some
 @scheme[id].
 
 @defexamples[
+#:eval posn-eval
 (define-syntax (define-xy-struct stx)
   (syntax-case stx ()
    [(ds name . rest) 

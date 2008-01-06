@@ -4,6 +4,9 @@
          (for-label scheme/require-transform
                     scheme/provide-transform)]
 
+@(define stx-eval (make-base-eval))
+@interaction-eval[#:eval stx-eval (require (for-syntax scheme/base))]
+
 @define[(transform-time) @t{This procedure must be called during the
 dynamic extent of a @tech{syntax transformer} application by the
 expander, otherwise the @exnraise[exn:fail:contract].}]
@@ -24,6 +27,7 @@ identifier appears as a @scheme[set!] target, the entire @scheme[set!]
 expression is provided to the transformer.
 
 @examples[
+#:eval stx-eval
 (let ([x 1]
       [y 2])
   (let-syntax ([x (make-set!-transformer

@@ -4,6 +4,8 @@
 @require[scribble/bnf]
 @require["guide-utils.ss"]
 
+@(define posn-eval (make-base-eval))
+
 @title[#:tag "define-struct"]{Programmer-Defined Datatypes}
 
 @refalso["structures"]{structure types}
@@ -30,6 +32,7 @@ only to static information about the structure type that cannot be
 used directly:
 
 @def+int[
+#:eval posn-eval
 (define-struct posn (x y))
 posn
 ]
@@ -48,21 +51,22 @@ built from @scheme[_struct-id] and the @scheme[_field-id]s:
        the number of @scheme[_field-id]s, and returns an instance of
        the structure type.
 
-       @examples[(make-posn 1 2)]}
+       @examples[#:eval posn-eval (make-posn 1 2)]}
 
  @item{@scheme[_struct-id]@schemeidfont{?} : a @deftech{predicate}
        function that takes a single argument and returns @scheme[#t]
        if it is an instance of the structure type, @scheme[#f]
        otherwise.
 
-       @examples[(posn? 3) (posn? (make-posn 1 2))]}
+       @examples[#:eval posn-eval (posn? 3) (posn? (make-posn 1 2))]}
 
  @item{@scheme[_struct-id]@schemeidfont{-}@scheme[_field-id] : for
        each @scheme[_field-id], an @deftech{accessor} that extracts
        the value of the corresponding field from an instance of the
        structure type.
 
-       @examples[(posn-x (make-posn 1 2)) (posn-y (make-posn 1 2))]}
+       @examples[#:eval posn-eval 
+                 (posn-x (make-posn 1 2)) (posn-y (make-posn 1 2))]}
 
  @item{@schemeidfont{struct:}@scheme[_struct-id] : a
        @deftech{structure type descriptor}, which is a value that
@@ -97,6 +101,7 @@ The @scheme[_super-id] must be a structure type name bound by
 an expression).
 
 @as-examples[@schemeblock+eval[
+#:eval posn-eval 
 (define-struct posn (x y))
 (define-struct (3d-posn posn) (z))
 ]]
@@ -108,6 +113,7 @@ can be used with the predicate and accessors of the
 supertype.
 
 @examples[
+#:eval posn-eval 
 (define p (make-3d-posn 1 2 3))
 p
 (posn? p)
@@ -134,6 +140,7 @@ To make a structure type @defterm{transparent}, use the
 @scheme[#:transparent] keyword after the field-name sequence:
 
 @def+int[
+#:eval posn-eval
 (define-struct posn (x y)
                #:transparent)
 (make-posn 1 2)
@@ -224,6 +231,7 @@ A @scheme[_struct-option] always starts with a keyword:
   argument.
 
  @defexamples[
+   #:eval posn-eval
    (define-struct thing (name)
                   #:transparent
                   #:guard (lambda (name type-name)
@@ -242,6 +250,7 @@ A @scheme[_struct-option] always starts with a keyword:
   fields added by the subtype).
 
  @defexamples[
+  #:eval posn-eval
   (define-struct (person thing) (age)
                  #:transparent
                  #:guard (lambda (name age type-name)
@@ -280,6 +289,7 @@ A @scheme[_struct-option] always starts with a keyword:
   they can be passed to procedures.
 
   @defexamples[
+    #:eval posn-eval
     (define (make-raven-constructor super-type)
       (define-struct raven ()
                      #:super super-type

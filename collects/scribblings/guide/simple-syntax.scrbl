@@ -4,6 +4,8 @@
 @require[scribble/bnf]
 @require["guide-utils.ss"]
 
+@(define ex-eval (make-base-eval))
+
 @title[#:tag "syntax-overview"]{Simple Definitions and Expressions}
 
 A program module is written as
@@ -77,6 +79,7 @@ of the function. When the function is called, it returns the result of
 the last @nonterm{expr}.
 
 @defexamples[
+#:eval ex-eval
 (code:line (define five 5)            (code:comment #, @t{defines @scheme[five] to be @scheme[5]}))
 (code:line (define (piece str)        (code:comment #, @t{defines @scheme[piece] as a function})
              (substring str 0 five))  (code:comment #, @t{of one argument}))
@@ -91,6 +94,7 @@ though the printed form is necessarily less complete than the printed
 form of a number or string.
 
 @examples[
+#:eval ex-eval
 piece
 substring
 ]
@@ -103,6 +107,7 @@ is returned when the function is called. The other expressions are
 evaluated only for some side-effect, such as printing.
 
 @defexamples[
+#:eval ex-eval
 (define (greet name)
   (printf "returning a greeting for ~a...\n" name)
   (string-append "hello " name))
@@ -115,6 +120,7 @@ in a definition body, because it explains why the following
 @scheme[nogreet] function simply returns its argument:
 
 @def+int[
+#:eval ex-eval
 (define (nogreet name)
   string-append "hello " name)
 (nogreet "world")
@@ -430,6 +436,7 @@ a function and an argument. Using @scheme[twice] is convenient if you
 already have a name for the function, such as @scheme[sqrt]:
 
 @def+int[
+#:eval ex-eval
 (define (twice f v)
   (f (f v)))
 (twice sqrt 16)
@@ -439,6 +446,7 @@ If you want to call a function that is not yet defined, you could
 define it, and then pass it to @scheme[twice]:
 
 @def+int[
+#:eval ex-eval
 (define (louder s)
   (string-append s "!"))
 (twice louder "hello")
@@ -463,6 +471,7 @@ Using @scheme[lambda], the above call to @scheme[twice] can be
 re-written as
 
 @interaction[
+#:eval ex-eval
 (twice (lambda (s) (string-append s "!"))
        "hello")
 (twice (lambda (s) (string-append s "?!"))
@@ -473,6 +482,7 @@ Another use of @scheme[lambda] is as a result for a function that
 generates functions:
 
 @def+int[
+#:eval ex-eval
 (define (make-add-suffix s2)
   (lambda (s) (string-append s s2)))
 (twice (make-add-suffix "!") "hello")
@@ -487,6 +497,7 @@ function. In other words, the @scheme[lambda]-generated function
 ``remembers'' the right @scheme[s2]:
 
 @interaction[
+#:eval ex-eval
 (define louder (make-add-suffix "!"))
 (define less-sure (make-add-suffix "?"))
 (twice less-sure "really")
@@ -502,6 +513,7 @@ form. For example, the following two definitions of @scheme[louder]
 are equivalent:
 
 @defs+int[
+#:eval ex-eval
 [(define (louder s)
    (string-append s "!"))
  code:blank
@@ -546,7 +558,8 @@ function body.
    [else "huh?"]))
 (converse "hello!")
 (converse "urp")
-(code:line starts? (code:comment #, @t{outside of @scheme[converse], so...}))
+(eval:alts (code:line starts? (code:comment #, @t{outside of @scheme[converse], so...}))
+           (parameterize ([current-namespace (make-base-namespace)]) (eval 'starts?)))
 ]
 
 Another way to create local bindings is the @scheme[let] form. An

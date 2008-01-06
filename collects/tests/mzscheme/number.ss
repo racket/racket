@@ -783,6 +783,13 @@
 
 (test 1.0 exact->inexact (/ big-num (add1 big-num)))
 
+(test 0.0 values (exact->inexact (/ (expt 2 5000) (add1 (expt 2 5000000)))))
+(test -0.0 values (exact->inexact (/ (- (expt 2 5000)) (add1 (expt 2 5000000)))))
+(test #t positive? (exact->inexact (* 5 (expt 10 -324))))
+(test #t negative? (exact->inexact (* -5 (expt 10 -324))))
+(test #t zero? (exact->inexact (* 5 (expt 10 -325))))
+(test #t positive? (exact->inexact (* 45 (expt 10 -325))))
+
 (err/rt-test (/ 0) exn:fail:contract:divide-by-zero?)
 (err/rt-test (/ 1 0) exn:fail:contract:divide-by-zero?)
 (err/rt-test (/ 1/2 0) exn:fail:contract:divide-by-zero?)

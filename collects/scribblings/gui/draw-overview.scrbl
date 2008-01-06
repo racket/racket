@@ -135,7 +135,7 @@ Suppose that @scheme[draw-face] creates a particularly complex face that
                           [width 300]
                           [height 300]))
 
-(code:comment #, @t{Make the drawing area with a paint callback that copies the bitmap})
+(code:comment #, @t{Make a drawing area whose paint callback copies the bitmap})
 (define canvas
   (new canvas% [parent frame]
                [paint-callback

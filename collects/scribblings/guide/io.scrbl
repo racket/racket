@@ -5,12 +5,14 @@
 @require[mzlib/process]
 @require["guide-utils.ss"]
 
+@(define io-eval (make-base-eval))
+
 @define[(twocolumn a b)
         (make-table #f
          (list (list (make-flow (list a))
                      (make-flow (list (make-paragraph (list (hspace 1)))))
                      (make-flow (list b)))))]
-@interaction-eval[(print-hash-table #t)]
+@interaction-eval[#:eval io-eval (print-hash-table #t)]
 
 @title[#:tag "i/o" #:style 'toc]{Input and Output}
 
@@ -35,11 +37,12 @@ examples:
   file for writing, and @scheme[open-input-file] opens a file for
   reading.
 
-@interaction-eval[(define old-dir (current-directory))]
-@interaction-eval[(current-directory (find-system-path 'temp-dir))]
-@interaction-eval[(when (file-exists? "data") (delete-file "data"))]
+@interaction-eval[#:eval io-eval (define old-dir (current-directory))]
+@interaction-eval[#:eval io-eval (current-directory (find-system-path 'temp-dir))]
+@interaction-eval[#:eval io-eval (when (file-exists? "data") (delete-file "data"))]
 
 @examples[
+#:eval io-eval
 (define out (open-output-file "data"))
 (display "hello" out)
 (close-output-port out)
@@ -48,7 +51,7 @@ examples:
 (close-input-port in)
 ]
 
-@interaction-eval[(delete-file "data")]
+@interaction-eval[#:eval io-eval (when (file-exists? "data") (delete-file "data"))]
 
 Instead of having to match @scheme[open-input-file] and
 @scheme[open-output-file] calls, most Scheme programmers will instead
@@ -56,6 +59,7 @@ use @scheme[call-with-output-file], which takes a function to call
 with the output port; when the function returns, the port is closed.
 
 @examples[
+        #:eval io-eval
 (call-with-output-file "data"
                         (lambda (out)
                           (display "hello" out)))
@@ -64,8 +68,8 @@ with the output port; when the function returns, the port is closed.
                         (read-line in)))
 ]
 
-@interaction-eval[(delete-file "data")]
-@interaction-eval[(current-directory old-dir)]}
+@interaction-eval[#:eval io-eval (when (file-exists? "data") (delete-file "data"))]
+@interaction-eval[#:eval io-eval (current-directory old-dir)]}
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  @item{@bold{Strings:} The @scheme[open-output-string] function creates
@@ -74,6 +78,7 @@ with the output port; when the function returns, the port is closed.
  creates a port to read from a string.
 
   @examples[
+  #:eval io-eval
   (define p (open-output-string))
   (display "hello" p)
   (get-output-string p)
@@ -88,6 +93,7 @@ with the output port; when the function returns, the port is closed.
  server, which accepts connections via @scheme[tcp-accept].
 
   @examples[
+  #:eval io-eval
   (eval:alts (define server (tcp-listen 12345)) (void))
   (eval:alts (define-values (c-in c-out) (tcp-connect "localhost" 12345)) (void))
   (eval:alts (define-values (s-in s-out) (tcp-accept server))
@@ -108,6 +114,7 @@ with the output port; when the function returns, the port is closed.
   subprocess, instead of creating new ports.)
 
   @examples[
+  #:eval io-eval
   (eval:alts
    (define-values (p stdout stdin stderr)
      (subprocess #f #f #f "/usr/bin/wc" "-w"))
@@ -128,6 +135,7 @@ with the output port; when the function returns, the port is closed.
  different processes.
 
  @examples[
+  #:eval io-eval
   (define-values (in out) (make-pipe))
   (display "garbage" out)
   (close-output-port out)
@@ -148,6 +156,7 @@ to the @defterm{current error port}, which is an output port. The
 ports.
 
 @examples[
+#:eval io-eval
 (display "Hi")
 (code:line (display "Hi" (current-output-port)) (code:comment #, @t{the same}))
 ]
@@ -159,6 +168,7 @@ stdout, and stderr. In this guide, the examples show output written to
 stdout in purple, and output written to stderr in red italics.
 
 @defexamples[
+#:eval io-eval
 (define (swing-hammer)
   (display "Ouch!" (current-error-port)))
 (swing-hammer)
@@ -170,6 +180,7 @@ that their values can be set with @scheme[parameterize].
 @moreguide["parameters"]{parameters}
 
 @examples[
+#:eval io-eval
 (let ([s (open-output-string)])
   (parameterize ([current-error-port s])
     (swing-hammer)
@@ -226,6 +237,7 @@ text. In the format string supplied to @scheme[printf], @litchar{~a}
 @scheme[write]s the next argument.
 
 @defexamples[
+#:eval io-eval
 (define (deliver who what)
   (printf "Value for ~a: ~s" who what))
 (deliver "John" "string")
@@ -235,6 +247,7 @@ An advantage of @scheme[write] is that many forms of data can be
 read back in using @scheme[read].
 
 @examples[
+#:eval io-eval
 (define-values (in out) (make-pipe))
 (write "hello" out)
 (read in)

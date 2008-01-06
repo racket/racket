@@ -152,11 +152,11 @@ handler (see @scheme[current-error-display-handler]) for exceptions other than
      (extract-current-continuation-marks 'key2))))
 
 (with-continuation-mark 'key 'mark1 
-  (with-continuation-mark 'key 'mark2 (code:comment @t{replaces the previous mark})
+  (with-continuation-mark 'key 'mark2 (code:comment #, @t{replaces previous mark})
     (extract-current-continuation-marks 'key)))
 
 (with-continuation-mark 'key 'mark1 
-  (list (code:comment @t{continuation extended to evaluate the argument})
+  (list (code:comment #, @t{continuation extended to evaluate the argument})
    (with-continuation-mark 'key 'mark2 
       (extract-current-continuation-marks 'key))))
 

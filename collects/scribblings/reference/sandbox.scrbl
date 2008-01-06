@@ -5,6 +5,9 @@
                      (only-in scheme/gui make-gui-namespace)
                      scheme/gui/dynamic))
 
+@(define box-eval (make-base-eval))
+@interaction-eval[#:eval box-eval (require scheme/sandbox)]
+
 @title{Sandboxed Evaluation}
 
 @note-lib-only[scheme/sandbox]
@@ -129,17 +132,18 @@ that puts the program in a module and one that merely initializes a
 top-level namespace:
 
 @interaction[
+#:eval box-eval
 (define base-module-eval 
   (code:comment #, @t{a module cannot have free variables...})
-  (make-evaluator 'scheme/base '() '(define (f) later)))
+  (make-evaluator 'scheme/base '(define (f) later)))
 (define base-module-eval 
-  (make-evaluator 'scheme/base '() '(define (f) later)
-                                   '(define later 5)))
+  (make-evaluator 'scheme/base '(define (f) later)
+                               '(define later 5)))
 (base-module-eval '(f))
 
 (define base-top-eval 
   (code:comment #, @t{non-module code can have free variables:})
-  (make-evaluator '(begin) '() '(define (f) later)))
+  (make-evaluator '(begin) '(define (f) later)))
 (base-top-eval '(+ 1 2))
 (base-top-eval '(define later 5))
 (base-top-eval '(f))

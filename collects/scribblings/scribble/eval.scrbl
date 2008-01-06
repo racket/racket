@@ -1,6 +1,7 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require["utils.ss"]
+@(require scribble/manual
+          "utils.ss"
+          (for-label scheme/sandbox))
 
 @title[#:tag "eval"]{Evaluation and Examples}
 
@@ -9,10 +10,19 @@ utilities for evaluating code at document-build time and incorporating
 the results in the document, especially to show example uses of
 defined procedures and syntax.}
 
-@defform[(interaction datum ...)]{Like @scheme[schemeinput], except
-that the result for each input @scheme[datum] is shown on the next
-line. The result is determined by evaluating the syntax-quoted form of
-the @scheme[datum].
+@defform*[[(interaction datum ...)
+           (interaction #:eval eval-expr datum ...)]]{
+
+Like @scheme[schemeinput], except that the result for each input
+@scheme[datum] is shown on the next line. The result is determined by
+evaluating the @scheme[quote]d form of the @scheme[datum] using he
+evaluator produced by @scheme[eval-expr], if provided.
+
+The @scheme[eval-expr] must produce a sandbox evaluator via
+@scheme[make-evaluator] or @scheme[make-module-evaluator] with the
+@scheme[sandbox-output] and @scheme[sandbox-error-output] parameters
+set to @scheme['string]. If @scheme[eval] is not provided, an
+evaluator is created using @scheme[make-base-eval].
 
 Uses of @scheme[code:comment] and @schemeidfont{code:blank} are
 stipped from each @scheme[datum] before evaluation.
@@ -25,33 +35,73 @@ If a datum has the form @scheme[(eval:alts #,(svar show-datum) #,(svar
 eval-datum))], then @svar[show-datum] is typeset, while
 @svar[eval-datum] is evaluated.}
 
-@defform[(interaction-eval datum)]{Evaluates the syntax-quoted form of
-each @scheme[datum] via @scheme[do-eval] and returns the empty string.}
 
-@defform[(interaction-eval-show datum)]{Evaluates the syntax-quoted form of
-@scheme[datum] and produces an element represeting the printed form of
-the result.}
+@defform*[[(interaction-eval datum)
+           (interaction-eval #:eval eval-expr datum)]]{
 
-@defform[(schemeblock+eval datum ...)]{Combines @scheme[schemeblock]
-and @scheme[interaction-eval].}
+Like @scheme[interaction], evaluates the @scheme[quote]d form of
+@scheme[datum], but returns the empty string.}
 
-@defform[(schememod+eval name datum ...)]{Combines @scheme[schememod]
-and @scheme[interaction-eval].}
 
-@defform[(def+int defn-datum expr-datum ...)]{Like
-@scheme[interaction], except the the @scheme[defn-datum] is typeset as
-for @scheme[schemeblock] (i.e., no prompt) with a line of space
-between the definition and the interactions.}
+@defform*[[(interaction-eval-show datum)
+           (interaction-eval-show #:eval eval-expr datum)]]{
 
-@defform[(defs+int (defn-datum ...) expr-datum ...)]{Like
-@scheme[def+int], but for multiple leading definitions.}
+Like @scheme[interaction-eval], but produces an element representing
+the printed form of the evaluation result.}
 
-@defform[(examples datum ...)]{Like @scheme[interaction], but with an
-``Examples:'' label prefixed.}
 
-@defform[(defexamples datum ...)]{Like @scheme[examples], but each
-definition using @scheme[define] among the @scheme[datum]s is typeset
-without a prompt, and with space after it.}
+@defform*[[(schemeblock+eval datum ...)
+           (schemeblock+eval #:eval eval-expr datum ...)]]{
 
-@defthing[current-int-namespace parameter?]{A parameter to hold the
-namespace used by @scheme[interaction], etc.}
+Combines @scheme[schemeblock] and @scheme[interaction-eval].}
+
+
+@defform*[[(schememod+eval name datum ...)
+           (schememod+eval #:eval eval-expr name datum ...)]]{
+
+Combines @scheme[schememod] and @scheme[interaction-eval].}
+
+
+@defform*[[(def+int defn-datum expr-datum ...)
+           (def+int #:eval eval-expr defn-datum expr-datum ...)]]{
+
+Like @scheme[interaction], except the the @scheme[defn-datum] is
+typeset as for @scheme[schemeblock] (i.e., no prompt) and a line of
+space is inserted before the @scheme[expr-datum]s.}
+
+
+@defform*[[(defs+int (defn-datum ...) expr-datum ...)
+           (defs+int #:eval eval-expr (defn-datum ...) expr-datum ...)]]{
+
+Like @scheme[def+int], but for multiple leading definitions.}
+
+
+@defform*[[(examples datum ...)
+           (examples #:eval eval-expr datum ...)]]{
+
+Like @scheme[interaction], but with an ``Examples:'' label prefixed.}
+
+
+@defform*[[(defexamples datum ...)
+           (defexamples #:eval eval-expr datum ...)]]{
+
+Like @scheme[examples], but each definition using @scheme[define] or
+@scheme[define-struct] among the @scheme[datum]s is typeset without a
+prompt, and with line of space after it.}
+
+
+@defproc[(make-base-eval) (any/c . -> . any)]{
+
+Creates an evaluator using @scheme[(make-evaluator 'scheme/base)],
+setting sandbox parameters to disable limits, set the outputs to
+@scheme['string], and not add extra security guards.}
+
+
+@defparam[scribble-eval-handler handler 
+          ((any/c . -> . any) any/c boolean? . -> . any)]{
+
+A parameter that serves as a hook for evaluation. The evaluator to use
+is supplied as the first argument to the parameter's value, and the
+second argument is the form to evaluate. The last argument is
+@scheme[#t] if exceptions are being captured (to display exception
+results), @scheme[#f] otherwise.}
