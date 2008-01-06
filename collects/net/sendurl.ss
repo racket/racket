@@ -118,7 +118,8 @@
                                  (cdr preferred))])
          (browser-process cmd))]
       [else
-       (error 'send-url "Couldn't find a browser to open URL: ~e" url-str)]))
+       (error 'send-url "Couldn't find a browser to open URL: ~e" url-str)])
+    (void))
 
   ;; run-browser : process-proc list-of-strings -> void
   (define (run-browser process*/ports args)
