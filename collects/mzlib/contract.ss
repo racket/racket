@@ -36,7 +36,9 @@
  
  (except-out (all-from-out scheme/private/contract)
              check-between/c
-             check-unary-between/c))
+             string-len/c
+             check-unary-between/c)
+ (rename-out [string-len/c string/len]))
 
 ;; from contract-guts.ss
 

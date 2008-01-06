@@ -826,7 +826,7 @@ improve method arity mismatch contract violation error messages?
          integer-in
          real-in
          natural-number/c
-         string/len
+         string-len/c
          false/c
          printable/c
          symbols one-of/c
@@ -1216,11 +1216,11 @@ improve method arity mismatch contract violation error messages?
    'false/c
    (λ (x) (not x))))
 
-(define (string/len n)
+(define (string-len/c n)
   (unless (number? n)
-    (error 'string/len "expected a number as argument, got ~e" n))
+    (error 'string-len/c "expected a number as argument, got ~e" n))
   (flat-named-contract 
-   `(string/len ,n)
+   `(string-len/c ,n)
    (λ (x)
      (and (string? x)
           ((string-length x) . < . n)))))

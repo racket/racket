@@ -4160,7 +4160,7 @@ so that propagation occurs.
   (test-name '(between/c 5 6) (between/c 5 6))
   (test-name '(integer-in 0 10) (integer-in 0 10))
   (test-name '(real-in 1 10) (real-in 1 10))
-  (test-name '(string/len 3) (string/len 3))
+  (test-name '(string-len/c 3) (string/len 3))
   (test-name 'natural-number/c natural-number/c)
   (test-name 'false/c false/c)
   (test-name 'printable/c printable/c)
