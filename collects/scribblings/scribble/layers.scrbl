@@ -29,6 +29,7 @@ A module written as
 
 @verbatim[#<<EOS
   #lang scribble/doc
+  @(require scribble/manual)
 
   @(define to-be "To Be")
 
@@ -43,6 +44,7 @@ reads as
 
 @schemeblock[
 (module #,(nonterm "name") scribble/doc
+  (require scribble/manual)
   "\n"
   (define to-be "To Be") "\n"
   "\n"
@@ -60,7 +62,9 @@ into a document bound to the provided identifier @scheme[doc].  That
 is, the module is transformed to something like this:
 
 @schemeblock[
-(module #,(nonterm "name") scribble/doc
+(module #,(nonterm "name") scheme/base
+  (require scribble/decode
+           scribble/manual)
   (define to-be "To Be")
   (define doc
     (decode
@@ -101,9 +105,9 @@ The value bound to @scheme[doc] in the example above is something like
            ....)
 ]
 
-Notice that @litchar{'tis} in the input has turned into
-@scheme['rsquo] (a curly apostrophe) followed by @scheme["tis"]. The
-conversion to use @scheme['rsquo] was performed by @scheme[decode] via
+Notice that the @litchar{'} in the input's @litchar{'tis} has turned
+into @scheme['rsquo] (a curly apostrophe). The conversion to use
+@scheme['rsquo] was performed by @scheme[decode] via
 @scheme[decode-flow] via @scheme[decode-paragraph] via
 @scheme[decode-content] via @scheme[decode-string].
 
