@@ -1281,9 +1281,11 @@ v4 todo:
      src-info
      blame
      orig-str
-     "expected a ~a that accepts ~a arguments~a, given: ~e"
+     "expected a ~a that accepts ~a~a argument~a~a, given: ~e"
      (if mtd? "method" "procedure")
-     dom-length
+     (if (zero? dom-length) "no" dom-length)
+     (if (null? mandatory-kwds) "" " ordinary")
+     (if (= 1 dom-length) "" "s")
      (keyword-error-text mandatory-kwds)
      val)))
 
@@ -1304,10 +1306,10 @@ v4 todo:
   (cond
     [(null? mandatory-keywords) " without any keywords"]
     [(null? (cdr mandatory-keywords))
-     (format " and the keyword ~a" (car mandatory-keywords))]
+     (format " and the mandatory keyword ~a" (car mandatory-keywords))]
     [else
      (format
-      " and the keywords ~a~a"
+      " and the mandatory keywords ~a~a"
       (car mandatory-keywords)
       (apply string-append (map (λ (x) (format " ~a" x)) (cdr mandatory-keywords))))]))
 
@@ -1320,9 +1322,12 @@ v4 todo:
      src-info
      blame
      orig-str
-     "expected a ~a that accepts ~a arguments and and arbitrarily more~a, given: ~e"
+     "expected a ~a that accepts ~a argument~a and and arbitrarily more~a, given: ~e"
      (if mtd? "method" "procedure")
-     dom-length
+     (cond
+       [(zero? dom-length) "no"]
+       [else dom-length])
+     (if (= 1 dom-length) "" "s")
      (keyword-error-text mandatory-kwds)
      val)))
 
