@@ -162,6 +162,9 @@ sub-form in a procedure being documented).}
 @scheme[schemefont], but colored as meta-syntax, such as backquote or
 unquote.}
 
+@defproc[(schemeerror [pre-content any/c] ...) element?]{Like
+@scheme[schemefont], but colored as error-message text.}
+
 @defproc[(procedure [pre-content any/c] ...) element?]{Typesets
 @tech{decode}d @scheme[pre-content] as a procedure name in a REPL
 result (e.g., in typewriter font with a @litchar{#<procedure:} prefix
@@ -573,6 +576,9 @@ the containing class/interface.}
 
 @; ------------------------------------------------------------------------
 @section{Various String Forms}
+
+@defproc[(emph [pre-content any/c] ...) element?]{Typesets the
+@tech{decode}d @scheme[pre-content] with emphasis (e.g., in italic).}
 
 @defproc[(defterm [pre-content any/c] ...) element?]{Typesets the
 @tech{decode}d @scheme[pre-content] as a defined term (e.g., in

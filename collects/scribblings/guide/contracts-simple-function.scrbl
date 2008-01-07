@@ -97,10 +97,10 @@ like that."
 
 @question[#:tag "dots"]{What are the dots in contracts about?}
 
-If you are used to mathematics, you like the arrow in between the domain
-  and the range of a function, not at the beginning. If you have read "How
-  to Design Programs," you have seen this many times. Indeed, you may have
-  seen contracts such as these in other people's code:
+If you are used to mathematics, you like the arrow in between the
+  domain and the range of a function, not at the beginning. If you
+  have read @|HtDP|, you have seen this many times. Indeed, you may
+  have seen contracts such as these in other people's code:
 
 @schemeblock[
 (provide/contract
@@ -159,9 +159,9 @@ the @scheme[amount?] predicate itself, with a contract
 saying that it accepts an arbitrary value and returns a
 boolean.
 
-In this case, we could also have used @scheme[natural-number/c], which is
-a contract defined in "contract.ss" that is equivalent to @scheme[amount]
-(modulo the name): 
+In this case, we could also have used @scheme[natural-number/c], which
+is a contract defined in @schememodname[scheme/contract] that is
+equivalent to @scheme[amount] (modulo the name):
 
 @schememod[
 scheme
@@ -174,7 +174,7 @@ scheme
 (define (deposit a) (set! this (+ this a)))
 ]
 
-Lesson: look up the built-in contracts. 
+Lesson: learn about the built-in contracts in @schememodname[scheme/contract]. 
 
 @question[#:tag "and-or"]{Are @scheme[and/c] and @scheme[or/c] contract combinators? What of @scheme[listof]?}
 
@@ -237,8 +237,8 @@ the function consumes a number and produces a string.
 
 The contract of the exported function @scheme[format-nat] is more
 interesting than the one of @scheme[format-number].  It consumes only
-natural numbers. Its range contract promises a string that has a dot "." in the
-third position from the right. 
+natural numbers. Its range contract promises a string that has a
+@litchar{.} in the third position from the right.
 
 @(exercise) Strengthen the promise of the range contract for
 @scheme[format-nat] so that it admits only strings with digits and a single

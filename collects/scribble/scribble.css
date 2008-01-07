@@ -133,6 +133,11 @@
                 margin-right: 0em;
                }
 
+               .insetpara { 
+                margin-left: 1em;
+                margin-right: 1em;
+               }
+
                .toclink { 
                text-decoration: none;
                color: blue;

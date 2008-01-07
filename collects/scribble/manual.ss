@@ -235,13 +235,14 @@
            litchar
            verbatim)
 
-  (provide image onscreen menuitem defterm
+  (provide image onscreen menuitem defterm emph
            schemefont schemevalfont schemeresultfont schemeidfont schemevarfont 
            schemeparenfont schemekeywordfont schememetafont schememodfont
            filepath exec envvar Flag DFlag PFlag DPFlag
            indexed-file indexed-envvar
            link procedure
-           idefterm)
+           idefterm
+           inset-flow)
 
   ;; String String *-> Element
   ;; an in-lined image, relative to the current directory 
@@ -255,6 +256,8 @@
     (make-element 'sf (decode-content str)))
   (define (menuitem menu item)
     (make-element 'sf (list menu "|" item)))
+  (define (emph . str)
+    (make-element 'italic (decode-content str)))
   (define (defterm . str)
     (make-element 'italic (decode-content str)))
   (define (idefterm . str)
@@ -312,6 +315,11 @@
   (provide t)
   (define (t . str)
     (decode-paragraph str))
+
+  (define (inset-flow . c)
+    (make-blockquote
+     "insetpara"
+     (flow-paragraphs (decode-flow c))))
 
   ;; ----------------------------------------
 

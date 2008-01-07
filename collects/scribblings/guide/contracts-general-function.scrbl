@@ -30,21 +30,21 @@ Several clients used your module. Others used their
 modules. And all of a sudden one of them sees this error
 message:
 
-@schemeerror{bank-client broke the contract (-> ??? any)
-it had with myaccount on deposit; 
-expected <???>, given: -10}
+@inset-flow{@schemeerror{bank-client broke the contract (-> ??? any)
+it had with myaccount on deposit; expected <???>, given: -10}}
 
-Clearly, @scheme[bank-client] is a module that uses
-@scheme[myaccount] but what are the @tt{?}s doing there?
-Wouldn't it be nice if we had a name for this class of data
-much like we have string, number, and so on?
+Clearly, @scheme[bank-client] is a module that uses @scheme[myaccount]
+but what are the @schemeerror{?}s doing there?  Wouldn't it be nice if
+we had a name for this class of data much like we have string, number,
+and so on?
 
-For this situation, PLT Scheme provides "flat named contracts". The use of
-"contract" shows that contracts are first-class values. The "flat" means that
-the collection of data is a subset of the built-in atomic classes of data; they
-are described by a predicate that consumes all Scheme values and produces a
-boolean. The "named" part says what we want to do: name the contract so that
-error messages become intelligible: 
+For this situation, PLT Scheme provides @deftech{flat named
+contracts}. The use of ``contract'' in this term shows that contracts
+are first-class values. The ``flat'' means that the collection of data
+is a subset of the built-in atomic classes of data; they are described
+by a predicate that consumes all Scheme values and produces a
+boolean. The ``named'' part says what we want to do, which is to name
+the contract so that error messages become intelligible:
 
 @schememod[
 scheme
@@ -59,23 +59,23 @@ scheme
 (define (deposit a) ...)
 ]
 
-With this little change, the error message becomes all of
+With this little change, the error message becomes all of the
 sudden quite readable:
 
-@schemeerror{bank-client broke the contract (-> amount any)
-it had with myaccount on deposit; 
-expected <amount>, given: -10"}
+@inset-flow{@schemeerror{bank-client broke the contract (-> amount
+any) it had with myaccount on deposit; expected <amount>, given: -10"}}
 
 @question[#:tag "optional"]{What about optional arguments?}
 
 Take a look at this excerpt from a string-processing module, inspired by the
-Scheme cookbook: 
+@link["http://schemecookbook.org"]{Scheme cookbook}: 
+
 @schememod[
 scheme
 
 (provide/contract
- ;; pad the given str left and right with
- ;; the (optional) char so that it is centered
+ (code:comment #, @t{pad the given str left and right with})
+ (code:comment #, @t{the (optional) char so that it is centered})
  [string-pad-center (->* (string? natural-number/c)
                          (char?) 
                          string?)])
@@ -126,7 +126,7 @@ the arguments depend on each other.
 To specify such contracts combine @scheme[case->] with
 the other function contract combinators, like we did in
 the @scheme[substring1] function above.
-}
+
 
 @question[#:tag "rest-args"]{What about rest arguments?}
 
@@ -147,7 +147,7 @@ Here is the contract:
 ]
 The @scheme[->*] contract combinator empowers you to specify
   functions that consume a variable number of arguments or functions like
-  @scheme[plus], which consume "at least this number" of arguments but
+  @scheme[plus], which consume ``at least this number'' of arguments but
   an arbitrary number of additional arguments. 
 
 The contracts for the required arguments are enclosed in the first
@@ -606,9 +606,9 @@ glance, this appears to suggest a contract that assigns a
      (listof any/c)
      (or/c number? false/c))
 ]
-This contract, however, says that the function must accept <em>any</em>
-number of arguments, not a <em>specific</em> but
-@italic{undetermined} number. Thus, applying @scheme[n-step] to
+This contract, however, says that the function must accept @emph{any}
+number of arguments, not a @emph{specific} but
+@emph{undetermined} number. Thus, applying @scheme[n-step] to
 @scheme[(lambda (x) x)] and @scheme[(list 1)] breaks the contract
 because the given function accepts only one argument. 
 
