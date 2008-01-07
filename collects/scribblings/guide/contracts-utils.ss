@@ -2,18 +2,22 @@
 (require scribble/basic
          scribble/manual)
 
-(provide question 
-         questionlink
+(provide ctc-section  question
+         ctc-link questionlink
          exercise
          solution)
 
-(define (question #:tag [tag #f] . rest)
+(define (ctc-section #:tag [tag #f] . rest)
   (keyword-apply section
                  '(#:tag)
                  (list (and tag (str->tag tag)))
                  rest))
 
-(define (questionlink tag . rest) (apply seclink (str->tag tag) rest))
+(define question ctc-section)
+
+(define (ctc-link tag . rest) (apply seclink (str->tag tag) rest))
+
+(define questionlink ctc-link)
 
 (define (str->tag tag) (format "contracts-~a" tag))
 

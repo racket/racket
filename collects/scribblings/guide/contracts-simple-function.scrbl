@@ -281,3 +281,46 @@ scheme
 ]
 
 
+@ctc-section{The difference between @scheme[any] and @scheme[any/c]}
+
+The contract @scheme[any/c] accepts any value, and
+@scheme[any] is a keyword that can appear in the range of
+the function contracts (@scheme[->], @scheme[->*], and
+@scheme[->d]), so it is natural to wonder what is the
+difference between these two contracts:
+@schemeblock[
+(-> integer? any)
+(-> integer? any/c)
+]
+
+Both allow any result, right? There are two differences:
+@itemize{
+
+@item{In the first case, the function may return anything at
+all, including multiple values. In the second case, the
+function may return any value, but not more than one. For
+example, this function:
+@schemeblock[
+(define (f x) (values (+ x 1) (- x 1)))
+]
+meets the first contract, but not the second one.}
+
+@item{Relatedly, this means that a call to a function that
+has the first contract is not a tail call. So, for example,
+this program is an infinite loop that takes only a constant
+amount of space, but if you replace @scheme[any] with
+@scheme[any/c], it uses up all of the memory available.
+
+@schemeblock[
+(module server scheme
+  (provide/contract
+   [f (-> (-> procedure? any) boolean?)])
+  (define (f g) (g g)))
+
+(module client scheme
+  (require 'server)
+  (f f))
+
+(require 'client)
+]
+}}
