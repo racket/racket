@@ -22,7 +22,7 @@ scribble/doc
 
 Besides making the file a module, this declaration selects the
 Scribble reader (instead of the usual Scheme reader), and it starts
-the body of the in ``text'' mode. The reader layers mostly leaves text
+the body of the in ``text'' mode. The reader layer mostly leaves text
 alone, but @litchar["@"] forms can escape to S-expression mode.
 
 A module written as
@@ -90,7 +90,7 @@ The value bound to @scheme[doc] in the example above is something like
 
 @schemeblock[
 (make-part ....
-           (list "To Be" " or Not " "To Be")
+           (list "To Be" " or Not " "To Be") (code:comment "title")
            ....
            (make-flow
              (list
@@ -104,15 +104,14 @@ The value bound to @scheme[doc] in the example above is something like
 Notice that @litchar{'tis} in the input has turned into
 @scheme['rsquo] (a curly apostrophe) followed by @scheme["tis"]. The
 conversion to use @scheme['rsquo] was performed by @scheme[decode] via
-@scheme[decode-flow] to @scheme[decode-paragraph] to
-@scheme[decode-content] to @scheme[decode-string].
+@scheme[decode-flow] via @scheme[decode-paragraph] via
+@scheme[decode-content] via @scheme[decode-string].
 
-The boldface ``That'' as @scheme[(make-element 'bold (list "That"))],
-in contrast, was produced by the @scheme[bold] function.  The
-@scheme[decode] operation is a function, not a syntactic form, and so
-@scheme[bold] has control over its argument before @scheme[decode]
-sees the result. Also, decoding traverses only immediate string
-arguments.
+In contrast, @scheme[(make-element 'bold (list "That"))] was produced
+by the @scheme[bold] function.  The @scheme[decode] operation is a
+function, not a syntactic form, and so @scheme[bold] has control over
+its argument before @scheme[decode] sees the result. Also, decoding
+traverses only immediate string arguments.
 
 As it turns out, @scheme[bold] also decodes its argument, because the
 @scheme[bold] function is implemented as
@@ -122,12 +121,12 @@ As it turns out, @scheme[bold] also decodes its argument, because the
   (make-element 'bold (decode-content strs)))
 ]
 
-The @scheme[verbatim] function, in contrast, does not decode its
-content, and instead typesets its text arguments directly.
+The @scheme[verbatim] function, however, does not decode its content,
+and instead typesets its text arguments directly.
 
-A document can construct elements directly using
+A document module can construct elements directly using
 @scheme[make-element], but normally functions like @scheme[bold] and
-@scheme[verbatim] to construct them. In particular, the
+@scheme[verbatim] are used to construct them. In particular, the
 @schememodname[scribble/manual] library provides many functions and
 forms to typeset elements and flow elements.
 
