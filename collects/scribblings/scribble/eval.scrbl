@@ -15,7 +15,7 @@ defined procedures and syntax.}
 
 Like @scheme[schemeinput], except that the result for each input
 @scheme[datum] is shown on the next line. The result is determined by
-evaluating the @scheme[quote]d form of the @scheme[datum] using he
+evaluating the @scheme[quote]d form of the @scheme[datum] using the
 evaluator produced by @scheme[eval-expr], if provided.
 
 The @scheme[eval-expr] must produce a sandbox evaluator via
@@ -27,13 +27,9 @@ evaluator is created using @scheme[make-base-eval].
 Uses of @scheme[code:comment] and @schemeidfont{code:blank} are
 stipped from each @scheme[datum] before evaluation.
 
-If a @scheme[datum] has the form @scheme[(#,(scheme code:line)
-_code-datum (#,(scheme code:comment) ...))], then only
-@scheme[_code-datum] is evaluated.
-
-If a datum has the form @scheme[(eval:alts #,(svar show-datum) #,(svar
-eval-datum))], then @svar[show-datum] is typeset, while
-@svar[eval-datum] is evaluated.}
+If a @scheme[datum] has the form @scheme[(eval:alts #,(svar
+show-datum) #,(svar eval-datum))], then @svar[show-datum] is typeset,
+while @svar[eval-datum] is evaluated.}
 
 
 @defform*[[(interaction-eval datum)
