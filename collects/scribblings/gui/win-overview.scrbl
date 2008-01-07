@@ -5,9 +5,7 @@
 
 @title[#:tag "windowing-overview"]{Windowing}
 
-@section{Basic GUI Building Blocks}
-
-MrEd's windowing toolbox provides the basic building blocks of GUI
+The PLT Scheme windowing toolbox provides the basic building blocks of GUI
  programs, including frames (top-level windows), modal dialogs, menus,
  buttons, check boxes, text fields, and radio buttons.  The toolbox
  provides these building blocks via built-in classes, such as the
@@ -132,7 +130,7 @@ For more information about window layout and containers, see
 
 @section{Core Windowing Classes}
 
-The fundamental graphical element in MrEd's windowing toolbox is an
+The fundamental graphical element in the windowing toolbox is an
  @deftech{area}. The following classes implement the different types
  of areas in the windowing toolbox:
 
@@ -320,7 +318,7 @@ system:
 
 @section[#:tag "containeroverview"]{Geometry Management}
 
-MrEd's geometry management makes it easy to design windows that look
+The windowing toolbox's geometry management makes it easy to design windows that look
  right on all platforms, despite different graphical representations
  of GUI elements. Geometry management is based on containers; each
  container arranges its children based on simple constraints, such as
@@ -742,7 +740,7 @@ Despite the programming convenience provided by a purely sequential
 
 }
 
-In MrEd, an @deftech{eventspace} is a context for processing GUI
+An @deftech{eventspace} is a context for processing GUI
  events. Each eventspace maintains its own queue of events, and events
  in a single eventspace are dispatched sequentially by a designated
  @deftech{handler thread}. An event-handling procedure running in this

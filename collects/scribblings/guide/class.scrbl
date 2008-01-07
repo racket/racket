@@ -4,7 +4,8 @@
           scheme/class
           "guide-utils.ss"
 
-          (for-label scheme/class))
+          (for-label scheme/class
+                     scheme/trait))
 
 @(define class-eval
    (let ([e (make-base-eval)])
@@ -13,7 +14,10 @@
 
 @; FIXME: at some point, discuss classes vs. units vs. modules
 
+
 @title[#:tag "classes"]{Classes and Objects}
+
+@margin-note{This section is based on a paper @cite["Flatt06"].}
 
 A @scheme[class] expression denotes a first-class value,
 just like a @scheme[lambda] expression:
@@ -68,13 +72,13 @@ The @scheme[size] initialization argument must be supplied via a named
  argument when instantiating the class through the @scheme[new] form:
 
 @schemeblock[
-(new (class object% (init size) ...) [size 10])
+(new (class object% (init size) ....) [size 10])
 ]
 
 Of course, we can also name the class and its instance:
 
 @schemeblock[
-(define fish% (class object% (init size) ...))
+(define fish% (class object% (init size) ....))
 (define charlie (new fish% [size 10]))
 ]
 
@@ -153,7 +157,7 @@ which brings the method name into scope for a direct call:
 With the @scheme[inherit] declaration, if @scheme[fish%] had not
 provided an @scheme[eat] method, an error would be signaled in the
 evaluation of the @scheme[class] form for @scheme[hungry-fish%]. In
-contrast, with @scheme[(send this ...)], an error would not be
+contrast, with @scheme[(send this ....)], an error would not be
 signaled until the @scheme[eat-more] method is called and the
 @scheme[send] form is evaluated. For this reason, @scheme[inherit] is
 preferred.
@@ -216,7 +220,7 @@ overridden method via a @scheme[super] call. For example, the
 @section[#:tag "initargs"]{Initialization Arguments}
 
 Since @scheme[picky-fish%] declares no initialization arguments, any
-initialization values supplied in @scheme[(new picky-fish% ...)]  are
+initialization values supplied in @scheme[(new picky-fish% ....)]  are
 propagated to the superclass initialization, i.e., to @scheme[fish%].
 A subclass can supply additional initialization arguments for its
 superclass in a @scheme[super-new] call, and such initialization
@@ -300,7 +304,7 @@ For example, instead of forcing all fish classes to be derived from
 
 @schemeblock[
 (define fish-interface (interface () get-size grow eat))
-(define fish% (class* object% (fish-interface) ...))
+(define fish% (class* object% (fish-interface) ....))
 ]
 
 If the definition of @scheme[fish%] does not include
@@ -327,7 +331,7 @@ new method or an overriding implementation.
 
 Between the extremes of allowing arbitrary overriding and disallowing
 overriding entirely, the class system also supports Beta-style
-@defterm{augmentable} methods. A method
+@defterm{augmentable} methods @cite["Goldberg04"]. A method
 declared with @scheme[pubment] is like @scheme[public], but the method
 cannot be overridden in subclasses; it can be augmented only. A
 @scheme[pubment] method must explicitly invoke an augmentation (if any)
@@ -355,7 +359,7 @@ maps member keys to methods, fields, and initialization arguments.
 Recall the @scheme[hungry-fish%] @scheme[class] expression:
 
 @schemeblock[
-(define hungry-fish% (class fish% ...
+(define hungry-fish% (class fish% ....
                        (inherit eat)
                        (define/public (eat-more fish1 fish2)
                          (eat fish1) (eat fish2))))
@@ -389,15 +393,17 @@ cooperating classes:
   (let () ; create a local definition scope
     (define-member-name get-depth (generate-member-key))
     (define fish%
-      (class ... (define my-depth ...)
-	         (define my-pond ...)
-		 (define/public (dive amt)
-		   (set! my-depth
-		     (min (+ my-depth amt)
-		          (send my-pond get-depth))))))
+      (class ....
+        (define my-depth ....)
+	(define my-pond ....)
+	(define/public (dive amt)
+        (set! my-depth
+              (min (+ my-depth amt)
+                   (send my-pond get-depth))))))
     (define pond%
-      (class ... (define current-depth ...)
-	         (define/public (get-depth) current-depth)))
+      (class ....
+        (define current-depth ....)
+        (define/public (get-depth) current-depth)))
     (values fish% pond%)))
 ]
 
@@ -414,4 +420,382 @@ A member-key value is primarily used with a
 @scheme[(member-name-key id)] captures the method key of @scheme[id]
 so that it can be communicated to a use of @scheme[define-member-name]
 in a different scope. This capability turns out to be useful for
-generalizing mixins (see mixins...).
+generalizing mixins, as discussed next.
+
+@; ----------------------------------------------------------------------
+
+@section{Mixins}
+
+Since @scheme[class] is an expression form instead of a top-level
+declaration as in Smalltalk and Java, a @scheme[class] form can be
+nested inside any lexical scope, including @scheme[lambda]. The result
+is a @deftech{mixin}, i.e., a class extension that is parameterized
+with respect to its superclass.
+
+For example, we can parameterize the @scheme[picky-fish%] class over
+its superclass to define @scheme[picky-mixin]:
+
+@schemeblock[
+(define (picky-mixin %)
+  (class % (super-new)
+    (define/override (grow amt) (super grow (* 3/4 amt)))))
+(define picky-fish% (picky-mixin fish%))
+]
+
+Many small differences between Smalltalk-style classes and Scheme
+classes contribute to the effective use of mixins. In particular, the
+use of @scheme[define/override] makes explicit that
+@scheme[picky-mixin] expects a class with a @scheme[grow] method. If
+@scheme[picky-mixin] is applied to a class without a @scheme[grow]
+method, an error is signaled as soon as @scheme[picky-mixin] is
+applied.
+
+Similarly, a use of @scheme[inherit] enforces a ``method existence''
+requirement when the mixin is applied:
+
+@schemeblock[
+(define (hungry-mixin %)
+  (class % (super-new)
+    (inherit eat)
+    (define/public (eat-more fish1 fish2) 
+      (eat fish1) 
+      (eat fish2))))
+]
+
+The advantage of mixins is that we can easily combine them to create
+new classes whose implementation sharing does not fit into a
+single-inheritance hierarchy---without the ambiguities associated with
+multiple inheritance. Equipped with @scheme[picky-mixin] and
+@scheme[hungry-mixin], creating a class for a hungry, yet picky fish
+is straightforward:
+
+@schemeblock[
+(define picky-hungry-fish% 
+  (hungry-mixin (picky-mixin fish%)))
+]
+
+The use of keyword initialization arguments is critical for the easy
+use of mixins. For example, @scheme[picky-mixin] and
+@scheme[hungry-mixin] can augment any class with suitable @scheme[eat]
+and @scheme[grow] methods, because they do not specify initialization
+arguments and add none in their @scheme[super-new] expressions:
+
+@schemeblock[
+(define person% 
+  (class object%
+    (init name age)
+    ....
+    (define/public (eat food) ....)
+    (define/public (grow amt) ....)))
+(define child% (hungry-mixin (picky-mixin person%)))
+(define oliver (new child% [name "Oliver"][age 6]))
+]
+
+Finally, the use of external names for class members (instead of
+lexically scoped identifiers) makes mixin use convenient. Applying
+@scheme[picky-mixin] to @scheme[person%] works because the names
+@scheme[eat] and @scheme[grow] match, without any a priori declaration
+that @scheme[eat] and @scheme[grow] should be the same method in
+@scheme[fish%] and @scheme[person%]. This feature is a potential
+drawback when member names collide accidentally; some accidental
+collisions can be corrected by limiting the scope external names, as
+discussed in @secref["extnames"].
+
+@subsection{Mixins and Interfaces}
+
+Using @scheme[implementation?], @scheme[picky-mixin] could require
+that its base class implements @scheme[grower-interface], which could
+be implemented by both @scheme[fish%] and @scheme[person%]:
+
+@schemeblock[
+(define grower-interface (interface () grow))
+(define (picky-mixin %)
+  (unless (implementation? % grower-interface)
+    (error "picky-mixin: not a grower-interface class"))
+  (class % ....))
+]
+
+Another use of interfaces with a mixin is to tag classes generated by
+the mixin, so that instances of the mixin can be recognized. In other
+words, @scheme[is-a?] cannot work on a mixin represented as a
+function, but it can recognize an interface (somewhat like a
+@defterm{specialization interface}) that is consistently implemented
+by the mixin.  For example, classes generated by @scheme[picky-mixin]
+could be tagged with @scheme[picky-interface], enabling the
+@scheme[is-picky?] predicate:
+
+@schemeblock[
+(define picky-interface (interface ()))
+(define (picky-mixin %)
+  (unless (implementation? % grower-interface)
+    (error "picky-mixin: not a grower-interface class"))
+  (class* % (picky-interface) ....))
+(define (is-picky? o)
+  (is-a? o picky-interface))
+]
+
+@subsection{The @scheme[mixin] Form}
+
+To codify the @scheme[lambda]-plus-@scheme[class] pattern for
+implementing mixins, including the use of interfaces for the domain
+and range of the mixin, the class system provides a @scheme[mixin]
+macro:
+
+@specform[
+(mixin (interface-expr ...) (interface-expr ...)
+  decl-or-expr ...)
+]
+
+The first set of @scheme[interface-expr]s determines the domain of the
+mixin, and the second set determines the range. That is, the expansion
+is a function that tests whether a given base class implements the
+first sequence of @scheme[interface-expr]s and produces a class that
+implements the second sequence of @scheme[interface-expr]s. Other
+requirements, such as the presence of @scheme[inherit]ed methods in
+the superclass, are then checked for the @scheme[class] expansion of
+the @scheme[mixin] form.
+
+Mixins not only override methods and introduce public methods, they
+can also augment methods, introduce augment-only methods, add an
+overrideable augmentation, and add an augmentable override --- all of
+the things that a class can do (see @secref["inner"]).
+
+
+@subsection[#:tag "parammixins"]{Parameterized Mixins}
+
+As noted in @secref["extnames"], external names can be bound with
+@scheme[define-member-name]. This facility allows a mixin to be
+generalized with respect to the methods that it defines and uses.  For
+example, we can parameterize @scheme[hungry-mixin] with respect to the
+external member key for @scheme[eat]:
+
+@schemeblock[
+(define (make-hungry-mixin eat-method-key)
+  (define-member-name eat eat-method-key)
+  (mixin () () (super-new)
+    (inherit eat)
+    (define/public (eat-more x y) (eat x) (eat y))))
+]
+
+To obtain a particular hungry-mixin, we must apply this function to a
+member key that refers to a suitable
+@scheme[eat] method, which we can obtain using @scheme[member-name-key]: 
+
+@schemeblock[
+((make-hungry-mixin (member-name-key eat))
+ (class object% .... (define/public (eat x) 'yum)))
+]
+
+Above, we apply @scheme[hungry-mixin] to an anonymous class that provides
+@scheme[eat], but we can also combine it with a class that provides 
+@scheme[chomp], instead:
+
+@schemeblock[
+((make-hungry-mixin (member-name-key chomp))
+ (class object% .... (define/public (chomp x) 'yum)))
+]
+
+@; ----------------------------------------------------------------------
+
+@section{Traits}
+
+A @defterm{trait} is similar to a mixin, in that it encapsulates a set
+of methods to be added to a class. A trait is different from a mixin
+in that its individual methods can be manipulated with trait operators
+such as @scheme[trait-sum] (merge the methods of two traits), @scheme[trait-exclude]
+(remove a method from a trait), and @scheme[trait-alias] (add a copy of a
+method with a new name; do not redirect any calls to the old name).
+
+The practical difference between mixins and traits is that two traits
+can be combined, even if they include a common method and even if
+neither method can sensibly override the other. In that case, the
+programmer must explicitly resolve the collision, usually by aliasing
+methods, excluding methods, and merging a new trait that uses the
+aliases.
+
+Suppose our @scheme[fish%] programmer wants to define two class
+extensions, @scheme[spots] and @scheme[stripes], each of which
+includes a @scheme[get-color] method. The fish's spot color should not
+override the stripe color nor vice-versa; instead, a
+@scheme[spots+stripes-fish%] should combine the two colors, which is
+not possible if @scheme[spots] and @scheme[stripes] are implemented as
+plain mixins. If, however, @scheme[spots] and @scheme[stripes] are
+implemented as traits, they can be combined. First, we alias
+@scheme[get-color] in each trait to a non-conflicting name. Second,
+the @scheme[get-color] methods are removed from both and the traits
+with only aliases are merged. Finally, the new trait is used to create
+a class that introduces its own @scheme[get-color] method based on the
+two aliases, producing the desired @scheme[spots+stripes] extension.
+
+@subsection{Traits as Sets of Mixins}
+
+One natural approach to implementing traits in PLT Scheme is as a set
+of mixins, with one mixin per trait method.  For example, we might
+attempt to define the spots and stripes traits as follows, using
+association lists to represent sets:
+
+@schemeblock[
+(define spots-trait
+  (list (cons 'get-color 
+               (lambda (%) (class % (super-new)
+                             (define/public (get-color) 
+                               'black))))))
+(define stripes-trait
+  (list (cons 'get-color 
+              (lambda (%) (class % (super-new)
+                            (define/public (get-color) 
+                              'red))))))
+]
+
+A set representation, such as the above, allows @scheme[trait-sum] and
+@scheme[trait-exclude] as simple manipulations; unfortunately, it does
+not support the @scheme[trait-alias] operator. Although a mixin can be
+duplicated in the association list, the mixin has a fixed method name,
+e.g., @scheme[get-color], and mixins do not support a method-rename
+operation. To support @scheme[trait-alias], we must parameterize the
+mixins over the external method name in the same way that @scheme[eat]
+was parameterized in @secref["parammixins"].
+
+To support the @scheme[trait-alias] operation, @scheme[spots-trait]
+should be represented as:
+
+@schemeblock[
+(define spots-trait
+  (list (cons (member-name-key get-color)
+              (lambda (get-color-key %) 
+                (define-member-name get-color get-color-key)
+                (class % (super-new)
+                  (define/public (get-color) 'black))))))
+]
+
+When the @scheme[get-color] method in @scheme[spots-trait] is aliased
+to @scheme[get-trait-color] and the @scheme[get-color] method is
+removed, the resulting trait is the same as
+
+@schemeblock[
+(list (cons (member-name-key get-trait-color)
+            (lambda (get-color-key %)
+              (define-member-name get-color get-color-key)
+              (class % (super-new)
+                (define/public (get-color) 'black)))))
+]
+
+To apply a trait @scheme[_T] to a class @scheme[_C] and obtain a derived
+class, we use @scheme[((trait->mixin _T) _C)]. The @scheme[trait->mixin]
+function supplies each mixin of @scheme[_T] with the key for the mixin's
+method and a partial extension of @scheme[_C]:
+
+@schemeblock[
+(define ((trait->mixin T) C)
+  (foldr (lambda (m %) ((cdr m) (car m) %)) C T))
+]
+
+Thus, when the trait above is combined with other traits and then
+applied to a class, the use of @scheme[get-color] becomes a reference
+to the external name @scheme[get-trait-color].
+
+@subsection{Inherit and Super in Traits}
+
+This first implementation of traits supports @scheme[trait-alias], and it
+ supports a trait method that calls itself, but it does not support
+ trait methods that call each other. In particular, suppose that a spot-fish's
+ market value depends on the color of its spots:
+
+@schemeblock[
+(define spots-trait
+  (list (cons (member-name-key get-color) ....)
+        (cons (member-name-key get-price)
+              (lambda (get-price %) ....
+                (class % ....
+                  (define/public (get-price) 
+                    .... (get-color) ....))))))
+]
+
+In this case, the definition of @scheme[spots-trait] fails, because
+@scheme[get-color] is not in scope for the @scheme[get-price]
+mixin. Indeed, depending on the order of mixin application when the
+trait is applied to a class, the @scheme[get-color] method may not be
+available when @scheme[get-price] mixin is applied to the class.
+Therefore adding an @scheme[(inherit get-color)] declaration to the
+@scheme[get-price] mixin does not solve the problem.
+
+One solution is to require the use of @scheme[(send this get-color)] in
+methods such as @scheme[get-price]. This change works because
+@scheme[send] always delays the method lookup until the method call is
+evaluated. The delayed lookup is more expensive than a direct call,
+however. Worse, it also delays checking whether a @scheme[get-color] method
+even exists.
+
+A second, effective, and efficient solution is to change the encoding
+of traits. Specifically, we represent each method as a pair of mixins:
+one that introduces the method and one that implements it. When a
+trait is applied to a class, all of the method-introducing mixins are
+applied first. Then the method-implementing mixins can use
+@scheme[inherit] to directly access any introduced method.
+
+@schemeblock[
+(define spots-trait
+  (list (list (local-member-name-key get-color)
+              (lambda (get-color get-price %) ....
+                (class % ....
+                  (define/public (get-color) (void))))
+              (lambda (get-color get-price %) ....
+                 (class % ....
+                   (define/override (get-color) 'black))))
+        (list (local-member-name-key get-price)
+              (lambda (get-price get-color %) ....
+                (class % ....
+                  (define/public (get-price) (void))))
+              (lambda (get-color get-price %) ....
+                (class % ....
+                  (inherit get-color)
+                  (define/override (get-price)
+		    .... (get-color) ....))))))
+]
+
+With this trait encoding, @scheme[trait-alias] adds a new method with
+a new name, but it does not change any references to the old method.
+
+@subsection{The @scheme[trait] Form}
+
+The general-purpose trait pattern is clearly too complex for a
+programmer to use directly, but it is easily codified in a
+@scheme[trait] macro:
+
+@specform[
+(trait trait-clause ...)
+]
+
+The @scheme[id]s in the optional @scheme[inherit] clause are available for direct
+reference in the method @scheme[expr]s, and they must be supplied
+either by other traits or the base class to which
+the trait is ultimately applied.
+
+Using this form in conjunction with trait operators such as
+@scheme[trait-sum], @scheme[trait-exclude], @scheme[trait-alias], and
+@scheme[trait->mixin], we can implement @scheme[spots-trait] and
+@scheme[stripes-trait] as desired.
+
+@schemeblock[
+(define spots-trait
+  (trait
+    (define/public (get-color) 'black)
+    (define/public (get-price) ... (get-color) ...)))
+
+(define stripes-trait
+  (trait 
+    (define/public (get-color) 'red)))
+
+(define spots+stripes-trait
+  (trait-sum 
+   (trait-exclude (trait-alias spots-trait 
+                               get-color get-spots-color)
+                  get-color) 
+   (trait-exclude (trait-alias stripes-trait 
+                               get-color get-stripes-color)
+                  get-color)
+   (trait
+     (inherit get-spots-color get-stripes-color)
+     (define/public (get-color)
+       .... (get-spots-color) .... (get-stripes-color) ....))))
+]

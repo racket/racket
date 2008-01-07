@@ -86,6 +86,10 @@ the exit status is @scheme[0] or determined by a call to
 
 @; ----------------------------------------------------------------------
 
+@include-section["init.scrbl"]
+
+@; ----------------------------------------------------------------------
+
 @section{Command Line}
 
 The MzScheme and MrEd executables recognize the following command-line

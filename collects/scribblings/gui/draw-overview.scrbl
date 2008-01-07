@@ -5,11 +5,11 @@
 
 @title[#:tag "drawing-overview"]{Drawing}
 
-Drawing in MrEd requires a @deftech{device context} (@deftech{DC}),
- which is an instance of the @scheme[dc<%>] interface. For example,
- the @method[canvas<%> get-dc] method of a canvas returns a
- @scheme[dc<%>] instance for drawing into the canvas window.  Other
- kinds of DCs draw to different kinds of devices:
+Drawing in PLT Scheme requires a @deftech{device context}
+(@deftech{DC}), which is an instance of the @scheme[dc<%>]
+interface. For example, the @method[canvas<%> get-dc] method of a
+canvas returns a @scheme[dc<%>] instance for drawing into the canvas
+window.  Other kinds of DCs draw to different kinds of devices:
 
 @itemize{
 

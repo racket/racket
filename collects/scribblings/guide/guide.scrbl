@@ -35,38 +35,23 @@ precise details to @|MzScheme| and other reference manuals.
 
 @include-section["io.scrbl"]
 
-@; ----------------------------------------------------------------------
-@include-section["class.scrbl"]
-
+@include-section["regexp.scrbl"]
 
 @; ----------------------------------------------------------------------
 @section[#:tag "control"]{Exceptions and Control}
-
 
 @; ----------------------------------------------------------------------
 @include-section["for.scrbl"]
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "regexp"]{Regular-Expression Matching@aux-elem{ (Regexps)}}
-
-
-@; ----------------------------------------------------------------------
-@section[#:tag "match"]{Pattern Matching}
-
-@subsection{Simple Dispatch: @scheme[case]}
-
-The @scheme[case] form dispatches to a clause by matching the result
-of an expression to the values for the clause:
-
-@specform[(case [(_datum ...+) expr ...+]
-                ...)]
+@include-section["match.scrbl"]
 
 @; ----------------------------------------------------------------------
-@include-section["qq.scrbl"]
+@include-section["class.scrbl"]
 
 @; ----------------------------------------------------------------------
-@section[#:tag "units"]{Units (Higher-Order Modules)}
+@section[#:tag "units"]{Units@aux-elem{ (Components)}}
 
 
 @; ----------------------------------------------------------------------
@@ -79,12 +64,11 @@ there is a parameter that determines the default destination for
 printed output.
 
 @; ----------------------------------------------------------------------
-@include-section["macros.scrbl"]
+@include-section["namespaces.scrbl"]
 
 
 @; ----------------------------------------------------------------------
-@include-section["namespaces.scrbl"]
-
+@include-section["macros.scrbl"]
 
 @; ----------------------------------------------------------------------
 @section[#:tag "reader"]{Reader Extension}
@@ -104,37 +88,14 @@ printed output.
 @include-section["performance.scrbl"]
 
 @; ----------------------------------------------------------------------
-@section[#:tag "ffi"]{Foreign-Function Interface@aux-elem{ (FFI)}}
-
-
-@; ----------------------------------------------------------------------
 @section[#:tag "scripts"]{Scripts}
 
-
 @; ----------------------------------------------------------------------
-@section[#:tag "mred"]{Graphical User Interfaces@aux-elem{ (GUIs)}}
-
-@deftech{MrEd} is both a library and an executable. As a library,
- @scheme[(lib "mred/mred.ss")] provides class, interface, and function
- bindings for writing GUI programs. An an executable, @exec{mred}
- substitutes for @exec{mzscheme} to run MrEd programs. (The
- @exec{mzscheme} executable cannot run MrEd programs, because
- @exec{mzscheme} does not include primitive GUI support, and because
- some operating systems distinguish GUI applications from command-line
- applications.)
-
-@; ----------------------------------------------------------------------
-@section[#:tag "tools"]{More Tools}
-
-In the @seclink["intro"]{introduction}, we mentioned that PLT Scheme
-includes more tools besides DrScheme and MzScheme:
+@section{Configuration and Compilation}
 
 @itemize{
 
- @tool["MrEd"]{extends MzScheme with graphical user interface (GUI)
- and drawing primitives}
-
- @tool["Setup PLT"]{a command-line tool for installation tasks}
+ @tool["setup-plt"]{a command-line tool for installation tasks}
 
  @tool["planet"]{a command-line tool for managing packages that are
  normally downloaded automatically, on demand}
@@ -147,5 +108,45 @@ includes more tools besides DrScheme and MzScheme:
 }
 
 @; ----------------------------------------------------------------------
+@section{More Libraries}
+
+@italic{@secref[#:doc '(lib "scribblings/gui/gui.scrbl") "top"]} describes the
+PLT Scheme graphics toolbox, whose core is implemented by the MrEd
+executable.
+
+@italic{@secref[#:doc '(lib "scribblings/foreign/foreign.scrbl")
+"top"]} describes tools for using Scheme to access libraries that are
+normally used by C programs.
+
+@italic{@secref[#:doc '(lib "web-server/docs/reference/web-reference.scrbl")
+"top"]} describes the PLT Scheme web server, which supports servlets
+implemented in Scheme.
+
+@italic{@secref[#:doc '(lib "scribblings/start/start.scrbl") "top"]} provides
+links to documentation for many other libraries distributed with PLT
+Scheme or installed on your system.
+
+@link["http://planet.plt-scheme.org/"]{@|PLaneT|} offers even more
+downloadable packages contributed by PLT Scheme users.
+
+@; ----------------------------------------------------------------------
+
+@(bibliography
+ 
+  (bib-entry #:key "Goldberg04"
+             #:author "David Goldberg, Robert Bruce Findler, and Matthew Flatt"
+             #:title "Super and Inner---Together at Last!"
+             #:location "Object-Oriented Programming, Languages, Systems, and Applications"
+             #:date "2004"
+             #:url "http://www.cs.utah.edu/plt/publications/oopsla04-gff.pdf")
+
+  (bib-entry #:key "Flatt06"
+             #:author "Matthew Flatt, Robert Bruce Findler, and Matthias Felleisen"
+             #:title "Scheme with Classes, Mixins, and Traits (invited tutorial)"
+             #:location "Asian Symposium on Programming Languages and Systems"
+             #:date "2006")
+
+
+)
 
 @index-section[]

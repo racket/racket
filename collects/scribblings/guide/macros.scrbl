@@ -3,7 +3,7 @@
 @require[scribble/eval]
 @require["guide-utils.ss"]
 
-@title[#:tag "macros" #:style 'toc]{Syntactic Extension@aux-elem{ (Macros)}}
+@title[#:tag "macros" #:style 'toc]{Macros}
 
 @local-table-of-contents[]
 

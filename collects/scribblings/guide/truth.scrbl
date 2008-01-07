@@ -85,7 +85,7 @@ lists that prints as @schemeresult[((1) (2) (3))]. The @scheme[quote]
 form does exactly that:
 
 @interaction[
-(eval:alts (#, @scheme[quote] (1 2 3)) '(1 2 3))
+(eval:alts (#, @scheme[quote] ((1) (2) (3))) '((1) (2) (3)))
 (eval:alts (#, @scheme[quote] ("red" "green" "blue")) '("red" "green" "blue"))
 (eval:alts (#, @scheme[quote] ()) '())
 ]
@@ -99,7 +99,7 @@ not:
 (eval:alts (#, @scheme[quote] (0 #, @schemeparenfont{.} (1 . 2))) '(0 . (1 . 2)))
 ]
 
-Naturally, lists can be nested:
+Naturally, lists of any kind can be nested:
 
 @interaction[
 (list (list 1 2 3) 5 (list "a" "b" "c"))

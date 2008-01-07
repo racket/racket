@@ -313,7 +313,7 @@ can be read using these methods or written using
 @scheme[write-editor-global-header] and
 @scheme[write-editor-global-footer].
 
-When reading from streams that span MrEd versions, use
+When reading from streams that span PLT Scheme versions, use
 @scheme[read-editor-version] before this procedure.
 
 
@@ -349,10 +349,10 @@ If @scheme[raise-errors?] is true, then an error in reading triggers an
 
 This procedure is a load handler for use with @scheme[current-load].
 
-The handler recognizes MrEd editor-format files (see
+The handler recognizes PLT Scheme editor-format files (see
  @secref["editorfileformat"]) and decodes them for loading. It is
- normally installed as MrEd starts (see
- @secref[#:doc reference-doc "running-sa"]).
+ normally installed as MrEd starts (see @secref[#:doc reference-doc
+ "running-sa"]).
 
 The handler recognizes editor files by the first twelve characters of
  the file: @litchar{WXME01}@nonterm{digit}@nonterm{digit}@litchar{ ## }.
@@ -409,7 +409,7 @@ One or more editors can be written to the stream by calling the
  @scheme[read-editor-global-header] and
  @scheme[read-editor-global-footer].
 
-To support streams that span MrEd versions, use
+To support streams that span PLT Scheme versions, use
  @scheme[write-editor-version] before this procedure.
 
 See also @secref["editorfileformat"].

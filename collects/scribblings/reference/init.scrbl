@@ -5,8 +5,6 @@
 
 @title{Init Libraries}
 
-See also @secref["init-actions"].
-
 @defmodule*/no-declare[(scheme/init)]{The @schememodname[scheme/init]
 library is the default start-up library for MzScheme. It re-exports
 the @schememodname[scheme] and @schememodname[scheme/help] libraries,

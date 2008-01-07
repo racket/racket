@@ -61,14 +61,14 @@ where @schememodname[scheme] includes all of
   (bib-entry #:key "Gasbichler02" 
              #:title "Processes vs. User-Level Threads in Scsh" 
              #:author "Martin Gasbichler and Michael Sperber" 
-             #:date 2002 
+             #:date "2002"
              #:location "Workshop on Scheme and Functional Programming")
 
  (bib-entry #:key "Gunter95"
             #:author "Carl Gunter, Didier Remy, and Jon Rieke"
             #:title "A Generalization of Exceptions and Control in ML-like Languages"
             #:location "Functional Programming Languages and Computer Architecture"
-            #:date 1995)
+            #:date "1995")
 
   (bib-entry #:key "Hieb90"
              #:author "Robert Hieb and R. Kent Dybvig"
@@ -92,7 +92,7 @@ where @schememodname[scheme] includes all of
              #:author "Ken Shan"
              #:title "Shift to Control"
              #:location "Workshop on Scheme and Functional Programming"
-             #:date 2004)
+             #:date "2004")
 
   (bib-entry #:key "Sitaram90"
              #:author "Dorai Sitaram"

@@ -88,3 +88,5 @@ form, a @scheme[_thing] is either an identifier or a keyword.
 @include-section["begin.scrbl"]
 @include-section["set.scrbl"]
 @include-section["quote.scrbl"]
+@include-section["qq.scrbl"]
+@include-section["case.scrbl"]

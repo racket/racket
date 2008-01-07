@@ -3,8 +3,8 @@
 
 @title[#:style '(toc reveal)]{Overview}
 
-For documentation purposes, the MrEd toolbox is organized into three
- parts:
+For documentation purposes, the graphics toolbox is organized into
+ three parts:
 
 @itemize{
 

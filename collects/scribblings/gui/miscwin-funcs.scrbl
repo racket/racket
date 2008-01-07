@@ -118,8 +118,8 @@ Hides the cursor until the user moves the mouse or clicks the mouse
  this function calls the window's @method[top-level-window<%>
  on-message] method, providing @scheme[message] as the method's
  argument; the result of the function call is the result returned by
- the method. If no MrEd window is at the given coordinates, or if it
- is covered by a non-MrEd window at (@scheme[x], @scheme[y]),
+ the method. If no Scheme window is at the given coordinates, or if it
+ is covered by a non-Scheme window at (@scheme[x], @scheme[y]),
  @scheme[#f] is returned.
 
 

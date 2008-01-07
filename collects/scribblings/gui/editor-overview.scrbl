@@ -23,8 +23,9 @@ The editor toolbox provides a foundation for two common kinds of
 
 Both kinds of applications need an extensible editor that can handle
  text, images, programmer-defined items, and even embedded
- editors. The difference between them is the layout of items.  MrEd
- therefore provides two kinds of editors via two classes:
+ editors. The difference between them is the layout of items. The
+ editor toolbox therefore provides two kinds of editors via two
+ classes:
 
 @itemize{
 
@@ -36,7 +37,7 @@ Both kinds of applications need an extensible editor that can handle
 
 }
 
-MrEd's editor architecture addresses the full range of real-world
+This editor architecture addresses the full range of real-world
  issues for an editor---including cut-and-paste, extensible file
  formats, and layered text styles---while supporting a high level of
  extensibility.  Unfortunately, the system is fairly complex as a
@@ -46,7 +47,7 @@ MrEd's editor architecture addresses the full range of real-world
  descriptions above to justify the depth and complexity of the toolbox
  and the learning investment required to use it.
 
-A brief example illustrates how MrEd editors work. To start, an editor
+A brief example illustrates how editors work. To start, an editor
  needs an @scheme[editor-canvas%] to display its contents. Then, we
  can create a text editor and install it into the canvas:
 
@@ -156,8 +157,8 @@ Applications that use the editor classes typically derive new versions
 
 @section[#:tag "tb:miaoverview"]{Editor Structure and Terminology}
 
-MrEd supports extensible and nestable editors by decomposing an editor
- assembly into three functional parts:
+The editor toolbox supports extensible and nestable editors by
+ decomposing an editor assembly into three functional parts:
 
 @itemize{
 
@@ -359,7 +360,7 @@ Editor data is read and written using @scheme[editor-stream-in%] and
  @scheme[write-editor-global-footer]. Similarly, reading editors from
  a stream is initialized with @scheme[read-editor-global-header] and
  finalized with @scheme[read-editor-global-footer]. Optionally, to
- support streams that span versions of MrEd, use
+ support streams that span versions of PLT Scheme, use
  @scheme[write-editor-version] and @scheme[read-editor-version] before
  the header operations.
 

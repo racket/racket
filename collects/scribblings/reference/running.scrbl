@@ -7,5 +7,5 @@
 
 @include-section["startup.scrbl"]
 @include-section["collects.scrbl"]
+@include-section["info.scrbl"]
 @include-section["help.scrbl"]
-@include-section["init.scrbl"]

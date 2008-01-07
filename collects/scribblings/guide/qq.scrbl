@@ -3,24 +3,22 @@
 @require[scribble/eval]
 @require["guide-utils.ss"]
 
-@title{Quasiquoting}
+@(define qq (scheme quasiquote))
+@(define uq (scheme unquote))
 
-[Explain why...]
-
-@;------------------------------------------------------------------------
-@section{Escapes: @scheme[quasiquote], @scheme[unquote], and @scheme[unquote-splicing]}
+@title{Quasiquoting: @scheme[quasiquote] and @schemevalfont{`}}
 
 The @scheme[quasiquote] form is similar to @scheme[quote]:
 
-@specform[(#,(schemekeywordfont "quasiquote") datum)]
+@specform[(#,qq datum)]
 
-However, for each @scheme[(#,(schemekeywordfont "unquote") _expr)]
+However, for each @scheme[(#,uq _expr)]
 that appears within the @scheme[_datum], the @scheme[_expr] is
 evaluated to produce a value that takes the place of the
-@scheme[unsyntax] sub-form.
+@scheme[unquote] sub-form.
 
 @examples[
-(eval:alts (#,(schemekeywordfont "quasiquote") (1 2 (#,(schemekeywordfont "unquote") (+ 1 2)) (#,(schemekeywordfont "unquote") (- 5 1))))
+(eval:alts (#,qq (1 2 (#,uq (+ 1 2)) (#,uq (- 5 1))))
            `(1 2 ,(+ 1 2), (- 5 1)))
 ]
 
@@ -31,7 +29,7 @@ either a list or a vector. As the name suggests, the resulting list
 is spliced into the context of its use.
 
 @examples[
-(eval:alts (#,(schemekeywordfont "quasiquote") (1 2 (#,(schemekeywordfont "unquote-splicing") (list (+ 1 2) (- 5 1))) 5))
+(eval:alts (#,qq (1 2 (#,(scheme unquote-splicing) (list (+ 1 2) (- 5 1))) 5))
            `(1 2 ,@(list (+ 1 2) (- 5 1)) 5))
 ]
 
@@ -41,6 +39,25 @@ effectively cancels one layer of @scheme[unquote] and
 @scheme[unquote-splicing] forms, so that a second @scheme[unquote]
 or @scheme[unquote-splicing] is needed.
 
-@;------------------------------------------------------------------------
-@section{Abbreviating with @schememetafont{`}, @schememetafont{,}, and @schememetafont[",@"]}
+@examples[
+(eval:alts (#,qq (1 2 (#,qq (#,uq (+ 1 2) 
+                            (#,uq (#,uq (- 5 1)))))))
+           `(1 2 (,(string->uninterned-symbol "quasiquote") 
+                  (,(string->uninterned-symbol "unquote") (+ 1 2)) 
+                  (,(string->uninterned-symbol "unquote") 4))))
+]
 
+The evaluation above will not actually print as shown. Instead, the
+shorthand form of @scheme[quasiquote] and @scheme[unquote] will be
+used: @litchar{`} (i.e., a backquote) and @litchar{,} (i.e., a comma).
+The same shorthands can be used in expressions:
+
+@examples[
+`(1 2 `(,(+ 1 2) ,,(- 5 1)))
+]
+
+The shorthand for of @scheme[unquote-splicing] is @litchar[",@"]:
+
+@examples[
+`(1 2 ,@(list (+ 1 2) (- 5 1)))
+]

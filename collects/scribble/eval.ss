@@ -193,7 +193,7 @@
              [comment? (lambda (a)
                          (and (pair? a)
                               (or (eq? (car a) 'code:comment)
-                                  (and (identifier? a)
+                                  (and (identifier? (car a))
                                        (eq? (syntax-e (car a)) 'code:comment)))))])
          (if (or (comment? a)
                  (and (syntax? a) (comment? (syntax-e a))))
@@ -217,12 +217,15 @@
                          ev
                          catching-exns? 
                          (let ([s (strip-comments s)])
-                           (if (syntax? s)
-                               (syntax-case s (module)
-                                 [(module . _rest)
-                                  (syntax->datum s)]
-                                 [_else s])
-                               s))))
+                           (cond
+                            [(syntax? s)
+                             (syntax-case s (module)
+                               [(module . _rest)
+                                (syntax->datum s)]
+                               [_else s])]
+                            [(string? s)
+                             `(begin ,s)]
+                            [else s]))))
       list))
 
   (define-syntax-rule (quote-expr e) 'e)
@@ -262,9 +265,7 @@
                                                      (list " ")))
 
   (define-syntax (schemedefinput* stx)
-    (syntax-case stx (eval-example-string define define-values define-struct)
-      [(_ (eval-example-string s))
-       #'(schemeinput* (eval-example-string s))]
+    (syntax-case stx (define define-values define-struct)
       [(_ (define . rest))
        (syntax-case stx ()
          [(_ e) #'(schemeblock+line e)])]

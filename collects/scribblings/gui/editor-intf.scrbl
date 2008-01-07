@@ -1696,11 +1696,11 @@ If @scheme[fit-on-page?] is a true value, then during printing for a
  @scheme[text%] editor, the editor's maximum width is set to the width
  of the page (less margins) and the autowrapping bitmap is removed.
 
-The @scheme[output-mode] setting is used for Windows and
- Mac OS X. It determines whether the output is generated
- directly as a PostScript file (using MrEd's built-in PostScript
- system) or generated using the platform-specific standard printing
- mechanism. The possible values are
+The @scheme[output-mode] setting is used for Windows and Mac OS X. It
+ determines whether the output is generated directly as a PostScript
+ file (using PLT Scheme's built-in PostScript system) or generated
+ using the platform-specific standard printing mechanism. The possible
+ values are
 
 @itemize{
 

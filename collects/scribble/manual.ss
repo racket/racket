@@ -1861,26 +1861,28 @@
       #f
       (append
        (if author
-           (list author
-                 ", ")
+           (append (decode-content (list author))
+                   (list ", "))
            null)
-       (list 'ldquo
-             title
-             (if location
+       (list 'ldquo)
+       (decode-content (list title))
+       (list (if location
                  "," 
                  ".")
              'rdquo)
        (if location
-           (list " "
-                 location
-                 (if date 
-                     ","
-                     "."))
+           (cons " "
+                 (append
+                  (decode-content (list location))
+                  (list
+                   (if date 
+                      ","
+                      "."))))
            null)
        (if date
-           (list " "
-                 date
-                 ".")
+           (cons " "
+                 (append (decode-content (list date))
+                         (list ".")))
            null)
        (if url
            (list " "
