@@ -465,7 +465,7 @@
     (make-styled-paragraph (list (make-element "refcolumn"
                                                (list
                                                 (make-element "refcontent"
-                                                              c))))
+                                                              (decode-content c)))))
                            "refpara"))
 
   ;; ----------------------------------------

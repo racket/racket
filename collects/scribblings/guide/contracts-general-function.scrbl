@@ -219,8 +219,8 @@ scheme/gui
 @margin-note{Note that if you really want to ask a yes-or-no
 question via a GUI, you should use
 @scheme[message-box/custom] (and generally speaking,
-avoiding the words ``yes'' and ``no'' in your dialog is a
-good idea, too ...)}
+avoiding the responses ``yes'' and ``no'' in your dialog is a
+good idea, too ...).}
 
 The contract for @scheme[ask-yes-or-no-question] uses our
 old friend the @scheme[->] contract combinator. Just like

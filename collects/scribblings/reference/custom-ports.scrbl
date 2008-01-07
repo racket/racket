@@ -348,7 +348,7 @@ The arguments implement the port as follows:
  @scheme[peek-byte-or-special], then the @exnraise[exn:fail:contract].}
 
 @begin[
-#readerscribble/comment-reader
+#reader scribble/comment-reader
 [examples
 ;; A port with no input...
 ;; Easy: @scheme[(open-input-bytes #"")]
@@ -942,7 +942,7 @@ procedures.
 }
 
 @begin[
-#readerscribble/comment-reader
+#reader scribble/comment-reader
 [examples
 ;; A port that writes anything to nowhere:
 (define /dev/null-out
