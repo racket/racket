@@ -116,6 +116,10 @@ Like @scheme[</c], but for @scheme[<=].}
 @defproc[(>=/c [n number?]) flat-contract?]{
 Like @scheme[</c], but for @scheme[>=].}
 
+@defproc[(between/c [n number?] [m number?])
+flat-contract?]{ Returns a flat contract that requires the
+input to be a between @scheme[n] and @scheme[m] or equal to
+one of them.}
 
 @defproc[(real-in [n real?][m real?]) flat-contract?]{
 
@@ -134,7 +138,7 @@ between @scheme[j] and @scheme[k], inclusive.}
 A flat contract that requires the input to be an exact non-negative integer.}
 
 
-@defproc[(string/len [len nonnegative-exact-integer?]) flat-contract?]{
+@defproc[(string-len/c [len nonnegative-exact-integer?]) flat-contract?]{
 
 Returns a flat contract that recognizes strings that have fewer than
 @scheme[len] characters.}

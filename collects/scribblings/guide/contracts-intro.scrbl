@@ -20,9 +20,7 @@ boundaries. Specifically, programmers may attach contracts to
 @scheme[provide] clauses and thus impose constraints and promises on the use
 of exported values. For example, the export specification 
 @schememod[
-scheme/base
-
-(require scheme/contract) (code:comment "now we can write contracts")
+scheme
 
 (provide/contract 
   [amount positive?])
@@ -34,13 +32,24 @@ positive number. The contract system monitors @scheme[a]'s obligation
 carefully. Every time a client refers to @scheme[amount], the monitor checks
 that the value of @scheme[amount] is indeed a positive number.
 
+The contracts library is built into the Scheme language, but
+if you wish to use @scheme[scheme/base], you can explicitly
+require the contracts library like this:
+
+@schememod[
+scheme/base
+(require scheme/contract) (code:comment "now we can write contracts")
+
+(provide/contract 
+  [amount positive?])
+(define amount ...)
+]
+
 @question[#:tag "amount0"]{What happens if @scheme[a] sets @scheme[amount] to 0?}
 
 Suppose the creator of @scheme[a] had written 
 @schememod[
-scheme/base
-
-(require scheme/contract)
+scheme
 
 (provide/contract 
   [amount positive?])
@@ -55,7 +64,7 @@ blame @scheme[a] for breaking its promises.
 
 Suppose the creator of @scheme[a] had written 
 @schememod[
-scheme/base
+scheme
 
 (provide/contract 
   [amount positive?])
@@ -172,7 +181,7 @@ the module boundary for a second time.
 </question>
 }
 
-@question[#:tag "obligations"]{How can a "server" module impose obligations on its client?}
+@question[#:tag "obligations"]{How can a ``server'' module impose obligations on its client?}
 
 On occasion, a module may want to enter a contract with
 another module only if the other module abides by certain

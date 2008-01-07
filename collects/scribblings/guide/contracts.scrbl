@@ -3,24 +3,39 @@
 @require[scribble/eval]
 @require["guide-utils.ss"]
 
-@title[#:tag "contracts"]{Contracts}
+@title[#:tag "contracts" #:style 'toc]{Contracts}
 
 @local-table-of-contents[]
 
 @;{
 
 Somewhere, discuss eq? and its impact on lists and
-procedures. Also, discuss difference between contracts on
+procedures. 
+
+Also, discuss difference between contracts on
 mutable datastructures & contracts on immutable ones.
+
+Fill in question on optional arguments in general-function contracts.
+
+->d and dependency (commented out section in general contracts).
+
+update string-pad-center to show examples via REPL notation:
+
+(string-pad-center "nba" 10)
+(code:comment "=> \"   abc    \"")
+
+(string-pad-center "nba" 10 #\-) 
+(code:comment "=> \"---abc----\"")
+
 
 }
 
 @include-section["contracts-intro.scrbl"]
 @include-section["contracts-simple-function.scrbl"]
 @include-section["contracts-general-function.scrbl"]
-@;{
 @include-section["contracts-structure.scrbl"]
+@;{
 @include-section["contracts-class.scrbl"]
 @include-section["contracts-example.scrbl"]
-@include-section["contract-gotchas.scrbl"]
 }
+@include-section["contracts-gotchas.scrbl"]

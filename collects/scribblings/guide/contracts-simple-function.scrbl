@@ -7,11 +7,13 @@
 
 @title[#:tag "contract-func"]{Simple Contracts on Functions}
 
-When a module exports a function, it establishes two channels of
-communication between itself and the client module that imports the
-function. If the client module calls the function, it sends a value into the
-"server" module. Conversely, if such a function call ends and the function
-returns a value, the "server" module sends a value back to the "client" module. 
+When a module exports a function, it establishes two
+channels of communication between itself and the client
+module that imports the function. If the client module calls
+the function, it sends a value into the ``server''
+module. Conversely, if such a function call ends and the
+function returns a value, the ``server'' module sends a
+value back to the "client" module.
 
 It is important to keep this picture in mind when you read the explanations
 of the various ways of imposing contracts on functions. 
@@ -23,8 +25,7 @@ select subset such as numbers, booleans, etc. Here is a module that may
 represent a bank account: 
 
 @schememod[
-scheme/base
-(require scheme/contract)
+scheme
 
 (provide/contract 
   [create  (-> string? number? any)]
@@ -39,10 +40,10 @@ It exports two functions:
 @itemize{
 
 @item{@scheme[create]: The function's contract says that it consumes two
-arguments, a string and a number, and it promises nothing about the return value. }}
+arguments, a string and a number, and it promises nothing about the return value. }
 
 @item{@scheme[deposit]: The function's contract demands from the client modules
-that they apply it to numbers.  It promises nothing about the return value. }
+that they apply it to numbers.  It promises nothing about the return value. }}
 
 If a "client" module that were to apply @scheme[deposit] to
 @scheme['silly], it would violate the contract.  The contract monitoring
@@ -56,7 +57,7 @@ the contract monitoring system to check the return value every time the function
 is called, even though the "client" module can't do much with this value
 anyway. In contrast, @scheme[any] tells the monitoring system @italic{not}
 to check the return value. Additionally, it tells a potential client that the
-"server" module @italic{makes no promises at all} about the function's return
+``server'' module @italic{makes no promises at all} about the function's return
 value.
 
 @question[#:tag "arrow"]{What does the arrow do?}
@@ -130,8 +131,7 @@ To this end, the contract system allows programmers to define their own
 contracts: 
 
 @schememod[
-scheme/base
-(require scheme/contract)
+scheme
   
 (define (amount? a)
   (and (number? a) (integer? a) (exact? a) (>= a 0)))
@@ -164,9 +164,7 @@ a contract defined in "contract.ss" that is equivalent to @scheme[amount]
 (modulo the name): 
 
 @schememod[
-scheme/base
-
-(require scheme/contract)
+scheme
 
 (provide/contract
   (code:comment "an amount is a natural number of cents")
@@ -188,8 +186,7 @@ For example, if we didn't have @scheme[natural-number/c], the
 as follows: 
 
 @schememod[
-scheme/base
-(require scheme/contract)
+scheme
 
 (define amount 
   (and/c number? integer? exact? (or/c positive? zero?)))
@@ -216,22 +213,24 @@ means? Hint: it is a contract!
 Consider a utility module for creating strings from banking records: 
 
 @schememod[
-scheme/base
-(require scheme/contract)
-  
+scheme
+
+(define (has-decimal? str)
+  (define L (string-length str))
+  (and (>= L 3)
+       (char=?
+        #\.
+        (string-ref result (- L 3)))))
+
 (provide/contract
-  ...
   (code:comment "convert a random number to a string")
   [format-number (-> number? string?)]
   
   (code:comment "convert an amount into a dollar based string")
   [format-nat (-> natural-number/c 
                   (lambda (result)
-                    (define L (string-length result))
                     (and (string? result)
-                         (>= L 3)
-                         (char=? #\. (string-ref result (- L 3))))))])
-...
+                         (has-decimal? string))))])
 ]
 The contract of the exported function @scheme[format-number] specifies that
 the function consumes a number and produces a string. 
@@ -241,19 +240,33 @@ interesting than the one of @scheme[format-number].  It consumes only
 natural numbers. Its range contract promises a string that has a dot "." in the
 third position from the right. 
 
-@bold{Exercise 1} Strengthen the promise of the range contract for
+@(exercise) Strengthen the promise of the range contract for
 @scheme[format-nat] so that it admits only strings with digits and a single
 dot. 
 
-@question[#:tag "exercise1"]{Solution to Exercise 1}
+@(solution)
 
 @schememod[
-scheme/base
-(require scheme/contract)
+scheme
 
 (define (digit-char? x) 
   (member x '(#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 #\0)))
-  
+
+(define (has-decimal? str)
+  (define L (string-length str))
+  (and (>= L 3)
+       (char=?
+        #\.
+        (string-ref result (- L 3)))))
+
+(define (is-decimal-string? str)
+  (define L (string-length str))
+  (and (has-decimal? str)
+       (andmap digit-char? 
+               (string->list (substring result 0 (- L 3))))
+       (andmap digit-char?
+               (string->list (substring result (- L 2) L)))))
+
 (provide/contract
   ...
   (code:comment "convert a random number to a string")
@@ -263,13 +276,8 @@ scheme/base
   (code:comment "into a dollar based string")
   [format-nat (-> natural-number/c 
                   (lambda (result)
-                    (define L (string-length result))
                     (and (string? result)
-                         (andmap digit-char? 
-                                 (string->list (substring result 0 (- L 3))))
-                         (andmap digit-char?
-                                 (string->list (substring result (- L 2) L)))
-                         (char=? #\. (string-ref result (- L 3))))))])
+                         (is-decimal-string? result))))])
 ]
 
 

@@ -5,58 +5,52 @@
 @require["contracts-utils.ss"]
 @(require (for-label scheme/contract))
 
-<section title="Gotchas" tag="gotchas" />
+@title{Gotchas}
 
-<question> What about @scheme[set!] on variables provided via @scheme[provide/contract]?
-</question>
+@question{What about @scheme[set!] on variables provided via @scheme[provide/contract]?}
 
-<p>
-The contract library assumes that variables exported
-via @scheme[provide/contract] are not assigned to, but
-does not enforce it. Accordingly, if you try
-to @scheme[set!] those variables, you may find
-unexpected behavior. As an example, consider this program:
+The contract library assumes that variables exported via
+@scheme[provide/contract] are not assigned to, but does not
+enforce it. Accordingly, if you try to @scheme[set!] those
+variables, you may find unexpected behavior. As an example,
+consider this program (running in the MzScheme language of
+DrScheme):
 
-<scheme>
-(module x mzscheme
-  (require (lib "contract.ss"))
+@schemeblock[
+(module server scheme
   (define (inc-x!) (set! x (+ x 1)))
   (define x 0)
   (provide/contract [inc-x! (-> void?)]
                     [x integer?]))
 
-(module client mzscheme
-  (require x)
+(module client scheme
+  (require 'server)
+
   (define (print-latest) (printf "x is ~s\n" x))
 
   (print-latest)
   (inc-x!)
   (print-latest))
 
-(require client)
-</scheme>
+(require 'client)
+]
 
 When it runs, both calls to @scheme[print-latest]
 print @scheme[0], even though the value
 of @scheme[x] has been incremented (and the change is
 visible inside the module @scheme[x]).
-</p>
 
-<p>
 To work around this, export accessor functions, rather than
 exporting the function directly, like this:
-<scheme>
-(module x mzscheme
-  (require (lib "contract.ss"))
-  (define (get-x) x)
-  (define (inc-x!) (set! x (+ x 1)))
-  (define x 0)
-  (provide/contract [inc-x! (-> void?)]
-                    [get-x (-> integer?)]))
 
-</scheme>
-</p>
+@schememod[
+scheme
 
-<p>
+(define (get-x) x)
+(define (inc-x!) (set! x (+ x 1)))
+(define x 0)
+(provide/contract [inc-x! (-> void?)]
+                  [get-x (-> integer?)])
+]
+
 This is a bug we hope to address in a future release.
-</p>
