@@ -1,9 +1,12 @@
 #lang scribble/doc
 @(require scribble/manual
+          scribble/eval
           "utils.ss"
           (for-label scribble/manual))
 
 @title[#:tag "reference-style"]{Style Guide}
+
+@section{Prose and Terminology}
 
 In the descriptive body of @scheme[defform], @scheme[defproc], etc.,
 do not start with ``This ...'' Instead, start with a sentence whose
@@ -17,7 +20,8 @@ values or expressions in a function call.  Refer to libraries and
 languages as such, rather than as ``modules'' (even though the form to
 typeset a library or language name is called @scheme[schememodname]).
 Do not call an identifier (i.e., a syntactic element) a ``variable''
-or a ``symbol.''
+or a ``symbol.'' Do not use the word ``expression'' for a form that is
+a definition or might be a definition; use the word ``form,'' instead.
 
 Avoid cut-and-paste for descriptive text. If two functions are
 similar, consider documenting them together with
@@ -26,6 +30,8 @@ explicit prose abstraction, such as ``@scheme[x] is like @scheme[@y],
 except that ...,'' instead of abstracting the source and instantiating
 it multiple times; often, a prose abstraction is clearer to the reader
 than a hidden abstraction in the document implementation.
+
+@section{Typesetting Code}
 
 Use @schemeidfont{id} or a name that ends @schemeidfont{-id} in
 @scheme[defform] to mean an identifier, not @schemeidfont{identifier},
@@ -73,6 +79,16 @@ variable, meta-variable, etc.---use @scheme[schemeidfont] (e.g., as in
 @schemeidfont{rand-expr} above).  Otherwise, use @scheme[litchar],
 not merely @scheme[schemefont] or @scheme[verbatim], to refer to a
 specific sequence of characters.
+
+When showing example evaluations, use the REPL-snapshot style:
+
+@interaction[
+(+ 1 2)
+]
+
+See also the @scheme[scribble/eval] library.
+
+@section{Typesetting Prose}
 
 Refrain from referring to documentation ``above'' or ``below,'' and
 instead have a hyperlink point to the right place.
