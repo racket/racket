@@ -158,7 +158,7 @@ result of of the last evaluation of @scheme[body]. If the
   (error "doesn't get here"))
 ]}
 
-@defform[(for/fold ([accum-id init-expr] ...) (for-clause ...). body)]{
+@defform[(for/fold ([accum-id init-expr] ...) (for-clause ...) . body)]{
 
 Iterates like @scheme[for]. Before iteration starts, the
 @scheme[init-expr]s are evaluated to produce initial accumulator
@@ -212,12 +212,12 @@ Like @scheme[for/list], etc., but with the implicit nesting of
 
 @defform[(for/fold/derived orig-datum
            ([accum-id init-expr] ...) (for-clause ...) body ...+)]{
-Like @scheme[fold/fold], but the extra @scheme[orig-datum] is used as the source for all syntax errors.
+Like @scheme[for/fold], but the extra @scheme[orig-datum] is used as the source for all syntax errors.
 }
 
 @defform[(for*/fold/derived orig-datum
            ([accum-id init-expr] ...) (for-clause ...) body ...+)]{
-Like @scheme[fold*/fold], but the extra @scheme[orig-datum] is used as the source for all syntax errors.
+Like @scheme[for*/fold], but the extra @scheme[orig-datum] is used as the source for all syntax errors.
 }
 
 @defform[(define-sequence-syntax id
