@@ -95,6 +95,7 @@
                              (box (loop (unbox v)))]
                             [else
                              v])
+                           content
                            content))]))])
                (datum->syntax
                 (quote-syntax here)
