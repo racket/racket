@@ -45,7 +45,7 @@ scheme/base
 (define amount ...)
 ]
 
-@question[#:tag "amount0"]{What happens if @scheme[a] sets @scheme[amount] to 0?}
+@ctc-section[#:tag "amount0"]{A first contract violation}
 
 Suppose the creator of @scheme[a] had written 
 @schememod[
@@ -60,7 +60,7 @@ When module @scheme[a] is required, the monitoring
 system will signal a violation of the contract and
 blame @scheme[a] for breaking its promises.
 
-@question[#:tag "qamount"]{What happens if @scheme[a] sets @scheme[amount] to @scheme['amount]?}
+@ctc-section[#:tag "qamount"]{A more subtle contract violation}
 
 Suppose the creator of @scheme[a] had written 
 @schememod[
@@ -181,7 +181,7 @@ the module boundary for a second time.
 </question>
 }
 
-@question[#:tag "obligations"]{How can a ``server'' module impose obligations on its client?}
+@ctc-section[#:tag "obligations"]{Imposing obligations on a module's clients}
 
 On occasion, a module may want to enter a contract with
 another module only if the other module abides by certain

@@ -4,12 +4,11 @@
 @require["guide-utils.ss"]
 @require["contracts-utils.ss"]
 @(require (for-label scheme/contract) 
-          (for-label srfi/13/string)
           (for-label scheme/gui))
 
 @title{Contracts on Functions in General}
 
-@question[#:tag "flat-named-contracts"]{Why do the error messages contain "..."?}
+@ctc-section[#:tag "flat-named-contracts"]{Contract error messages that contain ``...''}
 
 You wrote your module. You added contracts. You put them into the interface
 so that client programmers have all the information from interfaces. It's a
@@ -65,7 +64,7 @@ sudden quite readable:
 @inset-flow{@schemeerror{bank-client broke the contract (-> amount
 any) it had with myaccount on deposit; expected <amount>, given: -10"}}
 
-@question[#:tag "optional"]{What about optional arguments?}
+@ctc-section[#:tag "optional"]{Optional arguments}
 
 Take a look at this excerpt from a string-processing module, inspired by the
 @link["http://schemecookbook.org"]{Scheme cookbook}: 
@@ -101,9 +100,7 @@ functionality. The interesting point here is the formulation
 of the contract for the @scheme[string-pad-center].
 
 
-Like the contract combinator for
-@scheme[->*], i.e., rest arguments, @scheme[opt->] demands several
-groups of contracts: 
+The contract combinator @scheme[->*], demands several groups of contracts: 
 @itemize{
 @item{The first one is a parenthesized group of contracts for all required
 arguments. In this example, we see two: @scheme[string?] and
@@ -128,7 +125,7 @@ the other function contract combinators, like we did in
 the @scheme[substring1] function above.
 
 
-@question[#:tag "rest-args"]{What about rest arguments?}
+@ctc-section[#:tag "rest-args"]{Rest arguments}
 
 We all know that @scheme[+] in Beginner Scheme is a function
   that consumes at least two numbers but, in principle,
@@ -173,7 +170,7 @@ Finally, you may have noticed that the contract for the function range
   for those is that functions can return multiple values not just one, and
   this is our next topic in this guide. 
 
-@question[#:tag "keywords"]{What about keyword arguments?}
+@ctc-section[#:tag "keywords"]{Keyword arguments}
 
 Sometimes, a function accepts many arguments and remembering
 their order can be a nightmare. To help with such functions,
@@ -237,7 +234,7 @@ five keyword arguments, one for each of the keywords
 Also, just like in a function definition, the keywords in
 the @scheme[->] may appear in any order.
 
-@question[#:tag "optional-keywords"]{What about optional keyword arguments?}
+@ctc-section[#:tag "optional-keywords"]{Optional keyword arguments}
 
 Of course, many of the parameters in
 @scheme[ask-yes-or-no-question] (from the previous question)
@@ -274,7 +271,7 @@ sections. In this case, we have mandatory keywords
 putting the mandatory keywords in the first section and the
 optional ones in the second section.
 
-@question[#:tag "arrow-d"]{Can a contract specify that the result depends on the arguments?}
+@ctc-section[#:tag "arrow-d"]{When a function's result depends on its arguments}
 
 Here is an excerpt from an imaginary (pardon the pun) numerics module:
 
@@ -306,7 +303,7 @@ and @scheme[>=/c], and it pays off to look them up in the contract
 section of the reference manual. They simplify contracts tremendously
 and make them more accessible to potential clients. 
 
-@question[#:tag "arrow-d-args"]{Can a contract specify that arguments depend on each other?}
+@ctc-section[#:tag "arrow-d-args"]{When contract arguments depend on each other}
 
 Eventually bank customers want their money back. Hence, a module that
 implements a bank account must include a method for withdrawing money. Of
@@ -321,7 +318,7 @@ Suppose the account module provides the following two functions:
 Then, informally, the proper precondition for @scheme[withdraw] is that 
 ``the balance of the given account is greater than or equal to the given (withdrawal) amount.''
 The postcondition is similar to the one for
-@questionlink["flat-named-contracts"]{@scheme[deposit]}:
+@ctc-link["flat-named-contracts"]{@scheme[deposit]}:
 ``the balance of the resulting account is larger than (or equal to) than the one of the
 given account.''
 You could of course also formulate a full-fledged correctness condition, namely,
@@ -411,7 +408,7 @@ balance. The resulting contract checks whether an account
 has a balance that is larger or smaller, depending on the
 given comparison operator, than the original balance.
 
-@question[#:tag "case-lambda"]{What about case-lambda?}
+@ctc-section[#:tag "case-lambda"]{Contracts for @scheme[case-lambda]}
 
 Dybvig, in Chapter 5 of the
  @link["http://www.scheme.com/csug/"]{Chez Scheme User's Guide},
@@ -475,7 +472,7 @@ In the case of @scheme[substring1], we also know that the indices
   numeric constraints on them. 
 }
 
-@question[#:tag "multiple"]{What about multiple values?}
+@ctc-section[#:tag "multiple"]{Multiple result values}
 
 The function @scheme[split] consumes a list of @scheme[char]s
   and delivers the string that occurs before the first occurrence of
@@ -555,7 +552,7 @@ This contract is expensive to check of course. Here is a slightly
 ]
   Click on @scheme[string-len/c] to see what it does.
 
-@question[#:tag "no-domain"]{What about procedures of any specific arity?}
+@ctc-section[#:tag "no-domain"]{Procedures of some fixed, but statically unknown arity}
 
 Imagine yourself writing a contract for a function that accepts some other
 function and a list of numbers that eventually applies the former to the

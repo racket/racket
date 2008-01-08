@@ -18,7 +18,7 @@ value back to the "client" module.
 It is important to keep this picture in mind when you read the explanations
 of the various ways of imposing contracts on functions. 
 
-@question[#:tag "argcontract"]{How does a contract restrict the arguments of a function?}
+@ctc-section[#:tag "argcontract"]{Restricting the arguments of a function}
 
 Functions usually don't work on all possible Scheme values but only on a
 select subset such as numbers, booleans, etc. Here is a module that may
@@ -60,7 +60,7 @@ to check the return value. Additionally, it tells a potential client that the
 ``server'' module @italic{makes no promises at all} about the function's return
 value.
 
-@question[#:tag "arrow"]{What does the arrow do?}
+@ctc-section[#:tag "arrow"]{Arrows}
 
 It is natural to use an arrow to say that an exported value is a
 function. In decent high schools, you learn that a function has a domain
@@ -95,7 +95,7 @@ combinator}. Its purpose is to combine other contracts into a contract
 that says "this is a function @italic{and} its arguments and its result are
 like that."
 
-@question[#:tag "dots"]{What are the dots in contracts about?}
+@ctc-section[#:tag "dots"]{Infix contract notation}
 
 If you are used to mathematics, you like the arrow in between the
   domain and the range of a function, not at the beginning. If you
@@ -119,7 +119,7 @@ is really just a short-hand for
 Of course, placing the arrow to the left of the range follows not only
 mathematical tradition but also that of typed functional languages. 
 
-@question[#:tag "own"]{Can I make my own contracts for arguments?}
+@ctc-section[#:tag "own"]{Rolling your own contracts for function arguments}
 
 The @scheme[deposit] function adds the given number to the value of
 @scheme[amount]. While the function's contract prevents clients from
@@ -176,10 +176,10 @@ scheme
 
 Lesson: learn about the built-in contracts in @schememodname[scheme/contract]. 
 
-@question[#:tag "and-or"]{Are @scheme[and/c] and @scheme[or/c] contract combinators? What of @scheme[listof]?}
+@ctc-section[#:tag "and-or"]{The @scheme[and/c], @scheme[or/c], and @scheme[listof] contract combinators}
 
-The short answer is yes. Both @scheme[and/c] and @scheme[or/c]
-ombine contracts and they do what you expect them to do. 
+Both @scheme[and/c] and @scheme[or/c] ombine contracts and
+they do what you expect them to do.
 
 For example, if we didn't have @scheme[natural-number/c], the
 @scheme[amount?] contract is a bit opaque. Instead, we would define it
@@ -208,7 +208,7 @@ value satisfies @scheme[number?] and @scheme[integer?] and
 Oh, we almost forgot. What do you think @scheme[(listof char?)]
 means? Hint: it is a contract!
 
-@question[#:tag "range"]{How does a contract restrict the range of a function?}
+@ctc-section[#:tag "range"]{Restricting the range of a function}
 
 Consider a utility module for creating strings from banking records: 
 

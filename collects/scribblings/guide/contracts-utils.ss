@@ -2,8 +2,8 @@
 (require scribble/basic
          scribble/manual)
 
-(provide ctc-section  question
-         ctc-link questionlink
+(provide ctc-section
+         ctc-link
          exercise
          solution)
 
@@ -13,11 +13,7 @@
                  (list (and tag (str->tag tag)))
                  rest))
 
-(define question ctc-section)
-
 (define (ctc-link tag . rest) (apply seclink (str->tag tag) rest))
-
-(define questionlink ctc-link)
 
 (define (str->tag tag) (format "contracts-~a" tag))
 
@@ -28,3 +24,4 @@
 
 (define (solution)
   (bold (format "Solution to exercise ~a" exercise-number)))
+

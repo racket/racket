@@ -7,7 +7,7 @@
 
 @title{Gotchas}
 
-@question{What about @scheme[set!] on variables provided via @scheme[provide/contract]?}
+@ctc-section{Using @scheme[set!] to assign to variables provided via @scheme[provide/contract]}
 
 The contract library assumes that variables exported via
 @scheme[provide/contract] are not assigned to, but does not enforce
@@ -51,3 +51,33 @@ scheme
 ]
 
 This is a bug we hope to address in a future release.
+@;{
+@question{Contracts and @scheme[eq?]}
+
+As a general rule, adding a contract to a program should
+either leave the behavior of the program unchanged, or
+should signal a contract violation. And this is almost true
+for PLT Scheme contracts, with one exception: @scheme[eq?].
+
+The @scheme[eq?] procedure is designed to be fast and does
+not provide much in the way of guarantees, except that if it
+returns true, it means that the two values behave
+identically in all respects. Internally, this is implemented
+as pointer equality at a low-level so it exposes information
+about how PLT Scheme is implemented (and how contracts are
+implemented). 
+
+Contracts interact poorly with @scheme[eq?] because function
+contract checking is implemented internally as wrapper
+functions. For example, consider this module:
+@schememod[
+scheme
+
+(define (make-adder ))
+(provide make-adder)
+
+(provide/contract [make-adder (-> number? (-> number? number?))])
+]
+
+
+}

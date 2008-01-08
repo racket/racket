@@ -17,7 +17,7 @@ its fields contain values of a certain kind. This section
 explains how to protect structs with contracts for both
 uses.
 
-@question[#:tag "single-struct"]{Can a module promise something about a specific struct?}
+@ctc-section[#:tag "single-struct"]{Promising something about a specific struct}
 
 Yes. If your module defines a variable to be a structure, then on export you
 can specify the structures shape: 
@@ -35,12 +35,12 @@ In this example, the module imports a library for representing positions, which
 exports a @scheme[posn] structure. One of the @scheme[posn]s it creates
 and exports stands for the origin, i.e., @tt{(0,0)}, of the grid. 
 
-@question[#:tag "single-vector"]{Can a module promise something about a specific vector?}
+@ctc-section[#:tag "single-vector"]{Promising something about a specific vector}
 
 Yes, again. See the help desk for information on @scheme[vector/c] and
 similar contract combinators for (flat) compound data. 
 
-@question[#:tag "define-struct"]{Can a contract enforce that all structs are well-formed?}
+@ctc-section[#:tag "define-struct"]{Ensuring that all structs are well-formed}
 
 The book @link["http://www.htdp.org/"]{@italic{How to Design
 Programs}} teaches that @scheme[posn]s should contain only
@@ -111,7 +111,7 @@ reated a @scheme[posn] from symbols, i.e., the programmer who added
  keep this example in mind. 
 
 @(exercise) Use your knowledge from the
-@questionlink["single-struct"] section on exporting specific
+@ctc-link["single-struct"] section on exporting specific
 structs and change the contract for @scheme[p-sick] so that
 the error is caught when @scheme[sick] is exported.
 
@@ -128,7 +128,7 @@ A single change suffices:
 Instead of exporting @scheme[p-sick] as a plain @scheme[posn?], we use a
 @scheme[struct/c] contract to enforce constraints on its components. 
 
-@question[#:tag "lazy-contracts"]{What about contracts that check properties of data structures?}
+@ctc-section[#:tag "lazy-contracts"]{Checking properties of data structures}
 
 Contracts written using @scheme[struct/c] immediately
 check the fields of the data structure, but sometimes this
