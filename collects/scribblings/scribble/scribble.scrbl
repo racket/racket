@@ -3,8 +3,7 @@
 @require[scribble/bnf]
 @require["utils.ss"]
 
-@title[#:tag-prefix '(lib "scribblings/scribble/scribble.scrbl") 
-       #:tag "top"]{@bold{Scribble}: PLT Documentation Tool}
+@title{@bold{Scribble}: PLT Documentation Tool}
 
 Scribble is a collection of tools for creating prose documents,
 especially those that document libraries, and especially for HTML and
