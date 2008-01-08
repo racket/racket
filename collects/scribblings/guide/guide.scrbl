@@ -122,7 +122,7 @@ normally used by C programs.
 "top"]} describes the PLT Scheme web server, which supports servlets
 implemented in Scheme.
 
-@italic{@secref[#:doc '(lib "scribblings/start/start.scrbl") "top"]} provides
+@secref[#:doc '(lib "scribblings/start/start.scrbl") "top"] provides
 links to documentation for many other libraries distributed with PLT
 Scheme or installed on your system.
 

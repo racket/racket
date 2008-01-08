@@ -10,22 +10,17 @@
           scribble/urls
           scribble/struct
           scheme/class
-          "slideshow-doc.ss"
-          "slideshow-code-doc.ss"
-          "mred-doc.ss"
 
           (for-label scheme/base
                      scheme/gui/base
                      scheme/class
-                     slideshow)
+                     slideshow
+                     slideshow/code
+                     slideshow/flash)
 
           (for-syntax scheme/base))
 
 @(begin
-  (define filled-flash (lambda args (apply (eval 'filled-flash) args)))
-  (define random-gaussian (lambda args (apply (eval 'random-gaussian) args)))
-  (define-syntax code (syntax-rules () [(_ v) (typeset-code (quote-syntax v))]))
-  (provide filled-flash random-gaussian code)
   (define (keep-file file)
     (make-delayed-element
      (lambda (render part ri)
