@@ -757,23 +757,35 @@ Useful for implementing languages that are textual by default (see
 @filepath{docreader.ss} for example).
 }
 
-@defform[(make-at-readtable [keyword-args ...])]{
+@defproc[(make-at-readtable [#:readtable readtable readtable? (current-readtable)]
+                            [#:command-char command-char character? #\@]
+                            [#:start-inside? start-inside? any/c #f]
+                            [#:datum-readtable datum-readtable 
+                                               (or/c readtable? boolean? 
+                                                     (readtable? . -> . readtable?)) 
+                                               #t]
+                            [#:syntax-post-processor syntax-post-proc (syntax? . -> . syntax?) values])
+          readtable?]{
+
 Constructs an @"@"-readtable.  The keyword arguments can customize the
-resulting reader in several ways.
+resulting reader in several ways:
 
 @itemize{
-@item{@scheme[#:readtable] --- a readtable to base the @"@"-readtable
-  on.  Defaults to the current readtable.}
-@item{@scheme[#:command-char] --- the character used for @"@"-forms;
-  defaults to @scheme[#\@].}
-@item{@scheme[#:datum-readtable] --- determines the readtable used for
-  reading the datum part.  The default (@scheme[#t]) is to use the
+
+@item{@scheme[readtable] --- a readtable to base the @"@"-readtable
+  on.}
+
+@item{@scheme[command-char] --- the character used for @"@"-forms.}
+
+@item{@scheme[datum-readtable] --- determines the readtable used for
+  reading the datum part.  A @scheme[#t] values uses the
   @"@"-readtable, otherwise it can be a readtable, or a
   readtable-to-readtable function that will construct one from the
   @"@"-readtable.  The idea is that you may want to have completely
   different uses for the datum part, for example, introducing a
   convenient @litchar["key=val"] syntax for attributes.}
-@item{@scheme[#:syntax-post-processor] --- function that is applied on
+
+@item{@scheme[syntax-post-proc] --- function that is applied on
   each resulting syntax value after it has been parsed (but before it
   is wrapped quoting punctuations).  You can use this to further
   control uses of @"@"-forms, for example, making the command be the
@@ -786,41 +798,18 @@ resulting reader in several ways.
         (syntax-case stx ()
           [(cmd rest ...) #'(list 'cmd rest ...)]
           [_else (error "@ forms must have a body")])))
-  ]
+  ]}
 
-  Beware that the syntax may contain placeholder values at this stage
-  (e.g: the command part), so you can `plant' your own form that will
-  do some plain processing later.  For example, here's a setup that
-  uses a @schemeid[mk-] prefix for all command names:
+@item{@scheme[start-inside?] --- if true, creates a readtable for
+use starting in text mode, instead of S-expression mode.}
 
-  @schemeblock[
-    (use-at-readtable
-      #:syntax-post-processor
-      (lambda (stx)
-        (syntax-case stx ()
-          [(cmd rest ...) #'(add-mk cmd rest ...)]
-          [_else (error "@ forms must have a body")])))
-    (define-syntax (add-mk stx)
-      (syntax-case stx ()
-        [(_ cmd rest ...)
-         (identifier? #'cmd)
-         (with-syntax ([mk-cmd (datum->syntax-object
-                                #'cmd
-                                (string->symbol
-                                 (format "mk-~a" (syntax-e #'cmd)))
-                                #'cmd)])
-           (syntax/loc stx (mk-cmd rest ...)))]))
-  ]
-}
-@item{@scheme[#:start-inside?] --- used internally by the above
-  @schemeid[-inside] variants.}
 }}
 
 @defproc[(use-at-readtable ...) void?]{
-Installs the Scribble readtable as the default.  Useful for REPL
-experimentation.  (Note: enables line and column tracking.)  The given
-keyword arguments are used with `make-at-readtable'.
-}
+
+Passes all arguments to @scheme[make-at-readtable], and installs the
+resulting readtable using @scheme[current-readtable]. It also enables
+line counting for the current input-port via @scheme[port-count-lines!].}
 
 @; *** End reader-import section ***
 ))])]

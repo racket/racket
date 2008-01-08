@@ -1,20 +1,20 @@
 
-(module comment-reader mzscheme
-  (require (lib "kw.ss"))
+(module comment-reader scheme/base
 
-  (provide (rename *read read)
-           (rename *read-syntax read-syntax))
+  (provide (rename-out [*read read]
+                       [*read-syntax read-syntax])
+           make-comment-readtable)
 
-  (define/kw (*read #:optional [inp (current-input-port)])
+  (define (*read [inp (current-input-port)])
     (parameterize ([current-readtable (make-comment-readtable)])
       (read/recursive inp)))
 
-  (define/kw (*read-syntax #:optional src [port (current-input-port)])
+  (define (*read-syntax src [port (current-input-port)])
     (parameterize ([current-readtable (make-comment-readtable)])
       (read-syntax/recursive src port)))
 
-  (define (make-comment-readtable)
-    (make-readtable (current-readtable)
+  (define (make-comment-readtable #:readtable [rt (current-readtable)])
+    (make-readtable rt
                     #\; 'terminating-macro
                     (case-lambda 
                      [(char port)
@@ -22,7 +22,7 @@
                      [(char port src line col pos)
                       (let ([v (do-comment port (lambda () (read-syntax/recursive src port #\@)))])
                         (let-values ([(eline ecol epos) (port-next-location port)])
-                          (datum->syntax-object
+                          (datum->syntax
                            #f
                            v
                            (list src line col pos (and pos epos (- epos pos))))))])))

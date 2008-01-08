@@ -1,9 +1,9 @@
 ;; ============================================================================
 ;; Implements the @-reader macro for embedding text in Scheme code.
 
-(module reader mzscheme
+(module reader scheme/base
 
-  (require (lib "kw.ss") (lib "string.ss") (lib "readerr.ss" "syntax"))
+  (require (lib "string.ss") (lib "readerr.ss" "syntax"))
 
   ;; --------------------------------------------------------------------------
   ;; utilities for syntax specifications below
@@ -158,7 +158,7 @@
   (define eol-token "\n")
   (define (eol-syntax? x) (and (syntax? x) (eq? eol-token (syntax-e x))))
   ;; sanity check, in case this property gets violated in the future
-  (unless (eol-syntax? (datum->syntax-object #f eol-token))
+  (unless (eol-syntax? (datum->syntax #f eol-token))
     (internal-error 'invalid-assumption))
 
   ;; --------------------------------------------------------------------------
@@ -251,7 +251,7 @@
                             (unless (eol-syntax? eol)
                               (internal-error 'done-items))
                             (cons (syntax-property
-                                   (datum->syntax-object eol spaces eol)
+                                   (datum->syntax eol spaces eol)
                                    'scribble 'indentation)
                                   r)))]
                        ;; can have special comment values from "@||"
@@ -266,7 +266,7 @@
              [1st  (and (syntax? stx0) (syntax-e stx0))])
         (if (and (string? 1st) (not (eq? eol-token 1st))
                  (string? 2nd) (not (eq? eol-token 2nd)))
-          (cons (datum->syntax-object stx0
+          (cons (datum->syntax stx0
                   (string-append 1st 2nd)
                   (list (syntax-source stx0)
                         (syntax-line   stx0)
@@ -297,7 +297,7 @@
         ;; `done-items' to finish the job
         (define-values (line col pos) (port-next-location inp))
         (define (make-stx sexpr)
-          (datum->syntax-object #f
+          (datum->syntax #f
             (if (bytes? sexpr) (bytes->string/utf-8 sexpr) sexpr)
             (list source-name line col pos (span-from pos))))
         (cond
@@ -415,7 +415,7 @@
                                            [#",@" unquote-splicing]))
                                 => cadr]
                                [else (internal-error 'get-rprefixes)])])
-                    (loop (cons (datum->syntax-object #f sym
+                    (loop (cons (datum->syntax #f sym
                                   (list source-name line col pos
                                         (span-from pos)))
                                 r))))]
@@ -425,7 +425,7 @@
 
     (cond
       [start-inside?
-       (datum->syntax-object #f (get-lines* #f #f #f re:line-item-no-nests #f)
+       (datum->syntax #f (get-lines* #f #f #f re:line-item-no-nests #f)
          (list source-name line-num col-num position (span-from position)))]
       [(*skip re:whitespaces)
        (read-error* "unexpected whitespace after ~a" ch:command)]
@@ -458,7 +458,7 @@
                        (syntax-property
                         (if (syntax? stx)
                           stx
-                          (datum->syntax-object #f stx
+                          (datum->syntax #f stx
                             (list source-name line-num col-num position
                                   (span-from position))))
                         'scribble (list 'form ds ls))
@@ -470,7 +470,7 @@
                (if (null? rpfxs)
                  stx
                  (loop (cdr rpfxs) (list (car rpfxs) stx))))])
-         (datum->syntax-object #f stx
+         (datum->syntax #f stx
            (list source-name line-num col-num position
                  (span-from position))))]))
 
@@ -496,12 +496,12 @@
   ;; readtable
 
   (provide make-at-readtable)
-  (define/kw (make-at-readtable
-              #:key [readtable (current-readtable)]
-                    [command-char ch:command]
-                    [start-inside? #f]
-                    [datum-readtable #t]
-                    [syntax-post-processor values])
+  (define (make-at-readtable
+           #:readtable [readtable (current-readtable)]
+           #:command-char [command-char ch:command]
+           #:start-inside? [start-inside? #f]
+           #:datum-readtable [datum-readtable #t]
+           #:syntax-post-processor [syntax-post-processor values])
     (define dispatcher
       (make-dispatcher start-inside? command-char
                        (lambda () cmd-rt) (lambda () datum-rt)
@@ -521,7 +521,7 @@
             (unless m
               (raise-read-error "unbalanced `|'" source-name
                                 line-num col-num position #f))
-            (datum->syntax-object
+            (datum->syntax
              #f (string->symbol (bytes->string/utf-8 (cadr m)))
              (list source-name line-num col-num position
                    (add1 (bytes-length (car m)))))))))
@@ -535,9 +535,11 @@
     at-rt)
 
   (provide use-at-readtable)
-  (define (use-at-readtable . args)
-    (port-count-lines! (current-input-port))
-    (current-readtable (apply make-at-readtable args)))
+  (define use-at-readtable
+    (make-keyword-procedure
+     (lambda (kws kw-args . rest)
+       (port-count-lines! (current-input-port))
+       (keyword-apply current-readtable kws kw-args rest))))
 
   ;; utilities for below
   (define make-default-at-readtable
@@ -565,28 +567,29 @@
        (parameterize ([current-readtable (make-default-at-readtable)])
          body ...)]))
 
-  (define/kw (*read #:optional [inp (current-input-port)])
+  (define (*read [inp (current-input-port)])
     (with-at-reader (read inp)))
 
-  (define/kw (*read-syntax #:optional [src default-src]
-                                      [inp (current-input-port)])
+  (define (*read-syntax [src default-src]
+                        [inp (current-input-port)])
     (with-at-reader (read-syntax (src-name src inp) inp)))
 
-  (define/kw (read-inside #:optional [inp (current-input-port)])
+  (define (read-inside [inp (current-input-port)])
     (let*-values ([(line col pos) (port-next-location inp)]
                   [(inside-dispatcher) (make-default-at-dispatcher/inside)])
       (with-at-reader
-        (syntax-object->datum
+        (syntax->datum
          (inside-dispatcher #f inp (object-name inp) line col pos)))))
 
-  (define/kw (read-inside-syntax #:optional [src default-src]
-                                            [inp (current-input-port)])
+  (define (read-inside-syntax [src default-src]
+                              [inp (current-input-port)])
     (let*-values ([(line col pos) (port-next-location inp)]
                   [(inside-dispatcher) (make-default-at-dispatcher/inside)])
       (with-at-reader
         (inside-dispatcher #f inp (src-name src inp) line col pos))))
 
-  (provide (rename *read read) (rename *read-syntax read-syntax)
+  (provide (rename-out [*read read]
+                       [*read-syntax read-syntax])
            read-inside read-inside-syntax)
 
   )

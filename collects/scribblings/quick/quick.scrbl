@@ -30,7 +30,6 @@
      (lambda () (make-element #f (list))))))
 
 @; ----------------------------------------------------------------------
-@section{Why Pictures? Why DrScheme?}
 
 This tutorial provides a brief introduction to the PLT Scheme
 programming language by using one of its picture-drawing
