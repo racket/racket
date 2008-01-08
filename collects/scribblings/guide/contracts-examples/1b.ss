@@ -1,15 +1,14 @@
-;; --- the customer manager ----------------------------------------------------
-
 #lang scheme
 
-(require "1.ss")
+(require "1.ss") ;; the module just above
 
 ;; implementation 
 ;; [listof (list basic-customer? secret-info)]
 (define all '())
 
 (define (find c) 
-  (define (has-c-as-key p) (id-equal? (basic-customer-id (car p)) c))
+  (define (has-c-as-key p) 
+    (id-equal? (basic-customer-id (car p)) c))
   (define x (filter has-c-as-key all))
   (if (pair? x) (car x) x))
 
@@ -36,7 +35,6 @@
 (define c0 0)
 ;; end of implementation 
 
-;; interface
 (provide/contract
  ;; how many customers are in the db?  
  [count    natural-number/c]
@@ -53,9 +51,9 @@
  
  [add      (->d ([bc (and/c basic-customer? not-active?)])
                 ()
-                ;; A pre-post condition contract must use a side-effect
-                ;; to express this contract via post-conditions
-                #:pre-cond (set! c0 count) ;; pre
+                ;; A pre-post condition contract must use 
+                ;; a side-effect to express this contract
+                ;; via post-conditions
+                #:pre-cond (set! c0 count)
                 [result any/c] ;; result contract 
                 #:post-cond (> count c0))])
-;; end of interface

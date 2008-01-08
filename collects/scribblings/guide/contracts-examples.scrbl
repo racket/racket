@@ -40,46 +40,58 @@ Mitchell and McKim's principles for design by contract DbC are derived
 @item{@bold{For each command, write a post-condition contract that specifies the
     changes to the observable properties in terms of the basic queries.}}
 
-@item{@bold{For each query and command, decide on suitable pre-condition contract.}}}
+@item{@bold{For each query and command, decide on suitable
+pre-condition contract.}}}
 
-Each of the followong questions (sections) corresponds to a chapter in
- Mitchell and McKim's book (but not all chapters show up here). The
- contracts have a colored background and appear in <font
- color="purple">font</font> so that they are easy to find. Implementations
- are presented ahead of the interface in <font color="navy">navy.</font>
- Finally, tests are included in <font "a0a0aa">a light shade.</font> We
- recommend that you read the contracts first, then the implementation, and
- then the test module.
+Each of the following sections corresponds to a chapter in
+ Mitchell and McKim's book (but not all chapters show up
+ here). We recommend that you read the contracts first (near
+ the end of the first modules), then the implementation (in
+ the first modules), and then the test module (at the end of
+ each section).
 
-
- Mitchell and McKim use Eiffel as the underlying programming language and
+Mitchell and McKim use Eiffel as the underlying programming language and
  employ a conventional imperative programming style. Our long-term goal is
  to transliterate their examples into applicative Scheme,
- structure-oriented imperative Scheme, and PLT Scheme's class system (when
- contracts for those become available). 
+ structure-oriented imperative Scheme, and PLT Scheme's class system. 
 
 Note: To mimic Mitchell and McKim's informal notion of parametericity
  (parametric polymorphism), we use first-class contracts. At several
  places, this use of first-class contracts improves on Mitchell and McKim's
  design (see comments in interfaces).
 
-@; @external-file[1]
-
 @section{A Customer Manager Component for Managing Customer Relationships}
-@begin[
-#reader scribble/comment-reader
-[schememod
-scheme
-;; data definitions 
 
-(define id? symbol?)
-(define id-equal? eq?)
-(define-struct basic-customer (id name address) #:mutable)
+This first module contains some struct definitions in a
+separate module in order to better track bugs.
 
-;; interface 
-(provide/contract 
- [id?                   (-> any/c boolean?)]
- [id-equal?             (-> id? id? boolean?)]
- [struct basic-customer ((id id?) (name string?) (address string?))])
-;; end of interface
-]]
+@external-file[1]
+
+This module contains the program that uses the above.
+
+@external-file[1b]
+
+The tests:
+
+@external-file[1-test]
+
+@section{A Parameteric (Simple) Stack}
+@external-file[2]
+
+The tests:
+
+@external-file[2-test]
+
+@section{A Dictionary}
+@external-file[3]
+
+The tests:
+
+@external-file[3-test]
+
+@section{A Queue}
+@external-file[5]
+
+The tests:
+
+@external-file[5-test]

@@ -1,9 +1,4 @@
-;; chapter 1: A Customer Manager Component for Managing Customer Relationships 
-
-;; --- common data definitions ------------------------------------------------
-
-; #lang scheme
-  
+#lang scheme
 ;; data definitions 
 
 (define id? symbol?)
@@ -14,7 +9,9 @@
 (provide/contract 
  [id?                   (-> any/c boolean?)]
  [id-equal?             (-> id? id? boolean?)]
- [struct basic-customer ((id id?) (name string?) (address string?))])
+ [struct basic-customer ((id id?)
+                         (name string?)
+                         (address string?))])
 ;; end of interface
 
 

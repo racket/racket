@@ -1,7 +1,3 @@
-;; chapter 3: A Dictionary
-
-;; --- dictionary --------------------------------------------------------------
-
 #lang scheme
 
 ;; a contract utility 
@@ -57,10 +53,10 @@
                    ()
                    [result (and/c dictionary? (compose zero? count))])]
  ;; commands 
- ;; Mitchell and McKim say that put shouldn't consume Void (null ptr) for v.
- ;; We allow the client to specify a contract for all values via initialize. 
- ;; We could do the same via a key? parameter (exercise). 
- ;; add key k with value v to this dictionary 
+ ;; Mitchell and McKim say that put shouldn't consume Void (null ptr) 
+ ;; for v. We allow the client to specify a contract for all values
+ ;; via initialize. We could do the same via a key? parameter
+ ;; (exercise). add key k with value v to this dictionary 
  [put         (->d ([d dictionary?]
                     [k (and symbol? (not-has? d))]
                     [v (dictionary-value? d)])
