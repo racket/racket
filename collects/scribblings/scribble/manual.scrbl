@@ -821,6 +821,9 @@ Returns @scheme[#t] if @scheme[v] is a bibliography entry created by
 @defthing[PLaneT string?]{@scheme["PLaneT"] (to help make sure you get
 the letters in the right case).}
 
+@defproc[(hash-lang) element?]{Returns an element for @hash-lang[]
+that is hyperlinked to an explanation.}
+
 @defthing[void-const element?]{Returns an element for @|void-const|.}
 
 @defthing[undefined-const element?]{Returns an element for @|undefined-const|.}

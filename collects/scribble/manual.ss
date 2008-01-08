@@ -49,7 +49,7 @@
                               #'here
                               `(unsyntax (make-element
                                           #f
-                                          (list hash-lang
+                                          (list (hash-lang)
                                                 (hspace 1)
                                                 (as-modname-link
                                                  ',#'lang
@@ -140,7 +140,7 @@
                 (list (make-paragraph
                        (if lang?
                            (list (hspace 1)
-                                 hash-lang
+                                 (hash-lang)
                                  (hspace 1)
                                  (make-defschememodname name))
                            (list
@@ -1794,12 +1794,12 @@
              c)))
   (provide pidefterm)
 
-
-  (define hash-lang (make-link-element
-                     "schememodlink"
-                     (list (schememodfont "#lang"))
-                     `(part ,(doc-prefix '(lib "scribblings/guide/guide.scrbl")
-                                         "hash-lang"))))
+  (provide hash-lang)
+  (define (hash-lang) (make-link-element
+                       "schememodlink"
+                       (list (schememodfont "#lang"))
+                       `(part ,(doc-prefix '(lib "scribblings/guide/guide.scrbl")
+                                           "hash-lang"))))
   
   ;; ----------------------------------------
 

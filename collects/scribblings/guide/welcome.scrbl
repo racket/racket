@@ -54,12 +54,12 @@ work in the normal variant of Scheme (as opposed to the smaller
 @schememodname[scheme/base], or many other possibilities).
 
 If you've used DrScheme before with something other than a program
-that starts @schemefont{#lang}, DrScheme will remember the last language
-that you used, instead of inferring the language from the
-@schemefont{#lang} line. In that case, use the @menuitem["Language"
-"Choose Language..."]  menu item.  In the the dialog that appears,
-select the first item, which is @onscreen{Module}. Put the
-@schemefont{#lang} line above in the top text area, still.
+that starts @hash-lang[], DrScheme will remember the last language
+that you used, instead of inferring the language from the @hash-lang[]
+line. In that case, use the @menuitem["Language" "Choose Language..."]
+menu item.  In the the dialog that appears, select the first item,
+which is @onscreen{Module}. Put the @hash-lang[] line above in the top
+text area, still.
 
 @; ----------------------------------------------------------------------
 @section{Interacting with Scheme}
@@ -106,7 +106,7 @@ Although you can evaluate the @scheme[define] form in the @tech{REPL},
 definitions are normally a part of a program that you want to keep and
 use later. So, in DrScheme, you'd normally put the definition in the
 top text area---called the @defterm{definitions area}---along with the
-@schemefont{#lang} prefix:
+@hash-lang[] prefix:
 
 @schememod[
 scheme
@@ -163,10 +163,9 @@ traditional Scheme environment, but we strongly recommend against using
 
 Writing definitions outside of a module leads to bad error messages,
 bad performance, and awkward scripting to combine and run
-programs. The problems are not specific to @exec{mzscheme};
-they're fundamental limitations of the traditional top-level
-environment, which Scheme and Lisp implementations have historically
-fought with ad hoc command-line flags, compiler directives, and
-build tools. The module system is to designed to avoid the problems,
-so start with @schemefont{#lang}, and you'll be happier with
-PLT Scheme in the long run.
+programs. The problems are not specific to @exec{mzscheme}; they're
+fundamental limitations of the traditional top-level environment,
+which Scheme and Lisp implementations have historically fought with ad
+hoc command-line flags, compiler directives, and build tools. The
+module system is to designed to avoid the problems, so start with
+@hash-lang[], and you'll be happier with PLT Scheme in the long run.
