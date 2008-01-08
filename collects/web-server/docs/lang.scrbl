@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["../web-server.ss"]
+@require["web-server.ss"]
 
 @title[#:tag "lang"
        #:style 'toc]{Web Language Servlets}
@@ -14,7 +14,7 @@ is different and what API is provided.
 @section[#:tag "lang-servlets"]{Definition}
 @require[(for-label "dummy-language-servlet.ss")] ; to give a binding context
 
-@declare-exporting[web-server/docs/reference/dummy-language-servlet]
+@declare-exporting[web-server/docs/dummy-language-servlet]
 
 A @defterm{Web language servlet} is a module written in the
 @scheme[(lib "lang.ss" "web-server")] module language. It should provide

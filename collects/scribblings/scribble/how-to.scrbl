@@ -51,7 +51,17 @@ EOS
         gets large enough that you want it split into multiple pages,
         add the @scheme['multi-page] option (omitting the quote, since
         the whole right-hand side of the definition is already
-        quoted).}
+        quoted).
+
+        As usual, the @filepath{info.ss} module also needs a
+        @schemeidfont{name} field. If you do not already have an
+        @filepath{info.ss} module, here's a suitable complete module:
+
+        @schemeblock[
+          (module info setup/infotab
+            (define name "Some documentation")
+            (define scribblings '(("manual.scrbl" ()))))
+        ]}
 
   @item{Run @exec{setup-plt} to build your documentation. For a
         collection, optionally supply @Flag{l} followed by the

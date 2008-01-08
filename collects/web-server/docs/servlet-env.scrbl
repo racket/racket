@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["../web-server.ss"]
+@require["web-server.ss"]
 
 @title[#:tag "servlet-env.ss"
        #:style 'toc]{Environment}

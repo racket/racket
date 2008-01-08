@@ -1,9 +1,7 @@
 #lang scribble/doc
-@require["../web-server.ss"]
+@require["web-server.ss"]
 
-@title{Web Server User Guide}
-
-@table-of-contents[]
+@title{Troubleshooting}
 
 @section{General}
 
@@ -13,5 +11,3 @@ In quirks mode, IE does not parse your page as XML, in particular it will not re
 "empty tag shorthand", e.g. "<img src='...' />", whereas the @web-server uses @scheme[(lib "xml.ss" "xml")]
 to format XML, which uses empty tag shorthand by default. You can change the default with the @scheme[empty-tag-shorthand]
 parameter: @scheme[(empty-tag-shorthand 'never)].
-
-@index-section[]

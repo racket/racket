@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "../web-server.ss"
+@(require "web-server.ss"
           (for-syntax scheme/base))
 
 @(define-syntax (a-dispatcher stx)

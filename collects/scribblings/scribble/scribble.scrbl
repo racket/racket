@@ -7,7 +7,14 @@
        #:tag "top"]{@bold{Scribble}: PLT Documentation Tool}
 
 Scribble is a collection of tools for creating prose documents,
-especially those that document libraries.
+especially those that document libraries, and especially for HTML and
+PDF (via LaTeX) output.
+
+This document itself is written using Scribble. At the time that it
+was written, its source was available at
+@(let ([url "http://svn.plt-scheme.org/plt/trunk/collects/scribblings/scribble/"])
+   (link url url))
+starting with the @filepath{scribble.scrbl} file.
 
 @table-of-contents[]
 

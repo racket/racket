@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (lib "class.ss")
          (lib "mred.ss" "mred"))
-(require "launch.ss")
+(require "private/launch.ss")
 
 (define shutdown (serve))
 

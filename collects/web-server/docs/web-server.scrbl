@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require["../web-server.ss"]
+@require["web-server.ss"]
 
-@title[#:tag "web-server-ref"]{Web Server Reference Manual}
+@title[#:tag "web-server-ref"]{@bold{Web Server}: Reference Manual}
 @author{Jay McCarthy (jay@"@"plt-scheme.org)}
 
 The @web-server collection provides libraries that can be used to
@@ -21,6 +21,8 @@ develop Web applications in Scheme.
 @include-section["managers.scrbl"]
 
 @include-section["private.scrbl"]
+
+@include-section["faq.scrbl"]
 
 @; ------------------------------------------------------------
 @section[#:tag "ack"]{Acknowledgements}

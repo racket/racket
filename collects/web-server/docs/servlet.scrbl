@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["../web-server.ss"]
+@require["web-server.ss"]
 
 @title[#:tag "servlet"
        #:style 'toc]{Scheme Servlets}
@@ -14,11 +14,11 @@ of these servlets. This API is provided by @filepath{servlet.ss}.
 @section[#:tag "module-servlets"]{Definition}
 @require[(for-label "dummy-servlet.ss")] ; to give a binding context
 
-@declare-exporting[web-server/docs/reference/dummy-servlet]
+@declare-exporting[web-server/docs/dummy-servlet]
 
 A @defterm{servlet} is a module that provides the following:
 
-@defthing[interface-version (or/c 'v1 'v2)]{
+@defthing[interface-version (one-of/c 'v1 'v2)]{
  A symbol indicating the servlet interface the servlet conforms
  to. This influences the other provided identifiers.
 }

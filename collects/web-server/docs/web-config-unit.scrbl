@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["../web-server.ss"]
+@require["web-server.ss"]
 
 @title[#:tag "web-config-unit.ss"]{Web Config Unit}
 @require[(for-label web-server/web-config-unit)]
