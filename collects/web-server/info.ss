@@ -4,11 +4,6 @@
                         ("docs/guide/web-guide.scrbl" (multi-page main-doc))))
   
   (define mzscheme-launcher-libraries
-    (list "private/launch-text.ss"))
+    (list "private/main.ss"))
   (define mzscheme-launcher-names
-    (list "PLT Web Server Text")) 
-
-  (define mred-launcher-libraries
-    (list "private/launch-gui.ss"))
-  (define mred-launcher-names
     (list "PLT Web Server")))
