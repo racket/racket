@@ -63,3 +63,23 @@ Note: To mimic Mitchell and McKim's informal notion of parametericity
  places, this use of first-class contracts improves on Mitchell and McKim's
  design (see comments in interfaces).
 
+@; @external-file[1]
+
+@section{A Customer Manager Component for Managing Customer Relationships}
+@begin[
+#reader scribble/comment-reader
+[schememod
+scheme
+;; data definitions 
+
+(define id? symbol?)
+(define id-equal? eq?)
+(define-struct basic-customer (id name address) #:mutable)
+
+;; interface 
+(provide/contract 
+ [id?                   (-> any/c boolean?)]
+ [id-equal?             (-> id? id? boolean?)]
+ [struct basic-customer ((id id?) (name string?) (address string?))])
+;; end of interface
+]]
