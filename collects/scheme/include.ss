@@ -107,13 +107,13 @@
      (with-syntax ([_stx stx])
        (syntax/loc stx (do-include _stx _stx _stx fn #f)))]))
 
-(define (include-at/relative-to stx)
+(define-syntax (include-at/relative-to stx)
   (syntax-case stx ()
     [(_ ctx loc fn)
      (with-syntax ([_stx stx])
        (syntax/loc stx (do-include _stx ctx loc fn #f)))]))
       
-(define (include/reader stx)
+(define-syntax (include/reader stx)
   (syntax-case stx ()
     [(_ fn reader)
      ;; Expand to do-include:
@@ -126,7 +126,7 @@
                                                     (make-reader reader)))])
                        the-reader))))]))
     
-(define (include-at/relative-to/reader stx)
+(define-syntax (include-at/relative-to/reader stx)
   (syntax-case stx ()
     [(_ ctx loc fn reader)
      (with-syntax ([_stx stx])
