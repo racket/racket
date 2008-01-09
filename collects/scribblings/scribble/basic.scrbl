@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require["utils.ss"]
-@require[(for-syntax scheme/base)]
+@(require scribble/manual
+          "utils.ss"
+          (for-syntax scheme/base))
 
 @define-syntax[def-section-like
                (syntax-rules ()

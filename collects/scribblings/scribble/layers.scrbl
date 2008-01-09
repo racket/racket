@@ -3,7 +3,7 @@
           scribble/bnf
           "utils.ss")
 
-@title{Scribble Layers}
+@title[#:tag "layers"]{Scribble Layers}
 
 Scribble is made of independently usable parts.  For example, the
 Scribble reader can be used in any situation that requires lots of

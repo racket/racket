@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require[scribble/bnf]
-@require["utils.ss"]
+@(require scribble/manual
+          scribble/bnf
+          "utils.ss")
 
 @title{@bold{Scribble}: PLT Documentation Tool}
 

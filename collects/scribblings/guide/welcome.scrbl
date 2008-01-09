@@ -139,7 +139,7 @@ evaluation context to the inside of the module, just like DrScheme's
 @onscreen{Run} button.
 
 @; ----------------------------------------------------------------------
-@section{A Note to Readers with Scheme/Lisp Experience}
+@section[#:tag "use-module"]{A Note to Readers with Scheme/Lisp Experience}
 
 If you already know something about Scheme or Lisp, you might be
 tempted to put just
@@ -159,7 +159,7 @@ into @filepath{piece.ss} and run @exec{mzscheme} with
 
 That will work, because @exec{mzscheme} is willing to imitate a
 traditional Scheme environment, but we strongly recommend against using
-@scheme[load].
+@scheme[load] or writing programs outside of a module.
 
 Writing definitions outside of a module leads to bad error messages,
 bad performance, and awkward scripting to combine and run

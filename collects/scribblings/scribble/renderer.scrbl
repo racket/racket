@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require["utils.ss"]
-@require[(for-label scheme/class)]
+@(require scribble/manual
+          "utils.ss"
+          (for-label scheme/class))
 
 @(define-syntax-rule (defmodule/local lib . content)
    (begin

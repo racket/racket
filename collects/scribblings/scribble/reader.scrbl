@@ -1,9 +1,9 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require[scribble/bnf]
-@require[scribble/eval]
-@require["utils.ss"]
-@require[(for-syntax scheme/base)]
+@(require scribble/manual
+          scribble/bnf
+          scribble/eval
+          "utils.ss"
+          (for-syntax scheme/base))
 
 @(define read-eval (make-base-eval))
 @interaction-eval[#:eval read-eval (require (for-syntax scheme/base))]

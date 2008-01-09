@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require["utils.ss"]
+@(require scribble/manual
+          "utils.ss")
 
 @title[#:tag "scheme"]{Scheme}
 

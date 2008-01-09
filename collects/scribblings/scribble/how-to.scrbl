@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require[scribble/manual
-         scribble/bnf]
-@require["utils.ss"]
+@(require scribble/manual
+          scribble/bnf
+          "utils.ss")
 
 @title{How to Scribble Documentation}
 
@@ -154,13 +154,13 @@ means
 For more information on the syntax of @litchar["@"], see
 @secref["reader"].
 
-In a document that starts @tt{#lang scribble/doc},
+In a document that starts @hash-lang[] @schememodname[scribble/doc],
 the top level is a text-mode sequence. The parsed sequence is further
 decoded to turn it into a hierarchy of sections and paragraphs. For
 example, a linear sequence of @scheme[section] declarations with
 interleaved text is turned into a list of @scheme[part] instances with
-all text assigned to a particular part. See @secref["decode"] for more
-information on the decoding process.
+all text assigned to a particular part. See @secref["layers"] for more
+information on these layers.
 
 @; ----------------------------------------
 @section[#:tag "scheme-hyperlinks"]{Scheme Typesetting and Hyperlinks}
