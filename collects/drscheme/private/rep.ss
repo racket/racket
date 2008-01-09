@@ -204,8 +204,8 @@ TODO
                       (let ([source (srcloc-source srcloc)]
                             [pos (srcloc-position srcloc)]
                             [span (srcloc-span srcloc)])
-                        (and source pos span
-                             (cons source (cons pos span)))))
+                        (and source pos span 
+                             srcloc)))
                     srclocs-stack))]
              [src-locs (if (exn:srclocs? exn)
                            ((exn:srclocs-accessor exn) exn)
