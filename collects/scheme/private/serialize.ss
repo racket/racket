@@ -349,7 +349,7 @@
                           (deserial-shell (unbox v) mod-map (not-ready-fixup sv) n)
                           (deserialize-one v share mod-map))])
             (vector-set! share n val)
-            v)
+            val)
           sv)))
 
   (define (deserialize-one v share mod-map)
@@ -426,7 +426,7 @@
 	   v0)]
 	[(h)
 	 ;; Hash table
-	 (let ([ht0 (make-hash-table)])
+	 (let ([ht0 (apply make-hash-table (cdr v))])
 	   (vector-set! fixup n (lambda (ht)
 				  (hash-table-for-each 
 				   ht

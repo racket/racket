@@ -1,9 +1,11 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require[scribble/struct]
-@require[scribble/eval]
-@require[mzlib/process]
-@require["guide-utils.ss"]
+@(require scribble/manual
+          scribble/struct
+          scribble/eval
+          mzlib/process
+          "guide-utils.ss"
+          (for-label scheme/tcp
+                     scheme/serialize))
 
 @(define io-eval (make-base-eval))
 
@@ -51,7 +53,17 @@ examples:
 (close-input-port in)
 ]
 
-@interaction-eval[#:eval io-eval (when (file-exists? "data") (delete-file "data"))]
+If a file exists already, then @scheme[open-output-file] raises an
+exception by default. Supply an option like @scheme[#:exists
+'truncate] or @scheme[#:exists 'update] to re-write or update the
+file:
+
+@examples[
+#:eval io-eval
+(define out (open-output-file "data" #:exists 'truncate))
+(display "howdy" out)
+(close-output-port out)
+]
 
 Instead of having to match @scheme[open-input-file] and
 @scheme[open-output-file] calls, most Scheme programmers will instead
@@ -61,6 +73,7 @@ with the output port; when the function returns, the port is closed.
 @examples[
         #:eval io-eval
 (call-with-output-file "data"
+                        #:exists 'truncate
                         (lambda (out)
                           (display "hello" out)))
 (call-with-input-file "data"
@@ -107,7 +120,7 @@ with the output port; when the function returns, the port is closed.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
- @item{@bold{Process Pipes:} The @scheme[process] function runs a new
+ @item{@bold{Process Pipes:} The @scheme[subprocess] function runs a new
   process at the OS level and returns ports that correspond to the
   subprocess's stdin, stdout, and stderr. (The first three arguments
   can be certain kinds of existing ports to connect directly to the
@@ -207,6 +220,8 @@ ways to print an instance of a built-in value:
 
 }
 
+Here are some examples using each:
+
 @twocolumn[
 
 @interaction[
@@ -243,8 +258,8 @@ text. In the format string supplied to @scheme[printf], @litchar{~a}
 (deliver "John" "string")
 ]
 
-An advantage of @scheme[write] is that many forms of data can be
-read back in using @scheme[read].
+An advantage of @scheme[write], as opposed to @scheme[display], is
+that many forms of data can be read back in using @scheme[read].
 
 @examples[
 #:eval io-eval
@@ -258,8 +273,56 @@ read back in using @scheme[read].
 ]
 
 @; ----------------------------------------------------------------------
-@subsection{Serialization}
+@section{Datatypes and Serialization}
 
+New datatypes created by @scheme[define-struct] by default
+@scheme[write] either using @schemeresultfont{#<....>} notation (for
+opaque structure types) or using @schemeresultfont{#(....)} vector
+notation (for transparent structure types). In neither can can the
+result be read back in as an instance of the structure type.
+
+@examples[
+(define-struct posn (x y))
+(write (make-posn 1 2))
+(define-values (in out) (make-pipe))
+(write (make-posn 1 2) out)
+(read in)
+]
+
+@interaction[
+(define-struct posn (x y) #:transparent)
+(write (make-posn 1 2))
+(define-values (in out) (make-pipe))
+(write (make-posn 1 2) out)
+(define v (read in))
+v
+(posn? v)
+(vector? v)
+]
+
+The @scheme[define-serializable-struct] form defines a structure type
+that can be @scheme[serialize]d to a value that can be printed using
+@scheme[write] and restored via @scheme[read]. The @scheme[serialize]d
+result can be @scheme[deserialize]d to get back an instance of the
+original structure type. The serialization form an functions are
+provided by the @schememodname[scheme/serialize] library.
+
+@examples[
+(require scheme/serialize)
+(define-serializable-struct posn (x y) #:transparent)
+(deserialize (serialize (make-posn 1 2)))
+(write (serialize (make-posn 1 2)))
+(define-values (in out) (make-pipe))
+(write (serialize (make-posn 1 2)) out)
+(deserialize (read in))
+]
+
+In addition to the names bound by @scheme[define-struct],
+@scheme[define-serializable-struct] binds an identifier with
+deserialization information, and it automatically @scheme[provide]s
+the deserialization identifier from a module context. This
+deserialization identifier is accessed reflectively when a value is
+deserialized.
 
 @; ----------------------------------------------------------------------
 @section{Bytes versus Characters}

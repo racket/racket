@@ -148,7 +148,7 @@
    [more (apply tt more)]))
    
 (define cppi cpp)
-(define cppdef (lambda (x) (as-cpp-defn x (as-index (cpp x)))))
+(define cppdef (lambda (x) (as-cpp-defn x (cpp x))))
 (define *var italic)
 
 (define mzc (exec "mzc"))

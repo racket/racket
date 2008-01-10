@@ -209,7 +209,7 @@
                    [sandbox-error-output 'string]
                    [sandbox-eval-limits #f]
                    [sandbox-make-inspector current-inspector])
-      (make-evaluator 'scheme/base)))
+      (make-evaluator '(begin (require scheme/base)))))
       
   (define (do-plain-eval ev s catching-exns?)
     (call-with-values (lambda () 
@@ -223,6 +223,8 @@
                                [(module . _rest)
                                 (syntax->datum s)]
                                [_else s])]
+                            [(bytes? s)
+                             `(begin ,s)]
                             [(string? s)
                              `(begin ,s)]
                             [else s]))))

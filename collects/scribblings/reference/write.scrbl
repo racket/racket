@@ -60,7 +60,7 @@ escapes:
 
 @itemize{
 
-  @item{@FmtMark{n} or @FmtMark{%} prints a newline}
+  @item{@FmtMark{n} or @FmtMark{%} prints a newline, the same as @litchar{\n}}
 
   @item{@FmtMark{a} or @FmtMark{A} @scheme[display]s the next argument
   among the @scheme[v]s}
@@ -92,12 +92,13 @@ escapes:
 
   @item{@FmtMark{~} prints a tilde.}
 
-  @item{@FmtMark{}@nonterm{w}, where @nonterm{w} is a whitespace character,
-  skips characters in @scheme[form] until a non-whitespace
-  character is encountered or until a second end-of-line is
-  encountered (whichever happens first). An end-of-line is either
-  @scheme[#\return], @scheme[#\newline], or @scheme[#\return] followed
-  immediately by @scheme[#\newline] (on all platforms).}
+  @item{@FmtMark{}@nonterm{w}, where @nonterm{w} is a whitespace
+  character (see @scheme[char-whitespace?]), skips characters in
+  @scheme[form] until a non-whitespace character is encountered or
+  until a second end-of-line is encountered (whichever happens
+  first). On all platforms, an end-of-line can be @scheme[#\return],
+  @scheme[#\newline], or @scheme[#\return] followed immediately by
+  @scheme[#\newline].}
 
 }
 
