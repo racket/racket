@@ -133,10 +133,10 @@
      [(eval:alts p e)
       ((do-eval ev) #'e)]
      [else
-      (with-handlers ([exn? (lambda (e)
-                              (list (exn-message e)
-                                    (get-output ev)
-                                    (get-error-output ev)))])
+      (with-handlers ([exn:fail? (lambda (e)
+                                   (list (exn-message e)
+                                         (get-output ev)
+                                         (get-error-output ev)))])
         (list (let ([v (do-plain-eval ev s #t)])
                 (make-reader-graph (copy-value v (make-hash-table))))
               (get-output ev)
