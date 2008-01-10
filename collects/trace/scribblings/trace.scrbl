@@ -29,9 +29,10 @@ into another module. Instead, the @schememodname[trace/calltrace]
 module is meant to be invoked from the top-level, so that it can
 install an evaluation handler, exception handler, etc.
 
-To reuse parts of the code of @scheme[trace/calltrace], import
+To reuse parts of the code of @schememodname[trace/calltrace], import
 @schememodname[trace/calltrace-lib]. It contains all of the bindings
-described here, but it but does not set the @scheme[current-eval].
+described here, but it but does not set the @scheme[current-eval]
+parameter.
 
 @; ----------------------------------------
 
