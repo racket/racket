@@ -118,7 +118,7 @@ executable.
 "top"]} describes tools for using Scheme to access libraries that are
 normally used by C programs.
 
-@italic{@secref[#:doc '(lib "web-server/doc/web-server.scrbl")
+@italic{@secref[#:doc '(lib "web-server/scribblings/web-server.scrbl")
 "top"]} describes the PLT Scheme web server, which supports servlets
 implemented in Scheme.
 
