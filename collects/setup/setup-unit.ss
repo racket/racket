@@ -412,7 +412,7 @@
                     (with-input-from-file path read))])
         (when (and (pair? deps) (list? deps))
           (for ([s (cdr deps)])
-            (let ([s (map main-collects-relative->path s)])
+            (let ([s (main-collects-relative->path s)])
               (when (path-string? s)
                 (hash-table-put! dependencies s #t)))))))
     (delete-file path))
