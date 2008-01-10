@@ -1,6 +1,6 @@
 (module info setup/infotab
   (define name "Web Server")
-  (define scribblings '(("doc/web-server.scrbl" (multi-page main-doc))))
+  (define scribblings '(("scribblings/web-server.scrbl" (multi-page main-doc))))
 
   (define mzscheme-launcher-libraries
     (list "main.ss"))
