@@ -19,7 +19,7 @@
            ext-refsecref)
 
   (define Quick
-    (italic (secref #:doc '(lib "scribblings/quick/quick.scrbl") "top")))
+    (other-manual '(lib "scribblings/quick/quick.scrbl")))
 
   (define HtDP
     (italic (link "http://www.htdp.org" "How to Design Programs")))
@@ -62,5 +62,4 @@
   (define (ext-refsecref s)
     (make-element #f (list (refsecref s) " in " MzScheme)))
 
-  (define MzScheme
-    (italic (refsecref "top"))))
+  (define MzScheme (other-manual '(lib "scribblings/reference/reference.scrbl"))))

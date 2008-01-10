@@ -157,7 +157,7 @@
   (secref #:doc '(lib "scribblings/reference/reference.scrbl") s))
 
 (define MzScheme
-  (italic (refsecref "top")))
+  (other-manual '(lib "scribblings/reference/reference.scrbl")))
 
 (define (FormatD s)
   (litchar (string-append "%" s)))

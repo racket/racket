@@ -18,11 +18,11 @@
 This manual describes DrScheme's tools interface. It assumes
 familiarity with 
 PLT Scheme, as described in 
-@(secref #:doc '(lib "scribblings/guide/guide.scrbl") "top"),
+@(other-manual '(lib "scribblings/guide/guide.scrbl")),
 DrScheme, as described in
-@(secref #:doc '(lib "drscheme/drscheme.scrbl") "top"),
+@(other-manual '(lib "drscheme/drscheme.scrbl")),
 and the Framework, as described in
-@(secref #:doc '(lib "framework/framework.scrbl") "top").
+@(other-manual '(lib "framework/framework.scrbl")).
 
 @section{Thanks}
 

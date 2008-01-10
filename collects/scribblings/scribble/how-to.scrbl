@@ -19,8 +19,10 @@ To document a collection or @|PLaneT| package:
 @itemize{
 
  @item{Create a file in your collection or planet package with the
-       file extension @filepath{.scrbl}. The remainder of these
-       instructions assume that the file is called @filepath{manual.scrbl}.}
+       file extension @filepath{.scrbl}. Beware that the file name you
+       choose will determine the output directory's name. The
+       remainder of these instructions assume that the file is called
+       @filepath{manual.scrbl}.}
 
  @item{Start @filepath{manual.scrbl} like this:
 @verbatim[#<<EOS
@@ -67,15 +69,13 @@ EOS
         collection, optionally supply @Flag{l} followed by the
         collection name to limit the build process to that collection.}
 
-  @item{The generated documentation is
-        @filepath{compiled/doc/manual/index.html} within the
-        collection or @|PLaneT| package directory.
-
-        If you want the output to be relative to the PLT Scheme
-        documentation directory (which is recommend only for those who
-        produce the ``official'' PLT Scheme distribution, and even
-        then only in certain cases), add the @scheme['main-doc] option
-        to the @scheme[scribblings] definition in @filepath{info.ss}.}
+  @item{The generated documentation is normally
+        @filepath{doc/manual/index.html} within the collection or
+        @|PLaneT| package directory. If the collection in the PLT
+        Scheme installation's the main @filepath{collects} directory,
+        however, then the documentation is generated as
+        @filepath{manual/index.html} in the installation's main
+        @filepath{doc} directory.}
 
 }
 

@@ -1,6 +1,9 @@
 #lang scribble/doc
-@require["mz.ss"
-         scheme/math]
+@(require "mz.ss"
+          scheme/math)
+
+@(define math-eval (make-base-eval))
+@interaction-eval[#:eval math-eval (require scheme/math)]
 
 @title[#:tag "numbers"]{Numbers}
 
@@ -809,6 +812,7 @@ Returns the sign of @scheme[x] as either @math{-1}, @math{0}, or
 @math{1}.
 
 @examples[
+#:eval math-eval
 (sgn 10)
 (sgn -10.0)
 (sgn 0)
@@ -819,6 +823,7 @@ Returns the sign of @scheme[x] as either @math{-1}, @math{0}, or
 Returns the complex conjugate of @scheme[z].
 
 @examples[
+#:eval math-eval
 (conjugate 1)
 (conjugate 3+4i)
 ]}

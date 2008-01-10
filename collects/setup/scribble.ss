@@ -40,7 +40,8 @@
                                                        (and (and (list? (cadr v))
                                                                  (andmap (lambda (i)
                                                                            (member i '(main-doc 
-                                                                                       multi-page)))
+                                                                                       multi-page
+                                                                                       always-run)))
                                                                          (cadr v)))
                                                             (or (null? (cddr v))
                                                                 (and (path-string? (caddr v))
@@ -58,9 +59,10 @@
                                                                   (cadr d)
                                                                   (let-values ([(base name dir?) (split-path (car d))])
                                                                     (path-replace-suffix name #"")))])
-                                                    (if (memq 'main-doc flags)
+                                                    (if (or (memq 'main-doc flags)
+                                                            (pair? (path->main-collects-relative dir)))
                                                         (build-path (find-doc-dir) name)
-                                                        (build-path dir "compiled" "doc" name)))
+                                                        (build-path dir "doc" name)))
                                                   flags)))
                                     s)
                                (begin
@@ -303,7 +305,9 @@
                              (list-ref v-in 3)  ; searches
                              (map string->path (list-ref v-in 2)) ; deps, in case we don't need to build...
                              can-run?
-                             my-time info-out-time #f
+                             my-time info-out-time 
+                             (and can-run?
+                                  (memq 'always-run (doc-flags doc)))
                              #f #f
                              vers
                              #f)))

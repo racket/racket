@@ -142,9 +142,8 @@ Produces an opaque value representing the location of @scheme[id],
 which must be bound as a @tech{top-level variable} or
 @tech{module-level variable}.
 
-The result is useful to low-level extensions; see
-@italic{@secref[#:doc '(lib "scribblings/inside/inside.scrbl")
-"top"]}. It can also be used with
+The result is useful to low-level extensions; see @other-manual['(lib
+"scribblings/inside/inside.scrbl")]. It can also be used with
 @scheme[variable-reference->empty-namespace],
 @scheme[variable-reference->resolved-module-path], and
 @scheme[variable-reference->top-level-namespace], but facilities like

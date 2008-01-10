@@ -3,8 +3,7 @@
 @require[scribble/eval]
 @require["guide-utils.ss"]
 
-@title[#:tag-prefix '(lib "scribblings/guide/guide.scrbl") 
-       #:tag "top"]{@bold{Guide}: PLT Scheme}
+@title{@bold{Guide}: PLT Scheme}
 
 This guide is intended for programmers who are new to Scheme, new to PLT
 Scheme, or new to some part of PLT Scheme. It assumes
@@ -110,21 +109,21 @@ printed output.
 @; ----------------------------------------------------------------------
 @section{More Libraries}
 
-@italic{@secref[#:doc '(lib "scribblings/gui/gui.scrbl") "top"]} describes the
-PLT Scheme graphics toolbox, whose core is implemented by the MrEd
+@other-manual['(lib "scribblings/gui/gui.scrbl")] describes the PLT
+Scheme graphics toolbox, whose core is implemented by the MrEd
 executable.
 
-@italic{@secref[#:doc '(lib "scribblings/foreign/foreign.scrbl")
-"top"]} describes tools for using Scheme to access libraries that are
-normally used by C programs.
+@other-manual['(lib "scribblings/foreign/foreign.scrbl")] describes
+tools for using Scheme to access libraries that are normally used by C
+programs.
 
-@italic{@secref[#:doc '(lib "web-server/scribblings/web-server.scrbl")
-"top"]} describes the PLT Scheme web server, which supports servlets
+@other-manual['(lib "web-server/scribblings/web-server.scrbl")]
+describes the PLT Scheme web server, which supports servlets
 implemented in Scheme.
 
-@secref[#:doc '(lib "scribblings/start/start.scrbl") "top"] provides
-links to documentation for many other libraries distributed with PLT
-Scheme or installed on your system.
+@other-manual['(lib "scribblings/start/start.scrbl")] provides links
+to documentation for many other libraries distributed with PLT Scheme
+or installed on your system.
 
 @link["http://planet.plt-scheme.org/"]{@|PLaneT|} offers even more
 downloadable packages contributed by PLT Scheme users.

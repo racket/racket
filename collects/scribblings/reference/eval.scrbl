@@ -184,8 +184,8 @@ An @tech{extension-load handler} takes the same arguments as a
 @deftech{dynamic extension}, typically with the file suffix
 @filepath{.so} (Unix), @filepath{.dll} (Windows), or @filepath{.dylib}
 (Mac OS X).  The file is loaded using internal, OS-specific
-primitives. See @italic{@secref[#:doc '(lib
-"scribblings/inside/inside.scrbl") "top"]} for more information on
+primitives. See @other-manual['(lib
+"scribblings/inside/inside.scrbl")] for more information on
 @tech{dynamic extensions}.}
 
 

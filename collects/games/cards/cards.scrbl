@@ -3,7 +3,7 @@
          (for-label "main.ss"
                     scheme/gui/base)]
 
-@title{Virtual Playing Cards Library}
+@title{@bold{Cards}: Virtual Playing Cards Library}
 
 @defmodule[games/cards/main]{The @schememodname[games/cards/main]
 module provides a toolbox for creating cards games.}

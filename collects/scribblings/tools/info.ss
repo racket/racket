@@ -1,3 +1,4 @@
 (module info setup/infotab
   (define name "Scribblings: Tools")
-  (define scribblings '(("tools.scrbl" (multi-page main-doc)))))
+  (define scribblings '(("tools.scrbl" (multi-page main-doc))))
+  (define doc-categories '(other)))

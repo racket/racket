@@ -18,5 +18,4 @@
 
 
 (define InsideMzScheme
-  (italic (secref #:doc '(lib "scribblings/inside/inside.scrbl") 
-                  "top")))
+  (other-manual '(lib "scribblings/inside/inside.scrbl")))

@@ -1771,6 +1771,9 @@
   (define (seclink tag #:underline? [u? #t] #:doc [doc #f] . s)
     (make-link-element (if u? #f "plainlink") (decode-content s) `(part ,(doc-prefix doc tag))))
 
+  (define (other-manual #:underline? [u? #t] doc)
+    (secref #:doc doc #:underline? u? "top"))
+
   (define (*schemelink stx-id id . s)
     (let ([content (decode-content s)])
       (make-delayed-element
@@ -1786,7 +1789,7 @@
   (define-syntax schemelink
     (syntax-rules ()
       [(_ id . content) (*schemelink (quote-syntax id) 'id . content)]))
-  (provide secref seclink schemelink)
+  (provide secref seclink schemelink other-manual)
 
   (define (pidefterm . s)
     (let ([c (apply defterm s)])

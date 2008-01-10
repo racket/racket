@@ -4,7 +4,7 @@
          (for-label scheme
                     trace/calltrace-lib)]
 
-@title[#:tag "top"]{@bold{Calltrace}}
+@title[#:tag "top"]{@bold{Trace}: Instrumentation to Show Function Calls}
 
 @bold{Calltrace} is a tool that displays all calls to user procedures.
 It displays the arguments to the calls, and it indents to show the

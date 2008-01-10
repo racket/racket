@@ -175,6 +175,10 @@ static char *nl_langinfo(int which)
   if (!current_locale_name)
     current_locale_name = (mzchar *)"\0\0\0\0";
 
+  if ((current_local_name[0] = 'C')
+      && !current_local_name[1])
+    return "US-ASCII";
+
   for (i = 0; current_locale_name[i]; i++) {
     if (current_locale_name[i] == '.') {
       if (current_locale_name[i + 1]) {
@@ -196,9 +200,12 @@ static char *nl_langinfo(int which)
 
   return "UTF-8";
 }
-# define mz_iconv_nl_langinfo() nl_langinfo(0)
-#else
+#endif
+
+#ifdef DONT_USE_LOCALE
 # define mz_iconv_nl_langinfo() ""
+#else
+# define mz_iconv_nl_langinfo() nl_langinfo(0)
 #endif
 
 static const char * const STRING_IS_NOT_UTF_8 = "string is not a well-formed UTF-8 encoding: ";

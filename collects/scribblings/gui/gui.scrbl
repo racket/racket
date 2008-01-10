@@ -1,8 +1,7 @@
 #lang scribble/doc
 @require["common.ss"]
 
-@title[#:tag-prefix '(lib "scribblings/gui/gui.scrbl") 
-       #:tag "top"]{@bold{GUI}: PLT Graphics Toolkit}
+@title{@bold{GUI}: PLT Graphics Toolkit}
 
 @declare-exporting[scheme/gui/base scheme/gui]
 

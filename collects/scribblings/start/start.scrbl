@@ -14,54 +14,94 @@
                                   ,s)
                             #f))))
 
-(define initial-ones
-  (list (resolve "quick")
-        'blank
-        (resolve "guide")
-        (resolve "reference")
-        'blank
-        (resolve "gui")
-        'blank))
+(define-struct sec (cat label))
 
-(define ending-ones
-  (list 'blank
-        (resolve "foreign")
-        (resolve "inside")))
+(define sections
+  (list (make-sec 'getting-started
+                  "Getting Started")
+        (make-sec 'language
+                  "Languages")
+        (make-sec 'tool
+                  "Tools")
+        (make-sec 'library
+                  "Libraries")
+        (make-sec 'foreign
+                  "Low-Level APIs")
+        (make-sec 'other
+                  "Other")))
 
 (let* ([dirs (find-relevant-directories '(scribblings))]
        [infos (map get-info/full dirs)]
        [docs (apply append
                     (map (lambda (i dir)
                            (let ([s (i 'scribblings)])
-                             (map (lambda (d)
-                                    (if (pair? d)
-                                        (build-path dir (car d))
-                                        (build-path dir "???")))
-                                  s)))
+                             (map (lambda (d cat)
+                                    (let ([new-cat (if (or (symbol? cat)
+                                                           (and (list? cat)
+                                                                (= 2 (length cat))
+                                                                (symbol? (car cat))
+                                                                (real? (cadr cat))))
+                                                       cat
+                                                       'unknown)])
+                                      (list 
+                                       ;; Category
+                                       (let ([the-cat (if (list? new-cat)
+                                                          (car new-cat)
+                                                          new-cat)])
+                                         (case the-cat
+                                           [(getting-started language tool library foreign other omit)
+                                            the-cat]
+                                           [else 
+                                            (fprintf (current-error-port)
+                                                     "WARNING: base category: ~e from: ~e"
+                                                     cat
+                                                     dir)]))
+                                       ;; Priority
+                                       (if (list? new-cat)
+                                           (cadr new-cat)
+                                           0)
+                                       ;; Path
+                                       (if (pair? d)
+                                           (build-path dir (car d))
+                                           (build-path dir "???")))))
+                                  s
+                                  (i 'doc-categories (lambda ()
+                                                       (map (lambda (i) 'library) s))))))
                          infos
                          dirs))]
+       [plain-line
+        (lambda content
+          (list (make-flow (list (make-paragraph content)))))]
        [line
         (lambda (doc)
-          (list (make-flow (list (make-paragraph (list 
-                                                  (if (eq? doc 'blank)
-                                                      (hspace 1)
-                                                      (secref #:doc doc #:underline? #f "top"))))))))])
-
+          (plain-line (hspace 2)
+                      (other-manual doc #:underline? #f)))])
   (make-delayed-flow-element
    (lambda (renderer part resolve-info)
      (make-table
       #f
-      (append (map line initial-ones)
-              (sort
-               (map line
-                    (remove* (append initial-ones 
-                                     ending-ones)
-                             (remove (resolve "start") 
-                                     docs)))
-               (lambda (a b)
-                 (let ([a (car (paragraph-content (car (flow-paragraphs (car a)))))]
-                       [b (car (paragraph-content (car (flow-paragraphs (car b)))))])
-                   (string-ci<? (element->string a renderer part resolve-info)
-                                (element->string b renderer part resolve-info)))))
-              (map line ending-ones))))))
+      (cdr
+       (apply append
+              (map (lambda (sec)
+                     (let ([docs (filter (lambda (doc)
+                                           (eq? (car doc) (sec-cat sec)))
+                                         docs)])
+                       (list*
+                        (plain-line (hspace 1))
+                        (plain-line (sec-label sec))
+                        (map
+                         cdr
+                         (sort
+                          (map (lambda (doc) (cons (cadr doc)
+                                                   (line  (caddr doc))))
+                               docs)
+                          (lambda (ad bd)
+                            (let ([a (cadr (paragraph-content (car (flow-paragraphs (cadr ad)))))]
+                                  [b (cadr (paragraph-content (car (flow-paragraphs (cadr bd)))))])
+                              (if (= (car ad) (car bd))
+                                  (begin
+                                    (string-ci<? (element->string a renderer part resolve-info)
+                                                 (element->string b renderer part resolve-info)))
+                                  (> (car ad) (car bd))))))))))
+                   sections)))))))
 ]

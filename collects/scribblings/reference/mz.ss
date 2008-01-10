@@ -74,9 +74,8 @@
                                    (list ".")))))
 
   (define Guide
-    (italic (guidesecref "top")))
+    (other-manual '(lib "scribblings/guide/guide.scrbl")))
 
   (define HonuManual
-    (secref #:doc '(lib "scribblings/honu/honu.scrbl") "top")))
-
+    (other-manual '(lib "scribblings/honu/honu.scrbl"))))
 

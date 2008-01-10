@@ -1,7 +1,6 @@
 #lang scribble/doc
 
-@title[#:tag-prefix '(lib "quick.scrbl" "scribblings/quick")
-       #:tag "top"]{@bold{Quick}: An Introduction to PLT Scheme with Pictures}
+@title{@bold{Quick}: An Introduction to PLT Scheme with Pictures}
 
 @; ----------------------------------------------------------------------
 
@@ -576,5 +575,5 @@ way that Scheme is often described---PLT Scheme offers a rich language
 with an extensive set of libraries and tools.
 
 To start learning about the full PLT Scheme language and tools in
-depth, move on to @italic[@secref[#:doc '(lib "guide.scrbl"
- "scribblings/guide") "top"]].
+depth, move on to @other-manual['(lib "guide.scrbl"
+"scribblings/guide")].

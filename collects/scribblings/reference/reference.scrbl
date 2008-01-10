@@ -1,8 +1,7 @@
 #lang scribble/doc
 @require["mz.ss"]
 
-@title[#:tag-prefix '(lib "scribblings/reference/reference.scrbl")
-       #:tag "top"]{@bold{Reference}: PLT Scheme}
+@title{@bold{Reference}: PLT Scheme}
 
 This manual defines the core PLT Scheme language and describes its
 most prominent libraries. The companion manual @|Guide| provides a

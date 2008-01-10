@@ -638,17 +638,43 @@ and @litchar{^} for subscripts and superscripts.}
 @; ------------------------------------------------------------------------
 @section[#:tag "scribble:manual:section-links"]{Links}
 
-@defproc[(secref [tag string?]) element?]{
+@defproc[(secref [tag string?]
+                 [#:doc module-path (or/c module-path? false/c) #f]
+                 [#:underline? underline? any/c #t])
+         element?]{
 
 Inserts the hyperlinked title of the section tagged @scheme[tag], but
 @scheme{aux-element} items in the title content are omitted in the
-hyperlink label.}
+hyperlink label.
+
+If @scheme[module-path] is provided, the @scheme[tag] refers to a tag
+with a prefix determined by @scheme[module-path]. When
+@exec{setup-plt} renders documentation, it automatically adds a tag
+prefix to the document based on the source module. Thus, for example,
+to refer to a section of the PLT Scheme reference,
+@scheme[module-path] would be @scheme['(lib
+"scribblings/reference/reference.scrbl")].
+
+If @scheme[underline?] is @scheme[#f], then the hyperlink is rendered
+in HTML without an underline.}
 
 
-@defproc[(seclink [tag string?] [pre-content any/c] ...) element?]{
+@defproc[(seclink [tag string?] 
+                  [#:doc module-path (or/c module-path? false/c) #f]
+                  [#:underline? underline? any/c #t]
+                  [pre-content any/c] ...) element?]{
 
-The @tech{decode}d @scheme[pre-content] is hyperlinked to the section
-tagged @scheme[tag].}
+Like @scheme[secref], but the link label is the @tech{decode}d
+@scheme[pre-content] insteda of the target section's name.}
+
+@defproc[(other-manual [module-path module-path?]
+                       [#:underline? underline? any/c #t])
+         element?]{
+
+Like @scheme[secref] for the document's implicit @scheme["top"]
+tag. Use this function to refer to a whole manual instead of
+@scheme[secref], in case a special style in the future is used for
+manual titles.}
 
 
 @defproc[(schemelink [id symbol?] [pre-content any/c] ...) element?]{

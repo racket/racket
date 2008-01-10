@@ -4,7 +4,7 @@
                      scheme/contract
                      "../graphics.ss"))
 
-@title{Legacy Graphics Library}
+@title{@bold{Graphics}: Legacy Library}
 
 @table-of-contents[]
 

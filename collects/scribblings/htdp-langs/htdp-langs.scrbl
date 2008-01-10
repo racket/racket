@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.ss")
 
-@title{Languages for @italic{How to Design Programs}}
+@title{@italic{How to Design Programs} Languages}
 
 @table-of-contents[]
 

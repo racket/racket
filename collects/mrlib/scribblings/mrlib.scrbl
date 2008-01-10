@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.ss")
 
-@title{Extra PLT GUI Libraries}
+@title{@bold{MrLib}: Extra PLT GUI Libraries}
 
 @table-of-contents[]
 
