@@ -1,5 +1,5 @@
 
-(module stacktrace mzscheme
+(module stacktrace scheme/base
   (require (lib "unit.ss")
            (lib "kerncase.ss" "syntax")
            (lib "stx.ss" "syntax"))
@@ -86,9 +86,9 @@
                                                #,@(recur-on-sequence (syntax->list #'bodies)))))
                            #`(arglist #,@(recur-on-sequence (syntax->list #'bodies)))))]
                     [else
-                     (error 'expr-syntax-object-iterator 
+                     (error 'expr-syntax-iterator 
                             "unexpected (case-)lambda clause: ~a" 
-                            (syntax-object->datum stx))]))]
+                            (syntax->datum stx))]))]
                [let-values-abstraction
                 (lambda (stx)
                   (kernel-syntax-case stx #f
@@ -106,10 +106,10 @@
                                            (syntax->list #`(rhs ...)))])
                          #`(kwd (new-clause ...) #,@(recur-on-sequence (syntax->list #'bodies)))))]
                     [else
-                     (error 'expr-syntax-object-iterator 
+                     (error 'expr-syntax-iterator 
                             "unexpected let(rec) expression: ~a"
                             stx
-                            ;(syntax-object->datum stx)
+                            ;(syntax->datum stx)
                             )]))]) 
           (syntax-recertify
            (kernel-syntax-case stx #f
@@ -120,8 +120,6 @@
               #`(#%plain-lambda #,@(lambda-clause-abstraction #'clause))]
              [(case-lambda . clauses)
               #`(case-lambda #,@(map lambda-clause-abstraction (syntax->list #'clauses)))]
-             [(if test then)
-              #`(if #,(recur-non-tail #'test) #,(recur-tail #'then))]
              [(if test then else)
               #`(if
                  #,(recur-non-tail #'test)
@@ -152,7 +150,7 @@
               stx]
              [else
               (error 'expr-iterator "unknown expr: ~a" 
-                     (syntax-object->datum stx))])
+                     (syntax->datum stx))])
            stx
            insp
            #f)))
