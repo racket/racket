@@ -496,9 +496,8 @@
              old-dependencies
              (lambda (file _)
                (let-values ([(dir name dir?) (split-path file)])
-                 (let* ([base-name (path-replace-suffix name #"")]
-                        [zo (build-path dir mode-dir (format "~a.zo" base-name))]
-                        [dep (build-path dir mode-dir (format "~a.dep" base-name))])
+                 (let* ([zo (build-path dir mode-dir (path-add-suffix name #".zo"))]
+                        [dep (build-path dir mode-dir (path-add-suffix name #".dep"))])
                    (when (and (file-exists? dep) (file-exists? zo))
                      (set! did-something? #t)
                      (setup-printf "  deleting ~a" zo)
