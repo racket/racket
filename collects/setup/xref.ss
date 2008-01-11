@@ -2,7 +2,8 @@
 
 (require scribble/xref
          setup/getinfo
-         setup/dirs)
+         setup/dirs
+         setup/main-collects)
 
 (provide load-collections-xref)
 
@@ -17,7 +18,8 @@
                           (let-values ([(base name dir?) (split-path (car d))])
                             (path-replace-suffix name #"")))])
              (build-path
-              (if (memq 'main-doc flags)
+              (if (or (memq 'main-doc flags)
+                      (pair? (path->main-collects-relative dir)))
                 (build-path (find-doc-dir) name)
                 (build-path dir "compiled" "doc" name))
               "out.sxref"))
