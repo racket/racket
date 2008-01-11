@@ -423,7 +423,7 @@
             (case style
               [(italic) `((i ,@(super render-element e part ri)))]
               [(bold) `((b ,@(super render-element e part ri)))]
-              [(tt) `((tt ,@(super render-element e part ri)))]
+              [(tt) `((span ([class "stt"]) ,@(super render-element e part ri)))]
               [(no-break) `((span ([class "nobreak"]) ,@(super render-element e part ri)))]
               [(sf) `((b (font ([size "-1"][face "Helvetica"]) ,@(super render-element e part ri))))]
               [(subscript) `((sub ,@(super render-element e part ri)))]
