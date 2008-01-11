@@ -751,6 +751,33 @@
        (if no-specific-collections? #f (map cc-path ccs-to-compile))
        #f)))
 
+  (define (render-pdf file)
+    (define cmd
+      (format "pdflatex -interaction=batchmode \"~a\" > /dev/null" file))
+    (define logfile (path-replace-suffix file #".log"))
+    (let loop ([n 0])
+      (when (= n 5)
+        (error 'render-pdf "didn't get a stable result after ~a runs" n))
+      (if (zero? n)
+        (setup-printf "running pdflatex on ~a" file)
+        (setup-printf "  re-running ~a~a time"
+                      (add1 n) (case (add1 n) [(2) 'nd] [(3) 'rd] [else 'th])))
+      (unless (system cmd)
+        (call-with-input-file logfile
+          (lambda (log) (copy-port log (current-error-port))))
+        (error 'setup-plt "pdflatex failed"))
+      ;; see if we get a "Rerun" note, these seem to come in two flavors
+      ;; * Label(s) may have changed. Rerun to get cross-references right.
+      ;; * Package longtable Warning: Table widths have changed. Rerun LaTeX.
+      (cond
+        [(call-with-input-file logfile
+           (lambda (log) (regexp-match? #px#"changed\\.\\s+Rerun" log)))
+         (loop (add1 n))]
+        [(zero? n)
+         (setup-printf "Warning: no \"Rerun\" found in first run of pdflatex for ~a"
+                       file)]))
+    (path-replace-suffix file #".pdf"))
+
   (when (doc-pdf-dest)
     (setup-printf "Building PDF documentation (via pdflatex)")
     (let ([dest-dir (path->complete-path (doc-pdf-dest))])
@@ -767,20 +794,12 @@
              (if no-specific-collections? #f (map cc-path ccs-to-compile))
              tmp-dir)
             (parameterize ([current-directory tmp-dir])
-              (for ([f (directory-list)])
-                (define cmd (format "pdflatex \"~a\"" f))
-                (when (regexp-match? #rx#"[.]tex$" (path-element->bytes f))
-                  (let loop ([n 3])
-                    (unless (zero? n)
-                      (setup-printf "running ~a" cmd)
-                      (unless (system cmd)
-                        (error 'setup-plt "pdflatex failed"))
-                      (loop (sub1 n))))
-                  (let* ([f (path-replace-suffix f #".pdf")]
-                         [target (build-path dest-dir f)])
-                    (when (file-exists? target)
-                      (delete-file target))
-                    (copy-file f target))))))
+              (for ([f (directory-list)]
+                    #:when (regexp-match? #rx#"[.]tex$" (path-element->bytes f)))
+                (let* ([pdf    (render-pdf f)]
+                       [target (build-path dest-dir pdf)])
+                  (when (file-exists? target) (delete-file target))
+                  (copy-file pdf target)))))
           (lambda ()
             (when (directory-exists? tmp-dir)
               (delete-directory/files tmp-dir)))))))
