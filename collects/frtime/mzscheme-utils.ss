@@ -183,16 +183,28 @@
         (values acc (car lst))
         (split-list (append acc (list (car lst))) (cdr lst))))
   
+  (define (all-but-last lst)
+    (if (null? (cdr lst))
+        '()
+        (cons (car lst) (all-but-last (cdr lst)))))
+  
+  (define frp:apply/const-fn
+    (lambda (fn . args)
+      (let ([first-args (all-but-last args)]
+            [last-args (first (last-pair args))])
+        (if (behavior? last-args)
+            (super-lift
+             (lambda (last-args)
+               (apply apply fn (append first-args (list last-args))))
+             last-args)
+            (apply apply fn args)))))
+  
   (define frp:apply
     (lambda (fn . args)
-      (if (behavior? args)
-          (super-lift
-           (lambda (args)
-             (if (and (list? args) (list? (last-pair args)))
-                 (apply apply fn args)
-                 undefined))
-           args)
-          (apply apply fn args))))
+      (if (behavior? fn)
+          (super-lift (lambda (fn) (apply frp:apply/const-fn fn args)) fn)
+          (apply frp:apply/const-fn fn args))))
+  
   #|
   ;; taken from startup.ss
   (define-syntax frp:case

@@ -111,21 +111,27 @@
   
   (define any-nested-reactivity?
     (opt-lambda (obj [mem empty])
-      (cond
-        [(memq obj mem) #f]
-        [(behavior? obj) #t]
-        [(cons? obj)
-         (let ([mem (cons obj mem)])
-           (or (any-nested-reactivity? (car obj) mem)
-               (any-nested-reactivity? (cdr obj) mem)))]
-        [(struct? obj)
-         (let*-values ([(info skipped) (struct-info obj)]
-                       [(name init-k auto-k acc mut immut sup skipped?) (struct-type-info info)]
-                       [(ctor) (struct-type-make-constructor info)])
-           (ormap (lambda (i) (any-nested-reactivity? (acc obj i) (cons obj mem)))
-                  (build-list (+ auto-k init-k) (lambda (x) x))))]
-        [(vector? obj) (vector-any (lambda (o) (any-nested-reactivity? o (cons obj mem))) obj)]
-        [else #f])))
+      (with-handlers ((exn:fail?
+                       (lambda (e)
+                         (fprintf
+                          (current-error-port)
+                          "you've encountered a bug in frtime.  please send a report to the plt-scheme mailing list.~nexn: ~a~n"
+                          e) #f)))
+        (cond
+          [(memq obj mem) #f]
+          [(behavior? obj) #t]
+          [(cons? obj)
+           (let ([mem (cons obj mem)])
+             (or (any-nested-reactivity? (car obj) mem)
+                 (any-nested-reactivity? (cdr obj) mem)))]
+          [(struct? obj)
+           (let*-values ([(info skipped) (struct-info obj)]
+                         [(name init-k auto-k acc mut immut sup skipped?) (struct-type-info info)]
+                         [(ctor) (struct-type-make-constructor info)])
+             (ormap (lambda (i) (any-nested-reactivity? (acc obj i) (cons obj mem)))
+                    (build-list init-k (lambda (x) x))))]
+          [(vector? obj) (vector-any (lambda (o) (any-nested-reactivity? o (cons obj mem))) obj)]
+          [else #f]))))
   
   (define (deep-value-now/update-deps obj deps table)
     (cond
@@ -147,8 +153,7 @@
              (cons car-val cdr-val)))]
       ; won't work in the presence of super structs or immutable fields
       [(struct? obj)
-       obj
-       #;(let*-values ([(info skipped) (struct-info obj)]
+       (let*-values ([(info skipped) (struct-info obj)]
                      [(name init-k auto-k acc mut! immut sup skipped?) (struct-type-info info)]
                      [(ctor) (struct-type-make-constructor info)]
                      [(indices) (build-list init-k identity)]
