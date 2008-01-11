@@ -175,8 +175,8 @@ static char *nl_langinfo(int which)
   if (!current_locale_name)
     current_locale_name = (mzchar *)"\0\0\0\0";
 
-  if ((current_local_name[0] = 'C')
-      && !current_local_name[1])
+  if ((current_locale_name[0] = 'C')
+      && !current_locale_name[1])
     return "US-ASCII";
 
   for (i = 0; current_locale_name[i]; i++) {
