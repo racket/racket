@@ -756,7 +756,8 @@
                                     exn)))])
       ((doc:setup-scribblings)
        (if no-specific-collections? #f (map cc-path ccs-to-compile))
-       #f)))
+       #f
+       (not (null? (archives))))))
 
   (define (render-pdf file)
     (define cmd
@@ -799,7 +800,8 @@
             ((doc:verbose) (verbose))
             ((doc:setup-scribblings)
              (if no-specific-collections? #f (map cc-path ccs-to-compile))
-             tmp-dir)
+             tmp-dir
+             #f)
             (parameterize ([current-directory tmp-dir])
               (for ([f (directory-list)]
                     #:when (regexp-match? #rx#"[.]tex$" (path-element->bytes f)))

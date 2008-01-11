@@ -4,6 +4,7 @@
           (for-label scheme/serialize))
 
 @(define posn-eval (make-base-eval))
+@interaction-eval[#:eval posn-eval (require (for-syntax scheme/base))]
 
 @title[#:tag "define-struct"]{Defining Structure Types: @scheme[define-struct]}
 

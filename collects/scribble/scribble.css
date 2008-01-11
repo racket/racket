@@ -374,10 +374,6 @@ i {
   vertical-align: top;
 }
 
-.centered {
-  horiz-align: center; /* not right */
-}
-
 .ghost {
   color: white;
 }

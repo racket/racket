@@ -23,7 +23,44 @@
                      vers rendered?)
   #:mutable)
 
-(define (setup-scribblings only-dirs latex-dest)
+(define (user-start-doc? doc)
+  (memq 'user-doc-root (doc-flags doc)))
+
+(define (filter-user-start docs)
+  ;; If we've built it before...
+  (if (file-exists? (build-path (find-user-doc-dir) "index.html"))
+      ;; Keep building:
+      docs
+      ;; Otherwise, see if we need it:
+      (let ([cnt-not-main (apply +
+                                 (map (lambda (doc)
+                                        (if (doc-under-main? doc)
+                                            0
+                                            1))
+                                      docs))]
+            [start? (ormap (lambda (doc)
+                             (memq 'main-doc-root (doc-flags doc)))
+                           docs)]
+            [user-start? (ormap user-start-doc? docs)])
+        (let ([any-not-main? (positive?
+                              (- cnt-not-main
+                                 (if start? 1 0)
+                                 (if user-start? 1 0)))])
+          (cond
+           [any-not-main? 
+            ;; Need it:
+            docs]
+           [user-start? 
+            ;; Don't need it, so drop it:
+            (filter (lambda (doc) (not (user-start-doc? doc)))
+                    docs)]
+           [else 
+            ;; Wasn't planning to build it, anyway:
+            docs])))))
+
+(define (setup-scribblings only-dirs        ; limits doc builds
+                           latex-dest       ; if not #f, generate Latex output
+                           auto-start-doc?) ; if #t, expands `only-dir' with [user-]start to catch new docs
   (let* ([dirs (find-relevant-directories '(scribblings))]
          [infos (map get-info/full dirs)]
          [docs (map (lambda (i dir)
@@ -39,6 +76,7 @@
                                                          (andmap (lambda (i)
                                                                    (member i '(main-doc
                                                                                main-doc-root
+                                                                               user-doc-root
                                                                                multi-page
                                                                                always-run)))
                                                                  (cadr v))
@@ -49,6 +87,7 @@
                           (map (lambda (d)
                                  (let* ([flags (if (pair? (cdr d)) (cadr d) null)]
                                         [under-main? (and (not (memq 'main-doc-root flags))
+                                                          (not (memq 'user-doc-root flags))
                                                           (or (memq 'main-doc flags)
                                                               (pair? (path->main-collects-relative dir))))])
                                    (make-doc dir
@@ -59,11 +98,15 @@
                                                            (cadr d)
                                                            (let-values ([(base name dir?) (split-path (car d))])
                                                              (path-replace-suffix name #"")))])
-                                               (if (memq 'main-doc-root flags)
-                                                   (find-doc-dir)
-                                                   (if under-main?
-                                                       (build-path (find-doc-dir) name)
-                                                       (build-path dir "doc" name))))
+                                               (cond
+                                                [(memq 'main-doc-root flags)
+                                                 (find-doc-dir)]
+                                                [(memq 'user-doc-root flags)
+                                                 (find-user-doc-dir)]
+                                                [else
+                                                 (if under-main?
+                                                     (build-path (find-doc-dir) name)
+                                                     (build-path dir "doc" name))]))
                                              flags
                                              under-main?)))
                                s)
@@ -74,9 +117,9 @@
                                      dir)
                             null))))
                     infos dirs)]
-         [docs (apply append docs)])
+         [docs (filter-user-start (apply append docs))])
     (when (ormap (can-build? only-dirs) docs)
-      (let ([infos (filter values (map (get-doc-info only-dirs latex-dest) docs))])
+      (let ([infos (filter values (map (get-doc-info only-dirs latex-dest auto-start-doc?) docs))])
         (let loop ([first? #t] [iter 0])
           (let ([ht (make-hash-table 'equal)])
             ;; Collect definitions
@@ -226,7 +269,7 @@
                            (part-parts v)
                            (and (versioned-part? v) (versioned-part-version v))))))
 
-(define ((get-doc-info only-dirs latex-dest) doc)
+(define ((get-doc-info only-dirs latex-dest auto-start-doc?) doc)
   (let* ([info-out-file (build-path (or latex-dest (doc-dest-dir doc)) "out.sxref")]
          [info-in-file  (build-path (or latex-dest (doc-dest-dir doc)) "in.sxref")]
          [out-file (build-path (doc-dest-dir doc) "index.html")]
@@ -267,7 +310,7 @@
                               (fprintf (current-error-port) "~a\n" (exn-message exn))
                               (delete-file info-out-file)
                               (delete-file info-in-file)
-                              ((get-doc-info only-dirs latex-dest) doc))])
+                              ((get-doc-info only-dirs latex-dest auto-start-doc?) doc))])
         (let* ([v-in (with-input-from-file info-in-file read)]
                [v-out (with-input-from-file info-out-file read)])
           (unless (and (equal? (car v-in) (list vers (doc-flags doc)))
@@ -281,7 +324,8 @@
                      (map rel->path (list-ref v-in 2)) ; deps, in case we don't need to build...
                      can-run?
                      my-time info-out-time
-                     (and can-run? (memq 'always-run (doc-flags doc)))
+                     (and (or can-run? auto-start-doc?)
+                          (memq 'always-run (doc-flags doc)))
                      #f #f
                      vers
                      #f)))

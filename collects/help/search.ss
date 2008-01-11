@@ -18,8 +18,11 @@
  [send-main-page (-> void?)])
 
 (define (send-main-page)
-  (let ([dest-path (build-path (find-doc-dir) "index.html")])
-    (send-url (format "file://~a" (path->string dest-path)))))
+  (let ([user-dest-path (build-path (find-user-doc-dir) "index.html")]
+        [dest-path (build-path (find-doc-dir) "index.html")])
+    (send-url (format "file://~a" (path->string (if (file-exists? user-dest-path)
+                                                    user-dest-path
+                                                    dest-path))))))
 
 ;; if there is exactly one exact match for this search key, go directly
 ;; to that place. Otherwise, go to a page that lists all of the matches.
