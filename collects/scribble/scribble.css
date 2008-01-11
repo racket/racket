@@ -1,9 +1,11 @@
 
-/* ---------------------------------------- */
+/* CSS seems backward: List all the classes for which we want a
+   particular font, so that the font can be changed in one place.  (It
+   would be nicer to reference a font definition from all the places
+   that we want it.) 
 
-/* CSS is backward. List all the classes for which we want a
-   a aprticular font, so that the font can be changed in one
-   place. */
+   As you read the rest of the file, remember to double-check here to
+   see if any font is set. */
 
 /* Monospace: */
 .maincolumn, .refpara, .tocset, .stt, .hspace,
@@ -24,6 +26,7 @@
 }
 
 /* ---------------------------------------- */
+/* Main */
 
 body {
   color: black;
@@ -46,6 +49,7 @@ table td {
 }
 
 /* ---------------------------------------- */
+/* Navigation */
 
 .navleft { 
   position: relative;
@@ -60,6 +64,7 @@ table td {
 }
 
 /* ---------------------------------------- */
+/* Version */
 
 .versionbox {
   position: relative;
@@ -74,6 +79,7 @@ table td {
 }
 
 /* ---------------------------------------- */
+/* Margin notes */
 
 .refpara {
   position: relative;
@@ -98,6 +104,7 @@ table td {
 }
 
 /* ---------------------------------------- */
+/* Table of contents, inline */
 
 .toclink {
 text-decoration: none;
@@ -112,6 +119,7 @@ font-weight: bold;
 }
 
 /* ---------------------------------------- */
+/* Table of contents, left margin */
 
 .tocset {
   position: relative;
@@ -180,6 +188,7 @@ font-weight: bold;
 }
 
 /* ---------------------------------------- */
+/* Inherited methods, left margin */
 
 .inherited {
   width: 100%;
@@ -200,132 +209,10 @@ font-weight: bold;
 }
 
 /* ---------------------------------------- */
-
-.leftindent {
- margin-left: 1em;
- margin-right: 0em;
-}
-
-.insetpara {
- margin-left: 1em;
- margin-right: 1em;
-}
-
-.indexlink {
-  text-decoration: none;
-}
-
-.nobreak {
-  white-space: nowrap;
-}
-
-.stt {
-}
-
-.title {
-  font-size: 200%;
-  font-weight: normal;
-  margin-top: 2.8em;
-  text-align: center;
-}
-
-.partheading {
-  font-size: 100%;
-}
-
-.chapterheading {
-  font-size: 100%;
-}
-
-.beginsection {
-  font-size: 110%;
-}
-
-pre {
-  margin-left: 2em;
-}
-
-blockquote {
-  margin-left: 2em;
-}
-
-ol {
-  list-style-type: decimal;
-}
-
-ol ol {
-  list-style-type: lower-alpha;
-}
-
-ol ol ol {
-  list-style-type: lower-roman;
-}
-
-ol ol ol ol {
-  list-style-type: upper-alpha;
-}
-
-i {
-}
-
-.boxed {
-  width: 100%;
-  background-color: #E8E8FF;
-}
-
-.together {
-  width: 100%;
-}
-
-.prototype td {
-  vertical-align: top;
-}
-.longprototype td {
-  vertical-align: bottom;
-}
-
-.schemeblock td {
-  vertical-align: baseline;
-}
-
-.argcontract td {
-  vertical-align: top;
-}
-
-.centered {
-  horiz-align: center;
-}
-
-.ghost {
-  color: white;
-}
-
-.highlighted {
-  background-color: #ddddff;
-}
-
-.defmodule {
-  width: 100%;
-  background-color: #F5F5DC;
-}
-
-.specgrammar {
-  float: right;
-}
-
-.hspace {
-}
-
-.inferencetop td {
-  border-bottom: 1px solid black;
-  text-align: center;
-}
-.inferencebottom td {
-  text-align: center;
-}
+/* Scheme text styles */
 
 .schemeinput {
-  color: brown;
+  color: #996633; /* brown */
   background-color: #eeeeee;
 }
 
@@ -387,6 +274,136 @@ i {
   font-weight: bold;
 }
 
+.schemeresult {
+  color: #0000af;
+}
+
+.schemestdout {
+  color: #960096;
+}
+
+.schemecomment {
+  color: #c2741f;
+}
+
+.schemevalue {
+  color: #228b22;
+}
+
+/* ---------------------------------------- */
+/* Some inline styles */
+
+.leftindent {
+ margin-left: 1em;
+ margin-right: 0em;
+}
+
+.insetpara {
+ margin-left: 1em;
+ margin-right: 1em;
+}
+
+.indexlink {
+  text-decoration: none;
+}
+
+.nobreak {
+  white-space: nowrap;
+}
+
+.stt {
+}
+
+.title {
+  font-size: 200%;
+  font-weight: normal;
+  margin-top: 2.8em;
+  text-align: center;
+}
+
+pre {
+  margin-left: 2em;
+}
+
+blockquote {
+  margin-left: 2em;
+}
+
+ol {
+  list-style-type: decimal;
+}
+
+ol ol {
+  list-style-type: lower-alpha;
+}
+
+ol ol ol {
+  list-style-type: lower-roman;
+}
+
+ol ol ol ol {
+  list-style-type: upper-alpha;
+}
+
+i {
+}
+
+.boxed {
+  width: 100%;
+  background-color: #E8E8FF;
+}
+
+.together {
+  width: 100%;
+}
+
+.prototype td {
+  vertical-align: top;
+}
+.longprototype td {
+  vertical-align: bottom;
+}
+
+.schemeblock td {
+  vertical-align: baseline;
+}
+
+.argcontract td {
+  vertical-align: top;
+}
+
+.centered {
+  horiz-align: center; /* not right */
+}
+
+.ghost {
+  color: white;
+}
+
+.highlighted {
+  background-color: #ddddff;
+}
+
+.defmodule {
+  width: 100%;
+  background-color: #F5F5DC;
+}
+
+.specgrammar {
+  float: right;
+}
+
+.hspace {
+}
+
+.inferencetop td {
+  border-bottom: 1px solid black;
+  text-align: center;
+}
+.inferencebottom td {
+  text-align: center;
+}
+
 .badlink {
   text-decoration: underline;
   color: red;
@@ -405,22 +422,6 @@ i {
 .techlink:hover {
   text-decoration: underline;
   color: blue;
-}
-
-.schemeresult {
-  color: #0000af;
-}
-
-.schemestdout {
-  color: #960096;
-}
-
-.schemecomment {
-  color: #c2741f;
-}
-
-.schemevalue {
-  color: #228b22;
 }
 
 .bibliography td {
