@@ -1,4 +1,4 @@
 (module info setup/infotab
   (define name "Scribblings: GUI")
-  (define scribblings '(("gui.scrbl" (multi-page main-doc)))))
+  (define scribblings '(("gui.scrbl" (multi-page)))))
 

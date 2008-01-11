@@ -1,5 +1,5 @@
 (module info setup/infotab
   (define name "Scribblings: Reference")
-  (define scribblings '(("reference.scrbl" (multi-page main-doc))))
+  (define scribblings '(("reference.scrbl" (multi-page))))
   (define doc-categories '(language)))
 
