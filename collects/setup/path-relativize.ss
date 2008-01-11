@@ -17,59 +17,58 @@
     ;; `path->main-collects-relative' misses some usages, as long as it
     ;; works when we prepare a distribution tree.  Otherwise, things
     ;; will continue to work fine and .dep files will just contain
-    ;; absolute path names.  These functions work on .dep elements:
-    ;; either a pathname or a pair with a pathname in its cdr; the
-    ;; `path->main-collects-relative' pathname will itself be a pair.
+    ;; absolute path names.
     
     ;; We need to compare paths to find when something is in the plt
-    ;; tree -- this does some basic "normalization" that should work
-    ;; fine: getting rid of `.' and `..', collapsing multiple
-    ;; `/'s to one `/', and converting '/'s to '\'s under Windows.
-    (define (simplify-path* bytes)
-      (path->bytes (normal-case-path (simplify-path (bytes->path bytes)))))
+    ;; tree, so we explode the paths. This slower than the old way (by
+    ;; a factor of 2 or so), but it's simpler and more portable.
+    (define (explode-path* path)
+      (explode-path (simplify-path (path->complete-path path))))
+
+    (define (explode-path orig-path)
+      (let loop ([path orig-path][rest null])
+        (let-values ([(base name dir?) (split-path path)])
+          (if (path? base)
+              (loop base (cons name rest))
+              (cons name rest)))))
     
     (define main-collects-dir/
       (delay (let ([dir (find-main-dir)])
-               (and dir (simplify-path* (path->bytes (path->directory-path dir)))))))
-
-    (define (maybe-cdr-op fname f)
-      (lambda (x)
-        (cond [(and (pair? x) (not (eq? tag (car x))))
-               (cons (car x) (f (cdr x)))]
-              [else (f x)])))
+               (and dir (explode-path* dir)))))
 
     ;; path->main-collects-relative* : path-or-bytes -> datum-containing-bytes-or-path
-    (define (path->main-collects-relative* path)
-      (let* ([path (cond [(bytes? path) path]
-                         [(path?  path) (path->bytes path)]
-                         [else (error 'path->main-collects-relative
-                                      "expecting a byte-string, got ~e" path)])]
-             [path* (simplify-path* path)]
-             [main-collects-dir/ (force main-collects-dir/)]
-             [mcd-len (bytes-length main-collects-dir/)])
-        (cond [(and path*
-                    mcd-len
-                    (> (bytes-length path*) mcd-len)
-                    (equal? (subbytes path* 0 mcd-len)
-                            main-collects-dir/))
-               (cons tag (subbytes path* mcd-len))]
-              [(equal? path* main-collects-dir/) (cons tag #"")]
-              [else path])))
+    (define (path->main-relative* path)
+      (let loop ([exploded (explode-path* (if (bytes? path) 
+                                              (bytes->path path) 
+                                              path))]
+                 [main-exploded (force main-collects-dir/)])
+        (cond
+         [(null? main-exploded) (cons tag (map path-element->bytes exploded))]
+         [(null? exploded) path]
+         [(equal? (normal-case-path (car exploded))
+                  (normal-case-path (car main-exploded)))
+          (loop (cdr exploded) (cdr main-exploded))]
+         [else path])))
 
     ;; main-collects-relative->path* : datum-containing-bytes-or-path -> path
-    (define (main-collects-relative->path* path)
+    (define (main-relative->path* path)
       (cond [(and (pair? path)
                   (eq? tag (car path))
-                  (bytes? (cdr path)))
+                  (or (bytes? (cdr path)) ; backward compatibility
+                      (and (list? (cdr path))
+                           (andmap bytes? (cdr path)))))
              (let ([dir (or (find-main-dir)
                             ;; No main "collects"/"doc"/whatever? Use original working directory:
                             (find-system-path 'orig-dir))])
-               (if (equal? (cdr path) #"")
-                   dir
-                   (build-path dir (bytes->path (cdr path)))))]
-            [(bytes? path) (bytes->path path)]
+               (if (bytes? (cdr path))
+                   ;; backward compatibilty:
+                   (if (equal? (cdr path) #"")
+                       dir
+                       (build-path dir (bytes->path (cdr path))))
+                   ;; Normal mode:
+                   (apply build-path dir
+                          (map bytes->path-element (cdr path)))))]
             [else path]))
 
-    (values
-      (maybe-cdr-op to-rel-name path->main-collects-relative*)
-      (maybe-cdr-op from-rel-name main-collects-relative->path*))))
+    (values path->main-relative*
+            main-relative->path*)))

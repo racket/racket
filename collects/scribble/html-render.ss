@@ -76,6 +76,8 @@
                format-number
                quiet-table-of-contents)
 
+      (init-field [css-path #f])
+
       (define/override (get-suffix) #".html")
 
       ;; ----------------------------------------
@@ -132,6 +134,9 @@
 
       (define/private (reveal-subparts? p)
         (part-style? p 'reveal))
+
+      (define/public (toc-wrap table)
+        null)
     
       (define/public (render-toc-view d ri)
         (let-values ([(top mine)
@@ -185,10 +190,11 @@
                                          (class "tocviewlink"))
                                         ,@(render-content (or (part-title-content top) '("???")) d ri)))
                                 (div nbsp)
-                                (table 
-                                 ((class "tocviewlist")
-                                  (cellspacing "0"))
-                                 ,@toc-content)))))
+                                ,@(toc-wrap
+                                   `(table 
+                                     ((class "tocviewlist")
+                                      (cellspacing "0"))
+                                     ,@toc-content))))))
                  ,@(render-onthispage-contents d ri top)
                  ,@(apply append
                           (map (lambda (t)
@@ -311,17 +317,30 @@
                                      null))
                              (link ((rel "stylesheet")
                                     (type "text/css")
-                                    (href "scribble.css")
+                                    (href ,(or css-path "scribble.css"))
                                     (title "default"))))
                             (body ,@(render-toc-view d ri)
                                   (div ((class "maincolumn")) 
-                                       (div ((class "main")) ,@(render-part d ri)))))])
-            (install-file scribble-css)
+                                       (div ((class "main")) 
+                                            ,@(render-version d ri)
+                                            ,@(render-part d ri)))))])
+            (unless css-path
+              (install-file scribble-css))
             (printf "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n")
             (xml:write-xml/content (xml:xexpr->xml xpr)))))
 
       (define/override (render-one d ri fn)
         (render-one-part d ri fn null))
+
+      (define/public (render-version d ri)
+        `((div ([class "versionbox"])
+               ,@(render-content 
+                  (list 
+                   (make-element "version"
+                                 (list "Version: "
+                                       (current-version))))
+                  d
+                  ri))))
 
       (define/override (render-part d ri)
         (let ([number (collected-info-number (part-collected-info d ri))])
@@ -645,6 +664,9 @@
       (define/override (get-onthispage-label)
         `((div ((class "tocsubtitle"))
                "On this page:")))
+      
+      (define/override (toc-wrap p)
+        (list p))
 
       (define contents-content '("contents"))
       (define index-content '("index"))
@@ -654,7 +676,11 @@
       (define no-next-content next-content)
       (define sep-element (make-element #f '(nbsp nbsp)))
       
-      (inherit render-table)
+      (inherit render-table
+               render-paragraph)
+
+      (define/override (render-version r i)
+        null)
 
       (define/private (find-siblings d ri)
         (let ([parent (collected-info-parent (part-collected-info d ri))])
@@ -705,68 +731,56 @@
                                                 (let ([d (car (last-pair subs))])
                                                   (and (part-style? d 'index)
                                                        d)))))))])
-            `(,@(render-table (make-table
-                               'at-left
-                               (list
-                                (cons
-                                 (make-flow
-                                  (list
-                                   (make-paragraph
-                                    (list
-                                     (make-element
-                                      (if parent
-                                          (make-target-url "index.html")
-                                          "nonavigation")
-                                      contents-content)))))
-                                 (if index
-                                     (list
-                                      (make-flow
-                                       (list
-                                        (make-paragraph
-                                         (list
-                                          'nbsp
-                                          (if (eq? d index)
-                                              (make-element
-                                               "nonavigation"
-                                               index-content)
-                                              (make-link-element
-                                               #f
-                                               index-content
-                                               (car (part-tags index)))))))))
-                                     null))))
-                              d ri)
-              ,@(render-table (make-table
-                               'at-right
-                               (list 
-                                (list 
-                                 (make-flow
-                                  (list
-                                   (make-paragraph
-                                    (list
-                                     (make-element
-                                      (if parent
-                                          (make-target-url (if prev
-                                                               (derive-filename prev)
-                                                               "index.html"))
-                                          "nonavigation")
-                                      prev-content)
-                                     sep-element
-                                     (make-element
-                                      (if parent
-                                          (make-target-url 
-                                           (if (toc-part? parent)
-                                               (derive-filename parent)
-                                               "index.html"))
-                                          "nonavigation")
-                                      up-content)
-                                     sep-element
-                                     (make-element
-                                      (if next
-                                          (make-target-url (derive-filename next))
-                                          "nonavigation")
-                                      next-content))))))))
-                              d
-                              ri)))))
+            `((div ([class "navleft"])
+                   ,@(render-content
+                      (append
+                       (list 
+                        (make-element
+                         (if parent
+                             (make-target-url "index.html")
+                             "nonavigation")
+                         contents-content))
+                       (if index
+                           (list
+                            'nbsp
+                            (if (eq? d index)
+                                (make-element
+                                 "nonavigation"
+                                 index-content)
+                                (make-link-element
+                                 #f
+                                 index-content
+                                 (car (part-tags index)))))
+                           null))
+                      d
+                      ri))
+              (div ([class "navright"])
+                   ,@(render-content
+                      (list
+                       (make-element
+                        (if parent
+                            (make-target-url (if prev
+                                                 (derive-filename prev)
+                                                 "index.html"))
+                            "nonavigation")
+                        prev-content)
+                       sep-element
+                       (make-element
+                        (if parent
+                            (make-target-url 
+                             (if (toc-part? parent)
+                                 (derive-filename parent)
+                                 "index.html"))
+                            "nonavigation")
+                        up-content)
+                       sep-element
+                       (make-element
+                        (if next
+                            (make-target-url (derive-filename next))
+                            "nonavigation")
+                        next-content))
+                      d
+                      ri))))))
 
       (define/override (render-part d ri)
         (parameterize ([current-version
@@ -796,20 +810,9 @@
                                [on-separate-page #f])
                   (if sep?
                       ;; Navigation bars;
-                      `(,@(navigation d ri)
+                      `(,@(super render-version d ri)
+                        ,@(navigation d ri)
                         (p nbsp)
-                        ,@(render-table (make-table
-                                         "versionbox"
-                                         (list 
-                                          (list
-                                           (make-flow
-                                            (list
-                                             (make-paragraph (list 
-                                                              (make-element "version"
-                                                                            (list "Version: "
-                                                                                  (current-version))))))))))
-                                        d
-                                        ri)
                         ,@(super render-part d ri)
                         (p nbsp)
                         ,@(navigation d ri)

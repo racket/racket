@@ -1,497 +1,431 @@
 
-               body {
-               color: black;
-               background-color: #ffffff;
-               }
-
-               table td { 
-                 padding-left: 0;
-                 padding-right: 0;
-               }
-
-               .maincolumn {
-               font-family: monospace; 
-               width: 43em;
-               margin-right: -40em;
-               margin-left: 15em;
-               }
-
-               .main {
-               font-family: serif; 
-               text-align: left;
-               }
-
-               .versionbox { 
-                  position: relative;
-                  float: right;
-                  left: 3em;
-                  top: -2em;
-                  height: 0em;                
-                  width: 13em;
-                  margin: 0em -13em 0em 0em;
-                }
-               .version {
-                  font-family: sans-serif;
-                  
-                }
-
-               .refpara { 
-                font-family: monospace; 
-                position: relative;
-                float: right;
-                left: 1em;
-                top: -1em;
-                height: 0em;
-                width: 13em;
-                margin: 0em -13em 0em 0em;
-                }
-
-               .refcolumn { 
-                background-color: #F5F5DC;
-                display: block;
-                position: relative;
-                width: 13em;
-                font-size: 85%;
-                border: 0.5em solid #F5F5DC;
-               }
-
-               .refcontent { 
-                font-family: serif; 
-               }
-
-               .tocset { 
-                 font-family: monospace; 
-                 position: relative;
-                 float: left;
-                 width: 12.5em;
-                 margin-right: 2em;
-               }
-
-               .tocview {
-                 font-family: serif; 
-                 text-align: left;
-                 background-color: #F5F5DC;
-               }
-
-               .tocsub {
-                 font-family: serif; 
-                 margin-top: 1em;
-                 text-align: left;
-                 background-color: #DCF5F5;
-               }
-
-               .tocviewtitle { 
-                  font-size: 80%;
-                  font-weight: bold;
-                  margin: 0.2em 0.2em 0.2em 0.2em;
-                }
-
-               .tocviewlist { 
-                  margin: 0.2em 0.2em 0.2em 0.2em;
-                }
-
-               .tocviewlist td { 
-                  font-size: 80%;
-                  vertical-align: top;
-               }
-
-               .tocviewlink { 
-                  text-decoration: none;
-                }
-
-               .tocsublist { 
-                  margin: 0.2em 0.2em 0.2em 0.2em;
-                }
-
-               .tocsublist td { 
-                  vertical-align: top;
-                  padding-left: 1em;
-                  text-indent: -1em;
-               }
-
-               .tocsublinknumber { 
-                  font-size: 80%;
-                }
-
-               .tocsublink { 
-                  text-decoration: none;
-                }
-
-               .tocsubseclink { 
-                  font-size: 80%;
-                  text-decoration: none;
-                }
-
-               .tocsubtitle { 
-                  font-size: 80%;
-                  font-style: italic;
-                  margin: 0.2em 0.2em 0.2em 0.2em;
-                }
-
-               .leftindent { 
-                margin-left: 1em;
-                margin-right: 0em;
-               }
-
-               .insetpara { 
-                margin-left: 1em;
-                margin-right: 1em;
-               }
-
-               .toclink { 
-               text-decoration: none;
-               color: blue;
-               font-size: 85%;
-               }
-
-               .toptoclink { 
-               text-decoration: none;
-               color: blue;
-               font-weight: bold;
-               }
-
-               .inherited {
-                 width: 100%;
-                 margin-top: 1em;
-                 text-align: left;
-                 background-color: #ECF5F5;
-               }
-
-               .inherited td {
-                 padding-left: 1em;
-                 text-indent: -0.8em;
-                 padding-right: 0.2em;
-               }
-
-               .inheritedlbl { 
-                 font-style: italic;
-                 font-size: 85%;
-               }
-
-               .indexlink { 
-                  text-decoration: none;
-                }
-
-               .nobreak { 
-                  white-space: nowrap;
-                }
-
-               .stt {
-                 font-family: monospace; 
-               }
-
-               .title {
-               font-size: 200%;
-               font-weight: normal;
-               margin-top: 2.8em;
-               text-align: center;
-               }
-
-               .partheading {
-               font-size: 100%;
-               }
-
-               .chapterheading {
-               font-size: 100%;
-               }
-
-               .beginsection {
-               font-size: 110%;
-               }
-
-               .tiny {
-               font-size: 40%;
-               }
-
-               .scriptsize {
-               font-size: 60%;
-               }
-
-               .footnotesize {
-               font-size: 75%;
-               }
-
-               .small {
-               font-size: 90%;
-               }
-
-               .normalsize {
-               font-size: 100%;
-               }
-
-               .large {
-               font-size: 120%;
-               }
-
-               .largecap {
-               font-size: 150%;
-               }
-
-               .largeup {
-               font-size: 200%;
-               }
-
-               .huge {
-               font-size: 300%;
-               }
-
-               .hugecap {
-               font-size: 350%;
-               }
-
-               pre {
-               margin-left: 2em;
-               }
-
-               blockquote {
-               margin-left: 2em;
-               }
-
-               ol {
-               list-style-type: decimal;
-               }
-
-               ol ol {
-               list-style-type: lower-alpha;
-               }
-
-               ol ol ol {
-               list-style-type: lower-roman;
-               }
-
-               ol ol ol ol {
-               list-style-type: upper-alpha;
-               }
-
-               i {
-               font-family: serif;
-               }
-
-               .boxed { 
-                 width: 100%;
-                 background-color: #E8E8FF;
-               }
-
-               .together { 
-                 width: 100%;
-               }
-
-               .prototype td { 
-                 vertical-align: top;
-               }
-               .longprototype td { 
-                 vertical-align: bottom;
-               }
-
-               .schemeblock td { 
-                 vertical-align: baseline;
-               }
-
-               .argcontract td { 
-                 vertical-align: top;
-               }
-
-               .centered { 
-                 horiz-align: center;
-               }
-
-               .verbatim em {
-               font-family: serif;
-               }
-
-               .ghost {
-               color: white;
-               }
-
-               .scheme em {
-               color: black;
-               font-family: serif;
-               }
-
-               .highlighted {
-               background-color: #ddddff;
-               }
-
-               .defmodule {
-                 width: 100%;
-                 background-color: #F5F5DC;
-               }
-
-               .specgrammar {
-               float: right;
-               }
-
-               .hspace {
-               font-family: monospace; 
-               }
-
-               .small {
-               font-size: 80%;
-               }
-
-               .inferencetop td { 
-                border-bottom: 1px solid black;
-                text-align: center;
-               }
-               .inferencebottom td { 
-                text-align: center;
-               }
-
-               .schemeinput {
-               color: brown;
-               background-color: #eeeeee;
-               font-family: monospace; 
-               }
-
-               .schemeinputbg {
-               background-color: #eeeeee;
-               }
-
-               .schemereader {
-               font-family: monospace; 
-               }
-
-               .schemeparen {
-               color: #843c24;
-               font-family: monospace; 
-               }
-
-               .schememeta {
-               color: #262680;
-               font-family: monospace; 
-               }
-
-               .schememod {
-               color: black;
-               font-family: monospace; 
-               }
-
-               .schemeopt {
-               color: black;
-               }
-
-               .schemekeyword {
-               color: black;
-               font-weight: bold;
-               font-family: monospace; 
-               }
-
-               .schemeerror {
-               color: red;
-               font-style: italic;             
-               }
-
-               .schemevariable {
-               color: #262680;
-               font-style: italic;             
-               font-family: monospace; 
-               }
-
-               .schemesymbol {
-               color: #262680;
-               font-family: monospace; 
-               }
-
-               .schemevaluelink { 
-               text-decoration: none;
-               color: blue;
-               }
-
-               .schememodlink { 
-               text-decoration: none;
-               color: blue;
-               }
-
-               .schemesyntaxlink { 
-               text-decoration: none;
-               color: black;
-               font-weight: bold;
-               }
-
-               .badlink { 
-               text-decoration: underline;
-               color: red;
-               }
-
-               .plainlink { 
-               text-decoration: none;
-               color: blue;
-               }
-
-               .techlink { 
-               text-decoration: none;
-               color: black;
-               }
-               .techlink:hover { 
-               text-decoration: underline;
-               color: blue;
-               }
-
-               .schemeresult {
-               color: #0000af;
-               font-family: monospace; 
-               }
-
-               .schemestdout {
-               color: #960096;
-               font-family: monospace; 
-               }
-
-               .schemecomment {
-               color: #c2741f;
-               font-family: monospace; 
-               }
-
-               .schemevalue {
-               color: #228b22;
-               font-family: monospace; 
-               }
-
-               .bibliography td { 
-                 vertical-align: top;
-               }
-
-               .imageleft { 
-                 float: left;
-                 margin-right: 0.3em;
-               }
-
-               .nonavigation {
-               color: #EEEEEE;
-               }
-
-               .disable {
-               /* color: #e5e5e5; */
-               color: gray;
-               }
-
-               .smallcaps {
-               font-size: 75%;
-               }
-
-               .smallprint {
-               color: gray;
-               font-size: 75%;
-               text-align: right;
-               }
-
-               .footnoterule {
-               text-align: left;
-               width: 40%;
-               }
-
-               .colophon {
-               color: gray;
-               font-size: 80%;
-               font-style: italic;
-               text-align: right;
-               }
-
-               .colophon a {
-               color: gray;
-               }
-
-               .mywbr { 
-                 width: 0;
-                 font-size: 1px;
-               }
+body {
+  color: black;
+  background-color: #ffffff;
+}
+
+table td {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.maincolumn {
+  font-family: monospace;
+  width: 43em;
+  margin-right: -40em;
+  margin-left: 15em;
+}
+
+.main {
+  font-family: serif;
+  text-align: left;
+}
+
+.navleft { 
+  position: relative;
+  float: left;
+}
+.navright { 
+  position: relative;
+  float: right;
+}
+
+.versionbox {
+  position: relative;
+  float: right;
+  left: 3em;
+  height: 0em;
+  width: 13em;
+  margin: 0em -13em 0em 0em;
+}
+.version {
+  font-family: sans-serif;
+  font-size: small;
+}
+
+.refpara {
+  font-family: monospace;
+  position: relative;
+  float: right;
+  left: 1em;
+  top: -1em;
+  height: 0em;
+  width: 13em;
+  margin: 0em -13em 0em 0em;
+}
+
+.refcolumn {
+  background-color: #F5F5DC;
+  display: block;
+  position: relative;
+  width: 13em;
+  font-size: 85%;
+  border: 0.5em solid #F5F5DC;
+}
+
+.refcontent {
+  font-family: serif;
+}
+
+.tocset {
+  font-family: monospace;
+  position: relative;
+  float: left;
+  width: 12.5em;
+  margin-right: 2em;
+}
+
+.tocview {
+  font-family: serif;
+  text-align: left;
+  background-color: #F5F5DC;
+}
+
+.tocsub {
+  font-family: serif;
+  margin-top: 1em;
+  text-align: left;
+  background-color: #DCF5F5;
+}
+
+.tocviewtitle {
+  font-size: 80%;
+  font-weight: bold;
+  margin: 0.2em 0.2em 0.2em 0.2em;
+}
+
+.tocviewlist {
+  margin: 0.2em 0.2em 0.2em 0.2em;
+}
+
+.tocviewlist td {
+  font-size: 80%;
+  vertical-align: top;
+}
+
+.tocviewlink {
+  text-decoration: none;
+}
+
+.tocsublist {
+  margin: 0.2em 0.2em 0.2em 0.2em;
+}
+
+.tocsublist td {
+  vertical-align: top;
+  padding-left: 1em;
+  text-indent: -1em;
+}
+
+.tocsublinknumber {
+  font-size: 80%;
+}
+
+.tocsublink {
+  text-decoration: none;
+}
+
+.tocsubseclink {
+  font-size: 80%;
+  text-decoration: none;
+}
+
+.tocsubtitle {
+  font-size: 80%;
+  font-style: italic;
+  margin: 0.2em 0.2em 0.2em 0.2em;
+}
+
+.leftindent {
+ margin-left: 1em;
+ margin-right: 0em;
+}
+
+.insetpara {
+ margin-left: 1em;
+ margin-right: 1em;
+}
+
+.toclink {
+text-decoration: none;
+color: blue;
+font-size: 85%;
+}
+
+.toptoclink {
+text-decoration: none;
+color: blue;
+font-weight: bold;
+}
+
+.inherited {
+  width: 100%;
+  margin-top: 1em;
+  text-align: left;
+  background-color: #ECF5F5;
+}
+
+.inherited td {
+  padding-left: 1em;
+  text-indent: -0.8em;
+  padding-right: 0.2em;
+}
+
+.inheritedlbl {
+  font-style: italic;
+  font-size: 85%;
+}
+
+.indexlink {
+  text-decoration: none;
+}
+
+.nobreak {
+  white-space: nowrap;
+}
+
+.stt {
+  font-family: monospace;
+}
+
+.title {
+  font-size: 200%;
+  font-weight: normal;
+  margin-top: 2.8em;
+  text-align: center;
+}
+
+.partheading {
+  font-size: 100%;
+}
+
+.chapterheading {
+  font-size: 100%;
+}
+
+.beginsection {
+  font-size: 110%;
+}
+
+pre {
+  margin-left: 2em;
+}
+
+blockquote {
+  margin-left: 2em;
+}
+
+ol {
+  list-style-type: decimal;
+}
+
+ol ol {
+  list-style-type: lower-alpha;
+}
+
+ol ol ol {
+  list-style-type: lower-roman;
+}
+
+ol ol ol ol {
+  list-style-type: upper-alpha;
+}
+
+i {
+  font-family: serif;
+}
+
+.boxed {
+  width: 100%;
+  background-color: #E8E8FF;
+}
+
+.together {
+  width: 100%;
+}
+
+.prototype td {
+  vertical-align: top;
+}
+.longprototype td {
+  vertical-align: bottom;
+}
+
+.schemeblock td {
+  vertical-align: baseline;
+}
+
+.argcontract td {
+  vertical-align: top;
+}
+
+.centered {
+  horiz-align: center;
+}
+
+.verbatim em {
+  font-family: serif;
+}
+
+.ghost {
+  color: white;
+}
+
+.scheme em {
+  color: black;
+  font-family: serif;
+}
+
+.highlighted {
+  background-color: #ddddff;
+}
+
+.defmodule {
+  width: 100%;
+  background-color: #F5F5DC;
+}
+
+.specgrammar {
+  float: right;
+}
+
+.hspace {
+  font-family: monospace;
+}
+
+.inferencetop td {
+  border-bottom: 1px solid black;
+  text-align: center;
+}
+.inferencebottom td {
+  text-align: center;
+}
+
+.schemeinput {
+  color: brown;
+  background-color: #eeeeee;
+  font-family: monospace;
+}
+
+.schemeinputbg {
+  background-color: #eeeeee;
+}
+
+.schemereader {
+  font-family: monospace;
+}
+
+.schemeparen {
+  color: #843c24;
+  font-family: monospace;
+}
+
+.schememeta {
+  color: #262680;
+  font-family: monospace;
+}
+
+.schememod {
+  color: black;
+  font-family: monospace;
+}
+
+.schemeopt {
+  color: black;
+}
+
+.schemekeyword {
+  color: black;
+  font-weight: bold;
+  font-family: monospace;
+}
+
+.schemeerror {
+  color: red;
+  font-style: italic;
+}
+
+.schemevariable {
+  color: #262680;
+  font-style: italic;
+  font-family: monospace;
+}
+
+.schemesymbol {
+  color: #262680;
+  font-family: monospace;
+}
+
+.schemevaluelink {
+  text-decoration: none;
+  color: blue;
+}
+
+.schememodlink {
+  text-decoration: none;
+  color: blue;
+}
+
+.schemesyntaxlink {
+  text-decoration: none;
+  color: black;
+  font-weight: bold;
+}
+
+.badlink {
+  text-decoration: underline;
+  color: red;
+}
+
+.plainlink {
+  text-decoration: none;
+  color: blue;
+}
+
+.techlink {
+  text-decoration: none;
+  color: black;
+}
+
+.techlink:hover {
+  text-decoration: underline;
+  color: blue;
+}
+
+.schemeresult {
+  color: #0000af;
+  font-family: monospace;
+}
+
+.schemestdout {
+  color: #960096;
+  font-family: monospace;
+}
+
+.schemecomment {
+  color: #c2741f;
+  font-family: monospace;
+}
+
+.schemevalue {
+  color: #228b22;
+  font-family: monospace;
+}
+
+.bibliography td {
+  vertical-align: top;
+}
+
+.imageleft {
+  float: left;
+  margin-right: 0.3em;
+}
+
+.nonavigation {
+  color: #EEEEEE;
+}
+
+.mywbr {
+  width: 0;
+  font-size: 1px;
+}

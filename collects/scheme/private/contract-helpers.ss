@@ -78,7 +78,11 @@
          [r (and bs (path->main-collects-relative bs))])
     (and bs
          (bytes->string/locale (if (and (pair? r) (eq? 'collects (car r)))
-                                   (bytes-append #"<collects>/" (cdr r))
+                                   (apply bytes-append 
+                                          #"<collects>" 
+                                          (map (lambda (s)
+                                                 (bytes-append #"/" s))
+                                               (cdr r)))
                                    bs)))))
 
 ;; build-src-loc-string : syntax -> (union #f string)

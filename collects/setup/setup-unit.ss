@@ -18,8 +18,6 @@
          compiler/sig
          launcher/launcher-sig
 
-         (prefix-in doc: "scribble.ss")
-
          "unpack.ss"
          "getinfo.ss"
          "dirs.ss"
@@ -412,9 +410,11 @@
                     (with-input-from-file path read))])
         (when (and (pair? deps) (list? deps))
           (for ([s (cdr deps)])
-            (let ([s (main-collects-relative->path s)])
-              (when (path-string? s)
-                (hash-table-put! dependencies s #t)))))))
+            (unless (and (pair? s)
+                         (eq? 'ext (car s)))
+              (let ([s (main-collects-relative->path s)])
+                (when (path-string? s)
+                  (hash-table-put! dependencies s #t))))))))
     (delete-file path))
 
   (define (delete-files-in-directory path printout dependencies)
@@ -738,16 +738,23 @@
   ;;                       Docs                    ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define (doc:verbose)
+    (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
+      (dynamic-require 'setup/scribble 'verbose)))
+  (define (doc:setup-scribblings)
+    (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
+      (dynamic-require 'setup/scribble 'setup-scribblings)))
+
   (when (make-docs)
     (setup-printf "Building documentation")
-    (doc:verbose (verbose))
+    ((doc:verbose) (verbose))
     (with-handlers ([exn:fail? (lambda (exn)
                                  (setup-printf
                                   "Docs failure: ~a"
                                   (if (exn? exn)
                                     (exn-message exn)
                                     exn)))])
-      (doc:setup-scribblings
+      ((doc:setup-scribblings)
        (if no-specific-collections? #f (map cc-path ccs-to-compile))
        #f)))
 
@@ -789,8 +796,8 @@
           void
           (lambda ()
             (make-directory tmp-dir)
-            (doc:verbose (verbose))
-            (doc:setup-scribblings
+            ((doc:verbose) (verbose))
+            ((doc:setup-scribblings)
              (if no-specific-collections? #f (map cc-path ccs-to-compile))
              tmp-dir)
             (parameterize ([current-directory tmp-dir])

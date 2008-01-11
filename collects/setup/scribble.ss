@@ -16,7 +16,7 @@
 
 (define verbose (make-parameter #t))
 
-(define-struct doc (src-dir src-file dest-dir flags))
+(define-struct doc (src-dir src-file dest-dir flags under-main?))
 (define-struct info (doc sci provides undef searches deps 
                      build? time out-time need-run? 
                      need-in-write? need-out-write?
@@ -38,6 +38,7 @@
                                                     (and (list? (cadr v))
                                                          (andmap (lambda (i)
                                                                    (member i '(main-doc
+                                                                               main-doc-root
                                                                                multi-page
                                                                                always-run)))
                                                                  (cadr v))
@@ -46,7 +47,10 @@
                                                                   (relative-path? (caddr v))))))))
                                          s))
                           (map (lambda (d)
-                                 (let ([flags (if (pair? (cdr d)) (cadr d) null)])
+                                 (let* ([flags (if (pair? (cdr d)) (cadr d) null)]
+                                        [under-main? (and (not (memq 'main-doc-root flags))
+                                                          (or (memq 'main-doc flags)
+                                                              (pair? (path->main-collects-relative dir))))])
                                    (make-doc dir
                                              (build-path dir (car d))
                                              (let ([name (if (and (pair? (cdr d))
@@ -55,11 +59,13 @@
                                                            (cadr d)
                                                            (let-values ([(base name dir?) (split-path (car d))])
                                                              (path-replace-suffix name #"")))])
-                                               (if (or (memq 'main-doc flags)
-                                                       (pair? (path->main-collects-relative dir)))
-                                                 (build-path (find-doc-dir) name)
-                                                 (build-path dir "doc" name)))
-                                             flags)))
+                                               (if (memq 'main-doc-root flags)
+                                                   (find-doc-dir)
+                                                   (if under-main?
+                                                       (build-path (find-doc-dir) name)
+                                                       (build-path dir "doc" name))))
+                                             flags
+                                             under-main?)))
                                s)
                           (begin
                             (fprintf (current-error-port)
@@ -174,7 +180,10 @@
          [dest-dir (if (memq 'multi-page (doc-flags doc))
                      (let-values ([(base name dir?) (split-path (doc-dest-dir doc))])
                        base)
-                     (doc-dest-dir doc))])))
+                     (doc-dest-dir doc))]
+         [css-path (if (doc-under-main? doc)
+                       "../scribble.css"
+                       #f)])))
 
 (define (pick-dest latex-dest doc)
   (if latex-dest
@@ -269,7 +278,7 @@
                      (list-ref v-out 2) ; provides
                      (list-ref v-in 1)  ; undef
                      (list-ref v-in 3)  ; searches
-                     (map string->path (list-ref v-in 2)) ; deps, in case we don't need to build...
+                     (map rel->path (list-ref v-in 2)) ; deps, in case we don't need to build...
                      can-run?
                      my-time info-out-time
                      (and can-run? (memq 'always-run (doc-flags doc)))
@@ -399,7 +408,7 @@
                        (list (list (info-vers info) (doc-flags doc))
                              (info-undef info)
                              (map (lambda (i)
-                                    (path->string (doc-src-file (info-doc i))))
+                                    (path->rel (doc-src-file (info-doc i))))
                                   (info-deps info))
                              (info-searches info))))))))))
 
@@ -409,3 +418,15 @@
 (define (write-in info)
   (make-directory* (doc-dest-dir (info-doc info)))
   (write- info "in.sxref" (lambda (o i) i)))
+
+(define (rel->path r)
+  (if (bytes? r)
+      (bytes->path r)
+      (main-collects-relative->path r)))
+
+(define (path->rel r)
+  (let ([r (path->main-collects-relative r)])
+    (if (path? r)
+        (path->bytes r)
+        r)))
+
