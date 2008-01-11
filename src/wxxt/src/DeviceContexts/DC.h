@@ -231,6 +231,8 @@ public:
     virtual void SetAlpha(double d);
     double GetAlpha();
 
+    virtual int CacheFontMetricsKey();
+
     // public data members
     Bool  Colour;
     int   device;

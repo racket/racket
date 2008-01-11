@@ -198,6 +198,8 @@ class wxDC: public wxbDC
   double SmoothingXFormHL(double h, double y);
 
   void SetAlpha(double d);
+  
+  virtual int CacheFontMetricsKey();
 };
 
 // This class specific to Windows 3.1

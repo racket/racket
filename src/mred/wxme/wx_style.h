@@ -148,7 +148,7 @@ class wxStyle : public wxObject
   wxBrush *brush;
   int alignment;
 
-  wxDC *textMetricDC;
+  int cached_sizes;
   double textWidth, textHeight, textDescent, textSpace;
 
   wxList *children;

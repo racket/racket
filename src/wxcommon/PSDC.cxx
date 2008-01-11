@@ -2020,6 +2020,11 @@ void wxPostScriptDC::GetTextExtent (const char *string, double *x, double *y,
 			    x, y, descent, topSpace, sym_map);
 }
 
+int wxPostScriptDC::CacheFontMetricsKey()
+{
+  return 2;
+}
+
 void wxPostScriptDC::SetMapMode (int WXXTUNUSED(mode))
 {
 #ifndef wx_xt

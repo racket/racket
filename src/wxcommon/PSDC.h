@@ -179,6 +179,8 @@ class wxPostScriptDC: public wxDC
 
   void SetAntiAlias(int mode);
 
+  virtual int CacheFontMetricsKey();
+
   virtual Bool Ok() { return ok; }
 };
 

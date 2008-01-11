@@ -217,6 +217,8 @@ class wxbDC: public wxObject
 
   virtual void SetAlpha(double d);
   double GetAlpha();
+
+  virtual int CacheFontMetricsKey();
 };
 
 // Conversion

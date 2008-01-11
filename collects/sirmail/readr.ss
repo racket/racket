@@ -62,7 +62,8 @@
       
       ;; This will be set to the frame object
       (define main-frame #f)
-      
+      (define done? #f)
+
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;  Error Handling                                         ;;
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1006,7 +1007,7 @@
 	    (lambda (w e) 
 	      (purge-marked/update-headers)))
       (send global-keymap add-function "gc"
-	    (lambda (w e) (dump-memory-stats) (collect-garbage)))
+	    (lambda (w e) (collect-garbage) (collect-garbage)))
       (send global-keymap add-function "show-memory-graph"
 	    (lambda (w e) (show-memory-graph)))
       
@@ -1142,6 +1143,7 @@
 					    (inner #t can-close?)))]
           [define/augment on-close (lambda () 
 				     (logout)
+                                     (set! done? #t)
 				     (inner (void) on-close))]
           [define/override on-subwindow-char
             (lambda (w e)
@@ -1954,7 +1956,8 @@
              (update-status-text))
            (semaphore-post status-sema)
 	   (sleep 5)
-           (loop))))
+           (unless done?
+             (loop)))))
       
       (define vsz #f)
       (define rss #f)

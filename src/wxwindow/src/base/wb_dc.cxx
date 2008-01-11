@@ -172,6 +172,11 @@ double wxbDC::GetAlpha()
   return current_alpha;
 }
 
+int wxbDC::CacheFontMetricsKey()
+{
+  return 0;
+}
+
 wxbMemoryDC::wxbMemoryDC(void) { }
 wxbMemoryDC::wxbMemoryDC(wxCanvasDC *WXUNUSED(old_dc)) { }
 wxbMemoryDC::~wxbMemoryDC(void) { }

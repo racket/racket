@@ -189,6 +189,8 @@ class wxCanvasDC: public wxbCanvasDC
   void DrawTab(char *str, double x, double y, double w, double h, int state);
 
   virtual void SetAlpha(double d);
+
+  virtual int CacheFontMetricsKey();
 };
 
 long wxTextFontInfo(int font, int size, int face, FontInfo *finfo, char *str, int d = 0, int len = -1);

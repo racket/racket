@@ -1392,3 +1392,11 @@ void wxCanvasDC::DrawTab(char *str, double x, double y, double w, double h, int 
 
   ReleaseCurrentDC();
 }
+
+int wxCanvasDC::CacheFontMetricsKey()
+{
+  if ((user_scale_x == 1.0)
+      && (user_scale_y == 1.0))
+    return 1;
+  return 0;
+}

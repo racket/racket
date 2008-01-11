@@ -2736,6 +2736,14 @@ void wxWindowDC::SetTextBackground(wxColour *col)
     XSetBackground(DPY, TEXT_GC, pixel);
 }
 
+int wxCanvasDC::CacheFontMetricsKey()
+{
+  if ((scale_x == 1.0)
+      && (scale_y == 1.0))
+    return 1;
+  return 0;
+}
+
 //-----------------------------------------------------------------------------
 // clipping region
 //-----------------------------------------------------------------------------

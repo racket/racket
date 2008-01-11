@@ -258,6 +258,10 @@ double wxDC::GetAlpha()
   return current_alpha;
 }
 
+int wxDC::CacheFontMetricsKey()
+{
+  return 0;
+}
 
 //-----------------------------------------------------------------------------
 // wxDC::DrawOpenSpline(wxList *pts), may be virtually overridden by any child

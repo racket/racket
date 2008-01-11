@@ -192,6 +192,10 @@ double wxbDC::GetAlpha()
   return current_alpha;
 }
 
+int wxbDC::CacheFontMetricsKey()
+{
+  return 0;
+}
 
 wxbCanvasDC::wxbCanvasDC(void)
 {

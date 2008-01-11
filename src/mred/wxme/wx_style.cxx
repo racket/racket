@@ -551,8 +551,6 @@ wxStyle::wxStyle()
 
   __type = wxTYPE_STYLE;
 
-  textMetricDC = NULL;
-
   foreground = new WXGC_PTRS wxColour;
   background = new WXGC_PTRS wxColour;
 
@@ -604,7 +602,7 @@ void wxStyle::Update(wxStyle *basic, wxStyle *target,
 	target->font = base->font;
 	target->pen = base->pen;
 	target->brush = base->brush;
-	target->textMetricDC = NULL;
+	target->cached_sizes = 0;
 	target->foreground->CopyFrom(base->foreground);
 	target->background->CopyFrom(base->background);
 
@@ -692,7 +690,7 @@ void wxStyle::Update(wxStyle *basic, wxStyle *target,
 						 underlined, smoothing,
 						 sip);
 
-  target->textMetricDC = NULL;
+  target->cached_sizes = 0;
 
   if (nonjoin_delta->transparentTextBackingOff && nonjoin_delta->transparentTextBackingOn)
     transText = !base->transText;
@@ -921,8 +919,13 @@ void wxStyle::SwitchTo(wxDC *dc, wxStyle *oldStyle)
 void wxStyle::ResetTextMetrics(wxDC *dc)
 {
   double w, h, d, s;
+  int can_cache;
 
-  textMetricDC = dc;
+  can_cache = dc->CacheFontMetricsKey();
+
+  if (cached_sizes && (cached_sizes == can_cache))
+    return;
+
 #ifdef BROKEN_GET_TEXT_EXTENT 
   dc->SetFont(style->GetFont());
 #endif
@@ -931,36 +934,34 @@ void wxStyle::ResetTextMetrics(wxDC *dc)
   textHeight = h;
   textDescent = d;
   textSpace = s;
+
+  cached_sizes = can_cache;
 }
 
 double wxStyle::GetTextWidth(wxDC *dc)
 {
-  if (dc != textMetricDC)
-    ResetTextMetrics(dc);
+  ResetTextMetrics(dc);
 
   return textWidth;
 }
 
 double wxStyle::GetTextHeight(wxDC *dc)
 {
-  if (dc != textMetricDC)
-    ResetTextMetrics(dc);
+  ResetTextMetrics(dc);
 
   return textHeight;
 }
 
 double wxStyle::GetTextDescent(wxDC *dc)
 {
-  if (dc != textMetricDC)
-    ResetTextMetrics(dc);
+  ResetTextMetrics(dc);
 
   return textDescent;
 }
 
 double wxStyle::GetTextSpace(wxDC *dc)
 {
-  if (dc != textMetricDC)
-    ResetTextMetrics(dc);
+  ResetTextMetrics(dc);
 
   return textSpace;
 }

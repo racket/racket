@@ -482,6 +482,14 @@ Bool wxDC::CanGetTextExtent(void)
   return tok;
 }
 
+int wxDC::CacheFontMetricsKey()
+{
+  if ((user_scale_x == 1.0)
+      && (user_scale_y == 1.0))
+    return 1;
+  return 0;
+}
+
 void wxDC::SetColourMap(wxColourMap *cmap)
 {
   HDC dc;

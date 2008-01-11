@@ -82,8 +82,13 @@
 #endif
 
 /* This is the log base 2 of the standard memory page size. 14 means 2^14,
-   which is 16k. This seems to be a good size. */
-#define LOG_APAGE_SIZE 14
+   which is 16k. This seems to be a good size for most platforms.
+   Under Windows as of 2008, however, the allocation granularity is 64k. */
+#ifdef _WIN32
+# define LOG_APAGE_SIZE 16
+#else
+# define LOG_APAGE_SIZE 14
+#endif
 
 /* the number of tags to use for tagged objects */
 #define NUMBER_OF_TAGS 512
@@ -2152,7 +2157,7 @@ void GC_mark(const void *const_p)
 	}
 
 	page->marked_on = 1;
-	record_backtrace(page, NUM(page->addr) + PREFIX_SIZE);
+	record_backtrace(page, PTR(NUM(page->addr) + PREFIX_SIZE + WORD_SIZE));
 	GCDEBUG((DEBUGOUTF, "Marking %p on big page %p\n", p, page));
 	/* Finally, we want to add this to our mark queue, so we can 
 	   propagate its pointers */

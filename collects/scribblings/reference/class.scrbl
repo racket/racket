@@ -1231,7 +1231,7 @@ Converts a @tech{trait} to a @tech{mixin}, which can be applied to a
 @schemeblock[
 (trait->mixin
  (trait
-   trait-clause ...))
+   _trait-clause ...))
 ]
 
 is equivalent to
@@ -1239,7 +1239,7 @@ is equivalent to
 @schemeblock[
 (lambda (%)
   (class %
-    trait-clause ...
+    _trait-clause ...
     (super-new)))
 ]
 

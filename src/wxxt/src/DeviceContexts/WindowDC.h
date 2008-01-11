@@ -190,6 +190,8 @@ public:
 
   virtual Bool Ok(void);
 
+  virtual int CacheFontMetricsKey();
+
 #ifdef WX_USE_XRENDER
   virtual void InitPicture();
   void InitPictureClip();
