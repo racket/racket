@@ -121,9 +121,8 @@ programs.
 describes the PLT Scheme web server, which supports servlets
 implemented in Scheme.
 
-@other-manual['(lib "scribblings/start/start.scrbl")] provides links
-to documentation for many other libraries distributed with PLT Scheme
-or installed on your system.
+Run @exec{plt-help} to find documentation for many other libraries
+that are distributed with PLT Scheme or installed on your system.
 
 @link["http://planet.plt-scheme.org/"]{@|PLaneT|} offers even more
 downloadable packages contributed by PLT Scheme users.
