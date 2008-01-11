@@ -18,7 +18,7 @@
  [send-main-page (-> void?)])
 
 (define (send-main-page)
-  (let ([dest-path (build-path (find-doc-dir) "start" "index.html")])
+  (let ([dest-path (build-path (find-doc-dir) "index.html")])
     (send-url (format "file://~a" (path->string dest-path)))))
 
 ;; if there is exactly one exact match for this search key, go directly
