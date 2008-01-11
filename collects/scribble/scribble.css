@@ -54,10 +54,12 @@ table td {
 .navleft { 
   position: relative;
   float: left;
+  white-space: nowrap;
 }
 .navright { 
   position: relative;
   float: right;
+  white-space: nowrap;
 }
 .nonavigation {
   color: #EEEEEE;
