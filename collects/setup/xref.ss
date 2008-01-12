@@ -18,12 +18,18 @@
                           (let-values ([(base name dir?) (split-path (car d))])
                             (path-replace-suffix name #"")))])
              (build-path
-              (if (memq 'main-doc-root flags)
-                  (find-doc-dir)
-                  (if (or (memq 'main-doc flags)
-                          (pair? (path->main-collects-relative dir)))
-                      (build-path (find-doc-dir) name)
-                      (build-path dir "compiled" "doc" name)))
+              (cond
+               [(memq 'main-doc-root flags)
+                (find-doc-dir)]
+               [(memq 'user-doc-root flags)
+                (find-user-doc-dir)]
+               [(memq 'user-doc flags)
+                (build-path (find-user-doc-dir) name)]
+               [(or (memq 'main-doc flags)
+                    (pair? (path->main-collects-relative dir)))
+                (build-path (find-doc-dir) name)]
+               [else
+                (build-path dir "compiled" "doc" name)])
               "out.sxref"))
            #f))
        ((get-info/full dir) 'scribblings)))

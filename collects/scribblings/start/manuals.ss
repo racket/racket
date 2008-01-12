@@ -42,38 +42,46 @@
                              (if (or all?
                                      (main-collects? dir))
                                  (let ([s (i 'scribblings)])
-                                   (map (lambda (d cat)
-                                          (let ([new-cat (if (or (symbol? cat)
-                                                                 (and (list? cat)
-                                                                      (= 2 (length cat))
-                                                                      (symbol? (car cat))
-                                                                      (real? (cadr cat))))
-                                                             cat
-                                                             'unknown)])
-                                            (list 
-                                             ;; Category
-                                             (let ([the-cat (if (list? new-cat)
-                                                                (car new-cat)
-                                                                new-cat)])
-                                               (case the-cat
-                                                 [(getting-started language tool library foreign other omit)
-                                                  the-cat]
-                                                 [else 
-                                                  (fprintf (current-error-port)
-                                                           "WARNING: base category: ~e from: ~e"
-                                                           cat
-                                                           dir)]))
-                                             ;; Priority
-                                             (if (list? new-cat)
-                                                 (cadr new-cat)
-                                                 0)
-                                             ;; Path
-                                             (if (pair? d)
-                                                 (build-path dir (car d))
-                                                 (build-path dir "???")))))
-                                        s
-                                        (i 'doc-categories (lambda ()
-                                                             (map (lambda (i) 'library) s)))))
+                                   (apply
+                                    append
+                                    (map (lambda (d cat)
+                                           (if (and (not all?)
+                                                    (pair? (cdr d))
+                                                    (or (memq 'user-doc (cadr d))
+                                                        (memq 'user-doc-root (cadr d))))
+                                               null
+                                               (let ([new-cat (if (or (symbol? cat)
+                                                                      (and (list? cat)
+                                                                           (= 2 (length cat))
+                                                                           (symbol? (car cat))
+                                                                           (real? (cadr cat))))
+                                                                  cat
+                                                                  'unknown)])
+                                                 (list
+                                                  (list 
+                                                   ;; Category
+                                                   (let ([the-cat (if (list? new-cat)
+                                                                      (car new-cat)
+                                                                      new-cat)])
+                                                     (case the-cat
+                                                       [(getting-started language tool library foreign other omit)
+                                                        the-cat]
+                                                       [else 
+                                                        (fprintf (current-error-port)
+                                                                 "WARNING: base category: ~e from: ~e"
+                                                                 cat
+                                                                 dir)]))
+                                                   ;; Priority
+                                                   (if (list? new-cat)
+                                                       (cadr new-cat)
+                                                       0)
+                                                   ;; Path
+                                                   (if (pair? d)
+                                                       (build-path dir (car d))
+                                                       (build-path dir "???")))))))
+                                         s
+                                         (i 'doc-categories (lambda ()
+                                                              (map (lambda (i) 'library) s))))))
                                  null))
                            infos
                            dirs))]

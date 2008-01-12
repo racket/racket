@@ -157,7 +157,7 @@
 
   ;; ----------------------------------------
 
-  (provide section-index index index* as-index index-section)
+  (provide section-index index index* as-index index-section index-flow-elements)
 
   (define (section-index . elems)
     (make-part-index-decl (map element->string elems) elems))
@@ -192,57 +192,106 @@
                     key
                     content)))
 
-  (define (index-section #:tag [tag #f])
+  (define (index-section #:title [title "Index"] #:tag [tag #f])
     (make-unnumbered-part
      #f
      `((part ,(or tag "doc-index")))
-     '("Index")
+     (list title)
      'index
      null
-     (make-flow (list (make-delayed-flow-element
-                       (lambda (renderer sec ri)
-                         (let ([l null])
-                           (hash-table-for-each 
-                            (collected-info-info 
-                             (part-collected-info
-                              (collected-info-parent
-                               (part-collected-info sec ri))
-                              ri))
-                            (lambda (k v)
-                              (when (and (pair? k)
-                                         (eq? 'index-entry (car k)))
-                                (set! l (cons (cons (cadr k) v) l)))))
-                           (let ([l (sort 
-                                     l
-                                     (lambda (a b)
-                                       (let loop ([a (cadr a)][b (cadr b)])
-                                         (cond
-                                          [(null? a) #t]
-                                          [(null? b) #f]
-                                          [(string-ci=? (car a) (car b))
-                                           (loop (cdr a) (cdr b))]
-                                          [else
-                                           (string-ci<? (car a) (car b))]))))]
-                                 [commas (lambda (l)
-                                           (if (or (null? l)
-                                                   (null? (cdr l)))
-                                               l
-                                               (cdr (apply append (map (lambda (i)
-                                                                         (list ", " i))
-                                                                       l)))))])
-                             (make-table
-                              'index
-                              (map (lambda (i)
-                                     (list (make-flow
-                                            (list
-                                             (make-paragraph
-                                              (list
-                                               (make-link-element
-                                                "indexlink"
-                                                (commas (caddr i))
-                                                (car i))))))))
-                                   l))))))))
+     (make-flow (index-flow-elements))
      null))
+
+  (define (index-flow-elements)
+    (list (make-delayed-flow-element
+           (lambda (renderer sec ri)
+             (let ([l null])
+               (hash-table-for-each 
+                (let ([parent (collected-info-parent
+                               (part-collected-info sec ri))])
+                   (if parent
+                       (collected-info-info 
+                        (part-collected-info
+                         parent
+                         ri))
+                       (collect-info-ext-ht (resolve-info-ci ri))))
+                (lambda (k v)
+                  (when (and (pair? k)
+                             (eq? 'index-entry (car k)))
+                    (set! l (cons (cons (cadr k) v) l)))))
+               (let ([l (sort 
+                         l
+                         (lambda (a b)
+                           (let loop ([a (cadr a)][b (cadr b)])
+                             (cond
+                              [(null? a) #t]
+                              [(null? b) #f]
+                              [(string-ci=? (car a) (car b))
+                               (loop (cdr a) (cdr b))]
+                              [else
+                               (string-ci<? (car a) (car b))]))))]
+                     [commas (lambda (l)
+                               (if (or (null? l)
+                                       (null? (cdr l)))
+                                   l
+                                   (cdr (apply append (map (lambda (i)
+                                                             (list ", " i))
+                                                           l)))))]
+                     [alpha-starts (make-hash-table)])
+                 (make-table
+                  'index
+                  (list*
+                   (list
+                    (make-flow
+                     (list
+                      (make-paragraph
+                       (let ([add-letter 
+                              (lambda (letter l)
+                                (list* (make-element "nonavigation"
+                                                     (list (string letter)))
+                                       " "
+                                       l))])
+                         (let loop ([i l]
+                                    [alpha (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZ")])
+                           (cond
+                            [(null? alpha) null]
+                            [(null? i) (add-letter (car alpha)
+                                                   (loop i (cdr alpha)))]
+                            [else (let* ([strs (cadr (car i))]
+                                         [letter (if (or (null? strs)
+                                                         (string=? "" (car strs)))
+                                                     #f
+                                                     (string-ref (car strs) 0))])
+                                    (cond
+                                     [(not letter) (loop (cdr i) alpha)]
+                                     [(char-ci>? letter (car alpha))
+                                      (add-letter (car alpha)
+                                                  (loop i (cdr alpha)))]
+                                     [(char-ci=? letter (car alpha))
+                                      (hash-table-put! alpha-starts (car i) letter)
+                                      (list* (make-element (make-target-url 
+                                                            (format "#alpha:~a" letter)
+                                                            #f)
+                                                           (list (string (car alpha))))
+                                             " "
+                                             (loop (cdr i) (cdr alpha)))]
+                                     [else (loop (cdr i) alpha)]))])))))))
+                   (list (make-flow (list (make-paragraph (list 'nbsp)))))
+                   (map (lambda (i)
+                          (list (make-flow
+                                 (list
+                                  (make-paragraph
+                                   (list
+                                    (let ([e (make-link-element
+                                              "indexlink"
+                                              (commas (caddr i))
+                                              (car i))])
+                                      (let ([letter (hash-table-get alpha-starts i #f)])
+                                        (if letter
+                                            (make-element (make-url-anchor (format "alpha:~a" letter))
+                                                          (list e))
+                                            e)))))))))
+                        l)))))))))
 
   ;; ----------------------------------------
 

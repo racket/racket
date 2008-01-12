@@ -1,13 +1,11 @@
 ;; Utilities for creating a .plt package
-(module pack mzscheme
-  (require (lib "deflate.ss")
-           (lib "base64.ss" "net")
-           (lib "process.ss")
-	   (lib "list.ss")
-	   (lib "port.ss")
-	   (lib "file.ss")
-	   (lib "kw.ss")
-	   (lib "getinfo.ss" "setup"))
+(module pack scheme/base
+  (require file/gzip
+           net/base64
+           scheme/system
+           scheme/port
+           scheme/file
+           setup/getinfo)
 
   (provide pack
 	   pack-plt
@@ -21,15 +19,15 @@
                               "requires a true value for `~a' argument")
 	   arg1-name v arg2-name))
 
-  (define/kw (pack dest name paths collections
-		   #:optional [file-filter   std-filter]
-                              [encode?       #t]
-                              [file-mode     'file]
-                              [unpack-unit   #f]
-                              [plt-relative? #t]
-                              [requires      null]
-                              [conflicts     null]
-                              [at-plt-home?  #f])
+  (define (pack dest name paths collections
+                [file-filter   std-filter]
+                [encode?       #t]
+                [file-mode     'file]
+                [unpack-unit   #f]
+                [plt-relative? #t]
+                [requires      null]
+                [conflicts     null]
+                [at-plt-home?  #f])
     (pack-plt dest name paths
               #:collections   collections
               #:file-filter   file-filter
@@ -40,23 +38,23 @@
               #:requires      null
               #:conflicts     null
               #:at-plt-home?  at-plt-home?))
-
-  (define/kw (pack-plt dest name paths
-                       #:key [collections   null]
-                             [file-filter   std-filter]
-                             [encode?       #t]
-                             [file-mode     'file]
-                             [unpack-unit   #f]
-                             [plt-relative? #t]
-                             [requires      null]
-                             [conflicts     null]
-                             [at-plt-home?  #f]
-                             [test-plt-dirs #f])
+  
+  (define (pack-plt dest name paths
+                    #:collections   [collections   null]
+                    #:file-filter   [file-filter   std-filter]
+                    #:encode?       [encode?       #t]
+                    #:file-mode     [file-mode     'file]
+                    #:unpack-unit   [unpack-unit   #f]
+                    #:plt-relative? [plt-relative? #t]
+                    #:requires      [requires      null]
+                    #:conflicts     [conflicts     null]
+                    #:at-plt-home?  [at-plt-home?  #f]
+                    #:test-plt-dirs [test-plt-dirs #f])
     (when (and at-plt-home? (not plt-relative?))
       (x-arg-needs-true-arg 'pack-plt 'at-plt-home? at-plt-home? 'plt-relative?))
     (when (and test-plt-dirs (not at-plt-home?))
       (x-arg-needs-true-arg 'pack-plt 'test-plt-dirs test-plt-dirs 'at-plt-home?))
-    (let*-values ([(file) (open-output-file dest 'truncate/replace)]
+    (let*-values ([(file) (open-output-file dest #:exists 'truncate/replace)]
                   [(fileout thd)
                    (if encode?
                      (let-values ([(b64-out b64-in) (make-pipe 4096)]
@@ -185,21 +183,20 @@
 		 (regexp-match #rx#"~$|^#.*#$|^[.]#" name)
 		 (regexp-match #rx#"[.]plt$" name))))))
 
-  (define/kw (pack-collections
-              output name collections replace? extra-setup-collections
-              #:optional [file-filter std-filter] at-plt-home?)
+  (define (pack-collections output name collections replace? extra-setup-collections
+                            [file-filter std-filter] [at-plt-home? #f])
     (pack-collections-plt output name collections
                           #:replace? replace?
                           #:extra-setup-collections extra-setup-collections
                           #:file-filter file-filter
                           #:at-plt-home? at-plt-home?))
 
-  (define/kw (pack-collections-plt output name collections
-                                   #:key [replace? #f]
-                                         [extra-setup-collections null]
-                                         [file-filter std-filter]
-                                         [at-plt-home? #f]
-                                         [test-plt-collects? #t])
+  (define (pack-collections-plt output name collections
+                                #:replace? [replace? #f]
+                                #:extra-setup-collections [extra-setup-collections null]
+                                #:file-filter [file-filter std-filter]
+                                #:at-plt-home? [at-plt-home? #f]
+                                #:test-plt-collects? [test-plt-collects? #t])
     (let-values
         ([(dir source-files requires conflicts name)
           (let ([dirs (map (lambda (cp) (apply collection-path cp)) collections)])

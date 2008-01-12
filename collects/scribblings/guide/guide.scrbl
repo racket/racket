@@ -121,8 +121,10 @@ programs.
 describes the PLT Scheme web server, which supports servlets
 implemented in Scheme.
 
-Run @exec{plt-help} to find documentation for many other libraries
-that are distributed with PLT Scheme or installed on your system.
+@link["../index.html"]{PLT Scheme Documentation} lists documentation
+for many other installed libraries. Run @exec{plt-help} to find
+documentation for libraries that are installed on your system and
+specific to your user account.
 
 @link["http://planet.plt-scheme.org/"]{@|PLaneT|} offers even more
 downloadable packages contributed by PLT Scheme users.

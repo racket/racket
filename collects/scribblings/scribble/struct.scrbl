@@ -462,9 +462,11 @@ Computed for each part by the @techlink{collect pass}.
 }
 
 
-@defstruct[target-url ([addr string?])]{
+@defstruct[target-url ([addr string?]
+                       [style any/c])]{
 
-Used as a style for an @scheme[element].}
+Used as a style for an @scheme[element]. The @scheme[style] at this
+layer is a style for the hyperlink.}
 
 
 @defstruct[image-file ([path path-string?])]{

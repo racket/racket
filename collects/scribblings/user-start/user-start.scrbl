@@ -1,5 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual
+          scribble/struct
           "../start/manuals.ss")
 
 @title{PLT Scheme Documentation (user)}
@@ -10,3 +11,8 @@
              @other-manual['(lib "scribblings/start/start.scrbl")].}
 
 @(build-contents #t)
+
+@(make-toc-element
+  #f
+  null
+  (list @link["master-index/index.html" #:underline? #f]{master index}))

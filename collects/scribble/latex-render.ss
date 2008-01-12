@@ -244,9 +244,12 @@
                [opt (cond
                      [(equal? tableform "longtable") "[l]"]
                      [(equal? tableform "tabular") "[t]"]
-                     [else ""])])
-          (unless (or (null? (table-flowss t))
-                      (null? (car (table-flowss t))))
+                     [else ""])]
+               [flowss (if index?
+                           (cddr (table-flowss t))
+                           (table-flowss t))])
+          (unless (or (null? flowss)
+                      (null? (car flowss)))
             (parameterize ([current-table-mode (if inline?
                                                    (current-table-mode)
                                                    (list tableform t))]
@@ -273,14 +276,14 @@
                                                 [(center) "c"]
                                                 [(right) "r"]
                                                 [else "l"])))
-                                    (car (table-flowss t))
+                                    (car flowss)
                                     (cdr (or (and (list? (table-style t))
                                                   (assoc 'alignment (or (table-style t) null)))
-                                             (cons #f (map (lambda (x) #f) (car (table-flowss t)))))))))])
-              (let loop ([flowss (table-flowss t)]
+                                             (cons #f (map (lambda (x) #f) (car flowss))))))))])
+              (let loop ([flowss flowss]
                          [row-styles (cdr (or (and (list? (table-style t))
                                                    (assoc 'row-styles (table-style t)))
-                                              (cons #f (map (lambda (x) #f) (table-flowss t)))))])
+                                              (cons #f (map (lambda (x) #f) flowss))))])
                 (let ([flows (car flowss)]
                       [row-style (car row-styles)])
                   (let loop ([flows flows])

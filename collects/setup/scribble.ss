@@ -23,40 +23,32 @@
                      vers rendered?)
   #:mutable)
 
-(define (user-start-doc? doc)
-  (memq 'user-doc-root (doc-flags doc)))
+(define (user-doc? doc)
+  (or (memq 'user-doc-root (doc-flags doc))
+      (memq 'user-doc (doc-flags doc))))
 
 (define (filter-user-start docs)
-  ;; If we've built it before...
+  ;; If we've built user-specific before...
   (if (file-exists? (build-path (find-user-doc-dir) "index.html"))
       ;; Keep building:
       docs
       ;; Otherwise, see if we need it:
       (let ([cnt-not-main (apply +
                                  (map (lambda (doc)
-                                        (if (doc-under-main? doc)
+                                        (if (or (doc-under-main? doc)
+                                                (memq 'no-depend-on (doc-flags doc)))
                                             0
                                             1))
-                                      docs))]
-            [start? (ormap (lambda (doc)
-                             (memq 'main-doc-root (doc-flags doc)))
-                           docs)]
-            [user-start? (ormap user-start-doc? docs)])
-        (let ([any-not-main? (positive?
-                              (- cnt-not-main
-                                 (if start? 1 0)
-                                 (if user-start? 1 0)))])
+                                      docs))])
+        (let ([any-not-main? (positive? cnt-not-main)])
           (cond
            [any-not-main? 
-            ;; Need it:
+            ;; Need user-specific:
             docs]
-           [user-start? 
-            ;; Don't need it, so drop it:
-            (filter (lambda (doc) (not (user-start-doc? doc)))
-                    docs)]
-           [else 
-            ;; Wasn't planning to build it, anyway:
-            docs])))))
+           [else
+            ;; Don't need them, so drop them:
+            (filter (lambda (doc) (not (user-doc? doc)))
+                    docs)])))))
 
 (define (setup-scribblings only-dirs        ; limits doc builds
                            latex-dest       ; if not #f, generate Latex output
@@ -77,7 +69,11 @@
                                                                    (member i '(main-doc
                                                                                main-doc-root
                                                                                user-doc-root
+                                                                               user-doc
                                                                                multi-page
+                                                                               depends-all
+                                                                               depends-all-main
+                                                                               no-depend-on
                                                                                always-run)))
                                                                  (cadr v))
                                                          (or (null? (cddr v))
@@ -88,6 +84,7 @@
                                  (let* ([flags (if (pair? (cdr d)) (cadr d) null)]
                                         [under-main? (and (not (memq 'main-doc-root flags))
                                                           (not (memq 'user-doc-root flags))
+                                                          (not (memq 'user-doc flags))
                                                           (or (memq 'main-doc flags)
                                                               (pair? (path->main-collects-relative dir))))])
                                    (make-doc dir
@@ -103,6 +100,8 @@
                                                  (find-doc-dir)]
                                                 [(memq 'user-doc-root flags)
                                                  (find-user-doc-dir)]
+                                                [(memq 'user-doc flags)
+                                                 (build-path (find-user-doc-dir) name)]
                                                 [else
                                                  (if under-main?
                                                      (build-path (find-doc-dir) name)
@@ -119,7 +118,15 @@
                     infos dirs)]
          [docs (filter-user-start (apply append docs))])
     (when (ormap (can-build? only-dirs) docs)
-      (let ([infos (filter values (map (get-doc-info only-dirs latex-dest auto-start-doc?) docs))])
+      (let* ([auto-main? (and auto-start-doc?
+                              (ormap (can-build? only-dirs) 
+                                     (filter doc-under-main? docs)))]
+             [auto-user? (and auto-start-doc?
+                              (ormap (can-build? only-dirs) 
+                                     (filter (lambda (doc) (not (doc-under-main? doc)))
+                                             docs)))]
+             [infos (filter values (map (get-doc-info only-dirs latex-dest auto-main? auto-user?) 
+                                        docs))])
         (let loop ([first? #t] [iter 0])
           (let ([ht (make-hash-table 'equal)])
             ;; Collect definitions
@@ -152,15 +159,33 @@
                         (info-deps info)))
                   (for ([d (info-deps info)])
                     (let ([i (if (info? d)
-                               d
-                               (hash-table-get src->info d #f))])
+                                 d
+                                 (hash-table-get src->info d #f))])
                       (if i
-                        (hash-table-put! deps i #t)
-                        (begin
-                          (set! added? #t)
-                          (when (verbose)
-                            (printf " [Removed Dependency: ~a]\n"
-                                    (doc-src-file (info-doc info))))))))
+                          (hash-table-put! deps i #t)
+                          (unless (or (memq 'depends-all (doc-flags (info-doc info)))
+                                      (and (doc-under-main? (info-doc i))
+                                           (memq 'depends-all-main (doc-flags (info-doc info)))))
+                            (set! added? #t)
+                            (when (verbose)
+                              (printf " [Removed Dependency: ~a]\n"
+                                      (doc-src-file (info-doc info))))))))
+                  (let ([all-main? (memq 'depends-all-main (doc-flags (info-doc info)))])
+                    (when (or (memq 'depends-all (doc-flags (info-doc info)))
+                              all-main?)
+                      ;; Add all:
+                      (when (verbose)
+                        (printf " [Adding all~a as dependencies: ~a]\n"
+                                (if all-main? " main" "")
+                                (doc-src-file (info-doc info))))
+                      (for ([i infos])
+                        (unless (eq? i info)
+                          (when (not (hash-table-get deps i #f))
+                            (when (and (or (not all-main?)
+                                           (doc-under-main? (info-doc i)))
+                                       (not (memq 'no-depend-on (doc-flags (info-doc i)))))
+                              (set! added? #t)
+                              (hash-table-put! deps i #t)))))))
                   (let ([not-found
                          (lambda (k)
                            (unless one?
@@ -189,6 +214,7 @@
                       (printf " [Added Dependency: ~a]\n"
                               (doc-src-file (info-doc info))))
                     (set-info-deps! info (hash-table-map deps (lambda (k v) k)))
+                    (set-info-need-in-write?! info #t)
                     (set-info-need-run?! info #t)))))
             ;; If a dependency changed, then we need a re-run:
             (for ([i infos]
@@ -269,7 +295,7 @@
                            (part-parts v)
                            (and (versioned-part? v) (versioned-part-version v))))))
 
-(define ((get-doc-info only-dirs latex-dest auto-start-doc?) doc)
+(define ((get-doc-info only-dirs latex-dest auto-main? auto-user?) doc)
   (let* ([info-out-file (build-path (or latex-dest (doc-dest-dir doc)) "out.sxref")]
          [info-in-file  (build-path (or latex-dest (doc-dest-dir doc)) "in.sxref")]
          [out-file (build-path (doc-dest-dir doc) "index.html")]
@@ -300,7 +326,12 @@
                (or (not can-run?)
                    (my-time . >= . (max aux-time
                                         (file-or-directory-modify-seconds
-                                         src-zo #f (lambda () +inf.0))))))])
+                                         src-zo #f (lambda () +inf.0))))))]
+         [can-run? (or can-run?
+                       (and auto-main?
+                            (memq 'depends-all-main (doc-flags doc)))
+                       (and auto-user?
+                            (memq 'depends-all (doc-flags doc))))])
     (printf " [~a ~a]\n"
             (if up-to-date? "Using" (if can-run? "Running" "Skipping"))
             (doc-src-file doc))
@@ -310,7 +341,7 @@
                               (fprintf (current-error-port) "~a\n" (exn-message exn))
                               (delete-file info-out-file)
                               (delete-file info-in-file)
-                              ((get-doc-info only-dirs latex-dest auto-start-doc?) doc))])
+                              ((get-doc-info only-dirs latex-dest auto-main? auto-user?) doc))])
         (let* ([v-in (with-input-from-file info-in-file read)]
                [v-out (with-input-from-file info-out-file read)])
           (unless (and (equal? (car v-in) (list vers (doc-flags doc)))
@@ -324,7 +355,7 @@
                      (map rel->path (list-ref v-in 2)) ; deps, in case we don't need to build...
                      can-run?
                      my-time info-out-time
-                     (and (or can-run? auto-start-doc?)
+                     (and can-run?
                           (memq 'always-run (doc-flags doc)))
                      #f #f
                      vers

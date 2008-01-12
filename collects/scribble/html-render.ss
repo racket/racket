@@ -182,7 +182,7 @@
                                                                     (part-parts (caar l)))
                                                                (cdr l))))]
                                   [else (cons (car l) (loop (cdr l)))])))])
-                     (if (null? toc-content)
+                     (if (and #f (null? toc-content))
                          null
                          `((div ((class "tocview"))
                                 (div ((class "tocviewtitle"))
@@ -253,6 +253,8 @@
                                                   (cond
                                                    [(toc-target-element? a)
                                                     (cons a (loop (cdr c)))]
+                                                   [(toc-element? a)
+                                                    (cons a (loop (cdr c)))]
                                                    [(element? a)
                                                     (append (loop (element-content a))
                                                             (loop (cdr c)))]
@@ -284,25 +286,27 @@
                           ((class "tocsublist")
                            (cellspacing "0"))
                           ,@(map (lambda (p)
-                                   (parameterize ([current-no-links #t]
-                                                  [extra-breaking? #t])
-                                     `(tr
-                                       (td 
-                                        ,@(if (part? p)
-                                              `((span ((class "tocsublinknumber"))
-                                                      ,@(format-number (collected-info-number 
-                                                                        (part-collected-info p ri))
-                                                                       '((tt nbsp)))))
-                                              '(""))
-                                        (a ((href ,(if (part? p)
-                                                       (format "#~a" (anchor-name (tag-key (car (part-tags p)) ri)))
-                                                       (format "#~a" (anchor-name (tag-key (target-element-tag p) ri)))))
-                                            (class ,(if (part? p)
-                                                        "tocsubseclink"
-                                                        "tocsublink")))
-                                           ,@(if (part? p)
-                                                 (render-content (or (part-title-content p) '("???")) d ri)
-                                                 (render-content (element-content p) d ri)))))))
+                                   `(tr
+                                     (td 
+                                      ,@(if (part? p)
+                                            `((span ((class "tocsublinknumber"))
+                                                    ,@(format-number (collected-info-number 
+                                                                      (part-collected-info p ri))
+                                                                     '((tt nbsp)))))
+                                            '(""))
+                                      ,@(if (toc-element? p)
+                                            (render-content (toc-element-toc-content p) d ri)
+                                            (parameterize ([current-no-links #t]
+                                                           [extra-breaking? #t])
+                                              `((a ((href ,(if (part? p)
+                                                               (format "#~a" (anchor-name (tag-key (car (part-tags p)) ri)))
+                                                               (format "#~a" (anchor-name (tag-key (target-element-tag p) ri)))))
+                                                    (class ,(if (part? p)
+                                                                "tocsubseclink"
+                                                                "tocsublink")))
+                                                   ,@(if (part? p)
+                                                         (render-content (or (part-title-content p) '("???")) d ri)
+                                                         (render-content (element-content p) d ri)))))))))
                                  ps))))))))
 
       (define/public (render-one-part d ri fn number)
@@ -478,7 +482,14 @@
             (if (current-no-links)
                 (super render-element e part ri)
                 (parameterize ([current-no-links #t])
-                  `((a ((href ,(target-url-addr style))) ,@(super render-element e part ri)))))]
+                  `((a ((href ,(target-url-addr style))
+                        ,@(if (string? (target-url-style style))
+                              `((class ,(target-url-style style)))
+                              null))
+                       ,@(super render-element e part ri)))))]
+           [(url-anchor? style)
+            `((a ((name ,(url-anchor-name style)))
+                 ,@(super render-element e part ri)))]
            [(image-file? style) `((img ((src ,(install-file (image-file-path style))))))]
            [else (super render-element e part ri)])))
 
@@ -737,7 +748,7 @@
                        (list 
                         (make-element
                          (if parent
-                             (make-target-url "index.html")
+                             (make-target-url "index.html" #f)
                              "nonavigation")
                          contents-content))
                        (if index
@@ -761,7 +772,8 @@
                         (if parent
                             (make-target-url (if prev
                                                  (derive-filename prev)
-                                                 "index.html"))
+                                                 "index.html")
+                                             #f)
                             "nonavigation")
                         prev-content)
                        sep-element
@@ -770,13 +782,14 @@
                             (make-target-url 
                              (if (toc-part? parent)
                                  (derive-filename parent)
-                                 "index.html"))
+                                 "index.html")
+                             #f)
                             "nonavigation")
                         up-content)
                        sep-element
                        (make-element
                         (if next
-                            (make-target-url (derive-filename next))
+                            (make-target-url (derive-filename next) #f)
                             "nonavigation")
                         next-content))
                       d

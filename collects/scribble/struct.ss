@@ -158,6 +158,7 @@
    ;; content = list of elements
    [element ([style any/c]
              [content list?])]
+   [(toc-element element) ([toc-content list?])]
    [(target-element element) ([tag tag?])]
    [(toc-target-element target-element) ()]
    [(page-target-element target-element) ()]
@@ -174,7 +175,8 @@
                     [parent (or/c false/c part?)]
                     [info any/c])]
 
-   [target-url ([addr string?])]
+   [target-url ([addr string?][style any/c])]
+   [url-anchor ([name string?])]
    [image-file ([path path-string?])])
 
   ;; ----------------------------------------
