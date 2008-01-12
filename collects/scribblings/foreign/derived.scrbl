@@ -221,7 +221,7 @@ just aliases for byte-string bindings: @scheme[make-u8vector],
                (defform* [#,(datum->syntax
                              #'_vec
                              (cons #'_vec
-                                   (let loop ([l '(mode type maybe-len)]
+                                   (let loop ([l '(mode maybe-len)]
                                               [col (+ (syntax-column #'_vec)
                                                       (syntax-span #'_vec)
                                                       1)]
