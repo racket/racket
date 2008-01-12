@@ -71,7 +71,7 @@ table td {
 .versionbox {
   position: relative;
   float: right;
-  left: 3em;
+  left: 2em;
   height: 0em;
   width: 13em;
   margin: 0em -13em 0em 0em;
@@ -86,7 +86,7 @@ table td {
 .refpara {
   position: relative;
   float: right;
-  left: 1em;
+  left: 2em;
   top: -1em;
   height: 0em;
   width: 13em;
