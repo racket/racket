@@ -442,8 +442,8 @@ static void *allocate_big(size_t sizeb, int type)
 }
 
 #ifdef ALIGN_DOUBLES
-# define ALIGN_SIZE(sizew) ((sizew & 0x1) ? (sizew + 1) : sizew)
-# define ALIGN_BYTES_SIZE(sizeb) ((sizeb & WORD_SIZE) ? (sizeb + WORD_SIZE) : sizeb)
+# define ALIGN_SIZE(sizew) (((sizew) & 0x1) ? ((sizew) + 1) : (sizew))
+# define ALIGN_BYTES_SIZE(sizeb) (((sizeb) & WORD_SIZE) ? ((sizeb) + WORD_SIZE) : (sizeb))
 #else
 # define ALIGN_SIZE(sizew) (sizew)
 # define ALIGN_BYTES_SIZE(sizeb) (sizeb)
