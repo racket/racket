@@ -9,10 +9,12 @@
   (define (get-general-acks)
     (string-append
      "The following individuals contributed to the implementation"
-     " of DrScheme and associated tools: "
+     " and documentation of PLT Scheme: "
+     "Yavuz Arkun, "
      "Ian Barland, "
      "Eli Barzilay, "
      "Gann Bierner, "
+     "Richard Cleis, "
      "John Clements, "
      "Richard Cobbe, "
      "Greg Cooper, "

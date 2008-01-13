@@ -12,10 +12,3 @@
 
 @(build-contents #f)
 
-@(make-toc-element
-  #f
-  null
-  (list @link["master-index/index.html" 
-              #:underline? #f
-              (make-element "tocsubseclink"
-                            (list "Master Index"))]))

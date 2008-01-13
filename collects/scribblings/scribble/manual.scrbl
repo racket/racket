@@ -4,12 +4,14 @@
           (for-syntax scheme/base)
           (for-label scribble/manual-struct))
 
-@title[#:tag "manual"]{Manual Forms}
+@title[#:tag "manual" #:style 'toc]{Manual Forms}
 
 @defmodule[scribble/manual]{The @schememodname[scribble/manual]
 library provides all of @schememodname[scribble/basic], plus
 additional functions that are relatively specific to writing PLT
 Scheme documentation.}
+
+@local-table-of-contents[]
 
 @; ------------------------------------------------------------------------
 @section[#:tag "scribble:manual:code"]{Typesetting Code}
@@ -180,7 +182,7 @@ procedure, but use @scheme[var] if that cannot work for some reason.}
 in a form definition.}
 
 @; ------------------------------------------------------------------------
-@section{Documenting Modules}
+@section[#:tag "doc-modules"]{Documenting Modules}
 
 @defform[(defmodule id pre-flow ...)]{
 
@@ -238,7 +240,7 @@ list of @scheme[module-path]s is shown, for example, when the user
 hovers the mouse over one of the bindings defined within the section.}
 
 @; ------------------------------------------------------------------------
-@section{Documenting Forms, Functions, Structure Types, and Values}
+@section[#:tag "doc-forms"]{Documenting Forms, Functions, Structure Types, and Values}
 
 @defform/subs[(defproc prototype
                        result-contract-expr-datum
@@ -476,7 +478,7 @@ Like @scheme[schemegrammar], but for typesetting multiple productions
 at once, aligned around the @litchar{=} and @litchar{|}.}
 
 @; ------------------------------------------------------------------------
-@section{Documenting Classes and Interfaces}
+@section[#:tag "doc-classes"]{Documenting Classes and Interfaces}
 
 @defform[(defclass id super-id (intf-id ...) pre-flow ...)]{
 
@@ -575,7 +577,40 @@ Like @scheme[method], but the hyperlink shows both the method name and
 the containing class/interface.}
 
 @; ------------------------------------------------------------------------
-@section{Various String Forms}
+@section[#:tag "doc-signatures"]{Documenting Signature}
+
+@defform[(defsignature id (super-id ...) pre-flow ...)]{
+
+Defines a signature @scheme[id] that extends the @scheme[super-id]
+signatures. Any elements defined in @tech{decode}d
+@scheme[pre-flow]s---including forms, procedures, structure types,
+classes, interfaces, and mixins---are defined as members of the
+signature instead of direct bindings. These definitions can be
+referenced through @scheme[sigelem] instead of @scheme[scheme].
+
+The @tech{decode}d @scheme[pre-flow]s inset under the signature
+declaration in the typeset output, so no new sections, @|etc| can be
+started.}
+
+@defform[(defsignature/splice id (super-id ...) pre-flow ...)]{
+
+Like @scheme[defsignature], but the @tech{decode}d @scheme[pre-flow]s
+are not typeset under the signature declaration, and new sections,
+@|etc| can be started in the @scheme[pre-flow]s.}
+
+@defproc[(signature-desc [pre-flow any/c] ...) any/c]{
+
+Produces an opaque value that @scheme[defsignature] recognizes to
+outdent in the typeset form. This is useful for text describing the
+signature as a whole to appear right after the signature declaration.}
+
+@defform[(sigelem sig-id id)]{
+
+Typesets the identifier @scheme[id] with a hyperlink to its definition
+as a member of the signature named by @scheme[sig-id].}
+
+@; ------------------------------------------------------------------------
+@section[#:tag "doc-strings"]{Various String Forms}
 
 @defproc[(emph [pre-content any/c] ...) element?]{Typesets the
 @tech{decode}d @scheme[pre-content] with emphasis (e.g., in italic).}
@@ -636,7 +671,7 @@ Extensions to @scheme[math] are likely, such as recognizing @litchar{_}
 and @litchar{^} for subscripts and superscripts.}
 
 @; ------------------------------------------------------------------------
-@section[#:tag "scribble:manual:section-links"]{Links}
+@section[#:tag "section-links"]{Links}
 
 @defproc[(secref [tag string?]
                  [#:doc module-path (or/c module-path? false/c) #f]
@@ -865,7 +900,7 @@ an inset command-line example (e.g., in typewriter font).}
 a paragraph to be typeset in the margin instead of inlined.}
 
 @; ------------------------------------------------------------------------
-@section{Index-Entry Descriptions}
+@section[#:tag "index-entries"]{Index-Entry Descriptions}
 
 @defmodule[scribble/manual-struct]{The
 @schememodname[scribble/manual-struct] library provides types used to

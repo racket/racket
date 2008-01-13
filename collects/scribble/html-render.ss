@@ -482,7 +482,11 @@
             (if (current-no-links)
                 (super render-element e part ri)
                 (parameterize ([current-no-links #t])
-                  `((a ((href ,(target-url-addr style))
+                  `((a ((href ,(let ([addr (target-url-addr style)])
+                                 (if (path? addr)
+                                     (from-root addr
+                                                (get-dest-directory))
+                                     addr)))
                         ,@(if (string? (target-url-style style))
                               `((class ,(target-url-style style)))
                               null))
@@ -586,11 +590,19 @@
 				       '(wbr)
 				       `(span ((class "mywbr")) " "))
                                    (render-other (substring i (cdar m)) part ri))
-                            (list i)))]
+                            (ascii-ize i)))]
          [(eq? i 'mdash) `(" " ndash " ")]
          [(eq? i 'hline) `((hr))]
          [(symbol? i) (list i)]
          [else (list (format "~s" i))]))
+
+      (define/private (ascii-ize s)
+        (let ([m (regexp-match-positions #rx"[^\u01-\u7E]" s)])
+          (if m
+              (append (ascii-ize (substring s 0 (caar m)))
+                      (list (char->integer (string-ref s (caar m))))
+                      (ascii-ize (substring s (cdar m))))
+              (list s))))
       
       ;; ----------------------------------------
 

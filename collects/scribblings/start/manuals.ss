@@ -2,8 +2,10 @@
 
 (require scribble/manual
          scribble/struct
+         scribble/decode
          setup/getinfo
-         setup/main-collects)
+         setup/main-collects
+         setup/dirs)
 
 (provide build-contents)
 
@@ -33,6 +35,15 @@
 
 (define (main-collects? dir)
   (pair? (path->main-collects-relative dir)))
+
+(define (to-toc target label)
+  (make-toc-element
+   #f
+   null
+   (list (link target
+               #:underline? #f
+               (make-element "tocsubseclink"
+                             (list label))))))
 
 (define (build-contents all?)
   (let* ([dirs (find-relevant-directories '(scribblings))]
@@ -92,32 +103,46 @@
           (lambda (doc)
             (plain-line (hspace 2)
                         (other-manual doc #:underline? #f)))])
-    (make-delayed-flow-element
-     (lambda (renderer part resolve-info)
-       (make-table
-        #f
-        (cdr
-         (apply append
-                (map (lambda (sec)
-                       (let ([docs (filter (lambda (doc)
-                                             (eq? (car doc) (sec-cat sec)))
-                                           docs)])
-                         (list*
-                          (plain-line (hspace 1))
-                          (plain-line (sec-label sec))
-                          (map
-                           cdr
-                           (sort
-                            (map (lambda (doc) (cons (cadr doc)
-                                                     (line  (caddr doc))))
-                                 docs)
-                            (lambda (ad bd)
-                              (let ([a (cadr (paragraph-content (car (flow-paragraphs (cadr ad)))))]
-                                    [b (cadr (paragraph-content (car (flow-paragraphs (cadr bd)))))])
-                                (if (= (car ad) (car bd))
-                                    (begin
-                                      (string-ci<? (element->string a renderer part resolve-info)
-                                                   (element->string b renderer part resolve-info)))
-                                    (> (car ad) (car bd))))))))))
-                     sections))))))))
+    (make-splice
+     (list
+      (make-delayed-flow-element
+       (lambda (renderer part resolve-info)
+         (make-table
+          #f
+          (cdr
+           (apply append
+                  (map (lambda (sec)
+                         (let ([docs (filter (lambda (doc)
+                                               (eq? (car doc) (sec-cat sec)))
+                                             docs)])
+                           (list*
+                            (plain-line (hspace 1))
+                            (plain-line (sec-label sec))
+                            (map
+                             cdr
+                             (sort
+                              (map (lambda (doc) (cons (cadr doc)
+                                                       (line  (caddr doc))))
+                                   docs)
+                              (lambda (ad bd)
+                                (let ([a (cadr (paragraph-content (car (flow-paragraphs (cadr ad)))))]
+                                      [b (cadr (paragraph-content (car (flow-paragraphs (cadr bd)))))])
+                                  (if (= (car ad) (car bd))
+                                      (begin
+                                        (string-ci<? (element->string a renderer part resolve-info)
+                                                     (element->string b renderer part resolve-info)))
+                                      (> (car ad) (car bd))))))))))
+                       sections))))))
 
+      (to-toc "master-index/index.html"
+              "Master Index")
+      (make-toc-element
+       #f
+       null
+       (list 'nbsp))
+      (to-toc (build-path (find-doc-dir) "license/index.html")
+              "License")
+      (to-toc (build-path (find-doc-dir) "acks/index.html")
+              "Acknowledgments")
+      (to-toc (build-path (find-doc-dir) "release/index.html")
+              "Release Notes")))))

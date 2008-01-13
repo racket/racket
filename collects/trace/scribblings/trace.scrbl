@@ -19,7 +19,7 @@ depth of the continuation.
          @item{Prefix your program with 
                       @schemeblock[(require trace/calltrace)]
                perhaps by starting @exec{mzscheme} with
-                  @commandline{mzscheme -l trace/calltrace}
+                  @commandline{mzscheme -l trace/calltrace ...}
                before arguments to load your program.}
          @item{Run your program}
          }
