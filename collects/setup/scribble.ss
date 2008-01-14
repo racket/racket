@@ -16,7 +16,7 @@
 
 (define verbose (make-parameter #t))
 
-(define-struct doc (src-dir src-file dest-dir flags under-main?))
+(define-struct doc (src-dir src-file dest-dir flags under-main? category))
 (define-struct info (doc sci provides undef searches deps 
                      build? time out-time need-run? 
                      need-in-write? need-out-write?
@@ -80,7 +80,7 @@
                                                              (and (path-string? (caddr v))
                                                                   (relative-path? (caddr v))))))))
                                          s))
-                          (map (lambda (d)
+                          (map (lambda (d cat)
                                  (let* ([flags (if (pair? (cdr d)) (cadr d) null)]
                                         [under-main? (and (not (memq 'main-doc-root flags))
                                                           (not (memq 'user-doc-root flags))
@@ -107,8 +107,10 @@
                                                      (build-path (find-doc-dir) name)
                                                      (build-path dir "doc" name))]))
                                              flags
-                                             under-main?)))
-                               s)
+                                             under-main?
+                                             cat)))
+                               s
+                               (i 'doc-categories (lambda () (map (lambda (a) 'library) s))))
                           (begin
                             (fprintf (current-error-port)
                                      " bad 'scribblings info: ~e from: ~e\n"
@@ -295,6 +297,11 @@
                            (part-parts v)
                            (and (versioned-part? v) (versioned-part-version v))))))
 
+(define (omit? cat)
+  (or (eq? cat 'omit)
+      (and (pair? cat)
+           (eq? (car cat) 'omit))))
+
 (define ((get-doc-info only-dirs latex-dest auto-main? auto-user?) doc)
   (let* ([info-out-file (build-path (or latex-dest (doc-dest-dir doc)) "out.sxref")]
          [info-in-file  (build-path (or latex-dest (doc-dest-dir doc)) "in.sxref")]
@@ -327,11 +334,13 @@
                    (my-time . >= . (max aux-time
                                         (file-or-directory-modify-seconds
                                          src-zo #f (lambda () +inf.0))))))]
-         [can-run? (or can-run?
-                       (and auto-main?
-                            (memq 'depends-all-main (doc-flags doc)))
-                       (and auto-user?
-                            (memq 'depends-all (doc-flags doc))))])
+         [can-run? (and (or (not latex-dest)
+                            (not (omit? (doc-category doc))))
+                        (or can-run?
+                            (and auto-main?
+                                 (memq 'depends-all-main (doc-flags doc)))
+                            (and auto-user?
+                                 (memq 'depends-all (doc-flags doc)))))])
     (printf " [~a ~a]\n"
             (if up-to-date? "Using" (if can-run? "Running" "Skipping"))
             (doc-src-file doc))
