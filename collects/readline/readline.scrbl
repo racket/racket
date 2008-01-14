@@ -2,7 +2,9 @@
 @(require scribble/manual
           (for-label scheme/base
                      readline/pread
-                     readline/readline))
+                     readline/readline
+                     scheme/contract
+                     (except-in scheme/foreign ->)))
 
 @(define readline "Readline")
 @(define Readline "Readline")
@@ -167,12 +169,13 @@ accessible to the user via the up-arrow key.}
 
 @defproc[(set-completion-function! [proc ((or/c string? bytes?)
                                           . -> . (listof (or/c string? bytes?)))]
-                                   [type (one-of/c 'string 'bytes) 'string])
+                                   [type (one-of/c _string _bytes) _string])
          void?]{
 
 Sets @|readline|'s @tt{rl_completion_entry_function} to
-@scheme[proc]. The @scheme[type] argument determines the type of value
-upplied to the @scheme[proc].}
+@scheme[proc]. The @scheme[type] argument, whose possible values are
+from @schememodname[scheme/foreign], determines the type of value
+supplied to the @scheme[proc].}
 
 
 @section{License Issues}
