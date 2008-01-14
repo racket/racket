@@ -87,7 +87,7 @@ printed output.
 @include-section["performance.scrbl"]
 
 @; ----------------------------------------------------------------------
-@section[#:tag "scripts"]{Scripts}
+@include-section["running.scrbl"]
 
 @; ----------------------------------------------------------------------
 @section{Configuration and Compilation}
