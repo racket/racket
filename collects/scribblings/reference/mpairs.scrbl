@@ -11,7 +11,7 @@ operations to change the parts of the pair (like traditional Lisp and
 Scheme pairs).
 
 A @deftech{mutable list} is analogous to a list created with pairs, but
-instead created with immutable pairs.
+instead created with mutable pairs.
 
 @; ----------------------------------------
 @section{Mutable Pair Constructors and Selectors}
