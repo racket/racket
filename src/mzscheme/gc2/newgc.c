@@ -42,7 +42,21 @@
 #endif
 
 #if defined(sparc) || defined(__sparc) || defined(__sparc__)
-# define ALIGN_DOUBLES
+/* Required for `double' operations: */
+# define GC_ALIGN_EIGHT
+#endif
+
+/* Even when 8-byte alginment is not required by the processor, it's
+   better for floating-point performance (PowerPC) and may be required
+   for some libraries (VecLib in Mac OS X, including x86).
+
+   Under Windows, Mac OS X, and Linux x86_64, malloc() returns 16-byte
+   aligned data. And, actually, VecLib says that it requires
+   16-byte-aligned data. So, in those cases, GC_ALIGN_SIXTEEN might be
+   better --- but that's a lot more expensive, increasing DrScheme's
+   initial footprint by almost 10%. */
+#ifndef GC_ALIGN_EIGHT
+# define GC_ALIGN_EIGHT
 #endif
 
 #include "msgprint.c"
@@ -229,14 +243,24 @@ struct mpage {
   void **backtrace;
 };
 
-#ifdef ALIGN_DOUBLES
-/* Make sure alloction starts out double-word aligned: */
-# define PREFIX_SIZE WORD_SIZE
-# define PREFIX_WSIZE 1      
+/* Make sure alloction starts out double-word aligned. 
+   The header on each allocated object is one word, so to make
+   the content double-word aligned, we deeper. */
+#ifdef GC_ALIGN_SIXTEEN
+# ifdef SIXTY_FOUR_BIT_INTEGERS
+#  define PREFIX_WSIZE 1
+# else
+#  define PREFIX_WSIZE 3
+# endif
 #else
-# define PREFIX_SIZE 0
-# define PREFIX_WSIZE 0      
+# if defined(GC_ALIGN_EIGHT) && !defined(SIXTY_FOUR_BIT_INTEGERS)
+#  define PREFIX_WSIZE 1
+# else
+#  define PREFIX_WSIZE 0
+# endif
 #endif
+#define PREFIX_SIZE (PREFIX_WSIZE * WORD_SIZE)
+
 
 /* this is the maximum size of an object that will fit on a page, in words.
    the "- 3" is basically used as a fudge/safety factor, and has no real, 
@@ -441,12 +465,35 @@ static void *allocate_big(size_t sizeb, int type)
   return PTR(NUM(addr) + PREFIX_SIZE + WORD_SIZE);
 }
 
-#ifdef ALIGN_DOUBLES
-# define ALIGN_SIZE(sizew) (((sizew) & 0x1) ? ((sizew) + 1) : (sizew))
-# define ALIGN_BYTES_SIZE(sizeb) (((sizeb) & WORD_SIZE) ? ((sizeb) + WORD_SIZE) : (sizeb))
+/* ALIGN_BYTES_SIZE can assume that the argument is already word-aligned. */
+/* INSET_WORDS is how many words in a tagged array can be padding, plus one; it
+   must also be no more than the minimum size of a tagged element. */
+#ifdef GC_ALIGN_SIXTEEN
+# ifdef SIXTY_FOUR_BIT_INTEGERS
+#  define ALIGN_SIZE(sizew) (((sizew) & 0x1) ? ((sizew) + 1) : (sizew))
+#  define ALIGN_BYTES_SIZE(sizeb) (((sizeb) & WORD_SIZE) ? ((sizeb) + WORD_SIZE) : (sizeb))
+#  define INSET_WORDS 1
+# else
+#  define ALIGN_SIZE(sizew) (((sizew) & 0x3) ? ((sizew) + (4 - ((sizew) & 0x3))) : (sizew))
+#  define ALIGN_BYTES_SIZE(sizeb) (((sizeb) & (3 * WORD_SIZE)) ? ((sizeb) + ((4 * WORD_SIZE) - ((sizeb) & (3 * WORD_SIZE)))) : (sizeb))
+#  define INSET_WORDS 3
+# endif
 #else
-# define ALIGN_SIZE(sizew) (sizew)
-# define ALIGN_BYTES_SIZE(sizeb) (sizeb)
+# ifdef GC_ALIGN_EIGHT
+#  ifdef SIXTY_FOUR_BIT_INTEGERS
+#   define ALIGN_SIZE(sizew) (sizew)
+#   define ALIGN_BYTES_SIZE(sizeb) (sizeb)
+#   define INSET_WORDS 0
+#  else
+#   define ALIGN_SIZE(sizew) (((sizew) & 0x1) ? ((sizew) + 1) : (sizew))
+#   define ALIGN_BYTES_SIZE(sizeb) (((sizeb) & WORD_SIZE) ? ((sizeb) + WORD_SIZE) : (sizeb))
+#   define INSET_WORDS 1
+#  endif
+# else
+#  define ALIGN_SIZE(sizew) (sizew)
+#  define ALIGN_BYTES_SIZE(sizeb) (sizeb)
+#  define INSET_WORDS 0
+# endif
 #endif
 
 inline static void *allocate(size_t sizeb, int type)
@@ -901,7 +948,7 @@ static void *get_backtrace(struct mpage *page, void *ptr)
   unsigned long delta;
 
   if (page->big_page)
-    ptr = PTR(page->addr + PREFIX_SIZE);
+    ptr = PTR(page->addr + PREFIX_SIZE + WORD_SIZE);
 
   delta = PPTR(ptr) - PPTR(page->addr);
   return page->backtrace[delta - 1];
@@ -1690,7 +1737,7 @@ inline static void mark_normal_obj(struct mpage *page, void *ptr)
     case PAGE_TARRAY: {
       struct objhead *info = (struct objhead *)((char*)ptr - WORD_SIZE);
       unsigned short tag = *(unsigned short*)ptr;
-      void **temp = ptr, **end = PPTR(info) + (info->size - 1);
+      void **temp = ptr, **end = PPTR(info) + (info->size - INSET_WORDS);
       
       while(temp < end) temp += mark_table[tag](temp);
       break;
@@ -1718,7 +1765,7 @@ inline static void mark_acc_big_page(struct mpage *page)
     case PAGE_XTAGGED: GC_mark_xtagged(start); break;
     case PAGE_TARRAY: {
       unsigned short tag = *(unsigned short *)start;
-      end -= 1;
+      end -= INSET_WORDS;
       while(start < end) start += mark_table[tag](start);
       break;
     }
@@ -2295,7 +2342,7 @@ inline static void internal_mark(void *p)
       case PAGE_XTAGGED: GC_mark_xtagged(start); break;
       case PAGE_TARRAY: {
 	unsigned short tag = *(unsigned short *)start;
-	end -= 1;
+	end -= INSET_WORDS;
 	while(start < end) start += mark_table[tag](start);
 	break;
       }
@@ -2316,7 +2363,7 @@ inline static void internal_mark(void *p)
       }
       case PAGE_TARRAY: {
 	void **start = p;
-	void **end = PPTR(info) + (info->size - 1);
+	void **end = PPTR(info) + (info->size - INSET_WORDS);
 	unsigned short tag = *(unsigned short *)start;
 	while(start < end) start += mark_table[tag](start);
 	break;
@@ -2798,7 +2845,7 @@ static void repair_heap(void)
 	      break;
 	    case PAGE_TARRAY: {
 	      unsigned short tag = *(unsigned short *)start;
-	      end -= 1;
+	      end -= INSET_WORDS;
 	      while(start < end) start += fixup_table[tag](start);
 	      break;
 	    }
@@ -2851,7 +2898,7 @@ static void repair_heap(void)
 		struct objhead *info = (struct objhead *)start;
 		size_t size = info->size;
 		if(info->mark) {
-		  void **tempend = (start++) + (size - 1);
+		  void **tempend = (start++) + (size - INSET_WORDS);
 		  unsigned short tag = *(unsigned short*)start;
 		  while(start < tempend)
 		    start += fixup_table[tag](start);

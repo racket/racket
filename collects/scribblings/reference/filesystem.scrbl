@@ -57,7 +57,11 @@ by @scheme[kind], which must be one of the following:
  @item{@indexed-scheme['temp-dir] --- the standard directory for
  storing temporary files. Under @|AllUnix|, this is the directory
  specified by the @indexed-envvar{TMPDIR} environment variable, if it
- is defined.}
+ is defined, otherwise it is the first path that exists among
+ @filepath{/var/tmp}, @filepath{/usr/tmp}, and @filepath{/tmp}. Under
+ Windows, the result is the directory specified by the
+ @indexed-envvar{TMP} or @indexed-envvar{TEMP} environment variable,
+ if it is defined, otherwise it is the current directory.}
 
  @item{@indexed-scheme['init-dir] --- the directory containing the
  initialization file used by stand-alone @exec{mzscheme} executable.
