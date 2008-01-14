@@ -6,6 +6,7 @@
          mlist?
          mlength
          mappend
+         mappend!
          mreverse
          mlist-tail
          mlist-ref
@@ -94,6 +95,19 @@
                 b
                 (mcons (mcar a) (loop (mcdr a)))))]
    [(a . l) (mappend a (apply mappend l))]))
+
+;; mappend! : like append, but mutate each list to refer to the next.
+;; modeled loosely on the v372 behavior
+
+(define mappend!
+  (case-lambda
+    [() null]
+    [(a) a]
+    [(a b) (let loop ([atail a])
+             (cond [(null? atail) b]
+                   [(null? (mcdr atail)) (set-mcdr! atail b) a]
+                   [else (loop (mcdr atail))]))]
+    [(a . l) (mappend! a (apply mappend! l))]))
 
 (define (mreverse l)
   (let loop ([l l][a null])
