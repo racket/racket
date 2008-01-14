@@ -354,6 +354,11 @@ i {
   background-color: #E8E8FF;
 }
 
+.inlinetop{ 
+  display: inline;
+  vertical-align: top;
+}
+
 .together {
   width: 100%;
 }
