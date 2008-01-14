@@ -5685,6 +5685,9 @@ find_system_path(int argc, Scheme_Object **argv)
 	return scheme_make_path(p);
     }
 
+    if (scheme_directory_exists("/var/tmp"))
+      return scheme_make_path("/var/tmp");
+
     if (scheme_directory_exists("/usr/tmp"))
       return scheme_make_path("/usr/tmp");
 
