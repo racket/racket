@@ -8,6 +8,7 @@
          mappend
          mappend!
          mreverse
+         mreverse!
          mlist-tail
          mlist-ref
          mmemq
@@ -103,10 +104,11 @@
   (case-lambda
     [() null]
     [(a) a]
-    [(a b) (let loop ([atail a])
-             (cond [(null? atail) b]
-                   [(null? (mcdr atail)) (set-mcdr! atail b) a]
-                   [else (loop (mcdr atail))]))]
+    [(a b) (if (null? a)
+               b
+               (let loop ([atail a])
+                 (cond [(null? (mcdr atail)) (set-mcdr! atail b) a]
+                       [else (loop (mcdr atail))])))]
     [(a . l) (mappend! a (apply mappend! l))]))
 
 (define (mreverse l)
@@ -114,6 +116,14 @@
     (cond
      [(null? l) a]
      [else (loop (mcdr l) (mcons (mcar l) a))])))
+
+(define (mreverse! l)
+  (let loop ([l l][prev null])
+    (cond
+     [(null? l) prev]
+     [else (let ([next (mcdr l)])
+             (set-mcdr! l prev)
+             (loop next l))])))
 
 (define (mlist-tail l n)
   (cond

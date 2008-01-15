@@ -79,7 +79,7 @@
                                                         the-cat]
                                                        [else 
                                                         (fprintf (current-error-port)
-                                                                 "WARNING: base category: ~e from: ~e"
+                                                                 "WARNING: bad base category: ~e from: ~e\n"
                                                                  cat
                                                                  dir)]))
                                                    ;; Priority

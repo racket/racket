@@ -95,19 +95,28 @@ Like @scheme[list-tail], but for @tech{mutable lists}.}
 
 Like @scheme[append], but for @tech{mutable lists}.}
 
+
 @defproc*[([(mappend! [mlst mlist?] ...) mlist?]
            [(mappend! [mlst mlist?] ... [v any/c]) any/c])]{
 
-The @scheme[mappend!] procedure appends the given lists by mutating the tail of
-each to refer to the next, using @scheme[set-mcdr!]. Empty lists are silently
-ignored; in particular, the result of calling @scheme[mappend!] with one or
-more empty lists is the same as the result of the call with the empty lists
-removed from the set of arguments.}
+The @scheme[mappend!] procedure appends the given lists by mutating
+the tail of each to refer to the next, using @scheme[set-mcdr!]. Empty
+lists are dropped; in particular, the result of calling
+@scheme[mappend!] with one or more empty lists is the same as the
+result of the call with the empty lists removed from the set of
+arguments.}
 
 
 @defproc[(mreverse [mlst mlist?]) mlist?]{
 
 Like @scheme[reverse], but for @tech{mutable lists}.}
+
+
+@defproc[(mreverse! [mlst mlist?]) mlist?]{
+
+Like @scheme[mreverse], but destructively reverses the list by using
+all of the mutable pairs in @scheme[mlst] and changing them with
+@scheme[set-mcdr!].}
 
 
 @defproc[(mmap [proc procedure?] [mlst mlist?] ...+) 
