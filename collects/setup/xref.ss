@@ -10,29 +10,35 @@
 (define cached-xref #f)
 
 (define (get-dests dir)
-  (map (lambda (d)
-         (if (pair? d)
-           (let* ([flags (if (pair? (cdr d)) (cadr d) null)]
-                  [name (if (and (pair? (cdr d)) (pair? (cddr d)) (caddr d))
-                          (cadr d)
-                          (let-values ([(base name dir?) (split-path (car d))])
-                            (path-replace-suffix name #"")))])
-             (build-path
-              (cond
-               [(memq 'main-doc-root flags)
-                (find-doc-dir)]
-               [(memq 'user-doc-root flags)
-                (find-user-doc-dir)]
-               [(memq 'user-doc flags)
-                (build-path (find-user-doc-dir) name)]
-               [(or (memq 'main-doc flags)
-                    (pair? (path->main-collects-relative dir)))
-                (build-path (find-doc-dir) name)]
-               [else
-                (build-path dir "compiled" "doc" name)])
-              "out.sxref"))
-           #f))
-       ((get-info/full dir) 'scribblings)))
+  (let* ([i (get-info/full dir)]
+         [scribblings (i 'scribblings)]
+         [categories (i 'doc-categories (lambda ()
+                                          (map (lambda (d) 'library) scribblings)))])
+  (map (lambda (d cat)
+         (and (not (eq? cat 'omit))
+              (not (and (pair? cat) (eq? (car cat) 'omit)))
+              (pair? d)
+              (let* ([flags (if (pair? (cdr d)) (cadr d) null)]
+                     [name (if (and (pair? (cdr d)) (pair? (cddr d)) (caddr d))
+                               (cadr d)
+                               (let-values ([(base name dir?) (split-path (car d))])
+                                 (path-replace-suffix name #"")))])
+                (build-path
+                 (cond
+                  [(memq 'main-doc-root flags)
+                   (find-doc-dir)]
+                  [(memq 'user-doc-root flags)
+                   (find-user-doc-dir)]
+                  [(memq 'user-doc flags)
+                   (build-path (find-user-doc-dir) name)]
+                  [(or (memq 'main-doc flags)
+                       (pair? (path->main-collects-relative dir)))
+                   (build-path (find-doc-dir) name)]
+                  [else
+                   (build-path dir "compiled" "doc" name)])
+                 "out.sxref"))))
+       scribblings
+       categories)))
 
 (define (load-collections-xref [report-loading void])
   (or cached-xref
