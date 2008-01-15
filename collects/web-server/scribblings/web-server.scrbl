@@ -1,7 +1,7 @@
 #lang scribble/doc
 @require["web-server.ss"]
 
-@title[#:tag "web-server-ref"]{@bold{Web Server}: Reference Manual}
+@title[#:tag "web-server-ref"]{@bold{Web Server}: PLT HTTP Server}
 @author{Jay McCarthy (jay@"@"plt-scheme.org)}
 
 The @web-server collection provides libraries that can be used to

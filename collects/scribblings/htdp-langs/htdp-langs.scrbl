@@ -3,6 +3,10 @@
 
 @title{@italic{How to Design Programs} Languages}
 
+The languages documented in this manual are provided by DrScheme to be
+used with the @italic{@link["http://www.htdp.org/"]{How to Design
+Programs}} book.
+
 @table-of-contents[]
 
 @;------------------------------------------------------------------------

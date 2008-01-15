@@ -4,7 +4,7 @@
 (require scribble/manual)
 ]
 
-@title{@bold{DrScheme}: PLT Programming Environment Manual}
+@title{@bold{DrScheme}: PLT Programming Environment}
 
 Nothing yet.
 

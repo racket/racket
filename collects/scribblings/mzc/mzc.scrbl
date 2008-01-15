@@ -4,7 +4,7 @@
 
 @(define rare @emph{This mode is rarely useful.})
 
-@title{@exec{mzc}: Compilation and Packaging}
+@title{@exec{mzc}: PLT Compilation and Packaging}
 
 The @exec{mzc} tool is a kind of Swiss-army knife for PLT Scheme
 compilation and packaging tasks. Its main action is determined through
