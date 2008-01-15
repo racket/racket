@@ -1,6 +1,5 @@
 
 (module info setup/infotab
-  (define doc.txt "doc.txt")
   (define name "readline")
   (define scribblings '(("readline.scrbl")))
   (define blurb
