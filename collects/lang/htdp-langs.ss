@@ -33,8 +33,11 @@
            ;; and the user's namespace in the teaching languages
            "private/set-result.ss"
            
-           "stepper-language-interface.ss"
-           "debugger-language-interface.ss")
+           "stepper-language-interface.ss"           
+           "debugger-language-interface.ss"
+           
+           stepper/private/shared)
+  
   
   (provide tool@)
   
@@ -549,16 +552,19 @@
                                         ,@body-exps)))))))]
                   [(require) 
                    (set! state 'done-or-exn)
-                   (syntax
-                    (let ([done-already? #f])
-                      (dynamic-wind
-                       void
-                       (lambda () 
-                         (dynamic-require ''#%htdp #f))  ;; work around a bug in dynamic-require
-                       (lambda () 
-                         (unless done-already?
-                           (set! done-already? #t)
-                           (current-namespace (module->namespace ''#%htdp)))))))]
+                   (stepper-syntax-property
+                    (syntax
+                     (let ([done-already? #f])
+                       (dynamic-wind
+                        void
+                        (lambda () 
+                          (dynamic-require ''#%htdp #f))  ;; work around a bug in dynamic-require
+                        (lambda () 
+                          (unless done-already?
+                            (set! done-already? #t)
+                            (current-namespace (module->namespace ''#%htdp)))))))
+                    'stepper-skip-completely
+                    #t)]
                   [(done-or-exn)
                    (cond
                      [saved-exn
