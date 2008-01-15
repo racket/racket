@@ -11,11 +11,12 @@
     (let ([new-module-id (gensym "-htdp")])
       (with-syntax ([(tp-spec ...) teachpack-specs])
       (list (let ([mod (expand #`(module #,new-module-id #,language-module-spec 
-                                   (require-for-syntax mzscheme)
+                                   ;; why was this here? (JBC,2007-12-15)
+                                   #;(require-for-syntax mzscheme)
                                    (require tp-spec ...)
                                    #,@exps))])
               (rewrite-module mod))
-            #`(require #,new-module-id)
+            #`(require (quote #,new-module-id))
 ;            #`(let ([done-already? #f])
 ;                (dynamic-wind
 ;                 void
@@ -31,6 +32,7 @@
   ;; print out all results.
   
   (define (rewrite-module stx)
+    (printf "expanded: ~s\n" stx)
     (syntax-case stx (module #%plain-module-begin)
       [(module name lang (#%plain-module-begin bodies ...))
        (with-syntax ([(rewritten-bodies ...) 
@@ -52,7 +54,7 @@
             (syntax (provide ids ...))))]
         [else
          (let ([body (car bodies)])
-           (syntax-case body (define-values define-syntaxes require require-for-syntax provide)
+           (syntax-case body (define-values define-syntaxes #%require require-for-syntax provide)
              [(define-values (new-vars ...) e)
               (cons body (loop (cdr bodies)
                                (append
@@ -63,7 +65,7 @@
                                (append
                                 ids 
                                 (filter-ids (syntax (new-vars ...))))))]
-             [(require specs ...)
+             [(#%require specs ...)
               (cons body (loop (cdr bodies) ids))]
              [(require-for-syntax specs ...)
               (cons body (loop (cdr bodies) ids))]
