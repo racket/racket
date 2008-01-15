@@ -28,6 +28,8 @@
   (define display-only-errors (make-parameter #f))
   
   (define error-has-occurred-box (make-parameter #f))
+  
+  (define show-all-steps (make-parameter #f))
 
   (define (stream-ify expr-list iter)
     (lambda ()
@@ -51,15 +53,12 @@
                       "ran out of expected steps. Given result: ~v" result)
                 (begin
                   (if (compare-steps result (car all-steps))
-                      (begin
-                        ;; uncomment to see successful steps, too:
-                        #;(printf "test-sequence: steps match for expected result: ~v\n"
-                                (car all-steps))
-                        (void))
+                      (when (and (show-all-steps) (not (display-only-errors)))
+                        (printf "test-sequence: steps match for expected result: ~v\n"
+                                (car all-steps)))
                       (warn 'test-sequence
                           "steps do not match\n   given: ~v\nexpected: ~v"
-                          result (car all-steps)))
-
+                          (show-result result) (car all-steps)))
                   (set! all-steps (cdr all-steps)))))]
            [program-expander
             (lambda (init iter)
@@ -71,7 +70,9 @@
                                  (cons expr (read-loop)))))]
                      [exprs (wrap-in-module
                              exps namespace-spec teachpack-specs)])
-                ((stream-ify exprs iter))))])
+                ((stream-ify (let ([ans exprs])
+                               (printf "~s\n" ans)
+                               ans) iter))))])
       (let/ec escape
         (parameterize ([error-escape-handler (lambda () (escape (void)))])
           (go program-expander receive-result render-settings
@@ -186,10 +187,24 @@
                                'before)
                  (equal? err-msg (before-error-result-err-msg actual))))]
       [`(finished-stepping) (finished-stepping? actual)]
-      [`(ignore) (warn 'compare-steps "ignoring one step")]
+      [`(ignore) (warn 'compare-steps "ignoring one step") #t]
       [else (begin (warn 'compare-steps
                          "unexpected expected step type: ~v" expected)
                    #f)]))
+  
+  ;; used to display results in an error message
+  (define (show-result r)
+    (if (before-after-result? r)
+        (list 'before-after-result
+              (map (lambda (fn)
+                     (unless (list? (fn r))
+                       (warn 'show-result "not a list: ~v"
+                             (syntax-object->hilite-datum (fn r))))
+                     (map syntax-object->hilite-datum
+                          (fn r)))
+             (list before-after-result-pre-exps
+                   before-after-result-post-exps)))
+        r))
 
   ;; noisy-equal? : (any any . -> . boolean)
   ;; like equal?, but prints a noisy error message
@@ -1654,8 +1669,3 @@
   
 
   )
-;; Local variables:
-;; enable-local-eval: t
-;; eval:(add-color-pattern "{[^{}]+}" '*/h404)
-;; hide-local-variable-section: t
-;; End:
