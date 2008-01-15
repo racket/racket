@@ -763,7 +763,7 @@
                   "'[' cannot appear here. Array specifications must immediately follow the type. Methods begin with '('."
                   srt ne))
                 ((open-separator? n-tok) 
-                 (parse-error (format "Method parameters must begin with '(' found ~a." n-out) srt ne))
+                 (parse-error (format "Method parameter list must begin with '(', found ~a." n-out) srt ne))
                 ((id-token? n-tok)
                  (parse-error
                   (string-append 
