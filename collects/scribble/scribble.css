@@ -137,7 +137,8 @@ font-weight: bold;
 
 .tocsub {
   text-align: left;
-  background-color: #DCF5F5;
+  margin-top: 0.5em;
+  background-color: #F5F5F5;
 }
 
 .tocviewtitle {
@@ -180,6 +181,11 @@ font-weight: bold;
 .tocsubseclink {
   font-size: 80%;
   text-decoration: none;
+}
+
+.tocsubnonseclink {
+  text-decoration: none;
+  padding-left: 0.5em;
 }
 
 .tocsubtitle {

@@ -51,3 +51,5 @@ one of the following command-line flags:
 @include-section["plt.scrbl"]
 @include-section["ext.scrbl"]
 @include-section["zo.scrbl"]
+
+@index-section[]

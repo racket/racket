@@ -277,7 +277,8 @@
                                                                         flows)))
                                                    (table-flowss table))))])
                              (apply append (map flow-element-targets (flow-paragraphs (part-flow d)))))
-                           (map flatten (part-parts d)))))])
+                           (map flatten (part-parts d)))))]
+                   [any-parts? (ormap part? ps)])
               (if (null? ps)
                   null
                   `((div ((class "tocsub"))
@@ -303,7 +304,9 @@
                                                                (format "#~a" (anchor-name (tag-key (target-element-tag p) ri)))))
                                                     (class ,(if (part? p)
                                                                 "tocsubseclink"
-                                                                "tocsublink")))
+                                                                (if any-parts?
+                                                                    "tocsubnonseclink"
+                                                                    "tocsublink"))))
                                                    ,@(if (part? p)
                                                          (render-content (or (part-title-content p) '("???")) d ri)
                                                          (render-content (element-content p) d ri)))))))))
