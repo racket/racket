@@ -12,7 +12,7 @@ of these servlets. This API is provided by @filepath{servlet.ss}.
 
 @; ------------------------------------------------------------
 @section[#:tag "module-servlets"]{Definition}
-@require[(for-label "dummy-servlet.ss")] ; to give a binding context
+@require[(for-label "dummy-servlet.ss")] @; to give a binding context
 
 @declare-exporting[web-server/scribblings/dummy-servlet]
 

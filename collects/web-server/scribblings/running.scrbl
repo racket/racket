@@ -52,7 +52,27 @@ dispatcher. See @filepath{run.ss} for an example of such a script.
  Constructs an appropriate @scheme[dispatch-config^], invokes the @scheme[dispatch-server\@],
  and calls its @scheme[serve] function.
 }
+                   
+@; XXX Not the right `server' above.
 
+Here's an example of a simple web server that serves files
+from a given path:
+
+@require[(for-label web-server/dispatchers/filesystem-map)]
+@require[(prefix-in files: (for-label web-server/dispatchers/dispatch-files))]
+
+@schemeblock[
+(define (start-file-server base)
+  (serve 
+   #:dispatch
+   (files:make
+    #:url->path (make-url->path base)
+    #:path->mime-type
+    (lambda (path)
+      #"application/octet-stream"))
+   #:port 8080))
+]            
+                   
 @defproc[(serve/ports [#:dispatch dispatch dispatcher?]
                       [#:tcp\@ tcp\@ tcp-unit^ raw:tcp\@]
                       [#:ports ports (listof integer?) (list 80)]
