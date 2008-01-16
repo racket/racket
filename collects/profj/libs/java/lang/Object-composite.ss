@@ -350,7 +350,7 @@
                 (case (runtime-type-type rt)
                   ((byte short int long) (and (number? val) (not (inexact? val))))
                   ((char) (char? val))
-                  ((float double) (and (number? val) (inexact? val))))
+                  ((float double) (number? val) #;(and (number? val) (inexact? val))))
                 (is-a? val (runtime-type-type rt)))
             (and
              (is-a? val java-array)
