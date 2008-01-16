@@ -73,10 +73,9 @@ start @exec{mzscheme} with no command-line arguments:
 EOS
 ]
 
-If you're using a plain Unix terminal (e.g., not inside @exec{emacs}),
-if you have GNU Readline installed on your system, and if you'd like
-Readline support in @exec{mzscheme}, then evaluate
-@scheme[(require readline)]. If you also evaluate
+If you're using a plain terminal, if you have GNU Readline installed
+on your system, and if you'd like Readline support in @exec{mzscheme},
+then evaluate @scheme[(require readline)]. If you also evaluate
 @scheme[(install-readline!)], then your @filepath{~/.mzschemerc} is
 updated to load Readline whenever you start @exec{mzscheme} for
 interactive evaluation.

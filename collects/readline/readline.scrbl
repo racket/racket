@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           (for-label scheme/base
+                     readline
                      readline/pread
                      readline/readline
                      scheme/contract
@@ -27,8 +28,21 @@ You can start MzScheme with
 
 @commandline{mzscheme -il readline}
 
-or you can put the following in your @filepath{~/.mzschemerc} so that
-MzScheme starts with @|readline| support when appropriate:
+or evaluate
+
+@schemeblock[
+(require readline)
+]
+
+in the MzScheme @scheme[read-eval-print-loop] to load @|readline|
+manually.  You can also put (require readline) in your
+@filepath{~/.mzschemerc}, so that MzScheme automatically loads
+@|readline| support in interactive mode.
+
+If you want to enable @|readline| support only sometimes---such as
+only when you use an @exec{xterm}, and not when you use an Emacs
+shell---then you can use @scheme[dynamic-require], as in the following
+example:
 
 @schemeblock[
 (when (regexp-match? #rx"xterm" 
@@ -36,18 +50,30 @@ MzScheme starts with @|readline| support when appropriate:
   (dynamic-require 'readline #f))
 ]
 
-The @schememodname[readline] module is mostly a wrapper around
-@schememodname[readline/rep-start]; it will @emph{not} invoke
-@schememodname[readline/rep--start] if the input port is not a
-terminal port (e.g., when the input is redirected from a file); see
-@scheme[terminal-port?].  Still, the @envvar{TERM} condition above is
-useful for starting MzScheme in dumb terminals (e.g., inside Emacs).
+The @schememodname[readline] library automatically checks whether the
+current input port is a terminal, as determined by
+@scheme[terminal-port?], and it installs @|readline| only to replace
+terminal ports.  The @schememodname[readline/rep-start] module
+installs @|readline| without a terminal check.
 
-Completion is set to use the visible bindings in the current
-namespace; this is far from ideal, but it's better than @|readline|'s
-default filename completion which is rarely useful.  In addition, the
-@|readline| history is stored across invocations in MzScheme's
-preferences file, assuming that MzScheme exits normally.
+By default, @|readline|'s completion is set to use the visible
+bindings in the current namespace. This is far from ideal, but it's
+better than @|readline|'s default filename completion which is rarely
+useful.  In addition, the @|readline| history is stored across
+invocations in MzScheme's preferences file, assuming that MzScheme
+exits normally.
+
+@defproc[(install-readline!) void?]{
+
+Adds @scheme[(require readline)] to the result of
+@scheme[(find-system-path 'init-file)], which is
+@filepath{~/.mzschemerc} under Unix. Consequently, @|readline| will be
+loaded whenever MzScheme is started in interactive mode. The
+declaration is added only if it is not already present, as determined
+by @scheme[read]ing and checking all top-level expressions in the
+file. For more fine-grained control, such as conditionally loading
+@|readline| based on an environment variable, edit
+@filepath{~/.mzschemerc} manually.}
 
 
 @section{Interacting with the @|Readline|-Enabled Input Port }

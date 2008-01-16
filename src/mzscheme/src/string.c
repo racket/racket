@@ -205,7 +205,14 @@ static char *nl_langinfo(int which)
 #ifdef DONT_USE_LOCALE
 # define mz_iconv_nl_langinfo() ""
 #else
-# define mz_iconv_nl_langinfo() nl_langinfo(0)
+static char *mz_iconv_nl_langinfo(){
+  char *s;
+  s = nl_langinfo(0);
+  if (!s)
+    return "";
+  else
+    return s;
+}
 #endif
 
 static const char * const STRING_IS_NOT_UTF_8 = "string is not a well-formed UTF-8 encoding: ";
