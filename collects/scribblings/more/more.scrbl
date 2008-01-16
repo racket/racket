@@ -24,7 +24,7 @@
 @interaction-eval[#:eval break-eval
                   (define (show-fail n)
                     (error 'tcp-listen
-                           "listen on ~a failed (Address already in use; errno=48)"
+                           "listen on ~a failed (address already in use)"
                            n))]
 @interaction-eval[#:eval break-eval (require xml net/url)]
 
