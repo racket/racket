@@ -1477,10 +1477,15 @@
 (define cstruct-info
   (let ([table (make-hash-table 'weak)])
     (lambda (cstruct msg/fail-thunk . args)
-      (cond [(eq? 'set! msg/fail-thunk) (hash-table-put! table cstruct args)]
+      (cond [(eq? 'set! msg/fail-thunk) 
+             (hash-table-put! table cstruct (make-ephemeron cstruct args))]
             [(and cstruct ; might get a #f if there were no slots
                   (hash-table-get table cstruct (lambda () #f)))
-             => (lambda (xs) (apply values xs))]
+             => (lambda (xs) 
+                  (let ([v (ephemeron-value xs)])
+                    (if v 
+                        (apply values v)
+                        (msg/fail-thunk))))]
             [else (msg/fail-thunk)]))))
 
 ;; ----------------------------------------------------------------------------
