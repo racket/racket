@@ -42,7 +42,7 @@
 	   set-use-background-frame!
 	   enable-click-advance!
 	   title-h set-title-h! current-slide-assembler
-	   current-page-number-font current-page-number-color 
+	   current-page-number-font current-page-number-color current-page-number-adjust
            current-titlet current-para-width
 	   set-page-numbers-visible! done-making-slides
            clickback make-slide-inset slide-inset? apply-slide-inset))

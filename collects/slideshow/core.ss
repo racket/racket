@@ -173,6 +173,12 @@
 			  (unless (s . is-a? . color%)
 			    (raise-type-error 'current-page-number-color "color%" s))
 			  s)))
+      (define current-page-number-adjust (make-parameter 
+                                          (λ (n s) s)
+                                          (lambda (f)
+                                            (unless (procedure-arity-includes? f 2)
+                                              (raise-type-error 'current-page-number-adjust "procedure that accepts 2 arguments" f))
+                                            f)))
       
       (define page-number 1)
 

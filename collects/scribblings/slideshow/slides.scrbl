@@ -276,6 +276,15 @@ visible).}
 Parameter that determines the color used to draw the page number (if
 visible).}
 
+@defparam[current-page-number-adjust proc (-> number? string? string?)]{ 
+Parameter that controls the precise text
+that appears to indicate the page numbers (if visible). The
+input to the function is the default string and the slide
+number, and the result is what is drawn in the bottom right
+corner. The default parameter value just returns its first
+argument.
+} 
+
 @; ------------------------------------------------------------------------
 
 @section{Constants and Layout Variables}
