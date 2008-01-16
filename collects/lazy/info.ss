@@ -1,7 +1,7 @@
 (module info setup/infotab
   (require (lib "string-constant.ss" "string-constants"))
   (define name "Lazy Scheme")
-  (define doc.txt "doc.txt")
+  (define scribblings '(("lazy.scrbl")))
   (define drscheme-language-modules '(("lazy.ss" "lazy")))
   (define drscheme-language-positions
     `((,(string-constant experimental-languages) "Lazy Scheme")))

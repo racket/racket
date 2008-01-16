@@ -14,6 +14,7 @@
      "Ian Barland, "
      "Eli Barzilay, "
      "Gann Bierner, "
+     "Filipe Cabecinhas, "
      "Richard Cleis, "
      "John Clements, "
      "Richard Cobbe, "
