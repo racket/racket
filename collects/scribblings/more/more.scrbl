@@ -12,21 +12,21 @@
 @(define quick @other-manual['(lib "quick.scrbl" "scribblings/quick")])
 @(define guide @other-manual['(lib "guide.scrbl" "scribblings/guide")])
 
-@(define break-eval (make-base-eval))
-@interaction-eval[#:eval break-eval
-                  (define (show-reload)
-                    (printf " [re-loading serve.ss]\n"))]
-@interaction-eval[#:eval break-eval
+@(define more-eval (make-base-eval))
+@interaction-eval[#:eval more-eval
+                  (define (show-load re?)
+                    (fprintf (current-error-port) " [~aloading serve.ss]\n" (if re? "re-" "")))]
+@interaction-eval[#:eval more-eval
                   (define (serve n) void)]
-@interaction-eval[#:eval break-eval
+@interaction-eval[#:eval more-eval
                   (define (show-break)
                     (fprintf (current-error-port) "^Cuser break"))]
-@interaction-eval[#:eval break-eval
+@interaction-eval[#:eval more-eval
                   (define (show-fail n)
                     (error 'tcp-listen
                            "listen on ~a failed (address already in use)"
                            n))]
-@interaction-eval[#:eval break-eval (require xml net/url)]
+@interaction-eval[#:eval more-eval (require xml net/url)]
 
 @(define (whole-prog which [last? #f])
   (let ([file (format "step~a.txt" which)])
@@ -47,9 +47,12 @@ processes, which is the subject of this tutorial.
 
 Specifically, we show how to build a secure, multi-threaded,
 servlet-extensible, continuation-based web server. We use much more of
-the language than in @|quick|, and beware that the last couple of
-sections present material that is normally considered difficult. So if
-you're still new to Scheme, you may want to skip to @|guide|.
+the language than in @|quick|, and we expect you to click on syntax or
+function names that you don't recognize (which will take you to the
+relevant documentation). Beware that the last couple of sections
+present material that is normally considered difficult, so if you're
+still new to Scheme and have relatively little programming experience,
+you may want to skip to @|guide|.
 
 To get into the spirit of this tutorial, we suggest that you set
 DrScheme aside for a moment, and switch to raw @exec{mzscheme} in a
@@ -109,7 +112,8 @@ scheme
 Back in @exec{mzscheme}, try loading the file and running @scheme[go]:
 
 @interaction[
-(eval:alts (enter! "serve.ss") (printf " [loading serve.ss]\n"))
+#:eval more-eval
+(eval:alts (enter! "serve.ss") (show-load #f))
 (eval:alts (go) 'yep-it-works)
 ]
 
@@ -185,8 +189,8 @@ Copy the above three definitions---@scheme[serve],
 @filepath{serve.ss} and re-load:
 
 @interaction[
-#:eval break-eval
-(eval:alts (enter! "serve.ss") (show-reload))
+#:eval more-eval
+(eval:alts (enter! "serve.ss") (show-load #t))
 (eval:alts (serve 8080) (void))
 ]
 
@@ -206,7 +210,7 @@ interrupts the server loop:
 @onscreen{Stop} button once.}
 
 @interaction[
-#:eval break-eval
+#:eval more-eval
 (eval:alts (serve 8080) (show-break))
 (eval:alts code:blank (void))
 ]
@@ -215,7 +219,7 @@ Unfortunately, we cannot now re-start the server with the same port
 number:
 
 @interaction[
-#:eval break-eval
+#:eval more-eval
 (eval:alts (serve 8080) (show-fail 8080))
 ]
 
@@ -244,8 +248,8 @@ server thread and TCP listener:
 Try the new one:
 
 @interaction[
-#:eval break-eval
-(eval:alts (enter! "serve.ss") (show-reload))
+#:eval more-eval
+(eval:alts (enter! "serve.ss") (show-load #t))
 (define stop (serve 8081))
 ]
 
@@ -254,7 +258,7 @@ can shut down and restart the server on the same port number as often
 as you like:
 
 @interaction[
-#:eval break-eval
+#:eval more-eval
 (stop)
 (define stop (serve 8081))
 (stop)
@@ -283,10 +287,10 @@ thread, we can put each individual connection into its own thread:
 With this change, our server can now handle multiple threads at
 once. The handler is so fast that this fact will be difficult to
 detect, however, so try inserting @scheme[(sleep (random 10))] before
-the @scheme[handle] call above. If you make multiple connects from the
-web browser at the same time, some will return right away, and some
-will take up to 10 seconds. The random delays will be independent of
-the order in which you started the connections.
+the @scheme[handle] call above. If you make multiple connections from
+the web browser at roughly the same time, some will return soon, and
+some will take up to 10 seconds. The random delays will be independent
+of the order in which you started the connections.
 
 @; ----------------------------------------------------------------------
 @section{Terminating Connections}
@@ -298,7 +302,7 @@ like to implement a timeout for each connection thread.
 
 One way to implement the timeout is to create a second thread that
 waits for 10 seconds, and then kills the thread that calls
-@scheme[handle]. Threads are lightweight enough that this
+@scheme[handle]. Threads are lightweight enough in Scheme that this
 watcher-thread strategy works well:
 
 @schemeblock[
@@ -321,15 +325,15 @@ could add code to the watcher thread to close the streams as well as
 kill the thread, but Scheme offers a more general shutdown mechanism:
 @defterm{custodians}. A custodian is a kind of container for all
 resources other than memory, and it supports a
-@scheme[custodian-shutdown-all] that terminates and closes all
-resources within the container, whether they're threads, streams, or
-other kinds of limited resources.
+@scheme[custodian-shutdown-all] operation that terminates and closes
+all resources within the container, whether they're threads, streams,
+or other kinds of limited resources.
 
 Whenever a thread or stream is created, it is placed into the current
 custodian as determined by the @scheme[current-custodian]
 parameter. To place everything about a connection into a custodian, we
-@scheme[parameterize] all the resources creations to go into a new
-one:
+@scheme[parameterize] all the resource creations to go into a new
+custodian:
 
 @schemeblock[
 (define (accept-and-handle listener)
@@ -347,11 +351,10 @@ one:
 ]
 
 With this implementation, @scheme[in], @scheme[out], and the thread
-that calls @scheme[handle] all belong to the @scheme[cust]
-custodian. In addition, if we later change @scheme[handle] so that it,
-say, opens a file, then the file handles will also belong to
-@scheme[cust], so they will be reliably closed when @scheme[cust] is
-shut down.
+that calls @scheme[handle] all belong to @scheme[cust]. In addition,
+if we later change @scheme[handle] so that it, say, opens a file, then
+the file handles will also belong to @scheme[cust], so they will be
+reliably closed when @scheme[cust] is shut down.
 
 In fact, it's a good idea to change @scheme[serve] to that it uses a
 custodian, too:
@@ -372,7 +375,7 @@ custodian, too:
 That way, the @scheme[main-cust] created in @scheme[serve] not only
 owns the TCP listener and the main server thread, it also owns every
 custodian created for a connection. Consequently, the revised shutdown
-procedure for the server immediately terminates any active connection,
+procedure for the server immediately terminates all active connections,
 in addition to the main server loop.
 
 @whole-prog["4"]
@@ -381,8 +384,8 @@ After updating the @scheme[serve] and @scheme[accept-and-handle]
 functions as above, here's how you can simulate a malicious client:
 
 @interaction[
-#:eval break-eval
-(eval:alts (enter! "serve.ss") (show-reload))
+#:eval more-eval
+(eval:alts (enter! "serve.ss") (show-load #t))
 (define stop (serve 8081))
 (eval:alts (define-values (cin cout) (tcp-connect "localhost" 8081)) (void))
 ]
@@ -392,7 +395,7 @@ the stream that sends data from the server back to the client, you'll
 find that the server has shut down the connection:
 
 @interaction[
-#:eval break-eval
+#:eval more-eval
 (eval:alts (read-line cin) eof)
 ]
 
@@ -400,7 +403,7 @@ Alternatively, you don't have to wait 10 seconds if you explicitly
 shut down the server:
 
 @interaction[
-#:eval break-eval
+#:eval more-eval
 (eval:alts (define-values (cin2 cout2) (tcp-connect "localhost" 8081)) (void))
 (stop)
 (eval:alts (read-line cin2) eof)
@@ -426,7 +429,7 @@ takes a Scheme value that looks like HTML and turns it into actual
 HTML:
 
 @interaction[
-#:eval break-eval
+#:eval more-eval
 (xexpr->string '(html (head (title "Hello")) (body "Hi!")))
 ]
 
@@ -456,7 +459,7 @@ The @schememodname[net/url] library gives us @scheme[string->url],
 for getting from a string to parts of the URL that it represents:
 
 @interaction[
-#:eval break-eval
+#:eval more-eval
 (define u (string->url "http://localhost:8080/foo/bar?x=bye"))
 (url-path u)
 (map path/param-path (url-path u))
@@ -490,7 +493,7 @@ path element, like @scheme["foo"], to a handler function:
 
 With the new @scheme[require] import and new @scheme[handle],
 @scheme[dispatch], and @scheme[dispatch-table] definitions, our
-``Hello World!'' server has turn into an error server. You don't have
+``Hello World!'' server has turned into an error server. You don't have
 to stop the server to try it out. After modifying @filepath{serve.ss}
 with the new pieces, evaluate @scheme[(enter! "serve.ss")] and then
 try again to connect to the server. The web browser should show an
@@ -519,7 +522,7 @@ supplies through a form.
 
 The following helper function constructs an HTML form. The
 @scheme[label] argument is a string to show the user. The
-@scheme[next-url] argument is destination for the form results. The
+@scheme[next-url] argument is a destination for the form results. The
 @scheme[hidden] argument is a value to propagate through the form as a
 hidden field. When the user responds, the @scheme["number"] field in
 the form holds the user's value:
@@ -559,7 +562,7 @@ many ``hello''s as a user wants:
 
 As usual, once you have added these to your program, update with
 @scheme[(enter! "serve.ss")], and then visit
-@tt{http://localhost:8081/many}. Provide a number, and then you'll get
+@tt{http://localhost:8081/many}. Provide a number, and you'll receive
 a new page with that many ``hello''s.
 
 @; ----------------------------------------------------------------------
@@ -574,7 +577,7 @@ The solution to this class of problems is to limit the memory use of a
 connection. Inside @scheme[accept-and-handle], after the definition of
 @scheme[cust], add the line
 
-@scheme[(custodian-limit-memory cust (* 50 1024 1024))]
+@schemeblock[(custodian-limit-memory cust (* 50 1024 1024))]
 
 @whole-prog["7"]
 
@@ -583,17 +586,19 @@ way that memory accounting is defined, @scheme[cust] might also be
 charged for the core server implementation and all of the libraries
 loaded on start-up, so the limit cannot be too small. Also,
 garbage-collector overhead means that the actual memory use of the
-system can be some small multiple of 50 MB. The main guarantee is that
-different connections will not be charged for each other's memory use.
+system can be some small multiple of 50 MB. An important guarantee,
+however, is that different connections will not be charged for each
+other's memory use, so one misbehaving connection will not interfere
+with a different one.
 
 So, with the new line above, and assuming that you have a couple of
 hundred megabytes available for the @exec{mzscheme} process to use,
-then with the above limit, you shouldn't be able to crash the web
-server by requesting a ridiculously large number of ``hello''s.
+you shouldn't be able to crash the web server by requesting a
+ridiculously large number of ``hello''s.
 
 Given the @scheme["many"] example, it's a small step to a web server
-that accepts from clients arbitrary code to execute on the server. In
-that case, there are many additional security issues besides limiting
+that accepts arbitrary Scheme code to execute on the server. In that
+case, there are many additional security issues besides limiting
 processor time and memory consumption. The
 @schememodname[scheme/sandbox] library provides support to managing
 all those other issues.
@@ -608,10 +613,10 @@ topic: @defterm{continuations}. In fact, this facet of a web server
 needs @defterm{delimited continuations}, which PLT Scheme provides.
 
 The problem solved by continuations is related to servlet sessions and
-user input, where a computation spans multiple client
-connections. Often, client-side computation (as in AJAX) is the right
-solution to the problem, but many problems are best solved with a
-mixture of techniques (e.g., to take advantage of the browser's
+user input, where a computation spans multiple client connections
+@cite["Queinnec00"]. Often, client-side computation (as in AJAX) is the
+right solution to the problem, but many problems are best solved with
+a mixture of techniques (e.g., to take advantage of the browser's
 ``back'' button).
 
 As the multi-connection computation becomes more complex, propagating
@@ -712,7 +717,7 @@ around the cal to @scheme[dispatch]:
 
 Now, we can implement @scheme[send/suspend]. We use @scheme[call/cc]
 in the guise of @scheme[let/cc], which captures the current
-computation up to an enclosing @scheme[prompt], and binds that
+computation up to an enclosing @scheme[prompt] and binds that
 computation to an identifier---@scheme[k], in this case:
 
 @schemeblock[
@@ -746,8 +751,8 @@ generated tag:
 
 When the user submits the form, the handler associated with the form's
 URL is the old computation, stored as a continuation in the dispatch
-table. Invoking the continuation as a function restores the old
-computation, passing the @scheme[query] arguments as back to that
+table. Calling the continuation (like a function) restores the old
+computation, passing the @scheme[query] argument back to that
 computation.
 
 @whole-prog["9" #t]
@@ -774,8 +779,9 @@ Scheme, including papers on MrEd @cite["Flatt99"], memory accounting
 delimited continuations @cite["Flatt07"].
 
 The PLT Scheme distribution includes a production-quality web server
-that addresses all of the design points mentioned here and more. See
-@other-manual['(lib "web-server/scribblings/web-server.scrbl")].
+that addresses all of the design points mentioned here and more
+@cite["Krishnamurthi07"]. See @other-manual['(lib
+"web-server/scribblings/web-server.scrbl")].
 
 @; ----------------------------------------------------------------------
 
@@ -802,6 +808,20 @@ that addresses all of the design points mentioned here and more. See
              #:location "International Conference on Functional Programming"
              #:date "2007"
              #:url "http://www.cs.utah.edu/plt/publications/icfp07-fyff.pdf")
+
+  (bib-entry #:key "Krishnamurthi07"
+             #:author "Shriram Krishnamurthi, Peter Hopkins, Jay McCarthy, Paul T. Graunke, Greg Pettyjohn, and Matthias Felleisen"
+             #:title "Implementation and Use of the PLT Scheme Web Server"
+             #:location @italic{Higher-Order and Symbolic Computation}
+             #:date "2007"
+             #:url "http://www.cs.brown.edu/~sk/Publications/Papers/Published/khmgpf-impl-use-plt-web-server-journal/paper.pdf")
+
+  (bib-entry #:key "Queinnec00"
+             #:author "Christian Queinnec"
+             #:title "The Influence of Browsers on Evaluators or, Continuations to Program Web Servers"
+             #:location "International Conference on Functional Programming"
+             #:date "2000"
+             #:url "http://www-spi.lip6.fr/~queinnec/Papers/webcont.ps.gz")
 
   (bib-entry #:key "Wick04"
              #:author "Adam Wick and Matthew Flatt"

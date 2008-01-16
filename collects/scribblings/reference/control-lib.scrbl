@@ -7,16 +7,33 @@
 @note-lib-only[scheme/control]
 
 The @scheme[scheme/control] library provides various control operators
-from the research literature on higher-order control operators. These
-control operators are implemented in terms of
-@scheme[call-with-continuation-prompt],
+from the research literature on higher-order control operators, plus a
+few extra convenience forms. These control operators are implemented
+in terms of @scheme[call-with-continuation-prompt],
 @scheme[call-with-composable-continuations], etc., and they generally
 work sensibly together. Many are redundant; for example,
 @scheme[reset] and @scheme[shift] are aliases.
  
+@; ----------------------------------------------------------------------
+
+@defproc[(abort [v any/c] ...) any]{
+
+Returns the @scheme[v]s to a prompt using the default continuation
+prompt tag and the default abort handler.
+
+That is, @scheme[(abort v ...)] is equivalent to
+
+@schemeblock[
+(abort-current-continuation
+ (default-continuation-prompt-tag)
+ (lambda () (values v ...)))
+]}
+
+@; ----------------------------------------------------------------------
+
 @deftogether[(
-@defform[(% expr)]
-@defform/none[(% expr handler-expr)]
+@defform*[[(% expr)
+           (% expr handler-expr)]]
 @defproc[(fcontrol [v any/c]) any]
 )]{
 

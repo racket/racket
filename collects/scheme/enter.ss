@@ -45,7 +45,7 @@
   (check-latest mod))
 
 (define ((enter-load/use-compiled orig re?) path name)
-  (printf " [~aloading ~a]\n" (if re? "re-" "") path)
+  (fprintf (current-error-port) " [~aloading ~a]\n" (if re? "re-" "") path)
   (if name
       ;; Module load:
       (let ([code (get-module-code path
