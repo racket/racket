@@ -411,7 +411,7 @@ The default assembler uses @scheme[titlet] to turn a title string (if
 any) to a pict. See also @scheme[current-titlet] and
 @scheme[set-title-h!],.
 
-The slide assembler is @italic[not] responsible for adding page
+The slide assembler is @emph{not} responsible for adding page
 numbers to the slide; that job belongs to the viewer. See also
 @scheme[current-page-number-font], @scheme[current-page-number-color],
 and @scheme[set-page-numbers-visible!].}

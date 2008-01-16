@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base))
+(require syntax/modcode
+         (for-syntax scheme/base))
 
 (provide enter!)
 
@@ -25,8 +26,74 @@
 (define (do-enter! mod)
   (if mod
       (begin
-        (dynamic-require mod #f)
+        (enter-require mod)
         (let ([ns (module->namespace mod)])
           (current-namespace ns)
           (namespace-require 'scheme/enter)))
       (current-namespace orig-namespace)))
+
+(define-struct mod (name timestamp depends))
+
+(define loaded (make-hash-table 'equal))
+
+(define (enter-require mod)
+  ;; Collect dependencies while loading:
+  (parameterize ([current-load/use-compiled
+                  (enter-load/use-compiled (current-load/use-compiled) #f)])
+    (dynamic-require mod #f))
+  ;; Reload anything that's not up to date:
+  (check-latest mod))
+
+(define ((enter-load/use-compiled orig re?) path name)
+  (printf " [~aloading ~a]\n" (if re? "re-" "") path)
+  (if name
+      ;; Module load:
+      (let ([code (get-module-code path
+                                   "compiled"
+                                   (lambda (e)
+                                     (parameterize ([compile-enforce-module-constants #f])
+                                       (compile e)))
+                                   (lambda (ext loader?)
+                                     (load-extension ext)
+                                     #f))]
+            [path (normal-case-path
+                   (simplify-path
+                    (path->complete-path path
+                                         (or (current-load-relative-directory)
+                                             (current-directory)))))])
+        ;; Record module timestamp and dependencies:
+        (let ([mod (make-mod name
+                             (get-timestamp path)
+                             (call-with-values 
+                                 (lambda () (module-compiled-imports code))
+                               append))])
+          (hash-table-put! loaded path mod))
+        ;; Evaluate the module:
+        (eval code))
+      ;; Not a module:
+      (orig path name)))
+
+(define (get-timestamp path)
+  (file-or-directory-modify-seconds path #f (lambda () -inf.0)))
+
+(define (check-latest mod)
+  (let ([mpi (module-path-index-join mod #f)]
+        [done (make-hash-table 'equal)])
+    (let loop ([mpi mpi])
+      (let* ([rpath (module-path-index-resolve mpi)]
+             [path (resolved-module-path-name rpath)])
+        (when (path? path)
+          (unless (hash-table-get done path #f)
+            (hash-table-put! done path #t)
+            (let ([mod (hash-table-get loaded path #f)])
+              (when mod
+                (for-each loop (mod-depends mod))
+                (let ([ts (get-timestamp path)])
+                  (when (ts . > . (mod-timestamp mod))
+                    (let ([orig (current-load/use-compiled)])
+                      (parameterize ([current-load/use-compiled
+                                      (enter-load/use-compiled orig #f)]
+                                     [current-module-declare-name rpath])
+                        ((enter-load/use-compiled orig #t) 
+                         path
+                         (mod-name mod))))))))))))))

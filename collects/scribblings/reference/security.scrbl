@@ -1,7 +1,7 @@
 #lang scribble/doc
 @require["mz.ss"]
 
-@title[#:style 'toc]{Reflection and Security}
+@title[#:style 'toc #:tag "security"]{Reflection and Security}
 
 @local-table-of-contents[]
 

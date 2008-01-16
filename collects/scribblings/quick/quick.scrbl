@@ -6,6 +6,7 @@
 
 @(require scribble/manual
           "mreval.ss"
+          "keep.ss"
           scribble/urls
           scribble/struct
           scheme/class
@@ -18,15 +19,6 @@
                      slideshow/flash)
 
           (for-syntax scheme/base))
-
-@(begin
-  (define (keep-file file)
-    (make-delayed-element
-     (lambda (render part ri)
-       (send render install-file file)
-       null)
-     (lambda () 0)
-     (lambda () (make-element #f (list))))))
 
 @; ----------------------------------------------------------------------
 

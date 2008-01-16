@@ -1,6 +1,8 @@
 (module control mzscheme
 
-  (provide fcontrol %
+  (provide abort
+           
+           fcontrol %
 
            control prompt control-at prompt-at 
            ;; `-at' variations expect a prompt tag
@@ -15,6 +17,13 @@
            splitter
 
            new-prompt set cupto)
+
+  ;; ----------------------------------------
+
+  (define (abort . vals)
+    (abort-current-continuation 
+     (default-continuation-prompt-tag)
+     (lambda () (apply values vals))))
 
   ;; ----------------------------------------
   ;; Sitaram, PLDI'93

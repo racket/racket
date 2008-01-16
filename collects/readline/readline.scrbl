@@ -17,15 +17,15 @@ library with the MzScheme @scheme[read-eval-print-loop].
 
 @section{Normal Use of @|Readline|}
 
-@defmodule*[(readline/rep readline/rep-start)]
+@defmodule*[(readline readline/rep-start)]
 
-The @schememodname[readline/rep] library installs a @|readline|-based
+The @schememodname[readline] library installs a @|readline|-based
 input port, and hooks the prompt-and-read part of MzScheme's
 @scheme[read-eval-print-loop] to interact with it
 
 You can start MzScheme with
 
-@commandline{mzscheme -il readline/rep}
+@commandline{mzscheme -il readline}
 
 or you can put the following in your @filepath{~/.mzschemerc} so that
 MzScheme starts with @|readline| support when appropriate:
@@ -33,16 +33,15 @@ MzScheme starts with @|readline| support when appropriate:
 @schemeblock[
 (when (regexp-match? #rx"xterm" 
                      (getenv "TERM"))
-  (dynamic-require 'readline/rep #f))
+  (dynamic-require 'readline #f))
 ]
 
-The @schememodname[readline/rep] module is actually a wrapper around
+The @schememodname[readline] module is mostly a wrapper around
 @schememodname[readline/rep-start]; it will @emph{not} invoke
-@schememodname[readline/rep-start] if the input port is not a terminal
-port (e.g., when the input is redirected from a file); see
-@scheme[terminal-port?].  Still, the @envvar{TERM} condition
-above is useful for starting MzScheme in dumb terminals (e.g., inside
-Emacs.)
+@schememodname[readline/rep--start] if the input port is not a
+terminal port (e.g., when the input is redirected from a file); see
+@scheme[terminal-port?].  Still, the @envvar{TERM} condition above is
+useful for starting MzScheme in dumb terminals (e.g., inside Emacs).
 
 Completion is set to use the visible bindings in the current
 namespace; this is far from ideal, but it's better than @|readline|'s
@@ -55,7 +54,7 @@ preferences file, assuming that MzScheme exits normally.
 
 @defmodule[readline/pread]{ The @schememodname[readline/pread] library
 provides customization, and support for prompt-reading after
-@schememodname[readline/rep] installs the new input port.}
+@schememodname[readline] installs the new input port.}
 
 The reading facility that the new input port provides can be
 customized with the following parameters.
@@ -106,7 +105,7 @@ kept in history.}
 @defparam[readline-prompt status (or/c false/c bytes? (one-of/c 'space))]{
 
 The new input port that you get when you require
-@schememodname[readline/rep] is a custom port that uses @|readline| for
+@schememodname[readline] is a custom port that uses @|readline| for
 all inputs.  The problem is when you want to display a prompt and then
 read some input, @|readline| will get confused if it is not used when the
 cursor is at the beginning of the line (which is why it has a
@@ -128,7 +127,7 @@ A proper solution would be to install a custom output port, too, which
 keeps track of text that is displayed without a trailing newline.  As
 a cheaper solution, if line-counting is enabled for the terminal's
 output-port, then a newline is printed before reading if the column is
-not 0. (The @schememodname[readline/rep] library enables line-counting
+not 0. (The @schememodname[readline] library enables line-counting
 for the output port.)
 
 @bold{Warning:} The @|readline| library uses the output port directly.
