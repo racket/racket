@@ -212,6 +212,8 @@ class wxPrinterDC: public wxDC
   wxPrinterDC(HDC theDC);
 
   ~wxPrinterDC(void);
+
+  virtual int CacheFontMetricsKey();
 };
 
 // Gets an HDC for the default printer configuration

@@ -3052,6 +3052,11 @@ wxPrinterDC::wxPrinterDC(HDC theDC)
   SetPen(wxBLACK_PEN);
 }
 
+int wxPrinterDC::CacheFontMetricsKey()
+{
+  return 0;
+}
+
 wxPrinterDC::~wxPrinterDC(void)
 {
 }
