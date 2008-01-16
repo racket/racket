@@ -774,6 +774,10 @@ Scheme, including papers on MrEd @cite["Flatt99"], memory accounting
 @cite["Wick04"], kill-safe abstractions @cite["Flatt04"], and
 delimited continuations @cite["Flatt07"].
 
+The PLT Scheme distribution includes a production-quality web server
+that addresses all of the design points mentioned here and more. See
+@other-manual['(lib "web-server/scribblings/web-server.scrbl")].
+
 @; ----------------------------------------------------------------------
 
 @(bibliography
