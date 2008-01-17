@@ -3,7 +3,7 @@
   (define name "Help")
   ;(define doc.txt "doc.txt")
   (define compile-subcollections
-    '(("help" "private")
+    '(("help" "private"))
 #|
       ("help" "servlets")
       ("help" "servlets" "private")
@@ -11,6 +11,6 @@
       ("help" "servlets" "scheme")
       ("help" "servlets" "scheme" "misc")
 |#
-      ))
-  (define mzscheme-launcher-libraries '("help.ss"))
-  (define mzscheme-launcher-names     '("PLT Help")))
+    )
+  
+  (define post-install-collection "installer.ss"))
