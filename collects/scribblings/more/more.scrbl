@@ -766,6 +766,9 @@ the server updated, visit @tt{http://localhost:8081/sum2}.
 @; ----------------------------------------------------------------------
 @section{Where to Go From Here}
 
+If you arrived here as part of an introduction to PLT Scheme, then
+your next stop is probably @|guide|.
+
 If the topics covered here are the kind that interest you, see also
 @secref["concurrency" #:doc '(lib
 "scribblings/reference/reference.scrbl")] and @secref["security" #:doc

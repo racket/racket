@@ -42,10 +42,10 @@ start DrScheme.
 @; ----------------------------------------------------------------------
 @section{Set...}
 
-To draw pictures, we must first load the picture library, which is
-part of a slide-creation library.  Copy the following into the
-@defterm{definitions area}, which is the top text area that you see in
-DrScheme:
+To draw pictures, we must first load some picture functions, which are
+part of a library for creating slide presentations.  Copy the
+following into the @defterm{definitions area}, which is the top text
+area that you see in DrScheme:
 
 @schememod[slideshow]
 
