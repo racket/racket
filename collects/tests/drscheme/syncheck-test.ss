@@ -769,8 +769,50 @@
                   '((71 79) (95 96))
                   '((10 18) (20 38) (50 70) (82 94) (95 96))
                   '((39 47) (95 96))))
-
-
+     
+     ;; test case from Chongkai
+     (build-test (format "~s\n\n#reader'reader\n1\n"
+                         '(module reader mzscheme
+                            (provide (rename mrs read-syntax) read)
+                            (define (mrs sv p)
+                              (datum->syntax-object
+                               (read-syntax #f (open-input-string "a"))
+                               `(module f mzscheme
+                                  (provide x)
+                                  (define x 1))
+                               (list sv #f #f #f #f)))))
+                 '(("(" default-color)
+                   ("module" imported)
+                   (" reader mzscheme (" default-color)
+                   ("provide" imported)
+                   (" (rename " default-color)
+                   ("mrs" lexically-bound)
+                   (" read-syntax) " default-color)
+                   ("read" imported)
+                   (") (" default-color)
+                   ("define" imported)
+                   (" (" default-color)
+                   ("mrs" lexically-bound)
+                   (" " default-color)
+                   ("sv" lexically-bound)
+                   (" " default-color)
+                   ("p" lexically-bound)
+                   (") (" default-color)
+                   ("datum->syntax-object" imported)
+                   (" (" default-color)
+                   ("read-syntax" imported)
+                   (" #f (" default-color)
+                   ("open-input-string" imported)
+                   (" \"a\")) (" default-color)
+                   ("quasiquote" imported)
+                   (" (module f mzscheme (provide x) (define x 1))) (" default-color)
+                   ("list" imported)
+                   (" " default-color)
+                   ("sv" lexically-bound)
+                   (" #f #f #f #f))))\n\n#reader'reader\n1\n" default-color))
+                 
+                 (list '((77 79) (210 212))
+                       '((73 76) (41 44))))
      
      (make-dir-test "(module m mzscheme (require \"~a/list.ss\") foldl foldl)"
                     '(("("             default-color)

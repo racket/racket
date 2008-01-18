@@ -1524,9 +1524,10 @@ If the namespace does not, they are colored the unbound color.
                  
                  ;; tops are used here because a binding free use of a set!'d variable
                  ;; is treated just the same as (#%top . x).
-                 (if (identifier-binding (syntax var))
-                     (add-id varrefs (syntax var))
-                     (add-id tops (syntax var)))
+                 (when (syntax-original? (syntax var))
+                   (if (identifier-binding (syntax var))
+                       (add-id varrefs (syntax var))
+                       (add-id tops (syntax var))))
                  
                  (loop (syntax e)))]
               [(quote datum)
@@ -1632,7 +1633,8 @@ If the namespace does not, they are colored the unbound color.
                  (for-each (λ (provided-vars)
                              (for-each
                               (λ (provided-var)
-                                (add-id varrefs provided-var))
+                                (when (syntax-original? provided-var)
+                                  (add-id varrefs provided-var)))
                               provided-vars))
                            provided-varss))]
               
