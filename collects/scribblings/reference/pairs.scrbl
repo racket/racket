@@ -461,6 +461,10 @@ Like @scheme[assoc], but finds an element using the predicate
 
 @defproc[(eighth [lst list?]) any]{Returns the eighth element of the list.}
 
+@defproc[(ninth [lst list?]) any]{Returns the ninth element of the list.}
+
+@defproc[(tenth [lst list?]) any]{Returns the tenth element of the list.}
+
 @defproc[(last [lst list?]) any]{Returns the last element of the list.}
 
 @; ----------------------------------------
