@@ -88,7 +88,7 @@
                        (begin
                          (unless (eq? log-p #f)
                            (close-output-port log-p))
-                         (let ([new-log-p (open-output-file log-path 'append)])
+                         (let ([new-log-p (open-output-file log-path #:exists 'append)])
                            (file-stream-buffer-mode new-log-p 'line)
                            new-log-p))
                        log-p))
