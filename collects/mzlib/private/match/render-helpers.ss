@@ -8,7 +8,8 @@
 	   "getter-setter.scm"
 	   "parse-quasi.scm"
            "test-structure.scm"
-           (lib "etc.ss"))
+           (lib "etc.ss")
+           (lib "trace.ss"))
 
   (require-for-template mzscheme
 			(lib "list.ss")
@@ -32,18 +33,15 @@
       [p #'p]))
 
   (define (get-bind-val b-var bv-list)
-    (let ((res (assq
-                b-var
-                bv-list)))
-      (if res (cdr res)
-          (let ((res 
-                 (assq
-                    (syntax-object->datum b-var)
-                    (map (lambda (x)
-                           (cons 
-                            (syntax-object->datum (car x)) (cdr x))) 
-                         bv-list))))
-            (if res (cdr res) (error 'var-not-found))))))
+    (cond [(assq b-var bv-list) => cdr]
+          [(assq
+            (syntax-object->datum b-var)
+            (map (lambda (x)
+                   (cons 
+                    (syntax-object->datum (car x)) (cdr x))) 
+                 bv-list))
+           => cdr]
+          [else (error 'var-not-found)]))
   
   
     ;;!(function proper-hash-table-pattern?

@@ -419,27 +419,28 @@
                              '(unquote unquote-splicing ... ___))
                        (stx-dot-dot-k? (syntax pat))))
               (stx-dot-dot-k? (syntax dot-dot-k)))
-         (list
-          (shape-test
-           `(list? ,ae-datum)
-           ae (lambda (exp) #`(list? #,exp)))
-          (make-act
-           'list-ddk-pat
-           ae
-           (lambda (ks kf let-bound)
-             (if (stx-null? (syntax (pat-rest ...)))
-                 (handle-end-ddk-list ae kf ks
-                                      (syntax pat)
-                                      (syntax dot-dot-k)
-                                      let-bound
-                                      cert)
-                 (handle-inner-ddk-list ae kf ks
+         (begin
+           (list
+            (shape-test
+             `(list? ,ae-datum)
+             ae (lambda (exp) #`(list? #,exp)))
+            (make-act
+             'list-ddk-pat
+             ae
+             (lambda (ks kf let-bound)
+               (if (stx-null? (syntax (pat-rest ...)))
+                   (handle-end-ddk-list ae kf ks
                                         (syntax pat)
                                         (syntax dot-dot-k)
-                                        (append-if-necc 'list
-                                                        (syntax (pat-rest ...)))
                                         let-bound
-                                        cert))))))
+                                        cert)
+                   (handle-inner-ddk-list ae kf ks
+                                          (syntax pat)
+                                          (syntax dot-dot-k)
+                                          (append-if-necc 'list
+                                                          (syntax (pat-rest ...)))
+                                          let-bound
+                                          cert)))))))
         
         ;; list-rest pattern with a ooo or ook pattern
         ((list-rest pat dot-dot-k pat-rest ...)

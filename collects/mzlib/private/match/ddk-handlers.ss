@@ -8,7 +8,8 @@
            "render-helpers.ss"
            "render-sigs.ss"
            (lib "stx.ss" "syntax")
-           (lib "unit.ss"))
+           (lib "unit.ss")
+           (lib "trace.ss"))
   
   (require-for-template mzscheme
 			"test-no-order.ss")
@@ -90,28 +91,32 @@
                                                   (lambda (x) #`(reverse #,x))
                                                   binding-list-names))
                                             bv))
-                           #,(next-outer #'the-pat
-                                         #`(car #,exp-name)
-                                         sf
-                                         bv  ;; we always start
-                                         ;; over with the old
-                                         ;; bindings
-                                         let-bound
-                                         kf
-                                         (lambda (sf bv)
-                                           #`(#,loop-name
-                                                (cdr #,exp-name)
-                                                #,@(map
-                                                    (lambda
-                                                        (b-var
-                                                         bindings-var)
-                                                      #`(cons
-                                                         #,(get-bind-val
-                                                            b-var
-                                                            bv)
-                                                         #,bindings-var))
-                                                    bound binding-list-names)))
-                                         cert))))]))))
+                           #,(let ([new-var (gensym 'exp)])
+                               #`(let ([#,new-var (car #,exp-name)])
+                                   #,(next-outer #'the-pat
+                                                 #`#,new-var
+                                                 sf
+                                                 ;(append (map cons bound new-vars) bv)  
+                                                 bv
+                                                 ;; we always start
+                                                 ;; over with the old
+                                                 ;; bindings
+                                                 let-bound
+                                                 kf
+                                                 (lambda (sf bv)                                                   
+                                                   #`(#,loop-name
+                                                      (cdr #,exp-name)
+                                                      #,@(map
+                                                          (lambda
+                                                              (b-var
+                                                               bindings-var)
+                                                            #`(cons
+                                                               #,(get-bind-val
+                                                                  b-var
+                                                                  bv)
+                                                               #,bindings-var))
+                                                          bound binding-list-names)))
+                                                 cert))))))]))))
       (define (new-emit f) (emit f ae let-bound sf bv kf ksucc))
       (case k
         ((0) (ksucc sf bv))
