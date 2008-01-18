@@ -14,7 +14,7 @@ Snips:
 
 Displays, Administrators, and Mappings:
 
-@diagram->table[editor-diagram]
+@diagram->table[admin-diagram]
 
 Styles:
 

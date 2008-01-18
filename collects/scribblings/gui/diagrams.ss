@@ -131,12 +131,12 @@ DIAG
  
   (define admin-diagram
 #<<DIAG
-  editor-canvas%       
-
-  editor-admin<%>                   snip-admin%
+  editor-canvas%
+ 
+  editor-admin%                     snip-admin%
    |- editor-snip-editor-admin<%>
-
-  editor-wordbreak-map%   keymap%
+ 
+  editor-wordbreak-map%    keymap%
 DIAG
 )
  
@@ -153,8 +153,8 @@ DIAG
  editor-data-class%                     snip-class%
  editor-data-class-list<%>              snip-class-list<%>
  
- editor-stream-in%                   editor-stream-out%
- editor-stream-in-base%              editor-stream-out-base%
-  |- editor-stream-in-bytes-base%     |- editor-stream-out-bytes-base%
+ editor-stream-in%                 editor-stream-out%
+ editor-stream-in-base%            editor-stream-out-base%
+  |- editor-stream-in-bytes-base%   |- editor-stream-out-bytes-base%
 DIAG
 ))
