@@ -267,23 +267,6 @@ static Scheme_Object *current_reader_guard(int argc, Scheme_Object **argv);
 
 #define NUM_CELLS_PER_STACK 500
 
-typedef struct {
-  int pos;
-  Scheme_Simple_Object *stack;
-} ListStackRec;
-
-#define STACK_START(r) (r.pos = local_list_stack_pos, r.stack = local_list_stack)
-#define STACK_END(r) (local_list_stack_pos = r.pos, local_list_stack = r.stack)
-
-#ifdef MZ_PRECISE_GC
-/* Although list stacks should work with precise GC as implemented
-   below, there's much less to be gained with a generational GC, so 
-   we keep it simple. */
-# define USE_LISTSTACK(x) 0
-#else
-# define USE_LISTSTACK(x) 0 /* REMOVEME */
-#endif
-
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
@@ -2283,10 +2266,6 @@ scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int ca
   if (crc < 0)
     crc = SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_CAN_READ_COMPILED));
 
-  /* Need this before top_level_do: */
-  if (USE_LISTSTACK(!p->list_stack))
-    scheme_alloc_list_stack(p);
-
   if (cantfail) {
     return _scheme_internal_read(port, stxsrc, crc, cantfail, honu_mode, recur, expose_comment, -1, NULL, 
                                  magic_sym, magic_val, delay_load_info);
@@ -2628,22 +2607,7 @@ read_list(Scheme_Object *port,
       /* can't be eof, due to check above */
     }
 
-    if (USE_LISTSTACK(use_stack)) {
-      if (local_list_stack_pos >= NUM_CELLS_PER_STACK) {
-	/* Overflow */
-	Scheme_Simple_Object *sa;
-	sa = malloc_list_stack();
-	local_list_stack = sa;
-	local_list_stack_pos = 0;
-      }
-
-      pair = (Scheme_Object *)(local_list_stack + (local_list_stack_pos++));
-      pair->type = scheme_pair_type;
-      SCHEME_CAR(pair) = car;
-      SCHEME_CDR(pair) = scheme_null;
-    } else {
-      pair = scheme_make_pair(car, scheme_null);
-    }
+    pair = scheme_make_pair(car, scheme_null);
 
   retry_before_dot:
 
@@ -3237,13 +3201,10 @@ read_vector (Scheme_Object *port,
 {
   Scheme_Object *lresult, *obj, *vec, **els;
   int len, i;
-  ListStackRec r;
 
-  STACK_START(r);
   lresult = read_list(port, stxsrc, line, col, pos, closer, mz_shape_vec, 1, ht, indentation, params);
 
   if (requestLength == -2) {
-    STACK_END(r);
     scheme_raise_out_of_memory("read", "making vector of size %5", reqBuffer);
     return NULL;
   }
@@ -3256,7 +3217,6 @@ read_vector (Scheme_Object *port,
   len = scheme_list_length(obj);
   if (requestLength >= 0 && len > requestLength) {
     char buffer[20];
-    STACK_END(r);
     sprintf(buffer, "%ld", requestLength);
     scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
 		    "read: vector length %ld is too small, "
@@ -3273,7 +3233,6 @@ read_vector (Scheme_Object *port,
     obj = SCHEME_CDR(obj);
   }
   els = NULL;
-  STACK_END(r);
   if (i < requestLength) {
     if (len)
       obj = SCHEME_VEC_ELS(vec)[len - 1];
@@ -4931,21 +4890,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
     if (need_car) {
       Scheme_Object *pair;
 
-      if (USE_LISTSTACK(use_stack)) {
-	if (local_list_stack_pos >= NUM_CELLS_PER_STACK) {
-	  /* Overflow */
-	  Scheme_Simple_Object *sa;
-	  sa = malloc_list_stack();
-	  local_list_stack = sa;
-	  local_list_stack_pos = 0;
-	}
-
-	pair = (Scheme_Object *)(local_list_stack + (local_list_stack_pos++));
-	pair->type = scheme_pair_type;
-	SCHEME_CAR(pair) = v;
-	SCHEME_CDR(pair) = scheme_null;
-      } else
-	pair = scheme_make_pair(v, scheme_null);
+      pair = scheme_make_pair(v, scheme_null);
 
       if (last)
 	SCHEME_CDR(last) = pair;
@@ -4970,42 +4915,14 @@ static Scheme_Object *read_compact_list(int c, int proper, int use_stack, CPort 
   Scheme_Object *v, *first, *last, *pair;
 
   v = read_compact(port, 0);
-  if (USE_LISTSTACK(use_stack)) {
-    if (local_list_stack_pos >= NUM_CELLS_PER_STACK) {
-      /* Overflow */
-      Scheme_Simple_Object *sa;
-      sa = malloc_list_stack();
-      local_list_stack = sa;
-      local_list_stack_pos = 0;
-    }
-
-    last = (Scheme_Object *)(local_list_stack + (local_list_stack_pos++));
-    last->type = scheme_pair_type;
-    SCHEME_CAR(last) = v;
-    SCHEME_CDR(last) = scheme_null;
-  } else
-    last = scheme_make_pair(v, scheme_null);
+  last = scheme_make_pair(v, scheme_null);
 
   first = last;
 
   while (--c) {
     v = read_compact(port, 0);
 
-    if (USE_LISTSTACK(use_stack)) {
-      if (local_list_stack_pos >= NUM_CELLS_PER_STACK) {
-	/* Overflow */
-	Scheme_Simple_Object *sa;
-	sa = malloc_list_stack();
-	local_list_stack = sa;
-	local_list_stack_pos = 0;
-      }
-
-      pair = (Scheme_Object *)(local_list_stack + (local_list_stack_pos++));
-      pair->type = scheme_pair_type;
-      SCHEME_CAR(pair) = v;
-      SCHEME_CDR(pair) = scheme_null;
-    } else
-      pair = scheme_make_pair(v, scheme_null);
+    pair = scheme_make_pair(v, scheme_null);
 
     SCHEME_CDR(last) = pair;
     last = pair;
@@ -5048,27 +4965,21 @@ static Scheme_Object *read_compact_quote(CPort *port, int embedded)
 static Scheme_Object *read_marshalled(int type, CPort *port)
 {
   Scheme_Object *l;
-  ListStackRec r;
   Scheme_Type_Reader reader;
 
-  STACK_START(r);
   l = read_compact(port, 1);
 
   if ((type < 0) || (type >= _scheme_last_type_)) {
-    STACK_END(r);
     scheme_ill_formed_code(port);
   }
 
   reader = scheme_type_readers[type];
 
   if (!reader) {
-    STACK_END(r);
     scheme_ill_formed_code(port);
   }
 
   l = reader(l);
-
-  STACK_END(r);
 
   if (!l)
     scheme_ill_formed_code(port);
@@ -5098,7 +5009,6 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 				    Scheme_Hash_Table **ht,
 				    ReadParams *params)
 {
-  Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *result, *insp;
   long size, shared_size, got, offset = 0;
   CPort *rp;
@@ -5112,9 +5022,6 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   Scheme_Object *dir;
   Scheme_Config *config;
 	  
-  if (USE_LISTSTACK(!p->list_stack))
-    scheme_alloc_list_stack(p);
-
   if (!cpt_branch[1]) {
     int i;
 

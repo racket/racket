@@ -1833,13 +1833,11 @@ void *top_level_do(void *(*k)(void), int eb, void *sj_start)
 {
   void *v;
   Scheme_Prompt * volatile prompt;
-  volatile long save_list_stack_pos;
   mz_jmp_buf *save, newbuf;
   Scheme_Stack_State envss;
   Scheme_Comp_Env * volatile save_current_local_env;
   Scheme_Object * volatile save_mark, *  volatile save_name, * volatile save_certs, * volatile save_modidx;
   Scheme_Env * volatile save_menv;
-  Scheme_Simple_Object * volatile save_list_stack;
   Scheme_Thread * volatile p = scheme_current_thread;
   int thread_cc = top_next_use_thread_cc_ok;
   volatile int old_pcc = scheme_prompt_capture_count;
@@ -1890,8 +1888,6 @@ void *top_level_do(void *(*k)(void), int eb, void *sj_start)
   save_certs = p->current_local_certs;
   save_modidx = p->current_local_modidx;
   save_menv = p->current_local_menv;
-  save_list_stack = p->list_stack;
-  save_list_stack_pos = p->list_stack_pos;
 
   if (top_next_env) {
     p->current_local_env = top_next_env;
@@ -1939,8 +1935,6 @@ void *top_level_do(void *(*k)(void), int eb, void *sj_start)
       p->current_local_certs = save_certs;
       p->current_local_modidx = save_modidx;
       p->current_local_menv = save_menv;
-      p->list_stack = save_list_stack;
-      p->list_stack_pos = save_list_stack_pos;
     }
     scheme_longjmp(*save, 1);
   }

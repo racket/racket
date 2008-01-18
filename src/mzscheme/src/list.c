@@ -875,8 +875,9 @@ int scheme_is_list(Scheme_Object *obj1)
   else
     return 0;
 
+  obj2 = obj1;
+
   while (1) {
-    obj2 = obj1;
     obj1 = SCHEME_CDR(obj1);
 
     if (SCHEME_NULLP(obj1)){
@@ -908,6 +909,8 @@ int scheme_is_list(Scheme_Object *obj1)
     flags = SCHEME_PAIR_FLAGS(obj1);
     if (flags & PAIR_FLAG_MASK)
       break;
+
+    obj2 = SCHEME_CDR(obj2);
   }
 
   /* Propagate info further up the chain. */
