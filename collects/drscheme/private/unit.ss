@@ -848,7 +848,10 @@ module browser threading seems wrong.
                           (send item check #t))
                         (loop (cdr defns)))))))))
         
-        (super-new (label "(define ...)"))))
+        (super-new (label "(define ...)")
+                   [string-constant-untitled (string-constant untitled)]
+                   [string-constant-no-full-name-since-not-saved 
+                    (string-constant no-full-name-since-not-saved)])))
     
     ;; defn = (make-defn number string number number)
     (define-struct defn (indent name start-pos end-pos) #:mutable)
@@ -3598,7 +3601,10 @@ module browser threading seems wrong.
                   (send frame choose-language-callback))]))
         
         (super-new [label ""]
-                   [font small-control-font])
+                   [font small-control-font]
+                   [string-constant-untitled (string-constant untitled)]
+                   [string-constant-no-full-name-since-not-saved 
+                    (string-constant no-full-name-since-not-saved)])
                 
         (inherit set-allow-shrinking)
         (set-allow-shrinking 100)))
@@ -3628,7 +3634,10 @@ module browser threading seems wrong.
                                        (send this get-top-level-window))])
             (when file
               (handler:edit-file file))))
-        (super-new)))
+        (super-new 
+         [string-constant-untitled (string-constant untitled)]
+         [string-constant-no-full-name-since-not-saved 
+          (string-constant no-full-name-since-not-saved)])))
     
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;;

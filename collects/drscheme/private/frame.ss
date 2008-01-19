@@ -1,7 +1,6 @@
 
 #lang scheme/unit
-  (require (lib "name-message.ss" "mrlib")
-           (lib "string-constant.ss" "string-constants")
+  (require (lib "string-constant.ss" "string-constants")
            (lib "match.ss")
            (lib "class.ss")
            (lib "string.ss")
