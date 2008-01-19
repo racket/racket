@@ -1286,7 +1286,7 @@ v4 todo:
      (if (zero? dom-length) "no" dom-length)
      (if (null? mandatory-kwds) "" " ordinary")
      (if (= 1 dom-length) "" "s")
-     (keyword-error-text mandatory-kwds)
+     (keyword-error-text mandatory-kwds optional-keywords)
      val)))
 
 (define (procedure-arity-includes?/optionals f base optionals)
@@ -1302,17 +1302,30 @@ v4 todo:
                                (not (member kwd proc-mandatory))))
                  optional-kwds))))
 
-(define (keyword-error-text mandatory-keywords)
+(define (keyword-error-text mandatory-keywords optional-keywords)
+  (define (format-keywords-error type kwds)
+    (cond
+      [(null? kwds) ""]
+      [(null? (cdr kwds))
+       (format "the ~a keyword ~a" type (car kwds))]
+      [else
+       (format
+        "the ~a keywords ~a~a"
+        type
+        (car kwds)
+        (apply string-append (map (λ (x) (format " ~a" x)) (cdr kwds))))]))
   (cond
-    [(null? mandatory-keywords) " without any keywords"]
-    [(null? (cdr mandatory-keywords))
-     (format " and the mandatory keyword ~a" (car mandatory-keywords))]
+    [(and (null? optional-keywords) (null? mandatory-keywords)) " without any keywords"]
+    [(null? optional-keywords)
+     (string-append " and " (format-keywords-error 'mandatory mandatory-keywords))]
+    [(null? mandatory-keywords)
+     (string-append " and " (format-keywords-error 'optional optional-keywords))]
     [else
-     (format
-      " and the mandatory keywords ~a~a"
-      (car mandatory-keywords)
-      (apply string-append (map (λ (x) (format " ~a" x)) (cdr mandatory-keywords))))]))
-
+     (string-append ", "
+                    (format-keywords-error 'mandatory mandatory-keywords)
+                    ", and "
+                    (format-keywords-error 'optional optional-keywords))]))
+     
 (define (check-procedure/more val mtd? dom-length mandatory-kwds optional-kwds src-info blame orig-str)
   (unless (and (procedure? val)
                (procedure-accepts-and-more? val (if mtd? (+ dom-length 1) dom-length))
@@ -1328,7 +1341,7 @@ v4 todo:
        [(zero? dom-length) "no"]
        [else dom-length])
      (if (= 1 dom-length) "" "s")
-     (keyword-error-text mandatory-kwds)
+     (keyword-error-text mandatory-kwds optional-kwds)
      val)))
 
 ;; timing & size tests
