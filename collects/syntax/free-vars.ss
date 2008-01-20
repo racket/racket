@@ -63,12 +63,12 @@
                free))]
     [(case-lambda [formals expr ...] ...)
      (merge (map free-vars (syntax->list
-                            #'((lambda formals expr ...) ...))))]
+                            #'((#%plain-lambda formals expr ...) ...))))]
     [(let-values ([(id ...) rhs] ...) expr ...)
-     (merge (cons (free-vars #'(lambda (id ... ...) expr ...))
+     (merge (cons (free-vars #'(#%plain-lambda (id ... ...) expr ...))
                   (map free-vars (syntax->list #'(rhs ...)))))]
     [(letrec-values ([(id ...) rhs] ...) expr ...)
-     (free-vars #'(lambda (id ... ...) rhs ... expr ...))]      
+     (free-vars #'(#%plain-lambda (id ... ...) rhs ... expr ...))]
     [(_ expr ...)
      ;; if, begin, begin0, set!, #%app, #%variable-reference, with-continuation-mark
      (merge (map free-vars (syntax->list #'(expr ...))))]))
