@@ -2,6 +2,8 @@
   
   (require (lib "stx.ss" "syntax"))
   
+  (require scheme/list)
+  
   (require "match-error.ss"
            "match-helper.ss"
            "test-structure.scm"
@@ -26,7 +28,9 @@
   
 
 
-  (provide simplify)
+  (provide simplify match-...-nesting)
+  
+  (define match-...-nesting (make-parameter 0))
   
   
   ;; simplifies patterns by removing syntactic sugar and expanding match-expanders
@@ -107,10 +111,24 @@
       [(cons . rest) (match:syntax-err stx "cons pattern must have exactly two subpatterns")]
       
       ;; aggregates
+      
+      [(kw pats ... last ddk)
+       (and (stx-dot-dot-k? #'ddk)
+            (memq (syntax-e #'kw) '(list vector list-rest list-no-order and or not)))
+       (with-syntax ([(pats* ...) (append (syntax-map simplify/i #'(pats ...))
+                                          (parameterize ([match-...-nesting (add1 (match-...-nesting))])
+                                            (list (simplify/i #'last))))])
+         #;(printf "kw: ~a~n" (syntax-object->datum stx))
+         (quasisyntax/loc stx (kw pats* ... ddk)))
+       #;
+       (with-syntax ([(pats* ...) (syntax-map simplify/i #'(pats ...))]
+                     [last* (parameterize ([match-...-nesting (add1 (match-...-nesting))])
+                              (simplify/i #'last))])
+         (syntax/loc stx (kw pats* ... last* ddk)))]
       [(kw pats ...)       
        (memq (syntax-e #'kw) '(list vector list-rest list-no-order and or not))
        (with-syntax ([(pats* ...) (syntax-map simplify/i #'(pats ...))])
-	 (syntax/loc stx (kw pats* ...)))]
+         (syntax/loc stx (kw pats* ...)))]
       [(kw pats ... . rest)
        (match:syntax-err stx (format "~a pattern must have a proper list of subpatterns" (syntax-e #'kw)))]
       
