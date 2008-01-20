@@ -93,7 +93,7 @@
                                             bv))
                            #,(let ([new-var (gensym 'exp)])
                                #`(let ([#,new-var (car #,exp-name)])
-                                   #,(next-outer #'the-pat
+                                   #,(next-outer* #'the-pat
                                                  #`#,new-var
                                                  sf
                                                  ;(append (map cons bound new-vars) bv)  
@@ -103,19 +103,26 @@
                                                  ;; bindings
                                                  let-bound
                                                  kf
-                                                 (lambda (sf bv)                                                   
-                                                   #`(#,loop-name
-                                                      (cdr #,exp-name)
-                                                      #,@(map
-                                                          (lambda
-                                                              (b-var
-                                                               bindings-var)
-                                                            #`(cons
-                                                               #,(get-bind-val
-                                                                  b-var
-                                                                  bv)
-                                                               #,bindings-var))
-                                                          bound binding-list-names)))
+                                                 (lambda (let-bound)
+                                                   (lambda (sf bv) 
+                                                     ;(printf "let-bound is: ~a~n" let-bound)
+                                                     ;(printf "bv is: ~a ~a~n"
+                                                     ;        (map syntax-e (map car bv))
+                                                     ;        (map syntax-object->datum (map cdr bv)))
+                                                     #`(#,loop-name
+                                                        (cdr #,exp-name)
+                                                        #,@(map
+                                                            (lambda
+                                                                (b-var
+                                                                 bindings-var)
+                                                              (subst-bindings
+                                                               #`(cons
+                                                                  #,(get-bind-val
+                                                                     b-var
+                                                                     bv)
+                                                                  #,bindings-var)
+                                                               let-bound))
+                                                            bound binding-list-names))))
                                                  cert))))))]))))
       (define (new-emit f) (emit f ae let-bound sf bv kf ksucc))
       (case k

@@ -7,6 +7,6 @@
   
   (define-signature ddk-handlers^ (handle-end-ddk-list handle-inner-ddk-list handle-ddk-vector handle-ddk-vector-inner))
   
-  (define-signature getbindings^ (getbindings create-test-func next-outer))
+  (define-signature getbindings^ (getbindings create-test-func next-outer next-outer*))
     
   )

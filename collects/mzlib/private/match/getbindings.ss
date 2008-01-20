@@ -41,6 +41,19 @@
       (next-outer-helper p ae sf bv let-bound 
                          (lambda (x) kf) (lambda (a b) ks) cert stx))
     
+    (define/opt (next-outer*
+                 p
+                 ae ;; this is the actual expression
+                 sf
+                 bv
+                 let-bound
+                 kf
+                 ks
+                 cert
+                 [stx (syntax '())])
+      (next-outer-helper p ae sf bv let-bound 
+                         (lambda (x) kf) (lambda (a b) (ks b)) cert stx))
+    
     ;;!(function next-outer-helper
     ;;          (form (next-outer p ae sf bv let-bound kf-func ks-func syntax bool)
     ;;                ->
