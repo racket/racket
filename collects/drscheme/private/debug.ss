@@ -275,7 +275,7 @@ profile todo:
             (let ([note (new note%)])
               (send note set-callback (λ () (show-backtrace-window msg cms)))
               (write-special note (current-error-port))
-              (display #\space (current-error-port)))))))
+              (display #\space (current-error-port)) )))))
     
     (define (show-error-and-highlight msg exn highlight-errors)
       (let ([cms
@@ -285,10 +285,8 @@ profile todo:
         (when (and cms
                    (pair? cms))
           (print-bug-to-stderr msg cms))
-        
         (let ([srcs-to-display (find-src-to-display exn cms)])
           (for-each display-srcloc-in-error srcs-to-display)
-          
           (display msg (current-error-port))
           (when (exn:fail:syntax? exn)
             (show-syntax-error-context (current-error-port) exn))

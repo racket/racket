@@ -41,7 +41,16 @@
          (not (integer? x))))
   
   (define (do-printing pretty value port)
-    (parameterize ([pretty-print-columns 'infinity]
+    (parameterize (;; these three handlers aren't used, but are set to override the user's settings
+                   [pretty-print-print-line (λ (line-number op old-line dest-columns) 
+                                                (when (and (not (equal? line-number 0))
+                                                           (not (equal? dest-columns 'infinity)))
+                                                  (newline op))
+                                                0)]
+                   [pretty-print-pre-print-hook (λ (val port) (void))]
+                   [pretty-print-post-print-hook (λ (val port) (void))]
+                   [pretty-print-columns 'infinity]
+                     
                    [pretty-print-size-hook
                     (λ (value display? port)
                       (cond
