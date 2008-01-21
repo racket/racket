@@ -1643,8 +1643,7 @@
                            (new canvas-message% 
                                 (parent parent)
                                 (label (string-constant seasoned-plt-schemer?))))
-                         (list (string-constant legacy-languages)
-                               "(module ...)")
+                         (list "Module")
                          (list "PLT-206-small.png" 
                                "icons")))
       
