@@ -4,7 +4,7 @@
     scheme/class
     (except-in scheme/gui/base send-event)
     (only-in frtime undefined undefined? behavior? event? signal? seconds milliseconds never-e
-	     new-cell set-cell! event-receiver ft-send-event
+	     new-cell set-cell! event-receiver send-event
 	     map-e ==> filter-e =#> accum-e accum-b collect-e collect-b changes hold merge-e
 	     value-now delay-by integral derivative once-e switch when-e lift-strict)
     (only-in "demos/gui/fred.ss" ft-frame% ft-message% ft-button% ft-check-box% ft-slider%
@@ -61,9 +61,9 @@ that may be rewired to a different signal by @scheme[set-cell!].}
 take on the value(s) of @scheme[val].}
 
 @defproc[(event-receiver) event?]{returns an event stream that can be
-triggered imperatively by @scheme[ft-send-event].}
+triggered imperatively by @scheme[send-event].}
 
-@defproc[(ft-send-event [rcvr event?] [val any/c]) void?]{emits
+@defproc[(send-event [rcvr event?] [val any/c]) void?]{emits
 @scheme[val] on @scheme[rcvr] (which must have been created by
 @scheme[event-receiver]).}
 
