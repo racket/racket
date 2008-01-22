@@ -275,7 +275,7 @@
                                  "  return converted_result;\n"))))])
 	       (set! ffi-index (add1 ffi-index))
 	       (with-syntax ([fname fname]
-			     [all-code all-code]
+			     [code code]
 			     [arity (length arg-types)]
 			     [proc-name proc-name]
 			     [args (generate-temporaries arg-types)])
@@ -285,7 +285,7 @@
 				   '(fname
 				     proc-name
 				     arity
-				     all-code)))])
+				     code)))])
 		   (syntax-property stx-out 'mzc-cffi 'c-lambda)))))]))))
   
   (define-syntax (c-declare stx)
