@@ -124,14 +124,21 @@
                    (cdr val-list+outputs)
                     #f)))))))
 
+  (define (extract s . ops)
+    (let loop ([s s][ops ops])
+      (cond
+       [(null? ops) s]
+       [(syntax? s) (loop (syntax-e s) ops)]
+       [else (loop ((car ops) s) (cdr ops))])))
+
   (define ((do-eval ev) s)
     (syntax-case s (code:comment eval:alts)
      [(code:line v (code:comment . rest))
-      ((do-eval ev) #'v)]
+      ((do-eval ev) (extract s cdr car))]
      [(code:comment . rest)
       (list (list (void)) "" "")]
      [(eval:alts p e)
-      ((do-eval ev) #'e)]
+      ((do-eval ev) (extract s cdr cdr car))]
      [else
       (with-handlers ([exn:fail? (lambda (e)
                                    (list (exn-message e)
