@@ -1,7 +1,8 @@
 
 (module info setup/infotab
-  (define doc.txt "doc.txt")
   (define name "SLaTeX")
+
+  (define scribblings '(("slatex-wrap.scrbl")))
 
   ;(define tools (list (list "slatex-lang.ss")))
   ;(define tool-names (list "SLaTeX Language"))
