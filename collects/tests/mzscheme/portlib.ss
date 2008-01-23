@@ -476,6 +476,7 @@
 			  (set! v (read-bytes 6 p))))])
 	(test (void) sync (system-idle-evt) t)
 	(display "56" out)
+	(test (void) sync (system-idle-evt))
 	(test t sync/timeout SLEEP-TIME t)
 	(test #"123456" values v)))))
 
