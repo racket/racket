@@ -719,7 +719,9 @@
         ;; Not ok, so far:
         (let ([p2 (if (keyword-procedure? p)
                       #f
-                      (procedure-extract-target p))])
+                      (if (procedure? p)
+                          (procedure-extract-target p)
+                          #f))])
           (if p2
               ;; Maybe the target is ok:
               (keyword-procedure-extract kws n p2)

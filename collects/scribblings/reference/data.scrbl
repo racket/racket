@@ -127,6 +127,22 @@ values. For opaque structure types, @scheme[equal?] is the same as
 @scheme[equal-secondary-hash-code] results are based only on
 @scheme[eq-hash-code].}
 
+@subsection{Boolean Synonyms}
+
+@note-lib[scheme/bool]
+
+@defthing[true boolean?]{A synonym for @scheme[#t].}
+
+@defthing[false boolean?]{A synonym for @scheme[#f].}
+
+@defproc[(symbol=? [a symbol?] [b symbol?]) boolean?]{
+
+Returns @scheme[(equal? a b)].}
+
+@defproc[(boolean=? [a boolean?] [b boolean?]) boolean?]{
+
+Returns @scheme[(equal? a b)].}
+
 @; ------------------------------------------------------------
 @include-section["numbers.scrbl"]
 

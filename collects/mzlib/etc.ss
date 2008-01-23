@@ -2,6 +2,8 @@
 (module etc mzscheme
 
   (require (lib "main-collects.ss" "setup")
+           scheme/local
+           scheme/bool
            (only scheme/base 
                  build-string
                  build-list
@@ -12,15 +14,14 @@
   (require-for-syntax (lib "kerncase.ss" "syntax")
                       (lib "stx.ss" "syntax")
                       (lib "name.ss" "syntax")
-                      (lib "context.ss" "syntax")
                       (lib "main-collects.ss" "setup")
                       "private/stxset.ss")
 
-
-  (provide true false
-           boolean=? symbol=?
+  (provide boolean=? symbol=?
            identity
            compose
+
+           true false
 
            build-string
            build-vector
@@ -49,9 +50,6 @@
 
            begin-lifted)
 
-  (define true #t)
-  (define false #f)
-
   (define identity (lambda (x) x))
 
   (define (loop-until start done? next body)
@@ -59,16 +57,6 @@
       (unless (done? i)
         (body i)
         (loop (next i)))))
-
-  (define (boolean=? x y)
-    (unless (and (boolean? x) (boolean? y))
-      (raise-type-error 'boolean=? "boolean" (if (boolean? x) y x)))
-    (eq? x y))
-
-  (define (symbol=? x y)
-    (unless (and (symbol? x) (symbol? y))
-      (raise-type-error 'symbol=? "symbol" (if (symbol? x) y x)))
-    (eq? x y))
 
  (define-syntax (opt-lambda stx)
    (with-syntax ([name (or (syntax-local-infer-name stx)
@@ -117,65 +105,6 @@
           (with-syntax ([clauses clauses])
             (syntax/loc stx
               (letrec ([name (case-lambda . clauses)]) name))))])))
-
- (define-syntax (local stx)
-   (syntax-case stx ()
-     [(_ (defn ...) body1 body ...)
-      (let ([defs (let ([expand-context (generate-expand-context)])
-                    (let loop ([defns (syntax->list (syntax (defn ...)))])
-                      (apply
-                       append
-                       (map
-                        (lambda (defn)
-                          (let ([d (local-expand
-                                    defn
-                                    expand-context
-                                    (kernel-form-identifier-list))]
-                                [check-ids (lambda (ids)
-                                             (for-each
-                                              (lambda (id)
-                                                (unless (identifier? id)
-                                                  (raise-syntax-error
-                                                   #f
-                                                   "not an identifier for definition"
-                                                   stx
-                                                   id)))
-                                              ids))])
-                            (syntax-case d (define-values define-syntaxes begin)
-                              [(begin defn ...)
-                               (loop (syntax->list (syntax (defn ...))))]
-                              [(define-values (id ...) body)
-                               (begin
-                                 (check-ids (syntax->list (syntax (id ...))))
-                                 (list d))]
-                              [(define-values . rest)
-                               (raise-syntax-error
-                                #f "ill-formed definition" stx d)]
-                              [(define-syntaxes (id ...) body)
-                               (begin
-                                 (check-ids (syntax->list (syntax (id ...))))
-                                 (list d))]
-                              [(define-syntaxes . rest)
-                               (raise-syntax-error
-                                #f "ill-formed definition" stx d)]
-                              [_else
-                               (raise-syntax-error
-                                #f "not a definition" stx defn)])))
-                        defns))))])
-        (let ([ids (apply append
-                          (map
-                           (lambda (d)
-                             (syntax-case d ()
-                               [(_ ids . __) (syntax->list (syntax ids))]))
-                           defs))])
-          (let ([dup (check-duplicate-identifier ids)])
-            (when dup
-              (raise-syntax-error #f "duplicate identifier" stx dup)))
-          (with-syntax ([(def ...) defs])
-            (syntax/loc stx
-              (let () def ... (let () body1 body ...))))))]
-     [(_ x body1 body ...)
-      (raise-syntax-error #f "not a definition sequence" stx (syntax x))]))
 
   ;; recur is another name for 'let' in a named let
   (define-syntax (recur stx)

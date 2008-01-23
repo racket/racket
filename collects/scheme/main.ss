@@ -14,6 +14,8 @@
            scheme/file
            scheme/cmdline
            scheme/promise
+           scheme/bool
+           scheme/local
            (for-syntax scheme/base))
 
   (provide (all-from-out scheme/contract
@@ -31,5 +33,7 @@
                          scheme/path
                          scheme/file
                          scheme/cmdline
-                         scheme/promise)
+                         scheme/promise
+                         scheme/bool
+                         scheme/local)
            (for-syntax (all-from-out scheme/base))))

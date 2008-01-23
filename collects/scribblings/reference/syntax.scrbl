@@ -522,7 +522,26 @@ within all @scheme[trans-expr]s.}
 
 Combines @scheme[letrec-syntaxes] with @scheme[letrec-values]: each
 @scheme[trans-id] and @scheme[val-id] is bound in all
-@scheme[trans-expr]s and @scheme[val-expr]s.}
+@scheme[trans-expr]s and @scheme[val-expr]s.
+
+See also @scheme[local], which supports local bindings with
+@scheme[define], @scheme[define-syntax], and more.}
+
+@;------------------------------------------------------------------------
+@section[#:tag "local"]{Local Definitions: @scheme[local]}
+
+@note-lib[scheme/local]
+
+@defform[(local [definition ...] body ...+)]{
+
+Like @scheme[letrec], except that the bindings are expressed in the
+same way as in the top-level or in a module body: using
+@scheme[define], @scheme[define-values], @scheme[define-syntax],
+@scheme[define-struct], etc.  Definitions are distinguished from
+non-definitions by partially expanding @scheme[definition] forms (see
+@secref["partial-expansion"]). As in the top-level or in a module
+body, a @scheme[begin]-wrapped sequence is spliced into the sequence
+of @scheme[definition]s.}
 
 @;------------------------------------------------------------------------
 @include-section["shared.scrbl"]
