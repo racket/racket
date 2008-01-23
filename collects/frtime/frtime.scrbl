@@ -10,7 +10,7 @@
     (only-in "demos/gui/fred.ss" ft-frame% ft-message% ft-button% ft-check-box% ft-slider%
 	     ft-text-field% ft-radio-box% ft-choice% ft-list-box%)))
 
-@title[#:tag "frtime"]{FrTime: A Language for Reactive Programs}
+@title[#:tag "frtime"]{@bold{FrTime}: A Language for Reactive Programs}
 
 The @scheme[frtime.ss] language supports declarative construction of
 reactive systems in a syntax very similar to that of MzScheme.  To
