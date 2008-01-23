@@ -81,10 +81,10 @@ installation uses absolute path names, @scheme[#f] otherwise.}
 
 @defthing[cgc-suffix (promise/c (or/c string? false/c))]{
 
-A string used as the suffix (before the actual suffix, such as
-@filepath{.exe}) for a @filepath{CGC} executable. Use Windows-style
-casing, and the string will be downcased as appropriate (e.g., for a
-Unix binary name). A @scheme[#f] value means that if the
+A @scheme[delay]ed string used as the suffix (before the actual
+suffix, such as @filepath{.exe}) for a @filepath{CGC} executable. Use
+Windows-style casing, and the string will be downcased as appropriate
+(e.g., for a Unix binary name). A @scheme[#f] value means that if the
 @exec{mzscheme} binary identifies itself as CGC, then the suffix is
 @scheme[""], otherwise it is @scheme["CGC"].}
 
