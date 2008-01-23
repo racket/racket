@@ -416,3 +416,4 @@ resource. It is the same routine as for the shadows in the XfwfFrame widget.
 @incl <assert.h>
 @incl <wxtimeout.h>
 @incl "xwTools3d.h"
+@incl "xwTabString.h"

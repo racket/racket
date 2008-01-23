@@ -291,13 +291,13 @@ inline static struct mpage **create_page_map(void *p) {
   pos = (unsigned long)p >> 48;
   page_maps = page_mapss[pos];
   if (!page_maps) {
-    page_maps = (struct mpage ***)malloc(sizeof(struct mpage **) * (1 << 16));
+    page_maps = (struct mpage ***)calloc(1 << 16, sizeof(struct mpage **));
     page_mapss[pos] = page_maps;
   }
   pos = ((unsigned long)p >> 32) & ((1 << 16) - 1);
   page_map = page_maps[pos];
   if (!page_map) {
-    page_map = (struct mpage **)malloc(sizeof(struct mpage *) * (1 << USEFUL_ADDR_BITS));
+    page_map = (struct mpage **)calloc(1 << USEFUL_ADDR_BITS, sizeof(struct mpage *));
     page_maps[pos] = page_map;
   }
   return page_map;

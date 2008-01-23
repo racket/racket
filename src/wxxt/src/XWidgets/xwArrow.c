@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <wxtimeout.h>
 #include "xwTools3d.h"
+#include "xwTabString.h"
 #include <./xwArrowP.h>
 static void activate_and_start_timer(
 #if NeedFunctionPrototypes

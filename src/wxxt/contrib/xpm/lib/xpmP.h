@@ -53,7 +53,7 @@
 extern FILE *popen();
 #endif
 
-#if defined(SYSV) || defined(SVR4) || defined(VMS)
+#if defined(__FreeBSD__) || defined(SYSV) || defined(SVR4) || defined(VMS)
 #include <string.h>
 
 #ifndef index
