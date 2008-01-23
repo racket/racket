@@ -22,13 +22,15 @@
            glob->regexp)
 
 
-  (define ((make-string-do! translate) s)
-    (let loop ([n (sub1 (string-length s))])
-      (unless (negative? n)
-        (string-set! s n (translate (string-ref s n)))
-        (loop (sub1 n)))))
-  (define string-lowercase! (make-string-do! char-downcase))
-  (define string-uppercase! (make-string-do! char-upcase))
+  (define ((make-string-do! translate who) s)
+    (if (and (string? s) (not (immutable? s)))
+      (let loop ([n (sub1 (string-length s))])
+        (unless (negative? n)
+          (string-set! s n (translate (string-ref s n)))
+          (loop (sub1 n))))
+      (raise-type-error who "mutable string" s)))
+  (define string-lowercase! (make-string-do! char-downcase 'string-lowercase!))
+  (define string-uppercase! (make-string-do! char-upcase   'string-uppercase!))
 
   ;; helpers for eval-string and read-from-string-one-or-all
   (define-syntax wrap-errors
