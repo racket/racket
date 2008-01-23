@@ -178,9 +178,7 @@
                                                              (if (stx-null? s) 
                                                                  0 
                                                                  -inf.0)
-                                                             (if (stx-null? s)
-                                                                 -inf.0
-                                                                 1)))))])
+                                                             1))))])
                       (loop s))])
 	(values pre post (= m n)))))
 

@@ -481,7 +481,9 @@ a @scheme[slide] sequence.}
 
 Evaluates the @scheme[body]s once for each @scheme[id], skipping an
 @scheme[id] if its name ends with @litchar{~} and @scheme[condense?]
-is true.
+is true. The results of the last @scheme[body] for each iteration are
+collected into a list, which is the result of the @scheme[with-steps]
+form.
 
 Within the @scheme[body]s, several keywords are bound non-hygienically
 (using the first @scheme[body]'s lexical context):

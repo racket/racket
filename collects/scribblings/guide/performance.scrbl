@@ -35,8 +35,8 @@ usual binding, the expression @scheme[(let ([x 1][y (lambda () 4)]) (+
 1 (y)))] is compiled the same as the constant @scheme[5].
 
 On some platforms, bytecode is further compiled to native code via a
-@deftech{jut-in-time} or @deftech{JIT} compiler. The @tech{JIT}
-compiler substantially speed programs that execute tight loops,
+@deftech{just-in-time} or @deftech{JIT} compiler. The @tech{JIT}
+compiler substantially speeds programs that execute tight loops,
 arithmetic on small integers, and arithmetic on inexact real
 numbers. Currently, @tech{JIT} compilation is supported for x86,
 x86_64 (a.k.a. AMD64), and 32-bit PowerPC processors. The @tech{JIT}
@@ -59,7 +59,7 @@ difficult to detect.
 The module system aids optimization by helping to ensure that
 identifiers have the usual bindings. That is, the @scheme[+] provided
 by @schememodname[scheme/base] can be recognized by the compiler and
-inlined, which is especially imported for @tech{JIT}-compiled code.
+inlined, which is especially important for @tech{JIT}-compiled code.
 In contrast, in a traditional interactive Scheme system, the top-level
 @scheme[+] binding might be redefined, so the compiler cannot assume a
 fixed @scheme[+] binding (unless special flags or declarations
@@ -82,7 +82,7 @@ definitions when interactive exploration is more important. See
 @secref["module-set"] for more information.
 
 Currently, the compiler does not attempt to inline or propagate
-constant across module boundary, except for exports of the built-in
+constants across module boundary, except for exports of the built-in
 modules (such as the one that originally provides @scheme[+]).
 
 The later section @secref["letrec-performance"] provides some

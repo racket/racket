@@ -105,7 +105,7 @@ A syntax object matches a @scheme[pattern] as follows:
  Like the previous kind of pattern, but with a final
  sub-@scheme[pattern] as for @scheme[(pattern ...+ . pattern)].  The
  final @scheme[pattern] never matches a syntax object whose datum is a
- list.}
+ pair.}
 
  @specsubform[(code:line #,(tt "#")(pattern ...))]{
 

@@ -38,7 +38,7 @@ value of @scheme[x] has been incremented (and the change is visible
 inside the module @scheme[x]).
 
 To work around this, export accessor functions, rather than
-exporting the function directly, like this:
+exporting the variable directly, like this:
 
 @schememod[
 scheme

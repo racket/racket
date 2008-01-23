@@ -247,7 +247,7 @@ scheme
 ]
 
 In general, each use of @scheme[node/dc] must name the
-fields and then specify contracts for each fields. In the
+fields and then specify contracts for each field. In the
 above, the @scheme[val] field is a contract that accepts
 values between @scheme[low] and @scheme[high].
 The @scheme[left] and @scheme[right] fields are

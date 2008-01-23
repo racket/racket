@@ -44,6 +44,7 @@
   (define (formals->list formals)
     (syntax-case formals ()
       [(formal ... . rest)
+       (not (null? (syntax-e #'rest)))
        ;; dot is exactly like #:rest, but don't allow it with other
        ;; meta-keywords since its meaning is confusing
        (let* ([formals (syntax->list #'(formal ...))]

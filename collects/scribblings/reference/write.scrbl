@@ -203,17 +203,17 @@ it is not @scheme[#f], otherwise the path is left relative).}
 
 
 @defproc*[([(port-write-handler [out output-port?]) (any/c output-port? . -> . any)]
-           [(port-write-handler [in input-port?]
+           [(port-write-handler [out output-port?]
                                 [proc (any/c output-port? . -> . any)])
             void?])]{}
 
 @defproc*[([(port-display-handler [out output-port?]) (any/c output-port? . -> . any)]
-           [(port-display-handler [in input-port?]
-                                 [proc (any/c output-port? . -> . any)])
+           [(port-display-handler [out output-port?]
+                                  [proc (any/c output-port? . -> . any)])
             void?])]{}
 
 @defproc*[([(port-print-handler [out output-port?]) (any/c output-port? . -> . any)]
-           [(port-print-handler [in input-port?]
+           [(port-print-handler [out output-port?]
                                 [proc (any/c output-port? . -> . any)])
             void?])]{
 

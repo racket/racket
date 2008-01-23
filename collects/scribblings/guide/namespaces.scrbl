@@ -43,7 +43,7 @@ evaluation is reflective. Execution starts with an initial namespace
 that contains a few primitive modules, and that is further populated
 by loading files and modules as specified on the command line or as
 supplied in the @tech{REPL}. Top-level @scheme[require] and
-@scheme[define] forms adjust the identifier mapping, and module
+@scheme[define] forms adjusts the identifier mapping, and module
 declarations (typically loaded on demand for a @scheme[require] form)
 adjust the module mapping.
 
@@ -106,7 +106,7 @@ get started:
 ]
 
 Note that the @scheme[parameterize] of @scheme[current-namespace] does
-not affect the meaning of identifier like @scheme[namespace-require]
+not affect the meaning of identifiers like @scheme[namespace-require]
 within the @scheme[parameterize] body. Those identifiers obtain their
 meaning from the enclosing context (probably a module). Only
 expressions that are dynamic with respect to this code, such as the

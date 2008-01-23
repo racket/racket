@@ -48,7 +48,9 @@
 (define-syntax sd (syntax-rules () [(_ v) (syntax->datum (syntax v))]))
 
 (test '(3 1 2) 'syntax-case (syntax-case '(1 2 3) () [(a ... b) (sd (b a ...))]))
-(test 5 'syntax-case (syntax-case '(1 2 3) () [(a ... b . c) (sd (b a ... c))][_else 5]))
+(test '(3 1 2) 'syntax-case (syntax-case '(1 2 3) () [(a ... b . c) (sd (b a ...))]))
+(test '(3 1 2) 'syntax-case (syntax-case '(1 2 3) () [(a ... 3 . c) (sd (3 a ...))]))
+(test 5 'syntax-case (syntax-case '(1 2 3 4) () [(a ... 3 . c) (sd (3 a ... c))][_else 5]))
 (test '(3 1 2 4) 'syntax-case (syntax-case '(1 2 3 . 4) () [(a ... b . c) (sd (b a ... c))][_else 5]))
 (test '(3 1 2 4) 'syntax-case (syntax-case '(1 2 (3 . 4)) () [(a ... (b . c)) (sd (b a ... c))][_else 5]))
 (test '((3) 1 2 4) 'syntax-case (syntax-case '(1 2 (3 . 4)) () [(a ... (b ... . c)) (sd ((b ...) a ... c))][_else 5]))
@@ -956,7 +958,7 @@
        #'(list lifted-output id))]))
 
 (test 2 '@@foo (@@foo 2))
-(test #t values prev-ctx)
+(test #f values prev-ctx)
 (test 2 eval (expand-once #'(@@foo 2)))
 (test 2 eval (expand #'(@@foo 2)))
 (test 2 eval (expand-to-top-form #'(@@foo 2)))

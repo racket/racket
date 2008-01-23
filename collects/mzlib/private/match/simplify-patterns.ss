@@ -130,6 +130,7 @@
        (with-syntax ([(pats* ...) (syntax-map simplify/i #'(pats ...))])
          (syntax/loc stx (kw pats* ...)))]
       [(kw pats ... . rest)
+       (not (null? (syntax-e #'rest)))
        (match:syntax-err stx (format "~a pattern must have a proper list of subpatterns" (syntax-e #'kw)))]
       
       ;; hash table patterns have their own syntax

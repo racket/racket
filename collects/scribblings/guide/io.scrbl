@@ -304,7 +304,7 @@ The @scheme[define-serializable-struct] form defines a structure type
 that can be @scheme[serialize]d to a value that can be printed using
 @scheme[write] and restored via @scheme[read]. The @scheme[serialize]d
 result can be @scheme[deserialize]d to get back an instance of the
-original structure type. The serialization form an functions are
+original structure type. The serialization form and functions are
 provided by the @schememodname[scheme/serialize] library.
 
 @examples[

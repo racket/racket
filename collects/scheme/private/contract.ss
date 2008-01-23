@@ -97,31 +97,31 @@ improve method arity mismatch contract violation error messages?
            ;; In an expression context:
            (let ([key (syntax-local-lift-context)])
              ;; Already lifted in this lifting context?
-             (unless (hash-table-get saved-id-table key #f)
-               ;; No: lift the contract creation:
-               (with-syntax ([contract-id contract-id]
-                             [id id]
-                             [name (datum->syntax #f (syntax->datum id) id)]
-                             [pos-module-source pos-module-source])
-                 (hash-table-put!
-                  saved-id-table
-                  key
-                  (syntax-local-introduce
-                   (syntax-local-lift-expression
-                    #'(-contract contract-id
-                                 id
-                                 pos-module-source
-                                 (module-source-as-symbol #'name)
-                                 (quote-syntax name)))))))
-             ;; Expand to a use of the lifted expression:
-             (with-syntax ([saved-id (syntax-local-introduce (hash-table-get saved-id-table key))])
-               (syntax-case stx (set!)
-                 [name
-                  (identifier? (syntax name))
-                  (syntax saved-id)]
-                 [(name . more)
-                  (with-syntax ([app (datum->syntax stx '#%app)])
-                    (syntax/loc stx (app saved-id . more)))])))
+             (let ([lifted-id
+                    (or (hash-table-get saved-id-table key #f)
+                        ;; No: lift the contract creation:
+                        (with-syntax ([contract-id contract-id]
+                                      [id id]
+                                      [name (datum->syntax #f (syntax->datum id) id)]
+                                      [pos-module-source pos-module-source])
+                          (syntax-local-introduce
+                           (syntax-local-lift-expression
+                            #'(-contract contract-id
+                                         id
+                                         pos-module-source
+                                         (module-source-as-symbol #'name)
+                                         (quote-syntax name))))))])
+               (when key
+                 (hash-table-put! saved-id-table key lifted-id))
+               ;; Expand to a use of the lifted expression:
+               (with-syntax ([saved-id (syntax-local-introduce lifted-id)])
+                 (syntax-case stx (set!)
+                   [name
+                    (identifier? (syntax name))
+                    (syntax saved-id)]
+                   [(name . more)
+                    (with-syntax ([app (datum->syntax stx '#%app)])
+                      (syntax/loc stx (app saved-id . more)))]))))
            ;; In case of partial expansion for module-level and internal-defn contexts,
            ;; delay expansion until it's a good time to lift expressions:
            (quasisyntax/loc stx (#%expression #,stx)))))))
