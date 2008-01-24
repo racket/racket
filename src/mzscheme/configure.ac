@@ -40,7 +40,6 @@ AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of bundled 
 AC_ARG_ENABLE(origtree,[  --enable-origtree       install with original directory structure])
 
 AC_ARG_ENABLE(foreign, [  --enable-foreign        compile foreign support (enabled by default)], , enable_foreign=yes)
-AC_ARG_ENABLE(llvm,    [  --enable-llvm           compile llvm support (disabled by default)], , enable_llvm=no)
 
 AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC (Boehm or Senora) as default build])
 AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of the Boehm GC])
@@ -272,7 +271,6 @@ fi
 show_explicitly_enabled "${enable_orig}" "Original install tree"
 
 show_explicitly_disabled "${enable_foreign}" Foreign
-show_explicitly_enabled "${enable_llvm}" LLVM
 
 show_explicitly_enabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
@@ -1332,8 +1330,6 @@ AC_SUBST(FOREIGNTARGET)
 AC_SUBST(LIBMZSCHEME_DEP)
 AC_SUBST(LIBMRED_DEP)
 
-AC_SUBST(LLVMTARGET)
-
 AC_SUBST(LTO)
 AC_SUBST(LTA)
 
@@ -1386,20 +1382,6 @@ if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
 else
   FOREIGNTARGET="foreign-nothing"
   MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
-fi
-
-LLVMTARGET=
-if test -d "${srcdir}/llvm" && test "${enable_llvm}" = "yes" ; then
-  AC_CONFIG_SUBDIRS( llvm/llvm )
-  makefiles="$makefiles llvm/Makefile"
-  LLVMTARGET="llvm-stuff"
-  # Again, this changes arguments that are passed to *all* sub-configure
-  # invocations, which might be a problem.  Hopefully nobody else uses
-  # "--enable-targets" and if someone else uses "--enable-optimized" we might
-  # as well just go with it...
-  ac_configure_args="$ac_configure_args --enable-optimized --enable-targets=host-only"
-else
-  LLVMTARGET="llvm-nothing"
 fi
 
 if test "${enable_mred}" = "yes" ; then

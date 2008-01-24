@@ -733,7 +733,6 @@ FOREIGN_CONVENIENCE
 FOREIGNTARGET
 LIBMZSCHEME_DEP
 LIBMRED_DEP
-LLVMTARGET
 LTO
 LTA
 collectsdir
@@ -766,7 +765,6 @@ CCC
 CXXCPP
 XMKMF'
 ac_subdirs_all='foreign/gcc/libffi
-llvm/llvm
 wxcommon/jpeg
 wxxt/src/x/wbuild '
 
@@ -1345,7 +1343,6 @@ Optional Features:
   --enable-lt=<prog>      use <prog> instead of bundled libtool
   --enable-origtree       install with original directory structure
   --enable-foreign        compile foreign support (enabled by default)
-  --enable-llvm           compile llvm support (disabled by default)
   --enable-cgcdefault     use CGC (Boehm or Senora) as default build
   --enable-sgc            use Senora GC instead of the Boehm GC
   --enable-sgcdebug       use Senora GC for debugging
@@ -1883,13 +1880,6 @@ else
   enable_foreign=yes
 fi
 
-# Check whether --enable-llvm was given.
-if test "${enable_llvm+set}" = set; then
-  enableval=$enable_llvm;
-else
-  enable_llvm=no
-fi
-
 
 # Check whether --enable-cgcdefault was given.
 if test "${enable_cgcdefault+set}" = set; then
@@ -2207,7 +2197,6 @@ fi
 show_explicitly_enabled "${enable_orig}" "Original install tree"
 
 show_explicitly_disabled "${enable_foreign}" Foreign
-show_explicitly_enabled "${enable_llvm}" LLVM
 
 show_explicitly_enabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
@@ -11786,8 +11775,6 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
-
-
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -11854,21 +11841,6 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 else
   FOREIGNTARGET="foreign-nothing"
   MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
-fi
-
-LLVMTARGET=
-if test -d "${srcdir}/llvm" && test "${enable_llvm}" = "yes" ; then
-  subdirs="$subdirs llvm/llvm"
-
-  makefiles="$makefiles llvm/Makefile"
-  LLVMTARGET="llvm-stuff"
-  # Again, this changes arguments that are passed to *all* sub-configure
-  # invocations, which might be a problem.  Hopefully nobody else uses
-  # "--enable-targets" and if someone else uses "--enable-optimized" we might
-  # as well just go with it...
-  ac_configure_args="$ac_configure_args --enable-optimized --enable-targets=host-only"
-else
-  LLVMTARGET="llvm-nothing"
 fi
 
 if test "${enable_mred}" = "yes" ; then
@@ -12749,7 +12721,6 @@ FOREIGN_CONVENIENCE!$FOREIGN_CONVENIENCE$ac_delim
 FOREIGNTARGET!$FOREIGNTARGET$ac_delim
 LIBMZSCHEME_DEP!$LIBMZSCHEME_DEP$ac_delim
 LIBMRED_DEP!$LIBMRED_DEP$ac_delim
-LLVMTARGET!$LLVMTARGET$ac_delim
 LTO!$LTO$ac_delim
 LTA!$LTA$ac_delim
 collectsdir!$collectsdir$ac_delim
@@ -12768,7 +12739,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 39; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 38; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
