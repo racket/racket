@@ -18,3 +18,6 @@ ways:
  * Added case in "configure" x86_64-*-openbsd* to the existing x86_64 line
 
  * Changed ffi_common.h to always include <string.h>
+
+*** Synced from GCC repository, removing the above patches, and
+*** perhaps making them unnecessary.
