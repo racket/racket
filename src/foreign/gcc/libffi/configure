@@ -12675,7 +12675,7 @@ fi
           ac_config_links="$ac_config_links include/ffitarget.h:src/$TARGETDIR/ffitarget.h"
 
 
-                                        ac_config_files="$ac_config_files include/Makefile include/ffi.h Makefile testsuite/Makefile"
+                                        ac_config_files="$ac_config_files include/Makefile include/ffi.h Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -13661,7 +13661,6 @@ do
   "include/Makefile" ) CONFIG_FILES="$CONFIG_FILES include/Makefile" ;;
   "include/ffi.h" ) CONFIG_FILES="$CONFIG_FILES include/ffi.h" ;;
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
-  "testsuite/Makefile" ) CONFIG_FILES="$CONFIG_FILES testsuite/Makefile" ;;
   "include/ffitarget.h" ) CONFIG_LINKS="$CONFIG_LINKS include/ffitarget.h:src/$TARGETDIR/ffitarget.h" ;;
   "default-1" ) CONFIG_COMMANDS="$CONFIG_COMMANDS default-1" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;

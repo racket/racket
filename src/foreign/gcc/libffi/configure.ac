@@ -354,6 +354,6 @@ test -d src/$TARGETDIR || mkdir src/$TARGETDIR
 
 AC_CONFIG_LINKS(include/ffitarget.h:src/$TARGETDIR/ffitarget.h)
 
-AC_CONFIG_FILES(include/Makefile include/ffi.h Makefile testsuite/Makefile)
+AC_CONFIG_FILES(include/Makefile include/ffi.h Makefile)
 
 AC_OUTPUT

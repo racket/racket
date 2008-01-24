@@ -3,7 +3,7 @@
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I .. -I ../config
 
-SUBDIRS = include testsuite
+SUBDIRS = include
 
 EXTRA_DIST = LICENSE ChangeLog.v1 ChangeLog.libgcj configure.host \
 	src/alpha/ffi.c src/alpha/osf.S src/alpha/ffitarget.h \

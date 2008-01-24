@@ -21,3 +21,7 @@ ways:
 
 *** Synced from GCC repository, removing the above patches, and
 *** perhaps making them unnecessary.
+
+Local changes:
+
+ * Removed libffi/testsuite directory (r8401)

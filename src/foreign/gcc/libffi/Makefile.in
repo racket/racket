@@ -357,7 +357,7 @@ toolexecdir = @toolexecdir@
 toolexeclibdir = @toolexeclibdir@
 AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I .. -I ../config
-SUBDIRS = include testsuite
+SUBDIRS = include
 EXTRA_DIST = LICENSE ChangeLog.v1 ChangeLog.libgcj configure.host \
 	src/alpha/ffi.c src/alpha/osf.S src/alpha/ffitarget.h \
 	src/arm/ffi.c src/arm/sysv.S src/arm/ffitarget.h \
