@@ -1,0 +1,8 @@
+This directory is here only for configuring libffi which is
+distributed as part of GCC.  It contains the minimal set of files that
+make it possible to configure and build libffi.
+
+Synced to revision 131794 of the GCC repository.
+
+(Note: libffi is maintained as part of the GCC code repository, but it
+is still distributed under the LGPL.)
