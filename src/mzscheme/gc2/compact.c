@@ -386,7 +386,7 @@ static int running_finals;
 static char zero_sized[4];
 
 /* Temporary pointer-holder used by routines that allocate */
-static void *park[2];
+static void *park[2], *park_save[2];
 
 static int during_gc, avoid_collection;
 
@@ -2825,6 +2825,7 @@ static void init(void)
     GC_add_roots(&run_queue, (char *)&run_queue + sizeof(run_queue) + 1);
     GC_add_roots(&last_in_queue, (char *)&last_in_queue + sizeof(last_in_queue) + 1);
     GC_add_roots(&park, (char *)&park + sizeof(park) + 1);
+    GC_add_roots(&park_save, (char *)&park_save + sizeof(park_save) + 1);
 
     sets[0] = &tagged;
     sets[1] = &array;
@@ -3487,6 +3488,12 @@ static void gcollect(int full)
   if (!running_finals) {
     running_finals = 1;
 
+    /* Finalization might allocate, which might need park: */
+    park_save[0] = park[0];
+    park_save[1] = park[1];
+    park[0] = NULL;
+    park[1] = NULL;
+
     while (run_queue) {
       Fnl *f;
       void **gcs;
@@ -3505,6 +3512,11 @@ static void gcollect(int full)
     }
 
     running_finals = 0;
+
+    park[0] = park_save[0];
+    park[1] = park_save[1];
+    park_save[0] = NULL;
+    park_save[1] = NULL;
   }
 }
 

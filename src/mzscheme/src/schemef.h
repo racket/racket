@@ -615,8 +615,8 @@ MZ_EXTERN Scheme_Object *scheme_rational_from_float(float d);
 # define scheme_rational_from_float scheme_rational_from_double
 #endif
 MZ_EXTERN Scheme_Object *scheme_rational_normalize(const Scheme_Object *n);
-MZ_EXTERN Scheme_Object *scheme_rational_numerator(const Scheme_Object *n);
-MZ_EXTERN Scheme_Object *scheme_rational_denominator(const Scheme_Object *n);
+XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_rational_numerator(const Scheme_Object *n);
+XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_rational_denominator(const Scheme_Object *n);
 
 /*========================================================================*/
 /*                              complexes                                 */

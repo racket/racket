@@ -136,7 +136,7 @@ void (*GC_fixup_xtagged)(void *obj);
 
 #include "my_qsort.c"
 
-static void *park[2];
+static void *park[2], *park_save[2];
 
 /*****************************************************************************/
 /* OS-Level Memory Management Routines                                       */
@@ -2117,6 +2117,7 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
 			   fixup_weak_array, 0, 0);
     initialize_signal_handler();
     GC_add_roots(&park, (char *)&park + sizeof(park) + 1);
+    GC_add_roots(&park_save, (char *)&park_save + sizeof(park_save) + 1);
 
     initialize_protect_page_ranges(malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE), APAGE_SIZE);
   }
@@ -3202,6 +3203,13 @@ static void garbage_collect(int force_full)
      finalizer completes its execution */
   if(!running_finalizers) {
     running_finalizers = 1;
+
+    /* Finalization might allocate, which might need park: */
+    park_save[0] = park[0];
+    park_save[1] = park[1];
+    park[0] = NULL;
+    park[1] = NULL;
+
     while(run_queue) {
       struct finalizer *f;
       void **gcs;
@@ -3217,6 +3225,11 @@ static void garbage_collect(int force_full)
     }
     run_account_hooks();
     running_finalizers = 0;
+
+    park[0] = park_save[0];
+    park[1] = park_save[1];
+    park_save[0] = NULL;
+    park_save[1] = NULL;
   }
 
   DUMP_HEAP(); CLOSE_DEBUG_FILE();
