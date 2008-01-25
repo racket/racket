@@ -27,7 +27,8 @@ AC_ARG_ENABLE(multilib,
 # See config-ml.in if you want the gory details.
 
 if test "$srcdir" = "."; then
-  if test "$with_target_subdir" != "."; then
+  # ELI: modified the following line so builds can happen in the source dir
+  if test ! -z "$with_target_subdir" && test "$with_target_subdir" != "."; then
     multi_basedir="$srcdir/$with_multisrctop../$2"
   else
     multi_basedir="$srcdir/$with_multisrctop$2"
