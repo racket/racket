@@ -18,6 +18,7 @@ Local changes:
 
  * Removed libffi/testsuite directory (r8401)
  * Removed testsuite mention in configure and make files (r8403)
+ * Recreated the libffi/configure with autoconf version 2.61 (r8412)
 
 ========== libffi_msvc directory =====================================
 
