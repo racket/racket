@@ -166,7 +166,7 @@ static void init_compile_data(Scheme_Comp_Env *env);
 
 
 #ifdef DONT_USE_FOREIGN
-static void init_dummy_foreign(Scheme *env)
+static void init_dummy_foreign(Scheme_Env *env)
 {
   /* Works just well enough that the `mzscheme' module can 
      import it (so that attaching `mzscheme' to a namespace 
