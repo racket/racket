@@ -3,6 +3,10 @@ with extra files that are needed to configure it.  Similarly, The
 `libffi_msvc' directory holds a copy of the libffi version from the
 CTypes project.
 
+Note: libffi is maintained as part of the GCC code repository, but it
+is still distributed under an LGPL-compatible license.  CTypes is
+under the MIT License.
+
 ========== gcc directory =============================================
 
 The directory is synced from the GCC repository, revision 131816.
