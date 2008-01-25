@@ -1,28 +1,24 @@
-The copy of libffi for PLT Scheme has been changed in a few small
+The `gcc' directory holds a copy of libffi from the GCC repository,
+with extra files that are needed to configure it.  Similarly, The
+`libffi_msvc' directory holds a copy of the libffi version from the
+CTypes project.
+
+========== gcc directory =============================================
+
+The directory is synced from the GCC repository, revision 131816.
+
+Our copy of libffi for PLT Scheme has been changed in a few small
 ways:
-
- * Added i386 Mac OS X support from the PyObjC project:
-     gcc/libffi/src/x86/ffi_darwin.c
-     gcc/libffi/src/x86/darwin.S
-   and changed ffi.c and sysv.S to #include these when __APPLE__
-   is defined.
-
- * Added line to "configure" for i*86-*-darwin*
-
- * Added line to "configure" for i*86-*-openbsd*
-
- * Added line to "configure" for amd64-*-freebsd*
-
- * Added case in "configure" sparc64-*-freebsd* to existing sparc64 line
-
- * Added case in "configure" x86_64-*-openbsd* to the existing x86_64 line
-
- * Changed ffi_common.h to always include <string.h>
-
-*** Synced from GCC repository, removing the above patches, and
-*** perhaps making them unnecessary.
 
 Local changes:
 
  * Removed libffi/testsuite directory (r8401)
  * Removed testsuite mention in configure and make files (r8403)
+
+========== libffi_msvc directory =====================================
+
+This directory is synced from the CTypes repository
+
+  http://svn.python.org/projects/ctypes/trunk/ctypes
+
+revision 60274.
