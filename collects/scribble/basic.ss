@@ -206,9 +206,12 @@
         (cdr (apply append (map (lambda (i) (list ", " i)) l)))))
     (define (cadr-string-lists<? a b)
       (let loop ([a (cadr a)] [b (cadr b)])
-        (cond [(null? a) #t]
-              [(null? b) #f]
-              [(string-ci=? (car a) (car b)) (loop (cdr a) (cdr b))]
+        (cond [(null? b) #f]
+              [(null? a) #t]
+              [(string-ci=? (car a) (car b))
+               (or (loop (cdr a) (cdr b))
+                   ;; Try string<?
+                   (string<? (car a) (car b)))]
               [else (string-ci<? (car a) (car b))])))
     (define alpha (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
     (define contents
