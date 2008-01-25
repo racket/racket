@@ -115,7 +115,7 @@
                 (loop (cdr parts)
                       (if (unnumbered-part? s) pos (add1 pos))))))
           (hash-table-put! (collect-info-parts ci)
-                           d 
+                           d
                            (make-collected-info
                             number
                             parent
@@ -134,10 +134,7 @@
         (case (car k)
           [(part tech)
            (if (string? (cadr k))
-               (list (car k)
-                     (string-append prefix
-                                    ":"
-                                    (cadr k)))
+               (list (car k) (string-append prefix ":" (cadr k)))
                k)]
           [(index-entry)
            (let ([v (convert-key prefix (cadr k))])

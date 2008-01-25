@@ -85,37 +85,37 @@
                    (values tag (eq? (car tag) 'form))
                    (values #f #f))))])
       (cond
-       [(identifier? id/binding)
-        (search id/binding)]
-       [(and (list? id/binding)
-             (= 6 (length id/binding)))
-        (search id/binding)]
-       [(and (list? id/binding)
-             (= 2 (length id/binding)))
-        (let loop ([src (car id/binding)])
-          (cond
-           [(path? src)
-            (if (complete-path? src)
+        [(identifier? id/binding)
+         (search id/binding)]
+        [(and (list? id/binding)
+              (= 6 (length id/binding)))
+         (search id/binding)]
+        [(and (list? id/binding)
+              (= 2 (length id/binding)))
+         (let loop ([src (car id/binding)])
+           (cond
+             [(path? src)
+              (if (complete-path? src)
                 (search (list src (cadr id/binding)))
                 (loop (path->complete-path src)))]
-           [(path-string? src)
-            (loop (path->complete-path src))]
-           [(resolved-module-path? src)
-            (let ([n (resolved-module-path-name src)])
-              (if (pair? n)
+             [(path-string? src)
+              (loop (path->complete-path src))]
+             [(resolved-module-path? src)
+              (let ([n (resolved-module-path-name src)])
+                (if (pair? n)
                   (loop n)
                   (search n)))]
-           [(module-path-index? src)
-            (loop (module-path-index-resolve src))]
-           [(module-path? src)
-            (loop (module-path-index-join src #f))]
-           [else
-            (raise-type-error 'xref-binding-definition->tag
-                              "list starting with module path, resolved module path, module path index, path, or string"
-                              src)]))]
-       [else (raise-type-error 'xref-binding-definition->tag
-                               "identifier, 2-element list, or 6-element list"
-                               id/binding)]))]))
+             [(module-path-index? src)
+              (loop (module-path-index-resolve src))]
+             [(module-path? src)
+              (loop (module-path-index-join src #f))]
+             [else
+              (raise-type-error 'xref-binding-definition->tag
+                                "list starting with module path, resolved module path, module path index, path, or string"
+                                src)]))]
+        [else (raise-type-error 'xref-binding-definition->tag
+                                "identifier, 2-element list, or 6-element list"
+                                id/binding)]))]))
 
 (define (xref-binding->definition-tag xrefs id/binding mode)
   (let-values ([(tag form?) (xref-binding-tag xrefs id/binding mode)])
@@ -130,13 +130,9 @@
   (let ([v (hash-table-get (collect-info-ext-ht (resolve-info-ci (xrefs-ri xrefs)))
                            `(index-entry ,tag)
                            #f)])
-    (cond
-     [v (make-entry (car v) 
-                    (cadr v)
-                    (cadr tag)
-                    (caddr v))]
-     [(and (pair? tag) (eq? 'form (car tag)))
-      ;; Try again with 'def:
-      (xref-tag->index-entry xrefs (cons 'def (cdr tag)))]
-     [else #f])))
+    (cond [v (make-entry (car v) (cadr v) (cadr tag) (caddr v))]
+          [(and (pair? tag) (eq? 'form (car tag)))
+           ;; Try again with 'def:
+           (xref-tag->index-entry xrefs (cons 'def (cdr tag)))]
+          [else #f])))
 

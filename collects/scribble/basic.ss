@@ -190,14 +190,13 @@
                     content)))
 
   (define (index-section #:title [title "Index"] #:tag [tag #f])
-    (make-unnumbered-part
-     #f
-     `((part ,(or tag "doc-index")))
-     (list title)
-     'index
-     null
-     (make-flow (index-flow-elements))
-     null))
+    (make-unnumbered-part #f
+                          `((part ,(or tag "doc-index")))
+                          (list title)
+                          'index
+                          null
+                          (make-flow (index-flow-elements))
+                          null))
 
   (define (index-flow-elements)
     (define (commas l)
@@ -210,7 +209,7 @@
               [(null? a) #t]
               [(string-ci=? (car a) (car b))
                (or (loop (cdr a) (cdr b))
-                   ;; Try string<?
+                   ;; Try string<? so "Foo" still precedes "foo"
                    (string<? (car a) (car b)))]
               [else (string-ci<? (car a) (car b))])))
     (define alpha (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
@@ -264,10 +263,9 @@
                             [else (loop (cdr i) alpha)]))]))))))
            (list (make-flow (list (make-paragraph (list 'nbsp)))))
            (map (lambda (i)
-                  (let* ([e (make-link-element
-                             "indexlink"
-                             (commas (caddr i))
-                             (car i))]
+                  (let* ([e (make-link-element "indexlink"
+                                               (commas (caddr i))
+                                               (car i))]
                          [letter (hash-table-get alpha-starts i #f)]
                          [e (if letter
                               (make-element
