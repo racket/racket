@@ -33,7 +33,7 @@ profile todo:
     (export drscheme:debug^)
     
     
-    (define (oprintf . args) (apply fprintf orig args))
+    (define (printf . args) (apply fprintf orig args))
     
 
 ;                                                          
@@ -420,7 +420,17 @@ profile todo:
                        (syntax-source src-stx)]
                       [(is-a? (syntax-source src-stx) editor<%>)
                        (syntax-source src-stx)]
-                      [else #f])]
+                      [else 
+                       (let* ([rep (drscheme:rep:current-rep)])
+                         (and
+                          rep
+                          (let ([defs (send rep get-definitions-text)])
+                            (cond
+                              [(send rep port-name-matches? (syntax-source src-stx))
+                               rep]
+                              [(send defs port-name-matches? (syntax-source src-stx))
+                               defs]
+                              [else #f]))))])]
             [position (or (syntax-position src-stx) 0)]
             [span (or (syntax-span src-stx) 0)]
             [line (or (syntax-line src-stx) 0)]
@@ -897,49 +907,49 @@ profile todo:
                  [actions-ht (make-hash-table 'equal)]
                  [on/syntaxes (hash-table-map ht (λ (_ pr) pr))]
                  
-                 ;; can-annotate : (listof (list boolean syntax))
+                 ;; can-annotate : (listof (list boolean srcloc))
                  ;; boolean is #t => code was run
                  ;;            #f => code was not run
                  ;; remove those that cannot be annotated
                  [can-annotate
-                  (filter (λ (pr)
-                            (let ([stx (mcdr pr)])
-                              (and (syntax? stx)
-                                   (let ([src (syntax-source stx)]
-                                         [pos (syntax-position stx)]
-                                         [span (syntax-span stx)])
-                                     (and (is-a? src text:basic<%>)
-                                          pos
-                                          span)))))
-                          on/syntaxes)]
+                  (filter values
+                          (map (λ (pr)
+                                 (let ([stx (mcdr pr)])
+                                   (and (syntax? stx)
+                                        (let ([src (syntax-source stx)]
+                                              [pos (syntax-position stx)]
+                                              [span (syntax-span stx)])
+                                          (and pos
+                                               span
+                                               (send (get-defs) port-name-matches? src)
+                                               (list (mcar pr) (make-srcloc (get-defs) #f #f pos span)))))))
+                               on/syntaxes))]
                  
-                 ;; filtered : (listof (list boolean syntax))
+                 ;; filtered : (listof (list boolean srcloc))
                  ;; remove redundant expressions
                  [filtered
                   (let (;; actions-ht : (list src number number) -> (list boolean syntax)
                         [actions-ht (make-hash-table 'equal)])
                     (for-each
                      (λ (pr)
-                       (let* ([stx (mcdr pr)]
-                              [on? (mcar pr)]
-                              [key (list (syntax-source stx)
-                                         (syntax-position stx)
-                                         (syntax-span stx))]
-                              [old (hash-table-get actions-ht key (λ () 'nothing))])
+                       (let* ([on? (list-ref pr 0)]
+                              [key (list-ref pr 1)]
+                              [old (hash-table-get actions-ht key 'nothing)])
                          (cond
-                           [(eq? old 'nothing) (hash-table-put! actions-ht key (list on? stx))]
-                           [(car old) ;; recorded as executed
+                           [(eq? old 'nothing) (hash-table-put! actions-ht key on?)]
+                           [old ;; recorded as executed
                             (void)]
-                           [(not (car old)) ;; recorded as unexected
+                           [(not old) ;; recorded as unexected
                             (when on?
-                              (hash-table-put! actions-ht key (list #t stx)))])))
+                              (hash-table-put! actions-ht key #t))])))
                      can-annotate)
-                    (hash-table-map actions-ht (λ (k v) v)))])
+                    (hash-table-map actions-ht (λ (k v) (list v k))))])
             
             ;; if everything is covered *and* no coloring has been done, do no coloring.
             (unless (and (andmap car filtered)
                          (not (get-test-coverage-info-visible?)))
-              (let (;; sorted : (listof (list boolean syntax))
+              
+              (let (;; sorted : (listof (list boolean srcloc))
                     ;; sorting predicate:
                     ;;  x < y if
                     ;;    x's span is bigger than y's (ie, do larger expressions first)
@@ -949,14 +959,14 @@ profile todo:
                      (sort
                       filtered
                       (λ (x y)
-                        (let* ([x-stx (cadr x)]
-                               [y-stx (cadr y)]
-                               [x-pos (syntax-position x-stx)]
-                               [y-pos (syntax-position y-stx)]
-                               [x-span (syntax-span x-stx)]
-                               [y-span (syntax-span y-stx)]
-                               [x-on (car x)]
-                               [y-on (car y)])
+                        (let* ([x-on (list-ref x 0)]
+                               [y-on (list-ref y 0)]
+                               [x-srcloc (list-ref x 1)]
+                               [y-srcloc (list-ref y 1)]
+                               [x-pos (srcloc-position x-srcloc)]
+                               [y-pos (srcloc-position y-srcloc)]
+                               [x-span (srcloc-span x-srcloc)]
+                               [y-span (srcloc-span y-srcloc)])
                           (cond
                             [(and (= x-pos y-pos)
                                   (= x-span x-span))
@@ -968,7 +978,7 @@ profile todo:
                 ;; also fill in the edit-sequence-ht
                 (for-each
                  (λ (pr)
-                   (let ([src (syntax-source (cadr pr))])
+                   (let ([src (srcloc-source (list-ref pr 1))])
                      (hash-table-get 
                       edit-sequence-ht
                       src
@@ -996,19 +1006,18 @@ profile todo:
                 ;; set new annotations
                 (for-each
                  (λ (pr)
-                   (let ([stx (cadr pr)]
-                         [on? (car pr)])
-                     (when (syntax? stx)
-                       (let* ([src (syntax-source stx)]
-                              [pos (syntax-position stx)]
-                              [span (syntax-span stx)])
-                         (send src change-style
-                               (if on?
-                                   (or on-style test-covered-style-delta)
-                                   (or off-style test-not-covered-style-delta))
-                               (- pos 1)
-                               (+ (- pos 1) span)
-                               #f)))))
+                   (let ([on? (list-ref pr 0)]
+                         [srcloc (list-ref pr 1)])
+                     (let* ([src (srcloc-source srcloc)]
+                            [pos (srcloc-position srcloc)]
+                            [span (srcloc-span srcloc)])
+                       (send src change-style
+                             (if on?
+                                 (or on-style test-covered-style-delta)
+                                 (or off-style test-not-covered-style-delta))
+                             (- pos 1)
+                             (+ (- pos 1) span)
+                             #f))))
                  sorted)
                 
                 ;; relock editors
