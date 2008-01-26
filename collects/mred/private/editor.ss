@@ -81,6 +81,20 @@
 		     set-modified set-filename
 		     get-file put-file
 		     get-max-undo-history)
+      (rename-super [super-on-char on-char])
+      (define time 0)
+      (define count 0)
+      (override* [on-char 
+                  (λ (evt) 
+                    (let-values ([(results cpu real gc) 
+                                  (time-apply (λ () (super-on-char evt)) '())])
+                      (set! time (+ real time))
+                      (set! count (+ count 1))
+                      (when (= count 20)
+                        (printf "time ~s\n" time)
+                        (set! count 0)
+                        (set! time 0))
+                      (apply values results)))])
 	    (define canvases null)
 	    (define active-canvas #f)
 	    (define auto-set-wrap? #f)

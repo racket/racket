@@ -532,25 +532,6 @@ TODO
             (make-object image-snip% bitmap)
             (make-object string-snip% "[err]"))))
     
-    (define (no-user-evaluation-message frame exit-code memory-killed?)
-      (message-box
-       (string-constant evaluation-terminated)
-       (string-append
-        (string-constant evaluation-terminated-explanation)
-        (if exit-code
-            (string-append
-             "\n\n"
-             (if (zero? exit-code)
-                 (string-constant exited-successfully)
-                 (format (string-constant exited-with-error-code) exit-code)))
-            "")
-        (if memory-killed?
-            (string-append 
-             "\n\n"
-             (string-constant program-ran-out-of-memory))
-            ""))
-       frame))
-    
     ;; insert/delta : (instanceof text%) (union snip string) (listof style-delta%) *-> (values number number)
     ;; inserts the string/stnip into the text at the end and changes the
     ;; style of the newly inserted text based on the style deltas.
@@ -969,6 +950,38 @@ TODO
                user-exit-code
                (not (thread-running? memory-killed-thread))))))
         (field (need-interaction-cleanup? #f))
+        
+        (define/private (no-user-evaluation-message frame exit-code memory-killed?)
+          (let* ([new-limit (and custodian-limit (+ (* 1024 1024 128) custodian-limit))]
+                 [ans (message-box/custom
+                       (string-constant evaluation-terminated)
+                       (string-append
+                        (string-constant evaluation-terminated-explanation)
+                        (if exit-code
+                            (string-append
+                             "\n\n"
+                             (if (zero? exit-code)
+                                 (string-constant exited-successfully)
+                                 (format (string-constant exited-with-error-code) exit-code)))
+                            "")
+                        (if memory-killed?
+                            (string-append 
+                             "\n\n"
+                             (string-constant program-ran-out-of-memory))
+                            ""))
+                       (string-constant ok)
+                       #f
+                       (and memory-killed?
+                            new-limit
+                            (format "Increase memory limit to ~a megabytes" 
+                                    (floor (/ new-limit 1024 1024))))
+                       frame
+                       '(default=1 stop)
+                       )])
+            (when (equal? ans 3)
+              (set-custodian-limit new-limit)
+              (preferences:set 'drscheme:limit-memory new-limit))
+            (void)))
         
         (define/private (cleanup-interaction) ; =Kernel=, =Handler=
           (set! need-interaction-cleanup? #f)
