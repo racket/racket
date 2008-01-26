@@ -343,6 +343,7 @@
          [(string? i) (display-protected i)]
          [(symbol? i) (display
                        (case i
+                         [(newline) "\\\\"]
                          [(nbsp) "~"]
                          [(mdash) "---"]
                          [(ndash) "--"]
