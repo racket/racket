@@ -1345,7 +1345,7 @@ FOREIGN_OBJS = ../../foreign/gcc/libffi/src/*.@LTO@ ../../foreign/gcc/libffi/src
 FOREIGN_LIB = ../../foreign/gcc/libffi/libffi@FOREIGN_CONVENIENCE@.@LTA@
 FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
 
-EXTRA_MZ_OBJS = ../../mzscheme/src/gmp.@LTO@ $(FOREIGN_OBJSLIB)
+EXTRA_MZ_OBJS = ../../mzscheme/src/gmp.@LTO@ @FOREIGN_OBJSLIB_IF_USED@
 
 LIBMREDLIBS_a = 
 LIBMREDLIBS_la = $(LDFLAGS) $(LDLIBS) $(@WXVARIANT@_LIBS)
