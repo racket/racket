@@ -46,8 +46,10 @@
 
 #define jit_addr_d(rd,s1,s2)  FADDDrrr((rd),(s1),(s2))
 #define jit_subr_d(rd,s1,s2)  FSUBDrrr((rd),(s1),(s2))
+#define jit_subrr_d(rd,s1,s2) FSUBDrrr((rd),(s2),(s1))
 #define jit_mulr_d(rd,s1,s2)  FMULDrrr((rd),(s1),(s2))
 #define jit_divr_d(rd,s1,s2)  FDIVDrrr((rd),(s1),(s2))
+#define jit_divrr_d(rd,s1,s2) FDIVDrrr((rd),(s2),(s1))
 
 #define jit_addr_f(rd,s1,s2)  FADDSrrr((rd),(s1),(s2))
 #define jit_subr_f(rd,s1,s2)  FSUBSrrr((rd),(s1),(s2))
@@ -143,31 +145,36 @@
 
 #define jit_fpbr(d, s1, s2, rcbit) (		\
 	FCMPOrrr(_cr0,(s1),(s2)),		\
-	BTii ((rcbit), (d)))
+	BTii ((rcbit), (d)), _jit.x.pc)
 
 #define jit_fpbr_neg(d, s1, s2,rcbit) (	\
 	FCMPOrrr(_cr0,(s1),(s2)),		\
-	BFii ((rcbit), (d)))
+	BFii ((rcbit), (d)), _jit.x.pc)
 
 #define jit_fpbur(d, s1, s2, rcbit) (		\
 	FCMPUrrr(_cr0,(s1),(s2)),		\
-	BTii ((rcbit), (d)))
+	BTii ((rcbit), (d)), _jit.x.pc)
 
 #define jit_fpbur_neg(d, s1, s2,rcbit) (	\
 	FCMPUrrr(_cr0,(s1),(s2)),		\
-	BFii ((rcbit), (d)))
+	BFii ((rcbit), (d)), _jit.x.pc)
 
 #define jit_fpbur_or(d, s1, s2, bit1, bit2) (	\
 	FCMPUrrr(_cr0,(s1),(s2)),		\
 	CRORiii((bit1), (bit1), (bit2)),	\
-	BTii ((bit1), (d)))
+	BTii ((bit1), (d)), _jit.x.pc)
 
-#define jit_bgtr_d(d, s1, s2)      jit_fpbr ((d),(s1),(s2),_gt)   
-#define jit_bger_d(d, s1, s2)      jit_fpbr_neg((d),(s1),(s2),_lt)   
-#define jit_bltr_d(d, s1, s2)      jit_fpbr ((d),(s1),(s2),_lt)         
-#define jit_bler_d(d, s1, s2)      jit_fpbr_neg((d),(s1),(s2),_gt)         
-#define jit_beqr_d(d, s1, s2)      jit_fpbr ((d),(s1),(s2),_eq)         
-#define jit_bner_d(d, s1, s2)      jit_fpbr_neg((d),(s1),(s2),_eq)
+#define jit_fpbur_or_neg(d, s1, s2, bit1, bit2) (	\
+	FCMPUrrr(_cr0,(s1),(s2)),		\
+	CRORiii((bit1), (bit1), (bit2)),	\
+	BFii ((bit1), (d)), _jit.x.pc)
+
+#define jit_bgtr_d(d, s1, s2)      jit_fpbur ((d),(s1),(s2),_gt)   
+#define jit_bger_d(d, s1, s2)      jit_fpbur_or((d),(s1),(s2),_gt, _eq)   
+#define jit_bltr_d(d, s1, s2)      jit_fpbur ((d),(s1),(s2),_lt)         
+#define jit_bler_d(d, s1, s2)      jit_fpbur_or((d),(s1),(s2),_lt, _eq)
+#define jit_beqr_d(d, s1, s2)      jit_fpbur ((d),(s1),(s2),_eq)         
+#define jit_bner_d(d, s1, s2)      jit_fpbur_neg((d),(s1),(s2),_eq)
 #define jit_bunordr_d(d, s1, s2)   jit_fpbur ((d),(s1),(s2),_un)
 #define jit_bordr_d(d, s1, s2)     jit_fpbur_neg((d),(s1),(s2),_un)
 #define jit_bunler_d(d, s1, s2)    jit_fpbur_neg ((d), (s1), (s2), _gt)
@@ -176,6 +183,12 @@
 #define jit_bungtr_d(d, s1, s2)    jit_fpbur_or ((d), (s1), (s2), _un, _gt)
 #define jit_bltgtr_d(d, s1, s2)    jit_fpbur_or ((d), (s1), (s2), _gt, _lt)
 #define jit_buneqr_d(d, s1, s2)    jit_fpbur_or ((d), (s1), (s2), _un, _eq)
+
+#define jit_bantiltr_d(d, s1, s2)  jit_fpbur_neg ((d),(s1),(s2),_lt)
+#define jit_bantiler_d(d, s1, s2)  jit_fpbur_or_neg ((d),(s1),(s2),_lt, _eq)
+#define jit_bantieqr_d(d, s1, s2)  jit_fpbur_neg ((d),(s1),(s2),_eq)
+#define jit_bantiger_d(d, s1, s2)  jit_fpbur_or_neg ((d),(s1),(s2),_gt, _eq)
+#define jit_bantigtr_d(d, s1, s2)  jit_fpbur_neg ((d),(s1),(s2),_gt)
 
 #define jit_getarg_f(rd, ofs)        jit_movr_f((rd),(ofs))
 #define jit_getarg_d(rd, ofs)        jit_movr_d((rd),(ofs))

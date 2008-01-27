@@ -59,7 +59,7 @@
 END_XFORM_ARITH;
 #endif
 
-#ifdef MZ_USE_JIT_I386
+#if defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_PPC)
 # define JIT_USE_FP_OPS
 #endif
 
@@ -2478,7 +2478,7 @@ static int can_fast_double(int arith, int cmp, int two_args)
 #define jit_bltr_d_fppop(d, s1, s2)   jit_bltr_d(d, s1, s2)
 #define jit_bantiltr_d_fppop(d, s1, s2) jit_bantiltr_d(d, s1, s2)
 #define jit_beqr_d_fppop(d, s1, s2)   jit_beqr_d(d, s1, s2)
-#define jit_bner_d_fppop(d, s1, s2)   jit_bner_d(d, s1, s2)
+#define jit_bantieqr_d_fppop(d, s1, s2) jit_bantieqr_d(d, s1, s2)
 #endif
 
 static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int reversed, int two_args, int second_const,
@@ -2507,7 +2507,7 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
 
   if (!two_args && !second_const && ((arith == 2) || ((arith == -2) && reversed))) {
     /* Special case: multiplication by exact 0 */
-    jit_movi_p(JIT_R0, scheme_make_integer(0));
+    (void)jit_movi_p(JIT_R0, scheme_make_integer(0));
   } else {
     __END_SHORT_JUMPS__(1);
 
@@ -2977,11 +2977,11 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         if (v == 1) {
           /* R0 already is the answer */
         } else if (v == 0) {
-          jit_movi_p(JIT_R0, scheme_make_integer(0));
+          (void)jit_movi_p(JIT_R0, scheme_make_integer(0));
         } else {
           if (has_fixnum_fast) {
             /* No general fast path for fixnum multiplication, yet */
-            jit_movi_p(JIT_R1, scheme_make_integer(v));
+            (void)jit_movi_p(JIT_R1, scheme_make_integer(v));
             (void)jit_jmpi(refslow);
           }
         }
@@ -2991,7 +2991,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         } else {
           if (has_fixnum_fast) {
             /* No general fast path for fixnum division, yet */
-            jit_movi_p(JIT_R1, scheme_make_integer(v));
+            (void)jit_movi_p(JIT_R1, scheme_make_integer(v));
             (void)jit_jmpi(refslow);
           }
         }
@@ -3375,7 +3375,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     ref3 = jit_bmci_ul(jit_forward(), JIT_R2, 0x1);
     __END_SHORT_JUMPS__(branch_short);
     /* Ok bignum. Instead of jumping, install the fixnum 1: */
-    jit_movi_p(JIT_R0, scheme_make_integer(1));
+    (void)jit_movi_p(JIT_R0, scheme_make_integer(1));
 
     __START_SHORT_JUMPS__(1);
     mz_patch_branch(ref);
