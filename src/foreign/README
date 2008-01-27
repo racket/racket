@@ -25,6 +25,9 @@ Local changes:
  * Changed config/multi.m4 to allow in-source-tree builds, rebuild
    libffi/configure (r8413)
 
+ * Removed +live_support in src/powerpc/darwin_closure.S so it builds
+   with Mac OS X 10.3 (r8436)
+
 ========== libffi_msvc directory =====================================
 
 This directory is synced from the CTypes repository
