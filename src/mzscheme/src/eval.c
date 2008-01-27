@@ -2553,6 +2553,7 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
       if (f_cloned) {
         app2->rator = f_cloned;
         app2->rand = cloned;
+        info->inline_fuel >>= 1; /* because we've already optimized the rand */
         return optimize_application2((Scheme_Object *)app2, info);
       }
     }
