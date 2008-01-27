@@ -35,7 +35,7 @@
            
            "stepper-language-interface.ss"           
            "debugger-language-interface.ss"
-           
+           "run-teaching-program.ss"
            stepper/private/shared)
   
   
@@ -505,79 +505,12 @@
           (inherit get-reader set-printing-parameters)
           
           (define/override (front-end/complete-program port settings)
-            (let ([state 'init]
-                  ;; state : 'init => 'require => 'done-or-exn
-                  [reader (get-reader)]
-                  
-                  ;; in state 'done-or-exn, if this is an exn, we raise it
-                  ;; otherwise, we just return eof
-                  [saved-exn #f])
-              
-              (lambda ()
-                (case state
-                  [(init)
-                   (set! state 'require)
-                   (let ([language-module (get-module)])
-                     (with-handlers ([exn:fail?
-                                      (λ (x)
-                                        (set! saved-exn x)
-                                        (expand
-                                         (datum->syntax-object
-                                          #f
-                                          `(,#'module #%htdp ,language-module 
-                                                      ,@(map (λ (x) 
-                                                               `(require ,x))
-                                                             (htdp-lang-settings-teachpacks settings))))))])
-                       (let ([body-exps 
-                              (let loop ()
-                                (let ([result (reader (object-name port) port)])
-                                  (if (eof-object? result)
-                                      null
-                                      (cons result (loop)))))])
-                         (for-each
-                          (λ (tp)
-                            (with-handlers ((exn:fail? (λ (x) (error 'teachpack (missing-tp-message tp)))))
-                              (unless (file-exists? (build-path (apply collection-path (cddr tp))
-                                                                (cadr tp)))
-                                (error))))
-                          (htdp-lang-settings-teachpacks settings))
-                         (rewrite-module
-                          settings
-                          (expand
-                           (datum->syntax-object
-                            #f
-                            `(,#'module #%htdp ,language-module 
-                                        ,@(map (λ (x) `(require ,x))
-                                               (htdp-lang-settings-teachpacks settings))
-                                        ,@body-exps)))))))]
-                  [(require) 
-                   (set! state 'done-or-exn)
-                   (stepper-syntax-property
-                    (syntax
-                     (let ([done-already? #f])
-                       (dynamic-wind
-                        void
-                        (lambda () 
-                          (dynamic-require ''#%htdp #f))  ;; work around a bug in dynamic-require
-                        (lambda () 
-                          (unless done-already?
-                            (set! done-already? #t)
-                            (current-namespace (module->namespace ''#%htdp)))))))
-                    'stepper-skip-completely
-                    #t)]
-                  [(done-or-exn)
-                   (cond
-                     [saved-exn
-                      (raise saved-exn)]
-                     [else
-                      eof])]))))
-          
-          (define/private (missing-tp-message x)
-            (let* ([m (regexp-match #rx"/([^/]*)$" (cadr x))]
-                   [name (if m
-                             (cadr m)
-                             (cadr x))])
-              (format "the teachpack '~a' was not found" name)))
+            (run-teaching-program port 
+                                  settings 
+                                  (get-reader)
+                                  (get-module)
+                                  (htdp-lang-settings-teachpacks settings)
+                                  (drscheme:rep:current-rep)))
 
           (define keywords #f)
           (define/augment (capability-value key)
@@ -914,51 +847,6 @@
               (super-new))
             %))
 
-      ;; rewrite-module : settings syntax -> syntax
-      ;; rewrites te module to print out results of non-definitions
-      (define (rewrite-module settings stx)
-        (syntax-case stx (module #%plain-module-begin)
-          [(module name lang (#%plain-module-begin bodies ...))
-           (with-syntax ([(rewritten-bodies ...) 
-                          (rewrite-bodies (syntax->list (syntax (bodies ...))))])
-             #`(module name lang
-                 (#%plain-module-begin 
-                  rewritten-bodies ...)))]
-          [else
-           (raise-syntax-error 'htdp-languages "internal error .1")]))
-      
-      ;; rewrite-bodies : (listof syntax) -> syntax
-      (define (rewrite-bodies bodies)
-        (let loop ([bodies bodies])
-          (cond
-            [(null? bodies) null]
-            [else
-             (let ([body (car bodies)])
-               (syntax-case body (#%require define-values define-syntaxes define-values-for-syntax #%provide)
-                 [(define-values (new-vars ...) e)
-                  (cons body (loop (cdr bodies)))]
-                 [(define-syntaxes (new-vars ...) e)
-                  (cons body (loop (cdr bodies)))]
-                 [(define-values-for-syntax (new-vars ...) e)
-                  (cons body (loop (cdr bodies)))]
-                 [(#%require specs ...)
-                  (cons body (loop (cdr bodies)))]
-                 [(#%provide specs ...)
-                  (loop (cdr bodies))]
-                 [else 
-                  (let ([new-exp
-                         (with-syntax ([body body]
-                                       [print-results
-                                        (lambda results
-                                          (let ([rep (drscheme:rep:current-rep)])
-                                            (when rep
-                                              (send rep display-results/void results))))])
-                           (syntax 
-                            (call-with-values
-                             (lambda () body)
-                             print-results)))])
-                    (cons new-exp (loop (cdr bodies))))]))])))
-      
       ;; filter/hide-ids : syntax[list] -> listof syntax
       (define (filter/hide-ids ids)
         ;; When a `define-values' or `define-syntax' declaration
