@@ -35,7 +35,7 @@
                        (pair? (path->main-collects-relative dir)))
                    (build-path (find-doc-dir) name)]
                   [else
-                   (build-path dir "compiled" "doc" name)])
+                   (build-path dir "doc" name)])
                  "out.sxref"))))
        scribblings
        categories)))
