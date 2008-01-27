@@ -1321,8 +1321,7 @@ AC_SUBST(PNG_A)
 AC_SUBST(OSKHOME)
 AC_SUBST(EXTRA_OSK_LIBS)
 
-AC_SUBST(FOREIGN_OBJSLIB_IF_USED)
-AC_SUBST(FOREIGN_LIB_IF_USED)
+AC_SUBST(FOREIGN_IF_USED)
 AC_SUBST(FOREIGN_OBJSLIB)
 AC_SUBST(FOREIGN_CONVENIENCE)
 AC_SUBST(FOREIGNTARGET)
@@ -1366,15 +1365,13 @@ if test "${enable_shared}" = "yes" ; then
 fi
 
 FOREIGNTARGET=
-FOREIGN_OBJSLIB_IF_USED=
-FOREIGN_LIB_IF_USED=
+FOREIGN_IF_USED="FOREIGN_NOT_USED"
 if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
   AC_CONFIG_AUX_DIR( foreign/gcc )
   AC_CONFIG_SUBDIRS( foreign/gcc/libffi )
   makefiles="$makefiles foreign/Makefile"
   FOREIGNTARGET="foreign-stuff"
-  FOREIGN_OBJSLIB_IF_USED="\$(FOREIGN_OBJSLIB)"
-  FOREIGN_LIB_IF_USED="\$(FOREIGN_OBJ) \$(FOREIGN_LIB)"
+  FOREIGN_IF_USED="FOREIGN_USED"
   # --disable-multilib is needed to avoid problems when running libffi's
   # configure script.  This thing affects all usages of AC_CONFIG_SUBDIRS, but
   # other scripts do not use it anyway.

@@ -293,6 +293,8 @@ Scheme_Object *scheme_redirect_output_port_type;
 
 int scheme_force_port_closed;
 
+static int flush_out, flush_err;
+
 #if defined(FILES_HAVE_FDS)
 static int external_event_fd, put_external_event_fd, event_fd_set;
 #endif
@@ -535,6 +537,9 @@ scheme_init_port (Scheme_Env *env)
 			     : scheme_make_file_output_port(stderr)
 #endif
 			     );
+
+  flush_out = SCHEME_TRUEP(scheme_terminal_port_p(1, &scheme_orig_stdout_port));
+  flush_err = SCHEME_TRUEP(scheme_terminal_port_p(1, &scheme_orig_stderr_port));
 
 #ifdef MZ_FDS
   scheme_add_atexit_closer(flush_if_output_fds);
@@ -3290,8 +3295,10 @@ force_close_output_port(Scheme_Object *port)
 void scheme_flush_orig_outputs(void)
 {
   /* Flush original output ports: */
-  scheme_flush_output(scheme_orig_stdout_port);
-  scheme_flush_output(scheme_orig_stderr_port);
+  if (flush_out)
+    scheme_flush_output(scheme_orig_stdout_port);
+  if (flush_err)
+    scheme_flush_output(scheme_orig_stderr_port);
 }
 
 void scheme_flush_output(Scheme_Object *o)

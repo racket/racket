@@ -726,8 +726,7 @@ ZLIB_INC
 PNG_A
 OSKHOME
 EXTRA_OSK_LIBS
-FOREIGN_OBJSLIB_IF_USED
-FOREIGN_LIB_IF_USED
+FOREIGN_IF_USED
 FOREIGN_OBJSLIB
 FOREIGN_CONVENIENCE
 FOREIGNTARGET
@@ -11774,7 +11773,6 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
-
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -11794,8 +11792,7 @@ if test "${enable_shared}" = "yes" ; then
 fi
 
 FOREIGNTARGET=
-FOREIGN_OBJSLIB_IF_USED=
-FOREIGN_LIB_IF_USED=
+FOREIGN_IF_USED="FOREIGN_NOT_USED"
 if test -d "${srcdir}/foreign" && test "${enable_foreign}" = "yes" ; then
   ac_aux_dir=
 for ac_dir in foreign/gcc  "$srcdir"/foreign/gcc ; do
@@ -11832,8 +11829,7 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
   makefiles="$makefiles foreign/Makefile"
   FOREIGNTARGET="foreign-stuff"
-  FOREIGN_OBJSLIB_IF_USED="\$(FOREIGN_OBJSLIB)"
-  FOREIGN_LIB_IF_USED="\$(FOREIGN_OBJ) \$(FOREIGN_LIB)"
+  FOREIGN_IF_USED="FOREIGN_USED"
   # --disable-multilib is needed to avoid problems when running libffi's
   # configure script.  This thing affects all usages of AC_CONFIG_SUBDIRS, but
   # other scripts do not use it anyway.
@@ -12714,8 +12710,7 @@ ZLIB_INC!$ZLIB_INC$ac_delim
 PNG_A!$PNG_A$ac_delim
 OSKHOME!$OSKHOME$ac_delim
 EXTRA_OSK_LIBS!$EXTRA_OSK_LIBS$ac_delim
-FOREIGN_OBJSLIB_IF_USED!$FOREIGN_OBJSLIB_IF_USED$ac_delim
-FOREIGN_LIB_IF_USED!$FOREIGN_LIB_IF_USED$ac_delim
+FOREIGN_IF_USED!$FOREIGN_IF_USED$ac_delim
 FOREIGN_OBJSLIB!$FOREIGN_OBJSLIB$ac_delim
 FOREIGN_CONVENIENCE!$FOREIGN_CONVENIENCE$ac_delim
 FOREIGNTARGET!$FOREIGNTARGET$ac_delim
@@ -12739,7 +12734,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 38; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 37; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

@@ -115,8 +115,13 @@ mzlibrary:
 	cd src; $(MAKE) all 
 	$(MAKE) libmzscheme.@LIBSFX@
 
-libmzscheme.@LIBSFX@: src/*.@LTO@ @FOREIGN_LIB_IF_USED@
-	$(AR) $(ARFLAGS) libmzscheme.@LIBSFX@ src/*.@LTO@ @FOREIGN_OBJSLIB_IF_USED@ @LIBMZSCHEME_DEP@
+FOREIGN_USED_LIB = $(FOREIGN_OBJ) $(FOREIGN_LIB)
+FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
+FOREIGN_NOT_USED_LIB = 
+FOREIGN_NOT_USED_OBJSLIB = 
+
+libmzscheme.@LIBSFX@: src/*.@LTO@ $(@FOREIGN_IF_USED@_LIB)
+	$(AR) $(ARFLAGS) libmzscheme.@LIBSFX@ src/*.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) @LIBMZSCHEME_DEP@
 	$(RANLIB) libmzscheme.@LIBSFX@
 
 # Irix sproc, only

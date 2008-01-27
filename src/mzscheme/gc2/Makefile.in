@@ -31,6 +31,9 @@ XSRCDIR = xsrc
 XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
 SRCDIR = $(srcdir)/../src
 
+FOREIGN_USED_OBJ = foreign.@LTO@
+FOREIGN_NOT_USED_OBJ = 
+
 OBJS =  salloc.@LTO@ \
 	bignum.@LTO@ \
 	bool.@LTO@ \
@@ -69,8 +72,11 @@ OBJS =  salloc.@LTO@ \
 	thread.@LTO@ \
 	type.@LTO@ \
 	vector.@LTO@ \
-	foreign.@LTO@ \
+	$(@FOREIGN_IFUSED@_OBJ) \
 	gc2.@LTO@
+
+FOREIGN_USED_C = $(XSRCDIR)/foreign.c
+FOREIGN_NOT_USED_C =
 
 XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/bignum.c \
@@ -110,7 +116,7 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/thread.c \
 	$(XSRCDIR)/type.c \
 	$(XSRCDIR)/vector.c \
-	$(XSRCDIR)/foreign.c \
+	$(@FOREIGN_IFUSED@_C) \
 	$(XSRCDIR)/main.c
 
 all: xsrc
@@ -307,8 +313,13 @@ FOREIGN_OBJS = ../../foreign/gcc/libffi/src/*.@LTO@ ../../foreign/gcc/libffi/src
 FOREIGN_LIB = ../../foreign/gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la
 FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
 
-EXTRA_OBJS_T = ../src/gmp.@LTO@ @FOREIGN_LIB_IF_USED@
-EXTRA_OBJS_L = ../src/gmp.@LTO@ @FOREIGN_OBJSLIB_IF_USED@
+FOREIGN_USED_LIB = $(FOREIGN_OBJ) $(FOREIGN_LIB)
+FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
+FOREIGN_NOT_USED_LIB = 
+FOREIGN_NOT_USED_OBJSLIB = 
+
+EXTRA_OBJS_T = ../src/gmp.@LTO@ $(@FOREIGN_IF_USED@_LIB)
+EXTRA_OBJS_L = ../src/gmp.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
 
 ../libmzscheme3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T)
 	$(AR) $(ARFLAGS) ../libmzscheme3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L)
