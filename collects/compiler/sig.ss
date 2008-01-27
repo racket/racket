@@ -5,8 +5,7 @@
 
   (provide compiler:option^
 	   compiler^
-	   compiler:inner^
-	   compiler:linker^)
+	   compiler:inner^)
 
   ;; Compiler options
   (define-signature compiler:option^
@@ -75,20 +74,9 @@
      compile-extensions-to-c
      compile-c-extensions
 
-     compile-extension-parts
-     compile-extension-parts-to-c
-     compile-c-extension-parts
-
-     link-extension-parts
-     glue-extension-parts
-     glue-extension-parts-to-c
-
      compile-zos
 
-     compile-collection-extension
      compile-collection-zos
-
-     compile-directory-extension
      compile-directory-zos
  
      current-compiler-dynamic-require-wrapper
@@ -99,13 +87,4 @@
     (compile-extension
      compile-extension-to-c
      compile-c-extension
-     compile-extension-part
-     compile-extension-part-to-c
-     compile-c-extension-part
-     eval-compile-prefix))
-  
-  ;; Low-level multi-file extension linker interface
-  (define-signature compiler:linker^
-    (link-extension
-     glue-extension
-     glue-extension-source)))
+     eval-compile-prefix)))

@@ -11,7 +11,6 @@
      clean
      compile-mode
      make-zo
-     make-so
      make-info-domain
      make-launchers
      make-docs
