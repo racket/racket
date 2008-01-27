@@ -396,7 +396,7 @@
                   [(#\u03BC) (display "$\\mu$")]
                   [else (display c)]))
               (loop (add1 i))))))
-                  
+
       ;; ----------------------------------------
 
       (define/override (table-of-contents sec ri)

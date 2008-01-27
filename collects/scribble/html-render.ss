@@ -501,12 +501,13 @@
            [else (super render-element e part ri)])))
 
       (define/override (render-table t part ri)
-        `((table ((cellspacing "0") 
+        `((table ((cellspacing "0")
                   ,@(case (table-style t)
-                      [(boxed) '((class "boxed"))]
+                      [(boxed)    '((class "boxed"))]
                       [(centered) '((align "center"))]
                       [(at-right) '((align "right"))]
-                      [(at-left) '((align "left"))]
+                      [(at-left)  '((align "left"))]
+                      [(index)    '((align "right"))]
                       [else null])
                   ,@(let ([a (and (list? (table-style t))
                                   (assoc 'style (table-style t)))])
