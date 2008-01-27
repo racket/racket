@@ -489,6 +489,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   int alternate_rep = 0;
   int no_front = 0;
 #endif
+  int was_config_flag = 0, saw_nc_flag = 0;
   int no_compiled = 0;
   int init_ns = 0, no_init_ns = 0;
   FinishArgs *fa;
@@ -656,21 +657,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
   eval_kind = (int *)malloc(sizeof(int) * argc);
   num_enl = 0;
 
-  if (!argc) {
-    /* No args => repl */
-    use_repl = 1;
-    init_ns = 1;
-  } else if ((argv[0][0] != '-') && !is_number_arg(argv[0] + 1)) {
-    /* No switches => -u mode */
-    script_mode = 1;
-    no_more_switches = 1;
-    sprog = argv[0];
-    evals_and_loads[num_enl] = argv[0];
-    eval_kind[num_enl++] = mzcmd_REQUIRE;
-    argv++;
-    --argc;
-  }
-
   while (!no_more_switches && argc && argv[0][0] == '-' && !is_number_arg(argv[0] + 1)) {
     real_switch = argv[0];
 
@@ -757,9 +743,11 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  argv++;
 	  --argc;
 	  collects_path = scheme_make_path(argv[0]);
+          was_config_flag = 1;
 	  break;
 	case 'U':
 	  scheme_set_ignore_user_paths(1);
+          was_config_flag = 1;
 	  break;
 	case 'S':
 	  if (argc < 2) {
@@ -773,9 +761,11 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	    collects_extra = scheme_make_null();
 	  collects_extra = scheme_make_pair(scheme_make_path(argv[0]),
 					    collects_extra);
+          was_config_flag = 1;
 	  break;
         case 'c':
           no_compiled = 1;
+          was_config_flag = 1;
           break;
 	case 'm':
           evals_and_loads[num_enl] = "";
@@ -878,6 +868,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  argv++;
 	  --argc;
 	  sprog = argv[0];
+          was_config_flag = 1;
 	  break;
 	case 'q':
 	  no_init_file = 1;
@@ -903,12 +894,15 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  break;
 	case 'j':
 	  scheme_set_startup_use_jit(0);
+          was_config_flag = 1;
 	  break;
 	case 'd':
 	  scheme_set_startup_load_on_demand(0);
+          was_config_flag = 1;
 	  break;
 	case 'b':
 	  scheme_set_binary_mode_stdio(1);
+          was_config_flag = 1;
 	  break;
 #ifdef CMDLINE_STDIO_FLAG
        	case 'z':
@@ -931,10 +925,32 @@ static int run_from_cmd_line(int argc, char *_argv[],
           specific_switch[1] = 0;
 	  goto bad_switch;
 	}
+
+        if (was_config_flag)
+          was_config_flag = 0;
+        else
+          saw_nc_flag = 1;
       }
+      argv++;
+      --argc;
     }
-    argv++;
-    --argc;
+  }
+
+  if (!saw_nc_flag) {
+    if (!argc) {
+      /* No args => repl */
+      use_repl = 1;
+      init_ns = 1;
+    } else if ((argv[0][0] != '-') && !is_number_arg(argv[0] + 1)) {
+      /* No switches => -u mode */
+      script_mode = 1;
+      no_more_switches = 1;
+      sprog = argv[0];
+      evals_and_loads[num_enl] = argv[0];
+      eval_kind[num_enl++] = mzcmd_REQUIRE;
+      argv++;
+      --argc;
+    }
   }
 
   if (use_repl) {
@@ -1072,7 +1088,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
          PROGRAM_LC " [<option> ...] <argument> ...\n"
 # ifndef MZSCHEME_CMD_LINE
 #  ifdef wx_x
-	 " X options (must precede all other options):\n"
+	 " X configuration options (must precede all other options):\n"
 	 "  -display <display>, -geometry <geometry>, -fn <font>, -font <font>,\n"
          "  -bg <color>, -background <color>, -fg <color>, -foreground <color>,\n"
 	 "  -iconic, -name <name>, -rv, -reverse, +rv, -selectionTimeout <timeout>,\n"
@@ -1120,24 +1136,22 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -- : No argument following this switch is used as a switch\n"
 	 "  -h, --help : Show this information and exits, ignoring other options\n"
          "Default options:\n"
-         " If no switches/arguments are provided, -i is assumed.\n"
-         " If no switch appears before the first argument, -u is inserted.\n"
-         " If -t/-l/-p/-u apears before the first -i/-e/-f/-r, -n is inserted.\n"
+         " If only configuration options are provided, -i is added\n"
+         " If only configuration options are before the first argument, -u is added\n"
+         " If -t/-l/-p/-u apears before the first -i/-e/-f/-r, -n is added\n"
          "Switch syntax:\n"
 	 " Multiple single-letter switches can be collapsed, with arguments placed\n"
-	 " after the collapsed switches; the first collapsed switch cannot be --.\n"
+	 "   after the collapsed switches; the first collapsed switch cannot be --\n"
 	 " Example: `-ifve file expr' is the same as `-i -f file -v -e expr'\n"
          "Start-up sequence:\n"
-         " 1. Set `current-library-collection-paths' [unless -x].\n"
-         " 2. Require `(lib \"" INITIAL_NAMESPACE_MODULE "\")' [when " REPL_FLAGS "/-e/-f/-r, unless -n].\n"
-         " 3. Evaluate/load expressions/files in order, until first error.\n"
-         " 4. Load \"" INIT_FILENAME "\" [when " REPL_FLAGS "].\n"
-         " 5. Run read-eval-print loop [when " REPL_FLAGS "].\n"
+         " 1. Set `current-library-collection-paths'\n"
+         " 2. Require `(lib \"" INITIAL_NAMESPACE_MODULE "\")' [when " REPL_FLAGS "/-e/-f/-r, unless -n]\n"
+         " 3. Evaluate/load expressions/files in order, until first error\n"
+         " 4. Load \"" INIT_FILENAME "\" [when " REPL_FLAGS "]\n"
+         " 5. Run read-eval-print loop [when " REPL_FLAGS "]\n"
 # ifdef YIELD_BEFORE_EXIT
-         " 6. Run `(yield 'wait)' [unless -V].\n"
+         " 6. Run `(yield 'wait)' [unless -V]\n"
 # endif
-	 "For general information about " PROGRAM ", see:\n"
-	 "  http://www.plt-scheme.org/software/" PROGRAM_LC "/\n"
 	 );
   PRINTF(prog, BANNER);
 #if defined(WINDOWS_FILE_HANDLES)

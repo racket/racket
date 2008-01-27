@@ -65,6 +65,7 @@
 
 #include "matrix.h"
 #include "fit.h"
+#include <math.h>
 
 /* #define STANDARD stderr */
 

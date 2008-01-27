@@ -60,7 +60,6 @@
                     (when clean?
                       (clean #t)
                       (make-zo #f)
-                      (make-so #f)
                       (make-launchers #f)
                       (make-info-domain #t)
                       (call-install #f)))

@@ -483,9 +483,6 @@
                                      "already up-to-date at")
                                  dest))))
                    source-files)))]
-    [(collection-extension)
-     (compiler-warning)
-     (apply compile-collection-extension source-files)]
     [(collection-zos)
      (apply compile-collection-zos source-files)]
     [(cc)

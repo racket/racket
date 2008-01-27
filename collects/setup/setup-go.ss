@@ -35,7 +35,6 @@
 	     call-install
 	     call-post-install
 	     make-launchers
-	     make-so
 	     verbose
 	     make-verbose
 	     trust-existing-zos

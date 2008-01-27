@@ -511,7 +511,7 @@
               (with-handlers ([exn:fail:filesystem? (warning-handler (void))])
                 (with-output-to-file fn void #:exists 'truncate/replace))))))))
 
-  (when (or (make-zo) (make-so))
+  (when (make-zo)
     (compiler:option:verbose (compiler-verbose))
     (compiler:option:compile-subcollections #f))
 
@@ -638,8 +638,6 @@
                   ;; Make .zos
                   (compile-directory-zos dir info))
                 make-base-empty-namespace))))
-  (when (make-so)
-    (make-it "extensions" compile-directory-extension current-namespace))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;               Info-Domain Cache               ;;

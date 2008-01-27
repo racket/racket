@@ -40,10 +40,10 @@ static char *RCSid = "$Id: matrix.c,v 1.4 2005/03/15 23:21:26 eli Exp $";
 
 #include "fit.h"
 #include "matrix.h"
-
+#include <math.h>
 
 // create a simple gc malloc...
-typedef struct {
+typedef struct Node {
   struct Node * next;
   void * ptr;
 } Node;

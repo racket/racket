@@ -16,7 +16,6 @@
       (define clean (make-parameter #f))
       (define compile-mode (make-parameter #f))
       (define make-zo (make-parameter #t))
-      (define make-so (make-parameter #f))
       (define make-launchers (make-parameter #t))
       (define make-info-domain (make-parameter #t))
       (define make-docs (make-parameter #t))

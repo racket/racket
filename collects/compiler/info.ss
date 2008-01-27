@@ -1,6 +1,5 @@
 
 (module info setup/infotab
-  (define doc.txt "doc.txt")
   (define name "mzc")
 
   (define scribblings '(("cffi.scrbl")))

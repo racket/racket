@@ -66,42 +66,13 @@
 				(unless zo-compiler
 				  (set! zo-compiler (compile-zos #f)))
 				(zo-compiler (list ss) "compiled"))))
-		     sses zos)]
-	       [ss->c-list
-		(map (lambda (ss c)
-		       `(,c (,ss)
-			    ,(lambda ()
-			       (unless ext-compiler
-				 (set! ext-compiler (compile-extension-parts-to-c #f)))
-			       (parameterize ([compiler:option:setup-prefix 
-					       (string-append "_" collection-name)])
-				 (ext-compiler (list ss) (build-path "compiled" "native"))))))
-		     sses cs)]
-	       [c->o-list
-		(map (lambda (c obj)
-		       `(,obj (,c)
-			      ,(lambda ()
-				 (parameterize ([compiler:option:setup-prefix 
-						 (string-append "_" collection-name)])
-				   (compile-c-extension-parts (list c) dest-dir)))))
-		     cs objs)]
-	       [o->so
-		`(,(build-path dest-dir (append-extension-suffix "_loader"))
-		  ,objs
-		  ,(lambda ()
-		     (parameterize ([compiler:option:setup-prefix (string-append "_" collection-name)])
-		       (link-extension-parts
-			(append objs kps)
-			dest-dir))))])
+		     sses zos)])
 	  (unless (directory-exists? "compiled") (make-directory "compiled"))
 	  (unless (or (equal? argv #("zo"))
 		      (directory-exists? dest-dir))
 	    (make-directory* dest-dir))
 	  (make/proc
 	   (append
-	    (list o->so)
 	    `(("zo" ,zos))
-	    ss->zo-list
-	    ss->c-list
-	    c->o-list)
+	    ss->zo-list)
 	   argv)))))

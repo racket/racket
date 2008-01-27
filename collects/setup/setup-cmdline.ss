@@ -47,8 +47,6 @@
         (add-flags '((make-docs #f)))]
        [("--no-planet") "Do not setup PLaneT packages"
         (add-flags '((make-planet #f)))]
-       [("-e" "--extension") "Produce native code extensions"
-        (add-flags '((make-so #t)))]
        [("-v" "--verbose") "See names of compiled files and info printfs"
         (add-flags '((verbose #t)))]
        [("-m" "--make-verbose") "See make and compiler usual messages"

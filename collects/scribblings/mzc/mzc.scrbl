@@ -6,9 +6,15 @@
 
 @title{@exec{mzc}: PLT Compilation and Packaging}
 
-The @exec{mzc} tool is a kind of Swiss-army knife for PLT Scheme
-compilation and packaging tasks. Its main action is determined through
-one of the following command-line flags:
+The @exec{mzc} tool supports various PLT Scheme compilation and
+packaging tasks.
+
+@table-of-contents[]
+
+@section{Running @|mzc|}
+
+The main action of @|mzc| is determined through one of the following
+command-line flags:
 
 @itemize{
 
@@ -47,9 +53,10 @@ one of the following command-line flags:
 
 @include-section["make.scrbl"]
 @include-section["cc.scrbl"]
-@include-section["exe.scrbl"]
+@include-section["sa.scrbl"]
 @include-section["plt.scrbl"]
 @include-section["ext.scrbl"]
 @include-section["zo.scrbl"]
+@include-section["api.scrbl"]
 
 @index-section[]

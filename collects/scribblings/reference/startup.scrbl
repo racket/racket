@@ -64,12 +64,14 @@ any raises an uncaught exception, then the remaining @scheme[eval]s,
 
 After running all command-line expressions, files, and modules,
 MzScheme or MrEd then starts a read-eval-print loop for interactive
-evaluation if no command line flags are provided.  If any command-line
-argument is provided, then the read-eval-print-loop is not started,
-unless the @Flag{i}/@DFlag{repl} or @Flag{z}/@DFlag{text-repl} flag is
-provided on the command line to specifically re-enable it. In
-addition, just before the command line is started, MzScheme loads the
-file @scheme[(find-system-path 'init-file)] and MrEd loads the file
+evaluation if no command line flags are provided other than
+@tech{configuration options}.  If any command-line argument is
+provided that is not a @tech{configuration option}, then the
+read-eval-print-loop is not started, unless the @Flag{i}/@DFlag{repl}
+or @Flag{z}/@DFlag{text-repl} flag is provided on the command line to
+specifically re-enable it. In addition, just before the command line
+is started, MzScheme loads the file @scheme[(find-system-path
+'init-file)] and MrEd loads the file
 @scheme[(find-graphical-system-path 'init-file)] is loaded, unless the
 @Flag{q}/@DFlag{no-init-file} flag is specified on the command line.
 
@@ -183,7 +185,7 @@ flags:
 
  }}
 
- @item{Configuration options:
+ @item{@deftech{Configuration options}:
 
  @itemize{
 
@@ -243,13 +245,18 @@ flags:
 }
 
 If at least one command-line argument is provided, and if the first
-one is not a flag, then a @Flag{u}/@DFlag{--require-script} flag is
-implicitly added before the first argument.
+one after any @tech{configuration option} is not a flag, then a
+@Flag{u}/@DFlag{--require-script} flag is implicitly added before the
+first non-flag argument.
+
+If no command-line arguments are supplied other than
+@tech{configuration options}, then the @Flag{i}/@DFlag{--repl} flag is
+effectively added.
 
 For MrEd under X11, the follow flags are recognized when they appear
-at the beginning of the command line, and they do not otherwise count
-as command-line flags (i.e., they do not disable the read-eval-print
-loop or prevent the insertion of @Flag{u}/@DFlag{require-script}):
+at the beginning of the command line, and they count as configuration
+options (i.e., they do not disable the read-eval-print loop or prevent
+the insertion of @Flag{u}/@DFlag{require-script}):
 
 @itemize{
 
@@ -282,16 +289,16 @@ loop or prevent the insertion of @Flag{u}/@DFlag{require-script}):
 
 }
 
-Under Mac OS X, a leading switch starting with @FlagFirst{psn_} is
-treated specially. It indicates that Finder started the application,
-so the current input, output, and error output are redirected to a GUI
-window. It does not count as a command-line flag otherwise.
+Similarly, under Mac OS X, a leading switch starting with
+@FlagFirst{psn_} is treated as a special configuration option. It
+indicates that Finder started the application, so the current input,
+output, and error output are redirected to a GUI window.
 
-Multiple single-letter switches (the ones preceded by a single @litchar{-}) can
-be collapsed into a single switch by concatenating the letters, as long
-as the first switch is not @Flag{-}. The arguments for each switch
- are placed after the collapsed switches (in the order of the
- switches). For example,
+Multiple single-letter switches (the ones preceded by a single
+@litchar{-}) can be collapsed into a single switch by concatenating
+the letters, as long as the first switch is not @Flag{-}. The
+arguments for each switch are placed after the collapsed switches (in
+the order of the switches). For example,
 
 @commandline{-ifve @nonterm{file} @nonterm{expr}}
 

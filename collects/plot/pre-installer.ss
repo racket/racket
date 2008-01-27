@@ -1,9 +1,7 @@
 (module pre-installer mzscheme
   (require (lib "etc.ss") (lib "file.ss") (lib "list.ss")
            (lib "file.ss" "dynext") (lib "link.ss" "dynext")
-           (lib "compile.ss" "dynext")
-           (lib "compiler.ss" "compiler")
-           (prefix option: (lib "option.ss" "compiler")))
+           (lib "compile.ss" "dynext"))
 
   (define top-dir (this-expression-source-directory))
   (define src-dir (build-path top-dir "src"))
@@ -31,10 +29,6 @@
                                   [else '("-DHAVE_LIBPNG" "-DPLD_png")]))]
                        ;; we compile a simple .so, not an extension
                        [current-standard-link-libraries '()]
-                       ;; no 3m transformation:
-                       [option:3m #f]
-                       [link-variant 'cgc]
-                       [compile-variant 'cgc]
                        )
           (define c-files (filter (lambda (f)
                                     (regexp-match "\\.[cC]$" (path->string f)))
@@ -47,7 +41,16 @@
                              c-files)))
             (printf "plot: compiling \"~a\" -> \"~a\"...\n" lib so-name)
             (make-directory* tmp-dir)
-            (compile-c-extension-parts c-files tmp-dir)
+            (for-each (lambda (c-file)
+                        (compile-extension #f 
+                                           c-file 
+                                           (build-path tmp-dir
+                                                       (append-object-suffix
+                                                        (path-replace-suffix
+                                                         c-file
+                                                         #"")))
+                                           null))
+                      c-files)
             (parameterize ([current-directory tmp-dir])
               (link-extension #f (append 
 				  (directory-list tmp-dir) 

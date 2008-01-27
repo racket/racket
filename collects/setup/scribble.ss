@@ -2,6 +2,7 @@
 
 (require "getinfo.ss"
          "dirs.ss"
+         "private/doc-path.ss"
          scheme/class
          scheme/file
          setup/main-collects
@@ -95,17 +96,7 @@
                                                            (cadr d)
                                                            (let-values ([(base name dir?) (split-path (car d))])
                                                              (path-replace-suffix name #"")))])
-                                               (cond
-                                                [(memq 'main-doc-root flags)
-                                                 (find-doc-dir)]
-                                                [(memq 'user-doc-root flags)
-                                                 (find-user-doc-dir)]
-                                                [(memq 'user-doc flags)
-                                                 (build-path (find-user-doc-dir) name)]
-                                                [else
-                                                 (if under-main?
-                                                     (build-path (find-doc-dir) name)
-                                                     (build-path dir "doc" name))]))
+                                               (doc-path dir name flags))
                                              flags
                                              under-main?
                                              cat)))

@@ -17,8 +17,9 @@ Depending on command-line arguments, MzScheme runs in
 
 @subsection[#:tag "start-interactive-mode"]{Interactive Mode}
 
-When @exec{mzscheme} is run with no command-line arguments, then it
-starts a @tech{REPL} with a @litchar{> } prompt:
+When @exec{mzscheme} is run with no command-line arguments (other than
+confguration options, like @Flag{j}), then it starts a @tech{REPL}
+with a @litchar{> } prompt:
 
 @verbatim["  Welcome to MzScheme\n  > "]
 
@@ -32,8 +33,9 @@ results. Finally, @exec{mzscheme} loads the file reported by
 @scheme[(find-system-path 'init-file)], if it exists, before starting
 the @tech{REPL}.
 
-If any command-line arguments are provided, add @Flag{i} or
-@DFlag{repl} to re-enable the @tech{REPL}. For example,
+If any command-line arguments are provided (other than configuration
+options), add @Flag{i} or @DFlag{repl} to re-enable the
+@tech{REPL}. For example,
 
 @commandline{mzscheme -q -i}
 
@@ -74,9 +76,9 @@ in addition to the exports of @schememodname[scheme].
 @subsection[#:tag "start-module-mode"]{Module Mode}
 
 If a file argument is supplied to @exec{mzscheme} before any
-command-line switch, then the file is required as a module, and
-(unless @Flag{i}/@DFlag{repl} is specified), no @tech{REPL} is
-started. For example,
+command-line switch (other than configuration options), then the file
+is required as a module, and (unless @Flag{i}/@DFlag{repl} is
+specified), no @tech{REPL} is started. For example,
 
 @commandline{mzscheme hello.ss}
 
@@ -100,11 +102,10 @@ The @Flag{l} or @DFlag{lib} flag is similar to
 @Flag{t}/@DFlag{require}, but it requires a module using a
 @scheme[lib] module path instead of a file path. For example,
 
-@commandline{mzscheme -l help}
+@commandline{mzscheme -l compiler}
 
-is the same as running the @exec{plt-help} executable with no
-arguments, since the @scheme[help] module is the main @exec{plt-help}
-module.
+is the same as running the @exec{mzc} executable with no arguments,
+since the @scheme[compiler] module is the main @exec{mzc} module.
 
 @; ----------------------------------------
 

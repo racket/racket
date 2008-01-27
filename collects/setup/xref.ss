@@ -2,8 +2,7 @@
 
 (require scribble/xref
          setup/getinfo
-         setup/dirs
-         setup/main-collects)
+         "private/doc-path.ss")
 
 (provide load-collections-xref)
 
@@ -24,18 +23,7 @@
                                (let-values ([(base name dir?) (split-path (car d))])
                                  (path-replace-suffix name #"")))])
                 (build-path
-                 (cond
-                  [(memq 'main-doc-root flags)
-                   (find-doc-dir)]
-                  [(memq 'user-doc-root flags)
-                   (find-user-doc-dir)]
-                  [(memq 'user-doc flags)
-                   (build-path (find-user-doc-dir) name)]
-                  [(or (memq 'main-doc flags)
-                       (pair? (path->main-collects-relative dir)))
-                   (build-path (find-doc-dir) name)]
-                  [else
-                   (build-path dir "doc" name)])
+                 (doc-path dir name flags)
                  "out.sxref"))))
        scribblings
        categories)))

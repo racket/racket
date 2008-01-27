@@ -68,10 +68,7 @@
 		      (case mode
 			[(compile-extension) compile-extension]
 			[(compile-extension-to-c) compile-extension-to-c]
-			[(compile-c-extension) compile-c-extension]
-			[(compile-extension-part) compile-extension-part]
-			[(compile-extension-part-to-c) compile-extension-part-to-c]
-			[(compile-c-extension-part) compile-c-extension-part]))])
+			[(compile-c-extension) compile-c-extension]))])
 	  (invoke-unit
 	   (compound-unit
 	    (import (COMPILE : dynext:compile^)
@@ -110,49 +107,6 @@
 	(make-compiler 'compile-extension-to-c))
       (define compile-c-extensions
 	(make-unprefixed-compiler 'compile-c-extension))
-
-      (define compile-extension-parts
-	(make-compiler 'compile-extension-part))
-      (define compile-extension-parts-to-c
-	(make-compiler 'compile-extension-part-to-c))
-      (define compile-c-extension-parts
-	(make-unprefixed-compiler 'compile-c-extension-part))
-
-      (define (link/glue-extension-parts link? compile? source-files destination-directory)
-	(let ([u (c-dynamic-require 'compiler/ld-unit 'ld@)]
-	      [init (unit
-		      (import compiler:linker^)
-                      (export)
-		      (if link?
-			  link-extension
-			  (if compile?
-			      glue-extension
-			      glue-extension-source)))])
-	  (let ([f (invoke-unit
-		    (compound-unit
-		     (import (COMPILE : dynext:compile^)
-			     (LINK : dynext:link^)
-			     (DFILE : dynext:file^)
-			     (OPTION : compiler:option^))
-                     (export)
-		     (link [((LINKER : compiler:linker^)) 
-                            u 
-                            COMPILE LINK DFILE OPTION]
-			   [() init LINKER]))
-                    (import dynext:compile^
-                            dynext:link^
-                            dynext:file^
-                            compiler:option^))])
-            (f source-files destination-directory))))
-
-      (define (link-extension-parts source-files destination-directory)
-	(link/glue-extension-parts #t #t source-files destination-directory))
-
-      (define (glue-extension-parts source-files destination-directory)
-	(link/glue-extension-parts #f #t source-files destination-directory))
-
-      (define (glue-extension-parts-to-c source-files destination-directory)
-	(link/glue-extension-parts #f #f source-files destination-directory))
 
       (define (compile-to-zo src dest namespace eval?)
 	((if eval? (lambda (t) (t)) with-module-reading-parameterization)
@@ -276,14 +230,8 @@
               [info (c-get-info cp)])
           (compile-directory dir info zos?)))
 
-      (define (compile-collection-extension collection . cp)
-	(compile-collection (cons collection cp) #f))
-      
       (define (compile-collection-zos collection . cp)
 	(compile-collection (cons collection cp) #t))
-      
-      (define (compile-directory-extension dir info)
-        (compile-directory dir info #f))
       
       (define (compile-directory-zos dir info)
         (compile-directory dir info #t))
