@@ -72,7 +72,7 @@ OBJS =  salloc.@LTO@ \
 	thread.@LTO@ \
 	type.@LTO@ \
 	vector.@LTO@ \
-	$(@FOREIGN_IFUSED@_OBJ) \
+	$(@FOREIGN_IF_USED@_OBJ) \
 	gc2.@LTO@
 
 FOREIGN_USED_C = $(XSRCDIR)/foreign.c
