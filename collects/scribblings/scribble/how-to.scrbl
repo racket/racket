@@ -283,11 +283,11 @@ manual:
   @(require scribble/manual
             (for-label scheme))
   @(define ref-src
-     '(lib "scribblings/reference/reference.scrbl"))]
+     '(lib "scribblings/reference/reference.scrbl"))
 
   @title{My Library}
 
-  See also @italic{@secref[#:doc reference-src]{pairs}}.
+  See also @italic{@secref[#:doc ref-src]{pairs}}.
 EOS
 ]
 

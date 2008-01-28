@@ -8,6 +8,9 @@
 @(define (DFlagFirst n) (as-index (DFlag n)))
 @(define (PFlagFirst n) (as-index (PFlag n)))
 
+@(define (nontermstr s)
+   @elem{@schemevalfont{"}@nonterm[s]@schemevalfont{"}})
+
 @(define eventspace
    @tech[#:doc '(lib "scribblings/gui/gui.scrbl")]{eventspace})
 
@@ -114,12 +117,12 @@ flags:
         @nonterm{file} : @scheme[require]s @nonterm{file}.}
 
   @item{@FlagFirst{l} @nonterm{path} or @DFlagFirst{lib}
-       @nonterm{path} : @scheme[require]s @scheme[(lib
-       @nonterm{path})].}
+       @nonterm{path} : @scheme[require]s @scheme[(lib #,
+       @nontermstr{path})].}
 
   @item{@FlagFirst{p} @nonterm{file} @nonterm{u} @nonterm{path} :
-       @scheme[require]s @scheme[(planet @nonterm{file}
-       @nonterm{user} @nonterm{pkg})].}
+       @scheme[require]s @scheme[(planet #, @nontermstr{file}
+       #, @nontermstr{user} #, @nontermstr{pkg})].}
 
   @item{@FlagFirst{r} @nonterm{file} or @DFlagFirst{script}
         @nonterm{file} : @scheme[load]s @nonterm{file} as a

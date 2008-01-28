@@ -1,5 +1,5 @@
 
 (module info setup/infotab
-  (define doc.txt "doc.txt")
-  (define name "Dynext"))
+  (define name "Dynext")
+  (define scribblings '(("dynext.scrbl" (multi-page)))))
 
