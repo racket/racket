@@ -1144,8 +1144,11 @@
                                                          tag)))
                                                      (car content)))
                                                (annote-exporting-library
-                                                (to-element (make-just-context (extract-id prototype)
-                                                                               stx-id))))])]
+                                                (let ([sig (current-signature)])
+                                                  (if sig
+                                                      (*sig-elem (sig-id sig) (extract-id prototype))
+                                                      (to-element (make-just-context (extract-id prototype)
+                                                                                     stx-id))))))])]
                                [(flat-size) (+ (prototype-size args + +)
                                                (prototype-depth prototype)
                                                (element-width tagged))]

@@ -87,12 +87,15 @@
 
 (provide itemize item item?)
 
-(define (itemize . items)
+(define (itemize #:style [style #f] . items)
   (let ([items (filter (lambda (v) (not (whitespace? v))) items)])
     (for ([v items])
       (unless (an-item? v)
         (error 'itemize "expected an item, found something else: ~e" v)))
-    (make-itemization (map an-item-flow items))))
+    (let ([flows (map an-item-flow items)])
+      (if style
+          (make-styled-itemization flows style)
+          (make-itemization flows)))))
 
 (define-struct an-item (flow))
 (define (item? x) (an-item? x))

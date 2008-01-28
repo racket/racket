@@ -153,6 +153,7 @@
    [(auxiliary-table table) ()]
    [delayed-flow-element ([resolve (any/c part? resolve-info? . -> . flow-element?)])]
    [itemization ([flows (listof flow?)])]
+   [(styled-itemization itemization) ([style any/c])]
    [blockquote ([style any/c]
                 [paragraphs (listof flow-element?)])]
    ;; content = list of elements

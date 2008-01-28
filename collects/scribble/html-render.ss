@@ -576,6 +576,10 @@
 
       (define/override (render-itemization t part ri)
         `((ul
+           ,@(if (and (styled-itemization? t)
+                      (string? (styled-itemization-style t)))
+                 `(((class ,(styled-itemization-style t))))
+                 null)
            ,@(map (lambda (flow)
                     `(li ,@(render-flow flow part ri)))
                   (itemization-flows t)))))
