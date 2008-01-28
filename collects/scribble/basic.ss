@@ -251,19 +251,20 @@
                                  (loop (cdr i) (cdr alpha)))]
                          [else (loop (cdr i) alpha)]))]))
         (list 'nbsp)
-        (apply append
-               (map (lambda (i)
-                      (define e (make-link-element
-                                 "indexlink" (commas (caddr i)) (car i)))
-                      (list (cond [(hash-table-get alpha-starts i #f)
-                                   => (lambda (let)
-                                        (make-element
-                                         (make-url-anchor
-                                          (format "alpha:~a" (char-upcase let)))
-                                         (list e)))]
-                                  [else e])
-                            'newline))
-                    l))))))
+        ((if (null? l) values cdr) ; drop one 'newline
+         (apply append
+                (map (lambda (i)
+                       (define e (make-link-element
+                                  "indexlink" (commas (caddr i)) (car i)))
+                       (list (make-element 'newline '("/n"))
+                             (cond [(hash-table-get alpha-starts i #f)
+                                    => (lambda (let)
+                                         (make-element
+                                          (make-url-anchor
+                                           (format "alpha:~a" (char-upcase let)))
+                                          (list e)))]
+                                   [else e])))
+                     l)))))))
   (list contents))
 
 ;; ----------------------------------------

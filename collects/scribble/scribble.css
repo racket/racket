@@ -16,7 +16,7 @@
 }
 
 /* Serif: */
-.main, .refcontent, .tocview, .tocsub, i {
+.main, .refcontent, .tocview, .tocsub, .inheritedlbl, i {
   font-family: serif;
 }
 
@@ -142,7 +142,7 @@ font-weight: bold;
 }
 
 .tocviewtitle {
-  font-size: 80%;
+  font-size: 82%;
   font-weight: bold;
   margin: 0.2em 0.2em 0.2em 0.2em;
 }
@@ -152,7 +152,7 @@ font-weight: bold;
 }
 
 .tocviewlist td {
-  font-size: 80%;
+  font-size: 82%;
   vertical-align: top;
 }
 
@@ -171,15 +171,16 @@ font-weight: bold;
 }
 
 .tocsublinknumber {
-  font-size: 80%;
+  font-size: 82%;
 }
 
 .tocsublink {
+  font-size: 82%;
   text-decoration: none;
 }
 
 .tocsubseclink {
-  font-size: 80%;
+  font-size: 82%;
   text-decoration: none;
 }
 
@@ -189,7 +190,7 @@ font-weight: bold;
 }
 
 .tocsubtitle {
-  font-size: 80%;
+  font-size: 82%;
   font-style: italic;
   margin: 0.2em 0.2em 0.2em 0.2em;
 }
@@ -205,6 +206,7 @@ font-weight: bold;
 }
 
 .inherited td {
+  font-size: 82%;
   padding-left: 1em;
   text-indent: -0.8em;
   padding-right: 0.2em;
@@ -212,7 +214,6 @@ font-weight: bold;
 
 .inheritedlbl {
   font-style: italic;
-  font-size: 85%;
 }
 
 /* ---------------------------------------- */
@@ -441,13 +442,13 @@ i {
   margin-right: 0.3em;
 }
 
-.compact li p { 
-  margin: 0 0 0 0;
-  padding: 0 0 0 0;
-}
-
 /* A hack, inserted to break some Scheme ids: */
 .mywbr {
   width: 0;
   font-size: 1px;
+}
+
+.compact li p { 
+  margin: 0 0 0 0;
+  padding: 0 0 0 0;
 }

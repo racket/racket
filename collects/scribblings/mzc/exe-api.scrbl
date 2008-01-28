@@ -10,6 +10,9 @@
                      compiler/comp-unit
                      compiler/distribute
                      compiler/bundle-dist
+                     compiler/embed
+                     compiler/embed-sig
+                     compiler/embed-unit
                      scheme/runtime-path
                      launcher/launcher))
 

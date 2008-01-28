@@ -457,6 +457,7 @@
               [(hspace) `((span ([class "hspace"])
                                 ,@(let ([str (content->string (element-content e))])
                                     (map (lambda (c) 'nbsp) (string->list str)))))]
+              [(newline) `((br))]
               [else (error 'html-render "unrecognized style symbol: ~e" style)])]
            [(string? style) 
             `((span ([class ,style]) ,@(super render-element e part ri)))]
@@ -507,7 +508,6 @@
                       [(centered) '((align "center"))]
                       [(at-right) '((align "right"))]
                       [(at-left)  '((align "left"))]
-                      [(index)    '((align "right"))]
                       [else null])
                   ,@(let ([a (and (list? (table-style t))
                                   (assoc 'style (table-style t)))])
@@ -601,8 +601,6 @@
                      (render-other (substring i (cdar m)) part ri))
               (ascii-ize i)))]
          [(eq? i 'mdash) `(" " ndash " ")]
-         [(eq? i 'hline) `((hr))]
-         [(eq? i 'newline) `((br))]
          [(symbol? i) (list i)]
          [else (list (format "~s" i))]))
 

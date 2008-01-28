@@ -180,6 +180,7 @@
                                 [else
                                  (printf "{\\mytexttt{~a}}"
                                          (regexp-replace* #rx"." s "~"))]))]
+                  [(newline) (printf "\\\\")]
                   [else (error 'latex-render "unrecognzied style symbol: ~s" style)])]
                [(string? style)
                 (wrap e style (regexp-match? #px"^scheme(?!error)" style))]
@@ -343,7 +344,6 @@
          [(string? i) (display-protected i)]
          [(symbol? i) (display
                        (case i
-                         [(newline) "\\\\"]
                          [(nbsp) "~"]
                          [(mdash) "---"]
                          [(ndash) "--"]

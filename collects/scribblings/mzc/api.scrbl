@@ -6,6 +6,7 @@
                      compiler/compiler
                      compiler/sig
                      compiler/compiler-unit
+                     compiler/option
                      compiler/option-unit
                      compiler/comp-unit
                      launcher/launcher))

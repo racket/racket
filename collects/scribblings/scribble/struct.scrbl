@@ -339,8 +339,9 @@ The @scheme[style] field is normally either
 
  @item{one of the symbols that all renderers recognize: @scheme['tt],
        @scheme['italic], @scheme['bold], @scheme['sf],
-       @scheme['subscript], @scheme['superscript], or
-       @scheme['hspace];}
+       @scheme['subscript], @scheme['superscript], @scheme['hspace],
+       or @scheme['newline] (which renders a line break independent of
+       the @scheme[content]);}
 
  @item{a list of the form @scheme[(list 'color _name)] or
        @scheme[(list 'color _byte _byte _byte)] to set the text color,
