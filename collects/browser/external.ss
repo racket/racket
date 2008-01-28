@@ -82,8 +82,7 @@
 
   (define unix-browser-names
     (map (lambda (s)
-           (let ([l (string->list (symbol->string s))])
-             (list->string (cons (char-upcase (car l)) (cdr l)))))
+           (string-titlecase (regexp-replace* #rx"-" (symbol->string s) " ")))
          raw:unix-browser-list))
 
   ;; : (U str #f) -> (U symbol #f)
