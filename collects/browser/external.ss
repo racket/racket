@@ -229,15 +229,7 @@
              (set! callbacks
                    (cons (fw:preferences:add-callback 'external-browser
                            (lambda (name browser) (refresh-controls browser)))
-                    callbacks))
-
-             (let disable ([x raw:unix-browser-list] [n 0])
-               (cond
-                 [(null? x) (void)]
-                 [else (unless (find-executable-path
-                                (symbol->string (car x)) #f)
-                         (send r enable n #f))
-                       (disable (cdr x) (add1 n))]))))
+                    callbacks))))
 
          ;; -------------------- proxy for doc downloads --------------------
          (when set-help?
