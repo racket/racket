@@ -45,43 +45,48 @@
 
 ;; send-url : str [bool] -> void
 (define (send-url url-str [separate-window? separate-by-default?])
-  (define external (external-browser))
   (define stype (force systype))
-  (define preferred '|? ? ?|)
+  (cond [(not (string? url-str))
+         (error 'send-url "expected a string, got ~e" url-str)]
+        [(procedure? (external-browser)) ((external-browser) url-str)]
+        [else (case stype
+                [(macosx)  (send-url/mac url-str)]
+                [(windows) (send-url/win url-str)]
+                [(unix)    (send-url/unix url-str separate-window?)]
+                [else (error 'send-url
+                             "don't know how to open URL on platform: ~s"
+                             stype)])])
+  (void))
+
+(define (send-url/mac url-str)
+  (browser-process (format "osascript -e 'open location \"~a\"'" url-str)))
+
+(define (send-url/win url-str)
+  (define (simple)
+    (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL))
+  (if (regexp-match #rx"#" url-str)
+    ;; complex case: need to launch the browser directly,
+    ;; otherwise the fragment is ignored. Use `ftype' to discover
+    ;; the browser...
+    (let ([p (process "ftype htmlfile")])
+      (close-output-port (cadr p))
+      (let ([s (read-line (car p) 'return-linefeed)])
+        (close-input-port (car p))
+        (close-input-port (cadddr p))
+        (let ([m (regexp-match #rx"^htmlfile=(.*)" s)])
+          (if m
+            (browser-process (string-append (cadr m) " " url-str))
+            ;; give up and use simple mode
+            (simple)))))
+    ;; simple case: no fragment
+    (simple)))
+
+(define (send-url/unix url-str separate-window?)
+  (define preferred (or (external-browser) (get-preference 'external-browser)))
   (define (use-browser browser-name)
-    (when (eq? preferred '|? ? ?|)
-      (set! preferred (or external (get-preference 'external-browser))))
     (and (or (not preferred) (eq? preferred browser-name))
          (find-executable-path (symbol->string browser-name) #f)))
-  (unless (string? url-str)
-    (error 'send-url "expected a string, got ~e" url-str))
   (cond
-    [(procedure? external) (external url-str)]
-    [(eq? stype 'macosx)
-     (browser-process (format "osascript -e 'open location \"~a\"'" url-str))]
-    [(eq? stype 'windows)
-     (let ([simple
-            (lambda ()
-              (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL))])
-       (if (regexp-match #rx"#" url-str)
-         ;; complex case: need to launch the browser directly,
-         ;; otherwise the fragment is ignored. Use `ftype' to discover
-         ;; the browser...
-         (let ([p (process "ftype htmlfile")])
-           (close-output-port (cadr p))
-           (let ([s (read-line (car p) 'return-linefeed)])
-             (close-input-port (car p))
-             (close-input-port (cadddr p))
-             (let ([m (regexp-match #rx"^htmlfile=(.*)" s)])
-               (if m
-                 (browser-process (string-append (cadr m) " " url-str))
-                 ;; give up and use simple mode
-                 (simple)))))
-         ;; simple case: no fragment
-         (simple)))]
-    [(not (eq? stype 'unix))
-     (error 'send-url "don't know how to open URL on platform: ~s" stype)]
-    ;; unix
     [(use-browser 'opera)
      => (lambda (exe)
           ;; opera may not return -- always open asyncronously
@@ -116,8 +121,9 @@
                                (cdr preferred))])
        (browser-process cmd))]
     [else
-     (error 'send-url "Couldn't find a browser to open URL: ~e" url-str)])
-  (void))
+     (error 'send-url "Couldn't find a browser to open URL: ~e" url-str)]))
+
+;; Process helpers
 
 ;; run-browser : process-proc list-of-strings -> void
 (define (run-browser process*/ports args)
