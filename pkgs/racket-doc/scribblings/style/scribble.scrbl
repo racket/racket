@@ -103,3 +103,7 @@ for quotation marks that are part of code.
 
 Do not use a citation reference (as created by @scheme[cite]) as a
 noun; use it as an annotation.
+
+Do not start a sentence with a Scheme variable name, since it is
+normally lowercase. For example, use ``The @scheme[_thing] argument
+is...'' instead of ``@scheme[_thing] is...''
