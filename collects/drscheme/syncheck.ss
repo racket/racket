@@ -95,13 +95,23 @@ If the namespace does not, they are colored the unbound color.
     
     (define xref 'not-yet-loaded-xref)
     (define (get-xref) 
-      (when (symbol? xref)
-        (error 'get-xref "xref has not yet been loaded"))
-      xref)
+      (cond
+        [(equal? xref 'failed-to-load) #f]
+        [else
+         (when (symbol? xref)
+           (error 'get-xref "xref has not yet been loaded"))
+         xref]))
     (define (force-xref th) 
-      (when (symbol? xref)
-        (th)
-        (set! xref (load-collections-xref))))
+      (cond
+        [(equal? xref 'failed-to-load)
+         (void)]
+        [(symbol? xref)
+         (th)
+         (with-handlers ((exn? (λ (exn) (set! xref 'failed-to-load))))
+           (set! xref (load-collections-xref)))]
+        [else
+         (void)]))
+        
     
     
     ;;;  ;;; ;;; ;;;;; 
@@ -2382,29 +2392,31 @@ If the namespace does not, they are colored the unbound color.
                          (syntax-span stx))
                 (let* ([start (- (syntax-position stx) 1)]
                        [fin (+ start (syntax-span stx))]
-                       [definition-tag (xref-binding->definition-tag (get-xref) binding-info #f)])
-                  (when definition-tag
-                    (let-values ([(path tag) (xref-tag->path+anchor (get-xref) definition-tag)])
-                      (when path
-                        (let ([index-entry (xref-tag->index-entry (get-xref) definition-tag)])
-                          (when index-entry
-                            (send defs-text syncheck:add-background-color defs-text "navajowhite" start fin (syntax-e stx))
-                            (send defs-text syncheck:add-menu
-                                  defs-text
-                                  start 
-                                  fin 
-                                  (syntax-e stx)
-                                  (λ (menu)
-                                    (instantiate menu-item% ()
-                                      (parent menu)
-                                      (label (fw:gui-utils:format-literal-label (string-constant cs-view-docs) (exported-index-desc-name (entry-desc index-entry))))
-                                      (callback
-                                       (λ (x y)
-                                         (send-url (format "file://~a~a"
-                                                           (path->string path) 
-                                                           (if tag
-                                                               (string-append "#" (uri-encode tag))
-                                                               ""))))))))))))))))))))
+                       [xref (get-xref)])
+                  (when xref
+                    (let ([definition-tag (xref-binding->definition-tag xref binding-info #f)])
+                      (when definition-tag
+                        (let-values ([(path tag) (xref-tag->path+anchor xref definition-tag)])
+                          (when path
+                            (let ([index-entry (xref-tag->index-entry xref definition-tag)])
+                              (when index-entry
+                                (send defs-text syncheck:add-background-color defs-text "navajowhite" start fin (syntax-e stx))
+                                (send defs-text syncheck:add-menu
+                                      defs-text
+                                      start 
+                                      fin 
+                                      (syntax-e stx)
+                                      (λ (menu)
+                                        (instantiate menu-item% ()
+                                          (parent menu)
+                                          (label (fw:gui-utils:format-literal-label (string-constant cs-view-docs) (exported-index-desc-name (entry-desc index-entry))))
+                                          (callback
+                                           (λ (x y)
+                                             (send-url (format "file://~a~a"
+                                                               (path->string path) 
+                                                               (if tag
+                                                                   (string-append "#" (uri-encode tag))
+                                                                   ""))))))))))))))))))))))
     
     
     
