@@ -11,10 +11,16 @@
 (provide send-url unix-browser-list browser-preference? external-browser)
 
 (define separate-by-default?
-  (get-preference 'new-browser-for-urls (lambda () #t)))
+  ;; internal configuration, 'browser-default lets some browsers decide
+  (get-preference 'new-browser-for-urls (lambda () 'browser-default)))
 
-(define unix-browser-list
-  '(gnome-open firefox galeon opera netscape mozilla dillo))
+;; all possible unix browsers, filtered later to just existing executables
+;; order matters: the default will be the first of these that is found
+(define all-unix-browsers
+  '(gnome-open firefox galeon opera mozilla konqueror camino skipstone
+    epiphany seamonkey netscape dillo mosaic
+    ;; a configurable thing that is deprecated
+    htmlview))
 
 ;; : any -> bool
 (define (custom-browser? x)
@@ -32,6 +38,22 @@
      (if (browser-preference? x)
        x
        (error 'external-browser "~e is not a valid browser preference" x)))))
+
+;; by-need filtering of found unix executables
+(define existing-unix-browsers->exes
+  (delay
+    (filter values
+            (map (lambda (b)
+                   (let ([exe (find-executable-path (symbol->string b) #f)])
+                     (and exe (cons b exe))))
+                 all-unix-browsers))))
+(define existing-unix-browsers
+  (delay (map car (force existing-unix-browsers->exes))))
+(define-syntax unix-browser-list
+  (syntax-id-rules (set!)
+    [(_ . xs) ((force existing-unix-browsers) . xs)]
+    [(set! _ . xs) (error 'unix-browser-list "cannot be mutated")]
+    [_ (force existing-unix-browsers)]))
 
 ;; like (system-type), but return the real OS for OSX with XonX
 ;;  (could do the same for Cygwin, but it doesn't have shell-execute)
@@ -82,46 +104,57 @@
     (simple)))
 
 (define (send-url/unix url-str separate-window?)
-  (define preferred (or (external-browser) (get-preference 'external-browser)))
-  (define (use-browser browser-name)
-    (and (or (not preferred) (eq? preferred browser-name))
-         (find-executable-path (symbol->string browser-name) #f)))
+  ;; in cases where a browser was uninstalled, we might get a preference that
+  ;; is no longer valid, this will turn it back to #f
+  (define (try pref)
+    (if (symbol? pref)
+      (if (memq pref unix-browser-list) pref #f)
+      pref))
+  (define browser
+    (or (try (external-browser))
+        (try (get-preference 'external-browser))
+        ;; no preference -- chose the first one from the filtered list
+        (and (pair? unix-browser-list) (car unix-browser-list))))
+  (define exe
+    (cond [(assq browser (force existing-unix-browsers->exes)) => cdr]
+          [else #f]))
+  (define (simple) (browser-process* exe url-str))
+  (define (w/arg a) (browser-process* exe a url-str))
+  (define (try-remote)
+    (or (system* exe "-remote"
+                 (format "openURL(~a)"
+                         (if separate-window?
+                           (format "~a,new-window" url-str)
+                           url-str)))
+        (simple)))
   (cond
-    [(use-browser 'opera)
-     => (lambda (exe)
-          ;; opera may not return -- always open asyncronously
-          ;; opera starts a new browser automatically, if it can't find one
-          (browser-process* exe "-remote"
-                            (format "openURL(~a)"
-                                    (if separate-window?
-                                      (format "~a,new-window" url-str)
-                                      url-str))))]
-    [(use-browser 'galeon)
-     => (lambda (exe)
-          (browser-process* exe (if separate-window? "-w" "-x") url-str))]
-    [(use-browser 'gnome-open)
-     => (lambda (exe) (browser-process* exe url-str))]
-    [(or (use-browser 'netscape)
-         (use-browser 'mozilla)
-         (use-browser 'firefox))
-     => (lambda (exe)
-          ;; netscape's -remote returns with an error code, if no netscape is
-          ;; around.  start a new netscape in that case.
-          (or (system* exe "-remote"
-                       (format "openURL(~a)"
-                               (if separate-window?
-                                 (format "~a,new-window" url-str)
-                                 url-str)))
-              (browser-process* exe url-str)))]
-    [(use-browser 'dillo)
-     => (lambda (exe) (browser-process* exe url-str))]
-    [(custom-browser? preferred)
-     (let ([cmd (string-append (car preferred)
-                               url-str
-                               (cdr preferred))])
+    [(not browser)
+     (error 'send-url "Couldn't find a browser to open URL: ~e" url-str)]
+    [(custom-browser? browser)
+     (let ([cmd (string-append (car browser) url-str (cdr browser))])
        (browser-process cmd))]
+    ;; if it's a known browser, then it must be an existing one at this point
+    [(not exe) (error 'send-url "internal error")]
+    ;; if it's gone throw an error (refiltering will break assumptions of
+    ;; browser/external.ss, and we really mimic the Win/Mac case where there
+    ;; should be some builtin facility that doesn't change)
+    [(not (file-exists? exe)) (error 'send-url "executable vanished: ~a" exe)]
+    ;; finally, deal with the actual browser process
     [else
-     (error 'send-url "Couldn't find a browser to open URL: ~e" url-str)]))
+     (case browser
+       [(gnome-open firefox konqueror dillo htmlview) (simple)]
+       ;; don't really know how to run these
+       [(camino skipstone mosaic) (simple)]
+       [(galeon) (if (eq? 'browser-default separate-window?)
+                   (simple) (w/arg (if separate-window? "-w" "-x")))]
+       [(epiphany) (if separate-window? (w/arg "--new-window") (simple))]
+       [(mozilla seamonkey netscape) (try-remote)]
+       [(opera)
+        ;; opera starts a new browser automatically
+        (browser-process*
+         exe "-remote" (format "openURL(~a~a)"
+                               url-str (if separate-window? ",new-window" "")))]
+       [else (error 'send-url "internal error")])]))
 
 ;; Process helpers
 
