@@ -26,4 +26,5 @@ should be considered a bug in your code.}
 
 Cooperates with @scheme[provide*] to define @scheme[id] as a
 @scheme[unsafe!]-like form that introduces definitions for each
-binding provided as @scheme[unsafe].}
+binding provided as @scheme[unsafe].  The @scheme[define-unsafer] form
+must occur after all the @scheme[provide*] forms to which it refers.}

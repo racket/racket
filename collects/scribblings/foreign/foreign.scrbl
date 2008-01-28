@@ -7,7 +7,7 @@
 
 The @schememodname[scheme/foreign] library enables the direct use of
 C-based APIs within Scheme programs---without writing any new C
-code). From the Scheme perspective, functions and data with a C-based
+code. From the Scheme perspective, functions and data with a C-based
 API are @idefterm{foreign}, hence the term @defterm{foreign
 interface}. Furthermore, since most APIs consist mostly of functions,
 the foreign interface is sometimes called a @defterm{foreign function
