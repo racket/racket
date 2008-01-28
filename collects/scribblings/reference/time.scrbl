@@ -89,10 +89,10 @@ time is a portion of the time reported by
 
 @defproc[(time-apply [proc procedure?]
                      [arg any/c] ...)
-         (values exact-integer?
+         (values list?
                  exact-integer?
                  exact-integer?
-                 list?)]{
+                 exact-integer?)]{
 
 Collects timing information for a procedure application.
 
