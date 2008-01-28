@@ -26,11 +26,6 @@
 (define (custom-browser? x)
   (and (pair? x) (string? (car x)) (string? (cdr x))))
 
-;; : any -> bool
-(define (browser-preference? x)
-  (or (not x) (memq x unix-browser-list) (custom-browser? x)
-      (procedure? x)))
-
 (define external-browser
   (make-parameter
    #f ; #f means "consult the preferences file"
@@ -54,6 +49,10 @@
     [(_ . xs) ((force existing-unix-browsers) . xs)]
     [(set! _ . xs) (error 'unix-browser-list "cannot be mutated")]
     [_ (force existing-unix-browsers)]))
+
+;; : any -> bool
+(define (browser-preference? x)
+  (or (not x) (memq x unix-browser-list) (custom-browser? x) (procedure? x)))
 
 ;; like (system-type), but return the real OS for OSX with XonX
 ;;  (could do the same for Cygwin, but it doesn't have shell-execute)
