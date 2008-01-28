@@ -81,8 +81,8 @@
 
 (define osascript (delay (find-executable-path "osascript" #f)))
 (define (send-url/mac url-str)
-  (browser-process (force osascript) "-e"
-                   (format "open location \"~a\"" url-str)))
+  (browser-process* (force osascript) "-e"
+                    (format "open location \"~a\"" url-str)))
 
 (define (send-url/win url-str)
   (define (simple)
