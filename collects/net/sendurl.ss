@@ -22,7 +22,7 @@
 
 ;; : any -> bool
 (define (browser-preference? x)
-  (or (not x) (eq? 'plt x) (memq x unix-browser-list) (custom-browser? x)
+  (or (not x) (memq x unix-browser-list) (custom-browser? x)
       (procedure? x)))
 
 (define external-browser
@@ -34,7 +34,7 @@
        (error 'external-browser "~e is not a valid browser preference" x)))))
 
 ;; like (system-type), but return the real OS for OSX with XonX
-;;  (could do the same for Cygwin, but that it doesn't have shell-execute)
+;;  (could do the same for Cygwin, but it doesn't have shell-execute)
 (define systype
   (delay (let ([t (system-type)])
            (cond [(not (eq? t 'unix)) t]
@@ -45,9 +45,6 @@
 
 ;; send-url : str [bool] -> void
 (define (send-url url-str [separate-window? separate-by-default?])
-  (define stupid-internal-define-syntax1
-    (unless (string? url-str)
-      (error 'send-url "expected a string, got ~e" url-str)))
   (define external (external-browser))
   (define stype (force systype))
   (define preferred '|? ? ?|)
@@ -56,6 +53,8 @@
       (set! preferred (or external (get-preference 'external-browser))))
     (and (or (not preferred) (eq? preferred browser-name))
          (find-executable-path (symbol->string browser-name) #f)))
+  (unless (string? url-str)
+    (error 'send-url "expected a string, got ~e" url-str))
   (cond
     [(procedure? external) (external url-str)]
     [(eq? stype 'macosx)
@@ -122,17 +121,16 @@
 
 ;; run-browser : process-proc list-of-strings -> void
 (define (run-browser process*/ports args)
-  (let-values ([(stdout stdin pid stderr control)
-                (apply values
-                       (apply process*/ports
-                              (open-output-nowhere) #f (current-error-port)
-                              args))])
-    (close-output-port stdin)
-    (thread (lambda ()
-              (control 'wait)
-              (when (eq? 'done-error (control 'status))
-                (error 'run-browser "process execute failed: ~e" args))))
-    (void)))
+  (define-values (stdout stdin pid stderr control)
+    (apply values (apply process*/ports
+                         (open-output-nowhere) #f (current-error-port)
+                         args)))
+  (close-output-port stdin)
+  (thread (lambda ()
+            (control 'wait)
+            (when (eq? 'done-error (control 'status))
+              (error 'run-browser "process execute failed: ~e" args))))
+  (void))
 
 (define (browser-process* . args)
   (run-browser process*/ports args))

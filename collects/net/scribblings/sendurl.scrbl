@@ -43,7 +43,7 @@ The parameter is initialized to the value of the
 
 The parameter value can be any of the symbols in
 @scheme[unix-browser-list], @scheme[#f] to indicate that the
-preference is under, or a pair of strings.  If the preference is
+preference is unset, or a pair of strings.  If the preference is
 unset, @scheme[send-url] uses the first of the browsers from
 @scheme[unix-browser-list] for which the executable is found. If the
 parameter is a pair of strings, then a command line is constructed by
