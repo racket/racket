@@ -3,7 +3,7 @@
 (require setup/xref
          scribble/xref
          scribble/manual-struct
-         net/url
+         net/uri-codec
          net/sendurl
          scheme/path
          (for-syntax scheme/base))
@@ -103,21 +103,9 @@
 
 (define (go-to-tag xref t)
   (let-values ([(file anchor) (xref-tag->path+anchor xref t)])
-    (printf "Sending to web browser...\n  file: ~a\n"
-            file)
-    (when anchor
-      (printf "  anchor: ~a\n" anchor))
-    (unless (send-url (url->string
-                       (make-url "file"
-                                 #f #f #f #t
-                                 (map (lambda (s)
-                                        (make-path/param (if (absolute-path? s)
-                                                             (path->string s)
-                                                             (path-element->string s))
-                                                         null))
-                                      (explode-path file))
-                                 null
-                                 anchor)))
+    (printf "Sending to web browser...\n  file: ~a\n" file)
+    (when anchor (printf "  anchor: ~a\n" anchor))
+    (unless (send-url/file file #:fragment (uri-encode anchor))
       (error 'help "browser launch failed"))))
 
 (define generate-search-results #f)

@@ -18,11 +18,10 @@
  [send-main-page (-> void?)])
 
 (define (send-main-page)
-  (let ([user-dest-path (build-path (find-user-doc-dir) "index.html")]
-        [dest-path (build-path (find-doc-dir) "index.html")])
-    (send-url (format "file://~a" (path->string (if (file-exists? user-dest-path)
-                                                    user-dest-path
-                                                    dest-path))))))
+  (let* ([path (build-path (find-user-doc-dir) "index.html")]
+         [path (if (file-exists? path)
+                 path (build-path (find-doc-dir) "index.html"))])
+    (send-url/file path)))
 
 ;; if there is exactly one exact match for this search key, go directly
 ;; to that place. Otherwise, go to a page that lists all of the matches.
@@ -40,9 +39,7 @@
       [else
        (let ([match (car exact-matches)])
          (let-values ([(path tag) (xref-tag->path+anchor x (entry-tag match))])
-           (send-url (format "file://~a~a" 
-                             (path->string path) 
-                             (if tag (string-append "#" (uri-encode tag)) "")))))])))
+           (send-url/file path #:fragment (uri-encode tag))))])))
 
 (define (generate-search-results search-keys)
   (let ([file (next-search-results-file)]
@@ -75,7 +72,7 @@
                          (build-itemization "Exact matches" exact-matches)
                          (build-itemization "Containing matches" inexact-matches))]))))
        file)
-      (send-url (format "file://~a" (path->string file)))
+      (send-url/file file)
       (void))))
 
 (define (make-extra-content desc)
