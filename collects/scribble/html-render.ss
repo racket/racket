@@ -39,6 +39,9 @@
           p
           (main-collects-relative->path p))))
 
+  (define (toc-part? d)
+    (part-style? d 'toc))
+
   ;; HTML anchors are case-insenstive. To make them
   ;;  distinct, add a "." in front of capital letters.
   ;;  Also clean up characters that give browers trouble
@@ -76,7 +79,8 @@
                format-number
                quiet-table-of-contents)
 
-      (init-field [css-path #f])
+      (init-field [css-path #f]
+                  [up-path #f])
 
       (define/override (get-suffix) #".html")
 
@@ -330,11 +334,136 @@
                                   (div ((class "maincolumn")) 
                                        (div ((class "main")) 
                                             ,@(render-version d ri)
-                                            ,@(render-part d ri)))))])
+                                            ,@(navigation d ri)
+                                            ,@(render-part d ri)
+                                            ,@(navigation d ri)))))])
             (unless css-path
               (install-file scribble-css))
             (printf "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n")
             (xml:write-xml/content (xml:xexpr->xml xpr)))))
+
+      (define/private (part-parent d ri)
+        (collected-info-parent (part-collected-info d ri)))
+
+      (define/private (find-siblings d ri)
+        (let ([parent (collected-info-parent (part-collected-info d ri))])
+          (let loop ([l (if parent
+                            (part-parts parent)
+                            (if (or (null? (part-parts d))
+                                    (not (part-whole-page? (car (part-parts d)) ri)))
+                                (list d)
+                                (list d (car (part-parts d)))))]
+                     [prev #f])
+            (cond
+             [(eq? (car l) d) (values prev 
+                                      (and (pair? (cdr l)) 
+                                           (cadr l)))]
+             [else (loop (cdr l) (car l))]))))
+
+      (define contents-content '("contents"))
+      (define index-content '("index"))
+      (define prev-content '(larr " prev"))
+      (define up-content '("up"))
+      (define next-content '("next " rarr))
+      (define no-next-content next-content)
+      (define sep-element (make-element #f '(nbsp nbsp)))
+
+      (define/public (derive-filename d) "bad.html")
+
+      (define/private (navigation d ri)
+        (let ([parent (part-parent d ri)])
+          (let*-values ([(prev next) (find-siblings d ri)]
+                        [(prev) (if prev
+                                    (let loop ([prev prev])
+                                      (if (and (toc-part? prev)
+                                               (pair? (part-parts prev)))
+                                          (loop (car (last-pair (part-parts prev))))
+                                          prev))
+                                    (and parent
+                                         (toc-part? parent)
+                                         parent))]
+                        [(next) (cond
+                                 [(and (toc-part? d)
+                                       (pair? (part-parts d)))
+                                  (car (part-parts d))]
+                                 [(and (not next)
+                                       parent
+                                       (toc-part? parent))
+                                  (let-values ([(prev next)
+                                                (find-siblings parent ri)])
+                                    next)]
+                                 [else next])]
+                        [(index) (let loop ([d d])
+                                   (let ([p (part-parent d ri)])
+                                     (if p
+                                         (loop p)
+                                         (let ([subs (part-parts d)])
+                                           (and (pair? subs)
+                                                (let ([d (car (last-pair subs))])
+                                                  (and (part-style? d 'index)
+                                                       d)))))))])
+            (if (and (not prev)
+                     (not next)
+                     (not parent)
+                     (not index)
+                     (not up-path))
+                null
+                `((div ([class "navleft"])
+                       ,@(render-content
+                          (append
+                           (list 
+                            (make-element
+                             (if parent
+                                 (make-target-url "index.html" #f)
+                                 "nonavigation")
+                             contents-content))
+                           (if index
+                               (list
+                                'nbsp
+                                (if (eq? d index)
+                                    (make-element
+                                     "nonavigation"
+                                     index-content)
+                                    (make-link-element
+                                     #f
+                                     index-content
+                                     (car (part-tags index)))))
+                               null))
+                          d
+                          ri))
+                  (div ([class "navright"])
+                       ,@(render-content
+                          (list
+                           (make-element
+                            (if parent
+                                (make-target-url (if prev
+                                                     (derive-filename prev)
+                                                     "index.html")
+                                                 #f)
+                                "nonavigation")
+                            prev-content)
+                           sep-element
+                           (make-element
+                            (if (or parent
+                                    up-path)
+                                (make-target-url 
+                                 (if parent
+                                     (if (toc-part? parent)
+                                         (derive-filename parent)
+                                         "index.html")
+                                     up-path)
+                                 #f)
+                                "nonavigation")
+                            up-content)
+                           sep-element
+                           (make-element
+                            (if next
+                                (make-target-url (derive-filename next) #f)
+                                "nonavigation")
+                            next-content))
+                          d
+                          ri))
+                  (p nbsp))))))
 
       (define/override (render-one d ri fn)
         (render-one-part d ri fn null))
@@ -636,7 +765,7 @@
                         (current-subdirectory))
             (super get-dest-directory)))
 
-      (define/private (derive-filename d)
+      (define/override (derive-filename d)
         (let ([fn (format "~a.html" (regexp-replace*
                                      "[^-a-zA-Z0-9_=]"
                                      (let ([s (cadr (car (part-tags d)))])
@@ -658,9 +787,6 @@
 
       (define/override (current-part-whole-page? d)
         ((collecting-sub) . <= . 2))
-
-      (define/private (toc-part? d)
-        (part-style? d 'toc))
 
       (define/override (collect-part d parent ci number)
         (let ([prev-sub (collecting-sub)])
@@ -699,121 +825,8 @@
       (define/override (toc-wrap p)
         (list p))
 
-      (define contents-content '("contents"))
-      (define index-content '("index"))
-      (define prev-content '(larr " prev"))
-      (define up-content '("up"))
-      (define next-content '("next " rarr))
-      (define no-next-content next-content)
-      (define sep-element (make-element #f '(nbsp nbsp)))
-      
       (inherit render-table
                render-paragraph)
-
-      (define/override (render-version r i)
-        null)
-
-      (define/private (find-siblings d ri)
-        (let ([parent (collected-info-parent (part-collected-info d ri))])
-          (let loop ([l (if parent
-                            (part-parts parent)
-                            (if (null? (part-parts d))
-                                (list d)
-                                (list d (car (part-parts d)))))]
-                     [prev #f])
-            (cond
-             [(eq? (car l) d) (values prev 
-                                      (and (pair? (cdr l)) 
-                                           (cadr l)))]
-             [else (loop (cdr l) (car l))]))))
-
-      (define/private (part-parent d ri)
-        (collected-info-parent (part-collected-info d ri)))
-        
-      (define/private (navigation d ri)
-        (let ([parent (part-parent d ri)])
-          (let*-values ([(prev next) (find-siblings d ri)]
-                        [(prev) (if prev
-                                    (let loop ([prev prev])
-                                      (if (and (toc-part? prev)
-                                               (pair? (part-parts prev)))
-                                          (loop (car (last-pair (part-parts prev))))
-                                          prev))
-                                    (and parent
-                                         (toc-part? parent)
-                                         parent))]
-                        [(next) (cond
-                                 [(and (toc-part? d)
-                                       (pair? (part-parts d)))
-                                  (car (part-parts d))]
-                                 [(and (not next)
-                                       parent
-                                       (toc-part? parent))
-                                  (let-values ([(prev next)
-                                                (find-siblings parent ri)])
-                                    next)]
-                                 [else next])]
-                        [(index) (let loop ([d d])
-                                   (let ([p (part-parent d ri)])
-                                     (if p
-                                         (loop p)
-                                         (let ([subs (part-parts d)])
-                                           (and (pair? subs)
-                                                (let ([d (car (last-pair subs))])
-                                                  (and (part-style? d 'index)
-                                                       d)))))))])
-            `((div ([class "navleft"])
-                   ,@(render-content
-                      (append
-                       (list 
-                        (make-element
-                         (if parent
-                             (make-target-url "index.html" #f)
-                             "nonavigation")
-                         contents-content))
-                       (if index
-                           (list
-                            'nbsp
-                            (if (eq? d index)
-                                (make-element
-                                 "nonavigation"
-                                 index-content)
-                                (make-link-element
-                                 #f
-                                 index-content
-                                 (car (part-tags index)))))
-                           null))
-                      d
-                      ri))
-              (div ([class "navright"])
-                   ,@(render-content
-                      (list
-                       (make-element
-                        (if parent
-                            (make-target-url (if prev
-                                                 (derive-filename prev)
-                                                 "index.html")
-                                             #f)
-                            "nonavigation")
-                        prev-content)
-                       sep-element
-                       (make-element
-                        (if parent
-                            (make-target-url 
-                             (if (toc-part? parent)
-                                 (derive-filename parent)
-                                 "index.html")
-                             #f)
-                            "nonavigation")
-                        up-content)
-                       sep-element
-                       (make-element
-                        (if next
-                            (make-target-url (derive-filename next) #f)
-                            "nonavigation")
-                        next-content))
-                      d
-                      ri))))))
 
       (define/override (render-part d ri)
         (parameterize ([current-version
@@ -841,17 +854,8 @@
               (let ([sep? (on-separate-page)])
                 (parameterize ([next-separate-page (toc-part? d)]
                                [on-separate-page #f])
-                  (if sep?
-                      ;; Navigation bars;
-                      `(,@(super render-version d ri)
-                        ,@(navigation d ri)
-                        (p nbsp)
-                        ,@(super render-part d ri)
-                        (p nbsp)
-                        ,@(navigation d ri)
-                        (p nbsp))
-                      ;; Normal section render
-                      (super render-part d ri))))]))))
+                  ;; Normal section render
+                  (super render-part d ri)))]))))
 
       (super-new)))
 

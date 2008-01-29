@@ -19,9 +19,9 @@
      (lambda (variant)
        (parameterize ([current-launcher-variant variant])
          (make-mred-launcher '("-l" "help/help")
-                             (mred-program-launcher-path "PLT Help")
+                             (mred-program-launcher-path "plt-help")
                              (append
-                              '((exe-name . "PLT Help")
+                              '((exe-name . "plt-help")
                                 (relative? . #t))
                               (build-aux-from-path
                                (build-path (collection-path "help") "help"))))))

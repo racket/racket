@@ -38,7 +38,7 @@
                  " in plain text: "
                  (link file "step " which) ".")))
 
-@title{@bold{More}: Systems Programming with PLT Scheme (in Plain Text)}
+@title{@bold{More}: Systems Programming with PLT Scheme}
 
 In contrast to the impression that @|quick| may give, PLT Scheme is
 not just another pretty face. Underneath the graphical facade of
@@ -50,7 +50,7 @@ servlet-extensible, continuation-based web server. We use much more of
 the language than in @|quick|, and we expect you to click on syntax or
 function names that you don't recognize (which will take you to the
 relevant documentation). Beware that the last couple of sections
-present material that is normally considered difficult, so if you're
+present material that is normally considered difficult. If you're
 still new to Scheme and have relatively little programming experience,
 you may want to skip to @|guide|.
 

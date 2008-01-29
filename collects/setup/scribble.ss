@@ -245,7 +245,10 @@
                      (doc-dest-dir doc))]
          [css-path (if (doc-under-main? doc)
                        "../scribble.css"
-                       #f)])))
+                       #f)]
+         [up-path (if (doc-under-main? doc)
+                      "../index.html"
+                      #f)])))
 
 (define (pick-dest latex-dest doc)
   (if latex-dest

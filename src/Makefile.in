@@ -57,6 +57,12 @@ SETUP_ARGS = -X "$(DESTDIR)$(collectsdir)" -l setup
 install:
 	$(MAKE) install-@MAIN_VARIANT@
 
+plain-install:
+	if [ "$(DESTDIR)" != "" ]; then \
+          echo "cannot use plain-install with DESTDIR=$(DESTDIR)"; exit 1; \
+        fi
+	$(MAKE) plain-install-@MAIN_VARIANT@
+
 install-common-first:
 	mkdir -p $(ALLDIRINFO)
 
@@ -88,7 +94,7 @@ install-no-post-collects:
 
 fix-paths:
 	if [ "$(DESTDIR)" != "" ]; then \
-          mzscheme/mzscheme@CGC@ -mvxqu \
+          mzscheme/mzscheme@CGC@ -u \
             "$(srcdir)/../collects/setup/unixstyle-install.ss" \
             make-install-destdir-fix "$(srcdir)/.." \
             $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"; \
@@ -96,12 +102,19 @@ fix-paths:
 
 # 3m install ----------------------------------------
 
-install-3m:
+install-3m-common:
 	$(MAKE) install-common-first
 	cd mzscheme; $(MAKE) install-3m
 	$(MAKE) install-@MAKE_MRED@-3m
 	$(MAKE) install-common-middle
+
+install-3m:
+	$(MAKE) install-3m-common
 	mzscheme/mzscheme@MMM@ $(SETUP_ARGS)
+	$(MAKE) install-common-last
+
+plain-install-3m:
+	$(MAKE) install-3m-common
 	$(MAKE) install-common-last
 
 install-no-3m:
@@ -112,12 +125,19 @@ install-mred-3m:
 
 # CGC install ----------------------------------------
 
-install-cgc:
+install-cgc-common:
 	$(MAKE) install-common-first
 	cd mzscheme; $(MAKE) install-cgc
 	$(MAKE) install-@MAKE_MRED@-cgc
 	$(MAKE) install-common-middle
+
+install-cgc:
+	$(MAKE) install-cgc-common
 	mzscheme/mzscheme@CGC@ $(SETUP_ARGS)
+	$(MAKE) install-common-last
+
+plain-install-cgc:
+	$(MAKE) install-cgc-common
 	$(MAKE) install-common-last
 
 install-no-cgc:
@@ -128,12 +148,19 @@ install-mred-cgc:
 
 # Both install ----------------------------------------
 
-install-both:
+install-both-common:
 	$(MAKE) install-common-first
 	cd mzscheme; $(MAKE) install-both
 	$(MAKE) install-@MAKE_MRED@-both
 	$(MAKE) install-common-middle
+
+install-both:
+	$(MAKE) install-both-common
 	mzscheme/mzscheme@MAIN_VARIANT@ $(SETUP_ARGS)
+	$(MAKE) install-common-last
+
+plain-install-both:
+	$(MAKE) install-both-common
 	$(MAKE) install-common-last
 
 install-no-both:
