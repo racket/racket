@@ -686,6 +686,9 @@ as constructed by @scheme[pregexp], @litchar{#rx#} as constructed by
 
 @section[#:tag "parse-graph"]{Reading Graph Structure}
 
+@section-index["#0="]
+@section-index["#0#"]
+
 A @graph-defn[] tags the following datum for reference via
 @graph-ref[], which allows the reader to produce a datum that
 have graph structure.

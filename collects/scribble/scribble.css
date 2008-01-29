@@ -152,7 +152,7 @@ font-weight: bold;
 }
 
 .tocviewlist td {
-  font-size: 82%;
+
   vertical-align: top;
 }
 
@@ -185,6 +185,7 @@ font-weight: bold;
 }
 
 .tocsubnonseclink {
+  font-size: 82%;
   text-decoration: none;
   padding-left: 0.5em;
 }

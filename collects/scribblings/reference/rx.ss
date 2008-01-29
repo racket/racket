@@ -19,30 +19,30 @@ Repeat   ::= ...                      ...                                       
           |  Atom{N,}                 Match Atom N or more times                                   #px
           |  Atom{,M}                 Match Atom between 0 and M times                             #px
           |  Atom{N,M}                Match Atom between N and M times                             #px
-Atom     ::= (Regexp)                 Match sub-expression Regexp and report match                 #co
+Atom     ::= (Regexp)                 Match sub-expression Regexp and report                       #co
           |  [Range]                  Match any character in Range                                 #co
           |  [^Range]                 Match any character not in Range                             #co
-          |  .                        Match any character (except newline in multi mode)           #co
+          |  .                        Match any (except newline in multi mode)                     #co
           |  ^                        Match start (or after newline in multi mode)                 #co
           |  $                        Match end (or before newline in multi mode)                  #co
           |  Literal                  Match a single literal character                             #co
-          |  (?Mode:Regexp)           Match sub-expression Regexp using Mode                       #co
-          |  (?>Regexp)               Match sub-expression Regexp, only first possible             #co
+          |  (?Mode:Regexp)           Match Regexp using Mode                                      #co
+          |  (?>Regexp)               Match Regexp, only first possible                            #co
           |  Look                     Match empty if Look matches                                  #co
-          |  (?PredPieces|Pieces)     Match first Pieces if Pred, second Pieces if not             #co
+          |  (?PredPieces|Pieces)     Match 1st Pieces if Pred, else 2nd Pieces                    #co
           |  (?PredPieces)            Match Pieces if Pred, empty if not Pred                      #co
 Atom     ::= ...                      ...                                                          #px
           |  %N                       Match latest reported match for N##th _(_                    #px
           |  Class                    Match any character in Class                                 #px
-          |  %b                       Match between %w and %W, start, or end                       #px
-          |  %B                       Match between %w and %w or %W and %W, start, or end          #px
-          |  %p{Property}             Match a (UTF-8 encoded) character in Property                #px
-          |  %P{Property}             Match a (UTF-8 encoded) character not in Property            #px
+          |  %b                       Match %w* boundary                                           #px
+          |  %B                       Match where %b does not                                      #px
+          |  %p{Property}             Match (UTF-8 encoded) in Property                            #px
+          |  %P{Property}             Match (UTF-8 encoded) not in Property                        #px
 Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _._, _^_, _\\_, or _|_             #rx
 Literal  :== Any character except _(_, _)_, _*_, _+_, _?_, _[_, _]_, _{_, _}_, _._, _^_, _\\_, or _|_ #px
           |  \\Aliteral                Match Aliteral                                              #ot
 Aliteral :== Any character                                                                         #rx
-Aliteral :== Any character except a-z, A-Z, 0-9                                                    #px
+Aliteral :== Any character except _a_-_z_, _A_-_Z_, _0_-_9_                                        #px
 Range    ::= ]                        Range contains _]_ only                                      #co
           |  -                        Range contains _-_ only                                      #co
           |  Mrange                   Range contains everything in Mrange                          #co
@@ -62,8 +62,10 @@ Pred     ::= (N)                      True if Nth _(_ has a match               
 Lrange   ::= ...                      ...                                                          #px
           |  Class                    Lrange contains all characters in Class                      #px
           |  Posix                    Lrange contains all characters in Posix                      #px
+          |  \\Eliteral               Lrange contains Eliteral                                     #px
 Rliteral :== Any character except _]_ or _-_                                                       #rx
 Rliteral :== Any character except _]_, _\\_, or _-_                                                #px
+Eliteral :== Any character except _a_-_z_, _A_-_Z_                                                 #px
 Mode     ::=                          Like the enclosing mode                                      #mode
           |  Modei                    Like Mode, but case-insensitive                              #mode
           |  Mode-i                   Like Mode, but sensitive                                     #mode
@@ -71,25 +73,25 @@ Mode     ::=                          Like the enclosing mode                   
           |  Mode-s                   Like Mode, but in multi mode                                 #mode
           |  Modem                    Like Mode, but in multi mode                                 #mode
           |  Mode-m                   Like Mode, but not in multi mode                             #mode
-Class    ::= %d                       Contains 0-9                                                 #cat
+Class    ::= %d                       Contains _0_-_9_                                             #cat
           |  %D                       Contains ASCII other than those in %d                        #cat
-          |  %w                       Contains a-z, A-Z, 0-9, ___                                  #cat
+          |  %w                       Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___                      #cat
           |  %W                       Contains ASCII other than those in %w                        #cat
           |  %s                       Contains space, tab, newline, formfeed, return               #cat
           |  %S                       Contains ASCII other than those in %s                        #cat
-Posix    ::= [:alpha:]                Contains a-z, A-Z                                            #cat
-          |  [:alnum:]                Contains a-z, A-Z, 0-9                                       #cat
+Posix    ::= [:alpha:]                Contains _a_-_z_, _A_-_Z_                                    #cat
+          |  [:alnum:]                Contains _a_-_z_, _A_-_Z_, _0_-_9_                           #cat
           |  [:ascii:]                Contains all ASCII characters                                #cat
           |  [:blank:]                Contains space and tab                                       #cat
           |  [:cntrl:]                Contains all characters with scalar value < 32               #cat
-          |  [:digit:]                Contains 0-9                                                 #cat
+          |  [:digit:]                Contains _0_-_9_                                             #cat
           |  [:graph:]                Contains all ASCII characters that use ink                   #cat
           |  [:lower:]                Contains space, tab, and ASCII ink users                     #cat
-          |  [:print:]                Contains A-Z                                                 #cat
+          |  [:print:]                Contains _A_-_Z_                                             #cat
           |  [:space:]                Contains space, tab, newline, formfeed, return               #cat
-          |  [:upper:]                Contains A-Z                                                 #cat
-          |  [:word:]                 Contains a-z, A-Z, 0-9, ___                                  #cat
-          |  [:xdigit:]               Contains 0-9, a-f, A-F                                       #cat
+          |  [:upper:]                Contains _A_-_Z_                                             #cat
+          |  [:word:]                 Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___                      #cat
+          |  [:xdigit:]               Contains _0_-_9_, _a_-_f_, _A_-_F_                           #cat
 Property ::= Category                 Includes all characters in Category                          #cat
           |  ^Category                Includes all characters not in Category                      #cat
 Category ::= Ll | Lu | Lt | Lm        Unicode general category                                     #cat
@@ -122,7 +124,7 @@ Category ::= Ll | Lu | Lt | Lm        Unicode general category                  
 
   (define (fixup-ids s)
     (let loop ([m (regexp-match-positions
-                   #px"(Regexp)|(Pieces?)|(Atom)|(Repeat)|(Literal)|(Aliteral)|(Range)|(Lrange)|(Mrange)|(Rliteral)|(Mode)|(Class)|(Posix)|(Property)|(Category)|(Pred)|(Look)|(\\bN\\b)|(\\bM\\b)"
+                   #px"(Regexp)|(Pieces?)|(Atom)|(Repeat)|(Literal)|(Aliteral)|(Eliteral)|(Range)|(Lrange)|(Mrange)|(Rliteral)|(Mode)|(Class)|(Posix)|(Property)|(Category)|(Pred)|(Look)|(\\bN\\b)|(\\bM\\b)"
                    s)])
       (cond
        [m
@@ -159,7 +161,7 @@ Category ::= Ll | Lu | Lt | Lm        Unicode general category                  
            (let loop ([s s])
              (cond
               [(and (string? s)
-                    (regexp-match #rx"^(.*)_([^_]*|_)_(.*)$" s))
+                    (regexp-match #rx"^(.*?)_([^_]+|_)_(.*)$" s))
                => (lambda (m)
                     (make-element #f (list (loop (cadr m))
                                            (litchar (caddr m))
