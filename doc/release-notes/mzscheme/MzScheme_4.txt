@@ -4,10 +4,9 @@ in several significant ways:
 
  - The documentation has been re-organized and re-written. Instead of
    just reference manuals that occasionally provide examples, our
-   documentation is now based on "guides" that provides a friendly
-   overview and extensive examples, and then separate "references"
-   that provide the details (typically in a more terse, precise
-   style).
+   documentation is now based on a "guide" that provides a friendly
+   overview and examples, and then separate "references" that provide
+   the details (typically in a more terse, precise style).
 
  - Pairs created with `cons', `list', `map', etc. are immutable.  A
    separate datatype, "mpair", implements mutable pairs, with the
@@ -83,6 +82,9 @@ in several significant ways:
    used carefully; library functions should typically allow "~" to be
    a relative path).
 
+ - Literal vectors and boxes are immutable, as are vectors and boxes
+   produced by `syntax->datum'.
+
  - Hash table printing is enabled by default, and vector-length
    printing is disabled by default. Opaque structure instances no
    longer print with a leading "struct:" between angle brackets, and
@@ -91,7 +93,9 @@ in several significant ways:
 
  - Graph input syntax, such as `#0=(1 . #0#)' is no longer allowed in
    program syntax parsed by `read-syntax', though it is still allowed
-   for `read'.
+   for `read'. The `datum->syntax' function now raises an exception
+   when given a cyclic value, and non-cyclic graph structure (though
+   pairs, vectors, and boxes) is not preserved.
 
  - In fully expanded code, `#%datum' expands to `quote'. When using
    the `mzscheme' language, beware that `if' in expansions is the `if'
@@ -115,10 +119,10 @@ in several significant ways:
    `prop:equal+hash' property allows customization of `equal?' for a
    structure type.
 
- - The contract library (in `scheme/contract') no longer exports
-   object or mixin contracts. Instead they are exported from
-   `scheme/class'. (The libraries in "mzlib" remain the same as
-   before.)
+ - The contract library (in `scheme/contract') does not export object
+   or mixin contracts. Instead they are exported from
+   `scheme/class'. The libraries in the "mzlib" collection remain as
+   before.
 
 ======================================================================
  Immutable and Mutable Pairs
@@ -126,13 +130,14 @@ in several significant ways:
 
 Making pairs immutable helps prevent security and design holes that
 result form unexpected mutation of lists; Schemers do not usually
-think about lists as mutable, and they wrote code that fails in exotic
+think about lists as mutable, and they write code that fails in exotic
 ways if a list is mutated concurrently. For similar reasons, immutable
 lists work better with higher-order contracts.
 
 Although this change may sound drastic, our experience to date is that
 uses of mutable pairs are isolated and easy to convert to either
-mpairs or functional style.
+mpairs or functional style. The new `scheme/mpair' library provides
+functions for processing mutable lists.
 
 For compatbility, the `cons' exported by the `r5rs' language module is
 an alias for `mcons', and the various list-consuming and -producing
@@ -194,7 +199,7 @@ language module, instead of `mzscheme' or its close analogue
 Big" language: in addition to the core forms, it supplies contracts,
 the class system, the unit system, and the pretty printer. More
 precisely, the default module is `scheme/init', which is like
-`scheme', but it installs the pretty printer.
+`scheme', but installs the pretty printer and `help' form.
 
 The initial top-level environment is completely empty. Command-line
 flags like `-l' introduce bindings into the environment. Such bindings

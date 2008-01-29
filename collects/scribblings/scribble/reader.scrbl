@@ -3,7 +3,9 @@
           scribble/bnf
           scribble/eval
           "utils.ss"
-          (for-syntax scheme/base))
+          (for-syntax scheme/base)
+          (for-label (only-in scribble/reader
+                              use-at-readtable)))
 
 @(define read-eval (make-base-eval))
 @interaction-eval[#:eval read-eval (require (for-syntax scheme/base))]
@@ -30,7 +32,8 @@ A PLT Scheme manual more likely starts with
 
 which installs a reader, wraps the file content afterward into a
 MzScheme module, and parses the body into a document using
-@filepath{decode.ss}.  See @secref["docreader"] for more information.
+@schememodname[scribble/decode].  See @secref["docreader"] for more
+information.
 
 Another way to use the reader is to use the @scheme[use-at-readtable]
 function to switch the current readtable to a readtable that parses

@@ -4456,6 +4456,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       break;
     case CPT_BOX:
       v = scheme_box(read_compact(port, 0));
+      SCHEME_SET_IMMUTABLE(v);
       break;
     case CPT_PAIR:
       if (need_car) {
@@ -4496,6 +4497,10 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	  cv = read_compact(port, 0);
 	  SCHEME_VEC_ELS(vec)[i] = cv;
 	}
+
+        if (l) {
+          SCHEME_SET_IMMUTABLE(vec);
+        }
 
 	v = vec;
       }

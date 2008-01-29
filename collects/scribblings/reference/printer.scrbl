@@ -13,14 +13,14 @@ render the character/byte content directly to the output port.
 
 When the @scheme[print-graph] parameter is set to @scheme[#t], then
 the printer first scans an object to detect cycles. The scan traverses
-the components of pairs, vectors, boxes (when @scheme[print-box] is
-@scheme[#t]), hash tables (when @scheme[print-hash-table] is
-@scheme[#t]), and fields of structures exposed by
-@scheme[struct->vector] (when @scheme[print-struct] is
+the components of pairs, mutable pairs, vectors, boxes (when
+@scheme[print-box] is @scheme[#t]), hash tables (when
+@scheme[print-hash-table] is @scheme[#t]), and fields of structures
+exposed by @scheme[struct->vector] (when @scheme[print-struct] is
 @scheme[#t]). If @scheme[print-graph] is @scheme[#t], then this
 information is used to display sharing by printing graph definitions
-and references (see @secref["parse-graph"]). If a cycle is detected
-in the initial scan, then @scheme[print-graph] is effectively set to
+and references (see @secref["parse-graph"]). If a cycle is detected in
+the initial scan, then @scheme[print-graph] is effectively set to
 @scheme[#t] automatically.
 
 With the exception of displaying byte strings, printing is defined in

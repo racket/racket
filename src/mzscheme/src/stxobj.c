@@ -4575,6 +4575,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
   } else if (SCHEME_BOXP(v)) {
     v = syntax_to_datum_inner(SCHEME_BOX_VAL(v), with_marks, mt);
     result = scheme_box(v);
+    SCHEME_SET_IMMUTABLE(result);
   } else if (SCHEME_VECTORP(v)) {
     int size = SCHEME_VEC_SIZE(v), i;
     Scheme_Object *r, *a;
@@ -4585,8 +4586,10 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
       a = syntax_to_datum_inner(SCHEME_VEC_ELS(v)[i], with_marks, mt);
       SCHEME_VEC_ELS(r)[i] = a;
     }
-    
+
     result = r;
+    if (size)
+      SCHEME_SET_IMMUTABLE(result);
   } else
     result = v;
 
