@@ -183,7 +183,7 @@ The @scheme[thunk] results define the generated elements as follows:
                                                      (-> any))]{
 Returns two thunks to extract elements from the sequence. The first
 returns @scheme[#t] if more values are available for the sequence. The
-second returns the next element (hich may be multiple values) from the
+second returns the next element (which may be multiple values) from the
 sequence; if no more elements are available, the
 @exnraise[exn:fail:contract].}
 
