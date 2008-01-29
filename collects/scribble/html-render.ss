@@ -334,9 +334,9 @@
                                   (div ((class "maincolumn")) 
                                        (div ((class "main")) 
                                             ,@(render-version d ri)
-                                            ,@(navigation d ri)
+                                            ,@(navigation d ri #f)
                                             ,@(render-part d ri)
-                                            ,@(navigation d ri)))))])
+                                            ,@(navigation d ri #t)))))])
             (unless css-path
               (install-file scribble-css))
             (printf "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n")
@@ -370,7 +370,7 @@
 
       (define/public (derive-filename d) "bad.html")
 
-      (define/private (navigation d ri)
+      (define/private (navigation d ri pre-space?)
         (let ([parent (part-parent d ri)])
           (let*-values ([(prev next) (find-siblings d ri)]
                         [(prev) (if prev
@@ -408,7 +408,8 @@
                      (not index)
                      (not up-path))
                 null
-                `((div ([class "navleft"])
+                `(,@(if pre-space? '((p nbsp)) null)
+                  (div ([class "navleft"])
                        ,@(render-content
                           (append
                            (list 

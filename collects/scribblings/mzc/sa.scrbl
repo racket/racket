@@ -15,3 +15,4 @@ machines.
 
 @include-section["exe.scrbl"]
 @include-section["dist.scrbl"]
+@include-section["launcher.scrbl"]

@@ -4,8 +4,6 @@
 (require scheme/path
          scheme/file
 
-         (lib "compile-sig.ss" "dynext")
-         (lib "link-sig.ss" "dynext")
          (lib "embed.ss" "compiler")
          (lib "dirs.ss" "setup")
          (lib "variant.ss" "setup")
@@ -14,8 +12,7 @@
 
          (lib "winutf16.ss" "compiler" "private"))
 
-(import (prefix c: dynext:compile^)
-        (prefix l: dynext:link^))
+(import)
 (export launcher^)
 
 (define current-launcher-variant
@@ -588,14 +585,14 @@
                           (cons 'resource-files icon-files))))))))))))))
 
 (define (make-mred-program-launcher file collection dest)
-  (make-mred-launcher (list "-mqvL" file collection "--") 
+  (make-mred-launcher (list "-l-" (string-append collection "/" file))
                       dest
                       (build-aux-from-path
                        (build-path (collection-path collection)
                                    (strip-suffix file)))))
 
 (define (make-mzscheme-program-launcher file collection dest)
-  (make-mzscheme-launcher (list "-mqvL" file collection "--") 
+  (make-mzscheme-launcher (list "-l-" (string-append collection "/" file))
                           dest
                           (build-aux-from-path
                            (build-path (collection-path collection)

@@ -345,11 +345,12 @@ Mac OS X when @scheme[mred?] is @scheme[#t], @scheme[#f] otherwise.}
 
 Returns three values suitable for use as the @scheme[extension],
 @scheme[style], and @scheme[filters] arguments to @scheme[put-file],
-respectively. If MzScheme/MrEd launchers for this platform are
-directories, the @scheme[style] result is suitable for use with
-@scheme[get-directory], and the @scheme[extension] result may be a
-string indicating a required extension for the directory name (e.g.,
-@scheme["app"] for Mac OS X). }
+respectively.
+
+If MzScheme/MrEd launchers for the current platform were directories
+form the user's perspective, the @scheme[style] result is suitable for
+use with @scheme[get-directory], and the @scheme[extension] result may
+be a string indicating a required extension for the directory name. }
 
 
 @defproc[(embedding-executable-add-suffix [path path-string?] [mred? any/c])
