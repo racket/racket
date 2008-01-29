@@ -134,7 +134,7 @@ Hides the cursor until the user moves the mouse or clicks the mouse
 
 Gets a resource value from the resource database. The resource value
  is keyed on the combination of @scheme[section] and @scheme[entry].  The
- return value is @scheme[#t] is a value is found, @scheme[#f] if it is
+ return value is @scheme[#t] if a value is found, @scheme[#f] if it is
  not. The type of the value initially in the @scheme[value] box
  determines the way that the resource is interpreted, and @scheme[value]
  is filled with a new value of the same type if one is found.
