@@ -67,22 +67,28 @@
 ;; send-url : str [bool] -> void
 (define (send-url url-str [separate-window? separate-by-default?])
   (define stype (force systype))
-  (cond [(not (string? url-str))
-         (error 'send-url "expected a string, got ~e" url-str)]
-        [(procedure? (external-browser)) ((external-browser) url-str)]
-        [else (case stype
-                [(macosx)  (send-url/mac url-str)]
-                [(windows) (send-url/win url-str)]
-                [(unix)    (send-url/unix url-str separate-window?)]
-                [else (error 'send-url
-                             "don't know how to open URL on platform: ~s"
-                             stype)])])
+  (unless (string? url-str)
+    (error 'send-url "expected a string, got ~e" url-str))
+  (let ([url-str
+         ;; quote characters that will not work well in shell quotes
+         (regexp-replace*
+          #rx"[\"'`$\\]" url-str
+          (lambda (m)
+            (string-append "%" (number->string (char->integer (string-ref m 0))
+                                               16))))])
+    (if (procedure? (external-browser))
+      ((external-browser) url-str)
+      (case stype
+        [(macosx)  (send-url/mac url-str)]
+        [(windows) (send-url/win url-str)]
+        [(unix)    (send-url/unix url-str separate-window?)]
+        [else (error 'send-url
+                     "don't know how to open URL on platform: ~s" stype)])))
   (void))
 
 (define osascript (delay (find-executable-path "osascript" #f)))
 (define (send-url/mac url-str)
-  (browser-process* (force osascript) "-e"
-                    (format "open location \"~a\"" url-str)))
+  (browser-run (force osascript) "-e" (format "open location \"~a\"" url-str)))
 
 (define (send-url/win url-str)
   (define (simple)
@@ -98,7 +104,7 @@
         (close-input-port (cadddr p))
         (let ([m (regexp-match #rx"^htmlfile=(.*)" s)])
           (if m
-            (browser-process (string-append (cadr m) " " url-str))
+            (browser-run #:shell #t (string-append (cadr m) " " url-str))
             ;; give up and use simple mode
             (simple)))))
     ;; simple case: no fragment
@@ -119,8 +125,8 @@
   (define exe
     (cond [(assq browser (force existing-unix-browsers->exes)) => cdr]
           [else #f]))
-  (define (simple) (browser-process* exe url-str))
-  (define (w/arg a) (browser-process* exe a url-str))
+  (define (simple) (browser-run exe url-str))
+  (define (w/arg a) (browser-run exe a url-str))
   (define (try-remote)
     (or (system* exe "-remote"
                  (format "openURL(~a)"
@@ -132,8 +138,8 @@
     [(not browser)
      (error 'send-url "Couldn't find a browser to open URL: ~e" url-str)]
     [(custom-browser? browser)
-     (let ([cmd (string-append (car browser) url-str (cdr browser))])
-       (browser-process cmd))]
+     (browser-run #:shell #t
+                  (string-append (car browser) url-str (cdr browser)))]
     ;; if it's a known browser, then it must be an existing one at this point
     [(not exe) (error 'send-url "internal error")]
     ;; if it's gone throw an error (refiltering will break assumptions of
@@ -152,28 +158,20 @@
        [(mozilla seamonkey netscape) (try-remote)]
        [(opera)
         ;; opera starts a new browser automatically
-        (browser-process*
-         exe "-remote" (format "openURL(~a~a)"
-                               url-str (if separate-window? ",new-window" "")))]
+        (browser-run exe "-remote"
+                     (format "openURL(~a~a)"
+                             url-str (if separate-window? ",new-window" "")))]
        [else (error 'send-url "internal error")])]))
 
-;; Process helpers
-
-;; run-browser : process-proc list-of-strings -> void
-(define (run-browser process*/ports args)
+;; Process helper
+(define (browser-run #:shell? [shell? #f] . args)
   (define-values (stdout stdin pid stderr control)
-    (apply values (apply process*/ports
+    (apply values (apply (if shell? process/ports process*/ports)
                          (open-output-nowhere) #f (current-error-port)
                          args)))
   (close-output-port stdin)
   (thread (lambda ()
             (control 'wait)
             (when (eq? 'done-error (control 'status))
-              (error 'run-browser "process execute failed: ~e" args))))
+              (error 'browser-run "process execute failed: ~e" args))))
   (void))
-
-(define (browser-process* . args)
-  (run-browser process*/ports args))
-
-(define (browser-process . args)
-  (run-browser process/ports args))
