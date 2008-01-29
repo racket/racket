@@ -8,7 +8,8 @@
          scheme/promise
          scheme/port)
 
-(provide send-url unix-browser-list browser-preference? external-browser)
+(provide send-url send-url/file
+         unix-browser-list browser-preference? external-browser)
 
 (define separate-by-default?
   ;; internal configuration, 'browser-default lets some browsers decide
@@ -66,22 +67,25 @@
                   'macosx]
                  [else t]))))
 
-;; used for quoting characters that will not work well in shell quotes
-(define (quote-url url)
-  (define (escape str)
-    (apply string-append
-           (map (lambda (b)
-                  (string-append
-                   "%" (if (< b 16) "0" "") (number->string b 16)))
-                (bytes->list (string->bytes/utf-8 str)))))
-  (regexp-replace* #px"(?:[^[:graph:]]|[\"'`\\\\])" url escape))
+(define (%escape str)
+  (apply string-append
+         (map (lambda (b)
+                (string-append "%" (if (< b 16) "0" "") (number->string b 16)))
+              (bytes->list (string->bytes/utf-8 str)))))
+
+;; Used for quoting characters that will not work well in shell quotes, and
+;; only these characters.  This is only for protection when passing arguments
+;; to subprocesses, it's best to pass properly escaped urls to `send-url'.
+(define (escape-url url)
+  (regexp-replace* #px"(?:[^[:graph:]]|[\"'`\\\\])" url %escape))
 
 ;; send-url : str [bool] -> void
-(define (send-url url-str [separate-window? separate-by-default?])
+(define (send-url url-str [separate-window? separate-by-default?]
+                  #:escape? [escape? #t])
   (define stype (force systype))
   (unless (string? url-str)
     (error 'send-url "expected a string, got ~e" url-str))
-  (let ([url-str (quote-url url-str)])
+  (let ([url-str (if escape? (escape-url url-str) url-str)])
     (if (procedure? (external-browser))
       ((external-browser) url-str)
       (case stype
@@ -91,6 +95,27 @@
         [else (error 'send-url
                      "don't know how to open URL on platform: ~s" stype)])))
   (void))
+
+(define (send-url/file path [separate-window? separate-by-default?]
+                       #:fragment [fragment #f] #:query [query #f])
+  (let* ([path (path->string (path->complete-path path))]
+         [path (if (eq? 'windows (force systype))
+                 ;; see http://msdn2.microsoft.com/en-us/library/ms775098.aspx
+                 (let* ([path (regexp-replace* #rx"\\\\" path "/")]
+                        [slashes (cdar (regexp-match-positions #rx"^/*" path))])
+                   (case slashes
+                     [(0) (string-append "/" path)]
+                     [(1) (error 'send-url/file
+                                 "unexpected path, please submit a bug: ~s"
+                                 path)]
+                     [else (substring path 2)]))
+                 path)]
+         [path (regexp-replace* #rx"[^A-Za-z0-9_./:-]" path %escape)]
+         [path (string-append "file://" path)]
+         [path (if query (string-append path "?" (escape-url query)) path)]
+         [path (if fragment (string-append path "#" (escape-url fragment))
+                   path)])
+    (send-url path separate-window? #:escape? #f)))
 
 (define osascript (delay (find-exe "osascript")))
 (define (send-url/mac url)
@@ -156,25 +181,36 @@
 (define (using-ie7?)
   (define (bytes0 bs)
     (list->bytes (apply append (map (lambda (b) (list b 0)) (bytes->list bs)))))
+  (define (run cmd)
+    (define out (open-output-string))
+    (parameterize ([current-output-port out]
+                   [current-input-port (open-input-string "")]
+                   [current-error-port (open-output-nowhere)])
+      ;; just return #f on errors, since we can still use
+      ;; shell-execute in this case -- better a dropped anchor than no
+      ;; help at all
+      (and (system cmd) (get-output-string out))))
   (define (get-regdata)
     (define regfile (make-temporary-file "registry-data-~a"))
-    (and (system (format "regedit /e \"~a\" \"~a" regfile
-                         (regexp-replace* #rx"/" keypath "\\\\")))
-         (let ([x (file-size regfile)])
-           (begin0 (with-input-from-file regfile (lambda () (read-bytes x)))
-             (delete-file regfile)))))
+    (dynamic-wind
+      void
+      (lambda ()
+        (and (run (format "regedit /e \"~a\" \"~a\""
+                          regfile
+                          (regexp-replace* #rx"/" keypath "\\\\")))
+             (let ([n (file-size regfile)])
+               (with-input-from-file regfile (lambda () (read-bytes n))))))
+      (lambda () (delete-file regfile))))
   (define keypath
     "HKEY_LOCAL_MACHINE/Software/Microsoft/Internet Explorer/Version Vector")
   (define version-rx
     (bytes-append (bytes0 #"\r\n\"IE\"=\"") #"([0-9.\0]+)" (bytes0 #"\"\r\n")))
   (and
    ;; Is IE the default browser?
-   (let ([p (process "ftype http")])
-     (close-output-port (cadr p))
-     (let ([s (read-line (car p) 'return-linefeed)])
-       (close-input-port (car p))
-       (close-input-port (cadddr p))
-       (regexp-match? #px"^(?i:http=\"(.*\\\\|)iexplore.exe\")" s)))
+   (cond [(run "ftype http")
+          => (lambda (s)
+               (regexp-match? #px"^(?i:http=\"(.*\\\\|)iexplore.exe\")" s))]
+         [else #f])
    ;; Get the registry data and check the version.  We could convert the UTF-16
    ;; result to UTF-8, but we're looking for a simple pattern, so just search
    ;; for the expected UTF-16 sequence directly.
@@ -185,6 +221,7 @@
 (define send-url/win-proc
   (delay (let ([explorer (and (using-ie7?) (find-exe "explorer.exe"))])
            (if explorer
+             ;; looks like explorer.exe always returns an error code
              (lambda (url) (browser-run #:ignore-exit-code #t explorer url))
              (lambda (url)
                (shell-execute #f url "" (current-directory) 'SW_SHOWNORMAL))))))
