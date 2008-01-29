@@ -66,18 +66,22 @@
                   'macosx]
                  [else t]))))
 
+;; used for quoting characters that will not work well in shell quotes
+(define (quote-url url)
+  (define (escape str)
+    (apply string-append
+           (map (lambda (b)
+                  (string-append
+                   "%" (if (< b 16) "0" "") (number->string b 16)))
+                (bytes->list (string->bytes/utf-8 str)))))
+  (regexp-replace* #px"(?:[^[:graph:]]|[\"'`\\\\])" url escape))
+
 ;; send-url : str [bool] -> void
 (define (send-url url-str [separate-window? separate-by-default?])
   (define stype (force systype))
   (unless (string? url-str)
     (error 'send-url "expected a string, got ~e" url-str))
-  (let ([url-str
-         ;; quote characters that will not work well in shell quotes
-         (regexp-replace*
-          #rx"[\"'`$\\]" url-str
-          (lambda (m)
-            (string-append "%" (number->string (char->integer (string-ref m 0))
-                                               16))))])
+  (let ([url-str (quote-url url-str)])
     (if (procedure? (external-browser))
       ((external-browser) url-str)
       (case stype
