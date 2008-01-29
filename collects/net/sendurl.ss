@@ -34,14 +34,16 @@
        x
        (error 'external-browser "~e is not a valid browser preference" x)))))
 
+(define (find-exe name)
+  (find-executable-path name #f))
+
 ;; by-need filtering of found unix executables
 (define existing-unix-browsers->exes
   (delay
-    (filter values
-            (map (lambda (b)
-                   (let ([exe (find-executable-path (symbol->string b) #f)])
-                     (and exe (cons b exe))))
-                 all-unix-browsers))))
+    (filter values (map (lambda (b)
+                          (let ([exe (find-exe (symbol->string b))])
+                            (and exe (cons b exe))))
+                        all-unix-browsers))))
 (define existing-unix-browsers
   (delay (map car (force existing-unix-browsers->exes))))
 (define-syntax unix-browser-list
@@ -86,31 +88,11 @@
                      "don't know how to open URL on platform: ~s" stype)])))
   (void))
 
-(define osascript (delay (find-executable-path "osascript" #f)))
-(define (send-url/mac url-str)
-  (browser-run (force osascript) "-e" (format "open location \"~a\"" url-str)))
+(define osascript (delay (find-exe "osascript")))
+(define (send-url/mac url)
+  (browser-run (force osascript) "-e" (format "open location \"~a\"" url)))
 
-(define (send-url/win url-str)
-  (define (simple)
-    (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL))
-  (if (regexp-match #rx"#" url-str)
-    ;; complex case: need to launch the browser directly,
-    ;; otherwise the fragment is ignored. Use `ftype' to discover
-    ;; the browser...
-    (let ([p (process "ftype htmlfile")])
-      (close-output-port (cadr p))
-      (let ([s (read-line (car p) 'return-linefeed)])
-        (close-input-port (car p))
-        (close-input-port (cadddr p))
-        (let ([m (regexp-match #rx"^htmlfile=(.*)" s)])
-          (if m
-            (browser-run #:shell #t (string-append (cadr m) " " url-str))
-            ;; give up and use simple mode
-            (simple)))))
-    ;; simple case: no fragment
-    (simple)))
-
-(define (send-url/unix url-str separate-window?)
+(define (send-url/unix url separate-window?)
   ;; in cases where a browser was uninstalled, we might get a preference that
   ;; is no longer valid, this will turn it back to #f
   (define (try pref)
@@ -125,21 +107,17 @@
   (define exe
     (cond [(assq browser (force existing-unix-browsers->exes)) => cdr]
           [else #f]))
-  (define (simple) (browser-run exe url-str))
-  (define (w/arg a) (browser-run exe a url-str))
+  (define (simple) (browser-run exe url))
+  (define (w/arg a) (browser-run exe a url))
   (define (try-remote)
-    (or (system* exe "-remote"
-                 (format "openURL(~a)"
-                         (if separate-window?
-                           (format "~a,new-window" url-str)
-                           url-str)))
+    (or (system* exe "-remote" (format "openURL(~a~a)" url
+                                       (if separate-window? ",new-window" "")))
         (simple)))
   (cond
     [(not browser)
-     (error 'send-url "Couldn't find a browser to open URL: ~e" url-str)]
+     (error 'send-url "Couldn't find a browser to open URL: ~e" url)]
     [(custom-browser? browser)
-     (browser-run #:shell #t
-                  (string-append (car browser) url-str (cdr browser)))]
+     (browser-run #:shell #t (string-append (car browser) url (cdr browser)))]
     ;; if it's a known browser, then it must be an existing one at this point
     [(not exe) (error 'send-url "internal error")]
     ;; if it's gone throw an error (refiltering will break assumptions of
@@ -160,18 +138,65 @@
         ;; opera starts a new browser automatically
         (browser-run exe "-remote"
                      (format "openURL(~a~a)"
-                             url-str (if separate-window? ",new-window" "")))]
+                             url (if separate-window? ",new-window" "")))]
        [else (error 'send-url "internal error")])]))
 
+;; Windows -- IE7 has a bug: when launched (either through shell-execute or
+;; directly) it will ignore the fragment for `file:' URLs.  A workaround that
+;; seems to work is to run `explorer.exe' instead.  The problem is described at
+;; http://support.microsoft.com/default.aspx/kb/942172, and when a fix will be
+;; released (and enough time to be widely used), this whole thing should go
+;; away and the simple `shell-eexcute' will work fine.  (See also
+;; http://www.tutorials-win.com/IE/Lauching-HTML/)
+
+(define (using-ie7?)
+  (define (bytes0 bs)
+    (list->bytes (apply append (map (lambda (b) (list b 0)) (bytes->list bs)))))
+  (define (get-regdata)
+    (define regfile (make-temporary-file "registry-data-~a"))
+    (and (system (format "regedit /e \"~a\" \"~a" regfile
+                         (regexp-replace* #rx"/" keypath "\\\\")))
+         (let ([x (file-size regfile)])
+           (begin0 (with-input-from-file regfile (lambda () (read-bytes x)))
+             (delete-file regfile)))))
+  (define keypath
+    "HKEY_LOCAL_MACHINE/Software/Microsoft/Internet Explorer/Version Vector")
+  (define version-rx
+    (bytes-append (bytes0 #"\r\n\"IE\"=\"") #"([0-9.\0]+)" (bytes0 #"\"\r\n")))
+  (and
+   ;; Is IE the default browser?
+   (let ([p (process "ftype http")])
+     (close-output-port (cadr p))
+     (let ([s (read-line (car p) 'return-linefeed)])
+       (close-input-port (car p))
+       (close-input-port (cadddr p))
+       (regexp-match? #px"^(?i:http=\"(.*\\\\|)iexplore.exe\")" s)))
+   ;; Get the registry data and check the version.  We could convert the UTF-16
+   ;; result to UTF-8, but we're looking for a simple pattern, so just search
+   ;; for the expected UTF-16 sequence directly.
+   (cond [(regexp-match version-rx (get-regdata))
+          => (lambda (m) (regexp-match? #rx#"^7\0\\.\0" (cadr m)))]
+         [else #f])))
+
+(define send-url/win-proc
+  (delay (let ([explorer (and (using-ie7?) (find-exe "explorer.exe"))])
+           (if explorer
+             (lambda (url) (browser-run #:ignore-exit-code #t explorer url))
+             (lambda (url)
+               (shell-execute #f url "" (current-directory) 'SW_SHOWNORMAL))))))
+
+(define (send-url/win url) ((force send-url/win-proc) url))
+
 ;; Process helper
-(define (browser-run #:shell? [shell? #f] . args)
+(define (browser-run #:shell [shell? #f] #:ignore-exit-code [nowait? #f] . args)
   (define-values (stdout stdin pid stderr control)
     (apply values (apply (if shell? process/ports process*/ports)
                          (open-output-nowhere) #f (current-error-port)
                          args)))
   (close-output-port stdin)
-  (thread (lambda ()
-            (control 'wait)
-            (when (eq? 'done-error (control 'status))
-              (error 'browser-run "process execute failed: ~e" args))))
+  (unless nowait?
+    (thread (lambda ()
+              (control 'wait)
+              (when (eq? 'done-error (control 'status))
+                (error 'browser-run "process execute failed: ~e" args)))))
   (void))
