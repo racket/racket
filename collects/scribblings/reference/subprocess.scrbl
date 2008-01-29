@@ -33,7 +33,7 @@ the @scheme[arg]s are command-line arguments for the program. Under
 Unix and Mac OS X, command-line arguments are passed as byte strings
 using the current locale's encoding (see @secref["encodings"]).
 
-Under Windows, the first @scheme[arg] can be replaced
+Under Windows, the first @scheme[arg] can be replaced with
 @indexed-scheme['exact], which triggers a Windows-specific behavior:
 the sole @scheme[arg] is used exactly as the command-line for the
 subprocess. Otherwise, under Windows, a command-line string is
