@@ -89,6 +89,7 @@
                      [(rdquo) "\U201D"]
                      [(rsquo) "\U2019"]
                      [(rarr) "->"]
+                     [(nbsp) " "]
                      [else (error 'text-render "unknown element symbol: ~e" i)]))]
          [(string? i) (display i)]
          [else (write i)])
