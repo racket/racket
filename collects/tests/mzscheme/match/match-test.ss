@@ -1314,13 +1314,13 @@
 
 ;; set! for vectors
 
-(mytest (let ((x #(1 2)))
+(mytest (let ((x (vector 1 2)))
         (match x
                (#(_ (set! set-it)) (set-it 17)))
         x)
       #(1 17))
 
-(mytest (let ((x #(1 2)))
+(mytest (let ((x (vector 1 2)))
         (match x
                (#((set! set-it) _) (set-it 17)))
         x)
@@ -1328,7 +1328,7 @@
 
 ;; set! for boxes
 
-(mytest (let ((x #&1))
+(mytest (let ((x (box 1)))
         (match x
                (#&(set! set-it) (set-it 17)))
         x)
@@ -1342,7 +1342,7 @@
       #&(1 17))
 |#
 
-(mytest (let ((x #&#(1 2)))
+(mytest (let ((x (box (vector 1 2))))
         (match x
                (#&#(_ (set! set-it)) (set-it 17)))
         x)
@@ -1435,7 +1435,7 @@
 
 ;; get! for vectors
 
-(mytest (let* ((x #(1 2))
+(mytest (let* ((x (vector 1 2))
              (f
         (match x
                (#(_ (get! get-it)) get-it))))
@@ -1444,7 +1444,7 @@
         (f)) 17)
 
 
-(mytest (let* ((x #(1 2))
+(mytest (let* ((x (vector 1 2))
              (f
         (match x
                (#((get! get-it) _) get-it))))
@@ -1455,7 +1455,7 @@
 
 ;; get! for boxes
 
-(mytest (let* ((x #&1)
+(mytest (let* ((x (box 1))
              (f
         (match x
                (#&(get! get-it) get-it))))
@@ -1474,7 +1474,7 @@
         (f)) 17)
 |#
 
-(mytest (let* ((x #&#(1 2))
+(mytest (let* ((x (box (vector 1 2)))
              (f
         (match x
                (#&#(_ (get! get-it)) get-it))))

@@ -2012,19 +2012,19 @@
   '(1 2 (3 . 4) . 17))
 |#
  (mytest
-  (let ((x #2(1 2))) (match x ((vector _ (set! set-it)) (set-it 17))) x)
+  (let ((x (vector 1 2))) (match x ((vector _ (set! set-it)) (set-it 17))) x)
   #2(1 17))
  (mytest
-  (let ((x #2(1 2))) (match x ((vector (set! set-it) _) (set-it 17))) x)
+  (let ((x (vector 1 2))) (match x ((vector (set! set-it) _) (set-it 17))) x)
   #2(17 2))
- (mytest (let ((x #&1)) (match x ((box (set! set-it)) (set-it 17))) x) #&17)
+ (mytest (let ((x (box 1))) (match x ((box (set! set-it)) (set-it 17))) x) #&17)
 #|
  (mytest
   (let ((x #&(1 2))) (match x ((box (list _ (set! set-it))) (set-it 17))) x)
   #&(1 17))
 |#
  (mytest
-  (let ((x #&#2(1 2)))
+  (let ((x (box (vector 1 2))))
     (match x ((box (vector _ (set! set-it))) (set-it 17)))
     x)
   #&#2(1 17))
