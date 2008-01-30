@@ -11,8 +11,3 @@
              @other-manual['(lib "scribblings/start/start.scrbl")].}
 
 @(build-contents #t)
-
-@(make-toc-element
-  #f
-  null
-  (list @link["master-index/index.html" #:underline? #f]{master index}))
