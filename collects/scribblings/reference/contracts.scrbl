@@ -1,11 +1,11 @@
 #lang scribble/doc
 @require["mz.ss"]
 
-@title[#:tag "Contracts" #:style 'toc]{Contracts}
+@title[#:tag "contracts" #:style 'toc]{Contracts}
 
 This chapter is long on detail and short on the motivation
 and pragmatics of using contracts. See
-@guidesecref["Contracts"] in the Guide for more of the
+@guidesecref["contracts"] in the Guide for more of the
 latter and less of the former.
 
 A @defterm{contract} controls the flow of values to ensure that the

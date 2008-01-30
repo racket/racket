@@ -3,11 +3,11 @@
 @require[scribble/eval]
 @require["guide-utils.ss"]
 
-@title[#:tag "Contracts" #:style 'toc]{Contracts}
+@title[#:tag "contracts" #:style 'toc]{Contracts}
 
 This chapter provides a gentle introduction to PLT Scheme's
 contract system. For the complete details see the
-@refsecref["Contracts"] section in the reference manual.
+@refsecref["contracts"] section in the reference manual.
 
 @local-table-of-contents[]
 
