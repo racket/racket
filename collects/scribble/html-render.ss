@@ -66,6 +66,89 @@
               (loop (substring s (cdar m)))))]
        [else s])))
 
+  (define literal
+    (let ([loc (xml:make-location 0 0 0)])
+      (lambda strings (xml:make-cdata loc loc (apply string-append strings)))))
+  (define (script . body)
+    `(script ((type "text/javascript"))
+       ,(apply literal
+               `("\n"
+                 ,@(map (lambda (x) (if (string? x) x (format "~a" x))) body)
+                 "\n"))))
+
+  #reader scribble/reader
+  (define search-script
+    @script{
+      var search_nodes = null;
+      var last_search_terms = null;
+      function node_to_text(node) {
+        if (node.nodeType == 3) return node.nodeValue;
+        var r = "";
+        var children = node.childNodes;
+        for (var i=0@";" i<children.length@";" i++) {
+          r = r + node_to_text(children[i]);
+        }
+        return r;
+      }
+      function initialize_search() {
+        var all_links = document.getElementsByTagName("a");
+        search_nodes = new Array();
+        for (var i=0@";" i<all_links.length@";" i++)
+          if (all_links[i].className == "indexlink") {
+            all_links[i].flat_text = node_to_text(all_links[i]).toLowerCase();
+            search_nodes.push(all_links[i]);
+          }
+        var search_box = document.getElementById("search_box");
+        if (location.search.indexOf('?q=') == 0) {
+          var search = location.search.substring(3)
+          search_box.value = search;
+        }
+        if (search_box.value != "") do_search(search_box.value);
+        search_box.focus();
+        search_box.select();
+      }
+      window.onload = initialize_search;
+      function do_search(terms) {
+        terms = terms.toLowerCase();
+        if (terms == last_search_terms) return;
+        last_search_terms = terms;
+        terms = terms.split(/ +/);
+        var none = true;
+        for (var i=0@";" i<search_nodes.length@";" i++) {
+          var show = true, curtext = search_nodes[i].flat_text;
+          for (var j=0@";" j<terms.length@";" j++) {
+            if (terms[j] != "" && curtext.indexOf(terms[j]) < 0) {
+              show = false;
+              break;
+            }
+          }
+          if (show) none = false;
+          var style = search_nodes[i].style;
+          var newdisp = show ? "block" : "none";
+          if (newdisp != style.display) style.display = newdisp;
+        }
+        search_box.style.backgroundColor = none ? "#ffe0e0" : "white";
+      }
+      var search_timer = null;
+      function delayed_search(str, event) {
+        if (event && event.keyCode == 13) {
+          do_search(str);
+        } else {
+          if (search_timer != null) {
+            var t = search_timer;
+            search_timer = null;
+            clearTimeout(t);
+          }
+          search_timer = setTimeout(function(){do_search(str)@";"}, 1000);
+        }
+      }})
+
+  #reader scribble/reader
+  (define search-field
+    @`p{Search: @(input ((type "text") (id "search_box")
+                         (onChange "delayed_search(this.value,event);")
+                         (onKeyUp "delayed_search(this.value,event);")))})
+
   ;; ----------------------------------------
   ;;  main mixin
 
@@ -632,7 +715,9 @@
            [else (super render-element e part ri)])))
 
       (define/override (render-table t part ri)
-        `((table ((cellspacing "0")
+        (define index? (eq? 'index (table-style t)))
+        `(,@(if index? `(,search-script ,search-field) '())
+          (table ((cellspacing "0")
                   ,@(case (table-style t)
                       [(boxed)    '((class "boxed"))]
                       [(centered) '((align "center"))]

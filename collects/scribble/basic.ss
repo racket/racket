@@ -208,64 +208,60 @@
                  (string<? (car a) (car b)))]
             [else (string-ci<? (car a) (car b))])))
   (define alpha (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+  (define (rows . rows)
+    (make-table 'index (map (lambda (row)
+                              (list (make-flow (list (make-paragraph row)))))
+                            rows)))
+  (define line-break (make-element 'newline '("/n")))
   (define contents
-    (make-delayed-flow-element
-     (lambda (renderer sec ri)
-       (define l null)
-       (define alpha-starts (make-hash-table))
-       (define (rows . rows)
-         (make-table 'index
-                     (map (lambda (row)
-                            (list (make-flow (list (make-paragraph row)))))
-                          rows)))
-       (hash-table-for-each
-        (let ([parent (collected-info-parent (part-collected-info sec ri))])
-          (if parent
-            (collected-info-info (part-collected-info parent ri))
-            (collect-info-ext-ht (resolve-info-ci ri))))
-        (lambda (k v)
-          (when (and (pair? k) (eq? 'index-entry (car k)))
-            (set! l (cons (cons (cadr k) v) l)))))
-       (set! l (sort l cadr-string-lists<?))
-       (rows
-        (let loop ([i l] [alpha alpha])
-          (define (add-letter let l)
-            (list* (make-element "nonavigation" (list (string let))) " " l))
-          (cond [(null? alpha) null]
-                [(null? i) (add-letter (car alpha) (loop i (cdr alpha)))]
-                [else
-                 (let* ([strs (cadr (car i))]
-                        [letter (if (or (null? strs) (string=? "" (car strs)))
-                                  #f
-                                  (char-upcase (string-ref (car strs) 0)))])
-                   (cond [(not letter) (loop (cdr i) alpha)]
-                         [(char-ci>? letter (car alpha))
-                          (add-letter (car alpha) (loop i (cdr alpha)))]
-                         [(char-ci=? letter (car alpha))
-                          (hash-table-put! alpha-starts (car i) letter)
-                          (list* (make-element
-                                  (make-target-url (format "#alpha:~a" letter)
-                                                   #f)
-                                  (list (string (car alpha))))
-                                 " "
-                                 (loop (cdr i) (cdr alpha)))]
-                         [else (loop (cdr i) alpha)]))]))
-        (list 'nbsp)
-        ((if (null? l) values cdr) ; drop one 'newline
-         (apply append
-                (map (lambda (i)
-                       (define e (make-link-element
-                                  "indexlink" (commas (caddr i)) (car i)))
-                       (list (make-element 'newline '("/n"))
-                             (cond [(hash-table-get alpha-starts i #f)
-                                    => (lambda (let)
-                                         (make-element
-                                          (make-url-anchor
-                                           (format "alpha:~a" (char-upcase let)))
-                                          (list e)))]
-                                   [else e])))
-                     l)))))))
-  (list contents))
+    (lambda (renderer sec ri)
+      (define l null)
+      (define alpha-starts (make-hash-table))
+      (hash-table-for-each
+       (let ([parent (collected-info-parent (part-collected-info sec ri))])
+         (if parent
+           (collected-info-info (part-collected-info parent ri))
+           (collect-info-ext-ht (resolve-info-ci ri))))
+       (lambda (k v)
+         (when (and (pair? k) (eq? 'index-entry (car k)))
+           (set! l (cons (cons (cadr k) v) l)))))
+      (set! l (sort l cadr-string-lists<?))
+      (rows
+       (let loop ([i l] [alpha alpha])
+         (define (add-letter let l)
+           (list* (make-element "nonavigation" (list (string let))) " " l))
+         (cond [(null? alpha) null]
+               [(null? i) (add-letter (car alpha) (loop i (cdr alpha)))]
+               [else
+                (let* ([strs (cadr (car i))]
+                       [letter (if (or (null? strs) (string=? "" (car strs)))
+                                 #f
+                                 (char-upcase (string-ref (car strs) 0)))])
+                  (cond [(not letter) (loop (cdr i) alpha)]
+                        [(char-ci>? letter (car alpha))
+                         (add-letter (car alpha) (loop i (cdr alpha)))]
+                        [(char-ci=? letter (car alpha))
+                         (hash-table-put! alpha-starts (car i) letter)
+                         (list* (make-element
+                                 (make-target-url (format "#alpha:~a" letter) #f)
+                                 (list (string (car alpha))))
+                                " "
+                                (loop (cdr i) (cdr alpha)))]
+                        [else (loop (cdr i) alpha)]))]))
+       (list 'nbsp)
+       (map (lambda (i)
+              (define e
+                (make-link-element "indexlink"
+                                   `(,@(commas (caddr i)) ,line-break)
+                                   (car i)))
+              (cond [(hash-table-get alpha-starts i #f)
+                     => (lambda (let)
+                          (make-element (make-url-anchor
+                                         (format "alpha:~a" (char-upcase let)))
+                                        (list e)))]
+                    [else e]))
+            l))))
+  (list (make-delayed-flow-element contents)))
 
 ;; ----------------------------------------
 
