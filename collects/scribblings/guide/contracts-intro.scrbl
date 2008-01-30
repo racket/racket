@@ -9,7 +9,8 @@
 
 Like a contract between two business partners, a software
 contract is an agreement between two parties. The agreement
-specifies obligations and guarantees for each party.
+specifies obligations and guarantees for each ``product''
+(or value) that is handed from one party to the other.
 
 A contract thus establishes a boundary between the two parties. Whenever a
 value crosses this boundary, the contract monitoring system performs contract
@@ -27,10 +28,11 @@ scheme
 (define amount ...)
 ]
 
-promises to all clients of @scheme[a] that amount will always be a
-positive number. The contract system monitors @scheme[a]'s obligation
-carefully. Every time a client refers to @scheme[amount], the monitor checks
-that the value of @scheme[amount] is indeed a positive number.
+promises to all clients of the above module that amount will
+always be a positive number. The contract system monitors
+@scheme[a]'s obligation carefully. Every time a client
+refers to @scheme[amount], the monitor checks that the value
+of @scheme[amount] is indeed a positive number.
 
 The contracts library is built into the Scheme language, but
 if you wish to use @scheme[scheme/base], you can explicitly
@@ -57,10 +59,10 @@ scheme
 (define amount 0)]
 
 When module @scheme[a] is required, the monitoring
-system will signal a violation of the contract and
+system signals a violation of the contract and
 blame @scheme[a] for breaking its promises.
 
-@ctc-section[#:tag "qamount"]{A more subtle contract violation}
+@ctc-section[#:tag "qamount"]{A subtle contract violation}
 
 Suppose the creator of @scheme[a] had written 
 @schememod[
@@ -72,11 +74,12 @@ scheme
 (define amount 'amount)
 ]
 
-In that case, @scheme[positive?] will report an error, since
-its domain is only numbers. To make the contract capture our
-intentions for all Scheme values, we can ensure that the
-value is both a number and is positive, using an
-@scheme[and/c] contract:
+In that case, the monitoring system applies
+@scheme[positive?] to a symbol, but @scheme[positive?]
+reports an error, because its domain is only numbers. To
+make the contract capture our intentions for all Scheme
+values, we can ensure that the value is both a number and is
+positive, combining the two contracts with @scheme[and/c]:
 
 @schemeblock[
 (provide/contract 

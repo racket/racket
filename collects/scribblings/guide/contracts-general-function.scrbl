@@ -26,14 +26,14 @@ scheme
 ]
 
 Several clients used your module. Others used their
-modules. And all of a sudden one of them sees this error
+modules in turn. And all of a sudden one of them sees this error
 message:
 
 @inset-flow{@schemeerror{bank-client broke the contract (-> ??? any)
 it had with myaccount on deposit; expected <???>, given: -10}}
 
 Clearly, @scheme[bank-client] is a module that uses @scheme[myaccount]
-but what are the @schemeerror{?}s doing there?  Wouldn't it be nice if
+but what is the @schemeerror{???} doing there?  Wouldn't it be nice if
 we had a name for this class of data much like we have string, number,
 and so on?
 
@@ -62,7 +62,7 @@ With this little change, the error message becomes all of the
 sudden quite readable:
 
 @inset-flow{@schemeerror{bank-client broke the contract (-> amount
-any) it had with myaccount on deposit; expected <amount>, given: -10"}}
+any) it had with myaccount on deposit; expected <amount>, given: -10}}
 
 @ctc-section[#:tag "optional"]{Optional arguments}
 
@@ -88,16 +88,18 @@ scheme
                  (build-string rmargin (λ (x) pad))))
 ]
 
- The module exports @scheme[string-pad-center], a function that creates a
- string of a given @scheme[width] with the given string in the center. The
- default fill character is @scheme[#\space]; if the client module requires
- different character, it may call @scheme[string-pad-center] with a third
- argument, a @scheme[char], overwriting the default. 
+ The module exports @scheme[string-pad-center], a function
+ that creates a string of a given @scheme[width] with the
+ given string in the center. The default fill character is
+ @scheme[#\space]; if the client module wishes to use a
+ different character, it may call @scheme[string-pad-center]
+ with a third argument, a @scheme[char], overwriting the
+ default.
 
-The function definition uses optional arguments of
-@scheme[lambda], which is appropriate for this kind of
-functionality. The interesting point here is the formulation
-of the contract for the @scheme[string-pad-center].
+The function definition uses optional arguments, which is
+appropriate for this kind of functionality. The interesting
+point here is the formulation of the contract for the
+@scheme[string-pad-center].
 
 
 The contract combinator @scheme[->*], demands several groups of contracts: 
@@ -111,19 +113,12 @@ arguments: @scheme[char?]. }
 
 @item{The last one is a single contract: the result of the function.}
 }
- Note if a default value does not satisfy a contract, you won't get a contract
- error for this interface. We do trust you; if you can't trust
- yourself, you need to communicate across boundaries for everything you write. 
 
-The contract library does not have built-in combinators to
-specify richer contracts for functions that have optional
-arguments, like functions that have optional arguments where
-the arguments depend on each other.
-
-To specify such contracts combine @scheme[case->] with
-the other function contract combinators, like we did in
-the @scheme[substring1] function above.
-
+ Note if a default value does not satisfy a contract, you
+ won't get a contract error for this interface. In contrast
+ to type systems, we do trust you; if you can't trust
+ yourself, you need to communicate across boundaries for
+ everything you write.
 
 @ctc-section[#:tag "rest-args"]{Rest arguments}
 
@@ -165,11 +160,6 @@ rest argument follows @scheme[#:rest]
   contract demands a list of values; in this specific
   examples, these values must be number.
 
-Finally, you may have noticed that the contract for the function range
-  of @scheme[plus] is also wrapped in a pair of parentheses. The reason
-  for those is that functions can return multiple values not just one, and
-  this is our next topic in this guide. 
-
 @ctc-section[#:tag "keywords"]{Keyword arguments}
 
 Sometimes, a function accepts many arguments and remembering
@@ -182,25 +172,22 @@ GUI and asks the user a yes-or-no question:
 scheme/gui
 
 (define (ask-yes-or-no-question #:question question 
-                                #:default def
+                                #:default answer
                                 #:title title
                                 #:width w
                                 #:height h)
   (define d (new dialog% [label title] [width w] [height h]))
-  (define answer def)
   (define msg (new message% [label question] [parent d]))
   (define (yes) (set! answer #t) (send d show #f))
   (define (no) (set! answer #f) (send d show #f))
   (define yes-b (new button% 
-                     [label "Yes"]
-                     [parent d] 
+                     [label "Yes"] [parent d] 
                      [callback (λ (x y) (yes))]
-                     [style (if def '(border) '())]))
+                     [style (if answer '(border) '())]))
   (define no-b (new button% 
-                    [label "No"] 
-                    [parent d] 
+                    [label "No"] [parent d] 
                     [callback (λ (x y) (no))]
-                    [style (if def '() '(border))]))
+                    [style (if answer '() '(border))]))
   (send d show #t)
   answer)
 
@@ -241,7 +228,7 @@ Of course, many of the parameters in
 have reasonable defaults, and should be made optional:
 @schemeblock[
 (define (ask-yes-or-no-question #:question question 
-                                #:default def
+                                #:default answer
                                 #:title [title "Yes or No?"]
                                 #:width [w 400]
                                 #:height [h 200])
@@ -285,7 +272,7 @@ scheme
 ]
 
 The contract for the exported function @scheme[sqrt.v1] uses the
-@scheme[->d] rather than @scheme[->] function contract. The "d"
+@scheme[->d] rather than @scheme[->] function contract. The ``d''
 stands for @italic{dependent} contract, meaning the contract for the
 function range depends on the value of the argument. 
 
@@ -312,8 +299,8 @@ money but only as much as they have in the account.
 
 Suppose the account module provides the following two functions:
 @schemeblock[
-(code:comment "balance : account -> amount")
-(code:comment "withdraw : account amount -> account")
+balance : (-> account amount)
+withdraw : (-> account amount account)
 ]
 Then, informally, the proper precondition for @scheme[withdraw] is that 
 ``the balance of the given account is greater than or equal to the given (withdrawal) amount.''
@@ -330,7 +317,7 @@ conditions we just discussed:
 @schememod[
 scheme
 
-(code:comment "the contract definitions")
+(code:comment "section 1: the contract definitions")
 (define-struct account (balance))
 (define amount natural-number/c)
   
@@ -343,7 +330,7 @@ scheme
     (and (account? a) (op balance0 (balance a))))
   (flat-named-contract (format msg balance0) ctr))
 
-(code:comment "the exports")
+(code:comment "section 2: the exports")
 (provide/contract 
  [create   (amount . -> . account?)]
  [balance  (account? . -> . amount)]
@@ -356,7 +343,7 @@ scheme
                 ()
                 [result (mk-account-contract acc amt < msg<)])])
 
-(code:comment "the function definitions")
+(code:comment "section 3: the function definitions")
 (define balance account-balance)
   
 (define (create amt) (make-account amt))
@@ -533,7 +520,7 @@ Now suppose we also want to ensure that the first result of
              (values [s (substring-of (list->string fl))]
                      [c (listof char?)]))])
 ]
- Like @scheme[->*], the new combinator uses a function over the
+ Like @scheme[->*], the @scheme[->d] combinator uses a function over the
  argument to create the range contracts. Yes, it doesn't just return one
  contract but as many as the function produces values: one contract per
  value.  In this case, the second contract is the same as before, ensuring
@@ -594,7 +581,7 @@ Here are two uses:
 
 A contract for @scheme[n-step] must specify two aspects of
 @scheme[proc]'s behavior: its arity must include the number of elements
-in @scheme[inits], and it must return either a number of
+in @scheme[inits], and it must return either a number or
 @scheme[#f]. The latter is easy, the former is difficult. At first
 glance, this appears to suggest a contract that assigns a
 @italic{variable-arity} to @scheme[proc]: 

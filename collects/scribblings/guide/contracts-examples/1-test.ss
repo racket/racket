@@ -1,4 +1,4 @@
-#lang mzscheme
+#lang scheme
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2)))
 (require "1.ss" "1b.ss")

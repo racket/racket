@@ -1,6 +1,6 @@
 #lang scheme
 
-;; a contract utility 
+;; a shorthand for use below
 (define-syntax ⇒ 
   (syntax-rules ()
     [(⇒ antecedent consequent) (if antecedent consequent #t)]))

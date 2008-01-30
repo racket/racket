@@ -13,7 +13,7 @@ module that imports the function. If the client module calls
 the function, it sends a value into the ``server''
 module. Conversely, if such a function call ends and the
 function returns a value, the ``server'' module sends a
-value back to the "client" module.
+value back to the ``client'' module.
 
 It is important to keep this picture in mind when you read the explanations
 of the various ways of imposing contracts on functions. 
@@ -45,16 +45,17 @@ arguments, a string and a number, and it promises nothing about the return value
 @item{@scheme[deposit]: The function's contract demands from the client modules
 that they apply it to numbers.  It promises nothing about the return value. }}
 
-If a "client" module that were to apply @scheme[deposit] to
-@scheme['silly], it would violate the contract.  The contract monitoring
-system would flag this violation and blame "client" for breaking the contract
-with @scheme[myaccount]. 
+If a ``client'' module were to apply @scheme[deposit] to
+@scheme['silly], it would violate the contract.  The
+contract monitoring system would catch this violation and
+blame ``client'' for breaking the contract with the above
+module.
 
 @bold{Note:} Instead of @scheme[any] you could also use the
 more specific contract @scheme[void?], which says that the function will
 always return the @scheme[(void)] value. This contract, however, would require
 the contract monitoring system to check the return value every time the function
-is called, even though the "client" module can't do much with this value
+is called, even though the ``client'' module can't do much with this value
 anyway. In contrast, @scheme[any] tells the monitoring system @italic{not}
 to check the return value. Additionally, it tells a potential client that the
 ``server'' module @italic{makes no promises at all} about the function's return
@@ -79,10 +80,10 @@ reader what the name represents (a function) and, if it is a function (or
 some other complex value) what the pieces are supposed to be. This is why
 we use a @scheme[->] to say "hey, expect this to be a function." 
 
-So @scheme[->] says "this is contract for a function." What follows
+So @scheme[->] says ``this is a contract for a function.'' What follows
 in a function contracts are contracts (sub-contracts if you wish) that tell
 the reader what kind of arguments to expect and what kind of a result the
-function will produce. For example, 
+function produces. For example, 
 @schemeblock[
 (provide/contract
  [create (-> string? number? boolean? account?)])
@@ -228,9 +229,7 @@ scheme
   
   (code:comment "convert an amount into a dollar based string")
   [format-nat (-> natural-number/c 
-                  (lambda (result)
-                    (and (string? result)
-                         (has-decimal? string))))])
+                  (and/c string? has-decimal?))])
 ]
 The contract of the exported function @scheme[format-number] specifies that
 the function consumes a number and produces a string. 
@@ -286,8 +285,8 @@ scheme
 The contract @scheme[any/c] accepts any value, and
 @scheme[any] is a keyword that can appear in the range of
 the function contracts (@scheme[->], @scheme[->*], and
-@scheme[->d]), so it is natural to wonder what is the
-difference between these two contracts:
+@scheme[->d]), so it is natural to wonder what the
+difference between these two contracts is:
 @schemeblock[
 (-> integer? any)
 (-> integer? any/c)
@@ -306,8 +305,8 @@ example, this function:
 meets the first contract, but not the second one.}
 
 @item{Relatedly, this means that a call to a function that
-has the first contract is not a tail call. So, for example,
-this program is an infinite loop that takes only a constant
+has the second contract is not a tail call. So, for example,
+the following program is an infinite loop that takes only a constant
 amount of space, but if you replace @scheme[any] with
 @scheme[any/c], it uses up all of the memory available.
 

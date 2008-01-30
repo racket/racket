@@ -67,12 +67,12 @@ or promises that the two fields of a @scheme[posn] structure are
 numbers---when the values flow across the module boundary. 
 
 Thus, if a client calls @scheme[make-posn] on @scheme[10] and
-@scheme['a], the contract system will signal a contract
+@scheme['a], the contract system signals a contract
 violation. 
 
 The creation of @scheme[p-sick] inside of the @scheme[posn] module,
 however, does not violate the contracts. The function @scheme[make-posn] is
-internal so @scheme['a] and @scheme['b] don't cross the module
+used internally so @scheme['a] and @scheme['b] don't cross the module
 boundary. Similarly, when @scheme[p-sick] crosses the boundary of
 @scheme[posn], the contract promises a @scheme[posn?] and nothing
 else. In particular, this check does @italic{not} require that the fields of
@@ -89,10 +89,10 @@ scheme
 ... (posn-x p-sick) ...
 ]
 
-Using @scheme[posn-x] is the only way @scheme[client] can find out what
+Using @scheme[posn-x] is the only way the client can find out what
 a @scheme[posn] contains in the @scheme[x] field. The application of
 @scheme[posn-x] sends @scheme[p-sick] back into the
-@scheme[posn]module and the result value -- @scheme['a] here -- back to
+@scheme[posn] module and the result value -- @scheme['a] here -- back to
 the client, again across the module boundary. At this very point, the contract
 system discovers that a promise is broken. Specifically, @scheme[posn-x]
 doesn't return a number but a symbol and is therefore blamed. 
@@ -102,7 +102,7 @@ doesn't always pinpoint the source of the error. The good news is that the
 error is located in the @scheme[posn] module. The bad news is that the
 explanation is misleading. Although it is true that @scheme[posn-x]
 produced a symbol instead of a number, it is the fault of the programmer who
-reated a @scheme[posn] from symbols, i.e., the programmer who added
+created a @scheme[posn] from symbols, i.e., the programmer who added
 
 @schemeblock[
 (define p-sick (make-posn 'a 'b))
@@ -144,9 +144,8 @@ subtree are smaller than the number in the node, and all of
 the numbers in the right subtree are larger than the number
 in the node.
 
-We can implement implement a search
-function @scheme[in?] that takes advantage of the
-structure of the binary search tree.
+We can implement a search function @scheme[in?] that takes
+advantage of the structure of the binary search tree.
 @schememod[
 scheme
 
@@ -201,7 +200,7 @@ checking the binary search tree contract. In particular, if
 we only checked the contract on the nodes
 that @scheme[in?] looks at, we can still guarantee that
 the tree is at least partially well-formed, but without
-the performance loss.
+changing the complexity.
 
 To do that, we need to
 use @scheme[define-contract-struct] in place
@@ -211,8 +210,8 @@ predicate, and selectors for a new
 structure. Unlike @scheme[define-struct], it also
 defines contract combinators, in this
 case @scheme[node/c] and @scheme[node/dc]. Also unlike 
-@scheme[define-struct], it does not define mutators, making 
-its structs immutable. 
+@scheme[define-struct], it does not allow mutators, making 
+its structs always immutable. 
 
 The @scheme[node/c] function accepts a contract for each
 field of the struct and returns a contract on the

@@ -11,8 +11,8 @@
 
 The contract library assumes that variables exported via
 @scheme[provide/contract] are not assigned to, but does not enforce
-it. Accordingly, if you try to @scheme[set!] those variables, you may
-find unexpected behavior. Consider the following example:
+it. Accordingly, if you try to @scheme[set!] those variables, you 
+may be surprised. Consider the following example:
 
 @interaction[
 (module server scheme

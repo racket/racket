@@ -15,10 +15,9 @@
 Mitchell and McKim's principles for design by contract DbC are derived
   from the 1970s style algebraic specifications. The overall goal of DbC is
   to specify the constructors of an algebra in terms of its
-  observers. While we reformulate Mitchell and McKim's terminology, we
-  retain their terminology of "classes" and "objects" even though we
-  reformulate their examples in an applicative style (as well as an
-  imperative one):
+  observers. While we reformulate Mitchell and McKim's terminology and 
+  we use a mostly applicative, we
+  retain their terminology of "classes" and "objects":
 
 @itemize{
 @item{@bold{Separate queries from commands.}
