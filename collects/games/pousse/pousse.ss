@@ -674,7 +674,7 @@
                         (lambda (l e) (enable-ok)))])
             (send l enable #f)
             (values m l)))
-        (define board-size (make-object slider% "Board Size:" 4 20 game-panel void (current-board-size)))
+        (define board-size (make-object slider% "Board Size:" 3 20 game-panel void (current-board-size)))
         (define-values (x-kind x-robot) (make-player "X"))
         (define-values (o-kind o-robot) (make-player "O"))
         
