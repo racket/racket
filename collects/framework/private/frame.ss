@@ -1018,8 +1018,9 @@
       (define/override (editing-this-file? filename)
         (let ([path-equal?
                (λ (x y)
-                 (equal? (normal-case-path (normalize-path x))
-                         (normal-case-path (normalize-path y))))])
+                 (with-handlers ((exn:fail:filesystem? (λ (x) #f)))
+                   (equal? (normal-case-path (normalize-path x))
+                           (normal-case-path (normalize-path y)))))])
           (let ([this-fn (get-filename)])
             (and this-fn
                  (path-equal? filename (get-filename))))))
