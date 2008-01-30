@@ -170,63 +170,51 @@
                              url (if separate-window? ",new-window" "")))]
        [else (error 'send-url "internal error")])]))
 
-;; Windows -- IE7 has a bug: when launched (either through shell-execute or
-;; directly) it will ignore the fragment for `file:' URLs.  A workaround that
-;; seems to work is to run `explorer.exe' instead.  The problem is described at
-;; http://support.microsoft.com/default.aspx/kb/942172, and when a fix will be
-;; released (and enough time to be widely used), this whole thing should go
-;; away and the simple `shell-eexcute' will work fine.  (See also
-;; http://www.tutorials-win.com/IE/Lauching-HTML/)
+;; Windows has a bug when using `shell-execute' or when running `iexplore.exe'
+;; directly -- it silently drops the fragment and query from URLs that have
+;; them.  This is described at
+;;   http://support.microsoft.com/default.aspx/kb/942172
+;; It seems that the IE7 problem happens either way (`shell-execute' or running
+;; directly) -- but it also happens with firefox when using `shell-execute'.
+;; The current solution is to run `ftype http' to find the default browser
+;; command, if it uses `iexplore.exe', then change it to `explorer.exe', and
+;; run the resulting command directly.  This is described at
+;;   http://www.tutorials-win.com/IE/Lauching-HTML/
+;; Hopefully this works.  One question is whether IE6 will still work fine;
+;; another is other browsers work; and finally, we need to parse the command
+;; and substitute the url for `%1' (if it appears).  If there are other `%'s,
+;; throw an error so we can hack that in too.
+;; Oh and it seems that there is no way to get this to work on Vista, the above
+;; MS page says that the problem is that IE will start a more priviliged one,
+;; handing over the URL -- which, again, gets the fragment+query stripped
+;; away...
 
-(define (using-ie7?)
-  (define (bytes0 bs)
-    (list->bytes (apply append (map (lambda (b) (list b 0)) (bytes->list bs)))))
-  (define (run cmd)
-    (define out (open-output-string))
-    (parameterize ([current-output-port out]
-                   [current-input-port (open-input-string "")]
-                   [current-error-port (open-output-nowhere)])
-      ;; just return #f on errors, since we can still use
-      ;; shell-execute in this case -- better a dropped anchor than no
-      ;; help at all
-      (and (system cmd) (get-output-string out))))
-  (define (get-regdata)
-    (define regfile (make-temporary-file "registry-data-~a"))
-    (dynamic-wind
-      void
-      (lambda ()
-        (and (run (format "regedit /e \"~a\" \"~a\""
-                          regfile
-                          (regexp-replace* #rx"/" keypath "\\\\")))
-             (let ([n (file-size regfile)])
-               (with-input-from-file regfile (lambda () (read-bytes n))))))
-      (lambda () (delete-file regfile))))
-  (define keypath
-    "HKEY_LOCAL_MACHINE/Software/Microsoft/Internet Explorer/Version Vector")
-  (define version-rx
-    (bytes-append (bytes0 #"\r\n\"IE\"=\"") #"([0-9.\0]+)" (bytes0 #"\"\r\n")))
-  (and
-   ;; Is IE the default browser?
-   (cond [(run "ftype http")
-          => (lambda (s)
-               (regexp-match? #px"^(?i:http=\"(.*\\\\|)iexplore.exe\")" s))]
-         [else #f])
-   ;; Get the registry data and check the version.  We could convert the UTF-16
-   ;; result to UTF-8, but we're looking for a simple pattern, so just search
-   ;; for the expected UTF-16 sequence directly.
-   (cond [(regexp-match version-rx (get-regdata))
-          => (lambda (m) (regexp-match? #rx#"^7\0\\.\0" (cadr m)))]
-         [else #f])))
+(define windows-http-command
+  (delay (let ([out (open-output-string)])
+           (parameterize ([current-output-port out]
+                          [current-input-port (open-input-string "")]
+                          [current-error-port (open-output-nowhere)])
+             (and (system "ftype http")
+                  (cond [(regexp-match #rx"(?:^|\r?\n)?http=([^\r\n]+)\r?\n"
+                                       (get-output-string out))
+                         => cadr]
+                        [else #f]))))))
 
-(define send-url/win-proc
-  (delay (let ([explorer (and (using-ie7?) (find-exe "explorer.exe"))])
-           (if explorer
-             ;; looks like explorer.exe always returns an error code
-             (lambda (url) (browser-run #:ignore-exit-code #t explorer url))
-             (lambda (url)
-               (shell-execute #f url "" (current-directory) 'SW_SHOWNORMAL))))))
-
-(define (send-url/win url) ((force send-url/win-proc) url))
+(define (send-url/win url)
+  (let ([cmd (force windows-http-command)])
+    (browser-run
+     #:shell #t #:ignore-exit-code #t
+     (cond [(and (or (not cmd)
+                     (regexp-match? #px"(?:^|[/\\\\])(?i:iexplore.exe)" cmd))
+                 ;; IE: try to find exeplorer instead
+                 (find-exe "explorer.exe"))
+            => (lambda (exe) (format "\"~a\" ~a" exe url))]
+           [(not (regexp-match? #rx"%" cmd))
+            (format "~a ~a" cmd url)]
+           [(regexp-match? #rx"%[^1]" cmd)
+            (error 'send-url/win "Unknown browser configuration: ~s\n~a"
+                   cmd "*** Please report this as a bug!")]
+           [else (regexp-replace* #rx"%1" cmd url)]))))
 
 ;; Process helper
 (define (browser-run #:shell [shell? #f] #:ignore-exit-code [nowait? #f] . args)
