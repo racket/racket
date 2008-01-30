@@ -1169,7 +1169,7 @@ void scheme_save_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info)
 
 static void do_append_module_rename(Scheme_Object *src, Scheme_Object *dest,
 				    Scheme_Object *old_midx, Scheme_Object *new_midx,
-                                    int do_pes)
+                                    int do_pes, int do_unm)
 {
   Scheme_Hash_Table *ht, *hts, *drop_ht;
   Scheme_Object *v;
@@ -1193,6 +1193,24 @@ static void do_append_module_rename(Scheme_Object *src, Scheme_Object *dest,
       }
       SCHEME_CDR(last) = ((Module_Renames *)dest)->shared_pes;
       ((Module_Renames *)dest)->shared_pes = first;
+    }
+  }
+
+  if (do_unm) {
+    if (!SCHEME_NULLP(((Module_Renames *)src)->unmarshal_info)) {
+      Scheme_Object *first = NULL, *last = NULL, *pr, *l;
+      for (l = ((Module_Renames *)src)->unmarshal_info; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+        pr = scheme_make_pair(SCHEME_CAR(l), scheme_null);
+        if (last)
+          SCHEME_CDR(last) = pr;
+        else
+          first = pr;
+        last = pr;
+      }
+      SCHEME_CDR(last) = ((Module_Renames *)dest)->unmarshal_info;
+      ((Module_Renames *)dest)->unmarshal_info = first;
+
+      ((Module_Renames *)dest)->needs_unmarshal = 1;
     }
   }
 
@@ -1272,9 +1290,9 @@ static void do_append_module_rename(Scheme_Object *src, Scheme_Object *dest,
   }
 }
 
-void scheme_append_module_rename(Scheme_Object *src, Scheme_Object *dest)
+void scheme_append_module_rename(Scheme_Object *src, Scheme_Object *dest, int do_unm)
 {
-  do_append_module_rename(src, dest, NULL, NULL, 1);
+  do_append_module_rename(src, dest, NULL, NULL, 1, do_unm);
 }
 
 void scheme_remove_module_rename(Scheme_Object *mrn,
@@ -1346,7 +1364,7 @@ Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn,
   nmrn = scheme_make_module_rename(0, mzMOD_RENAME_NORMAL, NULL);
 
   /* use "append" to copy most info: */
-  do_append_module_rename(mrn, nmrn, old_midx, new_midx, 0);
+  do_append_module_rename(mrn, nmrn, old_midx, new_midx, 0, 0);
 
   /* Manually copy unmarshal_infos, where we have to shift anyway: */
 
@@ -1371,7 +1389,11 @@ Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn,
     l = SCHEME_CDR(l);
   }
   ((Module_Renames *)nmrn)->shared_pes = nl;
-  
+
+  if (((Module_Renames *)mrn)->needs_unmarshal) {
+    ((Module_Renames *)nmrn)->needs_unmarshal = 1;
+  }  
+
   return nmrn;
 }
 

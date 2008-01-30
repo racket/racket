@@ -44,8 +44,10 @@
   ;; Reload anything that's not up to date:
   (check-latest mod))
 
+(define (notify re? path)
+  (fprintf (current-error-port) " [~aloading ~a]\n" (if re? "re-" "") path))
+
 (define ((enter-load/use-compiled orig re?) path name)
-  (fprintf (current-error-port) " [~aloading ~a]\n" (if re? "re-" "") path)
   (if name
       ;; Module load:
       (let ([code (get-module-code path
@@ -55,7 +57,9 @@
                                        (compile e)))
                                    (lambda (ext loader?)
                                      (load-extension ext)
-                                     #f))]
+                                     #f)
+                                   #:notify (lambda (chosen)
+                                              (notify re? chosen)))]
             [path (normal-case-path
                    (simplify-path
                     (path->complete-path path
@@ -71,7 +75,9 @@
         ;; Evaluate the module:
         (eval code))
       ;; Not a module:
-      (orig path name)))
+      (begin
+        (notify re? path)
+        (orig path name))))
 
 (define (get-timestamp path)
   (file-or-directory-modify-seconds path #f (lambda () -inf.0)))

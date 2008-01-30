@@ -67,7 +67,8 @@
 
   (define (get-module-code path
                            [sub-path "compiled"] [compiler compile] [extension-handler #f] 
-                           #:choose [choose (lambda (src zo so) #f)])
+                           #:choose [choose (lambda (src zo so) #f)]
+                           #:notify [notify void])
     (unless (path-string? path)
       (raise-type-error 'get-module-code "path or string (sans nul)" path))
     (let*-values ([(path) (resolve path)]
@@ -95,6 +96,7 @@
           [(or (eq? prefer 'zo)
                (and (not prefer)
                     (date>=? zo path-d)))
+           (notify zo)
            (read-one path zo #f)]
           ;; Maybe there's an .so? Use it only if we don't prefer source.
           [(or (eq? prefer 'so)
@@ -102,14 +104,17 @@
                     (or (not path-d)
                         (date>=? so path-d))))
            (if extension-handler
-             (extension-handler so #f)
-             (raise (make-exn:get-module-code
-                     (format "get-module-code: cannot use extension file; ~e" so)
-                     (current-continuation-marks)
-                     so)))]
+               (begin
+                 (notify so)
+                 (extension-handler so #f))
+               (raise (make-exn:get-module-code
+                       (format "get-module-code: cannot use extension file; ~e" so)
+                       (current-continuation-marks)
+                       so)))]
           ;; Use source if it exists
           [(or (eq? prefer 'src)
                path-d)
+           (notify path)
            (with-dir (lambda () (compiler (read-one path path #t))))]
           ;; Report a not-there error
           [else (raise (make-exn:get-module-code

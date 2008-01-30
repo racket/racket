@@ -299,7 +299,8 @@
 (test #f immutable? (list* 1 null))
 (test #f immutable? (list* 1 2 null))
 (test #f immutable? 1)
-(test #f immutable? #(1 2 3))
+(test #t immutable? #(1 2 3))
+(test #f immutable? (vector 1 2 3))
 (test #f immutable? #())
 (test #f immutable? (string-copy "hi"))
 
@@ -1289,7 +1290,7 @@
 (err/rt-test (vector-set! #(1 2 3) (expt 2 100) 'x) exn:application:mismatch?)
 (err/rt-test (vector-set! '(1 2 3) 2 'x))
 (err/rt-test (vector-set! #(1 2 3) "2" 'x))
-(define v (quote #(1 2 3)))
+(define v (vector 1 2 3))
 (vector-fill! v 0)
 (test (quote #(0 0 0)) 'vector-fill! v)
 (arity-test vector-fill! 2 2)

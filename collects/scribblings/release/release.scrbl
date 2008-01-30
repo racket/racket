@@ -8,11 +8,11 @@
 
 @title{Release Notes}
 
-@itemize{
+@itemize[#:style "compact"]{
 
  @item{@rl-link['("drscheme" "HISTORY.txt")]{DrScheme}}
  @item{@rl-link['("mzscheme" "HISTORY.txt")]{MzScheme}
-       @itemize{
+       @itemize[#:style "compact"]{
          @item{@rl-link['("mzscheme" "MzScheme_4.txt")]{Porting from v3xx to v4.x}}
          @item{@rl-link['("mzscheme" "MzScheme_300.txt")]{Porting from v2xx to v3xx}}
          @item{@rl-link['("mzscheme" "MzScheme_200.txt")]{Porting from v1xx to v2xx}}

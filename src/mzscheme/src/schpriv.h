@@ -675,7 +675,7 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
 Scheme_Object *scheme_get_kernel_modidx(void);
 void scheme_remove_module_rename(Scheme_Object *mrn,
 				 Scheme_Object *localname);
-void scheme_append_module_rename(Scheme_Object *src, Scheme_Object *dest);
+void scheme_append_module_rename(Scheme_Object *src, Scheme_Object *dest, int with_unmarshal);
 void scheme_list_module_rename(Scheme_Object *src, Scheme_Hash_Table *ht);
 
 Scheme_Object *scheme_rename_to_stx(Scheme_Object *rn);

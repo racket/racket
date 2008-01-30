@@ -718,7 +718,7 @@ void scheme_save_initial_module_set(Scheme_Env *env)
     REGISTER_SO(initial_renames);
   }
   initial_renames = scheme_make_module_rename(0, mzMOD_RENAME_NORMAL, NULL);
-  scheme_append_module_rename(env->rename, initial_renames);
+  scheme_append_module_rename(env->rename, initial_renames, 1);
 
   /* Clone variable bindings: */
   if (!initial_toplevel) {
@@ -752,7 +752,7 @@ void scheme_install_initial_module_set(Scheme_Env *env)
     rn = scheme_make_module_rename(0, mzMOD_RENAME_TOPLEVEL, NULL);
     env->rename = rn;
   }
-  scheme_append_module_rename(initial_renames, env->rename);
+  scheme_append_module_rename(initial_renames, env->rename, 1);
 
   /* Copy toplevel: */
   {
@@ -1127,28 +1127,28 @@ static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Obj
     brn = scheme_make_module_rename(0, mzMOD_RENAME_TOPLEVEL, NULL);
     env->rename = brn;
   }
-  scheme_append_module_rename(rn, brn);
+  scheme_append_module_rename(rn, brn, 0);
 
   brn = env->exp_env->rename;
   if (!brn) {
     brn = scheme_make_module_rename(1, mzMOD_RENAME_TOPLEVEL, NULL);
     env->exp_env->rename = brn;
   }
-  scheme_append_module_rename(et_rn, brn);
+  scheme_append_module_rename(et_rn, brn, 0);
 
   brn = env->template_env->rename;
   if (!brn) {
     brn = scheme_make_module_rename(-1, mzMOD_RENAME_TOPLEVEL, NULL);
     env->template_env->rename = brn;
   }
-  scheme_append_module_rename(tt_rn, brn);
+  scheme_append_module_rename(tt_rn, brn, 0);
 
   brn = env->dt_rename;
   if (!brn) {
     brn = scheme_make_module_rename(MZ_LABEL_PHASE, mzMOD_RENAME_TOPLEVEL, NULL);
     env->dt_rename = brn;
   }
-  scheme_append_module_rename(dt_rn, brn);
+  scheme_append_module_rename(dt_rn, brn, 0);
 
   return scheme_void;
 }
@@ -2131,7 +2131,7 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
 
       v = scheme_stx_to_rename(m->rn_stx);
       rn = scheme_make_module_rename(0, mzMOD_RENAME_NORMAL, NULL);
-      scheme_append_module_rename(v, rn);
+      scheme_append_module_rename(v, rn, 1);
       menv->rename = rn;
       if (!menv->marked_names) {
 	Scheme_Hash_Table *mn;
@@ -2207,7 +2207,7 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
 
       v = scheme_stx_to_rename(m->et_rn_stx);
       rn = scheme_make_module_rename(1, mzMOD_RENAME_NORMAL, NULL);
-      scheme_append_module_rename(v, rn);
+      scheme_append_module_rename(v, rn, 1);
       menv->exp_env->rename = rn;
       if (!menv->exp_env->marked_names) {
 	Scheme_Hash_Table *mn;
@@ -2278,7 +2278,7 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
 
       v = scheme_stx_to_rename(m->dt_rn_stx);
       rn = scheme_make_module_rename(MZ_LABEL_PHASE, mzMOD_RENAME_NORMAL, NULL);
-      scheme_append_module_rename(v, rn);
+      scheme_append_module_rename(v, rn, 1);
       menv->dt_rename = rn;
       if (!menv->label_env->marked_names) {
 	Scheme_Hash_Table *mn;
@@ -8100,28 +8100,28 @@ top_level_require_execute(Scheme_Object *data)
     brn = scheme_make_module_rename(0, mzMOD_RENAME_TOPLEVEL, NULL);
     env->rename = brn;
   }
-  scheme_append_module_rename(rn, brn);
+  scheme_append_module_rename(rn, brn, 0);
   
   brn = env->exp_env->rename;
   if (!brn) {
     brn = scheme_make_module_rename(1, mzMOD_RENAME_TOPLEVEL, NULL);
     env->exp_env->rename = brn;
   }
-  scheme_append_module_rename(et_rn, brn);
+  scheme_append_module_rename(et_rn, brn, 0);
 
   brn = env->template_env->rename;
   if (!brn) {
     brn = scheme_make_module_rename(-1, mzMOD_RENAME_TOPLEVEL, NULL);
     env->template_env->rename = brn;
   }
-  scheme_append_module_rename(tt_rn, brn);
+  scheme_append_module_rename(tt_rn, brn, 0);
 
   brn = env->dt_rename;
   if (!brn) {
     brn = scheme_make_module_rename(MZ_LABEL_PHASE, mzMOD_RENAME_TOPLEVEL, NULL);
     env->dt_rename = brn;
   }
-  scheme_append_module_rename(dt_rn, brn);
+  scheme_append_module_rename(dt_rn, brn, 0);
 
   return scheme_void;
 }

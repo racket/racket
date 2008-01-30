@@ -45,6 +45,12 @@
                (make-element "tocsubseclink"
                              (list label))))))
 
+(define (make-spacer)
+  (make-toc-element
+   #f
+   null
+   (list 'nbsp)))
+
 (define (build-contents all?)
   (let* ([dirs (find-relevant-directories '(scribblings))]
          [infos (map get-info/full dirs)]
@@ -136,13 +142,14 @@
 
       (to-toc "master-index/index.html"
               "Master Index")
-      (make-toc-element
-       #f
-       null
-       (list 'nbsp))
+      (make-spacer)
       (to-toc (build-path (find-doc-dir) "license/index.html")
               "License")
       (to-toc (build-path (find-doc-dir) "acks/index.html")
               "Acknowledgments")
       (to-toc (build-path (find-doc-dir) "release/index.html")
-              "Release Notes")))))
+              "Release Notes")
+      (make-spacer)
+      (to-toc (format "http://bugs.plt-scheme.org/?v=~a" (version))
+              "Report a Bug")))))
+
