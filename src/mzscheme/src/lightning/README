@@ -31,8 +31,6 @@ This variant of GNU Lightning version 1.2 is modified for MzScheme:
    On x86, there are aso _fppush variants that ignore the provided
    registers and work in terms of the FP stack, instead.
 
- * The x86_64 FP support is based on lightning 1.3.
-
 ----------------------------------------
 
 GNU Lightning authors:
