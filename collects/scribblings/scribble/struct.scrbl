@@ -551,13 +551,23 @@ only during the @techlink{collect pass}.
 
 }
 
-@defproc[(resolve-get [ri resolve-info?] [key any/c])
+@defproc[(resolve-get [p part?] [ri resolve-info?] [key any/c])
          void?]{
 
 Extract information during the @techlink{resolve pass} or
-@techlink{render pass} from @scheme[ri], where the information was
-previously registered during the @techlink{collect pass}. See also
-@secref["passes"].
+@techlink{render pass} for @scheme[p] from @scheme[ri], where the
+information was previously registered during the @techlink{collect
+pass}. See also @secref["passes"].
+
+}
+
+@defproc[(resolve-get-keys [p part?] [ri resolve-info?] 
+                           [pred (any/c . -> . any/c)])
+         list?]{
+
+Applies @scheme[pred] to each key mapped for @scheme[p] in
+@scheme[ri], returning a list of all keys for which @scheme[pred]
+returns a true value.
 
 }
 

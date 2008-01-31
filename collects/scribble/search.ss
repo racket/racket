@@ -4,7 +4,8 @@
            setup/main-collects
            syntax/modcode)
 
-  (provide find-scheme-tag)
+  (provide find-scheme-tag
+           intern-taglet)
 
   (define module-info-cache (make-hash-table))
 
@@ -16,6 +17,24 @@
        [else
         (module-path-index-join name 
                                 (module-path-index-rejoin base rel-to))])))
+
+  (define interned (make-hash-table 'equal 'weak))
+  
+  (define (intern-taglet v)
+    (let ([v (if (list? v)
+                 (map intern-taglet v)
+                 v)])
+      (if (or (string? v)
+              (bytes? v)
+              (list? v))
+          (let ([b (hash-table-get interned v #f)])
+            (if b
+                (weak-box-value b)
+                (begin
+                  (hash-table-put! interned v (make-weak-box v))
+                  v)))
+          v)))
+     
 
   ;; mode is #f, 'for-label, or 'for-run
   (define (find-scheme-tag part ri stx/binding mode)
@@ -61,12 +80,11 @@
                    [queue (cdr queue)])
                (let* ([rmp (module-path-index-resolve mod)]
                       [eb (and here?
-                               (format "~a::~a"
-                                       (let ([p (resolved-module-path-name rmp)])
-                                         (if (path? p)
-                                             (path->main-collects-relative p)
-                                             p))
-                                       id))])
+                               (list (let ([p (resolved-module-path-name rmp)])
+                                       (if (path? p)
+                                           (intern-taglet (path->main-collects-relative p))
+                                           p))
+                                     id))])
                  (when (and eb
                             (not search-key))
                    (set! search-key eb))

@@ -179,7 +179,7 @@
 
       (define/public (part-whole-page? p ri)
         (let ([dest (resolve-get p ri (car (part-tags p)))])
-          (caddr dest)))
+          (dest-page? dest)))
 
       (define/public (current-part-whole-page? d)
         (eq? d (current-top-part)))
@@ -189,21 +189,38 @@
                     (let ([key (generate-tag t ci)])
                       (collect-put! ci
                                     key
-                                    (list (path->relative (current-output-file))
-                                          (or (part-title-content d)
-                                              '("???"))
-                                          (current-part-whole-page? d)
-                                          (format "~a" key)))))
+                                    (vector (path->relative (current-output-file))
+                                            (or (part-title-content d)
+                                                '("???"))
+                                            (current-part-whole-page? d)
+                                            key))))
                   (part-tags d)))
 
       (define/override (collect-target-element i ci)
         (let ([key (generate-tag (target-element-tag i) ci)])
           (collect-put! ci
                         key
-                        (list (path->relative (current-output-file))
-                              #f 
-                              (page-target-element? i)
-                              (format "~a" key)))))
+                        (vector (path->relative (current-output-file))
+                                #f 
+                                (page-target-element? i)
+                                key))))
+
+      (define (dest-path dest)
+        (if (vector? dest) ; temporary
+            (vector-ref dest 0)
+            (list-ref dest 0)))
+      (define (dest-title dest)
+        (if (vector? dest)
+            (vector-ref dest 1)
+            (list-ref dest 1)))
+      (define (dest-page? dest)
+        (if (vector? dest)
+            (vector-ref dest 2)
+            (list-ref dest 2)))
+      (define (dest-anchor dest)
+        (if (vector? dest)
+            (vector-ref dest 3)
+            (list-ref dest 3)))
       
       ;; ----------------------------------------
 
@@ -211,10 +228,10 @@
         (let ([dest (resolve-get #f ri tag)])
           (if dest
               (values
-               (relative->path (car dest))
-               (if (caddr dest)
+               (relative->path (dest-path dest))
+               (if (dest-page? dest)
                    #f
-                   (anchor-name (cadddr dest))))
+                   (anchor-name (dest-anchor dest))))
               (values #f #f))))
 
       ;; ----------------------------------------
@@ -249,14 +266,14 @@
                                      (td
                                       (a ((href ,(let ([dest (resolve-get p ri (car (part-tags p)))])
                                                    (format "~a~a~a" 
-                                                           (from-root (relative->path (car dest))
+                                                           (from-root (relative->path (dest-path dest))
                                                                       (get-dest-directory))
-                                                           (if (caddr dest)
+                                                           (if (dest-page? dest)
                                                                ""
                                                                "#")
-                                                           (if (caddr dest)
+                                                           (if (dest-page? dest)
                                                                ""
-                                                               (anchor-name (cadddr dest))))))
+                                                               (anchor-name (dest-anchor dest))))))
                                           (class ,(if (eq? p mine)
                                                       "tocviewselflink"
                                                       "tocviewlink")))
@@ -629,19 +646,19 @@
             (let ([dest (resolve-get part ri (link-element-tag e))])
               (if dest
                   `((a ((href ,(format "~a~a~a" 
-                                       (from-root (relative->path (car dest))
+                                       (from-root (relative->path (dest-path dest))
                                                   (get-dest-directory))
-                                       (if (caddr dest)
+                                       (if (dest-page? dest)
                                            ""
                                            "#")
-                                       (if (caddr dest)
+                                       (if (dest-page? dest)
                                            ""
-                                           (anchor-name (cadddr dest)))))
+                                           (anchor-name (dest-anchor dest)))))
                         ,@(if (string? (element-style e))
                               `((class ,(element-style e)))
                               null))
                        ,@(if (null? (element-content e))
-                             (render-content (strip-aux (cadr dest)) part ri)
+                             (render-content (strip-aux (dest-title dest)) part ri)
                              (render-content (element-content e) part ri))))
                   (begin 
                     (when #f

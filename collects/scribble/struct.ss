@@ -124,7 +124,9 @@
                         (symbol? (car s))
                         (pair? (cdr s))
                         (or (string? (cadr s))
-                            (generated-tag? (cadr s)))
+                            (generated-tag? (cadr s))
+                            (and (pair? (cadr s))
+                                 (list? (cadr s))))
                         (null? (cddr s))))
 
   (provide flow-element?)
@@ -356,9 +358,9 @@
           (list (car tg)
                 (let ([tags (collect-info-tags ci)])
                   (or (hash-table-get tags t #f)
-                      (let ([key (format "gentag:~a~a" 
-                                         (collect-info-gen-prefix ci)
-                                         (hash-table-count tags))])
+                      (let ([key (list* 'gentag
+                                        (hash-table-count tags)
+                                        (collect-info-gen-prefix ci))])
                         (hash-table-put! tags t key)
                         key)))))
         tg))
@@ -406,8 +408,12 @@
        [(and (link-element? c)
              (null? (element-content c)))
         (let ([dest (resolve-get sec ri (link-element-tag c))])
+          ;; FIXME: this is specific to renderer
           (if dest
-              (content->string (strip-aux (cadr dest)) renderer sec ri)
+              (content->string (strip-aux (if (pair? dest)
+                                              (cadr dest)
+                                              (vector-ref dest 1)))
+                               renderer sec ri)
               "???"))]
        [(element? c) (content->string (element-content c) renderer sec ri)]
        [(delayed-element? c) 

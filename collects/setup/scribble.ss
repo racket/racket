@@ -386,6 +386,7 @@
                       (info-out-time . > . (current-seconds)))])
             (when (and (verbose) need-out-write?)
               (fprintf (current-error-port) " [New out ~a]\n" (doc-src-file doc)))
+            (gc-point)
             (make-info doc
                        sci
                        defs
@@ -450,7 +451,12 @@
                 (delete-file (build-path dir f)))))
           (send renderer render (list v) (list dest-dir) ri)
           (set-info-time! info (/ (current-inexact-milliseconds) 1000))
+          (gc-point)
           (void))))))
+
+(define (gc-point)
+  ;; Forcing a GC on document boundaries helps keep peak memory use down.
+  (collect-garbage))
 
 (define-namespace-anchor anchor)
 

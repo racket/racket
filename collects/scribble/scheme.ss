@@ -182,9 +182,9 @@
                                        (lambda (c)
                                          (make-element "highlighted" (list c)))
                                        values)
-                                   (if color?
+                                   (if (and color? cls)
                                        (make-element cls (list v))
-                                       (make-element #f (list v))))
+                                       v))
                                   content))
               (set! dest-col (+ dest-col len))]))]))
       (define advance

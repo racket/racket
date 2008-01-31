@@ -338,15 +338,14 @@
           (annote-exporting-library
            (to-element (make-just-context name stx-id))))))
 
-  (define (libs->str libs)
+  (define (libs->taglet libs)
     (and (pair? libs)
-         (format "~a"
-                 (let ([p (resolved-module-path-name
-                           (module-path-index-resolve
-                            (module-path-index-join (car libs) #f)))])
-                   (if (path? p)
-                       (path->main-collects-relative p)
-                       p)))))
+         (let ([p (resolved-module-path-name
+                   (module-path-index-resolve
+                    (module-path-index-join (car libs) #f)))])
+           (if (path? p)
+               (intern-taglet (path->main-collects-relative p))
+               p))))
 
   (define (id-to-target-maker id dep?)
     (*id-to-target-maker 'def id dep?))
@@ -374,23 +373,22 @@
                                      "no declared exporting libraries for definition"
                                      id)))
              (if e
-                 (let* ([lib-str (libs->str (exporting-libraries-libs e))]
+                 (let* ([lib-taglet (libs->taglet (exporting-libraries-libs e))]
                         [tag (list (if sig
                                        (case sym
                                          [(def) 'sig-val]
                                          [(form) 'sig-def])
                                        sym)
-                                   (format "~a::~a~a~a"
-                                           lib-str
-                                           (if sig (syntax-e (sig-id sig)) "")
-                                           (if sig "::" "")
-                                           (syntax-e id)))])
+                                   (append
+                                    (list lib-taglet)
+                                    (if sig (list (syntax-e (sig-id sig))) null)
+                                    (list (syntax-e id))))])
                    (if (or sig (not dep?))
                        (list (mk tag))
                        (list (make-target-element
                               #f
                               (list (mk tag))
-                              `(dep ,(format "~a::~a" lib-str (syntax-e id)))))))
+                              `(dep ,(list lib-taglet (syntax-e id)))))))
                  content)))
          (lambda () (car content))
          (lambda () (car content))))))
@@ -405,9 +403,9 @@
       (make-delayed-element
        (lambda (renderer sec ri)
          (let* ([tag (find-scheme-tag sec ri sig 'for-label)]
-                [str (and tag (format "~a::~a" (cadr tag) elem))]
-                [vtag (and tag `(sig-val ,str))]
-                [stag (and tag `(sig-form ,str))]
+                [taglet (and tag (append (cadr tag) (list elem)))]
+                [vtag (and tag `(sig-val ,taglet))]
+                [stag (and tag `(sig-form ,taglet))]
                 [sd (and stag (resolve-get/tentative sec ri stag))])
            (list
             (make-element
@@ -466,7 +464,7 @@
 
   (define (method-tag vtag sym)
     (list 'meth
-          (format "~a::~a" (cadr vtag) sym)))
+          (list (cadr vtag) sym)))
 
   ;; ----------------------------------------
 
@@ -1767,9 +1765,8 @@
 
   (define (doc-prefix doc s)
     (if doc
-        (format "~a:~a" 
-                (module-path-prefix->string doc)
-                s)
+        (list (module-path-prefix->string doc)
+              s)
         s))
 
   (define (secref s #:underline? [u? #t] #:doc [doc #f])
@@ -1956,7 +1953,7 @@
     (let ([b (identifier-label-binding id)])
       (list (let ([p (resolved-module-path-name (module-path-index-resolve (caddr b)))])
               (if (path? p)
-                  (path->main-collects-relative p)
+                  (intern-taglet (path->main-collects-relative p))
                   p))
             (cadddr b)
             (list-ref b 5))))

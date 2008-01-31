@@ -180,7 +180,9 @@
   (let ([key (make-generated-tag)]
         [content (decode-content s)])
     (record-index (list (content->string content))
-                  (list (make-element #f content))
+                  (if (= 1 (length content))
+                      content
+                      (list (make-element #f content)))
                   key
                   content)))
 

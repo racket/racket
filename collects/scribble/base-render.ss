@@ -70,7 +70,7 @@
                                    (make-hash-table 'equal)
                                    (make-hash-table)
                                    (make-hash-table)
-                                   ""
+                                   null
                                    (make-hash-table)
                                    null)])
         (start-collect ds fns ci)
@@ -87,10 +87,9 @@
                    (collect-info-parts ci)
                    (collect-info-tags ci)
                    (if (part-tag-prefix d)
-                     (string-append (collect-info-gen-prefix ci)
-                                    (part-tag-prefix d)
-                                    ":")
-                     (collect-info-gen-prefix ci))
+                       (append (collect-info-gen-prefix ci)
+                               (list (part-tag-prefix d)))
+                       (collect-info-gen-prefix ci))
                    (collect-info-relatives ci)
                    (cons d (collect-info-parents ci)))])
         (when (part-title-content d)
@@ -115,14 +114,20 @@
         (let ([prefix (part-tag-prefix d)])
           (for ([(k v) (collect-info-ht p-ci)])
             (when (cadr k)
-              (collect-put! ci (if prefix (convert-key prefix k) k) v))))))
+              (collect-put! ci (if prefix
+                                   (convert-key prefix k) 
+                                   k) 
+                            v))))))
 
     (define/private (convert-key prefix k)
       (case (car k)
         [(part tech)
-         (if (string? (cadr k))
-           (list (car k) (string-append prefix ":" (cadr k)))
-           k)]
+         (let ([rhs (cadr k)])
+           (if (or (string? rhs) (pair? rhs))
+               (list (car k) (cons prefix (if (pair? rhs)
+                                              rhs
+                                              (list rhs))))
+               k))]
         [(index-entry)
          (let ([v (convert-key prefix (cadr k))])
            (if (eq? v (cadr k)) k (list 'index-entry v)))]
