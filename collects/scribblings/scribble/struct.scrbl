@@ -446,7 +446,9 @@ The @scheme[sizer] field is a procedure that produces a substitute
 determining the delayed element's width (see @scheme[element-width]).
 
 The @scheme[plain] field is a procedure that produces a substitute
-@techlink{element} when needed before the @techlink{collect pass}.
+@techlink{element} when needed before the @techlink{collect pass},
+such as when @scheme[element->string] is used before the @tech{collect
+pass}.
 
 }
 
