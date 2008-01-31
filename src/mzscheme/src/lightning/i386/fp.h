@@ -33,10 +33,6 @@
 #ifndef __lightning_asm_fp_h
 #define __lightning_asm_fp_h
 
-#ifdef JIT_X86_64___
-# include "fp-64.h"
-#else
-
 /* We really must map the x87 stack onto a flat register file.  In practice,
    we can provide something sensible and make it work on the x86 using the
    stack like a file of eight registers.
@@ -126,85 +122,93 @@
          *((float *) _jit.x.pc) = (float) immf, \
          _jit.x.uc_pc += sizeof (float),       \
         jit_ldr_f((rd), _ESP),                 \
-        ADDLir(4, _ESP))
+        ADDQir(4, _ESP))
 
 union jit_double_imm {
   double d;
   int i[2];
 };
 
-#define jit_movi_d(rd,immd)                                                            \
+#ifdef JIT_X86_64
+# define jit_double_as_long(v) (*(double *)(_jit.x.uc_pc) = v, *(long *)(_jit.x.uc_pc))
+# define _jit_push_d(immd) \
+  (MOVQir(jit_double_as_long(immd), JIT_REXTMP),		\
+   PUSHQr(JIT_REXTMP))
+# define FPX() _REX(0,0,0)
+#else
+# define _jit_push_d(immd)                                                              \
         (_O (0x68),                                                                    \
          _jit.x.uc_pc[4] = 0x68,                                                       \
          ((union jit_double_imm *) (_jit.x.uc_pc + 5))->d = (double) immd,             \
          *((int *) _jit.x.uc_pc) = ((union jit_double_imm *) (_jit.x.uc_pc + 5))->i[1],        \
-         _jit.x.uc_pc += 9,                                                            \
+         _jit.x.uc_pc += 9)
+# define FPX() ((void) 0)
+#endif
+
+#define jit_movi_d(rd,immd)                                                            \
+        (_jit_push_d(immd),                                                            \
         jit_ldr_d((rd), _ESP),                                                         \
-        ADDLir(8, _ESP))
+        ADDQir(8, _ESP))
 
 #define jit_movi_d_fppush(rd,immd)                                                            \
-        (_O (0x68),                                                                    \
-         _jit.x.uc_pc[4] = 0x68,                                                       \
-         ((union jit_double_imm *) (_jit.x.uc_pc + 5))->d = (double) immd,             \
-         *((int *) _jit.x.uc_pc) = ((union jit_double_imm *) (_jit.x.uc_pc + 5))->i[1],        \
-         _jit.x.uc_pc += 9,                                                            \
+        (_jit_push_d(immd),                                                            \
         jit_ldr_d_fppush((rd), _ESP),                                                         \
-        ADDLir(8, _ESP))
+        ADDQir(8, _ESP))
 
 #define jit_ldi_f(rd, is)                              \
   ((rd) == 0 ? (FSTPr (0), FLDSm((is), 0, 0, 0))       \
    : (FLDSm((is), 0, 0, 0), FSTPr ((rd) + 1)))
 
 #define jit_ldi_d(rd, is)                              \
-  ((rd) == 0 ? (FSTPr (0), FLDLm((is), 0, 0, 0))       \
-   : (FLDLm((is), 0, 0, 0), FSTPr ((rd) + 1)))
+  ((rd) == 0 ? (FSTPr (0), FPX(), FLDLm((is), 0, 0, 0)) \
+   : (FPX(), FLDLm((is), 0, 0, 0), FSTPr ((rd) + 1)))
 
-#define jit_ldi_d_fppush(rd, is) FLDLm((is), 0, 0, 0)
+#define jit_ldi_d_fppush(rd, is) (FPX(), FLDLm((is), 0, 0, 0))
 
 #define jit_ldr_f(rd, rs)                              \
-  ((rd) == 0 ? (FSTPr (0), FLDSm(0, (rs), 0, 0))       \
-   : (FLDSm(0, (rs), 0, 0), FSTPr ((rd) + 1)))
+  ((rd) == 0 ? (FSTPr (0), FPX(), FLDSm(0, (rs), 0, 0)) \
+   : (FPX(), FLDSm(0, (rs), 0, 0), FSTPr ((rd) + 1)))
 
 #define jit_ldr_d(rd, rs)                              \
-  ((rd) == 0 ? (FSTPr (0), FLDLm(0, (rs), 0, 0))       \
-   : (FLDLm(0, (rs), 0, 0), FSTPr ((rd) + 1)))
+  ((rd) == 0 ? (FSTPr (0), FPX(), FLDLm(0, (rs), 0, 0)) \
+   : (FPX(), FLDLm(0, (rs), 0, 0), FSTPr ((rd) + 1)))
 
-#define jit_ldr_d_fppush(rd, rs) FLDLm(0, (rs), 0, 0)
+#define jit_ldr_d_fppush(rd, rs) (FPX(), FLDLm(0, (rs), 0, 0))
 
 #define jit_ldxi_f(rd, rs, is)                         \
-  ((rd) == 0 ? (FSTPr (0), FLDSm((is), (rs), 0, 0))    \
-   : (FLDSm((is), (rs), 0, 0), FSTPr ((rd) + 1)))
+  ((rd) == 0 ? (FSTPr (0), FPX(), FLDSm((is), (rs), 0, 0))	\
+   : (FPX(), FLDSm((is), (rs), 0, 0), FSTPr ((rd) + 1)))
 
 #define jit_ldxi_d(rd, rs, is)                         \
-  ((rd) == 0 ? (FSTPr (0), FLDLm((is), (rs), 0, 0))    \
-   : (FLDLm((is), (rs), 0, 0), FSTPr ((rd) + 1)))
+  ((rd) == 0 ? (FSTPr (0), FPX(), FLDLm((is), (rs), 0, 0))	\
+   : (FPX(), FLDLm((is), (rs), 0, 0), FSTPr ((rd) + 1)))
 
-#define jit_ldxi_d_fppush(rd, rs, is) FLDLm((is), (rs), 0, 0)
+#define jit_ldxi_d_fppush(rd, rs, is) (FPX(), FLDLm((is), (rs), 0, 0))
 
 #define jit_ldxr_f(rd, s1, s2)                         \
-  ((rd) == 0 ? (FSTPr (0), FLDSm(0, (s1), (s2), 1))    \
-   : (FLDSm(0, (s1), (s2), 1), FSTPr ((rd) + 1)))
+  ((rd) == 0 ? (FSTPr (0), FPX(), FLDSm(0, (s1), (s2), 1))	\
+   : (FPX(), FLDSm(0, (s1), (s2), 1), FSTPr ((rd) + 1)))
 
 #define jit_ldxr_d(rd, s1, s2)                         \
-  ((rd) == 0 ? (FSTPr (0), FLDLm(0, (s1), (s2), 1))    \
-   : (FLDLm(0, (s1), (s2), 1), FSTPr ((rd) + 1)))
+  ((rd) == 0 ? (FSTPr (0), FPX(), FLDLm(0, (s1), (s2), 1))	\
+   : (FPX(), FLDLm(0, (s1), (s2), 1), FSTPr ((rd) + 1)))
 
 #define jit_extr_i_d(rd, rs)   (PUSHLr((rs)),          \
   ((rd) == 0 ? (FSTPr (0), FILDLm(0, _ESP, 0, 0))      \
    : (FILDLm(0, _ESP, 0, 0), FSTPr ((rd) + 1))),       \
   POPLr((rs)))
 
-#define jit_stxi_f(id, rd, rs) jit_fxch ((rs), FSTSm((id), (rd), 0, 0))
-#define jit_stxr_f(d1, d2, rs) jit_fxch ((rs), FSTSm(0, (d1), (d2), 1))
-#define jit_stxi_d(id, rd, rs) jit_fxch ((rs), FSTLm((id), (rd), 0, 0))
-#define jit_stxr_d(d1, d2, rs) jit_fxch ((rs), FSTLm(0, (d1), (d2), 1))
-#define jit_sti_f(id, rs)      jit_fxch ((rs), FSTSm((id), 0,    0, 0))
-#define jit_str_f(rd, rs)      jit_fxch ((rs), FSTSm(0,    (rd), 0, 0))
-#define jit_sti_d(id, rs)      jit_fxch ((rs), FSTLm((id), 0,    0, 0))
-#define jit_str_d(rd, rs)      jit_fxch ((rs), FSTLm(0,    (rd), 0, 0))
+#define jit_stxi_f(id, rd, rs) jit_fxch ((rs), FPX(), FSTSm((id), (rd), 0, 0))
+#define jit_stxr_f(d1, d2, rs) jit_fxch ((rs), FPX(), FSTSm(0, (d1), (d2), 1))
+#define jit_stxi_d(id, rd, rs) jit_fxch ((rs), FPX(), FSTLm((id), (rd), 0, 0))
+#define jit_stxr_d(d1, d2, rs) jit_fxch ((rs), FPX(), FSTLm(0, (d1), (d2), 1))
+#define jit_sti_f(id, rs)      jit_fxch ((rs), FPX(), FSTSm((id), 0,    0, 0))
+#define jit_str_f(rd, rs)      jit_fxch ((rs), FPX(), FSTSm(0,    (rd), 0, 0))
+#define jit_sti_d(id, rs)      jit_fxch ((rs), FPX(), FSTLm((id), 0,    0, 0))
+#define jit_str_d(rd, rs)      jit_fxch ((rs), FPX(), FSTLm(0,    (rd), 0, 0))
 
-#define jit_sti_d_fppop(id, rs)      FSTPLm((id), 0,    0, 0)
-#define jit_stxi_d_fppop(id, rd, rs) FSTPLm((id), (rd), 0, 0)
+#define jit_sti_d_fppop(id, rs)      (FPX(), FSTPLm((id), 0,    0, 0))
+#define jit_stxi_d_fppop(id, rd, rs) (FPX(), FSTPLm((id), (rd), 0, 0))
 
 /* Assume round to near mode */
 #define jit_floorr_d_i(rd, rs) \
@@ -282,12 +286,12 @@ union jit_double_imm {
 
 #define jit_fp_btest(d, s1, s2, n, _and, cmp, res)             \
        (((s1) == 0 ? FCOMr((s2)) : (FLDr((s1)), FUCOMPr((s2) + 1))),    \
-        PUSHLr(_EAX),                                          \
+        PUSHQr(_EAX),                                          \
         FNSTSWr(_EAX),                                         \
         SHRLir(n, _EAX),                                       \
         (void)((_and) ? ANDLir ((_and), _EAX) : 0),            \
         ((cmp) ? CMPLir ((cmp), _AL) : 0),                     \
-        (void) POPLr(_EAX),                                     \
+        (void) POPQr(_EAX),                                     \
         res ((d), 0, 0, 0), _jit.x.pc)
 
 #define jit_fp_test_fppop(d, n, _and, res)                       \
@@ -301,12 +305,12 @@ union jit_double_imm {
 
 #define jit_fp_btest_fppop(d, n, _and, cmp, res)               \
        (FUCOMPPr(1),                                           \
-        PUSHLr(_EAX),                                          \
+        PUSHQr(_EAX),                                          \
         FNSTSWr(_EAX),                                         \
         SHRLir(n, _EAX),                                       \
         (void)((_and) ? ANDLir ((_and), _EAX) : 0),            \
         (void)((cmp) ? CMPLir ((cmp), _AL) : 0),               \
-        POPLr(_EAX),                                           \
+        POPQr(_EAX),                                           \
         res ((d), 0, 0, 0), _jit.x.pc)
 
 #define jit_nothing_needed(x)
@@ -411,8 +415,6 @@ union jit_double_imm {
 #define jit_log()	(_OO(0xd9ed), 			/* fldln2 */ \
 			 FXCHr(1), 			/* fxch st(1) */ \
 			 _OO(0xd9f1))			/* fyl2x */
-#endif
-
 #endif
 
 #endif /* __lightning_asm_h */

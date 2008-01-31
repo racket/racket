@@ -59,9 +59,7 @@
 END_XFORM_ARITH;
 #endif
 
-#if defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_PPC)
-# define JIT_USE_FP_OPS
-#endif
+#define JIT_USE_FP_OPS
 
 #ifdef MZ_USE_JIT_X86_64
 # define MZ_USE_JIT_I386
@@ -2453,7 +2451,7 @@ static int can_fast_double(int arith, int cmp, int two_args)
    pushes and pops much balance. The popping branch operations pop
    both arguments before branching. */
 
-#if !defined(MZ_USE_JIT_I386) || defined(JIT_X86_64)
+#if !defined(MZ_USE_JIT_I386)
 /* Not FP stack, so use normal variants. */
 #define jit_movi_d_fppush(rd,immd)    jit_movi_d(rd,immd)
 #define jit_ldi_d_fppush(rd, is)      jit_ldi_d(rd, is)

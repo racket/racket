@@ -102,11 +102,13 @@ typedef unsigned long	_ul;
 # define _PSL(X)	((_sl *)(X))
 # define _PUL(X)	((_ul *)(X))
 
-#define _jit_B(B)         _jit_UL(((*_jit.x.uc_pc++)= _jit_UC((B)&  0xff)))
-#define _jit_W(W)         _jit_UL(((*_jit.x.us_pc++)= _jit_US((W)&0xffff)))
-#define _jit_I(I)         _jit_UL(((*_jit.x.ui_pc++)= _jit_UI((I)       )))
-#define _jit_L(L)         _jit_UL(((*_jit.x.ul_pc++)= _jit_UL((L)       )))
-#define _jit_I_noinc(I)   _jit_UL(((*_jit.x.ui_pc)=   _jit_UI((I)       )))
+# define _jit_VD(x) ((void)(x))
+
+#define _jit_B(B)         _jit_VD(((*_jit.x.uc_pc++)= _jit_UC((B)&  0xff)))
+#define _jit_W(W)         _jit_VD(((*_jit.x.us_pc++)= _jit_US((W)&0xffff)))
+#define _jit_I(I)         _jit_VD(((*_jit.x.ui_pc++)= _jit_UI((I)       )))
+#define _jit_L(L)         _jit_VD(((*_jit.x.ul_pc++)= _jit_UL((L)       )))
+#define _jit_I_noinc(I)   _jit_VD(((*_jit.x.ui_pc)=   _jit_UI((I)       )))
 
 #define _MASK(N)	((unsigned long)(((long)1<<(N)))-1)
 #define _siP(N,I)	(!((((unsigned long)(I))^(((unsigned long)(I))<<1))&~_MASK(N)))
