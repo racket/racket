@@ -77,13 +77,7 @@
 
   (provide 
    (struct-out collect-info)
-   (struct-out resolve-info)
-   part-collected-info
-   collect-put!
-   resolve-get
-   resolve-search
-   resolve-get/tentative
-   resolve-get-keys)
+   (struct-out resolve-info))
 
   ;; ----------------------------------------
 
@@ -488,6 +482,20 @@
           (and (list? st) (memq s st)))))
 
   ;; ----------------------------------------
+
+  (define (info-key? l)
+    (and (pair? l)
+         (symbol? (car l))
+         (pair? (cdr l))))
+
+  (provide info-key?)
+  (provide/contract
+   [part-collected-info (part? resolve-info? . -> . collected-info?)]
+   [collect-put! (collect-info? info-key?  any/c . -> . any)]
+   [resolve-get ((or/c part? false/c) resolve-info? info-key? . -> . any)]
+   [resolve-get/tentative ((or/c part? false/c) resolve-info? info-key? . -> . any)]
+   [resolve-search (any/c (or/c part? false/c) resolve-info? info-key? . -> . any)]
+   [resolve-get-keys ((or/c part? false/c) resolve-info? (info-key? . -> . any/c) . -> . any/c)])
 
   )
 

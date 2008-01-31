@@ -192,7 +192,9 @@ using the path @scheme[id]. The @tech{decode}d @scheme[pre-flow]s
 introduce the module, but need not include all of the module content.
 
 Besides generating text, this form expands to a use of
-@scheme[declare-exporting] with @scheme[id].
+@scheme[declare-exporting] with @scheme[id]. Consequently,
+@scheme[defmodule] should be used at most once in a section, though it
+can be shadowed with @scheme[defmodule]s in sub-sections.
 
 Hyperlinks created by @scheme[schememodname] are associated with the
 enclosing section, rather than the local @scheme[id] text.}
@@ -237,7 +239,12 @@ Associates the @scheme[module-paths]s to all bindings defined within
 the enclosing section, except as overridden by other
 @scheme[declare-exporting] declarations in nested sub-sections.  The
 list of @scheme[module-path]s is shown, for example, when the user
-hovers the mouse over one of the bindings defined within the section.}
+hovers the mouse over one of the bindings defined within the section.
+
+The @scheme[declare-exporting] form should be used no more than once
+per section, since the declaration applies to the entire section,
+although overriding @scheme[declare-exporting] forms can appear in
+sub-sections.}
 
 @; ------------------------------------------------------------------------
 @section[#:tag "doc-forms"]{Documenting Forms, Functions, Structure Types, and Values}

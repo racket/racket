@@ -65,9 +65,10 @@ A @deftech{flow element} is either a @techlink{table}, an
 
              @item{An @deftech{element} can be a string, one of a few
                    symbols, an instance of @scheme[element] (possibly
-                   @scheme[link-element], etc.), a @techlink{delayed
-                   element}, or anything else allowed by the current
-                   renderer.
+                   @scheme[link-element], etc.), a
+                   @techlink{part-relative element}, a
+                   @techlink{delayed element}, or anything else
+                   allowed by the current renderer.
 
                    @itemize{
 
@@ -118,6 +119,17 @@ A @deftech{flow element} is either a @techlink{table}, an
                          @techlink{collect pass} of document
                          processing to record information used by
                          later passes.}
+
+                   @item{A @deftech{part-relative element} is an
+                         instance of @scheme[part-relative-element],
+                         which has a procedure that is called in the
+                         @techlink{collect pass} of document
+                         processing to obtain @defterm{content} (i.e.,
+                         a list of @defterm{elements}). When the
+                         part-relative element's procedure is called,
+                         collected information is not yet available,
+                         but information about the enclosing parts is
+                         available.}
 
                    @item{A @deftech{delayed element} is an instance of
                          @scheme[delayed-element], which has a
@@ -453,13 +465,35 @@ pass}.
 }
 
 
+@defstruct[part-relative-element ([resolve (collect-info? . -> . list?)]
+                                  [sizer (-> any/c)]
+                                  [plain (-> any/c)])]{
+
+Similar to @scheme[delayed-flow-element], but the replacement
+@techlink{content} is obtained in the @techlink{collect pass} by
+calling the function in the @scheme[resolve] field.
+
+The @scheme[resolve] function can call @scheme[collect-info-parents]
+to obtain a list of @techlink{parts} that enclose the element,
+starting with the nearest enclosing section. Functions like
+@scheme[part-collected-info] and @scheme[collected-info-number] can
+extract information like the part number.
+
+}
+
+
 @defstruct[(collect-element element) ([collect (collect-info . -> . any)])]{
 
 Like @scheme[element], but the @scheme[collect] procedure is called
 during the @techlink{collect pass}. The @scheme[collect] procedure
 normally calls @scheme[collect-put!].
 
+Unlike @scheme[delayed-element] or @scheme[part-relative-element], the
+element remains intact (i.e., it is not replaced) by either the
+@tech{collect pass} or @tech{resolve pass}.
+
 }
+
 
 
 @defstruct[collected-info ([number (listof (or/c false/c integer?))]
@@ -540,11 +574,15 @@ Returns the width in characters of the given @tech{element}.
 Returns the width in characters of the given @tech{flow element}.}
 
 
-@defstruct[collect-info ([ht any/c] [ext-ht any/c] [parts any/c] [tags any/c] [gen-prefix any/c])]{
+@defstruct[collect-info ([ht any/c] [ext-ht any/c] [parts any/c] 
+                         [tags any/c] [gen-prefix any/c] 
+                         [relatives any/c] 
+                         [parents (listof part?)])]{
 
 Encapsulates information accumulated (or being accumulated) from the
 @techlink{collect pass}. The fields are exposed, but not currently
-intended for external use.
+intended for external use, except that @scheme[collect-info-parents]
+is intended for external use.
 
 }
 
@@ -556,7 +594,25 @@ intended for external use.
 
 }
 
-@defproc[(collect-put! [ci collect-info?] [key any/c] [val any/c])
+@defproc[(info-key? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is an @deftech{info key}: a list of
+at least two elements whose first element is a symbol. The result is
+@scheme[#f] otherwise.
+
+For a list that is an info tag, the interpretation of the second
+element of the list is effectively determined by the leading symbol,
+which classifies the key. However, a @scheme[#f] value as the second
+element has an extra meaning: collected information mapped by such
+info keys is not propagated out of the part where it is collected;
+that is, the information is available within the part and its
+sub-parts, but not in ancestor or sibling parts.
+
+Note that every @techlink{tag} is an info key.
+
+}
+
+@defproc[(collect-put! [ci collect-info?] [key info-key?] [val any/c])
          void?]{
 
 Registers information in @scheme[ci]. This procedure should be called
@@ -564,18 +620,48 @@ only during the @techlink{collect pass}.
 
 }
 
-@defproc[(resolve-get [p part?] [ri resolve-info?] [key any/c])
-         void?]{
+@defproc[(resolve-get [p (or/c part? false/c)] [ri resolve-info?] [key info-key?])
+         any/c]{
 
 Extract information during the @techlink{resolve pass} or
 @techlink{render pass} for @scheme[p] from @scheme[ri], where the
 information was previously registered during the @techlink{collect
 pass}. See also @secref["passes"].
 
+The result is @scheme[#f] if the no value for the given key is found.
+Furthermore, the search failure is recorded for potential consistency
+reporting, such as when @exec{setup-plt} is used to build
+documentation.
+
 }
 
-@defproc[(resolve-get-keys [p part?] [ri resolve-info?] 
-                           [pred (any/c . -> . any/c)])
+@defproc[(resolve-search [dep-key any/c][p (or/c part? false/c)] [ri resolve-info?] [key info-key?])
+         void?]{
+
+Like @scheme[resolve-get], but a shared @scheme[dep-key] groups
+multiple searches as a single request for the purposes of consistency
+reporting and dependency tracking. That is, a single success for the
+same @scheme[dep-key] means that all of the failed attempts for the
+same @scheme[dep-key] have been satisfied. However, for dependency
+checking, such as when using @exec{setup-plt} to re-build
+documentation, all attempts are recorded (in case external changes
+mean that an earlier attempt would succeed next time).
+
+}
+
+@defproc[(resolve-get/tentative [p (or/c part? false/c)] [ri resolve-info?] [key info-key?])
+         any/c]{
+
+Like @scheme[resolve-search], but without dependency tracking. For
+multi-document settings where dependencies are normally tracked, such
+as when using @exec{setup-plt} to build documentation, this function
+is suitable for use only for information within a single document.
+
+}
+
+@defproc[(resolve-get-keys [p (or/c part? false/c)]
+                           [ri resolve-info?] 
+                           [pred (info-key? . -> . any/c)])
          list?]{
 
 Applies @scheme[pred] to each key mapped for @scheme[p] in

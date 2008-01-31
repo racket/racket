@@ -92,6 +92,11 @@
                        (collect-info-gen-prefix ci))
                    (collect-info-relatives ci)
                    (cons d (collect-info-parents ci)))])
+        (hash-table-put! (collect-info-parts ci)
+                         d
+                         (make-collected-info number
+                                              parent
+                                              (collect-info-ht p-ci)))
         (when (part-title-content d)
           (collect-content (part-title-content d) p-ci))
         (collect-part-tags d p-ci number)
@@ -106,11 +111,6 @@
                                   number))
               (loop (cdr parts)
                     (if (unnumbered-part? s) pos (add1 pos))))))
-        (hash-table-put! (collect-info-parts ci)
-                         d
-                         (make-collected-info number
-                                              parent
-                                              (collect-info-ht p-ci)))
         (let ([prefix (part-tag-prefix d)])
           (for ([(k v) (collect-info-ht p-ci)])
             (when (cadr k)
