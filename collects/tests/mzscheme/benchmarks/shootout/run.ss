@@ -4,7 +4,7 @@
       ("ackermann.ss" "11")
       ("ary.ss" "9000")
       ("binarytrees.ss" "16")
-      ("chameneos.ss")
+      ("chameneos.ss" "1000000")
       ("cheapconcurrency.ss" "15000")
       ("echo.ss" "150000")
       ("except.ss" "2500000")
@@ -20,15 +20,15 @@
       ("moments.ss") ; 200 somethings...
       ("nbody.ss" "20000000")
       ("nestedloop.ss" "18")
-      ("nsieve.ss")
-      ("nsievebits.ss")
+      ("nsieve.ss" "9")
+      ("nsievebits.ss" "11")
       ("partialsums.ss" "2500000")
-      ("pidigits.ss")
+      ("pidigits.ss" "2500")
       ("pidigits1.ss")
       ("random.ss" "900000")
       ("recursive.ss" "11")
       ("regexmatch.ss")
-      ("regexpdna.ss")
+      ("regexpdna.ss" #f ,(lambda () (mk-regexpdna-input)))
       ("reversecomplement.ss" #f ,(lambda () (mk-revcomp-input)))
       ("k-nucleotide.ss" #f ,(lambda () (mk-knuc-input)))
       ("reversefile.ss")
@@ -42,7 +42,7 @@
       ))
 
   (define (dynreq f)
-    (dynamic-require `(lib ,f "tests" "mzscheme" "benchmarks" "shootout") #f))
+    (dynamic-require f #f))
 
   (define (mk-fasta n suffix)
     (let ([f (build-path (find-system-path 'temp-dir) (string-append "fasta-" suffix))])
@@ -59,6 +59,9 @@
 
   (define (mk-knuc-input)
     (mk-fasta "1000000" "1m"))
+
+  (define (mk-regexpdna-input)
+    (mk-fasta "5000000" "5m"))
 
   (define (mk-sumcol-input)
     (let ([f (build-path (find-system-path 'temp-dir) "sumcol-21k")])

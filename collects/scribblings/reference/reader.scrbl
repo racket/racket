@@ -553,7 +553,8 @@ is used for all slots.
 
 In @scheme[read-syntax] mode, each recursive read for the vector
 elements is also in @scheme[read-syntax] mode, so that the wrapped
-vector's elements are also wraped as syntax objects.
+vector's elements are also wraped as syntax objects, and the vector is
+immutable.
 
 @reader-examples[
 "#(1 apple 3)"
@@ -598,7 +599,7 @@ datum.
 
 In @scheme[read-syntax] mode, the recursive read for the box content
 is also in @scheme[read-syntax] mode, so that the wrapped box's
-content is also wraped as a syntax object.
+content is also wraped as a syntax object, and the box is immutable.
 
 @reader-examples[
 "#&17"

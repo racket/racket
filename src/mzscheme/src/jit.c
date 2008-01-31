@@ -156,7 +156,14 @@ typedef struct {
   void *self_restart_code;
   Scheme_Native_Closure *nc; /* for extract_globals, only */
   Scheme_Closure_Data *self_data;
+  void *status_at_ptr;
+  int reg_status;
 } mz_jit_state;
+
+#define mz_RECORD_STATUS(s) (jitter->status_at_ptr = _jit.x.pc, jitter->reg_status = (s))
+#define mz_CURRENT_STATUS() ((jitter->status_at_ptr == _jit.x.pc) ? jitter->reg_status : 0)
+
+#define mz_RS_R0_HAS_RUNSTACK0 0x1
 
 typedef int (*Native_Check_Arity_Proc)(Scheme_Object *o, int argc, int dummy);
 typedef Scheme_Object *(*Native_Get_Arity_Proc)(Scheme_Object *o, int dumm1, int dummy2);
@@ -434,6 +441,7 @@ static void *generate_one(mz_jit_state *old_jitter,
     jitter->max_extra_pushed = max_extra_pushed;
     jitter->self_pos = 1; /* beyond end of stack */
     jitter->self_toplevel_pos = -1;
+    jitter->status_at_ptr = NULL;
 
     ok = generate(jitter, data);
 
@@ -4562,8 +4570,10 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       START_JIT_DATA();
       LOG_IT(("local\n"));
       pos = mz_remap(SCHEME_LOCAL_POS(obj));
-      jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
-      VALIDATE_RESULT(JIT_R0);
+      if (pos || (mz_CURRENT_STATUS() != mz_RS_R0_HAS_RUNSTACK0)) {
+        jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+        VALIDATE_RESULT(JIT_R0);
+      }
       END_JIT_DATA(2);
       return 1;
     }
@@ -5304,6 +5314,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       END_JIT_DATA(17);
 
       LOG_IT(("...in\n"));
+
+      mz_RECORD_STATUS(mz_RS_R0_HAS_RUNSTACK0);
 
       return generate(lv->body, jitter, is_tail, multi_ok);
     }

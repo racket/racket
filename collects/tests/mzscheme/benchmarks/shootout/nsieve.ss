@@ -7,7 +7,7 @@
 ;; Written by Dima Dorfman, 2004
 ;; Converted to MzScheme by Brent Fulgham
 
-(module nseive mzscheme
+(module nsieve mzscheme
   (require (only (lib "13.ss" "srfi") string-index string-pad))
 
   (define (nsieve m)

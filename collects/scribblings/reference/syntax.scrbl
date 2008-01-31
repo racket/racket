@@ -54,30 +54,39 @@ Within such specifications,
 @;------------------------------------------------------------------------
 @section[#:tag "quote"]{Literals: @scheme[quote] and @scheme[#%datum]}
 
+Many forms are implicitly quoted (via @scheme[#%datum]) as literals. See
+@secref["expand-steps"] for more information.
+
 @guideintro["quote"]{@scheme[quote]}
 
 @defform[(quote datum)]{
 
 Produces a constant value corresponding to @scheme[datum] (i.e., the
-actual representation of the program fragment) without its
-@tech{lexical information} or source location.
+representation of the program fragment) without its @tech{lexical
+information}, source location, etc.  Quoted pairs, vectors, and boxes
+are immutable.
 
 @examples[
 (eval:alts (#,(schemekeywordfont "quote") x) 'x)
 (eval:alts (#,(schemekeywordfont "quote") (+ 1 2)) '(+ 1 2))
+(+ 1 2)
 ]
 
 }
 
 @defform[(#%datum . datum)]{
 
-Expands to @scheme[(#,(schemekeywordfont "quote") datum)]. See also @secref["expand-steps"]
-for information on how the expander introduces @schemeidfont{#%datum}
-identifiers.
+Expands to @scheme[(#,(schemekeywordfont "quote") datum)], as long as
+@scheme[datum] is not a keyword. If @scheme[datum] is a keyword, and
+syntax error is reported.
+
+See also @secref["expand-steps"] for information on how the expander
+introduces @schemeidfont{#%datum} identifiers.
 
 @examples[
 (#%datum . 10)
 (#%datum . x)
+(#%datum . #:x)
 ]
 }
 
