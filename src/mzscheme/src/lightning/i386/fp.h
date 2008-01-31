@@ -33,6 +33,10 @@
 #ifndef __lightning_asm_fp_h
 #define __lightning_asm_fp_h
 
+#ifdef JIT_X86_64___
+# include "fp-64.h"
+#else
+
 /* We really must map the x87 stack onto a flat register file.  In practice,
    we can provide something sensible and make it work on the x86 using the
    stack like a file of eight registers.
@@ -407,6 +411,8 @@ union jit_double_imm {
 #define jit_log()	(_OO(0xd9ed), 			/* fldln2 */ \
 			 FXCHr(1), 			/* fxch st(1) */ \
 			 _OO(0xd9f1))			/* fyl2x */
+#endif
+
 #endif
 
 #endif /* __lightning_asm_h */

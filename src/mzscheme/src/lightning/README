@@ -1,6 +1,5 @@
 
-This variant of GNU Lightning version 1.2 is slightly modified for
-MzScheme:
+This variant of GNU Lightning version 1.2 is modified for MzScheme:
 
  * For PowerPC, branches can be generated in long-jump mode, so that
    patched addresses are not limited to a 2^16 or 2^26 difference from
@@ -26,6 +25,13 @@ MzScheme:
  * Fixed update of `prev_page' and `prev_length' in "funcs.h" for x86
    (thanks to Ray Racine), and to call mprotect() based on whether
    `MZ_JIT_USE_MPROTECT' (instead iof `linux') is #defined.
+
+ * The FP operations use unordered comparison, and an "anti" set of
+   operations inverts the jump (without inverting the arguments).
+   On x86, there are aso _fppush variants that ignore the provided
+   registers and work in terms of the FP stack, instead.
+
+ * The x86_64 FP support is based on lightning 1.3.
 
 ----------------------------------------
 
