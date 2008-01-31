@@ -2486,7 +2486,7 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
                                  int branch_short)
 {
 #if defined(INLINE_FP_OPS) || defined(INLINE_FP_COMP)
-  GC_CAN_IGNORE jit_insn *ref8, *ref9, *ref10, *refd, *refdt, *refskip = NULL;
+  GC_CAN_IGNORE jit_insn *ref8, *ref9, *ref10, *refd, *refdt;
   int no_alloc = 0;
 
   /* Maybe they're doubles */
@@ -2504,13 +2504,12 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
   } else
     ref10 = NULL;
   CHECK_LIMIT();
+  __END_SHORT_JUMPS__(1);
 
   if (!two_args && !second_const && ((arith == 2) || ((arith == -2) && reversed))) {
     /* Special case: multiplication by exact 0 */
     (void)jit_movi_p(JIT_R0, scheme_make_integer(0));
   } else {
-    __END_SHORT_JUMPS__(1);
-
     /* Yes, they're doubles. */
     jit_ldxi_d_fppush(JIT_FPR1, JIT_R0, &((Scheme_Double *)0x0)->double_val);
     if (two_args) {
@@ -2594,12 +2593,6 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
 # endif
 #endif
         CHECK_LIMIT();
-        
-        if (refskip) {
-          __START_SHORT_JUMPS__(1);
-          mz_patch_branch(refskip);
-          __END_SHORT_JUMPS__(1);
-        }
       }
 
     } else {
@@ -2630,14 +2623,16 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
       __END_SHORT_JUMPS__(branch_short);
       *_refd = refd;
     }
-    __START_SHORT_JUMPS__(1);
   }
 
   /* Jump to return result or true branch: */
+  __START_SHORT_JUMPS__(branch_short);
   refdt = jit_jmpi(jit_forward());
   *_refdt = refdt;
+  __END_SHORT_JUMPS__(branch_short);
 
   /* No, they're not both doubles. */
+  __START_SHORT_JUMPS__(1);
   if (two_args) {
     mz_patch_branch(ref8);
     mz_patch_branch(ref10);
