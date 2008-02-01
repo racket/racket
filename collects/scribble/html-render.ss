@@ -76,7 +76,8 @@
                  ,@(map (lambda (x) (if (string? x) x (format "~a" x))) body)
                  "\n"))))
 
-  #reader scribble/reader
+  #reader scribble/reader (begin ; easier to format
+
   (define search-script
     @script{
       var search_nodes = null;
@@ -99,9 +100,15 @@
             search_nodes.push(all_links[i]);
           }
         var search_box = document.getElementById("search_box");
-        if (location.search.indexOf('?q=') == 0) {
-          var search = location.search.substring(3)
-          search_box.value = search;
+        if (location.search.length > 0) {
+          var paramstrs = location.search.substring(1).split(/[@";"&]/);
+          for (var i in paramstrs) {
+            var param = paramstrs[i].split(/=/);
+            if (param.length == 2 && param[0] == "q") {
+              search_box.value = unescape(param[1]).replace(/\+/g," ");
+              break;
+            }
+          }
         }
         if (search_box.value != "") do_search(search_box.value);
         search_box.focus();
@@ -143,11 +150,30 @@
         }
       }})
 
-  #reader scribble/reader
   (define search-field
     @`p{Search: @(input ((type "text") (id "search_box")
-                         (onChange "delayed_search(this.value,event);")
-                         (onKeyUp "delayed_search(this.value,event);")))})
+                         (onchange "delayed_search(this.value,event);")
+                         (onkeyup  "delayed_search(this.value,event);")))})
+
+  (define (search-index-box index-url) ; appears on every page
+    (let ([sa string-append])
+    `(input
+      ((style ,(sa "font-size: 75%; margin: 0px; padding: 0px; border: 1px;"
+                   " background-color: #eee; color: #888;"))
+       (type "text")
+       (value "...search...")
+       (onkeypress ,(sa "if (event && event.keyCode==13"
+                        " && this.value.indexOf(\"...search...\")<0) {"
+                        " location=\"doc-index.html?q=\"+escape(this.value);"
+                        " };"))
+       (onfocus ,(sa "this.style.color=\"black\";"
+                     " if (this.value.indexOf(\"...search...\")>=0)"
+                     " this.value=\"\";"))
+       (onblur ,(sa "if (this.value.match(/^ *$/)) {"
+                    " this.style.color=\"#888\";"
+                    " this.value=\"...search...\"; }"))))))
+
+  )
 
   ;; ----------------------------------------
   ;;  main mixin
@@ -471,100 +497,83 @@
       (define/public (derive-filename d) "bad.html")
 
       (define/private (navigation d ri pre-space?)
-        (let ([parent (part-parent d ri)])
-          (let*-values ([(prev next) (find-siblings d ri)]
-                        [(prev) (if prev
-                                    (let loop ([prev prev])
-                                      (if (and (toc-part? prev)
-                                               (pair? (part-parts prev)))
-                                          (loop (car (last-pair (part-parts prev))))
-                                          prev))
-                                    (and parent
-                                         (toc-part? parent)
-                                         parent))]
-                        [(next) (cond
-                                 [(and (toc-part? d)
-                                       (pair? (part-parts d)))
-                                  (car (part-parts d))]
-                                 [(and (not next)
-                                       parent
-                                       (toc-part? parent))
-                                  (let-values ([(prev next)
-                                                (find-siblings parent ri)])
-                                    next)]
-                                 [else next])]
-                        [(index) (let loop ([d d])
-                                   (let ([p (part-parent d ri)])
-                                     (if p
-                                         (loop p)
-                                         (let ([subs (part-parts d)])
-                                           (and (pair? subs)
-                                                (let ([d (car (last-pair subs))])
-                                                  (and (part-style? d 'index)
-                                                       d)))))))])
-            (if (and (not prev)
-                     (not next)
-                     (not parent)
-                     (not index)
-                     (not up-path))
-                null
-                `(,@(if pre-space? '((p nbsp)) null)
-                  (div ([class "navleft"])
-                       ,@(render-content
-                          (append
-                           (list 
-                            (make-element
-                             (if parent
-                                 (make-target-url "index.html" #f)
-                                 "nonavigation")
-                             contents-content))
-                           (if index
-                               (list
-                                'nbsp
-                                (if (eq? d index)
-                                    (make-element
-                                     "nonavigation"
-                                     index-content)
-                                    (make-link-element
-                                     #f
-                                     index-content
-                                     (car (part-tags index)))))
-                               null))
-                          d
-                          ri))
-                  (div ([class "navright"])
-                       ,@(render-content
-                          (list
-                           (make-element
-                            (if parent
-                                (make-target-url (if prev
-                                                     (derive-filename prev)
-                                                     "index.html")
-                                                 #f)
-                                "nonavigation")
-                            prev-content)
-                           sep-element
-                           (make-element
-                            (if (or parent
-                                    up-path)
-                                (make-target-url 
-                                 (if parent
-                                     (if (toc-part? parent)
-                                         (derive-filename parent)
-                                         "index.html")
-                                     up-path)
-                                 #f)
-                                "nonavigation")
-                            up-content)
-                           sep-element
-                           (make-element
-                            (if next
-                                (make-target-url (derive-filename next) #f)
-                                "nonavigation")
-                            next-content))
-                          d
-                          ri))
-                  (p nbsp))))))
+        (define parent (part-parent d ri))
+        (let*-values ([(prev next) (find-siblings d ri)]
+                      [(prev) (if prev
+                                (let loop ([prev prev])
+                                  (if (and (toc-part? prev)
+                                           (pair? (part-parts prev)))
+                                    (loop (car (last-pair (part-parts prev))))
+                                    prev))
+                                (and parent (toc-part? parent) parent))]
+                      [(next) (cond
+                                [(and (toc-part? d)
+                                      (pair? (part-parts d)))
+                                 (car (part-parts d))]
+                                [(and (not next) parent (toc-part? parent))
+                                 (let-values ([(prev next)
+                                               (find-siblings parent ri)])
+                                   next)]
+                                [else next])]
+                      [(index) (let loop ([d d])
+                                 (let ([p (part-parent d ri)])
+                                   (if p
+                                     (loop p)
+                                     (let ([subs (part-parts d)])
+                                       (and (pair? subs)
+                                            (let ([d (car (last-pair subs))])
+                                              (and (part-style? d 'index)
+                                                   d)))))))])
+          (define (render . content)
+            (render-content content d ri))
+          (if (not (or prev next parent index up-path))
+            null
+            `(,@(if pre-space? '((p nbsp)) null)
+              (div ([class "navleft"])
+                ,@(render (make-element
+                           (if parent
+                             (make-target-url "index.html" #f)
+                             "nonavigation")
+                           contents-content))
+                ,@(if index
+                    `(nbsp
+                      ,@(render (if (eq? d index)
+                                  (make-element "nonavigation" index-content)
+                                  (make-link-element
+                                   #f index-content (car (part-tags index)))))
+                      ,@(if (eq? d index)
+                          null
+                          ;; FIXME: put the real url of the index file
+                          `((small nbsp ,(search-index-box "doc-index.html")))))
+                    null))
+              (div ([class "navright"])
+                ,@(render
+                   (make-element
+                    (if parent
+                      (make-target-url
+                       (if prev (derive-filename prev) "index.html")
+                       #f)
+                      "nonavigation")
+                    prev-content)
+                   sep-element
+                   (make-element
+                    (if (or parent up-path)
+                      (make-target-url
+                       (if parent
+                         (if (toc-part? parent)
+                           (derive-filename parent)
+                           "index.html")
+                         up-path)
+                       #f)
+                      "nonavigation")
+                    up-content)
+                   sep-element
+                   (make-element
+                    (if next
+                      (make-target-url (derive-filename next) #f)
+                      "nonavigation")
+                    next-content)))
+              (p nbsp)))))
 
       (define/override (render-one d ri fn)
         (render-one-part d ri fn null))
