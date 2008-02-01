@@ -1,11 +1,18 @@
 #lang scribble/doc
-
-@begin[
-(require scribble/manual)
-]
+@(require scribble/manual)
 
 @title{@bold{DrScheme}: PLT Programming Environment}
 
-Nothing yet.
+DrScheme is a graphical environment for developing programs using the
+PLT Scheme programming languages.
+
+@table-of-contents[]
+
+@; ----------------------------------------------------------------------
+
+@include-section["interface-essentials.scrbl"]
+@include-section["languages.scrbl"]
+
+@; ----------------------------------------------------------------------
 
 @index-section[]
