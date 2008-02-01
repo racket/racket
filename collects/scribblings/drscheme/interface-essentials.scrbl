@@ -3,14 +3,15 @@
           scribble/decode
           scribble/eval
           scribble/struct
-          (for-label htdp/convert))
+          (for-label htdp/convert
+                     scheme/gui/base))
 
 @(define (ioinputfont . s)
    (apply tt s))
 @(define (iooutputfont . s)
    (make-element "schemestdout" (decode-content s)))
 
-@title[#:tag "interface-essentials"]{Interface Essentials}
+@title[#:tag "interface-essentials" #:style 'toc]{Interface Essentials}
 
 The DrScheme window has three parts: a row of buttons at the top, two
 editing panels in the middle, and a status line at the bottom.
@@ -43,9 +44,11 @@ currently evaluating any expression. The @as-index{recycling icon}
 flashes while DrScheme is ``recycling'' internal resources, such as
 memory.
 
+@local-table-of-contents[]
+
 @; ----------------------------------------------------------------------
 
-@section{Buttons}
+@section[#:tag "buttons"]{Buttons}
 
 The left end of the row of buttons in DrScheme contains a miniature
 button with the @index['("filename button")]{current file's
@@ -397,7 +400,8 @@ second @schemeresult[5] is colored blue, as usual for a result printed
 by DrScheme. (The underscore indicates the location of the blinking
 caret.)
 
-Output goes into the interaction window directly. If you run the program
+Output goes into the @tech{interactions window} directly. If you run
+the program
 
 @schememod[
 scheme
@@ -465,7 +469,62 @@ inserts a newline character into the input stream:
 
 @; ----------------------------------------------------------------------
 
-@section{Creating Executables}
+@section{Graphical Syntax}
+
+In addition to normal textual program, DrScheme supports certain
+graphical elements as expressions within a program. Plug-in tools can
+extend the available graphical syntax, but this section describes some
+of the more commonly used elements.
+
+@subsection{Images}
+
+DrScheme's @menuitem["Insert" "Insert Image..."] menu item lets you
+select an image file from disk (in various formats such as GIF, PNG,
+and BMP), and the image is inserted at the current editing caret.
+
+As an expression an image behaves like a number or string constant: it
+evaluates to itself. DrScheme's @tech{interactions window} knows how
+to draw image-value results or images displayed via @scheme[print].
+
+A program can manipulate image values in various ways, such as using
+the @schememodname[htdp/image] library or as an
+@schememodname[image-snip%] value.
+
+@subsection{XML Boxes and Scheme Boxes}
+
+DrScheme has special support for XML concrete syntax. The
+@menuitem["Special" "Insert XML Box"] menu item inserts an embedded
+editor into your program. In that embedded editor, you type XML's
+concrete syntax. When a program containing an XML box is evaluated,
+the XML box is translated into an @deftech{x-expression} (or
+@deftech{xexpr}), which is an s-expression representation of an XML
+expression. Each xexpr is a list whose first element is a symbol
+naming the tag, second element is an association list representing
+attributes and remaining elements are the nested XML expressions.
+
+XML boxes have two modes for handling whitespace. In one mode, all
+whitespace is left intact in the resulting xexpr.  In the other mode,
+any tag that only contains nested XML expressions and whitespace has
+the whitespace removed. You can toggle between these modes by
+right-clicking or Control-clicking (Mac OS X) on the top portion of
+the XML box.
+
+In addition to containing XML text, XML boxes can also
+contain Scheme boxes. Scheme boxes contain Scheme
+expressions. These expressions are evaluated and their
+contents are placed into the containing XML box's xexpr.
+There are two varieties of Scheme box: the standard Scheme
+box and the splicing Scheme box. The standard Scheme box
+inserts its value into the containing xexpr. The contents of
+the splice box must evaluate to a list and the elements of
+the list are ``flattened'' into the containing xexpr.
+Right-clicking or control-clicking (Mac OS X) on the top of a Scheme
+box opens a menu to toggle the box between a Scheme box and
+a Scheme splice box.
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "create-exe"]{Creating Executables}
 
 DrScheme's @onscreen{Create Executable...} menu item lets you create
 an executable for your program that you can start without first
@@ -521,7 +580,7 @@ Each type has advantages and disadvantages:
 In general, DrScheme's @drlang{Module} language gives you the most
 options. Most other languages only allow one type of executable. The
 teaching langauges create stand-alone executables in
-distributions. The lagacy languages create launchers.
+distributions. The legacy languages create launchers.
 
 @bold{Tip:} Disable debugging in the language dialog before creating
 your executable. With debugging enabled, you will see a stack trace
@@ -530,114 +589,3 @@ disable debugging, open the language dialog, click the @onscreen{Show
 Details} button, and select @onscreen{No debugging or profiling}, if
 it is available.
 
-@;{
-
-@section[#:tag "drscheme:sec:printing"]{Printed Results}
-
-\index{output format}\index{printing format}\index{read-eval-print loop}
-
-This section describes the different formats that DrScheme
-uses for printing results in the interactions window. Each
-of the different settings here also apply to the
-@scheme[print] primitive. That is, printing in the
-interactions window is identical to output produced by the
-@scheme[print] primitive.
-
-@subsection[#:tag "drscheme:sec:printing:cons"]{Constructor-style Output}
-
-\index{constructor-style output} 
-%
-{\drscheme}'s @defterm{constructor-style output} treats @scheme[cons],
- @scheme[vector], and similar primitives as value constructors, rather
- than functions. It also treats @scheme[list] as shorthand for multiple
- @scheme[cons]'s ending with the empty list.  Constructor-style printing
- is valuable for beginning computer science students, because output
- values look the same as input values.
-
-Results printed in DrScheme's interactions window using
- constructor-style printing look different than results printed in
- traditional Scheme implementations, which use @scheme[write] to print
- results. The table in Figure~\ref{fig:constructor-printing} shows the
- differences between values printed in constructor style and values
- printed with @scheme[write].
-
-\begin{figure}
-\begin{center}
-\input{drs-constructor-style-examples.tex}
-\end{center}
-\caption{Comparison of constructor-style output to @scheme[write]}\label{fig:constructor-printing}
-\end{figure}
-
-@subsection[#:tag "drscheme:sec:printing:quasi"]{Quasiquote-style Output}
-
-\index{quasiquote-style output} 
-%
-Constructor-style output is inconvenient for printing S-expression
- results that represent programs. For example, the value @scheme['(lambda
- (x) (lambda (y) (+ x y)))] prints as
-%
-\begin{center}
-@scheme[(list 'lambda (list 'x) (list 'lambda (list 'y) (list '+ 'x 'y)))] 
-\end{center}
-%
-with constructor-style printing. 
-
-DrScheme's @defterm{quasiquote-style output} combines the
- input--output invariance of constructor-style printing with the
- S-expression readability of @scheme[write]. It uses @scheme[quasiquote] to
- print lists, and uses @scheme[unquote] to escape back to constructor
- style printing for non-lists and non-symbols.
-
-With quasiquote-style printing, the above example prints as:
-%
-\begin{center}
-@scheme[`(lambda (x) (lambda (y) (+ x y)))] 
-\end{center}
-
-This example:
-\begin{center}
-@scheme[(list 'lambda (list 'x) (box '(lambda (y) (+ x y))))] 
-\end{center}
-in quasiquote-style printing prints as:
-\begin{center}
-@scheme[`(lambda (x) ,(box `(lambda (y) (+ x y))))]
-\end{center}
-
-
-@section{XML}
-\label{drscheme:sec:xml}
-
-\index{XML}
-%
-DrScheme has special support for XML concrete syntax. The
-@onscreen{Special} menu's @onscreen{Insert XML Box} menu inserts an
-embedded editor into your program. In that embedded editor,
-you type XML's concrete syntax. When a program containing an
-XML box is evaluated, the XML box is translated into an
-x-expression (or xexpr). Xexprs are s-expression
-representation for XML expressions. Each xexpr is a list
-whose first element is a symbol naming the tag, second
-element is an association list representing attributes and
-remaining elements are the nested XML expressions.
-
-XML boxes have two modes for handling whitespace. In one
-mode, all whitespace is left intact in the resulting xexpr.
-In the other mode, any tag that only contains nested XML
-expressions and whitespace has the whitespace removed. You
-can toggle between these modes by right-clicking or
-control-clicking (Mac OS X) on the top portion of the XML box.
-
-In addition to containing XML text, XML boxes can also
-contain Scheme boxes. Scheme boxes contain Scheme
-expressions. These expressions are evaluated and their
-contents are placed into the containing XML box's xexpr.
-There are two varieties of Scheme box: the standard Scheme
-box and the splicing Scheme box. The standard Scheme box
-inserts its value into the containing xexpr. The contents of
-the splice box must evaluate to a list and the elements of
-the list are ``flattened'' into the containing xexpr.
-Right-clicking or control-clicking (Mac OS X) on the top of a Scheme
-box opens a menu to toggle the box between a Scheme box and
-a Scheme splice box.
-
-}

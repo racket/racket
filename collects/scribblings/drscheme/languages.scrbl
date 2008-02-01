@@ -53,12 +53,13 @@ without a @hash-lang[] prefix:
   DrScheme. It evaluates a program in the same way as @scheme[load],
   and it starts by importing the following modules:
   @schememodname[mzscheme], @schememodname[scheme/gui/base],
-  @schememodname[mzlib/etc], @schememodname[mzlib/file],
-  @schememodname[mzlib/list], @schememodname[mzlib/unit],
-  @schememodname[mzlib/include], @schememodname[mzlib/defmacro],
-  @schememodname[mzlib/pretty], @schememodname[mzlib/string],
-  @schememodname[mzlib/thread], @schememodname[mzlib/math],
-  @schememodname[mzlib/match], and @schememodname[mzlib/shared].}
+  @schememodname[mzlib/class], @schememodname[mzlib/etc],
+  @schememodname[mzlib/file], @schememodname[mzlib/list],
+  @schememodname[mzlib/unit], @schememodname[mzlib/include],
+  @schememodname[mzlib/defmacro], @schememodname[mzlib/pretty],
+  @schememodname[mzlib/string], @schememodname[mzlib/thread],
+  @schememodname[mzlib/math], @schememodname[mzlib/match], and
+  @schememodname[mzlib/shared].}
 
  @item{The @as-index{@drlang{Swindle} language} starts with the same
   bindings as @schememodname[swindle], and evaluates the program like
