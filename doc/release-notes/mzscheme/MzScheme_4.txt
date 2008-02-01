@@ -1,6 +1,7 @@
 
 MzScheme version 4.0 is different from previous versions of MzScheme
-in several significant ways:
+in several significant ways. For porting advice, see "Advice" below,
+but we start with an enumeration of changes:
 
  - The documentation has been re-organized and re-written. Instead of
    just reference manuals that occasionally provide examples, our
@@ -43,7 +44,10 @@ in several significant ways:
 
      * `scheme/base' is the most like `mzscheme' in scale and scope,
        but with some improved syntax and a more consistent set of
-       precedures. See "scheme/base" below for more information.
+       precedures. For example, the `lambda' of `scheme/base' supports
+       optional and keyword arguments, and `define-struct' is much
+       more flexible than before. See "scheme/base" below for more
+       information.
 
      * `scheme' builds on `scheme/base', and it is analogous to the
        old "Pretty Big" language. The `scheme' language is the default
@@ -123,6 +127,144 @@ in several significant ways:
    or mixin contracts. Instead they are exported from
    `scheme/class'. The libraries in the "mzlib" collection remain as
    before.
+
+======================================================================
+ Porting Advice
+======================================================================
+
+The best approach to moving to v4 depends on the kind of code that
+you're working with.
+
+Non-module Programs
+-------------------
+
+If the prgram is not in a module, then start by putting it into into
+one. The module system is there help manage code across multiple
+dialects of Scheme, so staying outside of modules while upgrading
+means that you're ignoring the main upgrade tool.
+
+The module notation is much lighter than before, so putting old code
+into a module may be as easy as adding `#lang scheme' to the beginning
+of the file. If you want something closer to the old `mzscheme'
+language, try `#lang mzscheme' instead.  If you think of the program
+as R5RS code, then try starting with `#lang r5rs'. Finally, if it's a
+MrEd script, then `#lang scheme/gui' may be the best starting point.
+
+If you have R5RS code that won't fit (or that you don't want) in a
+module, then you still have the R5RS language in DrScheme, and you can
+run it in MzScheme via the `plt-r5rs' executable.
+
+Finally, the "Pretty Big" language is still available in the "Legacy"
+section of DrScheme's "Choose Language..." dialog. It remains a fusion
+of traditional Lisp style (big ball of mud, no modules) and PLT-isms
+(`local', immutable pairs). So, if you've moved beyond the 1980's R5RS
+minimalism, but you're yet ready for the 21st century's modular
+Scheme, then Pretty Big is still there for you.
+
+Modules Using the `mzscheme' Language
+-------------------------------------
+
+If the program is (now) in a `mzscheme' module, then it might work
+fine as-is, since the bindings of the `mzscheme' module in v3 and v4
+are mostly the same, with two main caveats:
+
+ * Pairs are immutable in the new `mzscheme'.
+
+   Even though `cons' in `mzscheme' could produce mutable pairs while
+   `cons' is other languages produces immutable pairs, the two
+   datatypes must be distinct. Thus, leaving `cons' as `mcons' in
+   `mzscheme' would simply force most code to be converted to `scheme'
+   or `scheme/base', which can require significant work.
+
+   Meanwhile, our experience is that making the result of `cons'
+   immutable does not create many porting problems. Nevertheless, if
+   your code does use `set-car!' or `set-cdr!', and if converting to a
+   more functional style is difficult, then consider using `mcons' and
+   the `scheme/mpair' library.
+
+ * Keyword arguments via `mzlib/kw' are not compatible with the
+   keyword argument of `scheme/base'.
+
+   Most PLT libraries are now built on `scheme/base', which means that
+   keyword-consuming functions from those libraries are difficult to
+   use in `mzscheme' without explicitly importing and using `#%app'
+   from `scheme/base'. Fortunately, keyword arguments were
+   infrequently used in PLT libraries before v4.
+
+If these sorts of problems start to give you trouble, or if the
+relevant code is likely to be useful for a long time, then you're
+probably better off upgrading from a `mzscheme' module to a
+`scheme/base' or `scheme' module. Upgrading gives you the easiest
+access to the PLT libraries (especially as keyword arguments become
+more common).
+
+Otherwise, even if you stick to `mzscheme', you can use some new
+features, like the new syntax for module paths. That is, `(require
+mzlib/pretty)' works just as well as `(require (lib "pretty.ss"))' to
+access the pretty-printing library in a `mzscheme' module.
+
+The "mzlib" collection has become the home of legacy libraries and
+legacy interfaces to still-evolving libraries. For example,
+`mzlib/contract' mostly re-exports `scheme/contract', but it also
+re-exports the class contracts of `scheme/class' for compatibility
+with the old `(lib "contract.ss")' interface.
+
+Moving to `scheme' or `scheme/base'
+-----------------------------------
+
+If you decide to port to the native language of most PLT libraries,
+then you need to pick either `scheme' or `scheme/base' as a
+replacement for `mzscheme'. The `scheme' language is a lot bigger than
+`scheme/base'. Use `scheme' for scripts or other places where you want
+the convenience of many bindings. Use `scheme/base' when you're
+implementting a library that you'll distirbute to others, where a
+smaller footprint and less possibility for name collisions matters
+more than convenience.
+
+If you're moving code into a `scheme' or `scheme/base' module, you'll
+usually have the change the following parts of your code:
+
+ * The `require' and `provide' syntax has changed:
+
+    - Use `(require (for-syntax ....))' instead of
+      `(require-for-syntax ....)'.
+
+    - Use `(only-in ....)' instead of `(only ....)'. Also, use
+      `(only-in .... [<old-id> <new-id>] ...)' instead of `(rename
+      .... [<new-id> <old-id>] ...)'. That is, use `only-in' instead
+      of `rename' and reverse the order of the names.
+
+    - Use `(all-from-out ....)' instead of `(all-from ....)', and use
+      `(except-out (all-from-out ....))' insteda of `(all-from-except
+      ....)'. That is, compose `except-out' and `all-from-out' to get
+      the old `all-from-except' combination.
+
+ * Beware that `scheme/base' and `scheme' automatically print non-void
+   results of top-level expressions. You may have to add an explicit
+   `(void ....)'  around an expression that is executed for a
+   side-effect, but that returns a non-void result.
+
+ * If you use `open-output-file', `call-with-output-file', etc. with a
+   mode like 'exists or 'replace, you'll have to add the #:exists
+   keyword before the mode (since it's now a keyword argument).
+
+ * Use plain `lambda' instead of `opt-lambda' or `lambda/kw', since
+   `lambda' supports optional and keyword arguments.
+
+ * Use `when' instead of one-armed `if' (which is no longer allowed).
+
+ * If you require libraries from the "mzlib" collection, convert to
+   the `scheme/...' variant --- if the function or syntactic form you
+   need is not already provided by `scheme'/base or `scheme'.
+
+ * Pairs are immutable, and the advice the same as in `mzscheme': try
+   to convert to a more functional style, and as a last resort fall
+   back to `mcons' and the `scheme/mpair' library.
+
+ * Beware of libraries that still use `mzlib/kw' for keyword
+   arguments. It's relatively easy to call such functions from
+   `scheme' or `scheme/base', though: just quote the keyword in the
+   function call.
 
 ======================================================================
  Immutable and Mutable Pairs
