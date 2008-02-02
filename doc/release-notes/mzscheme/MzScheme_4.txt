@@ -152,7 +152,7 @@ MrEd script, then `#lang scheme/gui' may be the best starting point.
 
 If you have R5RS code that won't fit (or that you don't want) in a
 module, then you still have the R5RS language in DrScheme, and you can
-run via the new `plt-r5rs' command-line executable.
+also run via the new `plt-r5rs' command-line executable.
 
 Modules Using the `mzscheme' Language
 -------------------------------------

@@ -91,7 +91,7 @@
 (define (reply query)
   ;; Extract and use the form results:
   (define n (string->number (cdr (assq 'number query))))
-  `(html (body ,@(for ([i (in-range n)])
+  `(html (body ,@(for/list ([i (in-range n)])
                    " hello"))))
 
 (hash-table-put! dispatch-table "many" many)

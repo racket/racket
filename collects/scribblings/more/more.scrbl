@@ -551,7 +551,7 @@ many ``hello''s as a user wants:
 
 (define (reply query)
   (define n (string->number (cdr (assq 'number query))))
-  `(html (body ,@(for ([i (in-range n)])
+  `(html (body ,@(for/list ([i (in-range n)])
                    " hello"))))
 
 (hash-table-put! dispatch-table "many" many)
@@ -706,7 +706,7 @@ Specifically, we need @scheme[prompt] and @scheme[abort] from
 @schememodname[scheme/control]. We use @scheme[prompt] to mark the
 place where a servlet is started, so that we can abort a computation
 to that point. Change @scheme[handle] by wrapping an @scheme[prompt]
-around the cal to @scheme[dispatch]:
+around the call to @scheme[dispatch]:
 
 @schemeblock[
 (define (handle in out)
@@ -759,7 +759,7 @@ computation.
 
 In summary, the new pieces are: @scheme[(require scheme/control)],
 adding @scheme[prompt] inside @scheme[handle], the definitions of
-@scheme[send/suspend], @scheme[get-number], and @scheme[sum], and
+@scheme[send/suspend], @scheme[get-number], and @scheme[sum2], and
 @scheme[(hash-table-put! dispatch-table "sum2" sum2)]. Once you have
 the server updated, visit @tt{http://localhost:8081/sum2}.
 
