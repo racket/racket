@@ -70,24 +70,28 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define errors null)
-  (define (record-error cc desc go)
+  (define (record-error cc desc go fail-k)
     (with-handlers ([exn:fail?
                      (lambda (x)
                        (if (exn? x)
                          (fprintf (current-error-port) "~a\n" (exn-message x))
                          (fprintf (current-error-port) "~s\n" x))
-                       (set! errors (cons (list cc desc x) errors)))])
+                       (set! errors (cons (list cc desc x) errors))
+                       (fail-k))])
       (go)))
   (define-syntax begin-record-error
     (syntax-rules ()
-      [(_ cc desc body ...) (record-error cc desc (lambda () body ...))]))
+      [(_ cc desc body ...) (record-error cc desc (lambda () body ...) void)]))
   (define (show-errors port)
     (for ([e (reverse errors)])
       (let ([cc (car e)]
             [desc (cadr e)]
             [x (caddr e)])
-        (setup-fprintf port "Error during ~a for ~a (~a)"
-                       desc (cc-name cc) (path->string (cc-path cc)))
+        (setup-fprintf port "Error during ~a for ~a"
+                       desc
+                       (if (cc? cc) 
+                           (format "~a (~a)" (cc-name cc) (path->string (cc-path cc)))
+                           cc))
         (if (exn? x)
           (setup-fprintf port "  ~a" (exn-message x))
           (setup-fprintf port "  ~s" x)))))
@@ -755,7 +759,11 @@
       ((doc:setup-scribblings)
        (if no-specific-collections? #f (map cc-path ccs-to-compile))
        #f
-       (not (null? (archives))))))
+       (not (null? (archives)))
+       (lambda (what go alt)
+         (record-error what "Building docs"
+                       go
+                       alt)))))
 
   (define (render-pdf file)
     (define cmd
