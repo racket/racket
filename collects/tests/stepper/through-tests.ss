@@ -3,15 +3,17 @@
 ;;exec mred -u "$0" "$@"
 ;;|#
 
-(module through-tests mzscheme
-  (require (lib "shared.ss" "stepper" "private")
-           (lib "model.ss" "stepper" "private")
-           (lib "model-settings.ss" "stepper" "private")
-           (lib "match.ss")
-           (lib "sexp-diff.ss" "tests" "utils")
-           "module-elaborator.ss"
-           (lib "list.ss")
-           (only (lib "13.ss" "srfi") string-contains)
+#lang scheme/base
+
+  (require (for-syntax scheme/base)
+           (for-syntax scheme/mpair)
+           scheme/match
+           stepper/private/shared
+           stepper/private/model
+           stepper/private/model-settings
+           tests/utils/sexp-diff
+           lang/run-teaching-program
+           (only-in (lib "13.ss" "srfi") string-contains)
            ;; for xml testing:
            ;; (lib "class.ss")
            ;; (all-except (lib "xml-snipclass.ss" "xml") snip-class)
@@ -19,9 +21,7 @@
            ;; (lib "mred.ss" "mred")
            )
   
-  (require-for-syntax scheme/mpair)
-  
-  (provide (all-defined))
+  (provide (all-defined-out))
 
   (define test-directory (find-system-path 'temp-dir))
   
@@ -31,11 +31,11 @@
   
   (define show-all-steps (make-parameter #f))
 
-  (define (stream-ify expr-list iter)
+  (define (stream-ify stx-thunk iter)
     (lambda ()
-      (if (null? expr-list)
-        (iter eof void)
-        (iter (expand (car expr-list)) (stream-ify (cdr expr-list) iter)))))
+      (let* ([next (stx-thunk)]
+             [followup-thunk (if (eof-object? next) void (stream-ify stx-thunk iter))])
+        (iter (expand next) followup-thunk))))
 
   (define (warn who fmt . args)
     (set-box! (error-has-occurred-box) #t)
@@ -63,16 +63,7 @@
            [program-expander
             (lambda (init iter)
               (init)
-              (let* ([exps (let read-loop ()
-                             (let ([expr (read-syntax "test-input" in-port)])
-                               (if (eof-object? expr)
-                                 null
-                                 (cons expr (read-loop)))))]
-                     [exprs (wrap-in-module
-                             exps namespace-spec teachpack-specs)])
-                ((stream-ify (let ([ans exprs])
-                               (printf "~s\n" ans)
-                               ans) iter))))])
+              ((stream-ify (expand-teaching-program in-port read-syntax namespace-spec teachpack-specs #f) iter)))])
       (let/ec escape
         (parameterize ([error-escape-handler (lambda () (escape (void)))])
           (go program-expander receive-result render-settings
@@ -88,6 +79,7 @@
     (let ([filename (build-path test-directory "stepper-test")])
       (call-with-output-file filename
         (lambda (port) (fprintf port "~a" exp-str))
+        #:exists
         'truncate)
       (unless (display-only-errors)
         (printf "testing string: ~v\n" exp-str))
@@ -423,7 +415,8 @@
      -> {(+ 5 6)}
      -> {11})
 
-  (t 2armed-if test-mz-sequence
+  ;; not really a part of base mzscheme anymore
+  #;(t 2armed-if test-mz-sequence
      (if 3 4)
      :: {(if 3 4)} -> {4})
 
@@ -1665,7 +1658,7 @@
     (run-tests '(check-error)))
   #;(parameterize ([display-only-errors #t])
     (run-all-tests-except '(prims qq-splice time set! local-set! lazy1 lazy2 lazy3)))
-  
+  (run-all-tests)
   
 
-  )
+
