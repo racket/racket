@@ -505,12 +505,11 @@
           (inherit get-reader set-printing-parameters)
           
           (define/override (front-end/complete-program port settings)
-            (run-teaching-program port 
-                                  settings 
-                                  (get-reader)
-                                  (get-module)
-                                  (htdp-lang-settings-teachpacks settings)
-                                  (drscheme:rep:current-rep)))
+            (expand-teaching-program port  
+                                     (get-reader)
+                                     (get-module)
+                                     (htdp-lang-settings-teachpacks settings)
+                                     (drscheme:rep:current-rep)))
 
           (define keywords #f)
           (define/augment (capability-value key)

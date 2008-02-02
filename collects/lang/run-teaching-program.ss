@@ -7,15 +7,14 @@
          scheme/contract)
 
 (provide/contract
- [run-teaching-program (-> input-port?
-                           any/c
+ [expand-teaching-program (-> input-port?
                            (-> any/c input-port? any/c)
                            any/c
                            (listof any/c)
-                           (object-contract [display-results/void (-> (listof any/c) any)])
+                           (or/c false/c (object-contract [display-results/void (-> (listof any/c) any)]))
                            any)])
 
-(define (run-teaching-program port settings reader language-module teachpacks rep)
+(define (expand-teaching-program port reader language-module teachpacks rep)
   (let ([state 'init]
         ;; state : 'init => 'require => 'done-or-exn
         
@@ -51,7 +50,6 @@
                     (error))))
               teachpacks)
              (rewrite-module
-              settings
               (expand
                (datum->syntax
                 #f
@@ -90,7 +88,7 @@
 
 ;; rewrite-module : settings syntax (is-a?/c interactions-text<%>) -> syntax
 ;; rewrites te module to print out results of non-definitions
-(define (rewrite-module settings stx rep)
+(define (rewrite-module stx rep)
   (syntax-case stx (module #%plain-module-begin)
     [(module name lang (#%plain-module-begin bodies ...))
      (with-syntax ([(rewritten-bodies ...) 
