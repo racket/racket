@@ -138,8 +138,8 @@ you're working with.
 Non-module Programs
 -------------------
 
-If the prgram is not in a module, then start by putting it into into
-one. The module system is there help manage code across multiple
+If the prgram is not in a module, then the best start is to put it
+into one. The module system is there help manage code across multiple
 dialects of Scheme, so staying outside of modules while upgrading
 means that you're ignoring the main upgrade tool.
 
@@ -152,31 +152,24 @@ MrEd script, then `#lang scheme/gui' may be the best starting point.
 
 If you have R5RS code that won't fit (or that you don't want) in a
 module, then you still have the R5RS language in DrScheme, and you can
-run it in MzScheme via the `plt-r5rs' executable.
-
-Finally, the "Pretty Big" language is still available in the "Legacy"
-section of DrScheme's "Choose Language..." dialog. It remains a fusion
-of traditional Lisp style (big ball of mud, no modules) and PLT-isms
-(`local', immutable pairs). So, if you've moved beyond the 1980's R5RS
-minimalism, but you're yet ready for the 21st century's modular
-Scheme, then Pretty Big is still there for you.
+run via the new `plt-r5rs' command-line executable.
 
 Modules Using the `mzscheme' Language
 -------------------------------------
 
 If the program is (now) in a `mzscheme' module, then it might work
-fine as-is, since the bindings of the `mzscheme' module in v3 and v4
-are mostly the same, with two main caveats:
+fine as-is. The bindings of the `mzscheme' module in v3 and v4 are
+mostly the same, with two main caveats:
 
  * Pairs are immutable in the new `mzscheme'.
 
-   Even though `cons' in `mzscheme' could produce mutable pairs while
-   `cons' is other languages produces immutable pairs, the two
-   datatypes must be distinct. Thus, leaving `cons' as `mcons' in
-   `mzscheme' would simply force most code to be converted to `scheme'
-   or `scheme/base', which can require significant work.
+   Even though `cons' in `mzscheme' could be defined to produce
+   mutable pairs, many PLT libraries expect immutable pairs. Thus,
+   `cons' in `mzscheme' produces immutable pairs, because it seems to
+   be the best compromise between backward compatibility and
+   interoperability.
 
-   Meanwhile, our experience is that making the result of `cons'
+   Indeed, our experience is that making the result of `cons'
    immutable does not create many porting problems. Nevertheless, if
    your code does use `set-car!' or `set-cdr!', and if converting to a
    more functional style is difficult, then consider using `mcons' and
@@ -204,10 +197,10 @@ mzlib/pretty)' works just as well as `(require (lib "pretty.ss"))' to
 access the pretty-printing library in a `mzscheme' module.
 
 The "mzlib" collection has become the home of legacy libraries and
-legacy interfaces to still-evolving libraries. For example,
-`mzlib/contract' mostly re-exports `scheme/contract', but it also
-re-exports the class contracts of `scheme/class' for compatibility
-with the old `(lib "contract.ss")' interface.
+interfaces. For example, `mzlib/contract' mostly re-exports
+`scheme/contract', but it also re-exports the class contracts of
+`scheme/class' for compatibility with the old `(lib "contract.ss")'
+interface.
 
 Moving to `scheme' or `scheme/base'
 -----------------------------------
@@ -217,9 +210,9 @@ then you need to pick either `scheme' or `scheme/base' as a
 replacement for `mzscheme'. The `scheme' language is a lot bigger than
 `scheme/base'. Use `scheme' for scripts or other places where you want
 the convenience of many bindings. Use `scheme/base' when you're
-implementting a library that you'll distirbute to others, where a
-smaller footprint and less possibility for name collisions matters
-more than convenience.
+implementing a library that you will distribute to others, in which
+case a smaller footprint and less possibility for name collisions
+matters more than convenience.
 
 If you're moving code into a `scheme' or `scheme/base' module, you'll
 usually have the change the following parts of your code:
@@ -235,14 +228,14 @@ usually have the change the following parts of your code:
       of `rename' and reverse the order of the names.
 
     - Use `(all-from-out ....)' instead of `(all-from ....)', and use
-      `(except-out (all-from-out ....))' insteda of `(all-from-except
+      `(except-out (all-from-out ....))' instead of `(all-from-except
       ....)'. That is, compose `except-out' and `all-from-out' to get
       the old `all-from-except' combination.
 
  * Beware that `scheme/base' and `scheme' automatically print non-void
    results of top-level expressions. You may have to add an explicit
-   `(void ....)'  around an expression that is executed for a
-   side-effect, but that returns a non-void result.
+   `(void ....)'  around a side-effecting expression that returns a
+   non-void result.
 
  * If you use `open-output-file', `call-with-output-file', etc. with a
    mode like 'exists or 'replace, you'll have to add the #:exists
@@ -257,9 +250,10 @@ usually have the change the following parts of your code:
    the `scheme/...' variant --- if the function or syntactic form you
    need is not already provided by `scheme'/base or `scheme'.
 
- * Pairs are immutable, and the advice the same as in `mzscheme': try
-   to convert to a more functional style, and as a last resort fall
-   back to `mcons' and the `scheme/mpair' library.
+ * Pairs are immutable, and the advice for handling mutation of pairs
+   is the same as in `mzscheme': try to convert to a more functional
+   style, and as a last resort fall back to `mcons' and the
+   `scheme/mpair' library.
 
  * Beware of libraries that still use `mzlib/kw' for keyword
    arguments. It's relatively easy to call such functions from
