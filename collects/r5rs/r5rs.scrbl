@@ -1,8 +1,11 @@
 #lang scribble/doc
 @(require scribble/manual
           (for-label r5rs
+                     (only-in mzscheme #%plain-module-begin)
+                     (only-in scheme/mpair mmap)
+                     (only-in scheme/contract one-of/c)
                      (only-in scheme/base
-                              require find-system-path
+                              require find-system-path namespace? mcons mcdr
                               namespace-require namespace-require/copy
                               read-case-sensitive
                               read-accept-infix-dot
@@ -47,15 +50,17 @@ according to @|r5rs|:
        expressions and definitions. See @secref["plt-r5rs"] (later in
        this manual) for more information.}
 
- @item{The @schememodname[r5rs] language supports an @|r5rs|-like
-       language within a module body.  See @secref["r5rs-mod"] (later
-       in this manual) for more information.}
+ @item{The @schememodname[r5rs] library implemented @|r5rs| procedures
+       and syntactic forms. It can also be used with @hash-lang[] to
+       create a module whose body is implemented in an @|r5rs|-like
+       language.  See @secref["r5rs-mod"] (later in this manual) for
+       more information.}
 
  @item{The @schememodname[r5rs/init] library extends
-       @schememodname[r5rs] to set parameters (such as case-sensitive
-       symbol reading) for @|r5rs| loading or an @|r5rs|
-       read-eval-print loop. See @secref["r5rs/init-mod"] (later in
-       this manual) for more information.}
+       @schememodname[r5rs] to set parameters (such as
+       case-insensitive symbol reading) for @|r5rs| loading or an
+       @|r5rs| read-eval-print loop. See @secref["r5rs/init-mod"]
+       (later in this manual) for more information.}
 
 }
 
@@ -87,20 +92,82 @@ for primitive bindings (at the cost of performance).
 
 @defmodulelang[r5rs]
 
-The @schememodname[r5rs] language resembles the language defined by
-@|r5rs|. The main difference is that, as a module language,
-@schememodname[r5rs] does not allow redefinition of top-level
-bindings, and expressions evaluated through @scheme[load] and
-@scheme[eval] cannot automatically access bindings defined within the
-module.
+As a library, @schememodname[r5rs] provides the syntactic forms and
+procedures defined by @|r5rs|. When used as a language via
+@hash-lang[], the program is read with the following
+parameterizations:
 
-The @schememodname[r5rs] module provides bindings that can be imported
-into a top-level environment, and then evaluation in the top-level
-environment corresponds more closely to @|r5rs|.
+@schemeblock[
+  (read-case-sensitive #f)
+  (read-accept-infix-dot #f)
+  (read-curly-brace-as-paren #f)
+  (read-square-bracket-as-paren #f)
+]
 
-In particular, the @exec{plt-r5rs} executable imports
-@schememodname[r5rs] into the top-level environment, though it does so
-via @schememodname[r5rs/init].
+The @schememodname[r5rs] bindings can be imported into a top-level
+environment, and then evaluation in that top-level environment
+corresponds to @|r5rs|. Use @scheme[(namespace-require/copy 'r5rs)]
+with an empty namespace to maximize conformance with @|r5rs|; Using
+@scheme[(namespace-require 'r5rs)], in contrast, creates primitive
+bindings as imports, which is the same as using
+@seclink["plt-r5rs"]{@exec{plt-r5rs}} without the @DFlag{slow} flag.
+More simply, use @scheme[(scheme-report-environment 5)].  See also
+@schememodname[r5rs/init], which sets reader and printer parameters to
+increase conformance.
+
+Using @schememodname[r5rs] via @hash-lang[] creates a module whose
+body is implemented with an @|r5rs|-like language. The main difference
+from @|r5rs| is that, as a module language, @schememodname[r5rs] does
+not allow redefinition of top-level bindings, and expressions
+evaluated through @scheme[load] and @scheme[eval] cannot automatically
+access bindings defined within the module.
+
+@; --------------------
+
+@subsection{Non-@|r5rs| Bindings from @schememodname[r5rs]}
+
+In addition to the bindings defined by @|r5rs|, the
+@schememodname[r5rs] library provides the following bindings from
+@schememodname[mzscheme] (which are not legal identifiers in @|r5rs|
+syntax, so there is no danger of collisions in @|r5rs| programs):
+
+@schemeblock[
+#%app #%datum #%top #%top-interaction #%require #%provide
+]
+
+It also provides @schememodname[mzscheme]'s
+@scheme[#%plain-module-begin] as @scheme[#%module-begin]. Note that
+@scheme[#%require] can be used to import PLT Scheme libraries into an
+otherwise @|r5rs| program, and @scheme[#%provide] can be used to
+export from a module that is implemented in an @|r5rs|-like language.
+
+@; --------------------
+
+@subsection{Notes on @|r5rs| Functions}
+
+The @scheme[cons] of @schememodname[r5rs] corresponds to
+@schememodname[scheme/base]'s @scheme[mcons]. Similarly, @scheme[cdr]
+is @scheme[mcdr], and @scheme[map] is @schememodname[scheme/mpair]'s
+@scheme[mmap], and so on.
+
+@defproc[(eval [expr any/c] [environment namespace?]) any]{
+
+An @|r5rs| @defterm{environment} is implemented as a
+@scheme[scheme/base] @defterm{namespace}. Also, relative to
+@scheme[scheme/base], the @scheme[expr] passed to @scheme[eval] is
+constructed using mutable pairs.}
+
+@defproc[(scheme-report-environment [n (one-of/c 5)]) namespace?]{
+
+Returns a namespace containing the bindings of @schememodname[r5rs].
+Procedure values are installed into the namespace using
+@scheme[namespace-require/copy], so that they can be redefined.}
+
+@defproc[(scheme-null-environment [n (one-of/c 5)]) namespace?]{
+
+Returns a namespace containing the syntactic forms of
+@schememodname[r5rs], not including @scheme[#%module-begin] (which is
+not useful outside of a module).}
 
 @; ----------------------------------------
 
@@ -120,16 +187,10 @@ and also sets parameters as follows:
 ]
 
 The side-effect of setting these parameters is useful when the module
-is @scheme[require]d before loading an @|r5rs| program, so tha the
+is @scheme[require]d before loading an @|r5rs| program, so that the
 reader and printer behave more as specified in @|r5rs|. In particular,
 the @seclink["plt-r5rs"]{@exec{plt-r5rs} executable} initializes by
 importing @schememodname[r5rs/init].
-
-Use @scheme[(namespace-require/copy 'r5rs/init)] with an empty
-namespace to maximize conformance with @|r5rs|. Using
-@scheme[(namespace-require 'r5rs/init)] creates primitive bindings as
-imports, not variables, which is the same as using
-@seclink["plt-r5rs"]{@exec{plt-r5rs}} without the @DFlag{slow} flag.
 
 @; ----------------------------------------
 

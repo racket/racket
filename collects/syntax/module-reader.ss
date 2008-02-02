@@ -1,5 +1,6 @@
 (module module-reader scheme/base
-  (provide (rename-out [provide-module-reader #%module-begin]))
+  (provide (rename-out [provide-module-reader #%module-begin]
+                       [wrap wrap-read-all]))
 
   (define-syntax provide-module-reader
     (syntax-rules ()
