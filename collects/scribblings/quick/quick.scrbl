@@ -419,7 +419,7 @@ Modules are named and distributed in various ways:
         @schememod[
          scheme
          (require "quick.ss")
-         (rainbow square)
+         (rainbow (square 5))
         ]
 
         and when you run @filepath{use.ss}, a rainbow list of squares
