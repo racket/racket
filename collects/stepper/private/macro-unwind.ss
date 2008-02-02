@@ -59,10 +59,16 @@
                                  (unwind-define stx settings)]
                                 [(#%plain-app exp ...)
                                  (recur-on-pieces #'(exp ...) settings)]
+                                [(quote datum)
+                                 (if (symbol? #'datum)
+                                     stx
+                                     #'datum)]
                                 [(let-values . rest)
                                  (unwind-mz-let stx settings)]
                                 [(letrec-values . rest)
                                  (unwind-mz-let stx settings)]
+                                [(#%plain-lambda . rest)
+                                 (recur-on-pieces #'(lambda . rest) settings)]
                                 [(set! var rhs)
                                  (with-syntax ([unwound-var (or (stepper-syntax-property
                                                                  #`var 'stepper-lifted-name)

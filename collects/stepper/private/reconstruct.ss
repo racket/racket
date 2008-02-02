@@ -107,7 +107,7 @@
   (define recon-value
     (opt-lambda (val render-settings [assigned-name #f])
       (if (hash-table-get finished-xml-box-table val (lambda () #f))
-          (stepper-syntax-property #`(#%datum . #,val) 'stepper-xml-value-hint 'from-xml-box)
+          (stepper-syntax-property #`(quote #,val) 'stepper-xml-value-hint 'from-xml-box)
           (let ([closure-record (closure-table-lookup val (lambda () #f))])     
             (if closure-record
                 (let* ([mark (closure-record-mark closure-record)]
@@ -124,7 +124,7 @@
                 (let* ([rendered ((render-settings-render-to-sexp render-settings) val)])
                   (if (symbol? rendered)
                       #`#,rendered
-                      #`(#%datum . #,rendered))))))))
+                      #`(quote #,rendered))))))))
     
   (define (final-mark-list? mark-list)
     (and (not (null? mark-list)) (eq? (mark-label (car mark-list)) 'final)))

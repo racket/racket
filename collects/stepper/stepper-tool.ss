@@ -592,11 +592,13 @@
                     (send stepper-window original-program-changed))))))
 
           (define/augment (on-insert x y)
-            (notify-stepper-frame-of-change)
+            (unless metadata-changing-now?
+              (notify-stepper-frame-of-change))
             (inner (void) on-insert x y))
 
           (define/augment (on-delete x y)
-            (notify-stepper-frame-of-change)
+            (unless metadata-changing-now?
+              (notify-stepper-frame-of-change))
             (inner (void) on-delete x y))
 
           (define/augment (after-set-next-settings s)
@@ -604,6 +606,18 @@
               (when tlw
                 (send tlw check-current-language-for-stepper)))
             (inner (void) after-set-next-settings s))
+          
+          (define metadata-changing-now? #f)
+          
+          ;; don't pay attention to changes that occur on metadata.
+          ;; this assumes that metadata changes cannot be nested.
+          (define/augment (begin-metadata-changes)
+            (set! metadata-changing-now? #t)
+            (inner (void) begin-metadata-changes))
+          
+          (define/augment (end-metadata-changes)
+            (set! metadata-changing-now? #f)
+            (inner (void) end-metadata-changes))
 
           (super-new)))
 
