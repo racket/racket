@@ -74,6 +74,7 @@ void wxMemoryDC::SelectObject(wxBitmap *bitmap)
   }
 
   if (cMacDC) {
+    cMacDC->EndCG();
     DELETE_OBJ cMacDC;
     cMacDC = NULL;
   }
