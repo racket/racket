@@ -2,12 +2,10 @@
 (module init scheme/base
 
   (read-case-sensitive #f)
-  (read-curly-brace-as-paren #f)
   (read-accept-infix-dot #f)
   (read-curly-brace-as-paren #f)
   (read-square-bracket-as-paren #f)
 
-  (print-vector-length #f)
   (print-mpair-curly-braces #f)
   ;; Printing pairs with curly braces is a bad idea, because
   ;;  syntax errors then use curly braces!

@@ -11,7 +11,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
            (lib "compile.ss")
            (lib "inflate.ss")
            (lib "date.ss")
-           (lib "file.ss" "dynext"))
+           (lib "file.ss" "dynext")
+           syntax/toplevel)
 
   ;; Implementaton-specific control functions ------------------------------
 
@@ -39,17 +40,24 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define (clean-up-nothing bm)
     (void))
 
-  (define (mk-mzscheme-r5rs bm)
+  (define (mk-plt-r5rs bm)
     (with-output-to-file (format "~a.scm" bm)
       #:exists 'replace
       (lambda ()
-        (printf "(module ~a \"r5rs-wrap.ss\")\n" bm)))
+        (printf "(load \"r5rs-wrap.ss\")\n(load \"~a.sch\")\n" bm)))
     ;; To get compilation time:
-    (parameterize ([current-namespace (make-base-namespace)])
-      (namespace-require 'scheme/base)
-      (load (format "~a.scm" bm))))
+    (parameterize ([current-namespace (make-base-empty-namespace)])
+      (namespace-require 'r5rs)
+      (with-input-from-file (format "~a.sch" bm)
+        (lambda ()
+          (let loop ()
+            (let ([e (read-syntax)])
+              (unless (eof-object? e)
+                (eval-compile-time-part-of-top-level/compile 
+                 (namespace-syntax-introduce e))
+                (loop))))))))
 
-  (define (clean-up-r5rs bm)
+  (define (clean-up-plt-r5rs bm)
     (let ([f (format "~s.scm" bm)])
       (when (file-exists? f)
         (delete-file f))))
@@ -193,12 +201,12 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 extract-mzscheme-times
                 clean-up-nothing
                 mutable-pair-progs)
-     (make-impl 'mz-r5rs
-                mk-mzscheme-r5rs
+     (make-impl 'plt-r5rs
+                mk-plt-r5rs
                 (lambda (bm)
-                  (system (format "mzscheme -u ~a.scm" bm)))
+                  (system (format "plt-r5rs ~a.scm" bm)))
                 extract-mzscheme-times
-                clean-up-r5rs
+                clean-up-plt-r5rs
                 null)
      (make-impl 'mzc
                 mk-mzc

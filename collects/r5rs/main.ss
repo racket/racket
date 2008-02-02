@@ -230,9 +230,9 @@
   ;; and with optimization for precedure letrecs
   (define undefined (letrec ([u u]) u))
   (define-syntax r5rs:letrec
-    (syntax-rules (r5rs-lambda)
-      ((r5rs:letrec ((var1 (r5rs-lambda . _rest)) ...) body ...)
-       (letrec ((var1 (r5rs-lambda . _rest)) ...) body ...))
+    (syntax-rules (r5rs:lambda)
+      ((r5rs:letrec ((var1 (r5rs:lambda . _rest)) ...) body ...)
+       (letrec ((var1 (r5rs:lambda . _rest)) ...) body ...))
       ((r5rs:letrec ((var1 init1) ...) body ...)
        (r5rs:letrec "generate_temp_names"
 	 (var1 ...)

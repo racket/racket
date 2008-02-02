@@ -192,7 +192,7 @@ incomplete encoding sequence.)}
                                [close? any/c #t]
                                [name any/c (object-name out)]
                                [buffer (one-of/c 'block 'line 'none)
-                                       (if (file-stream-port out)
+                                       (if (file-stream-port? out)
                                            (file-stream-buffer-mode out)
                                            'block)])
          output-port?]{
@@ -210,14 +210,14 @@ If @scheme[close?] is true, then closing the result output port also
 closes @scheme[out]. The @scheme[name] argument is used as the name of
 the result output port.
 
-The @scheme[buffer-sym] argument determines the buffer mode of the
-output port. In @scheme['block] mode, the port's buffer is flushed
-only when it is full or a flush is requested explicitly. In
-@scheme['line] mode, the buffer is flushed whenever a newline or
-carriage-return byte is written to the port. In @scheme['none] mode,
-the port's buffer is flushed after every write.  Implicit flushes for
-@scheme['line] or @scheme['none] leave bytes in the buffer when they
-are part of an incomplete encoding sequence.
+The @scheme[buffer] argument determines the buffer mode of the output
+port. In @scheme['block] mode, the port's buffer is flushed only when
+it is full or a flush is requested explicitly. In @scheme['line] mode,
+the buffer is flushed whenever a newline or carriage-return byte is
+written to the port. In @scheme['none] mode, the port's buffer is
+flushed after every write.  Implicit flushes for @scheme['line] or
+@scheme['none] leave bytes in the buffer when they are part of an
+incomplete encoding sequence.
 
 The resulting output port does not support atomic writes. An explicit
 flush or special-write to the output port can hang if the most
