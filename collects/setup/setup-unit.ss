@@ -753,17 +753,12 @@
     (with-handlers ([exn:fail? (lambda (exn)
                                  (setup-printf
                                   "Docs failure: ~a"
-                                  (if (exn? exn)
-                                    (exn-message exn)
-                                    exn)))])
+                                  (if (exn? exn) (exn-message exn) exn)))])
       ((doc:setup-scribblings)
        (if no-specific-collections? #f (map cc-path ccs-to-compile))
        #f
        (not (null? (archives)))
-       (lambda (what go alt)
-         (record-error what "Building docs"
-                       go
-                       alt)))))
+       (lambda (what go alt) (record-error what "Building docs" go alt)))))
 
   (define (render-pdf file)
     (define cmd
@@ -807,7 +802,9 @@
             ((doc:setup-scribblings)
              (if no-specific-collections? #f (map cc-path ccs-to-compile))
              tmp-dir
-             #f)
+             #f
+             (lambda (what go alt)
+               (record-error what "Building docs" go alt)))
             (parameterize ([current-directory tmp-dir])
               (for ([f (directory-list)]
                     #:when (regexp-match? #rx#"[.]tex$" (path-element->bytes f)))
