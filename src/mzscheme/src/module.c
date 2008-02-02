@@ -2240,16 +2240,18 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
 	rn = scheme_make_module_rename(MZ_LABEL_PHASE, mzMOD_RENAME_NORMAL, mn_ht);
 
 	/* Required for label: */
-	for (l = menv->dt_require_names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-	  idx = SCHEME_CAR(l);
-	  name = scheme_module_resolve(idx, 0);
-          if (SAME_OBJ(name, kernel_modname))
-	    im = kernel;
-          else
-            im = (Scheme_Module *)scheme_hash_get(menv->module_registry, name);
-	 
-	  add_require_renames(rn, NULL, NULL, im, idx);
-	}
+        if (menv->dt_require_names) {
+          for (l = menv->dt_require_names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+            idx = SCHEME_CAR(l);
+            name = scheme_module_resolve(idx, 0);
+            if (SAME_OBJ(name, kernel_modname))
+              im = kernel;
+            else
+              im = (Scheme_Module *)scheme_hash_get(menv->module_registry, name);
+            
+            add_require_renames(rn, NULL, NULL, im, idx);
+          }
+        }
 	/* Required, maybe has for-label exports: */
 	for (l = menv->require_names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
 	  idx = SCHEME_CAR(l);
