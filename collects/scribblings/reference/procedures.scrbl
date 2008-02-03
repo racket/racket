@@ -252,6 +252,7 @@ is disallowed).
 
 @examples[
 (define-struct fish (weight color)
+               #:mutable
                #:property 
                prop:procedure  
                (lambda (f n) (set-fish-weight! f (+ n (fish-weight f)))))
