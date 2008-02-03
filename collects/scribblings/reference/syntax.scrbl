@@ -5,7 +5,7 @@
 
 @title[#:tag "syntax" #:style 'toc]{Syntactic Forms}
 
-This section describes the core syntax forms that apear in a fully
+This section describes the core syntax forms that appear in a fully
 expanded expression, plus a many closely-related non-core forms.
 See @secref["fully-expanded"] for the core grammar.
 
