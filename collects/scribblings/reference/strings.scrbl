@@ -5,7 +5,7 @@
 
 @guideintro["strings"]{strings}
 
-A @pidefterm{string} is a fixed-length arary of
+A @pidefterm{string} is a fixed-length array of
 @seclink["characters"]{characters}.
 
 @index['("strings" "immutable")]{A} string can be @defterm{mutable} or
@@ -63,7 +63,7 @@ Returns an immutable string with the same content as
 
 @defproc[(string-ref [str string?] [k exact-nonnegative-integer?])
  char?]{  Returns the character at position @scheme[k] in @scheme[str].
- The first position in the string cooresponds to @scheme[0], so the
+ The first position in the string corresponds to @scheme[0], so the
  position @scheme[k] must be less than the length of the string,
  otherwise the @exnraise[exn:fail:contract].
 
@@ -73,7 +73,7 @@ Returns an immutable string with the same content as
 @defproc[(string-set! [str (and/c string? (not/c immutable?))] [k
  exact-nonnegative-integer?] [char char?]) void?]{  Changes the
  character position @scheme[k] in @scheme[str] to @scheme[char].  The first
- position in the string cooresponds to @scheme[0], so the position
+ position in the string corresponds to @scheme[0], so the position
  @scheme[k] must be less than the length of the string, otherwise the
  @exnraise[exn:fail:contract].
 
@@ -133,7 +133,7 @@ Returns an immutable string with the same content as
 
 @defproc[(string-append [str string?] ...) string?]{
 
-@index["strings" "concatenate"]{Returns} a new mutable string that is
+@index['("strings" "concatenate")]{Returns} a new mutable string that is
 as long as the sum of the given @scheme[str]s' lengths, and that
 contains the concatenated characters of the given @scheme[str]s. If no
 @scheme[str]s are provided, the result is a zero-length string.

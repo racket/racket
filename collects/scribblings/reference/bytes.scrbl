@@ -140,7 +140,7 @@ positions are initialized with the given @scheme[b]s.
 
 @defproc[(bytes-append [bstr bytes?] ...) bytes?]{ 
 
-@index["byte strings" "concatenate"]{Returns} a new mutable byte string
+@index['("byte strings" "concatenate")]{Returns} a new mutable byte string
 that is as long as the sum of the given @scheme[bstr]s' lengths, and
 that contains the concatenated bytes of the given @scheme[bstr]s. If
 no @scheme[bstr]s are provided, the result is a zero-length byte
