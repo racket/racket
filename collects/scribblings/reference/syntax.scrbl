@@ -77,7 +77,7 @@ are immutable.
 @defform[(#%datum . datum)]{
 
 Expands to @scheme[(#,(schemekeywordfont "quote") datum)], as long as
-@scheme[datum] is not a keyword. If @scheme[datum] is a keyword, and
+@scheme[datum] is not a keyword. If @scheme[datum] is a keyword, a
 syntax error is reported.
 
 See also @secref["expand-steps"] for information on how the expander
@@ -433,8 +433,8 @@ as well as the @scheme[body]s, and the @scheme[id]s need not be
 distinct; later bindings shadow earlier bindings.
 
 @examples[
-(let ([x 1]
-      [y (+ x 1)])
+(let* ([x 1]
+       [y (+ x 1)])
   (list y x))
 ]}
 
