@@ -701,6 +701,7 @@ than @scheme[decimal-digits] digits after the decimal (and it is
 padded with trailing zeros if necessary).
 
 @examples[
+#:eval math-eval
 (real->decimal-string pi)
 (real->decimal-string pi 5)
 ]}

@@ -4,6 +4,10 @@
           scheme/shared
           (for-label scheme/shared))
 
+
+@(define shared-eval (make-base-eval))
+@interaction-eval[#:eval shared-eval (require scheme/shared)]
+
 @(define maker
    (make-element #f (list
                      (schemevarfont "prefix:")
@@ -90,6 +94,7 @@ all @scheme[id]s are bound, so @scheme[_patchable-expr]s also created
 data cycles (but only with cycles that can be created via mutation).
 
 @examples[
+#:eval shared-eval
 (shared ([a (cons 1 a)])
   a)
 (shared ([a (cons 1 b)]
