@@ -589,7 +589,7 @@ Every continuation @scheme[_C] can be partitioned into
 @deftech{continuation frames} @frame[1], @frame[2], ..., @frame["n"]
 such that @scheme[_C] = @*sub[@frame[1] @*sub[@frame[2] @*sub["..."
 @frame["n"]]]], and no frame @frame["i"] can be itself partitioned
-into smaller continuations. Evaluation steps add an remove frames to
+into smaller continuations. Evaluation steps add and remove frames to
 the current continuation, typically one at a time.
 
 Each frame is conceptually annotated with a set of
