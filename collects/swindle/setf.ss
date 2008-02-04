@@ -17,7 +17,7 @@
 ;;>   either as a function or a syntax in the same definition context of
 ;;>   `foo'.  The nice feature that comes out of this and the syntax system
 ;;>   is that examples like the following work as expected:
-;;>     (let ([foo car] [set-foo! set-car!]) (setf! (foo a) 11))
+;;>     (let ([foo mcar] [set-foo! set-mcar!]) (setf! (foo a) 11))
 ;;>
 ;;>   `place' gets expanded before this processing is done so macros work
 ;;>   properly.  If the place is not a form, then this will just use the

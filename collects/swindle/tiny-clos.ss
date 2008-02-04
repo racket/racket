@@ -398,17 +398,17 @@
 ;;>   Note that slot names are usually symbols, but can be other values as
 ;;>   well.
 (define* (slot-ref object slot-name)
-  ((lookup-slot-info (class-of object) slot-name cadr) object))
+  ((lookup-slot-info (class-of object) slot-name mcar) object))
 (defsubst (%slot-ref object slot-name)
-  ((lookup-slot-info (class-of object) slot-name cadr) object))
+  ((lookup-slot-info (class-of object) slot-name mcar) object))
 
 ;;>> (slot-set! obj slot new)
 ;;>   Change the contents of the `slot' slot of `obj' to the given `new'
 ;;>   value.
 (define* (slot-set! object slot-name new-value)
-  ((lookup-slot-info (class-of object) slot-name caddr) object new-value))
+  ((lookup-slot-info (class-of object) slot-name mcdr) object new-value))
 (defsubst (%slot-set! object slot-name new-value)
-  ((lookup-slot-info (class-of object) slot-name caddr) object new-value))
+  ((lookup-slot-info (class-of object) slot-name mcdr) object new-value))
 ;;>> (set-slot-ref! obj slot new)
 ;;>   An alias for `slot-set!', to enable using `setf!' on it.
 (define* set-slot-ref! slot-set!)
@@ -430,21 +430,21 @@
   (not (eq? ??? (%slot-ref object slot-name))))
 
 (define (lookup-slot-info class slot-name selector)
-  (selector (or (assq slot-name
-                      ;; no need to ground slot-ref any more! -- see below
-                      ;; (if (eq? class <class>)
-                      ;;   ;;* This grounds out the slot-ref tower
-                      ;;   getters-n-setters-for-class
-                      ;;   (%class-getters-n-setters class))
-                      (%class-getters-n-setters class))
-                (raise* make-exn:fail:contract
-                        "slot-ref: no slot `~e' in ~e" slot-name class))))
+  (selector (cdr (or (assq slot-name
+                           ;; no need to ground slot-ref any more! -- see below
+                           ;; (if (eq? class <class>)
+                           ;;   ;;* This grounds out the slot-ref tower
+                           ;;   getters-n-setters-for-class
+                           ;;   (%class-getters-n-setters class))
+                           (%class-getters-n-setters class))
+                     (raise* make-exn:fail:contract
+                             "slot-ref: no slot `~e' in ~e" slot-name class)))))
 
 ;;; These are for optimizations - works only for single inheritance!
 (define (%slot-getter class slot-name)
-  (lookup-slot-info class slot-name cadr))
+  (lookup-slot-info class slot-name mcar))
 (define (%slot-setter class slot-name)
-  (lookup-slot-info class slot-name caddr))
+  (lookup-slot-info class slot-name mcdr))
 
 ;;>>... Singleton and Struct Specifiers
 
@@ -627,9 +627,8 @@
 (define getters-n-setters-for-class ; see lookup-slot-info
   (map (lambda (s)
          (let ([f (position-of s the-slots-of-a-class)])
-           (cons s
-                 (mcons (lambda (o)   (%instance-ref  o f))
-                        (lambda (o n) (%instance-set! o f n))))))
+           (cons s (mcons (lambda (o)   (%instance-ref  o f))
+                          (lambda (o n) (%instance-set! o f n))))))
        the-slots-of-a-class))
 
 ;;>>...
@@ -663,12 +662,12 @@
 ;; slot-ref definition above is fine. So,
 ;;   (%set-class-getters-n-setters! <class> getters-n-setters-for-class)
 ;; translates into this:
-((caddr (assq 'getters-n-setters getters-n-setters-for-class))
+((mcdr (cdr (assq 'getters-n-setters getters-n-setters-for-class)))
  <class> getters-n-setters-for-class)
 ;; and now the direct `%class-getters-n-setters' version:
 (set! %class-getters-n-setters
-      ;; and (lookup-slot-info <class> 'getters-n-setters caddr) translates to:
-      (cadr (assq 'getters-n-setters getters-n-setters-for-class)))
+      ;; and (lookup-slot-info <class> 'getters-n-setters mcar) translates to:
+      (mcar (cdr (assq 'getters-n-setters getters-n-setters-for-class))))
 
 ;;>> <top>
 ;;>   This is the "mother of all values": every value is an instance of
@@ -782,7 +781,7 @@
 ;; Do this since compute-apply-method relies on them not changing, as well as a
 ;; zillion other places.  A method should be very similar to a lambda.
 (dolist [slot '(specializers procedure qualifier)]
-  (make-setter-locked! (lookup-slot-info <method> slot cdr) #t
+  (make-setter-locked! (lookup-slot-info <method> slot values) #t
     (lambda ()
       (raise* make-exn:fail:contract
               "slot-set!: slot `~e' in <method> is locked" slot))))
@@ -1587,15 +1586,15 @@
             [(:instance)
              (let* ([f (allocator init-slot)]
                     [g+s (mcons (lambda (o) (%instance-ref o f))
-                               (if (and type (not (eq? <top> type)))
-                                 (lambda (o n)
-                                   (if (instance-of? n type)
-                                     (%instance-set! o f n)
-                                     (raise* make-exn:fail:contract
-                                             "slot-set!: wrong type for slot ~
+                                (if (and type (not (eq? <top> type)))
+                                  (lambda (o n)
+                                    (if (instance-of? n type)
+                                      (%instance-set! o f n)
+                                      (raise* make-exn:fail:contract
+                                              "slot-set!: wrong type for slot ~
                                               ~e in ~e (~e not in ~e)"
-                                             (car slot) class n type)))
-                                 (lambda (o n) (%instance-set! o f n))))])
+                                              (car slot) class n type)))
+                                  (lambda (o n) (%instance-set! o f n))))])
                (when lock
                  (make-setter-locked! g+s lock
                    (lambda ()
@@ -1613,9 +1612,9 @@
                             ;; cache the setter
                             (unless setter
                               (set! setter
-                                    (caddr (assq (car slot)
-                                                 (%class-getters-n-setters
-                                                  class)))))
+                                    (mcdr (cdr (assq (car slot)
+                                                     (%class-getters-n-setters
+                                                      class))))))
                             (unless (eq? result nothing)
                               (setter #f result))))
                         (%class-initializers class)))))
@@ -1626,14 +1625,14 @@
                ;; the slot was declared as :class here
                (let* ([cell (init)] ; default value - no arguments
                       [g+s (mcons (lambda (o) cell)
-                                 (lambda (o n)
-                                   (if (and type (not (instance-of? n type)))
-                                     (raise*
-                                      make-exn:fail:contract
-                                      "slot-set!: wrong type for shared slot ~
+                                  (lambda (o n)
+                                    (if (and type (not (instance-of? n type)))
+                                      (raise*
+                                       make-exn:fail:contract
+                                       "slot-set!: wrong type for shared slot ~
                                        ~e in ~e (~e not in ~e)"
-                                      (car slot) class n type)
-                                     (set! cell n))))])
+                                       (car slot) class n type)
+                                      (set! cell n))))])
                  (when lock
                    (make-setter-locked! (car slot) g+s lock
                      (lambda ()
