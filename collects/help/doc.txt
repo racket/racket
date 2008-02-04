@@ -365,12 +365,3 @@ xml documentation for information on the xexpr datatype) that correspond to
 the html that help desk can parse. If a collection's info.ss file returns
 such a list, the blurb is inserted into the ``installed components'' page
 of the help desk documentation.
-
-The _'help-desk-message field_ of the _info.ss_ file
-- - - - - - - - - - - - - - - - - - - - - - - - - -
-
-This field must be a string that is displayed at the top of the Help Desk
-results window, in green, when the doc.txt file of this collection is displayed. 
-It should be a single line, describing how to load the library with a prefix
-specifying the applicable language levels.
-  

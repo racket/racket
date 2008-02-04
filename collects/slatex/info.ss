@@ -7,8 +7,6 @@
   ;(define tools (list (list "slatex-lang.ss")))
   ;(define tool-names (list "SLaTeX Language"))
 
-  (define help-desk-message
-    "Mz/Mr: (require (lib \"slatex-wrapper.ss\" \"slatex\"))")
   (define blurb
     (list "SLaTeX is a pre-processor for LaTeX that formats Scheme code. "
 	  "For more information, see "

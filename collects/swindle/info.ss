@@ -4,7 +4,6 @@
   ;;
   (define name "Swindle")
   (define blurb '("Swindle extensions for MzScheme -- CLOS and more."))
-  (define help-desk-message "Mz/Mr: (require (lib \"swindle.ss\" \"swindle\"))")
   (define mzscheme-launcher-names '("swindle"))
   (define mzscheme-launcher-flags '(("-li" "swindle")))
   ;;
