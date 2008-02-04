@@ -11,8 +11,7 @@
            (lib "uri-codec.ss" "net")
            (lib "htmltext.ss" "browser")
            (lib "dirs.ss" "setup")
-           "private/buginfo.ss"
-           "private/manuals.ss")
+           "private/buginfo.ss")
 
   (provide help-desk:report-bug)
 
