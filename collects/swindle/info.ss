@@ -3,7 +3,6 @@
 (module info setup/infotab
   ;;
   (define name "Swindle")
-  (define blurb '("Swindle extensions for MzScheme -- CLOS and more."))
   (define mzscheme-launcher-names '("swindle"))
   (define mzscheme-launcher-flags '(("-li" "swindle")))
   ;;

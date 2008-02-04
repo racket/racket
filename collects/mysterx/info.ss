@@ -3,10 +3,4 @@
 (module info setup/infotab
   (define name "MysterX")
   (define doc.txt "doc.txt")
-  (define blurb
-    (list
-     "MysterX is an extension that lets you use Scheme to script "
-     "ActiveX controls and other COM components under Windows. "
-     "MysterX also has a programmable Web browser with support for "
-     "Dynamic HTML."))
   (define post-install-collection "installer.ss"))

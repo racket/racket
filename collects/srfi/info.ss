@@ -32,9 +32,6 @@
 
 (module info setup/infotab
   (define name "srfi")
-  (define doc.txt "doc.txt")
-
-  (define blurb '("SRFI collects together ports to PLT Scheme of the Scheme Request for Implementation libraries.  For further details about the SRFI process see " (a ((href "http://srfi.schemers.org/")) "http://srfi.schemers.org/")))
-  )
+  (define doc.txt "doc.txt"))
 
 ;;; info.ss ends here

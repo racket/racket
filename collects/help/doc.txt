@@ -355,13 +355,3 @@ Each index entry is a list of four strings:
     "How to Create Help Desk Documents"
 
 See plt/doc/mzscheme/hdindex for an example.
-
-
-The _'blurb field_ of the _info.ss_ file
-- - - - - - - - - - - - - - - - - - - - 
-
-The 'blurb field of the info.txt file should be a list of xexprs (see the
-xml documentation for information on the xexpr datatype) that correspond to
-the html that help desk can parse. If a collection's info.ss file returns
-such a list, the blurb is inserted into the ``installed components'' page
-of the help desk documentation.
