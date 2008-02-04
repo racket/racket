@@ -779,8 +779,8 @@
               (raise-syntax-error
                #f
                "expected an identifier for a struct-type name, but found something else"
-               id
-               stx))
+               stx
+               id))
             (let ([v (syntax-local-value id (lambda () #f))])
               (if (struct-info? v)
                   (let* ([v (extract-struct-info v)]
@@ -799,16 +799,49 @@
                                                                  (car super-ids)))
                                          ;; stop because we got to ids that belong to the supertype
                                          null]
-                                        [else (cons (car ids) (loop (cdr ids)))])))])
+                                        [else (cons (car ids) (loop (cdr ids)))])))]
+                         ;; FIXME: we're building a list of all imports on every expansion
+                         ;; of `syntax-out'. That could become expensive if `syntax-out' is
+                         ;; used a lot.
+                         [avail-ids (append (let-values ([(ids _) (syntax-local-module-defined-identifiers)])
+                                              ids)
+                                            (let-values ([(ids _ __)
+                                                          (syntax-local-module-required-identifiers #f #t #f #f)])
+                                              ids))]
+                         [find-imported/defined (lambda (id)
+                                                  (let ([ids (filter (lambda (id2)
+                                                                       (and (free-identifier=? id2 id)
+                                                                            id2))
+                                                                     avail-ids)])
+                                                    (cond
+                                                     [(or (null? ids)
+                                                          (pair? (cdr ids)))
+                                                      (raise-syntax-error
+                                                       #f
+                                                       (if (null? ids)
+                                                           "no import for structure-type identifier"
+                                                           (format "multiple imports (~a~a~a~a) for structure-type identifier"
+                                                                   (syntax-e (car ids))
+                                                                   (if (null? (cddr ids))
+                                                                       " and "
+                                                                       ", ")
+                                                                   (syntax-e (cadr ids))
+                                                                   (if (null? (cddr ids))
+                                                                       ""
+                                                                       ", ...")))
+                                                       stx
+                                                       id)]
+                                                     [else (car ids)])))])
                     (filter
                      values
                      (map (lambda (id)
                             (and id
-                                 (make-export id
-                                              (syntax-e id)
-                                              'run
-                                              #f
-                                              id)))
+                                 (let ([id (find-imported/defined id)])
+                                   (make-export id
+                                                (syntax-e id)
+                                                'run
+                                                #f
+                                                id))))
                           (append
                            (list id
                                  (list-ref v 0)

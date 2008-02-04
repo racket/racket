@@ -4302,8 +4302,8 @@ local_module_imports(int argc, Scheme_Object *argv[])
     scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
 		     "syntax-local-module-required-identifiers: not currently transforming module provides");
 
-  if (!scheme_is_module_path(argv[0]))
-    scheme_wrong_type("syntax-local-module-required-identifiers", "module-path", 0, argc, argv);
+  if (SCHEME_TRUEP(argv[0]) && !scheme_is_module_path(argv[0]))
+    scheme_wrong_type("syntax-local-module-required-identifiers", "module-path or #f", 0, argc, argv);
   
   return scheme_module_imported_list(scheme_current_thread->current_local_env->genv,
                                      scheme_current_thread->current_local_bindings,

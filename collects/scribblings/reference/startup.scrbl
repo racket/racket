@@ -57,7 +57,9 @@ command line does not specify a @scheme[require] flag
 @Flag{u}/@DFlag{require-script}) before any @scheme[eval],
 @scheme[load], or read-eval-print-loop flag (@Flag{e}/@DFlag{eval},
 @Flag{f}/@DFlag{load}, @Flag{r}/@DFlag{script}, @Flag{m}/@DFlag{main},
-@Flag{i}/@DFlag{repl}, or @Flag{z}/@DFlag{text-repl}).
+@Flag{i}/@DFlag{repl}, or @Flag{z}/@DFlag{text-repl}). The
+initialization library can be changed with the @Flag{I}
+@tech{configuration option}.
 
 After potentially loading the initialization module, expression
 @scheme[eval]s, files @scheme[load]s, and module @scheme[require]s are
@@ -171,9 +173,10 @@ flags:
         @scheme[(find-system-path 'init-file)] for
         @Flag{i}/@DFlag{repl} or @Flag{z}/@DFlag{text-repl}.}
 
-  @item{@FlagFirst{n} or @DFlagFirst{no-lib} : Skips requiring
-        @schememodname[scheme/init] or @schememodname[scheme/gui/init]
-        when not otherwise disabled.}
+  @item{@FlagFirst{n} or @DFlagFirst{no-lib} : Skips requiring the
+        initialization library (i.e., @schememodname[scheme/init] or
+        @schememodname[scheme/gui/init], unless it is changed with the
+        @Flag{I} flag) when not otherwise disabled.}
 
   @item{@FlagFirst{v} or @DFlagFirst{version} : Shows
         @scheme[(banner)].}
@@ -195,6 +198,10 @@ flags:
   @item{@FlagFirst{c} or @DFlagFirst{no-compiled} : Disables loading
         of compiled byte-code @filepath{.zo} files, by initializing
         @scheme[current-compiled-file-paths] to @scheme[null].}
+
+  @item{@FlagFirst{I} @nonterm{path} : Sets @scheme[(lib #,
+        @nontermstr{path})] as the path to @scheme[require] to initialize
+        the namespace, unless namespace initialization is disabled.}
 
   @item{@FlagFirst{X} @nonterm{dir} or @DFlagFirst{collects}
         @nonterm{dir} : Sets @nonterm{dir} as the path to the main

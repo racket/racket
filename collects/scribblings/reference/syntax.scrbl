@@ -226,9 +226,11 @@ expander introduces @schemeidfont{#%app} identifiers.
 (#%app cons)
 ]}
 
-@defform[(#%plain-app proc-expr arg-expr ...)]{
+@defform*[[(#%plain-app proc-expr arg-expr ...)
+           (#%plain-app)]]{
+
 Like @scheme[#%app], but without support for keyword arguments.
-}
+As a special case, @scheme[(#%plain-app)] produces @scheme['()].}
 
 @;------------------------------------------------------------------------
 @section[#:tag "lambda"]{Procedure Expressions: @scheme[lambda] and @scheme[case-lambda]}
@@ -1452,9 +1454,11 @@ The syntax of @scheme[provide-spec] can be extended via
 pre-defined forms are as follows.
 
  @specsubform[id]{ Exports @scheme[id], which must be @tech{bound}
- within the module (i.e., either defined or imported) at the relevant @tech{phase
- level} 0. The symbolic form of @scheme[id] is used as the external
- name.}
+ within the module (i.e., either defined or imported) at the relevant
+ @tech{phase level}. The symbolic form of @scheme[id] is used as the
+ external name, and the symbolic form of the defined or imported
+ identifier must match (otherwise, the external name could be
+ ambiguous). }
 
  @defsubform[(all-defined-out)]{ Exports all identifiers that are
  defined at @tech{phase level} 0 or @tech{phase level} 1 within the
@@ -1491,17 +1495,19 @@ pre-defined forms are as follows.
  Like @scheme[provide-spec], but with each symbolic export name from
  @scheme[provide-spec] prefixed with @scheme[prefix-id].}
 
- @defsubform[(struct-out id)]{Exports the bindings associated
- with a structure type @scheme[id]. Typically, @scheme[id] is
- bound with @scheme[(define-struct id ....)] or
- @scheme[(define-struct (id super-id) ....)]; more generally,
- @scheme[id] must have a @tech{transformer binding} of structure-type
- information at @tech{phase level} 0; see @secref["structinfo"].
- If the structure-type information includes a super-type
- identifier, and if the identifier has a @tech{transformer
- binding} of structure-type information, the accessor and mutator
- bindings of the super-type are @italic{not} included by
- @scheme[struct-out] for export.}
+ @defsubform[(struct-out id)]{Exports the bindings associated with a
+ structure type @scheme[id]. Typically, @scheme[id] is bound with
+ @scheme[(define-struct id ....)] or @scheme[(define-struct (id
+ super-id) ....)]; more generally, @scheme[id] must have a
+ @tech{transformer binding} of structure-type information at
+ @tech{phase level} 0; see @secref["structinfo"].  Furthermore, for
+ each identifier mentioned in the structure-type information, the
+ enclosing module must define or import one identifier that is
+ @scheme[free-identifier=?]. If the structure-type information
+ includes a super-type identifier, and if the identifier has a
+ @tech{transformer binding} of structure-type information, the
+ accessor and mutator bindings of the super-type are @italic{not}
+ included by @scheme[struct-out] for export.}
 
  @defsubform[(protect-out provide-spec ...)]{ Like the union of the
  @scheme[provide-spec]s, except that the exports are protected; see

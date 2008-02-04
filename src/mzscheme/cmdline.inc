@@ -208,6 +208,7 @@ typedef struct {
   Scheme_Object *main_args;
 #endif  
   Scheme_Env *global_env;
+  char *init_lib;
 } FinishArgs;
 
 typedef void (*Repl_Proc)(Scheme_Env *);
@@ -222,7 +223,9 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
     mz_jmp_buf * volatile save, newbuf;
 
     nsreq = scheme_builtin_value("namespace-require");
-    a[0] = scheme_intern_symbol(INITIAL_NAMESPACE_MODULE);
+    a[0] = scheme_make_pair(scheme_intern_symbol("lib"),
+                            scheme_make_pair(scheme_make_utf8_string(fa->init_lib),
+                                             scheme_make_null()));
 
     p = scheme_get_current_thread();
     save = p->error_buf;
@@ -489,6 +492,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   int alternate_rep = 0;
   int no_front = 0;
 #endif
+  char *init_lib = INITIAL_NAMESPACE_MODULE;
   int was_config_flag = 0, saw_nc_flag = 0;
   int no_compiled = 0;
   int init_ns = 0, no_init_ns = 0;
@@ -749,6 +753,17 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  scheme_set_ignore_user_paths(1);
           was_config_flag = 1;
 	  break;
+        case 'I':
+          if (argc < 2) {
+	    PRINTF("%s: missing path after %s switch\n", 
+		   prog, real_switch);
+	    goto show_need_help;
+	  }
+	  argv++;
+	  --argc;
+	  init_lib = argv[0];
+          was_config_flag = 1;
+          break;
 	case 'S':
 	  if (argc < 2) {
 	    PRINTF("%s: missing path after %s switch\n", 
@@ -941,7 +956,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
       /* No args => repl */
       use_repl = 1;
       init_ns = 1;
-    } else if ((argv[0][0] != '-') && !is_number_arg(argv[0] + 1)) {
+    } else if (argv[0][0] != '-') {
       /* No switches => -u mode */
       script_mode = 1;
       no_more_switches = 1;
@@ -1070,6 +1085,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   fa->a->alternate_rep = alternate_rep;
   fa->a->no_front = no_front;
 #endif
+  fa->init_lib = init_lib;
   fa->global_env = global_env;
 
   scheme_set_can_break(1);
@@ -1111,7 +1127,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -z, --text-repl : Like -i, but use text read-eval-print loop\n"
 # endif
 	 "  -q, --no-init-file : Skip load of " INIT_FILENAME " for " REPL_FLAGS "\n"
-         "  -n, --no-lib : Skip `(require (lib \"" INITIAL_NAMESPACE_MODULE "\"))' for " REPL_FLAGS "/-e/-f/-r\n"
+         "  -n, --no-lib : Skip `(require (lib \"<init-lib>\"))' for " REPL_FLAGS "/-e/-f/-r\n"
 	 "  -v, --version : Show version\n"
 # ifdef CMDLINE_STDIO_FLAG
 	 "  -K, --back : Don't bring application to the foreground (Mac OS X)\n"
@@ -1121,6 +1137,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 # endif
 	 " Configuration options:\n"
          "  -c, --no-compiled : Disable loading of compiled files\n"
+         "  -I <path> : Set <init-lib> to <path>\n"
 	 "  -X <dir>, --collects <dir> : Main collects at <dir> relative to " PROGRAM "\n"
 	 "  -S <dir>, --search <dir> : More collects at <dir> relative to " PROGRAM "\n"
 	 "  -U, --no-user-path : Ignore user-specific collects, etc.\n"
@@ -1139,13 +1156,14 @@ static int run_from_cmd_line(int argc, char *_argv[],
          " If only configuration options are provided, -i is added\n"
          " If only configuration options are before the first argument, -u is added\n"
          " If -t/-l/-p/-u apears before the first -i/-e/-f/-r, -n is added\n"
+         " <init-lib> defaults to " INITIAL_NAMESPACE_MODULE "\n"
          "Switch syntax:\n"
 	 " Multiple single-letter switches can be collapsed, with arguments placed\n"
 	 "   after the collapsed switches; the first collapsed switch cannot be --\n"
 	 " Example: `-ifve file expr' is the same as `-i -f file -v -e expr'\n"
          "Start-up sequence:\n"
          " 1. Set `current-library-collection-paths'\n"
-         " 2. Require `(lib \"" INITIAL_NAMESPACE_MODULE "\")' [when " REPL_FLAGS "/-e/-f/-r, unless -n]\n"
+         " 2. Require `(lib \"<init-lib>\")' [when " REPL_FLAGS "/-e/-f/-r, unless -n]\n"
          " 3. Evaluate/load expressions/files in order, until first error\n"
          " 4. Load \"" INIT_FILENAME "\" [when " REPL_FLAGS "]\n"
          " 5. Run read-eval-print loop [when " REPL_FLAGS "]\n"

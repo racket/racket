@@ -474,7 +474,7 @@ for-syntax) definitions.}
 
 
 @defproc[(syntax-local-module-required-identifiers
-          [mod-path module-path?]
+          [mod-path (or/c module-path? false/c)]
           [normal-imports? any/c]
           [syntax-imports? any/c]
           [label-imports? any/c])
@@ -488,7 +488,8 @@ Can be called only while
 
 It returns three lists of identifiers corresponding to all bindings
 imported into the module being expanded using the module path
-@scheme[mod-path]. This information is used for implementing
+@scheme[mod-path], or all modules if @scheme[mod-path] is
+@scheme[#f]. This information is used for implementing
 @scheme[provide] sub-forms like @scheme[all-from-out].
 
 The first result list corresponds to @tech{phase level} 0 (i.e.,

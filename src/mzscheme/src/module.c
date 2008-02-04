@@ -6109,8 +6109,8 @@ int compute_reprovides(Scheme_Hash_Table *_provided, Scheme_Hash_Table *_et_prov
 {
   Scheme_Hash_Table *provided, *required;
   int i, k;
-  Scheme_Object *rx;
-  int reprovide_kernel = 0;
+  Scheme_Object *rx, *provided_list;
+  int reprovide_kernel = 0, all_mods = 0;
   int src_phase_index;
 
   if (phase == MZ_LABEL_PHASE)
@@ -6118,76 +6118,84 @@ int compute_reprovides(Scheme_Hash_Table *_provided, Scheme_Hash_Table *_et_prov
   else
     src_phase_index = phase;
 
+  if (SCHEME_FALSEP(reprovided)) {
+    all_mods = 1;
+    /* more convenient: */
+    reprovided = scheme_make_pair(scheme_false, scheme_null);
+  }
+
   /* First, check the sanity of the re-provide specifications: */
-  for (rx = reprovided; !SCHEME_NULLP(rx); rx = SCHEME_CDR(rx)) {
-    Scheme_Object *midx = SCHEME_CAR(SCHEME_CAR(rx)), *l, *exns;
+  if (!all_mods) {
+    for (rx = reprovided; !SCHEME_NULLP(rx); rx = SCHEME_CDR(rx)) {
+      Scheme_Object *midx = SCHEME_CAR(SCHEME_CAR(rx)), *l, *exns;
 	
-    for (l = requires; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-      if (same_modidx(midx, SCHEME_CAR(l)))
-        break;
-    }
-    if (SCHEME_NULLP(l)) {
-      /* Didn't require the named module */
-      if (matching_form) {
-        Scheme_Object *name;
-        name = SCHEME_CAR(rx);
-        name = SCHEME_STX_CDR(name);
-        name = SCHEME_STX_CAR(name);
-        scheme_wrong_syntax("module", 
-                            SCHEME_MODNAMEP(midx) ? midx : ((Scheme_Modidx *)midx)->path, 
-                            name,
-                            "cannot provide from a module without a matching `%s'",
-                            matching_form);
-      } else {
-        return -1;
+      for (l = requires; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+        if (same_modidx(midx, SCHEME_CAR(l)))
+          break;
       }
-    }
-
-    exns = SCHEME_CDR(SCHEME_CDR(SCHEME_CAR(rx)));
-    for (l = exns; !SCHEME_STX_NULLP(l); l = SCHEME_STX_CDR(l)) {
-      /* Make sure excluded name was required: */
-      Scheme_Object *a, *vec;
-      a = SCHEME_STX_VAL(SCHEME_STX_CAR(l));
-      for (k = 0; k < 3; k++) {
-        switch (k) {
-        case 0:
-          required = _required;
-          break;
-        case 1:
-          required = _et_required;
-          break;
-        default:
-        case 2:
-          required = _dt_required;
-          break;
+      if (SCHEME_NULLP(l)) {
+        /* Didn't require the named module */
+        if (matching_form) {
+          Scheme_Object *name;
+          name = SCHEME_CAR(rx);
+          name = SCHEME_STX_CDR(name);
+          name = SCHEME_STX_CAR(name);
+          scheme_wrong_syntax("module", 
+                              SCHEME_MODNAMEP(midx) ? midx : ((Scheme_Modidx *)midx)->path, 
+                              name,
+                              "cannot provide from a module without a matching `%s'",
+                              matching_form);
+        } else {
+          return -1;
         }
-        if (required)
-          vec = scheme_hash_get(required, a);
-        else
-          vec = NULL;
-      
-        if (vec) {
-          /* Check for nominal modidx in list */
-          Scheme_Object *nml, *nml_modidx;
-          nml = SCHEME_VEC_ELS(vec)[0];
-          for (; SCHEME_PAIRP(nml); nml = SCHEME_CDR(nml)) {
-            nml_modidx = SCHEME_CAR(nml);
-            if (SCHEME_PAIRP(nml_modidx))
-              nml_modidx = SCHEME_CAR(nml_modidx);
-            if (same_modidx(SCHEME_CAR(SCHEME_CAR(rx)), nml_modidx))
-              break;
+      }
+
+      exns = SCHEME_CDR(SCHEME_CDR(SCHEME_CAR(rx)));
+      for (l = exns; !SCHEME_STX_NULLP(l); l = SCHEME_STX_CDR(l)) {
+        /* Make sure excluded name was required: */
+        Scheme_Object *a, *vec;
+        a = SCHEME_STX_VAL(SCHEME_STX_CAR(l));
+        for (k = 0; k < 3; k++) {
+          switch (k) {
+          case 0:
+            required = _required;
+            break;
+          case 1:
+            required = _et_required;
+            break;
+          default:
+          case 2:
+            required = _dt_required;
+            break;
           }
-          if (!SCHEME_PAIRP(nml))
-            vec = NULL; /* So it was provided, but not from the indicated module */
-        }
+          if (required)
+            vec = scheme_hash_get(required, a);
+          else
+            vec = NULL;
+      
+          if (vec) {
+            /* Check for nominal modidx in list */
+            Scheme_Object *nml, *nml_modidx;
+            nml = SCHEME_VEC_ELS(vec)[0];
+            for (; SCHEME_PAIRP(nml); nml = SCHEME_CDR(nml)) {
+              nml_modidx = SCHEME_CAR(nml);
+              if (SCHEME_PAIRP(nml_modidx))
+                nml_modidx = SCHEME_CAR(nml_modidx);
+              if (same_modidx(SCHEME_CAR(SCHEME_CAR(rx)), nml_modidx))
+                break;
+            }
+            if (!SCHEME_PAIRP(nml))
+              vec = NULL; /* So it was provided, but not from the indicated module */
+          }
 
-        if (vec)
-          break;
-      }
-      if (!vec) {
-        a = SCHEME_STX_CAR(l);
-        scheme_wrong_syntax("module", a, SCHEME_CADR(SCHEME_CAR(rx)),
-                            "excluded name was not required from the module");
+          if (vec)
+            break;
+        }
+        if (!vec) {
+          a = SCHEME_STX_CAR(l);
+          scheme_wrong_syntax("module", a, SCHEME_CADR(SCHEME_CAR(rx)),
+                              "excluded name was not required from the module");
+        }
       }
     }
   }
@@ -6210,6 +6218,8 @@ int compute_reprovides(Scheme_Hash_Table *_provided, Scheme_Hash_Table *_et_prov
       break;
     }
 
+    provided_list = scheme_null;
+
     if (required) {
       for (i = required->size; i--; ) {
         if (required->vals[i]) {
@@ -6228,7 +6238,7 @@ int compute_reprovides(Scheme_Hash_Table *_provided, Scheme_Hash_Table *_et_prov
               nominal_modidx = SCHEME_CAR(nml);
               if (SCHEME_PAIRP(nominal_modidx))
                 nominal_modidx = SCHEME_CAR(nominal_modidx);
-              if (same_modidx(SCHEME_CAR(SCHEME_CAR(rx)), nominal_modidx)) {
+              if (all_mods || same_modidx(SCHEME_CAR(SCHEME_CAR(rx)), nominal_modidx)) {
                 Scheme_Object *pi, *nml_pi;
 
                 if (SCHEME_PAIRP(SCHEME_CAR(nml))) {
@@ -6241,16 +6251,21 @@ int compute_reprovides(Scheme_Hash_Table *_provided, Scheme_Hash_Table *_et_prov
             
                   Scheme_Object *exns, *ree;
 	      
-                  break_outer = 1;
-	      
-                  ree = SCHEME_CDR(SCHEME_CAR(rx));
+                  if (!all_mods) {
+                    break_outer = 1;
+                  
+                    ree = SCHEME_CDR(SCHEME_CAR(rx));
 
-                  exns = SCHEME_CDR(ree);
-                  if (SAME_OBJ(modidx, kernel_modidx))
-                    if (!SCHEME_STX_NULLP(exns)) {
-                      if (_exclude_hint)
-                        *_exclude_hint = exns;
-                    }
+                    exns = SCHEME_CDR(ree);
+                    if (SAME_OBJ(modidx, kernel_modidx))
+                      if (!SCHEME_STX_NULLP(exns)) {
+                        if (_exclude_hint)
+                          *_exclude_hint = exns;
+                      }
+                  } else {
+                    ree = NULL;
+                    exns = scheme_null;
+                  }
 	    
                   for (; !SCHEME_STX_NULLP(exns); exns = SCHEME_STX_CDR(exns)) {
                     /* Was this name excluded? */
@@ -6263,6 +6278,7 @@ int compute_reprovides(Scheme_Hash_Table *_provided, Scheme_Hash_Table *_et_prov
                   if (SCHEME_STX_NULLP(exns)) {
                     /* Not excluded, so provide it. */
                     if (matching_form) {
+                      /* Assert: !all_mods */
                       check_already_provided(provided, outname, name, 0, SCHEME_CAR(ree), phase);
                       scheme_hash_set(provided, outname, scheme_make_pair(name, scheme_false));
                     } else {
@@ -6284,7 +6300,8 @@ int compute_reprovides(Scheme_Hash_Table *_provided, Scheme_Hash_Table *_et_prov
                       } else {
                         scheme_signal_error("found an import with no lexical context");
                       }
-                      scheme_hash_set(provided, outname, name);
+                      
+                      provided_list = scheme_make_pair(name, provided_list);
                     }
 
                     if (SAME_OBJ(modidx, kernel_modidx) && SAME_OBJ(outname, srcname))
@@ -6296,6 +6313,10 @@ int compute_reprovides(Scheme_Hash_Table *_provided, Scheme_Hash_Table *_et_prov
             }
           }
         }
+      }
+
+      if (!matching_form) {
+        scheme_hash_set(provided, scheme_void, provided_list);
       }
     }
   }
@@ -6376,7 +6397,7 @@ Scheme_Object *scheme_module_imported_list(Scheme_Env *genv, Scheme_Object *bind
 {
   Scheme_Hash_Table *ht, *et_ht, *dt_ht, *_ht, *_et_ht, *_dt_ht;
   Scheme_Object *l, *requires, *required, *et_required, *dt_required, *a[3];
-  int v, i, j, phase, inc;
+  int v, i, phase, inc;
 
   _ht = scheme_make_hash_table(SCHEME_hash_ptr);
   _et_ht = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -6423,11 +6444,16 @@ Scheme_Object *scheme_module_imported_list(Scheme_Env *genv, Scheme_Object *bind
     required = SCHEME_VEC_ELS(bindings)[i];
   
     if (inc) {
+      if (SCHEME_FALSEP(modpath))
+        l = scheme_false;
+      else
+        l = scheme_make_pair(scheme_make_pair(modpath,
+                                              scheme_make_pair(scheme_false,
+                                                               scheme_null)),
+                             scheme_null);
+
       v = compute_reprovides(ht, et_ht, dt_ht,
-                             scheme_make_pair(scheme_make_pair(modpath,
-                                                               scheme_make_pair(scheme_false,
-                                                                                scheme_null)),
-                                              scheme_null),
+                             l,
                              requires, 
                              (Scheme_Hash_Table *)required, (Scheme_Hash_Table *)et_required,(Scheme_Hash_Table *)dt_required,
                              genv, NULL, NULL, NULL, 
@@ -6438,13 +6464,9 @@ Scheme_Object *scheme_module_imported_list(Scheme_Env *genv, Scheme_Object *bind
     if (v < 0) {
       l = scheme_false;
     } else {
-      l = scheme_null;
-
-      for (j = ht->size; j--; ) {
-        if (ht->vals[j]) {
-          l = scheme_make_pair(ht->vals[j], l);
-        }
-      }
+      l = scheme_hash_get(ht, scheme_void);
+      if (!l)
+        l = scheme_null;
     }
 
     a[i] = l;
