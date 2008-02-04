@@ -5,5 +5,4 @@
 
 (module info setup/infotab
   (define name "SrPersist")
-  (define doc.txt "doc.txt")
   (define compile-omit-files '("info.ss" "srpersist.ss")))

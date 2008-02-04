@@ -1,7 +1,7 @@
 (module lex mzscheme
 
   ;; Provides the syntax used to create lexers and the functions needed to
-  ;; create and use the buffer that the lexer reads from.  See doc.txt.
+  ;; create and use the buffer that the lexer reads from.  See docs.
 	
   (require-for-syntax (lib "list.ss")
                       (lib "stx.ss" "syntax")

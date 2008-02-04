@@ -11,7 +11,7 @@
 ;;  linking in appropriate libraries. This is handled
 ;;  by compiler.ss.
 
-;; See doc.txt for information about the Scheme-level interface
+;; See manual for information about the Scheme-level interface
 ;;  provided by this collection.
 
 (module main scheme/base

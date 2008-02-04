@@ -1,6 +1,6 @@
 
 ;; Poor man's stack-trace-on-exceptions/profiler.
-;; See doc.txt for information.
+;; See docs for information.
 
 (module calltrace-lib mzscheme
   (require "stacktrace.ss"

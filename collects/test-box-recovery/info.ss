@@ -1,6 +1,5 @@
 
 (module info setup/infotab
-  (define doc.txt "doc.txt")
   (define name "Test Box Recovery")
   (define categories '(devtools))
   (define required-core-version "370")

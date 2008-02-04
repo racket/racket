@@ -1,9 +1,8 @@
 _Games_
 =======
 
-The "Games" (Unix: plt/bin/games) executable is created by "Setup PLT"
-(Unix: plt/bin/setup-plt). You can also start Games via Help Desk
-(search for "games").
+The "PLT Games" (Unix: plt/bin/plt-games) executable is created by
+"Setup PLT" (Unix: plt/bin/setup-plt).
 
 The Games program lets you select one of the games distributed by PLT,
 or other games installed as sub-collections of the "games" collection

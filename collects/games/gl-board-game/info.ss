@@ -1,3 +1,2 @@
 (module info setup/infotab
-  (define name "3D board game library")
-  (define doc.txt "doc.txt"))
+  (define name "3D board game library"))

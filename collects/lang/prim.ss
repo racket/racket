@@ -2,7 +2,7 @@
 ;; Provides `define-primitive' and `define-higher-order-primitive'
 ;; for use in teachpacks for Beginner, especially those that
 ;; define a primitive operator that consumes a procedure.
-;; See doc.txt for more information.
+;; See manual for more information.
 
 (module prim mzscheme
   (require (lib "error.ss" "lang")

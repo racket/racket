@@ -45,7 +45,7 @@
 	  (error 'current-extension-linker 
 		 "linker not found or not executable: ~s" v)))
 
-      ;; See doc.txt:
+      ;; See manual:
       (define current-extension-linker 
 	(make-parameter 
 	 (or (let ([p (getenv "MZSCHEME_DYNEXT_LINKER")])
@@ -150,7 +150,7 @@
 	      (split-command-line-args v)
 	      null)))
       
-      ;; See doc.txt:
+      ;; See manual:
       (define current-extension-linker-flags
 	(make-parameter
 	 (append (get-env-link-flags)
@@ -166,7 +166,7 @@
 	     (raise-type-error 'current-extension-linker-flags "list of strings" l))
 	   l)))
 
-      ;; See doc.txt:
+      ;; See manual:
       (define current-make-link-input-strings
 	(make-parameter
 	 (lambda (s) (list (path-string->string s)))
@@ -189,7 +189,7 @@
                                                                                       "mzdynb.def")))
                                                                null))))
       
-      ;; See doc.txt:
+      ;; See manual:
       (define current-make-link-output-strings
 	(make-parameter
 	 (case (system-type)
@@ -265,7 +265,7 @@
 			    ((wrap-3m "mzdyn~a.o")))
 		       null)))]))
 
-      ;; See doc.txt:
+      ;; See manual:
       (define current-standard-link-libraries
 	(make-parameter
 	 (case (system-type)
@@ -281,7 +281,7 @@
       
       ;; ---- Function to install standard linker parameters --------------------
 
-      ;; see doc.txt
+      ;; see manual
       (define (use-standard-linker name)
 	(define (bad-name name)
 	  (error 'use-standard-linker "unknown linker: ~a" name))

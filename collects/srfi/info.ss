@@ -31,7 +31,6 @@
 ;; this file is updated whenever a new release is made.
 
 (module info setup/infotab
-  (define name "srfi")
-  (define doc.txt "doc.txt"))
+  (define name "srfi"))
 
 ;;; info.ss ends here

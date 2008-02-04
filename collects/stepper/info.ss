@@ -1,6 +1,5 @@
 (module info setup/infotab
   (define name "Stepper")
-  (define doc.txt "doc.txt")
 
   (define tools '(("stepper+xml-tool.ss")
                   ;; ("debugger-tool.ss")

@@ -1,7 +1,6 @@
 
 (module info setup/infotab
   (define name "Slideshow")
-  (define doc.txt "doc.txt")
   (define tools (list '("tool.ss")))
   (define tool-names (list "Slideshow"))
   (define tool-icons (list (list "slideshow.png" "slideshow")))
