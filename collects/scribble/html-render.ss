@@ -543,8 +543,8 @@
                                    #f index-content (car (part-tags index)))))
                       ,@(if (eq? d index)
                           null
-                          ;; FIXME: put the real url of the index file
-                          `((small nbsp ,(search-index-box "doc-index.html")))))
+                          `((small nbsp
+                             ,(search-index-box (derive-filename index))))))
                     null))
               (div ([class "navright"])
                 ,@(render
