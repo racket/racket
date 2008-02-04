@@ -293,12 +293,6 @@
        #f
        #f
        synthesized-panel))
-    
-    (define docs-installed
-      (make-big-text
-       (string-constant bug-report-field-docs-installed)
-       #t
-       synthesized-panel))
 
     (define collections
       (make-big-text
@@ -354,9 +348,6 @@
     
     (define (get-environment)
       (string-append (send environment get-value)
-                     "\n"
-                     "Docs Installed:\n" 
-                     (format "~a" (send (send docs-installed get-editor) get-text))
                      "\n"
                      (format "Human Language: ~a\n" (send human-language get-value))
                      (format "(current-memory-use) ~a\n" (send memory-use get-value))
@@ -519,17 +510,12 @@
     (send memory-use set-value (format "~a" (current-memory-use)))
 
     (send (send collections get-editor) auto-wrap #t)
-    (send (send docs-installed get-editor) auto-wrap #t)
 
     ;; Currently, the help-menu is left empty
     (frame:remove-empty-menus bug-frame)
 
     (align-labels)
     (switch-to-compose-view)
-
-    (send (send docs-installed get-editor) insert
-          (format "~s" (split-by-directories (find-doc-directories)
-                                             (get-doc-search-dirs))))
 
     (send bug-frame show #t))
 
