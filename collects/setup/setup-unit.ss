@@ -4,13 +4,13 @@
 
 #lang scheme/base
 
-(require mzlib/unit
-         (except-in mzlib/file call-with-input-file* call-with-output-file*)
-         mzlib/list
+(require scheme/unit
          mzlib/cm
-         mzlib/port
-         mzlib/match
-         mzlib/process
+         scheme/path
+         scheme/file
+         scheme/port
+         scheme/match
+         scheme/system
          planet/planet-archives
          planet/private/planet-shared
 
@@ -35,10 +35,12 @@
   (export)
 
   (define (setup-fprintf p s . args)
-    (apply fprintf p (string-append "setup-plt: " s "~n") args))
+    (apply fprintf p (string-append "setup-plt: " s "\n") args))
 
   (define (setup-printf s . args)
     (apply setup-fprintf (current-output-port) s args))
+
+  (define (exn->string x) (if (exn? x) (exn-message x) (format "~s" x)))
 
   (setup-printf "Setup version is ~a [~a]" (version) (system-type 'gc))
   (setup-printf "Available variants:~a"
@@ -51,9 +53,6 @@
                   "empty!" ""))
   (for ([p (current-library-collection-paths)])
     (setup-printf "  ~a" (path->string p)))
-
-  (define (warning s x)
-    (setup-printf s (if (exn? x) (exn-message x) x)))
 
   (define (call-info info flag mk-default test)
     (if info
@@ -73,9 +72,7 @@
   (define (record-error cc desc go fail-k)
     (with-handlers ([exn:fail?
                      (lambda (x)
-                       (if (exn? x)
-                         (fprintf (current-error-port) "~a\n" (exn-message x))
-                         (fprintf (current-error-port) "~s\n" x))
+                       (fprintf (current-error-port) "~a\n" (exn->string x))
                        (set! errors (cons (list cc desc x) errors))
                        (fail-k))])
       (go)))
@@ -84,17 +81,13 @@
       [(_ cc desc body ...) (record-error cc desc (lambda () body ...) void)]))
   (define (show-errors port)
     (for ([e (reverse errors)])
-      (let ([cc (car e)]
-            [desc (cadr e)]
-            [x (caddr e)])
+      (match-let ([(list cc desc x) e])
         (setup-fprintf port "Error during ~a for ~a"
                        desc
-                       (if (cc? cc) 
-                           (format "~a (~a)" (cc-name cc) (path->string (cc-path cc)))
-                           cc))
-        (if (exn? x)
-          (setup-fprintf port "  ~a" (exn-message x))
-          (setup-fprintf port "  ~s" x)))))
+                       (if (cc? cc)
+                         (format "~a (~a)" (cc-name cc) (cc-path cc))
+                         cc))
+        (setup-fprintf port "  ~a" (exn->string x)))))
 
   (define (done)
     (setup-printf "Done setting up")
@@ -146,10 +139,9 @@
     (collection path name info root-dir info-path shadowing-policy)
     #:inspector #f)
 
-  (define (warning-handler v)
-    (lambda (exn)
-      (setup-printf "Warning: ~a" (if (exn? exn) (exn-message exn) exn))
-      v))
+  (define ((warning-handler v) exn)
+    (setup-printf "Warning: ~a" (exn->string exn))
+    v)
 
   ;; collection->cc : listof path -> cc
   (define (collection->cc collection-p)
@@ -189,7 +181,7 @@
   ;; converts a planet package spec into the information needed to create a cc structure
   (define (planet-spec->planet-list spec)
     (match spec
-      [(owner pkg-name maj-str min-str)
+      [(list owner pkg-name maj-str min-str)
        (let ([maj (string->number maj-str)]
              [min (string->number min-str)])
          (unless maj
@@ -229,7 +221,7 @@
   ;; builds a compilation job for the given subdirectory of the given cc this
   ;; is an awful hack
   (define (planet-cc->sub-cc cc subdir)
-    (match-let ([(('planet owner pkg-file extra-path ...) maj min)
+    (match-let ([(list (list 'planet owner pkg-file extra-path ...) maj min)
                  (cc-shadowing-policy cc)])
       (planet->cc (apply build-path (cc-path cc) (map bytes->path subdir))
                   owner
@@ -367,7 +359,7 @@
                             ;; Result checker:
                             (λ (p)
                                (match p
-                                 [(((? (λ (v) (or (string? v) (bytes? v)))) ...) ...)
+                                 [(list (list (? (λ (v) (or (string? v) (bytes? v)))) ...) ...)
                                   (void)]
                                  [_ (error "result is not a list of lists of strings: " p)])))))
                (list cc)
@@ -541,10 +533,11 @@
                             (unless (file-exists? p)
                               (error "installer file does not exist: " p)))))])
               (let ([installer
-                     (with-handlers ([exn:fail? (lambda (exn)
-                                                  (error 'setup-plt
-                                                         "error loading installer: ~a"
-                                                         (if (exn? exn) (exn-message exn) exn)))])
+                     (with-handlers ([exn:fail?
+                                      (lambda (exn)
+                                        (error 'setup-plt
+                                               "error loading installer: ~a"
+                                               (exn->string exn)))])
                        (dynamic-require (build-path (cc-path cc) fn)
                                         (case part
                                           [(pre)     'pre-installer]
@@ -591,15 +584,15 @@
     (if (not (compile-mode))
       (thunk)
       ;; Use the indicated mode
-      (let ([zo-compile (with-handlers ([exn:fail?
-                                         (lambda (exn)
-                                           (error 'setup-plt
-                                                  "error loading compiler for mode ~s: ~s"
-                                                  (compile-mode)
-                                                  (if (exn? exn)
-                                                    (exn-message exn)
-                                                    exn)))])
-                          (dynamic-require `(lib "zo-compile.ss" ,(compile-mode)) 'zo-compile))]
+      (let ([zo-compile
+             (with-handlers ([exn:fail?
+                              (lambda (exn)
+                                (error 'setup-plt
+                                       "error loading compiler for mode ~s: ~a"
+                                       (compile-mode)
+                                       (exn->string exn)))])
+               (dynamic-require `(lib "zo-compile.ss" ,(compile-mode))
+                                'zo-compile))]
             [orig-kinds (use-compiled-file-paths)]
             [orig-compile (current-compile)]
             [orig-namespace (namespace-anchor->empty-namespace anchor)])
@@ -678,7 +671,8 @@
                             (set! all-ok? #t)
                             (for ([i l])
                               (match i
-                                [((? (lambda (a)
+                                [(list
+                                  (? (lambda (a)
                                        (and (bytes? a)
                                             (let ([p (bytes->path a)])
                                               ;; If we have a root directory,
@@ -695,7 +689,7 @@
                                                        p)
                                                      "info.ss"))))))
                                      a)
-                                  ((? symbol? b) ...)
+                                  (list (? symbol? b) ...)
                                   c
                                   (? integer? d)
                                   (? integer? e))
@@ -750,10 +744,9 @@
   (when (make-docs)
     (setup-printf "Building documentation")
     ((doc:verbose) (verbose))
-    (with-handlers ([exn:fail? (lambda (exn)
-                                 (setup-printf
-                                  "Docs failure: ~a"
-                                  (if (exn? exn) (exn-message exn) exn)))])
+    (with-handlers ([exn:fail?
+                     (lambda (exn)
+                       (setup-printf "Docs failure: ~a" (exn->string exn)))])
       ((doc:setup-scribblings)
        (if no-specific-collections? #f (map cc-path ccs-to-compile))
        #f
