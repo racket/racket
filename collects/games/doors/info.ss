@@ -1,2 +1,3 @@
-(module info setup/infotab
-  (define name "Doors game library"))
+#lang setup/infotab
+
+(define name "Doors game library")

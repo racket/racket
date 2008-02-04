@@ -1,3 +1,3 @@
-(module info setup/infotab
-  (define name "Launcher"))
+#lang setup/infotab
 
+(define name "Launcher")

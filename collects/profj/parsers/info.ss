@@ -1,2 +1,3 @@
-(module info setup/infotab
-  (define name "ProfessorJ: parsers"))
+#lang setup/infotab
+
+(define name "ProfessorJ: parsers")

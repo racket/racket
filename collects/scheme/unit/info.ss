@@ -1,2 +1,3 @@
-(module info setup/infotab
-  (define name "Scheme unit language"))
+#lang setup/infotab
+
+(define name "Scheme unit language")

@@ -573,14 +573,14 @@ installation; it is a good idea to add it.
 
 An example info.ss file looks like this:
 
-(module info (lib "infotab.ss" "setup")
-  (define name "My Application")
-  (define blurb
-    (list "My application runs 60% faster on 20% less peanut "
-	  "butter. It even shows a fancy graphic!"))
-  (define primary-file "my-app.ss")
-  (define doc.txt "doc.txt")
-  (define categories '(system xml)))
+#lang setup/infotab
+(define name "My Application")
+(define blurb
+  '("My application runs 60% faster on 20% less peanut "
+    "butter. It even shows a fancy graphic!"))
+(define primary-file "my-app.ss")
+(define doc.txt "doc.txt")
+(define categories '(system xml))
 
 See the PLT mzc: MzScheme Compiler Manual, chapter 7 for more
 information on info.ss files.

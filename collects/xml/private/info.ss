@@ -1,6 +1,3 @@
+#lang setup/infotab
 
-(module info setup/infotab
-  (define name "XML private"))
-
-
-  
+(define name "XML private"))

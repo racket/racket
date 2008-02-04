@@ -1,5 +1,6 @@
-(module info setup/infotab
-  (define name "Scribble")
-  (define mzscheme-launcher-names '("scribble"))
-  (define mzscheme-launcher-libraries '("scribble.ss"))
-  (define compile-omit-files '("test-reader.ss")))
+#lang setup/infotab
+
+(define name "Scribble")
+(define mzscheme-launcher-names '("scribble"))
+(define mzscheme-launcher-libraries '("scribble.ss"))
+(define compile-omit-files '("test-reader.ss"))

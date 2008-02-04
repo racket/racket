@@ -1,3 +1,4 @@
-(module info setup/infotab
-  (define name "MrLib documentation")
-  (define scribblings '(("mrlib.scrbl" (multi-page)))))
+#lang setup/infotab
+
+(define name "MrLib documentation")
+(define scribblings '(("mrlib.scrbl" (multi-page))))

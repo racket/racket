@@ -1,2 +1,3 @@
-(module info setup/infotab
-  (define name "EoPL private"))
+#lang setup/infotab
+
+(define name "EoPL private")

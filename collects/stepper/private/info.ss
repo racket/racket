@@ -1,3 +1,3 @@
-(module info setup/infotab
-  (define name "Stepper private"))
-  
+#lang setup/infotab
+
+(define name "Stepper private")

@@ -1,2 +1,3 @@
-(module info setup/infotab
-  (define name "Macro Debugger - Syntax Browser"))
+#lang setup/infotab
+
+(define name "Macro Debugger - Syntax Browser")

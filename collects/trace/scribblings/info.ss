@@ -1,3 +1,4 @@
-(module info setup/infotab
-  (define name "Calltrace documentation")
-  (define scribblings '(("trace.scrbl" ()))))
+#lang setup/infotab
+
+(define name "Calltrace documentation")
+(define scribblings '(("trace.scrbl" ())))

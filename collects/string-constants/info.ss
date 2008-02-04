@@ -1,2 +1,3 @@
-(module info setup/infotab
-  (define name "String constants"))
+#lang setup/infotab
+
+(define name "String constants")

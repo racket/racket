@@ -1,4 +1,3 @@
+#lang setup/infotab
 
-(module info setup/infotab
-  (define name "#honu"))
-
+(define name "#honu")

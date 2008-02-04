@@ -1,3 +1,3 @@
+#lang setup/infotab
 
-(module info setup/infotab
-  (define name "MrEd private"))
+(define name "MrEd private")

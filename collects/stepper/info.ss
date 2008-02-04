@@ -1,18 +1,17 @@
-(module info setup/infotab
-  (define name "Stepper")
+#lang setup/infotab
 
-  (define tools '(("stepper+xml-tool.ss")
-                  ;; ("debugger-tool.ss")
-                  ))
+(define name "Stepper")
 
-  (define tool-names (list "The Stepper"
-                           ;; "The Debugger"
-                           ))
+(define tools '(("stepper+xml-tool.ss")
+                ;; ("debugger-tool.ss")
+                ))
 
-  (define tool-icons (list '("foot-up.png" "icons")
-                           ;; #f
-                           ))
+(define tool-names (list "The Stepper"
+                         ;; "The Debugger"
+                         ))
 
-  (define compile-omit-files `("debugger-tool.ss"))
+(define tool-icons (list '("foot-up.png" "icons")
+                         ;; #f
+                         ))
 
-  )
+(define compile-omit-files `("debugger-tool.ss"))

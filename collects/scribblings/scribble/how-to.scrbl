@@ -60,9 +60,9 @@ EOS
         @filepath{info.ss} module, here's a suitable complete module:
 
         @schemeblock[
-          (module info setup/infotab
-            (define name "Some documentation")
-            (define scribblings '(("manual.scrbl" ()))))
+          #lang setup/infotab
+          (define name "Some documentation")
+          (define scribblings '(("manual.scrbl" ())))
         ]}
 
   @item{Run @exec{setup-plt} to build your documentation. For a

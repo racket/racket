@@ -1,5 +1,5 @@
+#lang setup/infotab
 
-(module info setup/infotab
-  (define name "Macro Debugger")
-  (define tools '(["tool.ss"]))
-  (define tool-names '("Macro Stepper")))
+(define name "Macro Debugger")
+(define tools '(["tool.ss"]))
+(define tool-names '("Macro Stepper"))

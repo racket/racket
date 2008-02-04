@@ -1,3 +1,3 @@
+#lang setup/infotab
 
-(module info setup/infotab
-  (define name "Texpict private"))
+(define name "Texpict private")

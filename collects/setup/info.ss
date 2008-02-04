@@ -1,9 +1,8 @@
-(module info setup/infotab
-  (define name "Setup PLT")
+#lang setup/infotab
 
-  (define compile-omit-files
-    (list "main.ss"))
+(define name "Setup PLT")
 
-  (define mzscheme-launcher-libraries (list "main.ss"))
-  (define mzscheme-launcher-names (list "Setup PLT"))
-  )
+(define compile-omit-files '("main.ss"))
+
+(define mzscheme-launcher-libraries '("main.ss"))
+(define mzscheme-launcher-names '("Setup PLT"))

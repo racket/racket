@@ -1,2 +1,3 @@
-(module info setup/infotab
-  (define name "frtime gui wrapper"))
+#lang setup/infotab
+
+(define name "frtime gui wrapper")

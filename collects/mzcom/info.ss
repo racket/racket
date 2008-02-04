@@ -1,5 +1,4 @@
-;; info.ss for mzcom collection
+#lang setup/infotab
 
-(module info setup/infotab
-  (define name "MzCOM")
-  (define post-install-collection "installer.ss"))
+(define name "MzCOM")
+(define post-install-collection "installer.ss")

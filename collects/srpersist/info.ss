@@ -1,8 +1,5 @@
-;; info.ss for srpersist collection
+#lang setup/infotab
 
-;; no .zo compilation necessary, since all the
-;; real code is in C++
-
-(module info setup/infotab
-  (define name "SrPersist")
-  (define compile-omit-files '("info.ss" "srpersist.ss")))
+(define name "SrPersist")
+;; no .zo compilation necessary, since all the real code is in C++
+(define compile-omit-files '("info.ss" "srpersist.ss"))

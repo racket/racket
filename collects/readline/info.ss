@@ -1,4 +1,4 @@
+#lang setup/infotab
 
-(module info setup/infotab
-  (define name "readline")
-  (define scribblings '(("readline.scrbl"))))
+(define name "readline")
+(define scribblings '(("readline.scrbl")))

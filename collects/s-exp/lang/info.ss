@@ -1,3 +1,3 @@
+#lang setup/infotab
 
-(module info setup/infotab
-  (define name "S-expression Module reader"))
+(define name "S-expression Module reader")

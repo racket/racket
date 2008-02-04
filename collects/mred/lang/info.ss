@@ -1,2 +1,3 @@
-(module info setup/infotab
-  (define name "MrEd #lang"))
+#lang setup/infotab
+
+(define name "MrEd #lang")

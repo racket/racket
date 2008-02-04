@@ -1,4 +1,4 @@
+#lang setup/infotab
 
-(module info setup/infotab
-  (define name "MzLib private")
-  (define compile-omit-files '("shared-body.ss")))
+(define name "MzLib private")
+(define compile-omit-files '("shared-body.ss"))

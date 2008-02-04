@@ -1,2 +1,3 @@
-(module info setup/infotab
-  (define name "Errortrace"))
+#lang setup/infotab
+
+(define name "Errortrace")

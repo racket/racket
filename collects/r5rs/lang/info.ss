@@ -1,3 +1,3 @@
+#lang setup/infotab
 
-(module info setup/infotab
-  (define name "R5RS Languages"))
+(define name "R5RS Languages")

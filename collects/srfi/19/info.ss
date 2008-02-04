@@ -1,4 +1,4 @@
-(module info setup/infotab
+#lang setup/infotab
 
-  (define name "SRFI 19")
-  (define compile-omit-files `("tests.ss")))
+(define name "SRFI 19")
+(define compile-omit-files `("tests.ss"))

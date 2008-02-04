@@ -1,3 +1,3 @@
-(module info setup/infotab
-  (define name "HtDP Languages Private"))
+#lang setup/infotab
 
+(define name "HtDP Languages Private")

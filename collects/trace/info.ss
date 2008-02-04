@@ -1,2 +1,3 @@
-(module info setup/infotab
-  (define name "Calltrace"))
+#lang setup/infotab
+
+(define name "Calltrace")

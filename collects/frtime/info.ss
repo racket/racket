@@ -1,8 +1,9 @@
-(module info setup/infotab
-  (define name "frtime")
+#lang setup/infotab
 
-  (define scribblings '(("frtime.scrbl" ())))  
-  (define compile-subcollections (list (list "frtime" "demos" "gui")))
-  (define tools (list "frtime-tool.ss"))
-  (define tool-icons (list '("clock.png" "frtime")))
-  (define tool-names (list "FrTime Languages")))
+(define name "frtime")
+
+(define scribblings '(("frtime.scrbl" ())))
+(define compile-subcollections '(("frtime" "demos" "gui")))
+(define tools      '("frtime-tool.ss"))
+(define tool-icons '(("clock.png" "frtime")))
+(define tool-names '("FrTime Languages"))

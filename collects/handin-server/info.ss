@@ -1,2 +1,3 @@
-(module info setup/infotab
-  (define name "Handin Server"))
+#lang setup/infotab
+
+(define name "Handin Server")

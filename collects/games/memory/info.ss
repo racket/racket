@@ -1,4 +1,5 @@
-(module info setup/infotab
-  (define name "Memory")
-  (define game "memory.ss")
-  (define game-set "Card Games"))
+#lang setup/infotab
+
+(define name "Memory")
+(define game "memory.ss")
+(define game-set "Card Games")

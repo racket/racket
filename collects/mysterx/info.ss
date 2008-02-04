@@ -1,5 +1,4 @@
-;; info.ss for mysterx collection
+#lang setup/infotab
 
-(module info setup/infotab
-  (define name "MysterX")
-  (define post-install-collection "installer.ss"))
+(define name "MysterX")
+(define post-install-collection "installer.ss")

@@ -1,5 +1,4 @@
+#lang setup/infotab
 
-(module info setup/infotab
-  (define name "Graphics")
-  (define compile-omit-files '("value-turex.ss" "value-turtle-lib.ss")))
-
+(define name "Graphics")
+(define compile-omit-files '("value-turex.ss" "value-turtle-lib.ss"))

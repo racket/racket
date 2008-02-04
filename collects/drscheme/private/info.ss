@@ -1,5 +1,3 @@
-(module info setup/infotab
-  (define name "DrScheme private"))
+#lang setup/infotab
 
-
-  
+(define name "DrScheme private")

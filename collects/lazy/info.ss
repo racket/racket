@@ -1,10 +1,10 @@
-(module info setup/infotab
-  (require (lib "string-constant.ss" "string-constants"))
-  (define name "Lazy Scheme")
-  (define scribblings '(("lazy.scrbl")))
-  (define drscheme-language-modules '(("lazy.ss" "lazy")))
-  (define drscheme-language-positions
-    `((,(string-constant experimental-languages) "Lazy Scheme")))
-  (define drscheme-language-numbers '((1000 -500)))
-  (define drscheme-language-one-line-summaries '("Lazy Scheme"))
-)
+#lang setup/infotab
+
+(require string-constants/string-constant)
+(define name "Lazy Scheme")
+(define scribblings '(("lazy.scrbl")))
+(define drscheme-language-modules '(("lazy.ss" "lazy")))
+(define drscheme-language-positions
+  `((,(string-constant experimental-languages) "Lazy Scheme")))
+(define drscheme-language-numbers '((1000 -500)))
+(define drscheme-language-one-line-summaries '("Lazy Scheme"))

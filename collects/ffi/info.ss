@@ -1,2 +1,3 @@
-(module info setup/infotab
-  (define name "Foreign Function Interfaces"))
+#lang setup/infotab
+
+(define name "Foreign Function Interfaces")
