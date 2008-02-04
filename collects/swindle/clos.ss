@@ -3,10 +3,10 @@
 ;;> This module contains only syntax definitions, which makes Swindle closer
 ;;> to CLOS -- making the object system much more convenient to use.
 
-(module clos (lib "turbo.ss" "swindle")
+#lang s-exp swindle/turbo
 
-(require (lib "tiny-clos.ss" "swindle"))
-(provide (all-from (lib "tiny-clos.ss" "swindle")))
+(require swindle/tiny-clos)
+(provide (all-from swindle/tiny-clos))
 
 ;;; ---------------------------------------------------------------------------
 ;;; General helpers
@@ -730,5 +730,3 @@
 (provide defgeneric*)     (make-provide-syntax defgeneric     defgeneric*)
 (provide defclass*)       (make-provide-syntax defclass       defclass*)
 (provide defentityclass*) (make-provide-syntax defentityclass defentityclass*)
-
-)

@@ -30,7 +30,7 @@
 ;;; DAMAGES.
 ;;; ***************************************************************************
 
-(module tiny-clos (lib "base.ss" "swindle")
+#lang s-exp swindle/base
 
 ;;; A very simple CLOS-like language, embedded in Scheme, with a simple MOP.
 ;;; The features of the default base language are:
@@ -116,7 +116,7 @@
 ;;; OK, now let's get going.  But, as usual, before we can do anything
 ;;; interesting, we have to muck around for a bit first.  First, we need to
 ;;; load the support library.  [-- replaced with a module.]
-(require (lib "misc.ss" "swindle"))
+(require swindle/misc)
 
 ;; This is a convenient function for raising exceptions
 (define (raise* exn-maker fmt . args)
@@ -2336,5 +2336,3 @@
 ;;>       compute-methods
 ;;>         compute-method-more-specific?
 ;;>       compute-apply-methods
-
-)

@@ -24,32 +24,33 @@
 ;;; not things that can be made into a module -- a teachpack is better for
 ;;; those.
 
-(module custom (lib "swindle.ss" "swindle")
-  ;; provide all swindle, minus `lambda' which is overriden to `method'
-  (provide (all-from-except (lib "swindle.ss" "swindle") lambda))
-  (provide (rename lambda~ lambda))
-  (defsubst lambda~ method)
-  ;; some default customizations
-  (*make-safely* #t)
-  ;; set some syntax parameters -- must use eval!
-  (eval #'(begin
-            ;; simple defclass forms:
-            (-defclass-auto-initargs-
-             (;; auto acccessors, constructors, and predicates
-              :auto #t
-              ;; first two things after a slot name are type and initvalue
-              :default-slot-options '(:type :initvalue)
-              ;; printed representation of objects shows slot contents
-              :printer print-object-with-slots))
-            ;; set the accessor names made by the above
-            (-defclass-autoaccessors-naming- :class-slot)
-            ;; always use an explicit generic
-            (-defmethod-create-generics- #f)
-            ;; use defgeneric + add-method for accessors (since defmethod now
-            ;; wouldn't create the generic)
-            (-defclass-accessor-mode- :defgeneric))))
+#lang swindle
 
-;;; To make thins even better, it is best to change preferences so Swindle
+;; provide all swindle, minus `lambda' which is overriden to `method'
+(provide (all-from-except swindle lambda))
+(provide (rename lambda~ lambda))
+(defsubst lambda~ method)
+;; some default customizations
+(*make-safely* #t)
+;; set some syntax parameters -- must use eval!
+(eval #'(begin
+          ;; simple defclass forms:
+          (-defclass-auto-initargs-
+           (;; auto acccessors, constructors, and predicates
+            :auto #t
+            ;; first two things after a slot name are type and initvalue
+            :default-slot-options '(:type :initvalue)
+            ;; printed representation of objects shows slot contents
+            :printer print-object-with-slots))
+          ;; set the accessor names made by the above
+          (-defclass-autoaccessors-naming- :class-slot)
+          ;; always use an explicit generic
+          (-defmethod-create-generics- #f)
+          ;; use defgeneric + add-method for accessors (since defmethod now
+          ;; wouldn't create the generic)
+          (-defclass-accessor-mode- :defgeneric)))
+
+;;; To make things even better, it is best to change preferences so Swindle
 ;;; syntax get indented correctly.  For this, create the default preference
 ;;; file "plt/collects/defaults/plt-prefs.ss", and in it you can put any
 ;;; specific preferences you want as the defaults for people who run the system

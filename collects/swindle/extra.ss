@@ -1,9 +1,9 @@
-(module extra (lib "turbo.ss" "swindle")
+#lang s-exp swindle/turbo
 
 ;;> This module defines some additional useful functionality which requires
 ;;> Swindle.
 
-(require (lib "clos.ss" "swindle"))
+(require swindle/clos)
 
 ;;; ---------------------------------------------------------------------------
 ;;; A convenient `defstruct'
@@ -969,5 +969,3 @@
   (ui-question str args "Ok/Cancel" 'ok '(ok-cancel) #\o #\c))
 (define* (yes/no? str . args)
   (ui-question str args "Yes/No" 'yes '(yes-no) #\y #\n))
-
-)

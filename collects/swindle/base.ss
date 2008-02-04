@@ -3,7 +3,7 @@
 ;;> The `base' module defines some basic low-level syntactic extensions to
 ;;> MzScheme.  It can be used by itself to get these extensions.
 
-(module base mzscheme
+#lang mzscheme
 
 (provide (all-from-except mzscheme
           #%module-begin #%top #%app define let let* letrec lambda
@@ -19,16 +19,15 @@
       (datum->syntax-object
        (quote-syntax here)
        (list* (quote-syntax #%plain-module-begin)
-              (datum->syntax-object stx
-                                    (list (quote-syntax require-for-syntax)
-                                          '(lib "base.ss" "swindle")))
+              (datum->syntax-object
+               stx (list (quote-syntax require-for-syntax) 'swindle/base))
               (cdr e))
        stx)
       (raise-syntax-error #f "bad syntax" stx)))
   ;; This doesn't work anymore (from 203.4)
   ;; (syntax-rules ()
   ;;   [(_ . body) (#%plain-module-begin
-  ;;                (require-for-syntax (lib "base.ss" "swindle")) . body)])
+  ;;                (require-for-syntax swindle/base) . body)])
   )
 
 ;;>> (#%top . id)
@@ -593,5 +592,3 @@
           [else
            (loop (cddr as)
                  (if (memq (car as) outs) r (list* (cadr as) (car as) r)))])))
-
-)

@@ -1,4 +1,4 @@
-(module patterns mzscheme
+#lang mzscheme
 
 (provide (all-from-except mzscheme
                           define-values
@@ -263,5 +263,3 @@
 ;; (require foo)
 ;; (define a (make-point 1 2))
 ;; (let ([(make-point x y) a]) (+ x y))
-
-)

@@ -8,7 +8,7 @@
 ;;> this just defines the basic functionality, the `misc' module defines
 ;;> many common setters.
 
-(module setf mzscheme
+#lang mzscheme
 
 ;;>> (setf! place value ...)
 ;;>   Expand `(setf! (foo ...) v)' to `(set-foo! ... v)'.  The generated
@@ -274,5 +274,3 @@
                   (lambda (p)
                     #`(let ([p1 #,p])
                         (begin0 (car p1) (setf! #,p (cdr p1))))))])))))
-
-)

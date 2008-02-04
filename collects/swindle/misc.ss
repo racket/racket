@@ -3,14 +3,11 @@
 ;;> A lot of miscellaneous functionality that is needed for Swindle, or
 ;;> useful by itself.
 
-(module misc (lib "base.ss" "swindle")
+#lang s-exp swindle/base
 
-(require (lib "list.ss"))
-(provide (all-from (lib "list.ss")))
-(require (lib "etc.ss"))
-(provide (all-from (lib "etc.ss")))
-(require (all-except (lib "string.ss")))
-(provide (all-from (lib "string.ss")))
+(require mzlib/list)   (provide (all-from mzlib/list))
+(require mzlib/etc)    (provide (all-from mzlib/etc))
+(require mzlib/string) (provide (all-from mzlib/string))
 
 ;; ----------------------------------------------------------------------------
 ;;>>... Convenient syntax definitions
@@ -157,7 +154,7 @@
 ;;>     with `defsubst' above).
 ;;>   * A `letmacro' form for local macros is provided.
 
-(require-for-syntax (lib "dmhelp.ss" "mzlib" "private"))
+(require-for-syntax mzlib/private/dmhelp)
 (provide defmacro letmacro)
 (define-syntaxes (defmacro letmacro)
   (let ()
@@ -1900,5 +1897,3 @@
     [(_ str clause ...)
      #`(let ([s str])
          (cond #,@(map do-clause (syntax->list #'(clause ...)))))]))
-
-)

@@ -3,14 +3,10 @@
 (module info setup/infotab
   ;;
   (define name "Swindle")
-  (define blurb
-    '("Swindle extensions for MzScheme -- CLOS and more."))
-  (define help-desk-message
-    "Mz/Mr: (require (lib \"swindle.ss\" \"swindle\"))")
+  (define blurb '("Swindle extensions for MzScheme -- CLOS and more."))
+  (define help-desk-message "Mz/Mr: (require (lib \"swindle.ss\" \"swindle\"))")
   (define mzscheme-launcher-names '("swindle"))
-  (define mzscheme-launcher-flags
-    '(("-me"
-       "(namespace-require/copy (quote (lib \"swindle.ss\" \"swindle\")))")))
+  (define mzscheme-launcher-flags '(("-li" "swindle")))
   ;;
   ;; This simple interface is not enough, use tool.ss instead
   ;; (define drscheme-language-modules
