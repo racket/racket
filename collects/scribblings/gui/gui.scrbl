@@ -3,7 +3,7 @@
 
 @title{@bold{GUI}: PLT Graphics Toolkit}
 
-@declare-exporting[scheme/gui/base scheme/gui]
+@declare-exporting[scheme/gui/base scheme/gui #:use-sources (mred/mred)]
 
 This reference manual describes the GUI toolbox that is part of PLT
  Scheme and whose core is implemented by the MrEd executable.

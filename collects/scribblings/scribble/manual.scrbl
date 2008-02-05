@@ -184,7 +184,8 @@ in a form definition.}
 @; ------------------------------------------------------------------------
 @section[#:tag "doc-modules"]{Documenting Modules}
 
-@defform[(defmodule id pre-flow ...)]{
+@defform/subs[(defmodule id maybe-sources pre-flow ...)
+              ([maybe-sources #:use-sources (mod-path ...)])]
 
 Produces a sequence of flow elements (encaptured in a @scheme[splice])
 to start the documentation for a module that can be @scheme[require]d
@@ -192,27 +193,29 @@ using the path @scheme[id]. The @tech{decode}d @scheme[pre-flow]s
 introduce the module, but need not include all of the module content.
 
 Besides generating text, this form expands to a use of
-@scheme[declare-exporting] with @scheme[id]. Consequently,
-@scheme[defmodule] should be used at most once in a section, though it
-can be shadowed with @scheme[defmodule]s in sub-sections.
+@scheme[declare-exporting] with @scheme[id]; the
+@scheme[#:use-sources] clause, if provided, is propagated to
+@scheme[declare-exporting]. Consequently, @scheme[defmodule] should be
+used at most once in a section, though it can be shadowed with
+@scheme[defmodule]s in sub-sections.
 
 Hyperlinks created by @scheme[schememodname] are associated with the
 enclosing section, rather than the local @scheme[id] text.}
 
 
-@defform[(defmodulelang id pre-flow ...)]{
+@defform[(defmodulelang id maybe-sources pre-flow ...)]{
 
 Like @scheme[defmodule], but documents @scheme[id] as a module path
 suitable for use by either @scheme[require] or @schememodfont{#lang}.}
 
 
-@defform[(defmodule* (id ...) pre-flow ...)]{
+@defform[(defmodule* (id ...) maybe-sources pre-flow ...)]{
 
 Like @scheme[defmodule], but introduces multiple module paths instead
 of just one.}
 
 
-@defform[(defmodulelang* (id ...) pre-flow ...)]{
+@defform[(defmodulelang* (id ...) maybe-sources pre-flow ...)]{
 
 Like @scheme[defmodulelang], but introduces multiple module paths
 instead of just one.}
@@ -233,13 +236,36 @@ Like @scheme[defmodulelang*], but without expanding to
 @scheme[declare-exporting].}
 
 
-@defform[(declare-exporting module-path ...)]{
-
-Associates the @scheme[module-paths]s to all bindings defined within
-the enclosing section, except as overridden by other
+@defform/subs[(declare-exporting mod-path ... maybe-sources)
+              ([maybe-sources #:use-sources (mod-path ...)])]{
+                                 
+Associates the @scheme[mod-path]s to all bindings defined within the
+enclosing section, except as overridden by other
 @scheme[declare-exporting] declarations in nested sub-sections.  The
-list of @scheme[module-path]s is shown, for example, when the user
-hovers the mouse over one of the bindings defined within the section.
+list of @scheme[mod-path]s is shown, for example, when the user hovers
+the mouse over one of the bindings defined within the section.
+
+More significantly, the first @scheme[mod-path] plus the
+@scheme[#:use-sources] @scheme[mod-path]s determine the binding that
+is documented by each @scheme[defform], @scheme[defproc], or similar
+form within the section that contains the @scheme[declare-exporting]
+declaration:
+
+@itemize{
+
+ @item{If no @scheme[#:use-sources] clause is supplied, then the
+       documentation applies to the given name as exported by the first
+       @scheme[mod-path].}
+
+ @item{If @scheme[#:use-sources] @scheme[mod-path]s are supplied, then
+       they are tried in order. The first one to provide an export
+       with the same symbolic name and
+       @scheme[free-label-identifier=?] to the given name is used as
+       the documented binding. This binding is assumed to be the same
+       as the identifier as exported by the first @scheme[mod-path] in
+       the @scheme[declare-exporting] declaration.}
+
+}
 
 The @scheme[declare-exporting] form should be used no more than once
 per section, since the declaration applies to the entire section,

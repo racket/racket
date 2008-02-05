@@ -108,10 +108,15 @@
                 #f
                 (list . content)))
 
-  (define-syntax-rule (defmodule* (name ...) . content)
-    (begin
-      (declare-exporting name ...)
-      (defmodule*/no-declare (name ...) . content)))
+  (define-syntax defmodule*
+    (syntax-rules ()
+      [(_ (name ...) #:use-sources (pname ...) . content)
+       (begin
+         (declare-exporting name ... #:use-sources (pname ...))
+         (defmodule*/no-declare (name ...) . content))]
+      [(_ (name ...) . content)
+       (defmodule* (name ...) #:use-sources () . content)]))
+      
 
   (define-syntax-rule (defmodule name . content)
     (defmodule* (name) . content))
@@ -121,10 +126,14 @@
                 #t
                 (list . content)))
 
-  (define-syntax-rule (defmodulelang* (name ...) . content)
-    (begin
-      (declare-exporting name ...)
-      (defmodulelang*/no-declare (name ...) . content)))
+  (define-syntax defmodulelang* 
+    (syntax-rules ()
+      [(_ (name ...) #:use-sources (pname ...) . content)
+       (begin
+         (declare-exporting name ... #:use-sources (pname ...))
+         (defmodulelang*/no-declare (name ...) . content))]
+      [(_ (name ...) . content)
+       (defmodulelang* (name ...) #:use-sources () . content)]))
 
   (define-syntax-rule (defmodulelang lang . content)
     (defmodulelang* (lang) . content))
@@ -338,14 +347,38 @@
           (annote-exporting-library
            (to-element (make-just-context name stx-id))))))
 
-  (define (libs->taglet libs)
-    (and (pair? libs)
-         (let ([p (resolved-module-path-name
-                   (module-path-index-resolve
-                    (module-path-index-join (car libs) #f)))])
-           (if (path? p)
-               (intern-taglet (path->main-collects-relative p))
-               p))))
+  (define checkers (make-hash-table 'equal))
+
+  (define (libs->taglet id libs source-libs)
+    (let ([lib 
+           (or (ormap (lambda (lib)
+                        (let ([checker (hash-table-get checkers lib
+                                                       (lambda ()
+                                                         (let ([ns (make-base-empty-namespace)])
+                                                           (parameterize ([current-namespace ns])
+                                                             (namespace-require `(for-label ,lib)))
+                                                           (let ([checker
+                                                                  (lambda (id)
+                                                                    (parameterize ([current-namespace ns])
+                                                                      (let ([new-id (namespace-syntax-introduce
+                                                                                     (datum->syntax
+                                                                                      #f
+                                                                                      (syntax-e id)))])
+                                                                        (free-label-identifier=? new-id id))))])
+                                                             (hash-table-put! checkers lib checker)
+                                                             checker))))])
+                          (and (checker id)
+                               lib)))
+                      source-libs)
+               (and (pair? libs)
+                    (car libs)))])
+      (and lib
+           (let ([p (resolved-module-path-name
+                     (module-path-index-resolve
+                      (module-path-index-join lib #f)))])
+             (if (path? p)
+                 (intern-taglet (path->main-collects-relative p))
+                 p)))))
 
   (define (id-to-target-maker id dep?)
     (*id-to-target-maker 'def id dep?))
@@ -373,7 +406,11 @@
                                      "no declared exporting libraries for definition"
                                      id)))
              (if e
-                 (let* ([lib-taglet (libs->taglet (exporting-libraries-libs e))]
+                 (let* ([lib-taglet (libs->taglet (if sig
+                                                      (sig-id sig)
+                                                      id)
+                                                  (exporting-libraries-libs e)
+                                                  (exporting-libraries-source-libs e))]
                         [tag (list (if sig
                                        (case sym
                                          [(def) 'sig-val]
@@ -529,11 +566,12 @@
 
   (define-syntax declare-exporting
     (syntax-rules ()
-      [(_ lib ...) (*declare-exporting '(lib ...))]))
+      [(_ lib ... #:use-sources (plib ...)) (*declare-exporting '(lib ...) '(plib ...))]
+      [(_ lib ...) (*declare-exporting '(lib ...) '())]))
 
-  (define-struct (exporting-libraries element) (libs))
+  (define-struct (exporting-libraries element) (libs source-libs))
 
-  (define (*declare-exporting libs)
+  (define (*declare-exporting libs source-libs)
     (make-splice
      (list
       (make-part-collect-decl
@@ -542,7 +580,7 @@
                              (lambda (ri)
                                (collect-put! ri '(exporting-libraries #f) libs))))
       (make-part-collect-decl
-       (make-exporting-libraries #f null libs)))))
+       (make-exporting-libraries #f null libs source-libs)))))
 
   (define-syntax (quote-syntax/loc stx)
     (syntax-case stx ()

@@ -8,10 +8,20 @@ most prominent libraries. The companion manual @|Guide| provides a
 friendlier (though less precise and less complete) overview of the
 language.
 
-@defmodulelang*[(scheme/base scheme)]{Unless otherwise noted, the
-bindings defined in this manual are exported by the
-@schememodname[scheme/base] and @schememodname[scheme] languages,
-where @schememodname[scheme] includes all of
+@defmodulelang*[(scheme/base scheme) 
+                ;; Use sources for overlap with `mzscheme':
+                #:use-sources ('#%kernel
+                               scheme/private/more-scheme
+                               scheme/private/misc
+                               scheme/private/qqstx
+                               scheme/private/stxcase-scheme
+                               scheme/private/letstx-scheme
+                               scheme/private/define
+                               scheme/private/stx)]
+
+Unless otherwise noted, the bindings defined in this manual are
+exported by the @schememodname[scheme/base] and @schememodname[scheme]
+languages, where @schememodname[scheme] includes all of
 @schememodname[scheme/base].}
 
 @table-of-contents[]
