@@ -5,6 +5,7 @@
          "private/doc-path.ss"
          scheme/class
          scheme/file
+         scheme/fasl
          setup/main-collects
          scribble/base-render
          scribble/struct
@@ -301,6 +302,10 @@
       (and (pair? cat)
            (eq? (car cat) 'omit))))
 
+
+(define (read-out-sxref)
+  (fasl->s-exp (current-input-port)))
+
 (define ((get-doc-info only-dirs latex-dest auto-main? auto-user? with-record-error) doc)
   (let* ([info-out-file (build-path (or latex-dest (doc-dest-dir doc)) "out.sxref")]
          [info-in-file  (build-path (or latex-dest (doc-dest-dir doc)) "in.sxref")]
@@ -352,7 +357,7 @@
                               ((get-doc-info only-dirs latex-dest auto-main? auto-user? 
                                              with-record-error) doc))])
         (let* ([v-in (with-input-from-file info-in-file read)]
-               [v-out (with-input-from-file info-out-file read)])
+               [v-out (with-input-from-file info-out-file read-out-sxref)])
           (unless (and (equal? (car v-in) (list vers (doc-flags doc)))
                        (equal? (car v-out) (list vers (doc-flags doc))))
             (error "old info has wrong version or flags"))
@@ -383,7 +388,7 @@
                     [ri (send renderer resolve (list v) (list dest-dir) ci)]
                     [out-v (and info-out-time
                                 (with-handlers ([exn? (lambda (exn) #f)])
-                                  (let ([v (with-input-from-file info-out-file read)])
+                                  (let ([v (with-input-from-file info-out-file read-out-sxref)])
                                     (unless (equal? (car v) (list vers (doc-flags doc)))
                                       (error "old info has wrong version or flags"))
                                     v)))]
@@ -505,24 +510,24 @@
     (when (verbose) (printf " [Caching ~a]\n" info-file))
     (with-output-to-file info-file #:exists 'truncate/replace
       (lambda ()
-        (write ((sel (lambda ()
-                       (list (list (info-vers info) (doc-flags doc))
-                             (info-sci info)
-                             (info-provides info)))
-                     (lambda ()
-                       (list (list (info-vers info) (doc-flags doc))
-                             (info-undef info)
-                             (map (lambda (i)
-                                    (path->rel (doc-src-file (info-doc i))))
-                                  (info-deps info))
-                             (info-searches info))))))))))
+        (sel (lambda ()
+               (list (list (info-vers info) (doc-flags doc))
+                     (info-sci info)
+                     (info-provides info)))
+             (lambda ()
+               (list (list (info-vers info) (doc-flags doc))
+                     (info-undef info)
+                     (map (lambda (i)
+                            (path->rel (doc-src-file (info-doc i))))
+                          (info-deps info))
+                     (info-searches info))))))))
 
 (define (write-out info)
   (make-directory* (doc-dest-dir (info-doc info)))
-  (write- info "out.sxref" (lambda (o i) o)))
+  (write- info "out.sxref" (lambda (o i) (write-bytes (s-exp->fasl (o))))))
 (define (write-in info)
   (make-directory* (doc-dest-dir (info-doc info)))
-  (write- info "in.sxref" (lambda (o i) i)))
+  (write- info "in.sxref" (lambda (o i) (write (i)))))
 
 (define (rel->path r)
   (if (bytes? r)

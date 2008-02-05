@@ -430,6 +430,9 @@
     (subset?-helper (integer-set-contents s1) (integer-set-contents s2)))
     
   (define int (flat-named-contract "exact-integer" int?))
+
+  (provide well-formed-set?)
+
   (provide/contract (struct integer-set ((contents (flat-named-contract "integer-set-list" well-formed-set?))))
                     (make-range (case-> (-> integer-set?)
                                         (int . ->  . integer-set?)

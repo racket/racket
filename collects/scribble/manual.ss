@@ -1856,7 +1856,7 @@
                                        (cond
                                         [(string? i)
                                          (cond
-                                          [(regexp-match #rx"^(.*)([()0-9])(.*)$" i)
+                                          [(regexp-match #px"^(.*)([()0-9{}\\[\\]])(.*)$" i)
                                            => (lambda (m)
                                                 (append (loop (cadr m))
                                                         (list (caddr m))

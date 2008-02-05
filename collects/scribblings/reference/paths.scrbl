@@ -197,21 +197,22 @@ Returns the path convention type of the current platform:
 Windows.}
 
 
-@defproc[(build-path [base path-string?]
-                     [sub (or/c path-string? 
+@defproc[(build-path [base (or/c path-string?
+                                 (one-of/c 'up 'same))]
+                     [sub (or/c (and/c path-string? 
+                                       (not/c complete-path?))
                                 (one-of/c 'up 'same))] ...)
          path?]{
 
 Creates a path given a base path and any number of sub-path
 extensions. If @scheme[base] is an absolute path, the result is an
-absolute path; if @scheme[base] is a relative path, the result is a
-relative path.
+absolute path, otherwise the result is a relative path.
 
-Each @scheme[sub] must be either a relative path, the symbol
-@indexed-scheme['up] (indicating the relative parent directory), or
-the symbol @indexed-scheme['same] (indicating the relative current
-directory).  For Windows paths, if @scheme[base] is a drive
-specification (with or without a trailing slash) the first
+The @scheme[base] and each @scheme[sub] must be either a relative
+path, the symbol @indexed-scheme['up] (indicating the relative parent
+directory), or the symbol @indexed-scheme['same] (indicating the
+relative current directory).  For Windows paths, if @scheme[base] is a
+drive specification (with or without a trailing slash) the first
 @scheme[sub] can be an absolute (driveless) path. For all platforms,
 the last @scheme[sub] can be a filename.
 

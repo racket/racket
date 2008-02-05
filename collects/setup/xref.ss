@@ -2,6 +2,7 @@
 
 (require scribble/xref
          setup/getinfo
+         scheme/fasl
          "private/doc-path.ss")
 
 (provide load-collections-xref)
@@ -45,7 +46,7 @@
                                                                   (exn-message exn)
                                                                   (format "~e" exn)))
                                                        #f)])
-                                      (let ([r (with-input-from-file dest read)])
+                                      (let ([r (call-with-input-file* dest fasl->s-exp)])
                                         (cadr r)))))
                                 dests)))
           cached-xref))))

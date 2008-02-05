@@ -75,7 +75,7 @@
 
 @title[#:tag "mzlib:class" #:style 'toc]{Classes and Objects}
 
-@note-lib[scheme/class]
+@note-lib[scheme/class #:use-sources (scheme/private/class-internal)]
 
 @local-table-of-contents[]
 

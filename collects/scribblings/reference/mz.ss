@@ -17,17 +17,22 @@
   (provide AllUnix)
 
   (provide note-lib)
-  (define-syntax-rule (note-lib lib . more)
-    (begin
-      (declare-exporting lib scheme)
-      (defmodule*/no-declare (lib)
-        (t "The bindings documented in this section are provided by the "
-           (schememodname lib)
-           " and "
-           (schememodname scheme)
-           " libraries, but not " (schememodname scheme/base)
-           "." 
-           . more))))
+  (define-syntax note-lib
+    (syntax-rules ()
+      [(_ lib #:use-sources (src ...) . more)
+       (begin
+         (declare-exporting lib scheme #:use-sources (src ...))
+         (defmodule*/no-declare (lib)
+           (t "The bindings documented in this section are provided by the "
+              (schememodname lib)
+              " and "
+              (schememodname scheme)
+              " libraries, but not " (schememodname scheme/base)
+              "." 
+              . more)))]
+      [(_ lib . more)
+       (note-lib lib #:use-sources () . more)]))
+      
 
   (provide note-lib-only)
   (define-syntax-rule (note-lib-only lib . more)

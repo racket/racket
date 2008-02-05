@@ -30,6 +30,8 @@
                   "Libraries")
         (make-sec 'foreign
                   "Low-Level APIs")
+        (make-sec 'legacy
+                  "Legacy Languages and Libraries")
         (make-sec 'other
                   "Other")))
 
@@ -81,7 +83,7 @@
                                                                       (car new-cat)
                                                                       new-cat)])
                                                      (case the-cat
-                                                       [(getting-started language tool library foreign other omit)
+                                                       [(getting-started language tool library foreign legacy other omit)
                                                         the-cat]
                                                        [else 
                                                         (fprintf (current-error-port)
