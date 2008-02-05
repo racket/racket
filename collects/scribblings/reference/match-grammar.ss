@@ -38,6 +38,7 @@ literal ::= ()                                @match the empty list
          |  #t                                @match true
          |  #f                                @match false
          |  string                            @match equal% string
+         |  bytes                             @match equal% byte string
          |  number                            @match equal% number
          |  char                              @match equal% character
 lvp     ::= (code:line pat ooo)               @greedily match pat instances
@@ -113,7 +114,7 @@ ooo     ::= ***                               @zero or more; *** is literal
    [(symbol? s)
     (case s
       [(lvp pat qp literal ooo datum struct-id
-            string number character expr id
+            string bytes number character expr id
             rx-expr px-expr pred-expr
             derived-pattern)
        (match-nonterm (symbol->string s))]

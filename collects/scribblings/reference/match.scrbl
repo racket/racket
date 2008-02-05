@@ -24,6 +24,9 @@ bindings introduced by @scheme[pat] (if any). The last @scheme[expr]
 in the matching clause is evaluated in tail position with respect to
 the @scheme[match] expression.
 
+The @scheme[clause]s are tried in order to find a match. If no
+@scheme[clause] matches, then the @exnraise[exn:fail].
+
 An optional @scheme[(=> identifier)] between a @scheme[pat] and the
 @scheme[expr]s is bound to a @defterm{failure procedure} of zero
 arguments.  If this procedure is invoked, it escapes back to the
