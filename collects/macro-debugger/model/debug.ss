@@ -1,22 +1,22 @@
 
-(module debug mzscheme
-  (require (lib "plt-match.ss"))
-  (require "trace.ss"
-           "reductions.ss"
-           "deriv-util.ss"
-           "deriv-find.ss"
-           "hide.ss"
-           "hiding-policies.ss"
-           "deriv.ss"
-           "steps.ss")
+#lang scheme/base
 
-  (provide (all-from "trace.ss")
-           (all-from "reductions.ss")
-           (all-from "deriv.ss")
-           (all-from "deriv-util.ss")
-           (all-from "deriv-find.ss")
-           (all-from "hiding-policies.ss")
-           (all-from "hide.ss")
-           (all-from "steps.ss")
-           (all-from (lib "plt-match.ss")))
-  )
+(require scheme/match
+         "trace.ss"
+         "reductions.ss"
+         "deriv-util.ss"
+         "deriv-find.ss"
+         "hide.ss"
+         "hiding-policies.ss"
+         "deriv.ss"
+         "steps.ss")
+
+(provide (all-from-out "trace.ss")
+         (all-from-out "reductions.ss")
+         (all-from-out "deriv.ss")
+         (all-from-out "deriv-util.ss")
+         (all-from-out "deriv-find.ss")
+         (all-from-out "hiding-policies.ss")
+         (all-from-out "hide.ss")
+         (all-from-out "steps.ss")
+         (all-from-out scheme/match))

@@ -1,13 +1,13 @@
 
-(module embed mzscheme
-  (require "interfaces.ss"
-           "widget.ss"
-           "keymap.ss"
-           "params.ss"
-           "partition.ss")
-  
-  (provide (all-from "interfaces.ss")
-           (all-from "widget.ss")
-           (all-from "keymap.ss")
-           (all-from "params.ss")
-           identifier=-choices))
+#lang scheme/base
+(require "interfaces.ss"
+         "widget.ss"
+         "keymap.ss"
+         "params.ss"
+         "partition.ss")
+
+(provide (all-from-out "interfaces.ss")
+         (all-from-out "widget.ss")
+         (all-from-out "keymap.ss")
+         (all-from-out "params.ss")
+         identifier=-choices)
