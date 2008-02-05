@@ -1,14 +1,17 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label string-constants/string-constant
+@(require scribble/manual
+          (for-label scheme
+                     string-constants/string-constant
                      setup/getinfo))
 
 @title[#:tag "info.ss"]{@filepath{info.ss} File Format}
 
-In each @tech{collection}, a special module file @filepath{info.ss}
-provides general information about a collection for use by various
-tools. For example, an @filepath{info.ss} file specifies how to build
-the documentation for a collection, and it lists plug-in tools for
+@defmodulelang[setup/infotab]
+
+In each collection, a special module file @filepath{info.ss} provides
+general information about a collection for use by various tools. For
+example, an @filepath{info.ss} file specifies how to build the
+documentation for a collection, and it lists plug-in tools for
 DrScheme that the collection provides.
 
 Although an @filepath{info.ss} file contains a module declaration, the
@@ -45,7 +48,7 @@ grammar of @scheme[_info-module]:
 For example, the following declaration could be the @filepath{info.ss}
 library of the @filepath{help} collection. It contains definitions for
 three info tags, @scheme[name], @scheme[mzscheme-launcher-libraries], and
-@scheme[mzscheme-launcher-names].  (Note the use of @litchar{#lang}.)
+@scheme[mzscheme-launcher-names].
 
 @schememod[
 setup/infotab
@@ -54,9 +57,14 @@ setup/infotab
 (define mzscheme-launcher-names     '("PLT Help"))
 ]
 
+As illustrated in this example, an @filepath{info.ss} file can use
+@hash-lang[] notation, but only with the @schememodname[setup/infotab]
+language.
+
 The @scheme[name] tag is required for @exec{setup-plt} to recognize
 the collection and compile its files to bytecode. Similarly, an
 @filepath{info.ss} file in a sub-directory of a collection causes the
 sub-directory's files to be compiled.
 
 See also @scheme[get-info] from @schememodname[setup/getinfo].
+

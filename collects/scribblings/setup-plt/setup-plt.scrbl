@@ -106,10 +106,7 @@ collection that:
 
 @itemize{
 
- @item{has an @filepath{info.ss} library (see the
-   @italic{@other-manual['(lib "scribblings/mzc/mzc.scrbl")]} manual,
-   or @secref[#:doc ref-src "info.ss"] in Reference for a
-   description);}
+ @item{has an @filepath{info.ss} library (see @secref["info.ss"]);}
 
  @item{has a @scheme[name] field in @filepath{info.ss}; and}
 
@@ -901,14 +898,11 @@ An @deftech{unpackable} is one of the following:
 
 @; ------------------------------------------------------------------------
 
-@section[#:tag "getinfo"]{Reading @filepath{info.ss} Files}
+@include-section["info.scrbl"]
 
-@defmodulelang[setup/infotab]{@filepath{info.ss} use the
-@schememodname[setup/infotab] language, which allows simple
-definitions and a few constructors (like @scheme[list] and
-@scheme[build-path]).  Furthermore, the functions that are described
-below require an @filepath{info.ss} to be in a specific shape, so you
-cannot use a different module for these files.}
+@; ------------------------------------------------------------------------
+
+@section[#:tag "getinfo"]{Reading @filepath{info.ss} Files}
 
 @defmodule[setup/getinfo]{ The @schememodname[setup/getinfo] library
    provides functions for accessing fields in @filepath{info.ss}
@@ -930,7 +924,7 @@ cannot use a different module for these files.}
    Accepts a path to a directory. It returns @scheme[#f] if there is
    no @filepath{info.ss} file in the directory. If the
    @filepath{info.ss} file has the wrong shape (i.e., not a module
-   using @scheme[setup/infotab] or @scheme[(lib "infotab.ss" "setup")]),
+   using @schememodname[setup/infotab] or @scheme[(lib "infotab.ss" "setup")]),
    or if the @filepath{info.ss} file fails to load, then an exception
    is raised.
 

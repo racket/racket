@@ -66,7 +66,7 @@ The @filepath{.zo} files are placed into the collection's
 @filepath{compiled} directory.
 
 The collection compiler reads the collection's @filepath{info.ss} file
-(see @secref[#:doc '(lib "scribblings/reference/reference.scrbl")
+(see @secref[#:doc '(lib "scribblings/setup-plt/setup-plt.scrbl")
 "info.ss"]) to obtain information about compiling the collection.  The
 following fields are used:
 
