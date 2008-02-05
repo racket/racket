@@ -165,6 +165,7 @@ returns the source byte string for a regexp value.
 @examples[
 (byte-regexp #"ap*le")
 (object-name #rx#"ap*le")
+(byte-regexp "ap*le")
 ]}
 
 @defproc[(byte-pregexp [bstr bytes?]) byte-pregexp?]{
