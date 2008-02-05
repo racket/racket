@@ -178,8 +178,8 @@ syntax (see @secref["regexp-syntax"]). The result can be used with
 (byte-pregexp #"ap*le")
 ]}
 
-@defproc*[([(regexp-quote [str string?][case-sensitive? any/c #f]) string?]
-           [(regexp-quote [bstr bytes?][case-sensitive? any/c #f]) bytes?])]{
+@defproc*[([(regexp-quote [str string?] [case-sensitive? any/c #t]) string?]
+           [(regexp-quote [bstr bytes?] [case-sensitive? any/c #t]) bytes?])]{
 
 Produces a string or byte string suitable for use with @scheme[regexp]
 to match the literal sequence of characters in @scheme[str] or
