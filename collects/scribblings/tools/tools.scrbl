@@ -153,7 +153,7 @@ DrScheme continues to start up, without the tool.
 For example, if the @File{info.ss} file in a collection
 contains:
 @schemeblock[
-#lang setup/infotab
+\#lang setup/infotab
 (define name "Tool Name")
 (define tools (list (list "tool.ss")))
 ]
@@ -259,7 +259,7 @@ The lists must have the same length.
 As an example, the @italic{Essentials of Programming Languages}
 language specification's @File{info.ss} looks like this:
 @schemeblock[
-#lang setup/infotab
+\#lang setup/infotab
 (require string-constants/string-constant)
 (define name "EoPL Support")
 (define drscheme-language-modules

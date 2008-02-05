@@ -122,7 +122,7 @@ For example, the @filepath{info.ss} file in the @filepath{sirmail} collection
 might contain the following @scheme[info] declaration:
 
 @schemeblock[
-#lang setup/infotab
+\#lang setup/infotab
 (define name "SirMail")
 (define mred-launcher-libraries (list "sirmail.ss"))
 (define mred-launcher-names (list "SirMail"))

@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define name "XML private"))
+(define name "XML private")

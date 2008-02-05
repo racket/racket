@@ -60,7 +60,7 @@ EOS
         @filepath{info.ss} module, here's a suitable complete module:
 
         @schemeblock[
-          #lang setup/infotab
+          \#lang setup/infotab
           (define name "Some documentation")
           (define scribblings '(("manual.scrbl" ())))
         ]}

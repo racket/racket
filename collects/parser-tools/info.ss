@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define name "Parser-tools"))
+(define name "Parser-tools")

@@ -45,10 +45,10 @@ grammar of @scheme[_info-module]:
 For example, the following declaration could be the @filepath{info.ss}
 library of the @filepath{help} collection. It contains definitions for
 three info tags, @scheme[name], @scheme[mzscheme-launcher-libraries], and
-@scheme[mzscheme-launcher-names].  (Note the use of #lang!!!!!!)
+@scheme[mzscheme-launcher-names].  (Note the use of @litchar{#lang}.)
 
 @schemeblock[
-#lang setup/infotab
+\#lang setup/infotab
 (define name "Help")
 (define mzscheme-launcher-libraries '("help.ss"))
 (define mzscheme-launcher-names     '("PLT Help"))

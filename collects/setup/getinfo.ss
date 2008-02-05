@@ -16,28 +16,32 @@
 ;; get-info/full : path -> info/#f
 (define (get-info/full dir)
   (define file (build-path dir "info.ss"))
+  (define (err fmt . args)
+    (apply error 'get-info (string-append "info file " fmt " in ~a")
+           (append args (list file))))
   (define (contents)
-    (with-input-from-file file
-      (lambda ()
-        (begin0 (read)
-          (unless (eof-object? (read))
-            (error "info file has multiple expressions in ~a" file))))))
+    (parameterize ([read-accept-reader #t]
+                   [current-reader-guard
+                    (lambda (x)
+                      (if (eq? x 'setup/infotab/lang/reader)
+                        x
+                        (err "has illegal #lang or #reader"))
+                      x)])
+      (with-input-from-file file
+        (lambda ()
+          (begin0 (read)
+            (unless (eof-object? (read))
+              (err "has multiple expressions" file)))))))
   (and (file-exists? file)
-       (parameterize ([read-accept-reader #t]
-                      [current-reader-guard
-                       (lambda (x)
-                         (if (equal? x 'setup/infotab/lang/reader)
-                           x
-                           (error "info file has illegal #lang or #reader in ~a" file))
-                         x)])
-         (match (contents)
-           [(list 'module 'info
-                  (or '(lib "infotab.ss" "setup") 'setup/infotab)
-                  expr ...)
-            (dynamic-require file '#%info-lookup)]
-           [else (error 'get-info
-                        "info file does not contain a module of the right shape: \"~a\""
-                        file)]))))
+       (match (contents)
+         [(list 'module 'info
+                (or '(lib "infotab.ss" "setup") 'setup/infotab)
+                expr ...)
+          ;; no need to set a reader-guard, since we checked it
+          ;; above (a guard will see other uses of #lang for stuff
+          ;; that is required)
+          (dynamic-require file '#%info-lookup)]
+         [else (err "does not contain a module of the right shape")])))
 
 ;; directory-record = (make-directory-record nat nat key path (listof symbol))
 ;; eg: (make-directory-record 1 0 '(lib "mzlib") #"mzlib" '(name))
