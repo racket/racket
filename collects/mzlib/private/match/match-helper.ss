@@ -29,7 +29,8 @@
      (boolean? v)
      (char? v)
      (number? v)
-     (keyword? v)))
+     (keyword? v)
+     (bytes? v)))
   
   
   ;;!(function symbol-append
