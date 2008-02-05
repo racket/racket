@@ -164,7 +164,7 @@ returns the source byte string for a regexp value.
 
 @examples[
 (byte-regexp #"ap*le")
-(byte-regexp "ap*le")
+(object-name #rx#"ap*le")
 ]}
 
 @defproc[(byte-pregexp [bstr bytes?]) byte-pregexp?]{
@@ -624,8 +624,8 @@ matches an empty string, the @exnraise[exn:fail].
 (display (regexp-replace* #rx"x" "12x4x6" "\\\\"))
 ]}
 
-@defproc*[([(regexp-replace-quote [str string?][case-sensitive? any/c #f]) string?]
-           [(regexp-replace-quote [bstr bytes?][case-sensitive? any/c #f]) bytes?])]{
+@defproc*[([(regexp-replace-quote [str string?]) string?]
+           [(regexp-replace-quote [bstr bytes?]) bytes?])]{
 
 Produces a string suitable for use as the third argument to
 @scheme[regexp-replace] to insert the literal sequence of characters
