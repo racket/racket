@@ -47,8 +47,8 @@ library of the @filepath{help} collection. It contains definitions for
 three info tags, @scheme[name], @scheme[mzscheme-launcher-libraries], and
 @scheme[mzscheme-launcher-names].  (Note the use of @litchar{#lang}.)
 
-@schemeblock[
-\#lang setup/infotab
+@schememod[
+setup/infotab
 (define name "Help")
 (define mzscheme-launcher-libraries '("help.ss"))
 (define mzscheme-launcher-names     '("PLT Help"))

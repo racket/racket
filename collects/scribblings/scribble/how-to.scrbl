@@ -59,8 +59,8 @@ EOS
         @schemeidfont{name} field. If you do not already have an
         @filepath{info.ss} module, here's a suitable complete module:
 
-        @schemeblock[
-          \#lang setup/infotab
+        @schememod[
+          setup/infotab
           (define name "Some documentation")
           (define scribblings '(("manual.scrbl" ())))
         ]}
