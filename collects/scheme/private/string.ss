@@ -98,7 +98,7 @@
              (raise-type-error name "input port" string))
            (unless (or len (input-port? string))
              (raise-type-error name "string, byte string or input port" string)))
-         (lambda (start end)
+         (lambda (acc start end)
            (unless (and (number? start) (exact? start) (integer? start)
                         (start . >= . 0))
              (raise-type-error name "non-negative exact integer" start))
@@ -155,13 +155,14 @@
                              (get-output-bytes leftover-port)))])
                  (if match
                    (port-success-k
+                    acc
                     (car match)
                     (and end (- end (if need-leftover?
                                       (+ (bstring-length leftovers) start)
                                       discarded)
                                 (bstring-length (car match))))
                     leftovers)
-                   (port-failure-k leftovers))))
+                   (port-failure-k acc leftovers))))
              ;; String/port match, get positions
              (let ([match ((if peek?
                              regexp-match-peek-positions
@@ -173,8 +174,8 @@
                    (if (= match-start match-end)
                      (error name
                             "pattern matched a zero-length substring: ~e" rx)
-                     (success-k start end match-start match-end)))
-                 (failure-k start end))))))]))
+                     (success-k acc start end match-start match-end)))
+                 (failure-k acc start end))))))]))
 
   ;; Returns all the positions at which the pattern matched.
   (define (regexp-match-positions* pattern string [start 0] [end #f])
@@ -183,23 +184,25 @@
       (make-regexp-loop
        'regexp-match-positions* rx string
        ;; success-k:
-       (lambda (start end match-start match-end)
-         (cons (cons match-start match-end)
-               (if (or (string? string) (bytes? string))
-                 (loop match-end end)
-                 ;; Need to shift index of rest as reading:
-                 (map (lambda (p)
-                        (cons (+ match-end (car p)) (+ match-end (cdr p))))
-                      (loop 0 (and end (- end match-end)))))))
+       (lambda (acc start end match-start match-end)
+         (let ([acc (cons (cons match-start match-end) acc)])
+           (if (or (string? string) (bytes? string))
+             (loop acc match-end end)
+             ;; Need to shift index of rest as reading, cannot do a
+             ;; tail call without adding another state variable to the loop:
+             (append (map (lambda (p)
+                            (cons (+ match-end (car p)) (+ match-end (cdr p))))
+                          (loop '() 0 (and end (- end match-end))))
+                     acc))))
        ;; port-success-k: use string case
        #f
        ;; failure-k:
-       (lambda (start end) null)
+       (lambda (acc start end) acc)
        ;; port-fail-k: use string case
        #f
        #f
        #f))
-    (loop start end))
+    (reverse (loop '() start end)))
 
   ;; Returns all the positions at which the pattern matched.
   (define (regexp-match-peek-positions* pattern string [start 0] [end #f])
@@ -208,18 +211,17 @@
       (make-regexp-loop
        'regexp-match-peek-positions* rx string
        ;; success-k:
-       (lambda (start end match-start match-end)
-         (cons (cons match-start match-end)
-               (loop match-end end)))
+       (lambda (acc start end match-start match-end)
+         (loop (cons (cons match-start match-end) acc) match-end end))
        ;; port-success-k: use string case
        #f
        ;; failure-k:
-       (lambda (start end) null)
+       (lambda (acc start end) acc)
        ;; port-fail-k: use string case
        #f
        #f
        #t))
-    (loop start end))
+    (reverse (loop '() start end)))
 
   ;; Splits a string into a list by removing any piece which matches
   ;; the pattern.
@@ -233,20 +235,19 @@
       (make-regexp-loop
        'regexp-split rx buf
        ;; success-k:
-       (lambda (start end match-start match-end)
-         (cons (sub buf start match-start)
-               (loop match-end end)))
+       (lambda (acc start end match-start match-end)
+         (loop (cons (sub buf start match-start) acc) match-end end))
        ;; port-success-k:
-       (lambda (match-string new-end leftovers)
-         (cons leftovers (loop 0 new-end)))
+       (lambda (acc match-string new-end leftovers)
+         (loop (cons leftovers acc) 0 new-end))
        ;; failure-k:
-       (lambda (start end)
-         (list (sub buf start (or end (bstring-length buf)))))
+       (lambda (acc start end)
+         (cons (sub buf start (or end (bstring-length buf))) acc))
        ;; port-fail-k
-       (lambda (leftover) (list leftover))
+       (lambda (acc leftover) (cons leftover acc))
        #t
        #f))
-    (loop start end))
+    (reverse (loop '() start end)))
 
   ;; Returns all the matches for the pattern in the string.
   (define (regexp-match* pattern string [start 0] [end #f])
@@ -259,19 +260,18 @@
       (make-regexp-loop
        'regexp-match* rx buf
        ;; success-k:
-       (lambda (start end match-start match-end)
-         (cons (sub buf match-start match-end)
-               (loop match-end end)))
+       (lambda (acc start end match-start match-end)
+         (loop (cons (sub buf match-start match-end) acc) match-end end))
        ;; port-success-k:
-       (lambda (match-string new-end leftovers)
-         (cons match-string (loop 0 new-end)))
+       (lambda (acc match-string new-end leftovers)
+         (loop (cons match-string acc) 0 new-end))
        ;; failure-k:
-       (lambda (start end) null)
+       (lambda (acc start end) acc)
        ;; port-fail-k:
-       (lambda (leftover) null)
+       (lambda (acc leftover) acc)
        #f
        #f))
-    (loop start end))
+    (reverse (loop '() start end)))
 
   (define (regexp-match-exact? p s)
     (let ([m (regexp-match-positions p s)])
