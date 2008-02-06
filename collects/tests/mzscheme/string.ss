@@ -138,6 +138,15 @@
   (test '(#"here's " #" " #"u" #"k") regexp-split "[abc]" s 0 #f)
   (test eof read-char s))
 
+;; test with zero-length matches
+(test '("" "f" "o" "o" "") regexp-split #rx"" "foo")
+(test '("" "f" "o" "o" " " "b" "a" "r" "") regexp-split #rx"" "foo bar")
+(test '("" "f" "o" "o" "" "b" "a" "r" "") regexp-split #rx" *" "foo bar")
+(test '("f" "" "ar") regexp-split #rx"oo| b" "foo bar")
+(test '("foo bar" "") regexp-split #rx"$" "foo bar")
+;; this doesn't work (like in Emacs) because ^ matches the start pos
+;; (test '("" "foo bar") regexp-split #rx"^" "foo bar")
+
 (let ([g->re-test
        (lambda (glob . more)
          (let ([re (apply glob->regexp glob more)])

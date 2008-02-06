@@ -88,7 +88,8 @@
   (define-syntax regexp-loop
     (syntax-rules ()
       [(regexp-loop name loop start end rx string
-        success-k port-success-k failure-k port-failure-k
+        success-choose failure-k
+        port-success-k port-success-choose port-failure-k
         need-leftover? peek?)
        (let ([len (cond [(string? string) (string-length string)]
                         [(bytes?  string) (bytes-length  string)]
@@ -120,7 +121,7 @@
             (format "ending offset index out of range [~a,~a]: " start len)
             end))
          (reverse
-          (let loop ([acc '()] [start start] [end end])
+          (let loop ([acc '()] [start start] [end end] [skipped? #f])
             (when (and need-leftover? (positive? start) (input-port? string))
               ;; Skip start chars:
               (let ([s (make-bytes 4096)])
@@ -130,74 +131,90 @@
                               s string 0 (min (- start n) 4096))])
                       (unless (eof-object? m) (loop (+ n m))))))))
 
-            (if (and port-success-k (input-port? string))
+            (if (and port-success-choose (input-port? string))
               ;; Input port match, get string
-              (let ([discarded 0]
-                    [leftover-port (and need-leftover? (open-output-bytes))])
-                (let ([match
-                       (regexp-match
-                        rx string
-                        (if need-leftover? 0 start)
-                        (and end (if need-leftover? (- end start) end))
-                        (if need-leftover?
-                          leftover-port
-                          (make-output-port
-                           'counter
-                           always-evt
-                           (lambda (s start end flush? breakable?)
-                             (let ([c (- end start)])
-                               (set! discarded (+ c discarded))
-                               c))
-                           void)))]
-                      [leftovers
-                       (and need-leftover?
-                            (if (and (regexp? rx) (string? string))
-                              (get-output-string leftover-port)
-                              (get-output-bytes leftover-port)))])
-                  (if match
-                    (port-success-k
-                     acc
-                     (car match)
-                     (and end (- end (if need-leftover?
-                                       (+ (bstring-length leftovers) start)
-                                       discarded)
-                                 (bstring-length (car match))))
-                     leftovers)
-                    (port-failure-k acc leftovers))))
+              (let* ([discarded 0]
+                     [leftover-port (and need-leftover? (open-output-bytes))]
+                     [match
+                      (regexp-match
+                       rx string
+                       (if need-leftover? (if skipped? 1 0) start)
+                       (and end (if need-leftover?
+                                  (if skipped? (- end start -1) (- end start))
+                                  end))
+                       (if need-leftover?
+                         leftover-port
+                         (make-output-port
+                          'counter
+                          always-evt
+                          (lambda (s start end flush? breakable?)
+                            (let ([c (- end start)])
+                              (set! discarded (+ c discarded))
+                              c))
+                          void)))]
+                     [leftovers
+                      (and need-leftover?
+                           (if (and (regexp? rx) (string? string))
+                             (get-output-string leftover-port)
+                             (get-output-bytes leftover-port)))])
+                (if match
+                  (let* ([mlen (bstring-length (car match))]
+                         [skip? (zero? mlen)])
+                    (loop (cons (port-success-choose (car match) leftovers) acc)
+                          (if skip? 1 0)
+                          (and end (- end (if need-leftover?
+                                            (+ (bstring-length leftovers) start
+                                               (if skipped? 1 0))
+                                            discarded)
+                                      mlen))
+                          skip?))
+                  (port-failure-k acc leftovers)))
               ;; String/port match, get positions
               (let ([match ((if peek?
                               regexp-match-peek-positions
                               regexp-match-positions)
-                            rx string start end)])
+                            rx string start end)]
+                    [start (if skipped? (sub1 start) start)])
                 (if match
-                  (let ([match-start (caar match)]
-                        [match-end (cdar match)])
-                    (if (= match-start match-end)
-                      (error 'name
-                             "pattern matched a zero-length substring: ~e" rx)
-                      (success-k acc start end match-start match-end)))
+                  (let* ([mstart (caar match)]
+                         [mend   (cdar match)]
+                         [skip?  (= mstart mend)])
+                    ;; The following two pieces are similar, but not
+                    ;; simple to combine and preserve efficiency
+                    (define (cont acc end* new-start new-end)
+                      (if skip?
+                        (if (and end* (new-start . >= . end*))
+                          (if failure-k (failure-k acc end* end) acc)
+                          (loop acc (add1 new-start) new-end #t))
+                        (loop acc new-start new-end #f)))
+                    (if port-success-k
+                      (port-success-k
+                       (lambda (acc new-start new-end)
+                         (cont acc (or new-end end len) new-start new-end))
+                       acc start end mstart mend)
+                      (cont (cons (success-choose start mstart mend) acc)
+                            (or end len) mend end)))
                   (failure-k acc start end)))))))]))
 
   ;; Returns all the positions at which the pattern matched.
   (define (regexp-match-positions* pattern string [start 0] [end #f])
     (define rx (bstring->regexp 'regexp-match-positions* pattern))
     (regexp-loop regexp-match-positions* loop start end rx string
-     ;; success-k:
-     (lambda (acc start end match-start match-end)
-       (let ([acc (cons (cons match-start match-end) acc)])
-         (if (input-port? string)
-           ;; Need to shift index of rest as reading, cannot do a
-           ;; tail call without adding another state variable to the loop:
-           (append (map (lambda (p)
-                          (cons (+ match-end (car p)) (+ match-end (cdr p))))
-                        (loop '() 0 (and end (- end match-end))))
-                   acc)
-           (loop acc match-end end))))
-     ;; port-success-k: use string case
-     #f
+     ;; success-choose:
+     (lambda (start mstart mend) (cons mstart mend))
      ;; failure-k:
      (lambda (acc start end) acc)
-     ;; port-fail-k: use string case
+     ;; port-success-k: need to shift index of rest as reading; cannot
+     ;; do a tail call without adding another state variable to the
+     ;; regexp loop, so this remains inefficient
+     (and (input-port? string)
+          (lambda (loop acc start end mstart mend)
+            (append (map (lambda (p)
+                           (cons (+ mend (car p)) (+ mend (cdr p))))
+                         (loop '() 0 (and end (- end mend))))
+                    (cons (cons mstart mend) acc))))
+     ;; other port functions: use string case
+     #f
      #f
      #f
      #f))
@@ -206,14 +223,13 @@
   (define (regexp-match-peek-positions* pattern string [start 0] [end #f])
     (define rx (bstring->regexp 'regexp-match-peek-positions* pattern))
     (regexp-loop regexp-match-peek-positions* loop start end rx string
-     ;; success-k:
-     (lambda (acc start end match-start match-end)
-       (loop (cons (cons match-start match-end) acc) match-end end))
-     ;; port-success-k: use string case
-     #f
+     ;; success-choose:
+     (lambda (start mstart mend) (cons mstart mend))
      ;; failure-k:
      (lambda (acc start end) acc)
-     ;; port-fail-k: use string case
+     ;; port functions: use string case
+     #f
+     #f
      #f
      #f
      #t))
@@ -227,16 +243,16 @@
                   string))
     (define sub (if (bytes? buf) subbytes substring))
     (regexp-loop regexp-split loop start end rx buf
-     ;; success-k:
-     (lambda (acc start end match-start match-end)
-       (loop (cons (sub buf start match-start) acc) match-end end))
-     ;; port-success-k:
-     (lambda (acc match-string new-end leftovers)
-       (loop (cons leftovers acc) 0 new-end))
+     ;; success-choose:
+     (lambda (start mstart mend) (sub buf start mstart))
      ;; failure-k:
      (lambda (acc start end)
        (cons (if end (sub buf start end) (sub buf start)) acc))
-     ;; port-fail-k
+     ;; port-success-k:
+     #f
+     ;; port-success-choose:
+     (lambda (match-string leftovers) leftovers)
+     ;; port-failure-k:
      (lambda (acc leftover) (cons leftover acc))
      #t
      #f))
@@ -249,15 +265,15 @@
                   string))
     (define sub (if (bytes? buf) subbytes substring))
     (regexp-loop regexp-match* loop start end rx buf
-     ;; success-k:
-     (lambda (acc start end match-start match-end)
-       (loop (cons (sub buf match-start match-end) acc) match-end end))
-     ;; port-success-k:
-     (lambda (acc match-string new-end leftovers)
-       (loop (cons match-string acc) 0 new-end))
+     ;; success-choose:
+     (lambda (start mstart mend) (sub buf mstart mend))
      ;; failure-k:
      (lambda (acc start end) acc)
-     ;; port-fail-k:
+     ;; port-success-k:
+     #f
+     ;; port-success-choose:
+     (lambda (match-string leftovers) match-string)
+     ;; port-failure-k:
      (lambda (acc leftover) acc)
      #f
      #f))
