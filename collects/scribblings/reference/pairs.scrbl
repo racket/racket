@@ -319,10 +319,10 @@ Returns @scheme[(remove* v lst eq?)].}
 Returns @scheme[(remove* v lst eqv?)].}
 
 
-@defproc[(sort [lst list?] [less-than procedure?])
+@defproc[(sort [lst list?] [less-than? (any/c any/c . -> . any/c)])
          list?]{
 
-Returns a list sorted according to the @scheme[less-than] procedure,
+Returns a list sorted according to the @scheme[less-than?] procedure,
  which takes two elements of @scheme[lst] and returns a true value if
  the first is less than (i.e., should be sorted earlier) than the
  second.

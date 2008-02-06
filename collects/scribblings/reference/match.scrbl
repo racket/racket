@@ -16,7 +16,7 @@ on regular-expression matching on strings, bytes, and streams.
 
 @defform/subs[(match val-expr clause ...)
               ([clause [pat expr ...+]
-                       [pat (=> identifier) expr ...+]])]{
+                       [pat (=> id) expr ...+]])]{
 
 Finds the first @scheme[pat] that matches the result of
 @scheme[val-expr], and evaluates the corresponding @scheme[expr]s with
@@ -27,7 +27,7 @@ the @scheme[match] expression.
 The @scheme[clause]s are tried in order to find a match. If no
 @scheme[clause] matches, then the @exnraise[exn:fail].
 
-An optional @scheme[(=> identifier)] between a @scheme[pat] and the
+An optional @scheme[(=> id)] between a @scheme[pat] and the
 @scheme[expr]s is bound to a @defterm{failure procedure} of zero
 arguments.  If this procedure is invoked, it escapes back to the
 pattern matching expression, and resumes the matching process as if
@@ -74,9 +74,9 @@ In more detail, patterns match as follows:
          [(list _ _ a) a])
        ]}
 
- @item{@scheme[#t], @scheme[#f], @scheme[_string], @scheme[_number],
-       @scheme[_char], or @scheme[(#,(schemeidfont "quote") _datum)]
-       --- matches an @scheme[equal?] constant.
+ @item{@scheme[#t], @scheme[#f], @scheme[_string], @scheme[_bytes],
+       @scheme[_number], @scheme[_char], or @scheme[(#,(schemeidfont
+       "quote") _datum)] --- matches an @scheme[equal?] constant.
 
        @examples[
        #:eval match-eval

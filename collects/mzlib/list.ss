@@ -21,7 +21,11 @@
 
                  filter
                  
-                 sort))
+                 sort)
+           (only scheme/list
+                 cons?
+                 empty?
+                 empty))
 
   (provide first
            second
@@ -112,9 +116,5 @@
         (if (pair? x)
           (loop x (cdr x))
           l))
-      (raise-type-error 'last-pair "pair" l)))
-
-  (define cons? (lambda (x) (pair? x)))
-  (define empty? (lambda (x) (null? x)))
-  (define empty '()))
+      (raise-type-error 'last-pair "pair" l))))
 
