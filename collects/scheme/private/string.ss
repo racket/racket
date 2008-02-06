@@ -121,7 +121,7 @@
             end))
          (reverse
           (let loop ([acc '()] [start start] [end end])
-            (when (and (positive? start) (input-port? string) need-leftover?)
+            (when (and need-leftover? (positive? start) (input-port? string))
               ;; Skip start chars:
               (let ([s (make-bytes 4096)])
                 (let loop ([n 0])
@@ -185,14 +185,14 @@
      ;; success-k:
      (lambda (acc start end match-start match-end)
        (let ([acc (cons (cons match-start match-end) acc)])
-         (if (or (string? string) (bytes? string))
-           (loop acc match-end end)
+         (if (input-port? string)
            ;; Need to shift index of rest as reading, cannot do a
            ;; tail call without adding another state variable to the loop:
            (append (map (lambda (p)
                           (cons (+ match-end (car p)) (+ match-end (cdr p))))
                         (loop '() 0 (and end (- end match-end))))
-                   acc))))
+                   acc)
+           (loop acc match-end end))))
      ;; port-success-k: use string case
      #f
      ;; failure-k:
@@ -235,7 +235,7 @@
        (loop (cons leftovers acc) 0 new-end))
      ;; failure-k:
      (lambda (acc start end)
-       (cons (sub buf start (or end (bstring-length buf))) acc))
+       (cons (if end (sub buf start end) (sub buf start)) acc))
      ;; port-fail-k
      (lambda (acc leftover) (cons leftover acc))
      #t
