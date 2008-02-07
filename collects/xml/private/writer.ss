@@ -19,7 +19,7 @@
 			(lambda (x)
 			  (if (or (eq? x 'always) (eq? x 'never) (and (list? x) (andmap symbol? x)))
 			      x
-			      (error 'empty-tag-shorthand "expected 'always, 'never, or a list of symbols: received ~a" x)))))
+			      (error 'empty-tag-shorthand "expected 'always, 'never, or a list of symbols: received ~e" x)))))
       
       (define html-empty-tags '(param meta link isindex input img hr frame col br basefont base area))
       
@@ -91,7 +91,7 @@
            [(entity? el) write-xml-entity]
            [(comment? el) write-xml-comment]
            [(pi? el) write-xml-pi]
-           [else (error 'write-xml-content "received ~a" el)])
+           [else (error 'write-xml-content "received ~e" el)])
 	 el over dent out))
       
       ;; write-xml-element : Element Nat (Nat Output-Stream -> Void) Output-Stream -> Void

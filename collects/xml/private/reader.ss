@@ -41,7 +41,7 @@
                                                   (location-offset loc-before)
                                                   (- (location-offset loc-after)
                                                      (location-offset loc-before))))
-                                                "extra stuff at end of document ~a"
+                                                "extra stuff at end of document ~e"
                                                 end-of-file)))
                                misc1))))))
       
@@ -64,7 +64,7 @@
                                #f
                                1
                                (- (location-offset (pos)) 1)))
-                             "expected root element - received ~a"
+                             "expected root element - received ~e"
                              (if (pcdata? start) (pcdata-string start) start))]))
       
       ;; read-misc : Input-port (-> Location) -> (listof Misc) Token
@@ -323,7 +323,7 @@
       (define (lex-name in pos)
         (let ([c (non-eof read-char-or-special in pos)])
           (unless (name-start? c)
-            (lex-error in pos "expected name, received ~s" c))
+            (lex-error in pos "expected name, received ~e" c))
           (string->symbol
            (list->string
             (cons c (let lex-rest ()

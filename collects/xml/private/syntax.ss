@@ -105,7 +105,7 @@
       (define (cdata-string x) (syntax-e x))
       
       (define (comment-text c)
-        (error 'comment-text "expected a syntax representation of an XML comment, received ~a" c))
+        (error 'comment-text "expected a syntax representation of an XML comment, received ~e" c))
       ; conflate documents with their root elements
       (define (document-element d) d)
       ; more here - spoof document pieces better?
@@ -113,34 +113,34 @@
       (define (document-prolog d) null)
       
       (define (document-type-external dtd)
-        (error 'document-type-external "expected a dtd, given ~a" dtd))
+        (error 'document-type-external "expected a dtd, given ~e" dtd))
       
       (define (document-type-inlined dtd)
-        (error 'document-type-inlined "expected a dtd, given ~a" dtd))
+        (error 'document-type-inlined "expected a dtd, given ~e" dtd))
       
       (define (document-type-name dtd)
-        (error 'document-type-name "expected a dtd, given ~a" dtd))
+        (error 'document-type-name "expected a dtd, given ~e" dtd))
       
       (define (external-dtd-system x)
-        (error 'external-dtd-system "expected an external dtd, given ~a" x))
+        (error 'external-dtd-system "expected an external dtd, given ~e" x))
       
       (define (external-dtd/public-public x)
-        (error 'external-dtd/public-public "expected an external dtd, given ~a" x))
+        (error 'external-dtd/public-public "expected an external dtd, given ~e" x))
       
       (define (pi-instruction x)
-        (error 'pi-instruction "expected a pi, given ~a" x))
+        (error 'pi-instruction "expected a pi, given ~e" x))
       
       (define (pi-target-name x)
-        (error 'pi-target-name "expected a pi, given ~a" x))
+        (error 'pi-target-name "expected a pi, given ~e" x))
       
       (define (prolog-dtd x)
-        (error 'prolog-dtd "expected a prolog, given ~a" x))
+        (error 'prolog-dtd "expected a prolog, given ~e" x))
       
       (define (prolog-misc x)
-        (error 'prolog-misc "expected a prolog, given ~a" x))
+        (error 'prolog-misc "expected a prolog, given ~e" x))
       
       (define (prolog-misc2 x)
-        (error 'prolog-misc2 "expected a prolog, given ~a" x))
+        (error 'prolog-misc2 "expected a prolog, given ~e" x))
       
       ; : tst -> bool
       (define (attribute? a)
