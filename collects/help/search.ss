@@ -112,10 +112,8 @@
              (+ acc (foldl (lambda (sc acc) (+ acc (sc word))) 0 scorers)))
            ;; give some bonus for bindings and modules
            (let ([desc (entry-desc entry)])
-             (if (or (exported-index-desc? desc)
-                     (module-path-index-desc? desc))
-               exported-entry-bonus
-               0))
+             (if (or (exported-index-desc? desc) (module-path-index-desc? desc))
+               exported-entry-bonus 0))
            (entry-words entry))))
 
 (define (scored-entry<? x y)

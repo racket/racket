@@ -64,6 +64,7 @@
 
 (define (xref-render xrefs doc dest-file #:render% [render% (html:render-mixin render%)])
   (let* ([dest-file (if (string? dest-file) (string->path dest-file) dest-file)]
+         [_ (printf ">>> ~s\n" dest-file)]
          [renderer (new render% [dest-dir (path-only dest-file)])]
          [ci (send renderer collect (list doc) (list dest-file))])
     (send renderer transfer-info ci (resolve-info-ci (xrefs-ri xrefs)))
