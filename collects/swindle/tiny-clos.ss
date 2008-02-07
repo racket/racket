@@ -1002,14 +1002,13 @@
         [qualifier (%method-qualifier method)])
     ;; make sure that tables always contain enough hash tables (or #f's)
     (cond [(eq? tables ???)
-           (set! tables (n-falses (length specs)))
-           (%set-generic-singletons-list! generic tables)]
+           (set! tables (n-falses (length specs)))]
           [(< (length tables) (length specs))
            (set! tables (append
                          tables
-                         (n-falses (- (length specs) (length tables)))))
-           (%set-generic-singletons-list! generic tables)])
+                         (n-falses (- (length specs) (length tables)))))])
     (set! tables (add-to-singletons-list specs tables))
+    (%set-generic-singletons-list! generic tables)
     (if (memq generic generic-invocation-generics)
       ;; reset all caches by changing the value of *generic-app-cache-tag*
       (set! *generic-app-cache-tag* (list #f))
