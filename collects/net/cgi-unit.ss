@@ -207,7 +207,7 @@
   ;; -- string is either GET or POST (though future extension is possible)
   (define (get-cgi-method)
     (or (getenv "REQUEST_METHOD")
-        (error 'get-cgi-method "REQUEST_METHOD environment variable: expected string, got #f")))
+        (error 'get-cgi-method "no REQUEST_METHOD environment variable")))
 
   ;; generate-link-text : string x html-string -> html-string
   (define (generate-link-text url anchor-text)
