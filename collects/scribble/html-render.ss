@@ -211,16 +211,14 @@
         (eq? d (current-top-part)))
 
       (define/override (collect-part-tags d ci number)
-        (for-each (lambda (t)
-                    (let ([key (generate-tag t ci)])
-                      (collect-put! ci
-                                    key
-                                    (vector (path->relative (current-output-file))
-                                            (or (part-title-content d)
-                                                '("???"))
-                                            (current-part-whole-page? d)
-                                            key))))
-                  (part-tags d)))
+        (for ([t (part-tags d)])
+          (let ([key (generate-tag t ci)])
+            (collect-put! ci key
+                          (vector (and (current-output-file)
+                                       (path->relative (current-output-file)))
+                                  (or (part-title-content d) '("???"))
+                                  (current-part-whole-page? d)
+                                  key)))))
 
       (define/override (collect-target-element i ci)
         (let ([key (generate-tag (target-element-tag i) ci)])
@@ -447,25 +445,35 @@
 
       (define/public (render-one-part d ri fn number)
         (parameterize ([current-output-file fn])
-          (let ([xpr `(html () 
-                            (head
-                             (meta ((http-equiv "content-type")
-                                    (content "text-html; charset=utf-8")))
-                             ,@(let ([c (part-title-content d)])
-                                 (if c
-                                     `((title ,@(format-number number '(nbsp)) ,(content->string c this d ri)))
-                                     null))
-                             (link ((rel "stylesheet")
+          (let ([xpr `(html ()
+                        (head
+                         (meta ((http-equiv "content-type")
+                                (content "text-html; charset=utf-8")))
+                         ,@(let ([c (part-title-content d)])
+                             (if c
+                               `((title ,@(format-number number '(nbsp))
+                                        ,(content->string c this d ri)))
+                               null))
+                         ,(if (eq? 'inline css-path)
+                            `(style ([type "text/css"])
+                               "\n"
+                               ,(with-input-from-file scribble-css
+                                  (lambda ()
+                                    ;; note: file-size can be bigger that the
+                                    ;; string, but that's fine.
+                                    (read-string (file-size scribble-css))))
+                               "\n")
+                            `(link ((rel "stylesheet")
                                     (type "text/css")
                                     (href ,(or css-path "scribble.css"))
-                                    (title "default"))))
-                            (body ,@(render-toc-view d ri)
-                                  (div ((class "maincolumn")) 
-                                       (div ((class "main")) 
-                                            ,@(render-version d ri)
-                                            ,@(navigation d ri #f)
-                                            ,@(render-part d ri)
-                                            ,@(navigation d ri #t)))))])
+                                    (title "default")))))
+                        (body ,@(render-toc-view d ri)
+                          (div ((class "maincolumn"))
+                            (div ((class "main"))
+                              ,@(render-version d ri)
+                              ,@(navigation d ri #f)
+                              ,@(render-part d ri)
+                              ,@(navigation d ri #t)))))])
             (unless css-path
               (install-file scribble-css))
             (printf "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n")
@@ -978,33 +986,27 @@
   ;; utils
 
   (define (from-root p d)
-    (if d
-        (let ([e-d (explode (path->complete-path d (current-directory)))]
-              [e-p (explode (path->complete-path p (current-directory)))])
-          (let loop ([e-d e-d]
-                     [e-p e-p])
-            (cond
-             [(null? e-d) (let loop ([e-p e-p])
-                            (cond
-                             [(null? e-p) "/"]
-                             [(null? (cdr e-p)) (car e-p)]
-                             [(eq? 'same (car e-p)) (loop (cdr e-p))]
-                             [(eq? 'up (car e-p)) 
-                              (string-append "../" (loop (cdr e-p)))]
-                             [else (string-append (car e-p)
-                                                  "/"
-                                                  (loop (cdr e-p)))]))]
-             [(equal? (car e-d) (car e-p))
-              (loop (cdr e-d) (cdr e-p))]
-             [(eq? 'same (car e-d))
-              (loop (cdr e-d) e-p)]
-             [(eq? 'same (car e-p))
-              (loop e-d (cdr e-p))]
-             [else
-              (string-append
-               (apply string-append (map (lambda (x) "../") e-d))
-               (loop null e-p))])))
-        p))
+    (if (not d)
+      p
+      (let ([e-d (explode (path->complete-path d (current-directory)))]
+            [e-p (explode (path->complete-path p (current-directory)))])
+        (let loop ([e-d e-d]
+                   [e-p e-p])
+          (cond
+            [(null? e-d)
+             (let loop ([e-p e-p])
+               (cond
+                 [(null? e-p) "/"]
+                 [(null? (cdr e-p)) (car e-p)]
+                 [(eq? 'same (car e-p)) (loop (cdr e-p))]
+                 [(eq? 'up (car e-p)) (string-append "../" (loop (cdr e-p)))]
+                 [else (string-append (car e-p) "/" (loop (cdr e-p)))]))]
+            [(equal? (car e-d) (car e-p)) (loop (cdr e-d) (cdr e-p))]
+            [(eq? 'same (car e-d)) (loop (cdr e-d) e-p)]
+            [(eq? 'same (car e-p)) (loop e-d (cdr e-p))]
+            [else (string-append
+                   (apply string-append (map (lambda (x) "../") e-d))
+                   (loop null e-p))])))))
 
   (define (explode p)
     (reverse (let loop ([p p])
