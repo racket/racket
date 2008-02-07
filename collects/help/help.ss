@@ -10,7 +10,7 @@
  #:once-any
  [("--go" "-g") "Go directly to search result if only one (default)"
   (set! go-if-one? #t)]
- [("++go" "+g") "Show search results page even if only one result"
+ [("--no-go" "-G") "Show search results page even if only one result"
   (set! go-if-one? #t)]
  #:once-each
  [("--exact" "-x") "Search for the given term exactly"

@@ -24,9 +24,13 @@
 ;; Configuration of search results
 (define maximum-entries 500)
 (define exact-score 1000)
+(define exact-word-score 600)
+(define words1-score 400)
+(define words2-score 200)
 (define prefix-score 100)
 (define suffix-score  20)
 (define contain-score 10)
+(define exported-entry-bonus 200) ; prefer bindings and modules
 (define regexp-score-factor 1.25) ; regexps get higher score
 (define nomatch-score -1) ; prefer less irrelevant terms
 
@@ -34,17 +38,18 @@
   (if (null? terms)
     (send-main-page)
     (let* ([xref (load-collections-xref)]
-           [entries (xref-index xref)]
            [scorer (terms->scorer terms exact?)]
-           [scored-entries
+           [entries (xref-index xref)]
+           [entries
             (let loop ([es entries] [r '()])
               (if (null? es)
                 r
                 (loop (cdr es)
                       (let* ([e (car es)] [score (scorer e)])
-                        (if (score . > . 0) (cons (cons score e) r) r)))))])
-      (if (and go-if-one? (= 1 (length scored-entries)))
-        (let*-values ([(tag) (entry-tag (cdar scored-entries))]
+                        (if (score . > . 0) (cons (cons score e) r) r)))))]
+           [entries (map cdr (sort entries scored-entry<?))])
+      (if (and go-if-one? (= 1 (length entries)))
+        (let*-values ([(tag) (entry-tag (car entries))]
                       [(path tag) (xref-tag->path+anchor xref tag)])
           (send-url/file path #:fragment (uri-encode tag)))
         (let* ([file (next-search-results-file)]
@@ -55,7 +60,6 @@
                        (map (λ (x) (format ", ~a" (term->label x)))
                             (cdr terms)))]
                [search-title (string-append "Search results for " search-title)]
-               [entries (map cdr (sort scored-entries scored-entry<?))]
                [contents
                 (if (null? entries)
                   (list (make-element "schemeerror" (list "No results found.")))
@@ -66,6 +70,15 @@
 
 ;; converts a list of search terms to a scoring function
 (define (terms->scorer terms exact?)
+  ;; turns a string to one that matches word prefixes (eg turn a "reg-qu"
+  ;; string to "reg\\w*-qu\\w*"), as with convenient completers like Emacs or
+  ;; zsh.
+  (define (words-rx str pat)
+    (let* ([strs (reverse (map (lambda (s) (regexp-quote s #f))
+                               (regexp-split #px"(?<=\\w)\\b" str)))]
+           [strs (cons (car strs)
+                       (map (lambda (s) (string-append s pat)) (cdr strs)))])
+      (string-append "^" (apply string-append (reverse strs)) "$")))
   (define scorers
     (map (lambda (term)
            (let* ([rx?     (regexp? term)]
@@ -74,13 +87,20 @@
                   [exact   (regexp (format "^~a$" rx))]
                   [prefix  (regexp (format "^~a" rx))]
                   [suffix  (regexp (format "~a$" rx))]
+                  [exact-word (and (not rx?) (pregexp (format "\\b~a\\b" rx)))]
+                  [words1  (and (not rx?) (pregexp (words-rx term "\\w*")))]
+                  [words2  (and (not rx?) (pregexp (words-rx term ".*")))]
                   [contain (if rx? term (regexp rx))])
              (lambda (str)
-               (let* ([sc (cond [(regexp-match? exact  str) exact-score]
+               (let* ([match? (lambda (rx) (and rx (regexp-match? rx str)))]
+                      [sc (cond [(match? exact) exact-score]
                                 [exact? nomatch-score]
-                                [(regexp-match? prefix  str) prefix-score]
-                                [(regexp-match? suffix  str) suffix-score]
-                                [(regexp-match? contain str) contain-score]
+                                [(match? exact-word) exact-word-score]
+                                [(match? words1)     words1-score]
+                                [(match? words2)     words2-score]
+                                [(match? prefix)     prefix-score]
+                                [(match? suffix)     suffix-score]
+                                [(match? contain)    contain-score]
                                 [else nomatch-score])]
                       [sc (if (and rx? (sc . > . 0))
                             (* sc regexp-score-factor)
@@ -90,7 +110,13 @@
   (lambda (entry)
     (foldl (lambda (word acc)
              (+ acc (foldl (lambda (sc acc) (+ acc (sc word))) 0 scorers)))
-           0 (entry-words entry))))
+           ;; give some bonus for bindings and modules
+           (let ([desc (entry-desc entry)])
+             (if (or (exported-index-desc? desc)
+                     (module-path-index-desc? desc))
+               exported-entry-bonus
+               0))
+           (entry-words entry))))
 
 (define (scored-entry<? x y)
   (let ([xsc (car x)] [ysc (car y)])
