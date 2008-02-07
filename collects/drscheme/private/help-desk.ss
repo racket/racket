@@ -79,4 +79,4 @@
 (define help-desk
   (case-lambda
     [() (send-main-page)]
-    [(key) (generate-search-results (list key))]))
+    [(key) (perform-search (list key))]))
