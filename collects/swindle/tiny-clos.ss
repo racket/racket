@@ -1913,14 +1913,11 @@
 ;;>> <sequence>
 ;;>> <mutable>
 ;;>> <immutable>
-;;>> <improper-list>
 ;;>> <pair>
 ;;>> <mutable-pair>
 ;;>> <immutable-pair>
 ;;>> <list>
 ;;>> <nonempty-list>
-;;>> <mutable-nonempty-list>
-;;>> <immutable-nonempty-list>
 ;;>> <null>
 ;;>> <vector>
 ;;>> <char>
@@ -2003,14 +2000,11 @@
 (defprimclass <sequence>)
 (defprimclass <mutable>)
 (defprimclass <immutable>)
-(defprimclass <improper-list> <sequence>)
-(defprimclass <pair> <improper-list>)
+(defprimclass <pair> <sequence>)
 (defprimclass <mutable-pair> <pair> <mutable>)
 (defprimclass <immutable-pair> <pair> <immutable>)
-(defprimclass <list> <improper-list>)
-(defprimclass <nonempty-list> <pair> <list>)
-(defprimclass <mutable-nonempty-list> <nonempty-list> <mutable>)
-(defprimclass <immutable-nonempty-list> <nonempty-list> <immutable>)
+(defprimclass <list> <sequence>)
+(defprimclass <nonempty-list> <pair> <list> <immutable>)
 (defprimclass <null> <list>)
 (defprimclass <vector> <sequence> <mutable>)
 (defprimclass <char>)
@@ -2123,12 +2117,7 @@
                                       [(primitive? x) <primitive-procedure>]
                                       [else <procedure>])]
               [(string?      x) (if (immutable? x) <immutable-string> <string>)]
-              [(pair?        x)
-               (if (list? x)
-                 (if (immutable? x)
-                   <immutable-nonempty-list> <mutable-nonempty-list>)
-                 (if (immutable? x)
-                   <immutable-pair> <mutable-pair>))]
+              [(pair?        x) (if (list? x) <nonempty-list> <immutable-pair>)]
               [(null?        x) <null>]
               [(symbol?      x) (if (keyword? x) <keyword> <symbol>)]
               [(number?      x)
@@ -2148,6 +2137,7 @@
               [(bytes?       x) (if (immutable? x) <immutable-bytes> <bytes>)]
               [(path?        x) <path>]
               [(vector?      x) <vector>]
+              [(mpair?       x) <mutable-pair>]
               [(eof-object?  x) <end-of-file>]
               [(input-port?  x)
                (if (file-stream-port? x) <input-stream-port> <input-port>)]
@@ -2212,18 +2202,13 @@
 ;;>         <primitive-procedure> : <procedure-class>
 ;;>     <builtin> : <class>
 ;;>       <sequence> : <primitive-class>
-;;>         <improper-list> : <primitive-class>
-;;>           <pair> : <primitive-class>
-;;>             <mutable-pair> : <primitive-class>
-;;>             <immutable-pair> : <primitive-class>
-;;>             <nonempty-list> : <primitive-class>
-;;>               <mutable-nonempty-list> : <primitive-class>
-;;>               <immutable-nonempty-list> : <primitive-class>
-;;>           <list> : <primitive-class>
-;;>             <nonempty-list> : <primitive-class>
-;;>               <mutable-nonempty-list> : <primitive-class>
-;;>               <immutable-nonempty-list> : <primitive-class>
-;;>             <null> : <primitive-class>
+;;>         <pair> : <primitive-class>
+;;>           <mutable-pair> : <primitive-class>
+;;>           <immutable-pair> : <primitive-class>
+;;>           <nonempty-list> : <primitive-class>
+;;>         <list> : <primitive-class>
+;;>           <nonempty-list> : <primitive-class>
+;;>           <null> : <primitive-class>
 ;;>         <vector> : <primitive-class>
 ;;>         <string-like> : <primitive-class>
 ;;>           <string> : <primitive-class>
@@ -2235,15 +2220,14 @@
 ;;>           <path> : <primitive-class>
 ;;>       <mutable> : <primitive-class>
 ;;>         <mutable-pair> : <primitive-class>
-;;>         <mutable-nonempty-list> : <primitive-class>
 ;;>         <mutable-string-like> : <primitive-class>
 ;;>           <mutable-string> : <primitive-class>
 ;;>           <mutable-bytes> : <primitive-class>
 ;;>         <vector>
 ;;>         <box>
 ;;>       <immutable> : <primitive-class>
-;;>         <immutable-nonempty-list> : <primitive-class>
-;;>         <immutable-pair> : <primitive-class>
+;;>         <list> : <primitive-class>
+;;>         <pair> : <primitive-class>
 ;;>         <immutable-string-like> : <primitive-class>
 ;;>           <immutable-string> : <primitive-class>
 ;;>           <immutable-bytes> : <primitive-class>

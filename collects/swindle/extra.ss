@@ -459,7 +459,7 @@
 (define printer:too-deep "#?#")
 (define printer:too-long "...")
 
-(defmethod (print-object [o <improper-list>] esc? port)
+(defmethod (print-object [o <pair>] esc? port)
   (cond
    [(null? o) (orig-display-handler "()" port)]
    [(and (pair? (cdr o)) (null? (cddr o))
