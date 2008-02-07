@@ -1,21 +1,31 @@
 #lang scheme/base
 
-(require "search.ss"
-         scheme/cmdline)
+(require "search.ss" scheme/cmdline)
 
-(define exact-search? #f)
+(define go-if-one?     #t)
+(define exact-search?  #f)
+(define regexp-search? #f)
 
 (command-line
- #:once-any (["--exact" "-x"] "Go directly to the first exact hit for the search term" (set! exact-search? #t))
- #:args search-term
- (cond
-   [exact-search?
-    (when (null? search-term)
-      (error 'plt-help "expected a search term after -x or --exact"))
-    (unless (null? (cdr search-term))
-      (error 'plt-help "expected a single search term, got ~s" search-term))
-    (send-exact-results (car search-term))]
-   [(null? search-term)
-    (send-main-page)]
-   [else
-    (generate-search-results search-term)]))
+ #:once-any
+ [("--go" "-g") "Go directly to search result if only one (default)"
+  (set! go-if-one? #t)]
+ [("++go" "+g") "Show search results page even if only one result"
+  (set! go-if-one? #t)]
+ #:once-each
+ [("--exact" "-x") "Search for the given term exactly"
+  (set! exact-search? #t)]
+ [("--regexp" "-r") "Search for the given regexp"
+  (set! regexp-search? #t)]
+ #:args search-terms
+ (let ([one? (= 1 (length search-terms))])
+   (cond [(and regexp-search? (not one?))
+          (error 'plt-help "expected a single regexp after -r or --regexp")]
+         [(and exact-search? (not one?))
+          (error 'plt-help "expected a single search term after -x or --exact")]
+         [(null? search-terms) (send-main-page)]
+         [else (perform-search (if regexp-search?
+                                 (list (regexp (car search-terms)))
+                                 search-terms)
+                               #:exact? (or exact-search? regexp-search?)
+                               #:go-if-one? go-if-one?)])))

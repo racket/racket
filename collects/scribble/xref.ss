@@ -22,7 +22,7 @@
 
 (define-struct entry (words    ; list of strings: main term, sub-term, etc.
                       content  ; Scribble content to the index label
-                      tag ; for generating a Scribble link
+                      tag      ; for generating a Scribble link
                       desc))   ; further info that depends on the kind of index entry
 
 ;; Private:
@@ -63,11 +63,8 @@
                                       (caddr v)))))))
 
 (define (xref-render xrefs doc dest-file #:render% [render% (html:render-mixin render%)])
-  (let* ([dest-file (if (string? dest-file)
-                        (string->path dest-file)
-                        dest-file)]
-         [renderer (new render%
-                        [dest-dir (path-only dest-file)])]
+  (let* ([dest-file (if (string? dest-file) (string->path dest-file) dest-file)]
+         [renderer (new render% [dest-dir (path-only dest-file)])]
          [ci (send renderer collect (list doc) (list dest-file))])
     (send renderer transfer-info ci (resolve-info-ci (xrefs-ri xrefs)))
     (let ([ri (send renderer resolve (list doc) (list dest-file) ci)])
@@ -121,15 +118,16 @@
   (let-values ([(tag form?) (xref-binding-tag xrefs id/binding mode)])
     tag))
 
-(define (xref-tag->path+anchor xrefs tag #:render% [render% (html:render-mixin render%)])
-  (let ([renderer (new render%
-                       [dest-dir (find-system-path 'temp-dir)])])
-    (send renderer tag->path+anchor (xrefs-ri xrefs) tag)))
+(define (xref-tag->path+anchor xrefs tag
+                               #:render% [render% (html:render-mixin render%)])
+  (send (new render% [dest-dir (find-system-path 'temp-dir)])
+        tag->path+anchor (xrefs-ri xrefs) tag))
 
 (define (xref-tag->index-entry xrefs tag)
-  (let ([v (hash-table-get (collect-info-ext-ht (resolve-info-ci (xrefs-ri xrefs)))
-                           `(index-entry ,tag)
-                           #f)])
+  (let ([v (hash-table-get
+            (collect-info-ext-ht (resolve-info-ci (xrefs-ri xrefs)))
+            `(index-entry ,tag)
+            #f)])
     (cond [v (make-entry (car v) (cadr v) (cadr tag) (caddr v))]
           [(and (pair? tag) (eq? 'form (car tag)))
            ;; Try again with 'def:

@@ -4,26 +4,24 @@
 (provide post-installer)
 (require launcher/launcher)
 
-(define post-installer
-  (lambda (path)
-    (case (system-type)
-      [(macosx)  (make-mred-exe) (make-mzscheme-exe)]
-      [(windows) (make-mred-exe)]
-      [else      (make-mzscheme-exe)])))
-
-(define (make-mred-exe)
-  (for ([variant (available-mred-variants)])
-    (parameterize ([current-launcher-variant variant])
-      (make-mred-launcher
-       '("-l" "help/help")
-       (mred-program-launcher-path "plt-help")
-       (append '((exe-name . "plt-help") (relative? . #t))
-               (build-aux-from-path
-                (build-path (collection-path "help") "help")))))))
-
-(define (make-mzscheme-exe)
-  (for ([variant (available-mzscheme-variants)])
-    (parameterize ([current-launcher-variant variant])
-      (make-mzscheme-launcher '("-l" "help/help")
-                              (mzscheme-program-launcher-path "plt-help")
-                              '((exe-name . "plt-help") (relative? . #t))))))
+(define (post-installer path)
+  (for ([mr? (case (system-type)
+               [(macosx)  '(#t #f)]
+               [(windows) '(#t)]
+               [else      '(#f)])])
+    (define-values (variants mk-launcher mk-path extras)
+      (if mr?
+        (values available-mred-variants
+                make-mred-launcher
+                mred-program-launcher-path
+                (build-aux-from-path
+                 (build-path (collection-path "help") "help")))
+        (values available-mzscheme-variants
+                make-mzscheme-launcher
+                mzscheme-program-launcher-path
+                '())))
+    (for ([variant (variants)])
+      (parameterize ([current-launcher-variant variant])
+        (mk-launcher '("-l-" "help/help")
+                     (mk-path "plt-help")
+                     `([exe-name . "plt-help"] [relative? . #t] ,@extras))))))

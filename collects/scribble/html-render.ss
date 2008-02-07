@@ -312,19 +312,22 @@
                                                                     (part-parts (caar l)))
                                                                (cdr l))))]
                                   [else (cons (car l) (loop (cdr l)))])))])
-                     (if (and #f (null? toc-content))
-                         null
-                         `((div ((class "tocview"))
-                                (div ((class "tocviewtitle"))
-                                     (a ((href "index.html")
-                                         (class "tocviewlink"))
-                                        ,@(render-content (or (part-title-content top) '("???")) d ri)))
-                                (div nbsp)
-                                ,@(toc-wrap
-                                   `(table 
-                                     ((class "tocviewlist")
-                                      (cellspacing "0"))
-                                     ,@toc-content))))))
+                     (let* ([content (render-content
+                                      (or (part-title-content top) '("???"))
+                                      d ri)]
+                            [content (if (null? toc-content)
+                                       content
+                                       `((a ((href "index.html")
+                                             (class "tocviewlink"))
+                                           ,@content)))])
+                       `((div ((class "tocview"))
+                           (div ((class "tocviewtitle")) ,@content)
+                           (div nbsp)
+                           ,@(if (null? toc-content)
+                               '()
+                               (toc-wrap
+                                `(table ((class "tocviewlist") (cellspacing "0"))
+                                        ,@toc-content)))))))
                  ,@(render-onthispage-contents d ri top)
                  ,@(apply append
                           (map (lambda (t)
