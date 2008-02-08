@@ -24,15 +24,13 @@
 ;; Configuration of search results
 (define maximum-entries 500)
 (define exact-score 1000)
-(define exact-word-score 600)
-(define words1-score 400)
-(define words2-score 100)
 (define prefix-score 200)
 (define suffix-score  20)
 (define contain-score 10)
+(define words-factor 0.9)
 (define exported-entry-factor 1.1) ; prefer bindings and modules
 (define regexp-score-factor 1.1) ; regexps get higher score
-(define nomatch-score -1) ; prefer less irrelevant terms
+(define nomatch-score -5) ; prefer less irrelevant terms
 
 (define (perform-search terms #:exact? [exact? #f] #:go-if-one? [go-if-one? #t])
   (if (null? terms)
@@ -71,16 +69,13 @@
                              #:delete-at (* 60 10)))))))
 
 ;; converts a list of search terms to a scoring function
-(define (terms->scorer terms exact?)
+(define (terms->scorer terms exact? [words? #f])
   ;; turns a string to one that matches word prefixes (eg turn a "reg-qu"
   ;; string to "reg\\w*-qu\\w*"), as with convenient completers like Emacs or
   ;; zsh.
-  (define (words-rx str pat)
-    (let* ([strs (reverse (map (lambda (s) (regexp-quote s #f))
-                               (regexp-split #px"(?<=\\w)\\b" str)))]
-           [strs (cons (car strs)
-                       (map (lambda (s) (string-append s pat)) (cdr strs)))])
-      (string-append "^" (apply string-append (reverse strs)) "$")))
+  (define (collect-words strings)
+    (apply append (map (lambda (t) (regexp-match* #px"\\w+" t))
+                       (filter string? strings))))
   (define scorers
     (map (lambda (term)
            (let* ([rx?     (regexp? term)]
@@ -89,37 +84,39 @@
                   [exact   (regexp (format "^~a$" rx))]
                   [prefix  (regexp (format "^~a" rx))]
                   [suffix  (regexp (format "~a$" rx))]
-                  [exact-word (and (not rx?) (pregexp (format "\\b~a\\b" rx)))]
-                  [words1  (and (not rx?) (pregexp (words-rx term "\\w*")))]
-                  [words2  (and (not rx?) (pregexp (words-rx term ".*")))]
                   [contain (if rx? term (regexp rx))])
              (lambda (str)
-               (let* ([match? (lambda (rx) (and rx (regexp-match? rx str)))]
-                      [sc (cond [(match? exact) exact-score]
-                                [exact? nomatch-score]
-                                [(match? exact-word) exact-word-score]
-                                [(match? words1)     words1-score]
-                                [(match? words2)     words2-score]
-                                [(match? prefix)     prefix-score]
-                                [(match? suffix)     suffix-score]
-                                [(match? contain)    contain-score]
-                                [else nomatch-score])]
-                      [sc (if (and rx? (sc . > . 0))
-                            (* sc regexp-score-factor)
-                            sc)])
+               (let* ([match? (lambda (rx sc)
+                                (if (and rx (regexp-match? rx str)) sc 0))]
+                      [sc (if exact?
+                            (match? exact exact-score)
+                            (+ (match? exact   exact-score)
+                               (match? prefix  prefix-score)
+                               (match? suffix  suffix-score)
+                               (match? contain contain-score)))]
+                      [sc (cond [(sc . <= . 0) nomatch-score]
+                                [rx? (* sc regexp-score-factor)]
+                                [else sc])])
                  sc))))
          terms))
+  (define word-scorer
+    (and (not words?) (terms->scorer (collect-words terms) #f #t)))
   (lambda (entry)
-    (let ([sc (foldl (lambda (word acc)
-                       (+ acc (foldl (lambda (sc acc) (+ acc (sc word)))
-                                     0 scorers)))
-                     0
-                     (entry-words entry))])
-      ;; give some bonus for bindings and modules
-      (let ([desc (entry-desc entry)])
-        (if (or (exported-index-desc? desc) (module-path-index-desc? desc))
-          (* sc exported-entry-factor)
-          sc)))))
+    (let* ([words (entry-words entry)]
+           [words (if words? (collect-words words) words)]
+           [sc (foldl (lambda (word acc)
+                        (+ acc (foldl (lambda (sc acc) (+ acc (sc word)))
+                                      0 scorers)))
+                      0
+                      words)])
+      (if words?
+        sc
+        (let ([desc (entry-desc entry)]
+              [sc (+ sc (* words-factor (word-scorer entry)))])
+          ;; give some bonus for bindings and modules
+          (if (or (exported-index-desc? desc) (module-path-index-desc? desc))
+            (* sc exported-entry-factor)
+            sc))))))
 
 (define (scored-entry<? x y)
   (let ([xsc (car x)] [ysc (car y)])
