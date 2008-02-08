@@ -19,6 +19,7 @@
       (define make-launchers (make-parameter #t))
       (define make-info-domain (make-parameter #t))
       (define make-docs (make-parameter #t))
+      (define make-user (make-parameter #t))
       (define make-planet (make-parameter #t))
       (define call-install (make-parameter #t))
       (define call-post-install (make-parameter #t))

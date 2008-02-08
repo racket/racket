@@ -22,14 +22,9 @@
 
   ;; Converting parse-cmdline results into parameter settings:
   (define (do-flag name param)
-    (let ([a (assq name x-flags)])
-      (when a
-	(param (cadr a)))))
+    (cond [(assq name x-flags) => (lambda (a) (param (cadr a)))]))
   (define-syntax all-flags
-    (syntax-rules ()
-      [(_ f ...) (begin
-		   (do-flag 'f f)
-		   ...)]))
+    (syntax-rules () [(_ f ...) (begin (do-flag 'f f) ...)]))
   (all-flags clean
 	     make-zo
 	     call-install
@@ -43,6 +38,7 @@
 	     all-users
 	     compile-mode
              make-docs
+             make-user
              make-planet
              doc-pdf-dest)
 

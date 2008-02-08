@@ -42,6 +42,12 @@
 
   (define (exn->string x) (if (exn? x) (exn-message x) (format "~s" x)))
 
+  (unless (make-user)
+    (current-library-collection-paths
+     (filter (let ([main (find-collects-dir)])
+               (lambda (d) (equal? d main)))
+             (current-library-collection-paths))))
+
   (setup-printf "Setup version is ~a [~a]" (version) (system-type 'gc))
   (setup-printf "Available variants:~a"
                 (apply string-append
@@ -49,8 +55,7 @@
                             (available-mzscheme-variants))))
   (setup-printf "Main collection path is ~a" (find-collects-dir))
   (setup-printf "Collection search path is ~a"
-                (if (null? (current-library-collection-paths))
-                  "empty!" ""))
+                (if (null? (current-library-collection-paths)) "empty!" ""))
   (for ([p (current-library-collection-paths)])
     (setup-printf "  ~a" (path->string p)))
 
