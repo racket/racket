@@ -53,23 +53,27 @@
 (define (xref-index xrefs)
   (filter
    values
-   (hash-table-map (collect-info-ext-ht (resolve-info-ci (xrefs-ri xrefs)))
-                   (lambda (k v)
-                     (and (pair? k)
-                          (eq? (car k) 'index-entry)
-                          (make-entry (car v) 
-                                      (cadr v)
-                                      (cadr k)
-                                      (caddr v)))))))
+   (hash-table-map
+    (collect-info-ext-ht (resolve-info-ci (xrefs-ri xrefs)))
+    (lambda (k v)
+      (and (pair? k)
+           (eq? (car k) 'index-entry)
+           (make-entry (car v) (cadr v) (cadr k) (caddr v)))))))
 
-(define (xref-render xrefs doc dest-file #:render% [render% (html:render-mixin render%)])
+;; dest-file can be #f, which will make it return a string holding the
+;; resulting html
+(define (xref-render xrefs doc dest-file
+                     #:render% [render% (html:render-mixin render%)])
   (let* ([dest-file (if (string? dest-file) (string->path dest-file) dest-file)]
-         [renderer (new render% [dest-dir (path-only dest-file)])]
-         [ci (send renderer collect (list doc) (list dest-file))])
-    (send renderer transfer-info ci (resolve-info-ci (xrefs-ri xrefs)))
-    (let ([ri (send renderer resolve (list doc) (list dest-file) ci)])
-      (send renderer render (list doc) (list dest-file) ri)
-      (void))))
+         [renderer (new render% [dest-dir (and dest-file (path-only dest-file))]
+                                [css-path 'inline])]
+         [ci (send renderer collect (list doc) (list dest-file))]
+         [_ (send renderer transfer-info ci (resolve-info-ci (xrefs-ri xrefs)))]
+         [ri (send renderer resolve (list doc) (list dest-file) ci)]
+         [xs (send renderer render (list doc) (list dest-file) ri)])
+    (if dest-file
+      (void)
+      (car xs))))
 
 ;; Returns (values <tag-or-#f> <form?>)
 (define xref-binding-tag

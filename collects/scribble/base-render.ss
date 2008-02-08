@@ -279,9 +279,15 @@
 
     (define/public (render ds fns ri)
       (map (lambda (d fn)
+             (define (one) (render-one d ri fn))
              (when report-output? (printf " [Output to ~a]\n" fn))
-             (with-output-to-file fn #:exists 'truncate/replace
-               (lambda () (render-one d ri fn))))
+             (if fn
+               (with-output-to-file fn #:exists 'truncate/replace one)
+               ;; a #f filename means return the contents as a string
+               (let ([o (open-output-string)])
+                 (parameterize ([current-output-port o])
+                   (one)
+                   (get-output-string o)))))
            ds
            fns))
 

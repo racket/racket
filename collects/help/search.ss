@@ -26,12 +26,12 @@
 (define exact-score 1000)
 (define exact-word-score 600)
 (define words1-score 400)
-(define words2-score 200)
-(define prefix-score 100)
+(define words2-score 100)
+(define prefix-score 200)
 (define suffix-score  20)
 (define contain-score 10)
-(define exported-entry-bonus 200) ; prefer bindings and modules
-(define regexp-score-factor 1.25) ; regexps get higher score
+(define exported-entry-factor 1.1) ; prefer bindings and modules
+(define regexp-score-factor 1.1) ; regexps get higher score
 (define nomatch-score -1) ; prefer less irrelevant terms
 
 (define (perform-search terms #:exact? [exact? #f] #:go-if-one? [go-if-one? #t])
@@ -47,13 +47,15 @@
                 (loop (cdr es)
                       (let* ([e (car es)] [score (scorer e)])
                         (if (score . > . 0) (cons (cons score e) r) r)))))]
+           ;; use to debug weird search results
+           ;; [_ (for ([x (sort entries scored-entry<?)])
+           ;;      (printf "~a ~s\n" (car x) (entry-words (cdr x))))]
            [entries (map cdr (sort entries scored-entry<?))])
       (if (and go-if-one? (= 1 (length entries)))
         (let*-values ([(tag) (entry-tag (car entries))]
                       [(path tag) (xref-tag->path+anchor xref tag)])
-          (send-url/file path #:fragment (uri-encode tag)))
-        (let* ([file (next-search-results-file)]
-               [term->label
+          (send-url/file path #:fragment (and tag (uri-encode tag))))
+        (let* ([term->label
                 (λ (t) (format "``~a''" (if (regexp? t) (object-name t) t)))]
                [search-title ; note: terms is not null at this point (see above)
                 (apply string-append (term->label (car terms))
@@ -65,8 +67,8 @@
                   (list (make-element "schemeerror" (list "No results found.")))
                   (build-itemization entries))]
                [contents (cons (title search-title) contents)])
-          (xref-render xref (decode contents) file)
-          (send-url/file file))))))
+          (send-url/contents (xref-render xref (decode contents) #f)
+                             #:delete-at (* 60 10)))))))
 
 ;; converts a list of search terms to a scoring function
 (define (terms->scorer terms exact?)
@@ -108,13 +110,16 @@
                  sc))))
          terms))
   (lambda (entry)
-    (foldl (lambda (word acc)
-             (+ acc (foldl (lambda (sc acc) (+ acc (sc word))) 0 scorers)))
-           ;; give some bonus for bindings and modules
-           (let ([desc (entry-desc entry)])
-             (if (or (exported-index-desc? desc) (module-path-index-desc? desc))
-               exported-entry-bonus 0))
-           (entry-words entry))))
+    (let ([sc (foldl (lambda (word acc)
+                       (+ acc (foldl (lambda (sc acc) (+ acc (sc word)))
+                                     0 scorers)))
+                     0
+                     (entry-words entry))])
+      ;; give some bonus for bindings and modules
+      (let ([desc (entry-desc entry)])
+        (if (or (exported-index-desc? desc) (module-path-index-desc? desc))
+          (* sc exported-entry-factor)
+          sc)))))
 
 (define (scored-entry<? x y)
   (let ([xsc (car x)] [ysc (car y)])
@@ -128,14 +133,7 @@
                          (or (loop (cdr xs) (cdr ys))
                              ;; Try string<? so "Foo" still precedes "foo"
                              (string<? (car xs) (car ys)))]
-                        [else (string-ci<? (car xs) (car xs))]))])))
-
-
-(define next-search-results-file
-  (let ([n -1] [tmp (find-system-path 'temp-dir)])
-    (lambda ()
-      (set! n (modulo (add1 n) 10))
-      (build-path tmp (format "search-results-~a.html" n)))))
+                        [else (string-ci<? (car xs) (car ys))]))])))
 
 ;; build-itemization : (nonempty-listof entry) -> (listof <stuff>)
 (define (build-itemization entries)

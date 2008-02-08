@@ -106,7 +106,7 @@ which might be used with @scheme[xref-tag->path+anchor] or embedded in
 a document rendered via @scheme[xref-render]. If no definition point
 is found in @scheme[xref], the result is @scheme[#f].}
 
-                                                  
+
 @defproc[(xref-tag->path+anchor [xref xref?]
                                 [tag tag?]
                                 [#:render% using-render% (subclass?/c render%)
@@ -123,7 +123,7 @@ point in a page.
 
 The optional @scheme[using-render%] argument is as for
 @scheme[load-xref].}
-                                
+
 
 @defproc[(xref-tag->index-entry [xref xref?]
                                 [tag tag?])
