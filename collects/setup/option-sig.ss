@@ -14,6 +14,7 @@
      make-info-domain
      make-launchers
      make-docs
+     make-user
      make-planet
      call-install
      call-post-install
