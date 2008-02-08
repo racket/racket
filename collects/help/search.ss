@@ -100,7 +100,7 @@
                  sc))))
          terms))
   (define word-scorer
-    (and (not words?) (terms->scorer (collect-words terms) #f #t)))
+    (and (not words?) (not exact?) (terms->scorer (collect-words terms) #f #t)))
   (lambda (entry)
     (let* ([words (entry-words entry)]
            [words (if words? (collect-words words) words)]
