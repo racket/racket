@@ -8,7 +8,7 @@
          scheme/promise
          scheme/port)
 
-(provide send-url send-url/file
+(provide send-url send-url/file send-url/contents
          unix-browser-list browser-preference? external-browser)
 
 (define separate-by-default?
@@ -77,7 +77,7 @@
 ;; only these characters.  This is only for protection when passing arguments
 ;; to subprocesses, it's best to pass properly escaped urls to `send-url'.
 (define (escape-url url)
-  (regexp-replace* #px"(?:[^[:graph:]]|[\"'`\\\\])" url %escape))
+  (regexp-replace* #px"(?:[^[:graph:]]|[$\"'`\\\\])" url %escape))
 
 ;; send-url : str [bool] -> void
 (define (send-url url-str [separate-window? separate-by-default?]
@@ -116,6 +116,34 @@
          [path (if fragment (string-append path "#" (escape-url fragment))
                    path)])
     (send-url path separate-window? #:escape? #f)))
+
+;; See the documentation for the `delete-at' argument
+(define (send-url/contents contents [separate-window? separate-by-default?]
+                           #:fragment [fragment #f] #:query [query #f]
+                           #:delete-at [delete-at #f])
+  (define tmp-tmpl "plt-sendurl-contents-file-~a.html")
+  (define tmp-rx   #rx"^plt-sendurl-contents-file-.*\\.html$")
+  ;; The code below will often leave leftovers (for example, plt-help will quit
+  ;; before deletion happens), so every once in a while, do a cleanup.  This
+  ;; can also remove files that were created with no intention for deletion
+  ;; (when delete-at is #f), so don't remove files that are less than 15
+  ;; minutes old.
+  (when (zero? (random 5))
+    (parameterize ([current-directory (find-system-path 'temp-dir)])
+      (let ([now (current-seconds)])
+        (for ([file (directory-list)]
+              #:when (and (file-exists? file)
+                          (regexp-match tmp-rx (path-element->string file))
+                          (> (- now (file-or-directory-modify-seconds file))
+                             (* 15 60))))
+          ;; The temp directory may be shared with other users, so silently
+          ;; ignore failures to remove files.
+          (with-handlers ([void void]) (delete-file file))))))
+  (let ([temp (make-temporary-file tmp-tmpl)])
+    (with-output-to-file temp #:exists 'truncate
+      (lambda () (display contents)))
+    (when delete-at (thread (lambda () (sleep delete-at) (delete-file temp))))
+    (send-url/file temp)))
 
 (define osascript (delay (find-exe "osascript")))
 (define (send-url/mac url)
@@ -176,45 +204,27 @@
 ;;   http://support.microsoft.com/default.aspx/kb/942172
 ;; It seems that the IE7 problem happens either way (`shell-execute' or running
 ;; directly) -- but it also happens with firefox when using `shell-execute'.
-;; The current solution is to run `ftype http' to find the default browser
-;; command, if it uses `iexplore.exe', then change it to `explorer.exe', and
+;; One possible solution is to run `ftype http' to find the default browser
+;; command, and if it uses `iexplore.exe' then change it to `explorer.exe', and
 ;; run the resulting command directly.  This is described at
 ;;   http://www.tutorials-win.com/IE/Lauching-HTML/
-;; Hopefully this works.  One question is whether IE6 will still work fine;
-;; another is other browsers work; and finally, we need to parse the command
-;; and substitute the url for `%1' (if it appears).  If there are other `%'s,
-;; throw an error so we can hack that in too.
-;; Oh and it seems that there is no way to get this to work on Vista, the above
-;; MS page says that the problem is that IE will start a more priviliged one,
-;; handing over the URL -- which, again, gets the fragment+query stripped
-;; away...
-
-(define windows-http-command
-  (delay (let ([out (open-output-string)])
-           (parameterize ([current-output-port out]
-                          [current-input-port (open-input-string "")]
-                          [current-error-port (open-output-nowhere)])
-             (and (system "ftype http")
-                  (cond [(regexp-match #rx"(?:^|\r?\n)?http=([^\r\n]+)\r?\n"
-                                       (get-output-string out))
-                         => cadr]
-                        [else #f]))))))
+;; But this still fails on Vista, since the problem there is that launching a
+;; browser with a file:// URL makes it start a more priviliged process, and
+;; doing that drops the fragment again.  So the solution that the code below
+;; implements is to write and use (via `send-url/contents') a trampoline html
+;; that redirects to the actual file and fragment.
 
 (define (send-url/win url)
-  (let ([cmd (force windows-http-command)])
-    (browser-run
-     #:shell #t #:ignore-exit-code #t
-     (cond [(and (or (not cmd)
-                     (regexp-match? #px"(?:^|[/\\\\])(?i:iexplore.exe)" cmd))
-                 ;; IE: try to find exeplorer instead
-                 (find-exe "explorer.exe"))
-            => (lambda (exe) (format "\"~a\" ~a" exe url))]
-           [(not (regexp-match? #rx"%" cmd))
-            (format "~a ~a" cmd url)]
-           [(regexp-match? #rx"%[^1]" cmd)
-            (error 'send-url/win "Unknown browser configuration: ~s\n~a"
-                   cmd "*** Please report this as a bug!")]
-           [else (regexp-replace* #rx"%1" cmd url)]))))
+  (if (not (regexp-match? #rx"[#?]" url))
+    (shell-execute #f url "" (current-directory) 'SW_SHOWNORMAL)
+    (send-url/contents
+     (string-append
+      "<html><head><meta http-equiv=\"refresh\" content=\"0;URL="url"\"></head>"
+      "<body>Please go <a href=\""url"\">here</a>.</body></html>")
+     ;; starting the browser may take a while, don't remove the file
+     ;; immediately (this means that when used via plt-help, these files are
+     ;; never removed by a timer)
+     #:delete-at 15)))
 
 ;; Process helper
 (define (browser-run #:shell [shell? #f] #:ignore-exit-code [nowait? #f] . args)
