@@ -14,7 +14,7 @@ browser preference is set.
 
 
 @defproc[(send-url [str string?] [separate-window? any/c #t]
-                   #:escape [escape? any/c #t])
+                   [#:escape escape? any/c #t])
          void?]{
 
 Opens @scheme[str], which represents a URL, in a platform-specific
@@ -41,8 +41,8 @@ in shell quotes: URLs can still hold characters like @litchar{#},
 use quotations.}
 
 @defproc[(send-url/file [path path-string?] [separate-window? any/c #t]
-                        #:fragment [fragment (or/c string? false/c) #f]
-                        #:query [query (or/c string? false/c) #f])
+                        [#:fragment fragment (or/c string? false/c) #f]
+                        [#:query query (or/c string? false/c) #f])
          void?]{
 
 Similar to @scheme[send-url], but accepts a path to a file to be
@@ -53,9 +53,9 @@ the file.  If you need to use an anchor fragment or a query string,
 use the corresponding keyword arguments.}
 
 @defproc[(send-url/contents [contents string?] [separate-window? any/c #t]
-                            #:fragment [fragment (or/c string? false/c) #f]
-                            #:query [query (or/c string? false/c) #f]
-                            #:delete-at [seconds (or/c number? false/c) #f])
+                            [#:fragment fragment (or/c string? false/c) #f]
+                            [#:query query (or/c string? false/c) #f]
+                            [#:delete-at seconds (or/c number? false/c) #f])
          void?]{
 
 Similar to @scheme[send-url/file], but it consumes the contents of a
