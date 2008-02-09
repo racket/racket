@@ -3258,6 +3258,8 @@ Scheme_Object *scheme_sfs(Scheme_Object *o, SFS_Info *info, int max_let_depth)
 {
   int init, i;
 
+  return o;
+
   SFS_LOG(printf("sfs %d\n", SCHEME_TYPE(o)));
 
   if (!info) {
