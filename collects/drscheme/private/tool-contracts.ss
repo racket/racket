@@ -353,7 +353,7 @@
   
   (drscheme:debug:show-backtrace-window
    (string?
-    (listof srcloc?)
+    (or/c exn? (listof srcloc?))
     . -> .
     void?)
    (error-message dis)

@@ -495,86 +495,89 @@ profile todo:
     ;;                         (listof srcloc?)
     ;;                         -> 
     ;;                         void
-    (define (show-backtrace-window error-text dis)
-      (reset-backtrace-window)
-      (letrec ([text (make-object (text:wide-snip-mixin text:hide-caret/selection%))]
-               [mf-bday-note (when (mf-bday?)
-                               (instantiate message% ()
-                                 (label (string-constant happy-birthday-matthias))
-                                 (parent (send current-backtrace-window get-area-container))))]
-               [ec (make-object (canvas:color-mixin canvas:wide-snip%)
-                     (send current-backtrace-window get-area-container)
-                     text)]
-               [di-vec (list->vector dis)]
-               [index 0]
-               [how-many-at-once 15]
-               [show-next-dis
-                (λ ()
-                  (let ([start-pos (send text get-start-position)]
-                        [end-pos (send text get-end-position)])
-                    (send text begin-edit-sequence)
-                    (send text set-position (send text last-position))
-                    (let loop ([n index])
-                      (cond
-                        [(and (< n (vector-length di-vec))
-                              (< n (+ index how-many-at-once)))
-                         (show-frame ec text (vector-ref di-vec n))
-                         (loop (+ n 1))]
-                        [else
-                         (set! index n)]))
-                    
-                    ;; add 'more frames' link
-                    (when (< index (vector-length di-vec))
-                      (let ([end-of-current (send text last-position)])
-                        (send text insert #\newline)
-                        (let ([hyper-start (send text last-position)])
-                          (send text insert 
-                                (let* ([num-left
-                                        (- (vector-length di-vec)
-                                           index)]
-                                       [num-to-show
-                                        (min how-many-at-once
-                                             num-left)])
-                                  (if (= num-left 1)
-                                      (string-constant last-stack-frame)
-                                      (format (if (num-left . <= . num-to-show)
-                                                  (string-constant last-stack-frames)
-                                                  (string-constant next-stack-frames))
-                                              num-to-show))))
-                          (let ([hyper-end (send text last-position)])
-                            (send text change-style (gui-utils:get-clickback-delta
-                                                     (preferences:get 'framework:white-on-black?))
-                                  hyper-start hyper-end)
-                            (send text set-clickback
-                                  hyper-start hyper-end
-                                  (λ x
-                                    (send text begin-edit-sequence)
-                                    (send text lock #f)
-                                    (send text delete end-of-current (send text last-position))
-                                    (show-next-dis)
-                                    (send text set-position 
-                                          (send text last-position)
-                                          (send text last-position))
-                                    (send text lock #t)
-                                    (send text end-edit-sequence)))
-                            
-                            (send text insert #\newline)
-                            (send text set-paragraph-alignment (send text last-paragraph) 'center)))))
-                    
-                    (send text set-position start-pos end-pos)
-                    (send text end-edit-sequence)))])
-        (send current-backtrace-window set-alignment 'center 'center)
-        (send current-backtrace-window reflow-container)
-        (send text auto-wrap #t)
-        (send text set-autowrap-bitmap #f)
-        (send text insert error-text)
-        (send text insert "\n\n")
-        (send text change-style error-delta 0 (- (send text last-position) 1))
-        (show-next-dis)
-        (send text set-position 0 0)
-        (send text lock #t)
-        (send text hide-caret #t)
-        (send current-backtrace-window show #t)))
+    (define (show-backtrace-window error-text dis/exn)
+      (let ([dis (if (exn? dis/exn)
+                     (cms->srclocs (exn-continuation-marks dis/exn))
+                     dis/exn)])
+        (reset-backtrace-window)
+        (letrec ([text (make-object (text:wide-snip-mixin text:hide-caret/selection%))]
+                 [mf-bday-note (when (mf-bday?)
+                                 (instantiate message% ()
+                                   (label (string-constant happy-birthday-matthias))
+                                   (parent (send current-backtrace-window get-area-container))))]
+                 [ec (make-object (canvas:color-mixin canvas:wide-snip%)
+                       (send current-backtrace-window get-area-container)
+                       text)]
+                 [di-vec (list->vector dis)]
+                 [index 0]
+                 [how-many-at-once 15]
+                 [show-next-dis
+                  (λ ()
+                    (let ([start-pos (send text get-start-position)]
+                          [end-pos (send text get-end-position)])
+                      (send text begin-edit-sequence)
+                      (send text set-position (send text last-position))
+                      (let loop ([n index])
+                        (cond
+                          [(and (< n (vector-length di-vec))
+                                (< n (+ index how-many-at-once)))
+                           (show-frame ec text (vector-ref di-vec n))
+                           (loop (+ n 1))]
+                          [else
+                           (set! index n)]))
+                      
+                      ;; add 'more frames' link
+                      (when (< index (vector-length di-vec))
+                        (let ([end-of-current (send text last-position)])
+                          (send text insert #\newline)
+                          (let ([hyper-start (send text last-position)])
+                            (send text insert 
+                                  (let* ([num-left
+                                          (- (vector-length di-vec)
+                                             index)]
+                                         [num-to-show
+                                          (min how-many-at-once
+                                               num-left)])
+                                    (if (= num-left 1)
+                                        (string-constant last-stack-frame)
+                                        (format (if (num-left . <= . num-to-show)
+                                                    (string-constant last-stack-frames)
+                                                    (string-constant next-stack-frames))
+                                                num-to-show))))
+                            (let ([hyper-end (send text last-position)])
+                              (send text change-style (gui-utils:get-clickback-delta
+                                                       (preferences:get 'framework:white-on-black?))
+                                    hyper-start hyper-end)
+                              (send text set-clickback
+                                    hyper-start hyper-end
+                                    (λ x
+                                      (send text begin-edit-sequence)
+                                      (send text lock #f)
+                                      (send text delete end-of-current (send text last-position))
+                                      (show-next-dis)
+                                      (send text set-position 
+                                            (send text last-position)
+                                            (send text last-position))
+                                      (send text lock #t)
+                                      (send text end-edit-sequence)))
+                              
+                              (send text insert #\newline)
+                              (send text set-paragraph-alignment (send text last-paragraph) 'center)))))
+                      
+                      (send text set-position start-pos end-pos)
+                      (send text end-edit-sequence)))])
+          (send current-backtrace-window set-alignment 'center 'center)
+          (send current-backtrace-window reflow-container)
+          (send text auto-wrap #t)
+          (send text set-autowrap-bitmap #f)
+          (send text insert error-text)
+          (send text insert "\n\n")
+          (send text change-style error-delta 0 (- (send text last-position) 1))
+          (show-next-dis)
+          (send text set-position 0 0)
+          (send text lock #t)
+          (send text hide-caret #t)
+          (send current-backtrace-window show #t))))
     
     ;; show-frame : (instanceof editor-canvas%)
     ;;              (instanceof text%) 
