@@ -3250,7 +3250,7 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_d
 /*========================================================================*/
 
 /* For debugging and measuring the worst-case cost of sfs clears: */
-#define MAX_SFS_CLEARING 1
+#define MAX_SFS_CLEARING 0
 
 #define SFS_LOG(x) /* nothing */
 
