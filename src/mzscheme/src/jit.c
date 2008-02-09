@@ -4610,6 +4610,27 @@ static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi
 /*                          expression codegen                            */
 /*========================================================================*/
 
+static int generate_ignored_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi_ok, int need_ends)
+{
+  Scheme_Type t = SCHEME_TYPE(obj);
+
+  if (SAME_TYPE(t, scheme_local_type)
+      || SAME_TYPE(t, scheme_local_unbox_type)) {
+    /* Must be here to clear */
+    if (SCHEME_LOCAL_FLAGS(obj) & SCHEME_LOCAL_CLEAR_ON_READ) {
+      int pos;
+      START_JIT_DATA();
+      pos = mz_remap(SCHEME_LOCAL_POS(obj));
+      LOG_IT(("clear %d\n", pos));
+      jit_stxi_p(WORDS_TO_BYTES(pos), JIT_RUNSTACK, JIT_RUNSTACK);
+      END_JIT_DATA(2);      
+    }
+    return 1;
+  }
+
+  return generate_non_tail(obj, jitter, multi_ok, need_ends);
+}
+
 static Scheme_Object *generate_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -4780,8 +4801,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  mz_patch_branch(ref2);
 	  __END_SHORT_JUMPS__(1);
 	  for (i = 1; i < seq->count; i++) {
-	    generate_non_tail(seq->array[i], jitter, 1, 1);
-	    CHECK_LIMIT();
+	    generate_ignored_non_tail(seq->array[i], jitter, 1, 1);
+            CHECK_LIMIT();
 	  }
 
 	  /* Restore values, if necessary */
@@ -5107,7 +5128,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       LOG_IT(("begin\n"));
 
       for (i = 0; i < cnt - 1; i++) {
-	generate_non_tail(seq->array[i], jitter, 1, 1);
+	generate_ignored_non_tail(seq->array[i], jitter, 1, 1);
 	CHECK_LIMIT();
       }
 

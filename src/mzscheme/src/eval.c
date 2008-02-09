@@ -3589,8 +3589,8 @@ static Scheme_Object *sfs_one_branch(SFS_Info *info, int ip,
        in this branch). */
     o = SCHEME_VEC_ELS(vec)[((1 - delta) * SFS_BRANCH_W) + 3];
     b_end = SCHEME_INT_VAL(o);
-    if (((nt > ip) && (nt < b_end)) /* => non-tail call in branch */
-        || (ip < save_nt)) { /* => non-tail call after branches */
+    if (((nt > (ip + 1)) && (nt < b_end)) /* => non-tail call in branch */
+        || ((ip + 1) < save_nt)) { /* => non-tail call after branches */
       o = SCHEME_VEC_ELS(vec)[(1 - delta) * SFS_BRANCH_W];
       t_min_t = SCHEME_INT_VAL(o);
       if (t_min_t > -1) {
