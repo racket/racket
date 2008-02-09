@@ -155,19 +155,19 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant ("mcons", p, env);
 
-  p = scheme_make_noncm_prim(scheme_checked_mcar, "mcar", 1, 1);
+  p = scheme_make_immed_prim(scheme_checked_mcar, "mcar", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant ("mcar", p, env);
 
-  p = scheme_make_noncm_prim(scheme_checked_mcdr, "mcdr", 1, 1);
+  p = scheme_make_immed_prim(scheme_checked_mcdr, "mcdr", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant ("mcdr", p, env);
 
-  p = scheme_make_noncm_prim(scheme_checked_set_mcar, "set-mcar!", 2, 2);
+  p = scheme_make_immed_prim(scheme_checked_set_mcar, "set-mcar!", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant ("set-mcar!", p, env);
 
-  p = scheme_make_noncm_prim(scheme_checked_set_mcdr, "set-mcdr!", 2, 2);
+  p = scheme_make_immed_prim(scheme_checked_set_mcdr, "set-mcdr!", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant ("set-mcdr!", p, env);
 
@@ -176,17 +176,17 @@ scheme_init_list (Scheme_Env *env)
   scheme_add_global_constant ("null?", p, env);
 
   scheme_add_global_constant ("list?",
-			      scheme_make_noncm_prim(list_p_prim,
+			      scheme_make_immed_prim(list_p_prim,
 						     "list?",
 						     1, 1),
 			      env);
   scheme_add_global_constant ("list",
-			      scheme_make_noncm_prim(list_prim,
+			      scheme_make_immed_prim(list_prim,
 						     "list",
 						     0, -1),
 			      env);
   scheme_add_global_constant ("list*",
-			      scheme_make_noncm_prim(list_star_prim,
+			      scheme_make_immed_prim(list_star_prim,
 						     "list*",
 						     1, -1),
 			      env);
@@ -196,57 +196,57 @@ scheme_init_list (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
   scheme_add_global_constant ("length",
-			      scheme_make_noncm_prim(length_prim,
+			      scheme_make_immed_prim(length_prim,
 						     "length",
 						     1, 1),
 			      env);
   scheme_add_global_constant ("append",
-			      scheme_make_noncm_prim(append_prim,
+			      scheme_make_immed_prim(append_prim,
 						     "append",
 						     0, -1),
 			      env);
   scheme_add_global_constant ("reverse",
-			      scheme_make_noncm_prim(reverse_prim,
+			      scheme_make_immed_prim(reverse_prim,
 						     "reverse",
 						     1, 1),
 			      env);
   scheme_add_global_constant ("list-tail",
-			      scheme_make_noncm_prim(list_tail_prim,
+			      scheme_make_immed_prim(list_tail_prim,
 						     "list-tail",
 						     2, 2),
 			      env);
   scheme_add_global_constant ("list-ref",
-			      scheme_make_noncm_prim(list_ref_prim,
+			      scheme_make_immed_prim(list_ref_prim,
 						     "list-ref",
 						     2, 2),
 			      env);
   scheme_add_global_constant ("memq",
-			      scheme_make_noncm_prim(memq,
+			      scheme_make_immed_prim(memq,
 						     "memq",
 						     2, 2),
 			      env);
   scheme_add_global_constant ("memv",
-			      scheme_make_noncm_prim(memv,
+			      scheme_make_immed_prim(memv,
 						     "memv",
 						     2, 2),
 			      env);
   scheme_add_global_constant ("member",
-			      scheme_make_noncm_prim(member,
+			      scheme_make_immed_prim(member,
 						     "member",
 						     2, 2),
 			      env);
   scheme_add_global_constant ("assq",
-			      scheme_make_noncm_prim(assq,
+			      scheme_make_immed_prim(assq,
 						     "assq",
 						     2, 2),
 			      env);
   scheme_add_global_constant ("assv",
-			      scheme_make_noncm_prim(assv,
+			      scheme_make_immed_prim(assv,
 						     "assv",
 						     2, 2),
 			      env);
   scheme_add_global_constant ("assoc",
-			      scheme_make_noncm_prim(assoc,
+			      scheme_make_immed_prim(assoc,
 						     "assoc",
 						     2, 2),
 			      env);
@@ -390,12 +390,12 @@ scheme_init_list (Scheme_Env *env)
 			      env);
 
   scheme_add_global_constant(BOX,
-			     scheme_make_noncm_prim(box,
+			     scheme_make_immed_prim(box,
 						    BOX,
 						    1, 1),
 			     env);
   scheme_add_global_constant("box-immutable",
-			     scheme_make_noncm_prim(immutable_box,
+			     scheme_make_immed_prim(immutable_box,
 						    "box-immutable",
 						    1, 1),
 			     env);
@@ -404,23 +404,23 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
   scheme_add_global_constant(BOXP, p, env);
 
-  p = scheme_make_noncm_prim(unbox, UNBOX, 1, 1);
+  p = scheme_make_immed_prim(unbox, UNBOX, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
   scheme_add_global_constant(UNBOX, p, env);
 
   scheme_add_global_constant(SETBOX,
-			     scheme_make_noncm_prim(set_box,
+			     scheme_make_immed_prim(set_box,
 						    SETBOX,
 						    2, 2),
 			     env);
 
   scheme_add_global_constant("make-hash-table",
-			     scheme_make_noncm_prim(make_hash_table,
+			     scheme_make_immed_prim(make_hash_table,
 						    "make-hash-table",
 						    0, 2),
 			     env);
   scheme_add_global_constant("make-immutable-hash-table",
-			     scheme_make_noncm_prim(make_immutable_hash_table,
+			     scheme_make_immed_prim(make_immutable_hash_table,
 						    "make-immutable-hash-table",
 						    1, 2),
 			     env);
@@ -430,7 +430,7 @@ scheme_init_list (Scheme_Env *env)
 						      1, 3, 1),
 			     env);
   scheme_add_global_constant("hash-table-count",
-			     scheme_make_noncm_prim(hash_table_count,
+			     scheme_make_immed_prim(hash_table_count,
 						    "hash-table-count",
 						    1, 1),
 			     env);
@@ -466,28 +466,28 @@ scheme_init_list (Scheme_Env *env)
 			     env);
 
   scheme_add_global_constant("hash-table-iterate-first",
-			     scheme_make_noncm_prim(hash_table_iterate_start,
+			     scheme_make_immed_prim(hash_table_iterate_start,
 						    "hash-table-iterate-first",
                                                     1, 1),
 			     env);
   scheme_add_global_constant("hash-table-iterate-next",
-			     scheme_make_noncm_prim(hash_table_iterate_next,
+			     scheme_make_immed_prim(hash_table_iterate_next,
 						    "hash-table-iterate-next",
                                                     2, 2),
 			     env);
   scheme_add_global_constant("hash-table-iterate-value",
-			     scheme_make_noncm_prim(hash_table_iterate_value,
+			     scheme_make_immed_prim(hash_table_iterate_value,
 						    "hash-table-iterate-value",
                                                     2, 2),
 			     env);
   scheme_add_global_constant("hash-table-iterate-key",
-			     scheme_make_noncm_prim(hash_table_iterate_key,
+			     scheme_make_immed_prim(hash_table_iterate_key,
 						    "hash-table-iterate-key",
                                                     2, 2),
 			     env);
 
   scheme_add_global_constant("eq-hash-code",
-			     scheme_make_noncm_prim(eq_hash_code,
+			     scheme_make_immed_prim(eq_hash_code,
 						    "eq-hash-code",
 						    1, 1),
 			     env);
@@ -503,12 +503,12 @@ scheme_init_list (Scheme_Env *env)
 			     env);
 
   scheme_add_global_constant("make-weak-box",
-			     scheme_make_noncm_prim(make_weak_box,
+			     scheme_make_immed_prim(make_weak_box,
 						    "make-weak-box",
 						    1, 1),
 			     env);
   scheme_add_global_constant("weak-box-value",
-			     scheme_make_noncm_prim(weak_box_value,
+			     scheme_make_immed_prim(weak_box_value,
 						    "weak-box-value",
 						    1, 1),
 			     env);
@@ -519,12 +519,12 @@ scheme_init_list (Scheme_Env *env)
 			     env);
 
   scheme_add_global_constant("make-ephemeron",
-			     scheme_make_noncm_prim(make_ephemeron,
+			     scheme_make_immed_prim(make_ephemeron,
 						    "make-ephemeron",
 						    2, 2),
 			     env);
   scheme_add_global_constant("ephemeron-value",
-			     scheme_make_noncm_prim(ephemeron_value,
+			     scheme_make_immed_prim(ephemeron_value,
 						    "ephemeron-value",
 						    1, 1),
 			     env);

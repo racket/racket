@@ -387,12 +387,12 @@ scheme_init_string (Scheme_Env *env)
   scheme_add_global_constant("string?", p, env);
 
   scheme_add_global_constant("make-string",
-			     scheme_make_noncm_prim(make_string,
+			     scheme_make_immed_prim(make_string,
 						    "make-string",
 						    1, 2),
 			     env);
   scheme_add_global_constant("string",
-			     scheme_make_noncm_prim(string,
+			     scheme_make_immed_prim(string,
 						    "string",
 						    0, -1),
 			     env);
@@ -402,185 +402,185 @@ scheme_init_string (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
 
-  p = scheme_make_noncm_prim(scheme_checked_string_ref, "string-ref", 2, 2);
+  p = scheme_make_immed_prim(scheme_checked_string_ref, "string-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("string-ref", p, env);
 
 
-  p = scheme_make_noncm_prim(scheme_checked_string_set, "string-set!", 3, 3);
+  p = scheme_make_immed_prim(scheme_checked_string_set, "string-set!", 3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_MIN_NARY_INLINED;
   scheme_add_global_constant("string-set!", p, env);
 
   scheme_add_global_constant("string=?",
-			     scheme_make_noncm_prim(string_eq,
+			     scheme_make_immed_prim(string_eq,
 						    "string=?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string-locale=?",
-			     scheme_make_noncm_prim(string_locale_eq,
+			     scheme_make_immed_prim(string_locale_eq,
 						    "string-locale=?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string-ci=?",
-			     scheme_make_noncm_prim(string_ci_eq,
+			     scheme_make_immed_prim(string_ci_eq,
 						    "string-ci=?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string-locale-ci=?",
-			     scheme_make_noncm_prim(string_locale_ci_eq,
+			     scheme_make_immed_prim(string_locale_ci_eq,
 						    "string-locale-ci=?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string<?",
-			     scheme_make_noncm_prim(string_lt,
+			     scheme_make_immed_prim(string_lt,
 						    "string<?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string-locale<?",
-			     scheme_make_noncm_prim(string_locale_lt,
+			     scheme_make_immed_prim(string_locale_lt,
 						    "string-locale<?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string>?",
-			     scheme_make_noncm_prim(string_gt,
+			     scheme_make_immed_prim(string_gt,
 						    "string>?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string-locale>?",
-			     scheme_make_noncm_prim(string_locale_gt,
+			     scheme_make_immed_prim(string_locale_gt,
 						    "string-locale>?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string<=?",
-			     scheme_make_noncm_prim(string_lt_eq,
+			     scheme_make_immed_prim(string_lt_eq,
 						    "string<=?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string>=?",
-			     scheme_make_noncm_prim(string_gt_eq,
+			     scheme_make_immed_prim(string_gt_eq,
 						    "string>=?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string-ci<?",
-			     scheme_make_noncm_prim(string_ci_lt,
+			     scheme_make_immed_prim(string_ci_lt,
 						    "string-ci<?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string-locale-ci<?",
-			     scheme_make_noncm_prim(string_locale_ci_lt,
+			     scheme_make_immed_prim(string_locale_ci_lt,
 						    "string-locale-ci<?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string-ci>?",
-			     scheme_make_noncm_prim(string_ci_gt,
+			     scheme_make_immed_prim(string_ci_gt,
 						    "string-ci>?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string-locale-ci>?",
-			     scheme_make_noncm_prim(string_locale_ci_gt,
+			     scheme_make_immed_prim(string_locale_ci_gt,
 						    "string-locale-ci>?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string-ci<=?",
-			     scheme_make_noncm_prim(string_ci_lt_eq,
+			     scheme_make_immed_prim(string_ci_lt_eq,
 						    "string-ci<=?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("string-ci>=?",
-			     scheme_make_noncm_prim(string_ci_gt_eq,
+			     scheme_make_immed_prim(string_ci_gt_eq,
 						    "string-ci>=?",
 						    2, -1),
 			     env);
 
   scheme_add_global_constant("substring",
-			     scheme_make_noncm_prim(substring,
+			     scheme_make_immed_prim(substring,
 						    "substring",
 						    2, 3),
 			     env);
   scheme_add_global_constant("string-append",
-			     scheme_make_noncm_prim(string_append,
+			     scheme_make_immed_prim(string_append,
 						    "string-append",
 						    0, -1),
 			     env);
   scheme_add_global_constant("string->list",
-			     scheme_make_noncm_prim(string_to_list,
+			     scheme_make_immed_prim(string_to_list,
 						    "string->list",
 						    1, 1),
 			     env);
   scheme_add_global_constant("list->string",
-			     scheme_make_noncm_prim(list_to_string,
+			     scheme_make_immed_prim(list_to_string,
 						    "list->string",
 						    1, 1),
 			     env);
   scheme_add_global_constant("string-copy",
-			     scheme_make_noncm_prim(string_copy,
+			     scheme_make_immed_prim(string_copy,
 						    "string-copy",
 						    1, 1),
 			     env);
   scheme_add_global_constant("string-copy!",
-			     scheme_make_noncm_prim(string_copy_bang,
+			     scheme_make_immed_prim(string_copy_bang,
 						    "string-copy!",
 						    3, 5),
 			     env);
   scheme_add_global_constant("string-fill!",
-			     scheme_make_noncm_prim(string_fill,
+			     scheme_make_immed_prim(string_fill,
 						    "string-fill!",
 						    2, 2),
 			     env);
   scheme_add_global_constant("string->immutable-string",
-			     scheme_make_noncm_prim(string_to_immutable,
+			     scheme_make_immed_prim(string_to_immutable,
 						    "string->immutable-string",
 						    1, 1),
 			     env);
   scheme_add_global_constant("string-normalize-nfc",
-			     scheme_make_noncm_prim(string_normalize_c,
+			     scheme_make_immed_prim(string_normalize_c,
 						    "string-normalize-nfc",
 						    1, 1),
 			     env);
   scheme_add_global_constant("string-normalize-nfkc",
-			     scheme_make_noncm_prim(string_normalize_kc,
+			     scheme_make_immed_prim(string_normalize_kc,
 						    "string-normalize-nfkc",
 						    1, 1),
 			     env);
   scheme_add_global_constant("string-normalize-nfd",
-			     scheme_make_noncm_prim(string_normalize_d,
+			     scheme_make_immed_prim(string_normalize_d,
 						    "string-normalize-nfd",
 						    1, 1),
 			     env);
   scheme_add_global_constant("string-normalize-nfkd",
-			     scheme_make_noncm_prim(string_normalize_kd,
+			     scheme_make_immed_prim(string_normalize_kd,
 						    "string-normalize-nfkd",
 						    1, 1),
 			     env);
 
   scheme_add_global_constant("string-upcase",
-			     scheme_make_noncm_prim(string_upcase,
+			     scheme_make_immed_prim(string_upcase,
 						    "string-upcase",
 						    1, 1),
 			     env);
   scheme_add_global_constant("string-downcase",
-			     scheme_make_noncm_prim(string_downcase,
+			     scheme_make_immed_prim(string_downcase,
 						    "string-downcase",
 						    1, 1),
 			     env);
   scheme_add_global_constant("string-titlecase",
-			     scheme_make_noncm_prim(string_titlecase,
+			     scheme_make_immed_prim(string_titlecase,
 						    "string-titlecase",
 						    1, 1),
 			     env);
   scheme_add_global_constant("string-foldcase",
-			     scheme_make_noncm_prim(string_foldcase,
+			     scheme_make_immed_prim(string_foldcase,
 						    "string-foldcase",
 						    1, 1),
 			     env);
 
   scheme_add_global_constant("string-locale-upcase",
-			     scheme_make_noncm_prim(string_locale_upcase,
+			     scheme_make_immed_prim(string_locale_upcase,
 						    "string-locale-upcase",
 						    1, 1),
 			     env);
   scheme_add_global_constant("string-locale-downcase",
-			     scheme_make_noncm_prim(string_locale_downcase,
+			     scheme_make_immed_prim(string_locale_downcase,
 						    "string-locale-downcase",
 						    1, 1),
 			     env);
@@ -591,18 +591,18 @@ scheme_init_string (Scheme_Env *env)
 						       MZCONFIG_LOCALE),
 			     env);
   scheme_add_global_constant("locale-string-encoding",
-			     scheme_make_noncm_prim(locale_string_encoding,
+			     scheme_make_immed_prim(locale_string_encoding,
 						    "locale-string-encoding",
 						    0, 0),
 			     env);
   scheme_add_global_constant("system-language+country",
-			     scheme_make_noncm_prim(system_language_country,
+			     scheme_make_immed_prim(system_language_country,
 						    "system-language+country",
 						    0, 0),
 			     env);
 
   scheme_add_global_constant("bytes-converter?",
-			     scheme_make_noncm_prim(byte_converter_p,
+			     scheme_make_immed_prim(byte_converter_p,
 						    "bytes-converter?",
 						    1, 1),
 			     env);
@@ -619,12 +619,12 @@ scheme_init_string (Scheme_Env *env)
 						       2, 2),
 			     env);
   scheme_add_global_constant("bytes-open-converter",
-			     scheme_make_noncm_prim(byte_string_open_converter,
+			     scheme_make_immed_prim(byte_string_open_converter,
 						    "bytes-open-converter",
 						    2, 2),
 			     env);
   scheme_add_global_constant("bytes-close-converter",
-			     scheme_make_noncm_prim(byte_string_close_converter,
+			     scheme_make_immed_prim(byte_string_close_converter,
 						    "bytes-close-converter",
 						    1, 1),
 			     env);
@@ -656,12 +656,12 @@ scheme_init_string (Scheme_Env *env)
   scheme_add_global_constant("bytes?", p, env);
 
   scheme_add_global_constant("make-bytes",
-			     scheme_make_noncm_prim(make_byte_string,
+			     scheme_make_immed_prim(make_byte_string,
 						    "make-bytes",
 						    1, 2),
 			     env);
   scheme_add_global_constant("bytes",
-			     scheme_make_noncm_prim(byte_string,
+			     scheme_make_immed_prim(byte_string,
 						    "bytes",
 						    0, -1),
 			     env);
@@ -671,121 +671,121 @@ scheme_init_string (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
 
-  p = scheme_make_noncm_prim(scheme_checked_byte_string_ref, "bytes-ref", 2, 2);
+  p = scheme_make_immed_prim(scheme_checked_byte_string_ref, "bytes-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("bytes-ref", p, env);
 
-  p = scheme_make_noncm_prim(scheme_checked_byte_string_set, "bytes-set!", 3, 3);
+  p = scheme_make_immed_prim(scheme_checked_byte_string_set, "bytes-set!", 3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_MIN_NARY_INLINED;
   scheme_add_global_constant("bytes-set!", p, env);
 
   scheme_add_global_constant("bytes=?",
-			     scheme_make_noncm_prim(byte_string_eq,
+			     scheme_make_immed_prim(byte_string_eq,
 						    "bytes=?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("bytes<?",
-			     scheme_make_noncm_prim(byte_string_lt,
+			     scheme_make_immed_prim(byte_string_lt,
 						    "bytes<?",
 						    2, -1),
 			     env);
   scheme_add_global_constant("bytes>?",
-			     scheme_make_noncm_prim(byte_string_gt,
+			     scheme_make_immed_prim(byte_string_gt,
 						    "bytes>?",
 						    2, -1),
 			     env);
 
   scheme_add_global_constant("subbytes",
-			     scheme_make_noncm_prim(byte_substring,
+			     scheme_make_immed_prim(byte_substring,
 						    "subbytes",
 						    2, 3),
 			     env);
   scheme_add_global_constant("bytes-append",
-			     scheme_make_noncm_prim(byte_string_append,
+			     scheme_make_immed_prim(byte_string_append,
 						    "bytes-append",
 						    0, -1),
 			     env);
   scheme_add_global_constant("bytes->list",
-			     scheme_make_noncm_prim(byte_string_to_list,
+			     scheme_make_immed_prim(byte_string_to_list,
 						    "bytes->list",
 						    1, 1),
 			     env);
   scheme_add_global_constant("list->bytes",
-			     scheme_make_noncm_prim(list_to_byte_string,
+			     scheme_make_immed_prim(list_to_byte_string,
 						    "list->bytes",
 						    1, 1),
 			     env);
   scheme_add_global_constant("bytes-copy",
-			     scheme_make_noncm_prim(byte_string_copy,
+			     scheme_make_immed_prim(byte_string_copy,
 						    "bytes-copy",
 						    1, 1),
 			     env);
   scheme_add_global_constant("bytes-copy!",
-			     scheme_make_noncm_prim(byte_string_copy_bang,
+			     scheme_make_immed_prim(byte_string_copy_bang,
 						    "bytes-copy!",
 						    3, 5),
 			     env);
   scheme_add_global_constant("bytes-fill!",
-			     scheme_make_noncm_prim(byte_string_fill,
+			     scheme_make_immed_prim(byte_string_fill,
 						    "bytes-fill!",
 						    2, 2),
 			     env);
   scheme_add_global_constant("bytes->immutable-bytes",
-			     scheme_make_noncm_prim(byte_string_to_immutable,
+			     scheme_make_immed_prim(byte_string_to_immutable,
 						    "bytes->immutable-bytes",
 						    1, 1),
 			     env);
 
 
   scheme_add_global_constant("bytes-utf-8-index",
-			     scheme_make_noncm_prim(byte_string_utf8_index,
+			     scheme_make_immed_prim(byte_string_utf8_index,
 						    "bytes-utf-8-index",
 						    2, 4),
 			     env);
   scheme_add_global_constant("bytes-utf-8-length",
-			     scheme_make_noncm_prim(byte_string_utf8_length,
+			     scheme_make_immed_prim(byte_string_utf8_length,
 						    "bytes-utf-8-length",
 						    1, 4),
 			     env);
   scheme_add_global_constant("bytes-utf-8-ref",
-			     scheme_make_noncm_prim(byte_string_utf8_ref,
+			     scheme_make_immed_prim(byte_string_utf8_ref,
 						    "bytes-utf-8-ref",
 						    2, 4),
 			     env);
 
   scheme_add_global_constant("bytes->string/utf-8",
-			     scheme_make_noncm_prim(byte_string_to_char_string,
+			     scheme_make_immed_prim(byte_string_to_char_string,
 						    "bytes->string/utf-8",
 						    1, 4),
 			     env);
   scheme_add_global_constant("bytes->string/locale",
-			     scheme_make_noncm_prim(byte_string_to_char_string_locale,
+			     scheme_make_immed_prim(byte_string_to_char_string_locale,
 						    "bytes->string/locale",
 						    1, 4),
 			     env);
   scheme_add_global_constant("bytes->string/latin-1",
-			     scheme_make_noncm_prim(byte_string_to_char_string_latin1,
+			     scheme_make_immed_prim(byte_string_to_char_string_latin1,
 						    "bytes->string/latin-1",
 						    1, 4),
 			     env);
   scheme_add_global_constant("string->bytes/utf-8",
-			     scheme_make_noncm_prim(char_string_to_byte_string,
+			     scheme_make_immed_prim(char_string_to_byte_string,
 						    "string->bytes/utf-8",
 						    1, 4),
 			     env);
   scheme_add_global_constant("string->bytes/locale",
-			     scheme_make_noncm_prim(char_string_to_byte_string_locale,
+			     scheme_make_immed_prim(char_string_to_byte_string_locale,
 						    "string->bytes/locale",
 						    1, 4),
 			     env);
   scheme_add_global_constant("string->bytes/latin-1",
-			     scheme_make_noncm_prim(char_string_to_byte_string_latin1,
+			     scheme_make_immed_prim(char_string_to_byte_string_latin1,
 						    "string->bytes/latin-1",
 						    1, 4),
 			     env);
 
   scheme_add_global_constant("string-utf-8-length",
-			     scheme_make_noncm_prim(char_string_utf8_length,
+			     scheme_make_immed_prim(char_string_utf8_length,
 						    "string-utf-8-length",
 						    1, 3),
 			     env);
@@ -795,23 +795,23 @@ scheme_init_string (Scheme_Env *env)
      more problems than it solves... */
 
   scheme_add_global_constant("version",
-			     scheme_make_noncm_prim(version,
+			     scheme_make_immed_prim(version,
 						    "version",
 						    0, 0),
 			     env);
   scheme_add_global_constant("banner",
-			     scheme_make_noncm_prim(banner,
+			     scheme_make_immed_prim(banner,
 						    "banner",
 						    0, 0),
 			     env);
 
   scheme_add_global_constant("getenv",
-			     scheme_make_noncm_prim(sch_getenv,
+			     scheme_make_immed_prim(sch_getenv,
 						    "getenv",
 						    1, 1),
 			     env);
   scheme_add_global_constant("putenv",
-			     scheme_make_noncm_prim(sch_putenv,
+			     scheme_make_immed_prim(sch_putenv,
 						    "putenv",
 						    2, 2),
 			     env);
@@ -819,12 +819,12 @@ scheme_init_string (Scheme_Env *env)
   /* Don't make these folding, since they're platform-specific: */
 
   scheme_add_global_constant("system-type",
-			     scheme_make_noncm_prim(system_type,
+			     scheme_make_immed_prim(system_type,
 						    "system-type",
 						    0, 1),
 			     env);
   scheme_add_global_constant("system-library-subpath",
-			     scheme_make_noncm_prim(system_library_subpath,
+			     scheme_make_immed_prim(system_library_subpath,
 						    "system-library-subpath",
 						    0, 1),
 			     env);
@@ -908,24 +908,26 @@ void scheme_out_of_string_range(const char *name, const char *which,
 
   is_byte = SCHEME_BYTE_STRINGP(s);
 
-  if ((is_byte ? SCHEME_BYTE_STRTAG_VAL(s) : SCHEME_CHAR_STRTAG_VAL(s))) {
+  if (len) {
     char *sstr;
     int slen;
 
     sstr = scheme_make_provided_string(s, 2, &slen);
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: %sindex %s out of range [%d, %d] for %sstring: %t",
+		     "%s: %sindex %s out of range [%d, %d] for %s%s: %t",
 		     name, which,
 		     scheme_make_provided_string(i, 2, NULL),
 		     start, len,
 		     is_byte ? "byte-" : "",
+                     SCHEME_VECTORP(s) ? "vector" : "string",
 		     sstr, slen);
   } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: %sindex %s out of range for empty %sstring",
+		     "%s: %sindex %s out of range for empty %s%s",
 		     name, which,
 		     scheme_make_provided_string(i, 0, NULL),
-		     is_byte ? "byte-" : "");
+		     is_byte ? "byte-" : "",
+                     SCHEME_VECTORP(s) ? "vector" : "string");
   }
 }
 
@@ -960,6 +962,8 @@ void scheme_get_substring_indices(const char *name, Scheme_Object *str,
   long len;
   long start, finish;
 
+  if (SCHEME_VECTORP(str))
+    len = SCHEME_VEC_SIZE(str);
   if (SCHEME_CHAR_STRINGP(str))
     len = SCHEME_CHAR_STRTAG_VAL(str);
   else
@@ -985,9 +989,9 @@ void scheme_get_substring_indices(const char *name, Scheme_Object *str,
   *_finish = finish;
 }
 
-static void get_substring_indices(const char *name, Scheme_Object *str,
-                                  int argc, Scheme_Object **argv,
-                                  int spos, int fpos, long *_start, long *_finish, long len)
+void scheme_do_get_substring_indices(const char *name, Scheme_Object *str,
+                                     int argc, Scheme_Object **argv,
+                                     int spos, int fpos, long *_start, long *_finish, long len)
 {
   if (argc > spos) {
     if (SCHEME_INTP(argv[spos])) {

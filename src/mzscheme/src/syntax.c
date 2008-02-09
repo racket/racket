@@ -43,6 +43,7 @@ Scheme_Object scheme_undefined[1];
 
 Scheme_Syntax_Optimizer scheme_syntax_optimizers[_COUNT_EXPD_];
 Scheme_Syntax_Resolver scheme_syntax_resolvers[_COUNT_EXPD_];
+Scheme_Syntax_SFSer scheme_syntax_sfsers[_COUNT_EXPD_];
 Scheme_Syntax_Validater scheme_syntax_validaters[_COUNT_EXPD_];
 Scheme_Syntax_Executer scheme_syntax_executers[_COUNT_EXPD_];
 Scheme_Syntax_Jitter scheme_syntax_jitters[_COUNT_EXPD_];
@@ -137,46 +138,67 @@ static Scheme_Object *begin0_resolve(Scheme_Object *data, Resolve_Info *info);
 static Scheme_Object *apply_values_resolve(Scheme_Object *data, Resolve_Info *info);
 static Scheme_Object *splice_resolve(Scheme_Object *data, Resolve_Info *info);
 
+static Scheme_Object *define_values_sfs(Scheme_Object *data, SFS_Info *info);
+static Scheme_Object *ref_sfs(Scheme_Object *data, SFS_Info *info);
+static Scheme_Object *set_sfs(Scheme_Object *data, SFS_Info *info);
+static Scheme_Object *define_syntaxes_sfs(Scheme_Object *expr, SFS_Info *info);
+static Scheme_Object *define_for_syntaxes_sfs(Scheme_Object *expr, SFS_Info *info);
+static Scheme_Object *case_lambda_sfs(Scheme_Object *expr, SFS_Info *info);
+static Scheme_Object *begin0_sfs(Scheme_Object *data, SFS_Info *info);
+static Scheme_Object *apply_values_sfs(Scheme_Object *data, SFS_Info *info);
+static Scheme_Object *splice_sfs(Scheme_Object *data, SFS_Info *info);
+static Scheme_Object *bangboxenv_sfs(Scheme_Object *data, SFS_Info *info);
+
 static void define_values_validate(Scheme_Object *data, Mz_CPort *port, 
                                    char *stack, Validate_TLS tls,
                                    int depth, int letlimit, int delta, 
-				   int num_toplevels, int num_stxes, int num_lifts);
+				   int num_toplevels, int num_stxes, int num_lifts,
+                                   struct Validate_Clearing *vc, int tailpos);
 static void ref_validate(Scheme_Object *data, Mz_CPort *port, 
                          char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta, 
-			 int num_toplevels, int num_stxes, int num_lifts);
+			 int num_toplevels, int num_stxes, int num_lifts,
+                         struct Validate_Clearing *vc, int tailpos);
 static void set_validate(Scheme_Object *data, Mz_CPort *port, 
                          char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta, 
-			 int num_toplevels, int num_stxes, int num_lifts);
+			 int num_toplevels, int num_stxes, int num_lifts,
+                         struct Validate_Clearing *vc, int tailpos);
 static void define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
                                      char *stack, Validate_TLS tls,
                                      int depth, int letlimit, int delta, 
-				     int num_toplevels, int num_stxes, int num_lifts);
+				     int num_toplevels, int num_stxes, int num_lifts,
+                                     struct Validate_Clearing *vc, int tailpos);
 static void define_for_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
                                          char *stack, Validate_TLS tls,
                                          int depth, int letlimit, int delta, 
-					 int num_toplevels, int num_stxes, int num_lifts);
+					 int num_toplevels, int num_stxes, int num_lifts,
+                                         struct Validate_Clearing *vc, int tailpos);
 static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, 
                                  char *stack, Validate_TLS tls,
                                  int depth, int letlimit, int delta, 
-				 int num_toplevels, int num_stxes, int num_lifts);
+				 int num_toplevels, int num_stxes, int num_lifts,
+                                 struct Validate_Clearing *vc, int tailpos);
 static void begin0_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
                             int depth, int letlimit, int delta,
-			    int num_toplevels, int num_stxes, int num_lifts);
+			    int num_toplevels, int num_stxes, int num_lifts,
+                            struct Validate_Clearing *vc, int tailpos);
 static void apply_values_validate(Scheme_Object *data, Mz_CPort *port, 
                                   char *stack, Validate_TLS tls,
                                   int depth, int letlimit, int delta,
-                                  int num_toplevels, int num_stxes, int num_lifts);
+                                  int num_toplevels, int num_stxes, int num_lifts,
+                                  struct Validate_Clearing *vc, int tailpos);
 static void splice_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
                             int depth, int letlimit, int delta,
-                            int num_toplevels, int num_stxes, int num_lifts);
+                            int num_toplevels, int num_stxes, int num_lifts,
+                            struct Validate_Clearing *vc, int tailpos);
 static void bangboxenv_validate(Scheme_Object *data, Mz_CPort *port, 
                                 char *stack, Validate_TLS tls,
                                 int depth, int letlimit, int delta,
-				int num_toplevels, int num_stxes, int num_lifts);
+				int num_toplevels, int num_stxes, int num_lifts,
+                                struct Validate_Clearing *vc, int tailpos);
 
 static Scheme_Object *define_values_jit(Scheme_Object *data);
 static Scheme_Object *ref_jit(Scheme_Object *data);
@@ -260,54 +282,54 @@ scheme_init_syntax (Scheme_Env *env)
 
   scheme_register_syntax(DEFINE_VALUES_EXPD, 
 			 define_values_optimize, 
-			 define_values_resolve, define_values_validate, 
+			 define_values_resolve, define_values_sfs, define_values_validate, 
 			 define_values_execute, define_values_jit, 
 			 NULL, NULL, -2);
   scheme_register_syntax(SET_EXPD,
 			 set_optimize,
-			 set_resolve, set_validate,
+			 set_resolve, set_sfs, set_validate,
 			 set_execute, set_jit, 
 			 set_clone, set_shift, 2);
   scheme_register_syntax(REF_EXPD, 
 			 ref_optimize,
-			 ref_resolve, ref_validate, 
+			 ref_resolve, ref_sfs, ref_validate, 
 			 ref_execute, ref_jit, 
 			 NULL, ref_shift, 0);
   scheme_register_syntax(DEFINE_SYNTAX_EXPD, 
 			 define_syntaxes_optimize,
-			 define_syntaxes_resolve, define_syntaxes_validate,
+			 define_syntaxes_resolve, define_syntaxes_sfs, define_syntaxes_validate,
 			 define_syntaxes_execute, define_syntaxes_jit, 
 			 NULL, NULL, -2);
   scheme_register_syntax(DEFINE_FOR_SYNTAX_EXPD, 
 			 define_for_syntaxes_optimize, 
-			 define_for_syntaxes_resolve, define_for_syntaxes_validate,
+			 define_for_syntaxes_resolve, define_for_syntaxes_sfs, define_for_syntaxes_validate,
 			 define_for_syntaxes_execute, define_for_syntaxes_jit, 
 			 NULL, NULL, -2);
   scheme_register_syntax(CASE_LAMBDA_EXPD, 
 			 case_lambda_optimize,
-			 case_lambda_resolve, case_lambda_validate,
+			 case_lambda_resolve, case_lambda_sfs, case_lambda_validate,
 			 case_lambda_execute, case_lambda_jit, 
 			 NULL, case_lambda_shift, -1);
   scheme_register_syntax(BEGIN0_EXPD, 
 			 begin0_optimize,
-			 begin0_resolve, begin0_validate,
+			 begin0_resolve, begin0_sfs, begin0_validate,
 			 begin0_execute, begin0_jit, 
 			 begin0_clone, begin0_shift, -1);
 
   scheme_register_syntax(APPVALS_EXPD,
 			 apply_values_optimize,
-			 apply_values_resolve, apply_values_validate,
+			 apply_values_resolve, apply_values_sfs, apply_values_validate,
 			 apply_values_execute, apply_values_jit, 
 			 apply_values_clone, apply_values_shift, 1);
 
   scheme_register_syntax(SPLICE_EXPD,
 			 splice_optimize,
-			 splice_resolve, splice_validate,
+			 splice_resolve, splice_sfs, splice_validate,
 			 splice_execute, splice_jit, 
 			 splice_clone, splice_shift, 0);
 
   scheme_register_syntax(BOXENV_EXPD, 
-			 NULL, NULL, bangboxenv_validate,
+			 NULL, NULL, bangboxenv_sfs, bangboxenv_validate,
 			 bangboxenv_execute, bangboxenv_jit, 
 			 NULL, NULL, 1);
 
@@ -846,7 +868,8 @@ static Scheme_Object *define_values_jit(Scheme_Object *data)
 static void define_values_validate(Scheme_Object *data, Mz_CPort *port, 
 				   char *stack,  Validate_TLS tls,
                                    int depth, int letlimit, int delta, 
-                                   int num_toplevels, int num_stxes, int num_lifts)
+                                   int num_toplevels, int num_stxes, int num_lifts,
+                                   struct Validate_Clearing *vc, int tailpos)
 {
   int i, size;
   Scheme_Object *val, *only_var;
@@ -954,7 +977,7 @@ static void define_values_validate(Scheme_Object *data, Mz_CPort *port,
   scheme_validate_expr(port, val, stack, tls, 
                        depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
-                       NULL, !!only_var);
+                       NULL, !!only_var, 0, vc, 0);
 }
 
 static Scheme_Object *
@@ -1002,6 +1025,16 @@ define_values_resolve(Scheme_Object *data, Resolve_Info *rslv)
   SCHEME_VEC_ELS(vec)[0] = val;
 
   return scheme_make_syntax_resolved(DEFINE_VALUES_EXPD, vec);
+}
+
+static Scheme_Object *
+define_values_sfs(Scheme_Object *data, SFS_Info *info)
+{
+  Scheme_Object *e;
+  scheme_sfs_start_sequence(info, 1, 0);
+  e = scheme_sfs_expr(SCHEME_VEC_ELS(data)[0], info, -1);
+  SCHEME_VEC_ELS(data)[0] = e;
+  return data;
 }
 
 void scheme_resolve_lift_definition(Resolve_Info *info, Scheme_Object *var, Scheme_Object *rhs)
@@ -1474,7 +1507,8 @@ static Scheme_Object *set_jit(Scheme_Object *data)
 static void set_validate(Scheme_Object *data, Mz_CPort *port, 
 			 char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta, 
-                         int num_toplevels, int num_stxes, int num_lifts)
+                         int num_toplevels, int num_stxes, int num_lifts,
+                         struct Validate_Clearing *vc, int tailpos)
 {
   Scheme_Object *val, *tl;
 
@@ -1488,7 +1522,7 @@ static void set_validate(Scheme_Object *data, Mz_CPort *port,
 
   scheme_validate_expr(port, val, stack, tls, depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
-                       NULL, 0);
+                       NULL, 0, 0, vc, 0);
   scheme_validate_toplevel(tl, port, stack, tls, depth, delta, 
                            num_toplevels, num_stxes, num_lifts,
                            0);
@@ -1520,7 +1554,7 @@ set_optimize(Scheme_Object *data, Optimize_Info *info)
     /* Offset: */
     delta = scheme_optimize_info_get_shift(info, pos);
     if (delta)
-      var = scheme_make_local(scheme_local_type, pos + delta);
+      var = scheme_make_local(scheme_local_type, pos + delta, 0);
   } else {
     scheme_optimize_info_used_top(info);
   }
@@ -1600,6 +1634,26 @@ set_resolve(Scheme_Object *data, Resolve_Info *rslv)
   var = scheme_resolve_expr(var, rslv);
   
   return scheme_make_syntax_resolved(SET_EXPD, cons(set_undef, cons(var, val)));
+}
+
+static Scheme_Object *
+set_sfs(Scheme_Object *orig_data, SFS_Info *info)
+{
+  Scheme_Object *data, *var, *val;
+
+  data = SCHEME_CDR(orig_data);
+  var = SCHEME_CAR(data);
+  val = SCHEME_CDR(data);
+  
+  scheme_sfs_start_sequence(info, 2, 0);
+
+  val = scheme_sfs_expr(val, info, -1);
+  var = scheme_sfs_expr(var, info, -1);
+
+  SCHEME_CAR(data) = var;
+  SCHEME_CDR(data) = val;
+
+  return orig_data;
 }
 
 static Scheme_Object *
@@ -1813,7 +1867,8 @@ static Scheme_Object *ref_jit(Scheme_Object *data)
 static void ref_validate(Scheme_Object *tl, Mz_CPort *port, 
 			 char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta, 
-                         int num_toplevels, int num_stxes, int num_lifts)
+                         int num_toplevels, int num_stxes, int num_lifts,
+                         struct Validate_Clearing *vc, int tailpos)
 {
   scheme_validate_toplevel(tl,  port, stack, tls, depth, delta, 
                            num_toplevels, num_stxes, num_lifts,
@@ -1839,6 +1894,18 @@ static Scheme_Object *
 ref_resolve(Scheme_Object *tl, Resolve_Info *rslv)
 {
   return scheme_make_syntax_resolved(REF_EXPD, scheme_resolve_expr(tl, rslv));
+}
+
+static Scheme_Object *
+ref_sfs(Scheme_Object *tl, SFS_Info *info)
+{
+  Scheme_Object *naya;
+  scheme_sfs_start_sequence(info, 1, 0);
+  naya = scheme_sfs_expr(tl, info, -1);
+  if (SAME_OBJ(naya, tl))
+    return tl;
+  else
+    return scheme_make_syntax_resolved(REF_EXPD, naya);
 }
 
 static Scheme_Object *
@@ -2020,6 +2087,22 @@ apply_values_resolve(Scheme_Object *data, Resolve_Info *rslv)
 }
 
 static Scheme_Object *
+apply_values_sfs(Scheme_Object *data, SFS_Info *info)
+{
+  Scheme_Object *f, *e;
+
+  f = SCHEME_CAR(data);
+  e = SCHEME_CDR(data);
+
+  scheme_sfs_start_sequence(info, 2, 0);
+
+  f = scheme_sfs_expr(f, info, -1);
+  e = scheme_sfs_expr(e, info, -1);
+
+  return data;
+}
+
+static Scheme_Object *
 apply_values_shift(Scheme_Object *data, int delta, int after_depth)
 {
   Scheme_Object *e;
@@ -2052,7 +2135,8 @@ apply_values_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int del
 static void apply_values_validate(Scheme_Object *data, Mz_CPort *port, 
                                   char *stack, Validate_TLS tls,
                                   int depth, int letlimit, int delta, 
-                                  int num_toplevels, int num_stxes, int num_lifts)
+                                  int num_toplevels, int num_stxes, int num_lifts,
+                                  struct Validate_Clearing *vc, int tailpos)
 {
   Scheme_Object *f, *e;
 
@@ -2062,11 +2146,11 @@ static void apply_values_validate(Scheme_Object *data, Mz_CPort *port,
   scheme_validate_expr(port, f, stack, tls,
                        depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
-                       NULL, 0);
+                       NULL, 0, 0, vc, 0);
   scheme_validate_expr(port, e, stack, tls,
                        depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
-                       NULL, 0);
+                       NULL, 0, 0, vc, 0);
 }
 
 /**********************************************************************/
@@ -2215,15 +2299,21 @@ static Scheme_Object *case_lambda_jit(Scheme_Object *expr)
 
 static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, char *stack, Validate_TLS tls,
 				 int depth, int letlimit, int delta, 
-                                 int num_toplevels, int num_stxes, int num_lifts)
+                                 int num_toplevels, int num_stxes, int num_lifts,
+                                 struct Validate_Clearing *vc, int tailpos)
 {
   Scheme_Case_Lambda *seq = (Scheme_Case_Lambda *)data;
+  Scheme_Object *e;
   int i;
 
   for (i = 0; i < seq->count; i++) { 
-    scheme_validate_expr(port, seq->array[i], stack, tls, depth, letlimit, delta, 
+    e = seq->array[i];
+    if (!SAME_TYPE(SCHEME_TYPE(e), scheme_unclosed_procedure_type)
+        && !SAME_TYPE(SCHEME_TYPE(e), scheme_closure_type))
+      scheme_ill_formed_code(port);
+    scheme_validate_expr(port, e, stack, tls, depth, letlimit, delta, 
                          num_toplevels, num_stxes, num_lifts,
-                         NULL, 0);
+                         NULL, 0, 0, vc, 0);
   }
 }
 
@@ -2248,6 +2338,48 @@ case_lambda_resolve(Scheme_Object *expr, Resolve_Info *rslv)
   }
 
   return scheme_make_syntax_resolved(CASE_LAMBDA_EXPD, expr);
+}
+
+static Scheme_Object *
+case_lambda_sfs(Scheme_Object *expr, SFS_Info *info)
+{
+  Scheme_Case_Lambda *seq = (Scheme_Case_Lambda *)expr;
+  Scheme_Object *le, *clears = scheme_null;
+  int i;
+
+  scheme_sfs_start_sequence(info, seq->count, 0);
+
+  for (i = 0; i < seq->count; i++) {
+    le = seq->array[i];
+    le = scheme_sfs_expr(le, info, -1);
+    if (SAME_TYPE(SCHEME_TYPE(le), scheme_syntax_type)
+        && (SCHEME_PINT_VAL(le) == BEGIN0_EXPD)) {
+      /* Some clearing actions were added to the closure.
+         Lift them out. */
+      int j;
+      Scheme_Sequence *cseq = (Scheme_Sequence *)SCHEME_IPTR_VAL(le);
+      if (!cseq->count)
+        scheme_signal_error("internal error: empty sequence");
+      for (j = 1; j < cseq->count; j++) {
+        int pos;
+        pos = SCHEME_LOCAL_POS(cseq->array[j]);
+        clears = scheme_make_pair(scheme_make_integer(pos), clears);
+      }
+      le = cseq->array[0];
+    }
+    if (!SAME_TYPE(SCHEME_TYPE(le), scheme_unclosed_procedure_type)
+        && !SAME_TYPE(SCHEME_TYPE(le), scheme_closure_type)) {
+      scheme_signal_error("internal error: not a lambda for case-lambda: %d",
+                          SCHEME_TYPE(le));
+    }
+    seq->array[i] = le;
+  }
+
+  if (!SCHEME_NULLP(clears)) {
+    expr = scheme_make_syntax_resolved(CASE_LAMBDA_EXPD, expr);
+    return scheme_sfs_add_clears(expr, clears, 0);
+  } else
+    return expr;
 }
 
 static Scheme_Object *
@@ -2285,7 +2417,7 @@ case_lambda_shift(Scheme_Object *data, int delta, int after_depth)
   return data;
 }
 
-Scheme_Object *scheme_unclose_case_lambda(Scheme_Object *expr, int jit)
+Scheme_Object *scheme_unclose_case_lambda(Scheme_Object *expr, int mode)
 {
   Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)expr;
   Scheme_Closure *c;
@@ -2314,9 +2446,13 @@ Scheme_Object *scheme_unclose_case_lambda(Scheme_Object *expr, int jit)
       cl2->array[i] = (Scheme_Object *)c->code;
     }
 
-    if (jit)
+    if (mode == 2) {
+      /* sfs */
+      return scheme_make_syntax_resolved(CASE_LAMBDA_EXPD, expr);
+    } else if (mode == 1) {
+      /* JIT */
       return case_lambda_jit((Scheme_Object *)cl2);
-    else
+    } else
       return (Scheme_Object *)cl2;
   }
   
@@ -2535,6 +2671,14 @@ Scheme_Object *bangboxenv_execute(Scheme_Object *data)
   return _scheme_tail_eval(data);
 }
 
+static Scheme_Object *bangboxenv_sfs(Scheme_Object *data, SFS_Info *info)
+{
+  Scheme_Object *e;
+  e = scheme_sfs_expr(SCHEME_CDR(data), info, -1);
+  SCHEME_CDR(data) = e;
+  return data;
+}
+
 static Scheme_Object *bangboxenv_jit(Scheme_Object *data)
 {
   Scheme_Object *orig, *naya;
@@ -2550,7 +2694,8 @@ static Scheme_Object *bangboxenv_jit(Scheme_Object *data)
 static void bangboxenv_validate(Scheme_Object *data, Mz_CPort *port, 
 				char *stack, Validate_TLS tls,
                                 int depth, int letlimit, int delta, 
-                                int num_toplevels, int num_stxes, int num_lifts)
+                                int num_toplevels, int num_stxes, int num_lifts,
+                                struct Validate_Clearing *vc, int tailpos)
 {
   if (!SCHEME_PAIRP(data))
     scheme_ill_formed_code(port);
@@ -2559,7 +2704,7 @@ static void bangboxenv_validate(Scheme_Object *data, Mz_CPort *port,
 
   scheme_validate_expr(port, SCHEME_CDR(data), stack, tls, depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
-                       NULL, 0);
+                       NULL, 0, 0, vc, tailpos);
 }
 
 /**********************************************************************/
@@ -4365,16 +4510,21 @@ static Scheme_Object *begin0_jit(Scheme_Object *data)
 static void begin0_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
 			    int depth, int letlimit, int delta, 
-                            int num_toplevels, int num_stxes, int num_lifts)
+                            int num_toplevels, int num_stxes, int num_lifts,
+                            struct Validate_Clearing *vc, int tailpos)
 {
   Scheme_Sequence *seq = (Scheme_Sequence *)data;
   int i;
+
+  if (!SAME_TYPE(SCHEME_TYPE(seq), scheme_begin0_sequence_type)
+      && !SAME_TYPE(SCHEME_TYPE(seq), scheme_sequence_type))
+    scheme_ill_formed_code(port);
 
   for (i = 0; i < seq->count; i++) { 
     scheme_validate_expr(port, seq->array[i], stack, tls,
                          depth, letlimit, delta, 
                          num_toplevels, num_stxes, num_lifts,
-                         NULL, 0);
+                         NULL, 0, i > 0, vc, 0);
   }
 }
 
@@ -4434,6 +4584,24 @@ begin0_resolve(Scheme_Object *obj, Resolve_Info *info)
   }
 
   return scheme_make_syntax_resolved(BEGIN0_EXPD, obj);
+}
+
+static Scheme_Object *
+begin0_sfs(Scheme_Object *obj, SFS_Info *info)
+{
+  int i, cnt;
+  
+  cnt = ((Scheme_Sequence *)obj)->count;
+
+  scheme_sfs_start_sequence(info, cnt, 0);
+
+  for (i = 0; i < cnt; i++) {
+    Scheme_Object *le;
+    le = scheme_sfs_expr(((Scheme_Sequence *)obj)->array[i], info, -1);
+    ((Scheme_Sequence *)obj)->array[i] = le;
+  }
+
+  return obj;
 }
 
 static Scheme_Object *
@@ -4660,6 +4828,17 @@ splice_resolve(Scheme_Object *data, Resolve_Info *rslv)
 }
 
 static Scheme_Object *
+splice_sfs(Scheme_Object *data, SFS_Info *info)
+{
+  Scheme_Object *naya;
+  naya = scheme_sfs_expr(data, info, -1);
+  if (SAME_OBJ(naya, data))
+    return data;
+  else
+    return scheme_make_syntax_resolved(SPLICE_EXPD, data);
+}
+
+static Scheme_Object *
 splice_shift(Scheme_Object *data, int delta, int after_depth)
 {
   return scheme_make_syntax_compiled(SPLICE_EXPD,
@@ -4677,12 +4856,13 @@ splice_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, in
 static void splice_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
                             int depth, int letlimit, int delta, 
-                            int num_toplevels, int num_stxes, int num_lifts)
+                            int num_toplevels, int num_stxes, int num_lifts,
+                            struct Validate_Clearing *vc, int tailpos)
 {
   scheme_validate_expr(port, data, stack, tls,
                        depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
-                       NULL, 0);
+                       NULL, 0, 0, vc, 0);
 }
 
 /**********************************************************************/
@@ -4965,7 +5145,8 @@ static void do_define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port,
 static void define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
 				     char *stack, Validate_TLS tls,
                                      int depth, int letlimit, int delta, 
-				     int num_toplevels, int num_stxes, int num_lifts)
+				     int num_toplevels, int num_stxes, int num_lifts,
+                                     struct Validate_Clearing *vc, int tailpos)
 {
   do_define_syntaxes_validate(data, port, stack, tls, depth, letlimit, delta, 
                               num_toplevels, num_stxes, num_lifts, 0);
@@ -4974,7 +5155,8 @@ static void define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port,
 static void define_for_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
 					 char *stack, Validate_TLS tls,
                                          int depth, int letlimit, int delta, 
-					 int num_toplevels, int num_stxes, int num_lifts)
+					 int num_toplevels, int num_stxes, int num_lifts,
+                                         struct Validate_Clearing *vc, int tailpos)
 {
   do_define_syntaxes_validate(data, port, stack, tls, depth, letlimit, delta, 
                               num_toplevels, num_stxes, num_lifts, 1);
@@ -5069,6 +5251,31 @@ static Scheme_Object *define_syntaxes_resolve(Scheme_Object *data, Resolve_Info 
 static Scheme_Object *define_for_syntaxes_resolve(Scheme_Object *data, Resolve_Info *info)
 {
   return do_define_syntaxes_resolve(data, info, 1);
+}
+
+static Scheme_Object *do_define_syntaxes_sfs(Scheme_Object *data, SFS_Info *info)
+{
+  Scheme_Object *e;
+
+  if (!info->pass) {
+    int depth;
+    depth = SCHEME_INT_VAL(SCHEME_VEC_ELS(data)[2]);
+    info = scheme_new_sfs_info(depth);
+    e = scheme_sfs(SCHEME_VEC_ELS(data)[0], info, depth);
+    SCHEME_VEC_ELS(data)[0] = e;
+  }
+
+  return data;
+}
+
+static Scheme_Object *define_syntaxes_sfs(Scheme_Object *data, SFS_Info *info)
+{
+  return do_define_syntaxes_sfs(data, info);
+}
+
+static Scheme_Object *define_for_syntaxes_sfs(Scheme_Object *data, SFS_Info *info)
+{
+  return do_define_syntaxes_sfs(data, info);
 }
 
 static Scheme_Object *stx_val(Scheme_Object *name, Scheme_Object *_env)

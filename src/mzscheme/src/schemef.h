@@ -425,6 +425,9 @@ MZ_EXTERN Scheme_Object *scheme_make_folding_prim(Scheme_Prim *prim,
 					const char *name,
 					mzshort mina, mzshort maxa,
 					short functional);
+MZ_EXTERN Scheme_Object *scheme_make_immed_prim(Scheme_Prim *prim,
+					        const char *name,
+					        mzshort mina, mzshort maxa);
 MZ_EXTERN Scheme_Object *scheme_make_noncm_prim(Scheme_Prim *prim,
 						const char *name,
 						mzshort mina, mzshort maxa);

@@ -400,70 +400,70 @@ void scheme_init_stx(Scheme_Env *env)
 			     env);
 
   scheme_add_global_constant("syntax-original?", 
-			     scheme_make_noncm_prim(syntax_original_p,
+			     scheme_make_immed_prim(syntax_original_p,
 						    "syntax-original?",
 						    1, 1),
 			     env);
   scheme_add_global_constant("syntax-property", 
-			     scheme_make_noncm_prim(syntax_property,
+			     scheme_make_immed_prim(syntax_property,
 						    "syntax-property",
 						    2, 3),
 			     env);
   scheme_add_global_constant("syntax-property-symbol-keys", 
-			     scheme_make_noncm_prim(syntax_property_keys,
+			     scheme_make_immed_prim(syntax_property_keys,
 						    "syntax-property-symbol-keys",
 						    1, 1),
 			     env);
 
   scheme_add_global_constant("syntax-track-origin", 
-			     scheme_make_noncm_prim(syntax_track_origin,
+			     scheme_make_immed_prim(syntax_track_origin,
 						    "syntax-track-origin",
 						    3, 3),
 			     env);
 
   scheme_add_global_constant("bound-identifier=?", 
-			     scheme_make_noncm_prim(bound_eq,
+			     scheme_make_immed_prim(bound_eq,
 						    "bound-identifier=?",
 						    2, 2),
 			     env);
   scheme_add_global_constant("free-identifier=?", 
-			     scheme_make_noncm_prim(module_eq,
+			     scheme_make_immed_prim(module_eq,
 						    "free-identifier=?",
 						    2, 2),
 			     env);
   scheme_add_global_constant("free-transformer-identifier=?", 
-			     scheme_make_noncm_prim(module_trans_eq,
+			     scheme_make_immed_prim(module_trans_eq,
 						    "free-transformer-identifier=?",
 						    2, 2),
 			     env);
   scheme_add_global_constant("free-template-identifier=?", 
-			     scheme_make_noncm_prim(module_templ_eq,
+			     scheme_make_immed_prim(module_templ_eq,
 						    "free-template-identifier=?",
 						    2, 2),
 			     env);
   scheme_add_global_constant("free-label-identifier=?", 
-			     scheme_make_noncm_prim(module_label_eq,
+			     scheme_make_immed_prim(module_label_eq,
 						    "free-label-identifier=?",
 						    2, 2),
 			     env);
 
   scheme_add_global_constant("identifier-binding", 
-			     scheme_make_noncm_prim(module_binding,
+			     scheme_make_immed_prim(module_binding,
 						    "identifier-binding",
 						    1, 1),
 			     env);
   scheme_add_global_constant("identifier-transformer-binding", 
-			     scheme_make_noncm_prim(module_trans_binding,
+			     scheme_make_immed_prim(module_trans_binding,
 						    "identifier-transformer-binding",
 						    1, 2),
 			     env);
   scheme_add_global_constant("identifier-template-binding", 
-			     scheme_make_noncm_prim(module_templ_binding,
+			     scheme_make_immed_prim(module_templ_binding,
 						    "identifier-template-binding",
 						    1, 1),
 			     env);
   scheme_add_global_constant("identifier-label-binding", 
-			     scheme_make_noncm_prim(module_label_binding,
+			     scheme_make_immed_prim(module_label_binding,
 						    "identifier-label-binding",
 						    1, 1),
 			     env);
@@ -476,7 +476,7 @@ void scheme_init_stx(Scheme_Env *env)
 			     env);
 
   scheme_add_global_constant("syntax-recertify", 
-			     scheme_make_noncm_prim(syntax_recertify,
+			     scheme_make_immed_prim(syntax_recertify,
 						    "syntax-recertify",
 						    4, 4),
 			     env);

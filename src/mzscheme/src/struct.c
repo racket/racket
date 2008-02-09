@@ -2300,7 +2300,7 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
       p = scheme_make_folding_prim_closure(struct_getter,
 					   1, a,
 					   func_name,
-					   1 + need_pos, 1 + need_pos, 1);
+					   1 + need_pos, 1 + need_pos, 0);
       if (need_pos)
 	flags |= SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER | SCHEME_PRIM_IS_STRUCT_OTHER;
       else

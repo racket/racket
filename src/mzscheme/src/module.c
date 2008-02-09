@@ -79,17 +79,21 @@ static Scheme_Object *top_level_require_jit(Scheme_Object *data);
 
 static Scheme_Object *module_optimize(Scheme_Object *data, Optimize_Info *info);
 static Scheme_Object *module_resolve(Scheme_Object *data, Resolve_Info *info);
+static Scheme_Object *module_sfs(Scheme_Object *data, SFS_Info *info);
 static Scheme_Object *top_level_require_optimize(Scheme_Object *data, Optimize_Info *info);
 static Scheme_Object *top_level_require_resolve(Scheme_Object *data, Resolve_Info *info);
+static Scheme_Object *top_level_require_sfs(Scheme_Object *data, SFS_Info *info);
 
 static void module_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
                             int depth, int letlimit, int delta, 
-			    int num_toplevels, int num_stxes, int num_lifts);
+			    int num_toplevels, int num_stxes, int num_lifts,
+                            struct Validate_Clearing *vc, int tailpos);
 static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, 
                                        char *stack, Validate_TLS tls,
                                        int depth, int letlimit, int delta, 
-				       int num_toplevels, int num_stxes, int num_lifts);
+				       int num_toplevels, int num_stxes, int num_lifts,
+                                       struct Validate_Clearing *vc, int tailpos);
 
 static Scheme_Object *write_module(Scheme_Object *obj);
 static Scheme_Object *read_module(Scheme_Object *obj);
@@ -256,12 +260,12 @@ void scheme_init_module(Scheme_Env *env)
 
   scheme_register_syntax(MODULE_EXPD, 
 			 module_optimize,
-			 module_resolve, module_validate, 
+			 module_resolve, module_sfs, module_validate, 
 			 module_execute, module_jit, 
 			 NULL, NULL, -1);
   scheme_register_syntax(REQUIRE_EXPD, 
 			 top_level_require_optimize,
-			 top_level_require_resolve, top_level_require_validate, 
+			 top_level_require_resolve, top_level_require_sfs, top_level_require_validate, 
 			 top_level_require_execute, top_level_require_jit, 
 			 NULL, NULL, 2);
 
@@ -4232,7 +4236,8 @@ static Scheme_Object *module_jit(Scheme_Object *data)
 static void module_validate(Scheme_Object *data, Mz_CPort *port, 
                             char *stack, Validate_TLS tls,
 			    int depth, int letlimit, int delta, 
-			    int num_toplevels, int num_stxes, int num_lifts)
+			    int num_toplevels, int num_stxes, int num_lifts,
+                            struct Validate_Clearing *vc, int tailpos)
 {
   Scheme_Module *m;
   int i, cnt, let_depth;
@@ -4616,6 +4621,51 @@ module_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
   set_is_functional(m);
 
   return scheme_make_syntax_resolved(MODULE_EXPD, data);
+}
+
+static Scheme_Object *
+module_sfs(Scheme_Object *data, SFS_Info *old_info)
+{
+  Scheme_Module *m = (Scheme_Module *)data;
+  Scheme_Object *e, *ex;
+  SFS_Info *info;
+  int i, cnt, let_depth;
+
+  if (!old_info->for_mod) {
+    if (old_info->pass)
+      return data;
+
+    info = scheme_new_sfs_info(m->max_let_depth);
+    info->for_mod = 1;
+    scheme_sfs(data, info, m->max_let_depth);
+    return data;
+  }
+
+  info = old_info;
+
+  cnt = SCHEME_VEC_SIZE(m->body);
+  scheme_sfs_start_sequence(info, cnt, 0);
+
+  for (i = 0; i < cnt; i++) {
+    e = scheme_sfs_expr(SCHEME_VEC_ELS(m->body)[i], info, -1);
+    SCHEME_VEC_ELS(m->body)[i] = e;
+  }
+
+  if (!info->pass) {
+    cnt = SCHEME_VEC_SIZE(m->et_body);
+    for (i = 0; i < cnt; i++) {
+      e = SCHEME_VEC_ELS(m->et_body)[i];
+      
+      let_depth = SCHEME_INT_VAL(SCHEME_VEC_ELS(e)[2]);
+      ex = SCHEME_VEC_ELS(e)[1];
+      
+      info = scheme_new_sfs_info(let_depth);
+      ex = scheme_sfs(ex, info, let_depth);
+      SCHEME_VEC_ELS(e)[1] = ex;
+    }
+  }
+
+  return data;
 }
 
 static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env, 
@@ -5561,6 +5611,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  SCHEME_VEC_ELS(vec)[4] = (for_stx ? scheme_true : scheme_false);
 	  exp_body = scheme_make_pair(vec, exp_body);
 
+          m = scheme_sfs(m, NULL, ri->max_let_depth);
 	  if (ri->use_jit)
 	    m = scheme_jit_expr(m);
 	
@@ -8159,7 +8210,8 @@ top_level_require_jit(Scheme_Object *data)
 static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, 
                                        char *stack, Validate_TLS tls,
 				       int depth, int letlimit, int delta, 
-				       int num_toplevels, int num_stxes, int num_lifts)
+				       int num_toplevels, int num_stxes, int num_lifts,
+                                       struct Validate_Clearing *vc, int tailpos)
 {
 }
 
@@ -8177,6 +8229,12 @@ top_level_require_resolve(Scheme_Object *data, Resolve_Info *rslv)
   dummy = scheme_resolve_expr(dummy, rslv);
 
   return scheme_make_syntax_resolved(REQUIRE_EXPD, cons(dummy, SCHEME_CDR(data)));
+}
+
+static Scheme_Object *
+top_level_require_sfs(Scheme_Object *data, SFS_Info *rslv)
+{
+  return data;
 }
 
 static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env, 

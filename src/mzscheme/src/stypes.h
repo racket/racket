@@ -235,6 +235,8 @@ enum {
   scheme_rt_marshal_info,               /* 213 */
   scheme_rt_unmarshal_info,             /* 214 */
   scheme_rt_runstack,                   /* 215 */
+  scheme_rt_sfs_info,                   /* 216 */
+  scheme_rt_validate_clearing,          /* 217 */
 #endif
 
   _scheme_last_type_

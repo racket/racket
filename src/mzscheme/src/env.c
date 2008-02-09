@@ -54,7 +54,7 @@ int scheme_get_allow_set_undefined() { return scheme_allow_set_undefined; }
 
 int scheme_starting_up;
 
-Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][2];
+Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][2][3];
 
 #define MAX_CONST_TOPLEVEL_DEPTH 16
 #define MAX_CONST_TOPLEVEL_POS 16
@@ -256,30 +256,33 @@ Scheme_Env *scheme_basic_env()
 
 
   {
-    int i, k;
+    int i, k, cor;
 
 #ifndef USE_TAGGED_ALLOCATION
     GC_CAN_IGNORE Scheme_Local *all;
 
-    all = (Scheme_Local *)scheme_malloc_eternal(sizeof(Scheme_Local) * 2 * MAX_CONST_LOCAL_POS);
+    all = (Scheme_Local *)scheme_malloc_eternal(sizeof(Scheme_Local) * 3 * 2 * MAX_CONST_LOCAL_POS);
 # ifdef MEMORY_COUNTING_ON
-    scheme_misc_count += sizeof(Scheme_Local) * 2 * MAX_CONST_LOCAL_POS;
+    scheme_misc_count += sizeof(Scheme_Local) * 3 * 2 * MAX_CONST_LOCAL_POS;
 # endif    
 #endif
 
     for (i = 0; i < MAX_CONST_LOCAL_POS; i++) {
       for (k = 0; k < 2; k++) {
-	Scheme_Object *v;
-	
+        for (cor = 0; cor < 3; cor++) {
+          Scheme_Object *v;
+          
 #ifndef USE_TAGGED_ALLOCATION
-	v = (Scheme_Object *)(all++);
+          v = (Scheme_Object *)(all++);
 #else
-	v = (Scheme_Object *)scheme_malloc_eternal_tagged(sizeof(Scheme_Local));
+          v = (Scheme_Object *)scheme_malloc_eternal_tagged(sizeof(Scheme_Local));
 #endif
-	v->type = k + scheme_local_type;
-	SCHEME_LOCAL_POS(v) = i;
-	
-	scheme_local[i][k] = v;
+          v->type = k + scheme_local_type;
+          SCHEME_LOCAL_POS(v) = i;
+          SCHEME_LOCAL_FLAGS(v) = cor;
+          
+          scheme_local[i][k][cor] = v;
+        }
       }
     }
   }
@@ -1541,7 +1544,7 @@ Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env
   if (rec && rec[drec].dont_mark_local_use) {
     /* Make up anything; it's going to be ignored. */
     l = (Scheme_Local *)scheme_malloc_atomic_tagged(sizeof(Scheme_Local));
-    l->so.type = scheme_compiled_quote_syntax_type;
+    l->iso.so.type = scheme_compiled_quote_syntax_type;
     l->position = 0;
 
     return (Scheme_Object *)l;
@@ -1556,7 +1559,7 @@ Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env
   pos = cp->num_stxes;
 
   l = (Scheme_Local *)scheme_malloc_atomic_tagged(sizeof(Scheme_Local));
-  l->so.type = scheme_compiled_quote_syntax_type;
+  l->iso.so.type = scheme_compiled_quote_syntax_type;
   l->position = pos;
 
   cp->num_stxes++;
@@ -1582,23 +1585,40 @@ static Scheme_Object *alloc_local(short type, int pos)
   return (Scheme_Object *)v;
 }
 
-Scheme_Object *scheme_make_local(Scheme_Type type, int pos)
+Scheme_Object *scheme_make_local(Scheme_Type type, int pos, int flags)
 {
   int k;
-  Scheme_Object *v;
+  Scheme_Object *v, *key;
 
   k = type - scheme_local_type;
-
-  if (pos < MAX_CONST_LOCAL_POS) {
-    if (pos >= 0)
-      return scheme_local[pos][k];
+  
+  /* Helper for reading bytecode: make sure flags is a valid value */
+  switch (flags) {
+  case 0:
+    break;
+  case SCHEME_LOCAL_CLEAR_ON_READ:
+    break;
+  default:
+  case SCHEME_LOCAL_OTHER_CLEARS:
+    flags  = SCHEME_LOCAL_OTHER_CLEARS;
+    break;
   }
 
-  v = scheme_hash_get(locals_ht[k], scheme_make_integer(pos));
+  if (pos < MAX_CONST_LOCAL_POS) {
+    return scheme_local[pos][k][flags];
+  }
+
+  key = scheme_make_integer(pos);
+  if (flags) {
+    key = scheme_make_pair(scheme_make_integer(flags), key);
+  }
+
+  v = scheme_hash_get(locals_ht[k], key);
   if (v)
     return v;
 
   v = alloc_local(type, pos);
+  SCHEME_LOCAL_FLAGS(v) = flags;
 
   if (locals_ht[k]->count > TABLE_CACHE_MAX_SIZE) {
     Scheme_Hash_Table *ht;
@@ -1606,7 +1626,7 @@ Scheme_Object *scheme_make_local(Scheme_Type type, int pos)
     locals_ht[k] = ht;
   }
 
-  scheme_hash_set(locals_ht[k], scheme_make_integer(pos), v);
+  scheme_hash_set(locals_ht[k], key, v);
 
   return v;
 }
@@ -1642,7 +1662,7 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
   
   COMPILE_DATA(frame)->use[i] = u;
 
-  return (Scheme_Local *)scheme_make_local(scheme_local_type, p + i);
+  return (Scheme_Local *)scheme_make_local(scheme_local_type, p + i, 0);
 }
 
 Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modidx, 
@@ -2384,7 +2404,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
               *_lexical_binding_id = val;
             }
 	    if (flags & SCHEME_DONT_MARK_USE)
-	      return scheme_make_local(scheme_local_type, 0);
+	      return scheme_make_local(scheme_local_type, 0, 0);
 	    else
 	      return (Scheme_Object *)get_frame_loc(frame, i, j, p, flags);
 	  }
@@ -2970,7 +2990,7 @@ Scheme_Object *scheme_optimize_reverse(Optimize_Info *info, int pos, int unless_
     if (info->use && info->use[pos])
       return NULL;
 
-  return scheme_make_local(scheme_local_type, pos + delta);
+  return scheme_make_local(scheme_local_type, pos + delta, 0);
 }
 
 int scheme_optimize_is_used(Optimize_Info *info, int pos)
@@ -3063,7 +3083,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 	if (!n) {
 	  /* Return shifted reference to other local: */
 	  delta += scheme_optimize_info_get_shift(info, pos);
-	  n = scheme_make_local(scheme_local_type, pos + delta);
+	  n = scheme_make_local(scheme_local_type, pos + delta, 0);
 	}
       }
       return n;
@@ -3386,7 +3406,8 @@ static int resolve_info_lookup(Resolve_Info *info, int pos, int *flags, Scheme_O
             vec = scheme_make_vector(sz + 1, NULL);
             for (i = 0; i < sz; i++) {
               loc = scheme_make_local(scheme_local_type,
-                                      posmap[i] + offset + shifted);
+                                      posmap[i] + offset + shifted,
+                                      0);
               if (boxmap) {
                 if (boxmap[i / BITS_PER_MZSHORT] & ((mzshort)1 << (i & (BITS_PER_MZSHORT - 1))))
                   loc = scheme_box(loc);
@@ -4641,16 +4662,29 @@ static Scheme_Object *write_local(Scheme_Object *obj)
   return scheme_make_integer(SCHEME_LOCAL_POS(obj));
 }
 
+static Scheme_Object *do_read_local(Scheme_Type t, Scheme_Object *obj)
+{
+  int n, flags;
+
+  if (SCHEME_PAIRP(obj)) {
+    flags = SCHEME_INT_VAL(SCHEME_CAR(obj));
+    obj = SCHEME_CDR(obj);
+  } else
+    flags = 0;
+
+  n = SCHEME_INT_VAL(obj);
+
+  return scheme_make_local(t, n, flags);
+}
+
 static Scheme_Object *read_local(Scheme_Object *obj)
 {
-  return scheme_make_local(scheme_local_type,
-			   SCHEME_INT_VAL(obj));
+  return do_read_local(scheme_local_type, obj);
 }
 
 static Scheme_Object *read_local_unbox(Scheme_Object *obj)
 {
-  return scheme_make_local(scheme_local_unbox_type,
-			   SCHEME_INT_VAL(obj));
+  return do_read_local(scheme_local_unbox_type, obj);
 }
 
 static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
@@ -4753,6 +4787,7 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_rt_comp_env, mark_comp_env);
   GC_REG_TRAV(scheme_rt_resolve_info, mark_resolve_info);
   GC_REG_TRAV(scheme_rt_optimize_info, mark_optimize_info);
+  GC_REG_TRAV(scheme_rt_sfs_info, mark_sfs_info);
 }
 
 END_XFORM_SKIP;

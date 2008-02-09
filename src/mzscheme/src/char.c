@@ -246,7 +246,7 @@ void scheme_init_char (Scheme_Env *env)
 			     env);
 
   scheme_add_global_constant("make-known-char-range-list", 
-			     scheme_make_noncm_prim(char_map_list, 
+			     scheme_make_immed_prim(char_map_list, 
 						    "make-known-char-range-list", 
 						    0, 0),
 			     env);

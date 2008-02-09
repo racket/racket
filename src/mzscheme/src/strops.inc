@@ -208,8 +208,8 @@ X__(substring) (int argc, Scheme_Object *argv[])
 
   chars = SCHEME_X_STR_VAL(argv[0]);
 
-  get_substring_indices(SUBXSTR, argv[0], argc, argv, 1, 2,
-                        &start, &finish, SCHEME_X_STRTAG_VAL(argv[0]));
+  scheme_do_get_substring_indices(SUBXSTR, argv[0], argc, argv, 1, 2,
+                                  &start, &finish, SCHEME_X_STRTAG_VAL(argv[0]));
 
   str = X(scheme_alloc, _string)(finish-start, 0);
   memcpy(SCHEME_X_STR_VAL(str), chars + start, (finish - start) * sizeof(Xchar));
@@ -349,18 +349,18 @@ X__(string_copy_bang)(int argc, Scheme_Object *argv[])
   if (!SCHEME_MUTABLE_X_STRINGP(s1))
     scheme_wrong_type(XSTRINGSTR "-copy!", "mutable " XSTR "string", 0, argc, argv);
 
-  get_substring_indices(XSTRINGSTR "-copy!", s1, 
-                        argc, argv, 1, 5, 
-                        &ostart, &ofinish, SCHEME_X_STRTAG_VAL(s1));
+  scheme_do_get_substring_indices(XSTRINGSTR "-copy!", s1, 
+                                  argc, argv, 1, 5, 
+                                  &ostart, &ofinish, SCHEME_X_STRTAG_VAL(s1));
 
   s2 = argv[2];
   if (!SCHEME_X_STRINGP(s2))
     scheme_wrong_type(XSTRINGSTR "-copy!", XSTR "string", 2, argc, argv);
 
-  get_substring_indices(XSTRINGSTR "-copy!", s2, 
-                        argc, argv, 3, 4, 
-                        &istart, &ifinish, SCHEME_X_STRTAG_VAL(s2));
-
+  scheme_do_get_substring_indices(XSTRINGSTR "-copy!", s2, 
+                                  argc, argv, 3, 4, 
+                                  &istart, &ifinish, SCHEME_X_STRTAG_VAL(s2));
+  
   if ((ofinish - ostart) < (ifinish - istart)) {
     scheme_arg_mismatch(XSTRINGSTR "-copy!",
 			"not enough room in target " XSTR "string: ",

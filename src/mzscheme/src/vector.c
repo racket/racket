@@ -34,6 +34,7 @@ static Scheme_Object *vector_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_list (int argc, Scheme_Object *argv[]);
 static Scheme_Object *list_to_vector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_fill (int argc, Scheme_Object *argv[]);
+static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[]);
 
@@ -55,17 +56,17 @@ scheme_init_vector (Scheme_Env *env)
   scheme_add_global_constant("vector?", p, env);
 
   scheme_add_global_constant("make-vector", 
-			     scheme_make_noncm_prim(make_vector, 
+			     scheme_make_immed_prim(make_vector, 
 						    "make-vector", 
 						    1, 2), 
 			     env);
   scheme_add_global_constant("vector", 
-			     scheme_make_noncm_prim(vector, 
+			     scheme_make_immed_prim(vector, 
 						    "vector", 
 						    0, -1), 
 			     env);
   scheme_add_global_constant("vector-immutable", 
-			     scheme_make_noncm_prim(vector_immutable, 
+			     scheme_make_immed_prim(vector_immutable, 
 						    "vector-immutable", 
 						    0, -1), 
 			     env);
@@ -75,35 +76,40 @@ scheme_init_vector (Scheme_Env *env)
 						      1, 1, 1), 
 			     env);
 
-  p = scheme_make_noncm_prim(scheme_checked_vector_ref, 
+  p = scheme_make_immed_prim(scheme_checked_vector_ref, 
 			     "vector-ref", 
 			     2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("vector-ref", p, env);
 
-  p = scheme_make_noncm_prim(scheme_checked_vector_set,
+  p = scheme_make_immed_prim(scheme_checked_vector_set,
 			     "vector-set!", 
 			     3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_MIN_NARY_INLINED;
   scheme_add_global_constant("vector-set!", p, env);
 
   scheme_add_global_constant("vector->list", 
-			     scheme_make_noncm_prim(vector_to_list, 
+			     scheme_make_immed_prim(vector_to_list, 
 						    "vector->list", 
 						    1, 1), 
 			     env);
   scheme_add_global_constant("list->vector", 
-			     scheme_make_noncm_prim(list_to_vector, 
+			     scheme_make_immed_prim(list_to_vector, 
 						    "list->vector", 
 						    1, 1), 
 			     env);
   scheme_add_global_constant("vector-fill!", 
-			     scheme_make_noncm_prim(vector_fill, 
+			     scheme_make_immed_prim(vector_fill, 
 						    "vector-fill!", 
 						    2, 2), 
 			     env);
+  scheme_add_global_constant("vector-copy!", 
+			     scheme_make_immed_prim(vector_copy_bang, 
+						    "vector-copy!", 
+						    3, 5), 
+			     env);
   scheme_add_global_constant("vector->immutable-vector", 
-			     scheme_make_noncm_prim(vector_to_immutable, 
+			     scheme_make_immed_prim(vector_to_immutable, 
 						    "vector->immutable-vector", 
 						    1, 1), 
 			     env);
@@ -354,6 +360,42 @@ vector_fill (int argc, Scheme_Object *argv[])
   }
 
   return argv[0];
+}
+
+static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *s1, *s2;
+  long istart, ifinish;
+  long ostart, ofinish;
+
+  s1 = argv[0];
+  if (!SCHEME_MUTABLE_VECTORP(s1))
+    scheme_wrong_type("vector-copy!", "mutable vector", 0, argc, argv);
+
+  scheme_do_get_substring_indices("vector-copy!", s1, 
+                                  argc, argv, 1, 5, 
+                                  &ostart, &ofinish, SCHEME_VEC_SIZE(s1));
+
+  s2 = argv[2];
+  if (!SCHEME_VECTORP(s2))
+    scheme_wrong_type("vector-copy!", "vector", 2, argc, argv);
+
+  scheme_do_get_substring_indices("vector-copy!", s2, 
+                                  argc, argv, 3, 4, 
+                                  &istart, &ifinish, SCHEME_VEC_SIZE(s2));
+
+  if ((ofinish - ostart) < (ifinish - istart)) {
+    scheme_arg_mismatch("vector-copy!",
+			"not enough room in target vector: ",
+			argv[2]);
+    return NULL;
+  }
+
+  memmove(SCHEME_VEC_ELS(s1) + ostart,
+	  SCHEME_VEC_ELS(s2) + istart,
+	  (ifinish - istart) * sizeof(Scheme_Object*));
+  
+  return scheme_void;
 }
 
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[])

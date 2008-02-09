@@ -1115,6 +1115,17 @@ mark_optimize_info {
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));
 }
 
+mark_sfs_info {
+ mark:
+  SFS_Info *i = (SFS_Info *)p;
+  
+  gcMARK(i->max_used);
+  gcMARK(i->max_calls);
+  gcMARK(i->saved);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(SFS_Info));
+}
 
 END env;
 
@@ -1143,6 +1154,17 @@ mark_saved_stack {
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Saved_Stack));
+}
+
+mark_validate_clearing {
+ mark:
+  Validate_Clearing *vc = (Validate_Clearing *)p;
+  
+  gcMARK(vc->stack);
+  gcMARK(vc->ncstack);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Validate_Clearing));
 }
 
 END eval;

@@ -2272,15 +2272,22 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     {
       int unbox = SAME_TYPE(SCHEME_TYPE(obj), scheme_local_unbox_type);
       Scheme_Local *loc = (Scheme_Local *)obj;
-      if (loc->position < CPT_RANGE(SMALL_LOCAL)) {
+      if ((loc->position < CPT_RANGE(SMALL_LOCAL))
+          && !(SCHEME_LOCAL_FLAGS(loc) & SCHEME_LOCAL_CLEARING_MASK)) {
 	unsigned char s[1];
 	s[0] = loc->position + (unbox 
 				? CPT_SMALL_LOCAL_UNBOX_START 
 				: CPT_SMALL_LOCAL_START);
 	print_this_string(pp, (char *)s, 0, 1);
       } else {
+        int flags;
 	print_compact(pp, unbox ? CPT_LOCAL_UNBOX : CPT_LOCAL);
-	print_compact_number(pp, loc->position);
+        flags = SCHEME_LOCAL_FLAGS(loc) & SCHEME_LOCAL_CLEARING_MASK;
+        if (flags) {
+          print_compact_number(pp, -(loc->position + 1));
+          print_compact_number(pp, flags);
+        } else
+          print_compact_number(pp, loc->position);
       }
     }
   else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_application_type))

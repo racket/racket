@@ -228,7 +228,7 @@ Scheme_Object *scheme_make_initial_inspectors(void);
 extern int scheme_builtin_ref_counter;
 
 Scheme_Object **scheme_make_builtin_references_table(void);
-Scheme_Object *scheme_make_local(Scheme_Type type, int pos);
+Scheme_Object *scheme_make_local(Scheme_Type type, int pos, int flags);
 
 void scheme_add_embedded_builtins(Scheme_Env *env);
 void scheme_do_add_global_symbol(Scheme_Env *env, Scheme_Object *sym,
@@ -821,7 +821,7 @@ typedef struct {
 } Scheme_With_Continuation_Mark;
 
 typedef struct Scheme_Local {
-  Scheme_Object so;
+  Scheme_Inclhash_Object iso; /* keyex used for clear-on-read flag */
   mzshort position;
 #ifdef MZ_PRECISE_GC
 # ifdef MZSHORT_IS_SHORT
@@ -832,9 +832,14 @@ typedef struct Scheme_Local {
 } Scheme_Local;
 
 #define SCHEME_LOCAL_POS(obj)    (((Scheme_Local *)(obj))->position)
+#define SCHEME_LOCAL_FLAGS(obj)  MZ_OPT_HASH_KEY(&((Scheme_Local *)(obj))->iso)
+
+#define SCHEME_LOCAL_CLEAR_ON_READ 0x1
+#define SCHEME_LOCAL_OTHER_CLEARS  0x2
+#define SCHEME_LOCAL_CLEARING_MASK 0x3
 
 typedef struct Scheme_Toplevel {
-  Scheme_Inclhash_Object iso; /* keyex used for const flag */
+  Scheme_Inclhash_Object iso; /* keyex used for const & ready flags */
   mzshort depth;
   int position;
 } Scheme_Toplevel;
@@ -1689,7 +1694,7 @@ typedef struct Scheme_Comp_Env
 #define CLOS_HAS_REST 1
 #define CLOS_HAS_REF_ARGS 2
 #define CLOS_PRESERVES_MARKS 4
-#define CLOS_FOLDABLE 8
+#define CLOS_SFS 8
 #define CLOS_IS_METHOD 16
 #define CLOS_SINGLE_RESULT 32
 #define CLOS_RESULT_TENTATIVE 64
@@ -1784,11 +1789,13 @@ typedef struct Scheme_Object *(*Scheme_Syntax_Shifter)(Scheme_Object *data, int 
 typedef struct CPort Mz_CPort;
 
 typedef mzshort **Validate_TLS;
+struct Validate_Clearing;
 
 typedef void (*Scheme_Syntax_Validater)(Scheme_Object *data, Mz_CPort *port, 
                                         char *stack, Validate_TLS tls,
 					int depth, int letlimit, int delta,
-					int num_toplevels, int num_stxes, int num_lifts);
+					int num_toplevels, int num_stxes, int num_lifts,
+                                        struct Validate_Clearing *vc, int tailpos);
 
 typedef struct Scheme_Object *(*Scheme_Syntax_Executer)(struct Scheme_Object *data);
 
@@ -1859,7 +1866,7 @@ Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *obj, int
 						   Scheme_Native_Closure_Data *case_lam);
 
 #define MAX_CONST_LOCAL_POS 64
-extern Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][2];
+extern Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][2][3];
 
 #define scheme_new_frame(n) scheme_new_special_frame(n, 0)
 #define scheme_extend_env(f, e) (f->basic.next = e, f)
@@ -1949,6 +1956,31 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
                           int *_pos);
 int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
 
+typedef struct SFS_Info {
+  MZTAG_IF_REQUIRED  
+  int for_mod, pass;
+  int tail_pos;
+  int depth, stackpos, tlpos;
+  int selfpos, selfstart, selflen;
+  int ip, seqn, max_nontail;
+  int min_touch, max_touch;
+  int *max_used, *max_calls;
+  Scheme_Object *saved;
+} SFS_Info;
+
+SFS_Info *scheme_new_sfs_info(int depth);
+Scheme_Object *scheme_sfs(Scheme_Object *expr, SFS_Info *info, int max_let_depth);
+Scheme_Object *scheme_sfs_expr(Scheme_Object *expr, SFS_Info *si, int self_pos);
+Scheme_Object *scheme_sfs_closure(Scheme_Object *expr, SFS_Info *si, int self_pos);
+
+void scheme_sfs_used(SFS_Info *info, int pos);
+void scheme_sfs_push(SFS_Info *info, int count, int track);
+void scheme_sfs_start_sequence(SFS_Info *si, int cnt, int last_is_tail);
+
+Scheme_Object *scheme_sfs_add_clears(Scheme_Object *expr, Scheme_Object *clears, int pre);
+
+typedef struct Scheme_Object *(*Scheme_Syntax_SFSer)(Scheme_Object *data, SFS_Info *info);
+
 /* Resolving & linking */
 #define DEFINE_VALUES_EXPD 0
 #define DEFINE_SYNTAX_EXPD 1
@@ -1964,10 +1996,11 @@ int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
 #define SPLICE_EXPD        11
 #define _COUNT_EXPD_       12
 
-#define scheme_register_syntax(i, fo, fr, fv, fe, fj, cl, sh, pa)        \
+#define scheme_register_syntax(i, fo, fr, fs, fv, fe, fj, cl, sh, pa)    \
      (scheme_syntax_optimizers[i] = fo, \
       scheme_syntax_resolvers[i] = fr, \
       scheme_syntax_executers[i] = fe, \
+      scheme_syntax_sfsers[i] = fs, \
       scheme_syntax_validaters[i] = fv, \
       scheme_syntax_jitters[i] = fj, \
       scheme_syntax_cloners[i] = cl, \
@@ -1975,6 +2008,7 @@ int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
       scheme_syntax_protect_afters[i] = pa)
 extern Scheme_Syntax_Optimizer scheme_syntax_optimizers[_COUNT_EXPD_];
 extern Scheme_Syntax_Resolver scheme_syntax_resolvers[_COUNT_EXPD_];
+extern Scheme_Syntax_SFSer scheme_syntax_sfsers[_COUNT_EXPD_];
 extern Scheme_Syntax_Validater scheme_syntax_validaters[_COUNT_EXPD_];
 extern Scheme_Syntax_Executer scheme_syntax_executers[_COUNT_EXPD_];
 extern Scheme_Syntax_Jitter scheme_syntax_jitters[_COUNT_EXPD_];
@@ -2228,7 +2262,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 			  char *stack, Validate_TLS tls,
                           int depth, int letlimit, int delta,
 			  int num_toplevels, int num_stxes, int num_lifts,
-                          Scheme_Object *app_rator, int proc_with_refs_ok);
+                          Scheme_Object *app_rator, int proc_with_refs_ok, 
+                          int result_ignored, struct Validate_Clearing *vc, int tailpos);
 void scheme_validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
 			      char *stack, Validate_TLS tls,
                               int depth, int delta,
@@ -2244,7 +2279,8 @@ int scheme_validate_rator_wants_box(Scheme_Object *app_rator, int pos,
 
 void scheme_validate_closure(Mz_CPort *port, Scheme_Object *expr, 
                              char *new_stack, Validate_TLS tls,
-                             int num_toplevels, int num_stxes, int num_lifts);
+                             int num_toplevels, int num_stxes, int num_lifts,
+                             int self_pos_in_closure);
 
 #define TRACK_ILL_FORMED_CATCH_LINES 1
 #if TRACK_ILL_FORMED_CATCH_LINES
@@ -2568,6 +2604,9 @@ long scheme_extract_index(const char *name, int pos, int argc,
 void scheme_get_substring_indices(const char *name, Scheme_Object *str,
 				  int argc, Scheme_Object **argv,
 				  int spos, int fpos, long *_start, long *_finish);
+void scheme_do_get_substring_indices(const char *name, Scheme_Object *str,
+                                     int argc, Scheme_Object **argv,
+                                     int spos, int fpos, long *_start, long *_finish, long len);
 
 void scheme_out_of_string_range(const char *name, const char *which,
 				Scheme_Object *i, Scheme_Object *s,

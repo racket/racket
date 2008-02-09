@@ -711,7 +711,7 @@ scheme_init_port_fun(Scheme_Env *env)
 						       2, 2),
 			     env);
   scheme_add_global_constant("pipe-content-length", 
-			     scheme_make_noncm_prim(pipe_length, 
+			     scheme_make_immed_prim(pipe_length, 
 						    "pipe-content-length", 
 						    1, 1), 
 			     env);

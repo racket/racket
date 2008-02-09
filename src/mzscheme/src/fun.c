@@ -647,8 +647,7 @@ scheme_make_folding_prim(Scheme_Prim *fun, const char *name,
 {
   return make_prim_closure(fun, 1, name, mina, maxa,
 			   (folding 
-			    ? (SCHEME_PRIM_IS_FOLDING
-			       | SCHEME_PRIM_IS_NONCM)
+			    ? SCHEME_PRIM_OPT_FOLDING
 			    : 0),
 			   1, 1,
 			   0, 0, NULL);
@@ -660,9 +659,22 @@ scheme_make_noncm_prim(Scheme_Prim *fun, const char *name,
 {
   /* A non-cm primitive leaves the mark stack unchanged when it returns,
      it can't return multiple values or a tail call, and it cannot
-     use its third argument (i.e., the closure pointer) */
+     use its third argument (i.e., the closure pointer). */
   return make_prim_closure(fun, 1, name, mina, maxa,
-			   SCHEME_PRIM_IS_NONCM,
+			   SCHEME_PRIM_OPT_NONCM,
+			   1, 1,
+			   0, 0, NULL);
+}
+
+Scheme_Object *
+scheme_make_immed_prim(Scheme_Prim *fun, const char *name,
+		       mzshort mina, mzshort maxa)
+{
+  /* An immediate primitive is a non-cm primitive, and it doesn't
+     extend the continuation in a way that interacts with space safety, except
+     maybe to raise an exception. */
+  return make_prim_closure(fun, 1, name, mina, maxa,
+			   SCHEME_PRIM_OPT_IMMEDIATE,
 			   1, 1,
 			   0, 0, NULL);
 }
@@ -693,7 +705,7 @@ Scheme_Object *scheme_make_folding_prim_closure(Scheme_Primitive_Closure_Proc *p
 {
   return make_prim_closure((Scheme_Prim *)prim, 1, name, mina, maxa,
 			   (functional
-			    ? SCHEME_PRIM_IS_FOLDING
+			    ? SCHEME_PRIM_OPT_FOLDING
 			    : 0),
 			   1, 1,
 			   1, size, vals);
@@ -721,7 +733,7 @@ scheme_make_closed_prim_w_everything(Scheme_Closed_Prim *fun,
   prim->name = name;
   prim->mina = mina;
   prim->maxa = maxa;
-  prim->pp.flags = ((folding ? SCHEME_PRIM_IS_FOLDING : 0)
+  prim->pp.flags = ((folding ? SCHEME_PRIM_OPT_FOLDING : 0)
 		    | (scheme_defining_primitives ? SCHEME_PRIM_IS_PRIMITIVE : 0)
 		    | (hasr ? SCHEME_PRIM_IS_MULTI_RESULT : 0));
 
@@ -908,7 +920,8 @@ void scheme_delay_load_closure(Scheme_Closure_Data *data)
                               (Validate_TLS)SCHEME_VEC_ELS(vinfo)[2], 
                               SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[3]),
                               SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[4]),
-                              SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[5]));
+                              SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[5]),
+                              SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[6]));
     }
   }
 }
@@ -1022,6 +1035,98 @@ Scheme_Object *scheme_shift_closure_compilation(Scheme_Object *_data, int delta,
   data->code = expr;
 
   return _data;
+}
+
+Scheme_Object *scheme_sfs_closure(Scheme_Object *expr, SFS_Info *info, int self_pos)
+{
+  Scheme_Closure_Data *data = (Scheme_Closure_Data *)expr;
+  Scheme_Object *code;
+  int i, size, has_tl = 0;
+
+  size = data->closure_size;
+  if (size) {
+    if (info->stackpos + data->closure_map[size - 1] == info->tlpos) {
+      has_tl = 1;
+      --size;
+    }
+  }
+
+  if (!info->pass) {
+    for (i = size; i--; ) {
+      scheme_sfs_used(info, data->closure_map[i]);
+    }
+  } else {
+    /* Check whether we need to zero out any stack positions
+       after capturing them in a closure: */
+    Scheme_Object *clears = scheme_null;
+
+    if (info->ip < info->max_nontail) {
+      int pos, ip;
+      for (i = size; i--; ) {
+        pos = data->closure_map[i] + info->stackpos;
+        if (pos < info->depth) {
+          ip = info->max_used[pos];
+          if ((ip == info->ip)
+              && (ip < info->max_calls[pos])) {
+            pos -= info->stackpos;
+            clears = scheme_make_pair(scheme_make_integer(pos),
+                                      clears);
+          }
+        }
+      }
+    }
+
+    return scheme_sfs_add_clears(expr, clears, 0);
+  }
+
+  if (!(SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_SFS)) {
+    SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_SFS;
+    info = scheme_new_sfs_info(data->max_let_depth);
+    scheme_sfs_push(info, data->closure_size + data->num_params, 1);
+
+    if (has_tl)
+      info->tlpos = info->stackpos + data->closure_size - 1;
+
+    if (self_pos >= 0) {
+      for (i = size; i--; ) {
+        if (data->closure_map[i] == self_pos) {
+          info->selfpos = info->stackpos + i;
+          info->selfstart = info->stackpos;
+          info->selflen = data->closure_size;
+          break;
+        }
+      }
+    }
+    
+    code = scheme_sfs(data->code, info, data->max_let_depth);
+    
+    /* If any arguments go unused, and if there's a non-tail,
+       non-immediate call in the body, then we flush the
+       unused arguments at the start of the body. We assume that
+       the closure values are used (otherwise they wouldn't
+       be in the closure). */
+    if (info->max_nontail) {
+      int i, pos, cnt;
+      Scheme_Object *clears = scheme_null;
+
+      cnt = data->num_params;
+      for (i = 0; i < cnt; i++) {
+        pos = data->max_let_depth - (cnt - i);
+        if (!info->max_used[pos]) {
+          pos = i + data->closure_size;
+          clears = scheme_make_pair(scheme_make_integer(pos),
+                                    clears);
+        }
+      }
+      
+      if (SCHEME_PAIRP(clears))
+        code = scheme_sfs_add_clears(code, clears, 1);
+    }
+
+    data->code = code;
+  }
+
+  return expr;
 }
 
 int scheme_closure_body_size(Scheme_Closure_Data *data, int check_assign)

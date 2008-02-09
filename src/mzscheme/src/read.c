@@ -4593,20 +4593,26 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       break;
     case CPT_LOCAL:
       {
-	int p;
+	int p, flags;
 	p = read_compact_number(port);
-	if (p < 0)
-	  scheme_ill_formed_code(port);
-	v = scheme_make_local(scheme_local_type, p);
+        if (p < 0) {
+          p = -(p + 1);
+          flags = read_compact_number(port);
+        } else
+          flags = 0;
+	v = scheme_make_local(scheme_local_type, p, flags);
       }
       break;
     case CPT_LOCAL_UNBOX:
       {
-	int p;
+	int p, flags;
 	p = read_compact_number(port);
-	if (p < 0)
-	  scheme_ill_formed_code(port);
-	v = scheme_make_local(scheme_local_unbox_type, p);
+        if (p < 0) {
+          p = -(p + 1);
+          flags = read_compact_number(port);
+        } else
+          flags = 0;
+	v = scheme_make_local(scheme_local_unbox_type, p, flags);
       }
       break;
     case CPT_SVECTOR:
@@ -4764,9 +4770,9 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	  ch -= CPT_SMALL_LOCAL_START;
 	}
 	if (ch < MAX_CONST_LOCAL_POS)
-	  v = scheme_local[ch][k];
+	  v = scheme_local[ch][k][0];
 	else
-	  v = scheme_make_local(type, ch);
+	  v = scheme_make_local(type, ch, 0);
       }
       break;
     case CPT_SMALL_MARSHALLED_START:

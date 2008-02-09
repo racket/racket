@@ -236,6 +236,7 @@
 #define scheme_make_noneternal_prim (scheme_extension_table->scheme_make_noneternal_prim)
 #define scheme_make_prim_w_arity (scheme_extension_table->scheme_make_prim_w_arity)
 #define scheme_make_folding_prim (scheme_extension_table->scheme_make_folding_prim)
+#define scheme_make_immed_prim (scheme_extension_table->scheme_make_immed_prim)
 #define scheme_make_noncm_prim (scheme_extension_table->scheme_make_noncm_prim)
 #define scheme_make_noneternal_prim_w_arity (scheme_extension_table->scheme_make_noneternal_prim_w_arity)
 #define scheme_make_prim_w_everything (scheme_extension_table->scheme_make_prim_w_everything)

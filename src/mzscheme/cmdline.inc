@@ -906,6 +906,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  break;
 	case '-':
 	  no_more_switches = 1;
+          was_config_flag = 1;
 	  break;
 	case 'j':
 	  scheme_set_startup_use_jit(0);

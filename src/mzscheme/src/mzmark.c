@@ -2788,6 +2788,36 @@ static int mark_optimize_info_FIXUP(void *p) {
 #define mark_optimize_info_IS_CONST_SIZE 1
 
 
+static int mark_sfs_info_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(SFS_Info));
+}
+
+static int mark_sfs_info_MARK(void *p) {
+  SFS_Info *i = (SFS_Info *)p;
+  
+  gcMARK(i->max_used);
+  gcMARK(i->max_calls);
+  gcMARK(i->saved);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(SFS_Info));
+}
+
+static int mark_sfs_info_FIXUP(void *p) {
+  SFS_Info *i = (SFS_Info *)p;
+  
+  gcFIXUP(i->max_used);
+  gcFIXUP(i->max_calls);
+  gcFIXUP(i->saved);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(SFS_Info));
+}
+
+#define mark_sfs_info_IS_ATOMIC 0
+#define mark_sfs_info_IS_CONST_SIZE 1
+
 
 #endif  /* ENV */
 
@@ -2853,6 +2883,35 @@ static int mark_saved_stack_FIXUP(void *p) {
 
 #define mark_saved_stack_IS_ATOMIC 0
 #define mark_saved_stack_IS_CONST_SIZE 1
+
+
+static int mark_validate_clearing_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Validate_Clearing));
+}
+
+static int mark_validate_clearing_MARK(void *p) {
+  Validate_Clearing *vc = (Validate_Clearing *)p;
+  
+  gcMARK(vc->stack);
+  gcMARK(vc->ncstack);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Validate_Clearing));
+}
+
+static int mark_validate_clearing_FIXUP(void *p) {
+  Validate_Clearing *vc = (Validate_Clearing *)p;
+  
+  gcFIXUP(vc->stack);
+  gcFIXUP(vc->ncstack);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Validate_Clearing));
+}
+
+#define mark_validate_clearing_IS_ATOMIC 0
+#define mark_validate_clearing_IS_CONST_SIZE 1
 
 
 #endif  /* EVAL */
