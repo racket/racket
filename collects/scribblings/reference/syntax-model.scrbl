@@ -174,6 +174,10 @@ expression.
 A complete expansion produces a @tech{syntax object} matching the
 following grammar:
 
+@margin-note{Beware that the symbolic names of identifiers in a fully
+expanded program may not match the symbolic names in the grammar. Only
+the binding (according to @scheme[free-identifier=?]) matters.}
+
 @schemegrammar*[
 #:literals (#%expression module #%plain-module-begin begin #%provide
             define-values define-syntaxes define-values-for-syntax
@@ -220,10 +224,6 @@ A fully-expanded @tech{syntax object} corresponds to a @deftech{parse}
 of a program (i.e., a @deftech{parsed} program), and @tech{lexical
 information} on its @tech{identifiers} indicates the
 @tech{parse}.
-
-@margin-note{Beware that the symbolic names of identifiers in a fully
-expanded program may not match the symbolic names in the grammar. Only
-the binding (according to @scheme[free-identifier=?]) matters.}
 
 More specifically, the typesetting of identifiers in the above grammar
 is significant. For example, the second case for @scheme[_expr] is a

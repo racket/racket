@@ -144,7 +144,12 @@ source-location information recursively.}
                                               (or/c exact-positive-integer? false/c)
                                               (or/c exact-nonnegative-integer? false/c)
                                               (or/c exact-nonnegative-integer? false/c)
-                                              (or/c exact-positive-integer? false/c)))]
+                                              (or/c exact-positive-integer? false/c))
+                                      (vector/c any/c
+                                               (or/c exact-positive-integer? false/c)
+                                               (or/c exact-nonnegative-integer? false/c)
+                                               (or/c exact-nonnegative-integer? false/c)
+                                               (or/c exact-positive-integer? false/c)))]
                         [prop (or/c syntax? false/c) #f]
                         [cert (or/c syntax? false/c) #f])
           syntax?]{
@@ -171,11 +176,12 @@ Any of @scheme[ctxt], @scheme[srcloc], @scheme[prop], or @scheme[cert]
 can be @scheme[#f], in which case the resulting syntax has no lexical
 context, source information, new properties, and/or certificates.
 
-If @scheme[srcloc] is not @scheme[#f]
-or a @tech{syntax object}, it must be a list of five elements:
+If @scheme[srcloc] is not @scheme[#f] or a @tech{syntax object}, it
+must be a list or vector of five elements:
 
 @schemeblock[
   (list source-name line column position span)
+  #, @elem{or} (vector source-name line column position span)
 ]
 
 where @scheme[source-name-v] is an arbitrary value for the source

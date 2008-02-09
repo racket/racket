@@ -62,19 +62,28 @@
 
   (define line-breakable-space (make-element 'tt (list " ")))
 
-  (define id-element-cache #f #;(make-hash-table 'equal))
-  (define element-cache #f #;(make-hash-table 'equal))
+  ;; These caches intentionally record a key with the value.
+  ;; That way, when the value is no longer used, the key
+  ;; goes away, and the entry is gone.
+
+  (define id-element-cache (make-hash-table 'equal 'weak))
+  (define element-cache (make-hash-table 'equal 'weak))
+
+  (define-struct (cached-delayed-element delayed-element) (cache-key))
+  (define-struct (cached-element element) (cache-key))
 
   (define (make-id-element c s)
     (let* ([key (and id-element-cache
                      (let ([b (identifier-label-binding c)])
-                       (list (syntax-e c)
-                             (module-path-index-resolve (caddr b))
-                             (cadddr b)
-                             (list-ref b 5))))])
+                       (vector (syntax-e c)
+                               (module-path-index-resolve (caddr b))
+                               (cadddr b)
+                               (list-ref b 5))))])
       (or (and key
-               (hash-table-get id-element-cache key #f))
-          (let ([e (make-delayed-element
+               (let ([b (hash-table-get id-element-cache key #f)])
+                 (and b
+                      (weak-box-value b))))
+          (let ([e (make-cached-delayed-element
                     (lambda (renderer sec ri)
                       (let* ([tag (find-scheme-tag sec ri c 'for-label)])
                         (if tag
@@ -88,9 +97,10 @@
                              (make-element "badlink"
                                            (list (make-element "schemevaluelink" (list s))))))))
                     (lambda () s)
-                    (lambda () s))])
+                    (lambda () s)
+                    key)])
             (when key
-              (hash-table-put! id-element-cache key e))
+              (hash-table-put! id-element-cache key (make-weak-box e)))
             e))))
 
   (define (make-element/cache style content)
@@ -98,11 +108,12 @@
              (pair? content)
              (string? (car content))
              (null? (cdr content)))
-        (let ([key (cons style content)])
-          (or (hash-table-get element-cache key #f)
-              (let ([e (make-element style content)])
-                (hash-table-put! element-cache key e)
-                e)))
+        (let ([key (vector style (car content))])
+          (let ([b (hash-table-get element-cache key #f)])
+            (or (and b (weak-box-value b))
+                (let ([e (make-cached-element style content key)])
+                  (hash-table-put! element-cache key (make-weak-box e))
+                  e))))
         (make-element style content)))
 
   (define (typeset-atom c out color? quote-depth)
@@ -549,7 +560,7 @@
 			   ,(syntax-case v (uncode)
 			      [(uncode e) #'e]
 			      [else (stx->loc-s-expr (syntax-e v))])
-			   '(code
+                           #(code
                              ,(syntax-line v)
                              ,(syntax-column v)
                              ,(syntax-position v)

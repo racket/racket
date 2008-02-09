@@ -242,7 +242,12 @@ they are accepted in either order.}
                                               (or/c exact-positive-integer? false/c)
                                               (or/c exact-nonnegative-integer? false/c)
                                               (or/c exact-nonnegative-integer? false/c)
-                                              (or/c exact-positive-integer? false/c)))]
+                                              (or/c exact-positive-integer? false/c))
+                                      (vector/c any/c
+                                                (or/c exact-positive-integer? false/c)
+                                                (or/c exact-nonnegative-integer? false/c)
+                                                (or/c exact-nonnegative-integer? false/c)
+                                                (or/c exact-positive-integer? false/c)))]
                         [prop (or/c syntax? false/c) #f]
                         [cert (or/c syntax? false/c) #f])
           syntax?]

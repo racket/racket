@@ -5696,12 +5696,21 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
 
     if (!SCHEME_FALSEP(src) 
 	&& !SCHEME_STXP(src)
+	&& !(SCHEME_VECTORP(src)
+             && (SCHEME_VEC_SIZE(src) == 5)
+	     && pos_exact_or_false_p(SCHEME_VEC_ELS(src)[1])
+	     && nonneg_exact_or_false_p(SCHEME_VEC_ELS(src)[2])
+	     && pos_exact_or_false_p(SCHEME_VEC_ELS(src)[3])
+	     && nonneg_exact_or_false_p(SCHEME_VEC_ELS(src)[4]))
 	&& !((ll == 5)
 	     && pos_exact_or_false_p(SCHEME_CADR(src))
 	     && nonneg_exact_or_false_p(SCHEME_CADR(SCHEME_CDR(src)))
 	     && pos_exact_or_false_p(SCHEME_CADR(SCHEME_CDR(SCHEME_CDR(src))))
 	     && nonneg_exact_or_false_p(SCHEME_CADR(SCHEME_CDR(SCHEME_CDR(SCHEME_CDR(src)))))))
-      scheme_wrong_type("datum->syntax", "syntax, source location list, or #f", 2, argc, argv);
+      scheme_wrong_type("datum->syntax", "syntax, source location vector or list, or #f", 2, argc, argv);
+
+    if (SCHEME_VECTORP(src))
+      ll = 5;
 
     if (argc > 3) {
       if (!SCHEME_FALSEP(argv[3])) {
@@ -5722,11 +5731,19 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
     if (ll == 5) {
       /* line--column--pos--span format */
       Scheme_Object *line, *col, *pos, *span;
-      line = SCHEME_CADR(src);
-      col = SCHEME_CADR(SCHEME_CDR(src));
-      pos = SCHEME_CADR(SCHEME_CDR(SCHEME_CDR(src)));
-      span = SCHEME_CADR(SCHEME_CDR(SCHEME_CDR(SCHEME_CDR(src))));
-      src = SCHEME_CAR(src);
+      if (SCHEME_VECTORP(src)) {
+        line = SCHEME_VEC_ELS(src)[1];
+        col = SCHEME_VEC_ELS(src)[2];
+        pos = SCHEME_VEC_ELS(src)[3];
+        span = SCHEME_VEC_ELS(src)[4];
+        src = SCHEME_VEC_ELS(src)[0];
+      } else {
+        line = SCHEME_CADR(src);
+        col = SCHEME_CADR(SCHEME_CDR(src));
+        pos = SCHEME_CADR(SCHEME_CDR(SCHEME_CDR(src)));
+        span = SCHEME_CADR(SCHEME_CDR(SCHEME_CDR(SCHEME_CDR(src))));
+        src = SCHEME_CAR(src);
+      }
       
       if (SCHEME_FALSEP(line) != SCHEME_FALSEP(col))
 	scheme_arg_mismatch("datum->syntax", 
