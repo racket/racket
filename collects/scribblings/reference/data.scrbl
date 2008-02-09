@@ -353,6 +353,30 @@ If @scheme[vec] is itself immutable, then it is returned as the result.}
 Changes all slots of @scheme[vec] to contain @scheme[v].}
 
 
+@defproc[(vector-copy! [dest (and/c vector? (not/c immutable?))]
+                       [dest-start exact-nonnegative-integer?]
+                       [src vector?]
+                       [src-start exact-nonnegative-integer? 0]
+                       [src-end exact-nonnegative-integer? (vector-length src)])
+         void?]{
+
+ Changes the elements of @scheme[dest] starting at position
+ @scheme[dest-start] to match the elements in @scheme[src] from
+ @scheme[src-start] (inclusive) to @scheme[src-end] (exclusive). The
+ vectors @scheme[dest] and @scheme[src] can be the same vector, and in
+ that case the destination region can overlap with the source region;
+ the destination elements after the copy match the source elements
+ from before the copy. If any of @scheme[dest-start],
+ @scheme[src-start], or @scheme[src-end] are out of range (taking into
+ account the sizes of the vectors and the source and destination
+ regions), the @exnraise[exn:fail:contract].
+
+@examples[(define v (vector 'A 'p 'p 'l 'e))
+          (vector-copy! v 4 #(y))
+          (vector-copy! v 0 v 3 4)
+          v]}
+
+
 @defproc[(vector->values [vec vector?]
                          [start-pos nonnegative-exact-integer? 0]
                          [end-pos nonnegative-exact-integer? (vector-length vec)])

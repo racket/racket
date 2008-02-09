@@ -54,10 +54,56 @@
             (make-spaces #f
                          (list
                           (literalize-spaces (substring i 0 (caar m)))
-                          (make-element 'hspace (list (make-string cnt #\space)))
+                          (hspace cnt)
                           (literalize-spaces (substring i (cdar m))))
                          cnt))
           i)))
+
+
+  (define line-breakable-space (make-element 'tt (list " ")))
+
+  (define id-element-cache #f #;(make-hash-table 'equal))
+  (define element-cache #f #;(make-hash-table 'equal))
+
+  (define (make-id-element c s)
+    (let* ([key (and id-element-cache
+                     (let ([b (identifier-label-binding c)])
+                       (list (syntax-e c)
+                             (module-path-index-resolve (caddr b))
+                             (cadddr b)
+                             (list-ref b 5))))])
+      (or (and key
+               (hash-table-get id-element-cache key #f))
+          (let ([e (make-delayed-element
+                    (lambda (renderer sec ri)
+                      (let* ([tag (find-scheme-tag sec ri c 'for-label)])
+                        (if tag
+                            (list
+                             (case (car tag)
+                               [(form)
+                                (make-link-element "schemesyntaxlink" (list s) tag)]
+                               [else
+                                (make-link-element "schemevaluelink" (list s) tag)]))
+                            (list 
+                             (make-element "badlink"
+                                           (list (make-element "schemevaluelink" (list s))))))))
+                    (lambda () s)
+                    (lambda () s))])
+            (when key
+              (hash-table-put! id-element-cache key e))
+            e))))
+
+  (define (make-element/cache style content)
+    (if (and element-cache 
+             (pair? content)
+             (string? (car content))
+             (null? (cdr content)))
+        (let ([key (cons style content)])
+          (or (hash-table-get element-cache key #f)
+              (let ([e (make-element style content)])
+                (hash-table-put! element-cache key e)
+                e)))
+        (make-element style content)))
 
   (define (typeset-atom c out color? quote-depth)
     (let*-values ([(is-var?) (and (identifier? c)
@@ -81,21 +127,7 @@
                         (quote-depth . <= . 0)
                         (not (or it? is-var?)))
                    (if (pair? (identifier-label-binding c))
-                       (make-delayed-element
-                        (lambda (renderer sec ri)
-                          (let* ([tag (find-scheme-tag sec ri c 'for-label)])
-                            (if tag
-                                (list
-                                 (case (car tag)
-                                   [(form)
-                                    (make-link-element "schemesyntaxlink" (list s) tag)]
-                                   [else
-                                    (make-link-element "schemevaluelink" (list s) tag)]))
-                                (list 
-                                 (make-element "badlink"
-                                               (list (make-element "schemevaluelink" (list s))))))))
-                        (lambda () s)
-                        (lambda () s))
+                       (make-id-element c s)
                        s)
                    (literalize-spaces s))
                (cond
@@ -183,7 +215,7 @@
                                          (make-element "highlighted" (list c)))
                                        values)
                                    (if (and color? cls)
-                                       (make-element cls (list v))
+                                       (make-element/cache cls (list v))
                                        v))
                                   content))
               (set! dest-col (+ dest-col len))]))]))
@@ -208,8 +240,8 @@
                   (when (positive? amt)
                     (let ([old-dest-col dest-col])
                       (out (if (and (= 1 amt) (not multi-line?))
-                               (make-element 'tt (list " ")) ; allows a line break to replace the space
-                               (make-element 'hspace (list (make-string amt #\space))))
+                               line-breakable-space ; allows a line break to replace the space
+                               (hspace amt))
                            #f)
                       (set! dest-col (+ old-dest-col amt))))))
               (set! src-col c)
@@ -240,9 +272,9 @@
                                                     (make-sized-element 
                                                      (if val? value-color #f)
                                                      (list
-                                                      (make-element (if val? value-color paren-color) '(". "))
+                                                      (make-element/cache (if val? value-color paren-color) '(". "))
                                                       (typeset a #f "" "" "" (not val?))
-                                                      (make-element (if val? value-color paren-color) '(" .")))
+                                                      (make-element/cache (if val? value-color paren-color) '(" .")))
                                                      (+ (syntax-span a) 4)))
                                                   (list (syntax-source a)
                                                         (syntax-line a)
@@ -480,11 +512,16 @@
               (graph-reference? s))
           (gen-typeset c multi-line? prefix1 prefix suffix color?)
           (typeset-atom c 
-                        (case-lambda 
-                         [(elem color)
-                          (make-sized-element (and color? color) (list elem) (or (syntax-span c) 1))]
-                         [(elem color len)
-                          (make-sized-element (and color? color) (list elem) len)])
+                        (letrec ([mk
+                                  (case-lambda 
+                                   [(elem color)
+                                    (mk elem color (or (syntax-span c) 1))]
+                                   [(elem color len)
+                                    (if (and (string? elem)
+                                             (= len (string-length elem)))
+                                        (make-element/cache (and color? color) (list elem))
+                                        (make-sized-element (and color? color) (list elem) len))])])
+                          mk)
                         color? 0))))
   
   (define (to-element c)

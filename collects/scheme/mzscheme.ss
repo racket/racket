@@ -41,7 +41,8 @@
                               free-identifier=?
                               free-transformer-identifier=?
                               free-template-identifier=?
-                              free-label-identifier=?)
+                              free-label-identifier=?
+                              vector-copy!)
              (rename syntax->datum syntax-object->datum)
              (rename datum->syntax datum->syntax-object)
              (rename free-identifier=? module-identifier=?)

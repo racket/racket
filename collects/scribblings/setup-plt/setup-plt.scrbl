@@ -3,7 +3,6 @@
 @(require scribble/manual
           scribble/bnf
          (for-label scheme
-                    setup
                     setup/setup-unit
                     setup/option-unit
                     setup/option-sig

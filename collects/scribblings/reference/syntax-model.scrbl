@@ -218,17 +218,23 @@ following grammar:
 
 A fully-expanded @tech{syntax object} corresponds to a @deftech{parse}
 of a program (i.e., a @deftech{parsed} program), and @tech{lexical
-information} on its @tech{identifiers} indicates the @tech{parse}.
+information} on its @tech{identifiers} indicates the
+@tech{parse}.
+
+@margin-note{Beware that the symbolic names of identifiers in a fully
+expanded program may not match the symbolic names in the grammar. Only
+the binding (according to @scheme[free-identifier=?]) matters.}
 
 More specifically, the typesetting of identifiers in the above grammar
 is significant. For example, the second case for @scheme[_expr] is a
 @tech{syntax-object} list whose first element is an @tech{identifier},
 where the @tech{identifier}'s @tech{lexical information} specifies a
-binding to the @scheme[define-values] of the @schememodname[scheme/base]
-language (i.e., the @tech{identifier} is @scheme[free-identifier=?] to
-one whose binding is @scheme[define-values]). In all cases,
-identifiers above typeset as syntactic-form names refer to the
-bindings defined in @secref["syntax"].
+binding to the @scheme[define-values] of the
+@schememodname[scheme/base] language (i.e., the @tech{identifier} is
+@scheme[free-identifier=?] to one whose binding is
+@scheme[define-values]). In all cases, identifiers above typeset as
+syntactic-form names refer to the bindings defined in
+@secref["syntax"].
 
 Only @tech{phase levels} 0 and 1 are relevant for the parse of a
 program (though the @scheme[_datum] in a @scheme[quote-syntax] form

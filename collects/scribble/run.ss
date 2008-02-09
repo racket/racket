@@ -58,7 +58,7 @@
 
   (define (build-docs-files files)
     (build-docs (map (lambda (file)
-                       (dynamic-require file 'doc))
+                       (dynamic-require `(file ,file) 'doc))
                      files)
                 files))
     

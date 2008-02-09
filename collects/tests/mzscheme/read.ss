@@ -175,23 +175,24 @@
 (load-relative "numstrs.ss")
 (let loop ([l number-table])
   (unless (null? l)
-	  (let* ([pair (car l)]
-		 [v (car pair)]
-		 [s (cadr pair)])
-	    (cond
-	     [(memq v '(X DBZ NOE))
-	      (err/rt-test (readstr s) exn:fail:read?)
-	      (test #f string->number s)]
-	     [v 
-	      (test v readstr s)
-	      (test (if (symbol? v) #f v) string->number s)]
-	     [else 
-	      (test (string->symbol s) readstr s)
-	      (test #f string->number s)
-	      (unless (regexp-match "#" s)
-		(err/rt-test (readstr (string-append "#d" s)) exn:fail:read?)
-		(test #f string->number (string-append "#d" s)))]))
-	  (loop (cdr l))))
+    (let* ([pair (car l)]
+           [v (car pair)]
+           [s (cadr pair)])
+      (cond
+       [(memq v '(X DBZ NOE))
+        (err/rt-test (readstr s) exn:fail:read?)
+        (test #f string->number s)]
+       [v 
+        (printf "here ~a\n" test)
+        (test v readstr s)
+        (test (if (symbol? v) #f v) string->number s)]
+       [else 
+        (test (string->symbol s) readstr s)
+        (test #f string->number s)
+        (unless (regexp-match "#" s)
+          (err/rt-test (readstr (string-append "#d" s)) exn:fail:read?)
+          (test #f string->number (string-append "#d" s)))]))
+    (loop (cdr l))))
 
 (test 5 readstr "#| hi |# 5")
 (test 5 readstr "#| #| #| #| hi |# |# |# |# 5")

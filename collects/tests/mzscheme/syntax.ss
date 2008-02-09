@@ -365,10 +365,10 @@
 (test 70 'let* (let ((x 2) (y 3)) (let* ((x 7) (z (+ x y))) (* z x))))
 (test 70 'let*-values (let ((x 2) (y 3)) (let*-values (((x) 7) ((z) (+ x y))) (* z x))))
 (test #t 'letrec (letrec ((-even?
-			   (lambda (n) (if (zero? n) #t (-odd? (- n 1)))))
-			  (-odd?
-			   (lambda (n) (if (zero? n) #f (-even? (- n 1))))))
-		   (-even? 88)))
+                           (lambda (n) (if (zero? n) #t (-odd? (- n 1)))))
+                          (-odd?
+                           (lambda (n) (if (zero? n) #f (-even? (- n 1))))))
+                   (-even? 88)))
 (test #t 'letrec-values (letrec-values (((-even? -odd?)
 					 (values
 					  (lambda (n) (if (zero? n) #t (-odd? (- n 1))))

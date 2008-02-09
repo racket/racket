@@ -445,9 +445,9 @@
                (cdddr b))
         b)))
 
-(test '('#%kernel case-lambda scheme/init case-lambda #f #f)  identifier-binding* #'case-lambda)
-(test '(scheme/promise delay scheme/init delay #f #f)  identifier-binding* #'delay)
-(test '('#%kernel #%module-begin scheme/init #%plain-module-begin #f #f)  identifier-binding* #'#%plain-module-begin)
+(test '('#%kernel case-lambda (lib "scheme/init") case-lambda #f #f)  identifier-binding* #'case-lambda)
+(test '(scheme/promise delay (lib "scheme/init") delay #f #f)  identifier-binding* #'delay)
+(test '('#%kernel #%module-begin (lib "scheme/init") #%plain-module-begin #f #f)  identifier-binding* #'#%plain-module-begin)
 (require (only-in scheme/base [#%plain-module-begin #%pmb]))
 (test '('#%kernel #%module-begin scheme/base #%plain-module-begin #f #f)  identifier-binding* #'#%pmb)
 

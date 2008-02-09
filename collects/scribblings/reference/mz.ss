@@ -35,14 +35,18 @@
       
 
   (provide note-lib-only)
-  (define-syntax-rule (note-lib-only lib . more)
-    (defmodule lib
-      (t "The bindings documented in this section are provided by the "
-         (schememodname lib)
-         " library, not " (schememodname scheme/base)
-         " or " (schememodname scheme)
-         "."
-         . more)))
+  (define-syntax note-lib-only
+    (syntax-rules ()
+      [(_ lib #:use-sources (src ...) . more)
+       (defmodule lib #:use-sources (src ...)
+         (t "The bindings documented in this section are provided by the "
+            (schememodname lib)
+            " library, not " (schememodname scheme/base)
+            " or " (schememodname scheme)
+            "."
+            . more))]
+      [(_ lib . more)
+       (note-lib-only lib #:use-sources () . more)]))
     
   (define (*exnraise s)
     (make-element #f (list s " exception is raised")))

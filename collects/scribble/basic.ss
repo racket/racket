@@ -111,8 +111,15 @@
          tt span-class
          subscript superscript)
 
+(define hspace-cache (make-vector 100 #f))
+
 (define (hspace n)
-  (make-element 'hspace (list (make-string n #\space))))
+  (if (n . < . (vector-length hspace-cache))
+      (or (vector-ref hspace-cache n)
+          (let ([h (make-element 'hspace (list (make-string n #\space)))])
+            (vector-set! hspace-cache n h)
+            h))
+      (make-element 'hspace (list (make-string n #\space)))))
 
 (define (elem . str)
   (make-element #f (decode-content str)))

@@ -12,7 +12,7 @@ The @scheme[match] form and related forms support general pattern
 matching on Scheme values. See also @secref["regexp"] for information
 on regular-expression matching on strings, bytes, and streams.
 
-@note-lib[scheme/match]
+@note-lib[scheme/match #:use-sources (mzlib/plt-match)]
 
 @defform/subs[(match val-expr clause ...)
               ([clause [pat expr ...+]
@@ -36,7 +36,7 @@ the object being matched before calling the failure procedure,
 otherwise the behavior of matching is unpredictable.
 
 The grammar of @scheme[pat] is as follows, where non-italicized
-identifers are recognized symbolically (i.e., not by binding).
+identifiers are recognized symbolically (i.e., not by binding).
 
 @|match-grammar|
 

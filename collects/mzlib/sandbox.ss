@@ -1,10 +1,31 @@
 (module sandbox scheme/base
   (require scheme/sandbox
            (prefix-in mz: (only-in mzscheme make-namespace)))
-  (provide (except-out (all-from-out scheme/sandbox)
-                       make-evaluator
-                       make-module-evaluator
-                       gui?)
+  (provide sandbox-init-hook
+           sandbox-reader
+           sandbox-input
+           sandbox-output
+           sandbox-error-output
+           sandbox-propagate-breaks
+           sandbox-coverage-enabled
+           sandbox-namespace-specs
+           sandbox-override-collection-paths
+           sandbox-security-guard
+           sandbox-path-permissions
+           sandbox-network-guard
+           sandbox-make-inspector
+           sandbox-eval-limits
+           kill-evaluator
+           break-evaluator
+           set-eval-limits
+           put-input
+           get-output
+           get-error-output
+           get-uncovered-expressions
+           call-with-limits
+           with-limits
+           exn:fail:resource?
+           exn:fail:resource-resource
            (rename-out [*make-evaluator make-evaluator]
                        [gui? mred?]))
 
