@@ -2099,6 +2099,9 @@ apply_values_sfs(Scheme_Object *data, SFS_Info *info)
   f = scheme_sfs_expr(f, info, -1);
   e = scheme_sfs_expr(e, info, -1);
 
+  SCHEME_CAR(data) = f;
+  SCHEME_CDR(data) = e;
+
   return data;
 }
 
