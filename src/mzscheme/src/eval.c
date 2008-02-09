@@ -3258,8 +3258,6 @@ Scheme_Object *scheme_sfs(Scheme_Object *o, SFS_Info *info, int max_let_depth)
 {
   int init, i;
 
-  return o;
-
   SFS_LOG(printf("sfs %d\n", SCHEME_TYPE(o)));
 
   if (!info) {
@@ -3836,11 +3834,12 @@ static Scheme_Object *sfs_let_void(Scheme_Object *o, SFS_Info *info)
 {
   Scheme_Let_Void *lv = (Scheme_Let_Void *)o;
   Scheme_Object *body;
-  int i, pos;
+  int i, pos, save_mnt;
   Scheme_Object *vec;
     
   scheme_sfs_push(info, lv->count, 1);
   pos = info->stackpos;
+  save_mnt = info->max_nontail;
 
   if (!info->pass) {
     vec = scheme_make_vector(lv->count + 1, NULL);
@@ -3853,6 +3852,7 @@ static Scheme_Object *sfs_let_void(Scheme_Object *o, SFS_Info *info)
       info->max_used[pos + i] = SCHEME_INT_VAL(SCHEME_VEC_ELS(vec)[i]);
       info->max_calls[pos + i] = SCHEME_INT_VAL(SCHEME_VEC_ELS(vec)[lv->count]);
     }
+    info->max_nontail = SCHEME_INT_VAL(SCHEME_VEC_ELS(vec)[lv->count]);
   }
 
   body = scheme_sfs_expr(lv->body, info, -1);
@@ -3869,6 +3869,8 @@ static Scheme_Object *sfs_let_void(Scheme_Object *o, SFS_Info *info)
       n = info->max_used[pos + i];
       SCHEME_VEC_ELS(vec)[i] = scheme_make_integer(n);
     }
+  } else {
+    info->max_nontail = save_mnt;
   }
 
   lv->body = body;
