@@ -3250,13 +3250,15 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_d
 /*========================================================================*/
 
 /* For debugging and measuring the worst-case cost of sfs clears: */
-#define MAX_SFS_CLEARING 0
+#define MAX_SFS_CLEARING 1
 
 #define SFS_LOG(x) /* nothing */
 
 Scheme_Object *scheme_sfs(Scheme_Object *o, SFS_Info *info, int max_let_depth)
 {
   int init, i;
+
+  SFS_LOG(printf("sfs %d\n", SCHEME_TYPE(o)));
 
   if (!info) {
     info = scheme_new_sfs_info(max_let_depth);

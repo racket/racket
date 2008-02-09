@@ -4637,7 +4637,9 @@ module_sfs(Scheme_Object *data, SFS_Info *old_info)
 
     info = scheme_new_sfs_info(m->max_let_depth);
     info->for_mod = 1;
-    scheme_sfs(data, info, m->max_let_depth);
+    scheme_sfs(scheme_make_syntax_resolved(MODULE_EXPD, data), 
+               info, 
+               m->max_let_depth);
     return data;
   }
 
