@@ -5,8 +5,8 @@
 ;; installs cm for loading Setup PLT.
 
 ;; Note that this file is listed in "info.ss" so that it never gets a
-;; .zo file. Do not `require' this module from anywhere, otherwise it
-;; could get a .zo anyway.
+;; .zo file. Do not `require' this module from anywhere, not even 
+;; `for-label', otherwise it could get a .zo anyway.
 
 (module main '#%kernel
   (#%require '#%min-stx
