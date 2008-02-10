@@ -171,13 +171,12 @@ transformer expression instead of a run-time expression.}
                        [lift-ctx any/c (gensym 'lifts)])
          syntax?]{
 
-Like @scheme[local-expand], but if
-@scheme[syntax-local-lift-expression] is called during the expansion
-of @scheme[stx], the result is a syntax object that represents a
-@scheme[begin] expression; lifted expression appear with their
-identifiers in @scheme[define-values] forms, and the expansion of
-@scheme[stx] is the last expression in the @scheme[begin]. The
-@scheme[lift-ctx] value is reported by
+Like @scheme[local-expand], the result is a syntax object that
+represents a @scheme[begin] expression. Lifted expressions---from
+calls to @scheme[syntax-local-lift-expression] during the expansion of
+@scheme[stx]---appear with their identifiers in @scheme[define-values]
+forms, and the expansion of @scheme[stx] is the last expression in the
+@scheme[begin]. The @scheme[lift-ctx] value is reported by
 @scheme[syntax-local-lift-context] during local expansion. The lifted
 expressions are not expanded, but instead left as provided in the
 @scheme[begin] form.}

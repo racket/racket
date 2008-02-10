@@ -1047,20 +1047,33 @@
 (test #t symbol? prev-ctx)
 
 (set! prev-ctx #f)
-(define-syntax (@@local-top stx)
-  (syntax-case stx ()
-    [(_ expr)
-     (local-expand/capture-lifts #'expr
-				 (list (gensym))
-				 (list #'begin #'#%top)
-                                 #f
-                                 'the-key)]))
+(define-syntaxes (@@local-top @@local-top2 @@local-top3)
+  (let ([mk
+         (lambda (stops)
+           (lambda (stx)
+             (syntax-case stx ()
+               [(_ expr)
+                (let ([v (local-expand/capture-lifts #'expr
+                                                     (list (gensym))
+                                                     stops
+                                                     #f
+                                                     'the-key)])
+                  ;; make sure that it's a `begin' form:
+                  (syntax-case v (begin)
+                    [(begin e ... e0) v]))])))])
+    (values
+     (mk (list #'begin #'#%top))
+     (mk null)
+     (mk #f))))
 
 (test 1 'let-foo (let ([x 5]) (@@foo 1)))
 (test 1 eval (expand #'(let ([x 5]) (@@foo 1))))
 (test 1 'local-foo (let ([x 5]) (@@local-top (@@foo 1))))
 (test 'the-key values prev-ctx)
 (test 1 eval (expand #'(let ([x 5]) (@@local-top (@@foo 1)))))
+(test 1 eval (expand #'(@@local-top (@@foo 1))))
+(test 1 eval (expand #'(@@local-top2 (@@foo 1))))
+(test 1 eval (expand #'(@@local-top3 (@@foo 1))))
 (test 'the-key values prev-ctx)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -56,19 +56,21 @@
                           #%require)))])
 	     (syntax-case* e (begin define-values define-syntaxes require require-for-template) 
 			   free-transformer-identifier=?
-	       [(begin v ...)
+	       [(begin (begin v ...))
 		#'(begin-for-syntax v ...)]
-	       [(define-values (id ...) expr)
+	       [(begin (define-values (id ...) expr))
 		#'(define-values-for-syntax (id ...) expr)]
-	       [(require v ...)
+	       [(begin (require v ...))
 		#'(require (for-syntax v ...))]
-	       [(define-syntaxes (id ...) expr)
+	       [(begin (define-syntaxes (id ...) expr))
 		(raise-syntax-error
 		 #f
 		 "syntax definitions not allowed within begin-for-syntax"
 		 #'elem)]
-	       [other 
-		#'(define-values-for-syntax () (begin other (values)))]))]
+               [(begin other)
+		#'(define-values-for-syntax () (begin other (values)))]
+	       [(begin v ...)
+                #'(begin-for-syntax v ...)]))]
 	  [(_ elem ...)
 	   ;; We split up the elems so that someone else can
 	   ;;  worry about the fact that properly expanding the second
