@@ -42,10 +42,16 @@
 
   (define (exn->string x) (if (exn? x) (exn-message x) (format "~s" x)))
 
+  ;; auto-curried list-of
+  (define list-of
+    (case-lambda [(pred) (lambda (x) (and (list? x) (andmap pred x)))]
+                 [(pred x) ((list-of pred) x)]))
+
+  (define (relative-path-string? x) (and (path-string? x) (relative-path? x)))
+
   (unless (make-user)
     (current-library-collection-paths
-     (filter (let ([main (find-collects-dir)])
-               (lambda (d) (equal? d main)))
+     (filter (let ([main (find-collects-dir)]) (lambda (d) (equal? d main)))
              (current-library-collection-paths))))
 
   (setup-printf "Setup version is ~a [~a]" (version) (system-type 'gc))
@@ -284,14 +290,7 @@
                              (directory-list (cc-path cc)))))
               ;; Result checker:
               (lambda (x)
-                (unless (and (list? x)
-                             (andmap (lambda (x)
-                                       (and (list? x)
-                                            (andmap (lambda (x)
-                                                      (and (path-string? x)
-                                                           (relative-path? x)))
-                                                    x)))
-                                     x))
+                (unless (list-of (list-of relative-path-string?) x)
                   (error "result is not a list of relative path string lists:"
                          x)))))
            (list cc)
@@ -350,7 +349,7 @@
                     cc
                     (cond
                       [(path? p) (list (path->bytes p))]
-                      [(and (list? p) (andmap bytes? p)) p]
+                      [(list-of bytes? p) p]
                       [else (map (λ (s) (path->bytes (string->path s))) p)])))
                  (call-info info 'compile-subcollections
                             (lambda ()
@@ -433,7 +432,6 @@
   (define (clean-collection cc dependencies)
     (begin-record-error cc "Cleaning"
       (let* ([info (cc-info cc)]
-             [default (box 'default)]
              [paths (call-info
                      info
                      'clean
@@ -442,8 +440,7 @@
                              (build-path mode-dir "native")
                              (build-path mode-dir "native" (system-library-subpath))))
                      (lambda (x)
-                       (unless (or (eq? x default)
-                                   (and (list? x) (andmap path-string? x)))
+                       (unless (list-of path-string? x)
                          (error 'setup-plt "expected a list of path strings for 'clean, got: ~s"
                                 x))))]
              [printed? #f]
@@ -531,8 +528,7 @@
                           [(post)    'post-install-collection])
                         (lambda () (k #f))
                         (lambda (v)
-                          (unless (and (path-string? v)
-                                       (relative-path? v))
+                          (unless (relative-path-string? v)
                             (error "result is not a relative path string: " v))
                           (let ([p (build-path (cc-path cc) v)])
                             (unless (file-exists? p)
@@ -821,13 +817,11 @@
   (when (make-launchers)
     (let ([name-list
            (lambda (l)
-             (unless (and (list? l)
-                          (andmap (lambda (x) (and (path-string? x) (relative-path? x)))
-                                  l))
+             (unless (list-of relative-path-string? l)
                (error "result is not a list of relative path strings:" l)))]
           [flags-list
            (lambda (l)
-             (unless (and (list? l) (andmap (lambda (fs) (andmap string? fs)) l))
+             (unless (list-of (list-of string?) l)
                (error "result is not a list of strings:" l)))]
           [or-f (lambda (f) (lambda (x) (when x (f x))))])
       (for ([cc ccs-to-compile])
