@@ -6,6 +6,7 @@
          scheme/class
          scheme/file
          scheme/fasl
+         scheme/serialize
          setup/main-collects
          scribble/base-render
          scribble/struct
@@ -365,7 +366,10 @@
                      (list-ref v-out 1) ; sci
                      (list-ref v-out 2) ; provides
                      (list-ref v-in 1)  ; undef
-                     (list-ref v-in 3)  ; searches
+                     (let ([v (list-ref v-in 3)])  ; searches
+                       (if (hash-table? v) ; temporary compatibility; used to be not serialized
+                           v
+                           (deserialize v)))
                      (map rel->path (list-ref v-in 2)) ; deps, in case we don't need to build...
                      can-run?
                      my-time info-out-time
@@ -520,7 +524,7 @@
                      (map (lambda (i)
                             (path->rel (doc-src-file (info-doc i))))
                           (info-deps info))
-                     (info-searches info))))))))
+                     (serialize (info-searches info)))))))))
 
 (define (write-out info)
   (make-directory* (doc-dest-dir (info-doc info)))
