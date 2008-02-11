@@ -83,7 +83,7 @@
 
   (define glob->regexp
     (let-values
-        ([(def-case-sens) (not (memq (system-type) '(windows macos macosx)))]
+        ([(def-case-sens) (eq? (system-path-convention-type)'unix)]
          [(item:s item:b simple-item:s simple-item:b)
           (let ([rx (lambda (s)
                       (string-append

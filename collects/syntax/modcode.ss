@@ -44,7 +44,16 @@
         void
         (lambda ()
           (let ([v (with-module-reading-parameterization
-                    (lambda () (read-syntax path p)))])
+                    (lambda () 
+                      ;; In case we're reading a .zo, we need to set
+                      ;;  the load-relative directory for unmarshaling
+                      ;;  path literals.
+                      (parameterize ([current-load-relative-directory
+                                      (let-values ([(base name dir?) (split-path orig-path)])
+                                        (if (path? base)
+                                            base
+                                            (current-directory)))])
+                        (read-syntax path p))))])
             (when (eof-object? v)
               (error 'read-one
                      "empty file; expected a module declaration in: ~a" path))

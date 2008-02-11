@@ -533,7 +533,8 @@ Expands the given @scheme[_require-spec] to lists of imports and
 import sources.}
 
 
-@defproc[(make-require-transformer [proc ((syntax?) . ->* . ((listof import?) (listof import-source?)))])
+@defproc[(make-require-transformer [proc ((syntax?) . ->* . ((listof import?)
+                                                             (listof import-source?)))])
          require-transformer?]{
 
 Creates a @deftech{require transformer} (i.e., a structure with the

@@ -331,7 +331,7 @@
                           (map (lambda (t)
                                  (let loop ([t t])
                                    (if (table? t)
-                                       (render-table t d ri)
+                                       (render-table t d ri #f)
                                        (loop (delayed-flow-element-flow-elements t ri)))))
                                (filter (lambda (e)
                                          (let loop ([e e])
@@ -620,7 +620,7 @@
                          ,@(if (part-title-content d)
                                (render-content (part-title-content d) d ri)
                                null)))))
-            ,@(render-flow* (part-flow d) d ri #f)
+            ,@(render-flow* (part-flow d) d ri #f #f)
             ,@(let loop ([pos 1]
                          [secs (part-parts d)])
                 (if (null? secs)
@@ -629,23 +629,23 @@
                      (render-part (car secs) ri)
                      (loop (add1 pos) (cdr secs))))))))
 
-      (define/private (render-flow* p part ri special-last?)
+      (define/private (render-flow* p part ri start-inline? special-last?)
         ;; Wrap each table with <p>, except for a trailing table
         ;;  when `special-last?' is #t
-        (let loop ([f (flow-paragraphs p)])
+        (let loop ([f (flow-paragraphs p)][inline? start-inline?])
           (cond
            [(null? f) null]
            [(and (table? (car f)) 
                  (or (not special-last?)
                      (not (null? (cdr f)))))
-            (cons `(p ,@(render-flow-element (car f) part ri))
-                  (loop (cdr f)))]
+            (cons `(p ,@(render-flow-element (car f) part ri inline?))
+                  (loop (cdr f) #f))]
            [else
-            (append (render-flow-element (car f) part ri)
-                    (loop (cdr f)))])))
+            (append (render-flow-element (car f) part ri inline?)
+                    (loop (cdr f) #f))])))
 
-      (define/override (render-flow p part ri)
-        (render-flow* p part ri #t))
+      (define/override (render-flow p part ri start-inline?)
+        (render-flow* p part ri start-inline? #t))
 
       (define/override (render-paragraph p part ri)
         `((p ,@(if (styled-paragraph? p)
@@ -751,10 +751,13 @@
            [(image-file? style) `((img ((src ,(install-file (image-file-path style))))))]
            [else (super render-element e part ri)])))
 
-      (define/override (render-table t part ri)
+      (define/override (render-table t part ri need-inline?)
         (define index? (eq? 'index (table-style t)))
         `(,@(if index? `(,search-script ,search-field) '())
           (table ((cellspacing "0")
+                  ,@(if need-inline?
+                        '((style "display: inline; vertical-align: top;"))
+                        null)
                   ,@(case (table-style t)
                       [(boxed)    '((class "boxed"))]
                       [(centered) '((align "center"))]
@@ -810,7 +813,7 @@
                                                                   [(eq? 'cont (car ds)) (loop (+ n 1) (cdr ds))]
                                                                   [else n])))))
                                                           null))
-                                                   ,@(render-flow d part ri))
+                                                   ,@(render-flow d part ri #f))
                                               (loop (cdr ds) (cdr as) (cdr vas)))))))))
                         (table-flowss t)
                         (cdr (or (and (list? (table-style t))
@@ -823,7 +826,7 @@
                             null)
                       ,@(apply append
                                (map (lambda (i)
-                                      (render-flow-element i part ri))
+                                      (render-flow-element i part ri #f))
                                     (blockquote-paragraphs t))))))
 
       (define/override (render-itemization t part ri)
@@ -833,7 +836,7 @@
                  `(((class ,(styled-itemization-style t))))
                  null)
            ,@(map (lambda (flow)
-                    `(li ,@(render-flow flow part ri)))
+                    `(li ,@(render-flow flow part ri #t)))
                   (itemization-flows t)))))
 
       (define/override (render-other i part ri)

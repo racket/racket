@@ -113,7 +113,7 @@
           (for-each (lambda (t)
                       (printf "\\label{t:~a}" (t-encode (tag-key t ri))))
                     (part-tags d))
-          (render-flow (part-flow d) d ri)
+          (render-flow (part-flow d) d ri #f)
           (for-each (lambda (sec) (render-part sec ri))
                     (part-parts d))
           null))
@@ -226,7 +226,7 @@
                   (format "x~x" (char->integer c))]))
               (string->list (format "~s" s)))))
 
-      (define/override (render-table t part ri)
+      (define/override (render-table t part ri inline-table?)
         (let* ([boxed? (eq? 'boxed (table-style t))]
                [index? (eq? 'index (table-style t))]
                [inline? (and (not boxed?)
@@ -239,7 +239,8 @@
                                     (= 1 (length (car (table-flowss (cadr m))))))))]
                [tableform (cond
                            [index? "list"]
-                           [(not (current-table-mode))
+                           [(and (not (current-table-mode))
+                                 (not inline-table?))
                             "longtable"]
                            [else "tabular"])]
                [opt (cond
@@ -299,7 +300,7 @@
                                       [else n]))])
                           (unless (= cnt 1)
                             (printf "\\multicolumn{~a}{l}{" cnt))
-                          (render-flow (car flows) part ri)
+                          (render-flow (car flows) part ri #f)
                           (unless (= cnt 1)
                             (printf "}"))
                           (unless (null? (list-tail flows cnt))
@@ -325,7 +326,7 @@
         (printf "\n\n\\begin{itemize}\n")
         (for-each (lambda (flow)
                     (printf "\n\n\\item ")
-                    (render-flow flow part ri))
+                    (render-flow flow part ri #t))
                   (itemization-flows t))
         (printf "\n\n\\end{itemize}\n")
         null)
@@ -334,7 +335,7 @@
         (printf "\n\n\\begin{quote}\n")
         (parameterize ([current-table-mode (list "blockquote" t)])
           (for-each (lambda (e)
-                      (render-flow-element e part ri))
+                      (render-flow-element e part ri #f))
                     (blockquote-paragraphs t)))
         (printf "\n\n\\end{quote}\n")
         null)

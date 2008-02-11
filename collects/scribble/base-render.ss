@@ -298,7 +298,7 @@
       (list
        (when (part-title-content d)
          (render-content (part-title-content d) d ri))
-       (render-flow (part-flow d) d ri)
+       (render-flow (part-flow d) d ri #f)
        (map (lambda (s) (render-part s ri))
             (part-parts d))))
 
@@ -308,36 +308,41 @@
     (define/public (render-paragraph p part ri)
       (render-content (paragraph-content p) part ri))
 
-    (define/public (render-flow p part ri)
-      (apply append
-             (map (lambda (p)
-                    (render-flow-element p part ri))
-                  (flow-paragraphs p))))
+    (define/public (render-flow p part ri start-inline?)
+      (if (null? (flow-paragraphs p))
+          null
+          (append
+           (render-flow-element (car (flow-paragraphs p))
+                                part ri start-inline?)
+           (apply append
+                  (map (lambda (p)
+                         (render-flow-element p part ri #f))
+                       (cdr (flow-paragraphs p)))))))
 
-    (define/public (render-flow-element p part ri)
+    (define/public (render-flow-element p part ri inline?)
       (cond
         [(table? p) (if (auxiliary-table? p)
                       (render-auxiliary-table p part ri)
-                      (render-table p part ri))]
+                      (render-table p part ri inline?))]
         [(itemization? p) (render-itemization p part ri)]
         [(blockquote? p) (render-blockquote p part ri)]
         [(delayed-flow-element? p) 
-         (render-flow-element (delayed-flow-element-flow-elements p ri) part ri)]
+         (render-flow-element (delayed-flow-element-flow-elements p ri) part ri inline?)]
         [else (render-paragraph p part ri)]))
 
     (define/public (render-auxiliary-table i part ri)
       null)
 
-    (define/public (render-table i part ri)
-      (map (lambda (d) (if (flow? i) (render-flow d part ri) null))
+    (define/public (render-table i part ri inline?)
+      (map (lambda (d) (if (flow? i) (render-flow d part ri #f) null))
            (apply append (table-flowss i))))
 
     (define/public (render-itemization i part ri)
-      (map (lambda (d) (render-flow d part ri))
+      (map (lambda (d) (render-flow d part ri #t))
            (itemization-flows i)))
 
     (define/public (render-blockquote i part ri)
-      (map (lambda (d) (render-flow-element d part ri))
+      (map (lambda (d) (render-flow-element d part ri #f))
            (blockquote-paragraphs i)))
 
     (define/public (render-element i part ri)

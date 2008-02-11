@@ -10,7 +10,7 @@
 @(define inside @other-manual['(lib "scribblings/inside/inside.scrbl")])
 
 @(define (lines . l)
-   (make-table "inlinetop"
+   (make-table #f
                (map (lambda (l)
                       (list
                        (make-flow

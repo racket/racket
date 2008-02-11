@@ -34,7 +34,7 @@
                     (part-title-content d))
             (newline))
           (newline)
-          (render-flow (part-flow d) d ht)
+          (render-flow (part-flow d) d ht #f)
           (let loop ([pos 1]
                      [secs (part-parts d)])
             (unless (null? secs)
@@ -42,28 +42,28 @@
               (render-part (car secs) ht)
               (loop (add1 pos) (cdr secs))))))
 
-      (define/override (render-flow f part ht)
+      (define/override (render-flow f part ht start-inline?)
         (let ([f (flow-paragraphs f)])
           (if (null? f)
               null
               (apply
                append
-               (render-flow-element (car f) part ht)
+               (render-flow-element (car f) part ht start-inline?)
                (map (lambda (p)
                       (newline) (newline)
-                      (render-flow-element p part ht))
+                      (render-flow-element p part ht #f))
                     (cdr f))))))
 
-      (define/override (render-table i part ht)
+      (define/override (render-table i part ht inline?)
         (let ([flowss (table-flowss i)])
           (if (null? flowss)
               null
               (apply
                append
-               (map (lambda (d) (render-flow d part ht)) (car flowss))
+               (map (lambda (d) (render-flow d part ht #f)) (car flowss))
                (map (lambda (flows)
                       (newline)
-                      (map (lambda (d) (render-flow d part ht)) flows))
+                      (map (lambda (d) (render-flow d part ht #f)) flows))
                     (cdr flowss))))))
 
       (define/override (render-itemization i part ht)
@@ -73,10 +73,10 @@
               (apply append
                      (begin
                        (printf "* ")
-                       (render-flow (car flows) part ht))
+                       (render-flow (car flows) part ht #t))
                      (map (lambda (d)
                             (printf "\n\n* ")
-                            (render-flow d part ht))
+                            (render-flow d part ht #f))
                           (cdr flows))))))
       
       (define/override (render-other i part ht)
