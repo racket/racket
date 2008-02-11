@@ -1,5 +1,5 @@
-; This file is intended to be copied and/or modified and used as a template.
 #lang scheme/base
+; This file is intended to be copied and/or modified and used as a template.
 (require (lib "cmdline.ss")
          (only-in (lib "file.ss")
                   normalize-path)

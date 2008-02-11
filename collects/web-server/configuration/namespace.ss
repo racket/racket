@@ -1,5 +1,6 @@
 #lang scheme/base
-(require (lib "list.ss"))
+(require (lib "list.ss")
+         scheme/contract)
 
 (define default-to-be-copied-module-specs
   '(mzscheme
@@ -31,5 +32,16 @@
                         additional-names))
       new-namespace)))
 
-(provide
- make-make-servlet-namespace)
+; XXX
+(define module-spec? any/c)
+(define make-servlet-namespace?
+  (->* ()
+       (#:additional-specs (listof module-spec?))
+       namespace?))
+
+(provide/contract
+ [make-servlet-namespace? contract?]
+ [make-make-servlet-namespace 
+  (->* ()
+       (#:to-be-copied-module-specs (listof module-spec?))
+       make-servlet-namespace?)])

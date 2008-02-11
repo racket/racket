@@ -3,17 +3,38 @@
          (lib "tcp-sig.ss" "net")
          (prefix-in raw: (lib "tcp-unit.ss" "net"))
          (lib "unit.ss")
-         (lib "contract.ss")
+         scheme/contract
+         "dispatchers/dispatch.ss"
          "private/dispatch-server-sig.ss"
          "private/dispatch-server-unit.ss"
          "web-config-sig.ss"
          "web-server-sig.ss"
          "web-server-unit.ss"
          (prefix-in http: "private/request.ss"))
-(provide serve
-         serve/ports
-         serve/ips+ports)
 (provide/contract
+ [serve
+  (->* (#:dispatch dispatcher?)
+       (#:tcp@ unit?
+               #:port number?
+               #:listen-ip (or/c false/c string?)
+               #:max-waiting number?
+               #:initial-connection-timeout number?)
+       (-> void))]
+ [serve/ports
+  (->* (#:dispatch dispatcher?)
+       (#:tcp@ unit?
+               #:ports (listof number?)
+               #:listen-ip (or/c false/c string?)
+               #:max-waiting number?
+               #:initial-connection-timeout number?)
+       (-> void))]
+ [serve/ips+ports
+  (->* (#:dispatch dispatcher?)
+       (#:tcp@ unit?
+               #:ips+ports (listof (cons/c (or/c false/c string?) (listof number?)))
+               #:max-waiting number?
+               #:initial-connection-timeout number?)
+       (-> void))]
  [do-not-return (-> void)]
  [serve/web-config@ (unit? . -> . (-> void?))])
 

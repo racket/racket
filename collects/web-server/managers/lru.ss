@@ -4,7 +4,10 @@
 (require "manager.ss"
          "../servlet/servlet-structs.ss")
 (provide/contract
- [create-LRU-manager ((expiration-handler? number? number? (-> boolean?)) any/c . ->* . (manager?))])
+ [create-LRU-manager (expiration-handler? number? number? (-> boolean?)
+                      #:initial-count number?
+                      #:inform-p (number? . -> . void)
+                      . -> . manager?)])
 
 ;; Utility
 (define (make-counter)

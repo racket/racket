@@ -1,16 +1,23 @@
 #lang scheme/base
 (require (lib "list.ss")
          (lib "url.ss" "net")
-         (lib "contract.ss"))
+         scheme/contract)
 (require "dispatch.ss"
          "../private/util.ss"
          "../configuration/responders.ss"
          "../private/request-structs.ss"
+         "../private/response-structs.ss"
          "../servlet/basic-auth.ss"
          "../private/response.ss")  
 (provide/contract
- [interface-version dispatcher-interface-version?])
-(provide make)
+ [interface-version dispatcher-interface-version?]
+ [make (->* ()
+            (#:password-file path-string?
+                             #:authentication-responder 
+                             (url? header? . -> . response?))
+            (values
+             (-> void)
+             dispatcher?))])
 
 (define interface-version 'v1)
 (define (make ; XXX Take authorized? function

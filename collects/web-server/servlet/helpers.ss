@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "contract.ss"))
+(require scheme/contract)
 (require "../private/util.ss"
          "../private/request-structs.ss"
          "../private/response-structs.ss")
@@ -33,9 +33,11 @@
     (thunk)))
 
 (provide
- with-errors-to-browser
- redirect-to)
+ with-errors-to-browser)
 (provide/contract
+ [redirect-to
+  (->* (string?) (redirection-status? #:headers (listof header?))
+       response/full?)]
  [redirection-status? (any/c . -> . boolean?)]
  [permanently redirection-status?]
  [temporarily redirection-status?]

@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (lib "plt-match.ss")
-         (lib "contract.ss"))
+         scheme/contract)
 (require "dispatch.ss"
          "../private/web-server-structs.ss"
          "../private/connection-manager.ss"
@@ -9,6 +9,8 @@
          "../private/response-structs.ss"
          "../servlet/web-cells.ss"
          "../servlet/web.ss"
+         (lib "url.ss" "net")
+         "../dispatchers/filesystem-map.ss"
          "../configuration/responders.ss"
          "../configuration/namespace.ss"
          "../managers/manager.ss"
@@ -17,8 +19,15 @@
          "../private/cache-table.ss"
          "../private/util.ss")  
 (provide/contract
- [interface-version dispatcher-interface-version?])
-(provide make)
+ [interface-version dispatcher-interface-version?]
+ [make (->* ((box/c cache-table?)
+             #:url->path url-path?)
+            (#:make-servlet-namespace make-servlet-namespace?
+                                      #:responders-servlet-loading (url? any/c . -> . response?)
+                                      #:responders-servlet (url? any/c . -> . response?)
+                                      #:timeouts-default-servlet number?)
+            (values (-> void)
+                    dispatcher?))])
 
 (define interface-version 'v1)
 (define (make config:scripts 

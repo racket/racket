@@ -150,7 +150,7 @@
      (check alpha= (normalize-term (expand-syntax (syntax (+ 1 2 3))))
             (expand-syntax (syntax (+ 1 2 3)))))
     
-    (test-case
+    #;(test-case
      "empty-list"
      (check alpha= (normalize-term (expand-syntax (syntax ())))
             (expand-syntax (syntax ()))))

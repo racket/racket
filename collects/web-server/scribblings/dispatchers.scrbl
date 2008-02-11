@@ -235,7 +235,7 @@ a URL that refreshes the password file, servlet cache, etc.}
 @defproc[(make [#:password-file password-file path-string? "passwords"]
                [#:authentication-responder
                 authentication-responder
-                ((url url?) (header (cons/c symbol? string?)) . -> . response?)
+                ((url url?) (header header?) . -> . response?)
                 (gen-authentication-responder "forbidden.html")])
          (values (-> void)
                  dispatcher?)]{

@@ -5,8 +5,8 @@
 (require "util.ss"
          "response-structs.ss")
 (provide/contract
- [read-mime-types (path? . -> . hash-table?)]
- [make-path->mime-type (path? . -> . (path? . -> . bytes?))])
+ [read-mime-types (path-string? . -> . hash-table?)]
+ [make-path->mime-type (path-string? . -> . (path? . -> . bytes?))])
 
 ; read-mime-types : path? -> hash-table?
 (define (read-mime-types a-path)

@@ -2,20 +2,26 @@
 (require (lib "url.ss" "net")
          (lib "plt-match.ss")
          (lib "pregexp.ss")
-         (lib "contract.ss"))
+         scheme/contract)
 
 (require "dispatch.ss"
          "../private/util.ss"
          "../private/request-structs.ss"
          "../private/response-structs.ss"
          "../servlet/helpers.ss"
-         "../private/response.ss")
+         "../private/response.ss"
+         "../dispatchers/filesystem-map.ss")
 
 (provide/contract
  [interface-version dispatcher-interface-version?]
  [read-range-header (-> (listof header?) (or/c (listof pair?) false/c))])
 
-(provide make)
+(provide/contract
+ [make
+  (->* (#:url->path url-path?)
+       (#:path->mime-type (path? . -> . bytes?)
+                          #:indices (listof path-string?))
+       dispatcher?)])
 
 ;; looks-like-directory : str -> bool
 ;; to determine if is url style path looks like it refers to a directory

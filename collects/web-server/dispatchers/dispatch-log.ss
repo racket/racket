@@ -4,7 +4,7 @@
          (lib "date.ss")
          (lib "async-channel.ss")
          (lib "plt-match.ss")
-         (lib "contract.ss"))
+         scheme/contract)
 (require "dispatch.ss"
          "../private/request-structs.ss")  
 (define format-req/c (request? . -> . string?))
@@ -15,8 +15,11 @@
  [paren-format format-req/c]
  [extended-format format-req/c]
  [apache-default-format format-req/c]
- [interface-version dispatcher-interface-version?])
-(provide make)  
+ [interface-version dispatcher-interface-version?]
+ [make (->* ()
+            (#:format format-req/c
+                      #:log-path path-string?)
+            dispatcher?)])
 
 (define interface-version 'v1)
 (define (make #:format [format paren-format]

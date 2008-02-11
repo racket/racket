@@ -122,7 +122,7 @@ deployments of the @web-server .
           [collect-interval integer?]
           [collect? (-> boolean?)]
           [#:initial-count initial-count integer? 1]
-              [#:inform-p inform-p (integer? . -> . void) (lambda _ (void))])
+          [#:inform-p inform-p (integer? . -> . void) (lambda _ (void))])
          manager?]{
  Instances managed by this manager will be expired if there are no
  continuations associated with them, after the instance is unlocked.

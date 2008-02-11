@@ -1,21 +1,29 @@
 #lang scheme/base
 (require (lib "list.ss")
-         (lib "contract.ss")
+         scheme/contract
          (lib "session.ss" "web-server" "private")
          (only-in "../lang/web.ss"
                   initialize-servlet)           
          (lib "web-cells.ss" "web-server" "lang")
          "../private/request-structs.ss"
+         "../private/response-structs.ss"
          "dispatch.ss"
+         (lib "url.ss" "net")
          "../private/web-server-structs.ss"
          "../private/util.ss"
          "../private/response.ss"
+         "../dispatchers/filesystem-map.ss"
          "../configuration/namespace.ss"
          "../configuration/responders.ss")
 
 (provide/contract
- [interface-version dispatcher-interface-version?])
-(provide make)
+ [interface-version dispatcher-interface-version?]
+ [make
+  (->* (#:url->path url-path?)
+       (#:make-servlet-namespace make-servlet-namespace?
+                                  #:responders-servlet-loading (url? any/c . -> . response?)
+                                  #:responders-servlet (url? any/c . -> . response?))
+       dispatcher?)])
 
 ; XXX url->servlet
 ; XXX optional session manager
