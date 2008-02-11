@@ -1,8 +1,7 @@
 #lang scribble/doc
-@require[(except-in "mz.ss" link)]
-@require[scheme/unit]
-@require[(for-syntax scheme/base)]
-@require[(for-label scheme/unit)]
+@(require (except-in "mz.ss" link)
+          (for-label scheme/unit-exptime))
+                      
 
 @begin[
 (define-syntax defkeywords
@@ -38,9 +37,9 @@ itself imports variables that will be propagated to unresolved
 imported variables in the linked units, and re-exports some variables
 from the linked units for further linking.
 
-@note-lib[scheme/unit]{The @schememodname[scheme/unit] module name can
-be used as a language name with @schemefont{#lang}; see
-@secref["single-unit"].}
+@note-lib[scheme/unit #:use-sources (mzlib/unit)]{The
+@schememodname[scheme/unit] module name can be used as a language name
+with @schemefont{#lang}; see @secref["single-unit"].}
 
 @local-table-of-contents[]
 
@@ -685,3 +684,70 @@ without the directory and file suffix). If the module name ends in
 @schemeidfont{-sig}, then @scheme[_base] corresponds to the module
 name before @schemeidfont{-sig}. Otherwise, the module name serves as
 @scheme[_base].
+
+@; ----------------------------------------------------------------------
+
+@section{Transformer Helpers}
+
+@defmodule[scheme/unit-exptime #:use-sources (mzlib/unit-exptime)]
+
+The @schememodname[scheme/unit-exptime] library provides procedures
+that are intended for use by macro transformers. In particular, the
+library is typically imported using @scheme[for-syntax] into a module
+that defines macro with @scheme[define-syntax].
+
+@defproc[(unit-static-signatures [unit-identifier identifier?]
+                                 [err-syntax syntax?])
+         (values (list-of (cons/c (or/c symbol? false/c)
+                                  identifier?))
+                 (list-of (cons/c (or/c symbol? false/c)
+                                  identifier?)))]{
+
+If @scheme[unit-identifier] is bound to static unit information via
+@scheme[define-unit] (or other such forms), the result is two
+values. The first value is for the unit's imports, and the second is
+for the unit's exports. Each result value is a list, where each list
+element pairs a symbol or @scheme[#f] with an identifier. The symbol
+or @scheme[#f] indicates the import's or export's tag (where
+@scheme[#f] indicates no tag), and the identifier indicates the
+binding of the corresponding signature.
+
+If @scheme[unit-identifier] is not bound to static unit information,
+then the @exnraise[exn:fail:syntax]. In that case, the given
+@scheme[err-syntax] argument is used as the source of the error, where
+@scheme[unit-identifer] is used as the detail source location.}
+
+
+@defproc[(signature-members [sig-identifier identifier?]
+                            [err-syntax syntax?])
+         (values (or/c identifier? false/c)
+                 (listof identifier?)
+                 (listof identifier?)
+                 (listof identifier?))]{
+
+If @scheme[sig-identifier] is bound to static unit information via
+@scheme[define-signature] (or other such forms), the result is four
+values:
+
+@itemize{
+
+  @item{an identifier or @scheme[#f] indicating the signature (of any)
+        that is extended by the @scheme[sig-identifier] binding;}
+
+  @item{a list of identifiers representing the variables
+        supplied/required by the signature;}
+
+  @item{a list of identifiers for variable definitions in the
+        signature (i.e., variable bindings that are provided on
+        import, but not defined by units that implement the
+        signature); and}
+
+  @item{a list of identifiers with syntax definitions in the signature.}
+
+}
+
+If @scheme[sig-identifier] is not bound to a signature, then the
+@exnraise[exn:fail:syntax]. In that case, the given
+@scheme[err-syntax] argument is used as the source of the error, where
+@scheme[sig-identifier] is used as the detail source location.}
+

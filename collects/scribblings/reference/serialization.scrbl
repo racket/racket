@@ -75,7 +75,7 @@ elements:
 
  @item{An optional list @scheme['(1)] that represents the version of
        the serialization format. If the first element of a
-       representation \var{v} is not a list, then the version is
+       representation is not a list, then the version is
        @scheme[0]. Version 1 adds support for mutable pairs.}
 
  @item{A non-negative exact integer @scheme[_s-count] that represents the

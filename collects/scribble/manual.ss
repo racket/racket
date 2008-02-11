@@ -716,9 +716,13 @@
     (syntax-rules ()
       [(_ name fields #:mutable #:inspector #f desc ...)
        (**defstruct name fields #f #t desc ...)]
+      [(_ name fields #:mutable #:transparent desc ...)
+       (**defstruct name fields #f #t desc ...)]
       [(_ name fields #:mutable desc ...)
        (**defstruct name fields #f #f desc ...)]
       [(_ name fields #:inspector #f desc ...)
+       (**defstruct name fields #t #t desc ...)]
+      [(_ name fields #:transparent desc ...)
        (**defstruct name fields #t #t desc ...)]
       [(_ name fields desc ...)
        (**defstruct name fields #t #f desc ...)]))
@@ -1521,9 +1525,7 @@
                                  (to-flow spacer)
                                  (to-flow (make-element
                                            #f
-                                           (list (to-element '#:inspector)
-                                                 spacer
-                                                 (to-element #f)
+                                           (list (to-element '#:transparent)
                                                  (schemeparenfont ")"))))
                                  'cont
                                  'cont))]
@@ -1543,9 +1545,7 @@
                                  (to-flow spacer)
                                  (to-flow (make-element
                                            #f
-                                           (list (to-element '#:inspector)
-                                                 spacer
-                                                 (to-element #f)
+                                           (list (to-element '#:transparent)
                                                  (schemeparenfont ")"))))
                                  'cont
                                  'cont))]

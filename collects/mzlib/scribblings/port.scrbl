@@ -5,7 +5,7 @@
 @mzlib[#:mode title port]
 
 The @schememodname[mzlib/port] library mostly re-provides
-@scheme[scheme/port].
+@schememodname[scheme/port].
 
 @defproc[(strip-shell-command-start [in input-port?]) void?]{
 

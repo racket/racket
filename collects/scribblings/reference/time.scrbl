@@ -1,5 +1,6 @@
 #lang scribble/doc
-@require["mz.ss"]
+@(require "mz.ss"
+          (for-label scheme/date))
 
 @title[#:tag "time"]{Time}
  
@@ -32,7 +33,7 @@ portability is needed.}
                  [hour (integer-in 0 23)]
                  [day (integer-in 1 31)]
                  [month (integer-in 1 12)]
-                 [year nonnegative-exact-integer?]
+                 [year exact-nonnegative-integer?]
                  [week-day (integer-in 0 6)]
                  [year-day (integer-in 0 365)]
                  [dst? boolean?]
@@ -51,7 +52,9 @@ of GMT for the current time zone (e.g., Pacific Standard Time is
 The value produced for the @scheme[time-zone-offset] field tends to be
 sensitive to the value of the @envvar{TZ} environment variable,
 especially on Unix platforms; consult the system documentation
-(usually under @tt{tzset}) for details.}
+(usually under @tt{tzset}) for details.
+
+See also the @schememodname[scheme/date] library.}
 
 
 @defproc[(current-milliseconds) exact-integer?]{
@@ -111,3 +114,57 @@ include work performed by other threads.}
 Reports @scheme[time-apply]-style timing information for the
 evaluation of @scheme[expr] directly to the current output port.  The
 result is the result of @scheme[expr].}
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "date-string"]{Date Utilities}
+
+@defmodule[scheme/date]
+
+@defproc[(date->string [date date?][time? any/c #f]) string?]{
+
+Converts a date to a string. The returned string contains the time of
+day only if @scheme[time?]. See also @scheme[date-display-format].}
+
+
+@defparam[date-display-format format (one-of/c 'american
+                                               'chinese
+                                               'german
+                                               'indian
+                                               'irish
+                                               'iso-8601
+                                               'rfc2822
+                                               'julian)]{
+
+Parameter that determines the date string format. The initial format
+is @scheme['american].}
+
+
+@defproc[(find-seconds [second (integer-in 0 61)]
+                       [minute (integer-in 0 59)]
+                       [hour (integer-in 0 23)]
+                       [day (integer-in 1 31)]
+                       [month (integer-in 1 12)]
+                       [year exact-nonnegative-integer?])
+         exact-integer?]{
+
+Finds the representation of a date in platform-specific seconds. The
+arguments correspond to the fields of the @scheme[date] structure. If
+the platform cannot represent the specified date, an error is
+signaled, otherwise an integer is returned.}
+
+
+@defproc[(date->julian/scalinger [date date?]) exact-integer?]{
+
+Converts a date structure (up to 2099 BCE Gregorian) into a Julian
+date number. The returned value is not a strict Julian number, but
+rather Scalinger's version, which is off by one for easier
+calculations.}
+
+
+@defproc[(julian/scalinger->string [date-number exact-integer?])
+         string?]{
+
+Converts a Julian number (Scalinger's off-by-one version) into a
+string.}
+

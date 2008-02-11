@@ -12,7 +12,7 @@
 @(begin
   (define-syntax-rule (bind id)
     (begin
-     (require scheme/base)
+     (require (for-label scheme/base))
      (define id (scheme lambda))))
   (bind base-lambda))
 

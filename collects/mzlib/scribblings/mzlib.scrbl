@@ -269,6 +269,40 @@ Re-exports @schememodname[scheme/trait].
 
 @; ----------------------------------------------------------------------
 
+@include-section["unit.scrbl"]
+
+@; ----------------------------------------------------------------------
+
+@mzlib[unit-exptime]
+
+Re-exports @schememodname[scheme/unit-exptime].
+
+@; ----------------------------------------
+
+@mzlib[unit200]
+
+The @schememodname[mzlib/unit200] library provides an old
+implementation of units. See archived version 360 documentation on the
+@filepath{unit.ss} library of the @filepath{mzlib} collection for
+information about this library.
+
+@; ----------------------------------------
+
+@mzlib[unitsig200]
+
+The @schememodname[mzlib/unit200] library provides an old
+implementation of units. See archived version 360 documentation on the
+@filepath{unitsig.ss} library of the @filepath{mzlib} collection for
+information about this library.
+
+@; ----------------------------------------
+
+@mzlib[zip]
+
+Re-exports @schememodname[file/zip].
+
+@; ----------------------------------------------------------------------
+
 @(bibliography
  
   (bib-entry #:key "Shivers06"

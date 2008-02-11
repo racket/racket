@@ -365,7 +365,12 @@
           (make-info doc
                      (list-ref v-out 1) ; sci
                      (list-ref v-out 2) ; provides
-                     (list-ref v-in 1)  ; undef
+                     (let ([v (list-ref v-in 1)])  ; undef
+                       (if (not (and (pair? v) ; temporary compatibility; used to be not serialized
+                                     (pair? (car v))
+                                     (integer? (caar v))))
+                           v
+                           (deserialize v)))
                      (let ([v (list-ref v-in 3)])  ; searches
                        (if (hash-table? v) ; temporary compatibility; used to be not serialized
                            v
@@ -520,7 +525,7 @@
                      (info-provides info)))
              (lambda ()
                (list (list (info-vers info) (doc-flags doc))
-                     (info-undef info)
+                     (serialize (info-undef info))
                      (map (lambda (i)
                             (path->rel (doc-src-file (info-doc i))))
                           (info-deps info))

@@ -295,6 +295,16 @@ collected by sandbox evaluators.  Use
 @scheme[get-uncovered-expressions] to retrieve coverage information.}
 
 
+@defboolparam[sandbox-propagate-breaks propagate?]{
+
+When this boolean parameter is true, breaking while an evaluator is
+running evaluator propagates the break signal to the sandboxed
+context.  This makes the sandboxed evaluator break, typically, but
+beware that sandboxed evaluation can capture and avoid the breaks (so
+if safe execution of code is your goal, make sure you use it with a
+time limit).  The default is @scheme[#t].}
+
+
 @defparam[sandbox-namespace-specs spec (cons/c (-> namespace?) 
                                                (listof module-path?))]{
 
@@ -412,6 +422,13 @@ around each use of the evaluator, so consuming too much time or memory
 results in an exception.  Change the limits of a running evaluator
 using @scheme[set-eval-limits].}
 
+
+@defparam[sandbox-make-inspector make (-> inspector?)]{
+
+A parameter that determines the procedure used to create the inspector
+for sandboxed evaluation. The procedure is called when initializing an
+evaluator, and the default parameter value is @scheme[make-inspector].}
+
 @; ----------------------------------------------------------------------
 
 @section{Interacting with Evaluators}
@@ -432,6 +449,13 @@ ignored.
 Killing an evaluator is similar to sending an @scheme[eof] value to
 the evaluator, except that an @scheme[eof] value will raise an error
 immediately.}
+
+
+@defproc[(break-evaluator [evaluator (any/c . -> . any)]) void?]{
+
+Sends a break to the running evaluator.  The effect of this is as if
+Ctrl-C was typed when the evaluator is currently executing, which
+propagates the break to the evaluator's context.}
 
 
 @defproc[(set-eval-limits [evaluator (any/c . -> . any)]
