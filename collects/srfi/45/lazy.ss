@@ -30,7 +30,7 @@
               (mcdr content)
               (let* ((promise* ((mcdr content)))
                      (content (srfi-45-promise-content promise)))
-                (unless (car content)
+                (unless (mcar content)
                   (set-mcar! content (mcar (srfi-45-promise-content promise*)))
                   (set-mcdr! content (mcdr (srfi-45-promise-content promise*)))
                   (set-srfi-45-promise-content! promise* content))
