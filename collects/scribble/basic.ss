@@ -221,7 +221,7 @@
     (make-table 'index (map (lambda (row)
                               (list (make-flow (list (make-paragraph row)))))
                             rows)))
-  (define line-break (make-element 'newline '("/n")))
+  (define line-break (make-element 'newline '("\n")))
   (define contents
     (lambda (renderer sec ri)
       (define l null)
