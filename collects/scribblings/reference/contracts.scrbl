@@ -13,7 +13,9 @@ expectations of one party are met by another party.  The
 @scheme[provide/contract] form is the primary mechanism for
 associating a contract with a binding.
 
-@note-lib[scheme/contract]
+@note-lib[scheme/contract #:use-sources (scheme/private/contract-ds
+                                         scheme/private/contract
+                                         scheme/private/contract-guts)]
 
 @local-table-of-contents[]
 
