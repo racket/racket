@@ -1,4 +1,4 @@
-To play _Pousse_, run the "Games" application.
+** To play Pousse, run the "PLT Games" application.
 
 Pousse (French for "push", pronounced "poo-ss") is a 2 person game,
 played on an N by N board (usually 4x4).  Initially the board is
@@ -32,13 +32,13 @@ Note that the last marker of the row or column will be pushed off the
 board (and must be removed from play) if there are no empty squares on
 the insertion row or column.
 
-A row or a column is a "straight" of a given color, if it contains
-N markers of the given color.
+A row or a column is a "straight" of a given color, if it contains N
+markers of the given color.
 
 The game ends either when an insertion
 
-1) repeats a previous configuration of the board; in this case
-   the player who inserted the marker LOSES.
+1) repeats a previous configuration of the board; in this case the
+   player who inserted the marker LOSES.
 
 2) creates a configuration with more straights of one color than
    straights of the other color; the player whose color is dominant

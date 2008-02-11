@@ -1,4 +1,3 @@
-
 _doors.ss_
 
 The "doors.ss" library builds on "gl-board.ss" to support simple

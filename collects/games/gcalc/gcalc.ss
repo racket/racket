@@ -3,24 +3,23 @@
 ;;;   based on http://www.grame.fr/Research/GCalcul/Graphic_Calculus.html
 ;;;   implemented by Eli Barzilay: Maze is Life! (eli@barzilay.org)
 
-(module gcalc mzscheme
-  (require (lib "class.ss") (lib "mred.ss" "mred") (lib "etc.ss")
-           "../show-help.ss" (lib "unit.ss"))
-  (provide game@)
+#lang mzscheme
 
-  (define customs '())
-  (define (add-custom! name get set type desc)
-    (set! customs
-          (append customs (list (make-custom name get set type desc)))))
-  (define-struct custom (name getter setter type description))
-  (define-syntax defcustom
-    (syntax-rules ()
-      [(_ var default type description)
-       (begin (define var default)
-              (add-custom! 'var (lambda () var) (lambda (v) (set! var v))
-                           type description))]))
-  (define game@
-    (unit (import) (export)
+(require (lib "class.ss") (lib "mred.ss" "mred") (lib "etc.ss")
+         "../show-help.ss" (lib "unit.ss"))
+(provide game@)
+d
+(define customs '())
+(define (add-custom! name get set type desc)
+  (set! customs (append customs (list (make-custom name get set type desc)))))
+(define-struct custom (name getter setter type description))
+(define-syntax defcustom
+  (syntax-rules ()
+    [(_ var default type description)
+     (begin (define var default)
+            (add-custom! 'var (lambda () var) (lambda (v) (set! var v))
+                         type description))]))
+(define game@ (unit (import) (export)
 
 ;;;============================================================================
 ;;; Customizations etc
@@ -1025,4 +1024,4 @@
 ;; start the whole thing
 (send gcalc-frame show #t)
 
-)))
+))
