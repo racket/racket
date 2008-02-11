@@ -230,6 +230,45 @@ Re-exports @schememodname[scheme/shared].
 
 @; ----------------------------------------------------------------------
 
+@mzlib[stxparam]
+
+Re-exports @schememodname[scheme/stxparam] and
+@schememodname[scheme/stxparam-exptime] (both at phase level 0).
+
+@; ----------------------------------------------------------------------
+
+@include-section["surrogate.scrbl"]
+
+@; ----------------------------------------------------------------------
+
+@mzlib[tar]
+
+Re-exports @schememodname[file/tar].
+
+@; ----------------------------------------------------------------------
+
+@include-section["thread.scrbl"]
+
+@; ----------------------------------------------------------------------
+
+@include-section["trace.scrbl"]
+
+@; ----------------------------------------------------------------------
+
+@include-section["traceld.scrbl"]
+
+@; ----------------------------------------------------------------------
+
+@mzlib[trait]
+
+Re-exports @schememodname[scheme/trait].
+
+@; ----------------------------------------------------------------------
+
+@include-section["transcr.scrbl"]
+
+@; ----------------------------------------------------------------------
+
 @(bibliography
  
   (bib-entry #:key "Shivers06"

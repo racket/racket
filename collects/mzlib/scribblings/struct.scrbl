@@ -12,8 +12,6 @@
 
 @mzlib[#:mode title struct]
 
-@section[#:tag "mzlib:struct"]{Structure Utilities}
-
 @defform[(copy-struct struct-id struct-expr 
                       (accessor-id field-expr) ...)]{
 
