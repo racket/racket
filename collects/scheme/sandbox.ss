@@ -215,16 +215,17 @@
          (lambda ()
            (define this (current-thread))
            (define timer
-             (thread (lambda ()
-                       (sleep sec)
-                       ;; even in this case there are no parameters
-                       ;; to copy, since it is on a different thread
-                       (set! r (cons #f 'time))
-                       (kill-thread this))))
+             (and sec
+                  (thread (lambda ()
+                            (sleep sec)
+                            ;; even in this case there are no parameters
+                            ;; to copy, since it is on a different thread
+                            (set! r (cons #f 'time))
+                            (kill-thread this)))))
            (set! r
                  (with-handlers ([void (lambda (e) (list (p) raise e))])
                    (call-with-values thunk (lambda vs (list* (p) values vs)))))
-           (kill-thread timer))))
+           (when timer (kill-thread timer)))))
       (custodian-shutdown-all c)
       (unless r (error 'call-with-limits "internal error"))
       ;; apply parameter changes first
