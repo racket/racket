@@ -221,7 +221,8 @@ static Scheme_Object *read_lang(Scheme_Object *port, Scheme_Object *stxsrc,
                                 long line, long col, long pos,
                                 Scheme_Hash_Table **ht,
                                 Scheme_Object *indentation,
-                                ReadParams *params);
+                                ReadParams *params,
+                                int init_ch);
 static Scheme_Object *read_compiled(Scheme_Object *port, Scheme_Object *stxsrc,
 				    long line, long col, long pos,
 				    Scheme_Hash_Table **ht,
@@ -320,6 +321,20 @@ static unsigned char delim[128];
 #define HONU_NUM_OK        0x8
 #define HONU_INUM_OK       0x10
 #define HONU_INUM_SIGN_OK  0x20
+
+#define is_lang_nonsep_char(ch) (scheme_isalpha(ch)     \
+                                 || scheme_isdigit(ch)  \
+                                 || ((ch) == '-')       \
+                                 || ((ch) == '+')       \
+                                 || ((ch) == '_'))
+
+#define NEXT_LINE_CHAR 0x85
+#define LINE_SEPARATOR_CHAR 0x2028
+#define PARAGRAPH_SEPARATOR_CHAR 0x2029
+#define is_line_comment_end(ch) ((ch == '\n') || (ch == '\r') \
+                                 || (ch == NEXT_LINE_CHAR) \
+                                 || (ch == LINE_SEPARATOR_CHAR) \
+                                 || (ch == PARAGRAPH_SEPARATOR_CHAR))
 
 /*========================================================================*/
 /*                             initialization                             */
@@ -1019,7 +1034,8 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	else
 	  return honu_semicolon;
       } else {
-	while (((ch = scheme_getc_special_ok(port)) != '\n') && (ch != '\r')) {
+	while (((ch = scheme_getc_special_ok(port)) != '\n') 
+               && !is_line_comment_end(ch)) {
 	  if (ch == EOF) {
             if (comment_mode & RETURN_FOR_COMMENT)
               return NULL;
@@ -1358,7 +1374,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
                                       "read: #lang expressions not currently enabled");
                       return NULL;
                     }
-                    v = read_lang(port, stxsrc, line, col, pos, ht, indentation, params);
+                    v = read_lang(port, stxsrc, line, col, pos, ht, indentation, params, 0);
                     if (!v) {
                       if (comment_mode & RETURN_FOR_SPECIAL_COMMENT)
                         return NULL;
@@ -1622,6 +1638,15 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
             if (comment_mode & RETURN_FOR_COMMENT)
               return NULL;
             goto start_over;
+          } else if ((ch < 128) && is_lang_nonsep_char(ch)) {
+            Scheme_Object *v;
+            v = read_lang(port, stxsrc, line, col, pos, ht, indentation, params, ch);
+            if (!v) {
+              if (comment_mode & RETURN_FOR_SPECIAL_COMMENT)
+                return NULL;
+              goto start_over;
+            }
+            return v;
           } else {
             if (NOT_EOF_OR_SPECIAL(ch))
               scheme_read_err(port, stxsrc, line, col, pos, 3, 
@@ -3973,7 +3998,7 @@ skip_whitespace_comments(Scheme_Object *port, Scheme_Object *stxsrc,
       ch = scheme_getc_special_ok(port);
       if (ch == SCHEME_SPECIAL)
 	scheme_get_ready_read_special(port, stxsrc, ht);
-    } while (ch != '\n' && ch != '\r' && ch != EOF);
+    } while (!is_line_comment_end(ch) && ch != EOF);
     goto start_over;
   }
 
@@ -5919,11 +5944,12 @@ static Scheme_Object *read_reader(Scheme_Object *port,
   return do_reader(modpath, port, stxsrc, line, col, pos, ht, indentation, params);
 }
 
-/* "#lang" has been read */
+/* "#lang " has been read */
 static Scheme_Object *read_lang(Scheme_Object *port,
                                 Scheme_Object *stxsrc, long line, long col, long pos,
                                 Scheme_Hash_Table **ht,
-                                Scheme_Object *indentation, ReadParams *params)
+                                Scheme_Object *indentation, ReadParams *params,
+                                int init_ch)
 {
   int size, len;
   GC_CAN_IGNORE char *sfx;
@@ -5936,7 +5962,10 @@ static Scheme_Object *read_lang(Scheme_Object *port,
   len = 0;
 
   while (1) {
-    ch = scheme_getc_special_ok(port);
+    if (!len && init_ch) {
+      ch = init_ch;
+    } else
+      ch = scheme_getc_special_ok(port);
     if (ch == EOF) {
       break;
     } else if (ch == SCHEME_SPECIAL) {
@@ -5946,11 +5975,7 @@ static Scheme_Object *read_lang(Scheme_Object *port,
       break;
     } else {
       if ((ch < 128)
-          && (scheme_isalpha(ch)
-              || scheme_isdigit(ch)
-              || (ch == '-')
-              || (ch == '+')
-              || (ch == '_')
+          && (is_lang_nonsep_char(ch)
               || (ch == '/'))) {
         if (len + 1 >= size) {
           size *= 2;
@@ -5962,7 +5987,8 @@ static Scheme_Object *read_lang(Scheme_Object *port,
       } else {
         scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation, 
                         "read: expected only alphanumberic, `-', `+', `_', or `/'"
-                        " characters for `#lang', found %c",
+                        " characters for `#%s', found %c",
+                        init_ch ? "!" : "lang",
                         ch);
         return NULL;
       }
@@ -5971,9 +5997,10 @@ static Scheme_Object *read_lang(Scheme_Object *port,
 
   if (!len) {
     scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation, 
-                    ((ch == ' ')
+                    (((ch == ' ') && !init_ch)
                      ? "read: expected a single space after `#lang'"
-                     : "read: expected a non-empty sequence of alphanumberic, `-', `+', `_', or `/' after `#lang '"));
+                     : "read: expected a non-empty sequence of alphanumberic, `-', `+', `_', or `/' after `#%s'"),
+                    init_ch ? "!" : "lang ");
     return NULL;
   }
   if (buf[0] == '/') {
@@ -5983,7 +6010,8 @@ static Scheme_Object *read_lang(Scheme_Object *port,
   }
   if (buf[len - 1] == '/') {
     scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation, 
-                    "read: expected a name that does not end `/' after `#lang'");
+                    "read: expected a name that does not end `/' after `#%s'",
+                    init_ch ? "!" : "lang");
     return NULL;
   }
 

@@ -584,19 +584,24 @@
 
   (define-syntax (quote-syntax/loc stx)
     (syntax-case stx ()
-      [(_ id) 
+      [(_ id)
        (with-syntax ([loc
                       (let ([s #'id])
-                        (list (syntax-source s)
-                              (syntax-line s)
-                              (syntax-column s)
-                              (syntax-position s)
-                              (syntax-span s)))])
-         #'(let ([s (quote-syntax id)])
+                        (vector (syntax-source s)
+                                (syntax-line s)
+                                (syntax-column s)
+                                (syntax-position s)
+                                (syntax-span s)))])
+         #'(let ([s (*quote-syntax/loc id)])
              (datum->syntax s
                             (syntax-e s)
                             'loc
                             s)))]))
+
+  (define-syntax *quote-syntax/loc
+    (syntax-rules ()
+      [(_ (sub ...)) (datum->syntax #f (list (quote-syntax/loc sub) ...))]
+      [(_ id) (quote-syntax id)]))
 
   (define void-const
     (schemeresultfont "#<void>"))
@@ -1981,7 +1986,7 @@
 
   (define-syntax-parameter current-class #f)
 
-  (define-struct decl (name super intfs ranges mk-head body))
+  (define-struct decl (name super app-mixins intfs ranges mk-head body))
   (define-struct constructor (def))
   (define-struct meth (name mode desc def))
   (define-struct spec (def))
@@ -1989,14 +1994,17 @@
 
   (define (id-info id)
     (let ([b (identifier-label-binding id)])
-      (list (let ([p (resolved-module-path-name (module-path-index-resolve (caddr b)))])
-              (if (path? p)
-                  (intern-taglet (path->main-collects-relative p))
-                  p))
-            (cadddr b)
-            (list-ref b 5))))
+      (if b
+          (list (let ([p (resolved-module-path-name (module-path-index-resolve (caddr b)))])
+                  (if (path? p)
+                      (intern-taglet (path->main-collects-relative p))
+                      p))
+                (cadddr b)
+                (list-ref b 5))
+          (error 'scribble "no class/interface/mixin information for identifier: ~e"
+                 id))))
 
-  (define-serializable-struct cls/intf (name-element super intfs methods))
+  (define-serializable-struct cls/intf (name-element app-mixins super intfs methods))
 
   (define (make-inherited-table r d ri decl)
     (let* ([start (let ([key (find-scheme-tag d ri (decl-name decl) 'for-label)])
@@ -2018,12 +2026,12 @@
                                                            (let ([key (find-scheme-tag d ri i 'for-label)])
                                                              (and key
                                                                   (cons key (lookup-cls/intf d ri key)))))
-                                                         (reverse (cls/intf-intfs (cdr super)))))
-                                            (let ([s (and (cls/intf-super (cdr super))
-                                                          (find-scheme-tag d ri (cls/intf-super (cdr super)) 'for-label))])
-                                              (if s
-                                                  (list (cons s (lookup-cls/intf d ri s)))
-                                                  null))
+                                                         (append
+                                                          (reverse (cls/intf-intfs (cdr super)))
+                                                          (if (cls/intf-super (cdr super))
+                                                              (list (cls/intf-super (cdr super)))
+                                                              null)
+                                                          (reverse (cls/intf-app-mixins (cdr super))))))
                                             (cdr supers))
                                     (cons super accum)))]))))]
            [ht (let ([ht (make-hash-table)])
@@ -2080,6 +2088,7 @@
                                   "schemevaluelink"
                                   (list (symbol->string (syntax-e (decl-name decl))))
                                   tag)))
+                          (map id-info (decl-app-mixins decl))
                           (and (decl-super decl)
                                (not (free-label-identifier=? (quote-syntax object%)
                                                              (decl-super decl)))
@@ -2194,20 +2203,36 @@
            (show-intfs intfs #f)
            (show-intfs ranges #t)))))))
 
+  (define-syntax extract-super
+    (syntax-rules ()
+      [(_ (mixin base))
+       (extract-super base)]
+      [(_ super)
+       (quote-syntax/loc super)]))
+
+  (define-syntax extract-app-mixins
+    (syntax-rules ()
+      [(_ (mixin base))
+       (cons (quote-syntax/loc mixin)
+             (extract-app-mixins base))]
+      [(_ super)
+       null]))
+
   (define-syntax *defclass
     (syntax-rules ()
       [(_ *include-class name super (intf ...) body ...)
        (*include-class
         (syntax-parameterize ([current-class (quote-syntax name)])
           (make-decl (quote-syntax/loc name)
-                     (quote-syntax/loc super)
+                     (extract-super super)
+                     (extract-app-mixins super)
                      (list (quote-syntax/loc intf) ...)
                      null
                      (lambda (whole-page?)
                        (list
                         (*class-doc 'class
                                     (quote-syntax/loc name)
-                                    (quote-syntax super)
+                                    (quote-syntax/loc super)
                                     (list (quote-syntax intf) ...)
                                     null
                                     whole-page?
@@ -2231,6 +2256,7 @@
         (syntax-parameterize ([current-class (quote-syntax name)])
           (make-decl (quote-syntax/loc name)
                      #f
+                     null
                      (list (quote-syntax/loc intf) ...)
                      null
                      (lambda (whole-page?)
@@ -2261,6 +2287,7 @@
         (syntax-parameterize ([current-class (quote-syntax name)])
           (make-decl (quote-syntax/loc name)
                      #f
+                     null
                      (list (quote-syntax/loc domain) ...)
                      (list (quote-syntax/loc range) ...)
                      (lambda (whole-page?)
@@ -2394,8 +2421,9 @@
              (if key
                  (let ([v (lookup-cls/intf d ri key)])
                    (if v
-                       (cons (cls/intf-super v)
-                             (cls/intf-intfs v))
+                       (append (cls/intf-app-mixins v)
+                               (cons (cls/intf-super v)
+                                     (cls/intf-intfs v)))
                        null))
                  null))])
       (make-delayed-element
@@ -2425,6 +2453,7 @@
     (let ([v (resolve-get d ri `(cls/intf ,(cadr tag)))])
       (or v
           (make-cls/intf "unknown"
+                         null
                          #f
                          null
                          null))))

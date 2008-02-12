@@ -505,7 +505,9 @@ the @scheme[read-accept-quasiquote] @tech{parameter} is set to
 
 A @as-index{@litchar{;}} starts a line comment. When the reader
 encounters @litchar{;}, then it skips past all characters until the
-next linefeed or carriage return.
+next linefeed (ASCII 10), carriage return (ASCII 13), next-line
+(Unicode @scheme[#x0085]), line-separator (Unicode @scheme[#x2028]),
+or line-separator (Uunicode @scheme[#x2028]) character.
 
 A @as-index{@litchar["#|"]} starts a nestable block comment.  When the
 reader encounters @litchar["#|"], then it skips past all characters

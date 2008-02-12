@@ -6279,7 +6279,7 @@ int compute_reprovides(Scheme_Hash_Table *_provided, Scheme_Hash_Table *_et_prov
           Scheme_Object *nominal_modidx, *name, *modidx, *srcname, *outname, *nml, *orig_nml, *mark_src;
           int break_outer = 0;
 	
-          name = required->keys[i];
+          name = required->keys[i]; /* internal symbolic name */
           orig_nml = SCHEME_VEC_ELS(required->vals[i])[0];
           modidx = SCHEME_VEC_ELS(required->vals[i])[1];
           srcname = SCHEME_VEC_ELS(required->vals[i])[2];
@@ -6532,6 +6532,9 @@ static Scheme_Object *adjust_for_rename(Scheme_Object *out_name, Scheme_Object *
 {
   Scheme_Object *first = scheme_null, *last = NULL, *p, *a;
 
+  if (SCHEME_STXP(in_name))
+    in_name = SCHEME_STX_VAL(in_name);
+
   if (SAME_OBJ(in_name, out_name))
     return noms;
 
@@ -6595,8 +6598,8 @@ char *compute_provide_arrays(Scheme_Hash_Table *provided, Scheme_Hash_Table *req
       Scheme_Object *name, *prnt_name, *v;
       int protected;
 	
-      v = provided->vals[i];
-      name = SCHEME_CAR(v);
+      v = provided->vals[i]; /* external name */
+      name = SCHEME_CAR(v);  /* internal name (maybe already a symbol) */
       protected = SCHEME_TRUEP(SCHEME_CDR(v));
 
       prnt_name = name;
@@ -6636,7 +6639,7 @@ char *compute_provide_arrays(Scheme_Hash_Table *provided, Scheme_Hash_Table *req
             exs[count] = provided->keys[i];
             exsns[count] = SCHEME_VEC_ELS(v)[2];
             exss[count] = SCHEME_VEC_ELS(v)[1];
-            noms = adjust_for_rename(exs[count], name, SCHEME_VEC_ELS(v)[0]);
+            noms = adjust_for_rename(exs[count], SCHEME_VEC_ELS(v)[4], SCHEME_VEC_ELS(v)[0]);
             exsnoms[count] = noms;
             exps[count] = protected;
             count++;
@@ -6657,7 +6660,7 @@ char *compute_provide_arrays(Scheme_Hash_Table *provided, Scheme_Hash_Table *req
       int protected;
 	  
       v = provided->vals[i];
-      name = SCHEME_CAR(v);
+      name = SCHEME_CAR(v); /* internal name (maybe already a symbol) */
       protected = SCHEME_TRUEP(SCHEME_CDR(v));
 
       if (SCHEME_STXP(name)) {
@@ -6691,7 +6694,7 @@ char *compute_provide_arrays(Scheme_Hash_Table *provided, Scheme_Hash_Table *req
             exs[count] = provided->keys[i];
             exsns[count] = SCHEME_VEC_ELS(v)[2];
             exss[count] = SCHEME_VEC_ELS(v)[1];
-            noms = adjust_for_rename(exs[count], name, SCHEME_VEC_ELS(v)[0]);
+            noms = adjust_for_rename(exs[count], SCHEME_VEC_ELS(v)[4], SCHEME_VEC_ELS(v)[0]);
             exsnoms[count] = noms;
             exps[count] = protected;
             count++;
