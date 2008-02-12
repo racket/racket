@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define name "htdch")
+(define name "Java Teachpacks")
 (define compile-subcollections
   '(("htdch" "draw")
     ("htdch" "geometry")

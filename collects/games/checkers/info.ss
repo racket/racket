@@ -1,5 +1,4 @@
 #lang setup/infotab
 
-(define name "Checkers")
 (define game "checkers.ss")
 (define game-set "Board Games")

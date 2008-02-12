@@ -1,4 +1,4 @@
 #lang setup/infotab
 
-(define name "Game Cards")
+(define name "Cards game library")
 (define scribblings '(("cards.scrbl")))

@@ -1,6 +1,5 @@
 #lang setup/infotab
 
-(define name "DrScheme Test Suite")
 (define compile-omit-files
   '("config-lang-test.ss" "drscheme-jr.ss" "drscheme-test.ss" 
     "event-efficency.ss" ;"language-test.ss"

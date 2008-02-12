@@ -1,7 +1,5 @@
 #lang setup/infotab
 
-(define name "R5RS")
-
 (define scribblings '(("r5rs.scrbl" (multi-page))))
 (define doc-categories '((legacy 1)))
 

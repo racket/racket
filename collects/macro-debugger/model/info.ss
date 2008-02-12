@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define name "Macro Debugger expansion model")
+(define name "Expansion Model")

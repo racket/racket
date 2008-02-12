@@ -172,8 +172,12 @@
                         'setup-plt
                         "'name' result from collection ~e is not a string: ~e"
                         collection-p
-                        x))))])
-      (and name
+                        x))))]
+           [name (string-append (path->string (apply build-path collection-p))
+                                (if name
+                                  (string-append " (" name ")")
+                                  ""))])
+      (and info
            (make-cc collection-p
                     (apply collection-path collection-p)
                     name

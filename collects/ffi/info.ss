@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define name "Foreign Function Interfaces")
+(define name "Sample FFIs")

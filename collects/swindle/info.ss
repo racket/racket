@@ -1,7 +1,6 @@
 ;;; Written by Eli Barzilay: Maze is Life!  (eli@barzilay.org)
 #lang setup/infotab
 
-(define name "Swindle")
 (define mzscheme-launcher-names '("swindle"))
 (define mzscheme-launcher-flags '(("-li" "swindle")))
 

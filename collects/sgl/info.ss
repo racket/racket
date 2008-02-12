@@ -1,6 +1,5 @@
 #lang setup/infotab
 
-(define name "sgl")
 (define pre-install-collection "makefile.ss")
 (define compile-omit-files (list))
 (define virtual-sources '("gl-info.ss"))

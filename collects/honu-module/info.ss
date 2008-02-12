@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define name "#honu")
+(define name "#honu Language")

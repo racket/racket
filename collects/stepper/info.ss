@@ -1,7 +1,5 @@
 #lang setup/infotab
 
-(define name "Stepper")
-
 (define tools '(("stepper+xml-tool.ss")
                 ;; ("debugger-tool.ss")
                 ))

@@ -1,7 +1,5 @@
 #lang setup/infotab
 
-(define name "SRFI 1")
-
 (define compile-omit-files
   '("alist-test.ss"
     "all-srfi-1-tests.ss"

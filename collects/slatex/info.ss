@@ -1,7 +1,5 @@
 #lang setup/infotab
 
-(define name "SLaTeX")
-
 (define scribblings '(("slatex-wrap.scrbl")))
 
 ;; (define tools (list (list "slatex-lang.ss")))

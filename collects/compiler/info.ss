@@ -1,7 +1,5 @@
 #lang setup/infotab
 
-(define name "mzc")
-
 (define scribblings '(("cffi.scrbl")))
 (define doc-categories '((foreign -1)))
 

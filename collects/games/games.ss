@@ -15,7 +15,8 @@
     (and main
          (make-game
           (gamefile main)
-          (info 'name (lambda () (string-titlecase game)))
+          (info 'name (lambda ()
+                        (string-titlecase (regexp-replace* #rx"-" game " "))))
           (info 'game-set  (lambda () "Other Games"))
           (info 'game-icon (lambda () (gamefile (format "~a.png" game))))))))
 

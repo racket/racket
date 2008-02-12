@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define name "Scribblings")
+(define name "Documentation Sources")

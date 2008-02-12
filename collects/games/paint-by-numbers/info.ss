@@ -1,6 +1,5 @@
 #lang setup/infotab
 
-(define name "Paint by Numbers")
 (define game "paint-by-numbers.ss")
 (define game-set "Puzzle Games")
 (define compile-omit-files
