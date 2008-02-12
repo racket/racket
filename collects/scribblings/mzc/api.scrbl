@@ -80,14 +80,15 @@ following fields are used:
        required by other files that are compiled, however, will get
        compiled in the process, even when listed with this field.}
 
- @item{@scheme[compile-zo-omit-files] - A List of filenames to extend
+ @item{@scheme[compile-zo-omit-files] : A List of filenames to extend
        the list for @scheme[compile-omit-files]. Historically, this
        list of files was not used for other compilation modes that are
        no longer supported.}
 
  @item{@scheme[compile-subcollections] : A list of collection paths,
-       where each path is a list of
-       strings. @scheme[compile-collection-extension] is applied to
+       where each path is a list of strings specifying a collection
+       (from the collection root, not relative).
+       @scheme[compile-collection-extension] is applied to
        each of the collections.}
 }
 
@@ -99,7 +100,7 @@ The compilation process is driven by @scheme[managed-compile-zo] from
 @schememodname[compiler/cm].}
 
 
-@defproc[(compile-directory-zos [path path-string?] 
+@defproc[(compile-directory-zos [path path-string?]
                                 [info ()])
          void?]{
 
