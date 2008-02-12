@@ -8,7 +8,7 @@
 (require (lib "class.ss") (lib "mred.ss" "mred") (lib "etc.ss")
          "../show-help.ss" (lib "unit.ss"))
 (provide game@)
-d
+
 (define customs '())
 (define (add-custom! name get set type desc)
   (set! customs (append customs (list (make-custom name get set type desc)))))
