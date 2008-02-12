@@ -539,7 +539,7 @@
     (make-keyword-procedure
      (lambda (kws kw-args . rest)
        (port-count-lines! (current-input-port))
-       (keyword-apply current-readtable kws kw-args rest))))
+       (keyword-apply make-at-readtable kws kw-args rest))))
 
   ;; utilities for below
   (define make-default-at-readtable
