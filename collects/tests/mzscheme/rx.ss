@@ -1662,6 +1662,14 @@
 		      (loop (if uniform? end (+ n 1)))))))
 	      kcrl)))
 
+
+(test '(#" ") regexp-match #px#"\t|\\p{Zs}" " ")
+(test '(" ") regexp-match #px"\t|\\p{Zs}" " ")
+(test '(#"\t") regexp-match #px#"\t|\\p{Zs}" "\t")
+(test '("\t") regexp-match #px"\t|\\p{Zs}" "\t")
+(test #f regexp-match #px#"\t|\\p{Zs}" "a")
+(test #f regexp-match #px"\t|\\p{Zs}" "a")
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check that [\s] doesn't match \s, etc.

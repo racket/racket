@@ -1424,10 +1424,12 @@
                         (let ([just-name
                                (make-target-element*
                                 make-toc-target-element
-                                stx-id
+                                (if (pair? name)
+                                    (car (syntax-e stx-id))
+                                    stx-id)
                                 (annote-exporting-library
                                  (to-element (if (pair? name)
-                                                 (make-just-context (car name) stx-id)
+                                                 (make-just-context (car name) (car (syntax-e stx-id)))
                                                  stx-id)))
                                 (let ([name (if (pair? name)
                                                 (car name)
@@ -1445,13 +1447,14 @@
                                            (map (lambda (f)
                                                   (if (or (not immutable?)
                                                           (and (pair? (car f))
-                                                                (memq '#:mutable (car f))))
+                                                               (memq '#:mutable (car f))))
                                                       (list 'mutator 'set- name '- (field-name f) '!)
                                                       #f))
                                                 fields))))))])
                           (if (pair? name)
                               (to-element (list just-name
-                                                (make-just-context (cadr name) stx-id)))
+                                                (make-just-context (cadr name) 
+                                                                   (cadr (syntax-e stx-id)))))
                               just-name))]
                        [short-width (apply +
                                            (length fields)

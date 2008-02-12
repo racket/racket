@@ -583,9 +583,9 @@ of by-name arguments (for use with @scheme[new]).}
 Like @scheme[defconstructor/make], but with multiple constructor
 patterns analogous @scheme[defproc*].}
 
-@defform[(defconstructor/super-init [(arg-spec ...) ...] pre-flow ...)]{
+@defform[(defconstructor/auto-super [(arg-spec ...) ...] pre-flow ...)]{
 
-Like @scheme[defconstructor/super-init], but the constructor is
+Like @scheme[defconstructor], but the constructor is
 annotated to indicate that additional initialization arguments are
 accepted and propagated to the sueprclass.}
 

@@ -103,6 +103,12 @@ languages, where @schememodname[scheme] includes all of
              #:location "Workshop on Scheme and Functional Programming"
              #:date "2004")
 
+ (bib-entry #:key "Sperber07"
+            #:author "Michael Sperber, R. Kent Dybvig, Matthew Flatt, and Anton van Straaten (editors)"
+            #:title @elem{The Revised@superscript{6} Report on the Algorithmic Language Scheme}
+            #:date "2007"
+            #:url "http://www.r6rs.org/")
+
   (bib-entry #:key "Sitaram90"
              #:author "Dorai Sitaram"
              #:title "Control Delimiters and Their Hierarchies"

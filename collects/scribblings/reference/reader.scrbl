@@ -116,6 +116,7 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar{#,}]{starts a syntax quote; see @secref["parse-quote"]}
   @dispatch[@litchar["#! "]]{starts a line comment; see @secref["parse-comment"]}
   @dispatch[@litchar["#!/"]]{starts a line comment; see @secref["parse-comment"]}
+  @dispatch[@litchar["#!"]]{may start a reader extension; see @secref["parse-reader"]}
   @dispatch[@litchar{#`}]{starts a syntax quasiquote; see @secref["parse-quote"]}
   @dispatch[@litchar{#,}]{starts an syntax [splicing] unquote; see @secref["parse-quote"]}
   @dispatch[@litchar["#~"]]{starts compiled code; see @scheme[current-compile]}
@@ -750,14 +751,21 @@ If the @scheme[read-accept-reader] @tech{parameter} is set to
 
 @guideintro["hash-lang"]{@schememodfont["#lang"]}
 
-The @as-index{@litchar{#lang}} reader form is similar, but more
-constrained: the @litchar{#lang} must be followed by a single space
-(ASCII 32), and then a non-empty sequence of alphanumeric ASCII,
-@litchar{+}, @litchar{-}, @litchar{_}, and/or @litchar{/} characters
-terminated by @schemelink[char-whitespace?]{whitespace} or an
-end-of-file.  The sequence must not start or end with @litchar{/}. A
-sequence @litchar{#lang }@nonterm{name} is equivalent to
-@litchar{#reader }@nonterm{name}@litchar{/lang/reader}.
+The @as-index{@litchar{#lang}} reader form is similar to
+@litchar{#reader}, but more constrained: the @litchar{#lang} must be
+followed by a single space (ASCII 32), and then a non-empty sequence
+of alphanumeric ASCII, @litchar{+}, @litchar{-}, @litchar{_}, and/or
+@litchar{/} characters terminated by
+@schemelink[char-whitespace?]{whitespace} or an end-of-file.  The
+sequence must not start or end with @litchar{/}. A sequence
+@litchar{#lang }@nonterm{name} is equivalent to @litchar{#reader
+}@nonterm{name}@litchar{/lang/reader}.
+
+Finally, @as-index{@litchar{#!}} followed by alphanumeric ASCII,
+@litchar{+}, @litchar{-}, or @litchar{_} is a synonym for
+@litchar{#lang} followed by a space. Use of this synonym is discourage
+except as needed to construct programs that conform to certain
+grammars, such as that of R@superscript{6}RS @cite["Sperber07"].
 
 By convention, @litchar{#lang} normally appears at the beginning of a
 file, possibly after comment forms, to specify the syntax of a module.

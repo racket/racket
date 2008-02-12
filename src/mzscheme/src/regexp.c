@@ -1742,9 +1742,14 @@ regranges(int parse_flags, int at_start)
 	if ((c >= '0') && (c <= '9'))
 	  break;
 	if (((c >= 'a') && (c <= 'z'))
-	    || ((c >= 'A') && (c <= 'Z')))
+	    || ((c >= 'A') && (c <= 'Z'))) {
+          if ((c == 'p') || (c == 'P')) {
+            /* unicode char class; give up */
+            break;
+          }
 	  regcharclass(regparsestr[regparse], new_map);
-	else
+          
+	} else
 	  new_map[c] = 1;
       } else
 	new_map[c] = 1;
