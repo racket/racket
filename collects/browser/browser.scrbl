@@ -379,7 +379,7 @@ The @(litchar "MZSCHEME") forms are disabled unless the web page is a
         This method is called by the hypertext canvas to notify the
         panel that the hypertext page changed. The @scheme[page] is @scheme[#f]
         if @scheme[new-page] is the first page for the canvas. See also
-        @method[hyper-panel-mixin page->editor].
+        @scheme[page->editor].
         }
 
         @defmethod[(filter-notes [notes (listof string?)])

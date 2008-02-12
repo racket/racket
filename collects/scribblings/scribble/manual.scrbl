@@ -513,12 +513,15 @@ at once, aligned around the @litchar{=} and @litchar{|}.}
 @; ------------------------------------------------------------------------
 @section[#:tag "doc-classes"]{Documenting Classes and Interfaces}
 
-@defform[(defclass id super-id (intf-id ...) pre-flow ...)]{
+@defform/subs[(defclass id super (intf-id ...) pre-flow ...)
+              ([super super-id
+                      (mixin-id super)])]{
 
 Creates documentation for a class @scheme[id] that is a subclass of
-@scheme[super-id] and implements each interface @scheme[intf-id]. Each
-@scheme[super-id] (except @scheme[object%]) and @scheme[intf-id] must
-be documented somewhere via @scheme[defclass] or @scheme[definterface].
+@scheme[super] and implements each interface @scheme[intf-id]. Each
+identifier in @scheme[super] (except @scheme[object%]) and
+@scheme[intf-id] must be documented somewhere via @scheme[defclass] or
+@scheme[definterface].
 
 The decoding of the @scheme[pre-flow] sequence should start with
 general documentation about the class, followed by constructor
@@ -527,7 +530,7 @@ definitions (see @scheme[defmethod]). In rendered form, the
 constructor and method specification are indented to visually group
 them under the class definition.}
 
-@defform[(defclass/title id super-id (intf-id ...) pre-flow ...)]{
+@defform[(defclass/title id super (intf-id ...) pre-flow ...)]{
 
 Like @scheme[defclass], also includes a @scheme[title] declaration
 with the style @scheme['hidden]. In addition, the constructor and
@@ -579,6 +582,12 @@ of by-name arguments (for use with @scheme[new]).}
 
 Like @scheme[defconstructor/make], but with multiple constructor
 patterns analogous @scheme[defproc*].}
+
+@defform[(defconstructor/super-init [(arg-spec ...) ...] pre-flow ...)]{
+
+Like @scheme[defconstructor/super-init], but the constructor is
+annotated to indicate that additional initialization arguments are
+accepted and propagated to the sueprclass.}
 
 @defform[(defmethod (id arg-spec ...)
                     result-contract-expr-datum
