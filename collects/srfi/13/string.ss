@@ -1835,7 +1835,7 @@
   ;; 
   ;; Paste strings together using the delimiter string.
   ;; 
-  ;; (join-strings '("foo" "bar" "baz") ":") => "foo:bar:baz"
+  ;; (string-join '("foo" "bar" "baz") ":") => "foo:bar:baz"
   ;; 
   ;; DELIMITER defaults to a single space " "
   ;; GRAMMAR is one of the symbols {prefix, infix, strict-infix, suffix} 
