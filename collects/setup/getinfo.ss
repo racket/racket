@@ -31,7 +31,7 @@
         (lambda ()
           (begin0 (read)
             (unless (eof-object? (read))
-              (err "has multiple expressions" file)))))))
+              (err "has multiple expressions")))))))
   (and (file-exists? file)
        (match (contents)
          [(list 'module 'info
