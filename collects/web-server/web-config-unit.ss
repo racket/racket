@@ -11,17 +11,17 @@
 ; XXX unit? should be particular unit sig
 (provide/contract
  [configuration-table->web-config@
-  (-> path-string?
-      #:port (or/c false/c number?)
-      #:listen-ip (or/c false/c string?)
-      #:make-servlet-namespace make-servlet-namespace?
+  (->* (path-string?)
+       (#:port (or/c false/c number?)
+               #:listen-ip (or/c false/c string?)
+               #:make-servlet-namespace make-servlet-namespace?)
       unit?)]
  [configuration-table-sexpr->web-config@
-  (-> list? ; XXX
-      #:web-server-root path-string?
+  (->* (list?) ; XXX
+      (#:web-server-root path-string?
       #:port (or/c false/c number?)
       #:listen-ip (or/c false/c string?)
-      #:make-servlet-namespace make-servlet-namespace?
+      #:make-servlet-namespace make-servlet-namespace?)
       unit?)])
 
 ; configuration-table->web-config@ : path -> configuration
