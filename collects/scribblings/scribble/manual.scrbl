@@ -860,6 +860,16 @@ key for the index iterm does not include quotes.}
 combination of @scheme[envvar] and @scheme[as-index].}
 
 @; ------------------------------------------------------------------------
+@section{Images}
+
+@defproc[(image [filename-relative-to-source string?]) element?]{
+ creates a centered image, from the given relative source path.}
+
+@defproc[(image/plain [filename-relative-to-source string?]) element?]{
+ creates an in-lined image, from the given relative source path.}
+
+
+@; ------------------------------------------------------------------------
 @section{Bibliography}
 
 @defproc[(cite [key string?]) element?]{
