@@ -138,8 +138,9 @@
       (if path
           (collapse-module-path
            path
-           (and base
-                (collapse-module-path-index base relto-mp)))
+           (if base
+               (collapse-module-path-index base relto-mp)
+               relto-mp))
           relto-mp)))
 
   (define simple-rel-to-module-path-v/c
