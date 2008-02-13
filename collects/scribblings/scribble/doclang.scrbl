@@ -14,6 +14,6 @@ essentially packages the body of the module into a call to
 @scheme[doc].
 
 Any module-level form other than an expression (e.g., a
-@scheme[require] or @scheme[define]) is remains at the top level, and
+@scheme[require] or @scheme[define]) remains at the top level, and
 the @scheme[doc] binding is put at the end of the module. As usual, a
 module-top-level @scheme[begin] slices into the module top level.
