@@ -1582,8 +1582,8 @@
                   ans)))))
 
 
-                                        ; Alas, Scheme 48's APPLY blows up if you have many, many arguments.
-                                        ;(define (string-concatenate strings) (apply string-append strings))
+;; Alas, Scheme 48's APPLY blows up if you have many, many arguments.
+;;(define (string-concatenate strings) (apply string-append strings))
 
 ;; Here it is written out. I avoid using REDUCE to add up string lengths
 ;; to avoid non-R5RS dependencies.
@@ -1602,7 +1602,7 @@
 
 
 ;; Defined by R5RS, so commented out here.
-                                        ;(define (string-append . strings) (string-concatenate strings))
+;;(define (string-append . strings) (string-concatenate strings))
 
 ;; string-concatenate-reverse        string-list [final-string end] -> string
 ;; string-concatenate-reverse/shared string-list [final-string end] -> string
