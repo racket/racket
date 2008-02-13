@@ -399,7 +399,7 @@ return multiple values. If present, the @scheme[rest-expr]
 contract governs the arguments in the rest parameter.
 
 As an example, the contract 
-@schemeblock[(->* () (boolean? #:x integer?) (listof symbol?) (symbol?))] 
+@schemeblock[(->* () (boolean? #:x integer?) #:rest (listof symbol?) (symbol?))] 
 matches functions that optionally accept a boolean, an
 integer keyword argument @scheme[#:x] and arbitrarily more
 symbols, and that return a symbol.
