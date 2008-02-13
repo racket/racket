@@ -244,7 +244,7 @@
            litchar
            verbatim)
 
-  (provide image onscreen menuitem defterm emph
+  (provide image image/plain onscreen menuitem defterm emph
            schemefont schemevalfont schemeresultfont schemeidfont schemevarfont 
            schemeparenfont schemekeywordfont schememetafont schememodfont
            filepath exec envvar Flag DFlag PFlag DPFlag
@@ -260,6 +260,13 @@
       (make-element
 	(make-image-file filename-relative-to-source)
 	(decode-content alt))))
+
+  ;; MF! -- the centerline is used in the drscheme manual
+  ;; otherwise I'd switch 
+  (define (image/plain filename-relative-to-source . alt)
+    (make-element 
+      (make-image-file filename-relative-to-source)
+      (decode-content alt)))
 
   (define (onscreen . str)
     (make-element 'sf (decode-content str)))
