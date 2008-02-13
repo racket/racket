@@ -137,7 +137,7 @@ A second (optional) boolean argument indicates whether the callback
             boolean?]
            [(yield [v (or/c (one-of/c 'wait) evt?)])
             any/c])]{
-\index{pause}\index{wait}
+@;\index{pause}\index{wait}
 Yields control to event dispatching. See
  @secref["eventspaceinfo"] for details.
 
