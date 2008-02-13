@@ -447,7 +447,11 @@ If the namespace does not, they are colored the unbound color.
                                         new-vec)
                                        new-vec)))])
                 (let loop ([p start])
-                  (when (<= p end)
+                  (when (and (<= p end)
+                             (< p (vector-length arrow-vector))) 
+                    ;; the last test in the above and is because some syntax objects
+                    ;; appear to be from the original source, but can have bogus information.
+                    
                     (let ([r (vector-ref arrow-vector p)])
                       (cond
                         [use-key?
