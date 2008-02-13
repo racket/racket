@@ -5472,6 +5472,24 @@ so that propagation occurs.
       (eval '(require 'provide/contract26))
       (eval '(pc26-s-a (make-pc26-s 1))))
    1)
+  
+  (test/spec-passed/result
+   'provide/contract27
+   '(begin
+      (eval '(module provide/contract27a scheme/base
+               (require scheme/contract)
+               (define-struct person (name) #:transparent)
+               (provide/contract (struct person ([name string?])))))
+      (eval '(module provide/contract27b scheme/base
+               (require 'provide/contract27a)
+               (provide (struct-out person))))
+      (eval '(module provide/contract27c scheme/base
+               (require 'provide/contract27b)
+               (define provide/contract27ans (person-name (make-person "me")))
+               (provide provide/contract27ans)))
+      (eval '(require 'provide/contract27c))
+      (eval 'provide/contract27ans))
+   "me")
 
   (contract-error-test
    #'(begin
