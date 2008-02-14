@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-label htdp/testing))
+          (for-label teachpack/htdp/testing))
 
 @title{Test Box Recovery Tool}
 
@@ -8,8 +8,7 @@ The text-box recovery tool allows DrScheme v370 and later to read
 programs created using v360 and earlier that include test-case boxes.
 
 When opened using this tool, test-case boxes are turned into
-@scheme[check-expect] forms that work with the
-@schememodname[htdp/testing] teachpack.
+@scheme[check-expect] forms.
 
 Test boxes plain-text tests and expected results are converted to
 plain-text @scheme[check-expect] forms. 
