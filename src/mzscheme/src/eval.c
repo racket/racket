@@ -80,9 +80,16 @@
    Bytecodes are not linear. They're actually trees of expression
    nodes.
 
+   Top-level variables (global or module) are referenced through the
+   Scheme stack, so that the variables can be "re-linked" each time a
+   module is instantiated. Syntax constants are similarly accessed
+   through the Scheme stack. The global variables and syntax objects
+   are sometimes called the "prefix", and scheme_push_prefix()
+   initializes the prefix portion of the stack.
+
    Compilation:
 
-   Compilation works in three passes.
+   Compilation works in four passes.
 
    The first pass, called "compile", performs most of the work and
    tracks variable usage (including whether a variable is mutated or
@@ -101,12 +108,10 @@
    due to sharing (potentially cyclic) of closures that are "empty"
    but actually refer to other "empty" closures.
 
-   Top-level variables (global or module) are referenced through the
-   Scheme stack, so that the variables can be "re-linked" each time a
-   module is instantiated. Syntax constants are similarly accessed
-   through the Scheme stack. The global variables and syntax objects
-   are sometimes called the "prefix", and scheme_push_prefix()
-   initializes the prefix portion of the stack.
+   The fourth pass, "sfs", performs another liveness analysis on stack
+   slows and inserts operations to clear stack slots as necessary to
+   make execution safe for space. In particular, dead slots need to be
+   cleared before a non-tail call into arbitrary Scheme code.
 
    Just-in-time compilation:
 
@@ -3574,7 +3579,7 @@ static Scheme_Object *sfs_one_branch(SFS_Info *info, int ip,
           n = SCHEME_INT_VAL(o);
           SFS_LOG(printf(" @%d %d\n", i + t_min_t, n));
           if (info->max_used[i + t_min_t] < n) {
-            SFS_LOG(printf(" |%d %d\n", i + t_min_t, n));
+            SFS_LOG(printf(" |%d %d %d\n", i + t_min_t, n, info->max_nontail));
             info->max_used[i + t_min_t] = n;
             info->max_calls[i + t_min_t] = info->max_nontail;
           }
@@ -3587,10 +3592,12 @@ static Scheme_Object *sfs_one_branch(SFS_Info *info, int ip,
        Note that it doesn't matter whether the other branch actually
        clears them (i.e., the relevant non-tail call might be only
        in this branch). */
-    o = SCHEME_VEC_ELS(vec)[((1 - delta) * SFS_BRANCH_W) + 3];
+    o = SCHEME_VEC_ELS(vec)[(delta * SFS_BRANCH_W) + 3];
     b_end = SCHEME_INT_VAL(o);
+    SFS_LOG(printf(" %d %d %d %d\n", nt, ip, b_end, save_nt));
     if (((nt > (ip + 1)) && (nt < b_end)) /* => non-tail call in branch */
         || ((ip + 1) < save_nt)) { /* => non-tail call after branches */
+      SFS_LOG(printf(" other\n"));
       o = SCHEME_VEC_ELS(vec)[(1 - delta) * SFS_BRANCH_W];
       t_min_t = SCHEME_INT_VAL(o);
       if (t_min_t > -1) {
@@ -3608,10 +3615,10 @@ static Scheme_Object *sfs_one_branch(SFS_Info *info, int ip,
             pos = i + t_min_t;
             at_ip = info->max_used[pos];
             SFS_LOG(printf(" ?%d %d %d\n", pos, n, at_ip));
+            /* is last use in other branch? */
             if (((!delta && (at_ip == ip))
-                 || (delta && (at_ip == n)))
-                && (at_ip < info->max_calls[pos])) {
-              /* Add clear */
+                 || (delta && (at_ip == n)))) {
+              /* Yes, so add clear */
               SFS_LOG(printf(" !%d %d %d\n", pos, n, at_ip));
               pos -= info->stackpos;
               clears = scheme_make_pair(scheme_make_integer(pos), 
@@ -3668,6 +3675,9 @@ static Scheme_Object *sfs_one_branch(SFS_Info *info, int ip,
     SCHEME_VEC_ELS(vec)[(delta * SFS_BRANCH_W) + 2] = scheme_make_integer(info->max_nontail);
     SCHEME_VEC_ELS(vec)[(delta * SFS_BRANCH_W) + 3] = scheme_make_integer(info->ip);
   }
+
+  memset(info->max_used + info->stackpos, 0, (stackpos - info->stackpos) * sizeof(int));
+  memset(info->max_calls + info->stackpos, 0, (stackpos - info->stackpos) * sizeof(int));
 
   info->stackpos = stackpos;
 
@@ -3784,11 +3794,12 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
 {
   Scheme_Let_One *lo = (Scheme_Let_One *)o;
   Scheme_Object *body, *rhs, *vec;
-  int pos, save_mnt;
+  int pos, save_mnt, ip, et;
 
   scheme_sfs_start_sequence(info, 2, 1);
 
   scheme_sfs_push(info, 1, 1);
+  ip = info->ip;
   pos = info->stackpos;
   save_mnt = info->max_nontail;
 
@@ -3822,10 +3833,34 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
     SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(info->max_nontail);
   } else {
     info->max_nontail = save_mnt;
+
+    if (info->max_used[pos] <= ip) {
+      /* No one is using it, so either don't push the real value, or clear it.
+         The optimizer normally would have converted away the binding, but
+         it might not because (1) it was introduced late by inlining,
+         or (2) the rhs expression doesn't always produce a single
+         value. */
+      if (scheme_omittable_expr(rhs, 1, -1, 1)) {
+        rhs = scheme_false;
+      } else {
+        Scheme_Object *clr;
+        Scheme_Sequence *s;
+        s = malloc_sequence(2);
+        s->so.type = scheme_sequence_type;
+        s->count = 2;
+        clr = scheme_make_local(scheme_local_type, 0, SCHEME_LOCAL_CLEAR_ON_READ);
+        s->array[0] = clr;
+        s->array[1] = body;
+        body = (Scheme_Object *)s;
+      }
+    }
   }
 
   lo->value = rhs;
   lo->body = body;
+
+  et = scheme_get_eval_type(lo->value);
+  SCHEME_LET_EVAL_TYPE(lo) = et;
 
   return o;
 }

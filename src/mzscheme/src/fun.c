@@ -1097,9 +1097,9 @@ Scheme_Object *scheme_sfs_closure(Scheme_Object *expr, SFS_Info *info, int self_
         }
       }
     }
-    
+
     code = scheme_sfs(data->code, info, data->max_let_depth);
-    
+
     /* If any arguments go unused, and if there's a non-tail,
        non-immediate call in the body, then we flush the
        unused arguments at the start of the body. We assume that
