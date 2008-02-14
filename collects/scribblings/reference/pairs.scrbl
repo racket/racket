@@ -91,7 +91,7 @@ containing the @scheme[v]s as its elements.}
 @defproc[(list* [v any/c] ... [tail any/c]) any/c]{
 
 Like @scheme[list], but the last argument is used as the tail of
-the result, insteda of the final element. The result is a list
+the result, instead of the final element. The result is a list
 only if the last argument is a list.}
 
 @defproc[(build-list [n exact-nonnegative-integer?]

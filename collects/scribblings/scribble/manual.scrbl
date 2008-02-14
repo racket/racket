@@ -742,7 +742,7 @@ in HTML without an underline.}
                   [pre-content any/c] ...) element?]{
 
 Like @scheme[secref], but the link label is the @tech{decode}d
-@scheme[pre-content] insteda of the target section's name.}
+@scheme[pre-content] instead of the target section's name.}
 
 @defproc[(other-manual [module-path module-path?]
                        [#:underline? underline? any/c #t])
