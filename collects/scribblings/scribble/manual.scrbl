@@ -209,13 +209,13 @@ Like @scheme[defmodule], but documents @scheme[id] as a module path
 suitable for use by either @scheme[require] or @schememodfont{#lang}.}
 
 
-@defform[(defmodule* (id ...) maybe-sources pre-flow ...)]{
+@defform[(defmodule* (id ...+) maybe-sources pre-flow ...)]{
 
 Like @scheme[defmodule], but introduces multiple module paths instead
 of just one.}
 
 
-@defform[(defmodulelang* (id ...) maybe-sources pre-flow ...)]{
+@defform[(defmodulelang* (id ...+) maybe-sources pre-flow ...)]{
 
 Like @scheme[defmodulelang], but introduces multiple module paths
 instead of just one.}
@@ -266,6 +266,13 @@ declaration:
        the @scheme[declare-exporting] declaration.}
 
 }
+
+The initial @scheme[mod-path]s sequence can be empty if
+@scheme[mod-path]s are given with @scheme[#:use-sources]. In that
+case, the rendered documentation never reports an exporting module for
+identifiers that are documented within the section, but the
+@scheme[mod-path]s in @scheme[#:use-sources] provide a binding context
+for connecting (via hyperlinks) definitions and uses of identifiers.
 
 The @scheme[declare-exporting] form should be used no more than once
 per section, since the declaration applies to the entire section,
@@ -862,12 +869,22 @@ combination of @scheme[envvar] and @scheme[as-index].}
 @; ------------------------------------------------------------------------
 @section{Images}
 
-@defproc[(image [filename-relative-to-source string?]) element?]{
- creates a centered image, from the given relative source path.}
+@defproc[(image [filename-relative-to-source string?]
+                [pre-element any/c] ...)
+         flow-element?]{
+ Creates a centered image from the given relative source path. The
+ @tech{decode}d @scheme[pre-content] serves as the alternate text for
+ contexts where the image cannot be displayed.
 
-@defproc[(image/plain [filename-relative-to-source string?]) element?]{
- creates an in-lined image, from the given relative source path.}
+ The path is relative to the current directory, which is set by
+ @exec{setup-plt} and @exec{scribble} to the directory of the main
+ document file.}
 
+@defproc[(image/plain [filename-relative-to-source string?]
+                      [pre-element any/c] ...)
+         element?]{
+ Like @scheme[image], but the result is an element to appear inline in
+ a paragraph.}
 
 @; ------------------------------------------------------------------------
 @section{Bibliography}

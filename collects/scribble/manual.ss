@@ -256,13 +256,10 @@
   ;; String String *-> Element
   ;; an in-lined image, relative to the current directory 
   (define (image filename-relative-to-source . alt)
-    (centerline ;; this doesn't do anything? 
-      (make-element
-	(make-image-file filename-relative-to-source)
-	(decode-content alt))))
+    (make-element
+     (make-image-file filename-relative-to-source)
+     (decode-content alt)))
 
-  ;; MF! -- the centerline is used in the drscheme manual
-  ;; otherwise I'd switch 
   (define (image/plain filename-relative-to-source . alt)
     (make-element 
       (make-image-file filename-relative-to-source)
@@ -376,7 +373,8 @@
                                                              checker))))])
                           (and (checker id)
                                lib)))
-                      source-libs)
+                      (or source-libs
+                          null))
                (and (pair? libs)
                     (car libs)))])
       (and lib
@@ -571,10 +569,23 @@
            schemegrammar schemegrammar*
            var svar void-const undefined-const)
 
-  (define-syntax declare-exporting
-    (syntax-rules ()
-      [(_ lib ... #:use-sources (plib ...)) (*declare-exporting '(lib ...) '(plib ...))]
-      [(_ lib ...) (*declare-exporting '(lib ...) '())]))
+  (define-syntax (declare-exporting stx)
+    (syntax-case stx ()
+      [(_ lib ... #:use-sources (plib ...)) 
+       (let ([libs (syntax->list #'(lib ... plib ...))])
+         (for-each (lambda (l)
+                     (unless (module-path? (syntax->datum l))
+                       (raise-syntax-error #f
+                                           "not a module path"
+                                           stx
+                                           l)))
+                   libs)
+         (when (null? libs)
+           (raise-syntax-error #f
+                               "need at least one module path"
+                               stx))
+         #'(*declare-exporting '(lib ...) '(plib ...)))]
+      [(_ lib ...) #'(*declare-exporting '(lib ...) '())]))
 
   (define-struct (exporting-libraries element) (libs source-libs))
 
@@ -585,9 +596,10 @@
        (make-collect-element #f
                              null
                              (lambda (ri)
-                               (collect-put! ri '(exporting-libraries #f) libs))))
+                               (collect-put! ri '(exporting-libraries #f) 
+                                             libs))))
       (make-part-collect-decl
-       (make-exporting-libraries #f null libs source-libs)))))
+       (make-exporting-libraries #f null (and (pair? libs) libs) source-libs)))))
 
   (define-syntax (quote-syntax/loc stx)
     (syntax-case stx ()

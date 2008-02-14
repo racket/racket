@@ -116,6 +116,6 @@
     (parameterize ([current-namespace (namespace-anchor->empty-namespace
                                        anchor)])
       (set! generate-search-results
-            (dynamic-require 'help/search 'generate-search-results))))
+            (dynamic-require 'help/search 'perform-search))))
   (generate-search-results strs))
 

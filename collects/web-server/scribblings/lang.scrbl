@@ -12,17 +12,17 @@ is different and what API is provided.
 
 @; ------------------------------------------------------------
 @section[#:tag "lang-servlets"]{Definition}
-@require[(for-label "dummy-language-servlet.ss")] ; to give a binding context
+@require[(for-label "dummy-language-servlet.ss")] @; to give a binding context
 
-@declare-exporting[web-server/scribblings/dummy-language-servlet]
+@declare-exporting[#:use-sources (web-server/scribblings/dummy-language-servlet)]
 
 A @defterm{Web language servlet} is a module written in the
-@scheme[(lib "lang.ss" "web-server")] module language. It should provide
-the following identifier:
+@schememodname[web-server/lang] language. The servlet module should
+provide the following function:
 
 @defproc[(start [initial-request request?])
          response?]{
- This function is called when this servlet is invoked.
+ Called when this servlet is invoked.
  The argument is the HTTP request that initiated the servlet.
 }
 
