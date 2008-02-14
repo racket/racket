@@ -24,7 +24,7 @@
 
 (define (handle in out)
   ;; Discard the request header (up to blank line):
-  (regexp-match #rx#"(\r\n|^)\r\n" in)
+  (regexp-match #rx"(\r\n|^)\r\n" in)
   ;; Send reply:
   (display "HTTP/1.0 200 Okay\r\n" out)
   (display "Server: k\r\nContent-Type: text/html\r\n\r\n" out)

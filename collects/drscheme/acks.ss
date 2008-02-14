@@ -52,6 +52,7 @@
      "Francisco Solsona, "
      "Sam Tobin-Hochstadt, "
      "Neil W. Van Dyke, "
+     "David Van Horn, "
      "Anton van Straaten, "
      "Dale Vaillancourt, "
      "Stephanie Weirich, "

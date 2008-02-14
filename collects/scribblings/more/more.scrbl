@@ -172,7 +172,7 @@ header, and then write a ``Hello, world!'' web page as the result:
 @schemeblock[
 (define (handle in out)
   (code:comment #, @t{Discard the request header (up to blank line):})
-  (regexp-match #rx#"(\r\n|^)\r\n" in)
+  (regexp-match #rx"(\r\n|^)\r\n" in)
   (code:comment #, @t{Send reply:})
   (display "HTTP/1.0 200 Okay\r\n" out)
   (display "Server: k\r\nContent-Type: text/html\r\n\r\n" out)
@@ -445,7 +445,7 @@ takes a requested URL and produces a result value suitable to use with
                   (read-line in)))
   (when req
     (code:comment #, @t{Discard the rest of the header (up to blank line):})
-    (regexp-match #rx#"(\r\n|^)\r\n" in)
+    (regexp-match #rx"(\r\n|^)\r\n" in)
     (code:comment #, @t{Dispatch:})
     (let ([xexpr (dispatch (list-ref req 1))])
       (code:comment #, @t{Send reply:})

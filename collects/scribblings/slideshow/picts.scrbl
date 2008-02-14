@@ -631,14 +631,19 @@ which case true means @scheme["gray"] and false means
 
 @defproc[(standard-fish [w real?]
                         [h real?] 
-                        [direction (one-of/c 'left 'right)] 
-                        [color (or/c string? (is-a?/c color%)) "blue"] 
-                        [eye-color  (or/c string? (is-a?/c color%)) "black"]
-                        [open-mouth? any/c #t])
+                        [#:direction direction (one-of/c 'left 'right) 'left] 
+                        [#:color color (or/c string? (is-a?/c color%)) "blue"] 
+                        [#:eye-color eye-color (or/c string? (is-a?/c color%) false/c) "black"]
+                        [#:open-mouth open-mouth (or/c boolean? real?) #f])
          pict?]{
 
-Creates a fish, swimming either @scheme['left] or @scheme['right].}
+Creates a fish swimming either @scheme['left] or @scheme['right].
+If @scheme[eye-color] is @scheme[#f], no eye is drawn.
 
+The @scheme[open-mouth] argument can be either @scheme[#f] (mouth
+closed), @scheme[#t] (mouth fully open), or a number: @scheme[0.0] is
+closed, @scheme[1.0] is fully open, and numbers in between are
+partially open.}
 
 @defproc[(jack-o-lantern [size real?]
                          [pumpkin-color (or/c string? (is-a?/c color%)) "orange"] 

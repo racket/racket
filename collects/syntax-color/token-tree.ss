@@ -2,7 +2,7 @@
   (require (lib "class.ss"))
   
   (provide token-tree% insert-first! insert-last! insert-last-spec!
-           node-token-length node-token-data node-left-subtree-length node-left node-right)
+           node? node-token-length node-token-data node-left-subtree-length node-left node-right)
   
   ;; A tree is 
   ;;  - #f

@@ -502,7 +502,10 @@
                         (linewidth 3 (colorize (pip-arrow-line 50 50 gap-size) "orange"))))
             "without changing the layout"))
 
-(define blue-fish (standard-fish (* 3 gap-size) (* 2 gap-size) 'right "blue" "white"))
+(define blue-fish (standard-fish (* 3 gap-size) (* 2 gap-size) 
+                                 #:direction 'right 
+                                 #:color "blue" 
+                                 #:eye-color "white"))
 (define plain-file (file-icon (* 2 gap-size) (* 3 gap-size) #t))
 (define fish-file-scene (bound-frame 
                          (inset (ht-append (* 4 gap-size) 

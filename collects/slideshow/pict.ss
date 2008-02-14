@@ -82,6 +82,16 @@
           (cc-superimpose l p)
           (cc-superimpose p l))))
 
+  (define fish
+    (let ([standard-fish
+           (lambda (w h 
+                      #:direction [direction 'left]
+                      #:color [color "blue"]
+                      #:eye-color [eye-color "black"]
+                      #:open-mouth [open-mouth #f])
+             (standard-fish w h direction color eye-color open-mouth))])
+      standard-fish))
+
   (provide hline vline
            frame
            pict-path?
@@ -136,4 +146,7 @@
 
                        explode-star
 
-                       find-pen find-brush)))
+                       standard-fish
+
+                       find-pen find-brush)
+           (rename-out [fish standard-fish])))

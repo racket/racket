@@ -36,7 +36,7 @@
                   (read-line in)))
   (when req
     ;; Discard the rest of the header (up to blank line):
-    (regexp-match #rx#"(\r\n|^)\r\n" in)
+    (regexp-match #rx"(\r\n|^)\r\n" in)
     ;; Dispatch:
     (let ([xexpr (dispatch (list-ref req 1))])
       ;; Send reply:

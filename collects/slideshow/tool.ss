@@ -279,8 +279,8 @@ pict snip :
           (error 'pict-snip "expected a pict to be the result of each embedded snip, got ~e"
                  pict))
         (let* ([bm (make-object bitmap% 
-                     (max 1 (inexact->exact (ceiling w)))
-                     (max 1 (inexact->exact (ceiling h))))]
+                     (max 1 (add1 (inexact->exact (ceiling w))))
+                     (max 1 (add1 (inexact->exact (ceiling h)))))]
                [bdc (make-object bitmap-dc% bm)])
           (send bdc clear)
           (send bdc set-smoothing 'aligned)
@@ -891,8 +891,8 @@ pict snip :
                [pict-height (dynamic-require '(lib "texpict/mrpict.ss") 'pict-height)]
                [draw-pict (dynamic-require '(lib "texpict/mrpict.ss") 'draw-pict)]
                [bm (make-object bitmap%
-                     (max 1 (inexact->exact (ceiling (pict-width p))))
-                     (max 1 (inexact->exact (ceiling (pict-height p)))))]
+                     (max 1 (add1 (inexact->exact (ceiling (pict-width p)))))
+                     (max 1 (add1 (inexact->exact (ceiling (pict-height p))))))]
                [bdc (make-object bitmap-dc% bm)])
           (send bdc clear)
           (send bdc set-smoothing 'aligned)

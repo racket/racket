@@ -164,7 +164,9 @@
                       (if i
                           (hash-table-put! deps i #t)
                           (unless (or (memq 'depends-all (doc-flags (info-doc info)))
-                                      (and (doc-under-main? (info-doc i))
+                                      (and (if (info? d)
+                                               (doc-under-main? (info-doc d))
+                                               (not (path? (path->main-collects-relative d))))
                                            (memq 'depends-all-main (doc-flags (info-doc info)))))
                             (set! added? #t)
                             (when (verbose)

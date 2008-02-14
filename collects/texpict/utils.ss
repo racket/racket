@@ -643,12 +643,18 @@
 	  size (* 1.1 size))))
 
   (define standard-fish 
-    (opt-lambda (w h [direction 'left] [c "blue"] [ec #f] [mouth-open? #f])
+    (opt-lambda (w h [direction 'left] [c "blue"] [ec #f] [mouth-open #f])
       (define no-pen (send the-pen-list find-or-create-pen "black" 1 'transparent))
       (define color (if (string? c) (make-object color% c) c))
       (define dark-color (scale-color 0.8 color))
       (define eye-color (and ec (if (string? ec) (make-object color% ec) ec)))
       (define dark-eye-color color)
+      (define mouth-open? (and mouth-open
+                               (or (not (number? mouth-open))
+                                   (not (zero? mouth-open)))))
+      (define mouth-open-amt (if (number? mouth-open)
+                                 mouth-open
+                                 (if mouth-open 1.0 0.0)))
       (dc (lambda (dc x y)
             (let ([rgn (make-object region% dc)]
                   [old-rgn (send dc get-clipping-region)]
@@ -671,8 +677,9 @@
 					       (make-object point% w (- (* 1/2 h) dy))
 					       (make-object point% (* 1/6 w) (- (* 1/2 h) dy))
 					       (make-object point% 0 (if flip?
-									 (* 1/6 h)
-									 (* 1/3 h))))
+                                                                         (* 1/6 mouth-open-amt h)
+                                                                         (+ (* 1/3 h)
+                                                                            (* 1/6 (- 1 mouth-open-amt) h)))))
 					 x (+ y dy))
 				   (send rgn set-rectangle 
 					 x (+ y dy)
@@ -697,6 +704,7 @@
                                              (make-object point% (flip-rel (- w i)) (- (* 9/10 h) i)))
                        x y))
                #f #t)
+
 	      (set-rgn rgn #f)
 	      (send dc set-clipping-region rgn)
               (color-series
@@ -707,6 +715,7 @@
                        (- (* 6/4 w) (* 2 i)) (- (* 4 h) (* 2 i))))
                #f #t)
               (send dc set-clipping-region old-rgn)
+
               (set-rgn rgn #t)
               (send dc set-clipping-region rgn)
               (color-series
@@ -717,6 +726,16 @@
                        (- (* 6/4 w) (* 2 i)) (- (* 4 h) (* 2 i))))
                #f #t)
               (send dc set-clipping-region old-rgn)
+
+              (when mouth-open?
+                ;; Repaint border, just in case round-off does weird things
+                (send dc set-pen color 1 'solid)
+                (let ([y (+ y (/ h 2))])
+                  (send dc draw-line 
+                        (+ x (* 1/6 w)) y 
+                        (+ x w -6) y))
+                (send dc set-pen no-pen))
+
               (color-series
                dc 4 1
                dark-color color
