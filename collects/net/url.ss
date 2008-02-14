@@ -41,11 +41,16 @@
    (display-pure-port (input-port? . -> . void?))
    (purify-port (input-port? . -> . string?))
    (netscape/string->url (string? . -> . url?))
-   (call/input-url (opt->* (url?
-                            (opt-> (url?) ((listof string?)) input-port?)
-                            (input-port? . -> . any))
-                           ((listof string?))
-                           any))
+   (call/input-url  (case->
+                     (-> url?
+                         (-> url? input-port?)
+                         (-> input-port? any)
+                         any)
+                     (-> url?
+                         (-> url? (listof string?) input-port?)
+                         (-> input-port? any)
+                         (listof string?)
+                         any)))
    (combine-url/relative (url? string? . -> . url?))
    (url-exception? (any/c . -> . boolean?))
    (current-proxy-servers
