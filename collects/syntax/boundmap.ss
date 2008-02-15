@@ -3,24 +3,29 @@
   (require (lib "contract.ss")
 	   "private/boundmap.ss")
   
+  (define-syntax provide/contract*
+    (syntax-rules ()
+      [(_ [(name0 name ...) contract])
+       (begin (provide/contract [name0 contract])
+              (provide/contract (rename name0 name contract)) ...)]
+      [(_ [name contract])
+       (provide/contract [name contract])]
+      [(_ [name contract] ...)
+       (begin (provide/contract* [name contract]) ...)]))
+
   (define-syntax (provide-mapping-code/contract stx)
     (syntax-case stx ()
       [(_ make-identifier-mapping
-          identifier-mapping?
+          identifier-mapping? identifier-mapping?/out
           identifier-mapping-get
           identifier-mapping-put!
           identifier-mapping-for-each
           identifier-mapping-map
           identifier=?)
-       (and (identifier? (syntax identifier-mapping))
-            (identifier? (syntax identifier-mapping-get))
-            (identifier? (syntax identifier-mapping-put!))
-            (identifier? (syntax identifier-mapping-for-each))
-            (identifier? (syntax identifier-mapping-map)))
        (syntax
-	(provide/contract
+	(provide/contract*
 	 [make-identifier-mapping (-> identifier-mapping?)]
-	 [identifier-mapping? (any/c . -> . boolean?)]
+	 [identifier-mapping?/out (any/c . -> . boolean?)]
 	 [identifier-mapping-get (opt->*
 				  (identifier-mapping?
 				   identifier?)
@@ -42,7 +47,7 @@
 
   (provide-mapping-code/contract
    make-bound-identifier-mapping
-   bound-identifier-mapping?
+   bound-identifier-mapping? bound-identifier-mapping?
    bound-identifier-mapping-get
    bound-identifier-mapping-put!
    bound-identifier-mapping-for-each
@@ -50,10 +55,11 @@
    bound-identifier=?)
   
   (provide-mapping-code/contract
-   make-module-identifier-mapping
+   [make-module-identifier-mapping make-free-identifier-mapping]
    module-identifier-mapping?
-   module-identifier-mapping-get
-   module-identifier-mapping-put!
-   module-identifier-mapping-for-each
-   module-identifier-mapping-map
+   [module-identifier-mapping? free-identifier-mapping?]
+   [module-identifier-mapping-get free-identifier-mapping-get]
+   [module-identifier-mapping-put! free-identifier-mapping-put!]
+   [module-identifier-mapping-for-each free-identifier-mapping-for-each]
+   [module-identifier-mapping-map free-identifier-mapping-map]
    module-identifier=?))

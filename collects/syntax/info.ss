@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define name "Syntax Utilities")
+(define scribblings '(("scribblings/syntax.scrbl" (multi-page))))
