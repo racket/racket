@@ -2,7 +2,7 @@
 @(require "common.ss"
           (for-label syntax/toplevel))
 
-@title[#:tag "toplevel"]{Helper for Non-Module Compilation And Expansion}
+@title[#:tag "toplevel"]{Non-Module Compilation And Expansion}
 
 @defmodule[syntax/toplevel]
 
@@ -22,7 +22,7 @@ top-level expressions.)
 The @scheme[stx] should have a context already, possibly introduced with
 @scheme[namespace-syntax-introduce].}
 
-@defproc[(expand-top-level-with-compile-time-evals [stx syntax]) 
+@defproc[(expand-top-level-with-compile-time-evals [stx syntax?]) 
          syntax?]{
 
 Like @scheme[expand-syntax-top-level-with-compile-time-evals], but
