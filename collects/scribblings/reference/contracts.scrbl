@@ -297,9 +297,9 @@ result of the final @scheme[body] is the result of the entire form.}
 
 @defidform[any]{
 
-The @scheme[any] form can only be used in a result position of
-contracts like @scheme[->]. Using @scheme[any] elsewhere is a syntax
-error.}
+Represents a contract that is always satisfied. In particular, it can accept
+multiple values.  It can only be used in a result position of contracts like
+@scheme[->]. Using @scheme[any] elsewhere is a syntax error.}
 
 @defform[(promise/c expr)]{
 
