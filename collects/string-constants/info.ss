@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("string-constant.scrbl")))
+(define scribblings '(("string-constants.scrbl")))
