@@ -10,7 +10,8 @@
 
 In the descriptive body of @scheme[defform], @scheme[defproc], etc.,
 do not start with ``This ...'' Instead, start with a sentence whose
-implicit subject is the form or value being described. Thus, the
+implicit subject is the form or value being described. Capitalize the first
+word. Thus, the
 description will often start with ``Produces.'' Refer to arguments and
 sub-forms by name.
 
