@@ -372,7 +372,7 @@ The @scheme[defmodule] or @scheme[declare-exporting] requires, as well
 as the binding requirements for @scheme[id], are the same as for
 @scheme[defproc].
 
-The @tech{decode}d @scheme[pre-flow] documents the procedure. In this
+The @tech{decode}d @scheme[pre-flow] documents the form. In this
 description, a reference to any identifier in @scheme[datum] via
 @scheme[scheme], @scheme[schemeblock], @|etc| is typeset as a sub-form
 non-terminal. If @scheme[#:literals] clause is provided, however,
