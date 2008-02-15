@@ -358,7 +358,6 @@ static void *generate_one(mz_jit_state *old_jitter,
 #ifdef MZ_PRECISE_GC
     register_traversers();
 #endif
-    /* printf("zap!\n"); */
   }
 
   while (1) {

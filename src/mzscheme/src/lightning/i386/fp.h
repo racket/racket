@@ -155,6 +155,13 @@ union jit_double_imm {
         jit_ldr_d_fppush((rd), _ESP),                                                         \
         ADDQir(8, _ESP))
 
+#ifdef JIT_X86_64
+#define jit_ldi_d_fppush(rd, is)   \
+  (MOVQrr(JIT_R0, JIT_REXTMP), \
+   MOVQir(((long)is), JIT_R0),  \
+   jit_ldr_d_fppush(rd, JIT_R0), \
+   MOVQrr(JIT_REXTMP, JIT_R0))
+#else
 #define jit_ldi_f(rd, is)                              \
   ((rd) == 0 ? (FSTPr (0), FLDSm((is), 0, 0, 0))       \
    : (FLDSm((is), 0, 0, 0), FSTPr ((rd) + 1)))
@@ -164,6 +171,7 @@ union jit_double_imm {
    : (FPX(), FLDLm((is), 0, 0, 0), FSTPr ((rd) + 1)))
 
 #define jit_ldi_d_fppush(rd, is) (FPX(), FLDLm((is), 0, 0, 0))
+#endif
 
 #define jit_ldr_f(rd, rs)                              \
   ((rd) == 0 ? (FSTPr (0), FPX(), FLDSm(0, (rs), 0, 0)) \
@@ -202,13 +210,24 @@ union jit_double_imm {
 #define jit_stxr_f(d1, d2, rs) jit_fxch ((rs), FPX(), FSTSm(0, (d1), (d2), 1))
 #define jit_stxi_d(id, rd, rs) jit_fxch ((rs), FPX(), FSTLm((id), (rd), 0, 0))
 #define jit_stxr_d(d1, d2, rs) jit_fxch ((rs), FPX(), FSTLm(0, (d1), (d2), 1))
+
+#ifdef JIT_X86_64
+#define jit_sti_d_fppop(is, rd)   \
+  (MOVQrr(JIT_R0, JIT_REXTMP), \
+   MOVQir(((long)is), JIT_R0),  \
+   jit_str_d_fppop(JIT_R0, rd), \
+   MOVQrr(JIT_REXTMP, JIT_R0))
+#else
 #define jit_sti_f(id, rs)      jit_fxch ((rs), FPX(), FSTSm((id), 0,    0, 0))
 #define jit_str_f(rd, rs)      jit_fxch ((rs), FPX(), FSTSm(0,    (rd), 0, 0))
 #define jit_sti_d(id, rs)      jit_fxch ((rs), FPX(), FSTLm((id), 0,    0, 0))
 #define jit_str_d(rd, rs)      jit_fxch ((rs), FPX(), FSTLm(0,    (rd), 0, 0))
 
 #define jit_sti_d_fppop(id, rs)      (FPX(), FSTPLm((id), 0,    0, 0))
+#endif
 #define jit_stxi_d_fppop(id, rd, rs) (FPX(), FSTPLm((id), (rd), 0, 0))
+
+#define jit_str_d_fppop(rd, rs)      (FPX(), FSTLm(0,    (rd), 0, 0))
 
 /* Assume round to near mode */
 #define jit_floorr_d_i(rd, rs) \
