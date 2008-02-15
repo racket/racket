@@ -89,6 +89,7 @@ END_XFORM_ARITH;
 Fix me! See use.
 #endif
 
+/* Used by vector-set-performance-stats!: */
 int scheme_jit_malloced;
 
 #define MAX_SHARED_CALL_RANDS 25
