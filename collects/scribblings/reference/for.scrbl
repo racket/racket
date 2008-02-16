@@ -17,7 +17,7 @@ The @scheme[for] iteration forms are based on SRFI-42
                            (code:line #:when guard-expr)])]{
 
 Iteratively evaluates @scheme[body]. The @scheme[for-clause]s
-introduce bindings whose scope inculdes @scheme[body] and that
+introduce bindings whose scope includes @scheme[body] and that
 determine the number of times that @scheme[body] is evaluated.
 
 In the simple case, each @scheme[for-clause] has one of its first two
