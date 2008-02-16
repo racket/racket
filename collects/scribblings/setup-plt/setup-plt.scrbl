@@ -39,7 +39,7 @@
 
 The @|setup-plt| executable finds, compiles, configures, and installs
 documentation for all collections in a PLT Scheme installation. It can
-also single @filepath{.plt} files.
+also install single @filepath{.plt} files.
 
 @table-of-contents[]
 
