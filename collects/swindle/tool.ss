@@ -120,7 +120,7 @@
     (define phase1 void)
     (define (phase2)
       (for-each (lambda (args) (apply add-swindle-language `(,@args #f)))
-                '(("Swindle" "swindle" "Full Swindle" 0
+                '(("Swindle" "main" "Full Swindle" 0
                    "Full Swindle extensions")
                   ("Swindle w/o CLOS" "turbo" "Swindle without CLOS" 1
                    "Swindle without the object system")
