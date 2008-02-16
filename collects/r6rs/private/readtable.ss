@@ -5,7 +5,8 @@
 (require syntax/readerr
          (for-syntax scheme/base))
 
-(provide with-r6rs-reader-parameters)
+(provide with-r6rs-reader-parameters
+         rx:number)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
