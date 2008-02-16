@@ -125,9 +125,7 @@
                   ("Swindle w/o CLOS" "turbo" "Swindle without CLOS" 1
                    "Swindle without the object system")
                   ("Swindle Syntax" "base" "Basic syntax only" 2
-                   "Basic Swindle syntax: keyword-arguments etc")
-                  ("HTML Swindle" "html" "HTML Swindle" 3
-                   "Swindle's HTML extension")))
+                   "Basic Swindle syntax: keyword-arguments etc")))
       (parameterize ([current-directory (collection-path "swindle")])
         (define counter 100)
         (define (do-customize file)
