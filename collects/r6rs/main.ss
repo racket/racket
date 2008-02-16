@@ -202,7 +202,7 @@ FIXME:
                                       (symbol->string (syntax-e id)))
                                     (syntax->list #'(id1 id2 ...)))])
                      (if (= 1 (length strs))
-                         (values (car strs) "main")
+                         (values (list (car strs)) "main")
                          (values (reverse (cdr (reverse strs)))
                                  (car (reverse strs)))))])
        (let ([base (build-path (with-handlers ([exn:fail?
@@ -221,7 +221,7 @@ FIXME:
          (let ([vers (find-version (path->bytes base) (syntax->datum #'(vers ...)))])
            (if vers
                (datum->syntax
-                stx
+                orig
                 `(,#'lib ,(apply string-append
                                  (car coll)
                                  (append
