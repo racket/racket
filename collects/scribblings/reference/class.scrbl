@@ -816,7 +816,7 @@ Returns @scheme[#t] for values produced by @scheme[member-name-key]
 and @scheme[generate-member-key], @scheme[#f]
 otherwise.}
 
-@defproc[(member-name-key=? [a-key memebr-name-key?][b-key member-name-key?]) boolean?]{
+@defproc[(member-name-key=? [a-key member-name-key?][b-key member-name-key?]) boolean?]{
 
 Produces @scheme[#t] if member-name keys @scheme[a-key] and
 @scheme[b-key] represent the same external name, @scheme[#f]
@@ -826,7 +826,7 @@ otherwise.}
 @defproc[(member-name-key-hash-code [a-key member-name-key?]) integer?]{
 
 Produces an integer hash code consistent with
-@scheme[member-name-key=?]  comparsions, analogous to
+@scheme[member-name-key=?]  comparisons, analogous to
 @scheme[equal-hash-code].}
 
 @defexamples[
@@ -899,7 +899,7 @@ it receives any by-name initialization arguments, then
 @exnraise[exn:fail:object].
 
 If the end of initialization is reached for any class in the
-hierarchy without invoking superclasses initialization, the
+hierarchy without invoking the superclass's initialization, the
 @exnraise[exn:fail:object]. Also, if superclass initialization is
 invoked more than once, the @exnraise[exn:fail:object].
 
@@ -1285,7 +1285,7 @@ the supplied definition. In other words, declaring a method with
 @scheme[inherit], @scheme[inherit/super], or @scheme[inherit/inner],
 does not count as defining the method; at the same time, for example,
 a trait that contains an @scheme[inherit/super] declaration for a
-method @scheme[m] cannot be combinaed with a trait that defines
+method @scheme[m] cannot be combined with a trait that defines
 @scheme[m] as @scheme[augment], since no class could satisfy the
 requirements of both @scheme[augment] and @scheme[inherit/super] when
 the trait is later converted to a mixin and applied to a class.}
@@ -1336,7 +1336,7 @@ named by @scheme[id] is duplicated with the name @scheme[new-id]. The
 consistency requirements for the resulting trait are the same as for
 @scheme[trait-sum], otherwise the @exnraise[exn:fail:contract]. This
 operation does not rename any other use of @scheme[id], such as in
-method calls (even method calls to @scheme[identifer] in the cloned
+method calls (even method calls to @scheme[identifier] in the cloned
 definition for @scheme[new-id]).}
 
 
