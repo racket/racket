@@ -2,11 +2,11 @@
   (require (lib "lang-ext.ss" "frtime"))
   (require (lib "ft-qq.ss" "frtime"))
   (require (as-is:unchecked (lib "frp-core.ss" "frtime")
-	    event-cons? signal-value))
+	    event-set? signal-value))
   
   (define (value-nowable? x)
     (or (not (signal? x))
-	(not (event-cons? (signal-value x)))))
+	(not (event-set? (signal-value x)))))
 
   (define ((behaviorof pred) x)
     (let ([v (value-now x)])

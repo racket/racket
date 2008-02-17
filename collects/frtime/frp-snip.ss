@@ -56,7 +56,8 @@
                       [(event? bhvr) (signal-value bhvr)]
                       [else bhvr])])
            (cond
-             [(econs? tmp) (format "#<event (last: ~a)>" (efirst tmp))]
+             [(event-set? tmp) (format "#<event (last: ~a@~a)>"
+                                       (event-set-events tmp) (event-set-time tmp))]
              [(undefined? tmp) "<undefined>"]
              [else (expr->string tmp)])))]
       [(bhvr super-render-fun)
@@ -139,7 +140,7 @@
       [as-snip? (watch beh)]
       [(undefined? (value-now beh)) "<undefined>"]
       [(behavior? beh) (format "#<behavior (~a)>" (value-now beh))]
-      [(event? beh) (format "#<event (last: ~a)>" (efirst (signal-value beh)))]
+      [(event? beh) (format "#<event (last: ~a)>" (event-set-events (signal-value beh)))]
       [else beh]))
   
   (define (render/dynamic-snip val super-render-fun)

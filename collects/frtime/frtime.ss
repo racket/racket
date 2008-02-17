@@ -1,13 +1,13 @@
- (module frtime "mzscheme-utils.ss"
+(module frtime "mzscheme-utils.ss"
   (require "lang-ext.ss")
   (require "frp-snip.ss")
   (require "ft-qq.ss")
   (require (as-is:unchecked "frp-core.ss"
-                            event-cons? signal-value))
+                            event-set? signal-value))
 
   (define (value-nowable? x)
     (or (not (signal? x))
-	(not (event-cons? (signal-value x)))))
+	(not (event-set? (signal-value x)))))
 
   (define ((behaviorof pred) x)
     (let ([v (value-now x)])

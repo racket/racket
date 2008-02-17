@@ -134,4 +134,5 @@
   (list clock-face hour-hand minute-hand second-hand))
 
 ;; Draw the clock!
-(display-shapes analog-clock)
+(display-shapes
+ (list analog-clock (make-graph-string (make-posn 20 20) "Drag me around!" "black")))

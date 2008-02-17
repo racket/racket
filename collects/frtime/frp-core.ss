@@ -14,6 +14,11 @@
   ;;;;;;;;;;;;;
   ;; Globals ;;
   ;;;;;;;;;;;;;
+
+  ;; the current logical time step
+  (define logical-time (box 0))
+  (define (current-logical-time)
+    (unbox logical-time))
   
   (define frtime-inspector (make-inspector))
   (print-struct #t)
@@ -126,14 +131,10 @@
   
   (define-struct multiple (values) frtime-inspector)
   
-  (define-struct event-cons (head tail))
-  (define econs make-event-cons)
-  (define efirst event-cons-head)
-  (define erest event-cons-tail)
-  (define econs? event-cons?)
-  (define set-efirst! set-event-cons-head!)
-  (define set-erest! set-event-cons-tail!)
-  
+  (define-struct event-set (time events))
+  (define (make-events-now events)
+    (make-event-set (current-logical-time) events))
+    
   (define-struct (signal:unchanged signal) () frtime-inspector)
   (define-struct (signal:compound signal:unchanged) (content copy) frtime-inspector)
   (define-struct (signal:switching signal:unchanged) (current trigger) frtime-inspector)
@@ -169,17 +170,19 @@
            (emit (first the-args)))))))
   
   (define (event-producer2 proc . deps)
-    (let* ([out (econs undefined undefined)]
+    (let* ([result (apply proc->signal (lambda args (make-events-now empty)) deps)]
            [proc/emit (proc
                        (lambda (val)
-                         (set-erest! out (econs val undefined))
-                         (set! out (erest out))
-                         val))])
-      (apply proc->signal (lambda the-args (apply proc/emit the-args) out) deps)))
+                         (let ([old-value (signal-value result)])
+                           (make-events-now
+                            (if (= (current-logical-time) (event-set-time old-value))
+                                (append (event-set-events old-value) (list val))
+                                (list val))))))])
+      (set-signal-thunk! result proc/emit)
+      result))
   
   (define (build-signal ctor thunk producers)
     (let ([ccm (effective-continuation-marks)])
-      ;(printf "*")
       (do-in-manager
        (let* ([cust (current-cust)]
               [cust-sig (and cust (ft-cust-signal cust))]
@@ -336,7 +339,7 @@
   
   
   (define (behavior? v)
-    (and (signal? v) (not (event-cons? (signal-value v)))))
+    (and (signal? v) (not (event-set? (signal-value v)))))
   
   (define (undef b)
     (match b
@@ -392,17 +395,6 @@
                     [('exn e) (raise e)]))]))
   
   
-  (define (extract k evs)
-    (if (pair? evs)
-        (let ([ev (car evs)])
-          (if (or (eq? ev undefined) (undefined? (erest ev)))
-              (extract k (cdr evs))
-              (begin
-                (let ([val (efirst (erest ev))])
-                  ;(set-mcar! evs (erest ev))
-                  (k val (cons (erest ev) (rest evs)))))))))
-  
-  
   (define (kill-signal sig)
     ;(printf "killing~n")
     (for-each
@@ -432,53 +424,7 @@
   ;; Dataflow Graph Maintenance ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
-  
-  (define (fix-streams streams args)
-    (if (empty? streams)
-        empty
-        (cons
-         (if (undefined? (first streams))
-             (let ([stream (signal-value (first args))])
-               stream
-               #;(if (undefined? stream)
-                     stream
-                     (if (equal? stream (econs undefined undefined))
-                         stream
-                         (econs undefined stream))))
-             (first streams))
-         (fix-streams (rest streams) (rest args)))))
-  
-  (define (event-forwarder sym evt f+l)
-    (let ([proc (lambda (emit)
-                  (lambda (the-event)
-                    (for-each (lambda (tid) 
-                                (! tid (list 'remote-evt sym the-event))) (mcdr f+l))))]
-          
-          [args (list evt)])
-      (let* ([out (econs undefined undefined)]
-             [proc/emit (proc
-                         (lambda (val)
-                           (set-erest! out (econs val undefined))
-                           (set! out (erest out))
-                           val))]
-             [streams (let loop ([args args])
-                        (if (null? args)
-                            null
-                            (mcons (signal-value (car args))
-                                   (loop (cdr args)))))]
-             [thunk (lambda ()
-                      (when (ormap undefined? streams)
-                        ;(fprintf (current-error-port) "had an undefined stream~n")
-                        (set! streams (fix-streams streams args)))
-                      (let loop ()
-                        (extract (lambda (the-event) (proc/emit the-event) (loop))
-                                 streams))
-                      (set! streams (map signal-value args))
-                      out)])
-        (apply proc->signal thunk args))))
-  
-  
-  
+    
   (define (safe-signal-depth v)
     (cond
       [(signal? v) (signal-depth v)]
@@ -829,12 +775,6 @@
                                                                (if k (set! x (add1 x)))))
                            (! rtn-pid x))]
                         
-                        [('bind sym evt)
-                         (let ([forwarder+listeners (mcons #f empty)])
-                           (set-mcar! forwarder+listeners
-                                      (event-forwarder sym evt forwarder+listeners))
-                           (hash-table-put! named-providers sym forwarder+listeners))
-                         (loop)]
                         [('remote-reg tid sym)
                          (let ([f+l (hash-table-get named-providers sym)])
                            (when (not (member tid (mcdr f+l)))
@@ -889,6 +829,8 @@
              
              (set! notifications empty)
              (set! thunks-to-run empty)
+
+             (set-box! logical-time (add1 (unbox logical-time)))
              
              (inner)))))))
   
