@@ -187,21 +187,19 @@
                    (make-element "schemeinput" (list (substring s (cdar spaces) (caar end-spaces))))
                    (hspace (- (cdar end-spaces) (caar end-spaces)))))))))
 
-  (define (verbatim s)
-    (let ([strs (regexp-split #rx"\n" s)])
-      (make-table
-       #f
-       (map (lambda (s)
-              (list (make-flow (list (make-paragraph 
-                                      (let loop ([s s])
-                                        (let ([spaces (regexp-match-positions #rx"(?:^| ) +" s)])
-                                          (if spaces
-                                              (append
-                                               (loop (substring s 0 (caar spaces)))
-                                               (list (hspace (- (cdar spaces) (caar spaces))))
-                                               (loop (substring s (cdar spaces))))
-                                              (list (make-element 'tt (list s)))))))))))
-            strs))))
+  (define (verbatim s . more)
+    (define strs (regexp-split #rx"\n" (apply string-append s more)))
+    (define (str->elts str)
+      (let ([spaces (regexp-match-positions #rx"(?:^| ) +" str)])
+        (if spaces
+          (list* (substring str 0 (caar spaces))
+                 (hspace (- (cdar spaces) (caar spaces)))
+                 (str->elts (substring str (cdar spaces))))
+          (list (make-element 'tt (list str))))))
+    (define (make-line str)
+      (list (make-flow (list (make-paragraph
+                              (list (make-element 'tt (str->elts str))))))))
+    (make-table #f (map make-line strs)))
 
   (define-syntax indexed-scheme
     (syntax-rules ()
