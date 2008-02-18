@@ -634,7 +634,7 @@ control can be placed into struct fields.
 
 As an example, consider the following C code:
 
-@verbatim{
+@verbatim[#:indent 2]{
  typedef struct { int x; char y; } A;
  typedef struct { A a; int z; } B;
 

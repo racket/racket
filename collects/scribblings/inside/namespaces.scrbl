@@ -78,7 +78,7 @@ the global variable is undefined.
 
 The @cppi{Scheme_Bucket} structure is defined as:
 
-@verbatim{
+@verbatim[#:indent 2]{
   typedef struct Scheme_Bucket {
     Scheme_Object so; /* so.type = scheme_variable_type */
     void *key;

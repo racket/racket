@@ -168,7 +168,7 @@ tables) can be anything.
 The public portion of the @cppi{Scheme_Hash_Table} type is defined
 roughly as follows:
 
-@verbatim{
+@verbatim[#:indent 2]{
   typedef struct Scheme_Hash_Table {
     Scheme_Object so; /* so.type == scheme_hash_table_type */
     /* ... */
@@ -234,7 +234,7 @@ two are the same as for hash tables. The last is like
 The public portion of the @cppi{Scheme_Bucket_Table} type is defined
 roughly as follows:
 
-@verbatim{
+@verbatim[#:indent 2]{
   typedef struct Scheme_Bucket_Table {
     Scheme_Object so; /* so.type == scheme_variable_type */
     /* ... */
@@ -286,7 +286,7 @@ Returns the current value for @var{key} in @var{table}, or @cpp{NULL}
 Returns the bucket for @var{key} in @var{table}. The
 @cppi{Scheme_Bucket} structure is defined as:
 
-@verbatim{
+@verbatim[#:indent 2]{
   typedef struct Scheme_Bucket {
     Scheme_Object so; /* so.type == scheme_bucket_type */
     /* ... */

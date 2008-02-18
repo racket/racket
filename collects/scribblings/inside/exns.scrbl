@@ -18,7 +18,7 @@ in @cpp{scheme_current_thread->error_buf}. The macro
 @cppi{scheme_error_buf} is a shorthand for
 @cpp{*scheme_current_thread->error_buf}.
 
-@verbatim{
+@verbatim[#:indent 2]{
   mz_jmp_buf * volatile save, fresh;
   ...
   save = scheme_current_thread->error_buf;
@@ -84,7 +84,7 @@ visible when implementing a new primitive procedure. When
 request by chaining to the previously saved error buffer; otherwise,
 call @cppi{scheme_clear_escape}.
 
-@verbatim{
+@verbatim[#:indent 2]{
   mz_jmp_buf * volatile save, fresh;
   save = scheme_current_thread->error_buf;
   scheme_current_thread->error_buf = &fresh;
@@ -120,7 +120,7 @@ exceptions in a variety of situations. It implements the function
 application of a thunk. (This code is in
 @filepath{collects/mzscheme/examples/catch.c} in the distribution.)
 
-@verbatim{
+@verbatim[#:indent 2]{
   static Scheme_Object *exn_catching_apply, *exn_p, *exn_message;
 
   static void init_exn_catching_apply()
@@ -183,7 +183,7 @@ application of a thunk. (This code is in
 In the following example, the above code is used to catch exceptions
 that occur during while evaluating source code from a string.
 
-@verbatim{
+@verbatim[#:indent 2]{
   static Scheme_Object *do_eval(void *s, int noargc, Scheme_Object **noargv)
   {
     return scheme_eval_string((char *)s, scheme_get_env(scheme_config));

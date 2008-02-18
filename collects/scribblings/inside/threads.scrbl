@@ -85,7 +85,7 @@ of ``fuel'' that has been consumed since the last call to
 @scheme[vector->list] consumes a unit of fuel for each created cons
 cell:
 
-@verbatim{
+@verbatim[#:indent 2]{
   Scheme_Object *scheme_vector_to_list(Scheme_Object *vec)
   {
     int i;
@@ -173,7 +173,7 @@ class. (Any regular event-loop-based callback is appropriate.) The
 @cpp{scheme_notify_multithread} pointer is set to
 @cpp{MrEdInstallThreadTimer}. (MrEd no longer work this way, however.)
 
-@verbatim{
+@verbatim[#:indent 2]{
   class MrEdThreadTimer : public wxTimer
   {
    public:
@@ -240,7 +240,7 @@ ready on any of those file descriptors, the callbacks are removed and
 For example, the X Windows version of MrEd formerly set
 @cpp{scheme_wakeup_on_input} to this @cpp{MrEdNeedWakeup}:
 
-@verbatim{
+@verbatim[#:indent 2]{
   static XtInputId *scheme_cb_ids = NULL;
   static int num_cbs;
 
@@ -350,7 +350,7 @@ The following function @cpp{mzsleep} is an appropriate
 @cpp{scheme_sleep} function for most any Unix or Windows application.
 (This is approximately the built-in sleep used by Scheme.)
 
-@verbatim{
+@verbatim[#:indent 2]{
   void mzsleep(float v, void *fds)
   {
     if (v) {
@@ -472,7 +472,7 @@ Returns @cpp{1} if a break from @scheme[break-thread] or @cpp{scheme_break_threa
 The @cpp{Scheme_Ready_Fun} and @cpp{Scheme_Needs_Wakeup_Fun}
  types are defined as follows:
 
-@verbatim{
+@verbatim[#:indent 2]{
    typedef int (*Scheme_Ready_Fun)(Scheme_Object *data);
    typedef void (*Scheme_Needs_Wakeup_Fun)(Scheme_Object *data,
                                            void *fds);
@@ -623,7 +623,7 @@ Under Unix, and Mac OS X, this function has no effect.}
 
 The argument types are defined as follows:
 
-@verbatim{
+@verbatim[#:indent 2]{
    typedef int (*Scheme_Ready_Fun)(Scheme_Object *data);
    typedef void (*Scheme_Needs_Wakeup_Fun)(Scheme_Object *data,
                                            void *fds);
@@ -649,7 +649,7 @@ Like @cpp{scheme_add_evt}, but for objects where waiting is based
  on a semaphore. Instead of @var{ready} and @var{wakeup} functions,
  the @var{getsema} function extracts a semaphore for a given object:
 
-@verbatim{
+@verbatim[#:indent 2]{
    typedef
    Scheme_Object *(*Scheme_Wait_Sema_Fun)(Scheme_Object *data,
                                           int *repost);

@@ -206,7 +206,7 @@ pointer within a function call at any point when a collection can be
 triggered. Beware that nested function calls can hide temporary
 pointers; for example, in
 
-@verbatim{
+@verbatim[#:indent 2]{
   scheme_make_pair(scheme_make_pair(scheme_true, scheme_false),
                    scheme_make_pair(scheme_false, scheme_true))
 }
@@ -216,7 +216,7 @@ a register during the other call to @cpp{scheme_make_pair}; this
 pointer must be exposed to the garbage collection and made subject to
 update. Simply changing the code to
 
-@verbatim{
+@verbatim[#:indent 2]{
   tmp = scheme_make_pair(scheme_true, scheme_false);
   scheme_make_pair(tmp,
                    scheme_make_pair(scheme_false, scheme_true))
@@ -226,7 +226,7 @@ does not expose all pointers, since @cpp{tmp} must be evaluated before
 the second call to @cpp{scheme_make_pair}. In general, the above code
 must be converted to the form
 
-@verbatim{
+@verbatim[#:indent 2]{
   tmp1 = scheme_make_pair(scheme_true, scheme_false);
   tmp2 = scheme_make_pair(scheme_true, scheme_false);
   scheme_make_pair(tmp1, tmp2);
@@ -235,7 +235,7 @@ must be converted to the form
 and this is converted form must be instrumented to register @cpp{tmp1}
 and @cpp{tmp2}. The final result might be
 
-@verbatim{
+@verbatim[#:indent 2]{
   {
     Scheme_Object *tmp1 = NULL, *tmp2 = NULL, *result;
     MZ_GC_DECL_REG(2);
@@ -269,7 +269,7 @@ whereas registering an array of pointers requires three slots. For
 example, to register a pointer @cpp{tmp} and an array of 10
 @cpp{char*}s:
 
-@verbatim{
+@verbatim[#:indent 2]{
   {
     Scheme_Object *tmp1 = NULL;
     char *a[10];
@@ -300,7 +300,7 @@ must be registered with the collector during the entire call to
 The name used for a variable need not be immediate. Structure members
 can be supplied as well:
 
-@verbatim{
+@verbatim[#:indent 2]{
   {
     struct { void *s; int v; void *t; } x = {NULL, 0, NULL};
     MZ_GC_DECL_REG(2);
@@ -330,7 +330,7 @@ example also illustrates how @cpp{MZ_GC_UNREG} is not needed when
 control escapes from the function, such as when
 @cpp{scheme_signal_error} escapes.
 
-@verbatim{
+@verbatim[#:indent 2]{
   {
     Scheme_Object *tmp1 = NULL, *tmp2 = NULL;
     mzchar *a, *b;
@@ -372,7 +372,7 @@ declarations for the block's variables. In that case, the nested
 @cpp{MZ_GC_DECL_REG} must have its own @cpp{MZ_GC_REG} and
 @cpp{MZ_GC_UNREG} calls.
 
-@verbatim{
+@verbatim[#:indent 2]{
   {
     Scheme_Object *accum = NULL;
     MZ_GC_DECL_REG(1);
@@ -404,7 +404,7 @@ must be unregistered before it goes out of scope. The
 @cppi{MZ_GC_NO_VAR_IN_REG} macro can be used to unregister a variable
 or to initialize a slot as having no variable.
 
-@verbatim{
+@verbatim[#:indent 2]{
   {
     Scheme_Object *accum = NULL;
     MZ_GC_DECL_REG(2);
@@ -527,7 +527,7 @@ The following macros can be used (with care!) to navigate
 
  Example:
 
-@verbatim{
+@verbatim[#:indent 2]{
   int foo(int c, ...) {
     int r = 0;
     XFORM_START_SKIP;
@@ -555,7 +555,7 @@ The following macros can be used (with care!) to navigate
 
   Example:
 
-  @verbatim{
+  @verbatim[#:indent 2]{
     int foo(int c, ...) {
       int r = 0;
       {
@@ -699,7 +699,7 @@ Overrides the GC's auto-determined stack base, and/or disables the
 
 The following example shows a typical use for setting the stack base:
 
-@verbatim{
+@verbatim[#:indent 4]{
     int main(int argc, char **argv) {
        int dummy;
        scheme_set_stack_base(&dummy, 0);
@@ -777,7 +777,7 @@ finalizers are registered for @var{p}.
 The @cpp{fnl_proc} type is not actually defined, but it is equivalent
 to
 
-@verbatim{  typedef void (*fnl_proc)(void *p, void *data)}
+@verbatim[#:indent 2]{typedef void (*fnl_proc)(void *p, void *data)}
 
 The @var{f} argument is the callback function; when it is called, it
 will be passed the value @var{p} and the data pointer @var{data};
@@ -896,7 +896,7 @@ Forces an immediate garbage-collection.}
 
 Each of the three procedures takes a pointer and returns an integer:
 
-@verbatim{
+@verbatim[#:indent 2]{
   typedef int (*Size_Proc)(void *obj);
   typedef int (*Mark_Proc)(void *obj);
   typedef int (*Fixup_Proc)(void *obj);

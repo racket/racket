@@ -18,7 +18,7 @@ executable followed by a module declaration. For example, if
 @exec{mzscheme} is installed in @filepath{/usr/local/bin}, then a file
 containing the following text acts as a ``hello world'' script:
 
-@verbatim{
+@verbatim[#:indent 2]{
   #! /usr/local/bin/mzscheme
   #lang scheme/base
   "Hello, world!"
@@ -39,7 +39,7 @@ executable, a popular alternative is to require that @exec{mzscheme}
 is in the user's command path, and then ``trampoline'' using
 @exec{/usr/bin/env}:
 
-@verbatim{
+@verbatim[#:indent 2]{
   #! /usr/bin/env mzscheme
   #lang scheme/base
   "Hello, world!"
@@ -48,7 +48,7 @@ is in the user's command path, and then ``trampoline'' using
 In either case, command-line arguments to a script are available via
 @scheme[current-command-line-arguments]:
 
-@verbatim{
+@verbatim[#:indent 2]{
   #! /usr/bin/env mzscheme
   #lang scheme/base
   (printf "Given arguments: ~s\n"
@@ -65,7 +65,7 @@ them using the @scheme[command-line] form provided by
 command-line arguments from @scheme[(current-command-line-arguments)]
 by default:
 
-@verbatim{
+@verbatim[#:indent 2]{
   #! /usr/bin/env mzscheme
   #lang scheme
 
@@ -91,7 +91,7 @@ that are comments in one language and expressions in the other. This
 trampoline is more complicated, but it provides more control over
 command-line arguments to @scheme{mzscheme}:
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   #! /bin/sh
   #|
   exec mzscheme -cu "$0" ${1+"$@"}

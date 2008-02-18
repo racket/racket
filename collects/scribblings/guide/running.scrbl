@@ -21,7 +21,10 @@ When @exec{mzscheme} is run with no command-line arguments (other than
 confguration options, like @Flag{j}), then it starts a @tech{REPL}
 with a @litchar{> } prompt:
 
-@verbatim{  Welcome to MzScheme\n  > }
+@verbatim[#:indent 2]{
+  Welcome to MzScheme
+  > 
+}
 
 @margin-note{For information on GNU Readline support, see
 @schememodname[readline/rep].}

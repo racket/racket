@@ -684,7 +684,7 @@ Installs a printer to be used for printing (or writing or displaying)
 
 The type of @var{printer} is defined as follows:\cppIndex{scheme_Type_Printer}
 
-@verbatim{
+@verbatim[#:indent 2]{
  typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int dis,
                                      Scheme_Print_Params *pp);
 }
@@ -732,8 +732,8 @@ is only applied to values that both have tag @var{type}.
 The type of @var{equalp}, @var{hash1}, and @var{hash2} are defined as
 follows:
 
-@verbatim{
- typedef int (*Scheme_Equal_Proc)(Scheme_Object* obj1, 
+@verbatim[#:indent 2]{
+ typedef int (*Scheme_Equal_Proc)(Scheme_Object* obj1,
                                   Scheme_Object* obj2,
                                   void* cycle_data);
  typedef long (*Scheme_Primary_Hash_Proc)(Scheme_Object* obj, 

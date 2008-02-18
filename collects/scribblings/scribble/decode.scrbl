@@ -36,7 +36,7 @@ Some functions @deftech{decode} a sequence of @scheme[_pre-flow] or
 function accepts any number of @scheme[_pre-content] arguments, so
 that in
 
-@verbatim|{  @bold{``apple''}}|
+@verbatim[#:indent 2]|{@bold{``apple''}}|
 
 the @litchar{``apple''} argument is decoded to use fancy quotes, and
 then it is bolded.

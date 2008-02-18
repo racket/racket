@@ -39,7 +39,7 @@ contain Scheme strings, and since escape characters are difficult for
 people to read, a @litchar{|} character in @scheme[sexpr] is
 converted to a @litchar{"} character before it is parsed. Thus,
 
-@verbatim{
+@verbatim[#:indent 2]{
   <A MZSCHEME="|This goes nowhere.|">Nowhere</A>
 }
 
@@ -61,7 +61,7 @@ is executed immediately during HTML rendering. If the result is a
 string, the comment is replaced in the input HTML stream with the
 content of the string. Thus,
 
-@verbatim{
+@verbatim[#:indent 2]{
   <!-- MZSCHEME="(format |<B>Here</B>: ~a| (current-directory))" -->
 }
 

@@ -131,7 +131,8 @@ representation of literal text. Use this when you have to talk about
 the individual characters in a stream of text, as as when documenting
 a reader extension.}
 
-@defproc[(verbatim [str string?]) flow-element?]{Typesets @scheme[str]
+@defproc[(verbatim [#:indent indent integer? 0] [str string?] ...)
+         flow-element?]{Typesets @scheme[str]
 as a table/paragraph in typewriter font with the linebreaks specified
 by newline characters in @scheme[str]. ``Here strings'' are often
 useful with @scheme[verbatim].}

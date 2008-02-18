@@ -47,7 +47,7 @@ substantial or unbounded work should occasionally call
 Creates a primitive procedure value, given the C function pointer
 @var{prim}.  The form of @var{prim} is defined by:
 
-@verbatim{
+@verbatim[#:indent 2]{
    typedef Scheme_Object *(Scheme_Prim)(int argc, 
                                         Scheme_Object **argv);
 }
@@ -94,8 +94,8 @@ in @var{vals}; when the C function @var{prim} is invoked, the
 generated primitive is passed as the last parameter. The form of
 @var{prim} is defined by:
 
-@verbatim{
-   typedef 
+@verbatim[#:indent 2]{
+   typedef
    Scheme_Object *(Scheme_Prim_Closure_Proc)(int argc, 
                                              Scheme_Object **argv, 
                                              Scheme_Object *prim);
@@ -117,7 +117,7 @@ Creates an old-style primitive procedure value; when the C function
 @var{prim} is invoked, @var{data} is passed as the first parameter.
 The form of @var{prim} is defined by:
 
-@verbatim{
+@verbatim[#:indent 2]{
    typedef
    Scheme_Object *(Scheme_Closed_Prim)(void *data, int argc, 
                                        Scheme_Object **argv);

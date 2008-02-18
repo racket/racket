@@ -57,14 +57,14 @@ when using @scheme[scheme], especially outside of @scheme[defproc] or
 @scheme[defform]. Prefix a meta-variable with @litchar{_}; for
 example,
 
-@verbatim|{   @scheme[(rator-expr rand-expr ...)]}|
+@verbatim[#:indent 2]|{@scheme[(rator-expr rand-expr ...)]}|
 
 would be the wrong way to refer to the grammar of a function call,
 because it produces @scheme[(rator-expr rand-expr ...)], where
 @schemeidfont{rator-expr} and @schemeidfont{rand-expr} are
 typeset as variables. The correct description is
 
-@verbatim|{   @scheme[(_rator-expr _rand-expr ...)]}|
+@verbatim[#:indent 2]|{@scheme[(_rator-expr _rand-expr ...)]}|
 
 which produces @scheme[(_rator-expr _rand-expr ...)], where
 @schemeidfont{rator-expr} @schemeidfont{rand-expr} are typeset as

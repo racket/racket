@@ -84,8 +84,8 @@ Installs a function to be called on each custodian-registered item and
  its closer when MzScheme is about to exit. The registered function
  has the type
 
-@verbatim{
-  typedef 
+@verbatim[#:indent 2]{
+  typedef
   void (*Scheme_Exit_Closer_Func)(Scheme_Object *o,
                                   Scheme_Close_Custodian_Client *f, 
                                   void *d);

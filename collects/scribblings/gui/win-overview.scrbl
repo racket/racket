@@ -330,7 +330,7 @@ The built-in container classes include horizontal panels (and panes),
  vertical containers, a programmer can achieve most any layout.  For
  example, we can construct a dialog with the following shape:
 
-@verbatim{
+@verbatim[#:indent 2]{
   ------------------------------------------------------
  |              -------------------------------------   |
  |  Your name: |                                     |  |

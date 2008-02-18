@@ -48,7 +48,7 @@ re-exported by @schememodname[net/url].}
 The basic structure for all URLs, hich is explained in RFC 3986
 @cite["RFC3986"]. The following diagram illustrates the parts:
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   http://sky@www:801/cgi-bin/finger;xyz?name=shriram;host=nw#top
   {-1}   {2} {3} {4}{---5---------} {6} {----7-------------} {8}
 

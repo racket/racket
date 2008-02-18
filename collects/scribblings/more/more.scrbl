@@ -69,7 +69,7 @@ DrScheme.}
 @link[url:download-drscheme]{Download PLT Scheme}, install, and then
 start @exec{mzscheme} with no command-line arguments:
 
-@verbatim{
+@verbatim[#:indent 2]{
   $ mzscheme
   Welcome to MzScheme
   > 

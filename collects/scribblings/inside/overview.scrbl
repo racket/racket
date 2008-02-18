@@ -160,7 +160,7 @@ registered using @cppi{scheme_register_extension_global} (see
 As an example, the following C code defines an extension that returns
 @scheme["hello world"] when it is loaded:
 
-@verbatim{
+@verbatim[#:indent 2]{
  #include "escheme.h"
  Scheme_Object *scheme_initialize(Scheme_Env *env) {
    return scheme_make_utf8_string("hello world");

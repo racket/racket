@@ -35,7 +35,7 @@ called from Scheme as
 
 or with an @elem["@"] expression as
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   @title[#:tag "how-to"]{How to Design @italic{Great} Programs}
 }|
 

@@ -27,7 +27,7 @@ alone, but @litchar["@"] forms can escape to S-expression mode.
 
 A module written as
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   #lang scribble/doc
   @(require scribble/manual)
 

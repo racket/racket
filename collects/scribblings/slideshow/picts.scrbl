@@ -34,15 +34,15 @@ offset of an embedded pict in a larger pict.
 In addition to its drawing part, a pict has the following
 @deftech{bounding box} structure:
 
-@verbatim{
-                w
-        ------------------
-       |                  | a  \
-       |------------------|    |
-       |                  |    | h
-       |----------last----|    |
-       |                  | d  /
-        ------------------
+@verbatim[#:indent 7]{
+           w
+   ------------------
+  |                  | a  \
+  |------------------|    |
+  |                  |    | h
+  |----------last----|    |
+  |                  | d  /
+   ------------------
 }
 
 That is, the bounding box has a width @math{w} and a height

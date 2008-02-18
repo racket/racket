@@ -25,7 +25,7 @@ To document a collection or @|PLaneT| package:
        @filepath{manual.scrbl}.}
 
  @item{Start @filepath{manual.scrbl} like this:
-  @verbatim|{
+  @verbatim[#:indent 2]|{
     #lang scribble/doc
     @(require scribble/manual)
 
@@ -135,7 +135,7 @@ that precede text to typeset.
 
 Thus,
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   @title{My Library}
   @scheme[(list 'testing 1 2 3)]
   @section[#:tag "here"]{You Are Here}
@@ -189,7 +189,7 @@ preferred mechanism for linking to information outside of a single
 document. Such links require no information about where and how a
 binding is documented elsewhere:
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   #lang scribble/doc
   @(require scribble/manual
             (for-label scheme))
@@ -204,7 +204,7 @@ so it ignores the source formatting of the expression. The
 @scheme[schemeblock] form, in contrast, typesets inset Scheme code,
 and it preserves the expression's formatting from the document source.
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   #lang scribble/doc
   @(require scribble/manual
             (for-label scheme))
@@ -234,7 +234,7 @@ hyperlink with text other than the section title.
 
 The following example illustrates section hyperlinks:
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   #lang scribble/doc
   @(require scribble/manual
             (for-label scheme))
@@ -273,7 +273,7 @@ prefix, which is based on the target document's main source file.  The
 following example links to a section in the PLT Scheme reference
 manual:
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   #lang scribble/doc
   @(require scribble/manual
             (for-label scheme))
@@ -307,7 +307,7 @@ to import the binding information of @filepath{helper.ss}. Then add a
 binding with the module path as seen by a reader. Finally, use
 @scheme[defproc] to document the procedure:
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   #lang scribble/doc
   @(require scribble/manual
             (for-label scheme
@@ -379,7 +379,7 @@ bindings introduced into the document source by
 from the previous section, then @filepath{helper.ss} must be imported both
 via @scheme[require-for-label] and @scheme[require]:
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   #lang scribble/doc
   @(require scribble/manual
             scribble/eval    ; <--- added
@@ -415,7 +415,7 @@ as a sub-part of the enclosing part.
 
 In @filepath{manual.scrbl}:
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   #lang scribble/doc
   @(require scribble/manual)
 
@@ -430,7 +430,7 @@ In @filepath{manual.scrbl}:
 
 In @filepath{cows.scrbl}:
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   #lang scribble/doc
   @(require scribble/manual)
 
@@ -441,7 +441,7 @@ In @filepath{cows.scrbl}:
 
 In @filepath{aardvarks.scrbl}:
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   #lang scribble/doc
   @(require scribble/manual
             (for-label scheme
@@ -471,7 +471,7 @@ sub-sections.
 
 Revising @filepath{cows.scrbl} from the previous section:
 
-@verbatim|{
+@verbatim[#:indent 2]|{
   #lang scribble/doc
   @(require scribble/manual)
 
