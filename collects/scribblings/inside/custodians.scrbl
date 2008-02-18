@@ -41,11 +41,10 @@ The @var{f} function is called by the custodian if it is ever asked to
 ``shutdown'' its values; @var{o} and @var{data} are passed on to
 @var{f}, which has the type
 
-@verbatim[#<<EOS
+@verbatim{
 typedef void (*Scheme_Close_Custodian_Client)(Scheme_Object *o, 
                                               void *data);
-EOS
-]
+}
 
 If @var{strong} is non-zero, then the newly managed value will
 be remembered until either the custodian shuts it down or
@@ -85,13 +84,12 @@ Installs a function to be called on each custodian-registered item and
  its closer when MzScheme is about to exit. The registered function
  has the type
 
-@verbatim[#<<EOS
+@verbatim{
   typedef 
   void (*Scheme_Exit_Closer_Func)(Scheme_Object *o,
                                   Scheme_Close_Custodian_Client *f, 
                                   void *d);
-EOS
-]
+}
 
 where @var{d} is the second argument for @var{f}.}
 

@@ -58,7 +58,7 @@ For example, consider the following implementation of a
 performs @scheme[or] on the results of the thunks, evaluating only as
 many thunks as necessary.
 
-@verbatim[#<<EOS
+@verbatim{
 static Scheme_Object *
 thunk_or (int argc, Scheme_Object **argv)
 {
@@ -74,8 +74,7 @@ thunk_or (int argc, Scheme_Object **argv)
 
   return scheme_tail_apply(argv[argc - 1], 0, NULL);
 }
-EOS
-]
+}
 
 This @scheme[thunk-or] properly implements tail-recursion: if the
 final thunk is applied, then the result of @scheme[thunk-or] is the

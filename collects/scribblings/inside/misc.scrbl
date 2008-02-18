@@ -168,7 +168,7 @@ tables) can be anything.
 The public portion of the @cppi{Scheme_Hash_Table} type is defined
 roughly as follows:
 
-@verbatim[#<<EOS
+@verbatim{
   typedef struct Scheme_Hash_Table {
     Scheme_Object so; /* so.type == scheme_hash_table_type */
     /* ... */
@@ -180,8 +180,7 @@ roughly as follows:
     int (*compare)(void *v1, void *v2);
     /* ... */
   } Scheme_Hash_Table;
-EOS
-]
+}
 
 The @cpp{make_hash_indices} and @cpp{compare} function pointers can be
 set to arbitrary hashing and comparison functions (before any mapping
@@ -235,7 +234,7 @@ two are the same as for hash tables. The last is like
 The public portion of the @cppi{Scheme_Bucket_Table} type is defined
 roughly as follows:
 
-@verbatim[#<<EOS
+@verbatim{
   typedef struct Scheme_Bucket_Table {
     Scheme_Object so; /* so.type == scheme_variable_type */
     /* ... */
@@ -246,8 +245,7 @@ roughly as follows:
     int (*compare)(void *v1, void *v2);
     /* ... */
   } Scheme_Bucket_Table;
-EOS
-]
+}
 
 The @cpp{make_hash_indices} and @cpp{compare} functions are used as
 for hash tables. Note that @cppi{SCHEME_hash_weak_ptr} supplied as the
@@ -288,15 +286,14 @@ Returns the current value for @var{key} in @var{table}, or @cpp{NULL}
 Returns the bucket for @var{key} in @var{table}. The
 @cppi{Scheme_Bucket} structure is defined as:
 
-@verbatim[#<<EOS
+@verbatim{
   typedef struct Scheme_Bucket {
     Scheme_Object so; /* so.type == scheme_bucket_type */
     /* ... */
     void *key;
     void *val;
   } Scheme_Bucket;
-EOS
-]
+}
 
 Setting @var{val} to @cpp{NULL} unmaps the bucket's key, and @var{key}
 can be @cpp{NULL} in that case as well.  If the table holds keys

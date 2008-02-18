@@ -25,15 +25,14 @@ To document a collection or @|PLaneT| package:
        @filepath{manual.scrbl}.}
 
  @item{Start @filepath{manual.scrbl} like this:
-@verbatim[#<<EOS
-  #lang scribble/doc
-  @(require scribble/manual)
+  @verbatim|{
+    #lang scribble/doc
+    @(require scribble/manual)
 
-  @title{My Library}
+    @title{My Library}
 
-  Welcome to my documentation: @scheme[(list 'testing 1 2 3)].
-EOS
-]
+    Welcome to my documentation: @scheme[(list 'testing 1 2 3)].
+  }|
 
         The first line starts the file in ``text'' mode, and
         introduces the @litchar["@"] syntax to use Scheme bindings.
@@ -136,12 +135,11 @@ that precede text to typeset.
 
 Thus,
 
-@verbatim[#<<EOS
+@verbatim|{
   @title{My Library}
   @scheme[(list 'testing 1 2 3)]
   @section[#:tag "here"]{You Are Here}
-EOS
-]
+}|
 
 means
 
@@ -191,7 +189,7 @@ preferred mechanism for linking to information outside of a single
 document. Such links require no information about where and how a
 binding is documented elsewhere:
 
-@verbatim[#<<EOS
+@verbatim|{
   #lang scribble/doc
   @(require scribble/manual
             (for-label scheme))
@@ -199,15 +197,14 @@ binding is documented elsewhere:
   @title{My Library}
 
   See also @scheme[list].
-EOS
-]
+}|
 
 The @scheme[scheme] form typesets a Scheme expression for inline text,
 so it ignores the source formatting of the expression. The
 @scheme[schemeblock] form, in contrast, typesets inset Scheme code,
 and it preserves the expression's formatting from the document source.
 
-@verbatim[#<<EOS
+@verbatim|{
   #lang scribble/doc
   @(require scribble/manual
             (for-label scheme))
@@ -223,8 +220,7 @@ and it preserves the expression's formatting from the document source.
            "I've tried so hard to explain!"))
   (nobody-understands-me "glorble snop")
   ]
-EOS
-]
+}|
 
 
 @; ----------------------------------------
@@ -238,7 +234,7 @@ hyperlink with text other than the section title.
 
 The following example illustrates section hyperlinks:
 
-@verbatim[#<<EOS
+@verbatim|{
   #lang scribble/doc
   @(require scribble/manual
             (for-label scheme))
@@ -252,15 +248,14 @@ The following example illustrates section hyperlinks:
 
 
   @section[#:tag "chickens"]{Philadelphia Chickens}
-  
+
   Dancing tonight!
 
 
   @section{Reprise}
 
   See @secref{chickens}.
-EOS
-]
+}|
 
 Since the page is so short, it the hyperlinks in the above example are
  more effective if you change the @filepath{info.ss} file to add the
@@ -278,7 +273,7 @@ prefix, which is based on the target document's main source file.  The
 following example links to a section in the PLT Scheme reference
 manual:
 
-@verbatim[#<<EOS
+@verbatim|{
   #lang scribble/doc
   @(require scribble/manual
             (for-label scheme))
@@ -288,8 +283,7 @@ manual:
   @title{My Library}
 
   See also @italic{@secref[#:doc ref-src]{pairs}}.
-EOS
-]
+}|
 
 As mentioned in @secref{scheme-hyperlinks}, however, cross-document
 references based on @scheme[(require (for-label ....))] and
@@ -313,7 +307,7 @@ to import the binding information of @filepath{helper.ss}. Then add a
 binding with the module path as seen by a reader. Finally, use
 @scheme[defproc] to document the procedure:
 
-@verbatim[#<<EOS
+@verbatim|{
   #lang scribble/doc
   @(require scribble/manual
             (for-label scheme
@@ -329,8 +323,7 @@ binding with the module path as seen by a reader. Finally, use
 
    Replaces each @scheme['cow] in @scheme[lst] with
    @scheme['aardvark].}
-EOS
-]
+}|
 
 In @scheme[defproc], a contract is specified with each argument to the
 procedure. In this example, the contract for the @scheme[_lst]
@@ -386,13 +379,13 @@ bindings introduced into the document source by
 from the previous section, then @filepath{helper.ss} must be imported both
 via @scheme[require-for-label] and @scheme[require]:
 
-@verbatim[#<<EOS
+@verbatim|{
   #lang scribble/doc
   @(require scribble/manual
             scribble/eval    ; <--- added
             "helper.ss"      ; <--- added
             (for-label scheme
-                       "helper.ss"))]
+                       "helper.ss"))
 
   @title{My Library}
 
@@ -409,8 +402,7 @@ via @scheme[require-for-label] and @scheme[require]:
      (my-helper '())
      (my-helper '(cows such remarkable cows))
    ]}
-EOS
-]
+}|
 
 @;----------------------------------------
 @section{Splitting the Document Source}
@@ -423,7 +415,7 @@ as a sub-part of the enclosing part.
 
 In @filepath{manual.scrbl}:
 
-@verbatim[#<<EOS
+@verbatim|{
   #lang scribble/doc
   @(require scribble/manual)
 
@@ -434,24 +426,22 @@ In @filepath{manual.scrbl}:
 
   @include-section["cows.scrbl"]
   @include-section["aardvarks.scrbl"]
-EOS
-]
+}|
 
 In @filepath{cows.scrbl}:
 
-@verbatim[#<<EOS
+@verbatim|{
   #lang scribble/doc
   @(require scribble/manual)
 
   @title{Cows}
 
   Wherever they go, it's a quite a show.
-EOS
-]
+}|
 
 In @filepath{aardvarks.scrbl}:
 
-@verbatim[#<<EOS
+@verbatim|{
   #lang scribble/doc
   @(require scribble/manual
             (for-label scheme
@@ -464,8 +454,7 @@ In @filepath{aardvarks.scrbl}:
 
    Replaces each @scheme['cow] in @scheme[lst] with
    @scheme['aardvark].}
-EOS
-]
+}|
 
 @;----------------------------------------
 @section{Multi-Page Sections}
@@ -482,7 +471,7 @@ sub-sections.
 
 Revising @filepath{cows.scrbl} from the previous section:
 
-@verbatim[#<<EOS
+@verbatim|{
   #lang scribble/doc
   @(require scribble/manual)
 
@@ -495,8 +484,7 @@ Revising @filepath{cows.scrbl} from the previous section:
 
   @section{Dancing}
   See @secref["singing"].
-EOS
-]
+}|
 
 To run this example, remember to change @filepath{info.ss} to add the
 @scheme['multi-page] style. You may also want to add a call to

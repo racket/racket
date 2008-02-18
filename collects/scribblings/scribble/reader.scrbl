@@ -201,11 +201,11 @@ following spaces (or tabs) are part of the comment (similar to
 Tip: if you're editing in a Scheme-aware editor (like DrScheme or
 Emacs), it is useful to comment out blocks like this:
 
-@verbatim["
+@verbatim|{
   @;{
     ...
   ;}
-"]
+}|
 
 so the editor does not treat the file as having unbalanced
 parenthesis.

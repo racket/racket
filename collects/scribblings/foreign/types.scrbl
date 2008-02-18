@@ -634,7 +634,7 @@ control can be placed into struct fields.
 
 As an example, consider the following C code:
 
-@verbatim[#<<EOS
+@verbatim{
  typedef struct { int x; char y; } A;
  typedef struct { A a; int z; } B;
 
@@ -656,8 +656,7 @@ As an example, consider the following C code:
  char gety(A* a) {
    return a->y;
  }
-EOS
-]
+}
 
 Using the simple @scheme[_list-struct], you might expect this code to
 work:

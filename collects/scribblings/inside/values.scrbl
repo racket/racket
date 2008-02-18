@@ -683,13 +683,12 @@ Installs a printer to be used for printing (or writing or displaying)
  values that have the type tag @var{type}.
 
 The type of @var{printer} is defined as follows:\cppIndex{scheme_Type_Printer}
-%
-@verbatim[#<<EOS
+
+@verbatim{
  typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int dis,
                                      Scheme_Print_Params *pp);
-EOS
-]
-%
+}
+
 Such a printer must print a representation of the value using
  @cppi{scheme_print_bytes} and @cppi{scheme_print_string}.  The
  first argument to the printer, @var{v}, is the value to be printed.
@@ -733,7 +732,7 @@ is only applied to values that both have tag @var{type}.
 The type of @var{equalp}, @var{hash1}, and @var{hash2} are defined as
 follows:
 
-@verbatim[#<<EOS
+@verbatim{
  typedef int (*Scheme_Equal_Proc)(Scheme_Object* obj1, 
                                   Scheme_Object* obj2,
                                   void* cycle_data);
@@ -742,8 +741,7 @@ follows:
                                           void* cycle_data);
  typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object* obj,
                                            void* cycle_data);
-EOS
-]
+}
 
 The two hash functions are use to generate primary and secondary keys
 for double hashing in an @scheme[equal?]-based hash table. The result

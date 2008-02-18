@@ -47,11 +47,10 @@ substantial or unbounded work should occasionally call
 Creates a primitive procedure value, given the C function pointer
 @var{prim}.  The form of @var{prim} is defined by:
 
-@verbatim[#<<EOS
+@verbatim{
    typedef Scheme_Object *(Scheme_Prim)(int argc, 
                                         Scheme_Object **argv);
-EOS
-]
+}
 
 The value @var{mina} should be the minimum number of arguments that
 must be supplied to the procedure. The value @var{maxa} should be the
@@ -95,13 +94,12 @@ in @var{vals}; when the C function @var{prim} is invoked, the
 generated primitive is passed as the last parameter. The form of
 @var{prim} is defined by:
 
-@verbatim[#<<EOS
+@verbatim{
    typedef 
    Scheme_Object *(Scheme_Prim_Closure_Proc)(int argc, 
                                              Scheme_Object **argv, 
                                              Scheme_Object *prim);
-EOS
-]
+}
 
 The macro @cppi{SCHEME_PRIM_CLOSURE_ELS} takes a primitive-closure
 object and returns an array with the same length and content as
@@ -119,12 +117,11 @@ Creates an old-style primitive procedure value; when the C function
 @var{prim} is invoked, @var{data} is passed as the first parameter.
 The form of @var{prim} is defined by:
 
-@verbatim[#<<EOS
+@verbatim{
    typedef
    Scheme_Object *(Scheme_Closed_Prim)(void *data, int argc, 
                                        Scheme_Object **argv);
-EOS
-]}
+}}
 
 @function[(Scheme_Object* scheme_make_closed_prim
            [Scheme_Closed_Prim* prim]

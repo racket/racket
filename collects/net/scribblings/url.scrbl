@@ -48,16 +48,14 @@ re-exported by @schememodname[net/url].}
 The basic structure for all URLs, hich is explained in RFC 3986
 @cite["RFC3986"]. The following diagram illustrates the parts:
 
-@verbatim[#<<EOS
+@verbatim|{
   http://sky@www:801/cgi-bin/finger;xyz?name=shriram;host=nw#top
-  {-1}   {2} {3} {4}{---5-------------} {----7-------------} {8}
-                                    {6}
+  {-1}   {2} {3} {4}{---5---------} {6} {----7-------------} {8}
 
   1 = scheme, 2 = user, 3 = host, 4 = port,
   5 = path (two elements),  6 = param (of second path element),
   7 = query, 8 = fragment
-EOS
-]
+}|
 
 The strings inside the @scheme[user], @scheme[path], @scheme[query],
 and @scheme[fragment] fields are represented directly as Scheme

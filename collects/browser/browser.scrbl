@@ -39,10 +39,9 @@ contain Scheme strings, and since escape characters are difficult for
 people to read, a @litchar{|} character in @scheme[sexpr] is
 converted to a @litchar{"} character before it is parsed. Thus,
 
-@verbatim[#<<EOS
+@verbatim{
   <A MZSCHEME="|This goes nowhere.|">Nowhere</A>
-EOS
-]
+}
 
 creates a ``Nowhere'' hyperlink, which executes the Scheme program
 
@@ -62,10 +61,9 @@ is executed immediately during HTML rendering. If the result is a
 string, the comment is replaced in the input HTML stream with the
 content of the string. Thus,
 
-@verbatim[#<<EOS
+@verbatim{
   <!-- MZSCHEME="(format |<B>Here</B>: ~a| (current-directory))" -->
-EOS
-]
+}
 
 inserts the path of the current working directory into the containing
 document (and ``Here'' is boldfaced). If the result is a snip instead

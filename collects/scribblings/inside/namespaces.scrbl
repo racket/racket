@@ -78,14 +78,13 @@ the global variable is undefined.
 
 The @cppi{Scheme_Bucket} structure is defined as:
 
-@verbatim[#<<EOS
+@verbatim{
   typedef struct Scheme_Bucket {
     Scheme_Object so; /* so.type = scheme_variable_type */
     void *key;
     void *val;
   } Scheme_Bucket;
-EOS
-]}
+}}
 
 @function[(Scheme_Bucket* scheme_module_bucket
            [Scheme_Object* mod]

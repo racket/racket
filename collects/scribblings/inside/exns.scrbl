@@ -18,7 +18,7 @@ in @cpp{scheme_current_thread->error_buf}. The macro
 @cppi{scheme_error_buf} is a shorthand for
 @cpp{*scheme_current_thread->error_buf}.
 
-@verbatim[#<<EOS
+@verbatim{
   mz_jmp_buf * volatile save, fresh;
   ...
   save = scheme_current_thread->error_buf;
@@ -31,8 +31,7 @@ in @cpp{scheme_current_thread->error_buf}. The macro
   }
   scheme_current_thread->error_buf = save;
   ...
-EOS
-]
+}
 
 3m: when @cpp{scheme_setjmp} is used, the enclosing context must
 provide a local-variable registration record via @cpp{MZ_GC_DECL_REG}.
@@ -85,7 +84,7 @@ visible when implementing a new primitive procedure. When
 request by chaining to the previously saved error buffer; otherwise,
 call @cppi{scheme_clear_escape}.
 
-@verbatim[#<<EOS
+@verbatim{
   mz_jmp_buf * volatile save, fresh;
   save = scheme_current_thread->error_buf;
   scheme_current_thread->error_buf = &fresh;
@@ -102,8 +101,7 @@ call @cppi{scheme_clear_escape}.
     scheme_eval_string("x", scheme_env);
   }
   scheme_current_thread->error_buf = save;
-EOS
-]
+}
 
 This solution works fine as long as the procedure implementation only
 calls top-level evaluation functions (@cpp{scheme_eval},
@@ -122,96 +120,94 @@ exceptions in a variety of situations. It implements the function
 application of a thunk. (This code is in
 @filepath{collects/mzscheme/examples/catch.c} in the distribution.)
 
-@verbatim[#<<EOS
-static Scheme_Object *exn_catching_apply, *exn_p, *exn_message;
+@verbatim{
+  static Scheme_Object *exn_catching_apply, *exn_p, *exn_message;
 
-static void init_exn_catching_apply()
-{
-  if (!exn_catching_apply) {
-    char *e = 
-      "(lambda (thunk) "
-        "(with-handlers ([void (lambda (exn) (cons #f exn))]) "
-          "(cons #t (thunk))))";
-    /* make sure we have a namespace with the standard bindings: */
-    Scheme_Env *env = (Scheme_Env *)scheme_make_namespace(0, NULL);
+  static void init_exn_catching_apply()
+  {
+    if (!exn_catching_apply) {
+      char *e = 
+        "(lambda (thunk) "
+          "(with-handlers ([void (lambda (exn) (cons #f exn))]) "
+            "(cons #t (thunk))))";
+      /* make sure we have a namespace with the standard bindings: */
+      Scheme_Env *env = (Scheme_Env *)scheme_make_namespace(0, NULL);
 
-    scheme_register_extension_global(&exn_catching_apply, 
-                                     sizeof(Scheme_Object *));
-    scheme_register_extension_global(&exn_p, 
-                                     sizeof(Scheme_Object *));
-    scheme_register_extension_global(&exn_message, 
-                                     sizeof(Scheme_Object *));
-    
-    exn_catching_apply = scheme_eval_string(e, env);
-    exn_p = scheme_lookup_global(scheme_intern_symbol("exn?"), env);
-    exn_message 
-      = scheme_lookup_global(scheme_intern_symbol("exn-message"), 
-                             env);
+      scheme_register_extension_global(&exn_catching_apply, 
+                                       sizeof(Scheme_Object *));
+      scheme_register_extension_global(&exn_p, 
+                                       sizeof(Scheme_Object *));
+      scheme_register_extension_global(&exn_message, 
+                                       sizeof(Scheme_Object *));
+
+      exn_catching_apply = scheme_eval_string(e, env);
+      exn_p = scheme_lookup_global(scheme_intern_symbol("exn?"), env);
+      exn_message 
+        = scheme_lookup_global(scheme_intern_symbol("exn-message"), 
+                               env);
+    }
+  }
+
+  /* This function applies a thunk, returning the Scheme value if 
+     there's no exception, otherwise returning NULL and setting *exn 
+     to the raised value (usually an exn structure). */
+  Scheme_Object *_apply_thunk_catch_exceptions(Scheme_Object *f, 
+                                               Scheme_Object **exn)
+  {
+    Scheme_Object *v;
+
+    init_exn_catching_apply();
+
+    v = _scheme_apply(exn_catching_apply, 1, &f);
+    /* v is a pair: (cons #t value) or (cons #f exn) */
+
+    if (SCHEME_TRUEP(SCHEME_CAR(v)))
+      return SCHEME_CDR(v);
+    else {
+      *exn = SCHEME_CDR(v);
+      return NULL;
+    }
+  }
+
+  Scheme_Object *extract_exn_message(Scheme_Object *v)
+  {
+    init_exn_catching_apply();
+
+    if (SCHEME_TRUEP(_scheme_apply(exn_p, 1, &v)))
+      return _scheme_apply(exn_message, 1, &v);
+    else
+      return NULL; /* Not an exn structure */
   }
 }
-
-/* This function applies a thunk, returning the Scheme value if 
-   there's no exception, otherwise returning NULL and setting *exn 
-   to the raised value (usually an exn structure). */
-Scheme_Object *_apply_thunk_catch_exceptions(Scheme_Object *f, 
-                                             Scheme_Object **exn)
-{
-  Scheme_Object *v;
-
-  init_exn_catching_apply();
-  
-  v = _scheme_apply(exn_catching_apply, 1, &f);
-  /* v is a pair: (cons #t value) or (cons #f exn) */
-
-  if (SCHEME_TRUEP(SCHEME_CAR(v)))
-    return SCHEME_CDR(v);
-  else {
-    *exn = SCHEME_CDR(v);
-    return NULL;
-  }
-}
-
-Scheme_Object *extract_exn_message(Scheme_Object *v)
-{
-  init_exn_catching_apply();
-
-  if (SCHEME_TRUEP(_scheme_apply(exn_p, 1, &v)))
-    return _scheme_apply(exn_message, 1, &v);
-  else
-    return NULL; /* Not an exn structure */
-}
-EOS
-]
 
 In the following example, the above code is used to catch exceptions
 that occur during while evaluating source code from a string.
 
-@verbatim[#<<EOS
-static Scheme_Object *do_eval(void *s, int noargc, Scheme_Object **noargv)
-{
-  return scheme_eval_string((char *)s, scheme_get_env(scheme_config));
+@verbatim{
+  static Scheme_Object *do_eval(void *s, int noargc, Scheme_Object **noargv)
+  {
+    return scheme_eval_string((char *)s, scheme_get_env(scheme_config));
+  }
+
+  static Scheme_Object *eval_string_or_get_exn_message(char *s)
+  {
+    Scheme_Object *v, *exn;
+
+    v = scheme_make_closed_prim(do_eval, s);
+    v = _apply_thunk_catch_exceptions(v, &exn);
+    /* Got a value? */
+    if (v)
+      return v;
+
+    v = extract_exn_message(exn);
+    /* Got an exn? */
+    if (v)
+      return v;
+
+    /* `raise' was called on some arbitrary value */
+    return exn;
+  }
 }
-
-static Scheme_Object *eval_string_or_get_exn_message(char *s)
-{
-  Scheme_Object *v, *exn;
-
-  v = scheme_make_closed_prim(do_eval, s);
-  v = _apply_thunk_catch_exceptions(v, &exn);
-  /* Got a value? */
-  if (v)
-    return v;
-
-  v = extract_exn_message(exn);
-  /* Got an exn? */
-  if (v)
-    return v;
-
-  /* `raise' was called on some arbitrary value */
-  return exn;
-}
-EOS
-]
 
 @; ----------------------------------------------------------------------
 

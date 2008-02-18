@@ -85,23 +85,22 @@ of ``fuel'' that has been consumed since the last call to
 @scheme[vector->list] consumes a unit of fuel for each created cons
 cell:
 
-@verbatim[#<<EOS
-Scheme_Object *scheme_vector_to_list(Scheme_Object *vec)
-{
-  int i;
-  Scheme_Object *pair = scheme_null;
+@verbatim{
+  Scheme_Object *scheme_vector_to_list(Scheme_Object *vec)
+  {
+    int i;
+    Scheme_Object *pair = scheme_null;
 
-  i = SCHEME_VEC_SIZE(vec);
+    i = SCHEME_VEC_SIZE(vec);
 
-  for (; i--; ) {
-    SCHEME_USE_FUEL(1);
-    pair = scheme_make_pair(SCHEME_VEC_ELS(vec)[i], pair);
+    for (; i--; ) {
+      SCHEME_USE_FUEL(1);
+      pair = scheme_make_pair(SCHEME_VEC_ELS(vec)[i], pair);
+    }
+
+    return pair;
   }
-
-  return pair;
 }
-EOS
-]
 
 The @cpp{SCHEME_USE_FUEL} macro expands to a C block, not an
 expression.
@@ -174,41 +173,40 @@ class. (Any regular event-loop-based callback is appropriate.) The
 @cpp{scheme_notify_multithread} pointer is set to
 @cpp{MrEdInstallThreadTimer}. (MrEd no longer work this way, however.)
 
-@verbatim[#<<EOS
-class MrEdThreadTimer : public wxTimer
-{
- public:
-  void Notify(void); /* callback when timer expires */
-};
+@verbatim{
+  class MrEdThreadTimer : public wxTimer
+  {
+   public:
+    void Notify(void); /* callback when timer expires */
+  };
 
-static int threads_go;
-static MrEdThreadTimer *theThreadTimer;
-#define THREAD_WAIT_TIME 40
+  static int threads_go;
+  static MrEdThreadTimer *theThreadTimer;
+  #define THREAD_WAIT_TIME 40
 
-void MrEdThreadTimer::Notify()
-{
-  if (threads_go)
-    Start(THREAD_WAIT_TIME, TRUE);
+  void MrEdThreadTimer::Notify()
+  {
+    if (threads_go)
+      Start(THREAD_WAIT_TIME, TRUE);
 
-  scheme_check_threads();
+    scheme_check_threads();
+  }
+
+  static void MrEdInstallThreadTimer(int on)
+  {
+    if (!theThreadTimer)
+      theThreadTimer = new MrEdThreadTimer;
+
+    if (on)
+      theThreadTimer->Start(THREAD_WAIT_TIME, TRUE);
+    else
+      theThreadTimer->Stop();
+
+    threads_go = on;
+    if (on)
+      do_this_time = 1;
+  }
 }
-
-static void MrEdInstallThreadTimer(int on)
-{
-  if (!theThreadTimer)
-    theThreadTimer = new MrEdThreadTimer;
-
-  if (on)
-    theThreadTimer->Start(THREAD_WAIT_TIME, TRUE);
-  else
-    theThreadTimer->Stop();
-
-  threads_go = on;
-  if (on)
-    do_this_time = 1;
-}
-EOS
-]
 
 An alternate architecture, which MrEd now uses, is to send the main
 thread into a loop, which blocks until an event is ready to handle.
@@ -242,83 +240,82 @@ ready on any of those file descriptors, the callbacks are removed and
 For example, the X Windows version of MrEd formerly set
 @cpp{scheme_wakeup_on_input} to this @cpp{MrEdNeedWakeup}:
 
-@verbatim[#<<EOS
-static XtInputId *scheme_cb_ids = NULL;
-static int num_cbs;
+@verbatim{
+  static XtInputId *scheme_cb_ids = NULL;
+  static int num_cbs;
 
-static void MrEdNeedWakeup(void *fds)
-{
-  int limit, count, i, p;
-  fd_set *rd, *wr, *ex;
+  static void MrEdNeedWakeup(void *fds)
+  {
+    int limit, count, i, p;
+    fd_set *rd, *wr, *ex;
 
-  rd = (fd_set *)fds;
-  wr = ((fd_set *)fds) + 1;
-  ex = ((fd_set *)fds) + 2;
+    rd = (fd_set *)fds;
+    wr = ((fd_set *)fds) + 1;
+    ex = ((fd_set *)fds) + 2;
 
-  limit = getdtablesize();
+    limit = getdtablesize();
 
-  /* See if we need to do any work, really: */
-  count = 0;
-  for (i = 0; i < limit; i++) {
-    if (MZ_FD_ISSET(i, rd))
-      count++;
-    if (MZ_FD_ISSET(i, wr))
-      count++;
-    if (MZ_FD_ISSET(i, ex))
-      count++;
+    /* See if we need to do any work, really: */
+    count = 0;
+    for (i = 0; i < limit; i++) {
+      if (MZ_FD_ISSET(i, rd))
+        count++;
+      if (MZ_FD_ISSET(i, wr))
+        count++;
+      if (MZ_FD_ISSET(i, ex))
+        count++;
+    }
+
+    if (!count)
+      return;
+
+    /* Remove old callbacks: */
+    if (scheme_cb_ids)
+      for (i = 0; i < num_cbs; i++)
+        notify_set_input_func((Notify_client)NULL, (Notify_func)NULL,
+                              scheme_cb_ids[i]);
+
+    num_cbs = count;
+    scheme_cb_ids = new int[num_cbs];
+
+    /* Install callbacks */
+    p = 0;
+    for (i = 0; i < limit; i++) {
+      if (MZ_FD_ISSET(i, rd))
+        scheme_cb_ids[p++] = XtAppAddInput(wxAPP_CONTEXT, i,
+                                           (XtPointer *)XtInputReadMask,
+                                           (XtInputCallbackProc)MrEdWakeUp, NULL);
+      if (MZ_FD_ISSET(i, wr))
+        scheme_cb_ids[p++] = XtAppAddInput(wxAPP_CONTEXT, i,
+                                           (XtPointer *)XtInputWriteMask,
+                                           (XtInputCallbackProc)MrEdWakeUp, NULL);
+      if (MZ_FD_ISSET(i, ex))
+        scheme_cb_ids[p++] = XtAppAddInput(wxAPP_CONTEXT, i,
+                                           (XtPointer *)XtInputExceptMask,
+                                           (XtInputCallbackProc)MrEdWakeUp,
+                                           NULL);
+    }
   }
 
-  if (!count)
-    return;
+  /* callback function when input/exception is detected: */
+  Bool MrEdWakeUp(XtPointer, int *, XtInputId *)
+  {
+    int i;
 
-  /* Remove old callbacks: */
-  if (scheme_cb_ids)
-    for (i = 0; i < num_cbs; i++)
-      notify_set_input_func((Notify_client)NULL, (Notify_func)NULL, 
-                            scheme_cb_ids[i]);
+    if (scheme_cb_ids) {
+      /* Remove all callbacks: */
+      for (i = 0; i < num_cbs; i++)
+       XtRemoveInput(scheme_cb_ids[i]);
 
-  num_cbs = count;
-  scheme_cb_ids = new int[num_cbs];
+      scheme_cb_ids = NULL;
 
-  /* Install callbacks */
-  p = 0;
-  for (i = 0; i < limit; i++) {
-    if (MZ_FD_ISSET(i, rd))
-      scheme_cb_ids[p++] = XtAppAddInput(wxAPP_CONTEXT, i, 
-                                         (XtPointer *)XtInputReadMask, 
-                                         (XtInputCallbackProc)MrEdWakeUp, NULL);
-    if (MZ_FD_ISSET(i, wr))
-      scheme_cb_ids[p++] = XtAppAddInput(wxAPP_CONTEXT, i, 
-                                         (XtPointer *)XtInputWriteMask, 
-                                         (XtInputCallbackProc)MrEdWakeUp, NULL);
-    if (MZ_FD_ISSET(i, ex))
-      scheme_cb_ids[p++] = XtAppAddInput(wxAPP_CONTEXT, i, 
-                                         (XtPointer *)XtInputExceptMask, 
-                                         (XtInputCallbackProc)MrEdWakeUp, 
-                                         NULL);
+      /* ``wake up'' */
+      scheme_wake_up();
+    }
+
+    return FALSE;
   }
 }
-
-/* callback function when input/exception is detected: */
-Bool MrEdWakeUp(XtPointer, int *, XtInputId *)
-{
-  int i;
-
-  if (scheme_cb_ids) {
-    /* Remove all callbacks: */
-    for (i = 0; i < num_cbs; i++)
-     XtRemoveInput(scheme_cb_ids[i]);
-
-    scheme_cb_ids = NULL;
-    
-    /* ``wake up'' */
-    scheme_wake_up();
-  }
-
-  return FALSE;
-}
-EOS
-]
 
 @; ----------------------------------------------------------------------
 
@@ -353,30 +350,29 @@ The following function @cpp{mzsleep} is an appropriate
 @cpp{scheme_sleep} function for most any Unix or Windows application.
 (This is approximately the built-in sleep used by Scheme.)
 
-@verbatim[#<<EOS
-void mzsleep(float v, void *fds)
-{
-  if (v) {
-    sleep(v);
-  } else {
-    int limit;
-    fd_set *rd, *wr, *ex;
-    
-# ifdef WIN32
-    limit = 0;
-# else
-    limit = getdtablesize();
-# endif
+@verbatim{
+  void mzsleep(float v, void *fds)
+  {
+    if (v) {
+      sleep(v);
+    } else {
+      int limit;
+      fd_set *rd, *wr, *ex;
 
-    rd = (fd_set *)fds;
-    wr = (fd_set *)scheme_get_fdset(fds, 1);
-    ex = (fd_set *)scheme_get_fdset(fds, 2);
+  # ifdef WIN32
+      limit = 0;
+  # else
+      limit = getdtablesize();
+  # endif
 
-    select(limit, rd, wr, ex, NULL);
+      rd = (fd_set *)fds;
+      wr = (fd_set *)scheme_get_fdset(fds, 1);
+      ex = (fd_set *)scheme_get_fdset(fds, 2);
+
+      select(limit, rd, wr, ex, NULL);
+    }
   }
 }
-EOS
-]
 
 
 @; ----------------------------------------------------------------------
@@ -476,12 +472,11 @@ Returns @cpp{1} if a break from @scheme[break-thread] or @cpp{scheme_break_threa
 The @cpp{Scheme_Ready_Fun} and @cpp{Scheme_Needs_Wakeup_Fun}
  types are defined as follows:
 
-@verbatim[#<<EOS
+@verbatim{
    typedef int (*Scheme_Ready_Fun)(Scheme_Object *data);
-   typedef void (*Scheme_Needs_Wakeup_Fun)(Scheme_Object *data, 
+   typedef void (*Scheme_Needs_Wakeup_Fun)(Scheme_Object *data,
                                            void *fds);
-EOS
-]
+}
 
 Blocks the current thread until @var{f} with @var{data} returns a true
  value.  The @var{f} function is called periodically---at least once
@@ -564,7 +559,7 @@ for more information.}
 
 @function[(void scheme_wake_up)]{
 
-This function is called by the embedding program 
+This function is called by the embedding program
 when there is input on an external file descriptor. See
 @secref["sleeping"] for more information.}
 
@@ -628,13 +623,12 @@ Under Unix, and Mac OS X, this function has no effect.}
 
 The argument types are defined as follows:
 
-@verbatim[#<<EOS
+@verbatim{
    typedef int (*Scheme_Ready_Fun)(Scheme_Object *data);
-   typedef void (*Scheme_Needs_Wakeup_Fun)(Scheme_Object *data, 
+   typedef void (*Scheme_Needs_Wakeup_Fun)(Scheme_Object *data,
                                            void *fds);
    typedef int (*Scheme_Wait_Filter_Fun)(Scheme_Object *data);
-EOS
-]
+}
 
 Extends the set of waitable objects for @scheme[sync]
  to those with the type tag @var{type}. If @var{filter} is
@@ -655,12 +649,11 @@ Like @cpp{scheme_add_evt}, but for objects where waiting is based
  on a semaphore. Instead of @var{ready} and @var{wakeup} functions,
  the @var{getsema} function extracts a semaphore for a given object:
 
-@verbatim[#<<EOS
+@verbatim{
    typedef
-   Scheme_Object *(*Scheme_Wait_Sema_Fun)(Scheme_Object *data, 
+   Scheme_Object *(*Scheme_Wait_Sema_Fun)(Scheme_Object *data,
                                           int *repost);
-EOS
-]
+}
 
 If a successful wait should leave the semaphore waited, then
  @var{getsema} should set @var{*repost} to @cpp{0}. Otherwise, the

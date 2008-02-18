@@ -18,12 +18,11 @@ executable followed by a module declaration. For example, if
 @exec{mzscheme} is installed in @filepath{/usr/local/bin}, then a file
 containing the following text acts as a ``hello world'' script:
 
-@verbatim[#<<EOS
+@verbatim{
   #! /usr/local/bin/mzscheme
   #lang scheme/base
   "Hello, world!"
-EOS
-]
+}
 
 In particular, if the above is put into a file @filepath{hello} and
 the file is made executable (e.g., with @exec{chmod a+x hello}), then
@@ -40,23 +39,21 @@ executable, a popular alternative is to require that @exec{mzscheme}
 is in the user's command path, and then ``trampoline'' using
 @exec{/usr/bin/env}:
 
-@verbatim[#<<EOS
+@verbatim{
   #! /usr/bin/env mzscheme
   #lang scheme/base
   "Hello, world!"
-EOS
-]
+}
 
 In either case, command-line arguments to a script are available via
 @scheme[current-command-line-arguments]:
 
-@verbatim[#<<EOS
+@verbatim{
   #! /usr/bin/env mzscheme
   #lang scheme/base
   (printf "Given arguments: ~s\n"
           (current-command-line-arguments))
-EOS
-]
+}
 
 If the name of the script is needed, it is available via
 @scheme[(find-system-path 'run-file)], instead of via
@@ -68,7 +65,7 @@ them using the @scheme[command-line] form provided by
 command-line arguments from @scheme[(current-command-line-arguments)]
 by default:
 
-@verbatim[#<<EOS
+@verbatim{
   #! /usr/bin/env mzscheme
   #lang scheme
 
@@ -84,8 +81,7 @@ by default:
   (printf "~a~a\n"
           greeting
           (if (verbose?) " to you, too!" ""))
-EOS
-]
+}
 
 Try running the above script with the @DFlag{help} flag to see what
 command-line arguments are allowed by the script.
@@ -95,7 +91,7 @@ that are comments in one language and expressions in the other. This
 trampoline is more complicated, but it provides more control over
 command-line arguments to @scheme{mzscheme}:
 
-@verbatim[#<<EOS
+@verbatim|{
   #! /bin/sh
   #|
   exec mzscheme -cu "$0" ${1+"$@"}
@@ -105,8 +101,7 @@ command-line arguments to @scheme{mzscheme}:
   (printf "bytecode files has been disabled via -c.\n")
   (printf "Given arguments: ~s\n"
           (current-command-line-arguments))
-EOS
-]
+}|
 
 Note that @litchar{#!} starts a line comment in Scheme, and
 @litchar{#|}...@litchar{|#} forms a block comment. Meanwhile,

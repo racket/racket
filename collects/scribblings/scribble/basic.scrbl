@@ -35,11 +35,9 @@ called from Scheme as
 
 or with an @elem["@"] expression as
 
-@verbatim[
-#<<EOS
+@verbatim|{
   @title[#:tag "how-to"]{How to Design @italic{Great} Programs}
-EOS
-]
+}|
 
 Although the procedures are mostly design to be used from @elem["@"]
 mode, they are easier to document in Scheme mode (partly because we

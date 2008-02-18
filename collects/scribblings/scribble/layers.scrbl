@@ -27,7 +27,7 @@ alone, but @litchar["@"] forms can escape to S-expression mode.
 
 A module written as
 
-@verbatim[#<<EOS
+@verbatim|{
   #lang scribble/doc
   @(require scribble/manual)
 
@@ -37,8 +37,7 @@ A module written as
 
   @bold{That} is the question.
   Whether 'tis nobler...
-EOS
-]
+}|
 
 reads as
 

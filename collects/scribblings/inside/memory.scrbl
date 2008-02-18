@@ -206,39 +206,36 @@ pointer within a function call at any point when a collection can be
 triggered. Beware that nested function calls can hide temporary
 pointers; for example, in
 
-@verbatim[#<<EOS
+@verbatim{
   scheme_make_pair(scheme_make_pair(scheme_true, scheme_false),
                    scheme_make_pair(scheme_false, scheme_true))
-EOS
-]
+}
 
 the result from one @cpp{scheme_make_pair} call is on the stack or in
 a register during the other call to @cpp{scheme_make_pair}; this
 pointer must be exposed to the garbage collection and made subject to
 update. Simply changing the code to
 
-@verbatim[#<<EOS
+@verbatim{
   tmp = scheme_make_pair(scheme_true, scheme_false);
   scheme_make_pair(tmp,
                    scheme_make_pair(scheme_false, scheme_true))
-EOS
-]
+}
 
 does not expose all pointers, since @cpp{tmp} must be evaluated before
 the second call to @cpp{scheme_make_pair}. In general, the above code
 must be converted to the form
 
-@verbatim[#<<EOS
+@verbatim{
   tmp1 = scheme_make_pair(scheme_true, scheme_false);
   tmp2 = scheme_make_pair(scheme_true, scheme_false);
   scheme_make_pair(tmp1, tmp2);
-EOS
-]
+}
 
 and this is converted form must be instrumented to register @cpp{tmp1}
 and @cpp{tmp2}. The final result might be
 
-@verbatim[#<<EOS
+@verbatim{
   {
     Scheme_Object *tmp1 = NULL, *tmp2 = NULL, *result;
     MZ_GC_DECL_REG(2);
@@ -255,8 +252,7 @@ and @cpp{tmp2}. The final result might be
 
     return result;
   }
-EOS
-]
+}
 
 Notice that @cpp{result} is not registered above. The
 @cpp{MZ_GC_UNREG} macro cannot trigger a garbage collection, so the
@@ -273,7 +269,7 @@ whereas registering an array of pointers requires three slots. For
 example, to register a pointer @cpp{tmp} and an array of 10
 @cpp{char*}s:
 
-@verbatim[#<<EOS
+@verbatim{
   {
     Scheme_Object *tmp1 = NULL;
     char *a[10];
@@ -288,8 +284,7 @@ example, to register a pointer @cpp{tmp} and an array of 10
     f(a);
     ...
   }
-EOS
-]
+}
 
 The @cppi{MZ_GC_ARRAY_VAR_IN_REG} macro registers a local array given
 a starting slot, the array variable, and an array size. The
@@ -305,7 +300,7 @@ must be registered with the collector during the entire call to
 The name used for a variable need not be immediate. Structure members
 can be supplied as well:
 
-@verbatim[#<<EOS
+@verbatim{
   {
     struct { void *s; int v; void *t; } x = {NULL, 0, NULL};
     MZ_GC_DECL_REG(2);
@@ -314,8 +309,7 @@ can be supplied as well:
     MZ_GC_VAR_IN_REG(0, x.t);
     ...
   }
-EOS
-]
+}
 
 In general, the only constraint on the second argument to
 @cppi{MZ_GC_VAR_IN_REG} or @cppi{MZ_GC_ARRAY_VAR_IN_REG} is that
@@ -336,7 +330,7 @@ example also illustrates how @cpp{MZ_GC_UNREG} is not needed when
 control escapes from the function, such as when
 @cpp{scheme_signal_error} escapes.
 
-@verbatim[#<<EOS
+@verbatim{
   {
     Scheme_Object *tmp1 = NULL, *tmp2 = NULL;
     mzchar *a, *b;
@@ -371,15 +365,14 @@ control escapes from the function, such as when
 
     return tmp1;
   }
-EOS
-]
+}
 
 A @cpp{MZ_GC_DECL_REG} can be used in a nested block to hold
 declarations for the block's variables. In that case, the nested
 @cpp{MZ_GC_DECL_REG} must have its own @cpp{MZ_GC_REG} and
 @cpp{MZ_GC_UNREG} calls.
 
-@verbatim[#<<EOS
+@verbatim{
   {
     Scheme_Object *accum = NULL;
     MZ_GC_DECL_REG(1);
@@ -403,8 +396,7 @@ declarations for the block's variables. In that case, the nested
     MZ_GC_UNREG();
     return accum;
   }
-EOS
-]
+}
 
 Variables declared in a local block can also be registered together
 with variables from an enclosing block, but the local-block variable
@@ -412,7 +404,7 @@ must be unregistered before it goes out of scope. The
 @cppi{MZ_GC_NO_VAR_IN_REG} macro can be used to unregister a variable
 or to initialize a slot as having no variable.
 
-@verbatim[#<<EOS
+@verbatim{
   {
     Scheme_Object *accum = NULL;
     MZ_GC_DECL_REG(2);
@@ -435,8 +427,7 @@ or to initialize a slot as having no variable.
     MZ_GC_UNREG();
     return accum;
   }
-EOS
-]
+}
 
 The @cpp{MZ_GC_} macros all expand to nothing when @cpp{MZ_PRECISE_GC}
 is not defined, so the macros can be placed into code to be compiled
@@ -536,23 +527,22 @@ The following macros can be used (with care!) to navigate
 
  Example:
 
-@verbatim[#<<EOS
-int foo(int c, ...) {
-  int r = 0;
-  XFORM_START_SKIP;
-  {
-    /* va plays strange tricks that confuse xform */
-    va_list args;
-    va_start(args, c);
-    while (c--) {
-      r += va_arg(args, int);
+@verbatim{
+  int foo(int c, ...) {
+    int r = 0;
+    XFORM_START_SKIP;
+    {
+      /* va plays strange tricks that confuse xform */
+      va_list args;
+      va_start(args, c);
+      while (c--) {
+        r += va_arg(args, int);
+      }
     }
+    XFORM_END_SKIP;
+    return r;
   }
-  XFORM_END_SKIP;
-  return r;
 }
-EOS
-]
 
  These macros can also be used at the top level, outside of any
  function.  Since they have to be terminated by a semi-colon, however,
@@ -565,21 +555,20 @@ EOS
 
   Example:
 
-@verbatim[#<<EOS
-int foo(int c, ...) {
-  int r = 0;
-  {
-    /* va plays strange tricks that confuse xform */
-    XFORM_CAN_IGNORE va_list args; /* See below */
-    XFORM_HIDE_EXPR(va_start(args, c));
-    while (c--) {
-      r += XFORM_HIDE_EXPR(va_arg(args, int));
+  @verbatim{
+    int foo(int c, ...) {
+      int r = 0;
+      {
+        /* va plays strange tricks that confuse xform */
+        XFORM_CAN_IGNORE va_list args; /* See below */
+        XFORM_HIDE_EXPR(va_start(args, c));
+        while (c--) {
+          r += XFORM_HIDE_EXPR(va_arg(args, int));
+        }
+      }
+      return r;
     }
-  }
-  return r;
-}
-EOS
-]}
+  }}
 
 @item{@cppi{XFORM_CAN_IGNORE}: a macro that acts like a type
   modifier (must appear first) to indicate that a declared variable
@@ -710,14 +699,13 @@ Overrides the GC's auto-determined stack base, and/or disables the
 
 The following example shows a typical use for setting the stack base:
 
-@verbatim[#<<EOS
+@verbatim{
     int main(int argc, char **argv) {
        int dummy;
        scheme_set_stack_base(&dummy, 0);
        real_main(argc, argv); /* calls scheme_basic_env(), etc. */
     }
-EOS
-]}
+}}
 
 @function[(void scheme_set_stack_bounds
            [void* stack_addr]
@@ -789,7 +777,7 @@ finalizers are registered for @var{p}.
 The @cpp{fnl_proc} type is not actually defined, but it is equivalent
 to
 
-@verbatim["  typedef void (*fnl_proc)(void *p, void *data)"]
+@verbatim{  typedef void (*fnl_proc)(void *p, void *data)}
 
 The @var{f} argument is the callback function; when it is called, it
 will be passed the value @var{p} and the data pointer @var{data};
@@ -908,12 +896,11 @@ Forces an immediate garbage-collection.}
 
 Each of the three procedures takes a pointer and returns an integer:
 
-@verbatim[#<<EOS
+@verbatim{
   typedef int (*Size_Proc)(void *obj);
   typedef int (*Mark_Proc)(void *obj);
   typedef int (*Fixup_Proc)(void *obj);
-EOS
-]
+}
 
 If the result of the size procedure is a constant, then pass a
  non-zero value for @var{is_const_size}. If the mark and fixup

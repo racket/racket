@@ -34,7 +34,7 @@ offset of an embedded pict in a larger pict.
 In addition to its drawing part, a pict has the following
 @deftech{bounding box} structure:
 
-@verbatim[#<<EOS
+@verbatim{
                 w
         ------------------
        |                  | a  \
@@ -42,9 +42,8 @@ In addition to its drawing part, a pict has the following
        |                  |    | h
        |----------last----|    |
        |                  | d  /
-        ------------------     
-EOS
-]
+        ------------------
+}
 
 That is, the bounding box has a width @math{w} and a height
 @math{h}. For a single text line, @math{d} is descent below the

@@ -69,12 +69,11 @@ DrScheme.}
 @link[url:download-drscheme]{Download PLT Scheme}, install, and then
 start @exec{mzscheme} with no command-line arguments:
 
-@verbatim[#<<EOS
+@verbatim{
   $ mzscheme
   Welcome to MzScheme
   > 
-EOS
-]
+}
 
 If you're using a plain terminal, if you have GNU Readline installed
 on your system, and if you'd like Readline support in @exec{mzscheme},

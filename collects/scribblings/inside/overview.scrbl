@@ -160,7 +160,7 @@ registered using @cppi{scheme_register_extension_global} (see
 As an example, the following C code defines an extension that returns
 @scheme["hello world"] when it is loaded:
 
-@verbatim[#<<EOS
+@verbatim{
  #include "escheme.h"
  Scheme_Object *scheme_initialize(Scheme_Env *env) {
    return scheme_make_utf8_string("hello world");
@@ -171,8 +171,7 @@ As an example, the following C code defines an extension that returns
  Scheme_Object *scheme_module_name() {
    return scheme_false;
  }
-EOS
-]
+}
 
 Assuming that this code is in the file @filepath{hw.c}, the extension
 is compiled under Unix with the following two commands:
@@ -323,7 +322,7 @@ evaluates all expressions provided on the command line and displays
 the results, then runs a @scheme[read]-@scheme[eval]-@scheme[print]
 loop:
 
-@verbatim[#<<EOS
+@verbatim{
 #include "scheme.h"
 
 int main(int argc, char *argv[])
@@ -358,8 +357,7 @@ int main(int argc, char *argv[])
   }
   return 0;
 }
-EOS
-]
+}
 
 Under Mac OS X, or under Windows when MzScheme is compiled to a DLL
 using Cygwin, the garbage collector cannot find static variables
@@ -432,7 +430,7 @@ The simple embedding program from the previous section can be
 extended to work with either CGC or 3m, dependong on whether
 @cpp{MZ_PRECISE_GC} is specified on the compiler's command line:
 
-@verbatim[#<<EOS
+@verbatim{
 #include "scheme.h"
 
 int main(int argc, char *argv[])
@@ -487,8 +485,7 @@ int main(int argc, char *argv[])
 
   return 0;
 }
-EOS
-]
+}
 
 Strictly speaking, the @cpp{config} and @cpp{v} variables above need not be
 registered with the garbage collector, since their values are not needed

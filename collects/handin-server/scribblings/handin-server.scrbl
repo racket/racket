@@ -24,31 +24,34 @@
 
 @title{@bold{Handin Server}}
 
+
 @section{Handin-Server and Client}
 
-The @scheme[handin-server] directory contains a server to be run by a course
-instructor for accepting homework assignments and reporting on
+The @scheme[handin-server] directory contains a server to be run by a
+course instructor for accepting homework assignments and reporting on
 submitted assignments.
 
-The @scheme[handin-client] directory contains a client to be customized then
-re-distributed to students in the course.  The customized client will embed a
-particular hostname and port where the server is running, as well as a server
-certificate.
+The @scheme[handin-client] directory contains a client to be
+customized then re-distributed to students in the course.  The
+customized client will embed a particular hostname and port where the
+server is running, as well as a server certificate.
 
-With a customized client, students simply install a @filepath{.plt} file---so
-there's no futzing with configuration dialogs and certificates.  A student can
-install any number of clients at once (assuming that the clients are properly
-customized, as described below).
+With a customized client, students simply install a @filepath{.plt}
+file---so there's no futzing with configuration dialogs and
+certificates.  A student can install any number of clients at once
+(assuming that the clients are properly customized, as described
+below).
 
-The result, on the student's side, is a @onscreen{Handin} button in DrScheme's
-toolbar.  Clicking the @onscreen{Handin} button allows the student to type a
-password and upload the current content of the definitions and interactions
-window to the course instructor's server.  The @onscreen{File} menu is also
-extended with a @onscreen{Manage...} menu item for managing a handin account
-(i.e., changing the password and other information, or creating a new account
-if the instructor configures the server to allow new accounts).  Students can
-submit joint work by submitting with a concatenation of usernames separated by
-a ``@tt{+}''.
+The result, on the student's side, is a @onscreen{Handin} button in
+DrScheme's toolbar.  Clicking the @onscreen{Handin} button allows the
+student to type a password and upload the current content of the
+definitions and interactions window to the course instructor's server.
+The @onscreen{File} menu is also extended with a @onscreen{Manage...}
+menu item for managing a handin account (i.e., changing the password
+and other information, or creating a new account if the instructor
+configures the server to allow new accounts).  Students can submit
+joint work by submitting with a concatenation of usernames separated
+by a ``@tt{+}''.
 
 On the instructor's side, the handin server can be configured to check
 the student's submission before accepting it.
@@ -62,119 +65,124 @@ server and each user's password.
 @itemize{
 @item{Create a new directory.}
 
-@item{Copy @filepath{server-cert.pem} from the @filepath{handin-client} collection
-     to the new directory.
-     
-       NOTE: For real use, you need a new certificate.
-       
-       NOTE: See also @secref{wheres-the-collection}.}
+@item{Copy @filepath{server-cert.pem} from the
+  @filepath{handin-client} collection to the new directory.
 
-@item{Copy @filepath{private-key.pem} from the @filepath{handin-server} collection
-     to the new directory.
-     
-       NOTE: For real use, you need a new key.}
+  NOTE: For real use, you need a new certificate.
+
+  NOTE: See also @secref{wheres-the-collection}.}
+
+@item{Copy @filepath{private-key.pem} from the
+  @filepath{handin-server} collection to the new directory.
+
+  NOTE: For real use, you need a new key.}
 
 @item{Create a file @filepath{users.ss} with the following content:
-@schemeblock[
-   ((tester ("8fe4c11451281c094a6578e6ddbf5eed" 
-             "Tester" "1" "test@cs")))]}
+  @schemeblock[
+    ((tester ("8fe4c11451281c094a6578e6ddbf5eed"
+              "Tester" "1" "test@cs")))]}
 
 @item{Make a @filepath{test} subdirectory in your new directory.}
 
 @item{Create a file @filepath{config.ss} with the following content:
-       @schemeblock[((active-dirs ("test")))]}
+  @schemeblock[((active-dirs ("test")))]}
 
-@item{In your new directory, run
-        @commandline{mred -mvqM handin-server}}
+@item{In your new directory, run @commandline{mred -l handin-server}}
 
-@item{In the @filepath{handin-client} collection, edit @filepath{info.ss} and
-     uncomment the lines that define `server:port', @scheme[tools], 
-     @scheme[tool-names], and @scheme[tool-icons].}
+@item{In the @filepath{handin-client} collection, edit
+  @filepath{info.ss} and uncomment the lines that define
+  @scheme[server:port], @scheme[tools], @scheme[tool-names], and
+  @scheme[tool-icons].}
 
-@item{Run
-        @commandline{setup-plt -l handin-client}
+@item{Run @commandline{setup-plt -l handin-client}
 
-      NOTE: Under Windows, the executable is ``@tt{Setup PLT}'' 
-            instead of ``@tt{setup-plt}''.
-            
-      NOTE: The command line arguments are optional.}
+  NOTE: Under Windows, the executable is ``@tt{Setup PLT}'' instead of
+  ``@tt{setup-plt}''.
 
-@item{Start DrScheme, click @onscreen{Handin} to run the client, submit with
-     username ``@tt{tester}'' and password ``@tt{pw}''.
+  NOTE: The command line arguments are optional.}
 
-     The submitted file will be @filepath{.../test/tester/handin.scm}.}
+@item{Start DrScheme, click @onscreen{Handin} to run the client,
+  submit with username ``@tt{tester}'' and password ``@tt{pw}''.
+
+  The submitted file will be @filepath{.../test/tester/handin.scm}.}
 
 @item{Check the status of your submission by pointing a web browser at
-        @tt{https://localhost:7980/servlets/status.ss}.
-     Note the ``s'' in ``https''. Use the ``@tt{tester}'' username and ``@tt{pw}''
-     password, as before.}
+  @tt{https://localhost:7980/servlets/status.ss}.  Note the ``s'' in
+  ``https''. Use the ``@tt{tester}'' username and ``@tt{pw}''
+  password, as before.}
 }
+
 
 @section[#:tag "wheres-the-collection"]{Where is the collection?}
 
-If you obtained the server and client by installing a @filepath{.plt} file,
-then the @filepath{handin-server} and @filepath{handin-client} directories
-might be in your PLT addon space.  Start MzScheme, and enter
-@schemeblock[        (collection-path "handin-server")                        ]
-@schemeblock[        (collection-path "handin-client")                        ]
+If you obtained the server and client by installing a @filepath{.plt}
+file, then the @filepath{handin-server} and @filepath{handin-client}
+directories might be in your PLT addon space.  Start MzScheme, and
+enter
+@schemeblock[(collection-path "handin-server")]
+@schemeblock[(collection-path "handin-client")]
 to find out where these collections are.
+
 
 @section{Client Customization}
 
 @itemize{
-@item{Rename (or make a copy of) the @filepath{handin-client} collection
-     directory.  The new name should describe your class uniquely.
-     For example, @filepath{uu-cpsc2010} is a good name for CPSC 2010 at the
-     University of Utah.}
+@item{Rename (or make a copy of) the @filepath{handin-client}
+collection directory.  The new name should describe your class
+uniquely.  For example, @filepath{uu-cpsc2010} is a good name for CPSC
+2010 at the University of Utah.}
 
-@item{Edit the first three definitions of @filepath{info.ss} in your renamed
-     client collection:
-     @itemize{
-     @item{For @scheme[name], choose a name for the handin tool as it will
-         appear in DrScheme's interface (e.g., the @onscreen{XXX} for the
-         @onscreen{Manage XXX Handin Account...}  menu item).  Again, make the
-         name specific to the course, in case a student installs
-         multiple handin tools.  Do not use @onscreen{Handin} as the last part
-         of the name, since @onscreen{Handin} is always added for button and
-         menu names.}
+@item{Edit the first three definitions of @filepath{info.ss} in your
+  renamed client collection:
+  @itemize{
+  @item{For @scheme[name], choose a name for the handin tool as it
+    will appear in DrScheme's interface (e.g., the @onscreen{XXX} for
+    the @onscreen{Manage XXX Handin Account...}  menu item).  Again,
+    make the name specific to the course, in case a student installs
+    multiple handin tools.  Do not use @onscreen{Handin} as the last
+    part of the name, since @onscreen{Handin} is always added for
+    button and menu names.}
 
-         @item{Uncomment the definitions of @scheme[tools],
-         @scheme[tool-names], and @scheme[tool-icons].}
+  @item{Uncomment the definitions of @scheme[tools],
+    @scheme[tool-names], and @scheme[tool-icons].}
 
-         @item{For @scheme[server:port], uncomment the line, and use the hostname
-         and port where the server will be running to accept handin
-         submissions.}
-      }
-      Optionally uncomment and edit the next two definitions,
-      @scheme[web-menu-name] and @scheme[web-address], to add an item to the @onscreen{Help}
-      menu that opens a (course-specific) web page.}
+  @item{For @scheme[server:port], uncomment the line, and use the
+    hostname and port where the server will be running to accept
+    handin submissions.}}
 
-@item{ Replace @filepath{icon.png} in your renamed directory with a new 32x32
-      icon.  This icon is displayed on startup with DrScheme's splash
-      screen, and it is included at half size on the @onscreen{Handin} button.
-      Again, choose a distinct icon for the benefit of students who
-      install multiple handin tools.  A school logo is typically
-      useful, as it provides a recognizably local visual cue.}
+  Optionally uncomment and edit the next two definitions,
+  @scheme[web-menu-name] and @scheme[web-address], to add an item to
+  the @onscreen{Help} menu that opens a (course-specific) web page.}
 
-@item{ Replace @filepath{server-cert.pem} in your renamed directory with a
-      server certificate.  The file @filepath{server-cert.pem} in
-      @filepath{handin-client} collection is ok for testing, but the point of
-      this certificate is to make handins secure, so you should
-      generate a new (self-certifying) certificate and keep its key
-      private.  (See @secref{server-setup}.)}
+@item{Replace @filepath{icon.png} in your renamed directory with a new
+  32x32 icon.  This icon is displayed on startup with DrScheme's
+  splash screen, and it is included at half size on the
+  @onscreen{Handin} button.  Again, choose a distinct icon for the
+  benefit of students who install multiple handin tools.  A school
+  logo is typically useful, as it provides a recognizably local visual
+  cue.}
 
-@item{ Run
-       @commandline{mzc --collection-plt <name>.plt <name>}
-      where @tt{<name>} is the name that you chose for your directory
-      (i.e., whatever you changed @filepath{handin-client} to).}
+@item{Replace @filepath{server-cert.pem} in your renamed directory
+  with a server certificate.  The file @filepath{server-cert.pem} in
+  @filepath{handin-client} collection is ok for testing, but the point
+  of this certificate is to make handins secure, so you should
+  generate a new (self-certifying) certificate and keep its key
+  private.  (See @secref{server-setup}.)}
 
-@item{ Distribute @filepath{<name>.plt} to students for installation into their
-      copies of DrScheme.  The students need not have access to the
-      DrScheme installation directory; the tool will be installed on
-      the filesystem in the student's personal space.  If you want to
-      install it once on a shared installation, use setup-plt with the
-      @DFlag{all-users} flag.}
+@item{Run @commandline{mzc --collection-plt <name>.plt <name>} where
+  @tt{<name>} is the name that you chose for your directory (i.e.,
+  whatever you changed @filepath{handin-client} to).}
+
+@item{Distribute @filepath{<name>.plt} to students for installation
+  into their copies of DrScheme.  The students need not have access to
+  the DrScheme installation directory; the tool will be installed on
+  the filesystem in the student's personal space.  If you want to
+  install it once on a shared installation, use setup-plt with the
+  @DFlag{all-users} flag.}
+
 }
+
+
 @section[#:tag "server-setup"]{Server Setup}
 
 You must prepare a special directory to host the handin server.  To
@@ -183,362 +191,353 @@ set the @envvar{PLT_HANDINSERVER_DIR} environment variable.
 
 This directory contains the following files and sub-directories:
 @itemize{
-@item{@filepath{server-cert.pem} : the server's certificate.  To create a
-    certificate and key with openssl:
+@item{@filepath{server-cert.pem}: the server's certificate.  To create
+  a certificate and key with openssl:
+  @commandline{openssl req -new -nodes -x509 -days 365
+                 -out server-cert.pem -keyout private-key.pem}}
 
-      @commandline{openssl req -new -nodes -x509 -days 365 -out server-cert.pem -keyout private-key.pem}
-}
-@item{@filepath{private-key.pem} : the private key to go with
-    @filepath{server-cert.pem}.  Whereas @filepath{server-cert.pem} gets distributed to
-    students with the handin client, @filepath{private-key.pem} is kept
-    private.}
+@item{@filepath{private-key.pem}: the private key to go with
+  @filepath{server-cert.pem}.  Whereas @filepath{server-cert.pem} gets
+  distributed to students with the handin client,
+  @filepath{private-key.pem} is kept private.}
 
-@item{@filepath{config.ss} : configuration options.  The file format is
+@item{@filepath{config.ss}: configuration options.  The file format is
+  @schemeblock[((<key> <val>) ...)]
 
-@schemeblock[         ((<key> <val>) ...)]
+  The following keys can be used:
 
-    The following keys can be used:
+  @itemize{
+  @item{@indexed-scheme[active-dirs] --- a list of directories that
+    are active submissions, relative to the current directory or
+    absolute; the last path element for each of these (and
+    @scheme[inactive-dirs] below) should be unique, and is used to
+    identify the submission (for example, in the client's submission
+    dialog and in the status servlet).}
 
-    
-    @comment{I took out the quote before each identifier.}
-    
-    @itemize{
-@item{@indexed-scheme[active-dirs] --- a list of directories that are active
-         submissions, relative to the current directory or absolute;
-         the last path element for each of these (and @scheme['inactive-dirs]
-         below) should be unique, and is used to identify the
-         submission (for example, in the client's submission dialog
-         and in the status servlet).}
+  @item{@indexed-scheme[inactive-dirs] --- a list of inactive
+    submission directories (see above for details).}
 
-@item{@indexed-scheme[inactive-dirs] --- a list of inactive submission directories (see
-         above for details).}
+  @item{@indexed-scheme[port-number] --- the port for the main handin
+    server; the default is 7979.}
 
-@item{@indexed-scheme[port-number] --- the port for the main handin server; the default
-         is 7979.}
+  @item{@indexed-scheme[https-port-number] --- the port number for the
+    handin-status HTTPS server; the default is @scheme[#f] which
+    indicates that no HTTPS server is started.}
 
-@item{@indexed-scheme[https-port-number] --- the port number for the handin-status HTTPS
-         server; the default is @scheme[#f] which indicates that no HTTPS
-         server is started.}
+  @item{@indexed-scheme[session-timeout] --- number of seconds before
+    the session times-out.  The client is given this many seconds for
+    the login stage and then starts again so the same number of
+    seconds is given for the submit-validation process; the default is
+    300.}
 
-@item{@indexed-scheme[session-timeout] --- number of seconds before the session
-         times-out. The client is given this many seconds for the
-         login stage and then starts again so the same number of
-         seconds is given for the submit-validation process; the
-         default is 300.}
+  @item{@indexed-scheme[session-memory-limit] --- maximum size in
+    bytes of memory allowed for per-session computation, if
+    per-session limits are supported (i.e., when using MrEd and
+    MzScheme with the (default) exact garbage collector and memory
+    accounting); the default is 40000000.}
 
-@item{@indexed-scheme[session-memory-limit] --- maximum size in bytes of memory allowed
-         for per-session computation, if per-session limits are
-         supported (i.e., when using MrEd3m and MzScheme3m with memory
-         accounting); the default is 40000000.}
+  @item{@indexed-scheme[default-file-name] --- the default filename
+    that will be saved with the submission contents.  The default is
+    @filepath{handin.scm}.}
 
-@item{@indexed-scheme[default-file-name] --- the default filename that will be saved
-        with the submission contents.  The default is @filepath{handin.scm}.}
+  @item{@indexed-scheme[max-upload] --- maximum size in bytes of an
+    acceptable submission; the default is 500000.}
 
-@item{@indexed-scheme[max-upload] --- maximum size in bytes of an acceptable submission;
-         the default is 500000.}
+  @item{@indexed-scheme[max-upload-keep] --- maximum index of
+    submissions to keep; the most recent submission is
+    @filepath{handin.scm} (by default), the next oldest is in
+    @filepath{BACKUP-0/handin.scm}, next oldest is
+    @filepath{BACKUP-1/handin.scm}, etc.  The default is 9.}
 
-@item{@indexed-scheme[max-upload-keep] --- maximum index of submissions to keep; the
-         most recent submission is @filepath{handin.scm} (by default), the next
-         oldest is in @filepath{BACKUP-0/handin.scm}, next oldest is
-         @filepath{BACKUP-1/handin.scm}, etc.  The default is 9.}
+  @item{@indexed-scheme[user-regexp] --- a regular expression that is
+    used to validate usernames; alternatively, this can be @scheme[#f]
+    meaning no restriction, or a list of permitted strings.  Young
+    students often choose exotic usernames that are impossible to
+    remember, and forget capitalization, so the default is fairly
+    strict--- @scheme[#rx"^[a-z][a-z0-9]+$"]; a @scheme["+"] is always
+    disallowed in a username, since it is used in a submission
+    username to specify joint work.}
 
-@item{@indexed-scheme[user-regexp] --- a regular expression that is used to validate usernames;
-         alternatively, this can be @scheme[#f] meaning no restriction, or a list of
-         permitted strings.  Young students often choose exotic usernames that
-         are impossible to remember, and forget capitalization, so the default
-         is fairly strict--- @scheme[#rx"^[a-z][a-z0-9]+$"]; a @scheme["+"] is
-         always disallowed in a username, since it is used in a submission
-         username to specify joint work.}
+  @item{@indexed-scheme[user-desc] --- a plain-words description of
+    the acceptable username format (according to user-regexp above);
+    @scheme[#f] stands for no description; the default is
+    @scheme["alphanumeric string"] which matches the default
+    user-regexp.}
 
-@item{@indexed-scheme[user-desc] --- a plain-words description of the acceptable
-         username format (according to user-regexp above); @scheme[#f] stands
-         for no description; the default is @scheme["alphanumeric string"]
-         which matches the default user-regexp.}
+  @item{@indexed-scheme[username-case-sensitive] --- a boolean; when
+    @scheme[#f], usernames are case-folded for all purposes; defaults
+    to @scheme[#f] (note that you should not set this to @scheme[#t]
+    on Windows or when using other case-insensitive filesystems, since
+    usernames are used as directory names).}
 
-@item{@indexed-scheme[username-case-sensitive] --- a boolean; when @scheme[#f], usernames are
-         case-folded for all purposes; defaults to @scheme[#f] (note that you
-         should not set this to @scheme[#t] on Windows or when using other
-         case-insensitive filesystems, since usernames are used as
-         directory names).}
+  @item{@indexed-scheme[allow-new-users] --- a boolean indicating
+    whether to allow new-user requests from a client tool; the default
+    is @scheme[#f].}
 
-@item{@indexed-scheme[allow-new-users] --- a boolean indicating whether to allow
-         new-user requests from a client tool; the default is @scheme[#f].}
+  @item{@indexed-scheme[allow-change-info] --- a boolean indicating
+    whether to allow changing user information from a client tool
+    (changing passwords is always possible); the default is
+    @scheme[#f].}
 
-@item{@indexed-scheme[allow-change-info] --- a boolean indicating whether to allow
-         changing user information from a client tool (changing
-         passwords is always possible); the default is @scheme[#f].}
+  @item{@indexed-scheme[master-password] --- a string for an MD5 hash
+    for a password that allows login as any user; the default is
+    @scheme[#f], which disables the password.}
 
-@item{@indexed-scheme[master-password] --- a string for an MD5 hash for a password that
-         allows login as any user; the default is @scheme[#f], which disables
-         the password.}
+  @item{@indexed-scheme[log-output] --- a boolean that controls
+    whether the handin server log is written on the standard output;
+    defaults to @scheme[#t].}
 
-@item{@indexed-scheme[log-output] --- a boolean that controls whether the handin server
-         log is written on the standard output; defaults to @scheme[#t].}
+  @item{@indexed-scheme[log-file] --- a path (relative to handin
+    server directory or absolute) that specifies a filename for the
+    handin server log (possibly combined with the @scheme[log-output]
+    option), or @scheme[#f] for no log file; defaults to
+    @filepath{log}.}
 
-@item{@indexed-scheme[log-file] --- a path (relative to handin server directory or
-         absolute) that specifies a filename for the handin server log
-         (possibly combined with the 'log-output option), or @scheme[#f] for
-         no log file; defaults to @filepath{log}.}
+  @item{@indexed-scheme[web-base-dir] --- if @scheme[#f] (the
+    default), the built-in web server will use the
+    @filepath{status-web-root} in this collection for its
+    configuration; to have complete control over the built in server,
+    you can copy and edit @filepath{status-web-root}, and add this
+    configuration entry with the name of your new copy (relative to
+    the handin server directory, or absolute).}
 
-@item{@indexed-scheme[web-base-dir] --- if @scheme[#f] (the default), the built-in web server
-         will use the @filepath{status-web-root} in this collection for its
-         configuration; to have complete control over the built in
-         server, you can copy and edit @filepath{status-web-root}, and add this
-         configuration entry with the name of your new copy (relative
-         to the handin server directory, or absolute).}
+  @item{@indexed-scheme[web-log-file] --- a path (relative to handin
+    server directory or absolute) that specifies a filename for
+    logging the internal HTTPS status web server; or @scheme[#f] (the
+    default) to disable this log.}
 
-@item{@indexed-scheme[web-log-file] --- a path (relative to handin server directory or
-         absolute) that specifies a filename for logging the internal
-         HTTPS status web server; or @scheme[#f] (the default) to disable
-         this log.}
+  @item{@indexed-scheme[extra-fields] --- a list that describes extra
+    string fields of information for student records; each element in
+    this list is a list of three values: the name of the field, the
+    regexp (or @scheme[#f], or a list of permitted string values), and
+    a string describing acceptable strings.  The default is
+    @schemeblock[
+      '(("Full Name" #f #f)
+        ("ID#" #f #f)
+        ("Email" #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"
+         "a valid email address"))]
+    You can set this to a list of fields that you are interested in
+    keeping, for example:
+    @schemeblock[
+      '(("Full Name"
+         #rx"^[A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)+$"
+         "full name, no punctuations, properly capitalized")
+        ("Utah ID Number"
+         #rx"^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$"
+         "Utah ID Number with exactly nine digits")
+        ("Email"
+         #rx"^[^@<>\"`',]+@cs\\.utah\\.edu$"
+         "A Utah CS email address"))]
+    The order of these fields will be used both on the client GUI side
+    and in the @filepath{users.ss} file (see below).
 
-@item{@indexed-scheme[extra-fields] --- a list that describes extra string fields of
-         information for student records; each element in this list is
-         a list of three values -- the name of the field, the regexp
-         (or @scheme[#f], or a list of permitted string values), and a string
-         describing of acceptable strings.  The default is
-@schemeblock[
-           '(("Full Name" #f #f)
-             ("ID#" #f #f)
-             ("Email" #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"
-              "a valid email address"))]
+    @comment{a hyperlink here for users.ss?}
 
-         You can set this to a list of fields that you are interested
-         in keeping, for example:
+    The second item in a field description can also be the symbol
+    @scheme['-], which marks this field as one that is hidden from the
+    user interface: students will not see it and will not be able to
+    provide or modify it; when a new student creates an account, such
+    fields will be left empty.  This is useful for adding information
+    that you have on students from another source, for example, adding
+    information from a course roster.  You should manually edit the
+    @filepath{users.ss} file and fill in such information.  (The third
+    element for such descriptors is ignored.)}
 
-@schemeblock[
-           '(("Full Name"
-              #rx"^[A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)+$"
-              "full name, no punctuations, properly capitalized")
-             ("Utah ID Number"
-              #rx"^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$"
-              "Utah ID Number with exactly nine digits")
-             ("Email"
-              #rx"^[^@<>\"`',]+@cs\\.utah\\.edu$"
-              "A Utah CS email address"))]
+  @item{@indexed-scheme[hook-file] --- a path (relative to handin
+    server directory or absolute) that specifies a filename that
+    contains a `hook' module.  This is useful as a general device for
+    customizing the server through Scheme code.  The file is expected
+    to contain a module that provides a @scheme[hook] function, which
+    should be receiving three arguments:
 
-         The order of these fields will be used both on the client GUI
-         side and in the @filepath{users.ss} file (see below).
+    @declare-exporting[#:use-sources (handin-server/scribblings/hook-dummy)]
 
-         @comment{a hyperlink here for users.ss?}
+    @defproc[(hook [operation symbol?]
+                   [connection-context (or/c number? symbol? false?)]
+                   [relevant-info (listof (list/c symbol? any))])
+                   void?]{
 
-         The second item in a field description can also be the symbol
-         @scheme['-], which marks this field as one that is hidden from the
-         user interface: students will not see it and will not be able
-         to provide or modify it; when a new student creates an
-         account, such fields will be left empty.  This is useful for
-         adding information that you have on students from another
-         source, for example, adding information from a course roster.
-         You should manually edit the @filepath{users.ss} file and fill in such
-         information.  (The third element for such descriptors is
-         ignored.)}
+      The @scheme[operation] argument indicates the operation that is
+      now taking place.  It can be one of the following:
+      @indexed-scheme['server-start],
+      @indexed-scheme['server-connect], @indexed-scheme['user-create],
+      @indexed-scheme['user-change], @indexed-scheme['login],
+      @indexed-scheme['submission-received],
+      @indexed-scheme['submission-committed],
+      @indexed-scheme['submission-retrieved],
+      @indexed-scheme['status-login], or
+      @indexed-scheme['status-file-get].
 
-@item{@indexed-scheme[hook-file] --- a path (relative to handin server directory or
-         absolute) that specifies a filename that contains a `hook'
-         module.  This is useful as a general device for customizing
-         the server through Scheme code.  The file is expected to
-         contain a module that provides a @scheme[hook] function, which
-         should be receiving three arguments:
+      The @scheme[connection-context] argument is a datum that
+      specifies the connection context (a number for handin
+      connections, a @scheme['wN] symbol for servlet connections, and
+      @scheme[#f] for other server operations).
 
+      The @scheme[relevant-info] contains an alist of information
+      relevant to this operation.  Currently, the hook is used in
+      several places after an operation has completed.
 
+      For example, here is a simple hook module that sends
+      notification messages when users are created or their
+      information has changed:
 
-@declare-exporting[#:use-sources (handin-server/scribblings/hook-dummy)]
+      @schememod[
+        mzscheme
+        (provide hook)
+        (require (lib "sendmail.ss" "net"))
+        (define (hook what session alist)
+          (when (memq what '(user-create user-change))
+            (send-mail-message
+             "course-staff@university.edu"
+             (format "[server] ~a (~a)" what session)
+             '("course-staff@university.edu") '() '()
+             (map (lambda (key+val) (apply format "~a: ~s" key+val))
+                  alist))))]}}}
 
-@comment{should the result be void?}
-@defproc[(hook [operation symbol?] [connection-context (or/c number? symbol? false?)]
-                        [relevant-info (listof (list/c symbol? any))])
-                  any/c]{
+  Changes to @filepath{config.ss} are detected, the file will be
+  re-read, and options are reloaded.  A few options are fixed at
+  startup time: port numbers, log file specs, and the
+  @scheme[web-base-dir] are as configured at startup.  All other
+  options will change the behavior of the running server (but things
+  like @scheme[username-case-sensitive?]  it would be unwise to do
+  so).  (For safety, options are not reloaded until the file parses
+  correctly, but make sure that you don't save a copy that has
+  inconsistent options: it is best to create a new configuration file
+  and move it over the old one, or use an editor that does so and not
+  save until the new contents is ready.)  This is most useful for
+  closing & opening submissions directories.}
 
-         The @scheme[operation] argument indicates the operation that is now
-           taking place. It can be one of the following:
-           @indexed-scheme['server-start],  @indexed-scheme['server-connect],
-           @indexed-scheme['user-create],  @indexed-scheme['user-change],  @indexed-scheme['login],
-           @indexed-scheme['submission-received],  @indexed-scheme['submission-committed], 
-           @indexed-scheme['submission-retrieved], @indexed-scheme['status-login],
-           or @indexed-scheme['status-file-get].
+@item{@filepath{users.ss} (created if not present if a user is added):
+  keeps the list of user accounts, along with the associated password
+  (actually the MD5 hash of the password), and extra string fields as
+  specified by the 'extra-fields configuration entry (in the same
+  order).  The file format is
+  @schemeblock{
+    ((<username-sym> (<pw-md5-str> <extra-field> ...))
+     ...)}
 
-           The @scheme[connection-context] argument is a datum 
-           that specifies the connection context (a number for handin
-           connections, a @scheme['wN] symbol for servlet connections, 
-           and @scheme[#f] for other server operations).
-           
-         The @scheme[relevant-info] contains an alist of information relevant
-         to this operation.  Currently, the hook is used in several places
-         after an operation has completed.
+  For example, the default @scheme['extra-field] setting will make this:
+  @schemeblock{
+    ((<username-sym> (<pw-md5-str> <full-name> <id> <email>))
+      ...)}
 
-         For example, here is a simple hook module that sends
-         notification messages when users are created or their information has
-         changed:
+  Usernames that begin with ``solution'' are special.  They are used by the
+  HTTPS status server.  Independent of the @scheme['user-regexp] and
+  @scheme['username-case-sensitive?] configuration items, usernames are not
+  allowed to contain characters that are illegal in Windows pathnames, and they
+  cannot end or begin in spaces or periods.
 
-@schemeblock[
-           (module hook mzscheme
-             (provide hook)
-             (require (lib "sendmail.ss" "net"))
-             (define (hook what session alist)
-               (when (memq what '(user-create user-change))
-                 (send-mail-message
-                  "course-staff@university.edu"
-                  (format "[server] ~a (~a)" what session)
-                  '("course-staff@university.edu") '() '()
-                  (map (lambda (key+val)
-                         (apply format "~a: ~s" key+val))
-                       alist)))))]
+  If the @scheme['allow-new-users] configuration allows new users, the
+  @filepath{users.ss} file can be updated by the server with new
+  users.  It can always be updated by the server to change passwords.
 
-    Changes to @filepath{config.ss} are detected, the file will be re-read, and
-    options are reloaded.  A few options are fixed at startup time:
-    port numbers, log file specs, and the @scheme[web-base-dir] are as
-    configured at startup.  All other options will change the behavior
-    of the running server (but things like @scheme[username-case-sensitive?]
-    it would be unwise to do so).  (For safety, options are not
-    reloaded until the file parses correctly, but make sure that you
-    don't save a copy that has inconsistent options: it is best to
-    create a new configuration file and move it over the old one, or
-    use an editor that does so and not save until the new contents is
-    ready.)  This is most useful for closing & opening submissions
-    directories.}}}
-}
-@item{@filepath{users.ss} (created if not present if a user is added) : keeps
-    the list of user accounts, along with the associated password
-    (actually the MD5 hash of the password), and extra string fields
-    as specified by the 'extra-fields configuration entry (in the same
-    order).  The file format is
+  If you have access to a standard Unix password file (from
+  @filepath{/etc/passwd} or @filepath{/etc/shadow}), then you can
+  construct a @filepath{users.ss} file that will allow users to use
+  their normal passwords.  To achieve this, use a list with 'unix as
+  the first element and the system's encrypted password string as the
+  second element.  Such passwords can be used, but when users change
+  them, a plain md5 hash will be used.
 
-@schemeblock{
-((<username-sym> (<pw-md5-str> <extra-field> ...))
- ...)
-}
+  You can combine this with other fields from the password file to
+  create your @filepath{users.ss}, but make sure you have information
+  that matches your 'extra-fields specification.  For example, given
+  this system file:
+  @verbatim{
+    foo:wRzN1u5q2SqRD:1203:1203:L.E. Foo        :/home/foo:/bin/tcsh
+    bar:$1$dKlU0OkJ$t63TzKz:1205:1205:Bar Z. Lie:/home/bar:/bin/bash}
+  you can create this @filepath{users.ss} file:
+  @schemeblock[
+    ((foo ((unix "wRzN1u5q2SqRD") "L.E. Foo" "?"))
+     (bar ((unix "$1$dKlU0OkJ$t63TzKz") "Bar Z. Lie" "?")))]
+  which can be combined with this setting for @scheme['extra-fields]
+  in your @filepath{config.ss}:
+  @schemeblock[
+    ...
+    (extra-fields (("Full Name" #f #f)
+                   ("TA" '("Alice" "Bob") "Your TA")))
+    ...]
+  and you can tell your students to use their department username and
+  password, and use the @onscreen{Manage ...} dialog to properly set
+  their TA name.
 
-    For example, the default @scheme['extra-field] setting will make this:
+  Finally, a password value can be a list that begins with a
+  @scheme['plaintext] symbol, which will be used without encryption.
+  This may be useful for manually resetting a forgotten passwords.}
 
-@schemeblock{
-      ((<username-sym> (<pw-md5-str> <full-name> <id> <email>))
-        ...)
-}
+@item{@filepath{log} (or any other name that the @scheme['log-file]
+  configuration option specifies (if any), created if not present,
+  appended otherwise): records connections and actions, where each
+  entry is of the form
+  @verbatim{[<id>|<time>] <msg>}
+  where @scheme[<id>] is an integer representing the connection
+  (numbered consecutively from 1 when the server starts), ``@tt{-}''
+  for a message without a connection, and ``@tt{wN}'' for a message
+  from the status servlet.}
 
-    Usernames that begin with ``solution'' are special.  They are used by the
-    HTTPS status server.  Independent of the @scheme['user-regexp] and
-    @scheme['username-case-sensitive?] configuration items, usernames are not
-    allowed to contain characters that are illegal in Windows pathnames, and they
-    cannot end or begin in spaces or periods.
+@item{Active and inactive assignment directories (which you can put in
+  a nested directory for convenience, or specify a different absolute
+  directory), as specified by the configuration file using the
+  @scheme['active-dirs] and @scheme['inactive-dirs].  A list of active
+  assignment directories (the last path element in each specified path
+  is used as a label) is sent to the client tool when a student clicks
+  @onscreen{Handin}.  The assignment labels are ordered in the
+  student's menu using @scheme[string<?], and the first assignment is
+  the default selection.
 
-    If the @scheme['allow-new-users] configuration allows new users, the
-    @filepath{users.ss} file can be updated by the server with new users.  It can
-    always be updated by the server to change passwords.
+  Within each assignment directory, the student id is used for a
+  sub-directory name.  Within each student sub-directory are
+  directories for handin attempts and successes.  If a directory
+  @filepath{ATTEMPT} exists, it contains the most recent (unsuccessful
+  or currently-in-submission) handin attempt.  Directories
+  @filepath{SUCCESS-n} (where n counts from 0) contain successful
+  handins; the lowest numbered such directory represents the latest
+  handin.
 
-    If you have access to a standard Unix password file (from
-    @filepath{/etc/passwd} or @filepath{/etc/shadow}), then you can construct a
-    @filepath{users.ss} file that will allow users to use their normal
-    passwords.  To achieve this, use a list with 'unix as the first
-    element and the system's encrypted password string as the second
-    element.  Such passwords can be used, but when users change them,
-    a plain md5 hash will be used.
+  A cleanup process in the server copies successful submissions to the
+  student directory, one level up from the corresponding
+  @filepath{SUCCESS-n} directory.  This is done only for files and
+  directories that are newer in @filepath{SUCCESS-n} than in the
+  submission root, other files and directories are left intact.  If
+  external tools add new content to the student directory (e.g., a
+  @filepath{grade} file, as described below) it will stay there.  If
+  the machine crashes or the server is stopped, the cleanup process
+  might not finish.  When the server is started, it automatically runs
+  the cleanup process for each student directory.
 
-    You can combine this with other fields from the password file to
-    create your @filepath{users.ss}, but make sure you have information that
-    matches your 'extra-fields specification.  For example, given this
-    system file:
+  Within a student directory, a @filepath{handin.scm} file (or some
+  other name if the @scheme[default-file-name] option is set) contains
+  the actual submission.  A @scheme[checker] procedure can change this
+  default file name, and it can create additional files in an
+  @filepath{ATTEMPT} directory (to be copied by the cleanup process);
+  see below for more details on @schememodname[handin-server/checker].
 
-@verbatim[
-"foo:wRzN1u5q2SqRD:1203:1203:L.E. Foo:/home/foo:/bin/tcsh
-bar:$1$dKlU0OkJ$t63TzKz:1205:1205:Bar Z. Lie:/home/bar:/bin/bash"]
+  For submissions from a normal DrScheme frame, a submission file
+  contains a copy of the student's definitions and interactions
+  windows.  The file is in a binary format (to support non-text code),
+  and opening the file directly in DrScheme shows the definitions
+  part.  To get both the definitions and interactions parts, the file
+  can be parsed with @scheme[unpack-submission] from
+  @schememodname[handin-server/utils].
 
-    you can create this @filepath{users.ss} file:
+  To submit an assignment as a group, students use a concatenation of
+  usernames separated by ``@tt{+}'' and any number of spaces (e.g.,
+  ``@tt{user1+user2}'').  The same syntax (``@tt{user1+user2}'') is
+  used for the directory for shared submissions, where the usernames
+  are always sorted so that directory names are deterministic.
+  Multiple submissions for a particular user in different groups will
+  be rejected.
 
-@schemeblock[
-      ((foo ((unix "wRzN1u5q2SqRD") "L.E. Foo" "?"))
-       (bar ((unix "$1$dKlU0OkJ$t63TzKz") "Bar Z. Lie" "?")))]
+  Inactive assignment directories are used by the the HTTPS status web
+  server.}
 
-    which can be combined with this setting for 'extra-fields in your
-    @filepath{config.ss}:
-
-@schemeblock[
-      ...
-      (extra-fields (("Full Name" #f #f)
-                     ("TA" '("Alice" "Bob") "Your TA")))
-      ...]
-
-    and you can tell your students to use their department username
-    and password, and use the @onscreen{Manage ...} dialog to properly set
-    their TA name.
-
-    Finally, a password value can be a list that begins with a
-    @scheme['plaintext] symbol, which will be used without encryption.  This
-    may be useful for manually resetting a forgotten passwords.
-}
-
-@item{@filepath{log} (or any other name that the 'log-file configuration option
-    specifies (if any), created if not present, appended otherwise)
-    : records connections and actions, where each entry is of the
-    form
-@verbatim[
-"(id time-str msg-str)
-[<id>|<time>] <msg>}"]
-        
-    where @scheme[<id>] is an integer representing the connection (numbered
-    consecutively from 1 when the server starts), ``@tt{-}'' for a message
-    without a connection, and ``@tt{wN}'' for a message from the status
-    servlet.}
-
-@item{Active and inactive assignment directories (which you can put in a
-    nested directory for convenience, or specify a different absolute
-    directory), as specified by the configuration file using the
-    `active-dirs' and `inactive-dirs'.  A list of active assignment
-    directories (the last path element in each specified path is used
-    as a label) is sent to the client tool when a student clicks
-    @onscreen{Handin}.  The assignment labels are ordered in the student's menu
-    using @scheme[string<?], and the first assignment is the default
-    selection.
-
-    Within each assignment directory, the student id is used for a
-    sub-directory name.  Within each student sub-directory are
-    directories for handin attempts and successes.  If a directory
-    @filepath{ATTEMPT} exists, it contains the most recent (unsuccessful or
-    currently-in-submission) handin attempt.  Directories @filepath{SUCCESS-n}
-    (where n counts from 0) contain successful handins; the lowest
-    numbered such directory represents the latest handin.
-
-    A cleanup process in the server copies successful submissions to
-    the student directory, one level up from the corresponding
-    @filepath{SUCCESS-n} directory.  This is done only for files and
-    directories that are newer in @filepath{SUCCESS-n} than in the submission
-    root, other files and directories are left intact.  If external
-    tools add new content to the student directory (eg, a @filepath{grade}
-    file, as described below) it will stay there.  If the machine
-    crashes or the server is stopped, the cleanup process might not
-    finish.  When the server is started, it automatically runs the
-    cleanup process for each student directory.
-
-    Within a student directory, a @filepath{handin.scm} file (or some other
-    name if the @scheme[default-file-name] option is set) contains the actual
-    submission.  A @scheme[checker] procedure can change this default file
-    name, and it can create additional files in an @filepath{ATTEMPT} directory
-    (to be copied by the cleanup process); see below for more details
-    on @schememodname[handin-server/checker].
-
-    For submissions from a normal DrScheme frame, a submission file
-    contains a copy of the student's definitions and interactions
-    windows.  The file is in a binary format (to support non-text
-    code), and opening the file directly in DrScheme shows the
-    definitions part.  To get both the definitions and interactions
-    parts, the file can be parsed with @scheme[unpack-submission] from
-    @schememodname[handin-server/utils].
-    
-    To submit an assignment as a group, students use a concatenation
-    of usernames separated by ``@tt{+}'' and any number of spaces (e.g.,
-    ``@tt{user1+user2}'').  The same syntax (``@tt{user1+user2}'') is used for the
-    directory for shared submissions, where the usernames are always
-    sorted so that directory names are deterministic.  Multiple
-    submissions for a particular user in different groups will be
-    rejected.
-
-    Inactive assignment directories are used by the the HTTPS status
-    web server.}
-    
-@item{@filepath{<active-assignment>/checker.ss} (optional) : a module that
-    exports a @scheme[checker] function.  This function receives two
-    @comment{use defproc here?}
-    arguments: a username list and a submission as a byte string.
-    (See also @scheme[unpack-submission], etc. from @schememodname[handin-server/utils].)  To
+@item{@filepath{<active-assignment>/checker.ss} (optional): a module
+  that exports a @scheme[checker] function.  This function receives
+  two
+  @; use defproc here?
+  arguments: a username list and a submission as a byte string.  (See
+  also @scheme[unpack-submission], etc. from
+  @schememodname[handin-server/utils].)  To
     reject the submission, the @scheme[checker] function can raise an
     exception; the exception message will be relayed back to the
     student.  The module is loaded when the current directory is the
@@ -568,7 +567,7 @@ bar:$1$dKlU0OkJ$t63TzKz:1205:1205:Bar Z. Lie:/home/bar:/bin/bash"]
 
     The checker should return a string, such as @filepath{handin.scm}, to use
     in naming the submission file, or @scheme[#f] to indicate that he file
-    should be deleted (eg, when the checker alrady created the
+    should be deleted (e.g., when the checker alrady created the
     submission file(s) in a different place).
 
     Alternatively, the module can bind @scheme[checker] to a list of three
@@ -665,6 +664,7 @@ to obtain a list of all assignments, or
 to start with a specific assignment (named ASSIGNMENT).  The default
 PORT is 7980.
 
+
 @section{Checker Utilities}
 
 The checker utilities are provided to make writing checker functions.
@@ -692,12 +692,14 @@ common submission situations.}}
 
 The following sections describe each of these modules.
 
+
 @section{Sandbox}
 
 @defmodule[handin-server/sandbox]
 
 This is just a wrapper around the sandbox engine from MzLib.  It configures it
 for use with the handin server.
+
 
 @section{Utils}
 
@@ -876,6 +878,7 @@ Checks whether @scheme[name] is defined in the evaluator @scheme[eval], and
   future.  The timeout can be completely disabled by @scheme[(timeout-control
   #f)].  (Note that before the checker is used (after the pre-checker, if
   specified), the timer will be reset to the @scheme['session-timeout] value.)}
+
 
 @section{checker}
 
@@ -1189,7 +1192,7 @@ values from the submission code.
   information includes only execution coverage by submission code, excluding
   additional checker tests.  You do not have to call this explicitly---it is
   called at the end of the process automatically when @scheme[:coverage?] is
-  enabled.  It is made available so you can call it earlier (eg, before
+  enabled.  It is made available so you can call it earlier (e.g., before
   testing) to show clients a coverage error first, or if you want to avoid an
   error.  For example, you can do this:
 
@@ -1206,6 +1209,7 @@ values from the submission code.
          }
 }
 
+
 @section[#:tag "multi-file"]{Multiple-File Submissions}
 
 By default, the system is set up for submissions of single a single
@@ -1221,7 +1225,7 @@ submissions, do the following:
   suffix that should be used for the single concatenated output file.}
 
 @item{You can also add a @scheme[:names-checker] keyword--the value can be a
-  regexp that all submitted files must follow (eg, @scheme[".*[.]scm$"]), or a
+  regexp that all submitted files must follow (e.g., @scheme[".*[.]scm$"]), or a
   list of expected file names.  Alternatively, it can be a 1-argument
   procedure that will receive the (sorted) list of submitted files and
   can throw an error if some files are missing or some files are
@@ -1257,6 +1261,7 @@ directory where it will create an executable for the multi-file
 submission utility---the resulting executable can be used outside of
 DrScheme (but PLT Scheme is still required, so it cannot be
 uninstalled).
+
 
 @section{Auto-Updater}
 
