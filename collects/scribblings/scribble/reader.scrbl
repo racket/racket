@@ -201,11 +201,11 @@ following spaces (or tabs) are part of the comment (similar to
 Tip: if you're editing in a Scheme-aware editor (like DrScheme or
 Emacs), it is useful to comment out blocks like this:
 
-@verbatim|{
+@verbatim|==={
   @;{
     ...
   ;}
-}|
+}===|
 
 so the editor does not treat the file as having unbalanced
 parenthesis.
@@ -427,8 +427,8 @@ you want to control the sub expressions in the form.
 }===|
 
 Note that @litchar["@|{...}|"] can be parsed as either an escape expression or
-as a no-command @"@"-form.  The latter is used in this case (since there
-is little point in Scheme code that uses braces.
+as the Scheme command part of a @"@"-form.  The latter is used in this case
+(since there is little point in Scheme code that uses braces.
 
 @scribble-examples|==={
   @|{blah}|
