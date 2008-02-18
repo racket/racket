@@ -912,7 +912,7 @@
        (check-array-init (array-init-vals (car inits)) check-e env type type-recs))
       (else
        (check-array-init-sub-inits (cdr inits) check-e
-                                   (check-array-init (array-init-vals (car inits)) check-e env type type-recs)
+                                   (type/env-e (check-array-init (array-init-vals (car inits)) check-e env type type-recs))
                                    type type-recs))))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
