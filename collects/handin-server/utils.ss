@@ -5,7 +5,7 @@
            (lib "posn.ss" "lang")
            (prefix pc: (lib "pconvert.ss"))
            (lib "pretty.ss")
-           (only "handin-server.ss" timeout-control)
+           (only "main.ss" timeout-control)
            "private/run-status.ss"
            "private/config.ss"
            "private/logger.ss"
