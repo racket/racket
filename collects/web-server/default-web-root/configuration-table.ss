@@ -6,20 +6,13 @@
      (default-indices "index.html" "index.htm")
      (log-format parenthesized-default)
      (messages
-       (servlet-message
-         "/Users/mflatt/proj/plt/collects/web-server/default-web-root/./conf/servlet-error.html")
-       (authentication-message
-         "/Users/mflatt/proj/plt/collects/web-server/default-web-root/./conf/forbidden.html")
-       (servlets-refreshed
-         "/Users/mflatt/proj/plt/collects/web-server/default-web-root/./conf/servlet-refresh.html")
-       (passwords-refreshed
-         "/Users/mflatt/proj/plt/collects/web-server/default-web-root/./conf/passwords-refresh.html")
-       (file-not-found-message
-         "/Users/mflatt/proj/plt/collects/web-server/default-web-root/./conf/not-found.html")
-       (protocol-message
-         "/Users/mflatt/proj/plt/collects/web-server/default-web-root/./conf/protocol-error.html")
-       (collect-garbage
-         "/Users/mflatt/proj/plt/collects/web-server/default-web-root/./conf/collect-garbage.html"))
+       (servlet-message "servlet-error.html")
+       (authentication-message "forbidden.html")
+       (servlets-refreshed "servlet-refresh.html")
+       (passwords-refreshed "passwords-refresh.html")
+       (file-not-found-message "not-found.html")
+       (protocol-message "protocol-error.html")
+       (collect-garbage "collect-garbage.html"))
      (timeouts
        (default-servlet-timeout 30)
        (password-connection-timeout 300)
@@ -28,16 +21,10 @@
        (file-base-connection-timeout 30))
      (paths
       (configuration-root "conf")
-      (host-root
-        "/Users/mflatt/proj/plt/collects/web-server/default-web-root/.")
-      (log-file-path
-        "/Users/mflatt/proj/plt/collects/web-server/default-web-root/./log")
-      (file-root
-        "/Users/mflatt/proj/plt/collects/web-server/default-web-root/./htdocs")
-      (servlet-root
-        "/Users/mflatt/proj/plt/collects/web-server/default-web-root/./.")
-      (mime-types
-        "/Users/mflatt/proj/plt/collects/web-server/default-web-root/./mime.types")
-      (password-authentication
-        "/Users/mflatt/proj/plt/collects/web-server/default-web-root/./passwords"))))
+      (host-root ".")
+      (log-file-path "log")
+      (file-root "htdocs")
+      (servlet-root ".")
+      (mime-types "mime.types")
+      (password-authentication "passwords"))))
  (virtual-host-table))
