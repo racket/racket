@@ -7,7 +7,7 @@
   ;; submission process.
   (define current-run-status-box (make-parameter #f))
 
-  ;; current-messenget is a function that will send a message to the client.
+  ;; current-messenger is a function that will send a message to the client.
   (define current-messenger (make-parameter #f))
   (define (message . args)
     (let ([messenger (current-messenger)])
