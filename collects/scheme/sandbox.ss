@@ -400,14 +400,24 @@
                                values))
 (define null-input         (open-input-bytes #""))
 
-(define (kill-evaluator eval)            (eval kill-evaluator))
-(define (break-evaluator eval)           (eval break-evaluator))
-(define (set-eval-limits eval . args)    ((eval set-eval-limits) args))
-(define (put-input eval . args)          (apply (eval put-input) args))
-(define (get-output eval)                (eval get-output))
-(define (get-error-output eval)          (eval get-error-output))
-(define (get-uncovered-expressions eval . args)
-  (apply (eval get-uncovered-expressions) args))
+(define-struct evaluator-message (msg args))
+(define-syntax define-evaluator-messenger
+  (syntax-rules ()
+    [(define-evaluator-messenger name msg)
+     (define name
+       (let ([evmsg (make-evaluator-message msg #f)])
+         (lambda (evaluator) (evaluator evmsg))))]
+    [(define-evaluator-messenger name msg (... ...)) ; with extra args
+     (define (name evaluator . args)
+       (evaluator (make-evaluator-message msg args)))]))
+
+(define-evaluator-messenger kill-evaluator  'kill)
+(define-evaluator-messenger break-evaluator 'break)
+(define-evaluator-messenger set-eval-limits 'limits ...)
+(define-evaluator-messenger put-input       'input ...)
+(define-evaluator-messenger get-output      'output)
+(define-evaluator-messenger get-error-output 'error-output)
+(define-evaluator-messenger get-uncovered-expressions 'uncovered ...)
 
 (define (make-evaluator* init-hook require-perms program-or-maker)
   (define cust          (make-custodian))
@@ -485,23 +495,26 @@
   (define (output-getter p) (if (procedure? p) (user-eval `(,p)) p))
   (define input-putter
     (case-lambda
-     [() (input-putter input-putter)]
+     [() (input-putter input)]
      [(arg) (cond [(not input)
                    (error 'put-input "evaluator input is not 'pipe")]
                   [(or (string? arg) (bytes? arg))
                    (display arg input) (flush-output input)]
                   [(eof-object? arg) (close-output-port input)]
-                  [(eq? arg input-putter) input]
-                  [else (error 'put-input "bad input: ~e" arg)])]))
+                  [else (error 'put-input "bad argument: ~e" arg)])]))
   (define (evaluator expr)
-    (cond [(eq? expr kill-evaluator)  (user-kill)]
-          [(eq? expr break-evaluator) (user-break)]
-          [(eq? expr set-eval-limits) (lambda (args) (set! limits args))]
-          [(eq? expr put-input) input-putter]
-          [(eq? expr get-output) (output-getter output)]
-          [(eq? expr get-error-output) (output-getter error-output)]
-          [(eq? expr get-uncovered-expressions) get-uncovered]
-          [else (user-eval expr)]))
+    (if (evaluator-message? expr)
+      (let ([msg (evaluator-message-msg expr)])
+        (case msg
+          [(kill)   (user-kill)]
+          [(break)  (user-break)]
+          [(limits) (set! limits (evaluator-message-args expr))]
+          [(input)  (apply input-putter (evaluator-message-args expr))]
+          [(output) (output-getter output)]
+          [(error-output) (output-getter error-output)]
+          [(uncovered) (apply get-uncovered (evaluator-message-args expr))]
+          [else (error 'evaluator "internal error, bad message: ~e" msg)]))
+      (user-eval expr)))
   (define linked-outputs? #f)
   (define (make-output what out set-out! allow-link?)
     (cond [(not out) (open-output-nowhere)]
@@ -556,7 +569,8 @@
     [current-security-guard (sandbox-security-guard)]
     [exit-handler (lambda x (error 'exit "user code cannot exit"))]
     [current-inspector ((sandbox-make-inspector))]
-    ;; This breaks: [current-code-inspector (make-inspector)]
+    ;; This breaks because we need to load some libraries that are trusted
+    ;; [current-code-inspector (make-inspector)]
     ;; Note the above definition of `current-eventspace': in MzScheme, it
     ;; is an unused parameter.  Also note that creating an eventspace
     ;; starts a thread that will eventually run the callback code (which

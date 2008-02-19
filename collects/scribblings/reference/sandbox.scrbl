@@ -107,7 +107,7 @@ argument:
        set to customize reading programs from strings and ports.
 
        This option is provided mainly for older test systems. Using
-       @scheme[make-module-evaluator] with input starting
+       @scheme[make-module-evaluator] with input starting with
        @schememodfont{#lang} is generally better.}
 
  @item{Finally, @scheme[language] can be a list whose first element is
@@ -156,7 +156,7 @@ module, and all imports are part of the program:
 @schemeblock[
 (define base-module-eval2
   (code:comment #, @t{equivalent to @scheme[base-module-eval]:})
-  (make-module-evaluator '(module m scheme/base 
+  (make-module-evaluator '(module m scheme/base
                             (define (f) later)
                             (define later 5))))
 ]
@@ -176,10 +176,25 @@ environment:
        also @scheme[sandbox-eval-limits] and @scheme[set-eval-limits].}
 }
 
-Evaluation can also be instrumented to track evaluation information
-when @scheme[sandbox-coverage-enabled] is set. Exceptions (both syntax
-and run-time) are propagated as usual to the caller of the evaluation
-function (i.e., catch it with @scheme[with-handlers]).}
+Evaluation can also be instrumented to track coverage information when
+@scheme[sandbox-coverage-enabled] is set. Exceptions (both syntax and
+run-time) are propagated as usual to the caller of the evaluation
+function (i.e., catch it with @scheme[with-handlers]).  However, note
+that a sandboxed evaluator is convenient for testing, since all
+exceptions happen in the same way, so you don't need special code to
+catch syntax errors.
+
+Finally, the fact that a sandboxed evaluator accept syntax objects
+makes it usable as the value for @scheme{current-eval}, which means
+that you can easily start a sandboxed read-eval-print-loop:
+
+@schemeblock[
+(define e
+  (make-module-evaluator '(module m scheme/base (define x 1))))
+(parameterize ([current-eval e]) (read-eval-print-loop))
+]
+
+}
 
 @; ----------------------------------------------------------------------
 
@@ -336,7 +351,7 @@ of code can be helpful:
    `(,(car specs)
      ,@(cdr specs)
      lang/posn
-     ,@(if mred? '(mrlib/cache-image-snip) '()))))
+     ,@(if gui? '(mrlib/cache-image-snip) '()))))
 ]}
 
 
@@ -360,7 +375,7 @@ default forbids all filesystem I/O except for things in
 @scheme[sandbox-network-guard] for network connections.}
 
 
-@defparam[sandbox-path-permissions perms 
+@defparam[sandbox-path-permissions perms
           (listof (list/c (one-of/c 'execute 'write 'delete
                                     'read 'exists)
                           (or/c byte-regexp? bytes? string? path?)))]{
@@ -401,12 +416,10 @@ default @scheme[sandbox-security-guard].  The default forbids all
 network connection.}
 
 
-@defparam[sandbox-eval-limits limits (or/c
-                                      (list/c (or/c exact-nonnegative-integer? 
-                                                    false/c)
-                                              (or/c exact-nonnegative-integer?
-                                                    false/c))
-                                      false/c)]{
+@defparam[sandbox-eval-limits limits
+          (or/c (list/c (or/c exact-nonnegative-integer? false/c)
+                        (or/c exact-nonnegative-integer? false/c))
+                false/c)]{
 
 A parameter that determines the default limits on @italic{each} use of
 a @scheme[make-evaluator] function, including the initial evaluation
@@ -433,11 +446,8 @@ evaluator, and the default parameter value is @scheme[make-inspector].}
 
 @section{Interacting with Evaluators}
 
-The following functions actually pass themselves to the given
-procedure, and an evaluator procedure recognizes these procedures
-(using @scheme[eq?]) to take an appropriate action---but you should
-avoid relying on that fact.
-
+The following functions are used to interact with a sandboxed
+evaluator in addition to using it to evaluate code.
 
 @defproc[(kill-evaluator [evaluator (any/c . -> . any)]) void?]{
 
