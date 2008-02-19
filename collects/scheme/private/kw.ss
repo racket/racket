@@ -44,10 +44,10 @@
                                              (loop (cdr req)))))])))])
       (string-append
        (cond
-        [(number? a) (format "expects ~a argument~a" a (if (= a 1) "" "s"))]
+        [(number? a) (format "~a argument~a" a (if (= a 1) "" "s"))]
         [(arity-at-least? a)
          (let ([a (arity-at-least-value a)])
-           (format "expects at least ~a argument~a" a (if (= a 1) "" "s")))]
+           (format "at least ~a argument~a" a (if (= a 1) "" "s")))]
         [else
          "a different number of arguments"])
        (if (null? req)
