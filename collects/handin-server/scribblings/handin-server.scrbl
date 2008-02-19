@@ -27,11 +27,11 @@
 
 @section{Handin-Server and Client}
 
-The @scheme[handin-server] directory contains a server to be run by a
+The @filepath[handin-server] directory contains a server to be run by a
 course instructor for accepting homework assignments and reporting on
 submitted assignments.
 
-The @scheme[handin-client] directory contains a client to be
+The @filepath[handin-client] directory contains a client to be
 customized then re-distributed to students in the course.  The
 customized client will embed a particular hostname and port where the
 server is running, as well as a server certificate.
