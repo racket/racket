@@ -35,7 +35,7 @@
 (define (gen-servlet-responder servlet-error-file)
   (lambda (url exn)
     ((error-display-handler)
-     (format "Servlet exception:\n~a\n" (exn-message exn))
+     (format "Servlet (@ ~a) exception:\n~e\n" (url->string url) (exn-message exn))
      exn)
     (file-response 500 "Servlet error" servlet-error-file)))
 
