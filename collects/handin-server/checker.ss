@@ -1,4 +1,4 @@
-(module checker mzscheme
+#lang mzscheme
 
 (require "utils.ss" (lib "file.ss") (lib "list.ss") (lib "class.ss")
          (lib "mred.ss" "mred"))
@@ -730,5 +730,3 @@
          ((if (pair? proc) (car proc) handler) loc)))]
     [(null? uncovered) #f]
     [else (error* "bad checker: no coverage information for !all-covered")]))
-
-)
