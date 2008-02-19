@@ -9,19 +9,6 @@
            (lib "frp-core.ss" "frtime")
            (all-except (lib "lang-ext.ss" "frtime") undefined?)
            (only (lib "mzscheme-core.ss" "frtime") any-nested-reactivity? raise-reactivity)
-;           (rename (lib "frp-core.ss" "frtime") behavior? behavior?)
-;           (rename (lib "lang-ext.ss" "frtime") event? event?)
-;           (rename (lib "frp-core.ss" "frtime") signal? signal?)
-;           
-;           (rename (lib "frp-core.ss" "frtime") econs? econs?)
-;           (rename (lib "frp-core.ss" "frtime") efirst efirst)
-;
-;           (rename (lib "frp-core.ss" "frtime") value-now value-now)
-;           (rename (lib "frp-core.ss" "frtime") signal-value signal-value)
-;           (rename (lib "lang-ext.ss" "frtime") undefined undefined)
-;           (rename (lib "lang-ext.ss" "frtime") undefined? frp:undefined?)
-;           
-;           (rename (lib "frp-core.ss" "frtime") proc->signal proc->signal)
 
            ;; MrEd require
            (all-except (lib "mred.ss" "mred") send-event))
@@ -92,12 +79,8 @@
              (set! current c)
              (let ([admin (get-admin)])
                (when admin
-                 (send admin resized this #t)
-                 #;(send admin needs-update this 0 0 2000 100)))))))
-      #;(define/override (resize w h)
-        (super resize w h)
-        (send (get-admin) resized this #t)
-        #t)
+                 (send admin resized this #t)))))))
+
       (define/override (size-cache-invalid)
         (send current size-cache-invalid))
               
@@ -117,7 +100,7 @@
              [current (make-snip bhvr super-render-fun)])
       
       (define/override (copy)
-        (let ([ret (make-object value-snip-copy% current this)])
+        (let ([ret (make-object dynamic-snip-copy% current this)])
           (set! copies (cons ret copies))
           ret))
       
@@ -177,9 +160,6 @@
        (make-object dynamic-snip% (raise-reactivity beh) super-render-fun)]
       [(signal? beh)
        (make-object dynamic-snip% beh super-render-fun)]
-       #;(let ([pb (new pasteboard%)])
-         (send pb insert (make-object dynamic-snip% beh super-render-fun))
-         (new editor-snip% [editor (new pasteboard%)]))
       [else beh]))
   
   (provide (all-defined))
