@@ -1,18 +1,17 @@
 #lang scribble/doc
-@require["ss.ss"
-         scribble/struct]
+@(require "ss.ss"
+          scribble/struct)
 
-@define[(control-table . l)
-        (make-table
-         #f
-         (map (lambda (p)
-               (list (make-flow (list (make-paragraph (list (hspace 2)))))
-                     (make-flow (list (make-paragraph (list (car p)))))
-                     (make-flow (list (make-paragraph (list (hspace 1) ":" (hspace 1)))))
-                     (make-flow (list (make-paragraph (list (cadr p)))))))
-              l))]
-                     
-        
+@(define (control-table . l)
+   (make-table
+    #f
+    (map (lambda (p)
+           (list (make-flow (list (make-paragraph (list (hspace 2)))))
+                 (make-flow (list (make-paragraph (list (car p)))))
+                 (make-flow (list (make-paragraph (list (hspace 1) ":" (hspace 1)))))
+                 (make-flow (list (make-paragraph (list (cadr p)))))))
+         l)))
+
 
 @title{Creating Slide Presentations}
 

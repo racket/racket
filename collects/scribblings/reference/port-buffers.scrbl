@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["mz.ss"]
+@(require "mz.ss")
 
 @title[#:tag "port-buffers"]{Port Buffers and Positions}
 

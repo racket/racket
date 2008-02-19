@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require[scribble/bnf]
-@require["mz.ss"]
+@(require scribble/bnf
+          "mz.ss")
 
 @title[#:tag "unixpaths"]{@|AllUnix| Paths}
 

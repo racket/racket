@@ -1,8 +1,8 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require[scribble/eval]
-@require[scribble/bnf]
-@require["guide-utils.ss"]
+@(require scribble/manual
+          scribble/eval
+          scribble/bnf
+          "guide-utils.ss")
 
 @(define ex-eval (make-base-eval))
 
@@ -30,34 +30,35 @@ or more repetitions of the preceding element, @kleeneplus{} means one
 or more repetitions of the preceding element, and @BNF-group{} groups
 a sequence as an element for repetition.
 
-@define[val-defn-stx @BNF-seq[@litchar{(}@litchar{define} @nonterm{id} @nonterm{expr} @litchar{)}]]
-@define[fun-defn-stx
-         @BNF-seq[@litchar{(}@litchar{define} @litchar{(} @nonterm{id} @kleenestar{@nonterm{id}} @litchar{)}
-                  @kleeneplus{@nonterm{expr}} @litchar{)}]]
-@define[fun-defn2-stx
+@(define val-defn-stx
+   @BNF-seq[@litchar{(}@litchar{define} @nonterm{id} @nonterm{expr} @litchar{)}])
+@(define fun-defn-stx
    @BNF-seq[@litchar{(}@litchar{define} @litchar{(} @nonterm{id} @kleenestar{@nonterm{id}} @litchar{)}
-                  @kleenestar{@nonterm{definition}} @kleeneplus{@nonterm{expr}} @litchar{)}]]
-@define[app-expr-stx @BNF-seq[@litchar{(} @nonterm{id} @kleenestar{@nonterm{expr}} @litchar{)}]]
-@define[app2-expr-stx @BNF-seq[@litchar{(} @nonterm{expr} @kleenestar{@nonterm{expr}} @litchar{)}]]
-@define[if-expr-stx @BNF-seq[@litchar{(} @litchar{if} @nonterm{expr} @nonterm{expr} @nonterm{expr} @litchar{)}]]
+                  @kleeneplus{@nonterm{expr}} @litchar{)}])
+@(define fun-defn2-stx
+   @BNF-seq[@litchar{(}@litchar{define} @litchar{(} @nonterm{id} @kleenestar{@nonterm{id}} @litchar{)}
+            @kleenestar{@nonterm{definition}} @kleeneplus{@nonterm{expr}} @litchar{)}])
+@(define app-expr-stx @BNF-seq[@litchar{(} @nonterm{id} @kleenestar{@nonterm{expr}} @litchar{)}])
+@(define app2-expr-stx @BNF-seq[@litchar{(} @nonterm{expr} @kleenestar{@nonterm{expr}} @litchar{)}])
+@(define if-expr-stx @BNF-seq[@litchar{(} @litchar{if} @nonterm{expr} @nonterm{expr} @nonterm{expr} @litchar{)}])
 
-@define[lambda-expr-stx @BNF-seq[@litchar{(} @litchar{lambda} @litchar{(} @kleenestar{@nonterm{id}} @litchar{)}
-                                              @kleeneplus{@nonterm{expr}} @litchar{)}]]
-@define[lambda2-expr-stx
-         @BNF-seq[@litchar{(} @litchar{lambda} @litchar{(} @kleenestar{@nonterm{id}} @litchar{)}
-                  @kleenestar{@nonterm{definition}} @kleeneplus{@nonterm{expr}} @litchar{)}]]
-@define[and-expr-stx @BNF-seq[@litchar{(} @litchar{and} @kleenestar{@nonterm{expr}} @litchar{)}]]
-@define[or-expr-stx @BNF-seq[@litchar{(} @litchar{or} @kleenestar{@nonterm{expr}} @litchar{)}]]
-@define[cond-expr-stx @BNF-seq[@litchar{(} @litchar{cond}
-                                              @kleenestar{@BNF-group[@litchar{[} @nonterm{expr} @kleenestar{@nonterm{expr}} @litchar{]}]}
-                                              @litchar{)}]]
-@define[(make-let-expr-stx kw)
-         @BNF-seq[@litchar{(} kw @litchar{(}
-                      @kleenestar{@BNF-group[@litchar{[} @nonterm{id} @nonterm{expr} @litchar{]}]}
-                      @litchar{)}
-                   @kleeneplus{@nonterm{expr}} @litchar{)}]]
-@define[let-expr-stx (make-let-expr-stx @litchar{let})]
-@define[let*-expr-stx (make-let-expr-stx @litchar{let*})]
+@(define lambda-expr-stx @BNF-seq[@litchar{(} @litchar{lambda} @litchar{(} @kleenestar{@nonterm{id}} @litchar{)}
+                                              @kleeneplus{@nonterm{expr}} @litchar{)}])
+@(define lambda2-expr-stx
+   @BNF-seq[@litchar{(} @litchar{lambda} @litchar{(} @kleenestar{@nonterm{id}} @litchar{)}
+            @kleenestar{@nonterm{definition}} @kleeneplus{@nonterm{expr}} @litchar{)}])
+@(define and-expr-stx @BNF-seq[@litchar{(} @litchar{and} @kleenestar{@nonterm{expr}} @litchar{)}])
+@(define or-expr-stx @BNF-seq[@litchar{(} @litchar{or} @kleenestar{@nonterm{expr}} @litchar{)}])
+@(define cond-expr-stx @BNF-seq[@litchar{(} @litchar{cond}
+                                @kleenestar{@BNF-group[@litchar{[} @nonterm{expr} @kleenestar{@nonterm{expr}} @litchar{]}]}
+                                @litchar{)}])
+@(define (make-let-expr-stx kw)
+   @BNF-seq[@litchar{(} kw @litchar{(}
+            @kleenestar{@BNF-group[@litchar{[} @nonterm{id} @nonterm{expr} @litchar{]}]}
+            @litchar{)}
+            @kleeneplus{@nonterm{expr}} @litchar{)}])
+@(define let-expr-stx (make-let-expr-stx @litchar{let}))
+@(define let*-expr-stx (make-let-expr-stx @litchar{let*}))
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @section{Definitions}

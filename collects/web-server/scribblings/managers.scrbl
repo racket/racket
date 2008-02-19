@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["web-server.ss"]
+@(require "web-server.ss")
 
 @title[#:tag "managers"
        #:style 'toc]{Continuation Managers}
@@ -15,7 +15,7 @@ pluggable through the manager interface.
 
 @; ------------------------------------------------------------
 @section[#:tag "manager.ss"]{General}
-@require[(for-label web-server/managers/manager)]
+@(require (for-label web-server/managers/manager))
 
 @defmodule[web-server/managers/manager]
 
@@ -61,7 +61,7 @@ the users and implementers of managers.
 
 @; ------------------------------------------------------------
 @section[#:tag "none.ss"]{No Continuations}
-@require[(for-label web-server/managers/none)]
+@(require (for-label web-server/managers/none))
 
 @defmodule[web-server/managers/none]
 
@@ -80,7 +80,7 @@ Web Language. (See @secref["lang"].)
 
 @; ------------------------------------------------------------
 @section[#:tag "timeouts.ss"]{Timeouts}
-@require[(for-label web-server/managers/timeouts)]
+@(require (for-label web-server/managers/timeouts))
 
 @defmodule[web-server/managers/timeouts]
 
@@ -110,7 +110,7 @@ deployments of the @web-server .
 
 @; ------------------------------------------------------------
 @section[#:tag "lru.ss"]{LRU}
-@require[(for-label web-server/managers/lru)]
+@(require (for-label web-server/managers/lru))
 
 @defmodule[web-server/managers/lru]
 

@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require["common.ss"
-         (for-label scheme/gui/dynamic)]
+@(require "common.ss"
+          (for-label scheme/gui/dynamic))
 
 @title{Dynamic Loading}
 

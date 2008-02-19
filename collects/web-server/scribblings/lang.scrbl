@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["web-server.ss"]
+@(require "web-server.ss")
 
 @title[#:tag "lang"
        #:style 'toc]{Web Language Servlets}
@@ -12,7 +12,7 @@ is different and what API is provided.
 
 @; ------------------------------------------------------------
 @section[#:tag "lang-servlets"]{Definition}
-@require[(for-label "dummy-language-servlet.ss")] @; to give a binding context
+@(require (for-label "dummy-language-servlet.ss")) @; to give a binding context
 
 @declare-exporting[#:use-sources (web-server/scribblings/dummy-language-servlet)]
 
@@ -102,7 +102,7 @@ by the Web language API.
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/web.ss"]{Web}
-@require[(for-label web-server/lang/web)]
+@(require (for-label web-server/lang/web))
 
 @defmodule[web-server/lang/web]
 
@@ -144,7 +144,7 @@ by the Web language API.
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/stuff-url.ss"]{Stuff URL}
-@require[(for-label web-server/lang/stuff-url)]
+@(require (for-label web-server/lang/stuff-url))
 
 @defmodule[web-server/lang/stuff-url]
 
@@ -182,7 +182,7 @@ In the future, we will offer the facilities to:
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/web-extras.ss"]{Web Extras}
-@require[(for-label web-server/lang/web-extras)]
+@(require (for-label web-server/lang/web-extras))
 
 @defmodule[web-server/lang/web-extras]{The
 @schememodname[web-server/lang/web-extras] library provides
@@ -200,7 +200,7 @@ See @schememodname[web-server/servlet/web].}
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/file-box.ss"]{File Boxes}
-@require[(for-label web-server/lang/file-box)]
+@(require (for-label web-server/lang/file-box))
 
 @defmodule[web-server/lang/file-box]
 
@@ -240,7 +240,7 @@ are on a shared medium.}
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/web-param.ss"]{Web Parameters}
-@require[(for-label web-server/lang/web-param)]
+@(require (for-label web-server/lang/web-param))
 
 @defmodule[web-server/lang/web-param]
 
@@ -270,7 +270,7 @@ things in the Web Language, they are sensitive to source code modification.
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/web-cells.ss"]{Web Cells}
-@require[(for-label web-server/lang/web-cells)]
+@(require (for-label web-server/lang/web-cells))
 
 @defmodule[web-server/lang/web-cells]{The
 @schememodname[web-server/lang/web-cells] library provides the same

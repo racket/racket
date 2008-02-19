@@ -1,19 +1,18 @@
 #lang scribble/doc
-@require["mz.ss"]
-@require[scribble/bnf]
-@require["reader-example.ss"]
-@begin[
-(define (ilitchar s)
-  (litchar s))
-(define (nunterm s)
-  (nonterm s (subscript "n")))
-(define (sub n) (subscript n))
-(define (nonalpha)
-  @elem{; the next character must not be @schemelink[char-alphabetic?]{alphabetic}.})
-]
-@define[(graph-tag) @kleenerange[1 8]{@nonterm{digit@sub{10}}}]
-@define[(graph-defn) @elem{@litchar{#}@graph-tag[]@litchar{=}}]
-@define[(graph-ref) @elem{@litchar{#}@graph-tag[]@litchar{#}}]
+@(require "mz.ss"
+          scribble/bnf
+          "reader-example.ss")
+@(begin
+   (define (ilitchar s)
+     (litchar s))
+   (define (nunterm s)
+     (nonterm s (subscript "n")))
+   (define (sub n) (subscript n))
+   (define (nonalpha)
+     @elem{; the next character must not be @schemelink[char-alphabetic?]{alphabetic}.})
+   (define (graph-tag) @kleenerange[1 8]{@nonterm{digit@sub{10}}})
+   (define (graph-defn) @elem{@litchar{#}@graph-tag[]@litchar{=}})
+   (define (graph-ref) @elem{@litchar{#}@graph-tag[]@litchar{#}}))
 
 @title[#:tag "reader" #:style 'quiet]{The Reader}
 

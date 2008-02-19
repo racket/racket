@@ -1,8 +1,6 @@
 #lang scribble/doc
 
-@begin[
-(require scribble/manual)
-]
+@(require scribble/manual)
 
 @title{@bold{Framework}: PLT GUI Application Framework}
 

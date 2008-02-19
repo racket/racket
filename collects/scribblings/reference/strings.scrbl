@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["mz.ss"]
+@(require "mz.ss")
 
 @title[#:tag "strings"]{Strings}
 
@@ -183,10 +183,10 @@ _i)] is the character produced by @scheme[(proc _i)].
 @examples[(string=? "Apple" "apple")
           (string=? "a" "as" "a")]
 
-@define[(string-sort direction folded?)
-         (if folded?
-             @elem{Like @scheme[string-ci<?], but checks whether the arguments would be @direction after case-folding.}
-             @elem{Like @scheme[string<?], but checks whether the arguments are @|direction|.})]
+@(define (string-sort direction folded?)
+(if folded?
+  @elem{Like @scheme[string-ci<?], but checks whether the arguments would be @direction after case-folding.}
+  @elem{Like @scheme[string<?], but checks whether the arguments are @|direction|.}))
 
 @defproc[(string<? [str1 string?] [str2 string?] ...+) boolean?]{
  Returns @scheme[#t] if the arguments are lexicographically sorted

@@ -1,10 +1,10 @@
 #lang scribble/doc
-@require["common.ss"]
+@(require "common.ss")
 
 @defclass/title[key-event% event% ()]{
 
 A @scheme[key-event%] object contains information about a key press
- or release event. Key events are primarily processed by
+or release event. Key events are primarily processed by
 @xmethod[window<%> on-subwindow-char] and
 @xmethod[canvas<%> on-char].
 

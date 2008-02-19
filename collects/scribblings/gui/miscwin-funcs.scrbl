@@ -1,14 +1,15 @@
 #lang scribble/doc
-@require["common.ss"]
-@require[scribble/struct]
+@(require "common.ss"
+          scribble/struct)
 
-@define[(atable . l)
-               (make-table #f (map (lambda (i)
-                                     (map (lambda (e)
-                                            (make-flow (list (make-paragraph (list e)))))
-                                          i))
-                                    l))]
-@define[(tline l r) (list (hspace 2) l (hspace 1) 'rarr (hspace 1) r)]
+@(define (atable . l)
+   (make-table #f (map (lambda (i)
+                         (map (lambda (e)
+                                (make-flow (list (make-paragraph (list e)))))
+                              i))
+                       l)))
+@(define (tline l r)
+   (list (hspace 2) l (hspace 1) 'rarr (hspace 1) r))
 
 
 @title{Miscellaneous}

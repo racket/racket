@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["common.ss"]
+@(require "common.ss")
 
 @defclass/title[menu% object% (menu-item-container<%> labelled-menu-item<%>)]{
 

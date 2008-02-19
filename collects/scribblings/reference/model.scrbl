@@ -1,30 +1,31 @@
 #lang scribble/doc
-@require[scribble/struct
-         (for-syntax scheme/base)
-         "mz.ss"
-         "prog-steps.ss"]
+@(require scribble/struct
+          (for-syntax scheme/base)
+          "mz.ss"
+          "prog-steps.ss")
 
-@define[reduces (make-element #f (list 'rarr))]
-@define[rspace (make-element "ghost" (list 'rarr))]
+@(define reduces (make-element #f (list 'rarr)))
+@(define rspace (make-element "ghost" (list 'rarr)))
 
-@define[*redex (lambda (c)
-                 (make-element "highlighted" (list c)))]
-@define-syntax[redex (syntax-rules ()
-                       [(_ a) (*redex (scheme a))])]
+@(define *redex (lambda (c)
+                  (make-element "highlighted" (list c))))
+@(define-syntax redex
+   (syntax-rules () [(_ a) (*redex (scheme a))]))
 
 
-@define[hole (make-element #f (list "[]"))]
-@define[(*sub c e) (make-element #f (list c "[" e "]"))]
-@define[langle (make-element 'tt (list "<"))]
-@define[rangle (make-element 'tt (list ">"))]
-@define[comma (make-element 'tt (list ", "))]
-@define-syntax[sub (syntax-rules ()
-                     [(_ a b) (*sub (scheme a) (scheme b))])]
-@define[(*state c e) (make-element #f (list langle c comma e rangle))]
-@define-syntax[state (syntax-rules ()
-                       [(_ a b) (*state (scheme a) (scheme b))])]
-@define[(frame n) (make-element "schemevariable"
-                                (list "C" (make-element 'subscript (list (format "~a" n)))))]
+@(define hole (make-element #f (list "[]")))
+@(define (*sub c e) (make-element #f (list c "[" e "]")))
+@(define langle (make-element 'tt (list "<")))
+@(define rangle (make-element 'tt (list ">")))
+@(define comma (make-element 'tt (list ", ")))
+@(define-syntax sub
+   (syntax-rules () [(_ a b) (*sub (scheme a) (scheme b))]))
+@(define (*state c e) (make-element #f (list langle c comma e rangle)))
+@(define-syntax state
+   (syntax-rules () [(_ a b) (*state (scheme a) (scheme b))]))
+@(define (frame n)
+   (make-element "schemevariable"
+                 (list "C" (make-element 'subscript (list (format "~a" n))))))
 
 @;------------------------------------------------------------------------
 @title{Evaluation Model}

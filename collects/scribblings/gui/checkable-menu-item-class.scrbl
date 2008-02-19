@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["common.ss"]
+@(require "common.ss")
 
 @defclass/title[checkable-menu-item% object% (selectable-menu-item<%>)]{
 

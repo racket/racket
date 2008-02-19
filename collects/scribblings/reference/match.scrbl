@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require["mz.ss"
-         "match-grammar.ss"
-         scheme/match]
+@(require "mz.ss"
+          "match-grammar.ss"
+          scheme/match)
 
 @(define match-eval (make-base-eval))
 @interaction-eval[#:eval match-eval (require scheme/match)]

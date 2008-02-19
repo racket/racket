@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["web-server.ss"]
+@(require "web-server.ss")
 
 @title[#:tag "run.ss"
        #:style 'toc]{Running the Web Server}
@@ -34,7 +34,7 @@ To run the web server with MrEd, use
 
 @; ------------------------------------------------------------
 @section[#:tag "web-server.ss"]{Functional}
-@require[(for-label web-server/web-server)]
+@(require (for-label web-server/web-server))
 
 @defmodule[web-server/web-server]
 
@@ -58,8 +58,8 @@ dispatcher. See @filepath{run.ss} for an example of such a script.
 Here's an example of a simple web server that serves files
 from a given path:
 
-@require[(for-label web-server/dispatchers/filesystem-map)]
-@require[(prefix-in files: (for-label web-server/dispatchers/dispatch-files))]
+@(require (for-label web-server/dispatchers/filesystem-map)
+          (prefix-in files: (for-label web-server/dispatchers/dispatch-files)))
 
 @schemeblock[
 (define (start-file-server base)

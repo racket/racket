@@ -1,7 +1,7 @@
 #lang scribble/doc
 
-@begin[(require scribble/manual)
-       (require (for-label scheme/base))]
+@(require scribble/manual
+          (for-label scheme/base))
 
 @title{Teachpacks}
 

@@ -1,8 +1,8 @@
 #lang scribble/doc
-@require[scribble/bnf]
-@require["mz.ss"]
+@(require scribble/bnf
+          "mz.ss")
 
-@define[(FmtMark . s) (apply litchar "~" s)]
+@(define (FmtMark . s) (apply litchar "~" s))
 
 @title{Writing}
 

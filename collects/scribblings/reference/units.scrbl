@@ -1,24 +1,21 @@
 #lang scribble/doc
 @(require (except-in "mz.ss" link)
           (for-label scheme/unit-exptime))
-                      
 
-@begin[
-(define-syntax defkeywords
-  (syntax-rules (*)
-    [(_ [* (form ...) as see])
-     (defform* [form ...]
-       "Allowed only in a " (scheme as) "; see " (scheme see) ".")]
-    [(_ [* (form ...) see-eg])
-     (defform* [form ...]
-       "Allowed only in certain forms; see, for example, " (scheme see-eg) ".")]
-    [(_ [form as see])
-     (defkeywords [* (form) as see])]
-    [(_ [form see-eg])
-     (defkeywords [* (form) see-eg])]
-    [(_ f ...)
-     (begin (defkeywords f) ...)]))
-]
+@(define-syntax defkeywords
+   (syntax-rules (*)
+     [(_ [* (form ...) as see])
+      (defform* [form ...]
+        "Allowed only in a " (scheme as) "; see " (scheme see) ".")]
+     [(_ [* (form ...) see-eg])
+      (defform* [form ...]
+        "Allowed only in certain forms; see, for example, " (scheme see-eg) ".")]
+     [(_ [form as see])
+      (defkeywords [* (form) as see])]
+     [(_ [form see-eg])
+      (defkeywords [* (form) see-eg])]
+     [(_ f ...)
+      (begin (defkeywords f) ...)]))
 
 @title[#:tag "mzlib:unit" #:style 'toc]{Units}
 

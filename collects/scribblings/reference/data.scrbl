@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["mz.ss"]
+@(require "mz.ss")
 
 @title[#:style 'toc #:tag "data"]{Primitive Datatypes}
 

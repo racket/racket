@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["mz.ss"]
+@(require "mz.ss")
 
 @title[#:tag "bytestrings"]{Byte Strings}
 
@@ -176,8 +176,8 @@ string.
 @examples[(bytes=? #"Apple" #"apple")
           (bytes=? #"a" #"as" #"a")]
 
-@define[(bytes-sort direction)
-         @elem{Like @scheme[bytes<?], but checks whether the arguments are @|direction|.}]
+@(define (bytes-sort direction)
+   @elem{Like @scheme[bytes<?], but checks whether the arguments are @|direction|.})
 
 @defproc[(bytes<? [bstr1 bytes?] [bstr2 bytes?] ...+) boolean?]{
  Returns @scheme[#t] if the arguments are lexicographically sorted

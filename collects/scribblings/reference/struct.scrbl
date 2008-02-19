@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require["mz.ss"
-         (for-label scheme/struct-info)]
+@(require "mz.ss"
+          (for-label scheme/struct-info))
 
 @(define struct-eval (make-base-eval))
 

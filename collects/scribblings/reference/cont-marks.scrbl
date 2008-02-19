@@ -1,9 +1,10 @@
 #lang scribble/doc
-@require[scribble/struct]
-@require["mz.ss"]
+@(require scribble/struct
+          "mz.ss")
 
-@define[(cont n) (make-element "schemevariable"
-                                (list "C" (make-element 'subscript (list (format "~a" n)))))]
+@(define (cont n)
+   (make-element "schemevariable"
+                 (list "C" (make-element 'subscript (list (format "~a" n))))))
 
 @title[#:tag "contmarks"]{Continuation Marks}
 

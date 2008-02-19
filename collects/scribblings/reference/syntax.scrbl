@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require["mz.ss"]
+@(require "mz.ss")
 
-@define[cvt (schemefont "CVT")]
+@(define cvt (schemefont "CVT"))
 
 @title[#:tag "syntax" #:style 'toc]{Syntactic Forms}
 

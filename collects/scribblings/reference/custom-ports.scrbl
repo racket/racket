@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["mz.ss"]
+@(require "mz.ss")
 
 @title[#:tag "customport"]{Custom Ports}
 
@@ -347,7 +347,7 @@ The arguments implement the port as follows:
  @scheme[peek-char-or-special], @scheme[read-byte-or-special], or
  @scheme[peek-byte-or-special], then the @exnraise[exn:fail:contract].}
 
-@begin[
+@(begin
 #reader scribble/comment-reader
 [examples
 ;; A port with no input...
@@ -624,7 +624,7 @@ s
 (port-commit-peeked 1 progress-evt (make-semaphore 1) 
                     mod3-cycle)
 (close-input-port mod3-cycle)
-]]
+])
 
 @;------------------------------------------------------------------------
 @;------------------------------------------------------------------------
@@ -941,7 +941,7 @@ procedures.
  }
 }
 
-@begin[
+@(begin
 #reader scribble/comment-reader
 [examples
 ;; A port that writes anything to nowhere:
@@ -1043,4 +1043,4 @@ accum-list
 (get-output-string orig-port)
 (sync (write-bytes-avail-evt #"Bye" cap-port))
 (get-output-string orig-port)
-]]
+])

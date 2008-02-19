@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require[scribble/eval]
-@require["common.ss"]
-@require["diagrams.ss"]
+@(require scribble/eval
+          "common.ss"
+          "diagrams.ss")
 
 @title[#:tag "drawing-overview"]{Drawing}
 
@@ -160,7 +160,7 @@ More complex shapes are typically best implemented with
  when @filepath{gdiplus.dll} is installed, and smoothing is available
  under X when Cairo is installed before MrEd is compiled.)
 
-@begin[
+@(begin
 #readerscribble/comment-reader
 [schemeblock
 (require (lib "math.ss")) ; for @scheme[pi]
@@ -264,7 +264,7 @@ More complex shapes are typically best implemented with
 (send c canvas::min-client-width (/ 650 2))
 (send c canvas::min-client-height (/ 650 2))
 (send f show #t)
-]]
+])
 
 Drawing effects are not completely portable across platforms or across
  types of DC. Drawing in smoothed mode tends to produce more reliable

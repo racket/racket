@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require[scribble/bnf]
-@require["mz.ss"]
+@(require scribble/bnf
+          "mz.ss")
 
 @title[#:style 'toc]{Reader Extension}
 
@@ -193,7 +193,7 @@ directly accessible. To invoke default behaviors, use
 @scheme[read/recursive] or @scheme[read-syntax/recursive] with a
 character and the @scheme[#f] readtable.}
 
-@begin[
+@(begin
 #readerscribble/comment-reader
 [examples
 ;; Provides @scheme[raise-read-error] and @scheme[raise-read-eof-error]
@@ -320,7 +320,7 @@ character and the @scheme[#f] readtable.}
                   #\_ #\space #f))
 (parameterize ([current-readtable tuple-readtable+])
   (read (open-input-string "< * 1 __,__  2 __,__ * \"a\" * >")))
-]]
+])
 
 @;------------------------------------------------------------------------
 @section[#:tag "reader-procs"]{Reader-Extension Procedures}

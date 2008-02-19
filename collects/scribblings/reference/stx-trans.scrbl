@@ -1,15 +1,15 @@
 #lang scribble/doc
-@require[(except-in "mz.ss" import export)
-         (for-syntax scheme/base)
-         (for-label scheme/require-transform
-                    scheme/provide-transform)]
+@(require (except-in "mz.ss" import export)
+          (for-syntax scheme/base)
+          (for-label scheme/require-transform
+                     scheme/provide-transform))
 
 @(define stx-eval (make-base-eval))
 @interaction-eval[#:eval stx-eval (require (for-syntax scheme/base))]
 
-@define[(transform-time) @t{This procedure must be called during the
+@(define (transform-time) @t{This procedure must be called during the
 dynamic extent of a @tech{syntax transformer} application by the
-expander, otherwise the @exnraise[exn:fail:contract].}]
+expander, otherwise the @exnraise[exn:fail:contract].})
 
 
 @title[#:tag "stxtrans"]{Syntax Transformers}

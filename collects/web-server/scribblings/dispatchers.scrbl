@@ -32,7 +32,7 @@ documentation will be useful.
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch.ss"]{General}
-@require[(for-label web-server/dispatchers/dispatch)]
+@(require (for-label web-server/dispatchers/dispatch))
 
 @defmodule[web-server/dispatchers/dispatch]
 
@@ -77,7 +77,7 @@ Consider the following example dispatcher, that captures the essence of URL rewr
 
 @; ------------------------------------------------------------
 @section[#:tag "filesystem-map.ss"]{Mapping URLs to Paths}
-@require[(for-label web-server/dispatchers/filesystem-map)]
+@(require (for-label web-server/dispatchers/filesystem-map))
 
 @defmodule[web-server/dispatchers/filesystem-map]
 

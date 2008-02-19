@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["web-server.ss"]
+@(require "web-server.ss")
 
 @title[#:tag "configuration"
        #:style 'toc]{Configuration}
@@ -11,7 +11,7 @@ configuring the @web-server .
 
 @; ------------------------------------------------------------
 @section[#:tag "configuration-table-structs.ss"]{Configuration Table Structure}
-@require[(for-label web-server/configuration/configuration-table-structs)]
+@(require (for-label web-server/configuration/configuration-table-structs))
 
 @defmodule[web-server/configuration/configuration-table-structs]
 
@@ -81,7 +81,7 @@ the configuration table S-expression file format described in
 
 @; ------------------------------------------------------------
 @section[#:tag "configuration-table.ss"]{Configuration Table}
-@require[(for-label web-server/configuration/configuration-table)]
+@(require (for-label web-server/configuration/configuration-table))
 
 @defmodule[web-server/configuration/configuration-table]
 
@@ -154,7 +154,7 @@ This function writes a @scheme[configuration-table] to @scheme[path].
 
 @; ------------------------------------------------------------
 @section[#:tag "namespace.ss"]{Servlet Namespaces}
-@require[(for-label web-server/configuration/namespace)]
+@(require (for-label web-server/configuration/namespace))
 
 @defmodule[web-server/configuration/namespace]
 
@@ -197,7 +197,7 @@ of servlets can share different sets of modules.
 
 @; ------------------------------------------------------------
 @section[#:tag "responders.ss"]{Standard Responders}
-@require[(for-label web-server/configuration/responders)]
+@(require (for-label web-server/configuration/responders))
 
 @defmodule[web-server/configuration/responders]
 

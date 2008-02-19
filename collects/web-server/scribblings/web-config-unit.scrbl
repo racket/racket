@@ -1,9 +1,9 @@
 #lang scribble/doc
-@require["web-server.ss"]
+@(require "web-server.ss")
 
 @title[#:tag "web-config-unit.ss"]{Web Config Unit}
-@require[(for-label web-server/web-config-unit)]
-@require[(for-label web-server/web-config-sig)]
+@(require (for-label web-server/web-config-unit)
+          (for-label web-server/web-config-sig))
 
 The @web-server offers a unit-based approach to configuring the server.
 

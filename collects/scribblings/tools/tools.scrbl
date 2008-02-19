@@ -1,16 +1,17 @@
 #lang scribble/doc
-@begin[
-(require scribble/manual)
-(require (for-label scheme/unit) 
+@(begin
+(require scribble/manual
+         (for-label scheme/unit)
          (for-label scheme/base)
          (for-label framework/framework))
 
 (define (File x) @tt[x])
 (define (FileFirst x) @tt[x]) ;; indexing missing
 
-(define (item/cap x . ys) (apply item (bold (format "~a" x)) ": " ys)) ;; indexing missing
+(define (item/cap x . ys)
+  (apply item (bold (format "~a" x)) ": " ys)) ;; indexing missing
+)
 
-]
 @title{@bold{Plugins}: Extending DrScheme}
 
 @section{This Manual}

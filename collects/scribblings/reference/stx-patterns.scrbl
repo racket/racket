@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require["mz.ss"]
+@(require "mz.ss")
 
-@define[ellipses (scheme ...)]
+@(define ellipses (scheme ...))
 
 @title{Pattern-Based Syntax Matching}
 

@@ -1,8 +1,7 @@
 #lang scribble/doc
-@require["web-server.ss"]
+@(require "web-server.ss")
 
-@title[#:tag "private"
-       #:style 'toc]{Internal}
+@title[#:tag "private" #:style 'toc]{Internal}
 
 The @web-server is a complicated piece of software and as a result,
 defines a number of interesting and independently useful sub-components.
@@ -13,7 +12,7 @@ Some of these are documented here.
 
 @; ------------------------------------------------------------
 @section[#:tag "timer.ss"]{Timers}
-@require[(for-label web-server/private/timer)]
+@(require (for-label web-server/private/timer))
 
 @defmodule[web-server/private/timer]
 
@@ -61,7 +60,7 @@ procedures after a given amount of time, that may be extended.
 @; XXX Generalize
 @; ------------------------------------------------------------
 @section[#:tag "connection-manager.ss"]{Connection Manager}
-@require[(for-label web-server/private/connection-manager)]
+@(require (for-label web-server/private/connection-manager))
 
 @defmodule[web-server/private/connection-manager]
 
@@ -110,9 +109,9 @@ for doing this.
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-server-unit.ss"]{Dispatching Server}
-@require[(for-label web-server/private/dispatch-server-unit)]
-@require[(for-label web-server/private/dispatch-server-sig)]
-@require[(for-label web-server/web-server-sig)]
+@(require (for-label web-server/private/dispatch-server-unit)
+          (for-label web-server/private/dispatch-server-sig)
+          (for-label web-server/web-server-sig))
 
 The @web-server is just a configuration of a dispatching server.
 This dispatching server component is useful on its own.
@@ -175,8 +174,8 @@ provides the unit that actually implements a dispatching server.
 
 @; ------------------------------------------------------------
 @section[#:tag "closure.ss"]{Serializable Closures}
-@require[(for-label web-server/private/closure)]
-@require[(for-label web-server/private/define-closure)]
+@(require (for-label web-server/private/closure)
+          (for-label web-server/private/define-closure))
 
 @defmodule[web-server/private/closure]
 
@@ -216,7 +215,7 @@ defines a helper form:
 
 @; ------------------------------------------------------------
 @section[#:tag "cache-table.ss"]{Cache Table}
-@require[(for-label web-server/private/cache-table)]
+@(require (for-label web-server/private/cache-table))
 
 @defmodule[web-server/private/cache-table]
 
@@ -248,7 +247,7 @@ functions.
 
 @; ------------------------------------------------------------
 @section[#:tag "mime-types.ss"]{MIME Types}
-@require[(for-label web-server/private/mime-types)]
+@(require (for-label web-server/private/mime-types))
 
 @defmodule[web-server/private/mime-types]
 
@@ -270,7 +269,7 @@ files.
 @; XXX Rename mod-map.ss
 @; ------------------------------------------------------------
 @section[#:tag "mod-map.ss"]{Serialization Utilities}
-@require[(for-label web-server/private/mod-map)]
+@(require (for-label web-server/private/mod-map))
 
 @defmodule[web-server/private/mod-map]
 
@@ -292,7 +291,7 @@ compresses the serialized representation.
 
 @; ------------------------------------------------------------
 @section[#:tag "url-param.ss"]{URL Param}
-@require[(for-label web-server/private/url-param)]
+@(require (for-label web-server/private/url-param))
 
 @defmodule[web-server/private/url-param]
 
@@ -319,7 +318,7 @@ with this process.
 
 @; ------------------------------------------------------------
 @section[#:tag "util.ss"]{Miscellaneous Utilities}
-@require[(for-label web-server/private/util)]
+@(require (for-label web-server/private/util))
 
 @defmodule[web-server/private/util]
 

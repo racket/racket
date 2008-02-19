@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["common.ss"]
+@(require "common.ss")
 
 @definterface/title[area-container-window<%> (area-container<%> window<%>)]{
 

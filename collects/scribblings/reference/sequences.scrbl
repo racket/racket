@@ -1,13 +1,13 @@
 #lang scribble/doc
-@require["mz.ss"]
-@require[(for-syntax scheme/base)]
+@(require "mz.ss"
+          (for-syntax scheme/base))
 
-@define-syntax[speed
-  (syntax-rules ()
-    [(_ id what)
-     @t{A @scheme[id] application can provide better performance for
-        @elem[what]
-        iteration when it appears directly in a @scheme[for] clause.}])]
+@(define-syntax speed
+   (syntax-rules ()
+     [(_ id what)
+      @t{A @scheme[id] application can provide better performance for
+         @elem[what]
+         iteration when it appears directly in a @scheme[for] clause.}]))
 
 @title[#:tag "sequences"]{Sequences}
 

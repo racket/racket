@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require[scribble/manual
-         scribble/eval]
-@require["guide-utils.ss"]
+@(require scribble/manual
+          scribble/eval
+          "guide-utils.ss")
 
 @(define piece-eval (make-base-eval))
 

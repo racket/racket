@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require["common.ss"]
-@require["diagrams.ss"]
+@(require "common.ss"
+          "diagrams.ss")
 
 @title[#:style '(toc quiet)]{Windowing Classes}
 

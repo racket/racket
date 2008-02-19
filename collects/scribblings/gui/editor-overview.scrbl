@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require[scribble/bnf]
-@require["common.ss"]
+@(require scribble/bnf
+          "common.ss")
 
 @title[#:tag "editor-overview"]{Editor}
 

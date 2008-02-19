@@ -1,8 +1,8 @@
 #lang scribble/doc
-@require["ss.ss"]
-@require[(for-label scheme/gui
-                    slideshow/step
-                    slideshow/slides-to-picts)]
+@(require "ss.ss"
+          (for-label scheme/gui
+                     slideshow/step
+                     slideshow/slides-to-picts))
 
 @title[#:style 'toc]{Making Slides}
 

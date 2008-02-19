@@ -1,11 +1,11 @@
 #lang scribble/doc
-@require[scribble/struct]
-@require["mz.ss"]
+@(require scribble/struct
+          "mz.ss")
 
-@define[(ResultItself x)
-        (make-element #f (list "The "
-                      (tech "synchronization result")
-                      " of " x " is " x " itself"))]
+@(define (ResultItself x)
+   (make-element #f (list "The "
+                          (tech "synchronization result")
+                          " of " x " is " x " itself")))
 
 @title[#:tag "sync"]{Events}
 

@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require["mz.ss"]
+@(require "mz.ss")
 
-@define[(UCat x) x]
+@(define (UCat x) x)
 
 @title[#:tag "characters"]{Characters}
 
@@ -60,10 +60,10 @@ Returns @scheme[#t] if all of the arguments are @scheme[eqv?].
 @examples[(char=? #\a #\a)
           (char=? #\a #\A #\a)]}
 
-@define[(char-sort direction folded?)
-         (if folded?
-             @elem{Like @scheme[char-ci<?], but checks whether the arguments would be @direction after case-folding.}
-             @elem{Like @scheme[char<?], but checks whether the arguments are @|direction|.})]
+@(define (char-sort direction folded?)
+   (if folded?
+     @elem{Like @scheme[char-ci<?], but checks whether the arguments would be @direction after case-folding.}
+     @elem{Like @scheme[char<?], but checks whether the arguments are @|direction|.}))
 
 @defproc[(char<? [char1 char?] [char2 char?] ...+) boolean?]{
 

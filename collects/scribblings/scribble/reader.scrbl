@@ -733,12 +733,12 @@ provides direct Scribble reader functionality for advanced needs.}
 @; The `with-scribble-read' trick below shadows `read' and
 @;  `read-syntax' with for-label bindings from the Scribble reader
 
-@define-syntax[with-scribble-read
- (syntax-rules ()
-  [(_)
-   (...
-    (begin
-     (require (for-label scribble/reader))
+@(define-syntax with-scribble-read
+   (syntax-rules ()
+     [(_)
+      (...
+       (begin
+         (require (for-label scribble/reader))
 
 @; *** Start reader-import section ***
 @defproc[(read [in input-port? (current-input-port)]) any]{}
@@ -815,6 +815,6 @@ resulting readtable using @scheme[current-readtable]. It also enables
 line counting for the current input-port via @scheme[port-count-lines!].}
 
 @; *** End reader-import section ***
-))])]
+))]))
 @with-scribble-read[]
  

@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require["mz.ss"
-         (for-label scheme/control)]
+@(require "mz.ss"
+          (for-label scheme/control))
 
 @title{Classical Control Operators}
 

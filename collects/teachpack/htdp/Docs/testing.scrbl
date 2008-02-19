@@ -1,10 +1,8 @@
 #lang scribble/doc
 
-@begin[(require scribble/manual)
-       
-       (require (for-label 
-                 scheme/base
-                 "../testing.ss"))]
+@(require scribble/manual
+          (for-label scheme/base
+                     "../testing.ss"))
 
 @title[#:tag "testing"]{Testing: testing.ss}
 

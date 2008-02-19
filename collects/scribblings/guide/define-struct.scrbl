@@ -1,8 +1,8 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require[scribble/eval]
-@require[scribble/bnf]
-@require["guide-utils.ss"]
+@(require scribble/manual
+          scribble/eval
+          scribble/bnf
+          "guide-utils.ss")
 
 @(define posn-eval (make-base-eval))
 

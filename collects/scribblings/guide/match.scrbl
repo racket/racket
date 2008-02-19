@@ -1,8 +1,8 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require[scribble/eval]
-@require["guide-utils.ss"]
-@require[(for-label scheme/match)]
+@(require scribble/manual
+          scribble/eval
+          "guide-utils.ss"
+          (for-label scheme/match))
 
 @title[#:tag "match"]{Pattern Matching}
 

@@ -9,11 +9,11 @@
 
 @(define io-eval (make-base-eval))
 
-@define[(twocolumn a b)
-        (make-table #f
-         (list (list (make-flow (list a))
-                     (make-flow (list (make-paragraph (list (hspace 1)))))
-                     (make-flow (list b)))))]
+@(define (twocolumn a b)
+   (make-table #f
+     (list (list (make-flow (list a))
+                 (make-flow (list (make-paragraph (list (hspace 1)))))
+                 (make-flow (list b))))))
 @interaction-eval[#:eval io-eval (print-hash-table #t)]
 
 @title[#:tag "i/o" #:style 'toc]{Input and Output}

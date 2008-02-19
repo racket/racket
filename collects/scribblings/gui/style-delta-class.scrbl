@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["common.ss"]
+@(require "common.ss")
 
 @defclass/title[style-delta% object% ()]{
 

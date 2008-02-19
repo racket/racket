@@ -1,9 +1,9 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require[scribble/eval]
-@require["guide-utils.ss"]
-@require["contracts-utils.ss"]
-@(require (for-label scheme/contract))
+@(require scribble/manual
+          scribble/eval
+          "guide-utils.ss"
+          "contracts-utils.ss"
+          (for-label scheme/contract))
 
 @title[#:tag "contract-boundaries"]{Contracts and Boundaries}
 

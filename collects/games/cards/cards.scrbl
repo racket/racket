@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require[scribble/manual
-         (for-label "main.ss"
-                    scheme/gui/base)]
+@(require scribble/manual
+          (for-label "main.ss"
+                     scheme/gui/base))
 
 @title{@bold{Cards}: Virtual Playing Cards Library}
 

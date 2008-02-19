@@ -1,8 +1,8 @@
 #lang scribble/doc
 
-@require[scribble/manual
-         (for-label scheme
-                    trace/calltrace-lib)]
+@(require scribble/manual
+          (for-label scheme
+                     trace/calltrace-lib))
 
 @title[#:tag "top"]{@bold{Trace}: Instrumentation to Show Function Calls}
 

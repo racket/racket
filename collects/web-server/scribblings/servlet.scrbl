@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["web-server.ss"]
+@(require "web-server.ss")
 
 @title[#:tag "servlet"
        #:style 'toc]{Scheme Servlets}
@@ -12,7 +12,7 @@ of these servlets. This API is provided by @filepath{servlet.ss}.
 
 @; ------------------------------------------------------------
 @section[#:tag "module-servlets"]{Definition}
-@require[(for-label "dummy-servlet.ss")] @; to give a binding context
+@(require (for-label "dummy-servlet.ss")) @; to give a binding context
 
 @declare-exporting[#:use-sources (web-server/scribblings/dummy-servlet)]
 
@@ -46,7 +46,7 @@ A @defterm{servlet} is a module that provides the following:
 
 @; ------------------------------------------------------------
 @section[#:tag "servlet-structs.ss"]{Contracts}
-@require[(for-label web-server/servlet/servlet-structs)]
+@(require (for-label web-server/servlet/servlet-structs))
 
 @defmodule[web-server/servlet/servlet-structs]
 
@@ -65,7 +65,7 @@ for use in servlets.
 
 @; ------------------------------------------------------------
 @section[#:tag "request-structs.ss"]{HTTP Requests}
-@require[(for-label web-server/private/request-structs)]
+@(require (for-label web-server/private/request-structs))
 
 @defmodule[web-server/private/request-structs]
 
@@ -122,7 +122,7 @@ related to HTTP request data structures.
 
 @; ------------------------------------------------------------
 @section[#:tag "bindings.ss"]{Request Bindings}
-@require[(for-label web-server/servlet/bindings)]
+@(require (for-label web-server/servlet/bindings))
 
 @defmodule[web-server/servlet/bindings]
 
@@ -175,7 +175,7 @@ you lose the filename.
 
 @; ------------------------------------------------------------
 @section[#:tag "response-structs.ss"]{HTTP Responses}
-@require[(for-label web-server/private/response-structs)]
+@(require (for-label web-server/private/response-structs))
 
 @defmodule[web-server/private/response-structs]
 
@@ -226,7 +226,7 @@ transmission that the server will not catch.}
 
 @; ------------------------------------------------------------
 @section[#:tag "web.ss"]{Web}
-@require[(for-label web-server/servlet/web)]
+@(require (for-label web-server/servlet/web))
 
 @defmodule[web-server/servlet/web]{The
 @schememodname[web-server/servlet/web] library provides the primary
@@ -313,7 +313,7 @@ functions of interest for the servlet developer.}
 
 @; ------------------------------------------------------------
 @section[#:tag "helpers.ss"]{Helpers}
-@require[(for-label web-server/servlet/helpers)]
+@(require (for-label web-server/servlet/helpers))
 
 @defmodule[web-server/servlet/helpers]
 
@@ -350,7 +350,7 @@ functions of interest for the servlet developer.}
 @; XXX Depreciate
 @; ------------------------------------------------------------
 @section[#:tag "servlet-url.ss"]{Servlet URLs}
-@require[(for-label web-server/servlet/servlet-url)]
+@(require (for-label web-server/servlet/servlet-url))
 
 @defmodule[web-server/servlet/servlet-url]
 
@@ -369,7 +369,7 @@ They may eventually provided by another module.
 @; XXX Support Digest
 @; ------------------------------------------------------------
 @section[#:tag "basic-auth.ss"]{Basic Authentication}
-@require[(for-label web-server/servlet/basic-auth)]
+@(require (for-label web-server/servlet/basic-auth))
 
 @defmodule[web-server/servlet/basic-auth]
 
@@ -384,7 +384,7 @@ implementation of HTTP Basic Authentication.
 
 @; ------------------------------------------------------------
 @section[#:tag "web-cells.ss"]{Web Cells}
-@require[(for-label web-server/servlet/web-cells)]
+@(require (for-label web-server/servlet/web-cells))
 
 @defmodule[web-server/servlet/web-cells]{The
 @schememodname[web-server/servlet/web-cells] library provides the

@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require["mz.ss"
-         (for-label scheme/port)]
+@(require "mz.ss"
+          (for-label scheme/port))
 
 @title{More Port Constructors and Events}
 

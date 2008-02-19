@@ -1,8 +1,8 @@
 #lang scribble/doc
-@require[scribble/manual]
-@require[scribble/eval]
-@require[scheme/class]
-@require["guide-utils.ss"]
+@(require scribble/manual
+          scribble/eval
+          scheme/class
+          "guide-utils.ss")
 
 @title[#:tag "reflection"]{Reflection and Dynamic Evaluation}
 

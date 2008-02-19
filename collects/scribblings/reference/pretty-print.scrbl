@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require["mz.ss"
-         scribble/bnf]
+@(require "mz.ss"
+          scribble/bnf)
 
 @title[#:tag "pretty-print"]{Pretty Printing}
 

@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require["mz.ss"
-         scheme/serialize
-         (for-label scheme/serialize)]
+@(require "mz.ss"
+          scheme/serialize
+          (for-label scheme/serialize))
 
 @(define ser-eval (make-base-eval))
 @interaction-eval[#:eval ser-eval (require scheme/serialize)]

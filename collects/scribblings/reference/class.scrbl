@@ -4,7 +4,7 @@
           (for-syntax scheme/base)
           (for-label scheme/trait))
 
-@begin[
+@(begin
 
 (define-syntax sees
   (syntax-rules ()
@@ -65,10 +65,10 @@
               (scheme (begin (#,(scheme form) id) (define (id . formals) body ...+)))))))]
      [(_ form ...)
       #'(begin (defdefshorthands form) ...)]))
- 
+
 (define class-eval (make-base-eval))
 
-]
+)
 
 @interaction-eval[#:eval class-eval (require scheme/class)]
 

@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require["common.ss"]
-@require[scribble/bnf]
+@(require "common.ss"
+          scribble/bnf)
 
 @title{Editor Functions}
 

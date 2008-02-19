@@ -1,8 +1,7 @@
 #lang scribble/doc
-@require[scribble/bnf]
-@require["mz.ss"]
-
-@require["rx.ss"]
+@(require scribble/bnf
+          "mz.ss"
+          "rx.ss")
 
 @title[#:tag "regexp"]{Regular Expressions}
 

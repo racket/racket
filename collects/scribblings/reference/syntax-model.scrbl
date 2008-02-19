@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require[scribble/struct]
-@require[(for-syntax mzscheme)]
-@require["mz.ss"]
+@(require scribble/struct
+          (for-syntax mzscheme)
+          "mz.ss")
 
 @;------------------------------------------------------------------------
 @title[#:tag "syntax-model"]{Syntax Model}

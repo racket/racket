@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require[scribble/eval]
-@require["common.ss"]
-@require["diagrams.ss"]
+@(require scribble/eval
+          "common.ss"
+          "diagrams.ss")
 
 @title[#:tag "windowing-overview"]{Windowing}
 

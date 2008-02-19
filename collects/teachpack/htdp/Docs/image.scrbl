@@ -1,10 +1,8 @@
 #lang scribble/doc
 
-@begin[(require scribble/manual)
-       
-       (require (for-label 
-                 scheme/base
-                 "../image.ss"))]
+@(require scribble/manual
+          (for-label scheme/base
+                     "../image.ss"))
 
 @title[#:tag "image"]{Manipulating Images: image.ss}
 
@@ -26,7 +24,7 @@ Interpretation: @scheme['solid] is used for creating solid basic
   shapes; @scheme['outline] is used for creating outlines of basic
   shapes. Strings are used in an analogous manner. 
 
-@begin[
+@(begin
 #reader scribble/comment-reader
 (schemeblock
 (define-struct color (red blue green))
@@ -42,7 +40,7 @@ Interpretation: @scheme['solid] is used for creating solid basic
 ;; Interpretation: @scheme[Color] arguments are used to paint the shapes
 ;; or their outlines. See below for more information about color
 ;; structs.
-)]
+))
 
 The following predicate specifies what a valid image color is: 
 

@@ -1,7 +1,7 @@
 #lang scribble/doc
-@require["ss.ss"]
+@(require "ss.ss")
 
-@define[paper-url "http://www.cs.utah.edu/plt/publications/jfp05-ff.pdf"]
+@(define paper-url "http://www.cs.utah.edu/plt/publications/jfp05-ff.pdf")
 
 @title{@bold{Slideshow}: PLT Figure and Presentation Tools}
 

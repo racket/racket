@@ -1,45 +1,45 @@
 #lang scribble/doc
-@require["mz.ss"]
-@require[scribble/scheme]
-@require[(for-syntax scheme/base)]
+@(require "mz.ss"
+          scribble/scheme
+          (for-syntax scheme/base))
 
-@define-syntax[(defc_r stx)
-  (syntax-case stx ()
-    [(_ x ...)
-     (let ([xs (map syntax-e (syntax->list #'(x ...)))])
-       (let ([name (string->symbol
-                    (string-append
-                     "c"
-                     (apply string-append (map symbol->string xs))
-                     "r"))]
-             [contract (let loop ([l (reverse xs)])
-                         (cond
-                          [(null? (cdr l)) 'pair?]
-                          [(eq? (car l) 'a) `(cons/c ,(loop (cdr l)) any/c)]
-                          [(eq? (car l) 'd) `(cons/c any/c ,(loop (cdr l)))]))]
-             [equiv (let loop ([l xs])
-                      (cond 
-                       [(null? l) 'p]
-                       [(eq? (car l) 'a) `(car ,(loop (cdr l)))]
-                       [(eq? (car l) 'd) `(cdr ,(loop (cdr l)))]))])
-         (with-syntax ([name name]
-                       [contract (let loop ([c contract][pos 0])
-                                   (if (pair? c)
-                                       (let* ([a (loop (car c) (add1 pos))]
-                                              [b (loop (cdr c) (+ 1 pos (syntax-span a)))]
-                                              [span (+ 1 (syntax-span a) (syntax-span b))])
-                                         (datum->syntax #'here
-                                                        (cons a b)
-                                                        (list (syntax-source stx)
-                                                              1
-                                                              pos
-                                                              (add1 pos)
-                                                              span)))
-                                       (datum->syntax #'here c 
-                                                      (list (syntax-source stx) 1 pos (add1 pos) 1))))]
-                       [equiv equiv])
-           #'(defproc (name [v contract]) any/c
-               "Returns " (to-element 'equiv)))))])]
+@(define-syntax (defc_r stx)
+   (syntax-case stx ()
+     [(_ x ...)
+      (let ([xs (map syntax-e (syntax->list #'(x ...)))])
+        (let ([name (string->symbol
+                     (string-append
+                      "c"
+                      (apply string-append (map symbol->string xs))
+                      "r"))]
+              [contract (let loop ([l (reverse xs)])
+                          (cond
+                            [(null? (cdr l)) 'pair?]
+                            [(eq? (car l) 'a) `(cons/c ,(loop (cdr l)) any/c)]
+                            [(eq? (car l) 'd) `(cons/c any/c ,(loop (cdr l)))]))]
+              [equiv (let loop ([l xs])
+                       (cond 
+                         [(null? l) 'p]
+                         [(eq? (car l) 'a) `(car ,(loop (cdr l)))]
+                         [(eq? (car l) 'd) `(cdr ,(loop (cdr l)))]))])
+          (with-syntax ([name name]
+                        [contract (let loop ([c contract][pos 0])
+                                    (if (pair? c)
+                                      (let* ([a (loop (car c) (add1 pos))]
+                                             [b (loop (cdr c) (+ 1 pos (syntax-span a)))]
+                                             [span (+ 1 (syntax-span a) (syntax-span b))])
+                                        (datum->syntax #'here
+                                                       (cons a b)
+                                                       (list (syntax-source stx)
+                                                             1
+                                                             pos
+                                                             (add1 pos)
+                                                             span)))
+                                      (datum->syntax #'here c 
+                                                     (list (syntax-source stx) 1 pos (add1 pos) 1))))]
+                        [equiv equiv])
+            #'(defproc (name [v contract]) any/c
+                "Returns " (to-element 'equiv)))))]))
 
 @title[#:tag "pairs"]{Pairs and Lists}
 

@@ -1,8 +1,8 @@
 #lang scribble/doc
-@require[scribble/bnf]
-@require["mz.ss"]
+@(require scribble/bnf
+          "mz.ss")
 
-@define[MzAdd (italic "Scheme-specific:")]
+@(define MzAdd (italic "Scheme-specific:"))
 
 @title[#:tag "windowspaths"]{Windows Path Conventions}
 

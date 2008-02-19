@@ -1,5 +1,5 @@
 #lang scribble/doc
-@require["mz.ss"]
+@(require "mz.ss")
 
 @title[#:tag "contracts" #:style 'toc]{Contracts}
 
@@ -540,7 +540,7 @@ earlier fields.}
 
 As an example, consider the following module:
 
-@begin[
+@(begin
 #readerscribble/comment-reader
 [schemeblock
 (module product mzscheme
@@ -573,7 +573,7 @@ As an example, consider the following module:
   
   (provide kons? make-kons kons-hd kons-tl)
   (provide/contract [product (-> (sorted-list/gt -inf.0) number?)]))
-]]
+])
 
 The module provides a single function, @scheme[product] whose contract
 indicates that it accepts sorted lists of numbers and produces

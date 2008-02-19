@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require["mz.ss"
-         (for-label scheme/system)]
+@(require "mz.ss"
+          (for-label scheme/system))
 
 @title[#:tag "subprocess"]{Processes}
 

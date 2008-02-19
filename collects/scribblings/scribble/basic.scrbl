@@ -3,21 +3,24 @@
           "utils.ss"
           (for-syntax scheme/base))
 
-@define-syntax[def-section-like
-               (syntax-rules ()
-                 [(_ id result/c x ...) (defproc (id [#:tag tag (or/c false/c string?) #f]
-                                                     [pre-content any/c] (... ...+))
-                                                 result/c
-                                                 x ...)])]
+@(define-syntax def-section-like
+   (syntax-rules ()
+     [(_ id result/c x ...)
+      (defproc (id [#:tag tag (or/c false/c string?) #f]
+                   [pre-content any/c] (... ...+))
+        result/c
+        x ...)]))
 
-@define-syntax[def-elem-proc
-               (syntax-rules ()
-                 [(_ id x ...) (defproc (id [pre-content any/c] (... ...))
-                                        element?
-                                        x ...)])]
-@define-syntax[def-style-proc
-               (syntax-rules ()
-                 [(_ id) @def-elem-proc[id]{Like @scheme[elem], but with style @scheme['id]}])]
+@(define-syntax def-elem-proc
+   (syntax-rules ()
+     [(_ id x ...)
+      (defproc (id [pre-content any/c] (... ...))
+        element?
+        x ...)]))
+@(define-syntax def-style-proc
+   (syntax-rules ()
+     [(_ id)
+      @def-elem-proc[id]{Like @scheme[elem], but with style @scheme['id]}]))
 
 @title[#:tag "basic"]{Basic Document Forms}
 

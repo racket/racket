@@ -1,6 +1,6 @@
 #lang scribble/doc
-@require["mz.ss"
-         (for-label scheme/cmdline)]
+@(require "mz.ss"
+          (for-label scheme/cmdline))
 
 @title{Command-Line Parsing}
 
