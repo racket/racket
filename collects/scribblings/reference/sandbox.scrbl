@@ -186,12 +186,20 @@ catch syntax errors.
 
 Finally, the fact that a sandboxed evaluator accept syntax objects
 makes it usable as the value for @scheme{current-eval}, which means
-that you can easily start a sandboxed read-eval-print-loop:
+that you can easily start a sandboxed read-eval-print-loop.  For
+example, here is a quick implementation of a networked REPL:
 
 @schemeblock[
 (define e
-  (make-module-evaluator '(module m scheme/base (define x 1))))
-(parameterize ([current-eval e]) (read-eval-print-loop))
+  (make-module-evaluator '(module m scheme/base)))
+(let-values ([(i o) (tcp-accept (tcp-listen 9999))])
+  (parameterize ([current-input-port i]
+                 [current-output-port o]
+                 [current-error-port o]
+                 [current-eval a])
+    (read-eval-print-loop)
+    (fprintf o "\nBye...\n")
+    (close-output-port o)))
 ]
 
 }
