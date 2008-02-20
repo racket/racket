@@ -29,9 +29,14 @@
                              proc
                              key))
                     (set! counter (+ counter 1))
-                    (let ([name (if (and line col)
-                                    (format "~a:~a.~a:~a" src line col counter)
-                                    (format "~a:~a:~a" src pos counter))])
+                    (let ([name 
+                           (cond
+                             [(symbol? (object-name proc))
+                              (format "~a" (object-name proc))]
+                             [(and line col)
+                              (format "~a:~a.~a:~a" src line col counter)]
+                             [else
+                              (format "~a:~a:~a" src pos counter)])])
                       (send #%keymap add-function name 
                             (λ (x y)
                               (let ([end-edit-sequence
