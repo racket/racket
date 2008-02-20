@@ -3672,8 +3672,33 @@
       (eval '(require 'd-c-s-match2))
       (eval 'd-c-s-match2-f1))
    '(first second))
-   
-
+  
+  (test/spec-passed/result
+   'd-c-s-match3
+   '(begin
+      (eval '(module d-c-s-match3-a scheme/base
+               
+               (require scheme/contract)
+               
+               (define-struct super (a b c) #:transparent)
+               (define-struct (sub super) () #:transparent)
+               
+               (provide/contract
+                [struct super       ([a number?] [b number?] [c number?])]
+                [struct (sub super) ([a number?] [b number?] [c number?])])))
+      (eval '(module d-c-s-match3-b scheme/base
+               (require scheme/match)
+               
+               (require 'd-c-s-match3-a)
+               
+               (provide d-c-s-match3-ans)
+               (define d-c-s-match3-ans
+                 (match (make-sub 1 2 3)
+                   [(struct sub (a b c))
+                    (list a b c)]))))
+      (eval '(require 'd-c-s-match3-b))
+      (eval 'd-c-s-match3-ans))
+   '(1 2 3))
   
   (test/pos-blame 'd-c-s1
                   '(begin

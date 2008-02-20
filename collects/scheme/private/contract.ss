@@ -307,10 +307,7 @@ improve method arity mismatch contract violation error messages?
                            (parent-struct-count . <= . i))
                        id
                        #t))]
-                [mutator-ids (let ([candidate-mutator-ids (reverse (list-ref struct-info 4))])
-                               (if (andmap/count is-id-ok? candidate-mutator-ids)
-                                   candidate-mutator-ids
-                                   #f))]
+                [mutator-ids (reverse (list-ref struct-info 4))] ;; (listof (union #f identifier))
                 [field-contract-ids (map (λ (field-name field-contract) 
                                            (if (a:known-good-contract? field-contract)
                                                field-contract
@@ -349,6 +346,10 @@ improve method arity mismatch contract violation error messages?
                      provide-stx
                      struct-name))])
              
+             (unless (or (null? selector-ids)
+                         (identifier? (last selector-ids)))
+               (unknown-info "the selectors" (map syntax->datum selector-ids)))
+             
              (unless constructor-id (unknown-info "constructor" constructor-id))
              (unless predicate-id (unknown-info "predicate" predicate-id))
              (unless (andmap/count is-id-ok? selector-ids)
@@ -366,15 +367,6 @@ improve method arity mismatch contract violation error messages?
                                          (if (= 1 (length selector-ids)) "" "s")
                                          (length field-contract-ids)
                                          (if (= 1 (length field-contract-ids)) "" "s"))
-                                 provide-stx
-                                 struct-name))
-           (unless (or (not mutator-ids)
-                       (equal? (length mutator-ids)
-                               (length field-contract-ids)))
-             (raise-syntax-error 'provide/contract
-                                 (format "found ~a fields in struct, but ~a contracts"
-                                         (length mutator-ids)
-                                         (length field-contract-ids))
                                  provide-stx
                                  struct-name))
            
@@ -447,33 +439,18 @@ improve method arity mismatch contract violation error messages?
                                              selector-id
                                              #f))
                                        selector-ids)))]
-                         [((mutator-codes mutator-new-names) ...)
-                          (if mutator-ids
-                              (filter
-                               (λ (x) x)
-                               (map/count (λ (mutator-id field-contract-id index)
-                                            (if (is-new-id? index)
-                                                (code-for-one-id/new-name stx
-                                                                          mutator-id 
-                                                                          (build-mutator-contract struct-name 
-                                                                                                  predicate-id
-                                                                                                  field-contract-id)
-                                                                          #f)
-                                                #f))
-                                          mutator-ids
-                                          field-contract-ids))
-                              (list))]
-                         [(rev-mutator-old-names ...)
-                          (if mutator-ids
-                              (reverse
-                               (filter
-                                (λ (x) x)
-                                (map/count (λ (mutator-id index)
-                                             (if (not (is-new-id? index))
-                                                 mutator-id
-                                                 #f))
-                                           mutator-ids)))
-                              '())]
+                         [(mutator-codes/mutator-new-names ...)
+                          (map/count (λ (mutator-id field-contract-id index)
+                                       (if (and mutator-id (is-new-id? index))
+                                           (code-for-one-id/new-name stx
+                                                                     mutator-id 
+                                                                     (build-mutator-contract struct-name 
+                                                                                             predicate-id
+                                                                                             field-contract-id)
+                                                                     #f)
+                                           #f))
+                                     mutator-ids
+                                     field-contract-ids)]
                          [(predicate-code predicate-new-name)
                           (code-for-one-id/new-name stx predicate-id (syntax (-> any/c boolean?)) #f)]
                          [(constructor-code constructor-new-name)
@@ -498,53 +475,56 @@ improve method arity mismatch contract violation error messages?
                          [(field-contracts ...) field-contracts]
                          [(field-contract-ids ...) field-contract-ids])
              
-             (with-syntax ([(rev-selector-new-names ...) (reverse (syntax->list (syntax (selector-new-names ...))))]
-                           [(rev-mutator-new-names ...) (reverse (syntax->list (syntax (mutator-new-names ...))))])
-               (with-syntax ([struct-code 
-                              (with-syntax ([id-rename (a:mangle-id provide-stx 
-                                                                    "provide/contract-struct-expandsion-info-id"
-                                                                    struct-name)]
-                                            [struct-name struct-name]
-                                            [-struct:struct-name -struct:struct-name]
-                                            [super-id (if (boolean? super-id)
-                                                          super-id
-                                                          (with-syntax ([super-id super-id])
-                                                            (syntax ((syntax-local-certifier) #'super-id))))]
-                                            [mutator-id-info
-                                             (if mutator-ids
-                                                 #'(list (slc #'rev-mutator-new-names) ...
-                                                         (slc #'rev-mutator-old-names) ...)
-                                                 #`'#,(map (λ (x) #f) (syntax->list #'(rev-selector-new-names ... rev-selector-old-names ...))))])
-                                (syntax (begin
-                                          (provide (rename-out [id-rename struct-name]))
-                                          (define-syntax id-rename
-                                            (let ([slc (syntax-local-certifier)])
-                                              (list (slc #'-struct:struct-name)
-                                                    (slc #'constructor-new-name)
-                                                    (slc #'predicate-new-name)
-                                                    (list (slc #'rev-selector-new-names) ...
-                                                          (slc #'rev-selector-old-names) ...)
-                                                    mutator-id-info
-                                                    super-id))))))]
-                             [struct:struct-name struct:struct-name]
-                             [-struct:struct-name -struct:struct-name]
-                             [struct-name struct-name]
-                             [(selector-ids ...) selector-ids])
-                 (syntax/loc stx
-                   (begin
-                     struct-code
-                     field-contract-id-definitions ...
-                     selector-codes ...
-                     mutator-codes ...
-                     predicate-code
-                     constructor-code
-                     
-                     ;; expanding out the body of the `make-pc-struct-type' function
-                     ;; directly here in the expansion makes this very expensive at compile time
-                     ;; when there are a lot of provide/contract clause using structs
-                     (define -struct:struct-name 
-                       (make-pc-struct-type 'struct-name struct:struct-name field-contract-ids ...))
-                     (provide (rename-out [-struct:struct-name struct:struct-name])))))))))
+             (with-syntax ([((mutator-codes mutator-new-names) ...)
+                            (filter syntax-e (syntax->list #'(mutator-codes/mutator-new-names ...)))])
+               (with-syntax ([(rev-selector-new-names ...) (reverse (syntax->list (syntax (selector-new-names ...))))]
+                             [(rev-mutator-new-names ...) (reverse (syntax->list (syntax (mutator-new-names ...))))])
+                 (with-syntax ([struct-code 
+                                (with-syntax ([id-rename (a:mangle-id provide-stx 
+                                                                      "provide/contract-struct-expandsion-info-id"
+                                                                      struct-name)]
+                                              [struct-name struct-name]
+                                              [-struct:struct-name -struct:struct-name]
+                                              [super-id (if (boolean? super-id)
+                                                            super-id
+                                                            (with-syntax ([super-id super-id])
+                                                              (syntax ((syntax-local-certifier) #'super-id))))]
+                                              [(mutator-id-info ...)
+                                               (map (λ (x)
+                                                      (syntax-case x ()
+                                                        [(a b) #'(slc #'b)]
+                                                        [else #f]))
+                                                    (syntax->list #'(mutator-codes/mutator-new-names ...)))])
+                                  (syntax (begin
+                                            (provide (rename-out [id-rename struct-name]))
+                                            (define-syntax id-rename
+                                              (let ([slc (syntax-local-certifier)])
+                                                (list (slc #'-struct:struct-name)
+                                                      (slc #'constructor-new-name)
+                                                      (slc #'predicate-new-name)
+                                                      (list (slc #'rev-selector-new-names) ...
+                                                            (slc #'rev-selector-old-names) ...)
+                                                      (list mutator-id-info ...)
+                                                      super-id))))))]
+                               [struct:struct-name struct:struct-name]
+                               [-struct:struct-name -struct:struct-name]
+                               [struct-name struct-name]
+                               [(selector-ids ...) selector-ids])
+                   (syntax/loc stx
+                     (begin
+                       struct-code
+                       field-contract-id-definitions ...
+                       selector-codes ...
+                       mutator-codes ...
+                       predicate-code
+                       constructor-code
+                       
+                       ;; expanding out the body of the `make-pc-struct-type' function
+                       ;; directly here in the expansion makes this very expensive at compile time
+                       ;; when there are a lot of provide/contract clause using structs
+                       (define -struct:struct-name 
+                         (make-pc-struct-type 'struct-name struct:struct-name field-contract-ids ...))
+                       (provide (rename-out [-struct:struct-name struct:struct-name]))))))))))
        
        (define (map/count f . ls)
          (let loop ([ls ls]
@@ -820,7 +800,7 @@ improve method arity mismatch contract violation error messages?
 
 (provide flat-rec-contract
          flat-murec-contract
-         or/c
+         or/c 
          not/c
          =/c >=/c <=/c </c >/c between/c
          integer-in
