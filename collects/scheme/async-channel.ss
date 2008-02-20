@@ -152,7 +152,7 @@
 (provide async-channel?)
 (provide/contract (make-async-channel (case->
                                        (-> async-channel?)
-                                       ((union false/c (lambda (x)
+                                       ((or/c false/c (lambda (x)
                                                          (and (integer? x)
                                                               (exact? x)
                                                               (positive? x))))
