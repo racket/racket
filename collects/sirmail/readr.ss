@@ -793,14 +793,25 @@
             (let ([w (get-width)])
               (let-values ([(_1 h _2 _3) (send dc get-text-extent "yX")])
                 
-                (let ([old-clip (send dc get-clipping-region)])
-                  (send dc set-clipping-rect x y (+ FROM-WIDTH (/ first-gap 2) (- line-space)) h)
+                (let* ([old-clip (send dc get-clipping-region)]
+                       [new-clip #f]
+                       [set-clip
+                        (lambda (x y w h)
+                          (if old-clip
+                              (begin
+                                (send dc set-clipping-region #f)
+                                (unless new-clip
+                                  (set! new-clip (make-object region% dc)))
+                                (send new-clip set-rectangle x y w h)
+                                (send new-clip intersect old-clip)
+                                (send dc set-clipping-region new-clip))
+                              (send dc set-clipping-rect x y w h)))])
+                  (set-clip x y (+ FROM-WIDTH (/ first-gap 2) (- line-space)) h)
                   (send dc draw-text from (+ x left-edge-space) y #t)
-                  (send dc set-clipping-rect 
-                        (+ x FROM-WIDTH (/ first-gap 2) line-space)
-                        y 
-                        (+ SUBJECT-WIDTH (/ second-gap 2) (- line-space))
-                        h)
+                  (set-clip (+ x FROM-WIDTH (/ first-gap 2) line-space)
+                            y 
+                            (+ SUBJECT-WIDTH (/ second-gap 2) (- line-space))
+                            h)
                   (send dc draw-text subject (+ x FROM-WIDTH (/ first-gap 2) line-space) y #t)
                   (send dc set-clipping-region old-clip)
                   (send dc draw-text
