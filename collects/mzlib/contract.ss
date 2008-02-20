@@ -78,4 +78,5 @@
          name-prop name-pred? name-get
          stronger-prop stronger-pred? stronger-get
          flat-prop flat-pred? flat-get
-         first-order-prop first-order-get)
+         first-order-prop first-order-get
+         (rename-out [or/c union]))

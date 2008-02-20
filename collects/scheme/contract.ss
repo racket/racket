@@ -173,7 +173,6 @@ differences from v3:
       flat-contract
       flat-contract-predicate
       object-contract
-      union
       listof
       is-a?/c)
   

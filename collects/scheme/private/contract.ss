@@ -820,7 +820,7 @@ improve method arity mismatch contract violation error messages?
 
 (provide flat-rec-contract
          flat-murec-contract
-         or/c union
+         or/c
          not/c
          =/c >=/c <=/c </c >/c between/c
          integer-in
@@ -894,23 +894,6 @@ improve method arity mismatch contract violation error messages?
                (syntax->list (syntax (name ...))))]
     [(_ ([name ctc ...] ...))
      (raise-syntax-error 'flat-rec-contract "expected at least one body expression" stx)]))
-
-(define-syntax (union stx)
-  (begin
-    #;
-    (fprintf (current-error-port)
-             "WARNING: union is deprecated, use or/c (file ~a~a)\n"
-             (let ([file (syntax-source stx)])
-               (if (path? file)
-                   (path->string file)
-                   (format "~s" file)))
-             (let ([line (syntax-line stx)])
-               (if (number? line)
-                   (format ", line ~a" line)
-                   "")))
-    (syntax-case stx ()
-      [(_ args ...) (syntax (or/c args ...))]
-      [id (syntax or/c)])))
 
 (define or/c
   (case-lambda 
