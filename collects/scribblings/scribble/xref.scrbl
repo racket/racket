@@ -49,15 +49,18 @@ get all cross-reference information for installed documentation.}
                                                               symbol?
                                                               module-path-index?
                                                               symbol?
-                                                              boolean?
-                                                              (one-of/c #f 'for-syntax 'for-label))
+                                                              (one-of/c 0 1)
+                                                              (or/c exact-integer? false/c)
+                                                              (or/c exact-integer? false/c))
                                                       (list/c (or/c module-path?
                                                                     module-path-index?
                                                                     path?
                                                                     resolved-module-path?)
                                                               symbol?
-                                                              (one-of/c #f 'for-syntax 'for-label)))]
-                                       [mode (one-of/c #f 'for-syntax 'for-label)])
+                                                              (one-of/c 0 1)
+                                                              (or/c exact-integer? false/c)
+                                                              (or/c exact-integer? false/c)))]
+                                       [mode (or/c exact-integer? false/c)])
          (or/c tag? false/c)]{
 
 Locates a tag in @scheme[xref] that documents a module export. The
@@ -68,35 +71,27 @@ either for the specified module or, if the exported name is
 re-exported from other other module, for the other module
 (transitively).
 
-The @scheme[mode] argument specifies more information about the
-binding: whether it refers to a normal binding, a @scheme[for-syntax]
-binding, or a @scheme[for-label] binding.
-
-The @scheme[binding] is specified in one of four ways:
+The @scheme[mode] argument specifies the relevant phase level for the
+binding. The @scheme[binding] is specified in one of four ways:
 
 @itemize{
 
  @item{If @scheme[binding] is an identifier, then
-       @scheme[identifier-binding],
-       @scheme[identifier-transformer-binding], or
-       @scheme[identifier-label-binding] is used to determine the
-       binding, depending on the value of @scheme[mode].}
+       @scheme[identifier-binding] is used with @scheme[mode] to
+       determine the binding.}
 
  @item{If @scheme[binding] is a two-element list, then the first
        element provides the exporting module and the second the
        exported name. The @scheme[mode] argument is effectively
        ignored.}
 
- @item{If @scheme[binding] is a six-element list, then it corresponds
-       to a result from @scheme[identifier-binding],
-       @scheme[identifier-transformer-binding], or
-       @scheme[identifier-label-binding], depending on the value of
+ @item{If @scheme[binding] is a seven-element list, then it corresponds
+       to a result from @scheme[identifier-binding] using
        @scheme[mode].}
 
- @item{If @scheme[binding] is a three-element list, then the first
-       element is as for the 2-element-list case, the second element
-       is like the fourth element of the six-element case, and the
-       third element is like the sixth element of the six-element
+ @item{If @scheme[binding] is a five-element list, then the first
+       element is as for the two-element-list case, and the remain
+       elements are as in the last four elements of the seven-element
        case.}
 
 }

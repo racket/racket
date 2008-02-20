@@ -1102,7 +1102,7 @@ defn_targets_syntax (Scheme_Object *var, Scheme_Comp_Env *env, Scheme_Compile_In
     Scheme_Object *name, *pr, *bucket;
 
     name = SCHEME_STX_CAR(var);
-    name = scheme_tl_id_sym(env->genv, name, NULL, 2);
+    name = scheme_tl_id_sym(env->genv, name, NULL, 2, NULL);
 
     if (rec[drec].resolve_module_ids || !env->genv->module) {
       bucket = (Scheme_Object *)scheme_global_bucket(name, env->genv);
@@ -4025,7 +4025,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
 
       for (j = pre_k; j < k; j++) {
 	for (m = j + 1; m < k; m++) {
-	  if (scheme_stx_bound_eq(names[m], names[j], env->genv->phase))
+	  if (scheme_stx_bound_eq(names[m], names[j], scheme_make_integer(env->genv->phase)))
 	    scheme_wrong_syntax(NULL, NULL, form,
 				"multiple bindings of `%S' in the same clause", 
 				SCHEME_STX_SYM(names[m]));
@@ -5285,7 +5285,7 @@ static Scheme_Object *stx_val(Scheme_Object *name, Scheme_Object *_env)
 {
   Scheme_Env *env = (Scheme_Env *)_env;
 
-  return scheme_tl_id_sym(env, name, NULL, 2);
+  return scheme_tl_id_sym(env, name, NULL, 2, NULL);
 }
 
 static Scheme_Object *

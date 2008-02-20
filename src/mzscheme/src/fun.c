@@ -2570,73 +2570,73 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
   Scheme_Object *certs;
   certs = rec[drec].certs;
 
- if (SAME_TYPE(SCHEME_TYPE(rator), scheme_id_macro_type)) {
-   Scheme_Object *mark;
+  if (SAME_TYPE(SCHEME_TYPE(rator), scheme_id_macro_type)) {
+    Scheme_Object *mark;
    
-   rator = SCHEME_PTR1_VAL(rator);
-   /* rator is now an identifier */
+    rator = SCHEME_PTR1_VAL(rator);
+    /* rator is now an identifier */
 
-   /* and it's introduced by this expression: */
-   mark = scheme_new_mark();
-   rator = scheme_add_remove_mark(rator, mark);
+    /* and it's introduced by this expression: */
+    mark = scheme_new_mark();
+    rator = scheme_add_remove_mark(rator, mark);
 
-   if (for_set) {
-     Scheme_Object *tail, *setkw;
+    if (for_set) {
+      Scheme_Object *tail, *setkw;
 
-     tail = SCHEME_STX_CDR(code);
-     setkw = SCHEME_STX_CAR(code);
-     tail = SCHEME_STX_CDR(tail);
-     code = scheme_make_pair(setkw, scheme_make_pair(rator, tail));
-     code = scheme_datum_to_syntax(code, orig_code, orig_code, 0, 0);
-   } else if (SCHEME_SYMBOLP(SCHEME_STX_VAL(code)))
-     code = rator;
-   else {
-     code = SCHEME_STX_CDR(code);
-     code = scheme_make_pair(rator, code);
-     code = scheme_datum_to_syntax(code, orig_code, scheme_sys_wraps(env), 0, 0);
-   }
+      tail = SCHEME_STX_CDR(code);
+      setkw = SCHEME_STX_CAR(code);
+      tail = SCHEME_STX_CDR(tail);
+      code = scheme_make_pair(setkw, scheme_make_pair(rator, tail));
+      code = scheme_datum_to_syntax(code, orig_code, orig_code, 0, 0);
+    } else if (SCHEME_SYMBOLP(SCHEME_STX_VAL(code)))
+      code = rator;
+    else {
+      code = SCHEME_STX_CDR(code);
+      code = scheme_make_pair(rator, code);
+      code = scheme_datum_to_syntax(code, orig_code, scheme_sys_wraps(env), 0, 0);
+    }
 
-   code = cert_with_specials(code, mark, menv, orig_code, orig_code, env, env->genv->phase, 0, 0);
+    code = cert_with_specials(code, mark, menv, orig_code, orig_code, env, env->genv->phase, 0, 0);
 
-   code = scheme_stx_track(code, orig_code, name);
+    code = scheme_stx_track(code, orig_code, name);
 
-   return code;
- } else {
-   Scheme_Object *mark, *rands_vec[1];
+    return code;
+  } else {
+    Scheme_Object *mark, *rands_vec[1];
 
-   certs = scheme_stx_extract_certs(code, certs);
+    certs = scheme_stx_extract_certs(code, certs);
  
-   if (SAME_TYPE(SCHEME_TYPE(rator), scheme_set_macro_type))
-     rator = SCHEME_PTR_VAL(rator);
+    if (SAME_TYPE(SCHEME_TYPE(rator), scheme_set_macro_type))
+      rator = SCHEME_PTR_VAL(rator);
 
-   mark = scheme_new_mark();
-   code = scheme_add_remove_mark(code, mark);
+    mark = scheme_new_mark();
+    code = scheme_add_remove_mark(code, mark);
 
-   SCHEME_EXPAND_OBSERVE_MACRO_PRE_X(rec[drec].observer, code);
+    SCHEME_EXPAND_OBSERVE_MACRO_PRE_X(rec[drec].observer, code);
 
-   scheme_on_next_top(env, mark, boundname, certs, 
-		      menv, menv ? menv->link_midx : env->genv->link_midx);
+    scheme_on_next_top(env, mark, boundname, certs, 
+                       menv, menv ? menv->link_midx : env->genv->link_midx);
 
-   rands_vec[0] = code;
-   code = scheme_apply(rator, 1, rands_vec);
+    rands_vec[0] = code;
+    code = scheme_apply(rator, 1, rands_vec);
 
-   SCHEME_EXPAND_OBSERVE_MACRO_POST_X(rec[drec].observer, code);
+    SCHEME_EXPAND_OBSERVE_MACRO_POST_X(rec[drec].observer, code);
 
-   if (!SCHEME_STXP(code)) {
-     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		      "%S: return value from syntax expander was not syntax: %V",
-		      SCHEME_STX_SYM(name),
-		      code);
-   }
+    if (!SCHEME_STXP(code)) {
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                       "%S: return value from syntax expander was not syntax: %V",
+                       SCHEME_STX_SYM(name),
+                       code);
+    }
 
-   code = scheme_add_remove_mark(code, mark);
+    code = scheme_add_remove_mark(code, mark);
 
-   code = cert_with_specials(code, mark, menv, orig_code, orig_code, env, env->genv->phase, 0, 0);
+    code = cert_with_specials(code, mark, menv, orig_code, orig_code, env, env->genv->phase, 0, 0);
 
-   code = scheme_stx_track(code, orig_code, name);
+    code = scheme_stx_track(code, orig_code, name);
 
-   return code;
- }
+    return code;
+  }
 }
 
 /*========================================================================*/

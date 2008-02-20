@@ -85,7 +85,7 @@
                       (weak-box-value b))))
           (let ([e (make-cached-delayed-element
                     (lambda (renderer sec ri)
-                      (let* ([tag (find-scheme-tag sec ri c 'for-label)])
+                      (let* ([tag (find-scheme-tag sec ri c #f)])
                         (if tag
                             (list
                              (case (car tag)

@@ -9,7 +9,7 @@
 (provide 
  ;; PLT Scheme pre-requisites:
  (rename-out [datum #%datum])
- #%app
+ #%app #%top #%top-interaction
 
  ;; 11.2
  (rename-out [r5rs:define define]

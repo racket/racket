@@ -166,6 +166,8 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
       _h2 = NULL;
     } else
       _h2 = &h2;
+    if ((long)table->make_hash_indices < 0x100)
+      *(long *)0x0 = 1; /* REMOVEME */
     table->make_hash_indices((void *)key, (long *)&h, (long *)_h2);
     h = h & mask;
     if (_h2) {

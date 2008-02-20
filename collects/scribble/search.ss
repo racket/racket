@@ -36,17 +36,21 @@
           v)))
      
 
-  ;; mode is #f, 'for-label, or 'for-run
-  (define (find-scheme-tag part ri stx/binding mode)
+  (define (find-scheme-tag part ri stx/binding phase-level)
+    ;; The phase-level argument is used only when `stx/binding'
+    ;; is an identifier.
+    ;;
+    ;; Note: documentation key currently don't distinguish different
+    ;; phase definitions of an identifier from a source module.
+    ;; That is, there's no way to document (define x ....) differently
+    ;; from (define-for-syntax x ...). This isn't a problem in practice,
+    ;; because no one uses the same name for different-phase exported
+    ;; bindings.
     (let ([b (cond
               [(identifier? stx/binding)
-               ((case mode
-                  [(for-label) identifier-label-binding]
-                  [(for-syntax) identifier-transformer-binding]
-                  [else identifier-binding])
-                stx/binding)]
+               (identifier-binding stx/binding phase-level)]
               [(and (list? stx/binding)
-                    (= 6 (length stx/binding)))
+                    (= 7 (length stx/binding)))
                stx/binding]
               [else
                (and (not (symbol? (car stx/binding)))
@@ -57,15 +61,20 @@
                             (cadr stx/binding)
                             p
                             (cadr stx/binding)
-                            #f
                             (if (= 2 (length stx/binding))
-                                mode
-                                (caddr stx/binding)))))])])
+                                0
+                                (caddr stx/binding))
+                            (if (= 2 (length stx/binding))
+                                0
+                                (cadddr stx/binding))
+                            (if (= 2 (length stx/binding))
+                                0
+                                (cadddr (cdr stx/binding))))))])])
       (and 
        (pair? b)
        (let ([seen (make-hash-table)]
              [search-key #f])
-         (let loop ([queue (list (list (caddr b) (cadddr b) (eq? mode (list-ref b 5))))]
+         (let loop ([queue (list (list (caddr b) (cadddr b) (list-ref b 4) (list-ref b 5) (list-ref b 6)))]
                     [rqueue null])
            (cond
             [(null? queue)
@@ -74,12 +83,14 @@
                  #f
                  (loop (reverse rqueue) null))]
             [else
-             (let ([mod (caar queue)]
-                   [id (cadar queue)]
-                   [here? (caddar queue)]
+             (let ([mod (list-ref (car queue) 0)]
+                   [id (list-ref (car queue) 1)]
+                   [defn-phase (list-ref (car queue) 2)]
+                   [import-phase (list-ref (car queue) 3)]
+                   [export-phase (list-ref (car queue) 4)]
                    [queue (cdr queue)])
                (let* ([rmp (module-path-index-resolve mod)]
-                      [eb (and here?
+                      [eb (and (equal? defn-phase export-phase)
                                (list (let ([p (resolved-module-path-name rmp)])
                                        (if (path? p)
                                            (intern-taglet (path->main-collects-relative p))
@@ -106,35 +117,46 @@
                                        module-info-cache
                                        rmp
                                        (lambda ()
-                                         (let-values ([(run-vals run-stxes
-                                                                 syntax-vals syntax-stxes
-                                                                 label-vals label-stxes)
+                                         (let-values ([(valss stxess)
                                                        (module-compiled-exports
                                                         (get-module-code (resolved-module-path-name rmp)))])
-                                           (let ([t (list (append run-vals run-stxes)
-                                                          (append syntax-vals syntax-stxes)
-                                                          (append label-vals label-stxes))])
+                                           (let ([t 
+                                                  ;; Merge the two association lists:
+                                                  (let loop ([base valss]
+                                                             [stxess stxess])
+                                                    (cond
+                                                     [(null? stxess) base]
+                                                     [(assoc (caar stxess) base)
+                                                      => (lambda (l)
+                                                           (loop (cons (cons (car l)
+                                                                             (append (cdar stxess)
+                                                                                     (cdr l)))
+                                                                       (remq l base))
+                                                                 (cdr stxess)))]
+                                                     [else (loop (cons (car stxess)
+                                                                       base)
+                                                                 (cdr stxess))]))])
                                              (hash-table-put! module-info-cache rmp t)
                                              t))))])
                                  (hash-table-put! seen rmp #t)
-                                 (let ([a (assq id (list-ref exports
-                                                             (if here?
-                                                                 0
-                                                                 (case mode
-                                                                   [(for-syntax) 1]
-                                                                   [(for-label) 2]
-                                                                   [else 0]))))])
+                                 (let ([a (assq id (let ([a (assoc export-phase exports)])
+                                                     (if a
+                                                         (cdr a) 
+                                                         null)))])
                                    (if a
                                        (loop queue
                                              (append (map (lambda (m)
                                                             (if (pair? m)
                                                                 (list (module-path-index-rejoin (car m) mod)
-                                                                      (caddr m) 
-                                                                      (or here?
-                                                                          (eq? mode (cadr m))))
+                                                                      (list-ref m 2)
+                                                                      defn-phase
+                                                                      (list-ref m 1)
+                                                                      (list-ref m 3))
                                                                 (list (module-path-index-rejoin m mod)
                                                                       id
-                                                                      here?)))
+                                                                      0
+                                                                      0
+                                                                      0)))
                                                           (cadr a))
                                                      rqueue))
                                        (error 'find-scheme-tag

@@ -55,10 +55,9 @@
           (printf "Copying ~a to ~a~n" path target)
           (copy-file path target)
           (let ([code (get-module-code path "no-such-dir")])
-            (let-values ([(a b c d) (module-compiled-imports code)])
-              (map (lambda (x)
-                     (go x path #f))
-                   (append a b c d)))))))))
+            (map (lambda (x)
+                   (go x path #f))
+                 (apply append (map cdr (module-compiled-imports code))))))))))
 
 (unless (directory-exists? "xform-collects")
   (make-directory "xform-collects"))

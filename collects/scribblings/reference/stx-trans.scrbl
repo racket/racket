@@ -356,6 +356,13 @@ contexts.
 @transform-time[]}
 
 
+@defproc[(syntax-local-phase-level) (or/c exact-integer? false/c)]{
+
+During the dynamic extent of a @tech{syntax transformer} application
+by the expander, the result is the @tech{phase level} of the form
+being expanded. Otherwise, the result is @scheme[0].}
+
+
 @defproc[(syntax-local-module-exports [mod-path module-path?]) 
          (values (listof symbol?) (listof symbol?) (listof symbol?))]{
 
@@ -558,9 +565,10 @@ Returns @scheme[#t] if @scheme[v] has the
 @defstruct[import ([local-id identifier?]
                    [src-sym symbol?]
                    [src-mod-path module-path?]
-                   [orig-stx syntax?]
-                   [mode (one-of/c 'run 'syntax 'template 'label)]
-                   [req-mode (one-of/c 'run 'syntax 'template 'label)])]{
+                   [mode (or/c exact-integer? false/c)]
+                   [req-mode (or/c exact-integer? false/c)]
+                   [orig-mode (or/c exact-integer? false/c)]
+                   [orig-stx syntax?])]{
 
 A structure representing a single imported identifier:
 
@@ -582,11 +590,10 @@ A structure representing a single imported identifier:
        importing module.}
 
  @item{@scheme[req-mode] --- the @tech{phase level} shift of the
-       import relative to the exporting module. Since the underlying
-       module system currently allows only for-run @scheme[require]s
-       to import into other @tech{phase levels}, if this value is not
-       @scheme['run], then it must match the @scheme[mode] field's
-       value.}
+       import relative to the exporting module.}
+
+ @item{@scheme[orig-mode] --- the @tech{phase level} of the
+       binding as exported by the exporting module.}
 
 }}
 
@@ -594,7 +601,7 @@ A structure representing a single imported identifier:
 @defstruct[import-source ([mod-path-stx (and/c syntax?
                                                (lambda (x)
                                                  (module-path? (syntax->datum x))))]
-                          [mode (one-of/c 'run 'syntax 'template 'label)])]{
+                          [mode (or/c exact-integer? false/c)])]{
 
 A structure representing an imported module, which must be
 instantiated or visited even if no binding is imported into a module.
@@ -630,7 +637,7 @@ If the derived form contains a sub-form that is a
 transform the sub-@scheme[_provide-spec] to a lists of exports.
 
 
-@defproc[(expand-export [stx syntax?] [modes (listof (one-of/c 'run 'syntax 'label))])
+@defproc[(expand-export [stx syntax?] [modes (listof (or/c exact-integer? false/c))])
          (listof export?)]{
 
 Expands the given @scheme[_provide-spec] to a list of exports. The
@@ -638,10 +645,10 @@ Expands the given @scheme[_provide-spec] to a list of exports. The
 sub-@scheme[_provide-specs]; for example, an identifier refers to a
 @tech{phase level} 0 binding unless the @scheme[modes] list specifies
 otherwise. Normally, @scheme[modes] is either empty or contains a
-single symbol.}
+single element.}
 
 
-@defproc[(make-provide-transformer [proc (syntax? (listof (one-of/c 'run 'syntax 'label)) 
+@defproc[(make-provide-transformer [proc (syntax? (listof (or/c exact-integer? false/c))
                                           . -> . (listof export?))])
          provide-transformer?]{
 
@@ -667,7 +674,7 @@ Returns @scheme[#t] if @scheme[v] has the
                    [out-sym symbol?]
                    [orig-stx syntax?]
                    [protect? any/c]
-                   [mode (one-of/c 'run 'syntax 'label)])]{
+                   [mode (or/c exact-integer? false/c)])]{
 
 A structure representing a single imported identifier:
 

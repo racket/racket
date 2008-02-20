@@ -79,7 +79,7 @@ run time of the enclosing module (or the run time of top-level
 expression). Bindings in @tech{phase level} 0 constitute the
 @deftech{base environment}.  @tech{Phase level} 1 corresponds to the
 time during which the enclosing module (or top-level expression) is
-expanded; bindings in @tech{phase level} 0 constitute the
+expanded; bindings in @tech{phase level} 1 constitute the
 @deftech{transformer environment}.  Phase level -1 corresponds to the
 run time of a different module for which the enclosing module is
 imported for use at @tech{phase level} 1 (relative to the importing
@@ -385,20 +385,21 @@ core syntactic forms are encountered:
        @tech{phase level}s specified by the exporting modules:
        @tech{phase level} 0 for each normal @scheme[provide],
        @tech{phase level} 1 for each @scheme[for-syntax]
-       @scheme[provide], and the @tech{label phase level} for each
-       @scheme[for-label] @scheme[provide].
+       @scheme[provide], and so on. The @scheme[for-meta]
+       @scheme[provide] form allows exports at an arbitrary
+       @tech{phase level} (as long as a binding exists within the
+       module at the @tech{phase level}).
 
        A @scheme[for-syntax] sub-form within @scheme[require] imports
-       only @tech{phase level} 0 exports from the specified modules,
-       but the resulting bindings are for @tech{phase level} 1.
-
-       A @scheme[for-template] sub-form within @scheme[require] imports
-       only @tech{phase level} 0 exports from the specified modules,
-       but the resulting bindings are for @tech{phase level} -1.
-
-       A @scheme[for-label] sub-form within @scheme[require] imports
-       only @tech{phase level} 0 exports from the specified modules,
-       but the resulting bindings are for the @tech{label phase level}.}
+       similarly, but the resulting bindings have a @tech{phase level}
+       that is one more than the exported @tech{phase levels}, when
+       exports for the @tech{label phase level} are still imported at
+       the @tech{label phase level}. More generally, a
+       @scheme[for-meta] sub-form within @scheme[require] imports with
+       the specified @tech{phase level} shift; if the specified shift
+       is @scheme[#f], or if @scheme[for-label] is used to import,
+       then all bindings are imported into the @tech{label phase
+       level}.}
 
  @item{When a @scheme[define], @scheme[define-values],
        @scheme[define-syntax], or @scheme[define-syntaxes] form is

@@ -446,7 +446,7 @@
     (let ([s (to-element/no-color elem)])
       (make-delayed-element
        (lambda (renderer sec ri)
-         (let* ([tag (find-scheme-tag sec ri sig 'for-label)]
+         (let* ([tag (find-scheme-tag sec ri sig #f)]
                 [taglet (and tag (append (cadr tag) (list elem)))]
                 [vtag (and tag `(sig-val ,taglet))]
                 [stag (and tag `(sig-form ,taglet))]
@@ -490,7 +490,7 @@
            (lambda (c mk)
              (make-delayed-element
               (lambda (ren p ri)
-                (let ([tag (find-scheme-tag p ri id/tag 'for-label)])
+                (let ([tag (find-scheme-tag p ri id/tag #f)])
                   (if tag
                       (list (mk tag))
                       content)))
@@ -1851,7 +1851,7 @@
          (list
           (make-link-element #f 
                              content
-                             (or (find-scheme-tag p ri stx-id 'for-label)
+                             (or (find-scheme-tag p ri stx-id #f)
                                  (format "--UNDEFINED:~a--" (syntax-e stx-id))))))
        (lambda () content)
        (lambda () content))))
@@ -2023,15 +2023,17 @@
                   (if (path? p)
                       (intern-taglet (path->main-collects-relative p))
                       p))
-                (cadddr b)
-                (list-ref b 5))
+                (list-ref b 3)
+                (list-ref b 4)
+                (list-ref b 5)
+                (list-ref b 6))
           (error 'scribble "no class/interface/mixin information for identifier: ~e"
                  id))))
 
   (define-serializable-struct cls/intf (name-element app-mixins super intfs methods))
 
   (define (make-inherited-table r d ri decl)
-    (let* ([start (let ([key (find-scheme-tag d ri (decl-name decl) 'for-label)])
+    (let* ([start (let ([key (find-scheme-tag d ri (decl-name decl) #f)])
                     (if key
                         (list (cons key (lookup-cls/intf d ri key)))
                         null))]
@@ -2047,7 +2049,7 @@
                             (let ([super (car supers)])
                               (loop (append (filter values
                                                     (map (lambda (i)
-                                                           (let ([key (find-scheme-tag d ri i 'for-label)])
+                                                           (let ([key (find-scheme-tag d ri i #f)])
                                                              (and key
                                                                   (cons key (lookup-cls/intf d ri key)))))
                                                          (append
@@ -2452,14 +2454,14 @@
                  null))])
       (make-delayed-element
        (lambda (r d ri)
-         (let loop ([search (get d ri (find-scheme-tag d ri cname 'for-label))])
+         (let loop ([search (get d ri (find-scheme-tag d ri cname #f))])
            (cond
             [(null? search)
              (list (make-element #f '("<method not found>")))]
             [(not (car search))
              (loop (cdr search))]
             [else
-             (let* ([a-key (find-scheme-tag d ri (car search) 'for-label)]
+             (let* ([a-key (find-scheme-tag d ri (car search) #f)]
                     [v (and a-key (lookup-cls/intf d ri a-key))])
                (if v
                    (if (member name (cls/intf-methods v))
@@ -2468,7 +2470,7 @@
                                       (list (**method name a-key)
                                             " in " 
                                             (cls/intf-name-element v))))
-                       (loop (append (cdr search) (get d ri (find-scheme-tag d ri (car search) 'for-label)))))
+                       (loop (append (cdr search) (get d ri (find-scheme-tag d ri (car search) #f)))))
                    (loop (cdr search))))])))
        (lambda () (format "~a in ~a" (syntax-e cname) name))
        (lambda () (format "~a in ~a" (syntax-e cname) name)))))

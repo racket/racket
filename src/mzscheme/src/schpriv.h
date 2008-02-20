@@ -591,7 +591,7 @@ typedef struct Scheme_Stx {
   Scheme_Stx_Srcloc *srcloc;
   Scheme_Object *wraps;
   union {
-    long lazy_prefix; /* # of initial items in wraps to propagate */
+    long lazy_prefix; /* # of insitial items in wraps to propagate */
     Scheme_Object *modinfo_cache;
   } u;
   Scheme_Object *certs; /* cert chain or pair of cert chains */
@@ -658,14 +658,27 @@ Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *re
 
 struct Scheme_Module_Phase_Exports; /* forward declaration */
 
-Scheme_Object *scheme_make_module_rename(long phase, int kind, Scheme_Hash_Table *mns);
+Scheme_Object *scheme_make_module_rename_set(int kind, Scheme_Object *share_marked_names);
+void scheme_add_module_rename_to_set(Scheme_Object *set, Scheme_Object *rn);
+Scheme_Object *scheme_get_module_rename_from_set(Scheme_Object *set, Scheme_Object *phase, int create);
+
+Scheme_Hash_Table *scheme_get_module_rename_marked_names(Scheme_Object *set, Scheme_Object *phase, int create);
+
+void scheme_append_rename_set_to_env(Scheme_Object *rns, Scheme_Env *env);
+
+void scheme_seal_module_rename(Scheme_Object *rn);
+void scheme_seal_module_rename_set(Scheme_Object *rns);
+
+Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_Hash_Table *mns);
 void scheme_extend_module_rename(Scheme_Object *rn, Scheme_Object *modname,
 				 Scheme_Object *locname, Scheme_Object *exname,
 				 Scheme_Object *nominal_src, Scheme_Object *nominal_ex,
-				 int mod_phase, int src_phase_index, int drop_for_marshal);
+				 int mod_phase, Scheme_Object *src_phase_index, 
+                                 Scheme_Object *nom_export_phase, int drop_for_marshal);
 void scheme_extend_module_rename_with_shared(Scheme_Object *rn, Scheme_Object *modidx, 
-                                             struct Scheme_Module_Phase_Exports *pt, int k,
-                                             int src_phase_index, 
+                                             struct Scheme_Module_Phase_Exports *pt, 
+                                             Scheme_Object *unmarshal_phase_index,
+                                             Scheme_Object *src_phase_index, 
                                              int save_unmarshal);
 void scheme_extend_module_rename_with_kernel(Scheme_Object *rn, Scheme_Object *nominal_src);
 void scheme_save_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info);
@@ -681,21 +694,26 @@ void scheme_list_module_rename(Scheme_Object *src, Scheme_Hash_Table *ht);
 Scheme_Object *scheme_rename_to_stx(Scheme_Object *rn);
 Scheme_Object *scheme_stx_to_rename(Scheme_Object *stx);
 Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn, Scheme_Object *old_midx, Scheme_Object *new_midx);
+Scheme_Object *scheme_stx_shift_rename_set(Scheme_Object *mrns, Scheme_Object *old_midx, Scheme_Object *new_midx);
 Scheme_Hash_Table *scheme_module_rename_marked_names(Scheme_Object *rn);
 
 Scheme_Object *scheme_stx_content(Scheme_Object *o);
 Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist);
 
 int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, long phase);
-Scheme_Object *scheme_stx_module_name(Scheme_Object **name, long phase,
+int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase, Scheme_Object *asym);
+Scheme_Object *scheme_stx_get_module_eq_sym(Scheme_Object *a, Scheme_Object *phase);
+Scheme_Object *scheme_stx_module_name(Scheme_Object **name, Scheme_Object *phase,
 				      Scheme_Object **nominal_modidx,
 				      Scheme_Object **nominal_name,
-				      int *mod_phase, int *src_phase_index);
-Scheme_Object *scheme_stx_moduleless_env(Scheme_Object *a, long phase);
+				      Scheme_Object **mod_phase, 
+                                      Scheme_Object **src_phase_index, 
+                                      Scheme_Object **nominal_src_phase);
+Scheme_Object *scheme_stx_moduleless_env(Scheme_Object *a, Scheme_Object *phase);
 int scheme_stx_parallel_is_used(Scheme_Object *sym, Scheme_Object *stx);
 
-int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, long phase);
-int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *uid, long phase);
+int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase);
+int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *uid, Scheme_Object *phase);
 
 Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve);
 
@@ -2225,6 +2243,7 @@ Scheme_Env *scheme_make_empty_env(void);
 void scheme_prepare_exp_env(Scheme_Env *env);
 void scheme_prepare_template_env(Scheme_Env *env);
 void scheme_prepare_label_env(Scheme_Env *env);
+void scheme_prepare_env_renames(Scheme_Env *env, int kind);
 
 int scheme_used_app_only(Scheme_Comp_Env *env, int which);
 int scheme_used_ever(Scheme_Comp_Env *env, int which);
@@ -2346,6 +2365,8 @@ void scheme_unmarshal_wrap_set(Scheme_Unmarshal_Tables *ut,
 struct Scheme_Env {
   Scheme_Object so; /* scheme_namespace_type */
 
+  char disallow_unbound, rename_set_ready;
+
   struct Scheme_Module *module; /* NULL => top-level */
 
   Scheme_Hash_Table *module_registry; /* symbol -> module ; loaded modules,
@@ -2354,17 +2375,11 @@ struct Scheme_Env {
   Scheme_Object *insp; /* instantiation-time inspector, for granting
 			  protected access and certificates */
 
-  /* For compilation, per-declaration: */
-  /* First two are passed from module to module-begin: */
-  Scheme_Object *rename;    /* module rename record */
-  Scheme_Object *et_rename; /* exp-time rename record */
-  Scheme_Object *tt_rename; /* template-time rename record */
-  Scheme_Object *dt_rename; /* template-time rename record */
+  Scheme_Object *rename_set;
 
   Scheme_Bucket_Table *syntax;
   struct Scheme_Env *exp_env;
   struct Scheme_Env *template_env;
-  struct Scheme_Env *label_env; /* just for renamings */
 
   Scheme_Hash_Table *shadowed_syntax; /* top level only */
 
@@ -2372,6 +2387,7 @@ struct Scheme_Env {
   long phase, mod_phase;
   Scheme_Object *link_midx;
   Scheme_Object *require_names, *et_require_names, *tt_require_names, *dt_require_names; /* resolved */
+  Scheme_Hash_Table *other_require_names;
   char running, et_running, tt_running, lazy_syntax, attached, ran, et_ran;
 
   Scheme_Bucket_Table *toplevel;
@@ -2382,8 +2398,6 @@ struct Scheme_Env {
                                3. modchain for previous phase (or #f) */
 
   Scheme_Hash_Table *modvars; /* for scheme_module_variable_type hashing */
-
-  Scheme_Hash_Table *marked_names; /* for mapping marked ids to uninterned symbols */
 
   int id_counter;
 };
@@ -2405,6 +2419,7 @@ typedef struct Scheme_Module
   Scheme_Object *requires;     /* list of symbol-or-module-path-index */
   Scheme_Object *tt_requires;  /* list of symbol-or-module-path-index */
   Scheme_Object *dt_requires;  /* list of symbol-or-module-path-index */
+  Scheme_Hash_Table *other_requires;  /* phase to list of symbol-or-module-path-index */
 
   Scheme_Invoke_Proc prim_body;
   Scheme_Invoke_Proc prim_et_body;
@@ -2442,21 +2457,21 @@ typedef struct Scheme_Module
 
   Scheme_Env *primitive;
 
-  Scheme_Object *rn_stx, *et_rn_stx, *tt_rn_stx, *dt_rn_stx;
+  Scheme_Object *rn_stx;
 } Scheme_Module;
 
 typedef struct Scheme_Module_Phase_Exports
 {
-  MZTAG_IF_REQUIRED
+  Scheme_Object so;
 
-  int phase_index;
+  Scheme_Object *phase_index;
 
   Scheme_Object *src_modidx;  /* same as in enclosing Scheme_Module_Exports */
 
   Scheme_Object **provides;          /* symbols (extenal names) */
   Scheme_Object **provide_srcs;      /* module access paths, #f for self */
   Scheme_Object **provide_src_names; /* symbols (original internal names) */
-  Scheme_Object **provide_nominal_srcs;      /* import source if re-exported; NULL or array of lists */
+  Scheme_Object **provide_nominal_srcs; /* import source if re-exported; NULL or array of lists */
   char *provide_src_phases;          /* NULL, or src phase for for-syntax import */
   int num_provides;
   int num_var_provides;              /* non-syntax listed first in provides */
@@ -2476,7 +2491,10 @@ typedef struct Scheme_Module_Exports
      unmarshal syntax-object context. */
   MZTAG_IF_REQUIRED
 
+  /* Most common phases: */
   Scheme_Module_Phase_Exports *rt, *et, *dt;
+  /* All others: */
+  Scheme_Hash_Table *other_phases;
 
   Scheme_Object *src_modidx;  /* the one used in marshalled syntax */
 } Scheme_Module_Exports;
@@ -2504,7 +2522,7 @@ void scheme_add_global_keyword_symbol(Scheme_Object *name, Scheme_Object *v, Sch
 void scheme_add_global_constant(const char *name, Scheme_Object *v, Scheme_Env *env);
 void scheme_add_global_constant_symbol(Scheme_Object *name, Scheme_Object *v, Scheme_Env *env);
 
-Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int is_def);
+Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int is_def, Scheme_Object *phase);
 int scheme_tl_id_is_sym_used(Scheme_Hash_Table *marked_names, Scheme_Object *sym);
 
 Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env);
@@ -2552,8 +2570,8 @@ void scheme_clear_modidx_cache(void);
 void scheme_clear_shift_cache(void);
 void scheme_clear_prompt_cache(void);
 
-Scheme_Object *scheme_module_imported_list(Scheme_Env *genv, Scheme_Object *binings, Scheme_Object *modpath,
-                                           int include_run, int include_exp, int include_lbl);
+Scheme_Object *scheme_module_imported_list(Scheme_Env *genv, Scheme_Object *bindings, Scheme_Object *modpath,
+                                           Scheme_Object *mode);
 Scheme_Object *scheme_module_exported_list(Scheme_Object *modpath, Scheme_Env *genv);
 
 void scheme_run_module(Scheme_Env *menv, int set_ns);

@@ -8,9 +8,9 @@
                          "struct-info.ss"))
   
   (#%provide lib file planet
-             for-syntax for-template for-label
+             for-syntax for-template for-label for-meta
              require
-             only-in rename-in prefix-in except-in
+             only-in rename-in prefix-in except-in only-meta-in
              provide
              all-defined-out all-from-out
              rename-out except-out prefix-out struct-out
@@ -31,7 +31,7 @@
   (define-for-syntax (xlate-path stx)
     (if (pair? (syntax-e stx))
         (let ([kw
-               ;; free-identifier=? identifers are not necessarily module=?
+               ;; symbolic-identifier=? identifers are not necessarily free-identifier=?
                (syntax-case stx (lib planet file quote)
                  [(quote . _) 'quote]
                  [(lib . _) 'lib]
@@ -57,26 +57,27 @@
   (define-syntaxes (lib file planet)
     (let ([t (lambda (stx)
                (check-lib-form stx)
-               (let*-values ([(mod-path) (syntax->datum stx)]
-                             [(names et-names lt-names) (syntax-local-module-exports stx)])
+               (let* ([mod-path (syntax->datum stx)]
+                      [namess (syntax-local-module-exports stx)])
                  (values
                   (apply
                    append
-                   (map (lambda (names mode)
-                          (map (lambda (name)
-                                 (make-import (datum->syntax
-                                               stx
-                                               name
-                                               stx)
-                                              name
-                                              mod-path
-                                              mode
-                                              'run
-                                              stx))
-                               names))
-                        (list names et-names lt-names)
-                        (list 'run 'syntax 'label)))
-                  (list (make-import-source stx 'run)))))])
+                   (map (lambda (names)
+                          (let ([mode (car names)])
+                            (map (lambda (name)
+                                   (make-import (datum->syntax
+                                                 stx
+                                                 name
+                                                 stx)
+                                                name
+                                                mod-path
+                                                mode
+                                                0
+                                                mode
+                                                stx))
+                                 (cdr names))))
+                        namess))
+                  (list (make-import-source stx 0)))))])
       (let ([t2
              (let-values ([(s: mk s? s-ref s-set!)
                            (make-struct-type 'req+prov
@@ -96,6 +97,9 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; for-syntax, for-template, for-label
 
+  (define-for-syntax (phase+ a b)
+    (and a b (+ a b)))
+
   (define-for-syntax (shift-subs stx mode)
     (syntax-case stx ()
       [(_ in ...)
@@ -110,18 +114,17 @@
                         (make-import (import-local-id import)
                                      (import-src-sym import)
                                      (import-src-mod-path import)
-                                     mode
-                                     mode
+                                     (phase+ mode (import-mode import))
+                                     (phase+ mode (import-req-mode import))
+                                     (import-orig-mode import)
                                      (import-orig-stx import)))
-                      (filter (lambda (import)
-                                (eq? (import-mode import) 'run))
-                              imports))
+                      imports)
                  (map (lambda (source)
-                        (make-import-source (import-source-mod-path-stx source)
-                                            mode))
-                      (filter (lambda (source)
-                                (eq? (import-source-mode source) 'run))
-                              sources))))]))
+                        (make-import-source 
+                         (import-source-mod-path-stx source)
+                         (phase+ mode
+                                 (import-source-mode source))))
+                      sources)))]))
 
   (define-for-syntax (make-require+provide-transformer r p)
     (let-values ([(s: mk s? s-ref s-set!)
@@ -149,21 +152,50 @@
   (define-syntax for-syntax
     (make-require+provide-transformer
      (lambda (stx)
-       (shift-subs stx 'syntax))
+       (shift-subs stx 1))
      (lambda (stx modes)
-       (exports-at-phase stx modes 'syntax))))
+       (exports-at-phase stx modes 1))))
   
   (define-syntax for-template
-    (make-require-transformer
+    (make-require+provide-transformer
      (lambda (stx)
-       (shift-subs stx 'template))))
+       (shift-subs stx -1))
+     (lambda (stx modes)
+       (exports-at-phase stx modes -1))))
   
   (define-syntax for-label
     (make-require+provide-transformer
      (lambda (stx)
-       (shift-subs stx 'label))
+       (shift-subs stx #f))
      (lambda (stx modes)
-       (exports-at-phase stx modes 'label))))
+       (exports-at-phase stx modes #f))))
+  
+  (define-syntax for-meta
+    (make-require+provide-transformer
+     (lambda (stx)
+       (syntax-case stx ()
+         [(_ mode in ...)
+          (let ([base-mode (syntax-e #'mode)])
+            (unless (or (not base-mode)
+                        (exact-integer? base-mode))
+              (raise-syntax-error
+               #f
+               "phase level must be #f or an exact integer"
+               stx
+               #'mode))
+            (shift-subs #'(for-meta in ...) base-mode))]))
+     (lambda (stx modes)
+       (syntax-case stx ()
+         [(_ mode out ...)
+          (let ([base-mode (syntax-e #'mode)])
+            (unless (or (not base-mode)
+                        (exact-integer? base-mode))
+              (raise-syntax-error
+               #f
+               "phase level must be #f or an exact integer"
+               stx
+               #'mode))
+            (exports-at-phase #'(for-meta out ...) modes base-mode))]))))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; require
@@ -176,11 +208,8 @@
     (letrec ([mode-wrap
               (lambda (mode base)
                 (cond
-                  [(eq? mode 'run) base]
-                  [(eq? mode 'syntax) #`(for-syntax #,base)]
-                  [(eq? mode 'template) #`(for-template #,base)]
-                  [(eq? mode 'label) #`(for-label #,base)]
-                  [else (error "huh?" mode)]))]
+                  [(eq? mode 0) base]
+                  [else #`(for-meta #,mode #,base)]))]
              [simple-path? (lambda (p)
                              (syntax-case p (lib quote)
                                [(lib . _)
@@ -249,27 +278,17 @@
                        ;; TODO: collapse back to simple cases when possible
                        (append
                         (map (lambda (import)
-                               (mode-wrap (if (eq? base-mode 'run)
-                                              (import-req-mode import)
-                                              base-mode)
-                                          #`(rename #,(import-src-mod-path import)
-                                                    #,(import-local-id import)
-                                                    #,(import-src-sym import))))
-                             (if (eq? base-mode 'run)
-                                 imports
-                                 (filter (lambda (import)
-                                           (eq? (import-mode import) 'run))
-                                         imports)))
+                               #`(just-meta
+                                  #,(import-orig-mode import)
+                                  #,(mode-wrap (phase+ base-mode (import-req-mode import))
+                                               #`(rename #,(import-src-mod-path import)
+                                                         #,(import-local-id import)
+                                                         #,(import-src-sym import)))))
+                             imports)
                         (map (lambda (src)
-                               (mode-wrap (if (eq? base-mode 'run)
-                                              (import-source-mode src)
-                                              base-mode)
+                               (mode-wrap (phase+ base-mode (import-source-mode src))
                                           #`(only #,(import-source-mod-path-stx src))))
-                             (if (eq? base-mode 'run)
-                                 sources
-                                 (filter (lambda (source)
-                                           (eq? (import-source-mode source) 'run))
-                                         sources)))))]))]
+                             sources)))]))]
              [transform-one
               (lambda (in)
                 ;; Recognize `for-syntax', etc. for simple cases:
@@ -283,13 +302,13 @@
                                  (transform-simple in
                                                    (cond
                                                     [(free-identifier=? #'for-something #'for-syntax)
-                                                     'syntax]
+                                                     1]
                                                     [(free-identifier=? #'for-something #'for-template)
-                                                     'template]
+                                                     -1]
                                                     [(free-identifier=? #'for-something #'for-label)
-                                                     'label])))
+                                                     #f])))
                                (syntax->list #'(elem ...))))]
-                  [_ (transform-simple in 'run)]))])
+                  [_ (transform-simple in 0 #| run phase |#)]))])
       (syntax-case stx ()
         [(_ in ...)
          (with-syntax ([(new-in ...)
@@ -339,26 +358,32 @@
                    stx
                    dup-id)))
               (values
-               (map (lambda (new-id orig-id)
-                      (or (ormap (lambda (import)
-                                   (and (free-identifier=? orig-id
-                                                             (import-local-id import))
-                                        (if (eq? new-id orig-id)
-                                            import
-                                            (make-import new-id
-                                                         (import-src-sym import)
-                                                         (import-src-mod-path import)
-                                                         (import-mode import)
-                                                         (import-req-mode import)
-                                                         new-id))))
-                                 imports)
-                          (raise-syntax-error
-                           #f
-                           (format "identifier `~a' not included in nested require spec"
-                                   (syntax-e orig-id))
-                           stx
-                           #'in)))
-                    new-ids orig-ids)
+               (apply
+                append
+                (map (lambda (new-id orig-id)
+                       (let ([l (filter
+                                 values
+                                 (map (lambda (import)
+                                        (and (free-identifier=? orig-id (import-local-id import)) ; don't compare at mode
+                                             (if (eq? new-id orig-id)
+                                                 import
+                                                 (make-import new-id
+                                                              (import-src-sym import)
+                                                              (import-src-mod-path import)
+                                                              (import-mode import)
+                                                              (import-req-mode import)
+                                                              (import-orig-mode import)
+                                                              new-id))))
+                                      imports))])
+                         (if (null? l)
+                             (raise-syntax-error
+                              #f
+                              (format "identifier `~a' not included in nested require spec"
+                                      (syntax-e orig-id))
+                              stx
+                              #'in)
+                             l)))
+                     new-ids orig-ids))
                sources)))]))))
 
   (define-syntax except-in
@@ -402,6 +427,31 @@
                      imports)
              sources))]))))
 
+  (define-syntax only-meta-in
+    (make-require-transformer
+     (lambda (stx)
+       (syntax-case stx ()
+         [(_ mode in ...)
+          (let ([base-mode (syntax-e #'mode)])
+            (unless (or (not base-mode)
+                        (exact-integer? base-mode))
+              (raise-syntax-error
+               #f
+               "phase level must be #f or an exact integer"
+               stx
+               #'mode))
+            (let ([subs
+                   (map (lambda (in)
+                          (let-values ([(imports sources) (expand-import in)])
+                            (cons
+                             (filter (lambda (import)
+                                       (equal? (import-mode import) base-mode))
+                                     imports)
+                             sources)))
+                        (syntax->list #'(in ...)))])
+              (values (apply append (map car subs))
+                      (apply append (map cdr subs)))))]))))
+
   (define-syntax rename-in
     (make-require-transformer
      (lambda (stx)
@@ -444,6 +494,7 @@
                                                (import-src-mod-path import)
                                                (import-mode import)
                                                (import-req-mode import)
+                                               (import-orig-mode import)
                                                bind-id)
                                   import)))
                         orig-ids bind-ids)])
@@ -500,6 +551,7 @@
                                    (import-src-mod-path import)
                                    (import-mode import)
                                    (import-req-mode import)
+                                   (import-orig-mode import)
                                    (import-orig-stx import))))
                   imports)
              sources))]))))
@@ -538,9 +590,8 @@
                                   [mode (export-mode export)])
                               (let ([phased
                                      (cond
-                                      [(eq? mode 'run) base]
-                                      [(eq? mode 'syntax) #`(for-syntax #,base)]
-                                      [(eq? mode 'label) #`(for-label #,base)])])
+                                      [(eq? mode 0) base]
+                                      [else #`(for-meta #,mode #,base)])])
                                 (if (export-protect? export)
                                     #`(protect #,phased)
                                     phased))))
@@ -569,16 +620,16 @@
                                                             stx
                                                             (syntax-e id)))))])
             (append
-             (if (memq 'syntax modes)
+             (if (memq 1 modes)
                  (map (lambda (id)
-                        (make-export id (syntax-e id) 'syntax #f stx))
+                        (make-export id (syntax-e id) 1 #f stx))
                       (filter (same-ctx? free-transformer-identifier=?)
                               stx-ids))
                  null)
              (if (or (null? modes)
-                     (memq 'run modes))
+                     (memq 0 modes))
                  (map (lambda (id)
-                        (make-export id (syntax-e id) 'run #f stx))
+                        (make-export id (syntax-e id) 0 #f stx))
                       (filter (same-ctx? free-identifier=?)
                               ids))
                  null)))]))))
@@ -598,61 +649,42 @@
                  "bad module path"
                  stx
                  mp))
-              (let-values ([(ids stx-ids label-ids) 
-                            (syntax-local-module-required-identifiers (syntax->datum mp) 
-                                                                      (or (null? modes)
-                                                                          (memq 'run modes))
-                                                                      (memq 'syntax modes)
-                                                                      (memq 'label modes))]
-                           [(ok-context?) (lambda (id id=?)
-                                            (id=? id
-                                                  (datum->syntax mp (syntax-e id))))]) 
-                (when (or (null? modes) 
-                          (memq 'run modes))
-                  (unless ids
-                    (raise-syntax-error
-                     #f
-                     "no corresponding require"
-                     stx
-                     mp)))
-                (when (memq 'syntax modes)
-                  (unless stx-ids
-                    (raise-syntax-error
-                     #f
-                     "no corresponding for-syntax require"
-                     stx
-                     mp)))
-                (when (memq 'label modes)
-                  (unless label-ids
-                    (raise-syntax-error
-                     #f
-                     "no corresponding for-label require"
-                     stx
-                     mp)))
+              (let ([idss
+                     (apply
+                      append
+                      (map (lambda (mode)
+                             (let ([r (syntax-local-module-required-identifiers (syntax->datum mp) 
+                                                                                mode)])
+                               (or r
+                                   (raise-syntax-error
+                                    #f
+                                    (format "no corresponding require~a"
+                                            (cond
+                                             [(eq? mode 0) ""]
+                                             [(not mode)
+                                              " at the label phase level"]
+                                             [else
+                                              (format " at phase level ~a" mode)]))
+                                    stx
+                                    mp))))
+                           (if (null? modes)
+                               '(0)
+                               modes)))]
+                    [ok-context? (lambda (id id=?)
+                                   (id=? id
+                                         (datum->syntax mp (syntax-e id))))]) 
                 (filter
                  values
-                 (append
-                  (map (lambda (id)
-                         (and (ok-context? id free-transformer-identifier=?)
-                              (make-export id (syntax-e id) 'syntax #f stx)))
-                       (if (or (null? modes)
-                               (memq 'syntax modes))
-                           (or stx-ids null)
-                           null))
-                  (map (lambda (id)
-                         (and (ok-context? id free-label-identifier=?)
-                              (make-export id (syntax-e id) 'label #f stx)))
-                       (if (or (null? modes)
-                               (memq 'label modes))
-                           (or label-ids null)
-                           null))
-                  (map (lambda (id)
-                         (and (ok-context? id free-identifier=?)
-                              (make-export id (syntax-e id) 'run #f stx)))
-                       (if (or (null? modes)
-                               (memq 'run modes))
-                           ids
-                           null))))))
+                 (apply
+                  append
+                  (map (lambda (ids)
+                         (let ([mode (car ids)])
+                           (map (lambda (id)
+                                  (and (free-identifier=? id (datum->syntax mp (syntax-e id))
+                                                          mode)
+                                       (make-export id (syntax-e id) mode #f stx)))
+                                (cdr ids))))
+                       idss)))))
             (syntax->list #'(mp ...))))]))))
   
   (define-syntax rename-out
@@ -672,12 +704,16 @@
                       (append orig-ids bind-ids))
             (apply
              append
-             (map (lambda (mode identifier-binding env-desc)
+             (map (lambda (mode)
                     (map (lambda (orig-id bind-id)
-                           (unless (list? (identifier-binding orig-id))
+                           (unless (list? (identifier-binding orig-id mode))
                              (raise-syntax-error
                               #f
-                              (format "no binding~a for identifier" env-desc)
+                              (format "no binding~a for identifier"
+                                      (cond
+                                       [(eq? mode 0) ""]
+                                       [(not mode) " in the label phase level"]
+                                       [(not mode) (format " at phase level ~a" mode)]))
                               stx
                               orig-id))
                            (make-export orig-id
@@ -687,24 +723,8 @@
                                         bind-id))
                          orig-ids bind-ids))
                   (if (null? modes)
-                      '(run)
-                      modes)
-                  (if (null? modes)
-                      (list identifier-binding)
-                      (map (lambda (mode)
-                             (cond
-                              [(eq? mode 'run) identifier-binding]
-                              [(eq? mode 'syntax) identifier-transformer-binding]
-                              [(eq? mode 'label) identifier-label-binding]))
-                           modes))
-                  (if (null? modes)
-                      (list "")
-                      (map (lambda (mode)
-                             (cond
-                              [(eq? mode 'run) ""]
-                              [(eq? mode 'syntax) " for-syntax"]
-                              [(eq? mode 'label) " for-label"]))
-                           modes)))))]))))
+                      '(0)
+                      modes))))]))))
 
   (define-syntax except-out
     (make-provide-transformer
@@ -728,26 +748,22 @@
                  "duplicate identifier"
                  stx
                  dup-id)))
-            (map (lambda (id)
-                   (or (ormap (lambda (export)
-                                (free-identifier=? id (export-local-id export)))
-                              exports)
-                       (raise-syntax-error
-                        #f
-                        (format "identifier `~a' not included in nested provide spec"
-                                (syntax-e id))
-                        stx
-                        #'out)))
-                 ids)
+            (for-each (lambda (id)
+                        (or (ormap (lambda (export)
+                                     (free-identifier=? id (export-local-id export)
+                                                        (export-mode export)))
+                                   exports)
+                            (raise-syntax-error
+                             #f
+                             (format "identifier `~a' not included in nested provide spec"
+                                     (syntax-e id))
+                             stx
+                             #'out)))
+                      ids)
             (filter (lambda (export)
                       (not (ormap (lambda (id)
-                                    ((let ([mode (export-mode export)])
-                                       (cond
-                                        [(eq? mode 'run) free-identifier=?]
-                                        [(eq? mode 'syntax) free-transformer-identifier=?]
-                                        [(eq? mode 'label) free-label-identifier=?]))
-                                     id 
-                                     (export-local-id export)))
+                                    (free-identifier=? id (export-local-id export)
+                                                       (export-mode export)))
                                   ids)))
                     exports))]))))
 
@@ -767,10 +783,10 @@
     (make-provide-transformer
      (lambda (stx modes)
        (unless (or (null? modes)
-                   (memq 'run modes))
+                   (equal? '(0) modes))
          (raise-syntax-error
           #f
-          "allowed only for run-time bindings"
+          "allowed only for phase level 0"
           stx))
        (syntax-case stx ()
          [(_ id)
@@ -805,9 +821,13 @@
                          ;; used a lot.
                          [avail-ids (append (let-values ([(ids _) (syntax-local-module-defined-identifiers)])
                                               ids)
-                                            (let-values ([(ids _ __)
-                                                          (syntax-local-module-required-identifiers #f #t #f #f)])
-                                              ids))]
+                                            (let ([idss (syntax-local-module-required-identifiers #f #t)])
+                                              (if idss
+                                                  (let ([a (assoc 0 idss)])
+                                                    (if a
+                                                        (cdr a)
+                                                        null))
+                                                  null)))]
                          [find-imported/defined (lambda (id)
                                                   (let ([ids (filter (lambda (id2)
                                                                        (and (free-identifier=? id2 id)
@@ -839,7 +859,7 @@
                                  (let ([id (find-imported/defined id)])
                                    (make-export id
                                                 (syntax-e id)
-                                                'run
+                                                0
                                                 #f
                                                 id))))
                           (append

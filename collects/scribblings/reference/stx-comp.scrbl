@@ -3,19 +3,30 @@
 
 @title[#:tag "stxcmp"]{Syntax Object Bindings}
 
-@defproc[(bound-identifier=? [a-id syntax?][b-id syntax?]) boolean?]{
+@defproc[(bound-identifier=? [a-id syntax?][b-id syntax?]
+                             [phase-level (or/c exact-integer? false/c)
+                                          (syntax-local-phase-level)])
+         boolean?]{
 
 Returns @scheme[#t] if the identifier @scheme[a-id] would bind
 @scheme[b-id] (or vice-versa) if the identifiers were substituted in a
-suitable expression context, @scheme[#f] otherwise.}
+suitable expression context at the @tech{phase level} indicated by
+@scheme[phase-level], @scheme[#f] otherwise. A @scheme[#f] value for
+@scheme[phase-level] corresponds to the @tech{label phase level}.}
 
 
-@defproc[(free-identifier=? [a-id syntax?][b-id syntax?]) boolean?]{
+@defproc[(free-identifier=? [a-id syntax?][b-id syntax?]
+                            [phase-level (or/c exact-integer? false/c)
+                                         (syntax-local-phase-level)])
+         boolean?]{
 
 Returns @scheme[#t] if @scheme[a-id] and @scheme[b-id] access the same
-lexical, module, or top-level binding at @tech{phase level} 0. ``Same
-module binding'' means that the identifiers refer to the same original
-definition site, not necessarily the @scheme[require] or
+lexical, module, or top-level binding at the @tech{phase level}
+indicated by @scheme[phase-level]. A @scheme[#f] value for
+@scheme[phase-level] corresponds to the @tech{label phase level}.
+
+``Same module binding'' means that the identifiers refer to the same
+original definition site, not necessarily the @scheme[require] or
 @scheme[provide] site. Due to renaming in @scheme[require] and
 @scheme[provide], the identifiers may return distinct results with
 @scheme[syntax-e].}
@@ -23,23 +34,15 @@ definition site, not necessarily the @scheme[require] or
 
 @defproc[(free-transformer-identifier=? [a-id syntax?][b-id syntax?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[a-id] and @scheme[b-id] access the same
-lexical, module, or top-level binding at @tech{phase level} 1 (see
-@secref["id-model"]).}
-
+Same as @scheme[(free-identifier=? a-id b-id (add1 (syntax-local-phase-level)))].}
 
 @defproc[(free-template-identifier=? [a-id syntax?][b-id syntax?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[a-id] and @scheme[b-id] access the same
-lexical or module binding at @tech{phase level} -1 (see
-@secref["id-model"]).}
-
+Same as @scheme[(free-identifier=? a-id b-id (sub1 (syntax-local-phase-level)))].}
 
 @defproc[(free-label-identifier=? [a-id syntax?][b-id syntax?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[a-id] and @scheme[b-id] access the same
-lexical or module binding at the @tech{label phase level} (see
-@secref["id-model"]).}
+Same as @scheme[(free-identifier=? a-id b-id #f)].}
 
 
 @defproc[(check-duplicate-identifier [ids (listof identifier?)])
@@ -52,33 +55,41 @@ first one in @scheme[ids] that is a duplicate), otherwise the result
 is @scheme[#f].}
 
 
-@defproc[(identifier-binding [id-stx syntax?])
+@defproc[(identifier-binding [id-stx syntax?]
+                             [phase-level (or/c exact-integer? false/c)
+                                          (syntax-local-phase-level)])
          (or/c (one-of 'lexical #f)
                (listof module-path-index?
                        symbol?
                        module-path-index?
                        symbol?
-                       boolean?
-                       (one-of/c #f 'for-syntax 'for-template)))]{
+                       (one-of/c 0 1)
+                       (or/c exact-integer? false/c)
+                       (or/c exact-integer? false/c)))]{
 
 Returns one of three kinds of values, depending on the binding of
-@scheme[id-stx] at @tech{phase level} 0:
+@scheme[id-stx] at the @tech{phase level} indicated by
+@scheme[phase-level] (where a @scheme[#f] value for
+@scheme[phase-level] corresponds to the @tech{label phase level}):
 
 @itemize{ 
 
       @item{The result is @indexed-scheme['lexical] if @scheme[id-stx]
-      has a @tech{local binding}.}
+      has a @tech{local binding}. If @scheme['lexical] is produced for
+      any @scheme[phase-level] value, then it is produced for all
+      @scheme[phase-level] values.}
 
       @item{The result is a list of six items when @scheme[id-stx]
-      has a @tech{module binding}: @scheme[(list source-mod source-id
-      nominal-source-mod nominal-source-id et? mode)].
+      has a @tech{module binding}: @scheme[(list _source-mod _source-id
+      _nominal-source-mod _nominal-source-id _source-phase _import-phase 
+      _nominal-export-phase)].
 
         @itemize{
 
-        @item{@scheme[source-mod] is a module path index (see
+        @item{@scheme[_source-mod] is a module path index (see
         @secref["modpathidx"]) that indicates the defining module.}
 
-        @item{@scheme[source-id] is a symbol for the identifier's name
+        @item{@scheme[_source-id] is a symbol for the identifier's name
         at its definition site in the source module. This can be
         different from the local name returned by
         @scheme[syntax->datum] for several reasons: the identifier is
@@ -86,27 +97,32 @@ Returns one of three kinds of values, depending on the binding of
         implicitly renamed because the identifier (or its import) was
         generated by a macro invocation.}
 
-        @item{@scheme[nominal-source-mod] is a module path index (see
+        @item{@scheme[_nominal-source-mod] is a module path index (see
         @secref["modpathidx"]) that indicates the module
         @scheme[require]d into the context of @scheme[id-stx] to
         provide its binding. It can be different from
-        @scheme[source-mod] due to a re-export in
-        @scheme[nominal-source-mod] of some imported identifier.}
+        @scheme[_source-mod] due to a re-export in
+        @scheme[_nominal-source-mod] of some imported identifier.  If
+        the same binding is imported in multiple ways, an arbitrary
+        representative is chosen.}
 
-        @item{@scheme[nominal-source-id] is a symbol for the
+        @item{@scheme[_nominal-source-id] is a symbol for the
         identifier's name as exported by
-        @scheme[nominal-source-mod]. It can be different from
-        @scheme[source-id] due to a renaming @scheme[provide], even if
-        @scheme[source-mod] and @scheme[nominal-source-mod] are the
+        @scheme[_nominal-source-mod]. It can be different from
+        @scheme[_source-id] due to a renaming @scheme[provide], even if
+        @scheme[_source-mod] and @scheme[_nominal-source-mod] are the
         same.}
 
-        @item{@scheme[et?] is @scheme[#t] if the source definition is
-        for-syntax, @scheme[#f] otherwise.}
+        @item{@scheme[_source-phase] is @scheme[1] if the source
+        definition is for-syntax, @scheme[0] otherwise.}
 
-        @item{@scheme[mode] is @scheme[#f] if the binding import is a
-        plain @scheme[require], @scheme['for-syntax] if it is from a
-        @scheme[for-syntax] import, or @scheme['for-template] if it is
-        from a @scheme[for-template] import.}
+        @item{@scheme[_import-phase] is @scheme[0] if the binding
+        import of @scheme[_nominal-source-mode] is a plain
+        @scheme[require], @scheme[1] if it is from a
+        @scheme[for-syntax] import, etc.}
+
+        @item{@scheme[_nominal-export-phase] is the @tech{phase level}
+        of the export from @scheme[_nominal-source-mod].}
 
         }}
 
@@ -121,17 +137,11 @@ Returns one of three kinds of values, depending on the binding of
                        symbol?
                        module-path-index?
                        symbol?
-                       boolean?
-                       (one-of/c #f 'for-syntax 'for-template)))]{
+                       (one-of/c 0 1)
+                       (or/c exact-integer? false/c)
+                       (or/c exact-integer? false/c)))]{
 
-Like @scheme[identifier-binding], but that the reported information is
-for the identifier's binding in @tech{phase level} 1 (see
-@secref["id-model"]).
-
-If the result is @scheme['lexical] for either of
-@scheme[identifier-binding] or
-@scheme[identifier-transformer-binding], then the result is always
-@scheme['lexical] for both.}
+Same as @scheme[(identifier-binding id-stx (add1 (syntax-local-phase-level)))].}
 
 
 @defproc[(identifier-template-binding [id-stx syntax?])
@@ -140,32 +150,22 @@ If the result is @scheme['lexical] for either of
                        symbol?
                        module-path-index?
                        symbol?
-                       boolean?
-                       (one-of/c #f 'for-syntax 'for-template)))]{
+                       (one-of/c 0 1)
+                       (or/c exact-integer? false/c)
+                       (or/c exact-integer? false/c)))]{
 
-Like @scheme[identifier-binding], but that the reported information is
-for the identifier's binding in @tech{phase level} -1 (see
-@secref["id-model"]).
-
-If the result is @scheme['lexical] for either of
-@scheme[identifier-binding] or
-@scheme[identifier-template-binding], then the result is always
-@scheme['lexical] for both.}
+Same as @scheme[(identifier-binding id-stx (sub1 (syntax-local-phase-level)))].}
 
 
 @defproc[(identifier-label-binding [id-stx syntax?])
-         (or/c false/c
-               (listof (or/c module-path-index? symbol?)
+         (or/c (one-of 'lexical #f)
+               (listof module-path-index?
                        symbol?
-                       (or/c module-path-index? symbol?)
+                       module-path-index?
                        symbol?
-                       boolean?
-                       (one-of/c #f 'for-label)))]{
+                       (one-of/c 0 1)
+                       (or/c exact-integer? false/c)
+                       (or/c exact-integer? false/c)))]{
 
-Like @scheme[identifier-binding], but that the reported information is
-for the identifier's binding in the @tech{label phase level} (see
-@secref["id-model"]). 
-
-Unlike @scheme[identifier-binding], the result cannot be
-@scheme['lexical].}
+Same as @scheme[(identifier-binding id-stx #f)].}
 

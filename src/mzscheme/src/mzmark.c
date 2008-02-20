@@ -2054,15 +2054,11 @@ static int namespace_val_MARK(void *p) {
   gcMARK(e->export_registry);
   gcMARK(e->insp);
 
-  gcMARK(e->rename);
-  gcMARK(e->et_rename);
-  gcMARK(e->tt_rename);
-  gcMARK(e->dt_rename);
+  gcMARK(e->rename_set);
 
   gcMARK(e->syntax);
   gcMARK(e->exp_env);
   gcMARK(e->template_env);
-  gcMARK(e->label_env);
 
   gcMARK(e->shadowed_syntax);
 
@@ -2071,13 +2067,13 @@ static int namespace_val_MARK(void *p) {
   gcMARK(e->et_require_names);
   gcMARK(e->tt_require_names);
   gcMARK(e->dt_require_names);
+  gcMARK(e->other_require_names);
 
   gcMARK(e->toplevel);
   gcMARK(e->modchain);
 
   gcMARK(e->modvars);
 
-  gcMARK(e->marked_names);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -2091,15 +2087,11 @@ static int namespace_val_FIXUP(void *p) {
   gcFIXUP(e->export_registry);
   gcFIXUP(e->insp);
 
-  gcFIXUP(e->rename);
-  gcFIXUP(e->et_rename);
-  gcFIXUP(e->tt_rename);
-  gcFIXUP(e->dt_rename);
+  gcFIXUP(e->rename_set);
 
   gcFIXUP(e->syntax);
   gcFIXUP(e->exp_env);
   gcFIXUP(e->template_env);
-  gcFIXUP(e->label_env);
 
   gcFIXUP(e->shadowed_syntax);
 
@@ -2108,13 +2100,13 @@ static int namespace_val_FIXUP(void *p) {
   gcFIXUP(e->et_require_names);
   gcFIXUP(e->tt_require_names);
   gcFIXUP(e->dt_require_names);
+  gcFIXUP(e->other_require_names);
 
   gcFIXUP(e->toplevel);
   gcFIXUP(e->modchain);
 
   gcFIXUP(e->modvars);
 
-  gcFIXUP(e->marked_names);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -2324,6 +2316,7 @@ static int module_val_MARK(void *p) {
   gcMARK(m->requires);
   gcMARK(m->tt_requires);
   gcMARK(m->dt_requires);
+  gcMARK(m->other_requires);
 
   gcMARK(m->body);
   gcMARK(m->et_body);
@@ -2351,9 +2344,6 @@ static int module_val_MARK(void *p) {
   gcMARK(m->dummy);
 
   gcMARK(m->rn_stx);
-  gcMARK(m->et_rn_stx);
-  gcMARK(m->tt_rn_stx);
-  gcMARK(m->dt_rn_stx);
 
   gcMARK(m->primitive);
   return
@@ -2368,6 +2358,7 @@ static int module_val_FIXUP(void *p) {
   gcFIXUP(m->requires);
   gcFIXUP(m->tt_requires);
   gcFIXUP(m->dt_requires);
+  gcFIXUP(m->other_requires);
 
   gcFIXUP(m->body);
   gcFIXUP(m->et_body);
@@ -2395,9 +2386,6 @@ static int module_val_FIXUP(void *p) {
   gcFIXUP(m->dummy);
 
   gcFIXUP(m->rn_stx);
-  gcFIXUP(m->et_rn_stx);
-  gcFIXUP(m->tt_rn_stx);
-  gcFIXUP(m->dt_rn_stx);
 
   gcFIXUP(m->primitive);
   return
@@ -2415,6 +2403,8 @@ static int module_phase_exports_val_SIZE(void *p) {
 
 static int module_phase_exports_val_MARK(void *p) {
   Scheme_Module_Phase_Exports *m = (Scheme_Module_Phase_Exports *)p;
+
+  gcMARK(m->phase_index);
 
   gcMARK(m->src_modidx);
 
@@ -2435,6 +2425,8 @@ static int module_phase_exports_val_MARK(void *p) {
 
 static int module_phase_exports_val_FIXUP(void *p) {
   Scheme_Module_Phase_Exports *m = (Scheme_Module_Phase_Exports *)p;
+
+  gcFIXUP(m->phase_index);
 
   gcFIXUP(m->src_modidx);
 
@@ -2468,6 +2460,7 @@ static int module_exports_val_MARK(void *p) {
   gcMARK(m->rt);
   gcMARK(m->et);
   gcMARK(m->dt);
+  gcMARK(m->other_phases);
 
   gcMARK(m->src_modidx);
   return
@@ -2480,6 +2473,7 @@ static int module_exports_val_FIXUP(void *p) {
   gcFIXUP(m->rt);
   gcFIXUP(m->et);
   gcFIXUP(m->dt);
+  gcFIXUP(m->other_phases);
 
   gcFIXUP(m->src_modidx);
   return
@@ -4842,6 +4836,7 @@ static int mark_rename_table_SIZE(void *p) {
 
 static int mark_rename_table_MARK(void *p) {
   Module_Renames *rn = (Module_Renames *)p;
+  gcMARK(rn->phase);
   gcMARK(rn->ht);
   gcMARK(rn->nomarshal_ht);
   gcMARK(rn->unmarshal_info);
@@ -4854,6 +4849,7 @@ static int mark_rename_table_MARK(void *p) {
 
 static int mark_rename_table_FIXUP(void *p) {
   Module_Renames *rn = (Module_Renames *)p;
+  gcFIXUP(rn->phase);
   gcFIXUP(rn->ht);
   gcFIXUP(rn->nomarshal_ht);
   gcFIXUP(rn->unmarshal_info);
@@ -4866,6 +4862,35 @@ static int mark_rename_table_FIXUP(void *p) {
 
 #define mark_rename_table_IS_ATOMIC 0
 #define mark_rename_table_IS_CONST_SIZE 1
+
+
+static int mark_rename_table_set_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
+}
+
+static int mark_rename_table_set_MARK(void *p) {
+  Module_Renames_Set *rns = (Module_Renames_Set *)p;
+  gcMARK(rns->et);
+  gcMARK(rns->rt);
+  gcMARK(rns->other_phases);
+  gcMARK(rns->share_marked_names);
+  return
+  gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
+}
+
+static int mark_rename_table_set_FIXUP(void *p) {
+  Module_Renames_Set *rns = (Module_Renames_Set *)p;
+  gcFIXUP(rns->et);
+  gcFIXUP(rns->rt);
+  gcFIXUP(rns->other_phases);
+  gcFIXUP(rns->share_marked_names);
+  return
+  gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
+}
+
+#define mark_rename_table_set_IS_ATOMIC 0
+#define mark_rename_table_set_IS_CONST_SIZE 1
 
 
 static int mark_srcloc_SIZE(void *p) {

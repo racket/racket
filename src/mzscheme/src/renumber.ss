@@ -1,3 +1,4 @@
+#lang scheme/base
 
 (define filename "stypes.h")
 

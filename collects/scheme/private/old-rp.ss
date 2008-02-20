@@ -38,13 +38,13 @@
                   (if for-stx
                       (with-syntax ([for for-stx])
                         (syntax/loc stx
-                          (#%require (for elem ...))))
+                          (#%require (for-meta for (just-meta 0 elem ...)))))
                       (syntax/loc stx
                         (#%require elem ...)))])))])
       (values (mk #f)
-              (mk #'for-syntax)
-              (mk #'for-template)
-              (mk #'for-label))))
+              (mk #'1)
+              (mk #'-1)
+              (mk #'#f))))
 
   (define-syntaxes (provide provide-for-syntax provide-for-label)
     (let ([mk

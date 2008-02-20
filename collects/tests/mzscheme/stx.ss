@@ -445,11 +445,11 @@
                (cdddr b))
         b)))
 
-(test '('#%kernel case-lambda (lib "scheme/init") case-lambda #f #f)  identifier-binding* #'case-lambda)
-(test '(scheme/promise delay (lib "scheme/init") delay #f #f)  identifier-binding* #'delay)
-(test '('#%kernel #%module-begin (lib "scheme/init") #%plain-module-begin #f #f)  identifier-binding* #'#%plain-module-begin)
+(test '('#%kernel case-lambda (lib "scheme/init") case-lambda 0 0 0)  identifier-binding* #'case-lambda)
+(test '(scheme/promise delay (lib "scheme/init") delay 0 0 0)  identifier-binding* #'delay)
+(test '('#%kernel #%module-begin (lib "scheme/init") #%plain-module-begin 0 0 0)  identifier-binding* #'#%plain-module-begin)
 (require (only-in scheme/base [#%plain-module-begin #%pmb]))
-(test '('#%kernel #%module-begin scheme/base #%plain-module-begin #f #f)  identifier-binding* #'#%pmb)
+(test '('#%kernel #%module-begin scheme/base #%plain-module-begin 0 0 0)  identifier-binding* #'#%pmb)
 
 (let ([b (identifier-binding (syntax-case (expand #'(module m scheme/base
 						      (require (only-in (lib "lang/htdp-intermediate.ss") [cons bcons]))
@@ -1274,6 +1274,97 @@
   (def-y))
 
 ;; If we get here, then macro expansion didn't fail.
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that the free-identifier=? cache doesn't kick in too eagerly.
+
+(module @w@ scheme/base
+  (define add '+)
+  
+  (provide (rename-out [add plus])))
+
+(module @q@ scheme/base
+  (require (for-syntax scheme/base))
+  (provide result)
+  
+  (define-for-syntax a #'plus)
+  (define-for-syntax b #'plus)
+
+  (define-for-syntax accum null)
+  
+  (begin-for-syntax 
+   (set! accum (cons (free-identifier=? a #'plus)
+                     accum)))
+
+  (require '@w@)
+
+  (begin-for-syntax 
+   (set! accum (list*
+                (free-identifier=? a #'plus)
+                (free-identifier=? b #'plus)
+                accum)))
+
+  (define-syntax (accumulated stx)
+    (datum->syntax stx `',accum))
+
+  (define result (accumulated)))
+
+(require '@q@)
+(test '(#t #t #t) values result)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Test namespace-attach with phase-levels -2 and 2
+
+(when (file-exists? "tmp10")
+  (delete-file "tmp10"))
+
+(module @!a scheme/base
+  (provide x)
+  (with-output-to-file "tmp10" 
+    #:exists 'append
+    (lambda ()
+      (printf "a\n")))
+  (define x 5))
+
+(module @!b scheme/base
+  (provide get-x)
+  (require (for-meta -2 '@!a))
+  (define (get-x) #'x))
+
+(module @!c scheme/base
+  (require (for-meta 2 '@!b)
+           (for-syntax scheme/base
+                       (for-syntax scheme/base)))
+  (define-syntax (foo stx)
+    (let-syntax ([ref-x (lambda (stx)
+                          #`(quote-syntax #,(get-x)))])
+      (ref-x)))
+  
+  (with-output-to-file "tmp10" 
+    #:exists 'append
+    (lambda ()
+      (printf "~s\n" (foo)))))
+
+(define (check-tmp10 s)
+  (test s with-input-from-file "tmp10" (lambda () (read-string 1000))))
+
+(require '@!c)
+(check-tmp10 "a\n5\n")
+
+(let ()
+  (define n (make-base-namespace))
+  (namespace-attach-module (current-namespace) ''@!c n)
+  (test 5
+        'use-a
+        (parameterize ([current-namespace n])
+          ;; Shouldn't instantiate new:
+          (namespace-require ''@!a)
+          ;; Should see `x' from @!a:
+          (eval 'x)))
+  (check-tmp10 "a\n5\n"))
+
+(when (file-exists? "tmp10")
+  (delete-file "tmp10"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

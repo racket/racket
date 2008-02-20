@@ -79,10 +79,12 @@ static Scheme_Object *namespace_module_registry(int, Scheme_Object *[]);
 static Scheme_Object *variable_module_path(int, Scheme_Object *[]);
 static Scheme_Object *variable_namespace(int, Scheme_Object *[]);
 static Scheme_Object *variable_top_level_namespace(int, Scheme_Object *[]);
+static Scheme_Object *variable_phase(int, Scheme_Object *[]);
 static Scheme_Object *now_transforming(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_exp_time_value(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_exp_time_name(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_context(int argc, Scheme_Object *argv[]);
+static Scheme_Object *local_phase_level(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_make_intdef_context(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_introduce(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_introduce(int argc, Scheme_Object *argv[]);
@@ -530,7 +532,11 @@ static void make_init_env(void)
 						      "variable-reference->top-level-namespace",
 						      1, 1),
 			     env);
-
+  scheme_add_global_constant("variable-reference->phase",
+			     scheme_make_prim_w_arity(variable_phase,
+						      "variable-reference->phase",
+						      1, 1),
+			     env);
 
   scheme_add_global_constant("syntax-transforming?", 
 			     scheme_make_prim_w_arity(now_transforming,
@@ -550,6 +556,11 @@ static void make_init_env(void)
   scheme_add_global_constant("syntax-local-context", 
 			     scheme_make_prim_w_arity(local_context,
 						      "syntax-local-context",
+						      0, 0),
+			     env);
+  scheme_add_global_constant("syntax-local-phase-level", 
+			     scheme_make_prim_w_arity(local_phase_level,
+						      "syntax-local-phase-level",
 						      0, 0),
 			     env);
   scheme_add_global_constant("syntax-local-make-definition-context", 
@@ -591,7 +602,7 @@ static void make_init_env(void)
   scheme_add_global_constant("syntax-local-module-required-identifiers", 
 			     scheme_make_prim_w_arity(local_module_imports,
 						      "syntax-local-module-required-identifiers",
-						      4, 4),
+						      2, 2),
 			     env);
   scheme_add_global_constant("syntax-local-transforming-module-provides?", 
 			     scheme_make_prim_w_arity(local_module_expanding_provides,
@@ -709,20 +720,14 @@ static void skip_certain_things(Scheme_Object *o, Scheme_Close_Custodian_Client 
 /*                        namespace constructors                          */
 /*========================================================================*/
 
-static void create_env_marked_names(Scheme_Env *e)
+void scheme_prepare_env_renames(Scheme_Env *env, int kind)
 {
-  Scheme_Hash_Table *mn;
-  Scheme_Object *rn;
+  if (!env->rename_set) {
+    Scheme_Object *rns;
 
-  /* Set up a rename table, in case an identifier with a let-binding
-     renaming ends up in a definition position: */
-
-  mn = scheme_make_hash_table(SCHEME_hash_ptr);
-  scheme_hash_set(mn, scheme_false, scheme_null);
-  e->marked_names = mn;
-
-  rn = scheme_make_module_rename(e->phase, mzMOD_RENAME_TOPLEVEL, mn);
-  e->rename = rn;
+    rns = scheme_make_module_rename_set(kind, NULL);
+    env->rename_set = rns;
+  }
 }
 
 Scheme_Env *scheme_make_empty_env(void)
@@ -730,7 +735,6 @@ Scheme_Env *scheme_make_empty_env(void)
   Scheme_Env *e; 
 
   e = make_env(NULL, 0, 7);
-  create_env_marked_names(e);
 
   return e;
 }
@@ -843,8 +847,11 @@ void scheme_prepare_exp_env(Scheme_Env *env)
     env->exp_env = eenv;
     eenv->template_env = env;
 
-    if (!env->module && !env->phase)
-      create_env_marked_names(eenv);
+    scheme_prepare_env_renames(env, mzMOD_RENAME_TOPLEVEL);
+    eenv->rename_set = env->rename_set;
+
+    if (env->disallow_unbound)
+      eenv->disallow_unbound = 1;
   }
 }
 
@@ -875,26 +882,19 @@ void scheme_prepare_template_env(Scheme_Env *env)
     }
     eenv->modchain = modchain;
 
+    scheme_prepare_env_renames(env, mzMOD_RENAME_TOPLEVEL);
+    eenv->rename_set = env->rename_set;
+
     env->template_env = eenv;
-    eenv->exp_env = env;
+    eenv->exp_env = env;       
+
+    if (env->disallow_unbound)
+      eenv->disallow_unbound = 1;
   }
 }
 
 void scheme_prepare_label_env(Scheme_Env *env)
 {
-  if (!env->label_env) {
-    /* Used only for its marked_names table */
-    Scheme_Env *lenv;
-    lenv = make_env(NULL, 1, 7);
-    lenv->phase = MZ_LABEL_PHASE;
-    lenv->mod_phase = MZ_LABEL_PHASE;
-    env->label_env = lenv;
-    lenv->module = env->module;
-    lenv->module_registry = env->module_registry;
-    lenv->export_registry = env->export_registry;
-    lenv->insp = env->insp;
-    lenv->modchain = env->modchain;
-  }
 }
 
 Scheme_Env *scheme_clone_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Object *modchain)
@@ -1115,22 +1115,31 @@ scheme_add_global_keyword_symbol(Scheme_Object *name, Scheme_Object *obj,
 
 void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
 {
-  if (env->rename) {
-    scheme_remove_module_rename(env->rename, n);
-    if (env->module) {
-      scheme_extend_module_rename(env->rename,
-				  env->module->self_modidx,
-				  n, n,
-				  env->module->self_modidx,
-				  n,
-				  env->mod_phase,
-                                  -1,
-				  0);
+  Scheme_Object *rn;
+
+  if (env->rename_set) {
+    rn = scheme_get_module_rename_from_set(env->rename_set,
+                                           scheme_make_integer(env->phase),
+                                           0);
+    if (rn) {
+      scheme_remove_module_rename(rn, n);
+      if (env->module) {
+        scheme_extend_module_rename(rn,
+                                    env->module->self_modidx,
+                                    n, n,
+                                    env->module->self_modidx,
+                                    n,
+                                    env->mod_phase,
+                                    NULL,
+                                    NULL,
+                                    0);
+      }
     }
-  }
+  } else
+    rn = NULL;
 
   if (stxtoo) {
-    if (!env->module || env->rename) {
+    if (!env->module || rn) {
       if (!env->shadowed_syntax) {
 	Scheme_Hash_Table *ht;
 	ht = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -1732,7 +1741,7 @@ Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modid
   return val;
 }
 
-Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int is_def)
+Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int is_def, Scheme_Object *phase)
 /* The `env' argument can actually be a hash table. */
 {
   Scheme_Object *marks = NULL, *sym, *map, *l, *a, *amarks, *m, *best_match, *cm, *abdg;
@@ -1745,9 +1754,11 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
     marked_names = (Scheme_Hash_Table *)env;
   else {
     /* If there's no table and we're not defining, bail out fast */
-    if (!is_def && !env->marked_names)
+    if (!is_def && !env->rename_set)
       return sym;
-    marked_names = env->marked_names;
+    marked_names = scheme_get_module_rename_marked_names(env->rename_set,
+                                                         phase ? phase : scheme_make_integer(env->phase),
+                                                         0);
   }
 
   if (is_def) {
@@ -1762,8 +1773,10 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
   }
 
   if (!marked_names) {
-    marked_names = scheme_make_hash_table(SCHEME_hash_ptr);
-    env->marked_names = marked_names;
+    scheme_prepare_env_renames(env, mzMOD_RENAME_TOPLEVEL);
+    marked_names = scheme_get_module_rename_marked_names(env->rename_set,
+                                                         phase ? phase : scheme_make_integer(env->phase),
+                                                         1);
   }
   
   map = scheme_hash_get(marked_names, sym);
@@ -1865,7 +1878,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
        existing rename. */
     if (!SCHEME_HASHTP((Scheme_Object *)env) && env->module && (is_def != 2)) {
       Scheme_Object *mod, *nm = id;
-      mod = scheme_stx_module_name(&nm, env->phase, NULL, NULL, NULL, NULL);
+      mod = scheme_stx_module_name(&nm, scheme_make_integer(env->phase), NULL, NULL, NULL, NULL, NULL);
       if (mod /* must refer to env->module, otherwise there would
 		 have been an error before getting here */
 	  && NOT_SAME_OBJ(nm, sym))
@@ -2331,9 +2344,10 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
                       Scheme_Object **_lexical_binding_id)
 {
   Scheme_Comp_Env *frame;
-  int j = 0, p = 0, modpos, skip_stops = 0, mod_defn_phase, module_self_reference = 0;
+  int j = 0, p = 0, modpos, skip_stops = 0, module_self_reference = 0;
   Scheme_Bucket *b;
-  Scheme_Object *val, *modidx, *modname, *src_find_id, *find_global_id;
+  Scheme_Object *val, *modidx, *modname, *src_find_id, *find_global_id, *mod_defn_phase;
+  Scheme_Object *find_id_sym = NULL;
   Scheme_Env *genv;
   long phase;
 
@@ -2372,16 +2386,20 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
       uid = scheme_env_frame_uid(frame);
 
+      if (!find_id_sym 
+          && (frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME))
+        find_id_sym = scheme_stx_get_module_eq_sym(find_id, scheme_make_integer(phase));
+
       for (i = frame->num_bindings; i--; ) {
 	if (frame->values[i]) {
 	  if (frame->uids) 
 	    uid = frame->uids[i];
 	  if (SAME_OBJ(SCHEME_STX_VAL(find_id), SCHEME_STX_VAL(frame->values[i]))
-	      && (scheme_stx_env_bound_eq(find_id, frame->values[i], uid, phase)
+	      && (scheme_stx_env_bound_eq(find_id, frame->values[i], uid, scheme_make_integer(phase))
 		  || ((frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME)
-		      && scheme_stx_module_eq(find_id, frame->values[i], phase))
+		      && scheme_stx_module_eq2(find_id, frame->values[i], scheme_make_integer(phase), find_id_sym))
 		  || ((frame->flags & SCHEME_CAPTURE_LIFTED)
-		      && scheme_stx_bound_eq(find_id, frame->values[i], phase)))) {
+		      && scheme_stx_bound_eq(find_id, frame->values[i], scheme_make_integer(phase))))) {
 	    /* Found a lambda-, let-, etc. bound variable: */
 	    /* First, check certs (don't bind with fewer certs): */
 	    if (!(flags & SCHEME_NO_CERT_CHECKS) 
@@ -2414,12 +2432,14 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       for (i = COMPILE_DATA(frame)->num_const; i--; ) {
 	int issame;
 	if (frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME)
-	  issame = scheme_stx_module_eq(find_id, COMPILE_DATA(frame)->const_names[i], phase);
-	else {
+	  issame = scheme_stx_module_eq2(find_id, COMPILE_DATA(frame)->const_names[i], 
+                                         scheme_make_integer(phase), find_id_sym);
+        else {
 	  if (COMPILE_DATA(frame)->const_uids) uid = COMPILE_DATA(frame)->const_uids[i];
 	  issame = (SAME_OBJ(SCHEME_STX_VAL(find_id), 
 			     SCHEME_STX_VAL(COMPILE_DATA(frame)->const_names[i]))
-		    && scheme_stx_env_bound_eq(find_id, COMPILE_DATA(frame)->const_names[i], uid, phase));
+		    && scheme_stx_env_bound_eq(find_id, COMPILE_DATA(frame)->const_names[i], uid, 
+                                               scheme_make_integer(phase)));
 	}
       
 	if (issame) {
@@ -2466,7 +2486,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   }
 
   src_find_id = find_id;
-  modidx = scheme_stx_module_name(&find_id, phase, NULL, NULL, &mod_defn_phase, NULL);
+  modidx = scheme_stx_module_name(&find_id, scheme_make_integer(phase), NULL, NULL, &mod_defn_phase, NULL, NULL);
 
   /* Used out of context? */
   if (SAME_OBJ(modidx, scheme_undefined)) {
@@ -2488,7 +2508,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	 and references to top-level definitions: */
       module_self_reference = 1;
     } else {
-      genv = scheme_module_access(modname, env->genv, mod_defn_phase);
+      genv = scheme_module_access(modname, env->genv, SCHEME_INT_VAL(mod_defn_phase));
 
       if (!genv) {
 	if (env->genv->phase) {
@@ -2496,14 +2516,14 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	     execution. Force all laziness at the prior level 
 	     and try again. */
 	  scheme_module_force_lazy(env->genv, 1);
-	  genv = scheme_module_access(modname, env->genv, mod_defn_phase);
+	  genv = scheme_module_access(modname, env->genv, SCHEME_INT_VAL(mod_defn_phase));
 	}
 
 	if (!genv) {
 	  scheme_wrong_syntax("require", NULL, src_find_id, 
                               "namespace mismatch; reference (phase %d) to a module"
                               " %D that is not available (phase %d)", 
-			      env->genv->phase, modname, mod_defn_phase);
+			      env->genv->phase, modname, SCHEME_INT_VAL(mod_defn_phase));
 	  return NULL;
 	}
       }
@@ -2512,7 +2532,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     genv = env->genv;
     modname = NULL;
 
-    if (genv->module && !genv->rename) {
+    if (genv->module && genv->disallow_unbound) {
       /* Free variable. Maybe don't continue. */
       if (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) {
         scheme_wrong_syntax(((flags & SCHEME_SETTING) 
@@ -2530,7 +2550,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     *_menv = genv;
   
   if (!modname && SCHEME_STXP(find_id))
-    find_global_id = scheme_tl_id_sym(env->genv, find_id, NULL, 0);
+    find_global_id = scheme_tl_id_sym(env->genv, find_id, NULL, 0, NULL);
   else
     find_global_id = find_id;
 
@@ -2576,7 +2596,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     return NULL;
   }
 
-  if (!modname && (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) && (genv->module && !genv->rename)) {
+  if (!modname && (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) 
+      && (genv->module && genv->disallow_unbound)) {
     /* Check for set! of unbound variable: */    
     if (!scheme_lookup_in_table(genv->toplevel, (const char *)find_global_id)) {
       scheme_wrong_syntax(((flags & SCHEME_SETTING) 
@@ -2610,7 +2631,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     /* Create a module variable reference, so that idx is preserved: */
     return scheme_hash_module_variable(env->genv, modidx, find_id, 
 				       genv->module->insp,
-				       modpos, mod_defn_phase);
+				       modpos, SCHEME_INT_VAL(mod_defn_phase));
   }
 
   if (!modname && (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) && genv->module) {
@@ -2693,7 +2714,7 @@ void scheme_dup_symbol_check(DupCheckRecord *r, const char *where,
 
   if (r->count <= 5) {
     for (i = 0; i < r->count; i++) {
-      if (scheme_stx_bound_eq(symbol, r->syms[i], r->phase))
+      if (scheme_stx_bound_eq(symbol, r->syms[i], scheme_make_integer(r->phase)))
 	scheme_wrong_syntax(where, symbol, form,
 			    "duplicate %s name", what);
     }
@@ -2729,7 +2750,7 @@ int scheme_check_context(Scheme_Env *env, Scheme_Object *name, Scheme_Object *ok
   if (mod && SCHEME_TRUEP(mod) && NOT_SAME_OBJ(ok_modidx, mod)) {
     return 1;
   } else {
-    mod = scheme_stx_module_name(&id, env->phase, NULL, NULL, NULL, NULL);
+    mod = scheme_stx_module_name(&id, scheme_make_integer(env->phase), NULL, NULL, NULL, NULL, NULL);
     if (SAME_OBJ(mod, scheme_undefined))
       return 1;
   }
@@ -3614,10 +3635,8 @@ namespace_identifier(int argc, Scheme_Object *argv[])
   obj = scheme_datum_to_syntax(obj, scheme_false, scheme_false, 1, 0);
 
   /* Renamings: */
-  if (genv->rename)
-    obj = scheme_add_rename(obj, genv->rename);
-  if (genv->exp_env && genv->exp_env->rename)
-    obj = scheme_add_rename(obj, genv->exp_env->rename);
+  if (genv->rename_set)
+    obj = scheme_add_rename(obj, genv->rename_set);
 
   return obj;
 }
@@ -3648,7 +3667,9 @@ namespace_variable_value(int argc, Scheme_Object *argv[])
   else {
     Scheme_Full_Comp_Env inlined_e;
 
-    id = scheme_make_renamed_stx(argv[0], genv->rename);
+    scheme_prepare_env_renames(genv, mzMOD_RENAME_TOPLEVEL);
+
+    id = scheme_make_renamed_stx(argv[0], genv->rename_set);
 
     inlined_e.base.num_bindings = 0;
     inlined_e.base.next = NULL;
@@ -3774,8 +3795,8 @@ namespace_mapped_symbols(int argc, Scheme_Object *argv[])
     }
   }
 
-  if (env->rename)
-    scheme_list_module_rename(env->rename, mapped);
+  if (env->rename_set)
+    scheme_list_module_rename(env->rename_set, mapped);
 
   l = scheme_null;
   for (i = mapped->size; i--; ) {
@@ -3816,7 +3837,9 @@ static Scheme_Object *do_variable_namespace(const char *who, int tl, int argc, S
                       0, argc, argv);
 
   ph = env->phase;
-  if (tl) {
+  if (tl == 2) {
+    return scheme_make_integer(ph);
+  } else if (tl) {
     while (ph--) {
       env = env->template_env;
     }
@@ -3844,6 +3867,11 @@ static Scheme_Object *variable_namespace(int argc, Scheme_Object *argv[])
 static Scheme_Object *variable_top_level_namespace(int argc, Scheme_Object *argv[])
 {
   return do_variable_namespace("variable-reference->top-level-namespace", 1, argc, argv);
+}
+
+static Scheme_Object *variable_phase(int argc, Scheme_Object *argv[])
+{
+  return do_variable_namespace("variable-reference->phase", 2, argc, argv);
 }
 
 static Scheme_Object *variable_module_path(int argc, Scheme_Object *argv[])
@@ -4017,6 +4045,19 @@ local_context(int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
+local_phase_level(int argc, Scheme_Object *argv[])
+{
+  Scheme_Thread *p = scheme_current_thread;
+  int phase;
+
+  phase = (p->current_local_env
+           ? p->current_local_env->genv->phase
+           : 0);
+
+  return scheme_make_integer(phase);
+}
+
+static Scheme_Object *
 local_make_intdef_context(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env;
@@ -4079,22 +4120,9 @@ local_module_introduce(int argc, Scheme_Object *argv[])
 	v = scheme_stx_to_rename(env->genv->module->rn_stx);
 	s = scheme_add_rename(s, v);
       }
-      if (env->genv->module->et_rn_stx && !SAME_OBJ(scheme_true, env->genv->module->et_rn_stx)) {
-	v = scheme_stx_to_rename(env->genv->module->et_rn_stx);
-	s = scheme_add_rename(s, v);
-      }
-      if (env->genv->module->dt_rn_stx && !SAME_OBJ(scheme_true, env->genv->module->dt_rn_stx)) {
-	v = scheme_stx_to_rename(env->genv->module->dt_rn_stx);
-	s = scheme_add_rename(s, v);
-      }
     } else {
-      if (env->genv->rename)
-	s = scheme_add_rename(s, env->genv->rename);
-      if (env->genv->et_rename)
-	s = scheme_add_rename(s, env->genv->et_rename);
-      if (env->genv->dt_rename) {
-	s = scheme_add_rename(s, env->genv->dt_rename);
-      }
+      if (env->genv->rename_set)
+	s = scheme_add_rename(s, env->genv->rename_set);
     }
   }
 
@@ -4326,12 +4354,16 @@ local_module_imports(int argc, Scheme_Object *argv[])
   if (SCHEME_TRUEP(argv[0]) && !scheme_is_module_path(argv[0]))
     scheme_wrong_type("syntax-local-module-required-identifiers", "module-path or #f", 0, argc, argv);
   
+  if (!SCHEME_FALSEP(argv[1]) 
+      && !SAME_OBJ(scheme_true, argv[1])
+      && !SCHEME_INTP(argv[1])
+      && !SCHEME_BIGNUMP(argv[1]))
+    scheme_wrong_type("syntax-local-module-required-identifiers", "exact integer, #f, or #t", 1, argc, argv);
+  
   return scheme_module_imported_list(scheme_current_thread->current_local_env->genv,
                                      scheme_current_thread->current_local_bindings,
                                      argv[0],
-                                     SCHEME_TRUEP(argv[1]),
-                                     SCHEME_TRUEP(argv[2]),
-                                     SCHEME_TRUEP(argv[3]));
+                                     argv[1]);
 }
 
 static Scheme_Object *

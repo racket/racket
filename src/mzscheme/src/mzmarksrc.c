@@ -814,15 +814,11 @@ namespace_val {
   gcMARK(e->export_registry);
   gcMARK(e->insp);
 
-  gcMARK(e->rename);
-  gcMARK(e->et_rename);
-  gcMARK(e->tt_rename);
-  gcMARK(e->dt_rename);
+  gcMARK(e->rename_set);
 
   gcMARK(e->syntax);
   gcMARK(e->exp_env);
   gcMARK(e->template_env);
-  gcMARK(e->label_env);
 
   gcMARK(e->shadowed_syntax);
 
@@ -831,13 +827,13 @@ namespace_val {
   gcMARK(e->et_require_names);
   gcMARK(e->tt_require_names);
   gcMARK(e->dt_require_names);
+  gcMARK(e->other_require_names);
 
   gcMARK(e->toplevel);
   gcMARK(e->modchain);
 
   gcMARK(e->modvars);
 
-  gcMARK(e->marked_names);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -921,6 +917,7 @@ module_val {
   gcMARK(m->requires);
   gcMARK(m->tt_requires);
   gcMARK(m->dt_requires);
+  gcMARK(m->other_requires);
 
   gcMARK(m->body);
   gcMARK(m->et_body);
@@ -948,9 +945,6 @@ module_val {
   gcMARK(m->dummy);
 
   gcMARK(m->rn_stx);
-  gcMARK(m->et_rn_stx);
-  gcMARK(m->tt_rn_stx);
-  gcMARK(m->dt_rn_stx);
 
   gcMARK(m->primitive);
  size:
@@ -960,6 +954,8 @@ module_val {
 module_phase_exports_val {
  mark:
   Scheme_Module_Phase_Exports *m = (Scheme_Module_Phase_Exports *)p;
+
+  gcMARK(m->phase_index);
 
   gcMARK(m->src_modidx);
 
@@ -985,6 +981,7 @@ module_exports_val {
   gcMARK(m->rt);
   gcMARK(m->et);
   gcMARK(m->dt);
+  gcMARK(m->other_phases);
 
   gcMARK(m->src_modidx);
  size:
@@ -1974,6 +1971,7 @@ START stxobj;
 mark_rename_table {
  mark:
   Module_Renames *rn = (Module_Renames *)p;
+  gcMARK(rn->phase);
   gcMARK(rn->ht);
   gcMARK(rn->nomarshal_ht);
   gcMARK(rn->unmarshal_info);
@@ -1982,6 +1980,17 @@ mark_rename_table {
   gcMARK(rn->marked_names);
  size:
   gcBYTES_TO_WORDS(sizeof(Module_Renames));
+}
+
+mark_rename_table_set {
+ mark:
+  Module_Renames_Set *rns = (Module_Renames_Set *)p;
+  gcMARK(rns->et);
+  gcMARK(rns->rt);
+  gcMARK(rns->other_phases);
+  gcMARK(rns->share_marked_names);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
 }
 
 mark_srcloc {

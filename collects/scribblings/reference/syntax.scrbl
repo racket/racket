@@ -1238,16 +1238,18 @@ Legal only in a @tech{module begin context}, and handled by the
 @guideintro["module-require"]{@scheme[require]}
 
 @defform/subs[#:literals (only-in prefix-in except-in rename-in lib file planet + - =
-                          for-syntax for-template for-label quote)
+                          for-syntax for-template for-label for-meta only-meta-in quote)
               (require require-spec ...)
               ([require-spec module-path
                              (only-in require-spec id-maybe-renamed ...)
                              (except-in require-spec id ...)
                              (prefix-in prefix-id require-spec)
                              (rename-in require-spec [orig-id bind-id] ...)
+                             (only-meta-in require-spec ...)
                              (for-syntax require-spec ...)
                              (for-template require-spec ...)
                              (for-label require-spec ...)
+                             (for-meta phase-level require-spec ...)
                              derived-require-spec]
                [module-path (#,(scheme quote) id)
                             rel-string
@@ -1259,6 +1261,7 @@ Legal only in a @tech{module begin context}, and handled by the
                                     rel-string ...)]
                [id-maybe-renamed id
                                  [orig-id bind-id]]
+               [phase-level exact-integer #f]
                [vers nat
                      (nat nat)
                      (= nat)
@@ -1316,22 +1319,29 @@ pre-defined forms are as follows.
   @scheme[orig-id] is not in the set that @scheme[require-spec]
   describes, a syntax error is reported.}
 
+ @defsubform[(only-meta-in phase-level require-spec ...)]{
+  Like the combination of @scheme[require-spec]s, but removing any
+  binding that is not for @scheme[phase-level], where @scheme[#f] for
+  @scheme[phase-level] corresponds to the @tech{label phase level}.}
+
+ @specsubform[#:literals (for-meta)
+              (for-meta phase-level require-spec ...)]{Like the combination of
+  @scheme[require-spec]s, but constrained each binding specified by
+  each @scheme[require-spec] is shifted by @scheme[phase-level]. The
+  @tech{label phase level} corresponds to @scheme[#f], and a shifting
+  combination that involves @scheme[#f] produces @scheme[#f].}
+
  @specsubform[#:literals (for-syntax)
-              (for-syntax require-spec ...)]{Like the combination of
-  @scheme[require-spec]s, but constrained to imports specified as
-  @tech{phase level} 0 imports, each shifted to a @tech{phase level} 1
-  binding. A @scheme[for-syntax] form cannot appear within a
-  @scheme[for-syntax], @scheme[for-template], or @scheme[for-label]
-  form.}
+              (for-syntax require-spec ...)]{Same as 
+  @scheme[(for-meta 1 require-spec ...)].}
 
  @specsubform[#:literals (for-template)
-              (for-template require-spec ...)]{Analogous to
-  @scheme[for-syntax-spec], but shifts bindings to @tech{phase level} -1.}
+              (for-template require-spec ...)]{Same as 
+  @scheme[(for-meta -1 require-spec ...)].}
 
  @specsubform[#:literals (for-label)
-              (for-label require-spec ...)]{Analogous to
-  @scheme[for-syntax-spec], but shifts bindings to the @tech{label
-  phase level}.}
+              (for-label require-spec ...)]{Same as 
+  @scheme[(for-meta #f require-spec ...)].}
 
  @specsubform[derived-require-spec]{See @secref["require-trans"] for
  information on expanding the set of @scheme[require-spec] forms.}
@@ -1427,8 +1437,8 @@ an identifier can be either imported or defined for a given
 @guideintro["module-provide"]{@scheme[provide]}
 
 @defform/subs[#:literals (protect-out all-defined-out all-from-out rename-out 
-                          except-out prefix-out struct-out
-                          for-syntax for-label)
+                          except-out prefix-out struct-out for-meta
+                          for-syntax for-label for-template)
               (provide provide-spec ...)
               ([provide-spec id
                              (all-defined-out)
@@ -1438,7 +1448,12 @@ an identifier can be either imported or defined for a given
                              (prefix-out prefix-id provide-spec)
                              (struct-out id)
                              (protect-out provide-spec ...)
-                             derived-provide-spec])]{
+                             (for-meta phase-level provide-spec ...)
+                             (for-syntax provide-spec ...)
+                             (for-template provide-spec ...)
+                             (for-label provide-spec ...)
+                             derived-provide-spec]
+               [phase-level exact-integer #f])]{
 
 Declares exports from a module. A @scheme[provide] form must appear in
 a @tech{module context} or a @tech{module-begin context}.
@@ -1514,19 +1529,27 @@ pre-defined forms are as follows.
  @secref["modprotect"]. The @scheme[provide-spec] must specify only
  bindings that are defined within the exporting module.}
 
- @specsubform[#:literals (for-syntax) 
-              (for-syntax provide-spec ...)]{ Like the union of the
+ @specsubform[#:literals (for-meta) 
+              (for-meta phase-level provide-spec ...)]{ Like the union of the
  @scheme[provide-spec]s, but adjusted to apply to @tech{phase level}
- 1. In particular, an @scheme[id] or @scheme[rename-out] formas a
- @scheme[provide-spec] refers to a @tech{phase-level}-1 binding, an
- @scheme[all-define-out] exports only @tech{phase-level}-1
- definitions, and an @scheme[all-from-out] exports only bindings
- imported with a shift to @tech{phase level} 1.}
+ specified by @scheme[phase-level] (where @scheme[#f] corresponds to the
+ @tech{label phase level}). In particular, an @scheme[id] or @scheme[rename-out] form as
+ a @scheme[provide-spec] refers to a binding at @scheme[phase-level], an
+ @scheme[all-define-out] exports only @scheme[phase-level]
+ definitions, and an @scheme[all-from-out] exports bindings
+ imported with a shift by @scheme[phase-level].}
 
- @specsubform[#:literals (for-label)
-              (for-label provide-spec ...)]{Analogous to
- @scheme[for-syntax], adjusting each @scheme[provide-spec] to the
- @tech{label phase level}.}
+ @specsubform[#:literals (for-syntax) 
+              (for-syntax provide-spec ...)]{Same as
+ @scheme[(for-meta 1 provide-spec ...)].}
+
+ @specsubform[#:literals (for-template) 
+              (for-template provide-spec ...)]{Same as
+ @scheme[(for-meta -1 provide-spec ...)].}
+
+ @specsubform[#:literals (for-label) 
+              (for-label provide-spec ...)]{Same as
+ @scheme[(for-meta #f provide-spec ...)].}
 
  @specsubform[derived-provide-spec]{See @secref["provide-trans"] for
  information on expanding the set of @scheme[provide-spec] forms.}
@@ -1536,15 +1559,20 @@ export name, though the same binding can be specified with the
 multiple symbolic names.}
 
 
+@defform[(for-meta require-spec ...)]{See @scheme[require] and @scheme[provide].}
 @defform[(for-syntax require-spec ...)]{See @scheme[require] and @scheme[provide].}
-@defform[(for-template require-spec ...)]{See @scheme[require].}
+@defform[(for-template require-spec ...)]{See @scheme[require] and @scheme[provide].}
 @defform[(for-label require-spec ...)]{See @scheme[require] and @scheme[provide].}
 
 @defform/subs[(#%require raw-require-spec ...)
-              ([raw-require-spec phaseless-require-spec
+              ([raw-require-spec phaseless-spec
+                                 (#,(schemeidfont "for-meta") phase-level phaseless-spec ...)
                                  (#,(schemeidfont "for-syntax") phaseless-spec ...)
                                  (#,(schemeidfont "for-template") phaseless-spec ...)
-                                 (#,(schemeidfont "for-label") phaseless-spec ...)]
+                                 (#,(schemeidfont "for-label") phaseless-spec ...)
+                                 (#,(schemeidfont "just-meta") phase-level raw-require-spec ...)]
+               [phase-level exact-integer
+                            #f]
                [phaseless-spec raw-module-path
                                (#,(schemeidfont "only") rw-module-path id ...)
                                (#,(schemeidfont "prefix") prefix-id raw-module-path)
@@ -1565,7 +1593,9 @@ The primitive import form, to which @scheme[require] expands. A
 @scheme[require] form, except that the syntax is more constrained, not
 composable, and not extensible. Also, sub-form names like
 @schemeidfont{for-syntax} and @schemeidfont{lib} are recognized
-symbolically, instead of via bindings.
+symbolically, instead of via bindings. Although not formalized in the
+grammar above, a @schemeidfont{just-meta} form cannot appear within a
+@schemeidfont{just-meta} form.
 
 Each @scheme[raw-require-spec] corresponds to the obvious
 @scheme[_require-spec], but the @schemeidfont{rename} sub-form has the
@@ -1579,9 +1609,12 @@ where the lexical context of the @scheme[local-id] is preserved.}
 
 @defform/subs[(#%provide raw-provide-spec ...)
               ([raw-provide-spec phaseless-spec
+                                 (#,(schemeidfont "for-meta") phase-level phaseless-spec)
                                  (#,(schemeidfont "for-syntax") phaseless-spec)
                                  (#,(schemeidfont "for-label") phaseless-spec)
                                  (#,(schemeidfont "protect") raw-provide-spec)]
+               [phase-level exact-integer
+                            #f]
                [phaseless-spec id 
                                (#,(schemeidfont "rename") local-id export-id) 
                                (#,(schemeidfont "struct") struct-id (field-id ...))

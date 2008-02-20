@@ -12,34 +12,46 @@
              make-require-transformer prop:require-transformer require-transformer?
              ;; the import struct type:
              import struct:import make-import import?
-             import-local-id import-src-sym import-src-mod-path import-orig-stx import-mode import-req-mode
+             import-local-id import-src-sym import-src-mod-path import-orig-stx import-mode import-req-mode import-orig-mode
              ;; the import-source struct type:
              import-source struct:import-source make-import-source import-source?
              import-source-mod-path-stx import-source-mode)
   
-  (define-struct* import (local-id src-sym src-mod-path mode req-mode orig-stx)
-    #:guard (lambda (i s path mode req-mode stx info)
+  (define-struct* import (local-id src-sym src-mod-path mode req-mode orig-mode orig-stx)
+    #:guard (lambda (i s path mode req-mode orig-mode stx info)
               (unless (identifier? i)
                 (raise-type-error 'make-import "identifier" i))
               (unless (symbol? s)
                 (raise-type-error 'make-import "symbol" s))
               (unless (module-path? path)
                 (raise-type-error 'make-import "module-path" path))
-              (unless (memq mode '(run syntax template label))
-                (raise-type-error 'make-import "'run, 'syntax, 'template, or 'label" mode))
-              (unless (memq req-mode '(run syntax template label))
-                (raise-type-error 'make-import "'run, 'syntax, 'template, or 'label" req-mode))
+              (unless (or (not mode)
+                          (exact-integer? mode))
+                (raise-type-error 'make-import "exact integer or #f" mode))
+              (unless (or (not req-mode)
+                          (exact-integer? req-mode))
+                (raise-type-error 'make-import "'exact integer or #f" req-mode))
+              (unless (or (not orig-mode)
+                          (exact-integer? orig-mode))
+                (raise-type-error 'make-import "'exact integer or #f" orig-mode))
+              (unless (equal? mode (and req-mode orig-mode (+ req-mode orig-mode)))
+                (raise-mismatch-error 'make-import 
+                                      (format
+                                       "orig mode: ~a and require mode: ~a not consistent with mode: " 
+                                       orig-mode req-mode)
+                                      mode))
               (unless (syntax? stx)
                 (raise-type-error 'make-import "syntax" stx))
-              (values i s path mode req-mode stx)))
+              (values i s path mode req-mode orig-mode stx)))
               
   (define-struct* import-source (mod-path-stx mode)
     #:guard (lambda (path mode info)
               (unless (and (syntax? path)
                            (module-path? (syntax->datum path)))
                 (raise-type-error 'make-import-source "syntax module-path" path))
-              (unless (memq mode '(run syntax template label))
-                (raise-type-error 'make-import-source "'run, 'syntax, 'template, or 'label" mode))
+              (unless (or (not mode)
+                          (exact-integer? mode))
+                (raise-type-error 'make-import-source "exact integer or #f" mode))
               (values path mode)))
     
   (define-values (prop:require-transformer require-transformer? require-transformer-get-proc)
@@ -69,25 +81,26 @@
             #f
             "invalid module-path form"
             stx))
-         (let-values ([(names et-names lt-names) (syntax-local-module-exports stx)])
+         (let ([namess (syntax-local-module-exports stx)])
            (values
             (apply
              append
-             (map (lambda (names mode)
-                    (map (lambda (name)
-                           (make-import (datum->syntax
-                                         stx
-                                         name
-                                         stx)
-                                        name
-                                        mod-path
-                                        mode
-                                        'run
-                                        stx))
-                         names))
-                  (list names et-names lt-names)
-                  (list 'run 'syntax 'label)))
-            (list (make-import-source #'simple 'run)))))]
+             (map (lambda (names)
+                    (let ([mode (car names)])
+                      (map (lambda (name)
+                             (make-import (datum->syntax
+                                           stx
+                                           name
+                                           stx)
+                                          name
+                                          mod-path
+                                          mode
+                                          0
+                                          mode
+                                          stx))
+                           (cdr names))))
+                  namess))
+            (list (make-import-source #'simple 0)))))]
       [(id . rest)
        (identifier? #'id)
        (let ([t (syntax-local-value #'id (lambda () #f))])

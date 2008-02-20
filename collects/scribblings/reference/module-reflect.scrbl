@@ -242,37 +242,34 @@ the module's declared name.}
 
 
 @defproc[(module-compiled-imports [compiled-module-code compiled-module-expression?])
-         (values (listof module-path-index?)
-                 (listof module-path-index?)
-                 (listof module-path-index?)
-                 (listof module-path-index?))]{
+         (listof (cons/c (or/c exact-integer? false/c) 
+                         (listof module-path-index?)))]{
 
-Takes a module declaration in compiled form and returns four values: a
-list of module references for the module's explicit imports, a list of
-module references for the module's explicit for-syntax imports, a list
-of module references for the module's explicit for-template imports,
-and a list of module references for the module's explicit for-label
-imports.}
+Takes a module declaration in compiled form and returns an association
+list mapping @tech{phase level} shifts (where @scheme[#f] corresponds
+to a shift into the @tech{label phase level}) to module references for
+the module's explicit imports.}
+
 
 @defproc[(module-compiled-exports [compiled-module-code compiled-module-expression?])
-         (values list? list? list? list? list? list?)]{
+         (values (listof (cons/c (or/c exact-integer? false/c) list?))
+                 (listof (cons/c (or/c exact-integer? false/c) list?)))]
 
-Returns six lists: one for the module's explicit variable exports, one
-for the module's explicit syntax exports, one for the module's
-explicit @scheme[for-syntax] variable exports, one for the module's
-explicit @scheme[for-syntax] syntax exports, one for the module's
-explicit @scheme[for-label] variable exports, one for the module's
-explicit @scheme[for-label] syntax exports.
+Returns two association lists mapping @tech{phase level} values (where
+@scheme[#f] corresponds to the @tech{label phase level}) to exports at
+the corresponding phase. The first association list is for exported
+variables, and the second is for exported syntax.
 
-Each list more precisely matches the contract
+Each associated list more precisely matches the contract
 
 @schemeblock[
 (listof (list/c symbol?
                 (listof 
                  (or/c module-path-index?
                        (list/c module-path-index?
-                               (one-of/c #f 'for-syntax 'for-label)
-                               symbol?)))))
+                               (or/c exact-integer? false/c)
+                               symbol?
+                               (or/c exact-integer? false/c))))))
 ]
 
 For each element of the list, the leading symbol is the name of the
@@ -287,12 +284,15 @@ The origin list has more than one element if the binding was imported
 multiple times from (possibly) different sources.
 
 For each origin, a @tech{module path index} by itself means that the
-binding was imported with a plain @scheme[require] (not
-@scheme[for-syntax] or @scheme[for-label]), and imported identifier
-has the same name as the re-exported name. An origin represented with
-a list indicates explicitly the import, the import mode (plain
-@scheme[require], @scheme[for-syntax], or @scheme[for-label]) and the
-original export name of the re-exported binding.}
+binding was imported with a @tech{phase level} shift of @scheme[0]
+(i.e., a plain @scheme[require] without @scheme[for-meta],
+@scheme[for-syntax], etc.), and imported identifier has the same name
+as the re-exported name. An origin represented with a list indicates
+explicitly the import, the import @tech{phase level} shift (where
+@scheme[#f] corresponds to a @scheme[for-label] import), the import
+name of the re-exported binding, and the @tech{phase level} of the
+import.}
+
 
 @;------------------------------------------------------------------------
 @section[#:tag "dynreq"]{Dynamic Module Access}
