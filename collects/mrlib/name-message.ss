@@ -10,7 +10,7 @@
  (pad-xywh (number? number? (>=/c 0) (>=/c 0) . -> . (values number? number? (>=/c 0) (>=/c 0))))
  (draw-button-label
   (->d ([dc (is-a?/c dc<%>)]
-        [label (union false/c string?)]
+        [label (or/c false/c string?)]
         [x number?]
         [y number?]
         [w (and/c number? (min-w h))]
