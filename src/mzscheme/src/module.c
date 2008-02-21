@@ -5827,8 +5827,10 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     }
   }
 
-  scheme_seal_module_rename_set(rn_set);
-  scheme_seal_module_rename_set(post_ex_rn_set);
+  if (rec[drec].comp || (rec[drec].depth != -2)) {
+    scheme_seal_module_rename_set(rn_set);
+    scheme_seal_module_rename_set(post_ex_rn_set);
+  }
 
   /* Compute provides for re-provides and all-defs-out: */
   reprovide_kernel = compute_reprovides(all_provided,
