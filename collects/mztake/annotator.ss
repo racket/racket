@@ -384,15 +384,4 @@
              is-tail?)
             annotated))
       
-      (values (top-level-annotate stx) (hash-table-map breakpoints (lambda (k v) k)))))
-
-  #;
-  (define (tests)
-    (run/single-stepping-annotation
-     (current-custodian) "a.ss"
-     (map string->path '("/home/gmarceau/projects/mztake/collects/mztake/a.ss"
-                         "/home/gmarceau/projects/mztake/collects/mztake/b.ss"))
-     (lambda (fn pos)
-       (printf "break?: ~a ~a~n" fn pos) #t)
-     (lambda (bp-info) (printf "break: ~a~n" bp-info) #f)))  
-)                                                                 
+      (values (top-level-annotate stx) (hash-table-map breakpoints (lambda (k v) k))))))

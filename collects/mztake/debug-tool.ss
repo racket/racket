@@ -116,7 +116,7 @@
         (if (is-a? source editor<%>)
             source
             (cond
-              [(send (group:get-the-frame-group) locate-file source)
+              [(and source (send (group:get-the-frame-group) locate-file source))
                =>
                (lambda (frame)
                  (let ([defss (map (lambda (t) (send t get-defs)) (send frame get-tabs))])
@@ -587,7 +587,7 @@
                                               (lambda (defs)
                                                 (send (send defs get-tab)
                                                       add-top-level-binding var val))]
-                                             [else (printf "record-top-level failed~n")])
+                                             [else (void) #;(printf "record-top-level failed~n")])
                                            #;
                                            (printf "top-level binding: ~a ~a ~a~n" mod var val))
                                          source)])
