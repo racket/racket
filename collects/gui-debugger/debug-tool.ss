@@ -1012,7 +1012,7 @@
             (make-object button%
               ((bitmap-label-maker
                 (string-constant debug-tool-button-name)
-                (build-path (collection-path "mztake" "icons") "icon-small.png")) this)
+                (build-path (collection-path "gui-debugger" "icons") "icon-small.png")) this)
               (make-object vertical-pane% (get-button-panel))
               (lambda (button evt) (set! debug? #t) (execute-callback))))
           
@@ -1020,7 +1020,7 @@
             (instantiate button% ()
               [label ((bitmap-label-maker
                        "Pause"
-                       (build-path (collection-path "mztake" "icons") "pause.png")) this)]
+                       (build-path (collection-path "gui-debugger" "icons") "pause.png")) this)]
               [parent debug-panel]
               [callback (lambda (button evt)
                           (if (send (get-current-tab) get-stack-frames)
@@ -1035,7 +1035,7 @@
             (instantiate button% ()
               [label ((bitmap-label-maker
                        "Continue"
-                       (build-path (collection-path "mztake" "icons") "resume.png")) this)]
+                       (build-path (collection-path "gui-debugger" "icons") "resume.png")) this)]
               [parent debug-panel]
               [callback (lambda (button evt)
                           (if (send (get-current-tab) get-stack-frames)
@@ -1047,7 +1047,7 @@
             (instantiate button% ()
               [label ((bitmap-label-maker
                        "Step"
-                       (build-path (collection-path "mztake" "icons") "step.png")) this)]
+                       (build-path (collection-path "gui-debugger" "icons") "step.png")) this)]
               [parent debug-panel]
               [callback (lambda (btn evt)
                           (if (send (get-current-tab) get-stack-frames)
@@ -1098,7 +1098,7 @@
             (new button%
                  [label ((bitmap-label-maker
                           "Over"
-                          (build-path (collection-path "mztake" "icons") "step-over2.png")) this)]
+                          (build-path (collection-path "gui-debugger" "icons") "step-over2.png")) this)]
                  [parent debug-panel]
                  [callback (make-big-step-callback #f)]
                  [enabled #f]))
@@ -1107,7 +1107,7 @@
             (new button%
                  [label ((bitmap-label-maker
                           "Out"
-                          (build-path (collection-path "mztake" "icons") "step-out2.png")) this)]
+                          (build-path (collection-path "gui-debugger" "icons") "step-out2.png")) this)]
                  [parent debug-panel]
                  [callback (make-big-step-callback #t)]
                  [enabled #f]))
@@ -1140,7 +1140,7 @@
           (define/public (check-current-language-for-debugger)
             (let* ([settings (send (get-definitions-text) get-next-settings)]
                    [lang (drscheme:language-configuration:language-settings-language settings)]
-                   [visible? (and (send lang capability-value 'mztake:debug-button)
+                   [visible? (and (send lang capability-value 'gui-debugger:debug-button)
                                   (not (debugger-does-not-work-for?
                                         (extract-language-level settings))))])
               (if visible?
@@ -1156,7 +1156,7 @@
           
           ; hide debug button if it's not supported for the initial language:
           (check-current-language-for-debugger)))
-      (drscheme:language:register-capability 'mztake:debug-button (flat-contract boolean?) #t)
+      (drscheme:language:register-capability 'gui-debugger:debug-button (flat-contract boolean?) #t)
       (drscheme:get/extend:extend-definitions-text debug-definitions-text-mixin)
       (drscheme:get/extend:extend-interactions-text debug-interactions-text-mixin)
       (drscheme:get/extend:extend-unit-frame debug-unit-frame-mixin)

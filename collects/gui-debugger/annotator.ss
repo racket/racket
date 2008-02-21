@@ -2,7 +2,7 @@
 
   (require (prefix-in kernel: (lib "kerncase.ss" "syntax"))
            (lib "list.ss")
-           (lib "marks.ss" "mztake")
+           (lib "marks.ss" "gui-debugger")
            (lib "etc.ss")
            (prefix-in srfi: (lib "search.ss" "srfi" "1"))
            (for-syntax scheme/base)

@@ -79,12 +79,4 @@
         (values p filename))))
   
   
-  (define (test annotate-all?)
-    (require/annotations '(lib "mztake.ss" "mztake")
-                         (lambda (fn m)
-                           (printf "~a ~a~n" fn m)
-                           annotate-all?)
-                         (lambda (fn m stx) stx)))
-  ;(test #t) ; slow
-  ;(test #f) ; fast
 )
