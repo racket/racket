@@ -191,7 +191,7 @@
          (with-handlers ([exn:fail:contract?
                           (lambda (exn)
                             (error 'serialize-delayed-element
-                                   "serialization failed (wrong resolve info?); ~a"
+                                   "serialization failed (wrong resolve info? delayed element never rendered?); ~a"
                                    (exn-message exn)))])
            (vector
             (make-element #f (delayed-element-content d ri))))))
@@ -234,7 +234,7 @@
          (with-handlers ([exn:fail:contract?
                           (lambda (exn)
                             (error 'serialize-part-relative-element
-                                   "serialization failed (wrong resolve info?); ~a"
+                                   "serialization failed (wrong resolve info? part-relative element never rendered?); ~a"
                                    (exn-message exn)))])
            (vector
             (make-element #f (part-relative-element-content d ri))))))

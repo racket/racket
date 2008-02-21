@@ -292,7 +292,14 @@
              [transform-one
               (lambda (in)
                 ;; Recognize `for-syntax', etc. for simple cases:
-                (syntax-case in ()
+                (syntax-case in (for-meta)
+                  [(for-meta n elem ...)
+                   (or (exact-integer? (syntax-e #'n))
+                       (not (syntax-e #'n)))
+                   (apply append
+                          (map (lambda (in)
+                                 (transform-simple in (syntax-e #'n)))
+                               (syntax->list #'(elem ...))))]
                   [(for-something elem ...)
                    (and (identifier? #'for-something)
                         (ormap (lambda (i) (free-identifier=? i #'for-something))

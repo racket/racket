@@ -62,7 +62,10 @@
  even? finite? infinite? nan?
  min max
  + * - /
- abs gcd lcm
+ abs 
+ div-and-mod div mod
+ div0-and-mod0 div0 mod0
+ gcd lcm
  numerator denominator
  floor ceiling truncate round
  rationalize
@@ -196,6 +199,50 @@
 
 (define (nan? n)
   (eqv? n +nan.0))
+
+;; Someone needs to look more closely at div and mod.
+;; I started with the code from Enger04, and poked it
+;; until the results matched the examples in R6RS.
+
+(define (div x y)
+  (let ([n (* (numerator x)
+              (denominator y))]
+        [d (* (denominator x)
+              (numerator y))])
+    (if (negative? n)
+        (- (quotient (- (abs d) n 1) d))
+        (quotient n d))))
+
+(define (div0 x y)
+  (cond
+   [(zero? y) 0]
+   [(positive? y)
+    (if (negative? x)
+        (- (div (- x) y))
+        (div x y))]
+   [(negative? y)
+    (let ([n (* -2
+                (numerator x)
+                (denominator y))]
+          [d (* (denominator x)
+                (- (numerator y)))])
+      (if (< n d)
+          (- (quotient (- d n) (* 2 d)))
+          (quotient (+ n d -1) (* 2 d))))]))
+
+(define (mod x y)
+  (- x (* (div x y) y)))
+
+(define (div-and-mod x y)
+  (let ([d (div x y)])
+    (values d (- x (* d y)))))
+
+(define (mod0 x y)
+  (- x (* (div0 x y) y)))
+
+(define (div0-and-mod0 x y)
+  (let ([d (div0 x y)])
+    (values d (- x (* d y)))))
 
 (define (r6rs:number->string z [radix 10] [precision #f])
   (number->string z radix))

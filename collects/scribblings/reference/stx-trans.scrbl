@@ -481,35 +481,26 @@ for-syntax) definitions.}
 
 @defproc[(syntax-local-module-required-identifiers
           [mod-path (or/c module-path? false/c)]
-          [normal-imports? any/c]
-          [syntax-imports? any/c]
-          [label-imports? any/c])
-         (values (listof identifier?)
-                 (listof identifier?) 
-                 (listof identifier?))]{
+          [phase-level (or/c exact-integer? false/c (one-of/c #t))])
+         (listof (cons/c (or/c exact-integer? false/c)
+                         (listof identifier?)))]{
 
 Can be called only while
 @scheme[syntax-local-transforming-module-provides?] returns
 @scheme[#t].
 
-It returns three lists of identifiers corresponding to all bindings
-imported into the module being expanded using the module path
+It returns an association list mapping phase levels to lists of
+identifiers.  Each list of identifiers includes all bindings imported
+(into the module being expanded) using the module path
 @scheme[mod-path], or all modules if @scheme[mod-path] is
-@scheme[#f]. This information is used for implementing
-@scheme[provide] sub-forms like @scheme[all-from-out].
+@scheme[#f]. The association list includes all identifiers imported
+with a @scheme[phase-level] shift, of all shifts if
+@scheme[phase-level] is @scheme[#t].
 
-The first result list corresponds to @tech{phase level} 0 (i.e.,
-normal) bindings, and the second list corresponds to @tech{phase
-level} -1 (i.e., for-syntax) bindings, and the last list corresponds
-corresponds to @tech{label phase level} (i.e., for-label) bindings.
-
-The @scheme[normal-imports?], @scheme[syntax-imports?], and
-@scheme[label-imports?] arguments determine whether each of normal,
-@scheme[for-syntax], and @scheme[for-label] @scheme[require]s are
-considered in building the result lists. Note that normal
-@scheme[require]s can add to all three lists, while
-@scheme[for-syntax] and @scheme[for-label] @scheme[require]s
-contribute only to one of the latter two lists, respectively.}
+When an identifier is renamed on import, the result association list
+includes the identifier by its internal name. Use
+@scheme[identifier-binding] to obtain more information about the
+identifier.}
 
 @; ----------------------------------------------------------------------
 
@@ -672,9 +663,9 @@ Returns @scheme[#t] if @scheme[v] has the
 
 @defstruct[export ([local-id identifier?]
                    [out-sym symbol?]
-                   [orig-stx syntax?]
+                   [mode (or/c exact-integer? false/c)]
                    [protect? any/c]
-                   [mode (or/c exact-integer? false/c)])]{
+                   [orig-stx syntax?])]{
 
 A structure representing a single imported identifier:
 

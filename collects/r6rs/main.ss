@@ -2,14 +2,13 @@
 
 #|
 FIXME:
- * (for ... expand) should shift all exports, not just run-time (requires a mzscheme change)
- * need meta levels other than 0, 1, and -1
  * Check that each identifier is imported only once across phases.
 |#
 
 (require (for-syntax scheme/base
                      syntax/kerncase
-                     "private/find-version.ss"))
+                     "private/find-version.ss"
+                     scheme/provide-transform))
 
 (provide (rename-out [module-begin #%module-begin]))
 
@@ -299,17 +298,10 @@ FIXME:
                                 (let* ([levels
                                         (map (lambda (level)
                                                (syntax-case* level (run expand meta) symbolic-identifier=?
-                                                 [run #'except-in]
-                                                 [expand #'for-syntax]
-                                                 [(meta 0) #'except-in]
-                                                 [(meta 1) #'for-syntax]
-                                                 [(meta -1) #'for-template]
-                                                 [(meta n)
-                                                  (raise-syntax-error
-                                                   #f
-                                                   "meta level not supported"
-                                                   orig
-                                                   level)]
+                                                 [run #'0]
+                                                 [expand #'1]
+                                                 [(meta 0) #'0]
+                                                 [(meta n) #'n]
                                                  [_
                                                   (raise-syntax-error
                                                    #f
@@ -317,12 +309,11 @@ FIXME:
                                                    orig
                                                    level)]))
                                              (syntax->list #'(level ...)))])
-                                  (with-syntax ([is (parse-import-set orig #'im)]
-                                                [(level ...) (if (null? levels)
-                                                                 (list #'only-in)
-                                                                 null)])
-                                                 
-                                    #`((level is) ...)))]
+                                  (with-syntax ([is (parse-import-set orig #'base-im)])
+                                    (if (null? levels)
+                                        #'()
+                                        (with-syntax ([(level ...) levels])
+                                          #`((for-meta level is) ...)))))]
                                [(for . _)
                                 (raise-syntax-error
                                  #f
@@ -371,11 +362,57 @@ FIXME:
                                               orig
                                               ex)])))
                    exs)
-         (with-syntax ([(ex ...)
+         (with-syntax ([((ex ...) ...)
                         (map (lambda (ex)
                                (syntax-case ex ()
                                  [(rename . rest)
-                                  #'(rename-out . rest)]
-                                 [_ ex]))
-                             exs)])
-           #'(provide ex ...)))])))
+                                  #'rest]
+                                 [one #'((one one))]))
+                             exs)]
+                       [orig orig])
+           #'(provide (all-levels-out orig ex ... ...))))])))
+
+(define-syntax all-levels-out
+  (make-provide-transformer
+   (lambda (stx mode)
+     (syntax-case stx ()
+       [(_ orig (local-id ext-id) ...)
+        (let* ([table (make-hash-table)]
+               [map-id (lambda (phase)
+                         (lambda (id)
+                           (let ([l (hash-table-get table (syntax-e id) null)])
+                             (unless (ormap (lambda (e)
+                                              (and (equal? (cdr e) phase)
+                                                   (free-identifier=? (car e) id phase)))
+                                            l)
+                               (hash-table-put! table
+                                                (syntax-e id)
+                                                (cons (cons id phase) l))))))])
+          (let-values ([(ids for-syntax-ids) (syntax-local-module-defined-identifiers)])
+            (for-each (map-id 0) ids)
+            (for-each (map-id 1) for-syntax-ids))
+          (for-each (lambda (l)
+                      (for-each (map-id (car l)) (cdr l)))
+                    (syntax-local-module-required-identifiers #f #t))
+          (apply
+           append
+           (map (lambda (local-id ext-id)
+                  (let* ([l (hash-table-get table (syntax-e local-id) null)]
+                         [l (filter (lambda (e)
+                                      (free-identifier=? (car e) local-id (cdr e)))
+                                    l)])
+                    (unless l
+                      (raise-syntax-error
+                       #f
+                       "identifier not defined or imported"
+                       #'orig
+                       local-id))
+                    (map (lambda (e)
+                           (make-export local-id
+                                        (syntax-e ext-id)
+                                        (cdr e)
+                                        #f
+                                        local-id))
+                         l)))
+                (syntax->list #'(local-id ...))
+                (syntax->list #'(ext-id ...)))))]))))
