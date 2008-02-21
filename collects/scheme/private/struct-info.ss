@@ -7,9 +7,10 @@
 
   (#%provide make-struct-info
              struct-info?
-             extract-struct-info)
+             extract-struct-info
+             struct:struct-info)
   
-  (define-values (struct:struct-info create-struct-info struct-info-rec?
+  (define-values (struct:struct-info make-struct-info struct-info-rec?
                                      struct-info-ref struct-info-set!)
     (make-struct-type 'struct-info #f
                       1 0 #f
@@ -18,16 +19,15 @@
                         (raise-syntax-error
                          #f
                          "identifier for static struct-type information cannot be used as an expression"
-                         stx))))
-
-  (define-values (make-struct-info)
-    (lambda (proc)
-      (if (and (procedure? proc)
-               (procedure-arity-includes? proc 0))
-          (create-struct-info proc)
-          (raise-type-error 'make-struct-info
-                            "procedure (arity 0)"
-                            proc))))
+                         stx))
+                      null
+                      (lambda (proc info)
+                        (if (and (procedure? proc)
+                                 (procedure-arity-includes? proc 0))
+                            proc
+                            (raise-type-error 'make-struct-info
+                                              "procedure (arity 0)"
+                                              proc)))))
 
   (define-values (extract-struct-info)
     (lambda (si)

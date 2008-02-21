@@ -361,8 +361,8 @@ information can be used during the expansion of other expressions via
 @scheme[syntax-local-value].
 
 For example, the @scheme[define-struct] variant for subtypes uses the
-base type name @scheme[t] to find the variable
-@scheme[struct@scheme[:t]] containing the base type's descriptor; it
+base type name @scheme[_t] to find the variable
+@schemeidfont{struct:}@scheme[_t] containing the base type's descriptor; it
 also folds the field accessor and mutator information for the base
 type into the information for the subtype. As another example, the
 @scheme[match] form uses a type name to find the predicates and field
@@ -449,3 +449,11 @@ form.}
 
 Extracts the list form of the structure type information represented
 by @scheme[v].}
+
+@defthing[struct:struct-info struct-type?]{
+
+The @tech{structure type descriptor} for the structure type returned
+by @scheme[make-struct-info]. This @tech{structure type descriptor} is
+mostly useful for creating structure subtypes. The structure type
+includes a guard that checks an instance's first field in the same way
+as @scheme[make-struct-info].}
