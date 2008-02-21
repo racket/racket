@@ -7333,8 +7333,9 @@ void parse_provides(Scheme_Object *form, Scheme_Object *fst, Scheme_Object *e,
       if (!SAME_OBJ(mode, scheme_make_integer(0))) {
         Scheme_Object *f;
         f = SCHEME_STX_CAR(mode_stx);
-        a = scheme_make_pair(f, scheme_make_pair(for_meta_symbol, 
-                                                 scheme_make_pair(mode, scheme_null)));
+        a = scheme_make_pair(for_meta_symbol, 
+                             scheme_make_pair(mode, 
+                                              scheme_make_pair(a, scheme_null)));
         a = scheme_datum_to_syntax(a, mode_stx, mode_stx, 0, 0);
       }
       rebuilt = scheme_make_pair(a, rebuilt);
