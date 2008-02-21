@@ -286,7 +286,8 @@ a URL that refreshes the password file, servlet cache, etc.}
                [#:indices indices (listof string?) (list "index.html" "index.htm")])
          dispatcher?]{
  Uses @scheme[url->path] to extract a path from the URL in the request
- object. If this path does not exist, then the dispatcher does not apply.
+ object. If this path does not exist, then the dispatcher does not apply and 
+ @scheme[next-dispatcher] is invoked.
  If the path is a directory, then the @scheme[indices] are checked in order
  for an index file to serve. In that case, or in the case of a path that is
  a file already, @scheme[path->mime-type] is consulted for the MIME
