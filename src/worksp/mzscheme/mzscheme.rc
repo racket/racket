@@ -29,8 +29,8 @@ APPLICATION             ICON    DISCARDABLE     "mzscheme.ico"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 3,99,0,12
- PRODUCTVERSION 3,99,0,12
+ FILEVERSION 3,99,0,13
+ PRODUCTVERSION 3,99,0,13
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -48,11 +48,11 @@ BEGIN
             VALUE "CompanyName", "PLT Scheme Inc.\0"
             VALUE "FileDescription", "MzScheme-based application\0"
             VALUE "InternalName", "MzScheme.exe\0"
-            VALUE "FileVersion", "3, 99, 0, 12\0"
+            VALUE "FileVersion", "3, 99, 0, 13\0"
             VALUE "LegalCopyright", "Copyright Å© 1995-2008\0"
             VALUE "OriginalFilename", "mzscheme.exe\0"
             VALUE "ProductName", "MzScheme\0"
-            VALUE "ProductVersion", "3, 99, 0, 12\0"
+            VALUE "ProductVersion", "3, 99, 0, 13\0"
         END
     END
     BLOCK "VarFileInfo"
