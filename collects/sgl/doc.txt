@@ -214,9 +214,11 @@ gl-vector-norm: gl-vector -> real-number
 
 _sgl.ss_
 
-Use the sgl.ss module by adding (require sgl) to your program.  To prefix the
-function names with "gl-" use the form (require (prefix gl- sgl)) instead.
-The sgl.ss module provides a more Scheme-like interface to the GL functions in
+Use the sgl.ss module by adding (require sgl/sgl) to your program.  To get it
+with all function names prefixed with "gl-" use (require sgl) (which is
+actually sgl/main, reproviding everything from sgl.ss with the prefix).  Or you
+can also use (require (prefix <some-prefix> sgl/sgl)) directly instead.  The
+sgl.ss module provides a more Scheme-like interface to the GL functions in
 gl.ss.
 
 Functions in sgl.ss take symbols instead of integers for GLenum arguments.

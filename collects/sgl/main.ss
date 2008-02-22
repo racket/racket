@@ -1,3 +1,3 @@
 #lang scheme/base
-(require "sgl.ss")
+(require (prefix-in gl- "sgl.ss"))
 (provide (all-from-out "sgl.ss"))
