@@ -31,7 +31,7 @@
 
 #lang mzscheme
 
-(require games/cards mred mzlib class mzlib/list mzlib/unit)
+(require games/cards mred mzlib/class mzlib/list mzlib/unit)
 
 (provide game@)
 (define game@ (unit (import) (export)
