@@ -7,14 +7,15 @@
          scheme/contract)
 
 (provide/contract
- [expand-teaching-program (-> input-port?
-                           (-> any/c input-port? any/c)
-                           any/c
-                           (listof any/c)
-                           (or/c false/c (object-contract [display-results/void (-> (listof any/c) any)]))
-                           any)])
+ [expand-teaching-program (->* (input-port?
+                                (-> any/c input-port? any/c)
+                                any/c
+                                (listof any/c)
+                                (or/c false/c (object-contract [display-results/void (-> (listof any/c) any)])))
+                               (symbol?)
+                               any)])
 
-(define (expand-teaching-program port reader language-module teachpacks rep)
+(define (expand-teaching-program port reader language-module teachpacks rep [module-name '#%htdp])
   (let ([state 'init]
         ;; state : 'init => 'require => 'done-or-exn
         
@@ -32,7 +33,7 @@
                             (expand
                              (datum->syntax
                               #f
-                              `(,#'module #%htdp ,language-module 
+                              `(,#'module ,module-name ,language-module 
                                           ,@(map (λ (x) 
                                                    `(require ,x))
                                                  teachpacks)))))])
@@ -53,23 +54,23 @@
               (expand
                (datum->syntax
                 #f
-                `(,#'module #%htdp ,language-module 
+                `(,#'module ,module-name ,language-module 
                             ,@(map (λ (x) `(require ,x)) teachpacks)
                             ,@body-exps)))
               rep)))]
-        [(require) 
+        [(require)
          (set! state 'done-or-exn)
          (stepper-syntax-property
-          (syntax
+          (quasisyntax
            (let ([done-already? #f])
              (dynamic-wind
               void
               (lambda () 
-                (dynamic-require ''#%htdp #f))  ;; work around a bug in dynamic-require
+                (dynamic-require ''#,module-name #f))  ;; work around a bug in dynamic-require
               (lambda () 
                 (unless done-already?
                   (set! done-already? #t)
-                  (current-namespace (module->namespace ''#%htdp)))))))
+                  (current-namespace (module->namespace ''#,module-name)))))))
           'stepper-skip-completely
           #t)]
         [(done-or-exn)
