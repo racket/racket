@@ -2,26 +2,26 @@
 @(require scribble/manual
           (for-label scheme/base
                      scheme/contract
-                     config/config))
+                     config))
 
 @title{@bold{Config}: Installation and Search Paths}
 
 @section{Configuring Directories and Search Paths}
 
-@defmodule[config/config]{
+@defmodule[config]{
 
-The @schememodname[config/config] library specifies the location of
+The @schememodname[config] library specifies the location of
 directories (such as the main documentation directory) and also
 directory search paths (such as a list of directories to search for
 documentation).}
 
 
 @bold{Note:} Instead of @scheme[require]ing
-@schememodname[config/config] directly, use the
+@schememodname[config] directly, use the
 @schememodname[setup/dirs] library, which combines information from
-@schememodname[config/config] and other sources.
+@schememodname[config] and other sources.
 
-The @schememodname[config/config] module must export the following
+The @schememodname[config] module must export the following
 values. In all cases where a @scheme[delay]ed value is expected for an
 exported identifier, the value can be a @scheme[delay]ed @scheme[#f]
 to indicate the default.
@@ -109,7 +109,7 @@ normally takes precedence over the main collection directory).
 @defmodule[setup/configtab]{
 
 The @schememodname[setup/configtab] library defines a language module
-that can be used to implement @schememodname[config/config].}
+that can be used to implement @schememodname[config].}
 
 When @schememodname[setup/configtab] is used as a language module, the
 module body must consist of a sequence of
@@ -117,7 +117,7 @@ module body must consist of a sequence of
 @schemeblock[(define _id _val)]
 
 declarations, where each @scheme[_id] is one of the names that the
-@schememodname[config/config] library must export, and @scheme[_val] is
+@schememodname[config] library must export, and @scheme[_val] is
 an expression for the value (which will be automatically wrapped with
 @scheme[delay] when needed). If a required export has no corresponding
 @scheme[define], a definition with @scheme[#f] is inserted

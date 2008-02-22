@@ -2,7 +2,7 @@
 @(require scribble/manual
           scribble/eval
           (for-label html/html)
-          (for-label xml/xml))
+          (for-label xml))
 
 @title{@bold{HTML}: Parsing Library}
 
@@ -26,7 +26,7 @@ Reads (X)HTML from a port, producing an @scheme[html] instance.}
          (listof content)]{
  
 Reads HTML from a port, producing an xexpr compatible with the
-@schememodname[xml/xml] library (which defines @scheme[content]).}
+@schememodname[xml] library (which defines @scheme[content]).}
 
 
 
@@ -34,11 +34,11 @@ Reads HTML from a port, producing an xexpr compatible with the
 @def+int[
 (module html-example scheme
 
-  (code:comment #, @t{Some of the symbols in html/html and xml/xml conflict with})
+  (code:comment #, @t{Some of the symbols in html/html and xml conflict with})
   (code:comment #, @t{each other and with scheme/base language, so we prefix})
   (code:comment #, @t{to avoid namespace conflict.})
   (require (prefix-in h: html/html)
-           (prefix-in x: xml/xml))
+           (prefix-in x: xml))
 
   (define an-html
     (h:read-xhtml 
@@ -77,7 +77,7 @@ Reads HTML from a port, producing an xexpr compatible with the
 @section{HTML Structures}
 
 @scheme[pcdata], @scheme[entity], and @scheme[attribute] are defined
-in the @schememodname[xml/xml] documentation.
+in the @schememodname[xml] documentation.
 
 A @scheme[html-content] is either
 @itemize[

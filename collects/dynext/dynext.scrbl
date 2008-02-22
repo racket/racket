@@ -1,9 +1,9 @@
-#lang scribble/doc 
+#lang scribble/doc
 
-@(require 
+@(require
   scribble/manual
-  (for-label scheme 
-             dynext/dynext))
+  (for-label scheme
+             dynext))
 
 @title{@bold{Dynext}: Running a C Compiler/Linker}
 

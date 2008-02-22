@@ -1,7 +1,7 @@
 #lang scribble/doc
 
 @(require scribble/manual
-        (for-label browser/browser
+        (for-label browser
                    browser/browser-unit
                    browser/browser-sig
                    browser/htmltext
@@ -20,7 +20,7 @@
 
 @title{@bold{Browser}: Simple HTML Rendering}
 
-The @schememodname[browser/browser] library provides the following
+The @schememodname[browser] library provides the following
 procedures and classes for parsing and viewing HTML files.  The
 @schememodname[browser/htmltext] library provides a simplified
 interface for rendering to a subclass of the MrEd @scheme[text%]
@@ -29,7 +29,7 @@ an external browser (such as Firefox).
 
 @section[#:tag "browser"]{Browser}
 
-@defmodule[browser/browser]
+@defmodule[browser]
 
 The browser supports basic HTML commands, plus special Scheme
 hyperlinks of the form @(litchar "<A MZSCHEME=sexpr>...</A>"). When

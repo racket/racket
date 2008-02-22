@@ -51,7 +51,7 @@
 
  To load SrPersist, use
 
-   (require (lib "srpersist.ss" "srpersist"))
+   (require srpersist)
 
  For Windows, if you get errors when loading, your Windows installation 
  may be missing certain ODBC libraries.  Look for ODBC Data Sources 

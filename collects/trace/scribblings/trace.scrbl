@@ -2,7 +2,7 @@
 
 @(require scribble/manual
           (for-label scheme
-                     trace/calltrace-lib))
+                     trace))
 
 @title[#:tag "top"]{@bold{Trace}: Instrumentation to Show Function Calls}
 
@@ -17,19 +17,19 @@ depth of the continuation.
 @itemize{
          @item{Throw away @filepath{.zo} versions of your source}
          @item{Prefix your program with 
-                      @schemeblock[(require trace/calltrace)]
+                      @schemeblock[(require trace)]
                perhaps by starting @exec{mzscheme} with
-                  @commandline{mzscheme -l trace/calltrace ...}
+                  @commandline{mzscheme -l trace ...}
                before arguments to load your program.}
          @item{Run your program}
          }
 
-The @schememodname[trace/calltrace] module is odd; don't import it
-into another module. Instead, the @schememodname[trace/calltrace]
+The @schememodname[trace] module is odd; don't import it
+into another module. Instead, the @schememodname[trace]
 module is meant to be invoked from the top-level, so that it can
 install an evaluation handler, exception handler, etc.
 
-To reuse parts of the code of @schememodname[trace/calltrace], import
+To reuse parts of the code of @schememodname[trace], import
 @schememodname[trace/calltrace-lib]. It contains all of the bindings
 described here, but it but does not set the @scheme[current-eval]
 parameter.
@@ -38,11 +38,11 @@ parameter.
 
 @section{Installing Calltrace}
 
-@defmodule[trace/calltrace]{Invoking the
-@schememodname[trace/calltrace] module sets the evaluation handler
+@defmodule[trace]{Invoking the
+@schememodname[trace] module sets the evaluation handler
 (via @scheme[current-eval]) to instrument Scheme source code.}
 
- NOTE: @schememodname[trace/calltrace] has no effect on code loaded as
+ NOTE: @schememodname[trace] has no effect on code loaded as
  compiled byte code (i.e., from a @filepath{.zo} file) or native code
  (i.e., from a @filepath{.dll}, @filepath{.so}, or @filepath{.dylib}
  file).
@@ -53,7 +53,7 @@ default. The @scheme[instrumenting-enabled] parameter affects only the
 way that source code is compiled, not the way that exception
 information is reported.
 
-Do not load @schememodname[trace/calltrace] before writing
+Do not load @schememodname[trace] before writing
 @filepath{.zo} files.  Calltrace instruments S-expressions with
 unprintable values; this works fine if the instrumented S-expression
 is passed to the default eval handler, but neither the S-expression
@@ -65,7 +65,7 @@ nor its byte-code form can be marshalled to a string.
 
 @defmodule[trace/calltrace-lib]{The
 @schememodname[trace/calltrace-lib] module provides functions that
-implement @scheme[trace/calltrace].}
+implement @scheme[trace].}
 
 @defboolparam[instrumenting-enabled on?]{
 
@@ -78,7 +78,7 @@ A procedure suitable for use with @scheme[current-eval], which
 instruments expressions for Calltrace output (when instrumentation is
 not disabled via @scheme[instrumenting-enabled]).
 
-Requiring @scheme[trace/calltrace] installs this procedure as the
+Requiring @scheme[trace] installs this procedure as the
 value for @scheme[current-eval].}
 
 

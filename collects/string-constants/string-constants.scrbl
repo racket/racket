@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-label string-constants/string-constant
+          (for-label string-constants
                      scheme))
 
 @title{@bold{String Constants}: GUI Internationalization}
@@ -11,7 +11,7 @@ DrScheme's GUI.
 @; ----------------------------------------------------------------------
 
 @section{Using String Constants}
-@defmodule[string-constants/string-constant]
+@defmodule[string-constants]
 
 @defform[(string-constant name)]{
  

@@ -106,7 +106,7 @@ usual policy for reporting size information.
 LaTeX output
 ------------
 
-The LaTeX texpict function set is loaded by the _texpict.ss_ library.
+The LaTeX texpict function set is loaded by the _texpict_ library.
 The library is available in unit form via _texpict-unit.ss_, which
 provides a `texpict@' unit with no imports and taht exports
 `texpict-common^' and `texpict-extra^'. The _texpict-sig.ss_ library

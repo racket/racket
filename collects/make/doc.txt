@@ -50,7 +50,7 @@ can use the make collection.
 
 Here's the equivalent Scheme program: 
 
-(require (lib "make.ss" "make"))
+(require make)
 
 (define (make-output in out)
    ...)
@@ -72,11 +72,11 @@ abstract over the various make lines (for example, the
 a.output, b.output, and c.output lines are very similar and
 it would be good to write a program to generate those
 lines).
-			      
+
 _make.ss_
 ---------
 
-The make.ss library in the `make' collection provides a
+The make library in the `make' collection provides a
 `make' macro and a `make/proc' procedure.
 
 > (make ((target (depend ...) command ...) ...) argv)
@@ -118,7 +118,7 @@ The `target' field is a string or a list of strings naming
 the target(s), and the `orig-exn' field is the original
 exception.
 
-make.ss also provides the following parameters:
+make also provides the following parameters:
 
 > (make-print-checking [on?]) - If #f, make only prints when
 it is making a target. Otherwise, it prints when it is

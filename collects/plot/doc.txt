@@ -5,8 +5,8 @@ PLoT collection: Quick Start
 
 2.1  Making basic plots
 
-   After loading the correct module using (require (lib "plot.ss"
-   "plot")) try (plot (line (lambda (x) x)))
+   After loading the correct module using (require plot) try
+     (plot (line (lambda (x) x)))
 
    Any other function with the contract number -> number can be plotted
    using the same form. To plot multiple items, use the functions mix and
