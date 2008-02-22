@@ -89,7 +89,7 @@
         [(identifier? id/binding)
          (search id/binding)]
         [(and (list? id/binding)
-              (= 6 (length id/binding)))
+              (= 7 (length id/binding)))
          (search id/binding)]
         [(and (list? id/binding)
               (= 2 (length id/binding)))
@@ -115,7 +115,7 @@
                                 "list starting with module path, resolved module path, module path index, path, or string"
                                 src)]))]
         [else (raise-type-error 'xref-binding-definition->tag
-                                "identifier, 2-element list, or 6-element list"
+                                "identifier, 2-element list, or 7-element list"
                                 id/binding)]))]))
 
 (define (xref-binding->definition-tag xrefs id/binding mode)
