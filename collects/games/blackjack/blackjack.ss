@@ -31,11 +31,7 @@
 
 #lang mzscheme
 
-(require (lib "cards.ss" "games" "cards")
-         (lib "mred.ss" "mred")
-         (lib "class.ss")
-         (lib "list.ss")
-         (lib "unit.ss"))
+(require games/cards mred mzlib class mzlib/list mzlib/unit)
 
 (provide game@)
 (define game@ (unit (import) (export)

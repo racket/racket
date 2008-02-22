@@ -1,14 +1,8 @@
 
 #lang mzscheme
 
-(require (lib "cards.ss" "games" "cards")
-         (lib "mred.ss" "mred")
-         (lib "class.ss")
-         (lib "unit.ss")
-         (lib "etc.ss")
-         (lib "list.ss")
-         (lib "async-channel.ss")
-         (lib "file.ss"))
+(require games/cards mred mzlib/class mzlib/unit mzlib/etc mzlib/list mzlib/file
+         mzlib/async-channel)
 
 ;; Player record
 (define-struct player (r hand-r  ; region

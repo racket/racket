@@ -1,11 +1,6 @@
 #lang mzscheme
 
-(require (lib "cards.ss" "games" "cards")
-         (lib "class.ss")
-         (lib "mred.ss" "mred")
-         (lib "list.ss")
-         (lib "file.ss")
-         (lib "unit.ss")
+(require games/cards mred mzlib/class mzlib/list mzlib/file mzlib/unit
          "../show-help.ss")
 
 (define (list-first-n l n)

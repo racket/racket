@@ -3,9 +3,9 @@ The _Virtual Playing Cards Library_
 -----------------------------------
 
 Load the virtual card library with
-   (require (lib "cards.ss" "games" "cards"))
+   (require games/cards)
 
-The _cards.ss_ module defines the following procedures:
+The _cards_ module defines the following procedures:
 
 > (make-table [title-string] [w] [h]) returns a table named by
       `title-string' that is `w' cards wide and `h' cards high. A

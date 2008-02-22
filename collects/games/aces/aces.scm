@@ -7,12 +7,7 @@ possible to remap single click (instead of double click)?
 
 #lang mzscheme
 
-(require (lib "cards.ss" "games" "cards")
-         (lib "class.ss")
-         (lib "mred.ss" "mred")
-         (lib "list.ss")
-         (lib "unit.ss")
-         (lib "string-constant.ss" "string-constants")
+(require games/cards mred mzlib/class mzlib/list mzlib/unit string-constants
          "../show-help.ss")
 
 (provide game@)
