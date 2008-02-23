@@ -19,6 +19,7 @@
            ;; (all-except (lib "xml-snipclass.ss" "xml") snip-class)
            ;; (all-except (lib "scheme-snipclass.ss" "xml") snip-class)
            ;; (lib "mred.ss" "mred")
+           #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
            )
   
   (provide (all-defined-out))
@@ -61,9 +62,11 @@
                           (show-result result) (car all-steps)))
                   (set! all-steps (cdr all-steps)))))]
            [program-expander
+            (let ([module-id (gensym "stepper-module-name-")])
             (lambda (init iter)
               (init)
-              ((stream-ify (expand-teaching-program in-port read-syntax namespace-spec teachpack-specs #f) iter)))])
+              #;((make-expr-stream (expand-teaching-program in-port read-syntax namespace-spec teachpack-specs #f module-id) iter module-id))
+              ((stream-ify (expand-teaching-program in-port read-syntax namespace-spec teachpack-specs #f module-id) iter))))])
       (let/ec escape
         (parameterize ([error-escape-handler (lambda () (escape (void)))])
           (go program-expander receive-result render-settings
@@ -1654,11 +1657,12 @@
 
   ;; make sure to leave these off when saving, or the nightly tests will run these too...
   #;(run-all-tests)
+  (parameterize ()
+    (run-test '(top-app)))
   #;(parameterize ([store-steps? #t])
-    (run-tests '(check-error)))
+    (run-tests '(top-def)))
   #;(parameterize ([display-only-errors #t])
     (run-all-tests-except '(prims qq-splice time set! local-set! lazy1 lazy2 lazy3)))
-  (run-all-tests)
   
 
 
