@@ -1,7 +1,7 @@
 (module unihead mzscheme
-  (require (lib "base64.ss" "net")
-           (lib "qp.ss" "net")
-           (lib "string.ss"))
+  (require net/base64
+           net/qp
+           mzlib/string)
 
   (provide encode-for-header
            decode-for-header

@@ -8,10 +8,10 @@
 ;; url.ss tests
 ;;
 
-(require (lib "url.ss" "net")
-	 (lib "uri-codec.ss" "net")
-         (lib "string.ss")
-         (lib "url-unit.ss" "net") ; to get set-url:os-type!
+(require net/url
+	 net/uri-codec
+         mzlib/string
+         net/url-unit ; to get set-url:os-type!
          )
 
 (test "%Pq" uri-decode "%Pq")
@@ -466,7 +466,7 @@
 ;; a few tests of head.ss -- JBC, 2006-07-31
 ;;
 
-(require (lib "head.ss" "net"))
+(require net/head)
 
 (test (void) validate-header "From: me@here.net\r\n\r\n")
 (test (void) validate-header #"From: me@here.net\r\n\r\n")
@@ -541,7 +541,7 @@
 ;;
 ;; cookie tests --- JBM, 2006-12-01
 
-(require (lib "cookie.ss" "net"))
+(require net/cookie)
 
 ;; cookie-test : (cookie -> cookie) string -> test
 (define (cookie-test fn  expected)
@@ -615,9 +615,9 @@
 ;; other net tests
 ;;
 
-(require (lib "base64.ss" "net")
-	 (lib "qp.ss" "net")
-	 (lib "port.ss"))
+(require net/base64
+	 net/qp
+	 mzlib/port)
 
 (define tricky-strings
   (let ([dir (collection-path "tests" "mzscheme")])

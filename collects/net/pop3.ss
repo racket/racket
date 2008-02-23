@@ -1,5 +1,5 @@
 (module pop3 mzscheme
-  (require (lib "unit.ss") "pop3-sig.ss" "pop3-unit.ss")
+  (require mzlib/unit "pop3-sig.ss" "pop3-unit.ss")
 
   (define-values/invoke-unit/infer pop3@)
 

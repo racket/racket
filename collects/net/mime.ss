@@ -27,7 +27,7 @@
 ;; Commentary:
 
 (module mime mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
            "mime-sig.ss"
            "mime-unit.ss"
            "qp-sig.ss"

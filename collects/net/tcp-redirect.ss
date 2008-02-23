@@ -1,9 +1,9 @@
 (module tcp-redirect mzscheme
   (provide tcp-redirect)
 
-  (require (lib "unit.ss")
-           (lib "async-channel.ss")
-           (lib "etc.ss")
+  (require mzlib/unit
+           mzlib/async-channel
+           mzlib/etc
            "tcp-sig.ss")
 
   (define raw:tcp-abandon-port tcp-abandon-port)
