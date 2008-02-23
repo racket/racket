@@ -1,7 +1,7 @@
 #lang scheme/base
-(require (lib "contract.ss")
-         (lib "url.ss" "net")
-         (lib "serialize.ss")
+(require mzlib/contract
+         net/url
+         mzlib/serialize
          "../private/util.ss"
          "../private/url-param.ss"
          "../private/mod-map.ss")
@@ -16,7 +16,7 @@
  [unstuff-url (url? . -> . serializable?)])
 
 ; XXX Abstract this
-(require (lib "md5.ss"))
+(require mzlib/md5)
 (define (md5-store str)
   (define hash (md5 (string->bytes/utf-8 str)))
   (with-output-to-file

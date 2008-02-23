@@ -1,6 +1,6 @@
 
 (module param mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
 	   "sig.ss"
 	   "cmdline.ss"
 	   "viewer.ss")

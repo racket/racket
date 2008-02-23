@@ -1,10 +1,10 @@
 (module java-signatures mzscheme
   
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
   
-  (require (lib "lex.ss" "parser-tools")
+  (require parser-tools/lex
            (lib "combinator-unit.ss" "combinator-parser")
-           (lib "string.ss"))
+           mzlib/string)
   
   (provide (all-defined))
   

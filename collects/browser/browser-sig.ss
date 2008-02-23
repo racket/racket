@@ -1,5 +1,5 @@
 (module browser-sig mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
            "private/sig.ss")
 
   (provide browser^)

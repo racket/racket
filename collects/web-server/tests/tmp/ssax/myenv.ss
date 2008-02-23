@@ -1,6 +1,6 @@
 ; Module header is generated automatically
 #cs(module myenv mzscheme
-(require (lib "defmacro.ss"))
+(require mzlib/defmacro)
 
 ;; $Id: myenv.ss,v 1.14 2002/03/28 22:23:06 nwv Exp $
 ;; $Source: /home/nwv/cvsroot/projects/ssax-plt/myenv.ss,v $

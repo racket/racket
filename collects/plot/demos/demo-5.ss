@@ -1,4 +1,4 @@
-(require (lib "plot.ss" "plot"))
+(require plot)
 
 
 (define (trig x y) (* (sin x) (sin y)))

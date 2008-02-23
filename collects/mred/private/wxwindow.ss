@@ -1,6 +1,6 @@
 (module wxwindow mzscheme
-  (require (lib "class.ss")
-	   (lib "class100.ss")
+  (require mzlib/class
+	   mzlib/class100
 	   (prefix wx: "kernel.ss")
 	   "lock.ss"
 	   "helper.ss"

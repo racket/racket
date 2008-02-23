@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(require string-constants/string-constant)
+(require string-constants)
 (define name "ProfessorJ")
 (define tools (list (list "tool.ss") (list "test-tool.ss")))
 (define tool-names '("ProfessorJ" "ProfessorJ Testing"))

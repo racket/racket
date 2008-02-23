@@ -1,7 +1,7 @@
 (module embed-me7 mzscheme
-  (require (lib "plot.ss" "plot")
-           (lib "mred.ss" "mred")
-           (lib "class.ss"))
+  (require plot
+           mred
+           mzlib/class)
   
   (define img (plot (line (lambda (x) x))))
 

@@ -1,10 +1,10 @@
 #lang scheme/base
 (require (for-template scheme/base)
-         (lib "kerncase.ss" "syntax")
-         (lib "list.ss")
-         (lib "toplevel.ss" "syntax")
-         (lib "plt-match.ss")
-         (lib "stx.ss" "syntax")
+         syntax/kerncase
+         mzlib/list
+         syntax/toplevel
+         mzlib/plt-match
+         syntax/stx
          "util.ss")
 (provide free-vars)  
 

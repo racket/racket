@@ -1,10 +1,10 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (only-in (lib "file.ss")
+         (only-in mzlib/file
                   file-name-from-path
                   make-temporary-file)
-         (lib "url.ss" "net")
-         (lib "list.ss")
+         net/url
+         mzlib/list
          (lib "xml.ss" "xml")
          (lib "request-structs.ss" "web-server" "private")
          (lib "util.ss" "web-server" "private")

@@ -1,7 +1,7 @@
 (module xelda-checker mzscheme
-  (require (lib "class.ss"))
-  (require (lib "list.ss"))
-  (require (lib "match.ss"))
+  (require mzlib/class)
+  (require mzlib/list)
+  (require mzlib/match)
   
   (require "xl-util.ss")
   (require "formula.ss")

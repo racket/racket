@@ -1,9 +1,9 @@
 ;; module loader for SRFI-1
 (module |1| mzscheme
   
-  (require (lib "list.ss" "srfi" "1"))
+  (require srfi/1/list)
   
-  (provide (all-from-except (lib "list.ss" "srfi" "1")
+  (provide (all-from-except srfi/1/list
                             s:map s:for-each
                             s:member
                             s:assoc)

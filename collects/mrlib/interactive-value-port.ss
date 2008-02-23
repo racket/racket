@@ -1,8 +1,8 @@
 
 (module interactive-value-port mzscheme
-  (require (lib "pretty.ss")
-           (lib "mred.ss" "mred")
-           (lib "class.ss")
+  (require mzlib/pretty
+           mred
+           mzlib/class
            "syntax-browser.ss")
   (provide set-interactive-display-handler
            set-interactive-write-handler

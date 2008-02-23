@@ -98,8 +98,8 @@
 
 (module mymatch mzscheme
   (require-for-syntax "private/mkmatch.ss"
-		      (lib "stx.ss" "syntax")
-		      (lib "struct.ss" "syntax"))
+		      syntax/stx
+		      syntax/struct)
 
   (provide
    match-fail

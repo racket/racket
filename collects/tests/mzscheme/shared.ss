@@ -3,7 +3,7 @@
 
 (Section 'shared)
 
-(require (lib "shared.ss"))
+(require mzlib/shared)
 
 (require (only-in mzscheme define-struct))
 (load-relative "shared-tests.ss")

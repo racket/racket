@@ -1,6 +1,6 @@
 (module start mzscheme
   (require "tex2page.ss"
-	   (lib "cmdline.ss"))
+	   mzlib/cmdline)
 
   (command-line
    "tex2page"

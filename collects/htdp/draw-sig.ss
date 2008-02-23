@@ -1,6 +1,6 @@
 #cs(module draw-sig mzscheme
      (provide core-draw^ draw^)
-     (require (lib "unit.ss"))
+     (require mzlib/unit)
      
      ;; xxx-solid-rect cannot be called xxx-solid-rectangle because that
      ;; interferes with the existing xxx-solid-rectangle name in our unit

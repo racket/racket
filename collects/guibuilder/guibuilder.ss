@@ -1,12 +1,12 @@
 
 (module guibuilder mzscheme
-  (require (prefix mred: (lib "mred.ss" "mred"))
-	   (lib "class.ss")
-	   (lib "file.ss")
-	   (lib "pretty.ss")
-	   (lib "etc.ss")
-	   (lib "list.ss")
-	   (prefix framework: (lib "framework.ss" "framework"))
+  (require (prefix mred: mred)
+	   mzlib/class
+	   mzlib/file
+	   mzlib/pretty
+	   mzlib/etc
+	   mzlib/list
+	   (prefix framework: framework)
 	   "utils.ss"
 	   "top-level.ss"
 	   "toolbar.ss")

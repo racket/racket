@@ -1,3 +1,3 @@
 (module |27| mzscheme
-  (require (lib "random-bits.ss" "srfi" "27"))
-  (provide (all-from (lib "random-bits.ss" "srfi" "27"))))
+  (require srfi/27/random-bits)
+  (provide (all-from srfi/27/random-bits)))

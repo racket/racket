@@ -9,10 +9,10 @@ wraps the load of the module.)
 |#
 
 (module eopl-tool mzscheme
-  (require (lib "unit.ss")
-	   (lib "class.ss")
+  (require mzlib/unit
+	   mzlib/class
 	   (lib "tool.ss" "drscheme")
-           (lib "string-constant.ss" "string-constants"))
+           string-constants)
   
   (provide tool@)
 

@@ -1,16 +1,16 @@
 
 (module compiler mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
   
   (require "sig.ss")
 
-  (require (lib "compile-sig.ss" "dynext"))
-  (require (lib "link-sig.ss" "dynext"))
-  (require (lib "file-sig.ss" "dynext"))
+  (require dynext/compile-sig)
+  (require dynext/link-sig)
+  (require dynext/file-sig)
   ;;
-  (require (lib "compile.ss" "dynext"))
-  (require (lib "link.ss" "dynext"))
-  (require (lib "file.ss" "dynext"))
+  (require dynext/compile)
+  (require dynext/link)
+  (require dynext/file)
 
   (require "option.ss")
 

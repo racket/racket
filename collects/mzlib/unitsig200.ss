@@ -10,7 +10,7 @@
 
   (require-for-syntax "private/sigutil.ss")
   (require-for-syntax "private/sigmatch.ss")
-  (require-for-syntax (lib "kerncase.ss" "syntax"))
+  (require-for-syntax syntax/kerncase)
 
   (define-struct signed-unit (unit imports exports))
 

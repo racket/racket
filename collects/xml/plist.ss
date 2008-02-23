@@ -1,7 +1,7 @@
 (module plist mzscheme
 
   (require "xml.ss"
-           (lib "contract.ss"))
+           mzlib/contract)
 
    ; a dict is (list 'dict assoc-pair ...)
    ; an assoc-pair is (list 'assoc-pair key value)

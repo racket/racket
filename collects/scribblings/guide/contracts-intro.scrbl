@@ -96,7 +96,7 @@ discussion is elided. Here's the expansion of
 the requiring module, just to give an idea:
 
 (module m mzscheme 
-  (require (lib "contract.ss"))
+  (require mzlib/contract)
    (provide/contract [x x-ctc]))
 
 (module n mzscheme (require m) (define (f) ... x ...))
@@ -125,7 +125,7 @@ Of course, this breaks assignment to the provided variable.
 <scheme>
 ;; Language: Pretty Big
 (module a mzscheme 
-  (require (lib "contract.ss"))
+  (require mzlib/contract)
 
   (provide/contract 
    [amount positive?])

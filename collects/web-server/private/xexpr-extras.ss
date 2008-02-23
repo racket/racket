@@ -1,6 +1,6 @@
 #lang scheme/base
-(require (lib "url.ss" "net")
-         (lib "plt-match.ss"))  
+(require net/url
+         mzlib/plt-match)  
 (provide xexpr+extras->xexpr)
 
 (define xexpr+extras->xexpr

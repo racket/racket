@@ -36,7 +36,7 @@
   mzscheme
 
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (all-except (lib "delete.ss" "srfi" "1") member))
+           (all-except srfi/1/delete member))
 
   (provide delete-tests)
 

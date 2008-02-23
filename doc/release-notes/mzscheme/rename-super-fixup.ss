@@ -16,8 +16,8 @@
 ;; with the converted code (unless <file>.bak already exists, in which
 ;; case it is left as-is).
 
-(require (lib "list.ss")
-	 (lib "stx.ss" "syntax"))
+(require mzlib/list
+	 syntax/stx)
 
 ;; returns a list of syntax for `rename' clauses
 ;; the order in the list matches the textual order in the source

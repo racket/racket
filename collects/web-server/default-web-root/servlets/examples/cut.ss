@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "servlet.ss" "web-server"))
+(require web-server/servlet)
 (provide (all-defined-out))
 (define interface-version 'v1)
 (define timeout +inf.0)

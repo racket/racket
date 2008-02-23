@@ -1,18 +1,18 @@
 
 (module class-internal scheme/base
   (require (for-syntax scheme/base)
-           (lib "list.ss")
-           (lib "etc.ss")
-	   (lib "stxparam.ss")
+           mzlib/list
+           mzlib/etc
+	   mzlib/stxparam
            "class-events.ss"
            "serialize-structs.ss"
-           (for-syntax (lib "kerncase.ss" "syntax")
-                       (lib "stx.ss" "syntax")
-                       (lib "name.ss" "syntax")
-                       (lib "context.ss" "syntax")
-                       (lib "define.ss" "syntax")
+           (for-syntax syntax/kerncase
+                       syntax/stx
+                       syntax/name
+                       syntax/context
+                       syntax/define
                        (lib "boundmap.ss" "syntax" "private")
-                       (lib "stxparam.ss")
+                       mzlib/stxparam
                        "classidmap.ss"))
 
   (define insp (current-inspector)) ; for all opaque structures

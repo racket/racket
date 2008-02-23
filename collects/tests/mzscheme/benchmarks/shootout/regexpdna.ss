@@ -12,7 +12,7 @@
 
 (module regexpdna mzscheme
 
-  (require (lib "port.ss"))
+  (require mzlib/port)
   
   ;; -------------------------------
   

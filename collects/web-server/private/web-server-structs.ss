@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "contract.ss"))
+(require mzlib/contract)
 
 (define current-server-custodian (make-parameter #f))
 (provide current-server-custodian) ; parameter

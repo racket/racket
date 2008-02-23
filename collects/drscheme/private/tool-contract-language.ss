@@ -2,8 +2,8 @@
   (provide (rename -#%module-begin #%module-begin)
            (all-from-except mzscheme #%module-begin))
   
-  (require (lib "contract.ss"))
-  (require-for-syntax (lib "list.ss"))
+  (require mzlib/contract)
+  (require-for-syntax mzlib/list)
   
   (define-syntax (-#%module-begin stx)
     

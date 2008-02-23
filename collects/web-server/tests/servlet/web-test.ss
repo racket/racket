@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "url.ss" "net")
+         net/url
          (lib "web.ss" "web-server" "servlet"))
 (provide web-tests)
 

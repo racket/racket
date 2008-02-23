@@ -1,7 +1,7 @@
 (module datatype-test mzscheme
   (require (lib "datatype.ss" "plai")
            (lib "test-harness.ss" "plai")
-           (lib "contract.ss"))
+           mzlib/contract)
   
   (print-tests 'stop)
   

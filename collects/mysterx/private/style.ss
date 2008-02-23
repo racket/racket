@@ -1,7 +1,7 @@
 ;;; style.ss 
 
 (module style mzscheme
-  (require (lib "string.ss"))
+  (require mzlib/string)
   (require "util.ss")
   (require "properties.ss")
 

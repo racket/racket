@@ -1,7 +1,7 @@
 #lang scheme/base
-(require (lib "serialize.ss")
-         (lib "plt-match.ss")
-         (lib "url.ss" "net")           
+(require mzlib/serialize
+         mzlib/plt-match
+         net/url           
          "../private/request-structs.ss"
          "abort-resume.ss"
          "../private/session.ss"

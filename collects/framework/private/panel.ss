@@ -1,10 +1,10 @@
 
 #lang scheme/unit
-  (require (lib "class.ss")
+  (require mzlib/class
            "sig.ss"
            (lib "mred-sig.ss" "mred")
-           (lib "list.ss")
-           (lib "etc.ss"))
+           mzlib/list
+           mzlib/etc)
   
   (import [prefix icon: framework:icon^]
           mred^)

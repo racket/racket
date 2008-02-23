@@ -1,6 +1,6 @@
 (module tool mzscheme
   (require (lib "external.ss" "browser")
-           (lib "unit.ss")
+           mzlib/unit
            (lib "tool.ss" "drscheme"))
   (provide tool@)
 

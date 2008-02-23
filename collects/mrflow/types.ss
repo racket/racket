@@ -40,8 +40,8 @@
   ;; Printing
   ;; 
 
-  (require (lib "match.ss")
-           (prefix string: (lib "string.ss"))
+  (require mzlib/match
+           (prefix string: mzlib/string)
            "util.ss"
            "labels.ss")
 

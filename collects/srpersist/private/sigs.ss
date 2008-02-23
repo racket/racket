@@ -2,7 +2,7 @@
 
 (module sigs mzscheme
 
-  (require (lib "unitsig.ss"))
+  (require mzlib/unitsig)
 
   (provide srpersist:odbc^)
 

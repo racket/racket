@@ -1,6 +1,6 @@
 
 (module boundmap mzscheme
-  (require (lib "contract.ss")
+  (require mzlib/contract
 	   "private/boundmap.ss")
   
   (define-syntax provide/contract*

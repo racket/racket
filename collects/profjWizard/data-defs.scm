@@ -22,7 +22,7 @@
 #cs
 (module data-defs mzscheme 
   
-  (require (lib "string-constant.ss" "string-constants"))
+  (require string-constants)
   
   ;; Those languages for which methods that satisfy an interface 
   ;; don't have to be decorated with public --- 
@@ -50,7 +50,7 @@
   (define datat1  (make-dt "ATree" methods (list vc1 vc2) "a tree for ints"))
   
   (require "aux-contract.scm")
-  (require (lib "contract.ss"))
+  (require mzlib/contract)
   
   (provide 
    Class   ;; flat-contract

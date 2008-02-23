@@ -36,7 +36,7 @@
 (module predicate
   mzscheme
 
-  (require (lib "optional.ss" "srfi"))
+  (require srfi/optional)
 
   (provide pair?
 		   null?

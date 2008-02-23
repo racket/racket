@@ -1,6 +1,6 @@
 (module mzrl mzscheme
 
-(require (lib "foreign.ss")) (unsafe!)
+(require mzlib/foreign) (unsafe!)
 (provide readline readline-bytes
          add-history add-history-bytes
          set-completion-function!)

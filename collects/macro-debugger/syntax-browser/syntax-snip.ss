@@ -1,11 +1,11 @@
 
 (module syntax-snip mzscheme
-  (require (lib "class.ss")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
-           (lib "match.ss")
-           (lib "list.ss")
-           (lib "string.ss")
+  (require mzlib/class
+           mred
+           framework
+           mzlib/match
+           mzlib/list
+           mzlib/string
            "interfaces.ss"
            "display.ss"
            "controller.ss"

@@ -1,7 +1,7 @@
 (module prefs mzscheme
   (require "test-suite-utils.ss"
-	   (lib "etc.ss")
-	   (lib "list.ss"))
+	   mzlib/etc
+	   mzlib/list)
   
   (define ((check-eq? x) y) (eq? x y))
   (define pref-sym 'plt:not-a-real-preference)

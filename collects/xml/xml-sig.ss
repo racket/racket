@@ -1,6 +1,6 @@
 
 (module xml-sig mzscheme
-  (require (lib "unitsig.ss"))
+  (require mzlib/unitsig)
   
   (require "private/sig.ss")
 

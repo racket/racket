@@ -1,8 +1,8 @@
 (module load-sandbox mzscheme
   
-  (require (lib "moddep.ss" "syntax")
-           (lib "class.ss" "mzlib")
-           (lib "mred.ss" "mred"))  
+  (require syntax/moddep
+           mzlib/class
+           mred)  
   
   (provide eval/annotations
            require/annotations

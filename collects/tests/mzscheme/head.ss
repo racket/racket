@@ -6,7 +6,7 @@
 ;; url.ss tests
 ;;
 
-(require (lib "head.ss" "net"))
+(require net/head)
 
 (for-each 
  (lambda (addr)

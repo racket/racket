@@ -1,7 +1,7 @@
 
 (module utils mzscheme
-  (require (lib "mred.ss" "mred")
-	   (lib "class.ss"))
+  (require mred
+	   mzlib/class)
 
   (provide make-bitmap
 	   define-accessor

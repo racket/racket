@@ -14,10 +14,10 @@
 ;;  opposite must be completed, first.
 
 (module mzssl mzscheme
-  (require (lib "foreign.ss")
-	   (lib "port.ss")
-	   (lib "kw.ss")
-           (lib "runtime-path.ss"))
+  (require mzlib/foreign
+	   mzlib/port
+	   mzlib/kw
+           mzlib/runtime-path)
 
   (provide ssl-available?
 	   ssl-load-fail-reason

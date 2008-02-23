@@ -1,6 +1,6 @@
 
 (module collection-sig mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
   (provide make:collection^)
 

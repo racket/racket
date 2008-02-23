@@ -3,12 +3,12 @@
   
   (require
    (lib "tool.ss" "drscheme")
-   (lib "unit.ss")
-   (lib "list.ss")
-   (lib "class.ss")
-   (lib "mred.ss" "mred")
-   (prefix fw: (lib "framework.ss" "framework"))
-   (prefix strcst: (lib "string-constant.ss" "string-constants"))
+   mzlib/unit
+   mzlib/list
+   mzlib/class
+   mred
+   (prefix fw: framework)
+   (prefix strcst: string-constants)
    (prefix bit: (lib "bitmap-label.ss" "mrlib"))
    
    (prefix cst: "constants.ss")

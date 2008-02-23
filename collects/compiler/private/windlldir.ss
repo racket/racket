@@ -1,6 +1,6 @@
 
 (module windlldir mzscheme
-  (require (lib "port.ss")
+  (require mzlib/port
 	   "winutf16.ss")
 
   (provide update-dll-dir

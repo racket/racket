@@ -3,7 +3,7 @@
 ; 28-May-2005
 (module format mzscheme
   
-  (require (lib "pretty.ss"))
+  (require mzlib/pretty)
   
   (provide s:format)
   

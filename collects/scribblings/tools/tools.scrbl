@@ -163,8 +163,8 @@ then the same collection would be expected to contain a
 @schemeblock[
 (module tool mzscheme
   (require (lib "tool.ss" "drscheme")
-           (lib "mred.ss" "mred")
-           (lib "unit.ss"))
+           mred
+           mzlib/unit)
   
   (provide tool@)
   
@@ -261,7 +261,7 @@ As an example, the @italic{Essentials of Programming Languages}
 language specification's @File{info.ss} looks like this:
 @schememod[
 setup/infotab
-(require string-constants/string-constant)
+(require string-constants)
 (define name "EoPL Support")
 (define drscheme-language-modules
   (list "eopl-lang.ss"))

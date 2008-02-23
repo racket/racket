@@ -1,6 +1,6 @@
 
 (module winicon mzscheme
-  (require (lib "list.ss"))
+  (require mzlib/list)
   (provide install-icon
 	   extract-icons
 	   parse-icon
@@ -627,8 +627,8 @@
   ;;  moved somewhere else.
   #;
   (begin
-    (require (lib "mred.ss" "mred")
-             (lib "class.ss"))
+    (require mred
+             mzlib/class)
     (define (bitmap%->icon bm)
       (let* ([w (send bm get-width)]
              [h (send bm get-height)]

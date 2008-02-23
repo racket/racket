@@ -1,11 +1,11 @@
 
 (module canvas mzscheme
-  (require (prefix mred: (lib "mred.ss" "mred"))
-	   (lib "class.ss")
-	   (lib "file.ss")
-	   (lib "pretty.ss")
-	   (lib "etc.ss")
-	   (lib "list.ss")
+  (require (prefix mred: mred)
+	   mzlib/class
+	   mzlib/file
+	   mzlib/pretty
+	   mzlib/etc
+	   mzlib/list
 	   "utils.ss"
 	   "base.ss"
 	   "feature.ss")

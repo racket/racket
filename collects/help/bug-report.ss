@@ -1,16 +1,16 @@
 
 (module bug-report mzscheme
-  (require (lib "string-constant.ss" "string-constants")
-           (lib "head.ss" "net")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
-           (lib "class.ss")
-           (lib "etc.ss")
-           (lib "list.ss")
-           (lib "url.ss" "net")
-           (lib "uri-codec.ss" "net")
+  (require string-constants
+           net/head
+           mred
+           framework
+           mzlib/class
+           mzlib/etc
+           mzlib/list
+           net/url
+           net/uri-codec
            (lib "htmltext.ss" "browser")
-           (lib "dirs.ss" "setup")
+           setup/dirs
            "private/buginfo.ss")
 
   (provide help-desk:report-bug)

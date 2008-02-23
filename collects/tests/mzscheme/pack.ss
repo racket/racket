@@ -8,9 +8,9 @@
 
 (require (lib "pack.ss" "setup")
 	 (lib "unpack.ss" "setup")
-	 (lib "process.ss")
-	 (lib "dirs.ss" "setup")
-	 (lib "file.ss"))
+	 mzlib/process
+	 setup/dirs
+	 mzlib/file)
 
 ;; Test via mzc interface
 

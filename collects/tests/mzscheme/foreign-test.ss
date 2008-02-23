@@ -3,7 +3,7 @@
 
 (Section 'foreign)
 
-(require (lib "foreign.ss"))
+(require mzlib/foreign)
 (unsafe!)
 
 (let ([big/little (if (system-big-endian?) (lambda (x y) x) (lambda (x y) y))]
@@ -36,7 +36,7 @@
                               ";" vc "/atlmfc/lib"
                               ";" vc "/PlatformSDK/lib"))))
 
-(require (lib "compile.ss" "dynext") (lib "link.ss" "dynext") (lib "etc.ss"))
+(require dynext/compile dynext/link mzlib/etc)
 (let ([c  (build-path (this-expression-source-directory) "foreign-test.c")]
       [o  (build-path (current-directory) "foreign-test.o")]
       [so (build-path (current-directory)

@@ -1,7 +1,7 @@
 
-(require (lib "string.ss")
-         (only-in (lib "url.ss" "net") get-pure-port string->url)
-         (only-in (lib "port.ss") copy-port))
+(require mzlib/string
+         (only-in net/url get-pure-port string->url)
+         (only-in mzlib/port copy-port))
 
 (load-relative "loadtest.ss")
 

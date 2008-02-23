@@ -1,8 +1,8 @@
 #lang scheme/base
 (require (for-template scheme/base)         
-         (lib "kerncase.ss" "syntax")
-         (lib "etc.ss")
-         (lib "list.ss")
+         syntax/kerncase
+         mzlib/etc
+         mzlib/list
          (for-template "../lang/abort-resume.ss")
          "util.ss")
 (provide (all-defined-out))

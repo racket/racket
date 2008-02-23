@@ -1,6 +1,5 @@
 
-(require (lib "list.ss")
-	 (lib "head.ss" "net"))
+(require mzlib/list net/head)
 
 (define msgs
   (sort (filter (lambda (x) (regexp-match #rx"^[0-9]*$" (path->string x))) (directory-list))

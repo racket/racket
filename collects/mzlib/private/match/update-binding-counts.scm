@@ -3,7 +3,7 @@
   (provide update-binding-counts update-binding-count)
   
   (require "test-structure.scm")
-  (require (lib "etc.ss"))
+  (require mzlib/etc)
   
   
   ;;!(function update-binding-count

@@ -1,6 +1,6 @@
 
 (module dirs mzscheme
-  (require (lib "dirs.ss" "setup"))
+  (require setup/dirs)
 
   (define include-dir (find-include-dir))
   (define std-library-dir (find-lib-dir))

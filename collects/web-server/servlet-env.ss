@@ -1,7 +1,7 @@
 #lang scheme/base
-(require (prefix-in net: (lib "sendurl.ss" "net"))
+(require (prefix-in net: net/sendurl)
          (for-syntax scheme/base)
-         (lib "list.ss"))
+         mzlib/list)
 (require "web-server.ss"
          "configuration/configuration-table.ss"
          "private/util.ss"

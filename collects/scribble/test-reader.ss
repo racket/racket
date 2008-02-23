@@ -3,7 +3,7 @@
 exec mzscheme -r "$0" "$@"
 |#
 
-(require (lib "string.ss"))
+(require mzlib/string)
 
 #reader(lib "reader.ss" "scribble")
 (define tests

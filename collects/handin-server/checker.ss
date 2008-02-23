@@ -1,7 +1,6 @@
 #lang mzscheme
 
-(require "utils.ss" (lib "file.ss") (lib "list.ss") (lib "class.ss")
-         (lib "mred.ss" "mred"))
+(require "utils.ss" mzlib/file mzlib/list mzlib/class mred)
 
 (provide (all-from-except mzscheme #%module-begin) (all-from "utils.ss"))
 
@@ -93,7 +92,7 @@
 ;; * snip->text is used earlier in the process, where comment-box text is still
 ;;   available
 
-(require (lib "framework.ss" "framework")) ; for drscheme snips, used below
+(require framework) ; for drscheme snips, used below
 
 ;; input-port->text-input-port : input-port (any -> any) -> input-port
 ;;  the `filter' function is applied to special values; the filter result is

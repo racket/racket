@@ -2,10 +2,10 @@
   (require "utils.ss"
            "board.ss"
            "board-size.ss"
-           (lib "class.ss")
-           (lib "class100.ss")
-           (all-except (lib "unit.ss") rename) ; rename collides with class100
-           (lib "mred.ss" "mred")
+           mzlib/class
+           mzlib/class100
+           (all-except mzlib/unit rename) ; rename collides with class100
+           mred
            (prefix robot: "robot.ss"))
   
   (provide game@)

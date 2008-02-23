@@ -1,13 +1,13 @@
 (module external mzscheme
-  (require (lib "string-constant.ss" "string-constants")
-           (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "file.ss")
-           (lib "list.ss")
-           (lib "match.ss")
-           (prefix raw: (lib "sendurl.ss" "net"))
-           (lib "url.ss" "net")
-           (prefix fw: (lib "framework.ss" "framework")))
+  (require string-constants
+           mred
+           mzlib/class
+           mzlib/file
+           mzlib/list
+           mzlib/match
+           (prefix raw: net/sendurl)
+           net/url
+           (prefix fw: framework))
   (provide send-url
            (rename raw:browser-preference? browser-preference?)
            update-browser-preference

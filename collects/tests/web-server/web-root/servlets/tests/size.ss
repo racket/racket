@@ -1,4 +1,4 @@
-(require (lib "unitsig.ss"))
+(require mzlib/unitsig)
 (require (lib "servlet-sig.ss" "web-server"))
 
 (let* ([line-size 80]

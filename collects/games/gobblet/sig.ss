@@ -1,5 +1,5 @@
 (module sig mzscheme
-  (require (lib "unitsig.ss"))
+  (require mzlib/unitsig)
 
   (provide config^ 
 	   heuristics^ explore^

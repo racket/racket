@@ -4,7 +4,7 @@
 ;;; Modified for proper string output by Brent Fulgham
 
 (module random mzscheme
-  (require (only (lib "string.ss") real->decimal-string))
+  (require (only mzlib/string real->decimal-string))
 
   (define IM 139968)
   (define IA   3877)

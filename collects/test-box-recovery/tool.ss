@@ -1,10 +1,10 @@
 
 (module tool mzscheme
   (require (lib "tool.ss" "drscheme")
-           (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "unit.ss")
-           (lib "framework.ss" "framework"))
+           mred
+           mzlib/class
+           mzlib/unit
+           framework)
 
   (provide tool@)
 

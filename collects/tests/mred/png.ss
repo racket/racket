@@ -1,4 +1,4 @@
-(require (lib "list.ss"))
+(require mzlib/list)
 
 (define png-suite (build-path (or (current-load-relative-directory)
 				  (current-directory))

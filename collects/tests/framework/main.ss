@@ -1,8 +1,8 @@
 (module main mzscheme 
-  (require (lib "launcher.ss" "launcher")
-	   (lib "cmdline.ss")
-	   (lib "list.ss")
-           (lib "unitsig.ss")
+  (require launcher
+	   mzlib/cmdline
+	   mzlib/list
+           mzlib/unitsig
 	   "debug.ss"
 	   "test-suite-utils.ss")
 

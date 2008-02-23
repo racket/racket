@@ -1,8 +1,8 @@
 (module compile mzscheme
   (require "parameters.ss" "ast.ss" "types.ss" "parser.ss" "build-info.ss" "check.ss" "to-scheme.ss" "profj-pref.ss")
-  (require (lib "list.ss")
-           (lib "file.ss")
-           (lib "class.ss"))
+  (require mzlib/list
+           mzlib/file
+           mzlib/class)
 
   (provide compile-java compile-interactions compile-files compile-ast compile-interactions-ast
            compilation-unit-code compilation-unit-contains set-compilation-unit-code!

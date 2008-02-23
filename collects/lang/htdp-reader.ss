@@ -1,5 +1,5 @@
 (module htdp-reader mzscheme
-  (require (lib "etc.ss"))
+  (require mzlib/etc)
   (provide make-read-syntax
            make-read)
   

@@ -1,3 +1,3 @@
 (module |4| mzscheme
-  (require (lib "foreign.ss"))
+  (require mzlib/foreign)
   (provide-srfi-4))

@@ -1,16 +1,8 @@
 (module view mzscheme
-  (require 
-   (lib "plplot.ss" "plot")
-   (lib "math.ss" "plot")
-   (lib "class.ss")
-   (lib "file.ss")
-   (lib "mred.ss" "mred")
-   (lib "math.ss")
-   ;(lib "4.ss" "srfi")
-   )
+  (require plot/plplot plot/math mzlib/class mzlib/file mred mzlib/math)
 
   ;; including suggested fix from Doug Williams
-  
+
   ; macro for creating a field in a class with a getter and a setter
   (define-syntax (fields-with-accessors stx) 
     (define (join-identifier prefix ident)

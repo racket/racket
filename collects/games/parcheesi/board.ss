@@ -1,8 +1,8 @@
 
 (module board mzscheme
-  (require (lib "contract.ss")
-           (lib "list.ss")
-           (lib "etc.ss"))
+  (require mzlib/contract
+           mzlib/list
+           mzlib/etc)
   
   ;; color = (symbols 'blue 'green 'red 'yellow)
   ;; color : color

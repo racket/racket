@@ -1,10 +1,10 @@
 
 (module graph mzscheme
-  (require (lib "class.ss")
-           (lib "list.ss")
-           (lib "math.ss")
-           (lib "mred.ss" "mred")
-	   (lib "contract.ss"))
+  (require mzlib/class
+           mzlib/list
+           mzlib/math
+           mred
+	   mzlib/contract)
   
   (provide graph-snip<%>
            graph-snip-mixin

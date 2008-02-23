@@ -36,10 +36,10 @@ paint by numbers.
 |#
 
 (module gui mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
-           (lib "etc.ss")
-           (lib "class.ss"))
+  (require mred
+           framework
+           mzlib/etc
+           mzlib/class)
 
   (provide paint-by-numbers-canvas%
            design-paint-by-numbers-canvas%)

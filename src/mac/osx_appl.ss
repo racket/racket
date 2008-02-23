@@ -11,8 +11,8 @@
 (module osx_appl mzscheme
 
   (require (lib "plist.ss" "xml")
-	   (lib "process.ss")
-	   (lib "file.ss"))
+	   mzlib/process
+	   mzlib/file)
 
   (define rez-path (or (getenv "REZ")
 		       "/Developer/Tools/Rez"))

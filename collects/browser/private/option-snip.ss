@@ -1,7 +1,7 @@
 (module option-snip mzscheme
-  (require (lib "mred.ss" "mred")
-	   (lib "class.ss")
-	   (lib "string.ss"))
+  (require mred
+	   mzlib/class
+	   mzlib/string)
 
   (provide option-snip%
            checkbox-snip%)

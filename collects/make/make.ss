@@ -1,6 +1,6 @@
 
 (module make mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
   (require "make-sig.ss"
 	  "make-unit.ss")

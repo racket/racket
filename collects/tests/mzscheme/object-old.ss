@@ -3,7 +3,7 @@
 
 (load-relative "loadtest.ss")
 
-(require (lib "class.ss"))
+(require mzlib/class)
 
 (Section 'object)
 

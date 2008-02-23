@@ -3,7 +3,7 @@
   (require (lib "compile.ss" "profj")
            (lib "parameters.ss" "profj")
            (lib "display-java.ss" "profj")
-           (lib "class.ss"))
+           mzlib/class)
 
   (define report-expected-error-messages (make-parameter #t))
 
@@ -95,9 +95,9 @@
                                                 (format "Test ~a: Exception raised for ~a : ~a"
                                                         msg ent (exn-message exn)) (interaction-msgs))))))])
                     (let ((new-val (eval `(begin
-                                            (require (lib "class.ss")
+                                            (require mzlib/class
                                                      (prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java"))
-                                                     (prefix c: (lib "contract.ss")))
+                                                     (prefix c: mzlib/contract))
                                             ,(compile-interactions st st type-recs level)))))
                       (when (eq? val 'error)
                         (missed-expected-errors (add1 (missed-expected-errors)))
@@ -143,7 +143,7 @@
         (eval-modules (compile-java 'port 'port level #f def-st def-st type-recs))
         (let ((vals (map (lambda (ex-val)
                            (let ((st (open-input-string ex-val)))
-                             (eval `(begin (require (lib "class.ss")
+                             (eval `(begin (require mzlib/class
                                                     (prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java")))
                                            ,(compile-interactions st st type-recs level)))))
                          val)))
@@ -178,7 +178,7 @@
                     (lambda (exn)
                       (list 'interact #f (exn-message exn)))])
                 (let* ((get-val (lambda (v-st v-pe)
-                                  (eval `(begin (require (lib "class.ss"))
+                                  (eval `(begin (require mzlib/class)
                                                 (require (prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java")))
                                                 ,(compile-interactions v-st v-st type-recs level)))))
                        (i-st (open-input-string interact))

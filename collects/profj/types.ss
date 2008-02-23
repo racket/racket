@@ -1,11 +1,11 @@
 (module types mzscheme
 
   (require 
-   (only (lib "1.ss" "srfi") lset-intersection)
-   (lib "etc.ss")
-   (lib "pretty.ss")
-   (lib "list.ss")
-   (lib "class.ss")
+   (only srfi/1 lset-intersection)
+   mzlib/etc
+   mzlib/pretty
+   mzlib/list
+   mzlib/class
    "ast.ss")
   
   (provide (all-defined-except number-assign-conversions remove-dups meth-member?

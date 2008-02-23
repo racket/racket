@@ -1,6 +1,6 @@
 #lang scheme/base
-(require (lib "serialize.ss")
-         (lib "url.ss" "net"))
+(require mzlib/serialize
+         net/url)
 (provide (struct-out mc-question)
          make-cue-page
          quiz)

@@ -1,9 +1,9 @@
 
 (module slide mzscheme
-  (require (lib "unit.ss")
-	   (lib "contract.ss")
-	   (lib "mrpict.ss" "texpict")
-	   (lib "utils.ss" "texpict")
+  (require mzlib/unit
+	   mzlib/contract
+	   texpict/mrpict
+	   texpict/utils
 	   "sig.ss"
 	   "core.ss"
 	   "private/utils.ss"
@@ -122,5 +122,5 @@
 		    [apply-slide-inset
 		     (sinset? pict? . -> . pict?)])
   ;; Things not at all in the core unit:
-  (provide (all-from (lib "mrpict.ss" "texpict"))
-	   (all-from (lib "utils.ss" "texpict"))))
+  (provide (all-from texpict/mrpict)
+	   (all-from texpict/utils)))

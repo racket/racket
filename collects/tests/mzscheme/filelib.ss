@@ -3,9 +3,9 @@
 
 (Section 'file)
 
-(require (lib "file.ss")
-	 (lib "process.ss")
-	 (lib "list.ss"))
+(require mzlib/file
+	 mzlib/process
+	 mzlib/list)
 
 (parameterize ([current-directory (current-load-relative-directory)])
   (let ([rel (find-files values)]

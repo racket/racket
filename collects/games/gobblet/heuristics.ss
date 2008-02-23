@@ -3,9 +3,9 @@
 ;; explorer.
 
 (module heuristics mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "etc.ss")
-	   (lib "list.ss")
+  (require mzlib/unitsig
+	   mzlib/etc
+	   mzlib/list
 	   "sig.ss"
 	   "plays-3x3.ss")
 

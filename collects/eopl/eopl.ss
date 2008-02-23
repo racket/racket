@@ -1,8 +1,8 @@
 (module eopl mzscheme
   (require "datatype.ss"
 	   "private/sllgen.ss"
-	   (lib "trace.ss")
-	   (lib "pretty.ss")
+	   mzlib/trace
+	   mzlib/pretty
            (rename r5rs r5rs:define define))
   (require-for-syntax "private/slldef.ss")
 

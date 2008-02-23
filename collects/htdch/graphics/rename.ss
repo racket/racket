@@ -1,8 +1,8 @@
 (module rename mzscheme
 
-  (require (lib "class.ss") 
-           (lib "mred.ss" "mred") 
-           (lib "image.ss" "htdp")
+  (require mzlib/class
+           mred
+           htdp/image
            (lib "imageeq.ss" "lang" "private" ))
   
   (provide to-symbol new-object call-back-canvas% overlay-x-y 

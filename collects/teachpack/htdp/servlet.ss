@@ -1,3 +1,3 @@
 #cs(module servlet mzscheme
-  (require (lib "servlet.ss" "htdp"))
-  (provide (all-from (lib "servlet.ss" "htdp"))))
+  (require htdp/servlet)
+  (provide (all-from htdp/servlet)))

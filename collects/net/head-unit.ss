@@ -1,6 +1,6 @@
 #lang scheme/unit
 
-  (require (lib "date.ss") (lib "string.ss") "head-sig.ss")
+  (require mzlib/date mzlib/string "head-sig.ss")
 
   (import)
   (export head^)

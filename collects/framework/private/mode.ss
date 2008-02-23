@@ -1,6 +1,6 @@
 #lang scheme/unit
-  (require (lib "surrogate.ss")
-           (lib "class.ss")
+  (require mzlib/surrogate
+           mzlib/class
            "sig.ss")
   
   (import)

@@ -1,6 +1,6 @@
 
 (module modhelp mzscheme
-  (require (lib "string.ss"))
+  (require mzlib/string)
 
   (provide explode-relpath-string
            module-path-v?

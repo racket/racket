@@ -2,10 +2,10 @@
 ;; Unit system
 
 (module unit200 mzscheme
-  (require-for-syntax (lib "kerncase.ss" "syntax")
-		      (lib "stx.ss" "syntax")
-		      (lib "name.ss" "syntax")
-		      (lib "context.ss" "syntax")
+  (require-for-syntax syntax/kerncase
+		      syntax/stx
+		      syntax/name
+		      syntax/context
 		      "list.ss"
 		      "private/unitidmap.ss")
 

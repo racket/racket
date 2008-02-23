@@ -1,8 +1,8 @@
 (module combinator-example mzscheme
 
-(require (lib "unit.ss")
-         (lib "lex.ss" "parser-tools")
-         (lib "combinator-unit.ss" "parser-tools"))
+(require mzlib/unit
+         parser-tools/lex
+         parser-tools/combinator-unit)
 
 (define-unit support
   (import)

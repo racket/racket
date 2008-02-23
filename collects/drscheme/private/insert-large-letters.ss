@@ -1,9 +1,6 @@
 #lang scheme/base
 
-(require mred/mred
-         scheme/class
-         string-constants/string-constant
-         framework/framework)
+(require mred scheme/class string-constants framework)
 
 (provide insert-large-letters)
 

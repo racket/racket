@@ -11,33 +11,33 @@
 ;;
 
 (module readr mzscheme
-  (require (lib "unit.ss")
-	   (lib "class.ss")
-           (lib "file.ss")
+  (require mzlib/unit
+	   mzlib/class
+           mzlib/file
 	   (lib "mred-sig.ss" "mred")
-           (lib "framework.ss" "framework")
-           (lib "process.ss"))
+           framework
+           mzlib/process)
 
-  (require (lib "string.ss")
-           (lib "list.ss")
-	   (lib "thread.ss")
+  (require mzlib/string
+           mzlib/list
+	   mzlib/thread
            "spell.ss")
 
   (require "sirmails.ss")
 
   (require "pref.ss")
 
-  (require (lib "imap-sig.ss" "net")
-	   (lib "smtp-sig.ss" "net")
-	   (lib "head-sig.ss" "net")
-	   (lib "base64-sig.ss" "net")
-	   (lib "mime-sig.ss" "net")
-	   (lib "qp-sig.ss" "net")
+  (require net/imap-sig
+	   net/smtp-sig
+	   net/head-sig
+	   net/base64-sig
+	   net/mime-sig
+	   net/qp-sig
            (lib "htmltext.ss" "browser"))
 
   (require (lib "hierlist-sig.ss" "hierlist"))
 
-  (require (lib "sendurl.ss" "net"))
+  (require net/sendurl)
 
   (require (lib "mzssl.ss" "openssl"))
 

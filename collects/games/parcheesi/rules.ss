@@ -5,10 +5,10 @@
            "moves.ss"
            "gui.ss"
 
-           (lib "class.ss")
+           mzlib/class
            (lib "xml.ss" "xml")
            (lib "htmltext.ss" "browser")
-           (lib "mred.ss" "mred"))
+           mred)
 
   (define board-size 250)
   

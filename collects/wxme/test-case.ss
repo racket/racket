@@ -1,6 +1,6 @@
 
 (module test-case mzscheme
-  (require (lib "class.ss")
+  (require mzlib/class
            "wxme.ss"
            "private/class-help.ss")
 

@@ -2,9 +2,9 @@
 
 (module solve mzscheme
   
-  (require (lib "list.ss")
-           (lib "etc.ss")
-           (lib "contract.ss"))
+  (require mzlib/list
+           mzlib/etc
+           mzlib/contract)
   
   (provide/contract [solve (-> (listof (listof integer?))  ; row-info
                                (listof (listof integer?))  ; col-info

@@ -1,6 +1,6 @@
 (module simplify-patterns mzscheme
   
-  (require (lib "stx.ss" "syntax"))
+  (require syntax/stx)
   
   (require scheme/list)
   

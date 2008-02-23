@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "md5.ss"))
+(require mzlib/md5)
 (provide make-labeling)
 
 ;; REQUIREMENT: The label code must be non-numeric.

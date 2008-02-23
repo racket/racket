@@ -1,4 +1,4 @@
-(require (lib "world.ss" "htdp"))
+(require htdp/world)
 
 (with-handlers ((exn? (lambda (x) #t)))
   (place-image (circle 3 'solid 'red) 1.2 3.14 (empty-scene 100 100)))

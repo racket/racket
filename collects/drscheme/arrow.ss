@@ -1,9 +1,9 @@
 
 (module arrow mzscheme
-  (require (lib "class.ss")
-           (lib "list.ss")
-           (lib "math.ss")
-	   (lib "mred.ss" "mred"))
+  (require mzlib/class
+           mzlib/list
+           mzlib/math
+	   mred)
   
   (provide draw-arrow)
     

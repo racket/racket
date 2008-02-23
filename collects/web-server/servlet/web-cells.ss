@@ -1,6 +1,6 @@
 #lang scheme/base
-(require (lib "struct.ss")
-         (lib "contract.ss"))
+(require mzlib/struct
+         mzlib/contract)
 
 (define-struct (exn:fail:frame:top exn) ())
 (define (exn:fail:frame:top-raise)

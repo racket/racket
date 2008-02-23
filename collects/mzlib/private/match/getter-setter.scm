@@ -5,7 +5,7 @@
   (require "coupling-and-binding.scm"
            "match-helper.ss"
            "match-error.ss"
-           (lib "stx.ss" "syntax"))
+           syntax/stx)
   (require-for-template mzscheme
 			"match-error.ss")
   

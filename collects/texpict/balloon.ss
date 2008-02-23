@@ -1,10 +1,10 @@
 (module balloon mzscheme
   (require "mrpict.ss"
 	   "utils.ss"
-	   (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "etc.ss")
-           (lib "math.ss"))
+	   mred
+           mzlib/class
+           mzlib/etc
+           mzlib/math)
   
   (provide wrap-balloon pip-wrap-balloon
 	   place-balloon

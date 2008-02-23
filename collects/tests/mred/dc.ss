@@ -75,7 +75,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Get-pixel, set-pixel, get-argb-pixels, etc.
 
-(require (lib "etc.ss"))
+(require mzlib/etc)
 
 (define (pixel-tests b&w?)
   (begin-with-definitions

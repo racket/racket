@@ -1,10 +1,10 @@
 #cs
 (module general-parsing mzscheme
   
-  (require (all-except (lib "lex.ss" "parser-tools") input-port)
-           (lib "string.ss")
-           (prefix class: (lib "class.ss"))
-           (lib "list.ss"))
+  (require (all-except parser-tools/lex input-port)
+           mzlib/string
+           (prefix class: mzlib/class)
+           mzlib/list)
   (require "../ast.ss" "../parameters.ss" "lexer.ss")
   
   (provide (all-defined))

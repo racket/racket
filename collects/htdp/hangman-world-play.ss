@@ -1,7 +1,7 @@
 (module hangman-world-play mzscheme 
   (require "hangman-world.ss"
-           (lib "world.ss" "htdp")
-           (lib "etc.ss"))
+           htdp/world
+           mzlib/etc)
   
   #| ------------------------------------------------------------------------
   add-next-part :

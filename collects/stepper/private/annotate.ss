@@ -1,9 +1,9 @@
 #lang scheme/base
 
-(require (prefix-in kernel: (lib "kerncase.ss" "syntax"))
-         (lib "contract.ss")
-         (lib "list.ss")
-         (lib "etc.ss")
+(require (prefix-in kernel: syntax/kerncase)
+         mzlib/contract
+         mzlib/list
+         mzlib/etc
          scheme/match
          "marks.ss"
          "shared.ss"

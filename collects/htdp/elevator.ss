@@ -1,9 +1,9 @@
 (module elevator mzscheme
-  (require (lib "big-draw.ss" "htdp")
-	   (lib "error.ss" "htdp")
+  (require htdp/big-draw
+	   htdp/error
 	   (lib "posn.ss" "lang")
-           (lib "etc.ss")
-           (lib "mred.ss" "mred")
+           mzlib/etc
+           mred
            (lib "prim.ss" "lang"))
 
   ;; Implementation:

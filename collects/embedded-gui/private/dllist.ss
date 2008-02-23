@@ -1,10 +1,10 @@
 (module dllist mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "list.ss")
-   (lib "etc.ss")
-   (lib "framework.ss" "framework")
+   mzlib/class
+   mzlib/list
+   mzlib/etc
+   framework
    "interface.ss")
   
   (provide dllist-mixin dllist% head% tail%)

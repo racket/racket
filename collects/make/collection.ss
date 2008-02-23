@@ -1,12 +1,12 @@
 
 (module collection mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
-  (require (lib "file-sig.ss" "dynext")
-	  (lib "file.ss" "dynext")
-	  (lib "sig.ss" "compiler")
-	  (lib "compiler.ss" "compiler")
-	  (lib "option.ss" "compiler"))
+  (require dynext/file-sig
+	  dynext/file
+	  compiler/sig
+	  compiler/compiler
+	  compiler/option)
 
   (require "make-sig.ss"
 	  "make.ss"

@@ -3,17 +3,17 @@
   ;; Provides the syntax used to create lexers and the functions needed to
   ;; create and use the buffer that the lexer reads from.  See docs.
 	
-  (require-for-syntax (lib "list.ss")
-                      (lib "stx.ss" "syntax")
-                      (lib "define.ss" "syntax")
-                      (lib "boundmap.ss" "syntax")
+  (require-for-syntax mzlib/list
+                      syntax/stx
+                      syntax/define
+                      syntax/boundmap
                       "private-lex/util.ss"
                       "private-lex/actions.ss"
                       "private-lex/front.ss"
                       "private-lex/unicode-chars.ss")
 
-  (require (lib "stxparam.ss")
-           (lib "readerr.ss" "syntax")
+  (require mzlib/stxparam
+           syntax/readerr
            "private-lex/token.ss")
 
   (provide lexer lexer-src-pos define-lex-abbrev define-lex-abbrevs define-lex-trans

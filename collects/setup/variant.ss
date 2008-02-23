@@ -1,7 +1,7 @@
 
 (module variant mzscheme
-  (require (prefix config: (lib "config.ss" "config"))
-           (lib "dirs.ss" "setup"))
+  (require (prefix config: config)
+           setup/dirs)
 
   (provide variant-suffix)
 

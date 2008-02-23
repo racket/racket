@@ -10,7 +10,7 @@ in ...
 
 |#         
 
-(require (lib "match.ss"))
+(require mzlib/match)
 
 ;; shrink-file : string -> string
 (define (shrink-file filename)

@@ -1,5 +1,5 @@
 #lang scheme/unit
-  (require (lib "class.ss")
+  (require mzlib/class
            "sig.ss"
            "../preferences.ss"
            (lib "mred-sig.ss" "mred"))

@@ -218,7 +218,7 @@
 (htdp-teachpack-pop)
 
 ;; Check require
-(htdp-top (require (lib "unit.ss" "mzlib")))
+(htdp-top (require mzlib/unit))
 (htdp-test #f unit? 12)
 (htdp-top-pop 1)
 

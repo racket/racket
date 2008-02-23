@@ -1,6 +1,6 @@
 (require "sort.scm"
          "vector-util.scm"
-         (lib "27.ss" "srfi"))
+         srfi/27)
 
 (define insert-sort!
   ; http://www.math.grin.edu/~stone/events/scheme-workshop/insertion.html

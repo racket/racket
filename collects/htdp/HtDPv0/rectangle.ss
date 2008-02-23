@@ -1,9 +1,9 @@
 (module rectangle mzscheme
-  (require (lib "error.ss" "htdp")
-	   (lib "draw-sig.ss" "htdp")
-	   (lib "big-draw.ss" "htdp")
-           (lib "unitsig.ss")
-           (lib "list.ss")
+  (require htdp/error
+	   htdp/draw-sig
+	   htdp/big-draw
+           mzlib/unitsig
+           mzlib/list
 	   (lib "posn.ss" "lang"))
   
   (provide show)

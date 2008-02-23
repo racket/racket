@@ -5,9 +5,9 @@
    stretchable-editor-snip-mixin)
   
   (require
-   (lib "class.ss")
-   (lib "mred.ss" "mred")
-   (lib "etc.ss")
+   mzlib/class
+   mred
+   mzlib/etc
    "snip-lib.ss"
    "interface.ss")
   

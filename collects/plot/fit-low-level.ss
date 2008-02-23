@@ -1,5 +1,5 @@
 (module fit-low-level mzscheme
-  (require (lib "foreign.ss") (lib "runtime-path.ss"))
+  (require mzlib/foreign mzlib/runtime-path)
   (unsafe!)
 
   (define-runtime-path libfit-path

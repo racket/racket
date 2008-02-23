@@ -1,9 +1,9 @@
 (module suppress-modify-editor mzscheme
   
   (require
-   (lib "etc.ss")
-   (lib "class.ss")
-   (lib "mred.ss" "mred"))
+   mzlib/etc
+   mzlib/class
+   mred)
   
   (provide suppress-modify-editor-mixin)
       

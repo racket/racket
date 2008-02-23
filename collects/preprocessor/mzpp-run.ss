@@ -1,9 +1,6 @@
 (module mzpp-run mzscheme
 
-(require (lib "mzpp.ss" "preprocessor")
-         (lib "pp-run.ss" "preprocessor")
-         (lib "cmdline.ss")
-         (lib "process.ss"))
+(require preprocessor/mzpp preprocessor/pp-run mzlib/cmdline mzlib/process)
 
 (let ([output #f] [run-cmd #f])
   (command-line

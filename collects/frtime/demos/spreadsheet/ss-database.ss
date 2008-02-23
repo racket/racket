@@ -1,8 +1,8 @@
-(module ss-database (lib "frtime-big.ss" "frtime")
-  (require (rename (lib "frp-core.ss" "frtime") current-custs current-custs))
-  (require (rename (lib "frp-core.ss" "frtime") do-in-manager do-in-manager))
+(module ss-database frtime/frtime-big
+  (require (rename frtime/frp-core current-custs current-custs))
+  (require (rename frtime/frp-core do-in-manager do-in-manager))
   (require (as-is:unchecked mzscheme make-hash-table hash-table-get hash-table-put!))
-  ;(require (lib "string.ss"))
+  ;(require mzlib/string)
     
   (define-struct rcvXbeh (rcv beh))
 

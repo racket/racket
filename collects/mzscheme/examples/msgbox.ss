@@ -3,7 +3,7 @@
 ;; so that MessageBox() is linked in.
 
 (module msgbox mzscheme
-  (require (lib "cffi.ss" "compiler"))
+  (require compiler/cffi)
   
   ;; c-declare is really file-specific, and
   ;;  not module-specific

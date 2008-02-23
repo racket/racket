@@ -1,9 +1,9 @@
 #lang scheme/base
-(require (lib "url.ss" "net")
-         (lib "list.ss")
-         (lib "plt-match.ss")
-         (lib "contract.ss")
-         (lib "etc.ss"))
+(require net/url
+         mzlib/list
+         mzlib/plt-match
+         mzlib/contract
+         mzlib/etc)
 (require "../managers/manager.ss"
          "../private/util.ss"
          "../private/servlet.ss"

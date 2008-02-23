@@ -1,5 +1,5 @@
 (module mred-unit mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
            "mred-sig.ss"
            "mred.ss")
   (provide standard-mred@)

@@ -1,7 +1,7 @@
 (module pict-box-lib mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "mrpict.ss" "texpict")
+  (require mred
+           mzlib/class
+           texpict/mrpict
            "image-snipr.ss")
   
   (provide get-snp/poss

@@ -3,7 +3,7 @@
 
 (Section 'command-line)
 
-(require (lib "cmdline.ss"))
+(require mzlib/cmdline)
 
 (define (r-append opt . rest)
   (append opt (list (list->vector rest))))

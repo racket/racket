@@ -37,10 +37,10 @@
 
 
 (module model mzscheme
-  (require (lib "contract.ss")
-           (lib "etc.ss")
-           (lib "match.ss")
-           (lib "class.ss")
+  (require mzlib/contract
+           mzlib/etc
+           mzlib/match
+           mzlib/class
            (prefix a: "annotate.ss")
            (prefix r: "reconstruct.ss")
            "shared.ss"

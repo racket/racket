@@ -1,2 +1,2 @@
 (module trusted-xforms mzscheme
-  (require (lib "class.ss")))
+  (require mzlib/class))

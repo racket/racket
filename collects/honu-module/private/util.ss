@@ -3,7 +3,7 @@
   (provide delim-identifier=?
            extract-until)
 
-  (require (lib "stx.ss" "syntax"))
+  (require syntax/stx)
 
    (define (delim-identifier=? a b)
      (eq? (syntax-e a) (syntax-e b)))

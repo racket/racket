@@ -1,6 +1,6 @@
 
 (module pcre mzscheme
-  (require (lib "foreign.ss"))
+  (require mzlib/foreign)
   (unsafe!)
 
   (provide pcregexp

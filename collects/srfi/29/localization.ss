@@ -1,10 +1,10 @@
 (module localization mzscheme
   
-  (require (lib "contract.ss")
-           (lib "file.ss")
-           (lib "runtime-path.ss")
-           (lib "string.ss")
-           (lib "modread.ss" "syntax"))
+  (require mzlib/contract
+           mzlib/file
+           mzlib/runtime-path
+           mzlib/string
+           syntax/modread)
   
   (provide/contract (current-language (parameter/c symbol?))
                     (current-country (parameter/c symbol?))

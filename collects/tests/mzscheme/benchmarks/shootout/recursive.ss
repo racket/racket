@@ -9,7 +9,7 @@
 ;; ---------------------------------------------------------------------
 
 (module recursive mzscheme
-  (require (only (lib "string.ss") real->decimal-string))
+  (require (only mzlib/string real->decimal-string))
 
   ;; -------------------------------
 

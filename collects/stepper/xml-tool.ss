@@ -2,14 +2,14 @@
 (module xml-tool mzscheme
   (require "private/xml-snip-helpers.ss"
            "xml-sig.ss"
-           (lib "unit.ss")
-           (lib "contract.ss")
-           (lib "class.ss")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
+           mzlib/unit
+           mzlib/contract
+           mzlib/class
+           mred
+           framework
            (lib "tool.ss" "drscheme")
            (lib "xml.ss" "xml")
-           (lib "string-constant.ss" "string-constants"))
+           string-constants)
   
   (provide xml-tool@)
   

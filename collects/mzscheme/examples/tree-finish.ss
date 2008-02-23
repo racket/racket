@@ -1,7 +1,7 @@
 
 ;; Assumes that tree.so has been loaded
 
-(require (lib "class.ss"))
+(require mzlib/class)
 
 (define tree%
   (let ([method-names '(get-leaves 

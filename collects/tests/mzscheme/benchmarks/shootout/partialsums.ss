@@ -12,7 +12,7 @@
 ;;  its time GCing; it runs 1.5 times as fast in mzscheme3m.
 
 (module partialsums mzscheme
-  (require (only (lib "string.ss") real->decimal-string))
+  (require (only mzlib/string real->decimal-string))
 
   (let ((n (exact->inexact
 	    (string->number

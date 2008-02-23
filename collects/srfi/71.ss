@@ -1,7 +1,7 @@
 ;; module loader for SRFI-71
 (module |71| mzscheme
-  (require (lib "letvalues.ss" "srfi" "71"))
-  (provide (all-from-except (lib "letvalues.ss" "srfi" "71")
+  (require srfi/71/letvalues)
+  (provide (all-from-except srfi/71/letvalues
                             let
                             let*
                             letrec

@@ -17,12 +17,12 @@ please see the note below.
 
 To load a SRFI, use the following form:
 
-         (require (lib "N.ss" "srfi"))
+         (require srfi/N)
 
 if you know the number of the SRFI you want to load.  This
 is the preferred method, or this one:
 
-         (require (lib "NAME.ss" "srfi" "N"))
+         (require srfi/N/NAME)
 
 if you know the `informative name' of the SRFI.
 
@@ -32,11 +32,11 @@ name we assigned to the main file in which the SRFI is
 defined.  For instance, to load SRFI-34 you have to do
 either one of:
 
-         (require (lib "34.ss" "srfi"))
+         (require srfi/34)
 
 or,
 
-         (require (lib "exception.ss" "srfi" "34"))
+         (require srfi/34/exception)
 
 NOTE on SRFIs with name conflicts
 ---------------------------------
@@ -53,7 +53,7 @@ problematic exports to avoid these conflicts.  For SRFI 1,
 this library is called list.ss, and should be required like
 this:
 
-         (require (lib "list.ss" "srfi" "1"))
+         (require srfi/1/list)
 
 which supplies the colliding names with a prefix of 's:'
 (e.g. "s:map", "s:reverse!") and is therefore suitable for
@@ -62,7 +62,7 @@ requires in a module.
 For SRFI 19, this library is called time.ss, and should be
 required like this:
 
-         (require (lib "time.ss" "srfi" "19"))
+         (require srfi/19/time)
 
 which supplies the colliding names with a prefix of 'srfi:'
 (e.g. "srfi:date?", "srfi:date-second") and is therefore

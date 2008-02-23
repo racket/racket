@@ -1,7 +1,7 @@
 #cs(module simplify mzscheme
      (require "parse.ss"
               "prims.ss"
-              (lib "match.ss"))
+              mzlib/match)
      
      (provide simplify)
       

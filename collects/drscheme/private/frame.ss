@@ -1,15 +1,15 @@
 
 #lang scheme/unit
-  (require (lib "string-constant.ss" "string-constants")
-           (lib "match.ss")
-           (lib "class.ss")
-           (lib "string.ss")
-           (lib "list.ss")
+  (require string-constants
+           mzlib/match
+           mzlib/class
+           mzlib/string
+           mzlib/list
            "drsig.ss"
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
-           (lib "url.ss" "net")
-           (lib "head.ss" "net")
+           mred
+           framework
+           net/url
+           net/head
            (lib "plt-installer.ss" "setup")
            (lib "bug-report.ss" "help")
            scheme/file)

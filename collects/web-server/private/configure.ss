@@ -1,13 +1,13 @@
 #lang scheme/base
-(require (lib "servlet.ss" "web-server")
-         (lib "url.ss" "net")
-         (lib "etc.ss")
-         (lib "list.ss")
-         (lib "pretty.ss")
-         (only-in (lib "file.ss")
+(require web-server/servlet
+         net/url
+         mzlib/etc
+         mzlib/list
+         mzlib/pretty
+         (only-in mzlib/file
                   make-directory*)
          (lib "configuration-table-structs.ss" "web-server" "configuration")
-         (lib "configuration-table.ss" "web-server" "configuration")           
+         web-server/configuration/configuration-table
          (lib "util.ss" "web-server" "private"))
 (provide
  interface-version timeout

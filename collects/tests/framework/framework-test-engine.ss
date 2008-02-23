@@ -1,7 +1,7 @@
 
 (module framework-test-engine mzscheme
-  (require (lib "pconvert.ss")
-	   (lib "mred.ss" "mred")
+  (require mzlib/pconvert
+	   mred
 	   "debug.ss")
 
   (define errs null)

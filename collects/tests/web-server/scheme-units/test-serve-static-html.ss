@@ -2,7 +2,7 @@
 ;; Test whether a static, HTML file can be sent correctly.
 (module test-serve-static-html mzscheme
   (require (lib "test.ss" "schemeunit")
-           (lib "contract.ss")
+           mzlib/contract
            "assertions.ss"
            )
 

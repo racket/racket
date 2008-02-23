@@ -7,14 +7,14 @@
 #lang scheme/unit
 
   (require (lib "mred-sig.ss" "mred")
-	   (lib "class.ss")
-	   (lib "class100.ss")
-	   (lib "etc.ss")
+	   mzlib/class
+	   mzlib/class100
+	   mzlib/etc
            "erl.ss"
            ;(rename "frp-core.ss" event-receiver event-receiver)
            ;(rename "frp-core.ss" frp-man man)
            ;(rename "frp-core.ss" send-event send-event)
-           (lib "frp-core.ss" "frtime")
+           frtime/frp-core
 	   "graphics-sig.ss")
 
   (import (prefix mred: mred^)

@@ -6,8 +6,8 @@
   
   (require "test-structure.scm"
 	   "match-helper.ss"
-	   (lib "pretty.ss")
-           (lib "list.ss"))
+	   mzlib/pretty
+           mzlib/list)
   
   (require-for-template mzscheme)
   
@@ -179,7 +179,7 @@
                         let-bound ;; initial-let bindings
                         ))))      ;; fail-func
   
-  (require (lib "trace.ss"))
+  (require mzlib/trace)
   ;(trace meta-couple)
   ;(trace couple-tests)
   )

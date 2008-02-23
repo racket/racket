@@ -1,5 +1,5 @@
 (module structure-helper mzscheme
-  (require (lib "stx.ss" "syntax"))
+  (require syntax/stx)
   (provide str str? str-renames make-str remove-dups split open open-as-helper)
   (define-struct str (renames))
   

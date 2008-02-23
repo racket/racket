@@ -1,6 +1,6 @@
 ;;; dhtmltests.ss -- DHTML tests for MysterX
 
-(require (lib "class.ss"))
+(require mzlib/class)
 
 ; set inspector so structures can be compared
 (define insp (current-inspector))

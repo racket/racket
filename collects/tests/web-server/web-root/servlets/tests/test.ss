@@ -1,4 +1,4 @@
-(require (lib "unitsig.ss"))
+(require mzlib/unitsig)
 (require (lib "servlet-sig.ss" "web-server"))
 (let ([count 0])
   (unit/sig ()

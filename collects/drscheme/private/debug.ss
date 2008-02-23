@@ -7,16 +7,16 @@ profile todo:
 |#
 
 (module debug mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
            (lib "stacktrace.ss" "errortrace")
-           (lib "class.ss")
-           (lib "list.ss")
-           (lib "etc.ss")
-           (lib "file.ss")
+           mzlib/class
+           mzlib/list
+           mzlib/etc
+           mzlib/file
            "drsig.ss"
-           (lib "framework.ss" "framework")
-           (lib "mred.ss" "mred")
-           (lib "string-constant.ss" "string-constants")
+           framework
+           mred
+           string-constants
            (lib "bday.ss" "framework" "private")
            "bindings-browser.ss")
   

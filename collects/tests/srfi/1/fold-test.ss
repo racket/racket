@@ -37,9 +37,9 @@
 
   (require
    (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-   (all-except (lib "fold.ss" "srfi" "1") map for-each)
-   (rename (lib "fold.ss" "srfi" "1") s:map map)
-   (rename (lib "fold.ss" "srfi" "1") s:for-each for-each))
+   (all-except srfi/1/fold map for-each)
+   (rename srfi/1/fold s:map map)
+   (rename srfi/1/fold s:for-each for-each))
 
   (provide fold-tests)
 

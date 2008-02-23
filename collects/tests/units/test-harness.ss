@@ -1,5 +1,5 @@
 (module test-harness mzscheme
-  (require (lib "stx.ss" "syntax"))
+  (require syntax/stx)
               
   (provide (all-defined))
 

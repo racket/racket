@@ -28,7 +28,7 @@
 (module char-set-test mzscheme
 
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (lib "char-set.ss" "srfi" "14")
+           srfi/14/char-set
            )
   (provide char-set-tests)
 

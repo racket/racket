@@ -1,7 +1,7 @@
 ;; properties.ss
 
 (module properties mzscheme
-  (require (lib "list.ss"))	
+  (require mzlib/list)	
 
   (provide
    *css-units*

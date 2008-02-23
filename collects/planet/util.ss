@@ -6,16 +6,16 @@
            "private/planet-shared.ss"
            "private/linkage.ss"
            "resolver.ss"
-           (lib "url.ss" "net")
+           net/url
            (lib "xml.ss" "xml")
-           (lib "contract.ss")
-           (lib "file.ss")
-           (lib "list.ss")
+           mzlib/contract
+           mzlib/file
+           mzlib/list
            (lib "pack.ss" "setup")
            (lib "plt-single-installer.ss" "setup")
            (lib "getinfo.ss" "setup")
            (lib "unpack.ss" "setup")
-           (lib "etc.ss"))
+           mzlib/etc)
 
   #| The util collection provides a number of useful functions for interacting with the PLaneT system. |#
   

@@ -1,7 +1,7 @@
 (module xml-box scheme/base
-  (require (lib "contract.ss")
+  (require mzlib/contract
            "shared.ss"
-           (prefix-in kernel: (lib "kerncase.ss" "syntax")))
+           (prefix-in kernel: syntax/kerncase))
   
   (provide/contract [rewrite-xml-box (syntax?                  ; stx to rewrite
                                       (syntax? . -> . syntax?) ; rewriter for non-xml-box subcomponents

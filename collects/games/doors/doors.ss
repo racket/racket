@@ -1,12 +1,12 @@
 (module doors mzscheme
   (require (lib "gl-board.ss" "games" "gl-board-game")
-           (lib "gl-vectors.ss" "sgl")
-           (prefix gl- (lib "sgl.ss" "sgl"))
+           sgl/gl-vectors
+           sgl
            (lib "bitmap.ss" "sgl")
-           (lib "mred.ss" "mred")
-           (lib "list.ss")
-           (lib "etc.ss")
-           (lib "class.ss"))
+           mred
+           mzlib/list
+           mzlib/etc
+           mzlib/class)
   
   (provide door-game%
            player-data

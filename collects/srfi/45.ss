@@ -1,7 +1,7 @@
 ;; module loader for SRFI-45
 (module |45| mzscheme
-  (require (lib "lazy.ss" "srfi" "45"))
-  (provide (all-from-except (lib "lazy.ss" "srfi" "45")
+  (require srfi/45/lazy)
+  (provide (all-from-except srfi/45/lazy
                             s:delay
                             s:force
                             srfi-45-promise?)

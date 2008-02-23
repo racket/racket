@@ -1,9 +1,9 @@
 (module lines mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "etc.ss")
-   (lib "mred.ss" "mred")
+   mzlib/class
+   mzlib/etc
+   mred
    "snip-wrapper.ss"
    "interface.ss")
   

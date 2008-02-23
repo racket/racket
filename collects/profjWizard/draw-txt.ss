@@ -2,9 +2,9 @@
 (module draw-txt mzscheme
   (require "data-defs.scm"
            "class.scm"
-           (lib "etc.ss")
-           (lib "list.ss")
-           (lib "contract.ss"))
+           mzlib/etc
+           mzlib/list
+           mzlib/contract)
   
   (provide/contract
    [dt-draw    (Union . -> . string?)]

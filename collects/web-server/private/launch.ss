@@ -1,9 +1,9 @@
 #lang scheme/base
 (require scheme/tcp
-         (lib "cmdline.ss")
-         (lib "pregexp.ss")
-         (lib "unit.ss")
-         (lib "tcp-sig.ss" "net"))
+         mzlib/cmdline
+         mzlib/pregexp
+         mzlib/unit
+         net/tcp-sig)
 (require "../configuration/configuration-table.ss"
          "../web-config-unit.ss"
          "../web-config-sig.ss"

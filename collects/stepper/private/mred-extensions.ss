@@ -1,11 +1,11 @@
 (module mred-extensions mzscheme
-  (require (lib "class.ss")
-           (lib "mred.ss" "mred")
-           (prefix f: (lib "framework.ss" "framework"))
-           (lib "pretty.ss")
+  (require mzlib/class
+           mred
+           (prefix f: framework)
+           mzlib/pretty
            "testing-shared.ss"
            "shared.ss"
-	   (lib "string-constant.ss" "string-constants")
+	   string-constants
            (lib "bitmap-label.ss" "mrlib"))
 
   (provide

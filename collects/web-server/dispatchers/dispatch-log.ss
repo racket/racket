@@ -1,9 +1,9 @@
 #lang scheme/base
-(require (lib "url.ss" "net")
-         (prefix-in srfi-date: (lib "19.ss" "srfi"))
-         (lib "date.ss")
-         (lib "async-channel.ss")
-         (lib "plt-match.ss")
+(require net/url
+         (prefix-in srfi-date: srfi/19)
+         mzlib/date
+         mzlib/async-channel
+         mzlib/plt-match
          scheme/contract)
 (require "dispatch.ss"
          "../private/request-structs.ss")  

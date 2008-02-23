@@ -1,12 +1,12 @@
 
 (module cmdline mzscheme
-  (require (lib "process.ss")
-           (lib "cmdline.ss")
-           (lib "list.ss")
-           (lib "compile.ss")
-           (lib "inflate.ss")
-           (lib "date.ss")
-           (lib "file.ss" "dynext"))
+  (require mzlib/process
+           mzlib/cmdline
+           mzlib/list
+           mzlib/compile
+           mzlib/inflate
+           mzlib/date
+           dynext/file)
 
   (provide process-command-line
            rprintf)

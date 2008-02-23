@@ -3646,7 +3646,7 @@
    '(begin
       (eval '(module d-c-s-match1 scheme/base
                (require scheme/contract
-                        (lib "match.ss"))
+                        mzlib/match)
                
                (define-contract-struct foo (bar baz))
                
@@ -3660,7 +3660,7 @@
    '(begin
       (eval '(module d-c-s-match2 scheme/base
                (require scheme/contract
-                        (lib "match.ss"))
+                        mzlib/match)
                
                (define-contract-struct foo (bar baz))
                
@@ -5227,7 +5227,7 @@ so that propagation occurs.
                (define-struct s (a b) #:inspector (make-inspector))
                (provide/contract (struct s ((a number?) (b number?))))))
       (eval '(module pc10-n scheme/base
-               (require (lib "struct.ss")
+               (require mzlib/struct
                         'pc10-m)
                (print-struct #t)
                (copy-struct s 
@@ -5258,7 +5258,7 @@ so that propagation occurs.
                (define-struct s (a b) #:inspector (make-inspector))
                (provide/contract (struct s ((a number?) (b number?))))))
       (eval '(module pc11b-n scheme/base
-               (require (lib "struct.ss")
+               (require mzlib/struct
                         m)
                (print-struct #t)
                (copy-struct s 
@@ -5309,7 +5309,7 @@ so that propagation occurs.
                         ([flags (listof string?)] [type type?])))))
 
       (eval '(module pc14-test2 scheme/base
-               (require (lib "plt-match.ss"))
+               (require mzlib/plt-match)
                (require 'pc14-test1)
                (match (make-type:ptr '() (make-type '()))
                  [(struct type:ptr (flags type)) #f])))
@@ -5407,7 +5407,7 @@ so that propagation occurs.
    'provide/contract20
    '(eval '(module tmp scheme/base
              (require scheme/contract
-                      (lib "unit.ss"))
+                      mzlib/unit)
              
              (define-struct s (a b))
              

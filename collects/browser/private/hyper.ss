@@ -2,10 +2,7 @@
 A test case:
 
 (module tmp mzscheme
-   (require (lib "class.ss")
-	    (lib "mred.ss" "mred")
-	    (lib "browser.ss" "browser")
-            (lib "framework.ss" "framework"))
+   (require mzlib/class mred browser framework)
    
    (define f%
      (frame:status-line-mixin 
@@ -30,16 +27,16 @@ A test case:
 
 #lang scheme/unit
 
-(require (lib "class.ss")
+(require mzlib/class
          "sig.ss"
          scheme/path
          scheme/file
-         (lib "url-sig.ss" "net")
-         (lib "url-structs.ss" "net")
-         (lib "head.ss" "net")
+         net/url-sig
+         net/url-structs
+         net/head
          (lib "mred-sig.ss" "mred")
-         (lib "framework.ss" "framework")
-         (lib "string-constant.ss" "string-constants")
+         framework
+         string-constants
          (lib "plt-installer-sig.ss" "setup"))
 
    

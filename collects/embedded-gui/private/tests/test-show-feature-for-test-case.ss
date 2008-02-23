@@ -1,6 +1,6 @@
 (require
- (lib "class.ss")
- (lib "mred.ss" "mred")
+ mzlib/class
+ mred
  "../aligned-pasteboard.ss"
  "../verthoriz-alignment.ss"
  "../snip-wrapper.ss"

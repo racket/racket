@@ -3,7 +3,7 @@
 
 (Section 'sandbox)
 
-(require (lib "sandbox.ss"))
+(require mzlib/sandbox)
 
 (let ([ev void])
   (define (run thunk)

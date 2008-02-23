@@ -1,6 +1,6 @@
 
 (module image mzscheme
-  (require (lib "class.ss")
+  (require mzlib/class
            "private/class-help.ss")
 
   (provide image%)

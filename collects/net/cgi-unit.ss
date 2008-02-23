@@ -1,6 +1,6 @@
 #lang scheme/unit
 
-  (require (lib "etc.ss")
+  (require mzlib/etc
            "cgi-sig.ss"
            "uri-codec.ss")
 

@@ -1,10 +1,10 @@
 (module verthoriz-alignment mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "etc.ss")
-   (lib "list.ss")
-   (lib "match.ss")
+   mzlib/class
+   mzlib/etc
+   mzlib/list
+   mzlib/match
    (prefix a: "alignment.ss")
    "interface.ss"
    "alignment-helpers.ss"

@@ -1,5 +1,5 @@
 (module error mzscheme
-  (require (lib "etc.ss") (lib "list.ss"))
+  (require mzlib/etc mzlib/list)
   ;; --------------------------------------------------------------------------
   (provide
    check-arg

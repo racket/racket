@@ -1,6 +1,6 @@
 (module collapsed-snipclass mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
+  (require mred
+           mzlib/class
            "private/collapsed-snipclass-helpers.ss")
   
   (provide snip-class)

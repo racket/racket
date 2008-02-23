@@ -3,7 +3,7 @@
 
 (Section 'kw)
 
-(require (lib "kw.ss")
+(require mzlib/kw
          (prefix-in mz: mzscheme))
 
 (let-syntax ([#%datum (syntax-rules () [(_ . xs) (mz:#%datum . xs)])]

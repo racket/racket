@@ -1,6 +1,6 @@
 
 (module boundmap mzscheme
-  (require (lib "etc.ss"))
+  (require mzlib/etc)
   
   (define-syntax (make-mapping-code stx)
     (syntax-case stx ()

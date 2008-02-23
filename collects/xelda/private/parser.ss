@@ -1,9 +1,9 @@
 (module parser mzscheme
   
-  (require (lib "string.ss"))
-  (require (lib "yacc.ss" "parser-tools"))
-  (require (lib "lex.ss" "parser-tools"))
-  (require (lib "list.ss"))
+  (require mzlib/string)
+  (require parser-tools/yacc)
+  (require parser-tools/lex)
+  (require mzlib/list)
   
   (require "xl-util.ss")
   (require "formula.ss")

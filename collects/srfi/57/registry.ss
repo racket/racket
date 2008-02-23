@@ -11,7 +11,7 @@
            lookup-copier
            lookup-predicate)
 
-  (require (prefix s1: (lib "1.ss" "srfi")))
+  (require (prefix s1: srfi/1))
 
   (define reg '())
 

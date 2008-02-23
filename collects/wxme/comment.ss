@@ -1,7 +1,7 @@
 
 (module comment mzscheme
-  (require (lib "class.ss")
-           (lib "string.ss")
+  (require mzlib/class
+           mzlib/string
            "wxme.ss"
            "private/readable-editor.ss")
 

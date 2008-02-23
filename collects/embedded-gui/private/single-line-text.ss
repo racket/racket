@@ -1,9 +1,9 @@
 (module single-line-text mzscheme
   
   (require
-   (lib "mred.ss" "mred")
-   (lib "framework.ss" "framework")
-   (lib "class.ss"))
+   mred
+   framework
+   mzlib/class)
   
   (provide single-line-text-mixin)
   

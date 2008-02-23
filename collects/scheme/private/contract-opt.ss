@@ -1,10 +1,10 @@
 #lang scheme/base
 (require "contract-guts.ss"
          scheme/stxparam
-         (lib "etc.ss"))
+         mzlib/etc)
 (require (for-syntax scheme/base)
          (for-syntax "contract-opt-guts.ss")
-         (for-syntax (lib "etc.ss"))
+         (for-syntax mzlib/etc)
          (for-syntax scheme/stxparam))
 
 (provide opt/c define-opt/c define/opter opt-stronger-vars-ref)

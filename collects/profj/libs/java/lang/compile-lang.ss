@@ -1,9 +1,9 @@
 #cs
 (module compile-lang mzscheme
   (require (lib "compile.ss" "profj")
-           (lib "list.ss")
-           (lib "file.ss")
-           (lib "pretty.ss"))
+           mzlib/list
+           mzlib/file
+           mzlib/pretty)
  
   (provide compile-exceptions make-compilation-path)
   

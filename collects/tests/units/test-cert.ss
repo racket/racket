@@ -1,5 +1,5 @@
 (module test mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
   
   (provide s)
   
@@ -12,7 +12,7 @@
        (syntax-rules () ((_) (x a)))))))
 
  (module test2 mzscheme
-   (require (lib "unit.ss")
+   (require mzlib/unit
             test)
    (define-unit u1 (import) (export s)
      (define a 1))
@@ -28,7 +28,7 @@
  (require test2)
 
  (module test3 mzscheme
-   (require (lib "unit.ss")
+   (require mzlib/unit
             test)
    (define-unit u1 (import) (export s)
      (define a 1))

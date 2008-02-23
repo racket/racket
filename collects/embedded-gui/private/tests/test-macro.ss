@@ -1,6 +1,6 @@
 (module test-macro mzscheme
   
-  (require (lib "etc.ss"))
+  (require mzlib/etc)
   
   (provide test)
   

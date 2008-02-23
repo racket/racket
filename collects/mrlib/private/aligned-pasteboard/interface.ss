@@ -1,8 +1,8 @@
 (module interface mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "mred.ss" "mred"))
+   mzlib/class
+   mred)
   
   (provide
     aligned-pasteboard<%>

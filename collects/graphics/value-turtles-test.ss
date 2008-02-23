@@ -1,8 +1,8 @@
 (module value-turtles-test mzscheme
   (require "value-turtles-examples.ss"
            "value-turtles.ss"
-           (lib "mred.ss" "mred")
-           (lib "class.ss"))
+           mred
+           mzlib/class)
   
   (define-syntax (test stx)
     (syntax-case stx ()

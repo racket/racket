@@ -1,7 +1,7 @@
 ;; This is a wrapper around `winvers-change.ss' to patch binary files with the
 ;; current version number.
 (module winvers mzscheme
-  (require (lib "file.ss") 
+  (require mzlib/file 
 	   "main-collects.ss"
 	   "dirs.ss")
 

@@ -1,6 +1,6 @@
 
 (module debugger-language-interface mzscheme
-  (require (lib "class.ss"))
+  (require mzlib/class)
   (provide debugger-language<%>)
 
   (define debugger-language<%>

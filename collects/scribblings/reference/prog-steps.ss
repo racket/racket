@@ -4,9 +4,9 @@
            (lib "decode.ss" "scribble")
            (lib "manual.ss" "scribble")
            (lib "scheme.ss" "scribble")
-           (lib "kw.ss")
-           (lib "class.ss")
-           (lib "for.ss"))
+           mzlib/kw
+           mzlib/class
+           mzlib/for)
 
   (provide prog-steps
            prog-steps/cont

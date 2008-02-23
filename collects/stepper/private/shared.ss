@@ -1,12 +1,12 @@
 (module shared mzscheme
   
   (require "my-macros.ss"
-	   (lib "contract.ss")
-           (lib "list.ss")
-           (lib "etc.ss")
-           (lib "match.ss")
-           (lib "26.ss" "srfi")
-           (lib "class.ss"))
+	   mzlib/contract
+           mzlib/list
+           mzlib/etc
+           mzlib/match
+           srfi/26
+           mzlib/class)
 
   ; CONTRACTS
   

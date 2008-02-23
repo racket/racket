@@ -1,6 +1,6 @@
 
 (module defmacro mzscheme
-  (require-for-syntax (lib "stx.ss" "syntax")
+  (require-for-syntax syntax/stx
 		      "private/dmhelp.ss")
 
   (provide define-macro

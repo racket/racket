@@ -36,7 +36,7 @@
   mzscheme
 
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (lib "cons.ss" "srfi" "1"))
+           srfi/1/cons)
 
   (provide cons-tests)
 

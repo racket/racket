@@ -1,7 +1,7 @@
 (module web-hammer mzscheme
-  (require (lib "url.ss" "net"))
+  (require net/url)
   (provide server-performance)
-  (provide (all-from (lib "url.ss" "net")))
+  (provide (all-from net/url))
 
   (define BUFFER-SIZE 8192)
 

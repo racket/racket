@@ -1,14 +1,14 @@
 
 #lang scheme/unit
   (require (lib "getinfo.ss" "setup")
-           (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "list.ss")
+           mred
+           mzlib/class
+           mzlib/list
            "drsig.ss"
-           (lib "contract.ss")
+           mzlib/contract
            "tool-contracts.ss"
-           (lib "framework.ss" "framework")
-           (lib "string-constant.ss" "string-constants"))
+           framework
+           string-constants)
   
   (import [prefix drscheme:frame: drscheme:frame^]
           [prefix drscheme:unit: drscheme:unit^]

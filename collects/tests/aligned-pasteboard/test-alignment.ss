@@ -1,8 +1,8 @@
 (require
  "utils.ss"
- (lib "etc.ss")
- (lib "list.ss")
- (lib "match.ss")
+ mzlib/etc
+ mzlib/list
+ mzlib/match
  (lib "private/aligned-pasteboard/alignment.ss" "mrlib"))
 
 ;; los-equal? ((listof rect?) (listof rect?) . -> . boolean?)

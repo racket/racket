@@ -1,14 +1,14 @@
-(module ss-canvas (lib "frtime.ss" "frtime")
+(module ss-canvas frtime/frtime
   
   (require 
           
-           (lib "class.ss")
-           (lib "list.ss" "frtime")
+           mzlib/class
+           frtime/list
           
-           (all-except (lib "mred.ss" "mred") send-event)
+           (all-except mred send-event)
            (lib "mixin-macros.ss" "frtime" "demos" "gui")
            )
-  (require (rename (lib "frp-core.ss" "frtime") super-lift super-lift))
+  (require (rename frtime/frp-core super-lift super-lift))
  
   
   

@@ -1,6 +1,6 @@
 (module pp-run mzscheme
 
-(require (lib "process.ss"))
+(require mzlib/process)
 
 (provide more-help)
 (define (more-help name top-line)

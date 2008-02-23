@@ -1,11 +1,11 @@
 (module debugger-tool mzscheme
-  (require (lib "contract.ss")
+  (require mzlib/contract
            (lib "tool.ss" "drscheme")
-           (lib "mred.ss" "mred")
-           (prefix frame: (lib "framework.ss" "framework"))
-           (lib "unitsig.ss")
-           (lib "class.ss")
-           (lib "list.ss")
+           mred
+           (prefix frame: framework)
+           mzlib/unitsig
+           mzlib/class
+           mzlib/list
            (lib "bitmap-label.ss" "mrlib")
            "debugger-sig.ss"
            "private/debugger-vc.ss"

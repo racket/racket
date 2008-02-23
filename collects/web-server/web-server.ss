@@ -1,8 +1,8 @@
 #lang scheme/base
-(require (lib "plt-match.ss")
-         (lib "tcp-sig.ss" "net")
-         (prefix-in raw: (lib "tcp-unit.ss" "net"))
-         (lib "unit.ss")
+(require mzlib/plt-match
+         net/tcp-sig
+         (prefix-in raw: net/tcp-unit)
+         mzlib/unit
          scheme/contract
          "dispatchers/dispatch.ss"
          "private/dispatch-server-sig.ss"

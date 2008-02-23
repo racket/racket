@@ -3,7 +3,7 @@
 
 (Section 'mzlib-string)
 
-(require (lib "string.ss"))
+(require mzlib/string)
 
 (let ([s1 (string-copy "Hello!")])
   (string-lowercase! s1)

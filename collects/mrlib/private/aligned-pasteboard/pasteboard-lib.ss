@@ -1,10 +1,10 @@
 (module pasteboard-lib mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "mred.ss" "mred")
-   (lib "contract.ss")
-   (lib "etc.ss")
+   mzlib/class
+   mred
+   mzlib/contract
+   mzlib/etc
    "interface.ss"
    "snip-lib.ss")
   

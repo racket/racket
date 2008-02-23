@@ -1,11 +1,11 @@
 (module all-problems mzscheme
-  (require (lib "etc.ss")
-           (lib "list.ss")
-           (lib "unitsig.ss")
-           (lib "include.ss")
+  (require mzlib/etc
+           mzlib/list
+           mzlib/unitsig
+           mzlib/include
            "problem.ss")
 
-  (require-for-syntax (lib "etc.ss"))
+  (require-for-syntax mzlib/etc)
 
   (define-signature paint-by-numbers:all-problems^ (problemss set-names))
   (define-signature paint-by-numbers:problem-set^ (problems set-name))

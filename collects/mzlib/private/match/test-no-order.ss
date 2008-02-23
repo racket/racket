@@ -1,5 +1,5 @@
 (module test-no-order mzscheme
-  (require (lib "list.ss"))
+  (require mzlib/list)
 
   (provide match:test-no-order)
   

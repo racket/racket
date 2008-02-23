@@ -4,11 +4,11 @@
 ; (define-type edge (label label label -> boolean))
 
 (module constraints-gen-and-prop (lib "mrflow.ss" "mrflow")
-  (require (prefix kern: (lib "kerncase.ss" "syntax"))
-           (prefix list: (lib "list.ss"))
-           (prefix etc: (lib "etc.ss"))
+  (require (prefix kern: syntax/kerncase)
+           (prefix list: mzlib/list)
+           (prefix etc: mzlib/etc)
            
-           (lib "match.ss")
+           mzlib/match
            
            "labels.ss"
            "types.ss"
@@ -4649,7 +4649,7 @@
       ;(printf "H: ~a~nP: ~a~n~n" type foo)
       pretty-string))
   
-  ;  (require (prefix string: (lib "string.ss")))
+  ;  (require (prefix string: mzlib/string))
   ;  (define (ppp-type type delta-flow)
   ;      (cond
   ;        [(type-empty? type) "_"]

@@ -2,9 +2,9 @@
 ;; Plays automatic games, often useful when learning is enabled in explore.ss
 
 (module robot mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "etc.ss")
-	   (lib "list.ss")
+  (require mzlib/unitsig
+	   mzlib/etc
+	   mzlib/list
 	   "sig.ss"
 	   "model.ss"
 	   "explore.ss"

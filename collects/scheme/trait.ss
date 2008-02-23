@@ -1,11 +1,11 @@
 (module trait mzscheme
-  (require (lib "class.ss")
-           (lib "list.ss")
-           (lib "struct.ss"))
-  (require-for-syntax (lib "list.ss")
-                      (lib "stx.ss" "syntax")
-                      (lib "boundmap.ss" "syntax")
-                      (lib "kerncase.ss" "syntax")
+  (require mzlib/class
+           mzlib/list
+           mzlib/struct)
+  (require-for-syntax mzlib/list
+                      syntax/stx
+                      syntax/boundmap
+                      syntax/kerncase
                       ;; This should be part of a public expand-time API
                       ;;  exported by the class system:
                       (only "private/classidmap.ss" 

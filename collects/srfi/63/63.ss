@@ -9,8 +9,8 @@
 
 (module |63| mzscheme
   
-  (require (lib "4.ss" "srfi")
-           (lib "contract.ss"))
+  (require srfi/4
+           mzlib/contract)
   
   (define-syntax make-cvector
     (syntax-rules ()

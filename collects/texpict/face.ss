@@ -1,11 +1,11 @@
 (module face mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "mrpict.ss" "texpict")
-           (lib "utils.ss" "texpict")
-           (lib "class.ss")
-           (lib "math.ss")
-           (lib "etc.ss")
-           (lib "kw.ss"))
+  (require mred
+           texpict/mrpict
+           texpict/utils
+           mzlib/class
+           mzlib/math
+           mzlib/etc
+           mzlib/kw)
 
   (provide face face* default-face-color)
   

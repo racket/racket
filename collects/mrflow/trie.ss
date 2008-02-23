@@ -1,6 +1,6 @@
 
 (module trie (lib "mrflow.ss" "mrflow")
-  (require (prefix list: (lib "list.ss"))
+  (require (prefix list: mzlib/list)
            (prefix cst: "constants.ss")
            
            "dfa.ss"

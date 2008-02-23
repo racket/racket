@@ -1,7 +1,7 @@
 
 (module gen-standard-menus mzscheme
-  (require (lib "pretty.ss"))
-  (require (lib "list.ss"))
+  (require mzlib/pretty)
+  (require mzlib/list)
   (require "standard-menus-items.ss")
   
   ;; build-before-super-item-clause : an-item -> (listof clause)

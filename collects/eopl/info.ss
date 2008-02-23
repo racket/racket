@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(require string-constants/string-constant)
+(require string-constants)
 
 (define name "EoPL")
 (define tools (list "eopl-tool.ss"))

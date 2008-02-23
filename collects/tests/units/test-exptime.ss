@@ -1,7 +1,7 @@
-(require-for-syntax (lib "unit-exptime.ss"))
+(require-for-syntax mzlib/unit-exptime)
 (require "test-harness.ss"
          ;unit
-         (lib "unit.ss"))
+         mzlib/unit)
 
 (define-signature one^ (one-a one-b))
 (define-signature two^ (two-a 

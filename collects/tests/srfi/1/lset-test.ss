@@ -36,7 +36,7 @@
   mzscheme
 
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (lib "lset.ss" "srfi" "1"))
+           srfi/1/lset)
 
   (provide lset-tests)
 

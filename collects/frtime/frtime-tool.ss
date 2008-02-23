@@ -1,12 +1,12 @@
 
 (module frtime-tool mzscheme
-  (require (lib "unit.ss")
-	   (lib "class.ss")
-           (lib "mred.ss" "mred")
-           (lib "etc.ss")
-           (lib "list.ss")
+  (require mzlib/unit
+	   mzlib/class
+           mred
+           mzlib/etc
+           mzlib/list
 	   (lib "tool.ss" "drscheme")
-           (lib "string-constant.ss" "string-constants"))
+           string-constants)
   
   (provide tool@)
 
@@ -22,7 +22,7 @@
 	  (define/public (get-language-position)
 	    (list (string-constant experimental-languages) "FrTime"))
 	  (define/public (get-module)
-	    '(lib "frtime-big.ss" "frtime"))
+	    'frtime/frtime-big)
 	  (define/public (get-one-line-summary)
 	    "Language for functional programming of event-driven systems")
           (define/public (get-language-url) #f)

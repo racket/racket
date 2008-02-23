@@ -1,4 +1,4 @@
-(require (lib "world.ss" "htdp"))
+(require htdp/world)
 
 (define plain (empty-scene 100 100))
 

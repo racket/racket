@@ -1,6 +1,6 @@
 
 (module graph mzscheme
-  (require (lib "class.ss")
+  (require mzlib/class
            "private/utils.ss")
   (require-for-syntax "private/utils.ss")
 

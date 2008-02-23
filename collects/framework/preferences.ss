@@ -27,9 +27,9 @@ the state transitions / contracts are:
 |#
 
 (module preferences mzscheme
-  (require (lib "file.ss")
-	   (lib "etc.ss")
-           (lib "contract.ss"))
+  (require mzlib/file
+	   mzlib/etc
+           mzlib/contract)
   
   (provide exn:struct:unknown-preference)
   

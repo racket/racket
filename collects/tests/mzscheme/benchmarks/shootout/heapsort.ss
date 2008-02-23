@@ -6,8 +6,8 @@
 ;; Updated by Brent Fulgham to provide proper output formatting
 
 (module heapsort mzscheme
-  (require (only (lib "13.ss" "srfi") string-index string-pad-right)
-           (only (lib "string.ss") real->decimal-string))
+  (require (only srfi/13 string-index string-pad-right)
+           (only mzlib/string real->decimal-string))
 
   (define IM   139968)
   (define IA     3877)

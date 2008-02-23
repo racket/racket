@@ -1,6 +1,6 @@
 #lang scheme/unit
 
-  (require (lib "string-constant.ss" "string-constants")
+  (require string-constants
            "sig.ss"
            "../preferences.ss"
            "../gui-utils.ss"

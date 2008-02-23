@@ -1,8 +1,8 @@
 (module cm mzscheme
-  (require (lib "modcode.ss" "syntax")
-           (lib "modresolve.ss" "syntax")
+  (require syntax/modcode
+           syntax/modresolve
 	   (lib "main-collects.ss" "setup")
-	   (lib "file.ss"))
+	   mzlib/file)
 
   (provide make-compilation-manager-load/use-compiled-handler
 	   managed-compile-zo

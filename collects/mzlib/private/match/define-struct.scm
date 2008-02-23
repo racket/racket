@@ -92,7 +92,7 @@
 #|
 
 (require struct)
-(require (lib "pretty.ss"))
+(require mzlib/pretty)
 (print-struct #t)
 
 (define-syntax go

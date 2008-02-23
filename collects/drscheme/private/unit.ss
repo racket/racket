@@ -18,9 +18,9 @@ module browser threading seems wrong.
            scheme/path
            scheme/port
            scheme/list
-           (only-in (lib "etc.ss") compose)
-           (lib "string-constant.ss" "string-constants")
-           (lib "framework.ss" "framework")
+           (only-in mzlib/etc compose)
+           string-constants
+           framework
            (lib "name-message.ss" "mrlib")
            (lib "bitmap-label.ss" "mrlib")
            (lib "include-bitmap.ss" "mrlib")
@@ -30,10 +30,10 @@ module browser threading seems wrong.
            
            (prefix-in drscheme:arrow: "../arrow.ss")
            
-           (lib "mred.ss" "mred")
-           (prefix-in mred: (lib "mred.ss" "mred"))
+           mred
+           (prefix-in mred: mred)
            
-           (lib "date.ss"))
+           mzlib/date)
   
   (provide unit@)
   

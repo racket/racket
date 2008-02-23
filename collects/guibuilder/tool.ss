@@ -1,11 +1,11 @@
 
 (module tool mzscheme
   (require (lib "tool.ss" "drscheme")
-           (lib "mred.ss" "mred")
-           (lib "unit.ss")
-           (lib "class.ss")
-	   (lib "string-constant.ss" "string-constants")
-	   (lib "contract.ss")
+           mred
+           mzlib/unit
+           mzlib/class
+	   string-constants
+	   mzlib/contract
            "top-level.ss"
 	   "toolbar.ss"
 	   "readable.ss")

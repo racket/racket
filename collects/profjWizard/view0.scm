@@ -1,10 +1,10 @@
 #cs(module wizard mzscheme
-     (require (lib "mred.ss" "mred")
-              (lib "class.ss")
-              (lib "etc.ss")
-              (lib "list.ss")
-              (lib "string.ss" "srfi" "13")
-              (lib "contract.ss"))
+     (require mred
+              mzlib/class
+              mzlib/etc
+              mzlib/list
+              srfi/13/string
+              mzlib/contract)
      
      (require (file "assoc-list.scm")
               (file "data-defs.scm"))

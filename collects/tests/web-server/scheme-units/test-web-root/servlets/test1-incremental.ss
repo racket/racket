@@ -1,7 +1,7 @@
 ;; Incremental servlet with no arguments on the URL, in text/html, no URL
 ;; path.
 (module test1-incremental mzscheme
-  (require (lib "servlet.ss" "web-server")
+  (require web-server/servlet
            )
 
   (provide start timeout interface-version)

@@ -3,10 +3,10 @@
 
 (module grammar mzscheme
   
-  (require (lib "class.ss")
-           (lib "list.ss")
+  (require mzlib/class
+           mzlib/list
            "yacc-helper.ss"
-           (lib "contract.ss"))
+           mzlib/contract)
   
   ;; Each production has a unique index 0 <= index <= number of productions
   (define-struct prod (lhs rhs index prec action) (make-inspector))

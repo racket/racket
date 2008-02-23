@@ -1,6 +1,6 @@
 ; Module header is generated automatically
 #cs(module sxpathlib mzscheme
-(require (rename (lib "pretty.ss") pp pretty-print))
+(require (rename mzlib/pretty pp pretty-print))
 (require "common.ss")
 (require "myenv.ss")
 (require (lib "string.ss" "srfi/13"))

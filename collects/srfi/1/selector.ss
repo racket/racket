@@ -35,8 +35,8 @@
 (module selector
   mzscheme
 
-  (require (lib "optional.ss" "srfi"))
-  (require (lib "receive.ss" "srfi" "8"))
+  (require srfi/optional)
+  (require srfi/8/receive)
 
   (provide
    first second

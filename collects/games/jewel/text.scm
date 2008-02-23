@@ -1,9 +1,9 @@
 (module text mzscheme
 
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "gl.ss" "sgl")
-           (lib "gl-vectors.ss" "sgl")
+  (require mred
+           mzlib/class
+           sgl/gl
+           sgl/gl-vectors
   )
   
   (provide string-init string-draw)

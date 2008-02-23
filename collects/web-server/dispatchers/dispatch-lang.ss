@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "list.ss")
+(require mzlib/list
          scheme/contract
          (lib "session.ss" "web-server" "private")
          (only-in "../lang/web.ss"
@@ -8,7 +8,7 @@
          "../private/request-structs.ss"
          "../private/response-structs.ss"
          "dispatch.ss"
-         (lib "url.ss" "net")
+         net/url
          "../private/web-server-structs.ss"
          "../private/util.ss"
          "../private/response.ss"

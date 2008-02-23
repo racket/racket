@@ -1,7 +1,7 @@
 (require
- (lib "animation.ss" "frtime")
- (lib "gui.ss" "frtime")
- (all-except (lib "match.ss") match))
+ frtime/animation
+ frtime/gui
+ (all-except mzlib/match match))
 
 (define paddle-radius (make-slider "Paddle radius" 10 30 20))
 (define key-control-speed (* 0.01 (make-slider "Key control speed" 1 50 25)))

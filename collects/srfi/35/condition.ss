@@ -1,7 +1,7 @@
 (module condition mzscheme
   
-  (require (lib "list.ss" "srfi" "1")
-           (lib "9.ss" "srfi"))
+  (require srfi/1/list
+           srfi/9)
   
   (provide make-condition-type
            condition-type?

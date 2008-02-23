@@ -2,7 +2,7 @@
                     (lib "unit-syntax.ss" "mzlib" "private"))
 (require "test-harness.ss"
          ;unit
-         (lib "unit.ss"))
+         mzlib/unit)
 
 (define-syntax (lookup-sig-mac stx)
   (parameterize ((error-syntax stx))
@@ -1153,7 +1153,7 @@
 (test-syntax-error "struct: bad omission"
   (define-signature x ((struct n () x))))
 
-(require (lib "plt-match.ss"))
+(require mzlib/plt-match)
 (let ()
   (define-signature sig ((struct s (x y))))
   (test 3

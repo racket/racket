@@ -1,10 +1,10 @@
 
 (module xml-snip-helpers mzscheme
   (require (lib "xml.ss" "xml")
-           (lib "readerr.ss" "syntax")
-           (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "list.ss")
+           syntax/readerr
+           mred
+           mzlib/class
+           mzlib/list
            "shared.ss")
   
   (provide xml-read-special

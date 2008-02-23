@@ -1,8 +1,8 @@
 
 (module splash mzscheme
-  (require (lib "class.ss")
-           (lib "file.ss")
-           (lib "mred.ss" "mred"))
+  (require mzlib/class
+           mzlib/file
+           mred)
   
   (provide get-splash-bitmap
            set-splash-bitmap
@@ -127,8 +127,8 @@
                         (getenv "PLTDRDEBUG"))
                     (parameterize ([current-namespace (make-namespace)])
                       (values
-                       (dynamic-require '(lib "cm.ss") 'make-compilation-manager-load/use-compiled-handler)
-                       (dynamic-require '(lib "cm.ss") 'manager-trace-handler)))
+                       (dynamic-require 'mzlib/cm 'make-compilation-manager-load/use-compiled-handler)
+                       (dynamic-require 'mzlib/cm 'manager-trace-handler)))
                     (values #f #f))])
     
     (current-load

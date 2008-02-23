@@ -10,7 +10,7 @@
 
 (module assoc-set-hash (lib "mrflow.ss" "mrflow")
   (require
-   (lib "etc.ss") ; for opt-lambda
+   mzlib/etc ; for opt-lambda
    "assoc-set-exn.ss" ; no prefix so we can re-provide
    (prefix cst: "constants.ss")
    )

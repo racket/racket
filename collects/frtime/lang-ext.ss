@@ -1,9 +1,9 @@
 (module lang-ext mzscheme
-  (require (lib "frp-core.ss" "frtime")
-           (lib "etc.ss")
-           (lib "list.ss"))
+  (require frtime/frp-core
+           mzlib/etc
+           mzlib/list)
 
-  (require-for-syntax (lib "list.ss"))
+  (require-for-syntax mzlib/list)
   
   (define nothing (void));(string->uninterned-symbol "nothing"))
   

@@ -1,7 +1,7 @@
 #cs(module compile mzscheme
      (require "parse.ss"
-              (lib "match.ss")
-              (lib "list.ss"))
+              mzlib/match
+              mzlib/list)
      
      (provide compile-simplified)
 

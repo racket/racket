@@ -12,4 +12,4 @@
 
 (define (gui-dynamic-require sym)
   (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
-    (dynamic-require 'mred/mred sym)))
+    (dynamic-require 'mred sym)))

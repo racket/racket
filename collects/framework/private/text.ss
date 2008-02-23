@@ -6,20 +6,20 @@ WARNING: printf is rebound in the body of the unit to always
 |#
 
 #lang scheme/unit
-(require (lib "string-constant.ss" "string-constants")
-         (lib "class.ss")
-         (lib "match.ss")
+(require string-constants
+         mzlib/class
+         mzlib/match
          scheme/path
          "sig.ss"
          "../gui-utils.ss"
          "../preferences.ss"
          (lib "mred-sig.ss" "mred")
          (lib "interactive-value-port.ss" "mrlib")
-         (lib "list.ss")
-         (lib "etc.ss")
-         (lib "dirs.ss" "setup")
-         (lib "string.ss")
-         (prefix-in srfi1: (lib "1.ss" "srfi")))
+         mzlib/list
+         mzlib/etc
+         setup/dirs
+         mzlib/string
+         (prefix-in srfi1: srfi/1))
 (require setup/xref
          scribble/xref
          scribble/struct

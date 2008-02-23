@@ -1,9 +1,9 @@
 (module yacc-to-scheme mzscheme
-  (require (lib "lex.ss" "parser-tools")
-           (prefix : (lib "lex-sre.ss" "parser-tools"))
-           (lib "yacc.ss" "parser-tools")
-           (lib "readerr.ss" "syntax")
-           (lib "list.ss"))
+  (require parser-tools/lex
+           (prefix : parser-tools/lex-sre)
+           parser-tools/yacc
+           syntax/readerr
+           mzlib/list)
   (provide trans)
   
   (define match-double-string

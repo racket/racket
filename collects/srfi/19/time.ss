@@ -59,9 +59,9 @@
 ;; internal.
 
 (module time mzscheme
-  (require (lib "receive.ss" "srfi" "8")
-	   (lib "29.ss" "srfi")
-	   (lib "optional.ss" "srfi"))
+  (require srfi/8/receive
+	   srfi/29
+	   srfi/optional)
   (provide time-tai time-utc time-monotonic time-thread time-process time-duration time-gc
 	   current-date current-julian-day current-modified-julian-day current-time time-resolution
            ;; Time object and accessors

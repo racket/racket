@@ -1,7 +1,7 @@
 (module label-frame-mred mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss"))
-  (provide (all-from-except (lib "mred.ss" "mred") frame%)
+  (require mred
+           mzlib/class)
+  (provide (all-from-except mred frame%)
            (rename registering-frame% frame%)
            lookup-frame-name)
   

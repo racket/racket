@@ -3,9 +3,9 @@
 ;; See `make-search' for the main entry point.
 
 (module explore mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "etc.ss")
-	   (lib "list.ss")
+  (require mzlib/unitsig
+	   mzlib/etc
+	   mzlib/list
 	   "sig.ss"
 	   "test.ss")
 

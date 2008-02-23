@@ -36,8 +36,8 @@
 (module delete
   mzscheme
 
-  (require (lib "etc.ss" "mzlib")
-		   (lib "optional.ss" "srfi")
+  (require mzlib/etc
+		   srfi/optional
 		   "predicate.ss"
 		   "filter.ss")
 

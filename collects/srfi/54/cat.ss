@@ -3,7 +3,7 @@
   
   (provide cat)
   
-  (require (only (lib "string.ss") expr->string))
+  (require (only mzlib/string expr->string))
   
   (define (take-both-end str take)
     (let ((left (car take)))

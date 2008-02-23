@@ -1,9 +1,9 @@
 (module seqcontract mzscheme
-  (require (lib "class.ss"))
+  (require mzlib/class)
   (provide (protect es-contract-mixin lock-contract-mixin))
   
-  (require-for-syntax (lib "stx.ss" "syntax")
-                      (lib "boundmap.ss" "syntax"))
+  (require-for-syntax syntax/stx
+                      syntax/boundmap)
 
   (define-syntax (sequence-contract-mixin stx)
     (syntax-case stx (state-machine)

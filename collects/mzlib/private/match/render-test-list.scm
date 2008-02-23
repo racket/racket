@@ -7,7 +7,7 @@
            "render-test-list-impl.ss"
            "getbindings.ss"
            "ddk-handlers.ss"
-           (lib "unit.ss"))
+           mzlib/unit)
   
   (define-compound-unit/infer rtl@
     (import)

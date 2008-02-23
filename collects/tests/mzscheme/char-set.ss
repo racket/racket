@@ -3,7 +3,7 @@
 
 (Section 'char-set/srfi-14)
 
-(require (lib "char-set.ss" "srfi" "14"))
+(require srfi/14/char-set)
 
 ;; NOTE: tests assume that ! functions are actually functional
 

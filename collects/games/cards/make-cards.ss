@@ -1,7 +1,7 @@
 
 (module make-cards mzscheme
-  (require (lib "class.ss")
-	   (prefix mred: (lib "mred.ss" "mred"))
+  (require mzlib/class
+	   (prefix mred: mred)
 	   (prefix card-class: "card-class.ss"))
   
   (provide back deck-of-cards make-card)

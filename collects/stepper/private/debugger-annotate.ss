@@ -1,9 +1,9 @@
 (module debugger-annotate scheme/base
   
-  (require (prefix-in kernel: (lib "kerncase.ss" "syntax"))
+  (require (prefix-in kernel: syntax/kerncase)
            "shared.ss"
            "marks.ss"
-           (lib "contract.ss"))
+           mzlib/contract)
   
   (define count 0)
   

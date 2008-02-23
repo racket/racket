@@ -51,7 +51,8 @@
   (syntax-case stx ()
     [(_ lib) (member (syntax-object->datum #'lib)
                      '((lib "string-constant.ss" "string-constants")
-                       string-constants/string-constant))
+                       string-constants/string-constant
+                       string-constants))
      (syntax/loc stx (require lib))]))
 
 (provide (rename info-module-begin #%module-begin)

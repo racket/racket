@@ -1,6 +1,6 @@
 ; Module header is generated automatically
 #cs(module srfi-12 mzscheme
-(require (lib "defmacro.ss"))
+(require mzlib/defmacro)
 (require "myenv.ss")
 
 ;************************************************************************

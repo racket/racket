@@ -1,5 +1,5 @@
 (module interfaces mzscheme
-  (require (lib "class.ss"))
+  (require mzlib/class)
   (provide player<%>
            game<%>)
 

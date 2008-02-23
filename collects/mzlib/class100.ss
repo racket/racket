@@ -2,7 +2,7 @@
 (module class100 mzscheme
   (require "class.ss")
 
-  (require-for-syntax (lib "stx.ss" "syntax"))
+  (require-for-syntax syntax/stx)
 
   (define-syntax super-init (make-rename-transformer #'super-make-object))
 

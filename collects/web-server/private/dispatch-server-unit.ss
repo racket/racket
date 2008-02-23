@@ -1,8 +1,8 @@
 #lang scheme/unit
-(require (lib "tcp-sig.ss" "net")
-         (lib "thread.ss")
-         (lib "contract.ss")
-         (lib "kw.ss"))
+(require net/tcp-sig
+         mzlib/thread
+         mzlib/contract
+         mzlib/kw)
 (require "web-server-structs.ss"
          "connection-manager.ss"
          "dispatch-server-sig.ss")

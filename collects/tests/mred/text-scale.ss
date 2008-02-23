@@ -1,5 +1,5 @@
 
-(require (lib "math.ss"))
+(require mzlib/math)
 
 (define measure-after? #f)
 (define rotate? #f)

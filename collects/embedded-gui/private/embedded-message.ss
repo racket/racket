@@ -1,8 +1,8 @@
 (module embedded-message mzscheme
   
   (require
-   (lib "mred.ss" "mred")
-   (lib "class.ss")
+   mred
+   mzlib/class
    "snip-wrapper.ss")
   
   (provide embedded-message%)

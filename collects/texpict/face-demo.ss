@@ -1,8 +1,8 @@
 (module face-demo mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "utils.ss" "texpict")
-           (lib "mrpict.ss" "texpict")
+  (require mred
+           mzlib/class
+           texpict/utils
+           texpict/mrpict
            "face.ss")
   
   (define f (new frame% (label "frame")))

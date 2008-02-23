@@ -1,13 +1,13 @@
 #lang scheme/unit
 
-(require (lib "string-constant.ss" "string-constants")
-         (lib "mred.ss" "mred")
+(require string-constants
+         mred
          (lib "external.ss" "browser")
          (lib "bug-report.ss" "help")
          (lib "buginfo.ss" "help" "private")
-         (lib "framework.ss" "framework")
-         (lib "class.ss")
-         (lib "list.ss")
+         framework
+         mzlib/class
+         mzlib/list
          (lib "search.ss" "help")
          "drsig.ss")
 

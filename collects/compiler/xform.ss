@@ -1,6 +1,6 @@
 
 (module xform mzscheme
-  (require (lib "compile.ss" "dynext")
+  (require dynext/compile
 	   (prefix xform: "private/xform.ss"))
 
   (provide xform)

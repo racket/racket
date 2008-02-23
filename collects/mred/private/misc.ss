@@ -1,7 +1,7 @@
 (module misc mzscheme
-  (require (lib "class.ss")
-	   (lib "file.ss")
-	   (lib "process.ss")
+  (require mzlib/class
+	   mzlib/file
+	   mzlib/process
 	   (prefix wx: "kernel.ss"))
 
   (provide file-creator-and-type

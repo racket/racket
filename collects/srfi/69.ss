@@ -1,7 +1,7 @@
 ;; module loader for SRFI-69
 (module |69| mzscheme
-  (require (lib "hash.ss" "srfi" "69"))
-  (provide (all-from-except (lib "hash.ss" "srfi" "69")
+  (require srfi/69/hash)
+  (provide (all-from-except srfi/69/hash
                             s:make-hash-table
                             s:hash-table?
                             s:hash-table-copy)

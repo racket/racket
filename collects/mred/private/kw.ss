@@ -1,5 +1,5 @@
 (module kw mzscheme
-  (require (lib "class100.ss"))
+  (require mzlib/class100)
 
   (provide (protect define-keywords
 		    class100*/kw))

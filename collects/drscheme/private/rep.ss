@@ -18,17 +18,17 @@ TODO
 ;;          user's io ports, to aid any debugging printouts.
 ;;          (esp. useful when debugging the users's io)
 (module rep mzscheme
-  (require (lib "class.ss")
-           (lib "file.ss")
-           (lib "pretty.ss")
-           (lib "etc.ss")
-           (lib "list.ss")
-           (lib "port.ss")
-           (lib "unit.ss")
+  (require mzlib/class
+           mzlib/file
+           mzlib/pretty
+           mzlib/etc
+           mzlib/list
+           mzlib/port
+           mzlib/unit
            "drsig.ss"
-           (lib "string-constant.ss" "string-constants")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
+           string-constants
+           mred
+           framework
            (lib "external.ss" "browser")
            (lib "default-lexer.ss" "syntax-color"))
   

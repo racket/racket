@@ -1,9 +1,9 @@
 (module ssl-tcp-unit mzscheme
   (provide make-ssl-tcp@)
-  (require (lib "unit.ss")
+  (require mzlib/unit
            "tcp-sig.ss"
            (lib "mzssl.ss" "openssl")
-           (lib "etc.ss"))
+           mzlib/etc)
 
   (define (make-ssl-tcp@
            server-cert-file server-key-file server-root-cert-files server-suggest-auth-file

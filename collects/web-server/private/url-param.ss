@@ -1,8 +1,8 @@
 #lang scheme/base
-(require (lib "contract.ss")
-         (lib "url.ss" "net")
-         (lib "plt-match.ss")
-         (lib "list.ss")
+(require mzlib/contract
+         net/url
+         mzlib/plt-match
+         mzlib/list
          "util.ss")
 ; XXX Use instead of embed-ids
 (provide/contract

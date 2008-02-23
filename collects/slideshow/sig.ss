@@ -1,6 +1,6 @@
 
 (module sig mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
   (provide config^ viewer^ core^
 	   cmdline^)

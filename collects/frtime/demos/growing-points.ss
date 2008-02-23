@@ -8,9 +8,9 @@
 
 ;; Require the animation library, the gui library, and the library
 ;; containing the build-list function.
-(require (lib "animation.ss" "frtime")
-         (lib "gui.ss" "frtime")
-         (lib "etc.ss" "frtime"))
+(require frtime/animation
+         frtime/gui
+         frtime/etc)
 
 ;; distance : number number number number -> number
 ;; Returns the distance between (x1, y1) and (x2, y2).

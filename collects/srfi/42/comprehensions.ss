@@ -2,12 +2,12 @@
 ; sebastian_egner@yahoo.com, 26-Dec-2007, PLT 371.
 ;   + bugs found by sunnan and jens axel soegaard fixed
 ; Sebastian.Egner@philips.com, 15-May-2003, PLT 204.
-; For running demos: (require (lib "examples.ss" "srfi" "42"))
+; For running demos: (require srfi/42/examples)
 ; For anything else: http://srfi.schemers.org/srfi-42/
 
 (module |comprehensions| mzscheme
 
- (require (lib "23.ss" "srfi"))
+ (require srfi/23)
 
  (provide 
     do-ec list-ec append-ec string-ec string-append-ec vector-ec 
@@ -27,13 +27,13 @@
 ; as expected when the exported macro is used outside.
 ;    As a fix, Matthew Flatt suggested to use syntax-case*
 ; with equivalence predicate module-or-top-identifier=? as
-; require-for-syntax'ed by (lib "stx.ss" "syntax"). To limit
+; require-for-syntax'ed by syntax/stx. To limit
 ; the amount of modification to the SRFI 42 code below, we
 ; replace define-syntax by the new define-syntax-globally
 ; which constructs the proper code. The new transformer
 ; must be used for all exported macros recognizing `not'.
 
-  (require-for-syntax (lib "stx.ss" "syntax"))
+  (require-for-syntax syntax/stx)
   
   (define-syntax define-syntax-globally
     (syntax-rules (syntax-rules)

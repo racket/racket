@@ -1,11 +1,11 @@
 
 (module snips-and-arrows-view (lib "mrflow.ss" "mrflow")
   (require
-   (lib "class.ss")
-   (lib "mred.ss" "mred")
+   mzlib/class
+   mred
    (prefix arrow: (lib "arrow.ss" "drscheme"))
-   (only (lib "list.ss") sort)
-   (prefix strcst: (lib "string-constant.ss" "string-constants"))
+   (only mzlib/list sort)
+   (prefix strcst: string-constants)
    
    (prefix cst: "constants.ss")
    (prefix saam: "snips-and-arrows-model.ss")

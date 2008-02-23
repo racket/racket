@@ -1,7 +1,7 @@
 #lang scheme/base
-(require (lib "url.ss" "net")
-         (lib "list.ss")
-         (lib "contract.ss"))
+(require net/url
+         mzlib/list
+         mzlib/contract)
 (require "../private/util.ss")
 (define url-path?
   ((url?) . ->* . (path? (listof path-element?))))

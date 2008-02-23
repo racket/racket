@@ -1,9 +1,9 @@
 #lang mzscheme
 (require "board.ss"
          "../show-help.ss"
-         (lib "mred.ss" "mred")
-         (lib "class.ss")
-         (lib "unit.ss"))
+         mred
+         mzlib/class
+         mzlib/unit)
 
 (provide game@ lights-out^)
 

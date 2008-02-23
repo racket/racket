@@ -1,7 +1,7 @@
 
 (module struct mzscheme
-  (require (lib "etc.ss")
-	   (lib "stx.ss" "syntax")
+  (require mzlib/etc
+	   syntax/stx
            (lib "struct-info.ss" "scheme"))
   (require-for-template mzscheme)
   

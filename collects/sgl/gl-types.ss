@@ -1,5 +1,5 @@
 (module gl-types mzscheme
-  (require (lib "foreign.ss")
+  (require mzlib/foreign
            "gl-info.ss")
   
   (provide (all-defined-except get-unsigned-type get-signed-type make-gl-vector-type))

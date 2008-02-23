@@ -1,7 +1,7 @@
 
 (module string-constant mzscheme
-  (require-for-syntax (lib "etc.ss")
-		      (lib "list.ss")
+  (require-for-syntax mzlib/etc
+		      mzlib/list
                       (prefix english: "english-string-constants.ss")
                       (prefix spanish: "spanish-string-constants.ss")
                       (prefix german: "german-string-constants.ss")
@@ -13,8 +13,8 @@
                       (prefix traditional-chinese: "traditional-chinese-string-constants.ss")
                       (prefix simplified-chinese: "simplified-chinese-string-constants.ss"))
   
-  (require (lib "file.ss")
-           (lib "etc.ss")
+  (require mzlib/file
+           mzlib/etc
            "private/only-once.ss")
 
   (provide string-constant string-constants this-language all-languages set-language-pref)

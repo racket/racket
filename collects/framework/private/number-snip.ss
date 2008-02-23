@@ -3,9 +3,9 @@
 
   (require "sig.ss"
            (lib "mred-sig.ss" "mred")
-           (lib "class.ss")
+           mzlib/class
            "../preferences.ss"
-           (lib "string-constant.ss" "string-constants"))
+           string-constants)
   
   (import mred^)
   (export (rename framework:number-snip^

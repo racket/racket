@@ -7,11 +7,11 @@
 ;;  specially preserved for `lambda' expressions.
 
 (module src2src scheme/base
-  (require (lib "class.ss")
-	   (lib "kerncase.ss" "syntax")
-	   (lib "primitives.ss" "syntax")
-	   (lib "etc.ss")
-	   (lib "list.ss"))
+  (require mzlib/class
+	   syntax/kerncase
+	   syntax/primitives
+	   mzlib/etc
+	   mzlib/list)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Optimizer

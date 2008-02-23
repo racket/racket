@@ -29,7 +29,7 @@
 #lang scheme/unit
 
   (require "qp-sig.ss"
-           (lib "etc.ss"))
+           mzlib/etc)
 
   (import)
   (export qp^)

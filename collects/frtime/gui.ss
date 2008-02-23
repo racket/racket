@@ -1,10 +1,10 @@
 (module gui "frtime.ss"
   (require
-   (all-except (lib "etc.ss") rec)
-   (lib "list.ss")
-   (lib "class.ss")
-   (rename (lib "frp-core.ss" "frtime") proc->signal proc->signal)
-   (all-except (lib "mred.ss" "mred") send-event))
+   (all-except mzlib/etc rec)
+   mzlib/list
+   mzlib/class
+   (rename frtime/frp-core proc->signal proc->signal)
+   (all-except mred send-event))
   
   (define reactive-control<%>
     (interface (control<%>)

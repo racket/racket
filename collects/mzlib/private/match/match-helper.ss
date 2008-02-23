@@ -3,10 +3,10 @@
   (provide (all-defined)
            (all-from "syntax-utils.ss"))
   
-  (require (lib "struct.ss" "syntax")
+  (require syntax/struct
            "syntax-utils.ss"
            "match-error.ss"
-           (lib "list.ss"))
+           mzlib/list)
   
   (require-for-template mzscheme)
   

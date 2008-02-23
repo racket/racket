@@ -1,15 +1,15 @@
 
 (module classes mzscheme
-  (require (lib "class.ss")
-	   (lib "class100.ss")
-	   (prefix mred: (lib "mred.ss" "mred"))
-	   (lib "list.ss")
-	   (lib "etc.ss")
+  (require mzlib/class
+	   mzlib/class100
+	   (prefix mred: mred)
+	   mzlib/list
+	   mzlib/etc
 	   (prefix util: "utils.ss")
 	   "constants.ss"
 	   "make-cards.ss"
 	   "region.ss"
-	   (lib "string-constant.ss" "string-constants")
+	   string-constants
 	   "../show-help.ss")
 
   (provide pasteboard%

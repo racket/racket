@@ -2,8 +2,8 @@
 ;(c) Dorai Sitaram, 1997-2002
 
 (module tex2page-aux mzscheme
-  (require (lib "process.ss"))
-  (require (lib "date.ss"))
+  (require mzlib/process)
+  (require mzlib/date)
   (provide (all-defined-except ))
 
 (define make-table

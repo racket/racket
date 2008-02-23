@@ -1,8 +1,8 @@
 (require
  "utils.ss"
- (lib "etc.ss")
- (lib "class.ss")
- (lib "mred.ss" "mred")
+ mzlib/etc
+ mzlib/class
+ mred
  (lib "private/aligned-pasteboard/pasteboard-lib.ss" "mrlib")
  (lib "aligned-pasteboard.ss" "mrlib"))
 

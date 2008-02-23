@@ -36,7 +36,7 @@
   mzscheme
 
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (lib "selector.ss" "srfi" "1"))
+           srfi/1/selector)
 
   (provide selector-tests)
 

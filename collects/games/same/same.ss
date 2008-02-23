@@ -1,9 +1,9 @@
 (module same mzscheme
-  (require (lib "etc.ss")
-           (lib "class.ss")
-           (lib "unit.ss")
-           (lib "mred.ss" "mred")
-           (lib "list.ss")
+  (require mzlib/etc
+           mzlib/class
+           mzlib/unit
+           mred
+           mzlib/list
            "../show-help.ss")
   
   (provide game@)

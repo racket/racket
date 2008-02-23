@@ -1,9 +1,9 @@
 #cs(module parse mzscheme
-     (require (lib "lex.ss" "parser-tools")
-              (prefix : (lib "lex-sre.ss" "parser-tools"))
+     (require parser-tools/lex
+              (prefix : parser-tools/lex-sre)
               "cfg-parser.ss"
-	      (lib "yacc.ss" "parser-tools")
-              (lib "readerr.ss" "syntax")
+	      parser-tools/yacc
+              syntax/readerr
               "prims.ss")
      
      (define-lex-abbrevs [lex:letter (:or (:/ #\a #\z) (:/ #\A #\Z))]

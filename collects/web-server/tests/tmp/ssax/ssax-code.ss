@@ -1,6 +1,6 @@
 ; Module header is generated automatically
 #cs(module ssax-code mzscheme
-(require (lib "defmacro.ss"))
+(require mzlib/defmacro)
 (require "common.ss")
 (require "myenv.ss")
 (require (lib "string.ss" "srfi/13"))

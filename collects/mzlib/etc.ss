@@ -11,9 +11,9 @@
                  compose)
            "kw.ss")
 
-  (require-for-syntax (lib "kerncase.ss" "syntax")
-                      (lib "stx.ss" "syntax")
-                      (lib "name.ss" "syntax")
+  (require-for-syntax syntax/kerncase
+                      syntax/stx
+                      syntax/name
                       (lib "main-collects.ss" "setup")
                       "private/stxset.ss")
 

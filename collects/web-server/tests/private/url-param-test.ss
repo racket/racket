@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "url.ss" "net")
+         net/url
          (lib "url-param.ss" "web-server" "private"))
 (provide url-param-tests)
 

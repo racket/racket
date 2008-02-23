@@ -35,14 +35,14 @@
 (module lset
   mzscheme
 
-  (require (lib "optional.ss" "srfi")
+  (require srfi/optional
 		   (all-except "search.ss" member)
 		   (all-except "fold.ss" map for-each)
 		   (rename "search.ss" s:member member)
 		   "delete.ss"
 		   "predicate.ss"
 		   "filter.ss")
-  (require (lib "receive.ss" "srfi" "8"))
+  (require srfi/8/receive)
 
   (provide lset<=
 		   lset=

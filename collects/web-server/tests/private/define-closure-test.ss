@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "serialize.ss")
-         (lib "match.ss")
+         mzlib/serialize
+         mzlib/match
          (lib "define-closure.ss" "web-server" "private"))
 (provide define-closure-tests)
 

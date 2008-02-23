@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "contract.ss")
+(require mzlib/contract
          (lib "xml.ss" "xml")
          "request-structs.ss")
 

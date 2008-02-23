@@ -4,10 +4,10 @@ exec mzscheme -qu "$0" ${1+"$@"}
 |#
 
 (module auto mzscheme
-  (require (lib "process.ss")
-           (lib "port.ss")
-           (lib "list.ss")
-           (lib "date.ss")
+  (require mzlib/process
+           mzlib/port
+           mzlib/list
+           mzlib/date
            "../common/cmdline.ss")
 
   ;; Needed for rxmzold, comment out otherwise:

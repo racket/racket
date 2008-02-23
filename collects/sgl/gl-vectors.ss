@@ -1,5 +1,5 @@
 (module gl-vectors mzscheme
-  (require (lib "foreign.ss")
+  (require mzlib/foreign
            "gl-types.ss")
   
   (define-syntax gl-vector-binop

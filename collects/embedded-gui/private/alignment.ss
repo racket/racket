@@ -23,10 +23,10 @@ neck and it is the most readable solution.
 (module alignment mzscheme
   
   (require
-   (lib "match.ss")
-   (lib "contract.ss")
-   (lib "etc.ss")
-   (lib "list.ss"))
+   mzlib/match
+   mzlib/contract
+   mzlib/etc
+   mzlib/list)
   
   (define-struct rect (x y) (make-inspector))
   (define-struct abs-rect (ondim offdim) (make-inspector))

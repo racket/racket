@@ -1,10 +1,9 @@
 (module combinator-parser lazy
 
-  (require (lib "unit.ss")
-           (lib "lex.ss" "parser-tools"))
-    
+  (require mzlib/unit parser-tools/lex)
+
   (require "structs.scm" "parser-sigs.ss" "combinator.scm" "errors.scm")
-  
+
   (provide combinator-parser-tools@)
   
   (define-unit main-parser@

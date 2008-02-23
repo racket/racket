@@ -7,21 +7,21 @@
            scheme/unit
            scheme/class
 	   (lib "mred-sig.ss" "mred")
-           (lib "framework.ss" "framework"))
+           framework)
 
   (require scheme/file
-	   (lib "process.ss")
+	   mzlib/process
 	   (lib "mzssl.ss" "openssl"))
 
   (require "sirmails.ss"
 	   "pref.ss"
            "spell.ss")
 
-  (require (lib "imap-sig.ss" "net")
-	   (lib "smtp-sig.ss" "net")
-	   (lib "head-sig.ss" "net")
-	   (lib "base64-sig.ss" "net")
-	   (lib "qp-sig.ss" "net"))
+  (require net/imap-sig
+	   net/smtp-sig
+	   net/head-sig
+	   net/base64-sig
+	   net/qp-sig)
 
   (require (lib "hierlist-sig.ss" "hierlist"))
 

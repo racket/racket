@@ -1,8 +1,8 @@
 (module messagebox mzscheme
-  (require (lib "class.ss")
-	   (lib "class100.ss")
-	   (lib "etc.ss")
-           (lib "string.ss")
+  (require mzlib/class
+	   mzlib/class100
+	   mzlib/etc
+           mzlib/string
 	   (prefix wx: "kernel.ss")
 	   "const.ss"
 	   "check.ss"

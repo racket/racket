@@ -1,8 +1,8 @@
 (module xelda-com mzscheme
   
   (require (lib "mysterx.ss" "mysterx"))
-  (require (lib "list.ss"))
-  (require (lib "class.ss"))
+  (require mzlib/list)
+  (require mzlib/class)
   
   (require "xl-util.ss")
   

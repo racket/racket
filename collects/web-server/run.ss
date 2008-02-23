@@ -1,7 +1,7 @@
 #lang scheme/base
 ; This file is intended to be copied and/or modified and used as a template.
-(require (lib "cmdline.ss")
-         (only-in (lib "file.ss")
+(require mzlib/cmdline
+         (only-in mzlib/file
                   normalize-path)
          (lib "web-server.ss" "web-server")
          (lib "responders.ss" "web-server" "configuration")

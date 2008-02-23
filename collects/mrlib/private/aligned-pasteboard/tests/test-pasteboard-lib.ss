@@ -1,8 +1,8 @@
 (require
- (lib "etc.ss")
- (lib "class.ss")
+ mzlib/etc
+ mzlib/class
  "test-macro.ss"
- (lib "mred.ss" "mred")
+ mred
  "../pasteboard-lib.ss"
  "../aligned-pasteboard.ss"
  "../aligned-editor-container.ss")

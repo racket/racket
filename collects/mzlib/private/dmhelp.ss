@@ -1,6 +1,6 @@
 
 (module dmhelp mzscheme
-  (require (lib "stx.ss" "syntax"))
+  (require syntax/stx)
 
   (provide dm-syntax->datum
 	   dm-subst)

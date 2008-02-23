@@ -1,5 +1,5 @@
 (module paren-tree mzscheme
-  (require (lib "class.ss")
+  (require mzlib/class
            "token-tree.ss")
   
   (provide paren-tree%)

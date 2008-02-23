@@ -1,7 +1,7 @@
 (module mztext mzscheme
 
-(require (lib "string.ss") (lib "port.ss") (lib "pp-utils.ss" "preprocessor"))
-(provide (all-from (lib "pp-utils.ss" "preprocessor")))
+(require mzlib/string mzlib/port preprocessor/pp-utils)
+(provide (all-from preprocessor/pp-utils))
 
 ;;=============================================================================
 ;; Composite port
@@ -308,7 +308,7 @@
 (define (initialize)
   (read-case-sensitive #t)
   (unless (command-marker) (command-marker "@"))
-  (namespace-require '(lib "mztext.ss" "preprocessor"))
+  (namespace-require 'preprocessor/mztext)
   (do-evals))
 
 (define (run)

@@ -1,11 +1,11 @@
 
 (module optionr mzscheme
-  (require (lib "unit.ss")
-	   (lib "string.ss"))
+  (require mzlib/unit
+	   mzlib/string)
 
-  (require (lib "imap-sig.ss" "net")
+  (require net/imap-sig
            (lib "mred-sig.ss" "mred")
-	   (lib "framework.ss" "framework"))
+	   framework)
 
   (require "sirmails.ss"
 	   "pref.ss")

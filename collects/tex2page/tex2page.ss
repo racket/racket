@@ -1,5 +1,5 @@
 (module tex2page mzscheme
-  (require (lib "etc.ss"))
+  (require mzlib/etc)
   (provide tex2page)
   (define
    tex2page

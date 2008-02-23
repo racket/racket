@@ -1,12 +1,12 @@
 
 (module plt-installer-unit mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
            (lib "mred-sig.ss" "mred")
-           (lib "class.ss")
-           (lib "etc.ss")
+           mzlib/class
+           mzlib/etc
            "plt-installer-sig.ss"
            (prefix single: "plt-single-installer.ss")
-           (lib "string-constant.ss" "string-constants"))
+           string-constants)
 
   (provide plt-installer@)
   (define-unit plt-installer@

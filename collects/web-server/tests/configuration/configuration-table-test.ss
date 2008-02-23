@@ -1,8 +1,8 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (only-in (lib "file.ss")
+         (only-in mzlib/file
                   make-temporary-file)
-         (lib "configuration-table.ss" "web-server" "configuration"))
+         web-server/configuration/configuration-table)
 (provide configuration-table-tests)
 
 (define configuration-table-tests

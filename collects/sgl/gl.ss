@@ -1,5 +1,5 @@
 (module gl mzscheme
-  (require (lib "foreign.ss")
+  (require mzlib/foreign
            "gl-types.ss"
            "gl-vectors.ss")
   

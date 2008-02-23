@@ -1,8 +1,8 @@
 ;;; util.ss -- utility procedures for MysterX
 
 (module util mzscheme
-  (require (lib "unitsig.ss"))
-  (require (lib "list.ss"))	   
+  (require mzlib/unitsig)
+  (require mzlib/list)	   
 
   (provide 
    fold-strings-with-spaces

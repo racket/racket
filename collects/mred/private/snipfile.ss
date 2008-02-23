@@ -1,8 +1,8 @@
 (module snipfile mzscheme
-  (require (lib "class.ss")
-	   (lib "etc.ss")
-	   (lib "port.ss")
-	   (lib "moddep.ss" "syntax")
+  (require mzlib/class
+	   mzlib/etc
+	   mzlib/port
+	   syntax/moddep
 	   (prefix wx: "kernel.ss")
 	   "check.ss"
 	   "editor.ss")

@@ -1,8 +1,8 @@
 #lang scheme/base
 (require (lib "stuff-url.ss" "web-server" "lang")
          (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "url.ss" "net")
-         (lib "serialize.ss")
+         net/url
+         mzlib/serialize
          "../util.ss")  
 (provide stuff-url-tests)
 

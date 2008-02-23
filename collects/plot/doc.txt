@@ -113,8 +113,8 @@ PLoT collection: Quick Start
    could do the following:
 
 ; Load the required modules
-(require (lib "class.ss")
-         (lib "etc.ss")
+(require mzlib/class
+         mzlib/etc
          (lib "plot-extend.ss" "plot"))
 
 

@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "list.ss")
-         (lib "url.ss" "net")
+         mzlib/list
+         net/url
          (lib "servlet-url.ss" "web-server" "servlet")
          (lib "request-structs.ss" "web-server" "private"))
 (provide servlet-url-tests)

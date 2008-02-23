@@ -1,5 +1,5 @@
 
-(require (lib "etc.ss") (lib "compat.ss"))
+(require mzlib/etc mzlib/compat)
 (load-relative "listlib.ss")
 (load-relative "veclib.ss")
 (load-relative "tic-func.ss")

@@ -1,12 +1,12 @@
 (module pref mzscheme
 
-  (require (lib "class.ss")
-	   (lib "framework.ss" "framework")
-	   (lib "mred.ss" "mred")
-	   (lib "list.ss")
-	   (lib "string.ss")
-	   (lib "etc.ss")
-	   (lib "head.ss" "net"))
+  (require mzlib/class
+	   framework
+	   mred
+	   mzlib/list
+	   mzlib/string
+	   mzlib/etc
+	   net/head)
 
   ;; IMPORTANT! All preferences operations outside this
   ;; file should go through the following exports.

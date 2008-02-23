@@ -1,8 +1,8 @@
 (module wxtop mzscheme
-  (require (lib "class.ss")
-	   (lib "class100.ss")
-	   (lib "etc.ss")
-	   (lib "list.ss")
+  (require mzlib/class
+	   mzlib/class100
+	   mzlib/etc
+	   mzlib/list
 	   (prefix wx: "kernel.ss")
 	   "lock.ss"
 	   "helper.ss"

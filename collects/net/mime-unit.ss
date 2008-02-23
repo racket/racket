@@ -34,9 +34,9 @@
            "base64-sig.ss"
            "head-sig.ss"
            "mime-util.ss"
-           (lib "etc.ss")
-           (lib "string.ss")
-           (lib "port.ss"))
+           mzlib/etc
+           mzlib/string
+           mzlib/port)
 
   (import base64^ qp^ head^)
   (export mime^)

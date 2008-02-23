@@ -1,9 +1,5 @@
 (module renderers mzscheme
-  (require 
-   (lib "math.ss" "plot")
-   (lib "renderer-helpers.ss" "plot")
-   (lib "class.ss")
-   (lib "plot-extend.ss" "plot"))
+  (require plot/math plot/renderer-helpers mzlib/class plot/plot-extend)
   
   ;line : (number -> number) [number] [symbol] [number] -> (2dplotview -> nothing)
   (define-plot-type line 

@@ -544,7 +544,7 @@ As an example, consider the following module:
 #readerscribble/comment-reader
 [schemeblock
 (module product mzscheme
-  (require (lib "contract.ss"))
+  (require mzlib/contract)
 
   (define-contract-struct kons (hd tl))
   

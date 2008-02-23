@@ -6,8 +6,8 @@
                       "match-helper.ss"
                       "match-error.ss") 
   
-  (require (lib "etc.ss")           
-           (lib "list.ss")
+  (require mzlib/etc           
+           mzlib/list
            "match-expander.ss"
            "match-error.ss")
   

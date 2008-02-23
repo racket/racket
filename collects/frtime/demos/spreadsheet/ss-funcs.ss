@@ -2,7 +2,7 @@
 
 (require "data-synthesis.ss"
          "distributions.ss"
-         (only (lib "frtime.ss" "frtime") undefined?)
+         (only frtime/frtime undefined?)
          )
 
 ;;filter: ('a -> bool) * 'a list -> 'a list

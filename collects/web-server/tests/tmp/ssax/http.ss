@@ -1,6 +1,6 @@
 ; Module header is generated automatically
 #cs(module http mzscheme
-(require (lib "defmacro.ss"))
+(require mzlib/defmacro)
 (require "common.ss")
 (require "myenv.ss")
 (require "mime.ss")

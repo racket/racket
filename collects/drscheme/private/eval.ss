@@ -1,18 +1,18 @@
 
 (module eval mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "unit.ss")
-           (lib "port.ss")
-           (lib "class.ss")
-           (lib "toplevel.ss" "syntax")
-           (lib "framework.ss" "framework")
+  (require mred
+           mzlib/unit
+           mzlib/port
+           mzlib/class
+           syntax/toplevel
+           framework
            "drsig.ss")
   
   ;; to ensure this guy is loaded (and the snipclass installed) in the drscheme namespace & eventspace
   ;; these things are for effect only!
   (require (lib "cache-image-snip.ss" "mrlib")
            #;
-           (prefix foo (lib "matrix.ss" "htdp")))
+           (prefix foo htdp/matrix))
   
   (define op (current-output-port))
   (define (oprintf . args) (apply fprintf op args))

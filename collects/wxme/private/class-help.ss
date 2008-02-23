@@ -1,6 +1,6 @@
 
 (module class-help mzscheme
-  (require (lib "class.ss"))
+  (require mzlib/class)
 
   (provide init-accessible)
 

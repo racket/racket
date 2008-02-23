@@ -1,10 +1,10 @@
 
 (module gui-utils mzscheme
-  (require (lib "class.ss")
-	   (lib "mred.ss" "mred")
-           (lib "etc.ss")
-           (lib "contract.ss")
-           (lib "string-constant.ss" "string-constants"))
+  (require mzlib/class
+	   mred
+           mzlib/etc
+           mzlib/contract
+           string-constants)
   
   (define-syntax (provide/contract/docs stx)
     (syntax-case stx ()

@@ -1,11 +1,11 @@
 
 #lang scheme/unit
-  (require (lib "class.ss")
-           (lib "list.ss")
+  (require mzlib/class
+           mzlib/list
            scheme/file
-           (lib "string-constant.ss" "string-constants")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
+           string-constants
+           mred
+           framework
            (lib "external.ss" "browser")
            (lib "getinfo.ss" "setup")
            "drsig.ss"

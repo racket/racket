@@ -1,6 +1,6 @@
 (module fit mzscheme
-  (require (lib "math.ss" "plot"))
-  (require (lib "fit-low-level.ss" "plot"))
+  (require plot/math)
+  (require plot/fit-low-level)
 
   ; a structure contain a the results of a curve-fit
   (define-struct fit-result (
@@ -49,10 +49,6 @@
              (caddr result)
              (lambda args (apply function(append args (car result)))))))))
 
-   (provide fit-int (struct fit-result (rms
-                             variance
-                             names
-                             final-params
-                             std-error
-                             std-error-percent
-                             function))))
+   (provide fit-int
+            (struct fit-result (rms variance names final-params
+                                std-error std-error-percent function))))

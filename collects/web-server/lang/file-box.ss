@@ -1,6 +1,6 @@
 #lang scheme/base
-(require (lib "serialize.ss")
-         (lib "contract.ss"))  
+(require mzlib/serialize
+         mzlib/contract)  
 
 (define-serializable-struct internal-file-box (path))
 (define file-box? internal-file-box?)

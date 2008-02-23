@@ -1,7 +1,7 @@
 
 (module parcheesi mzscheme
-  (require (lib "unit.ss")
-           (lib "class.ss")
+  (require mzlib/unit
+           mzlib/class
            "admin-gui.ss")
   
   (provide game@)

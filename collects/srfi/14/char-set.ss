@@ -5,9 +5,9 @@
 ;;  the code and tests are a lot better than they would be.
 
 (module char-set mzscheme
-  (require (lib "integer-set.ss")
-	   (all-except (lib "contract.ss") union)
-	   (rename (lib "contract.ss") union/c union))
+  (require mzlib/integer-set
+	   (all-except mzlib/contract union)
+	   (rename mzlib/contract union/c union))
 
   ;; Data defn ----------------------------------------
     

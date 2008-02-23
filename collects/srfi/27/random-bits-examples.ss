@@ -1,5 +1,5 @@
 (module random-bits-examples mzscheme
-  (require (lib "random-bits.ss" "srfi" "27"))
+  (require srfi/27/random-bits)
 
   (define ascii->char integer->char)
 

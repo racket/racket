@@ -1,7 +1,7 @@
 ;; rudimentary test harness for complex math routines in 
 ;; zmath.ss 
 
-(require (lib "zmath.ss"))
+(require mzlib/zmath)
 
 (define ztest
   (lambda (z)

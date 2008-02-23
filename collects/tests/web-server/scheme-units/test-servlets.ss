@@ -6,7 +6,7 @@
 ;; - Various MIME formats
 ;; - URL paths
 (module test-servlets mzscheme
-  (require (lib "contract.ss")
+  (require mzlib/contract
            (lib "test.ss" "schemeunit")
            "assertions.ss"
            )

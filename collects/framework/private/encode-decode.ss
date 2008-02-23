@@ -1,9 +1,9 @@
 (module encode-decode mzscheme
-  (require (lib "deflate.ss")
-           (lib "match.ss")
-           (lib "pretty.ss"))
-  (require-for-syntax (lib "inflate.ss")
-                      (lib "string.ss"))
+  (require mzlib/deflate
+           mzlib/match
+           mzlib/pretty)
+  (require-for-syntax mzlib/inflate
+                      mzlib/string)
   
   (provide encode-sexp
            decode

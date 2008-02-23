@@ -15,9 +15,9 @@
 ;;; ------------------------------------------------------------
 
 (module rep mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
-  (require (lib "zodiac-sig.ss" "syntax"))
+  (require syntax/zodiac-sig)
 
   (require "sig.ss")
   (require "../sig.ss")

@@ -1,7 +1,7 @@
 (module fontdialog mzscheme
-  (require (lib "class.ss")
-	   (lib "etc.ss")
-	   (lib "list.ss")
+  (require mzlib/class
+	   mzlib/etc
+	   mzlib/list
 	   (prefix wx: "kernel.ss")
 	   "lock.ss"
 	   "wx.ss"

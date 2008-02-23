@@ -15,7 +15,7 @@ as well as the following:
 
 @defthing[send-url (parameter/c ([url string?] [separate-window? boolean?] . -> . void))]{
  Should open @scheme[url]. In another window if @scheme[separate-window?] is true.
- By default this is from @scheme[(lib "sendurl.ss" "net")].
+ By default this is from @scheme[net/sendurl].
 }
 
 @defform*[[(on-web servlet-expr)

@@ -4,7 +4,7 @@
 ;; reporting in the teaching languages.
 
 (module image mzscheme
-  (require (lib "image.ss" "htdp")
+  (require htdp/image
            (lib "prim.ss" "lang"))
   
   

@@ -5,10 +5,10 @@
 
 #lang mzscheme
 
-(require (lib "etc.ss") ; defines build-vector
-         (lib "class.ss")
-         (lib "unit.ss")
-         (lib "mred.ss" "mred")
+(require mzlib/etc ; defines build-vector
+         mzlib/class
+         mzlib/unit
+         mred
          (lib "include-bitmap.ss" "mrlib"))
 
 (provide game@)

@@ -1,4 +1,4 @@
-(require (lib "animation.ss" "frtime"))
+(require frtime/animation)
 
 ; the mouse position delayed
 (display-shapes

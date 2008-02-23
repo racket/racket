@@ -1,8 +1,8 @@
 (module ft-qq "mzscheme-core.ss"
   (require (as-is:unchecked mzscheme define-values define-syntaxes require-for-syntax
   raise-type-error quote unquote unquote-splicing))
-  ;(require-for-syntax (lib "frp.ss" "frtime"))
-  (require-for-syntax (lib "stx.ss" "syntax"))
+  ;(require-for-syntax frtime/frp)
+  (require-for-syntax syntax/stx)
   
   
   (define-values (frp:qq-append)

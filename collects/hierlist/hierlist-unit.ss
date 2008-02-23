@@ -1,14 +1,14 @@
 
 (module hierlist-unit mzscheme
-  (require (all-except (lib "unit.ss") rename)
-	   (lib "class.ss")
-	   (lib "class100.ss")
+  (require (all-except mzlib/unit rename)
+	   mzlib/class
+	   mzlib/class100
 	   (lib "mred-sig.ss" "mred")
 	   (lib "include-bitmap.ss" "mrlib")
 	   "hierlist-sig.ss")
 
-  (require (rename (lib "list.ss") sort* sort)
-	   (lib "etc.ss"))
+  (require (rename mzlib/list sort* sort)
+	   mzlib/etc)
 
   (define turn-up (include-bitmap "../icons/turn-up.png" 'png))
   (define turn-down (include-bitmap "../icons/turn-down.png" 'png))

@@ -1,10 +1,10 @@
 
 (module browse-deriv mzscheme
-  (require (lib "class.ss")
-           (lib "plt-match.ss")
-           (lib "unit.ss")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
+  (require mzlib/class
+           mzlib/plt-match
+           mzlib/unit
+           mred
+           framework
            (lib "hierlist.ss" "hierlist"))
   (require "../model/deriv.ss")
   (provide (all-defined))

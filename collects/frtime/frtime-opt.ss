@@ -8,14 +8,14 @@
   (provide (rename my-module-begin #%module-begin)
            #%app #%top #%datum optimize-expr optimize-module dont-optimize)
   
-  (require-for-syntax (lib "lowered-equivs.ss" "frtime"))
-  (require-for-syntax (only (lib "1.ss" "srfi") lset-union lset-difference every))
-  (require-for-syntax (lib "list.ss"))
-  (require (only (lib "frp-core.ss" "frtime") super-lift undefined undefined?))
-  (require (rename (lib "lang-ext.ss" "frtime") frtime:lift lift)
-           (rename (lib "mzscheme-core.ss" "frtime") frtime:if if)
-           (only (lib "mzscheme-core.ss" "frtime") frp:copy-list))
-;  (require (lib "unit.ss") (lib "unitsig.ss"))
+  (require-for-syntax frtime/lowered-equivs)
+  (require-for-syntax (only srfi/1 lset-union lset-difference every))
+  (require-for-syntax mzlib/list)
+  (require (only frtime/frp-core super-lift undefined undefined?))
+  (require (rename frtime/lang-ext frtime:lift lift)
+           (rename frtime/mzscheme-core frtime:if if)
+           (only frtime/mzscheme-core frp:copy-list))
+;  (require mzlib/unit mzlib/unitsig)
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Helper functions
@@ -81,7 +81,7 @@
   ;; The variables are projected before evaluating the expression,
   ;; and the result is then injected into the dataflow graph as a
   ;; single node.
-  (require (only (lib "frp-core.ss" "frtime") proc->signal value-now))
+  (require (only frtime/frp-core proc->signal value-now))
   (define-syntax (dip stx)
     (syntax-case stx (begin)
       ;; special case: don't dip lone identifiers
@@ -113,7 +113,7 @@
     (syntax-case stx ()
       [(_ FORMS ...)
        (let* (;; get a list of all the symbols provided by the frtime-opt-lang module
-              [lang-symbols (all-provided-ids #'(lib "frtime-opt-lang.ss" "frtime") stx)]
+              [lang-symbols (all-provided-ids #'frtime/frtime-opt-lang stx)]
               ;; convert those symbols into an equiv-map by pairing up functions
               ;; with their lowered equivalents
               [lang-equiv-map (symbol-list-to-equiv-map lang-symbols)]
@@ -122,7 +122,7 @@
               [equiv-map-stx (equiv-map-to-stx lang-equiv-map)])
          #`(#%plain-module-begin 
             (require-for-syntax #,(so->d->so stx #`mzscheme))
-            (require #,(so->d->so stx #`(lib "frtime-opt-lang.ss" "frtime")))
+            (require #,(so->d->so stx #`frtime/frtime-opt-lang))
             (optimize-module #,equiv-map-stx FORMS ...)))]))
   
   

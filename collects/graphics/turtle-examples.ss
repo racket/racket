@@ -1,6 +1,6 @@
 (module turtle-examples mzscheme
-  (require (lib "math.ss")
-	   (lib "etc.ss")
+  (require mzlib/math
+	   mzlib/etc
 	   "turtles.ss")
   (provide regular-poly regular-polys radial-turtles spaced-turtles
 	   spokes spyro-gyra neato graphics-bexam serp-size serp serp-nosplit

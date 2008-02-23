@@ -5,12 +5,12 @@
            "all-problems.ss"
            "problem.ss"
            "../show-help.ss"
-           (lib "framework.ss" "framework")
-           (lib "class.ss")
-           (lib "unit.ss")
-           (lib "pretty.ss")
-           (lib "list.ss")
-           (lib "mred.ss" "mred"))
+           framework
+           mzlib/class
+           mzlib/unit
+           mzlib/pretty
+           mzlib/list
+           mred)
   
   (provide game@)
   

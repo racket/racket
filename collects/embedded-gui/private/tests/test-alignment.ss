@@ -1,7 +1,7 @@
 (require
- (lib "etc.ss")
- (lib "list.ss")
- (lib "match.ss")
+ mzlib/etc
+ mzlib/list
+ mzlib/match
  "../alignment.ss"
  "test-macro.ss")
 

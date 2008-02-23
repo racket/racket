@@ -3,12 +3,12 @@
 (require "sig.ss"
          (lib "mred-sig.ss" "mred")
          scheme/file
-         (lib "port.ss")
-         (lib "url-sig.ss" "net")
+         mzlib/port
+         net/url-sig
          (only-in (lib "html.ss" "html")
                   read-html-as-xml read-html-comments use-html-spec)
          (except-in (lib "xml.ss" "xml") read-comments)
-         (lib "class.ss")
+         mzlib/class
          "bullet.ss"
          "option-snip.ss"
          "entity-names.ss")

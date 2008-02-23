@@ -1,5 +1,5 @@
 (module contract-opt-tests mzscheme
-  (require (lib "contract.ss")
+  (require mzlib/contract
            (planet "test.ss" ("schematics" "schemeunit.plt" 2 1)))
     
   (define (exn:fail:contract-violation? exn)

@@ -5,9 +5,9 @@
            "../ast.ss"
            "../parameters.ss")
   
-  (require (lib "yacc.ss" "parser-tools")
-           (all-except (lib "lex.ss" "parser-tools") input-port)
-           (lib "readerr.ss" "syntax"))
+  (require parser-tools/yacc
+           (all-except parser-tools/lex input-port)
+           syntax/readerr)
   
   (provide parse-full parse-full-interactions parse-full-expression parse-full-type)
     

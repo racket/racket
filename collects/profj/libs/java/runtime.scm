@@ -6,11 +6,11 @@
 
 (module runtime mzscheme
   
-  (require (lib "class.ss")
-           (lib "list.ss")
-           (lib "Object.ss" "profj" "libs" "java" "lang")
-           (lib "String.ss" "profj" "libs" "java" "lang")
-           (lib "Throwable.ss" "profj" "libs" "java" "lang")
+  (require mzlib/class
+           mzlib/list
+           profj/libs/java/lang/Object
+           profj/libs/java/lang/String
+           profj/libs/java/lang/Throwable
            (lib "ArithmeticException.ss" "profj" "libs" "java" "lang")
            (lib "ClassCastException.ss" "profj" "libs" "java" "lang")
            (lib "NullPointerException.ss" "profj" "libs" "java" "lang")

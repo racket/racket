@@ -1,6 +1,6 @@
 (module assoc-list mzscheme
   
-  (require (lib "class.ss"))
+  (require mzlib/class)
   
   (provide assoc%)
   

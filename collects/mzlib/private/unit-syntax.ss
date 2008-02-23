@@ -1,5 +1,5 @@
 (module unit-syntax mzscheme
-  (require (lib "stx.ss" "syntax"))
+  (require syntax/stx)
   (require-for-template "unit-keywords.ss")
   
   (provide (all-defined))

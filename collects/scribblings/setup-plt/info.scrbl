@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           (for-label scheme
-                     string-constants/string-constant
+                     string-constants
                      setup/getinfo))
 
 @title[#:tag "info.ss"]{@filepath{info.ss} File Format}

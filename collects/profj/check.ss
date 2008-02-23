@@ -7,8 +7,8 @@
            "restrictions.ss"
            "profj-pref.ss"
            "build-info.ss"
-           (lib "class.ss") (lib "list.ss") (lib "file.ss")
-           (prefix srfi: (lib "1.ss" "srfi")) (lib "string.ss"))
+           mzlib/class mzlib/list mzlib/file
+           (prefix srfi: srfi/1) mzlib/string)
   (provide check-defs check-interactions-types)
   
   ;symbol-remove-last: symbol->symbol

@@ -1,5 +1,5 @@
 (load-relative "../mzscheme/loadtest.ss")
-(require (lib "class.ss")
+(require mzlib/class
          (lib "token-tree.ss" "syntax-color"))
 
 (define t (new token-tree% (length 1) (data 'a)))

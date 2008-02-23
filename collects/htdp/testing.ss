@@ -1,11 +1,11 @@
 (module testing mzscheme
 
   (require (lib "teachprims.ss" "lang" "private")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
-           (lib "pretty.ss")
-           (lib "pconvert.ss")
-           (lib "class.ss"))
+           mred
+           framework
+           mzlib/pretty
+           mzlib/pconvert
+           mzlib/class)
   
   (require-for-syntax (lib "shared.ss" "stepper" "private"))
   

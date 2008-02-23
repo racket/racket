@@ -33,13 +33,13 @@
 
 
 (module gears mzscheme
-(require (lib "mred.ss" "mred")
-         (lib "class.ss")
-         (lib "math.ss")
-         (prefix gl- (lib "sgl.ss" "sgl"))
-         (lib "gl-vectors.ss" "sgl"))
-         
-         
+(require mred
+         mzlib/class
+         mzlib/math
+         sgl
+         sgl/gl-vectors)
+
+
 (define controls? #t)
 
 (define gears-canvas%

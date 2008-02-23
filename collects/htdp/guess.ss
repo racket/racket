@@ -1,10 +1,10 @@
-#cs#cs(module guess mzscheme
-     (require (lib "error.ss" "htdp")
-              (lib "unitsig.ss")
-              (lib "etc.ss")
-              (lib "class.ss")
-              (lib "list.ss")
-              (lib "mred.ss" "mred")
+#cs(module guess mzscheme
+     (require htdp/error
+              mzlib/unitsig
+              mzlib/etc
+              mzlib/class
+              mzlib/list
+              mred
               (lib "prim.ss" "lang"))
      
      (provide 

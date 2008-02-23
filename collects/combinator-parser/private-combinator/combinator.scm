@@ -1,11 +1,11 @@
 (module combinator lazy
   
-  (require (lib "unit.ss")
-           (only (lib "etc.ss") opt-lambda))
+  (require mzlib/unit
+           (only mzlib/etc opt-lambda))
   
   (require "structs.scm"
            "parser-sigs.ss"
-           (lib "lex.ss" "parser-tools"))
+           parser-tools/lex)
   
   (provide (all-defined))
   

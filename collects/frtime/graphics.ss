@@ -1,7 +1,7 @@
 (module graphics mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
 	   (lib "mred-sig.ss" "mred")
-	   (lib "mred.ss" "mred")
+	   mred
 	   "graphics-sig.ss"
 	   "graphics-unit.ss")
   (provide-signature-elements graphics:posn^ graphics:posn-less^)

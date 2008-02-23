@@ -1,8 +1,8 @@
 #lang mzscheme
-(require (lib "unitsig.ss")
-         (only (lib "unit.ss") unit import export)
-         (lib "file.ss")
-         (lib "mred.ss" "mred")
+(require mzlib/unitsig
+         (only mzlib/unit unit import export)
+         mzlib/file
+         mred
          "sig.ss"
          "model.ss"
          "gui.ss"

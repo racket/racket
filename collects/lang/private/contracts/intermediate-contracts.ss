@@ -2,9 +2,9 @@
   
   (require "hilighters.ss"
            "contracts-helpers.ss"
-           (lib "etc.ss"))
+           mzlib/etc)
   
-  (require (lib "list.ss"))
+  (require mzlib/list)
   
   (provide vector-contract 
            listof-contract 

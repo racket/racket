@@ -1,9 +1,9 @@
 ;; load this file as a tool to run the test suites
 
 (module run-tests mzscheme
-  (require (lib "class.ss")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework"))
+  (require mzlib/class
+           mred
+           framework)
 
   (provide ask-test-suite)
   

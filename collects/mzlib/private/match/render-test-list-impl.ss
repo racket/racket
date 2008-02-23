@@ -1,6 +1,6 @@
 (module render-test-list-impl mzscheme
   
-  (require (lib "stx.ss" "syntax"))
+  (require syntax/stx)
   
   (require "match-error.ss"
            "match-helper.ss"
@@ -13,7 +13,7 @@
            "render-helpers.ss")
   
   (require "render-sigs.ss"
-           (lib "unit.ss"))
+           mzlib/unit)
   
   (require-for-syntax "match-helper.ss"
                       "match-expander-struct.ss"

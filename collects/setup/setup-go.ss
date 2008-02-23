@@ -1,12 +1,12 @@
 
 (module setup-go mzscheme
   (require "setup-cmdline.ss"
-	   (lib "unit.ss")
+	   mzlib/unit
 
 	    "option-sig.ss"
 	    "setup-unit.ss"
 	    "option-unit.ss"
-	    (lib "cm.ss"))
+	    mzlib/cm)
 
   (define-values/invoke-unit/infer setup:option@)
 
@@ -49,12 +49,12 @@
   (require (lib "launcher-sig.ss" "launcher")
 	   (lib "launcher-unit.ss" "launcher")
 
-	   (lib "dynext-sig.ss" "dynext")
-	   (lib "dynext-unit.ss" "dynext"))
+	   dynext/dynext-sig
+	   dynext/dynext-unit)
 
-  (require (lib "sig.ss" "compiler")
-	   (lib "option-unit.ss" "compiler")
-	   (lib "compiler-unit.ss" "compiler"))
+  (require compiler/sig
+	   compiler/option-unit
+	   compiler/compiler-unit)
 
   (invoke-unit
    (compound-unit/infer

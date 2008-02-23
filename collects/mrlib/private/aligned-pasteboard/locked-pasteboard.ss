@@ -5,10 +5,10 @@
 (module locked-pasteboard mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "mred.ss" "mred")
-   (lib "etc.ss")
-   (lib "contract.ss"))
+   mzlib/class
+   mred
+   mzlib/etc
+   mzlib/contract)
   
   (provide/contract
    (locked-pasteboard-mixin mixin-contract))

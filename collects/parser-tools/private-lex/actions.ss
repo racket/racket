@@ -1,6 +1,6 @@
 (module actions mzscheme
   (provide (all-defined))
-  (require (lib "stx.ss" "syntax"))
+  (require syntax/stx)
     
   ;; get-special-action: (syntax-object list) syntax-object syntax-object  -> syntax-object
   ;; Returns the first action from a rule of the form ((which-special) action)

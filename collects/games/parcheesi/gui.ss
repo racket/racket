@@ -2,10 +2,10 @@
 (module gui mzscheme
   (require "board.ss"
 	   "moves.ss"
-           (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "list.ss")
-           (lib "etc.ss"))
+           mred
+           mzlib/class
+           mzlib/list
+           mzlib/etc)
 
   (provide show-board
            board-canvas%

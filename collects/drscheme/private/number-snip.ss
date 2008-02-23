@@ -1,7 +1,7 @@
 (module number-snip mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "framework.ss" "framework"))
+  (require mred
+           mzlib/class
+           framework)
   
   (provide snip-class)
   (define snip-class (make-object number-snip:snip-class%))

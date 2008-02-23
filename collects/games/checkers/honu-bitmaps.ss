@@ -1,8 +1,8 @@
 (module honu-bitmaps mzscheme
-  (require (lib "math.ss")
-           (lib "etc.ss")
-           (lib "mred.ss" "mred")
-           (lib "class.ss"))
+  (require mzlib/math
+           mzlib/etc
+           mred
+           mzlib/class)
 
   (provide honu-bitmap honu-down-bitmap
            honu-rotation honu-down-rotation)

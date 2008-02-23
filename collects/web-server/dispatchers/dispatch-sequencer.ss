@@ -1,6 +1,6 @@
 #lang scheme/base
-(require (lib "list.ss")
-         (lib "contract.ss"))
+(require mzlib/list
+         mzlib/contract)
 (require "dispatch.ss")
 (provide/contract
  [interface-version dispatcher-interface-version?])

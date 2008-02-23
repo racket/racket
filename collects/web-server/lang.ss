@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (for-syntax scheme/base)
-         (for-syntax (lib "etc.ss"))
-         (for-syntax (lib "list.ss"))
+         (for-syntax mzlib/etc)
+         (for-syntax mzlib/list)
          (for-syntax "lang/labels.ss")
          (for-syntax "lang/util.ss")
          (for-syntax "lang/elim-letrec.ss")

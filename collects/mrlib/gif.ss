@@ -1,12 +1,12 @@
 
 (module gif mzscheme
-  (require (lib "class.ss")
-           (lib "file.ss")
-           (lib "mred.ss" "mred")
-           (lib "gifwrite.ss" "net")
-           (lib "contract.ss")
-           (lib "kw.ss")
-           (lib "etc.ss"))
+  (require mzlib/class
+           mzlib/file
+           mred
+           net/gifwrite
+           mzlib/contract
+           mzlib/kw
+           mzlib/etc)
 
   (provide write-gif
            write-animated-gif)

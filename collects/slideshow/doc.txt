@@ -55,7 +55,7 @@ program.
 
 For constructing slide images, Slideshow builds on the "texpict"
 collection's utilities for constructing images. More specifically,
-all of the functions provided by `(lib "mrpict.ss" "texpict")'
+all of the functions provided by `texpict/mrpict'
 are available for creating images.
 
 In addition to the "mrpict.ss" functions, Slideshow provides functions
@@ -75,8 +75,8 @@ The _slideshow.ss_ module acts as a language that includes:
 
  - the Slideshow function for creating slides (defined here)
  - all of MzScheme
- - (lib "mrpict.ss" "texpict")
- - (lib "utils.ss" "texpict")
+ - texpict/mrpict
+ - texpict/utils
 
 The _slide.ss_ module is like "slideshow.ss", but it does not
 re-provide MzScheme. Thus, "slide.ss" is a non-language version of
@@ -98,7 +98,7 @@ The main Slideshow function is `slide/title', which adds a slide to
 the presentation with a given title and content. For example, the
 Hello World presentation can be defined by the following module:
 
- (module hello-world (lib "slideshow.ss" "slideshow")
+ (module hello-world slideshow/slideshow
    (slide/title
     "How to Say Hello"
     (t "Hello World!")))
@@ -128,7 +128,7 @@ pict that will be centered on the slide. The picts are stacked
 vertically and top-aligned, with `gap-size' separation between each
 pict.
 
- (module hello-world (lib "slideshow.ss" "slideshow")
+ (module hello-world slideshow/slideshow
    (slide/title
     "How to Say Hello"
     (t "Hello World!")
@@ -137,7 +137,7 @@ pict.
 The `slide/title/center' form centers the stacked picts vertically
 instead of putting them at the top of the slide:
 
- (module hello-world (lib "slideshow.ss" "slideshow")
+ (module hello-world slideshow/slideshow
    (slide/title/center
     "How to Say Hello"
     (t "Hello World!")
@@ -147,7 +147,7 @@ Various functions format paragraphs and generate bulleted items for
 lists. For example, `page-item' creates a bulleted paragraph that
 spaces the width of the slide:
 
- (module hello-world (lib "slideshow.ss" "slideshow")
+ (module hello-world slideshow/slideshow
    (slide/title
     "How to Say Hello"
     (page-item "If you want to create an example, you"
@@ -165,7 +165,7 @@ Staging Slides
 The `slide/title' function creates a slide as a side effect. It can be
 put inside a function to abstract over a slide:
 
- (module hello-world (lib "slideshow.ss" "slideshow")
+ (module hello-world slideshow/slideshow
    (define (make-slide-n n)
      (slide/title
       "How to Generalize Slides"
@@ -204,7 +204,7 @@ title is usually a pict, but there are a few other possibilities:
 
 Here's an example to illustrate how 'next and 'alts work:
 
- (module multi-step (lib "slideshow.ss" "slideshow")
+ (module multi-step slideshow/slideshow
   (slide/title
    "Example"
    (page-item "First step")

@@ -2,7 +2,7 @@
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          (planet "util.ss" ("schematics" "schemeunit.plt" 2))
          (lib "xml.ss" "xml")
-         (only-in (lib "file.ss")
+         (only-in mzlib/file
                   make-temporary-file)
          (lib "response.ss" "web-server" "private")
          (lib "request-structs.ss" "web-server" "private")

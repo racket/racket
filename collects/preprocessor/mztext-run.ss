@@ -1,8 +1,6 @@
 (module mztext-run mzscheme
 
-(require (lib "mztext.ss" "preprocessor")
-         (lib "pp-run.ss" "preprocessor")
-         (lib "cmdline.ss"))
+(require preprocessor/mztext preprocessor/pp-run mzlib/cmdline)
 
 (let ([output #f] [run-cmd #f])
   (command-line

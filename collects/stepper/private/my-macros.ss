@@ -1,6 +1,6 @@
 (module my-macros mzscheme
 
-  (require-for-syntax (lib "list.ss"))
+  (require-for-syntax mzlib/list)
                        
   ;;;;;;;;;;
   ;;

@@ -1,8 +1,8 @@
 (module to-core mzscheme
-  (require (lib "kerncase.ss" "syntax")
-           (lib "stx.ss" "syntax")
-           (lib "list.ss")
-           (lib "boundmap.ss" "syntax"))
+  (require syntax/kerncase
+           syntax/stx
+           mzlib/list
+           syntax/boundmap)
 
   (provide top-level-to-core)
 

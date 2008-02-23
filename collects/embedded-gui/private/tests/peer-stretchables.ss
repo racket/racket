@@ -1,7 +1,7 @@
 (require
- (lib "class.ss")
- (lib "etc.ss")
- (lib "mred.ss" "mred")
+ mzlib/class
+ mzlib/etc
+ mred
  "../stretchable-editor-snip.ss"
  "../verthoriz-alignment.ss"
  "../aligned-pasteboard.ss")

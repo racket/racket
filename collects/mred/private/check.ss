@@ -1,5 +1,5 @@
 (module check mzscheme
-  (require (lib "class.ss")
+  (require mzlib/class
 	   (prefix wx: "kernel.ss")
 	   "wx.ss"
 	   "const.ss")

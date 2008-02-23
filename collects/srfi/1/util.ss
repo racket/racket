@@ -35,10 +35,10 @@
 (module util
   mzscheme
 
-  (require (lib "optional.ss" "srfi")
+  (require srfi/optional
 		   "predicate.ss"
 		   "selector.ss")
-  (require (lib "receive.ss" "srfi" "8"))
+  (require srfi/8/receive)
 
   (provide %cdrs
 		   %cars+

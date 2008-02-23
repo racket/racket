@@ -1,7 +1,7 @@
 #lang scheme/base
-(require (lib "list.ss")
-         (lib "plt-match.ss")
-         (lib "serialize.ss")
+(require mzlib/list
+         mzlib/plt-match
+         mzlib/serialize
          "../private/define-closure.ss"
          "../lang/web-cells.ss")
 (provide

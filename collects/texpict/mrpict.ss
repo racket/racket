@@ -1,9 +1,9 @@
 
 (module mrpict mzscheme
-  (require (lib "unit.ss")
-           (lib "contract.ss")
-           (lib "class.ss")
-           (lib "mred.ss" "mred"))
+  (require mzlib/unit
+           mzlib/contract
+           mzlib/class
+           mred)
 
   (require (lib "mred-sig.ss" "mred")
 	   (lib "mred-unit.ss" "mred"))

@@ -7,10 +7,10 @@ plt/collects/tests/mzscheme/image-test.ss
 
 (module image mzscheme
 
-  (require (lib "mred.ss" "mred")
-	   (lib "class.ss")
+  (require mred
+	   mzlib/class
            (lib "cache-image-snip.ss" "mrlib")
-           (lib "math.ss")
+           mzlib/math
 	   (lib "posn.ss" "lang")
            (lib "imageeq.ss" "lang" "private")
            "error.ss")

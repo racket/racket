@@ -5,9 +5,9 @@
   (provide copy-struct 
 	   define-struct/properties
 	   make-->vector)
-  (require-for-syntax (lib "struct.ss" "syntax")
+  (require-for-syntax syntax/struct
 		      "list.ss"
-                      (lib "stx.ss" "syntax"))
+                      syntax/stx)
 
   ;; ------------------------------------------------------------
   ;; copy-struct

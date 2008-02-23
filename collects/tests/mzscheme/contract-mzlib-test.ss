@@ -1615,7 +1615,7 @@ of the contract library does not change over time.
    'define/contract7
    '(let ()
       (eval '(module contract-test-suite-define1 mzscheme
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define/contract x string? "a")
                x))
       (eval '(require 'contract-test-suite-define1))))
@@ -3222,8 +3222,8 @@ of the contract library does not change over time.
    'd-c-s-match1
    '(begin
       (eval '(module d-c-s-match1 mzscheme
-               (require (lib "contract.ss")
-                        (lib "match.ss"))
+               (require mzlib/contract
+                        mzlib/match)
                
                (define-contract-struct foo (bar baz))
                
@@ -3236,8 +3236,8 @@ of the contract library does not change over time.
    'd-c-s-match2
    '(begin
       (eval '(module d-c-s-match2 mzscheme
-               (require (lib "contract.ss")
-                        (lib "match.ss"))
+               (require mzlib/contract
+                        mzlib/match)
                
                (define-contract-struct foo (bar baz))
                
@@ -3255,7 +3255,7 @@ of the contract library does not change over time.
   (test/pos-blame 'd-c-s1
                   '(begin
                      (eval '(module d-c-s1 mzscheme
-                              (require (lib "contract.ss"))
+                              (require mzlib/contract)
                               (define-contract-struct couple (hd tl))
                               (contract (couple/c any/c any/c) 1 'pos 'neg)))
                      (eval '(require 'd-c-s1))))
@@ -4037,7 +4037,7 @@ so that propagation occurs.
 
   (contract-eval 
    '(module contract-test-suite-inferred-name1 mzscheme
-      (require (lib "contract.ss"))
+      (require mzlib/contract)
       (define contract-inferred-name-test-contract (-> integer? any))
       (define (contract-inferred-name-test x) #t)
       (provide/contract (contract-inferred-name-test contract-inferred-name-test-contract))
@@ -4620,7 +4620,7 @@ so that propagation occurs.
    'provide/contract1
    '(let ()
       (eval '(module contract-test-suite1 mzscheme
-                (require (lib "contract.ss"))
+                (require mzlib/contract)
                 (define x 1)
                 (provide/contract (x integer?))))
       (eval '(require 'contract-test-suite1))
@@ -4630,7 +4630,7 @@ so that propagation occurs.
    'provide/contract2
    '(let ()
       (eval '(module contract-test-suite2 mzscheme
-                (require (lib "contract.ss"))
+                (require mzlib/contract)
                 (provide/contract)))
       (eval '(require 'contract-test-suite2))))
   
@@ -4638,7 +4638,7 @@ so that propagation occurs.
    'provide/contract3
    '(let ()
       (eval '(module contract-test-suite3 mzscheme
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define x #f)
                (provide/contract (x integer?))))
       (eval '(require 'contract-test-suite3))
@@ -4649,7 +4649,7 @@ so that propagation occurs.
    'provide/contract4
    '(begin
       (eval '(module contract-test-suite4 mzscheme
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define-struct s (a))
                (provide/contract (struct s ((a any/c))))))
       (eval '(require 'contract-test-suite4))
@@ -4662,7 +4662,7 @@ so that propagation occurs.
    'provide/contract4-b
    '(begin
       (eval '(module contract-test-suite4-b mzscheme
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define-struct s (a))
                (provide/contract (struct s ((a any/c))))))
       (eval '(require 'contract-test-suite4-b))
@@ -4674,7 +4674,7 @@ so that propagation occurs.
    'provide/contract4-c
    '(begin
       (eval '(module contract-test-suite4-c mzscheme
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define-struct s (a b))
                (provide/contract (struct s ((a any/c) (b any/c))))))
       (eval '(require 'contract-test-suite4-c))
@@ -4692,7 +4692,7 @@ so that propagation occurs.
    'provide/contract5
    '(begin
       (eval '(module contract-test-suite5 mzscheme
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define-struct s (a))
                (define-struct t (a))
                (provide/contract (struct s ((a any/c)))
@@ -4709,7 +4709,7 @@ so that propagation occurs.
    'provide/contract6
    '(begin
       (eval '(module contract-test-suite6 mzscheme
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define-struct s (a))
                (provide/contract (struct s ((a any/c))))))
       (eval '(require 'contract-test-suite6))
@@ -4719,13 +4719,13 @@ so that propagation occurs.
    'provide/contract6b
    '(begin
       (eval '(module contract-test-suite6b mzscheme
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define-struct s_ (a))
                (provide/contract (struct s_ ((a any/c))))))
       (eval '(require 'contract-test-suite6b))
       (eval '(module contract-test-suite6b2 mzscheme
                (require 'contract-test-suite6b)
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define-struct (t_ s_) (b))
                (provide s_-a)
                (provide/contract (struct (t_ s_) ((a any/c) (b any/c))))))
@@ -4737,7 +4737,7 @@ so that propagation occurs.
    'provide/contract7
    '(begin
       (eval '(module contract-test-suite7 mzscheme
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define-struct s (a b))
                (define-struct (t s) (c d))
                (provide/contract 
@@ -4755,7 +4755,7 @@ so that propagation occurs.
    'provide/contract8
    '(begin
       (eval '(module contract-test-suite8 mzscheme
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define-struct i-s (contents))
                (define (w-f-s? x) #t)
                (provide/contract 
@@ -4767,7 +4767,7 @@ so that propagation occurs.
    'provide/contract9
    '(begin
       (eval '(module contract-test-suite9 mzscheme
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define the-internal-name 1)
                (provide/contract (rename the-internal-name the-external-name integer?))
                (+ the-internal-name 1)))
@@ -4778,11 +4778,11 @@ so that propagation occurs.
    'provide/contract10
    '(begin
       (eval '(module pc10-m mzscheme
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define-struct s (a b) (make-inspector))
                (provide/contract (struct s ((a number?) (b number?))))))
       (eval '(module pc10-n mzscheme
-               (require (lib "struct.ss")
+               (require mzlib/struct
                         'pc10-m)
                (print-struct #t)
                (copy-struct s 
@@ -4794,7 +4794,7 @@ so that propagation occurs.
    'provide/contract11
    '(begin
       (eval '(module pc11-m mzscheme
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define x 1)
                (provide/contract [rename x y integer?]
                                  [rename x z integer?])))
@@ -4809,11 +4809,11 @@ so that propagation occurs.
    'provide/contract11b
    '(parameterize ([current-namespace (make-namespace)])
       (eval '(module pc11b-m mzscheme
-               (require (lib "contract.ss"))
+               (require mzlib/contract)
                (define-struct s (a b) (make-inspector))
                (provide/contract (struct s ((a number?) (b number?))))))
       (eval '(module pc11b-n mzscheme
-               (require (lib "struct.ss")
+               (require mzlib/struct
                         m)
                (print-struct #t)
                (copy-struct s 
@@ -4864,7 +4864,7 @@ so that propagation occurs.
                         ([flags (listof string?)] [type type?])))))
 
       (eval '(module pc14-test2 mzscheme
-               (require (lib "plt-match.ss"))
+               (require mzlib/plt-match)
                (require 'pc14-test1)
                (match (make-type:ptr '() (make-type '()))
                  [(struct type:ptr (flags type)) #f])))
@@ -4962,7 +4962,7 @@ so that propagation occurs.
    'provide/contract20
    '(eval '(module tmp mzscheme
              (require mzlib/contract
-                      (lib "unit.ss"))
+                      mzlib/unit)
              
              (define-struct s (a b))
              

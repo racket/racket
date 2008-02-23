@@ -1,7 +1,7 @@
 ;; load the graphics
-(require (lib "graphics.ss" "graphics")
-         (lib "etc.ss")
-         (lib "file.ss"))
+(require graphics/graphics
+         mzlib/etc
+         mzlib/file)
 (open-graphics)
 
 (define (struct-test)

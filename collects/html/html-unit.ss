@@ -1,11 +1,11 @@
 ;; copyright by Paul Graunke June 2000 AD
 
 (module html-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "file.ss")
-	   (lib "list.ss")
-	   (lib "etc.ss")
-	   (lib "include.ss")
+  (require mzlib/unitsig
+	   mzlib/file
+	   mzlib/list
+	   mzlib/etc
+	   mzlib/include
 	   "html-sig.ss"
 	   "sgml-reader-sig.ss"
 	   (lib "xml-sig.ss" "xml"))

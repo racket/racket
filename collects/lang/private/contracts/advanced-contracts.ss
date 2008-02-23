@@ -1,6 +1,6 @@
 (module advanced-contracts mzscheme
   (require "contracts-helpers.ss")
-  (require (lib "list.ss"))
+  (require mzlib/list)
   
   (provide void-contract)
   

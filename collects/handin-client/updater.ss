@@ -1,7 +1,7 @@
 (module updater mzscheme
-  (require (lib "file.ss") (lib "port.ss") (lib "url.ss" "net")
-           (lib "plt-installer.ss" "setup") (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
+  (require mzlib/file mzlib/port net/url
+           (lib "plt-installer.ss" "setup") mred
+           framework
            "info.ss" "this-collection.ss")
   (define name        (#%info-lookup 'name))
   (define web-address (#%info-lookup 'web-address))

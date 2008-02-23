@@ -1,6 +1,6 @@
 
 (module link mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
   (require "link-sig.ss")
   (require "link-unit.ss")

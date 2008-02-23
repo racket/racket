@@ -8,7 +8,7 @@
          framework/framework
          drscheme/tool
          mrlib/bitmap-label
-         string-constants/string-constant
+         string-constants
          "model/trace.ss"
          "model/deriv.ss"
          "model/deriv-util.ss"

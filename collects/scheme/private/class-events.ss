@@ -1,8 +1,8 @@
 
 (module class-events mzscheme
 
-  (require-for-syntax (lib "stxparam.ss"))
-  (require (lib "stxparam.ss"))
+  (require-for-syntax mzlib/stxparam)
+  (require mzlib/stxparam)
 
   (provide current-class-event-handler
            define-traced

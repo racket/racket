@@ -1,7 +1,7 @@
 #cs
 (module Double-native-methods mzscheme
   
-  (require (lib "class.ss"))
+  (require mzlib/class)
   (require "Throwable.ss" "String.ss"
            "NumberFormatException.ss" "NullPointerException.ss" "RuntimeException.ss")
   

@@ -1,11 +1,11 @@
 ;; Mike Burns, July 28th, 2004, netgeek@speakeasy.net
 ;; Test serving files that require authentication.
 (module test-authentication mzscheme
-  (require (lib "contract.ss")
+  (require mzlib/contract
            (lib "test.ss" "schemeunit")
-           (lib "url.ss" "net")
-           (lib "head.ss" "net")
-           (lib "base64.ss" "net")
+           net/url
+           net/head
+           net/base64
            "assertions.ss"
            )
 

@@ -1,7 +1,7 @@
 ; Module header is generated automatically
 #cs(module stx-engine mzscheme
-(require (lib "defmacro.ss"))
-(require (rename (lib "pretty.ss") pp pretty-print))
+(require mzlib/defmacro)
+(require (rename mzlib/pretty pp pretty-print))
 (require (lib "string.ss" "srfi/13"))
 (require "sxml-tools.ss")
 (require "sxpathlib.ss")

@@ -9,7 +9,7 @@
 ;;  so we don't do comparisons against expected results
 ;;  basically, looking for segfaults and garbage values
 
-(require (lib "srpersist.ss" "srpersist"))
+(require srpersist)
 
 (define c-types
  '(sql-c-char

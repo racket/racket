@@ -2,10 +2,10 @@
 (module snips-and-arrows (lib "mrflow.ss" "mrflow")
   
   (require
-   (lib "etc.ss")
-   (lib "class.ss")
-   (lib "mred.ss" "mred")
-   (prefix strcst: (lib "string-constant.ss" "string-constants"))
+   mzlib/etc
+   mzlib/class
+   mred
+   (prefix strcst: string-constants)
    
    (prefix cst: "constants.ss")
    (prefix saav: "snips-and-arrows-view.ss")

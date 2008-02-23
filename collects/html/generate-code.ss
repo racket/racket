@@ -1,8 +1,8 @@
 ; copyright by Paul Graunke June 2000 AD
-(require (lib "pretty.ss")
-         (lib "date.ss")
-         (lib "list.ss")
-         (lib "etc.ss"))
+(require mzlib/pretty
+         mzlib/date
+         mzlib/list
+         mzlib/etc)
 
 ; date-string : -> String
 (define (date-string) (date->string (seconds->date (current-seconds)) 'seconds-please))

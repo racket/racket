@@ -1,8 +1,8 @@
 ;; By Brendan Burns, with modifications by Scott Owens
 
 (module gl-frame (lib "plt-pretty-big.ss" "lang")
-  (require (lib "gl.ss" "sgl")
-           (lib "gl-vectors.ss" "sgl"))  
+  (require sgl/gl
+           sgl/gl-vectors)  
   (provide set-gl-draw-fn
            set-gl-init-fn
            init-textures

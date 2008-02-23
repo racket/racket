@@ -1,7 +1,7 @@
 (module moves mzscheme
   (require "board.ss"
-           (lib "contract.ss")
-           (lib "list.ss"))
+           mzlib/contract
+           mzlib/list)
 
   ;; a move is either:
   ;;  - (make-enter-piece pawn)

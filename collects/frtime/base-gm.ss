@@ -1,5 +1,5 @@
 (module base-gm mzscheme
-  (require (lib "list.ss")
+  (require mzlib/list
 	   (lib  "etc.ss"))
   
   (provide assert

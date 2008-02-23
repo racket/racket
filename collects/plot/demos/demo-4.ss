@@ -1,4 +1,4 @@
-(require (lib "plot.ss" "plot"))
+(require plot)
 
 (plot
  (vector-field (gradient (lambda (x y) (* (sin x) (cos y)))) (samples 25))

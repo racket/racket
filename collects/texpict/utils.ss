@@ -1,10 +1,10 @@
 
 (module utils mzscheme
-  (require (lib "class.ss")
-	   (lib "math.ss")
-	   (lib "etc.ss")
-	   (lib "contract.ss")
-           (lib "mred.ss" "mred"))
+  (require mzlib/class
+	   mzlib/math
+	   mzlib/etc
+	   mzlib/contract
+           mred)
 
   (require "mrpict.ss")
 

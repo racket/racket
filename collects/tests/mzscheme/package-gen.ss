@@ -1,7 +1,7 @@
 
-(require (lib "package.ss")
-	 (lib "pretty.ss")
-	 (lib "toplevel.ss" "syntax"))
+(require mzlib/package
+	 mzlib/pretty
+	 syntax/toplevel)
 
 (define (check x)
   (unless (equal? x 'this-is-right)

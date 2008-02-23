@@ -1,8 +1,8 @@
 #lang scheme/unit
-  (require (lib "class.ss")
+  (require mzlib/class
            "sig.ss"
            (lib "mred-sig.ss" "mred")
-           (lib "list.ss"))
+           mzlib/list)
   
   (import)
   (export framework:color-model^)

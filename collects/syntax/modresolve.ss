@@ -1,7 +1,7 @@
 
 (module modresolve mzscheme
-  (require (lib "list.ss")
-           (lib "contract.ss")
+  (require mzlib/list
+           mzlib/contract
            "private/modhelp.ss")
 
   (define (force-relto relto dir?)

@@ -1,11 +1,11 @@
 
 (module repl-test mzscheme
   (require "drscheme-test-util.ss"
-           (lib "class.ss")
-           (lib "file.ss")
-           (lib "string.ss")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework"))
+           mzlib/class
+           mzlib/file
+           mzlib/string
+           mred
+           framework)
   
   (provide run-test)
   
@@ -677,7 +677,7 @@
                 void)
      
      (make-test (to-strings
-                 '(require (lib "utils.ss" "texpict"))
+                 '(require texpict/utils)
                  '(let ()
                     (current-namespace (make-namespace))
                     (namespace-set-variable-value! 'd (disk 3)))
@@ -692,10 +692,10 @@
                 void)
      (make-test (to-strings
                  '(let ([on (current-namespace)]
-                        [n ((current-module-name-resolver) '(lib "mred.ss" "mred") #f #f)])
+                        [n ((current-module-name-resolver) 'mred #f #f)])
                     (current-namespace (make-namespace))
                     (namespace-attach-module on n))
-                 '(require (lib "utils.ss" "texpict"))
+                 '(require texpict/utils)
                  '(disk 3))
                 "{image}"
                 "{image}"

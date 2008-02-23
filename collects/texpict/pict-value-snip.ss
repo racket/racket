@@ -10,12 +10,12 @@ the user has to move the mouse first.
 |#
 
 (module pict-value-snip mzscheme
-  (require (lib "mrpict.ss" "texpict")
-           (lib "utils.ss" "texpict")
-           (lib "class.ss")
-           (lib "mred.ss" "mred")
-           (lib "etc.ss")
-           (lib "list.ss"))
+  (require texpict/mrpict
+           texpict/utils
+           mzlib/class
+           mred
+           mzlib/etc
+           mzlib/list)
   
   (provide pict-value-snip%)
 

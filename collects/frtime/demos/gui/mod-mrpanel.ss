@@ -1,6 +1,6 @@
 (module mod-mrpanel mzscheme
-  (require (lib "class.ss")
-	   (lib "class100.ss")
+  (require mzlib/class
+	   mzlib/class100
 	   (prefix wx: (lib "kernel.ss" "mred" "private"))
 	   (lib "lock.ss" "mred" "private")
 	   (lib "const.ss" "mred" "private")

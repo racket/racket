@@ -1,6 +1,6 @@
 (module crypt mzscheme
 
-(require (lib "foreign.ss")) (unsafe!)
+(require mzlib/foreign) (unsafe!)
 
 (define libcrypt (ffi-lib "libcrypt"))
 

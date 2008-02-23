@@ -1,7 +1,7 @@
 (module front mzscheme
-  (require (prefix is: (lib "integer-set.ss"))
-           (lib "list.ss")
-	   (lib "stx.ss" "syntax")
+  (require (prefix is: mzlib/integer-set)
+           mzlib/list
+	   syntax/stx
            "util.ss"
            "stx.ss"
            "re.ss"

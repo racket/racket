@@ -1,11 +1,11 @@
 
 (module unpack mzscheme
 
-  (require (lib "etc.ss")
-	   (lib "inflate.ss")
-	   (lib "file.ss")
-           (lib "list.ss")
-	   (lib "base64.ss" "net")
+  (require mzlib/etc
+	   mzlib/inflate
+	   mzlib/file
+           mzlib/list
+	   net/base64
 	   (lib "getinfo.ss" "setup")
 	   "dirs.ss")
 

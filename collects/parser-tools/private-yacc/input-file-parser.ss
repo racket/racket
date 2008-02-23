@@ -6,8 +6,8 @@
   (require "yacc-helper.ss"
            "../private-lex/token-syntax.ss"
            "grammar.ss"
-           (lib "class.ss")
-           (lib "contract.ss"))
+           mzlib/class
+           mzlib/contract)
   (require-for-template mzscheme)
   
 

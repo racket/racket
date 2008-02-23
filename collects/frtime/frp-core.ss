@@ -1,8 +1,8 @@
 
 (module frp-core mzscheme
-  (require (lib "etc.ss")
-           (lib "list.ss")
-           (lib "match.ss")
+  (require mzlib/etc
+           mzlib/list
+           mzlib/match
            "erl.ss"
            "heap.ss")
   

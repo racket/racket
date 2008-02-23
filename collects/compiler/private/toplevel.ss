@@ -3,7 +3,7 @@
 ;; (c) 1997-2001 PLT
 
 (module toplevel mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
   (require "sig.ss")
 

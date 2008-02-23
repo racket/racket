@@ -28,14 +28,14 @@ the state transitions / contracts are:
 
 #lang scheme/unit
 
-  (require (lib "string-constant.ss" "string-constants")
-	   (lib "class.ss")
+  (require string-constants
+	   mzlib/class
            scheme/file
            "sig.ss"
            "../gui-utils.ss"
            "../preferences.ss"
 	   (lib "mred-sig.ss" "mred")
-	   (lib "list.ss"))
+	   mzlib/list)
   
   (import mred^
           [prefix exit: framework:exit^]

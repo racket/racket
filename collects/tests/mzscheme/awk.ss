@@ -3,7 +3,7 @@
 
 (Section 'awk)
 
-(require (lib "awk.ss"))
+(require mzlib/awk)
 
 (define-syntax (test-awk stx)
   (syntax-case stx ()

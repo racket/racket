@@ -8,8 +8,8 @@
 
 (Section 'control)
 
-(require (lib "control.ss")
-         (only-in (lib "etc.ss") rec))
+(require mzlib/control
+         (only-in mzlib/etc rec))
 
 ;-----------------------------------------------------------------------
 

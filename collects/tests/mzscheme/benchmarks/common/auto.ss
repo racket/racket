@@ -5,13 +5,13 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
 (module auto scheme/base
   (require (for-syntax scheme/base)
-           (lib "process.ss")
+           mzlib/process
            "cmdline.ss"
-           (lib "list.ss")
-           (lib "compile.ss")
-           (lib "inflate.ss")
-           (lib "date.ss")
-           (lib "file.ss" "dynext")
+           mzlib/list
+           mzlib/compile
+           mzlib/inflate
+           mzlib/date
+           dynext/file
            syntax/toplevel)
 
   ;; Implementaton-specific control functions ------------------------------

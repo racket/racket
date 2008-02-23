@@ -1,14 +1,12 @@
 (module shapes mzscheme
 
-(require (lib "gl.ss" "sgl")
-         (lib "gl-vectors.ss" "sgl")
-	 (prefix gl- (lib "sgl.ss" "sgl"))
-)
+(require sgl/gl
+         sgl/gl-vectors
+         sgl)
 
 (provide makedots makebucky makebevelcube makecylinder 
          makeuvsphere makediamond makepyramid makeicosahedron
-         makespiky makedisc
-)
+         makespiky makedisc)
 
 
 (define (norm p1 p2 p3 dir)

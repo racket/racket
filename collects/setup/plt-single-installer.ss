@@ -1,6 +1,6 @@
 (module plt-single-installer mzscheme 
-  (require (lib "unit.ss")
-           (lib "etc.ss")
+  (require mzlib/unit
+           mzlib/etc
            
 	   ;; All the rest are to get the imports for setup@:
 	   "option-sig.ss"
@@ -8,11 +8,11 @@
 	   "option-unit.ss"
 	   (lib "launcher-sig.ss" "launcher")
 	   (lib "launcher-unit.ss" "launcher")
-	   (lib "dynext-sig.ss" "dynext")
-	   (lib "dynext-unit.ss" "dynext")
-	   (lib "sig.ss" "compiler")
-	   (lib "option-unit.ss" "compiler")
-	   (lib "compiler-unit.ss" "compiler"))
+	   dynext/dynext-sig
+	   dynext/dynext-unit
+	   compiler/sig
+	   compiler/option-unit
+	   compiler/compiler-unit)
 
   (provide run-single-installer install-planet-package clean-planet-package)
 

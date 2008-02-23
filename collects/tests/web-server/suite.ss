@@ -10,10 +10,10 @@
 (module suite mzscheme
   (provide broken? broken?/remote start-server files-broken? authentication-broken?
            normal-servlets-broken? errors-broken?)
-  (require (lib "process.ss")
-           (lib "etc.ss")
+  (require mzlib/process
+           mzlib/etc
            "my-url.ss"
-           (lib "base64.ss" "net")
+           net/base64
            (lib "xml.ss" "xml")
            (lib "channel.ss" "web-server"))
 

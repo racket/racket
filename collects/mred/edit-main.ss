@@ -3,7 +3,7 @@
 
 (module edit-main mzscheme
   (require "edit.ss"
-	   (lib "cmdline.ss"))
+	   mzlib/cmdline)
 
   (command-line
    "Edit"

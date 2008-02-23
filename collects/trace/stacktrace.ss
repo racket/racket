@@ -1,8 +1,8 @@
 
 (module stacktrace scheme/base
-  (require (lib "unit.ss")
-           (lib "kerncase.ss" "syntax")
-           (lib "stx.ss" "syntax"))
+  (require mzlib/unit
+           syntax/kerncase
+           syntax/stx)
   
   (provide stacktrace@ stacktrace^ stacktrace-imports^)
   

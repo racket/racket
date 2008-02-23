@@ -10,9 +10,9 @@ all of the names in the tools library, for use defining keybindings
 (module tool-lib mzscheme
   (require "private/link.ss"
 	   "private/drsig.ss"
-	   (lib "class.ss")
-	   (lib "unit.ss")
-           (lib "framework.ss" "framework")
+	   mzlib/class
+	   mzlib/unit
+           framework
 	   (lib "splash.ss" "framework"))
 
   (shutdown-splash)

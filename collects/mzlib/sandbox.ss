@@ -80,18 +80,14 @@
                               (cdr v))])
           (thunk))]
        [(and gui?
-             (eq? (car v) (dynamic-require 'mred/mred 'make-gui-namespace)))
+             (eq? (car v) (dynamic-require 'mred 'make-gui-namespace)))
         (parameterize ([sandbox-namespace-specs
                         ;; Simulate the old make-namespace-with-mred:
                         (cons (lambda ()
                                 (let ([ns (make-mz-namespace)]
-                                      [ns2 ((dynamic-require 'mred/mred 'make-gui-namespace))])
-                                  (namespace-attach-module ns2
-                                                           'mred/mred
-                                                           ns)
-                                  (namespace-attach-module ns2
-                                                           'scheme/class
-                                                           ns)
+                                      [ns2 ((dynamic-require 'mred 'make-gui-namespace))])
+                                  (namespace-attach-module ns2 'mred ns)
+                                  (namespace-attach-module ns2 'scheme/class ns)
                                   (parameterize ([current-namespace ns])
                                     (namespace-require 'mred)
                                     (namespace-require 'scheme/class))

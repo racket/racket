@@ -1,8 +1,8 @@
 (require
- (lib "class.ss")
- (lib "list.ss")
- (lib "mred.ss" "mred")
- (lib "etc.ss")
+ mzlib/class
+ mzlib/list
+ mred
+ mzlib/etc
  "../aligned-editor-container.ss"
  "../aligned-pasteboard.ss"
  "../snip-lib.ss")

@@ -1,8 +1,8 @@
 (module testing-shared mzscheme
-  (require (lib "contract.ss")
+  (require mzlib/contract
            "shared.ss"
-           (lib "kerncase.ss" "syntax")
-           (lib "file.ss"))
+           syntax/kerncase
+           mzlib/file)
   
   (provide/contract [build-stx-with-highlight ((or/c (listof any/c) string?) ; input with one or more '(hilite ...) tags
                                                . -> .

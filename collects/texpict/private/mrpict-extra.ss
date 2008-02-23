@@ -1,8 +1,8 @@
 
 #lang scheme/unit
 
-  (require (lib "class.ss")
-           (lib "etc.ss"))
+  (require mzlib/class
+           mzlib/etc)
 
   (require (lib "mred-sig.ss" "mred"))
 

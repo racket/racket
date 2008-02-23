@@ -1,7 +1,7 @@
 #lang scheme/unit
   (require (for-syntax scheme/base)
            scheme/promise
-           (lib "class.ss")
+           mzlib/class
            (lib "include-bitmap.ss" "mrlib")
            "bday.ss"
            "sig.ss"

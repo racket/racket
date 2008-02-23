@@ -2,9 +2,9 @@
 (module run mzscheme
   (require "struct.ss"
            "base-render.ss"
-           (lib "cmdline.ss")
-           (lib "class.ss")
-           (lib "file.ss")
+           mzlib/cmdline
+           mzlib/class
+           mzlib/file
            (prefix text: "text-render.ss")
            (prefix html: "html-render.ss")
            (prefix latex: "latex-render.ss"))

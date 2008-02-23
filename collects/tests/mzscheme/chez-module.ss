@@ -3,7 +3,7 @@
 ;; printouts.
 
 (module helpers mzscheme
-  (require (lib "package.ss"))
+  (require mzlib/package)
 
   (provide identifier-syntax with-implicit
 	   (rename package module)

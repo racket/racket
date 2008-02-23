@@ -2,9 +2,9 @@
   
   (require "lexer.ss" "general-parsing.ss"
            "../parameters.ss"
-           (lib "etc.ss")
-           (lib "readerr.ss" "syntax")
-           (all-except (lib "lex.ss" "parser-tools") input-port))
+           mzlib/etc
+           syntax/readerr
+           (all-except parser-tools/lex input-port))
   
   (provide
    find-beginner-error find-beginner-error-interactions find-beginner-error-expression find-beginner-error-type           

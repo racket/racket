@@ -1,6 +1,6 @@
 
 (module sig mzscheme
-  (require (lib "unitsig.ss"))
+  (require mzlib/unitsig)
 
   (define-signature xml-structs^
     ((struct location (line char offset))

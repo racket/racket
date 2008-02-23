@@ -1,7 +1,7 @@
 (module value-turtles-examples mzscheme
   (require "value-turtles.ss"
-           (lib "etc.ss")
-           (lib "math.ss"))
+           mzlib/etc
+           mzlib/math)
 
   (provide regular-poly regular-polys radial-turtles spaced-turtles 
            spokes spyro-gyra neato)

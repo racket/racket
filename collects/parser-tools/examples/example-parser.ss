@@ -1,8 +1,8 @@
 (module example-parser mzscheme
-  (require (lib "lex.ss" "parser-tools")
-           (lib "yacc.ss" "parser-tools")
-           (prefix : (lib "lex-sre.ss" "parser-tools"))
-           (lib "list.ss" "srfi" "1"))
+  (require parser-tools/lex
+           parser-tools/yacc
+           (prefix : parser-tools/lex-sre)
+           srfi/1/list)
 
   (provide malgol-lexer malgol-parser)
   

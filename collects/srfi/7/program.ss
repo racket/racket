@@ -3,9 +3,9 @@
 ;;; based on MJ Ray's code for SRFI 0
 
 (module program mzscheme
-  (require-for-syntax (lib "stx.ss" "syntax")
-		      (lib "features.ss" "srfi"))
-  (require (lib "include.ss"))
+  (require-for-syntax syntax/stx
+		      srfi/features)
+  (require mzlib/include)
   (provide program)
   
   (define-syntax require-feature

@@ -3,10 +3,7 @@
   ; Contains the helpers for the plot-renderers package
   ; usefull for building your own renderers
 
-  (require
-   (lib "list.ss")
-   (lib "math.ss")
-   (lib "math.ss" "plot"))
+  (require mzlib/list mzlib/math plot/math)
 
   ; sample-size: number number number -> number
   (define (sample-size samples x-min x-max)
@@ -56,8 +53,6 @@
 
   (provide (all-defined))
 
-  (require
-   (lib "class.ss")
-   (lib "etc.ss"))
+  (require mzlib/class mzlib/etc)
 
   )

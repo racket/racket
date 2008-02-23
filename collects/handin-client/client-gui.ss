@@ -1,8 +1,6 @@
 (module client-gui mzscheme
-  (require (lib "class.ss") (lib "unit.ss") (lib "file.ss")
-           (lib "sendurl.ss" "net") (lib "mred.ss" "mred")
-           (lib "bitmap-label.ss" "mrlib")
-           (lib "tool.ss" "drscheme") (lib "framework.ss" "framework")
+  (require mzlib/class mzlib/unit mzlib/file net/sendurl mred
+           mrlib/bitmap-label drscheme/tool framework
            "info.ss" "client.ss" "this-collection.ss")
 
   (provide tool@)
@@ -485,7 +483,7 @@
                [callback
                 (lambda (b e)
                   (define (launcher sym)
-                    (dynamic-require `(lib "launcher.ss" "launcher") sym))
+                    (dynamic-require `launcher sym))
                   (let* ([exe (let-values
                                   ([(dir name dir?)
                                     (split-path

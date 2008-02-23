@@ -4,9 +4,9 @@
 
 (module calltrace-lib mzscheme
   (require "stacktrace.ss"
-           (lib "list.ss") 
-           (lib "etc.ss")
-           (lib "unit.ss"))
+           mzlib/list 
+           mzlib/etc
+           mzlib/unit)
 
 
   

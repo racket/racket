@@ -1,21 +1,21 @@
 (module debug-tool mzscheme
-  (require (lib "etc.ss")
-           (lib "list.ss")
-           (lib "string.ss")
-           (prefix srfi: (lib "search.ss" "srfi" "1"))
-           ;(lib "math.ss")
-           (lib "class.ss")
-           (lib "unit.ss")
-           ;(lib "contract.ss")
-           (lib "mred.ss" "mred")
+  (require mzlib/etc
+           mzlib/list
+           mzlib/string
+           (prefix srfi: srfi/1/search)
+           ;mzlib/math
+           mzlib/class
+           mzlib/unit
+           ;mzlib/contract
+           mred
            (prefix drscheme:arrow: (lib "arrow.ss" "drscheme"))
            (lib "tool.ss" "drscheme")
            (lib "marks.ss" "skipper")
-           (lib "boundmap.ss" "syntax")
-           (prefix kernel: (lib "kerncase.ss" "syntax"))
+           syntax/boundmap
+           (prefix kernel: syntax/kerncase)
            (lib "bitmap-label.ss" "mrlib")
-           ;(lib "framework.ss" "framework")
-           #;(lib "string-constant.ss" "string-constants"))
+           ;framework
+           #;string-constants)
   
   (provide tool@)
   

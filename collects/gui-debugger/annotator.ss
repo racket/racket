@@ -1,10 +1,10 @@
 (module annotator scheme/base
 
-  (require (prefix-in kernel: (lib "kerncase.ss" "syntax"))
-           (lib "list.ss")
+  (require (prefix-in kernel: syntax/kerncase)
+           mzlib/list
            (lib "marks.ss" "gui-debugger")
-           (lib "etc.ss")
-           (prefix-in srfi: (lib "search.ss" "srfi" "1"))
+           mzlib/etc
+           (prefix-in srfi: srfi/1/search)
            (for-syntax scheme/base)
            )
   (provide annotate-stx annotate-for-single-stepping)

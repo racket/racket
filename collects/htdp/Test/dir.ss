@@ -16,7 +16,7 @@
  (map (lambda (x) (format "in Test, not in  Teachpacks: ~s" x))
       (filter (lambda (x) (not (member x teachps-files))) current-files)))
 
-(require (lib "testing.ss" "htdp"))
+(require htdp/testing)
 
 (check-expect (make-file 'a 1 2) (make-file 'a 1 2))
 

@@ -1,6 +1,6 @@
 (module syntax mzscheme
   (provide syntax-structs@)
-  (require (lib "unitsig.ss")
+  (require mzlib/unitsig
            "sig.ss")
   
   ; to make error-raising functions named like structure mutators

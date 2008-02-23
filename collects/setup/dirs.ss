@@ -1,5 +1,5 @@
 (module dirs mzscheme
-  (require (prefix config: (lib "config.ss" "config"))
+  (require (prefix config: config)
            (lib "winutf16.ss" "compiler" "private")
            (lib "mach-o.ss" "compiler" "private"))
 

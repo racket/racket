@@ -1,6 +1,6 @@
 
 (module mrpict-unit mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
   (require (lib "mred-sig.ss" "mred"))
 

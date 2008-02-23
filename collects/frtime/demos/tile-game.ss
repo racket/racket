@@ -1,8 +1,8 @@
 ;; tile game by Dave Tucker
 
-(require (lib "animation.ss" "frtime")
-         (lib "gui.ss" "frtime")
-         (lib "class.ss"))
+(require frtime/animation
+         frtime/gui
+         mzlib/class)
 
 (define-struct tile (row col num color))
 (define-struct state (tiles blank-row blank-col))

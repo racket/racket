@@ -1,11 +1,11 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          (planet "util.ss" ("schematics" "schemeunit.plt" 2))
-         (only-in (lib "file.ss")
+         (only-in mzlib/file
                   make-temporary-file)
-         (lib "url.ss" "net")
-         (lib "list.ss")
-         (lib "serialize.ss")
+         net/url
+         mzlib/list
+         mzlib/serialize
          (lib "request-structs.ss" "web-server" "private")
          (lib "dispatch.ss" "web-server" "dispatchers")
          (prefix-in passwords: (lib "dispatch-passwords.ss" "web-server" "dispatchers"))

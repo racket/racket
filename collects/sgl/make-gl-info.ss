@@ -1,11 +1,11 @@
 (module make-gl-info mzscheme
-  (require (prefix dynext: (lib "compile.ss" "dynext"))
-           (lib "file.ss" "dynext")
-           (prefix dynext: (lib "link.ss" "dynext"))
-           (lib "file.ss")
-	   (lib "dirs.ss" "setup")
-	   (lib "launcher.ss" "launcher")
-           (lib "string.ss" "srfi" "13"))
+  (require (prefix dynext: dynext/compile)
+           dynext/file
+           (prefix dynext: dynext/link)
+           mzlib/file
+	   setup/dirs
+	   launcher
+           srfi/13/string)
   
   (provide make-gl-info)
   

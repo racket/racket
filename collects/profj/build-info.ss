@@ -1,6 +1,6 @@
 (module build-info mzscheme
   
-  (require (lib "class.ss") (lib "file.ss") (lib "list.ss")
+  (require mzlib/class mzlib/file mzlib/list
            "ast.ss" "types.ss" "error-messaging.ss" "parameters.ss" 
            "restrictions.ss" "parser.ss" "profj-pref.ss")
 
@@ -452,7 +452,7 @@
                                 (directory-list (build-path (dir-path-path base-dir) "compiled")))))))
            (lang-classes (get-classes lang-dir)) 
            (test-classes (when (testcase-ext?) (get-classes test-dir)))
-           (array (datum->syntax-object #f `(lib "array.ss" "profj" "libs" "java" "lang") #f))
+           (array (datum->syntax-object #f `(lib "array.ss" "profj/libs/java/lang") #f))
            
            (add
             (lambda (path classes dir array?)

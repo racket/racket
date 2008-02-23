@@ -39,20 +39,20 @@ Matthew
 ;; Fri Dec  9 21:39:03 EST 2005: remoevd (update ... produce ...); added on-redraw 
 ;; Thu Dec  1 17:03:03 EST 2005: fixed place-image; all coordinates okay now
 (module world mzscheme
-  (require (lib "class.ss")
-           (lib "etc.ss")
-           (lib "mred.ss" "mred")
-           (lib "error.ss" "htdp")
-           (lib "image.ss" "htdp")
-           (only (lib "htdp-beginner.ss" "lang") image?)
-           (lib "cache-image-snip.ss" "mrlib")
-           (lib "prim.ss" "lang"))
+  (require mzlib/class
+           mzlib/etc
+           mred
+           htdp/error
+           htdp/image
+           (only lang/htdp-beginner image?)
+           mrlib/cache-image-snip
+           lang/prim)
   
-  (require (lib "gif.ss" "mrlib"))
-  (require (lib "runtime-path.ss"))
+  (require mrlib/gif)
+  (require mzlib/runtime-path)
   
-  (require (lib "bitmap-label.ss" "mrlib")
-           (lib "string-constant.ss" "string-constants"))
+  (require mrlib/bitmap-label
+           string-constants)
   
   ;; --- provide ---------------------------------------------------------------
   
@@ -75,7 +75,7 @@ Matthew
   
   ;; image manipulation functions:
   ;; =============================
-  (provide (all-from (lib "image.ss" "htdp")))
+  (provide (all-from htdp/image))
   
   (provide
     ;; Scene is Image with pinhole in origin 

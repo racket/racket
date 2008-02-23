@@ -5,21 +5,21 @@
 
 #lang scheme/unit
   (require "drsig.ss"
-           (lib "string-constant.ss" "string-constants")
-           (lib "pconvert.ss")
-           (lib "pretty.ss")
-           (lib "etc.ss")
-           (lib "struct.ss")
-           (lib "class.ss")
+           string-constants
+           mzlib/pconvert
+           mzlib/pretty
+           mzlib/etc
+           mzlib/struct
+           mzlib/class
            scheme/file
-           (lib "list.ss")
-           (lib "embed.ss" "compiler")
-           (lib "launcher.ss" "launcher")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
+           mzlib/list
+           compiler/embed
+           launcher
+           mred
+           framework
            (lib "syntax-browser.ss" "mrlib")
-           (lib "distribute.ss" "compiler")
-           (lib "bundle-dist.ss" "compiler"))
+           compiler/distribute
+           compiler/bundle-dist)
   
   (import [prefix drscheme:debug: drscheme:debug^]
           [prefix drscheme:tools: drscheme:tools^]
@@ -457,8 +457,8 @@
   ;; simple-module-based-language-get-init-code : setting -> sexp[module]
   (define (simple-module-based-language-get-init-code setting)
     `(module mod-name mzscheme
-       (require (lib "pconvert.ss")
-                (lib "pretty.ss"))
+       (require mzlib/pconvert
+                mzlib/pretty)
        
        (provide init-code)
        

@@ -1,7 +1,7 @@
 #lang scheme/base
-(require #;(lib "file.ss")
-         (lib "list.ss")
-         (lib "process.ss")
+(require #;mzlib/file
+         mzlib/list
+         mzlib/process
          (lib "web-server.ss" "web-server")
          (prefix-in files: (lib "dispatch-files.ss" "web-server" "dispatchers"))
          (planet "csv.ss" ("neil" "csv.plt" 1 1)))

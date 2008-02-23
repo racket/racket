@@ -2,29 +2,29 @@
 ;;          (with a mail composer, too)
 
 (module sirmail mzscheme
-  (require (lib "unit.ss")
-	   (lib "class.ss")
+  (require mzlib/unit
+	   mzlib/class
 	   (lib "mred-sig.ss" "mred")
-	   (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
-	   (lib "list.ss"))
+	   mred
+           framework
+	   mzlib/list)
   
   (require "sirmails.ss"
 	   "pref.ss"
 	   "sirmailr.ss")
 
-  (require (lib "imap-sig.ss" "net")
-	   (lib "smtp-sig.ss" "net")
-	   (lib "head-sig.ss" "net")
-	   (lib "base64-sig.ss" "net")
-	   (lib "mime-sig.ss" "net")
-	   (lib "qp-sig.ss" "net")
-	   (lib "imap.ss" "net")
-	   (lib "smtp.ss" "net")
-	   (lib "head.ss" "net")
-	   (lib "base64.ss" "net")
-	   (lib "mime.ss" "net")
-	   (lib "qp.ss" "net"))
+  (require net/imap-sig
+	   net/smtp-sig
+	   net/head-sig
+	   net/base64-sig
+	   net/mime-sig
+	   net/qp-sig
+	   net/imap
+	   net/smtp
+	   net/head
+	   net/base64
+	   net/mime
+	   net/qp)
 
   (require (lib "hierlist-sig.ss" "hierlist")
 	   (lib "hierlist.ss" "hierlist"))

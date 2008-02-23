@@ -2,8 +2,8 @@
   
   (provide (all-defined-except make-fail-type))
   
-  (require (lib "force.ss" "lazy")
-           (lib "lex.ss" "parser-tools"))
+  (require lazy/force
+           parser-tools/lex)
     
   ;fail-src: (list line col pos span loc)
 

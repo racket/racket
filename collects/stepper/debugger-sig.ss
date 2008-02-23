@@ -1,5 +1,5 @@
 (module debugger-sig mzscheme
-  (require (lib "unitsig.ss"))
+  (require mzlib/unitsig)
 
   (provide debugger-model^
            debugger-vc^)

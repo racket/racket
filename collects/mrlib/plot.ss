@@ -1,7 +1,7 @@
 (module plot mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "contract.ss"))
+  (require mred
+           mzlib/class
+           mzlib/contract)
 
   
   (define-struct data-set (points connected? pen min-x max-x min-y max-y))

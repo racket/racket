@@ -1,10 +1,10 @@
 (module browser-unit mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
            (lib "mred-sig.ss" "mred")
            (lib "plt-installer-sig.ss" "setup")
-           (lib "tcp-sig.ss" "net")
-           (lib "url-sig.ss" "net")
-           (lib "url-unit.ss" "net")
+           net/tcp-sig
+           net/url-sig
+           net/url-unit
            "browser-sig.ss"
            "private/sig.ss"
            "private/bullet.ss"

@@ -1,5 +1,5 @@
 (module graphics-sig mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
   (provide graphics^ graphics:posn^)
 

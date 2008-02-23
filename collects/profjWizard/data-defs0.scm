@@ -31,7 +31,7 @@
   
   
   (require "aux-contract.scm")
-  (require (lib "contract.ss"))
+  (require mzlib/contract)
   
   (provide 
    Class   ;; flat-contract

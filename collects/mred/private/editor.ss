@@ -1,9 +1,9 @@
 (module editor mzscheme
-  (require (lib "class.ss")
-	   (lib "class100.ss")
-	   (lib "etc.ss")
-	   (lib "list.ss")
-	   (lib "file.ss")
+  (require mzlib/class
+	   mzlib/class100
+	   mzlib/etc
+	   mzlib/list
+	   mzlib/file
 	   (prefix wx: "kernel.ss")
 	   "seqcontract.ss"
 	   "lock.ss"

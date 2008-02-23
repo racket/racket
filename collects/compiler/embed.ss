@@ -1,7 +1,7 @@
 
 (module embed mzscheme
-  (require (lib "unit.ss")
-           (lib "contract.ss"))
+  (require mzlib/unit
+           mzlib/contract)
   
   (require "sig.ss")
   

@@ -3,7 +3,7 @@
 ;; Not sure if this is needed, but it was in Paul's.
 (module test-web-server-process mzscheme
   (require (lib "test.ss" "schemeunit")
-           (lib "process.ss"))
+           mzlib/process)
 
   (provide test-web-server-process)
 

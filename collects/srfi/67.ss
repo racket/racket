@@ -1,3 +1,3 @@
 (module |67| mzscheme
-  (require (lib "compare.ss" "srfi" "67"))
-  (provide (all-from (lib "compare.ss" "srfi" "67"))))
+  (require srfi/67/compare)
+  (provide (all-from srfi/67/compare)))

@@ -1,12 +1,12 @@
 #lang scheme/unit
 
-(require (lib "string-constant.ss" "string-constants")
-         (lib "contract.ss")
+(require string-constants
+         mzlib/contract
          "drsig.ss"
-         (lib "mred.ss" "mred")
-         (lib "framework.ss" "framework")
-         (lib "class.ss")
-         (lib "list.ss")
+         mred
+         framework
+         mzlib/class
+         mzlib/list
          scheme/path
          (lib "external.ss" "browser")
          (lib "plt-installer.ss" "setup"))

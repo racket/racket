@@ -3,14 +3,14 @@
 
 (module jewel mzscheme
 
-  (require (lib "unit.ss")
-	   (lib "string.ss")
-           (lib "class.ss")
-	   (lib "file.ss")
-           (lib "mred.ss" "mred")
-           (lib "gl.ss" "sgl")
-           (lib "gl-vectors.ss" "sgl")
-	   (only (lib "sgl.ss" "sgl") get-gl-version-number)
+  (require mzlib/unit
+	   mzlib/string
+           mzlib/class
+           mzlib/file
+           mred
+           sgl/gl
+           sgl/gl-vectors
+	   (only sgl/sgl get-gl-version-number)
 	   "shapes.scm"
 	   "array.scm"
 	   "text.scm"

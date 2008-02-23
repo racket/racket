@@ -3,8 +3,8 @@
   (require "board.ss"
 	   "moves.ss"
            "interfaces.ss"
-           (lib "class.ss")
-           (lib "list.ss"))
+           mzlib/class
+           mzlib/list)
   
   (provide game%
            game-observer<%>)

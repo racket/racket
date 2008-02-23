@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(require (lib "restart.ss"))
+(require mzlib/restart)
 
 (Section 'restart)
 

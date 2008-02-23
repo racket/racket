@@ -1,6 +1,6 @@
 (module yacc-helper mzscheme
 
-  (require (lib "list.ss")
+  (require mzlib/list
            "../private-lex/token-syntax.ss")
   
   ;; General helper routines

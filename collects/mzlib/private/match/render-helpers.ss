@@ -8,11 +8,11 @@
 	   "getter-setter.scm"
 	   "parse-quasi.scm"
            "test-structure.scm"
-           (lib "etc.ss")
-           (lib "trace.ss"))
+           mzlib/etc
+           mzlib/trace)
 
   (require-for-template mzscheme
-			(lib "list.ss")
+			mzlib/list
 			"match-error.ss")
   
   (provide (all-from "emit-assm.scm")

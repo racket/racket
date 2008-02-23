@@ -1,10 +1,10 @@
 (module include-bitmap mzscheme
-  (require (lib "mred.ss" "mred")
-	   (lib "class.ss")
-	   (lib "file.ss")
+  (require mred
+	   mzlib/class
+	   mzlib/file
            (lib "main-collects.ss" "setup"))
-  (require-for-syntax (lib "path-spec.ss" "syntax")
-		      (lib "cm-accomplice.ss")
+  (require-for-syntax syntax/path-spec
+		      mzlib/cm-accomplice
                       (lib "main-collects.ss" "setup"))
 
   (provide include-bitmap

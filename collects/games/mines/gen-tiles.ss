@@ -1,8 +1,8 @@
 
 (module gen-tiles mzscheme
-  (require (lib "class.ss")
-           (lib "mred.ss" "mred")
-           (lib "math.ss"))
+  (require mzlib/class
+           mred
+           mzlib/math)
 
   (define SIZE 24)
 

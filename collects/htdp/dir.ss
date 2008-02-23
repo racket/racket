@@ -1,6 +1,6 @@
 #lang scheme
 
-(require (lib "error.ss" "htdp")
+(require htdp/error
          (lib "prim.ss" "lang"))
 
 (provide

@@ -1,7 +1,7 @@
 
 (module readable mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
+  (require mred
+           mzlib/class
 	   "top-level.ss"
 	   "toolbar.ss")
 

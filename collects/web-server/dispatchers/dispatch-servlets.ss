@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "plt-match.ss")
+(require mzlib/plt-match
          scheme/contract)
 (require "dispatch.ss"
          "../private/web-server-structs.ss"
@@ -9,7 +9,7 @@
          "../private/response-structs.ss"
          "../servlet/web-cells.ss"
          "../servlet/web.ss"
-         (lib "url.ss" "net")
+         net/url
          "../dispatchers/filesystem-map.ss"
          "../configuration/responders.ss"
          "../configuration/namespace.ss"
@@ -158,7 +158,7 @@
   (define (load-servlet/path a-path)
     (parameterize ([current-namespace (make-servlet-namespace
                                        #:additional-specs
-                                       '((lib "servlet.ss" "web-server")
+                                       '(web-server/servlet
                                          (lib "servlet.ss" "web-server" "private")
                                          (lib "web.ss" "web-server" "servlet")
                                          (lib "web-cells.ss" "web-server" "servlet")))]

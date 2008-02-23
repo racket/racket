@@ -1,8 +1,8 @@
 (module lifting scheme/base
-  (require (lib "etc.ss")
-           (lib "contract.ss")
-           (prefix-in kernel: (lib "kerncase.ss" "syntax"))
-           (lib "match.ss")
+  (require mzlib/etc
+           mzlib/contract
+           (prefix-in kernel: syntax/kerncase)
+           mzlib/match
            "testing-shared.ss"
            "shared.ss"
            "my-macros.ss"

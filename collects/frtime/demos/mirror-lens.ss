@@ -1,5 +1,5 @@
-(require (lib "animation.ss" "frtime")
-         (lib "gui.ss" "frtime"))
+(require frtime/animation
+         frtime/gui)
 
 ;; Written by Evan Perillo
 ;; never run two display-envs at the same time or the images will overlap and not look nice

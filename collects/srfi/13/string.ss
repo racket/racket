@@ -84,10 +84,10 @@
 
 #lang mzscheme
 
-(require (lib "optional.ss" "srfi")
-         (lib "receive.ss" "srfi" "8")
-         (lib "char-set.ss" "srfi" "14")
-         (lib "etc.ss") ; for opt-lambda (instead of let-optionals*)
+(require srfi/optional
+         srfi/8/receive
+         srfi/14/char-set
+         mzlib/etc ; for opt-lambda (instead of let-optionals*)
          )
 (provide
  ;; String procedures:

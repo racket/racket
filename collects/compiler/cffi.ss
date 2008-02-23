@@ -7,9 +7,9 @@
 ;; of expression.
 
 (module cffi mzscheme
-  (require (lib "stx.ss" "syntax"))
-  (require-for-syntax (lib "name.ss" "syntax")
-                      (lib "path-spec.ss" "syntax"))
+  (require syntax/stx)
+  (require-for-syntax syntax/name
+                      syntax/path-spec)
 
   (define-syntax c-lambda
     (let ([re:fname (regexp "^[a-zA-Z_0-9]+$")]

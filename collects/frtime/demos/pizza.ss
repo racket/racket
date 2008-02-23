@@ -1,4 +1,4 @@
-(require (lib "gui.ss" "frtime"))
+(require frtime/gui)
 
 (define kinds (list "New York" "Chicago" "California" "Hawaii"))
 (define sizes (list "small" "medium" "large" "Texas"))

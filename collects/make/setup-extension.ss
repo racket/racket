@@ -1,15 +1,15 @@
 
 (module setup-extension mzscheme
-  (require (lib "make.ss" "make")
-	   (lib "link.ss" "dynext")
-	   (lib "compile.ss" "dynext")
-	   (lib "file.ss" "dynext")
-	   (lib "file.ss")
-	   (lib "list.ss")
-	   (lib "etc.ss")
-	   (lib "launcher.ss" "launcher")
-	   (lib "xform.ss" "compiler")
-	   (lib "dirs.ss" "setup"))
+  (require make
+	   dynext/link
+	   dynext/compile
+	   dynext/file
+	   mzlib/file
+	   mzlib/list
+	   mzlib/etc
+	   launcher
+	   compiler/xform
+	   setup/dirs)
   
   (provide pre-install
 	   with-new-flags)

@@ -1,11 +1,11 @@
 (module my-url mzscheme
-  (require (all-except (lib "url.ss" "net") purify-port))
+  (require (all-except net/url purify-port))
   (provide purify-port
            (struct mime-header (name value)))
   ;(provide (all-from-except url purify-port))
-  ;(provide (all-from-except (lib "url.ss" "net") purify-port))
+  ;(provide (all-from-except net/url purify-port))
   ; the -except is not needed, since purify-port was not imported.
-  (provide (all-from (lib "url.ss" "net")))
+  (provide (all-from net/url))
 
   ; mime-header = (make-mime-header str str)
   (define-struct mime-header (name value))

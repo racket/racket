@@ -2,7 +2,7 @@
 ;;  under OS X
 (module script-installer mzscheme
   (provide post-installer)
-  (require (lib "launcher.ss" "launcher"))
+  (require launcher)
 
   (define post-installer
     (lambda (path)

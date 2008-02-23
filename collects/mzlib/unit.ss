@@ -1,15 +1,15 @@
 (module unit mzscheme
-  (require-for-syntax (lib "list.ss")
-                      (lib "boundmap.ss" "syntax")
-                      (lib "context.ss" "syntax")
-                      (lib "kerncase.ss" "syntax")
-                      (lib "name.ss" "syntax")
-                      (lib "struct.ss" "syntax")
-                      (lib "stx.ss" "syntax")
+  (require-for-syntax mzlib/list
+                      syntax/boundmap
+                      syntax/context
+                      syntax/kerncase
+                      syntax/name
+                      syntax/struct
+                      syntax/stx
                       "private/unit-compiletime.ss"
                       "private/unit-syntax.ss")
   
-  (require (lib "etc.ss")
+  (require mzlib/etc
            "private/unit-keywords.ss"
            "private/unit-runtime.ss"
            (only "private/unit-compiletime.ss" apply-mac))

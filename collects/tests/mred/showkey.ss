@@ -1,6 +1,6 @@
 
-(require (lib "etc.ss")
-	 (lib "class100.ss"))
+(require mzlib/etc
+	 mzlib/class100)
 
 (let ()
   (define iter 0)

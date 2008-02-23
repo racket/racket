@@ -11,8 +11,8 @@
                               !defined !procedure !procedure* !integer !integer*
                               check:
                               !test !all-covered)
-                     handin-server/scribblings/hook-dummy)
-          (for-label mred/mred))
+                     handin-server/scribblings/hook-dummy
+                     mred))
 
 @(define (comment . args) "")
 
@@ -384,7 +384,7 @@ This directory contains the following files and sub-directories:
       @schememod[
         mzscheme
         (provide hook)
-        (require (lib "sendmail.ss" "net"))
+        (require net/sendmail)
         (define (hook what session alist)
           (when (memq what '(user-create user-change))
             (send-mail-message
@@ -1087,7 +1087,7 @@ code.}
   pop-up a message telling the student about it:
 
   @schemeblock[
-    (require (lib "sendmail.ss" "net"))
+    (require net/sendmail)
     (post:
       (define info
         (format "hw.scm: ~a ~a"

@@ -4,8 +4,8 @@
   
   (require "grammar.ss"
 	   "graph.ss"
-	   (lib "list.ss")
-	   (lib "class.ss"))
+	   mzlib/list
+	   mzlib/class)
   
   (provide build-lr0-automaton lr0%
 	   (struct trans-key (st gs)) trans-key-list-remove-dups

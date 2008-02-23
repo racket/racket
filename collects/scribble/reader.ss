@@ -3,7 +3,7 @@
 
 (module reader scheme/base
 
-  (require (lib "string.ss") (lib "readerr.ss" "syntax"))
+  (require mzlib/string syntax/readerr)
 
   ;; --------------------------------------------------------------------------
   ;; utilities for syntax specifications below

@@ -1,4 +1,4 @@
-(module symbol (lib "slideshow.ss" "slideshow")
+(module symbol slideshow/slideshow
   
   (provide symbol
 	   sym:in sym:rightarrow sym:leftarrow sym:infinity sym:times 

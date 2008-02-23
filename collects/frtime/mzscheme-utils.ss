@@ -42,8 +42,8 @@
            (rename "frp-core.ss" behavior? behavior?)
            (rename "lang-ext.ss" undefined undefined)
            (rename "lang-ext.ss" undefined? undefined?)
-	   (lib "class.ss"))
-  (require (lib "list.ss"))  
+	   mzlib/class)
+  (require mzlib/list)  
   
   (define-syntax (lifted-send stx)
     (syntax-case stx ()

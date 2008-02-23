@@ -1,3 +1,3 @@
 #cs(module arrow-gui mzscheme
-  (require (lib "arrow-gui.ss" "htdp"))
-  (provide (all-from (lib "arrow-gui.ss" "htdp"))))
+  (require htdp/arrow-gui)
+  (provide (all-from htdp/arrow-gui)))

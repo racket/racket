@@ -1,11 +1,11 @@
 
 (module bitmap mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "gl-vectors.ss" "sgl")
-           (prefix gl- (lib "sgl.ss" "sgl"))
-           (lib "gl.ss" "sgl")
-           (lib "kw.ss"))
+  (require mred
+           mzlib/class
+           sgl/gl-vectors
+           sgl
+           sgl/gl
+           mzlib/kw)
   
   (provide bitmap->gl-list)
   

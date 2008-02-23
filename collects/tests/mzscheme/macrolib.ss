@@ -3,7 +3,7 @@
 
 (Section 'macrolib)
 
-(require (lib "etc.ss"))
+(require mzlib/etc)
 
 (let ([u (letrec ([x x]) x)])
   (let ([l1

@@ -1,6 +1,5 @@
 (module pread mzscheme
-  (require (lib "readline.ss" "readline") (lib "file.ss")
-           (lib "list.ss") (lib "string.ss"))
+  (require readline/readline mzlib/file mzlib/list mzlib/string)
 
   ;; --------------------------------------------------------------------------
   ;; Configuration

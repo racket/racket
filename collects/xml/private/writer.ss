@@ -1,9 +1,9 @@
 
 (module writer mzscheme
-  (require (lib "unitsig.ss")
-           (lib "list.ss")
-	   (lib "string.ss")
-           (lib "etc.ss"))
+  (require mzlib/unitsig
+           mzlib/list
+	   mzlib/string
+           mzlib/etc)
   
   (require "sig.ss")
   

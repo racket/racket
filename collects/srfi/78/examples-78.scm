@@ -34,11 +34,11 @@
 ; -- portability --
 
 ; PLT:
-; (require (lib "23.ss" "srfi") (lib "42.ss" "srfi")) (load "check.scm")
+; (require srfi/23 srfi/42) (load "check.scm")
 ; (load "examples.scm")
 
-(require (lib "78.ss" "srfi")
-         (lib "42.ss" "srfi"))
+(require srfi/78
+         srfi/42)
 
 ; Scheme48: 
 ; ,open srfi-23 srfi-42

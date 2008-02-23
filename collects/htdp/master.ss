@@ -2,11 +2,11 @@
   (provide master)
   
   (require "error.ss"
-           (lib "class.ss")
-           (lib "class100.ss")
-           (lib "mred.ss" "mred")
+           mzlib/class
+           mzlib/class100
+           mred
            (lib "prim.ss" "lang")
-           (lib "etc.ss"))
+           mzlib/etc)
   
   (define-higher-order-primitive master master/proc (compare-guess))
   

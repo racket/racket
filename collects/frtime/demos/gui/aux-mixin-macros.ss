@@ -1,6 +1,6 @@
 (module aux-mixin-macros frtime
   (require "mixin-macros.ss")
-  (require (lib "class.ss"))
+  (require mzlib/class)
 
   
   ;; consider taking out setter

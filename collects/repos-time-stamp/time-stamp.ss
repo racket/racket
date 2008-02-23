@@ -1,8 +1,8 @@
 
 (module time-stamp mzscheme
   (require (lib "tool.ss" "drscheme")
-           (lib "unit.ss")
-           (lib "framework.ss" "framework"))
+           mzlib/unit
+           framework)
   
   (require "stamp.ss")
   

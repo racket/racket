@@ -1,8 +1,8 @@
 
 (module drscheme-normal mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "cmdline.ss")
+  (require mred
+           mzlib/class
+           mzlib/cmdline
            (lib "bday.ss" "framework" "private"))
 
   ; (current-load text-editor-load-handler)

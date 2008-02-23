@@ -8,14 +8,14 @@ Marshalling (and hence the 'read' method of the snipclass omitted for fast proto
 |#
 
 (module bindings-browser mzscheme
-  (require (lib "pretty.ss")
-           (lib "list.ss")
-           (lib "class.ss")
-           (lib "mred.ss" "mred")
-           (lib "match.ss")
-           (lib "string.ss")
+  (require mzlib/pretty
+           mzlib/list
+           mzlib/class
+           mred
+           mzlib/match
+           mzlib/string
            (lib "marks.ss" "stepper" "private")
-           (lib "contract.ss"))
+           mzlib/contract)
   
   (provide render-bindings/snip)
 

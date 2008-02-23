@@ -1,6 +1,6 @@
 (module reloadable mzscheme
 
-  (require (lib "moddep.ss" "syntax") "logger.ss")
+  (require syntax/moddep "logger.ss")
 
   (provide reload-module)
   (define (reload-module modspec path)

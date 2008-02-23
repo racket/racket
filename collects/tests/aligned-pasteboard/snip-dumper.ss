@@ -1,8 +1,8 @@
 (module snip-dumper mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "mred.ss" "mred"))
+   mzlib/class
+   mred)
   
   (provide
    dump-children

@@ -1,7 +1,7 @@
 ; needs first defined (i.e. use a teaching langauge)
 ; needs the servlet.ss teachpack
 
-(require (lib "etc.ss"))
+(require mzlib/etc)
 
 ; : sym -> str
 ; to input an opinion about a color

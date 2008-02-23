@@ -1,8 +1,8 @@
 
 (module macfw mzscheme
   (require "mach-o.ss"
-	   (lib "string.ss")
-	   (lib "process.ss"))
+	   mzlib/string
+	   mzlib/process)
 
   (provide update-framework-path
 	   get-current-framework-path

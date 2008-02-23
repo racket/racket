@@ -1,6 +1,6 @@
 (module advanced-tests mzscheme
   (require "profj-testing.ss")
-  (require (lib "String.ss" "profj" "libs" "java" "lang"))
+  (require profj/libs/java/lang/String)
   
   (prepare-for-tests "Advanced")
   

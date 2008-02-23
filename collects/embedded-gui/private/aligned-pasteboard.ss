@@ -9,9 +9,9 @@
   (provide aligned-pasteboard%)
   
   (require
-   (lib "class.ss")
-   (lib "mred.ss" "mred")
-   (lib "etc.ss")
+   mzlib/class
+   mred
+   mzlib/etc
    (lib "click-forwarding-editor.ss" "mrlib")
    "on-show-pasteboard.ss"
    "really-resized-pasteboard.ss"

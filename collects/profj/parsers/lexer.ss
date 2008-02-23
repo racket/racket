@@ -4,14 +4,14 @@
   ;; chapter 3.
   ;; Lacks all Unicode support
   
-  (require (lib "class.ss")
-           (lib "lex.ss" "parser-tools")
-           (prefix re: (lib "lex-sre.ss" "parser-tools"))
+  (require mzlib/class
+           parser-tools/lex
+           (prefix re: parser-tools/lex-sre)
            (lib "parameters.ss" "profj"))
   
   (define (image-snip%)
     (if (mred?)
-      	(dynamic-require '(lib "mred.ss" "mred") 'image-snip%)
+      	(dynamic-require 'mred 'image-snip%)
         (class object% (super-instantiate ()))))
   
   (provide (all-defined-except image-snip%))

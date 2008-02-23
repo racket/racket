@@ -6,8 +6,8 @@
   
   (require "test-structure.scm"
 	   "match-helper.ss"
-           (lib "etc.ss")
-           (lib "list.ss"))
+           mzlib/etc
+           mzlib/list)
   
   ;;!(function test-filter
   ;;          (form (test-filter test-list) -> test-list)

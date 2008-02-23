@@ -3,9 +3,9 @@
 
 (Section 'pconvert)
 
-(require (lib "file.ss")
-         (lib "class.ss")
-         (lib "pconvert.ss"))
+(require mzlib/file
+         mzlib/class
+         mzlib/pconvert)
 
 (constructor-style-printing #t)
 (quasi-read-style-printing #f)

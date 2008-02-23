@@ -6,9 +6,9 @@
                       "private-yacc/parser-actions.ss")
   (require "private-lex/token.ss"
            "private-yacc/parser-actions.ss"
-           (lib "etc.ss")
-           (lib "pretty.ss")
-	   (lib "readerr.ss" "syntax"))
+           mzlib/etc
+           mzlib/pretty
+	   syntax/readerr)
   
   (provide parser)
   

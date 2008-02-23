@@ -1,9 +1,6 @@
 
 (module beginner-funs mzscheme
-  (require (lib "etc.ss")
-    (lib "list.ss")
-    (lib "math.ss")
-    (lib "docprovide.ss" "syntax"))
+  (require mzlib/etc mzlib/list mzlib/math syntax/docprovide)
 
   ;; Implements the procedures:
   (require "teachprims.ss"

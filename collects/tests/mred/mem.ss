@@ -1,7 +1,7 @@
 
 ; run with mred -u -- -f mem.ss
 
-(require (lib "class100.ss"))
+(require mzlib/class100)
 
 (define source-dir (current-load-relative-directory))
 

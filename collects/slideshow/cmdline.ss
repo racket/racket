@@ -1,15 +1,15 @@
 
 (module cmdline mzscheme
-  (require (lib "class.ss")
-           (lib "unit.ss")
-	   (lib "file.ss")
-	   (lib "etc.ss")
-	   (lib "contract.ss")
-	   (lib "mred.ss" "mred")
-	   (lib "cmdline.ss")
-	   (lib "mrpict.ss" "texpict")
-	   (lib "utils.ss" "texpict")
-	   (lib "math.ss")
+  (require mzlib/class
+           mzlib/unit
+	   mzlib/file
+	   mzlib/etc
+	   mzlib/contract
+	   mred
+	   mzlib/cmdline
+	   texpict/mrpict
+	   texpict/utils
+	   mzlib/math
 	   "sig.ss"
 	   (prefix start: "start-param.ss"))
 

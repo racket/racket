@@ -1,5 +1,5 @@
 (require "../simple.ss")
-(require (rename (lib "mred.ss" "mred") horizontal-panel% horizontal-panel%))
+(require (rename mred horizontal-panel% horizontal-panel%))
 
 ; just change this to change the range of the binary/decimal converter
 (define SIZE 10) 

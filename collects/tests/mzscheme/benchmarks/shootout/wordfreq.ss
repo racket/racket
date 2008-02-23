@@ -5,7 +5,7 @@
 ;  Re-written by Matthew Flatt with some inspriation from the Python example
 
 (module wordfreq mzscheme
-  (require (lib "list.ss"))
+  (require mzlib/list)
 
   (define t (make-hash-table 'equal))
 

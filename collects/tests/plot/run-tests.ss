@@ -4,9 +4,9 @@ exec mred -u  "$0" "$@"
 |#
 (module run-tests mzscheme
 
-(require (lib "plot.ss" "plot")
-         (lib "md5.ss")
-         (lib "pretty.ss"))
+(require plot
+         mzlib/md5
+         mzlib/pretty)
 
 
 ;; thisi should be big enough to read thse files
@@ -78,9 +78,9 @@ exec mred -u  "$0" "$@"
          (x-min -3.5) (x-max 3.5) (y-min -3.5) (y-max 3.5) (z-min -1.0) (z-max 1.5) (bgcolor '(0 0 0)) (fgcolor '(255 0 0)))
  "3d-mesh")
 
-(require (lib "class.ss")
+(require mzlib/class
          (lib "plot-extend.ss" "plot")
-         (lib "etc.ss"))
+         mzlib/etc)
 
 
 ; (number -> number) mumbo-jumbo -> 2d-renderer

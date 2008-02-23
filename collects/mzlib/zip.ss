@@ -1,7 +1,7 @@
 ;; A modification of Dave Herman's zip module
 
 (module zip mzscheme
-  (require (lib "deflate.ss") (lib "file.ss") (lib "kw.ss"))
+  (require mzlib/deflate mzlib/file mzlib/kw)
 
   ;; ===========================================================================
   ;; DATA DEFINITIONS

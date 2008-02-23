@@ -18,9 +18,9 @@
               "default-web-root" "servlets" "examples" "english-measure-questions.ss"))
 (define *questions-per-quiz* 5)
 
-(require (lib "servlet.ss" "web-server")
-         (lib "list.ss")
-         (lib "etc.ss"))
+(require web-server/servlet
+         mzlib/list
+         mzlib/etc)
 
 (provide (all-defined-out))
 (define interface-version 'v1)

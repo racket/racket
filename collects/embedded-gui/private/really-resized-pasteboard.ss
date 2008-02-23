@@ -12,9 +12,9 @@ get text deteleted from them, etc.
 (module really-resized-pasteboard mzscheme
   
   (require
-   (lib "etc.ss")
-   (lib "class.ss")
-   (lib "mred.ss" "mred"))
+   mzlib/etc
+   mzlib/class
+   mred)
   
   (provide
    really-resized-pasteboard-mixin

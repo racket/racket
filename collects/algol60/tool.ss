@@ -1,18 +1,18 @@
 (module tool mzscheme
   (require (lib "tool.ss" "drscheme")
-           (lib "mred.ss" "mred")
-           (lib "unit.ss")
-           (lib "class.ss")
+           mred
+           mzlib/unit
+           mzlib/class
            "parse.ss"
            "simplify.ss"
            "compile.ss"
-	   (lib "embed.ss" "compiler")
-	   (lib "string-constant.ss" "string-constants")
+	   compiler/embed
+	   string-constants
 	   (prefix bd: "bd-tool.ss"))
 
   (provide tool@)
 
-  (define base-importing-stx (dynamic-require '(lib "algol60/base.ss")
+  (define base-importing-stx (dynamic-require 'mzlib/algol60/base
 					     'base-importing-stx))
 
   (define tool@
@@ -88,8 +88,8 @@
           (define/public (get-teachpack-names) null)
           (define/public (marshall-settings x) x)
           (define/public (on-execute settings run-in-user-thread)
-            (dynamic-require '(lib "algol60/base.ss") #f)
-            (let ([path ((current-module-name-resolver) '(lib "algol60/base.ss") #f #f)]
+            (dynamic-require 'mzlib/algol60/base #f)
+            (let ([path ((current-module-name-resolver) 'mzlib/algol60/base #f #f)]
                   [n (current-namespace)])
               (run-in-user-thread
                (lambda ()
@@ -115,10 +115,10 @@
 						base-importing-stx)])
 		  (make-embedding-executable dst-file
 					     #f #f
-					     '((#f (lib "algol60/base.ss")))
+					     '((#f mzlib/algol60/base))
 					     null
 					     (compile
-					      `(module m (lib "algol60/base.ss")
+					      `(module m mzlib/algol60/base
 						 ,code))
 					     (list "-mvqe" "(require m)"))))))
 	  (define/public (get-one-line-summary) "Algol 60 (not Scheme at all!)")

@@ -1,7 +1,7 @@
 ;;; filter.ss
 
 (module filter mzscheme
-  (require (lib "string.ss"))
+  (require mzlib/string)
   (require "properties.ss")
   (require "util.ss")
 

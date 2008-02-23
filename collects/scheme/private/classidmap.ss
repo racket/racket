@@ -1,6 +1,6 @@
 
 (module classidmap mzscheme
-  (require (lib "stx.ss" "syntax"))
+  (require syntax/stx)
   (require-for-template mzscheme "class-events.ss")
 
   (define-values (struct:s!t make-s!t s!t? s!t-ref s!t-set!)

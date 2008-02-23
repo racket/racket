@@ -4,7 +4,7 @@
 (when (file-exists? "tmp-pipe")
   (delete-file "tmp-pipe"))
 
-(require (lib "process.ss"))
+(require mzlib/process)
 (system "mknod tmp-pipe p")
 
 (define i1 (open-input-file "tmp-pipe"))

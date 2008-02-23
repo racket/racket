@@ -1,8 +1,8 @@
 (module bitmap-label mzscheme
-  (require (lib "mred.ss" "mred")
-	   (lib "class.ss")
-	   (lib "etc.ss")
-           (lib "contract.ss"))
+  (require mred
+	   mzlib/class
+	   mzlib/etc
+           mzlib/contract)
 
   (provide/contract
    [make-bitmap-label (opt->

@@ -1,7 +1,7 @@
 (require
- (lib "class.ss")
- (lib "mred.ss" "mred")
- (lib "etc.ss")
+ mzlib/class
+ mred
+ mzlib/etc
  (lib "aligned-pasteboard.ss" "mrlib"))
 
 (define frame (instantiate frame% () (label "big-min") (width 400) (height 500)))

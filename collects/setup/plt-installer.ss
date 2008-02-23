@@ -1,5 +1,5 @@
 (module plt-installer mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
            "plt-installer-sig.ss"
            "plt-installer-unit.ss"
            (lib "mred-unit.ss" "mred")

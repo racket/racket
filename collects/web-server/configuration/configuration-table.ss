@@ -1,7 +1,7 @@
 #lang scheme/base
-(require (lib "contract.ss")
-         (lib "list.ss")
-         (lib "pretty.ss"))
+(require mzlib/contract
+         mzlib/list
+         mzlib/pretty)
 (require "configuration-table-structs.ss"
          "../servlet/bindings.ss")
 (provide/contract

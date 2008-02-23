@@ -1,9 +1,9 @@
 #lang scheme/base
-(require (lib "contract.ss")
-         (lib "plt-match.ss")
-         (lib "url.ss" "net")
-         (lib "list.ss")
-         (lib "uri-codec.ss" "net"))
+(require mzlib/contract
+         mzlib/plt-match
+         net/url
+         mzlib/list
+         net/uri-codec)
 (require "util.ss"
          "connection-manager.ss"
          "../private/request-structs.ss")

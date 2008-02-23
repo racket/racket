@@ -6,13 +6,13 @@
            "data-defs.scm"
            (lib "tool.ss" "drscheme")
            (only (lib "drsig.ss" "drscheme" "private") drscheme:language-configuration^)
-           (lib "framework.ss" "framework")
-           (lib "mred.ss" "mred")
-           (lib "unit.ss") 
-           (lib "etc.ss")
-           (lib "class.ss")
-	   (lib "string-constant.ss" "string-constants")
-           (lib "contract.ss"))
+           framework
+           mred
+           mzlib/unit 
+           mzlib/etc
+           mzlib/class
+	   string-constants
+           mzlib/contract)
   
   (provide tool@)
   

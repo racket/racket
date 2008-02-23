@@ -5,7 +5,7 @@
 
 (module hash mzscheme
   
-  (require (lib "etc.ss"))
+  (require mzlib/etc)
   
   (provide (rename my-make-hash-table s:make-hash-table)
            (rename my-hash-table? s:hash-table?)

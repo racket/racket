@@ -1,8 +1,8 @@
 (module syncheck-debug mzscheme
-  (require (lib "pretty.ss")
-           (lib "list.ss")
-           (lib "class.ss")
-           (lib "mred.ss" "mred"))
+  (require mzlib/pretty
+           mzlib/list
+           mzlib/class
+           mred)
   
   (provide debug-origin)  ;; : syntax [syntax] -> void
   ;; creates a frame for examining the 

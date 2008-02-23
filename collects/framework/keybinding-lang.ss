@@ -1,14 +1,14 @@
 (module keybinding-lang mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "string-constant.ss" "string-constants")
-           (lib "framework.ss" "framework")
-           (lib "class.ss"))
+  (require mred
+           string-constants
+           framework
+           mzlib/class)
   
   (provide (rename kl-module-begin #%module-begin)
            (all-from-except mzscheme #%module-begin)
-           (all-from (lib "framework.ss" "framework"))
-           (all-from (lib "mred.ss" "mred"))
-           (all-from (lib "class.ss")))
+           (all-from framework)
+           (all-from mred)
+           (all-from mzlib/class))
   
   (define-syntax (kl-module-begin stx)
     (syntax-case stx ()

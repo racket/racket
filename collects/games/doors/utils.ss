@@ -1,12 +1,12 @@
 (module utils mzscheme
-  (require (lib "gl-vectors.ss" "sgl")
-           (prefix gl- (lib "sgl.ss" "sgl"))
-           (lib "math.ss")
-           (lib "mred.ss" "mred")
-           (lib "list.ss")
-           (lib "etc.ss")
-           (lib "class.ss")
-           (lib "kw.ss")
+  (require sgl/gl-vectors
+           sgl
+           mzlib/math
+           mred
+           mzlib/list
+           mzlib/etc
+           mzlib/class
+           mzlib/kw
            "doors.ss")
   
   (provide door-bm

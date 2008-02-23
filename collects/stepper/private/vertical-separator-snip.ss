@@ -1,6 +1,6 @@
 (module vertical-separator-snip mzscheme
-  (require (lib "mred.ss" "mred")
-	   (lib "class.ss")
+  (require mred
+	   mzlib/class
            "mred-extensions.ss")
   
   (provide snip-class)

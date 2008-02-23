@@ -2,9 +2,9 @@
   (require "parser-units.scm"
            (only (lib "force.ss" "lazy") !!!)
            (only (lib "combinator-unit.ss" "combinator-parser") err^)
-           (lib "unit.ss")
-           #;(lib "lex.ss" "parser-tools")
-           #;(prefix re: (lib "lex-sre.ss" "parser-tools")))
+           mzlib/unit
+           #;parser-tools/lex
+           #;(prefix re: parser-tools/lex-sre))
   
   (provide parse-beginner parse-intermediate parse-intermediate+access parse-advanced
            parse-beginner-interact parse-intermediate-interact parse-advanced-interact)

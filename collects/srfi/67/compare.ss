@@ -1,6 +1,6 @@
 (module compare mzscheme
-  (require (lib "include.ss")
-           (lib "27.ss" "srfi"))
+  (require mzlib/include
+           srfi/27)
   
   (include "compare-reference.scm")
   

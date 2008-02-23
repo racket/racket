@@ -1,12 +1,12 @@
 (module time-keystrokes mzscheme
   
   (require (lib "tool.ss" "drscheme")
-           (lib "list.ss")
-           (lib "unit.ss")
-           (lib "class.ss")
-           (lib "etc.ss")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework"))
+           mzlib/list
+           mzlib/unit
+           mzlib/class
+           mzlib/etc
+           mred
+           framework)
   
   (provide tool@)
   

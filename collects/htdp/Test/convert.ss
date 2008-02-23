@@ -1,6 +1,6 @@
 ;; test errors by hand in GUI
 (load "tester.ss")
-(require (lib "convert.ss" "htdp"))
+(require htdp/convert)
 
 ;; f2c : num -> num
 ;; to convert a Fahrenheit temperature into a Celsius temperature 

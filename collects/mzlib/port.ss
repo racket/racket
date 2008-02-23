@@ -1,8 +1,8 @@
 
 (module port mzscheme
-  (require (lib "etc.ss")
-	   (lib "contract.ss")
-	   (lib "list.ss")
+  (require mzlib/etc
+	   mzlib/contract
+	   mzlib/list
 	   "private/port.ss")
 
   (define (input-port-with-progress-evts? ip)

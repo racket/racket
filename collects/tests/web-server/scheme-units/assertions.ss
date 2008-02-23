@@ -4,9 +4,9 @@
   (require (lib "test.ss" "schemeunit")
            (lib "web-server.ss" "web-server")
            (lib "configuration.ss" "web-server")
-           (lib "url.ss" "net")
-           (lib "head.ss" "net")
-           (lib "contract.ss"))
+           net/url
+           net/head
+           mzlib/contract)
 
   (provide assert-serve assert-serve/string assert-status-number assert-with-server)
   (provide/contract

@@ -3,7 +3,7 @@
 
 (Section 'structlib)
 
-(require (lib "struct.ss"))
+(require mzlib/struct)
 
 (let* ([now (seconds->date (current-seconds))]
        [v (modulo (add1 (date-second now)) 60)])

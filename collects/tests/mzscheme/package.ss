@@ -1,6 +1,6 @@
 
 (load-relative "loadtest.ss")
-(require (lib "package.ss"))
+(require mzlib/package)
 
 
 (Section 'packages)

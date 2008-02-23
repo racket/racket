@@ -1,3 +1,3 @@
 #cs(module arrow mzscheme
-  (require (lib "arrow.ss" "htdp"))
-  (provide (all-from (lib "arrow.ss" "htdp"))))
+  (require htdp/arrow)
+  (provide (all-from htdp/arrow)))

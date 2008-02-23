@@ -1,7 +1,7 @@
 
 (module space mzscheme
-  (require (lib "unitsig.ss")
-	  (lib "list.ss"))
+  (require mzlib/unitsig
+	  mzlib/list)
 
   (require "sig.ss")
 

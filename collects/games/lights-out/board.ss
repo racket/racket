@@ -1,7 +1,7 @@
 (module board mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "etc.ss")
+  (require mred
+           mzlib/class
+           mzlib/etc
            "boards.ss")
 
   (provide

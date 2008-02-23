@@ -1,10 +1,10 @@
 (module on-show-editor mzscheme
   (define (writeln x) (write x) (newline))
   (require
-   (lib "class.ss")
-   (lib "etc.ss")
-   (lib "mred.ss" "mred")
-   (lib "framework.ss" "framework")
+   mzlib/class
+   mzlib/etc
+   mred
+   framework
    "snip-lib.ss")
   
   (provide

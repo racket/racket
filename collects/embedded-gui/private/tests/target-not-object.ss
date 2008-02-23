@@ -1,6 +1,6 @@
 (require
- (lib "class.ss")
- (lib "embedded-gui.ss" "embedded-gui"))
+ mzlib/class
+ embedded-gui)
 
 (let* ([pb (new aligned-pasteboard%)]
        [interactions (new vertical-alignment% (parent pb))])

@@ -2,7 +2,7 @@
 ;; Test the error messages for both headers and content.
 (module test-errors mzscheme
   (require (lib "test.ss" "schemeunit")
-           (lib "url.ss" "net")
+           net/url
            "assertions.ss"
            )
 

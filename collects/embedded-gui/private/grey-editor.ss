@@ -3,9 +3,9 @@
   (provide grey-editor-snip-mixin grey-editor-mixin)
   
   (require
-   (lib "mred.ss" "mred")
-   (lib "class.ss")
-   (lib "framework.ss" "framework"))
+   mred
+   mzlib/class
+   framework)
   
   (define *disable-color* (make-object color% 235 235 255))
   

@@ -1,10 +1,10 @@
 (module alignment-helpers mzscheme
   
   (require
-   (lib "list.ss")
-   (lib "class.ss")
-   (lib "mred.ss" "mred")
-   (lib "contract.ss")
+   mzlib/list
+   mzlib/class
+   mred
+   mzlib/contract
    
    "interface.ss"
    "snip-lib.ss")

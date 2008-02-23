@@ -1,10 +1,10 @@
 (module gl-board mzscheme
-  (require (prefix gl- (lib "sgl.ss" "sgl"))
-           (lib "gl.ss" "sgl")
-           (lib "gl-vectors.ss" "sgl")
-           (lib "class.ss")
-           (lib "list.ss")
-           (lib "mred.ss" "mred"))
+  (require sgl
+           sgl/gl
+           sgl/gl-vectors
+           mzlib/class
+           mzlib/list
+           mred)
   
   (provide gl-board%)
 

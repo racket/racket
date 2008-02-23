@@ -27,7 +27,7 @@
 ;; Commentary:
 
 (module mime-util mzscheme
-  (require (lib "etc.ss"))
+  (require mzlib/etc)
 
   (provide string-tokenizer
            trim-all-spaces

@@ -4,7 +4,7 @@
 
 (Section 'compat)
 
-(require (lib "compat.ss"))
+(require mzlib/compat)
 
 (define-structure (add left right) ([sum (+ left right)]))
 (test 9 add-sum (make-add 3 6))

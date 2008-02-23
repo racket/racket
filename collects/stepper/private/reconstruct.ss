@@ -4,10 +4,10 @@
 ;  or have a value in some mark somewhere (or both).
 
 (module reconstruct scheme/base
-  (require (prefix-in kernel: (lib "kerncase.ss" "syntax"))
-           (lib "list.ss")
-           (lib "etc.ss")
-	   (lib "contract.ss")
+  (require (prefix-in kernel: syntax/kerncase)
+           mzlib/list
+           mzlib/etc
+	   mzlib/contract
            "marks.ss"
            "model-settings.ss"
            "shared.ss"

@@ -2,10 +2,7 @@
 
   ; Usefull mathy functions for plots
   
-  (require 
-   (lib "list.ss")
-   (lib "etc.ss")
-   (lib "math.ss"))
+  (require mzlib/list mzlib/etc mzlib/math)
   
   ; using vectors for n-dimentional points
   

@@ -7,9 +7,9 @@
          drscheme/tool
          mzlib/class
          mzlib/list
-         mred/mred
+         mred
          net/sendurl
-         string-constants/string-constant)
+         string-constants)
 (provide tool@)
 
 (define tool@

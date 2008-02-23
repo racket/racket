@@ -3,10 +3,10 @@
   (require (lib "eval.ss" "scribble")
            (lib "struct.ss" "scribble")
            (lib "scheme.ss" "scribble")
-           (lib "class.ss")
-           (lib "file.ss")
-           (lib "runtime-path.ss")
-           (lib "serialize.ss")
+           mzlib/class
+           mzlib/file
+           mzlib/runtime-path
+           mzlib/serialize
            (lib "exn.ss" "scribblings" "quick"))
 
   (define-syntax define-mr

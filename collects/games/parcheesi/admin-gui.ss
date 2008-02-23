@@ -15,10 +15,10 @@ corresponds to the unplayed move! that's confusing.
            "rules.ss"
            "best-players.ss"
 	   "../show-help.ss"
-           (lib "framework.ss" "framework")
-           (lib "class.ss")
-           (lib "list.ss")
-           (lib "mred.ss" "mred"))
+           framework
+           mzlib/class
+           mzlib/list
+           mred)
   
   (provide gui-game%)
   

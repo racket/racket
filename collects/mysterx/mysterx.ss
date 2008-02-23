@@ -12,12 +12,12 @@
 
   ; mzlib
 
-  (require (prefix mzlib: (lib "list.ss")))
-  (require (lib "string.ss"))
-  (require (lib "class.ss"))
-  (require (lib "url.ss" "net"))
-  (require (lib "etc.ss"))
-  (require (lib "thread.ss"))
+  (require (prefix mzlib: mzlib/list))
+  (require mzlib/string)
+  (require mzlib/class)
+  (require net/url)
+  (require mzlib/etc)
+  (require mzlib/thread)
 
   ; exports
 

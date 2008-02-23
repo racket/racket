@@ -1,3 +1,3 @@
 #cs(module docs mzscheme
-  (require (lib "docs.ss" "htdp"))
-  (provide (all-from (lib "docs.ss" "htdp"))))
+  (require htdp/docs)
+  (provide (all-from htdp/docs)))

@@ -1,5 +1,5 @@
-(require (lib "etc.ss" "frtime")
-         (lib "animation.ss" "frtime"))
+(require frtime/etc
+         frtime/animation)
 
 (define radius (new-cell 20))
 

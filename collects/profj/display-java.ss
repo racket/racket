@@ -1,12 +1,12 @@
 (module display-java mzscheme
   
-  (require (lib "class.ss")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
-           (lib "Object.ss" "profj" "libs" "java" "lang")
-           (lib "String.ss" "profj" "libs" "java" "lang")
-           (lib "Throwable.ss" "profj" "libs" "java" "lang")
-           (lib "array.ss" "profj" "libs" "java" "lang"))
+  (require mzlib/class
+           mred
+           framework
+           profj/libs/java/lang/Object
+           profj/libs/java/lang/String
+           profj/libs/java/lang/Throwable
+           profj/libs/java/lang/array)
   
   (provide format-java-value make-format-style make-java-snip)
   

@@ -1,9 +1,9 @@
 
 (module compile-unit mzscheme
-  (require (lib "unit.ss")
-	   (lib "include.ss")
-	   (lib "process.ss")
-	   (lib "sendevent.ss")
+  (require mzlib/unit
+	   mzlib/include
+	   mzlib/process
+	   mzlib/sendevent
 	   "private/dirs.ss"
 	   "private/cmdargs.ss")
 

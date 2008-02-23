@@ -1,7 +1,7 @@
 #lang scheme/gui
 
 ;(module convert mzscheme
-  (require (lib "etc.ss")
+  (require mzlib/etc
            htdp/error
            lang/prim)
   

@@ -1,15 +1,15 @@
 
 (module module-language mzscheme
   (provide module-language@)
-  (require (lib "unit.ss")
-           (lib "class.ss")
-           (lib "mred.ss" "mred")
-           (lib "embed.ss" "compiler")
-           (lib "launcher.ss" "launcher")
-           (lib "framework.ss" "framework")
-           (lib "string-constant.ss" "string-constants")
+  (require mzlib/unit
+           mzlib/class
+           mred
+           compiler/embed
+           launcher
+           framework
+           string-constants
            "drsig.ss"
-           (lib "contract.ss"))
+           mzlib/contract)
   
   (define op (current-output-port))
   (define (oprintf . args) (apply fprintf op args))

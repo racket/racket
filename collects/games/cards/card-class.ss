@@ -1,8 +1,8 @@
 
 (module card-class mzscheme
-  (require (lib "class.ss")
-	   (lib "class100.ss")
-	   (prefix mred:(lib "mred.ss" "mred"))
+  (require mzlib/class
+	   mzlib/class100
+	   (prefix mred: mred)
 	   "snipclass.ss"
 	   "region.ss")
 

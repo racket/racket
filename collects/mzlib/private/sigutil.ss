@@ -3,9 +3,9 @@
   ;; Used by unitsig.ss
   ;; (needs an overhaul, too)
 
-  (require (lib "stx.ss" "syntax")
-	   (lib "struct.ss" "syntax")
-	   (lib "context.ss" "syntax"))
+  (require syntax/stx
+	   syntax/struct
+	   syntax/context)
 
   (require "sigmatch.ss")
   (require "../unit200.ss")

@@ -13,13 +13,13 @@ add this test:
 (module io mzscheme
   (require "drscheme-test-util.ss"
            (lib "gui.ss" "tests" "utils")
-           (lib "class.ss")
-           (lib "list.ss")
-           (lib "pretty.ss")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
+           mzlib/class
+           mzlib/list
+           mzlib/pretty
+           mred
+           framework
            (lib "text-string-style-desc.ss" "mrlib")
-           (prefix fw: (lib "framework.ss" "framework")))
+           (prefix fw: framework))
   
   (provide run-test)
   

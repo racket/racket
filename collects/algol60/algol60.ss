@@ -11,7 +11,7 @@
                          "compile.ss"
 			 ;; Compiles a simplified AST to Scheme.
 
-                         (lib "file.ss"))
+                         mzlib/file)
 
      ;; By using #'here for the context of identifiers
      ;; introduced by compilation, the identifiers can

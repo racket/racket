@@ -3,11 +3,11 @@
          #;(only (planet "ssax.ss" ("lizorkin" "ssax.plt" 1 3))
                  ssax:xml->sxml)
          #;(planet "sxml.ss" ("lizorkin" "sxml.plt" 1 4))
-         (lib "etc.ss")
-         (lib "list.ss")
-         (lib "pretty.ss")
-         (lib "url.ss" "net")
-         (lib "servlet-env.ss" "web-server"))
+         mzlib/etc
+         mzlib/list
+         mzlib/pretty
+         net/url
+         web-server/servlet-env)
 (provide servlet-env-tests)
 
 #;(define (call u bs)

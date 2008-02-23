@@ -4,9 +4,9 @@
            "name-utils.scm"
            "graph-scc.ss"
            "parameters.ss"
-           (lib "class.ss")
-           (lib "list.ss")
-           (lib "etc.ss"))
+           mzlib/class
+           mzlib/list
+           mzlib/etc)
   
   (provide translate-program translate-interactions (struct compilation-unit (contains code locations depends)))
   
@@ -388,9 +388,9 @@
            (reqs (filter-reqs group-reqs defs type-recs)))
       (values (if (> (length translated-defs) 1)
                   (cons (make-syntax #f `(module ,(module-name) mzscheme
-                                           (require (lib "class.ss")
+                                           (require mzlib/class
                                                     (prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java"))
-                                                    (prefix c: (lib "contract.ss"))
+                                                    (prefix c: mzlib/contract)
                                                     ,@(remove-dup-syntax (translate-require reqs type-recs)))
                                            ,@(map car translated-defs))
                                      #f)
@@ -400,9 +400,9 @@
                                                                                  (symbol->string (module-name)) 
                                                                                  ""))
                                         mzscheme
-                                        (require (lib "class.ss")
+                                        (require mzlib/class
                                                  (prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java"))
-                                                 (prefix c: (lib "contract.ss"))
+                                                 (prefix c: mzlib/contract)
                                                  ,@(remove-dup-syntax
                                                     (translate-require (map (lambda (r) (list (def-file (car defs)) r))
                                                                             (def-uses (car defs)))

@@ -1,10 +1,10 @@
 (module click-forwarding-editor mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "contract.ss")
-   (lib "etc.ss")
-   (lib "mred.ss" "mred"))
+   mzlib/class
+   mzlib/contract
+   mzlib/etc
+   mred)
   
   (provide/contract
    (click-forwarding-editor-mixin mixin-contract))

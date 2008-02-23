@@ -1,8 +1,8 @@
 
 (module xml mzscheme
-  (require (lib "class.ss")
+  (require mzlib/class
            (lib "xml.ss" "xml")
-           (lib "list.ss")
+           mzlib/list
            "wxme.ss"
            "editor.ss"
            "private/readable-editor.ss")

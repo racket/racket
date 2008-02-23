@@ -1,11 +1,11 @@
 (module parser-units lazy
   
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
   
-  (require (lib "lex.ss" "parser-tools")
+  (require parser-tools/lex
            (lib "combinator-unit.ss" "combinator-parser")
            "java-signatures.scm"
-           (lib "string.ss"))
+           mzlib/string)
 
     
   (define-signature language-forms^ (program statement expression field interact)) ;value-type method-type))

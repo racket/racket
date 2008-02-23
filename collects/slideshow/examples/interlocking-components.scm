@@ -1,7 +1,7 @@
 
-(module interlocking-components (lib "run.ss" "slideshow")
-  (require (lib "class.ss")
-           (lib "mred.ss" "mred"))
+(module interlocking-components slideshow/run
+  (require mzlib/class
+           mred)
   
   (define-struct posn (x y) (make-inspector))
   

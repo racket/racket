@@ -18,8 +18,8 @@
                                  [use-compiled-file-paths '()])
                     (values
                      (dynamic-require '(lib "zo-compile.ss" "errortrace") 'zo-compile)
-                     (dynamic-require '(lib "cm.ss") 'make-compilation-manager-load/use-compiled-handler)
-                     (dynamic-require '(lib "cm.ss") 'manager-trace-handler)))])
+                     (dynamic-require 'mzlib/cm 'make-compilation-manager-load/use-compiled-handler)
+                     (dynamic-require 'mzlib/cm 'manager-trace-handler)))])
       (current-compile zo-compile)
       (use-compiled-file-paths (list (build-path "compiled" "errortrace")))
       (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))
@@ -36,8 +36,8 @@
                    manager-trace-handler)
                   (parameterize ([current-namespace (make-namespace)])
                     (values
-                     (dynamic-require '(lib "cm.ss") 'make-compilation-manager-load/use-compiled-handler)
-                     (dynamic-require '(lib "cm.ss") 'manager-trace-handler)))])
+                     (dynamic-require 'mzlib/cm 'make-compilation-manager-load/use-compiled-handler)
+                     (dynamic-require 'mzlib/cm 'manager-trace-handler)))])
       (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))
       (when cm-trace?
         (printf "PLTDRCM: enabling CM tracing\n")

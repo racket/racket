@@ -284,7 +284,7 @@
 Tests:
 
 (require rbtree)
-(require (lib "pretty.ss"))
+(require mzlib/pretty)
 (print-struct #t)
 
 (define t (new-tree))

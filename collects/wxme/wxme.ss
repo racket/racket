@@ -1,11 +1,11 @@
 
 (module wxme mzscheme
-  (require (lib "port.ss")
-           (lib "string.ss")
-           (lib "kw.ss")
-           (lib "class.ss")
-           (lib "contract.ss")
-           (lib "list.ss")
+  (require mzlib/port
+           mzlib/string
+           mzlib/kw
+           mzlib/class
+           mzlib/contract
+           mzlib/list
            "image.ss"
            "editor.ss"
            "private/compat.ss")
@@ -666,8 +666,8 @@
                       (dynamic-require '#%mred-kernel #f)
                       #t)
                     ;; GUI mode, since MrEd is available:
-                    (let ([text% (dynamic-require '(lib "mred.ss" "mred") 'text%)]
-                          [open-input-text-editor (dynamic-require '(lib "mred.ss" "mred") 'open-input-text-editor)])
+                    (let ([text% (dynamic-require 'mred 'text%)]
+                          [open-input-text-editor (dynamic-require 'mred 'open-input-text-editor)])
                       (let ([t (new text%)])
                         (send t insert-port port 'standard)
                         (open-input-text-editor t 0 'end values (object-name port) #t)))

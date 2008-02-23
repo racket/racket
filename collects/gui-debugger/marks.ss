@@ -1,7 +1,7 @@
 (module marks mzscheme
 
-  (require (lib "list.ss")
-	   (lib "contract.ss")
+  (require mzlib/list
+	   mzlib/contract
            (lib "my-macros.ss" "stepper" "private")
            (lib "shared.ss" "stepper" "private"))
 

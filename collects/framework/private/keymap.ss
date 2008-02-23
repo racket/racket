@@ -1,11 +1,11 @@
 
 #lang scheme/unit
 
-(require (lib "string-constant.ss" "string-constants")
-         (lib "class.ss")
-         (lib "list.ss")
+(require string-constants
+         mzlib/class
+         mzlib/list
          (lib "mred-sig.ss" "mred")
-         (lib "match.ss")
+         mzlib/match
          "../preferences.ss"
          "tex-table.ss"
          "sig.ss")

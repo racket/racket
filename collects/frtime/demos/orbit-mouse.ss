@@ -1,5 +1,5 @@
-(require (lib "animation.ss" "frtime")
-         (lib "gui.ss" "frtime"))
+(require frtime/animation
+         frtime/gui)
 
 (define radius (make-slider "Radius" 25 200 100))
 (define speed (* .1 (make-slider "Speed" -15 15 6)))

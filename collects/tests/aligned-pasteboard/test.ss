@@ -1,10 +1,10 @@
 ;;note: turns out these tests are window manager specific
 
 (require
- (lib "class.ss")
- (lib "mred.ss" "mred")
- (lib "etc.ss")
- (lib "list.ss")
+ mzlib/class
+ mred
+ mzlib/etc
+ mzlib/list
  (lib "aligned-pasteboard.ss" "mrlib")
  "snip-dumper.ss")
 

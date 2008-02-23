@@ -2,8 +2,8 @@
 
   (require "sig.ss"
            (lib "mred-sig.ss" "mred")
-           (lib "string.ss")
-           (lib "list.ss"))
+           mzlib/string
+           mzlib/list)
   (import)
   (export (rename framework:version^
                   [-version version]))

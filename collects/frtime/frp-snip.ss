@@ -1,17 +1,17 @@
 (module frp-snip mzscheme
-  (require (lib "class.ss")
-           (lib "string.ss")
-           (lib "list.ss")
-           (lib "port.ss")
+  (require mzlib/class
+           mzlib/string
+           mzlib/list
+           mzlib/port
            
            ;; FRP requires
            
-           (lib "frp-core.ss" "frtime")
-           (all-except (lib "lang-ext.ss" "frtime") undefined?)
-           (only (lib "mzscheme-core.ss" "frtime") any-nested-reactivity? raise-reactivity)
+           frtime/frp-core
+           (all-except frtime/lang-ext undefined?)
+           (only frtime/mzscheme-core any-nested-reactivity? raise-reactivity)
 
            ;; MrEd require
-           (all-except (lib "mred.ss" "mred") send-event))
+           (all-except mred send-event))
   
   (define drs-eventspace #f)
   

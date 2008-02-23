@@ -35,11 +35,11 @@
 (module fold
   mzscheme
 
-  (require (lib "optional.ss" "srfi")
+  (require srfi/optional
 		   "predicate.ss"
 		   "selector.ss"
 		   "util.ss")
-  (require (lib "receive.ss" "srfi" "8"))
+  (require srfi/8/receive)
 
   (provide (rename my-map map)
 	   (rename my-for-each for-each)

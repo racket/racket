@@ -1,8 +1,8 @@
 
 (module stxset mzscheme
 
-  (require-for-syntax (lib "kerncase.ss" "syntax")
-		      (lib "context.ss" "syntax"))
+  (require-for-syntax syntax/kerncase
+		      syntax/context)
 
   (provide finish-syntax-set)
 

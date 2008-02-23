@@ -1,8 +1,8 @@
 ; copyright by Paul Graunke June 2000 AD
 (module dtd mzscheme
   (require "dtd-ast.ss" "entity-expander.ss"
-           (lib "list.ss")
-           (lib "string.ss"))
+           mzlib/list
+           mzlib/string)
   
   (provide read-sgml-dtd summarize-dtd)
   

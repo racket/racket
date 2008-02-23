@@ -144,16 +144,16 @@ an appropriate subdirectory.
 ||#
 (module resolver mzscheme
   
-  (require (lib "match.ss")
-           (lib "file.ss")
-           (lib "port.ss")
-           (lib "list.ss")
+  (require mzlib/match
+           mzlib/file
+           mzlib/port
+           mzlib/list
            
-           (lib "date.ss")
+           mzlib/date
            
-           (lib "url.ss" "net")
-           (lib "head.ss" "net")
-           (lib "struct.ss")
+           net/url
+           net/head
+           mzlib/struct
            
            "config.ss"
            "private/planet-shared.ss"
@@ -668,7 +668,7 @@ an appropriate subdirectory.
   ;; ------------------------------------------------------------
   ;; HTTP VERSION OF THE PROTOCOL
   
-  ;; pkg->servlet-args : FULL-PKG-SPEC -> environment[from (lib "url.ss" "net")]
+  ;; pkg->servlet-args : FULL-PKG-SPEC -> environment[from net/url]
   ;; gets the appropriate query arguments to request the given package from the
   ;; PLaneT HTTP download servlet
   (define (pkg->servlet-args pkg)
@@ -680,7 +680,7 @@ an appropriate subdirectory.
         (min-hi . ,(get pkg-spec-minor-hi))
         (path   . ,(get pkg-spec-path)))))
   
-  ;; get-http-response-code : header[from (lib "head.ss" "net")] -> string
+  ;; get-http-response-code : header[from net/head] -> string
   ;; gets the HTTP response code in the given header
   (define (get-http-response-code header)
     (let ((parsed (regexp-match #rx"^HTTP/[^ ]* ([^ ]*)" header)))

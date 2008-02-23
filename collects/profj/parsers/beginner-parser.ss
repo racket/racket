@@ -5,10 +5,10 @@
            "../ast.ss"
            "../parameters.ss")
   
-  (require (lib "yacc.ss" "parser-tools")
-           (all-except (lib "lex.ss" "parser-tools") input-port)           
-           (lib "readerr.ss" "syntax")
-           (prefix class: (lib "class.ss")))
+  (require parser-tools/yacc
+           (all-except parser-tools/lex input-port)           
+           syntax/readerr
+           (prefix class: mzlib/class))
   
   ;(require (lib "build-grammar.ss" "tester"))
   

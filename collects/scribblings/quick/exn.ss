@@ -1,6 +1,6 @@
 
 (module exn mzscheme
-  (require (lib "serialize.ss"))
+  (require mzlib/serialize)
 
   (define-serializable-struct mr-exn (message))
 

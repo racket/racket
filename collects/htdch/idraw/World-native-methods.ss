@@ -1,6 +1,6 @@
 #cs
 (module World-native-methods mzscheme
-  (require (lib "support.scm" "htdch" "draw") (lib "unit.ss"))
+  (require (lib "support.scm" "htdch" "draw") mzlib/unit)
   
   (provide endOfTime-java.lang.String-native endOfWorld-java.lang.String-native bigBangO-double-native)
 

@@ -12,8 +12,8 @@
            "ast.ss"
            "parameters.ss")
   
-  (require (all-except (lib "lex.ss" "parser-tools") input-port)
-           (lib "readerr.ss" "syntax")
+  (require (all-except parser-tools/lex input-port)
+           syntax/readerr
            (lib "force.ss" "lazy"))
   (provide parse parse-interactions parse-expression parse-type parse-name lex-stream)
   

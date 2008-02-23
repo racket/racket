@@ -1,8 +1,8 @@
 
 (load-relative "loadtest.ss")
 
-(require (lib "class.ss")
-         (lib "trait.ss"))
+(require mzlib/class
+         mzlib/trait)
 
 (Section 'trait)
 

@@ -1,7 +1,7 @@
-(module data-synthesis (lib "frtime.ss" "frtime")
+(module data-synthesis frtime/frtime
 
 (require "distributions.ss"
-         (lib "math.ss")
+         mzlib/math
          )
 
 ;; num list -> num

@@ -1,8 +1,8 @@
 #lang scheme/base
 (require (for-template scheme/base)
-         (for-template (lib "serialize.ss"))
-         (lib "list.ss")
-         (lib "serialize.ss"))
+         (for-template mzlib/serialize)
+         mzlib/list
+         mzlib/serialize)
 (provide make-closure-definition-syntax
          closure->deserialize-name) 
 

@@ -2,9 +2,9 @@
 ;;   http://shootout.alioth.debian.org/
 
 (module k-nucleotide mzscheme
-  (require (lib "list.ss")
-           (lib "string.ss")
-           (only (lib "13.ss" "srfi") string-pad-right))
+  (require mzlib/list
+           mzlib/string
+           (only srfi/13 string-pad-right))
 
   (define (all-counts len dna)
     (let ([table (make-hash-table)]

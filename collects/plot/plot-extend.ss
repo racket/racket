@@ -1,12 +1,6 @@
 (module plot-extend mzscheme
-  (require
-   (lib "class.ss")
-   (lib "view.ss" "plot")
-   (lib "renderer-helpers.ss" "plot")
-   )
-  
-  
-  
+  (require mzlib/class plot/view plot/renderer-helpers)
+
   (define-syntax (define-plot-type stx)
     (define (join-identifier prefix ident)
       (datum->syntax-object 
@@ -113,6 +107,6 @@
                             body))))))])))]))
   (provide
    define-plot-type
-   (all-from (lib "view.ss" "plot"))
-   (all-from (lib "renderer-helpers.ss" "plot"))))
+   (all-from plot/view)
+   (all-from plot/renderer-helpers)))
 

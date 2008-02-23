@@ -1,9 +1,9 @@
 (module hashcons (lib "mrflow.ss" "mrflow")
-  (require (prefix list: (lib "list.ss"))
-           (lib "match.ss")
-           (lib "pretty.ss")
-           (lib "etc.ss")
-           (prefix string: (lib "string.ss"))
+  (require (prefix list: mzlib/list)
+           mzlib/match
+           mzlib/pretty
+           mzlib/etc
+           (prefix string: mzlib/string)
            
            (prefix cst: "constants.ss")
            "dfa.ss"

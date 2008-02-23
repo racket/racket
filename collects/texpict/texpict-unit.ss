@@ -1,6 +1,6 @@
 
 (module texpict-unit mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
   (require "private/texpict-sig.ss"
 	   "private/common-sig.ss"

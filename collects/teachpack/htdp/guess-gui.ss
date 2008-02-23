@@ -1,3 +1,3 @@
 #cs(module guess-gui mzscheme
-  (require (lib "guess-gui.ss" "htdp"))
-  (provide (all-from (lib "guess-gui.ss" "htdp"))))
+  (require htdp/guess-gui)
+  (provide (all-from htdp/guess-gui)))

@@ -1,8 +1,8 @@
 (module |74| mzscheme
-  (require (lib "include.ss")
-           (lib "26.ss" "srfi")
-           (lib "60.ss" "srfi")
-           (lib "66.ss" "srfi"))
+  (require mzlib/include
+           srfi/26
+           srfi/60
+           srfi/66)
   (provide
    endianness
    blob?

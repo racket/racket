@@ -2,8 +2,8 @@
 (module decode mzscheme
   (require "struct.ss"
            "decode-struct.ss"
-           (lib "contract.ss")
-           (lib "class.ss"))
+           mzlib/contract
+           mzlib/class)
 
   (provide decode
            decode-part

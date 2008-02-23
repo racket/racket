@@ -20,10 +20,10 @@ The col and row type specs are in sig.ss and the solution type is:
 
 (define argv (current-command-line-arguments))
 
-(require (lib "etc.ss")
-         (lib "list.ss")
-         (lib "file.ss")
-         (lib "pretty.ss")
+(require mzlib/etc
+         mzlib/list
+         mzlib/file
+         mzlib/pretty
          (prefix solve: "../solve.ss"))
 
 (if (eq? (vector) argv)

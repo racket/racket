@@ -1,7 +1,7 @@
 (module mzpp mzscheme
 
-(require (lib "pp-utils.ss" "preprocessor"))
-(provide (all-from (lib "pp-utils.ss" "preprocessor")))
+(require preprocessor/pp-utils)
+(provide (all-from preprocessor/pp-utils))
 
 (provide beg-mark end-mark skip-to no-spaces? debug?)
 (define beg-mark   (make-parameter "<<"))
@@ -170,7 +170,7 @@
 (provide preprocess)
 (define (preprocess . files)
   (read-case-sensitive #t)
-  (namespace-require '(lib "mzpp.ss" "preprocessor"))
+  (namespace-require 'preprocessor/mzpp)
   (do-evals)
   (run files))
 

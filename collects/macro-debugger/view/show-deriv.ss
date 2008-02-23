@@ -1,11 +1,11 @@
 
 (module deriv-show mzscheme
-  (require (lib "mrpict.ss" "texpict")
-           (lib "utils.ss" "texpict")
-           (lib "match.ss")
-           (lib "pretty.ss")
-           (lib "class.ss")
-           (lib "mred.ss" "mred"))
+  (require texpict/mrpict
+           texpict/utils
+           mzlib/match
+           mzlib/pretty
+           mzlib/class
+           mred)
   (require "../model/deriv.ss")
 
   (define code-size 12)

@@ -1,13 +1,13 @@
 (module tool mzscheme
   (require (lib "tool.ss" "drscheme")
-           (lib "unit.ss")
-           (lib "framework.ss" "framework")
-           (lib "mred.ss" "mred")
-           (lib "class.ss")
+           mzlib/unit
+           framework
+           mred
+           mzlib/class
            "patchlevel.ss"
            "check.ss"
            (lib "external.ss" "browser")
-           (lib "string-constant.ss" "string-constants"))
+           string-constants)
 
   (define download-url "http://download.plt-scheme.org/")
 

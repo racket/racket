@@ -1,7 +1,7 @@
 #lang mzscheme
 
-(require (lib "etc.ss") 
-         (lib "list.ss"))
+(require mzlib/etc 
+         mzlib/list)
 
 ;; --------------------------------------------------------------------------
 (provide check-arg check-arity check-proc check-result check-list-list

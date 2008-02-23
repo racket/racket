@@ -3,8 +3,8 @@
 (define new-dir "~/Desktop/gc6.7")
 (define really-svn? #t)
 
-(require (lib "file.ss")
-	 (lib "process.ss"))
+(require mzlib/file
+	 mzlib/process)
 
 (define old (make-hash-table 'equal))
 (define new (make-hash-table 'equal))

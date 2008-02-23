@@ -1,6 +1,6 @@
 #cs(module docs mzscheme
-  (require (lib "error.ss" "htdp")
-           (lib "list.ss")
+  (require htdp/error
+           mzlib/list
 	   (lib "prim.ss" "lang"))
   
   (provide

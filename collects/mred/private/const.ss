@@ -1,6 +1,6 @@
 (module const mzscheme
-  (require (lib "class.ss")
-	   (lib "file.ss")
+  (require mzlib/class
+	   mzlib/file
 	   (prefix wx: "kernel.ss"))
   (provide (protect (all-defined)))
 

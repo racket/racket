@@ -1,7 +1,7 @@
 (module xform mzscheme
-  (require (lib "list.ss")
-	   (lib "etc.ss")
-	   (lib "process.ss"))
+  (require mzlib/list
+	   mzlib/etc
+	   mzlib/process)
   
   (provide xform)
   

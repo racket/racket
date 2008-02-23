@@ -1,7 +1,7 @@
 (module text-snipclass mzscheme
-  (require (lib "framework.ss" "framework")
-           (lib "class.ss")
-           (lib "mred.ss" "mred"))
+  (require framework
+           mzlib/class
+           mred)
 
   (provide text-box%
            (rename snipclass snip-class))

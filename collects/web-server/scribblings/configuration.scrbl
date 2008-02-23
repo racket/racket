@@ -170,7 +170,7 @@ of @filepath{dispatchers/dispatch-servlets.ss} and @filepath{dispatchers/dispatc
                 namespace?)]{
 This function creates a function that when called will construct a new @scheme[namespace] that
 has all the modules from @scheme[to-be-copied-module-specs] and @scheme[additional-specs], as well
-as @scheme[mzscheme] and @scheme[(lib "mred.ss" "mred")], provided they are already attached
+as @scheme[mzscheme] and @scheme[mred], provided they are already attached
 to the @scheme[(current-namespace)] of the call-site.
 
 Example:

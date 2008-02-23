@@ -1,5 +1,5 @@
 (module config mzscheme
-  (require (lib "file.ss") (lib "list.ss"))
+  (require mzlib/file mzlib/list)
 
   ;; This module should be invoked when we're in the server directory
   (provide server-dir)

@@ -3,7 +3,7 @@
               "protect-play-unit.ss"
               "ping-play-unit.ss"
               "pingp.ss"
-              (lib "unitsig.ss"))
+              mzlib/unitsig)
      
      (provide protect-play@)
      (define protect-play@

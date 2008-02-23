@@ -1,3 +1,3 @@
 (module |32| mzscheme
-  (require (lib "sort.scm" "srfi" "32"))
-  (provide (all-from (lib "sort.scm" "srfi" "32"))))
+  (require (lib "srfi/32/sort.scm"))
+  (provide (all-from (lib "srfi/32/sort.scm"))))

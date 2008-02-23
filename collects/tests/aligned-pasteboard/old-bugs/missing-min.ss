@@ -1,9 +1,9 @@
 (require
- (lib "class.ss")
- (lib "etc.ss")
+ mzlib/class
+ mzlib/etc
  (lib "aligned-pasteboard.ss" "mrlib")
- (lib "class.ss")
- (lib "mred.ss" "mred"))
+ mzlib/class
+ mred)
 
 (define f (instantiate frame% () (label "test") (width 400) (height 500)))
 (define pb1 (instantiate vertical-pasteboard% ()))

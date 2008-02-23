@@ -1,3 +1,3 @@
 
-(module slideshow (lib "slideshow.ss" "slideshow")
-  (provide (all-from (lib "slideshow.ss" "slideshow"))))
+(module slideshow slideshow/slideshow
+  (provide (all-from slideshow/slideshow)))

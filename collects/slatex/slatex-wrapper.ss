@@ -1,8 +1,8 @@
 
 (module slatex-wrapper mzscheme
-  (require (lib "file.ss")
-	   (lib "process.ss")
-	   (lib "sendevent.ss")
+  (require mzlib/file
+	   mzlib/process
+	   mzlib/sendevent
            "slatex.ss")
 
   (provide slatex latex pdf-slatex pdf-latex slatex/no-latex

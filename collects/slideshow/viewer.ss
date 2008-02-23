@@ -7,8 +7,8 @@
            scheme/path
            scheme/file
 	   mred
-	   (lib "mrpict.ss" "texpict")
-	   (lib "utils.ss" "texpict")
+	   texpict/mrpict
+	   texpict/utils
 	   scheme/math
 	   (lib "include-bitmap.ss" "mrlib")
 	   "sig.ss"

@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "url.ss" "net")
+(require net/url
          (for-template "web.ss")
          "web.ss"
          "../servlet/helpers.ss")

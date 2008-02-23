@@ -1,6 +1,6 @@
 (module model mzscheme
   (require "sig.ss"
-	   (lib "unitsig.ss"))
+	   mzlib/unitsig)
 
   (provide model-unit)
 

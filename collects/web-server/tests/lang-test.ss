@@ -509,7 +509,7 @@
       (lambda ()
         (make-module-eval
          (module data (lib "lang.ss" "web-server")
-           (require (lib "contract.ss"))
+           (require mzlib/contract)
            
            (define x 1)
            (provide/contract
@@ -522,7 +522,7 @@
       (lambda ()
         (make-module-eval
          (module data (lib "lang.ss" "web-server")
-           (require (lib "contract.ss"))
+           (require mzlib/contract)
            
            (define-struct posn (x y) #:mutable)
            (provide/contract

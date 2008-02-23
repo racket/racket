@@ -1,9 +1,9 @@
 (module value-turtles mzscheme
-  (require (lib "math.ss")
-           (lib "class.ss")
-           (lib "mred.ss" "mred")
-           (all-except (lib "list.ss") merge)
-           (lib "struct.ss"))
+  (require mzlib/math
+           mzlib/class
+           mred
+           (all-except mzlib/list merge)
+           mzlib/struct)
 
   (provide turtles move draw turn turn/radians merge clean)
 

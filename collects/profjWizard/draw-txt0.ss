@@ -5,8 +5,8 @@
 
 |#
 (module draw-txt mzscheme
-  (require (lib "etc.ss")
-           (lib "list.ss"))
+  (require mzlib/etc
+           mzlib/list)
   
   ;; Class (Listof Classes) -> (Listof String)
   (define (class-union-to-strings utype variants) 

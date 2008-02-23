@@ -2,14 +2,14 @@
 
 ;; 4. integrate with snips
 
-(require (lib "matrix-sig.ss" "htdp")
-         (lib "matrix-render-sig.ss" "htdp")
-         (lib "matrix-unit.ss" "htdp")
+(require htdp/matrix-sig
+         htdp/matrix-render-sig
+         htdp/matrix-unit
          (lib "matrix-snip.ss" "mrlib"))
 
-(require (lib "class.ss")
-         (lib "string.ss")
-         (lib "mred.ss" "mred")
+(require mzlib/class
+         mzlib/string
+         mred
          (lib "matrix-snip.ss" "mrlib"))
 
 ;; ---------------------------------------------------------------------------

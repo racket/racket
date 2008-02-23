@@ -1,8 +1,8 @@
 #cs(module protect-play-unit mzscheme
      (provide protect-play-U)
-     (require (lib "unitsig.ss")
+     (require mzlib/unitsig
               "pingp-sig.ss"
-              (lib "list.ss")
+              mzlib/list
 	      (lib "posn.ss" "lang"))
 
      (define protect-play-U

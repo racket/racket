@@ -96,7 +96,7 @@ We thank Greg Pettyjohn for his initial implementation of this algorithm.
 @; ------------------------------------------------------------
 @section[#:tag "reprovided"]{Reprovided API}
 
-The APIs from @scheme[(lib "url.ss" "net")], @secref["request-structs.ss"],
+The APIs from @scheme[net/url], @secref["request-structs.ss"],
 @secref["response-structs.ss"], and @secref["helpers.ss"] are reprovided
 by the Web language API.
 

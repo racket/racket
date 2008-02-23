@@ -2,8 +2,8 @@
 (module bnf mzscheme
   (require "struct.ss"
            "decode.ss"
-           (lib "kw.ss")
-           (lib "class.ss"))
+           mzlib/kw
+           mzlib/class)
 
   (provide BNF 
            nonterm

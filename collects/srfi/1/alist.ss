@@ -35,8 +35,8 @@
 (module alist
   mzscheme
 
-  (require (lib "etc.ss" "mzlib")
-		   (lib "optional.ss" "srfi")
+  (require mzlib/etc
+		   srfi/optional
 		   (only "search.ss" find)
 		   "filter.ss"
 		   (rename "fold.ss" s:map map))

@@ -36,7 +36,7 @@
 
 ; -- portability --
 
-; PLT:      (require (lib "23.ss" "srfi") (lib "42.ss" "srfi"))
+; PLT:      (require srfi/23 srfi/42)
 ; Scheme48: ,open srfi-23 srfi-42 
 
 ; -- utilities --
@@ -49,7 +49,7 @@
 ; because the pretty printers usually output a trailing
 ; newline.
 
-; PLT:      (require (lib "pretty.ss")) (define check:write pretty-print)
+; PLT:      (require mzlib/pretty) (define check:write pretty-print)
 ; Scheme48: ,open pp (define check:write p)
 
 ; -- mode --

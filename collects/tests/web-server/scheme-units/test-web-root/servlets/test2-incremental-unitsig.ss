@@ -1,6 +1,6 @@
 ;; Incremental servlet with no arguments on the URL, in text/html, with URL
 ;; path.
-(require (lib "unitsig.ss")
+(require mzlib/unitsig
          (lib "servlet-sig.ss" "web-server")
          )
 (unit/sig ()

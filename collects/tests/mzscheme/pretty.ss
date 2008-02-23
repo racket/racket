@@ -12,7 +12,7 @@
 
 (Section 'pretty)
 
-(require (lib "pretty.ss"))
+(require mzlib/pretty)
 
 (define (pprec-print pprec port write?)
   (define (print-one n port)

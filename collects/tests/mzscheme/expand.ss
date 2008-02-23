@@ -1,5 +1,5 @@
 
-(require (lib "toplevel.ss" "syntax"))
+(require syntax/toplevel)
 
 (load-relative "loadtest.ss")
 

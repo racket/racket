@@ -1,13 +1,13 @@
 (module stretching-in-alignment mzscheme
     
   (require
-   (lib "mred.ss" "mred")
-   (lib "etc.ss")
-   (lib "class.ss")
+   mred
+   mzlib/etc
+   mzlib/class
    (lib "interface.ss" "mrlib" "private" "aligned-pasteboard")
    (lib "debug.ss" "mike-lib")
-   (lib "list.ss")
-   (lib "match.ss")
+   mzlib/list
+   mzlib/match
    (prefix a: "alignment.ss")
    (lib "click-forwarding-editor.ss" "mrlib")
    (lib "snip-lib.ss" "mrlib" "private" "aligned-pasteboard")

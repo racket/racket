@@ -2,8 +2,8 @@
   
   (require "contracts.ss")
   
-  (require-for-syntax (lib "list.ss")
-		      (lib "boundmap.ss" "syntax"))
+  (require-for-syntax mzlib/list
+		      syntax/boundmap)
   
   (provide beginner-module-begin intermediate-module-begin advanced-module-begin)
   

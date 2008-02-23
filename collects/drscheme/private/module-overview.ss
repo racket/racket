@@ -1,11 +1,11 @@
 #lang scheme/base
 
-(require mred/mred
+(require mred
          scheme/class
          syntax/moddep
          syntax/toplevel
          framework/framework
-         string-constants/string-constant
+         string-constants
          mrlib/graph
          "drsig.ss"
          scheme/unit

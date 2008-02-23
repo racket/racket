@@ -7,11 +7,11 @@
 
 (module mxdemo mzscheme
   
-  (require (lib "class.ss"))
-  (require (lib "mysterx.ss" "mysterx"))
+  (require mzlib/class)
+  (require mysterx)
   
-  (require (lib "runtime-path.ss")
-           (lib "process.ss"))
+  (require mzlib/runtime-path
+           mzlib/process)
 
   ;; Ensure that DLLs are included with the distibution:
   (define-runtime-path myspage-dll '(so "myspage"))

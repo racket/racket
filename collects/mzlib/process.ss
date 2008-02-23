@@ -9,7 +9,7 @@
 	   system/exit-code
 	   system*/exit-code)
 
-  (require (lib "port.ss"))
+  (require mzlib/port)
 
   ;; Helpers: ----------------------------------------
 

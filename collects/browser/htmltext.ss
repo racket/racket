@@ -1,14 +1,14 @@
 
 (module htmltext mzscheme
-  (require (lib "unit.ss")
-           (lib "class.ss")
+  (require mzlib/unit
+           mzlib/class
            "browser-sig.ss"
            "private/sig.ss"
            "private/html.ss"
            "private/bullet.ss"
-	   (lib "url.ss" "net")
-	   (lib "url-sig.ss" "net")
-           (lib "mred.ss" "mred")
+	   net/url
+	   net/url-sig
+           mred
            (lib "mred-unit.ss" "mred")
            (lib "mred-sig.ss" "mred")
 	   (lib "external.ss" "browser"))

@@ -1,5 +1,5 @@
 (module token-tree mzscheme
-  (require (lib "class.ss"))
+  (require mzlib/class)
   
   (provide token-tree% insert-first! insert-last! insert-last-spec!
            node? node-token-length node-token-data node-left-subtree-length node-left node-right)

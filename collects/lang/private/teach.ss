@@ -34,17 +34,17 @@
 ;; error.
 
 (module teach mzscheme
-  (require (lib "etc.ss")
-	   (lib "list.ss")
-	   (lib "math.ss")
+  (require mzlib/etc
+	   mzlib/list
+	   mzlib/math
            "set-result.ss")
   (require-for-syntax "teachhelp.ss"
                       "teach-shared.ss"
-		      (lib "kerncase.ss" "syntax")
-		      (lib "stx.ss" "syntax")
-		      (lib "struct.ss" "syntax")
-		      (lib "context.ss" "syntax")
-		      (lib "include.ss")
+		      syntax/kerncase
+		      syntax/stx
+		      syntax/struct
+		      syntax/context
+		      mzlib/include
                       (lib "shared.ss" "stepper" "private"))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

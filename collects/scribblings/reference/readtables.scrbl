@@ -197,7 +197,7 @@ character and the @scheme[#f] readtable.}
 #readerscribble/comment-reader
 [examples
 ;; Provides @scheme[raise-read-error] and @scheme[raise-read-eof-error]
-(require (lib "readerr.ss" "syntax"))
+(require syntax/readerr)
 
 (define (skip-whitespace port)
   ;; Skips whitespace characters, sensitive to the current

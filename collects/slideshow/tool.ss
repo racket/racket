@@ -23,15 +23,15 @@ pict snip :
 
 (module tool mzscheme
   (require (lib "tool.ss" "drscheme")
-           (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "unit.ss")
-           (lib "contract.ss")
-           (lib "string-constant.ss" "string-constants")
-           (lib "framework.ss" "framework")
-           (lib "mrpict.ss" "texpict")
+           mred
+           mzlib/class
+           mzlib/unit
+           mzlib/contract
+           string-constants
+           framework
+           texpict/mrpict
            (lib "pict-value-snip.ss" "texpict")
-           (lib "list.ss")
+           mzlib/list
            "private/pict-box-lib.ss"
            "private/image-snipr.ss")
 

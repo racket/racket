@@ -1,9 +1,9 @@
 ;; some more advanced aligned-pasteboard tests take from the test-case-boxes
 
 (require
- (lib "class.ss")
- (lib "mred.ss" "mred")
- (lib "etc.ss")
+ mzlib/class
+ mred
+ mzlib/etc
  "../aligned-editor-container.ss"
  "../aligned-pasteboard.ss")
 

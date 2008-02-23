@@ -7,7 +7,7 @@
            "debug.ss"
            "module-language.ss"
            "tools.ss"
-           (lib "unit.ss")
+           mzlib/unit
            "language.ss"
            "language-configuration.ss"
            "drsig.ss"

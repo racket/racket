@@ -1,6 +1,6 @@
 (module display-break-stuff mzscheme
 
-  (require (lib "mred.ss" "mred") (lib "class.ss") "marks.ss")
+  (require mred mzlib/class "marks.ss")
 
   (provide display-break-stuff)
 

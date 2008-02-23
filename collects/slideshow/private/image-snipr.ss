@@ -1,6 +1,6 @@
 (module image-snipr mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss"))
+  (require mred
+           mzlib/class)
 
   (provide snipclass
            image-snip/r%)

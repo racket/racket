@@ -1,13 +1,13 @@
 (module mrflow mzscheme
-  (require (lib "pretty.ss")
-           (lib "contract.ss")
-           (lib "mred.ss" "mred"))
+  (require mzlib/pretty
+           mzlib/contract
+           mred)
 
   (provide (all-from mzscheme)
            ;(all-from-except mzscheme vector-ref)
            ;(rename dbg-vector-ref vector-ref)
            
-           (all-from-except (lib "contract.ss") provide/contract define/contract)
+           (all-from-except mzlib/contract provide/contract define/contract)
            ; one or the other
            provide/contract define/contract
            ;(rename dbg-provide/contract provide/contract)(rename dbg-define-contract define/contract)

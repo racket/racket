@@ -1,3 +1,3 @@
 (module |87| mzscheme
-  (require (lib "case.ss" "srfi" "87"))
+  (require srfi/87/case)
   (provide (rename srfi:case case)))

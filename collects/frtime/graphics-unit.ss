@@ -1,5 +1,5 @@
 (module graphics-unit mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
 	   (lib "mred-sig.ss" "mred")
 	   "graphics-sig.ss"
 	   "graphics-posn-less-unit.ss")

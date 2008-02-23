@@ -5,9 +5,9 @@
 (module errortrace-lib mzscheme
   (require "stacktrace.ss"
            "errortrace-key.ss"
-           (lib "list.ss")
-           (lib "unit.ss")
-           (lib "runtime-path.ss"))
+           mzlib/list
+           mzlib/unit
+           mzlib/runtime-path)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Test coverage run-time support

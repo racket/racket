@@ -3,11 +3,11 @@
 (module snip-lib mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "etc.ss")
-   (lib "mred.ss" "mred")
-   (lib "list.ss")
-   (lib "contract.ss")
+   mzlib/class
+   mzlib/etc
+   mred
+   mzlib/list
+   mzlib/contract
    "interface.ss")
   
   ;; a snip

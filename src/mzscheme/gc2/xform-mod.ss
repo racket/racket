@@ -1,6 +1,6 @@
 (module xform-mod mzscheme
   (require (lib "xform.ss" "compiler" "private")
-	   (lib "cmdline.ss"))
+	   mzlib/cmdline)
 
   (define precompiling-header? (getenv "XFORM_PRECOMP"))
   (define precompiled-header (getenv "XFORM_USE_PRECOMP"))

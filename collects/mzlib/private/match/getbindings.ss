@@ -5,7 +5,7 @@
            "update-binding-counts.scm"           
            "render-helpers.ss"
            "render-sigs.ss"
-           (lib "unit.ss"))
+           mzlib/unit)
     
   (require-for-template mzscheme)
    

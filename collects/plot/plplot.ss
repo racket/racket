@@ -1,6 +1,6 @@
 (module plplot mzscheme
 
-(require (lib "etc.ss") (lib "list.ss") (lib "foreign.ss") (lib "runtime-path.ss"))
+(require mzlib/etc mzlib/list mzlib/foreign mzlib/runtime-path)
 (unsafe!)
 
 (define-runtime-path plplot-path

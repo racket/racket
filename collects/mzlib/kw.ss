@@ -1,6 +1,6 @@
 (module kw mzscheme
 
-(require-for-syntax (lib "name.ss" "syntax"))
+(require-for-syntax syntax/name)
 
 (begin-for-syntax ; -> configuration for lambda/kw
   ;; must appear at the end, each with exactly one variable

@@ -1,6 +1,6 @@
 (module stepper-language-interface mzscheme
   
-  (require (lib "class.ss"))
+  (require mzlib/class)
   (provide stepper-language<%>)
     
   (define stepper-language<%>

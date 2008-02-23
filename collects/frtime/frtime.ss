@@ -15,7 +15,7 @@
           (pred v))))
 
 
-  ;(provide-for-syntax (rename (lib "mzscheme-utils.ss" "frtime") syntax->list syntax->list))
+  ;(provide-for-syntax (rename frtime/mzscheme-utils syntax->list syntax->list))
   
   (provide value-nowable? behaviorof
 	   (all-from "mzscheme-utils.ss")

@@ -1,7 +1,7 @@
 (load-relative "loadtest.ss")
 
 (require (lib "cache-image-snip.ss" "mrlib")
-         (lib "unit.ss"))
+         mzlib/unit)
 
 (invoke-unit
  (unit 

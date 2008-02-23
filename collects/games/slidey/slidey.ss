@@ -1,8 +1,8 @@
 #lang mzscheme
-(require (lib "etc.ss")
-         (lib "class.ss")
-         (lib "unit.ss")
-         (lib "mred.ss" "mred"))
+(require mzlib/etc
+         mzlib/class
+         mzlib/unit
+         mred)
 
 (provide game@)
 

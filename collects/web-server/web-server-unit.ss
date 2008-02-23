@@ -1,6 +1,6 @@
 #lang scheme/base
-(require (lib "tcp-sig.ss" "net")
-         (lib "unit.ss"))
+(require net/tcp-sig
+         mzlib/unit)
 (require "web-server-sig.ss"
          "web-config-sig.ss"
          "private/dispatch-server-unit.ss"

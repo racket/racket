@@ -1,7 +1,7 @@
 #lang scheme/base
-(require (lib "contract.ss")
-         (lib "plt-match.ss")
-         (lib "url.ss" "net")
+(require mzlib/contract
+         mzlib/plt-match
+         net/url
          "../private/request-structs.ss"
          "../private/util.ss"
          "dispatch.ss")

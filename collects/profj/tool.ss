@@ -1,15 +1,16 @@
 (module tool scheme/base
-  (require (lib "tool.ss" "drscheme") (lib "contract.ss")
-           (lib "mred.ss" "mred") (lib "framework.ss" "framework")
-           (lib "errortrace-lib.ss" "errortrace")
-           (prefix-in u: (lib "unit.ss")) 
+  (require drscheme/tool mzlib/contract
+           mred framework
+           errortrace/errortrace-lib
+           (prefix-in u: mzlib/unit)
            scheme/file
-           (lib "include-bitmap.ss" "mrlib") (lib "etc.ss")
-           (lib "class.ss")
-	   (lib "string-constant.ss" "string-constants")
-           (lib "Object.ss" "profj" "libs" "java" "lang") (lib "array.ss" "profj" "libs" "java" "lang")
-           (lib "String.ss" "profj" "libs" "java" "lang"))
-  (require "compile.ss" "parameters.ss" "parsers/lexer.ss" "parser.ss" 
+           mrlib/include-bitmap
+           mzlib/etc
+           mzlib/class
+	   string-constants
+           profj/libs/java/lang/Object profj/libs/java/lang/array
+           profj/libs/java/lang/String)
+  (require "compile.ss" "parameters.ss" "parsers/lexer.ss" "parser.ss"
            (except-in "ast.ss" for) "tester.scm"
            "display-java.ss")
 
@@ -744,11 +745,11 @@
 	    (if (syntax? s) (namespace-syntax-introduce s) s))
           
           (define/public (on-execute settings run-in-user-thread)
-            (dynamic-require '(lib "Object.ss" "profj" "libs" "java" "lang") #f)
-            (let ([obj-path ((current-module-name-resolver) '(lib "Object.ss" "profj" "libs" "java" "lang") #f #f)]
-                  [string-path ((current-module-name-resolver) '(lib "String.ss" "profj" "libs" "java" "lang") #f #f)]
-                  [class-path ((current-module-name-resolver) '(lib "class.ss") #f #f)]
-                  [mred-path ((current-module-name-resolver) '(lib "mred.ss" "mred") #f #f)]
+            (dynamic-require 'profj/libs/java/lang/Object #f)
+            (let ([obj-path ((current-module-name-resolver) 'profj/libs/java/lang/Object #f #f)]
+                  [string-path ((current-module-name-resolver) 'profj/libs/java/lang/String #f #f)]
+                  [class-path ((current-module-name-resolver) 'mzlib/class #f #f)]
+                  [mred-path ((current-module-name-resolver) 'mred #f #f)]
                   [n (current-namespace)]
                   [e (current-eventspace)])
               (test-ext? (profj-settings-allow-check? settings))
@@ -850,7 +851,7 @@
                      (namespace-require class-path)
                      (namespace-require mred-path)
                      (namespace-require '(prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java")))
-                     (namespace-require '(prefix c: (lib "contract.ss")))
+                     (namespace-require '(prefix c: mzlib/contract))
                      ))))))
           
           #;(define/public (render-value value settings port); port-write)

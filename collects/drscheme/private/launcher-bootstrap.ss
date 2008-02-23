@@ -1,6 +1,6 @@
 (module launcher-bootstrap mzscheme
-  (require (lib "string.ss")
-           (lib "file.ss"))
+  (require mzlib/string
+           mzlib/file)
   
   (define argv (current-command-line-arguments))
   ;; skip first six

@@ -1,9 +1,9 @@
 (module list "frtime.ss"
   
-  (require (lifted (lib "list.ss") sort
+  (require (lifted mzlib/list sort
                    fifth sixth seventh eighth
                    last-pair)
-           (rename (lib "list.ss") empty empty))
+           (rename mzlib/list empty empty))
 
   (define first car)
   (define rest cdr)

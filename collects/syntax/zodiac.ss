@@ -1,6 +1,6 @@
 
 (module zodiac mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
   (require "zodiac-sig.ss")
   (require "zodiac-unit.ss")

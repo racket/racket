@@ -42,7 +42,7 @@
    (37.7	-19.8	3.5)))
 
 ; first column is time data, second is result, third is error. to parse them out...
-(require (lib "math.ss"))
+(require mzlib/math)
 
 (define times
   (map car raw-data))
@@ -53,7 +53,7 @@
 
 (define experemental-data (map list->vector raw-data))
 
-(require (lib "plot.ss" "plot"))
+(require plot)
 
 (plot (mix (points experemental-data (symbol 'circle))
            (error-bars experemental-data))

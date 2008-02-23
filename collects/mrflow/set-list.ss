@@ -12,8 +12,8 @@
 
 (module set-list (lib "mrflow.ss" "mrflow")
   (require
-   (lib "list.ss") ; for foldr
-   (lib "etc.ss") ; for opt-lambda
+   mzlib/list ; for foldr
+   mzlib/etc ; for opt-lambda
    "set-exn.ss" ; no prefix so we can re-provide
    )
   

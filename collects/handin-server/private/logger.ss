@@ -1,5 +1,5 @@
 (module logger mzscheme
-  (require "config.ss" (lib "date.ss") (lib "port.ss"))
+  (require "config.ss" mzlib/date mzlib/port)
 
   (provide current-session)
   (define current-session (make-parameter #f))

@@ -4,7 +4,7 @@
                  namespace-anchor->empty-namespace
                  make-base-empty-namespace)
            scheme/class
-           (lib "etc.ss")
+           mzlib/etc
 	   (prefix wx: "private/kernel.ss")
 	   "private/wxtop.ss"
 	   "private/app.ss"
@@ -47,7 +47,7 @@
   (define (make-gui-empty-namespace)
     (let ([ns (make-base-empty-namespace)])
       (namespace-attach-module (namespace-anchor->empty-namespace anchor)
-                               'mred/mred
+                               'mred
                                ns)
       ns))
 
@@ -55,7 +55,7 @@
     (let ([ns (make-gui-empty-namespace)])
       (parameterize ([current-namespace ns])
         (namespace-require 'scheme/base)
-        (namespace-require 'mred/mred)
+        (namespace-require 'mred)
         (namespace-require 'scheme/class))
       ns))
 

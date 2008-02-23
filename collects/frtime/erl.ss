@@ -1,9 +1,9 @@
 (module erl mzscheme
   
-  (require (lib "list.ss")
-           (lib "thread.ss")
-           (lib "etc.ss")
-           (lib "dns.ss" "net")
+  (require mzlib/list
+           mzlib/thread
+           mzlib/etc
+           net/dns
            "mymatch.ss")
   
   (define (with-semaphore s thunk)

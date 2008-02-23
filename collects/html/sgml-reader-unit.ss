@@ -3,9 +3,9 @@
 ;; It needs to be abstracted back in.
 
 (module sgml-reader-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "list.ss")
-	   (lib "string.ss")
+  (require mzlib/unitsig
+	   mzlib/list
+	   mzlib/string
 	   "sgml-reader-sig.ss"
 	   (lib "sig.ss" "xml" "private"))
 

@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "unit.ss")
+(require mzlib/unit
          scheme/contract)
 (require "private/util.ss"
          "private/cache-table.ss"

@@ -35,13 +35,13 @@
 (module misc
   mzscheme
 
-  (require (lib "optional.ss" "srfi")
+  (require srfi/optional
 		   "predicate.ss"
 		   "selector.ss"
 		   "util.ss"
 		   (only "fold.ss" reduce-right)
 		   (rename "fold.ss" srfi-1:map map))
-  (require (lib "receive.ss" "srfi" "8"))
+  (require srfi/8/receive)
 
   (provide length+
 		   concatenate

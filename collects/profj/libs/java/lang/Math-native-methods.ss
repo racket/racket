@@ -1,6 +1,6 @@
 #cs
 (module Math-native-methods mzscheme
-  (require (lib "math.ss"))
+  (require mzlib/math)
 
   (define-syntax (define/provide stx)
     (syntax-case stx ()

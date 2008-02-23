@@ -1,6 +1,6 @@
 (module keys mzscheme
   (require "test-suite-utils.ss")
-  (require (lib "include.ss"))
+  (require mzlib/include)
   
   (test
    'keymap:aug-keymap%/get-table

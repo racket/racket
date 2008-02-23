@@ -1,8 +1,8 @@
 #lang scheme/base
-(require (lib "contract.ss")
-         (lib "serialize.ss")
-         (lib "plt-match.ss")
-         (lib "url.ss" "net"))
+(require mzlib/contract
+         mzlib/serialize
+         mzlib/plt-match
+         net/url)
 
 (define (bytes-ci=? b0 b1)
   (string-ci=? (bytes->string/utf-8 b0)

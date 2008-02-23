@@ -1,10 +1,10 @@
 
 (module framework mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
            (lib "mred-unit.ss" "mred")
            (lib "mred-sig.ss" "mred")
-           (lib "mred.ss" "mred")
-           (lib "class.ss")
+           mred
+           mzlib/class
            
            "preferences.ss"
            "test.ss"
@@ -14,7 +14,7 @@
            "framework-unit.ss"
            "private/sig.ss"
            
-           (lib "contract.ss"))
+           mzlib/contract)
   
   (provide-signature-elements
    (prefix application: framework:application-class^)

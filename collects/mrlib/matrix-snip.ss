@@ -1,7 +1,7 @@
 #lang scheme 
 
-(require (lib "class.ss")
-         (lib "string.ss")
+(require mzlib/class
+         mzlib/string
          (lib "cache-image-snip.ss" "mrlib"))
 
 (provide visible-matrix%

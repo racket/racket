@@ -1,5 +1,5 @@
 (module util mzscheme
-  (require (lib "list.ss"))
+  (require mzlib/list)
   
   (provide (all-defined))
 

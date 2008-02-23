@@ -2,9 +2,9 @@
 (module alpha mzscheme
   ;; Standard requires
   (require 
-   (lib "mred.ss" "mred")
-   (lib "gl.ss" "sgl")
-   (lib "gl-vectors.ss" "sgl")
+   mred
+   sgl/gl
+   sgl/gl-vectors
    "gl-frame.ss")
   
   ;; texture

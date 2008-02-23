@@ -1,13 +1,13 @@
 
 (module utilr mzscheme
-  (require (lib "unit.ss")
-	   (lib "class.ss")
+  (require mzlib/unit
+	   mzlib/class
 	   (lib "mred-sig.ss" "mred")
-	   (lib "qp-sig.ss" "net")
-	   (lib "base64-sig.ss" "net")
-	   (prefix unihead: (lib "unihead.ss" "net"))
-	   (lib "etc.ss")
-	   (lib "string.ss"))
+	   net/qp-sig
+	   net/base64-sig
+	   (prefix unihead: net/unihead)
+	   mzlib/etc
+	   mzlib/string)
 
   (require "sirmails.ss")
 

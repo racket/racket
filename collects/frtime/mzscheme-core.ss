@@ -1,12 +1,12 @@
 (module mzscheme-core mzscheme
   ;(require (all-except mzscheme provide module if require letrec null?)
-           ;(lib "list.ss"))
-  (require-for-syntax (lib "struct.ss" "frtime") (lib "list.ss"))
-  (require (lib "list.ss")
-           (lib "frp-core.ss" "frtime")
-           (only (lib "vector-lib.ss" "srfi" "43") vector-any)
-           (only (lib "lang-ext.ss" "frtime") lift new-cell switch ==> changes)
-           (only (lib "etc.ss") build-vector rec build-list opt-lambda identity))
+           ;mzlib/list)
+  (require-for-syntax frtime/struct mzlib/list)
+  (require mzlib/list
+           frtime/frp-core
+           (only srfi/43/vector-lib vector-any)
+           (only frtime/lang-ext lift new-cell switch ==> changes)
+           (only mzlib/etc build-vector rec build-list opt-lambda identity))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Fundamental Macros ;;

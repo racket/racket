@@ -5,7 +5,7 @@
 
   ;; This file is invoked from the installer, without using zo files -- so
   ;; using net/url.ss is extremely slow.  Instead, do things directly.
-  ;; (require (lib "url.ss" "net"))
+  ;; (require net/url)
   ;; (define (url->port url)
   ;;   (get-pure-port (string->url url)))
   (define (url->port url)

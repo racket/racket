@@ -1,8 +1,8 @@
 (module beginner-tests mzscheme
   (require "profj-testing.ss")
-  (require (lib "class.ss")
-           (lib "Object.ss" "profj" "libs" "java" "lang")
-           (lib "String.ss" "profj" "libs" "java" "lang"))
+  (require mzlib/class
+           profj/libs/java/lang/Object
+           profj/libs/java/lang/String)
   
   (prepare-for-tests "Beginner")
   

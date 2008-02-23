@@ -1,5 +1,5 @@
 (module turtles mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
 	   (lib "mred-sig.ss" "mred")
 	   (lib "mred-unit.ss" "mred")
 	   "turtle-sig.ss"

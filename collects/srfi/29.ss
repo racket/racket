@@ -1,4 +1,4 @@
 ;; module loader for SRFI-29
 (module |29| mzscheme
-  (require (lib "localization.ss" "srfi" "29"))
-  (provide (all-from (lib "localization.ss" "srfi" "29"))))
+  (require srfi/29/localization)
+  (provide (all-from srfi/29/localization)))

@@ -1,9 +1,9 @@
 
 #lang scheme/unit
-  (require (lib "class.ss")
+  (require mzlib/class
            "drsig.ss"
-           (lib "mred.ss" "mred")
-           (lib "etc.ss"))
+           mred
+           mzlib/etc)
   
   
   

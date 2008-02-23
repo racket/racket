@@ -2,10 +2,10 @@
 (Section 'plt-match)
 
 
-(require (lib "plt-match.ss"))
+(require mzlib/plt-match)
 ;(require "../plt-match.ss")
-(require (lib "list.ss"))
-(require (lib "pregexp.ss"))
+(require mzlib/list)
+(require mzlib/pregexp)
 
 (define-syntax test-mac
   (syntax-rules ()

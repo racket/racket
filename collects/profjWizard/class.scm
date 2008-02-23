@@ -1,10 +1,10 @@
 (module class mzscheme 
   (require "data-defs.scm"
-           (lib "contract.ss")
-           (lib "etc.ss") 
-           (lib "list.ss")
-           (lib "string.ss" "srfi" "13")
-           (only (lib "1.ss" "srfi") zip))
+           mzlib/contract
+           mzlib/etc 
+           mzlib/list
+           srfi/13/string
+           (only srfi/1 zip))
   
   ;; ------------------------------------------------------------------------
   (provide/contract

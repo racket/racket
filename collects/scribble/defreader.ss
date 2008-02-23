@@ -1,7 +1,7 @@
 
 (module defreader mzscheme
   (require (prefix scribble: "reader.ss")
-           (lib "kw.ss"))
+           mzlib/kw)
 
   (provide (rename *read read)
            (rename *read-syntax read-syntax))

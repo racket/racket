@@ -1,7 +1,7 @@
 (module macro-unwind scheme/base
-  (require (prefix-in kernel: (lib "kerncase.ss" "syntax"))
-           (lib "etc.ss")
-           (lib "contract.ss")
+  (require (prefix-in kernel: syntax/kerncase)
+           mzlib/etc
+           mzlib/contract
 	   "model-settings.ss"
            "shared.ss"
            (for-syntax scheme/base))

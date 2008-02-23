@@ -1,16 +1,16 @@
 
 (module base mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
   (require "../sig.ss")
   (require "sig.ss")
 
-  (require (lib "zodiac-sig.ss" "syntax")
-	   (lib "zodiac-unit.ss" "syntax"))
+  (require syntax/zodiac-sig
+	   syntax/zodiac-unit)
 
-  (require (lib "file-sig.ss" "dynext")
-	   (lib "link-sig.ss" "dynext")
-	   (lib "compile-sig.ss" "dynext"))
+  (require dynext/file-sig
+	   dynext/link-sig
+	   dynext/compile-sig)
 
   (require "zlayer.ss"
 	   "library.ss"

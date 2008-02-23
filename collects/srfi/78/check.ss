@@ -1,8 +1,8 @@
 (module check mzscheme
-  (require (lib "include.ss")
-	   (lib "23.ss" "srfi")
-	   (lib "42.ss" "srfi")
-	   (lib "pretty.ss"))
+  (require mzlib/include
+	   srfi/23
+	   srfi/42
+	   mzlib/pretty)
 
   (include "check-reference.scm")
   

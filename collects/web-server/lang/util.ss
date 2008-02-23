@@ -1,8 +1,8 @@
 #lang scheme/base
 (require (for-template scheme/base)
-         (lib "kerncase.ss" "syntax")
-         (lib "pretty.ss")
-         (lib "list.ss"))
+         syntax/kerncase
+         mzlib/pretty
+         mzlib/list)
 (provide (except-out (all-defined-out) template))
 
 (define transformer? (make-parameter #f))

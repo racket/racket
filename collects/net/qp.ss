@@ -27,7 +27,7 @@
 ;; Commentary:
 
 (module qp mzscheme
-  (require (lib "unit.ss") "qp-sig.ss" "qp-unit.ss")
+  (require mzlib/unit "qp-sig.ss" "qp-unit.ss")
 
   (define-values/invoke-unit/infer qp@)
 

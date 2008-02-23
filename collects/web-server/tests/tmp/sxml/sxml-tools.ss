@@ -1,6 +1,6 @@
 ; Module header is generated automatically
 #cs(module sxml-tools mzscheme
-(require (lib "defmacro.ss"))
+(require mzlib/defmacro)
 (require (lib "string.ss" "srfi/13"))
 (require (lib "ssax.ss" "web-server/tests/tmp/ssax"))
 (require "sxpathlib.ss")

@@ -1,5 +1,5 @@
 (module imap mzscheme
-  (require (lib "unit.ss") (lib "contract.ss") "imap-sig.ss" "imap-unit.ss")
+  (require mzlib/unit mzlib/contract "imap-sig.ss" "imap-unit.ss")
 
   (define-values/invoke-unit/infer imap@)
 

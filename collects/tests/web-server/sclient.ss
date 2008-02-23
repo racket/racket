@@ -3,7 +3,7 @@
 ; by gaurav, peter, and gang.
 ; The TCP/IP stuff isn't as finely controlled, so it's my fault if it stinks.
 (module sclient mzscheme
-  (require (lib "etc.ss"))
+  (require mzlib/etc)
   
   ; old-state = 'nothing | 'waiting | 'reading | 'writing
   

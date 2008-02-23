@@ -1,10 +1,10 @@
 (module fred frtime
   (require "mixin-macros.ss"
            "aux-mixin-macros.ss"
-           (lib "class.ss")
-           (lib "string.ss")
-           (all-except (lib "mred.ss" "mred") send-event)
-           (lib "framework.ss" "framework"))
+           mzlib/class
+           mzlib/string
+           (all-except mred send-event)
+           framework)
   
   
   
@@ -269,7 +269,7 @@
   
   
   (provide (all-defined)
-           (all-from (lib "class.ss"))
+           (all-from mzlib/class)
            (all-from "mixin-macros.ss")
            (all-from "aux-mixin-macros.ss"))) 
 

@@ -4,7 +4,7 @@
 	   "port.ss")
   (provide compile-file)
   
-  ;; (require (lib "src2src.ss" "compiler"))
+  ;; (require compiler/src2src)
 
   (define compile-file
     (case-lambda

@@ -1,6 +1,6 @@
 (module build-plt mzscheme
   (require (lib "pack.ss" "setup")
-           (lib "date.ss")
+           mzlib/date
            "suite.ss")
   
   (define web-root (build-path "collects" "web-server" "default-web-root"))

@@ -1,6 +1,6 @@
 (load-relative "../loadtest.ss")
 (Section 'match)
-(require  (lib "match.ss"))
+(require  mzlib/match)
 ;(require  "../match.ss")
 
 (define-syntax test-mac

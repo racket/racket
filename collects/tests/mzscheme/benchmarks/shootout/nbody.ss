@@ -16,7 +16,7 @@ Correct output N = 1000 is
 -0.169087605
 |#
 (module nbody mzscheme
-  (require (only (lib "string.ss") real->decimal-string))
+  (require (only mzlib/string real->decimal-string))
 
   ;; ------------------------------
   ;; define planetary masses, initial positions & velocity

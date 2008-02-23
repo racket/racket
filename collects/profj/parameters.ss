@@ -1,6 +1,6 @@
 (module parameters mzscheme
   
-  (require (lib "class.ss"))
+  (require mzlib/class)
   
   (provide (all-defined))
   

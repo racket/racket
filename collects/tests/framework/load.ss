@@ -7,12 +7,10 @@
     (test
      (string->symbol file)
      void?
-     `(let ([mred-name 
-             ((current-module-name-resolver) '(lib "mred.ss" "mred") #f #f)]
+     `(let ([mred-name ((current-module-name-resolver) 'mred #f #f)]
             [orig-namespace (current-namespace)])
         (parameterize ([current-namespace (make-namespace)])
-          (namespace-attach-module
-           orig-namespace           mred-name)
+          (namespace-attach-module orig-namespace mred-name)
           (eval '(require (lib ,file "framework")))
           (with-handlers ([(lambda (x) #t)
                            (lambda (x)
@@ -26,7 +24,7 @@
   (test/load "gui-utils.ss" 'gui-utils:next-untitled-name)
   (test/load "test.ss" 'test:run-interval)
   (test/load "splash.ss" 'start-splash)
-  (test/load "framework-sig.ss" '(begin (eval '(require (lib "unit.ss")))
+  (test/load "framework-sig.ss" '(begin (eval '(require mzlib/unit))
                                         (eval '(define-signature dummy-signature^ ((open framework^))))))
   (test/load "framework-unit.ss" 'framework@)
   (test/load "framework.ss" '(list test:button-push
@@ -34,14 +32,14 @@
 				   frame:basic-mixin))
   
   ;; ensures that all of the names in the signature are provided
-  ;; by (require (lib "framework.ss" "framework"))
+  ;; by (require framework)
   (test/load 
    "framework.ss"
    ;; these extra evals let me submit multiple, independent top-level
    ;; expressions in the newly created namespace.
-   '(begin (eval '(require (lib "unit.ss")))
+   '(begin (eval '(require mzlib/unit))
            (eval '(require-for-syntax mzscheme))
-           (eval '(require-for-syntax (lib "unit-exptime.ss")))
+           (eval '(require-for-syntax mzlib/unit-exptime))
            (eval '(define-syntax (signature->symbols stx)
                     (syntax-case stx ()
                       [(_ sig)

@@ -37,9 +37,9 @@
 
   (require
    (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-   (all-except (lib "misc.ss" "srfi" "1") append! reverse!)
-   (rename (lib "misc.ss" "srfi" "1") s:append! append!)
-   (rename (lib "misc.ss" "srfi" "1") s:reverse! reverse!))
+   (all-except srfi/1/misc append! reverse!)
+   (rename srfi/1/misc s:append! append!)
+   (rename srfi/1/misc s:reverse! reverse!))
 
   (provide misc-tests)
 

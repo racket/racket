@@ -1,6 +1,6 @@
 (module distributions mzscheme
   
-  (require (lib "math.ss")
+  (require mzlib/math
            )
   
   (define RANDOM-GRAIN (sub1 (expt 2 31)))  

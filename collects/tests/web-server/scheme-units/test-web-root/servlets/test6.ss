@@ -1,7 +1,7 @@
 ;; Non-incremental servlet with arguments on the URL, in text/plain, no URL
 ;; path.
 (module test6 mzscheme
-  (require (lib "servlet.ss" "web-server")
+  (require web-server/servlet
            )
 
   (provide start timeout interface-version)

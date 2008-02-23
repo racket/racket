@@ -1,4 +1,3 @@
-(require (lib "plot.ss" "plot"))
+(require plot)
 
-(plot 
- (line identity (color 'red)))
+(plot (line identity (color 'red)))

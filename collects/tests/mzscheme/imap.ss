@@ -11,8 +11,8 @@
 (Section 'imap)
 
 (require (lib "mzssl.ss" "openssl")
-	 (lib "imap.ss" "net")
-	 (lib "etc.ss"))
+	 net/imap
+	 mzlib/etc)
 
 (define (test-connect)
   (let ([c (ssl-make-client-context)])

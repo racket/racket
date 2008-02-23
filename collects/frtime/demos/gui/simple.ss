@@ -1,8 +1,8 @@
 (module simple frtime
   
   (require "fred.ss"
-           (lib "class.ss")
-           (rename (lib "mred.ss" "mred") frame% frame%))
+           mzlib/class
+           (rename mred frame% frame%))
   
   (define widget (lambda (x) x))
   (define value-b (lambda (x) (send x get-value-b)))
@@ -50,7 +50,7 @@
   
   (provide (all-defined)
            (all-from "fred.ss")
-           (all-from (lib "class.ss")))) 
+           (all-from mzlib/class))) 
             
             
             

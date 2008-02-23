@@ -1,7 +1,7 @@
 
 (module modcollapse mzscheme
-  (require (lib "list.ss")
-           (lib "contract.ss")
+  (require mzlib/list
+           mzlib/contract
            "private/modhelp.ss")
 
   (define (collapse-module-path s relto-mp)

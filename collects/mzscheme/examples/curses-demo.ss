@@ -4,7 +4,7 @@
 
 ; To get append-extension-suffix, which adds .so or .ddl as
 ; approrpiate for the current platform:
-(require (lib "file.ss" "dynext"))
+(require dynext/file)
 
 ; Load the curses extension
 (load-extension (append-extension-suffix "curses"))

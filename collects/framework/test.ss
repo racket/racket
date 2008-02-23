@@ -1,9 +1,9 @@
 
 (module test mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "etc.ss")
-           (lib "contract.ss"))
+  (require mred
+           mzlib/class
+           mzlib/etc
+           mzlib/contract)
   
   (define-syntax (provide/contract/docs stx)
     (syntax-case stx ()

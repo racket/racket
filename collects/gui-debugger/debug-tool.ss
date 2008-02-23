@@ -1,22 +1,22 @@
 (module debug-tool mzscheme
-  (require (lib "etc.ss")
-           (lib "list.ss")
-           (lib "string.ss")
-           ;(lib "math.ss")
-           (lib "class.ss")
-           (lib "unit.ss")
-           (lib "contract.ss")
-           (lib "mred.ss" "mred")
-           (lib "match.ss")
+  (require mzlib/etc
+           mzlib/list
+           mzlib/string
+           ;mzlib/math
+           mzlib/class
+           mzlib/unit
+           mzlib/contract
+           mred
+           mzlib/match
            (prefix drscheme:arrow: (lib "arrow.ss" "drscheme"))
            (lib "tool.ss" "drscheme")
            "marks.ss"
-           (lib "boundmap.ss" "syntax")
+           syntax/boundmap
            (lib "bitmap-label.ss" "mrlib")
            "annotator.ss"
            "load-sandbox.ss"
-           (lib "framework.ss" "framework")
-           (lib "string-constant.ss" "string-constants")
+           framework
+           string-constants
            (lib "debugger-language-interface.ss" "lang"))
   
   (provide tool@)

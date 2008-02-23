@@ -3,11 +3,11 @@
 ;; (c) 1997-2001 PLT
 
 (module vm2c mzscheme
-  (require (lib "unit.ss")
-	   (lib "list.ss"))
+  (require mzlib/unit
+	   mzlib/list)
 
-  (require (lib "zodiac-sig.ss" "syntax")
-	   (lib "primitives.ss" "syntax"))
+  (require syntax/zodiac-sig
+	   syntax/primitives)
 
   (require "sig.ss")
   (require "../sig.ss")

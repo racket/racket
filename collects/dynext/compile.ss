@@ -1,6 +1,6 @@
 
 (module compile mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
   (require "compile-sig.ss")
   (require "compile-unit.ss")

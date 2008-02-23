@@ -1,7 +1,7 @@
 
-(module step (lib "slideshow.ss" "slideshow")
-  (require (lib "list.ss")
-	   (lib "etc.ss"))
+(module step slideshow/slideshow
+  (require mzlib/list
+	   mzlib/etc)
 
   (provide with-steps with-steps~)
   

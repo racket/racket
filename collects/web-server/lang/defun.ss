@@ -1,8 +1,8 @@
 #lang scheme/base
 (require (for-template scheme/base)
-         (lib "kerncase.ss" "syntax")
-         (lib "list.ss")
-         (lib "plt-match.ss")
+         syntax/kerncase
+         mzlib/list
+         mzlib/plt-match
          "util.ss"
          "freevars.ss"
          "../private/closure.ss")

@@ -1,10 +1,10 @@
 (load-relative "../loadtest.ss")
 (Section 'match-performance)
 
-(require (lib "pretty.ss"))
-(require-for-syntax (lib "pretty.ss"))
-(require (lib "include.ss"))
-(require (lib "plt-match.ss"))
+(require mzlib/pretty)
+(require-for-syntax mzlib/pretty)
+(require mzlib/include)
+(require mzlib/plt-match)
 
 (include "match-compile-perf.scm")
 (include "drom-algol-structs.scm")

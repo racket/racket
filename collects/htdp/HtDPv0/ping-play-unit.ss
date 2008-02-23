@@ -1,7 +1,7 @@
 #cs(module ping-play-unit mzscheme
      (require "pingp-sig.ss"
 	      (lib "posn.ss" "lang")
-              (lib "unitsig.ss"))
+              mzlib/unitsig)
      (provide ping-play-U)
      
      (define ping-play-U

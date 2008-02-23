@@ -3,5 +3,5 @@
 ; The servlet accepts requests only from the *same machine* as the Web server
 ; for security purposes.
 #lang scheme/base
-(require (lib "configure.ss" "web-server" "private"))
-(provide (all-from-out (lib "configure.ss" "web-server" "private")))
+(require web-server/private/configure)
+(provide (all-from-out web-server/private/configure))

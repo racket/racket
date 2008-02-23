@@ -1,9 +1,9 @@
 (module code mzscheme
   (require "mrpict.ss"
-	   (lib "class.ss")
-	   (lib "list.ss")
-           (lib "mred.ss" "mred")
-	   (lib "unit.ss"))
+	   mzlib/class
+	   mzlib/list
+           mred
+	   mzlib/unit)
 
   (provide define-code code^ code-params^ code@)
 

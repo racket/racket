@@ -3,12 +3,12 @@
 ; Originally written by Johnathan Franklin
 
 (module graphics-posn-less-unit mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
 	   (lib "mred-sig.ss" "mred")
-           (lib "mred.ss" "mred")
-	   (lib "class.ss")
-	   (lib "class100.ss")
-	   (lib "etc.ss")
+           mred
+	   mzlib/class
+	   mzlib/class100
+	   mzlib/etc
 	   "graphics-sig.ss")
   (provide graphics-posn-less@)
 

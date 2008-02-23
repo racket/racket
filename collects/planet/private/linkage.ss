@@ -2,8 +2,8 @@
   
   (require "planet-shared.ss"
            "../config.ss"
-           (lib "file.ss")
-           (lib "match.ss"))
+           mzlib/file
+           mzlib/match)
 
   (provide get/linkage
            get-linkage 

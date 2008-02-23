@@ -1,6 +1,6 @@
 
 (module sirmails mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
   
   (provide sirmail:exit^
            sirmail:environment^)

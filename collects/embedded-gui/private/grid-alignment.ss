@@ -7,11 +7,11 @@
 #;(module grid-alignment mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "mred.ss" "mred")
-   (lib "etc.ss")
-   (lib "list.ss")
-   (lib "match.ss")
+   mzlib/class
+   mred
+   mzlib/etc
+   mzlib/list
+   mzlib/match
    (prefix a: "alignment.ss")
    (lib "click-forwarding-editor.ss" "mrlib")
    

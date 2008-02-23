@@ -2,8 +2,8 @@
 
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
 
-  (require (lib "list.ss" "srfi" "1")
-           (prefix h: (lib "69.ss" "srfi")))
+  (require srfi/1/list
+           (prefix h: srfi/69))
 
   (provide hash-tests)
   

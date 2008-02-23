@@ -563,7 +563,7 @@
       r))
 
   ;; --------------------------------------------------------------------------
-  ;; (lib "list.ss") functionality
+  ;; mzlib/list functionality
 
   (define* (rest x) (~cdr x))
   (define* (first   x) (~car    x))
@@ -578,7 +578,7 @@
   (define* empty null)
   (define* (empty? x) (null? (! x)))
 
-  (require (rename (lib "list.ss") !last-pair last-pair))
+  (require (rename mzlib/list !last-pair last-pair))
   (define* (last-pair list) (!last-pair (!list list)))
 
   (define (do-remove name item list =)
@@ -641,15 +641,15 @@
                  (if (! (!*app pred x)) (cons x xs) xs))]
               [else (error 'filter "not a proper list: ~e" list)]))))
 
-  (require (rename (lib "list.ss") !sort sort))
+  (require (rename mzlib/list !sort sort))
   (define* (sort list less?)
     (let ([less? (! less?)])
       (!sort (!list list) (lambda (x y) (! (!*app less? x y))))))
 
   ;; --------------------------------------------------------------------------
-  ;; (lib "etc.ss") functionality
+  ;; mzlib/etc functionality
 
-  (require (only (lib "etc.ss") boolean=? symbol=?))
+  (require (only mzlib/etc boolean=? symbol=?))
   (define* true  #t)
   (define* false #f)
 

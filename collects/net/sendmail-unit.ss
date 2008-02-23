@@ -1,6 +1,6 @@
 #lang scheme/unit
 
-  (require (lib "process.ss") "sendmail-sig.ss")
+  (require mzlib/process "sendmail-sig.ss")
 
   (import)
   (export sendmail^)

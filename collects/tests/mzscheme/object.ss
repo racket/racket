@@ -1129,7 +1129,7 @@
   (define class-cert-%%-client (gensym 'class-cert-%%-client))
   (teval
    `(module ,class-cert-%%-init mzscheme
-      (require (lib "class.ss"))
+      (require mzlib/class)
       (define-syntax (init-private stx)
 	(syntax-case stx ()
 	  [(_ name value)
@@ -1143,7 +1143,7 @@
   ;; Shouldn't fail with a cert erorr:
   (teval
    `(module ,class-cert-%%-client mzscheme
-      (require (lib "class.ss")
+      (require mzlib/class
 	       ',class-cert-%%-init)
       (define cert-error%
 	(class object%

@@ -1,8 +1,8 @@
 (module aux-class mzscheme 
-  (require (lib "class.ss"))
+  (require mzlib/class)
   
   (provide 
-   (all-from (lib "class.ss")) 
+   (all-from mzlib/class) 
    define/abstract ; (define/abstract <identifier>) :: <definition> 
    )
   

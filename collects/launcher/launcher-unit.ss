@@ -4,8 +4,8 @@
 (require scheme/path
          scheme/file
 
-         (lib "embed.ss" "compiler")
-         (lib "dirs.ss" "setup")
+         compiler/embed
+         setup/dirs
          (lib "variant.ss" "setup")
 
          "launcher-sig.ss"

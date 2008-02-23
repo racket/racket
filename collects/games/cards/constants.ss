@@ -1,7 +1,7 @@
 
 (module constants mzscheme
-  (require (lib "class.ss")
-	   (lib "mred.ss" "mred"))
+  (require mzlib/class
+	   mred)
 
   (provide ANIMATION-STEPS
 	   ANIMATION-TIME

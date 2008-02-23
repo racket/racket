@@ -1,7 +1,7 @@
 (module match-error mzscheme
   (provide (all-defined))
   
-  (require (lib "pregexp.ss"))
+  (require mzlib/pregexp)
   
   (define-struct (exn:misc:match exn:fail) (value))
   

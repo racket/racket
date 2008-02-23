@@ -1,8 +1,8 @@
 
 #lang scheme/unit
 
-  (require (lib "etc.ss")
-	   (lib "list.ss"))
+  (require mzlib/etc
+	   mzlib/list)
 
   (require "texpict-sig.ss"
 	   "common-sig.ss")

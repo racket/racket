@@ -1,7 +1,7 @@
 (module Object-composite mzscheme
   
-  (require (lib "class.ss")
-           (prefix c: (lib "contract.ss"))
+  (require mzlib/class
+           (prefix c: mzlib/contract)
            (lib "errortrace-lib.ss" "errortrace")
            (lib "Comparable.ss" "profj" "libs" "java" "lang")
            (lib "Serializable.ss" "profj" "libs" "java" "io"))

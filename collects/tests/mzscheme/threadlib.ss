@@ -3,7 +3,7 @@
 
 (Section 'threadlib)
 
-(require (lib "thread.ss"))
+(require mzlib/thread)
 
 (define sema (make-semaphore))
 (define sema2 (make-semaphore))

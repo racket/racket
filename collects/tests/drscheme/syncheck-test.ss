@@ -3,12 +3,12 @@
   
   (require "drscheme-test-util.ss"
            (lib "gui.ss" "tests" "utils")
-           (lib "etc.ss")
-           (lib "class.ss")
-           (lib "list.ss")
-           (lib "file.ss")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
+           mzlib/etc
+           mzlib/class
+           mzlib/list
+           mzlib/file
+           mred
+           framework
            (lib "text-string-style-desc.ss" "mrlib"))
   
   (provide run-test)

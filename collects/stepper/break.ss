@@ -1,6 +1,6 @@
 (module break mzscheme
 
-  (require (lib "contract.ss"))
+  (require mzlib/contract)
 
   (provide current-breakpoint-handler)
 

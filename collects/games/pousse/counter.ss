@@ -7,7 +7,7 @@
 (module counter mzscheme
   (require "board.ss"
            "utils.ss"
-           (lib "unitsig.ss"))
+           mzlib/unitsig)
   
   (provide params^
            counter@)

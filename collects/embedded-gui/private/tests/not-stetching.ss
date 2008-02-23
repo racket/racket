@@ -2,9 +2,9 @@
   
   (require
    (lib "debug.ss" "mike-lib")
-   (lib "class.ss")
-   (lib "etc.ss")
-   (lib "mred.ss" "mred")
+   mzlib/class
+   mzlib/etc
+   mred
    (lib "aligned-pasteboard.ss" "embedded-gui")
    (lib "stretchable-editor-snip.ss" "embedded-gui")
    (lib "verthoriz-alignment.ss" "embedded-gui"))

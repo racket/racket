@@ -1,5 +1,5 @@
 (module tar mzscheme
-  (require (lib "deflate.ss") (lib "file.ss") (lib "kw.ss"))
+  (require mzlib/deflate mzlib/file mzlib/kw)
 
   (define tar-block-size 512)
   (define tar-name-length 100)

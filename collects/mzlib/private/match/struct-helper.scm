@@ -1,5 +1,5 @@
 (module struct-helper mzscheme
-  (require (lib "list.ss"))
+  (require mzlib/list)
   (require-for-template mzscheme)
   (provide (all-defined))
   

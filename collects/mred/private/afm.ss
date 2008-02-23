@@ -1,6 +1,6 @@
 (module afm mzscheme
-  (require (lib "file.ss")
-	   (lib "list.ss"))
+  (require mzlib/file
+	   mzlib/list)
 
   (provide (protect afm-draw-text
 		    afm-get-text-extent

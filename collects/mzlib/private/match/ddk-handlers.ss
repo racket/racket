@@ -7,9 +7,9 @@
            "coupling-and-binding.scm"
            "render-helpers.ss"
            "render-sigs.ss"
-           (lib "stx.ss" "syntax")
-           (lib "unit.ss")
-           (lib "trace.ss"))
+           syntax/stx
+           mzlib/unit
+           mzlib/trace)
   
   (require-for-template mzscheme
 			"test-no-order.ss")

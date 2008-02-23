@@ -1,11 +1,11 @@
 (module module-lang-test mzscheme
   (require "drscheme-test-util.ss"
-           (lib "class.ss")
-           (lib "file.ss")
-           (lib "etc.ss")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
-           (prefix fw: (lib "framework.ss" "framework")))
+           mzlib/class
+           mzlib/file
+           mzlib/etc
+           mred
+           framework
+           (prefix fw: framework))
   
   (provide run-test)
   

@@ -7,8 +7,8 @@
 ;; this is mostly a wrapper module.
 
 (module pregexp mzscheme
-  (require (lib "string.ss")
-	   (lib "kw.ss"))
+  (require mzlib/string
+	   mzlib/kw)
   (provide pregexp
 	   pregexp-match-positions
 	   pregexp-match

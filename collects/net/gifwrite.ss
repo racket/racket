@@ -15,7 +15,7 @@
 |#
 
 (module gifwrite mzscheme
-  (require (lib "contract.ss"))
+  (require mzlib/contract)
 
   (define LZ_MAX_CODE 4095)
 

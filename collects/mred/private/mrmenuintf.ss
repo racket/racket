@@ -1,5 +1,5 @@
 (module mrmenuintf mzscheme
-  (require (lib "class.ss"))
+  (require mzlib/class)
 
   (provide menu-item<%>
 	   labelled-menu-item<%>

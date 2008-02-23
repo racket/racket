@@ -1,11 +1,11 @@
 (module gui mzscheme
   (require (lib "gl-board.ss" "games" "gl-board-game")
-           (lib "class.ss")
-	   (lib "mred.ss" "mred")
-           (lib "file.ss")
-           (lib "gl-vectors.ss" "sgl")
-           (prefix gl- (lib "sgl.ss" "sgl"))
-	   (lib "unitsig.ss")
+           mzlib/class
+	   mred
+           mzlib/file
+           sgl/gl-vectors
+           sgl
+	   mzlib/unitsig
 	   "sig.ss")
 
   (provide gui-unit)

@@ -1,7 +1,7 @@
 ;; module loader for SRFI-19
 (module |19| mzscheme
-  (require (lib "time.ss" "srfi" "19"))
-  (provide (all-from-except (lib "time.ss" "srfi" "19")
+  (require srfi/19/time)
+  (provide (all-from-except srfi/19/time
                             make-srfi:date srfi:date?
                             srfi:date-second 
                             srfi:date-minute 

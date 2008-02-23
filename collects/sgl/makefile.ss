@@ -1,6 +1,6 @@
 (module makefile mzscheme
-  (require (lib "make.ss" "make")
-	   (lib "dirs.ss" "setup")
+  (require make
+	   setup/dirs
            "make-gl-info.ss")
 
   (provide pre-installer)

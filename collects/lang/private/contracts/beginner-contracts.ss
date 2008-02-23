@@ -3,7 +3,7 @@
   (require "contracts-helpers.ss"
            (lib "posn.ss" "lang")
            (lib "teach.ss" "lang" "private")
-           (lib "list.ss"))  
+           mzlib/list)  
   
   (provide (all-defined))
   

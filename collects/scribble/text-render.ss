@@ -1,7 +1,7 @@
 
 (module text-render mzscheme
   (require "struct.ss"
-           (lib "class.ss"))
+           mzlib/class)
   (provide render-mixin)
 
   (define (render-mixin %)

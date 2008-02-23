@@ -1,8 +1,8 @@
 (module dfa (lib "mrflow.ss" "mrflow")
-  (require (lib "match.ss")
-           (lib "pretty.ss")
-           (lib "etc.ss")
-           (prefix list: (lib "list.ss"))
+  (require mzlib/match
+           mzlib/pretty
+           mzlib/etc
+           (prefix list: mzlib/list)
            (prefix cst: "constants.ss")
            
            "set-hash.ss"
@@ -10,7 +10,7 @@
            "util.ss"
            "env.ss"
            
-           (lib "class.ss"))
+           mzlib/class)
   
   (provide
    (struct dfa (stnum->state))

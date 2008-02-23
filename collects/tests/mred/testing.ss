@@ -1,7 +1,7 @@
 
 ;; MrEd automatic testing basic functions and macros
 
-(require (lib "class.ss"))
+(require mzlib/class)
 
 (define SECTION #t)
 

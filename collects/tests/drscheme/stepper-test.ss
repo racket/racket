@@ -1,11 +1,11 @@
 
 (module stepper-test mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
+  (require mred
+           mzlib/class
            "drscheme-test-util.ss"
            (lib "gui.ss" "tests" "utils")
-           (lib "framework.ss" "framework")
-           (lib "pretty.ss"))
+           framework
+           mzlib/pretty)
   
   (provide run-test)
   

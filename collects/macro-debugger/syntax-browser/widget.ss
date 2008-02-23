@@ -1,7 +1,7 @@
 
 #lang mzscheme
 (require scheme/class
-         mred/mred
+         mred
          framework/framework
          scheme/list
          scheme/match

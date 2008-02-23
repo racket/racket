@@ -1,14 +1,14 @@
 
 (module collection-unit mzscheme
-  (require (lib "unit.ss")
-	   (lib "list.ss")
-	   (lib "file.ss"))
+  (require mzlib/unit
+	   mzlib/list
+	   mzlib/file)
 
   (require "collection-sig.ss")
   (require "make-sig.ss")
 
-  (require (lib "sig.ss" "compiler")
-	   (lib "file-sig.ss" "dynext"))
+  (require compiler/sig
+	   dynext/file-sig)
 
   (provide make:collection@)
 

@@ -1,7 +1,7 @@
 
 (load-relative "testing.ss")
 
-(require (lib "process.ss"))
+(require mzlib/process)
 
 (Section 'subprocess)
 

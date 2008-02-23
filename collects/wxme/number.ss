@@ -1,6 +1,6 @@
 
 (module number mzscheme
-  (require (lib "class.ss")
+  (require mzlib/class
            "wxme.ss")
 
   (provide reader)

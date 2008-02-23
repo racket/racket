@@ -1,6 +1,6 @@
 #lang scheme/unit
 
-  (require (lib "list.ss") (lib "process.ss") "dns-sig.ss"
+  (require mzlib/list mzlib/process "dns-sig.ss"
            scheme/udp)
 
   (import)

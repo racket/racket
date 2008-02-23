@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(require string-constants/string-constant)
+(require string-constants)
 (define name "Lazy Scheme")
 (define scribblings '(("lazy.scrbl")))
 (define drscheme-language-modules '(("lazy.ss" "lazy")))

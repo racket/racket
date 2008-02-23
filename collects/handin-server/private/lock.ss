@@ -1,5 +1,5 @@
 (module lock mzscheme
-  (require (lib "list.ss"))
+  (require mzlib/list)
 
   (provide wait-for-lock)
 

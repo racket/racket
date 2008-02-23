@@ -1,5 +1,5 @@
 (module base64 mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
            "base64-sig.ss"
            "base64-unit.ss")
 

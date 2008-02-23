@@ -3,7 +3,7 @@
 
 (Section 'etc)
 
-(require (lib "etc.ss"))
+(require mzlib/etc)
 
 (let () 
   (begin-with-definitions 

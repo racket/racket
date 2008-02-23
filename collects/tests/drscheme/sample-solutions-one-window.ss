@@ -2,12 +2,12 @@
 (module sample-solutions-one-window mzscheme
   (require "drscheme-test-util.ss"
            (lib "gui.ss" "tests" "utils")
-           (lib "class.ss")
-           (lib "list.ss")
-           (lib "file.ss")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
-           (prefix fw: (lib "framework.ss" "framework")))
+           mzlib/class
+           mzlib/list
+           mzlib/file
+           mred
+           framework
+           (prefix fw: framework))
   
   (provide run-test)
   

@@ -22,10 +22,10 @@ is being reset.
 (module program-editor mzscheme
   
   (require
-   (lib "mred.ss" "mred")
-   (lib "etc.ss")
-   (lib "class.ss")
-   (lib "framework.ss" "framework")
+   mred
+   mzlib/etc
+   mzlib/class
+   framework
    "snip-lib.ss")
   
   (provide program-editor-mixin

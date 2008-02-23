@@ -1,10 +1,10 @@
 
 (module etc "frtime.ss"
   (require (lib "main-collects.ss" "setup"))
-  (require-for-syntax (lib "kerncase.ss" "syntax")
-		      (lib "stx.ss" "syntax")
-		      (lib "name.ss" "syntax")
-		      (lib "context.ss" "syntax")
+  (require-for-syntax syntax/kerncase
+		      syntax/stx
+		      syntax/name
+		      syntax/context
 		      (lib "main-collects.ss" "setup")
 		      (lib "stxset.ss" "mzlib" "private"))
 

@@ -1,8 +1,8 @@
 
 (module file-unit mzscheme
-  (require (lib "unit.ss")
-           (lib "include.ss")
-           (lib "string.ss"))
+  (require mzlib/unit
+           mzlib/include
+           mzlib/string)
 
   (require "file-sig.ss")
 

@@ -13,7 +13,7 @@
 ;; Lesser General Public License for more details.
  
 (module sgl mzscheme
-  (require (lib "etc.ss")
+  (require mzlib/etc
            "gl-vectors.ss"
            "gl.ss")
   

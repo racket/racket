@@ -3,7 +3,7 @@
 
 (Section 'date)
 
-(require (lib "date.ss"))
+(require mzlib/date)
 
 (define (test-find s m h d mo y)
   (let* ([secs (find-seconds s m h d mo y)]

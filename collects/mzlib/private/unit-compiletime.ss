@@ -1,7 +1,7 @@
 (module unit-compiletime mzscheme
-  (require-for-syntax (lib "struct.ss" "syntax"))
-  (require (lib "boundmap.ss" "syntax")
-           (lib "list.ss")
+  (require-for-syntax syntax/struct)
+  (require syntax/boundmap
+           mzlib/list
            "unit-runtime.ss"
            "unit-syntax.ss")
   (require-for-template mzscheme

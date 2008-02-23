@@ -25,7 +25,7 @@
 (module cut-test mzscheme
 
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (lib "cut.ss" "srfi" "26"))
+           srfi/26/cut)
 
   (provide cut-tests)
 

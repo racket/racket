@@ -3,8 +3,8 @@
   (require "input-file-parser.ss"
            "grammar.ss"
            "table.ss"
-           (lib "class.ss")
-           (lib "contract.ss"))
+           mzlib/class
+           mzlib/contract)
   (require-for-template mzscheme)
   
   (provide/contract
@@ -69,7 +69,7 @@
         #`(when #f
             (let ((bind void) ... (tmp void) ...)
               (void bound ... ... term-group ... start ... end ... prec ...))))))
-  (require (lib "list.ss") "parser-actions.ss")
+  (require mzlib/list "parser-actions.ss")
   (define (build-parser filename src-pos suppress input-terms start end assocs prods)
     (let* ((grammar (parse-input input-terms start end assocs prods src-pos))
            (table (build-table grammar filename suppress))

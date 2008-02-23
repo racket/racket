@@ -32,7 +32,7 @@ crash.
 
 _gl.ss_
 
-Use the gl.ss module by adding (require (lib "gl.ss" "sgl")) to your program.
+Use the gl.ss module by adding (require sgl/gl) to your program.
 The gl.ss module provides a direct interface to the system's GL library
 closely following the conventions of the C-language GL API.  It provides a
 binding for each #defined constant (these start with GL_) and for the
@@ -153,8 +153,8 @@ results of glSelectBuffer in a Scheme-friendly format.
 
 
 Notational Example:
-(require (lib "gl.ss" "sgl")
-         (lib "gl-vectors.ss" "sgl"))
+(require sgl/gl
+         sgl/gl-vectors)
 (glBegin GL_TRIANGLES)
 (glVertex3i 1 2 3)
 (glVertex4fv (gl-float-vector 1 2 3 4))
@@ -171,7 +171,7 @@ _gl-vectors.ss_
 The gl-vectors module supports GL programming with cvectors.  In this
 document, and in the error messages, a gl-vector is just a cvector, from (lib
 "foreign.ss"), and a gl-<type>-vector is a cvector with an appropriate type.
-Use this module by adding (require (lib "gl-vectors.ss" "sgl")) to your
+Use this module by adding (require sgl/gl-vectors) to your
 program.  I suggest using this module instead of using the cvector function
 directly because these functions are specialized to handling the GL typedefs
 correctly.
@@ -248,8 +248,7 @@ not yet have counterparts in the sgl.ss module.  See the list of functions
 below.
 
 Notational Example:
-(require (prefix gl- (lib "sgl.ss" "sgl"))
-         (lib "gl-vectors.ss" "sgl"))
+(require sgl sgl/gl-vectors)
 (gl-begin 'triangles)
 (gl-vertex 1 2 3)
 (gl-vertex-v (gl-float-vector 1 2 3 4))

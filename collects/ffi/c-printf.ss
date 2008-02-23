@@ -1,6 +1,6 @@
 (module c-printf mzscheme
 
-(require (lib "foreign.ss")) (unsafe!)
+(require mzlib/foreign) (unsafe!)
 
 ;; This code demonstrates how to interface `printf' which can be used with
 ;; different arities and types.  Also, `printf' is unsafe unless this code will

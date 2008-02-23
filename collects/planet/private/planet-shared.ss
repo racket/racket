@@ -6,12 +6,12 @@ Various common pieces of code that both the client and server need to access
 
 (module planet-shared mzscheme
   
-  (require (lib "list.ss")
-           (lib "etc.ss")
-           (lib "port.ss")
-           (lib "file.ss")
+  (require mzlib/list
+           mzlib/etc
+           mzlib/port
+           mzlib/file
            (lib "getinfo.ss" "setup")
-           (prefix srfi1: (lib "1.ss" "srfi"))
+           (prefix srfi1: srfi/1)
            "../config.ss")
   
   (provide (all-defined))

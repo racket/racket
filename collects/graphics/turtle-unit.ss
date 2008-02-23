@@ -1,10 +1,10 @@
 #lang scheme/unit
 
 (require (lib "mred-sig.ss" "mred")
-         (lib "class.ss")
-         (lib "class100.ss")
-         (lib "list.ss")
-         (lib "etc.ss")
+         mzlib/class
+         mzlib/class100
+         mzlib/list
+         mzlib/etc
          "turtle-sig.ss")
 
 (import [prefix mred: mred^])

@@ -14,7 +14,7 @@
 
 (module snips-and-arrows-model (lib "mrflow.ss" "mrflow")
   (require
-   (prefix lst: (lib "list.ss"))
+   (prefix lst: mzlib/list)
    
    (prefix cst: "constants.ss")
    ;"set-list.ss"

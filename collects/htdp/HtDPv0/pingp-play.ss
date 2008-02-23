@@ -2,7 +2,7 @@
      
      (require "pingp-sig.ss"
               "pingp.ss"
-              (lib "unitsig.ss")
+              mzlib/unitsig
               "ping-play-unit.ss")
      
      (provide pingp-play@)  

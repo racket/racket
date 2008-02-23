@@ -60,20 +60,20 @@
 ;;    the binding.
 
 (module driver mzscheme
-  (require (lib "unit.ss")
-	   (lib "list.ss")
-	   (lib "file.ss")
-	   (lib "port.ss")
-	   (lib "etc.ss")
-	   (lib "pretty.ss")
+  (require mzlib/unit
+	   mzlib/list
+	   mzlib/file
+	   mzlib/port
+	   mzlib/etc
+	   mzlib/pretty
 	   (prefix src2src: "../src2src.ss"))
   
-  (require (lib "zodiac-sig.ss" "syntax")
-	   (lib "toplevel.ss" "syntax")
-	   (lib "compile-sig.ss" "dynext")
-	   (lib "link-sig.ss" "dynext")
-	   (lib "file-sig.ss" "dynext")
-	   (lib "dirs.ss" "setup"))
+  (require syntax/zodiac-sig
+	   syntax/toplevel
+	   dynext/compile-sig
+	   dynext/link-sig
+	   dynext/file-sig
+	   setup/dirs)
 
   (require "../sig.ss"
 	   "sig.ss"
@@ -262,7 +262,7 @@
 	      (eval (or prefix
 			;; Need MzScheme and cffi:
 			'(begin
-			   (require (lib "cffi.ss" "compiler"))
+			   (require compiler/cffi)
 			   (require-for-syntax mzscheme))))))))
 
       ;;----------------------------------------------------------------------
@@ -428,7 +428,7 @@
 
       (define (open-input-scheme-file path)
 	(let ([p (let ([open (with-handlers ([exn:fail? (lambda (x) #f)])
-			       (dynamic-require '(lib "mred.ss" "mred") 'open-input-graphical-file))])
+			       (dynamic-require 'mred 'open-input-graphical-file))])
 		   (if open
 		       ;; Handles WXME files:
 		       (open path)

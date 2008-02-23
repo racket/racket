@@ -1,5 +1,5 @@
 (module stepper+xml-tool mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
            (lib "tool.ss" "drscheme")
            "stepper-tool.ss"
            "xml-tool.ss")

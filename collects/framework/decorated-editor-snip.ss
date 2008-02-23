@@ -4,8 +4,8 @@
            decorated-editor-snipclass%
            decorated-editor-snip-mixin)
 
-  (require (lib "class.ss")
-           (lib "mred.ss" "mred")
+  (require mzlib/class
+           mred
            "preferences.ss")
   
   (define (decorated-editor-snip-mixin super%)

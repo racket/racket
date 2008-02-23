@@ -1,5 +1,5 @@
 (module nestedloop mzscheme
-  (require (lib "defmacro.ss"))
+  (require mzlib/defmacro)
 
   (define-macro (nest n expr)
     (if (> n 0)

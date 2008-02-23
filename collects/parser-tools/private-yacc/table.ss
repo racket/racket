@@ -6,9 +6,9 @@
 	   "lr0.ss"
 	   "lalr.ss"
 	   "parser-actions.ss"
-	   (lib "contract.ss")
-           (lib "list.ss")
-	   (lib "class.ss"))
+	   mzlib/contract
+           mzlib/list
+	   mzlib/class)
 
   (provide/contract 
    (build-table ((is-a?/c grammar%) string? any/c . -> .

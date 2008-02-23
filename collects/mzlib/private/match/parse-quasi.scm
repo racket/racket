@@ -3,8 +3,8 @@
   (provide (all-defined))
   (require "match-error.ss"
            "match-helper.ss"
-           (lib "etc.ss")
-           (lib "stx.ss" "syntax"))
+           mzlib/etc
+           syntax/stx)
   
   (require-for-template mzscheme
                         "match-error.ss")

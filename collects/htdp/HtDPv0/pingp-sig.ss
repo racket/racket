@@ -1,6 +1,6 @@
 #cs(module pingp-sig mzscheme
      (require "draw-sig.ss"
-              (lib "unitsig.ss"))
+              mzlib/unitsig)
      (provide pingpS
               ping-protS-core
               ping-protS-extr

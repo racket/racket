@@ -1,6 +1,6 @@
 #lang scheme/base
-(require (lib "list.ss")
-         (lib "plt-match.ss"))
+(require mzlib/list
+         mzlib/plt-match)
 (provide compress-serial
          decompress-serial)
 

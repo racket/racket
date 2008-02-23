@@ -22,7 +22,7 @@
 
 (module testing mzscheme
   
-  (require (lib "9.ss" "srfi"))
+  (require srfi/9)
   
   ;; List of exported names
   (provide

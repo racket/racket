@@ -3,8 +3,8 @@
 
 (Section 'function)
 
-(require (lib "list.ss"))
-(require (lib "etc.ss"))
+(require mzlib/list)
+(require mzlib/etc)
 
 (test (list 1 2 3 4) foldl cons '() (list 4 3 2 1))
 (test (list 1 2 3 4) foldr cons '() (list 1 2 3 4))

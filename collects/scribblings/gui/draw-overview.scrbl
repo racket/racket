@@ -163,7 +163,7 @@ More complex shapes are typically best implemented with
 @(begin
 #readerscribble/comment-reader
 [schemeblock
-(require (lib "math.ss")) ; for @scheme[pi]
+(require mzlib/math) ; for @scheme[pi]
 
 ;; Construct paths for a 630 x 630 logo
 

@@ -1,5 +1,5 @@
 (module stx mzscheme
-  (require (lib "boundmap.ss" "syntax")
+  (require syntax/boundmap
            "util.ss")
   
   (provide parse)

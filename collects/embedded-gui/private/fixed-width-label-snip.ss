@@ -1,9 +1,9 @@
 (module fixed-width-label-snip mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "list.ss")
-   (lib "mred.ss" "mred"))
+   mzlib/class
+   mzlib/list
+   mred)
   
   (provide fixed-width-label-snip)
   

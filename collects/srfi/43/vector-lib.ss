@@ -2,9 +2,9 @@
 
 (module vector-lib mzscheme
   
-  (require (lib "receive.ss" "srfi" "8")
-           (lib "etc.ss")
-           (lib "contract.ss"))
+  (require srfi/8/receive
+           mzlib/etc
+           mzlib/contract)
   
   (define mutable-vector/c
     (and/c vector? (not/c immutable?)))

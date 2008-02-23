@@ -2,10 +2,10 @@
 (module distribute scheme/base
   (require scheme/file
            scheme/path
-           (lib "dirs.ss" "setup")
-	   (lib "list.ss")
+           setup/dirs
+	   mzlib/list
 	   (lib "variant.ss" "setup")
-	   (lib "filename-version.ss" "dynext")
+	   dynext/filename-version
 	   "private/macfw.ss"
 	   "private/windlldir.ss"
 	   "private/collects-path.ss")

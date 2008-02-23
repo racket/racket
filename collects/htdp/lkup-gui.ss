@@ -1,8 +1,8 @@
 #cs(module lkup-gui mzscheme
-  (require (lib "error.ss" "htdp")
-	   (lib "class.ss")
+  (require htdp/error
+	   mzlib/class
            (lib "prim.ss" "lang")
-	   (lib "mred.ss" "mred"))
+	   mred)
   
   (provide control view connect)
   

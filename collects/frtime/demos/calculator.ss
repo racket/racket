@@ -1,4 +1,4 @@
-(require (lib "gui.ss" "frtime"))
+(require frtime/gui)
 
 (define op-names (list "+" "-" "*" "/"))
 (define ops (list + - * /))

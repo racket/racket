@@ -4,7 +4,7 @@
 
 (module datatype mzscheme
 
-  (require (lib "pconvert-prop.ss"))
+  (require mzlib/pconvert-prop)
   (require-for-syntax "private/utils.ss")
 
   (define-syntax define-datatype

@@ -1,6 +1,6 @@
 
 (module slideshow mzscheme
-  (require (lib "slide.ss" "slideshow"))
-  (provide (all-from (lib "slide.ss" "slideshow"))
+  (require slideshow/slide)
+  (provide (all-from slideshow/slide)
 	   (all-from mzscheme)))
 

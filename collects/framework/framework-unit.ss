@@ -1,5 +1,5 @@
 (module framework-unit mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
            (lib "mred-sig.ss" "mred"))
 
   (require "private/sig.ss"

@@ -1,6 +1,6 @@
 (module auto-language mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss"))
+  (require mred
+           mzlib/class)
   
   (provide pick-new-language looks-like-module?)
   

@@ -2,11 +2,11 @@
 ; REPL by getting & setting values in the top-level environment
 
 (module debugger-bindings mzscheme
-  (require (lib "contract.ss")
+  (require mzlib/contract
            "marks.ss"
-           (lib "etc.ss")
-           (lib "list.ss")
-           (prefix kernel: (lib "kerncase.ss" "syntax")))
+           mzlib/etc
+           mzlib/list
+           (prefix kernel: syntax/kerncase))
   
   (provide/contract [set-event-num! (-> number? void?)] 
                     [bt (-> void?)] 

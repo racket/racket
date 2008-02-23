@@ -3,9 +3,9 @@
 (module button-snip mzscheme
   
   (require
-   (lib "mred.ss" "mred")
-   (lib "class.ss")
-   (lib "etc.ss")
+   mred
+   mzlib/class
+   mzlib/etc
    "snip-wrapper.ss")
   
   (provide

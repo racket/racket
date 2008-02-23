@@ -8,7 +8,7 @@
 (define no-extra-if-tests? #t)
 
 ;; Check export names:
-(require (lib "docprovide.ss" "syntax"))
+(require syntax/docprovide)
 (let ([docs (lookup-documentation '(lib "htdp-advanced.ss" "lang") 'procedures)])
   (for-each
    (lambda (row)

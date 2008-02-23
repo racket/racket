@@ -1,7 +1,7 @@
 
 (module readable-editor mzscheme
-  (require (lib "class.ss")
-           (lib "struct.ss")
+  (require mzlib/class
+           mzlib/struct
            "../wxme.ss"
            "../editor.ss")
 

@@ -1,12 +1,12 @@
 
 #lang scheme/unit
-  (require (lib "string-constant.ss" "string-constants")
+  (require string-constants
            "sig.ss"
            "../preferences.ss"
            (lib "mred-sig.ss" "mred")
-           (lib "string.ss")
+           mzlib/string
            scheme/path
-           (lib "etc.ss"))
+           mzlib/etc)
   
   
   (import mred^

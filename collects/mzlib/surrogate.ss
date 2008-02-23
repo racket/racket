@@ -1,5 +1,5 @@
 (module surrogate mzscheme
-  (require (lib "class.ss"))
+  (require mzlib/class)
 
   (provide surrogate)
   

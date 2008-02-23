@@ -10,12 +10,12 @@
 ;;  to macro uses (where the macros are defined in mzc.h).
 
 (module vmphase mzscheme 
-  (require (lib "unit.ss")
-	   (lib "list.ss")
-	   (lib "etc.ss"))
+  (require mzlib/unit
+	   mzlib/list
+	   mzlib/etc)
 
-  (require (lib "zodiac-sig.ss" "syntax")
-	   (lib "primitives.ss" "syntax"))
+  (require syntax/zodiac-sig
+	   syntax/primitives)
 
   (require "sig.ss"
 	   "../sig.ss")

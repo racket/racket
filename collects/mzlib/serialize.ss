@@ -1,16 +1,16 @@
 (module serialize mzscheme
-  (require-for-syntax (lib "struct.ss" "syntax"))
-  (require (lib "modcollapse.ss" "syntax")
-	   (lib "etc.ss")
-	   (lib "list.ss")
+  (require-for-syntax syntax/struct)
+  (require syntax/modcollapse
+	   mzlib/etc
+	   mzlib/list
            ;; core [de]serializer:
-           (lib "private/serialize.ss" "scheme"))
+           scheme/private/serialize)
 
   (provide define-serializable-struct
 	   define-serializable-struct/versions
 
            ;; core [de]serializer:
-           (all-from (lib "private/serialize.ss" "scheme")))
+           (all-from scheme/private/serialize))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; define-serializable-struct

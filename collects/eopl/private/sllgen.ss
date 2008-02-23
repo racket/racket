@@ -6,10 +6,10 @@
 ;; time.
 
 (module sllgen mzscheme
-  (require (lib "pretty.ss")
+  (require mzlib/pretty
 	   "../datatype.ss"
 	   "sllboth.ss"
-	   (lib "etc.ss"))
+	   mzlib/etc)
 
   (require-for-syntax "sllboth.ss"
 		      "slldef.ss")

@@ -1,20 +1,20 @@
 
 (module language-configuration mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
            (lib "hierlist.ss" "hierlist")
-           (lib "class.ss")
-           (lib "contract.ss")
-           (lib "kw.ss")
-           (lib "string.ss")
+           mzlib/class
+           mzlib/contract
+           mzlib/kw
+           mzlib/string
            "drsig.ss"
-           (lib "string-constant.ss" "string-constants")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
-           (lib "list.ss")
-           (lib "etc.ss")
-           (lib "file.ss")
+           string-constants
+           mred
+           framework
+           mzlib/list
+           mzlib/etc
+           mzlib/file
            (lib "getinfo.ss" "setup")
-           (lib "toplevel.ss" "syntax"))
+           syntax/toplevel)
   
   (define original-output (current-output-port))
   (define (printfo . args) (apply fprintf original-output args))

@@ -1,8 +1,8 @@
 #lang scheme/base
-(require (lib "serialize.ss")
-         (lib "list.ss")
-         (lib "plt-match.ss")
-         (lib "contract.ss")
+(require mzlib/serialize
+         mzlib/list
+         mzlib/plt-match
+         mzlib/contract
          "../private/closure.ss")
 ;; Implementation: Have a distinguished frame variable that is read and captured by send/suspend, 
 ;; installed on invocations of continuations by the server (and NOT from other continuation invocations)

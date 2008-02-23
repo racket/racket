@@ -1,6 +1,6 @@
 #lang scheme/base
-(require (lib "contract.ss")
-         (lib "url.ss" "net"))
+(require mzlib/contract
+         net/url)
 (require "../private/response-structs.ss"
          "../private/request-structs.ss"
          "../private/util.ss")           

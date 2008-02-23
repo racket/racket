@@ -1,8 +1,8 @@
 (module heap mzscheme
   
-  (require (lib "etc.ss")
+  (require mzlib/etc
 	   "base-gm.ss"
-           (lib "list.ss")
+           mzlib/list
 	   "dv.ss")
   
   

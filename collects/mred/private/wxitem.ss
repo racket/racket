@@ -1,8 +1,8 @@
 (module wxitem mzscheme
-  (require (lib "class.ss")
-	   (lib "class100.ss")
-	   (lib "etc.ss")
-	   (lib "file.ss")
+  (require mzlib/class
+	   mzlib/class100
+	   mzlib/etc
+	   mzlib/file
 	   (prefix wx: "kernel.ss")
 	   "lock.ss"
 	   "helper.ss"

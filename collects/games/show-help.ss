@@ -1,7 +1,7 @@
 (module show-help mzscheme
-  (require (lib "class.ss")
-           (lib "mred.ss" "mred")
-	   (lib "etc.ss"))
+  (require mzlib/class
+           mred
+	   mzlib/etc)
   
   (provide show-help)
   

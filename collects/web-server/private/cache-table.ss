@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "contract.ss"))
+(require mzlib/contract)
 
 (define-struct cache-table (hash semaphore)
   #:mutable)

@@ -1,10 +1,10 @@
 
 (module flash mzscheme
   (require "mrpict.ss"
-	   (lib "math.ss")
-	   (lib "etc.ss")
-           (lib "mred.ss" "mred")
-           (lib "class.ss"))
+	   mzlib/math
+	   mzlib/etc
+           mred
+           mzlib/class)
 
   (provide filled-flash
 	   outline-flash)

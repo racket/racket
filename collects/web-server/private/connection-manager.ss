@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "contract.ss")
+(require mzlib/contract
          "timer.ss")
 
 (define-struct connection (id timer i-port o-port custodian close?)

@@ -4,7 +4,7 @@
 
 (Section 'serialization)
 
-(require (lib "serialize.ss"))
+(require mzlib/serialize)
 
 ;; ----------------------------------------
 
@@ -265,7 +265,7 @@
 ;; ----------------------------------------
 
 (module ser-mod mzscheme
-   (require (lib "serialize.ss"))
+   (require mzlib/serialize)
    (provide ser-mod-test)
 
    (define-serializable-struct foo (a b))
@@ -279,7 +279,7 @@
 ;; ----------------------------------------
 ;; Classes
 
-(require (lib "class.ss"))
+(require mzlib/class)
 
 (define-serializable-class s:c% object%
   (init-field [one 0])

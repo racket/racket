@@ -2,7 +2,7 @@
      (require  "error.ss"
                "pingp-sig.ss"
                "big-draw.ss"
-               (lib "unitsig.ss")
+               mzlib/unitsig
 	       (lib "posn.ss" "lang"))
 
      (provide pingpU)

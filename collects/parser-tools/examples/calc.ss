@@ -2,9 +2,9 @@
 
 
 ;; Import the parser and lexer generators.
-(require (lib "yacc.ss" "parser-tools")
-         (lib "lex.ss" "parser-tools")
-         (prefix : (lib "lex-sre.ss" "parser-tools")))
+(require parser-tools/yacc
+         parser-tools/lex
+         (prefix : parser-tools/lex-sre))
 
 (define-tokens value-tokens (NUM VAR FNCT))
 (define-empty-tokens op-tokens (newline = OP CP + - * / ^ EOF NEG))

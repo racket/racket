@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(require (lib "for.ss"))
+(require mzlib/for)
 
 (Section 'generator)
 

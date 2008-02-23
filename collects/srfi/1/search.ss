@@ -35,11 +35,11 @@
 (module search
   mzscheme
 
-  (require (lib "etc.ss" "mzlib")
-		   (lib "optional.ss" "srfi")
+  (require mzlib/etc
+		   srfi/optional
 		   "predicate.ss"
 		   "util.ss")
-  (require (lib "receive.ss" "srfi" "8"))
+  (require srfi/8/receive)
 
   (provide (rename my-member member)
 		   find

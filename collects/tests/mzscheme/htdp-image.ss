@@ -2,9 +2,9 @@
 
 (load-relative "loadtest.ss")
 (require (lib "image.ss" "teachpack" "htdp")
-         (lib "error.ss" "htdp")
+         htdp/error
          (lib "posn.ss" "lang")
-         (lib "list.ss")
+         mzlib/list
          (lib "imageeq.ss" "lang"))
 
 (define-values (image-snip1 image-snip2)

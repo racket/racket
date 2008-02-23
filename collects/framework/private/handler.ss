@@ -1,14 +1,14 @@
 
 #lang scheme/unit
-  (require (lib "class.ss")
-           (lib "list.ss")
+  (require mzlib/class
+           mzlib/list
            (lib "hierlist.ss" "hierlist")
            "sig.ss"
            "../preferences.ss"
            "../gui-utils.ss"
            (lib "mred-sig.ss" "mred")
            scheme/path
-           (lib "string-constant.ss" "string-constants"))
+           string-constants)
   
   
   (import mred^

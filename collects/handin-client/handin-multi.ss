@@ -1,6 +1,6 @@
 (module handin-multi mzscheme
-  (require (lib "class.ss") (lib "list.ss") (lib "string.ss") (lib "port.ss")
-           (lib "mred.ss" "mred") (lib "framework.ss" "framework")
+  (require mzlib/class mzlib/list mzlib/string mzlib/port
+           mred framework
            (lib "external.ss" "browser")
            "info.ss" "client-gui.ss" "this-collection.ss")
 

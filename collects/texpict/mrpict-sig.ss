@@ -1,6 +1,6 @@
 
 (module mrpict-sig mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
   
   (require "private/common-sig.ss")
   (require "private/mrpict-sig.ss")

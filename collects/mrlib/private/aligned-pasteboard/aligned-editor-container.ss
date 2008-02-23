@@ -1,10 +1,10 @@
 (module aligned-editor-container mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "mred.ss" "mred")
-   (lib "etc.ss")
-   (lib "list.ss")
+   mzlib/class
+   mred
+   mzlib/etc
+   mzlib/list
    "snip-lib.ss"
    "interface.ss"
    "constants.ss")

@@ -1,7 +1,7 @@
 (module deriv mzscheme
   
-  (require (lib "list.ss")
-           (prefix is: (lib "integer-set.ss"))
+  (require mzlib/list
+           (prefix is: mzlib/integer-set)
            "re.ss"
            "util.ss")
 

@@ -1,5 +1,5 @@
 (module render-sigs mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
   
   (provide (all-defined))
   

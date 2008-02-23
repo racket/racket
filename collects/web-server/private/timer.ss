@@ -1,7 +1,7 @@
 #lang scheme/base
-(require (lib "list.ss")
-         (lib "contract.ss")
-         (lib "async-channel.ss"))
+(require mzlib/list
+         mzlib/contract
+         mzlib/async-channel)
 
 (define-struct timer (evt expire-seconds action)
   #:mutable)

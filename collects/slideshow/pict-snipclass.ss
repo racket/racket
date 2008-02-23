@@ -1,6 +1,6 @@
 (module pict-snipclass mzscheme
-  (require (lib "class.ss")
-           (lib "mred.ss" "mred"))
+  (require mzlib/class
+           mred)
   
   (provide snip-class)
   (require "private/pict-box-lib.ss")

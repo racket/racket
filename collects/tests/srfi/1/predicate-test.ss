@@ -37,8 +37,8 @@
 
   (require
    (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-   (lib "predicate.ss" "srfi" "1")
-   (lib "cons.ss" "srfi" "1"))
+   srfi/1/predicate
+   srfi/1/cons)
 
   (provide predicate-tests)
 

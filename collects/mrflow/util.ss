@@ -1,8 +1,8 @@
 
 (module util  (lib "mrflow.ss" "mrflow")
-  (require (prefix list: (lib "list.ss"))
-           (lib "pretty.ss")
-           (lib "class.ss")
+  (require (prefix list: mzlib/list)
+           mzlib/pretty
+           mzlib/class
            (prefix cst: "constants.ss"))
   
   (provide (all-defined))

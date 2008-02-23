@@ -1,7 +1,7 @@
 (module preprocessor2 mzscheme
   
-  (require (lib "string.ss")
-           (lib "etc.ss")
+  (require mzlib/string
+           mzlib/etc
            )
   
   (define (drop l n)

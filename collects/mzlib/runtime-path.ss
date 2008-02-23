@@ -1,8 +1,8 @@
 
 (module runtime-path mzscheme
-  (require (lib "etc.ss")
-           (lib "modcollapse.ss" "syntax")
-	   (lib "dirs.ss" "setup")
+  (require mzlib/etc
+           syntax/modcollapse
+	   setup/dirs
            (only "private/runtime-path-table.ss" table))
 
   (provide define-runtime-path

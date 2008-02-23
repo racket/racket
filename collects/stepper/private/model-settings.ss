@@ -1,6 +1,6 @@
 (module model-settings mzscheme
-  (require (lib "contract.ss")
-           (lib "pconvert.ss"))
+  (require mzlib/contract
+           mzlib/pconvert)
   
   ; there are two separate reasons to use units here, but it's just too painful.
   ; reason 1) the drscheme:language procedures are linked at runtime into the

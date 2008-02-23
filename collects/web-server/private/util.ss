@@ -1,11 +1,11 @@
 #lang scheme/base
-(require (lib "list.ss")
-         (lib "plt-match.ss")
-         (lib "contract.ss")
-         (lib "serialize.ss")
-         (lib "pretty.ss")
+(require mzlib/list
+         mzlib/plt-match
+         mzlib/contract
+         mzlib/serialize
+         mzlib/pretty
          (lib "xml.ss" "xml")
-         (lib "url.ss" "net"))
+         net/url)
 (define path-element?
   (or/c string? path? (symbols 'up 'same)))
 

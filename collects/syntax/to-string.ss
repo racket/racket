@@ -1,8 +1,8 @@
 (module to-string mzscheme
-  (require (lib "contract.ss")
-           (lib "stx.ss" "syntax"))
+  (require mzlib/contract
+           syntax/stx)
   
-  (require (lib "list.ss"))
+  (require mzlib/list)
 
   (define (syntax->string c)
     (let* ([s (open-output-string)]

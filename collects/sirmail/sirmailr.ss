@@ -1,16 +1,16 @@
 
 (module sirmailr mzscheme
-  (require (lib "unit.ss")
+  (require mzlib/unit
 	   (lib "mred-sig.ss" "mred"))
 
   (require "sirmails.ss")
 
-  (require (lib "imap-sig.ss" "net")
-           (lib "smtp-sig.ss" "net")
-           (lib "head-sig.ss" "net")
-           (lib "base64-sig.ss" "net")
-           (lib "mime-sig.ss" "net")
-           (lib "qp-sig.ss" "net"))
+  (require net/imap-sig
+           net/smtp-sig
+           net/head-sig
+           net/base64-sig
+           net/mime-sig
+           net/qp-sig)
   
   (require (lib "hierlist-sig.ss" "hierlist"))
   

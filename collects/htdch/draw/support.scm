@@ -1,13 +1,13 @@
 #cs
 (module support mzscheme 
-  (require (lib "draw.ss" "htdp")
-           (lib "posn.ss" "lang")
-           (lib "class.ss")
-           (lib "mred.ss" "mred")
-           (lib "unit.ss")
-           (lib "String.ss" "profj" "libs" "java" "lang")
-           (lib "Throwable.ss" "profj" "libs""java""lang")
-           (lib "RuntimeException.ss" "profj" "libs" "java" "lang"))
+  (require htdp/draw
+           lang/posn
+           mzlib/class
+           mred
+           mzlib/unit
+           profj/libs/java/lang/String
+           profj/libs/java/lang/Throwable
+           profj/libs/java/lang/RuntimeException)
   
   (provide world-native@ world-native^ canvas-native@ canvas-native^ support^)
   
@@ -64,8 +64,8 @@
                        (exn-message e))))))
 	       (begin (begin body ...) void-or-true))]))
       
-      (define Posn-x-get (dynamic-require '(lib "Posn.ss" "htdch" "geometry") 'Posn-x-get))
-      (define Posn-y-get (dynamic-require '(lib "Posn.ss" "htdch" "geometry") 'Posn-y-get))
+      (define Posn-x-get (dynamic-require 'htdch/geometry/Posn 'Posn-x-get))
+      (define Posn-y-get (dynamic-require 'htdch/geometry/Posn 'Posn-y-get))
       
       (define (build-posn posnO) (make-posn (Posn-x-get posnO) (Posn-y-get posnO)))
       (define (color->symbol colorO) (string->symbol (to-lower-case (send colorO my-name))))

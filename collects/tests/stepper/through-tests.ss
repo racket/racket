@@ -13,12 +13,12 @@
            stepper/private/model-settings
            tests/utils/sexp-diff
            lang/run-teaching-program
-           (only-in (lib "13.ss" "srfi") string-contains)
+           (only-in srfi/13 string-contains)
            ;; for xml testing:
-           ;; (lib "class.ss")
+           ;; mzlib/class
            ;; (all-except (lib "xml-snipclass.ss" "xml") snip-class)
            ;; (all-except (lib "scheme-snipclass.ss" "xml") snip-class)
-           ;; (lib "mred.ss" "mred")
+           ;; mred
            #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
            )
   
@@ -1340,7 +1340,7 @@
   ;
 
   ; as you can see, many teachpack tests work only in mred:
-  ;; (require (lib "mred.ss" "mred"))
+  ;; (require mred)
 
 
   (define test-teachpack-sequence (lambda (teachpack-specs expr-string expected-results)
@@ -1354,7 +1354,7 @@
   
   (t1 check-expect
       (test-teachpack-sequence
-       `((lib "testing.ss" "htdp"))
+       `(htdp/testing)
        "(check-expect (+ 3 4) (+ 8 9)) (+ 4 5)"
        `((before-after ((check-expect (+ 3 4) (hilite (+ 8 9))))
                        ((check-expect (+ 3 4) (hilite 17))))
@@ -1365,7 +1365,7 @@
   
   (t1 check-within
       (test-teachpack-sequence
-       `((lib "testing.ss" "htdp"))
+       `(htdp/testing)
        "(check-within (+ 3 4) (+ 8 10) (+ 10 90)) (+ 4 5)"
        `((before-after ((check-within (+ 3 4) (hilite (+ 8 10)) (+ 10 90)))
                        ((check-within (+ 3 4) (hilite 18) (+ 10 90))))
@@ -1378,7 +1378,7 @@
 
   (t1 check-error
       (test-teachpack-sequence
-       `((lib "testing.ss" "htdp"))
+       `(htdp/testing)
        "(check-error (+ (+ 3 4) (rest empty)) (string-append \"b\" \"ogus\")) (+ 4 5)"
        `((before-after ((check-error (+ (+ 3 4) (rest empty)) (hilite (string-append "b" "ogus"))))
                        ((check-error (+ (+ 3 4) (rest empty)) (hilite "bogus"))))
@@ -1400,7 +1400,7 @@
   #;
   (t1 teachpack-drawing
   (test-teachpack-sequence
-   `((lib "draw.ss" "htdp"))
+   `(htdp/draw)
    "(define (draw-limb i) (cond
  [(= i 1) (draw-solid-line (make-posn 20 20) (make-posn 20 100) 'blue)]
  [(= i 0) (draw-solid-line (make-posn (+ 1 10) 10) (make-posn 10 100) 'red)]))
@@ -1463,7 +1463,7 @@
   #;
   (t1 teachpack-web-interaction
   (test-teachpack-sequence
-   `((lib "servlet2.ss" "htdp"))
+   `(htdp/servlet2)
    "(define (adder go) (inform (number->string (+ (single-query (make-number \"enter 10\")) (single-query (make-number \"enter 20\")))))) (adder true)"
    `((before-after-finished ((define (adder go) (inform (number->string (+ (single-query (make-number "enter 10")) (single-query (make-number "enter 20")))))))
                             ((hilite (adder true)))

@@ -2,9 +2,9 @@
 
 ;; Foreign Scheme interface
 (require '#%foreign 
-         (lib "dirs.ss" "setup")
+         setup/dirs
          (for-syntax scheme/base
-                     (lib "stx.ss" "syntax")))
+                     syntax/stx))
 
 ;; This module is full of unsafe bindings that are not provided to requiring
 ;; modules.  Instead, an `unsafe!' binding is provided that makes these unsafe

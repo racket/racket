@@ -88,10 +88,10 @@ See more in PR8831.
 
 #lang scheme/unit
 
-(require (lib "match.ss")
-         (lib "string.ss")
-         (lib "list.ss")
-         (lib "etc.ss")
+(require mzlib/match
+         mzlib/string
+         mzlib/list
+         mzlib/etc
          "uri-codec-sig.ss")
 
 (import)

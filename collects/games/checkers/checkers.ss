@@ -1,14 +1,14 @@
 #lang mzscheme
 
 (require (lib "gl-board.ss" "games" "gl-board-game")
-         (lib "class.ss")
-         (lib "math.ss")
-         (lib "mred.ss" "mred")
-         (lib "unit.ss")
-         (lib "gl-vectors.ss" "sgl")
-         (prefix gl- (lib "sgl.ss" "sgl"))
-         (lib "gl.ss" "sgl")
-         (lib "array.ss" "srfi" "25")
+         mzlib/class
+         mzlib/math
+         mred
+         mzlib/unit
+         sgl/gl-vectors
+         sgl
+         sgl/gl
+         srfi/25/array
          (lib "include-bitmap.ss" "mrlib")
          "honu-bitmaps.ss")
 (provide game@)

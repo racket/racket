@@ -2,9 +2,9 @@
 ;; Some tests for the model
 
 (module test-model mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "etc.ss")
-	   (lib "list.ss")
+  (require mzlib/unitsig
+	   mzlib/etc
+	   mzlib/list
 	   "sig.ss"
 	   "model.ss"
 	   "test.ss")

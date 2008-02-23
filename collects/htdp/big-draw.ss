@@ -2,16 +2,16 @@
 (module big-draw mzscheme
   (require "error.ss"
            "draw-sig.ss"
-           (lib "etc.ss")
-           (lib "posn.ss" "lang")
-           (lib "prim.ss" "lang")           
-           (lib "unit.ss")
-           (prefix mred: (lib "mred.ss" "mred"))
-           (lib "class.ss")
-           (lib "mred-sig.ss" "mred")
-           (lib "mred-unit.ss" "mred")           
-           (lib "graphics-sig.ss" "graphics")
-           (lib "graphics-posn-less-unit.ss" "graphics"))
+           mzlib/etc
+           lang/posn
+           lang/prim
+           mzlib/unit
+           (prefix mred: mred)
+           mzlib/class
+           mred/mred-sig
+           mred/mred-unit
+           graphics/graphics-sig
+           graphics/graphics-posn-less-unit)
   
   (define-unit-from-context p@ graphics:posn^)
   (define-compound-unit/infer g@ (import) (export graphics^)

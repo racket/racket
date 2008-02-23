@@ -1,7 +1,7 @@
 
 (module modcode scheme/base
-  (require (lib "port.ss")
-           (lib "contract.ss")
+  (require mzlib/port
+           mzlib/contract
            "modread.ss")
 
   (provide moddep-current-open-input-file

@@ -1,8 +1,8 @@
 (module debugger-model mzscheme
-  (require (lib "unitsig.ss")
-           (lib "contract.ss")
-           (lib "etc.ss")
-           (lib "mred.ss" "mred")
+  (require mzlib/unitsig
+           mzlib/contract
+           mzlib/etc
+           mred
            (lib "debugger-sig.ss" "stepper")
            "my-macros.ss"
            "debugger-annotate.ss"

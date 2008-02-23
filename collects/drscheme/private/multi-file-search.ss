@@ -1,13 +1,13 @@
 
 #lang scheme/unit
-  (require (lib "framework.ss" "framework")
-           (lib "class.ss")
-           (lib "mred.ss" "mred")
+  (require framework
+           mzlib/class
+           mred
            scheme/file
            scheme/path
-           (lib "thread.ss")
-           (lib "async-channel.ss")
-           (lib "string-constant.ss" "string-constants")
+           mzlib/thread
+           mzlib/async-channel
+           string-constants
            "drsig.ss")
   
   (import [prefix drscheme:frame: drscheme:frame^]

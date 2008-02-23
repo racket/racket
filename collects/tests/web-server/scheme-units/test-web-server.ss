@@ -4,7 +4,7 @@
   (require (lib "web-server.ss" "web-server")
            (lib "configuration.ss" "web-server")
            (lib "test.ss" "schemeunit")
-           (lib "etc.ss"))
+           mzlib/etc)
 
   (provide test-web-server)
 

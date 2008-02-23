@@ -15,7 +15,7 @@ following _Internet_ (quasi-)protocols:
 _URL_ posting, _web clients_, _WWW_
 ==========================================================================
 
-To load directly: (require (lib "url.ss" "net"))
+To load directly: (require net/url)
 Module files: _url.ss_ - provides the procedures documented below
               _url-unit.ss_ - provides unit url@
               _url-sig.ss_ - provides signature url^
@@ -247,7 +247,7 @@ _web documents_
 
 EXAMPLE --------------------------------------------------------------
 
- (require (lib "url.ss" "net"))
+ (require net/url)
  (define url:cs (string->url "http://www.cs.rice.edu/"))
  (define (test url)
    (call/input-url url get-pure-port display-pure-port))
@@ -267,7 +267,7 @@ _URL viewing_
 To load a module for accessing a Web _browser_ either
   (require (lib "external.ss" "browser"))
 or
-  (require (lib "sendurl.ss" "net"))
+  (require net/sendurl)
 
 The version in "browser" will prompt the user for a browser preference
 if not already set.  The version in "sendurl.ss" lacks this capability,
@@ -306,7 +306,7 @@ These modules define one main function:
 _CGI_ backends, _WWW_
 ==========================================================================
 
-To load directly: (require (lib "cgi.ss" "net"))
+To load directly: (require net/cgi)
 Module files: _cgi.ss_ - provides the procedures documented below
               _cgi-unit.ss_ - provides unit cgi@
               _cgi-sig.ss_ - provides signature cgi^
@@ -435,7 +435,7 @@ PROCEDURES -----------------------------------------------------------
 _sending mail_, _sendmail_
 ==========================================================================
 
-To load directly: (require (lib "sendmail.ss" "net"))
+To load directly: (require net/sendmail)
 Module files: _sendmail.ss_ - provides the procedures documented below
               _sendmail-unit.ss_ - provides unit sendmail@
               _sendmail-sig.ss_ - provides signature sendmail^
@@ -491,7 +491,7 @@ PROCEDURES -----------------------------------------------------------
 _sending mail_, _SMTP_
 ==========================================================================
 
-To load directly: (require (lib "smtp.ss" "net"))
+To load directly: (require net/smtp)
 Module files: _smtp.ss_ - provides the procedures documented below
               _smtp-unit.ss_ - provides unit smtp@
               _smtp-sig.ss_ - provides signature smtp^
@@ -584,7 +584,7 @@ PROCEDURES -----------------------------------------------------------
 _NNTP_, _newsgroups_
 ==========================================================================
 
-To load directly: (require (lib "nntp.ss" "net"))
+To load directly: (require net/nntp)
 Module files: _nntp.ss_ - provides the procedures documented below
               _nntp-unit.ss_ - provides unit nntp@
               _nntp-sig.ss_ - provides signature nntp^
@@ -731,7 +731,7 @@ PROCEDURES -----------------------------------------------------------
 _POP-3_, _reading mail_
 ==========================================================================
 
-To load directly: (require (lib "pop3.ss" "net"))
+To load directly: (require net/pop3)
 Module files: _pop3.ss_ - provides the procedures documented below
               _pop3-unit.ss_ - provides unit pop3@
               _pop3-sig.ss_ - provides signature pop3^
@@ -879,7 +879,7 @@ PROCEDURES -----------------------------------------------------------
 
 EXAMPLE --------------------------------------------------------------
 
- > (require (lib "pop3.ss" "net"))
+ > (require net/pop3)
  > (define c (connect-to-server "cs.rice.edu"))
  > (authenticate/plain-text "scheme" "********" c)
  > (get-mailbox-status c)
@@ -910,7 +910,7 @@ EXAMPLE --------------------------------------------------------------
 _IMAP_, _reading mail_
 ==========================================================================
 
-To load directly: (require (lib "imap.ss" "net"))
+To load directly: (require net/imap)
 Module files: _imap.ss_ - provides the procedures documented below
               _imap-unit.ss_ - provides unit imap@
               _imap-sig.ss_ - provides signature imap^
@@ -1285,7 +1285,7 @@ PROCEDURES -----------------------------------------------------------
 _mime headers_, _mail headers_, _http headers_
 ==========================================================================
 
-To load directly: (require (lib "head.ss" "net"))
+To load directly: (require net/head)
 Module files: _head.ss_ - provides the procedures documented below
               _head-unit.ss_ - provides unit head@
               _head-sig.ss_ - provides signature head^
@@ -1436,7 +1436,7 @@ PROCEDURES -----------------------------------------------------------
 _DNS_, _domain name service_
 ==========================================================================
 
-To load directly: (require (lib "dns.ss" "net"))
+To load directly: (require net/dns)
 Module files: _dns.ss_ - provides the procedures documented below
               _dns-unit.ss_ - provides unit dns@
               _dns-sig.ss_ - provides signature dns^
@@ -1482,7 +1482,7 @@ PROCEDURES -----------------------------------------------------------
 _MIME support__
 ==========================================================================
 
-To load directly: (require (lib "mime.ss" "net"))
+To load directly: (require net/mime)
 Module files: _mime.ss_ - provides the procedures documented below
               _mime-unit.ss_ - provides unit mime@
                                imports base64^ from "base64-sig.ss"
@@ -1794,7 +1794,7 @@ struct entity
 _Base 64 Encoding_, _base64_
 ==========================================================================
 
-To load directly: (require (lib "base64.ss" "net"))
+To load directly: (require net/base64)
 Module files: _base64.ss_ - provides the procedures documented below
               _base64-unit.ss_ - provides unit base64@
               _base64-sig.ss_ - provides signature base64^
@@ -1836,7 +1836,7 @@ PROCEDURES -----------------------------------------------------------
 _Quoted Printable Encoding_, _qp__
 ==========================================================================
 
-To load directly: (require (lib "qp.ss" "net"))
+To load directly: (require net/qp)
 Module files: _qp.ss_ - provides the procedures documented below
               _qp-unit.ss_ - provides unit qp@
               _qp-sig.ss_ - provides signature qp^
@@ -1903,7 +1903,7 @@ PROCEDURES -----------------------------------------------------------
 _FTP client_
 ==========================================================================
 
-To load directly: (require (lib "ftp.ss" "net"))
+To load directly: (require net/ftp)
 Module files: _ftp.ss_ - provides the procedures documented below
               _ftp-unit.ss_ - provides unit ftp@
               _ftp-sig.ss_ - provides signature ftp^
@@ -2044,7 +2044,7 @@ PROCEDURES -----------------------------------------------------------
 _cookies_, HTTP _State Management_
 ==========================================================================
 
-To load directly: (require (lib "cookie.ss" "net"))
+To load directly: (require net/cookie)
 Module files: _cookie.ss_ - provides the procedures documented below
               _cookie-unit.ss_ - provides unit cookie@
               _cookie-sig.ss_ - provides signature cookie^
@@ -2183,7 +2183,7 @@ won't have a cookie set then first arrive at your site.
 _URL encoding_, _URL decoding_, _application/x-www-form-urlencoded_
 ==========================================================================
 
-To load directly: (require (lib "uri-codec.ss" "net"))
+To load directly: (require net/uri-codec)
 Module files: _uri-codec.ss_ - provides the procedures documented below
               _uri-codec-unit.ss_ - provides unit uri-codec@
               _uri-codec-sig.ss_ - provides signature uri-codec^
@@ -2310,7 +2310,7 @@ PROCEDURES -----------------------------------------------------------
 _GIF_ writing, _animated GIF_ writing
 ==========================================================================
 
-To load directly: (require (lib "gifwrite.ss" "net"))
+To load directly: (require net/gifwrite)
 
 ABSTRACT -------------------------------------------------------------
 

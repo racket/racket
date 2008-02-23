@@ -4,9 +4,9 @@ exec mzscheme -qu "$0" ${1+"$@"}
 |#
 
 (module tabulate mzscheme
-  (require (lib "list.ss")
+  (require mzlib/list
            (lib "xml.ss" "xml")
-           (lib "cmdline.ss"))
+           mzlib/cmdline)
 
   (define base-link-filename (make-parameter #f))
   (define full-page-mode (make-parameter #f))

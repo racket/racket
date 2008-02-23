@@ -3,8 +3,8 @@
 
 (use-compiled-file-paths null)
 
-(require (lib "restart.ss")
-	 (lib "process.ss"))
+(require mzlib/restart
+	 mzlib/process)
 
 (define (system- s)
   (fprintf (current-error-port) "~a~n" s)

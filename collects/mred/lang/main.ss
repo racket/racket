@@ -1,6 +1,6 @@
 (module main mzscheme
-  (require (lib "class.ss")
-           (lib "mred.ss" "mred"))
+  (require mzlib/class
+           mred)
   (provide (all-from mzscheme)
-           (all-from (lib "class.ss"))
-           (all-from (lib "mred.ss" "mred"))))
+           (all-from mzlib/class)
+           (all-from mred)))

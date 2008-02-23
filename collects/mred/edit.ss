@@ -3,9 +3,9 @@
 ;; and new-pasteboard-frame
 
 (module edit mzscheme
-  (require (lib "class.ss")
-	   (lib "mred.ss" "mred")
-	   (lib "etc.ss"))
+  (require mzlib/class
+	   mred
+	   mzlib/etc)
 
   (provide new-text-frame
 	   new-pasteboard-frame

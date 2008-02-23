@@ -1,4 +1,4 @@
 
 (module unitsig mzscheme
-  (require (lib "unitsig200.ss"))
-  (provide (all-from (lib "unitsig200.ss"))))
+  (require mzlib/unitsig200)
+  (provide (all-from mzlib/unitsig200)))

@@ -1,8 +1,8 @@
 
 (module warning mzscheme
-  (require (lib "class.ss")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework"))
+  (require mzlib/class
+           mred
+           framework)
   (provide warnings%
            stepper-warnings%)
   

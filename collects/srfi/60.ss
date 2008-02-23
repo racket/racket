@@ -1,5 +1,5 @@
 (module |60| mzscheme
 
-  (require (lib "60.ss" "srfi" "60"))
-  (provide (all-from (lib "60.ss" "srfi" "60")))
+  (require srfi/60/60)
+  (provide (all-from srfi/60/60))
   )

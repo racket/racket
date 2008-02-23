@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (for-syntax scheme/base)
          "../private/closure.ss"
-         (lib "list.ss"))
+         mzlib/list)
 
 ; XXX Add contract
 (provide make-web-parameter

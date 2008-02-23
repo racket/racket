@@ -4,9 +4,9 @@
            "board.ss"
 	   "moves.ss"
            "die.ss"
-           (lib "math.ss")
-           (lib "class.ss")
-           (lib "mred.ss" "mred"))
+           mzlib/math
+           mzlib/class
+           mred)
   
   (provide play-game)
   

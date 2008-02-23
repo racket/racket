@@ -1,9 +1,9 @@
 
 (module utils mzscheme
-  (require (prefix mred: (lib "mred.ss" "mred"))
-	   (lib "class.ss")
-	   (lib "etc.ss")
-	   (lib "list.ss"))
+  (require (prefix mred: mred)
+	   mzlib/class
+	   mzlib/etc
+	   mzlib/list)
 
   (define-syntax (private-field stx)
     (syntax-case stx ()

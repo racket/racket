@@ -1,6 +1,6 @@
 
 (module scheme mzscheme
-  (require (lib "class.ss")
+  (require mzlib/class
            "wxme.ss"
            "editor.ss"
            "private/readable-editor.ss")

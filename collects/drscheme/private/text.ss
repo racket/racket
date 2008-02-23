@@ -1,8 +1,8 @@
 
 #lang scheme/unit
-  (require (lib "class.ss")
+  (require mzlib/class
            "drsig.ss"
-           (lib "framework.ss" "framework"))
+           framework)
   
   (import)
   (export drscheme:text^)

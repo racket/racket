@@ -56,7 +56,7 @@
 
 
 (module array mzscheme
-  (require (lib "9.ss" "srfi");; record-types
+  (require srfi/9;; record-types
 	   )
   (provide array? make-array shape array array-rank
 	   array-start array-end array-ref array-set! share-array
@@ -77,7 +77,7 @@
     (shp array:shape))
 
   ;; Using SRFI-25 ctor based index representation
-  (require (lib "include.ss"))
+  (require mzlib/include)
   (include "ix-ctor.scm")
   (include "op-ctor.scm")
 

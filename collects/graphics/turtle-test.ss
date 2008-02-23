@@ -1,7 +1,7 @@
 (module turtle-test mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "math.ss")
+  (require mred
+           mzlib/class
+           mzlib/math
            "turtle-examples.ss"
            "turtles.ss")
   

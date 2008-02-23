@@ -3,12 +3,12 @@
 
 #lang scheme/unit
   (require "collapsed-snipclass-helpers.ss"
-           (lib "string-constant.ss" "string-constants")
-           (lib "class.ss")
+           string-constants
+           mzlib/class
            "sig.ss"
            (lib "mred-sig.ss" "mred")
-           (lib "list.ss")
-           (lib "etc.ss")
+           mzlib/list
+           mzlib/etc
            (lib "scheme-lexer.ss" "syntax-color")
            "../gui-utils.ss"
            "../preferences.ss")

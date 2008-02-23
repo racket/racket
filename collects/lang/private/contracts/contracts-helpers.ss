@@ -1,7 +1,7 @@
 (module contracts-helpers mzscheme
   
   (require "hilighters.ss")
-  (require (lib "etc.ss"))
+  (require mzlib/etc)
            
   (provide (all-defined))
   

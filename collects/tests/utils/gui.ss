@@ -1,7 +1,7 @@
 (module gui mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "etc.ss"))
+  (require mred
+           mzlib/class
+           mzlib/etc)
   (provide find-labelled-window whitespace-string=?)
   
   ;; whitespace-string=? : string string -> boolean

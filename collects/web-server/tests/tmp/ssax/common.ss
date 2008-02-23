@@ -4,9 +4,9 @@
 ;; For PLT Schemes v.200
 
 (require 
-  (lib "defmacro.ss")
-  (lib "string.ss")
-  (rename (lib "pretty.ss") pp pretty-print))
+  mzlib/defmacro
+  mzlib/string
+  (rename mzlib/pretty pp pretty-print))
   
 (define (command-line)
   (cons "plt" (vector->list (current-command-line-arguments)

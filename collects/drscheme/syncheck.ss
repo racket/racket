@@ -17,7 +17,7 @@ If the namespace does not, they are colored the unbound color.
 |#
 
 
-(require string-constants/string-constant
+(require string-constants
          scheme/unit
          scheme/contract
          scheme/class
@@ -28,7 +28,7 @@ If the namespace does not, they are colored the unbound color.
          mrlib/bitmap-label
          (prefix-in drscheme:arrow: drscheme/arrow)
          (prefix-in fw: framework/framework)
-         mred/mred
+         mred
          setup/xref
          scribble/xref
          scribble/manual-struct

@@ -4,10 +4,10 @@
 
 (module read mzscheme
   
-  (require (lib "lex.ss" "parser-tools")
-           (prefix : (lib "lex-sre.ss" "parser-tools"))
-           (lib "yacc.ss" "parser-tools")
-           (lib "readerr.ss" "syntax"))
+  (require parser-tools/lex
+           (prefix : parser-tools/lex-sre)
+           parser-tools/yacc
+           syntax/readerr)
   
   (define-tokens data (DATUM))
   (define-empty-tokens delim (OP CP HASHOP QUOTE QUASIQUOTE UNQUOTE UNQUOTE-SPLICING DOT EOF))

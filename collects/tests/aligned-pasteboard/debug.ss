@@ -1,6 +1,6 @@
 (module debug mzscheme
   (require
-   (lib "class.ss"))
+   mzlib/class)
   
   (provide
    debug-snip

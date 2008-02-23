@@ -2,8 +2,8 @@
 (module start "slideshow.ss"
   (require "start-param.ss"
            (lib "config.ss" "planet")
-	   (lib "mred.ss" "mred")
-           (lib "class.ss"))
+	   mred
+           mzlib/class)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Path utilities

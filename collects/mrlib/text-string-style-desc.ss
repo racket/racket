@@ -1,8 +1,8 @@
 (module text-string-style-desc mzscheme
   (provide get-string/style-desc)
-  (require (lib "mred.ss" "mred")
-           (lib "etc.ss")
-           (lib "class.ss"))
+  (require mred
+           mzlib/etc
+           mzlib/class)
   
   ;; get-string/style-desc : text -> (listof str/ann)
   (define get-string/style-desc

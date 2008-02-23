@@ -1,6 +1,6 @@
 
-(require (lib "deflate.ss")
-	 (lib "inflate.ss"))
+(require mzlib/deflate
+	 mzlib/inflate)
 
 (for-each (lambda (f)
 	    (when (file-exists? f)
@@ -33,8 +33,8 @@
 ;; Uses (unix) `gzip' program from your path.
 ;; Run this in a directory with lots of files to use as tests
 
-(require (lib "deflate.ss")
-	 (lib "process.ss"))
+(require mzlib/deflate
+	 mzlib/process)
 
 (define (check-file/fastest p in)
   (let ([s1 (make-string 5000)]

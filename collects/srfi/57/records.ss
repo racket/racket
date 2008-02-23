@@ -10,8 +10,8 @@
            record-compose
            show)
 
-  (require            (prefix s9: (lib "9.ss" "srfi")))
-  (require-for-syntax (prefix s1: (lib "1.ss" "srfi")))
+  (require            (prefix s9: srfi/9))
+  (require-for-syntax (prefix s1: srfi/1))
 
   (require-for-syntax "registry.ss")
 

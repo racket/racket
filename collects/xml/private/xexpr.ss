@@ -1,8 +1,8 @@
 
 (module xexpr mzscheme
-  (require (lib "unitsig.ss")
-	  (lib "list.ss")
-	  (lib "etc.ss"))
+  (require mzlib/unitsig
+	  mzlib/list
+	  mzlib/etc)
 
   (require "sig.ss")
 

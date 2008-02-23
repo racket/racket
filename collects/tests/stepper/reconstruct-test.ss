@@ -1,13 +1,13 @@
 (require (prefix annotate: (lib "annotate.ss" "stepper" "private"))
-         (prefix kernel: (lib "kerncase.ss" "syntax"))
+         (prefix kernel: syntax/kerncase)
          (prefix reconstruct: (lib "reconstruct.ss" "stepper" "private"))
          (lib "shared.ss" "stepper" "private")
          (lib "highlight-placeholder.ss" "stepper" "private")
          (lib "my-macros.ss" "stepper" "private")
          (lib "model-settings.ss" "stepper" "private")
          (lib "marks.ss" "stepper" "private")
-         (lib "class.ss")
-         (lib "etc.ss")
+         mzlib/class
+         mzlib/etc
          "tests-common.ss")
 
 (load "/Users/clements/plt/tests/mzscheme/testing.ss")
@@ -529,17 +529,17 @@
 ;;
 ;;;;;;;;;;;;;
 
-(require (lib "mred.ss" "mred"))
+(require mred)
 
 (define tp-namespace
   (let ([ns (current-namespace)]
-        [mred-name ((current-module-name-resolver) '(lib "mred.ss" "mred") #f #f)]
+        [mred-name ((current-module-name-resolver) 'mred #f #f)]
         [new-namespace (make-namespace 'empty)])
     (parameterize ([current-namespace new-namespace])
       (namespace-attach-module ns 'mzscheme)
       (namespace-attach-module ns mred-name)
-      (namespace-require '(lib "htdp-beginner.ss" "lang"))
-      (namespace-require '(lib "guess.ss" "htdp"))
+      (namespace-require 'lang/htdp-beginner)
+      (namespace-require 'htdp/guess)
       new-namespace)))
 
 (reconstruct:set-render-settings! fake-beginner-render-settings)

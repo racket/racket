@@ -20,12 +20,12 @@ it around flattened out.
 (require "contract-guts.ss"
          "contract-opt.ss"
          "contract-ds-helpers.ss"
-         (lib "etc.ss"))
+         mzlib/etc)
 (require (for-syntax scheme/base)
          (for-syntax "contract-ds-helpers.ss")
          (for-syntax "contract-helpers.ss")
          (for-syntax "contract-opt-guts.ss")
-         (for-syntax (lib "etc.ss")))
+         (for-syntax mzlib/etc))
 
 (provide define-contract-struct
          

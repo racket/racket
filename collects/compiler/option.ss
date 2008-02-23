@@ -1,6 +1,6 @@
 
 (module option mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
   (require "sig.ss")
   (require "option-unit.ss")

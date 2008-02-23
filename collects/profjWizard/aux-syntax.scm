@@ -6,7 +6,7 @@
       cap-id           ; Identifier -> Identifier 
       )
      
-     (require (lib "string.ss"))
+     (require mzlib/string)
      
      (define (prefix-id-suffix prefix e suffix)
        (datum->syntax-object

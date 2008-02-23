@@ -1,15 +1,15 @@
 (module stepper-tool mzscheme
 
-  (require (lib "contract.ss")
+  (require mzlib/contract
            (lib "tool.ss" "drscheme")
-           (lib "mred.ss" "mred")
-           (lib "pconvert.ss")
-           (lib "string-constant.ss" "string-constants")
-           (lib "async-channel.ss")
-           (prefix frame: (lib "framework.ss" "framework"))
-           (lib "unit.ss")
-           (lib "class.ss")
-           (lib "list.ss")
+           mred
+           mzlib/pconvert
+           string-constants
+           mzlib/async-channel
+           (prefix frame: framework)
+           mzlib/unit
+           mzlib/class
+           mzlib/list
            (prefix model: "private/model.ss")
            "private/my-macros.ss"
            (prefix x: "private/mred-extensions.ss")

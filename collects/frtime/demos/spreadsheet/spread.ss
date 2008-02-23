@@ -1,17 +1,17 @@
-(module spread (lib "frtime-big.ss" "frtime")
+(module spread frtime/frtime-big
   
-  (require (lib "class.ss")
-           (all-except (lib "mred.ss" "mred") send-event)
+  (require mzlib/class
+           (all-except mred send-event)
            (rename mzscheme mz:define-struct define-struct)
            "preprocessor2.ss"
            (lifted "ss-funcs.ss" inflate-data)
            "quotes.ss"
-           (as-is:unchecked (lib "match.ss") match-lambda)
-           (as-is:unchecked (lib "frp-core.ss" "frtime") signal-value
+           (as-is:unchecked mzlib/match match-lambda)
+           (as-is:unchecked frtime/frp-core signal-value
                             proc->signal)
-           (lib "framework.ss" "framework")
-           (as-is:unchecked (lib "string.ss") expr->string)
-           (as-is:unchecked (lib "etc.ss") build-vector)
+           framework
+           (as-is:unchecked mzlib/string expr->string)
+           (as-is:unchecked mzlib/etc build-vector)
            ;(lifted mzscheme regexp-match)
            (as-is:unchecked mzscheme make-hash-table hash-table-put! hash-table-get
                             hash-table-remove! let*-values vector-set! make-string

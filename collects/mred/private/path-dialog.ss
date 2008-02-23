@@ -1,5 +1,5 @@
 (module path-dialog mzscheme
-  (require (lib "class.ss") (lib "list.ss") (lib "string.ss") (lib "file.ss")
+  (require mzlib/class mzlib/list mzlib/string mzlib/file
 	   (prefix wx: "kernel.ss")
 	   "helper.ss" "mrtop.ss" "mritem.ss" "mrpanel.ss" "mrtextfield.ss"
            "messagebox.ss" "mrmenu.ss")

@@ -435,7 +435,7 @@
                                              module-path)])
                                     (syntax-case (expand `(module m mzscheme
                                                             (require (only ,module-path)
-                                                                     (lib "runtime-path.ss"))
+                                                                     mzlib/runtime-path)
                                                             (runtime-paths ,module-path))) (quote)
                                       [(_ m mz (#%mb rfs req (quote (spec ...))))
                                        (syntax->datum #'(spec ...))]

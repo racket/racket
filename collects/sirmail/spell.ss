@@ -1,13 +1,13 @@
 (module spell mzscheme
-  (require (lib "lex.ss" "parser-tools")
-           (prefix : (lib "lex-sre.ss" "parser-tools"))
-           (lib "class.ss")
-           (lib "string.ss")
-           (lib "list.ss")
-           (lib "framework.ss" "framework")
-           (lib "contract.ss")
-	   (lib "file.ss")
-           (lib "process.ss"))
+  (require parser-tools/lex
+           (prefix : parser-tools/lex-sre)
+           mzlib/class
+           mzlib/string
+           mzlib/list
+           framework
+           mzlib/contract
+	   mzlib/file
+           mzlib/process)
   
   (provide/contract [activate-spelling ((is-a?/c color:text<%>) . -> . void?)]
                     [word-count (-> number?)])

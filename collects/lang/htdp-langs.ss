@@ -7,27 +7,27 @@
 |#
 
 (module htdp-langs mzscheme
-  (require (lib "string-constant.ss" "string-constants")
-           (lib "framework.ss" "framework")
+  (require string-constants
+           framework
            (prefix et: (lib "stacktrace.ss" "errortrace"))
            (prefix tr: (lib "stacktrace.ss" "trace"))
-           (lib "pretty.ss")
-           (prefix pc: (lib "pconvert.ss"))
-           (lib "file.ss")
-           (lib "unit.ss")
-           (lib "class.ss")
-           (lib "list.ss")
-           (lib "struct.ss")
-           (lib "compile.ss")
-           (lib "struct.ss")
+           mzlib/pretty
+           (prefix pc: mzlib/pconvert)
+           mzlib/file
+           mzlib/unit
+           mzlib/class
+           mzlib/list
+           mzlib/struct
+           mzlib/compile
+           mzlib/struct
            (lib "tool.ss" "drscheme")
-           (lib "mred.ss" "mred")
+           mred
            (lib "bday.ss" "framework" "private")
-           (lib "moddep.ss" "syntax")
+           syntax/moddep
            (lib "cache-image-snip.ss" "mrlib")
-           (lib "embed.ss" "compiler")
+           compiler/embed
            (lib "wxme.ss" "wxme")
-           (lib "dirs.ss" "setup")
+           setup/dirs
            
            ;; this module is shared between the drscheme's namespace (so loaded here) 
            ;; and the user's namespace in the teaching languages

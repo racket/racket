@@ -35,8 +35,8 @@
 (module cons
   mzscheme
 
-  (require (lib "etc.ss" "mzlib")
-		   (lib "optional.ss" "srfi")
+  (require mzlib/etc
+		   srfi/optional
 		   "selector.ss")
 
   (provide xcons 

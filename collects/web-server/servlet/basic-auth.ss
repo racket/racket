@@ -1,7 +1,7 @@
 #lang scheme/base
-(require (lib "contract.ss")
-         (lib "plt-match.ss")
-         (lib "base64.ss" "net"))
+(require mzlib/contract
+         mzlib/plt-match
+         net/base64)
 (require "../private/request-structs.ss")
 
 (define (extract-user-pass headers)

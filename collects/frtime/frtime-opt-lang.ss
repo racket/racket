@@ -2,8 +2,8 @@
 ;; as well as their lowered equivalents.  It doesn't know how to perform
 ;; optimization, though -- that is left to the frtime-opt module.
 (module frtime-opt-lang mzscheme
-  (require (prefix frtime: (lib "frtime.ss" "frtime")))
-  (require-for-syntax (lib "lowered-equivs.ss" "frtime"))
+  (require (prefix frtime: frtime/frtime))
+  (require-for-syntax frtime/lowered-equivs)
   
   ;; Export a function that is just a lifted version of a standard
   ;; function (with the same name).
@@ -12,7 +12,7 @@
     (syntax-case stx ()
       [(_ MOD FUNC)
        (let ([lowered-equiv-id (make-lowered-equiv-id #'FUNC)])
-         #`(begin (require (rename (lib "frtime-big.ss" "frtime") lifted-func FUNC))
+         #`(begin (require (rename frtime/frtime-big lifted-func FUNC))
                   (provide (rename lifted-func FUNC))
                   (require (rename MOD #,lowered-equiv-id FUNC))
                   (provide #,lowered-equiv-id)))]
@@ -24,7 +24,7 @@
     (syntax-case stx ()
       [(_ FUNC)
        (let ([lowered-equiv-id (make-lowered-equiv-id #'FUNC)])
-         #`(begin (require (only (lib "frtime-big.ss" "frtime") FUNC))
+         #`(begin (require (only frtime/frtime-big FUNC))
                   ;; note: the definition is necessary here because otherwise the lowered
                   ;; equiv doesn't become part of the module's namespace, and there's
                   ;; no way to find the list of identifiers exported by a module other
@@ -40,7 +40,7 @@
   (define-syntax provide/no-equiv
     (syntax-rules ()
       [(_ FUNC)
-       (begin (require (rename (lib "frtime-big.ss" "frtime") func FUNC))
+       (begin (require (rename frtime/frtime-big func FUNC))
               (provide (rename func FUNC)))]
       [(_ FUNC FUNCS ...)
        (begin (provide/no-equiv FUNC)
@@ -128,7 +128,7 @@
    eval procedure-arity regexp-match void system-type
    )
   
-  (provide/lifted (lib "1.ss" "srfi")
+  (provide/lifted srfi/1
     first second)
 
   ;; things that serve as their own lowered equivalent

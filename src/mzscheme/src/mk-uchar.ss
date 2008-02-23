@@ -11,7 +11,7 @@
 ;; in the "Unicode" directory. The file schuchar.inc will be
 ;; overwritten.
 
-(require (lib "list.ss"))
+(require mzlib/list)
 (require mzscheme)
 
 (define mark-cats '("Mn" "Mc" "Me"))

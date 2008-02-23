@@ -5,7 +5,7 @@
 ;;   contributed by Isaac Gouy
 
 (module spectralnorm mzscheme
-  (require (lib "string.ss"))
+  (require mzlib/string)
 
   (define (Approximate n)
     (let ([u (make-vector n 1.0)]

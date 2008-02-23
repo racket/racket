@@ -1,7 +1,6 @@
 (module os mzscheme
-  (require (lib "etc.ss")
-	   (lib "foreign.ss")) (unsafe!)
-     
+  (require mzlib/etc mzlib/foreign) (unsafe!)
+
   (define kernel32 
     (delay (and (eq? 'windows (system-type))
 		(ffi-lib "kernel32"))))

@@ -1,7 +1,7 @@
 (module stick-figures mzscheme
-  (require (lib "class.ss")
-           (lib "pretty.ss")
-           (lib "mred.ss" "mred"))
+  (require mzlib/class
+           mzlib/pretty
+           mred)
   
   (define head-size 40)
   (define small-bitmap-factor 1/2)

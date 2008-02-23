@@ -1,6 +1,6 @@
 (module planet-archives mzscheme
   (require "private/planet-shared.ss"
-	   (lib "file.ss")
+	   mzlib/file
            "config.ss"
            "cachepath.ss")
   

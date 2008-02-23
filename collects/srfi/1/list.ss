@@ -214,7 +214,7 @@
 
 (module list mzscheme
 
-  (require (lib "optional.ss" "srfi"))
+  (require srfi/optional)
 
   (require "cons.ss"
 	   "selector.ss"

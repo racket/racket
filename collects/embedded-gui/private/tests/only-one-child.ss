@@ -1,9 +1,9 @@
 (require
- (lib "mred.ss" "mred")
- (lib "class.ss")
- (lib "etc.ss")
- (lib "list.ss")
- (lib "match.ss")
+ mred
+ mzlib/class
+ mzlib/etc
+ mzlib/list
+ mzlib/match
  (prefix a: "../alignment.ss")
  "../alignment-helpers.ss"
  "../dllist.ss"

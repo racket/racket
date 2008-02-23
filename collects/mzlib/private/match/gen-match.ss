@@ -2,8 +2,8 @@
   
   (provide gen-match)
   
-  (require (lib "etc.ss")
-           (lib "stx.ss" "syntax")
+  (require mzlib/etc
+           syntax/stx
            "match-helper.ss"
            "match-error.ss"           
            "coupling-and-binding.scm"		      
@@ -17,7 +17,7 @@
            "convert-pat.ss")
   
   (require-for-template mzscheme
-			(lib "etc.ss")
+			mzlib/etc
 			"match-error.ss")
   
   ;; mark-patlist : listof[x] -> listof[(cons x #f)]

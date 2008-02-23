@@ -1,10 +1,8 @@
 #lang scheme/base
-(require (lib "list.ss")
+(require mzlib/list
          scheme/contract)
 
-(define default-to-be-copied-module-specs
-  '(mzscheme
-    (lib "mred.ss" "mred")))
+(define default-to-be-copied-module-specs '(mzscheme mred))
 
 (define (make-make-servlet-namespace
          #:to-be-copied-module-specs [to-be-copied-module-specs empty])    

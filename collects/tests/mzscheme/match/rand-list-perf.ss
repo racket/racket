@@ -1,11 +1,11 @@
 (load-relative "../loadtest.ss")
 (Section 'match-performance)
 
-(require (lib "pretty.ss"))
-(require-for-syntax (lib "pretty.ss"))
-(require (lib "include.ss"))
-(require (lib "plt-match.ss"))
-(require (lib "list.ss"))
+(require mzlib/pretty)
+(require-for-syntax mzlib/pretty)
+(require mzlib/include)
+(require mzlib/plt-match)
+(require mzlib/list)
 
 (include "match-compile-perf.scm")
 

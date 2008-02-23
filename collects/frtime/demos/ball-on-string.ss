@@ -1,4 +1,4 @@
-(require (lib "animation.ss" "frtime"))
+(require frtime/animation)
 
 (define-values (pos vel)
  (letrec ([pos (posn-integral vel)]

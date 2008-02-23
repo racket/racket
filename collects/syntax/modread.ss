@@ -1,5 +1,5 @@
 (module modread mzscheme
-  (require (lib "contract.ss"))
+  (require mzlib/contract)
   
   (provide with-module-reading-parameterization)
   (provide/contract

@@ -1,10 +1,10 @@
 (module font mzscheme
-  (require (lib "unit.ss")
-           (lib "class.ss")
+  (require mzlib/unit
+           mzlib/class
            "drsig.ss"
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
-           (lib "string-constant.ss" "string-constants"))
+           mred
+           framework
+           string-constants)
   
   (define sc-smoothing-label (string-constant font-smoothing-label))
   (define sc-smoothing-none (string-constant font-smoothing-none))

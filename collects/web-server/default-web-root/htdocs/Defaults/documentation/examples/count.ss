@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "date.ss"))
+(require mzlib/date)
 (provide (all-defined-out))
 (define interface-version 'v1)
 (define timeout +inf.0)

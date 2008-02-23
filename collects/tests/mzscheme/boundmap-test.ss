@@ -1,6 +1,6 @@
 (load-relative "loadtest.ss")
 
-(require (lib "boundmap.ss" "syntax"))
+(require syntax/boundmap)
   
 (Section 'boundmap)
 

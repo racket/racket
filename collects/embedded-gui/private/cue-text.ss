@@ -9,10 +9,10 @@
 (module cue-text mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "mred.ss" "mred")
-   (lib "etc.ss")
-   (lib "framework.ss" "framework"))
+   mzlib/class
+   mred
+   mzlib/etc
+   framework)
   
   (provide cue-text-mixin
            cue-text%)

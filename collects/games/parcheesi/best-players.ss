@@ -15,10 +15,10 @@ careful charlie
 	   "moves.ss"
            "interfaces.ss"
            "test.ss"
-           (lib "list.ss")
-           (lib "etc.ss")
-           (lib "class.ss")
-           (lib "pretty.ss"))
+           mzlib/list
+           mzlib/etc
+           mzlib/class
+           mzlib/pretty)
   
   (provide random-player%
            agressive-player%

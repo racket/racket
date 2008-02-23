@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "contract.ss"))
+(require mzlib/contract)
 (require "../private/connection-manager.ss"
          "../private/request-structs.ss")
 

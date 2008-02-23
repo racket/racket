@@ -5,8 +5,7 @@
 
 #lang mzscheme
 
-(require (lib "class.ss") (lib "mred.ss" "mred") (lib "etc.ss")
-         "../show-help.ss" (lib "unit.ss"))
+(require mzlib/class mred mzlib/etc "../show-help.ss" mzlib/unit)
 (provide game@)
 
 (define customs '())

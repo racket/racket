@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (lib "request-structs.ss" "web-server" "private")
-         (lib "url.ss" "net"))
+         net/url)
 (provide start)
 
 (define (start req)

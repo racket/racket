@@ -2,12 +2,12 @@
 ; sebastian_egner@yahoo.com, 26-Dec-2007, PLT 371.
 ;   + check fix for bugs found by sunnan and jens axel soegaard
 ; Sebastian.Egner@philips.com, 7-July-2003, PLT 204.
-; For running the demos: (require (lib "examples-42.ss" "srfi" "42"))
+; For running the demos: (require srfi/42/examples-42)
 ; For anything else: http://srfi.schemers.org/srfi-42/
 
 (module |examples-42| mzscheme
 
-  (require (lib "42.ss" "srfi"))
+  (require srfi/42)
 
   (define (my-open-output-file filename)
     (open-output-file filename 'replace 'text) )
@@ -40,7 +40,7 @@
 ;   (load "examples.scm")
 ;
 ; Running the examples in PLT/DrScheme (version 204): 
-;   (require (lib "42-examples.ss" "srfi"))
+;   (require srfi/42-examples)
 ;
 ; Running the examples in SCM (version 5d7):
 ;   (require 'macro) (require 'record)

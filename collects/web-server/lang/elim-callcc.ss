@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (for-template scheme/base)
-         (lib "kerncase.ss" "syntax")
+         syntax/kerncase
          "../lang/abort-resume.ss"
          (for-template "../lang/abort-resume.ss")
          "util.ss")

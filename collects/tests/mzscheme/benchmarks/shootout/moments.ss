@@ -1,8 +1,8 @@
 ; Moments.scm
 
 (module moments mzscheme
-  (require (only (lib "list.ss") sort)
-           (only (lib "string.ss") real->decimal-string))
+  (require (only mzlib/list sort)
+           (only mzlib/string real->decimal-string))
 
   (define (to-str n) (real->decimal-string n 6))
 

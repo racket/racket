@@ -1,9 +1,9 @@
 (module waterworld mzscheme
-  (require (lib "class.ss"))
-  (require (lib "file.ss"))
-  (require (lib "list.ss"))
-  (require (lib "etc.ss"))
-  (require (lib "mred.ss" "mred"))
+  (require mzlib/class)
+  (require mzlib/file)
+  (require mzlib/list)
+  (require mzlib/etc)
+  (require mred)
   (require (lib "external.ss" "browser"))
   
   (define *progname* "WaterWorld")

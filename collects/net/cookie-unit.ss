@@ -50,10 +50,10 @@
 
 #lang scheme/unit
 
-  (require (lib "etc.ss")
-           (lib "list.ss")
-           (lib "string.ss" "srfi" "13")
-           (lib "char-set.ss" "srfi" "14")
+  (require mzlib/etc
+           mzlib/list
+           srfi/13/string
+           srfi/14/char-set
            "cookie-sig.ss")
 
   (import)

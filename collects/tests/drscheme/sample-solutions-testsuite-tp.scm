@@ -1,6 +1,6 @@
 (module sample-solutions-testsuite-tp mzscheme
   (provide require-library)
-  (require (lib "include.ss"))
+  (require mzlib/include)
   
   (define-syntax require-library
     (let ([cache null])

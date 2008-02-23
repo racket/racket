@@ -1,7 +1,6 @@
 (module pre-installer mzscheme
-  (require (lib "etc.ss") (lib "file.ss") (lib "list.ss")
-           (lib "file.ss" "dynext") (lib "link.ss" "dynext")
-           (lib "compile.ss" "dynext"))
+  (require mzlib/etc mzlib/file mzlib/list
+           dynext/file dynext/link dynext/compile)
 
   (define top-dir (this-expression-source-directory))
   (define src-dir (build-path top-dir "src"))

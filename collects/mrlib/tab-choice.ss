@@ -5,9 +5,9 @@
 ;;  -- The copy in framework should be removed --
 
 (module tab-choice mzscheme
-  (require (lib "class.ss")
-	   (lib "mred.ss" "mred")
-	   (lib "list.ss"))
+  (require mzlib/class
+	   mred
+	   mzlib/list)
 
   (provide auto-tab-panel%
 	   single<%> single-mixin)

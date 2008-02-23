@@ -1,5 +1,5 @@
 (require (prefix annotate: (lib "annotate.ss" "stepper" "private")))
-(require (prefix kernel: (lib "kerncase.ss" "syntax")))
+(require (prefix kernel: syntax/kerncase))
 (require (lib "syncheck-debug.ss" "drscheme" "private"))
 (require (lib "marks.ss" "stepper" "private"))
 (require "tests-common.ss")

@@ -1,9 +1,9 @@
 
 #lang scheme/unit
-  (require (lib "string-constant.ss" "string-constants")
+  (require string-constants
            "drsig.ss"
-           (lib "list.ss")
-           (lib "mred.ss" "mred"))
+           mzlib/list
+           mred)
   
   
   (import)

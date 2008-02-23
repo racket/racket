@@ -1,6 +1,6 @@
 (module url-structs mzscheme
-  (require (lib "contract.ss")
-           (lib "serialize.ss"))
+  (require mzlib/contract
+           mzlib/serialize)
 
   (define-serializable-struct url (scheme user host port path-absolute? path query fragment))
   (define-serializable-struct path/param (path param))

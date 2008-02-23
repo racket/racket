@@ -3,8 +3,8 @@
 ;; as syntactic identifiers.
 (module lowered-equivs mzscheme
   (provide (all-defined))
-  (require (lib "list.ss"))
-  (require (only (lib "1.ss" "srfi") any))
+  (require mzlib/list)
+  (require (only srfi/1 any))
 
   (define lowered-equiv-suffix ":lowered-equiv")
   

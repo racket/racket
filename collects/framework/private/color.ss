@@ -1,12 +1,12 @@
 #lang scheme/unit
-  (require (lib "class.ss")
-           (lib "thread.ss")
-           (lib "mred.ss" "mred")
-           (lib "etc.ss")
+  (require mzlib/class
+           mzlib/thread
+           mred
+           mzlib/etc
            (lib "token-tree.ss" "syntax-color")
            (lib "paren-tree.ss" "syntax-color")
            (lib "default-lexer.ss" "syntax-color")
-           string-constants/string-constant
+           string-constants
            "../preferences.ss"
            "sig.ss")
   

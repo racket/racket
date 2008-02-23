@@ -1,9 +1,9 @@
 (module cache-image-snip mzscheme
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
-           (lib "string.ss")
-	   (lib "contract.ss")
-           (lib "list.ss"))
+  (require mred
+           mzlib/class
+           mzlib/string
+	   mzlib/contract
+           mzlib/list)
   
   (provide cache-image-snip%
            cache-image-snip-class%

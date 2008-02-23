@@ -29,12 +29,12 @@
 ;; tokens.
 
 (module cfg-parser mzscheme
-  (require (lib "yacc.ss" "parser-tools")
-	   (lib "lex.ss" "parser-tools")
-           (lib "list.ss")
-           (lib "etc.ss"))
-  (require-for-syntax (lib "boundmap.ss" "syntax")
-                      (lib "list.ss")
+  (require parser-tools/yacc
+	   parser-tools/lex
+           mzlib/list
+           mzlib/etc)
+  (require-for-syntax syntax/boundmap
+                      mzlib/list
 		      (lib "token-syntax.ss" "parser-tools" "private-lex"))
 
   (provide cfg-parser)

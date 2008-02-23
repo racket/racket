@@ -20,7 +20,7 @@
 		    ""))])
   (namespace-variable-value 'flat-number))
 
-(require (lib "pretty.ss"))
+(require mzlib/pretty)
 
 (define line-count 0)
 (define file-count 0)

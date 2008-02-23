@@ -2,15 +2,15 @@
   
   (require (all-except "graphics.ss" make-posn posn-x posn-y make-rgb)
            (lifted "graphics.ss" posn-x posn-y make-posn make-rgb)
-           (lib "match.ss")
-           (as-is:unchecked (lib "lang-ext.ss" "frtime") lift)
-           (lib "class.ss")
-           (lib "list.ss" "frtime")
-           (lib "etc.ss" "frtime")
-           (lib "math.ss" "frtime")
+           mzlib/match
+           (as-is:unchecked frtime/lang-ext lift)
+           mzlib/class
+           frtime/list
+           frtime/etc
+           frtime/math
            (rename mzscheme mz:define-struct define-struct))
   
-  (require-for-syntax (lib "etc.ss"))
+  (require-for-syntax mzlib/etc)
   
   (open-graphics)
   

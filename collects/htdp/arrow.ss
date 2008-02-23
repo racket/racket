@@ -1,10 +1,10 @@
 #cs(module arrow mzscheme
   
-  (require (lib "error.ss" "htdp")
-           (lib "big-draw.ss" "htdp")
-           (lib "etc.ss")
-           (lib "class.ss")
-           (lib "mred.ss" "mred")
+  (require htdp/error
+           htdp/big-draw
+           mzlib/etc
+           mzlib/class
+           mred
            (lib "prim.ss" "lang"))
   
   (provide

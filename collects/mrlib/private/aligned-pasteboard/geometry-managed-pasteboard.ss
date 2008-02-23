@@ -1,12 +1,12 @@
 (module geometry-managed-pasteboard mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "contract.ss")
-   (lib "list.ss")
-   (lib "etc.ss")
-   (lib "match.ss")
-   (lib "mred.ss" "mred")
+   mzlib/class
+   mzlib/contract
+   mzlib/list
+   mzlib/etc
+   mzlib/match
+   mred
    "aligned-editor-container.ss"
    "interface.ss"
    "alignment.ss"

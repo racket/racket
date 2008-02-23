@@ -1,13 +1,13 @@
 #lang scheme/unit
 
-(require (lib "matrix-sig.ss" "htdp")
-         (lib "matrix-render-sig.ss" "htdp")
+(require htdp/matrix-sig
+         htdp/matrix-render-sig
          (lib "matrix-snip.ss" "mrlib")
-         (lib "error.ss" "htdp")
+         htdp/error
          (lib "posn.ss" "lang")
-         (lib "class.ss")
-         (lib "pconvert.ss")
-         (lib "pretty.ss"))
+         mzlib/class
+         mzlib/pconvert
+         mzlib/pretty)
 
 (import matrix-render^)
 (export matrix^)

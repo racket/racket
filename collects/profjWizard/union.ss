@@ -2,9 +2,9 @@
 (module union mzscheme 
   (require "data-defs.scm"
            "class.scm"
-           (lib "contract.ss")
-           (lib "etc.ss") 
-           (lib "list.ss"))
+           mzlib/contract
+           mzlib/etc 
+           mzlib/list)
   
 
   (provide/contract

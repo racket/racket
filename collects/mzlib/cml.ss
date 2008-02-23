@@ -1,6 +1,6 @@
 
 (module cml mzscheme
-  (require (lib "contract.ss"))
+  (require mzlib/contract)
 
   (define (spawn thunk)
     (thread/suspend-to-kill thunk))

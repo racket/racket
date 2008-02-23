@@ -26,7 +26,7 @@
            #"__head_~a_lib\0"
            #"__~a_lib_iname\0")))
 
-  (require (lib "filename-version.ss" "dynext"))
+  (require dynext/filename-version)
   (define version-bytes (string->bytes/utf-8 filename-version-part))
 
   (define (binary-file? filename)

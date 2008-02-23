@@ -1,9 +1,9 @@
 #cs(module guess-gui mzscheme
-  (require (lib "error.ss" "htdp")
-	   (lib "mred.ss" "mred")
-	   (lib "class.ss")
-           (lib "list.ss")
-           (lib "etc.ss")
+  (require htdp/error
+	   mred
+	   mzlib/class
+           mzlib/list
+           mzlib/etc
            (lib "prim.ss" "lang"))
   
   (provide

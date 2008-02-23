@@ -2,11 +2,11 @@
   (require "error.ss"
 	   "draw-sig.ss"
 	   "big-draw.ss"
-	   (lib "class.ss")
-           (lib "unit.ss")
-           (lib "etc.ss")
+	   mzlib/class
+           mzlib/unit
+           mzlib/etc
            (lib "prim.ss" "lang")
-	   (lib "mred.ss" "mred"))
+	   mred)
   
   (provide
    hangman

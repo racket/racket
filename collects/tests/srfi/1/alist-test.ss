@@ -35,8 +35,8 @@
 (module alist-test mzscheme
 
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (all-except (lib "alist.ss" "srfi" "1") assoc)
-           (rename (lib "alist.ss" "srfi" "1") s:assoc assoc))
+           (all-except srfi/1/alist assoc)
+           (rename srfi/1/alist s:assoc assoc))
 
   (provide alist-tests)
 

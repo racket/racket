@@ -4,7 +4,7 @@
 
 (Section 'moddep)
 
-(require (lib "moddep.ss" "syntax"))
+(require syntax/moddep)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; resolve-module-path[-index]

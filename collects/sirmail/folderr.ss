@@ -1,17 +1,17 @@
 
 (module folderr mzscheme
-  (require (lib "unit.ss")
-           (lib "class.ss")
-           (lib "framework.ss" "framework")
+  (require mzlib/unit
+           mzlib/class
+           framework
            (lib "mred-sig.ss" "mred"))
   
-  (require (lib "list.ss")
-           (lib "etc.ss"))
+  (require mzlib/list
+           mzlib/etc)
   
   (require "sirmails.ss"
            "pref.ss")
   
-  (require (lib "imap-sig.ss" "net"))
+  (require net/imap-sig)
   
   (require (lib "hierlist-sig.ss" "hierlist"))
 

@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          (lib "file-box.ss" "web-server" "lang")
-         (only-in (lib "file.ss") make-temporary-file))
+         (only-in mzlib/file make-temporary-file))
 (provide file-box-tests)
 
 (define file-box-tests

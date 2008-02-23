@@ -1,9 +1,9 @@
 
 #lang scheme/gui
 
-(require (lib "class.ss")
-	 (lib "class100.ss")
-	 (lib "etc.ss"))
+(require mzlib/class
+	 mzlib/class100
+	 mzlib/etc)
 
 (define my-txt #f)
 (define my-lb #f)

@@ -1,6 +1,6 @@
 
 (module structures mzscheme
-  (require (lib "unitsig.ss"))
+  (require mzlib/unitsig)
 
   (require "sig.ss")
 

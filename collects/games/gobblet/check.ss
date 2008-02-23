@@ -5,9 +5,9 @@
 ;; form).
 
 (module check mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "etc.ss")
-	   (lib "list.ss")
+  (require mzlib/unitsig
+	   mzlib/etc
+	   mzlib/list
 	   "sig.ss"
 	   "model.ss"
 	   "explore.ss"

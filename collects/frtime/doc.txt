@@ -12,7 +12,7 @@ used.
 To interact with FrTime, set the language level to FrTime.  You can
 also make FrTime the language for a module:
 
-(module <module-name> (lib "frtime.ss" "frtime")
+(module <module-name> frtime/frtime
    <module-body>)
 
 For the animation library and demo programs, set the language level

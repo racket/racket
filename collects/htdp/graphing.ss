@@ -1,8 +1,8 @@
 (module graphing mzscheme
-  (require (lib "error.ss" "htdp")
-	   (lib "unit.ss")
-	   (lib "draw-sig.ss" "htdp")
-	   (lib "big-draw.ss" "htdp")
+  (require htdp/error
+	   mzlib/unit
+	   htdp/draw-sig
+	   htdp/big-draw
 	   (lib "posn.ss" "lang")
            (lib "prim.ss" "lang"))
   

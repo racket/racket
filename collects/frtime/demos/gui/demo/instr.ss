@@ -1,7 +1,7 @@
 (require (lib "mixin-macros.ss" "frtime" "demos" "gui")) 
 (require (lib "aux-mixin-macros.ss" "frtime" "demos" "gui")) ;require the macros
-(require (lib "class.ss")) ; require class utilities
-(require (lib "mred.ss" "mred")) ; require base mred library
+(require mzlib/class) ; require class utilities
+(require mred) ; require base mred library
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -6,9 +6,9 @@
                   ssax:xml->sxml)
          (lib "request-structs.ss" "web-server" "private")
          (lib "web-server-structs.ss" "web-server" "private")
-         (lib "url.ss" "net")
-         (lib "pretty.ss")
-         (lib "list.ss")
+         net/url
+         mzlib/pretty
+         mzlib/list
          (lib "timer.ss" "web-server" "private"))
 (provide make-module-eval
          make-eval/mod-path

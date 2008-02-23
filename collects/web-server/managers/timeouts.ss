@@ -1,6 +1,6 @@
 #lang scheme/base
-(require (lib "plt-match.ss")
-         (lib "contract.ss"))
+(require mzlib/plt-match
+         mzlib/contract)
 (require "manager.ss")
 (require "../private/timer.ss"
          "../servlet/servlet-structs.ss")

@@ -1,7 +1,7 @@
 (module xelda mzscheme
-  (require (lib "class.ss"))
-  (require (lib "list.ss"))
-  (require (lib "mred.ss" "mred"))
+  (require mzlib/class)
+  (require mzlib/list)
+  (require mred)
   
   (require "private/xelda-com.ss")
   (require "private/xelda-checker.ss")

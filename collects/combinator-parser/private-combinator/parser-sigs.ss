@@ -1,10 +1,10 @@
 (module parser-sigs mzscheme
   
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
-  (require (only (lib "etc.ss") opt-lambda))    ; Required for expansion
-  (require (lib "lex.ss" "parser-tools")
-           (lib "string.ss") (lib "list.ss"))
+  (require (only mzlib/etc opt-lambda))    ; Required for expansion
+  (require parser-tools/lex
+           mzlib/string mzlib/list)
   
   (provide (all-defined))
   

@@ -1,16 +1,16 @@
 (require
- (lib "class.ss")
- (lib "list.ss")
- (lib "mred.ss" "mred")
- (lib "unitsig.ss")
+ mzlib/class
+ mzlib/list
+ mred
+ mzlib/unitsig
  (lib "tool.ss" "drscheme")
- (lib "etc.ss")
- (lib "match.ss")
- (lib "framework.ss" "framework")
- (lib "readerr.ss" "syntax")
- (lib "string-constant.ss" "string-constants")
- (lib "embedded-gui.ss" "embedded-gui")
- (lib "string-constant.ss" "string-constants"))
+ mzlib/etc
+ mzlib/match
+ framework
+ syntax/readerr
+ string-constants
+ embedded-gui
+ string-constants)
 
 (define test-case:program-editor% text%)
 

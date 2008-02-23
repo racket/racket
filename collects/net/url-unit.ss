@@ -10,12 +10,12 @@
 ;;   "pure" = the MIME headers have been read
 
 (module url-unit mzscheme
-  (require (lib "file.ss")
-           (lib "unit.ss")
-           (lib "port.ss")
-           (lib "list.ss")
-           (lib "string.ss")
-           (lib "kw.ss")
+  (require mzlib/file
+           mzlib/unit
+           mzlib/port
+           mzlib/list
+           mzlib/string
+           mzlib/kw
            "url-structs.ss"
            "uri-codec.ss"
            "url-sig.ss"

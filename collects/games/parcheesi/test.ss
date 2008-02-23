@@ -1,5 +1,5 @@
 (module test mzscheme
-  (require (lib "pretty.ss"))
+  (require mzlib/pretty)
   (provide test test-list test-err test-results)
   
   (define show-tests? #t)

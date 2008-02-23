@@ -4,8 +4,8 @@
   
   (require "lr0.ss"
 	   "grammar.ss"
-	   (lib "list.ss")
-	   (lib "class.ss"))
+	   mzlib/list
+	   mzlib/class)
 
   (provide compute-LA)
   

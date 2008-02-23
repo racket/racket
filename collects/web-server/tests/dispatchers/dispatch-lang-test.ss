@@ -2,8 +2,8 @@
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          ; XXX Replace with real
          (lib "sxml.ss" "web-server/tests/tmp/sxml")
-         (lib "etc.ss")
-         (lib "list.ss")
+         mzlib/etc
+         mzlib/list
          (lib "dispatch.ss" "web-server" "dispatchers")
          (lib "request-structs.ss" "web-server" "private")
          (lib "namespace.ss" "web-server" "configuration")

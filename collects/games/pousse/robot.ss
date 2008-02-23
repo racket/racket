@@ -2,7 +2,7 @@
   (require "counter.ss"
            "board.ss"
            "utils.ss"
-           (lib "unitsig.ss"))
+           mzlib/unitsig)
   
   (provide robot)
   

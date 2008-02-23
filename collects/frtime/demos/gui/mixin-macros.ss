@@ -1,5 +1,5 @@
 (module mixin-macros frtime
-  (require (lib "class.ss"))
+  (require mzlib/class)
   
   
   (define-syntax events->callbacks

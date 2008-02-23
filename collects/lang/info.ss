@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(require string-constants/string-constant)
+(require string-constants)
 
 (define name "HtDP Languages")
 (define tools (list "htdp-langs.ss"))

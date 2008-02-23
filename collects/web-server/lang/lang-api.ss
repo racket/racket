@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "url.ss" "net")
+(require net/url
          "../private/request-structs.ss"
          "../private/response-structs.ss"
          "../servlet/helpers.ss"
@@ -10,7 +10,7 @@
          "file-box.ss"
          "web-extras.ss")
 (provide (except-out (all-from-out scheme/base) #%module-begin)
-         (all-from-out (lib "url.ss" "net"))
+         (all-from-out net/url)
          (all-from-out "../private/request-structs.ss")
          (all-from-out "../private/response-structs.ss")
          (all-from-out "../servlet/helpers.ss")

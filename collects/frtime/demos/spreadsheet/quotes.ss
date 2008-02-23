@@ -1,6 +1,6 @@
 (module quotes mzscheme
-  (require (lib "url.ss" "net"))
-  (require (lib "list.ss"))
+  (require net/url)
+  (require mzlib/list)
   
   (provide no-quote? stock-quote no-quote-reason)
   

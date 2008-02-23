@@ -1,9 +1,9 @@
 
 (module test-suite-utils mzscheme
-  (require (lib "launcher.ss" "launcher")
-	   (lib "pretty.ss")
-	   (lib "list.ss")
-           (lib "process.ss")
+  (require launcher
+	   mzlib/pretty
+	   mzlib/list
+           mzlib/process
 	   "debug.ss")
 
   (provide
@@ -110,8 +110,8 @@
       (set! out-port out))
     (when load-framework-automatically?
       (queue-sexp-to-mred
-       '(begin (eval '(require (lib "framework.ss" "framework")))
-	       (eval '(require (lib "gui.ss" "tests" "utils")))))))
+       '(begin (eval '(require framework))
+	       (eval '(require tests/utils/gui))))))
 
   (define load-framework-automatically
     (case-lambda

@@ -2,10 +2,10 @@
   
   (require "structs.scm" "parser-sigs.ss")
   
-  (require (lib "force.ss" "lazy")
-           (lib "etc.ss")
-           (lib "unit.ss")
-           (lib "list.ss"))
+  (require lazy/force
+           mzlib/etc
+           mzlib/unit
+           mzlib/list)
   
   (provide (all-defined))
   

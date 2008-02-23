@@ -1,7 +1,7 @@
 (module installer mzscheme
-  (require (lib "file.ss")
-           (lib "etc.ss")
-           (lib "launcher.ss" "launcher"))
+  (require mzlib/file
+           mzlib/etc
+           launcher)
   (provide installer)
   
   (define (installer plthome)

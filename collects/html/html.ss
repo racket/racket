@@ -1,7 +1,7 @@
 ;; copyright by Paul Graunke June 2000 AD
 
 (module html mzscheme
-  (require (lib "unitsig.ss")
+  (require mzlib/unitsig
 	   "html-sig.ss" 
 	   "html-unit.ss"
 	   "sgml-reader-sig.ss"

@@ -1,14 +1,14 @@
 (module tester mzscheme
   
-  (require (lib "mred.ss" "mred")
+  (require mred
            (lib "tool.ss" "drscheme")
-           (prefix u: (lib "unit.ss"))
-           (lib "framework.ss" "framework")
-           (lib "string-constant.ss" "string-constants")
-           (lib "class.ss")
-           (lib "list.ss")
-           (lib "file.ss")
-           (lib "etc.ss"))
+           (prefix u: mzlib/unit)
+           framework
+           string-constants
+           mzlib/class
+           mzlib/list
+           mzlib/file
+           mzlib/etc)
            
   (require "ast.ss" "display-java.ss" "parameters.ss")
   

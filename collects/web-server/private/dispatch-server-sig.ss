@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "unit.ss"))
+(require mzlib/unit)
 
 (define-signature dispatch-server^
   (serve

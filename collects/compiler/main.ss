@@ -25,14 +25,14 @@
   (require "compiler.ss")
 
   ;; Read argv array for arguments and input file name
-  (require (lib "cmdline.ss")
-	   (lib "list.ss")
-	   (lib "file.ss" "dynext")
-	   (lib "compile.ss" "dynext")
-	   (lib "link.ss" "dynext")
+  (require mzlib/cmdline
+	   mzlib/list
+	   dynext/file
+	   dynext/compile
+	   dynext/link
 	   (lib "pack.ss" "setup")
 	   (lib "getinfo.ss" "setup")
-	   (lib "dirs.ss" "setup"))
+	   setup/dirs)
 
   (define dest-dir (make-parameter #f))
   (define auto-dest-dir (make-parameter #f))
@@ -408,7 +408,7 @@
 		   ,(if (compiler:option:assume-primitives) 
                         '(void) 
                         '(namespace-require/copy 'scheme))
-		   (require (lib "cffi.ss" "compiler"))
+		   (require compiler/cffi)
 		   ,@(map (lambda (s) `(load ,s)) prefixes)
 		   (void)))))))
      (list "file/directory/collection" "file/directory/sub-collection")))
@@ -457,9 +457,9 @@
 					    (dest-dir)))]
     [(make-zo)
      (let ([n (make-base-empty-namespace)]
-	   [mc (dynamic-require '(lib "mzlib/cm.ss")
+	   [mc (dynamic-require 'mzlib/mzlib/cm
 				'managed-compile-zo)]
-	   [cnh (dynamic-require '(lib "mzlib/cm.ss")
+	   [cnh (dynamic-require 'mzlib/mzlib/cm
 				 'manager-compile-notify-handler)]
 	   [did-one? #f])
        (parameterize ([current-namespace n]
@@ -518,7 +518,7 @@
                         [out-file  (if (dest-dir)
                                        (build-path (dest-dir) out-file)
                                        out-file)])
-		   ((dynamic-require '(lib "xform.ss" "compiler") 'xform)
+		   ((dynamic-require 'compiler/xform 'xform)
 		    (not (compiler:option:verbose))
 		    file
 		    out-file
@@ -555,7 +555,7 @@
 	#:aux (exe-aux))
        (printf " [output to \"~a\"]~n" dest))]
     [(exe-dir)
-     ((dynamic-require '(lib "distribute.ss" "compiler") 
+     ((dynamic-require 'compiler/distribute 
 		       'assemble-distribution)
       (exe-dir-output)
       source-files

@@ -1,11 +1,11 @@
 #lang scheme/base
-(require (lib "contract.ss")
-         (lib "md5.ss")
-         (lib "port.ss")
-         (lib "list.ss")
-         (lib "plt-match.ss")
-         (only-in (lib "list.ss" "srfi" "1") fold filter-map)
-         (only-in (lib "string.ss" "srfi" "13") string-join)
+(require mzlib/contract
+         mzlib/md5
+         mzlib/port
+         mzlib/list
+         mzlib/plt-match
+         (only-in srfi/1/list fold filter-map)
+         (only-in srfi/13/string string-join)
          (lib "xml.ss" "xml")
          "connection-manager.ss"
          "../private/request-structs.ss"

@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "contract.ss"))
+(require mzlib/contract)
 (require "manager.ss")
 (require "../servlet/servlet-structs.ss")
 (provide/contract

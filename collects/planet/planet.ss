@@ -9,12 +9,12 @@ PLANNED FEATURES:
    that if it's a tool it won't start w/ DrScheme, etc)
 4. Examine and alter linkage table
 |#
-  (require (lib "cmdline.ss")
-           (lib "string.ss")
-           (lib "file.ss")
-           (only (lib "list.ss") sort)
-           (lib "url.ss" "net")
-           (lib "match.ss")
+  (require mzlib/cmdline
+           mzlib/string
+           mzlib/file
+           (only mzlib/list sort)
+           net/url
+           mzlib/match
            
            "config.ss"
            "private/planet-shared.ss"

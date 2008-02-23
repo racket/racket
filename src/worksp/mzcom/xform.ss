@@ -2,7 +2,7 @@
 
 (use-compiled-file-paths null)
 
-(require (lib "restart.ss"))
+(require mzlib/restart)
 
 (define cpp-flags "/D _CRT_SECURE_NO_DEPRECATE /D WIN32")
 (define includes "/I ../../mzscheme/include /I . /I .. /I ../../mzcom")

@@ -4,9 +4,9 @@
   ;; http://developer.apple.com/fonts/TTRefMan/RM06/Chap6.html
   ;; http://www.microsoft.com/typography/otspec/otff.htm
   
-  (require (lib "etc.ss")
-	   (lib "list.ss")
-	   (lib "cmdline.ss"))
+  (require mzlib/etc
+	   mzlib/list
+	   mzlib/cmdline)
   
   (define (read-fixed p)
     (integer-bytes->integer (read-bytes 4 p) #f #t))

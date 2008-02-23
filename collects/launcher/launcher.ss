@@ -1,6 +1,6 @@
 
 (module launcher mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
 
   (require "launcher-sig.ss"
 	   "launcher-unit.ss")

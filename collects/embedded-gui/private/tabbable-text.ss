@@ -2,12 +2,12 @@
 (module tabbable-text mzscheme
   
   (require
-   (lib "class.ss")
-   (lib "list.ss")
-   (lib "etc.ss")
-   (lib "framework.ss" "framework")
-   (lib "mred.ss" "mred")
-   (lib "contract.ss"))
+   mzlib/class
+   mzlib/list
+   mzlib/etc
+   framework
+   mred
+   mzlib/contract)
   
   (define tabbable-text<%>
     (interface ()

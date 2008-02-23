@@ -14,11 +14,11 @@ the settings above should match r5rs
 (module language-test mzscheme
   (require "drscheme-test-util.ss"
            (lib "gui.ss" "tests" "utils")
-           (lib "class.ss")
-           (lib "list.ss")
-           (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework")
-           (prefix fw: (lib "framework.ss" "framework")))
+           mzlib/class
+           mzlib/list
+           mred
+           framework
+           (prefix fw: framework))
   
   (provide run-test)
 

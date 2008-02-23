@@ -1,16 +1,16 @@
-(module view mzscheme 
-  
+(module view mzscheme
+
   (require "assoc-list.scm"
            "aux-class.scm"
            "data-defs.scm"
            "class.scm"
            "union.ss"
-           (lib "mred.ss" "mred")
-           (lib "class.ss")           
-           (lib "etc.ss")
-           (lib "list.ss")
-           (lib "string.ss" "srfi" "13")
-           (lib "contract.ss"))
+           mred
+           mzlib/class
+           mzlib/etc
+           mzlib/list
+           srfi/13/string
+           mzlib/contract)
   
   (provide/contract
    [get-class-info (opt->* () [Language] [boolean? (union false/c (list/c Class boolean? boolean?))])]

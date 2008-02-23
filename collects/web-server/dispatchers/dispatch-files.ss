@@ -1,7 +1,7 @@
 #lang scheme/base
-(require (lib "url.ss" "net")
-         (lib "plt-match.ss")
-         (lib "pregexp.ss")
+(require net/url
+         mzlib/plt-match
+         mzlib/pregexp
          scheme/contract)
 
 (require "dispatch.ss"
