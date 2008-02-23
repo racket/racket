@@ -1,10 +1,10 @@
 
 (module bundle-dist mzscheme
-  (require (lib "etc.ss")
-	   (lib "file.ss")
-	   (lib "process.ss")
-	   (lib "zip.ss")
-	   (lib "tar.ss"))
+  (require mzlib/etc
+	   mzlib/file
+	   mzlib/process
+	   mzlib/zip
+	   mzlib/tar)
 
   (provide bundle-put-file-extension+style+filters
 	   bundle-directory)

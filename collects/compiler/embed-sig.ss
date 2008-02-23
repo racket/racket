@@ -1,6 +1,6 @@
 
 (module embed-sig mzscheme
-  (require (lib "unit.ss"))
+  (require mzlib/unit)
   (provide compiler:embed^)
 
   (define-signature compiler:embed^

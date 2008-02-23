@@ -3,10 +3,10 @@
 
 (Section 'embed)
 
-(require (lib "embed.ss" "compiler")
-         (lib "file.ss")
-	 (lib "process.ss")
-         (lib "distribute.ss" "compiler"))
+(require compiler/embed
+         mzlib/file
+	 mzlib/process
+         compiler/distribute)
 
 (define (mk-dest-bin mred?)
   (case (system-type)
@@ -220,8 +220,8 @@
   (try-exe mr-dest "This is 5: #<class:button%>\n" #t))
 
 ;; Try the mzc interface:
-(require (lib "dirs.ss" "setup")
-	 (lib "file.ss"))
+(require setup/dirs
+	 mzlib/file)
 (define mzc (build-path (find-console-bin-dir) (if (eq? 'windows (system-type))
                                                    "mzc.exe"
                                                    "mzc")))
@@ -283,7 +283,7 @@
 (mzc-tests #t)
 |#
 
-(require (lib "file.ss" "dynext"))
+(require dynext/file)
 (define (extension-test mred?)
   (parameterize ([current-directory (find-system-path 'temp-dir)])
     
