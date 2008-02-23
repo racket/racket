@@ -1781,6 +1781,8 @@ int scheme_is_module_path(Scheme_Object *obj)
         int i;
         mzchar *s;
         obj = SCHEME_CAR(obj);
+        if (!SCHEME_CHAR_STRINGP(obj))
+          return 0;
         s = SCHEME_CHAR_STR_VAL(obj);
         i = SCHEME_CHAR_STRLEN_VAL(obj);
         if (!i)

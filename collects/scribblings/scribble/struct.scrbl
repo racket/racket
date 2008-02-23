@@ -399,7 +399,7 @@ label to be shown in the ``on this page'' table for HTML output.
 }
 
 
-@defstruct[(link-element element) ([tag any/c])]{
+@defstruct[(link-element element) ([tag tag?])]{
 
 Hyperlinks the content to @scheme[tag].
 

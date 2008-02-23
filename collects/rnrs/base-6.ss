@@ -2,21 +2,19 @@
 
 (require (for-syntax scheme/base
                      r6rs/private/identifier-syntax)
+         r6rs/private/qq-gen
          (prefix-in r5rs: r5rs)
          (only-in r6rs/private/readtable rx:number)
          scheme/bool)
 
 (provide 
- ;; PLT Scheme pre-requisites:
- (rename-out [datum #%datum])
- #%app #%top #%top-interaction
 
  ;; 11.2
  (rename-out [r5rs:define define]
-             [r5rs:define-syntax define-syntax])
+             [r6rs:define-syntax define-syntax])
 
  ;; 11.4.1
- quote
+ (rename-out [r5rs:quote quote])
 
  ;; 11.4.2
  (rename-out [r5rs:lambda lambda])
@@ -154,13 +152,13 @@
  assertion-violation assert
 
  ;; 11.15
- apply
+ (rename-out [r5rs:apply apply])
  call-with-current-continuation call/cc
  values call-with-values
  dynamic-wind
 
  ;; 11.17
- (rename-out [r5rs:quasiquote quasiquote]) ;; FIXME: need the R6RS extension
+ (rename-out [r6rs:quasiquote quasiquote])
  unquote unquote-splicing
 
  ;; 11.18
@@ -168,7 +166,9 @@
 
  ;; 11.19
  (for-syntax syntax-rules
-             identifier-syntax)
+             identifier-syntax
+             ...
+             _)
 
  )
 
@@ -291,32 +291,72 @@
 (define-struct (exn:fail:contract:r6rs exn:fail:contract) (who irritants))
 
 (define (r6rs:error who msg . irritants)
-  (make-exn:fail:r6rs
-   (format "~a: ~a" who msg)
-   (current-continuation-marks)
-   who
-   irritants))
+  (raise
+   (make-exn:fail:r6rs
+    (format "~a: ~a" who msg)
+    (current-continuation-marks)
+    who
+    irritants)))
 
 (define (assertion-violation who msg . irritants)
-  (make-exn:fail:r6rs
-   (format "~a: ~a" who msg)
-   (current-continuation-marks)
-   who
-   irritants))
+  (raise
+   (make-exn:fail:r6rs
+    (format "~a: ~a" who msg)
+    (current-continuation-marks)
+    who
+    irritants)))
 
 (define-syntax-rule (assert expr)
   (unless expr
     (assrtion-violation #f "assertion failed")))
 
 ;; ----------------------------------------
-;; Datum
+;; quasiquote generalization
 
-(define-syntax (datum stx)
+(define-generalized-qq r6rs:quasiquote 
+  quasiquote unquote unquote-splicing)
+
+;; ----------------------------------------
+;; define-syntax: wrap a transformer to
+;;  ensure that the result of an expansion is
+;;  a wrapped syntax object.
+
+(define-syntax (r6rs:define-syntax stx)
   (syntax-case stx ()
-    [(_ . thing)
-     (if (vector? (syntax-e #'thing))
-         (raise-syntax-error 'r6rs
-                             "a vector is not an expression"
-                             #'thing)
-         #`(quote thing))]))
+    [(_ id expr)
+     (identifier? #'id)
+     (syntax/loc stx
+       (define-syntax id (wrap-as-needed expr)))]))
+
+(define-for-syntax (wrap r stx)
+  (cond
+   [(syntax? r) r]
+   [(symbol? r) (error 'macro
+                       "transformer result included a raw symbol: ~e"
+                       r)]
+   [(mpair? r) (datum->syntax
+                stx
+                (cons (wrap (mcar r) stx)
+                      (wrap (mcdr r) stx))
+                stx)]
+   [(vector? r) (datum->syntax
+                 stx
+                 (list->vector
+                  (map (lambda (r) (wrap r stx))
+                       (vector->list r)))
+                 stx)]
+   [else (datum->syntax stx r stx)]))
+
+(define-for-syntax (wrap-as-needed v)
+  (if (and (procedure? v)
+           (procedure-arity-includes? v 1))
+      (procedure-reduce-arity
+       (case-lambda 
+        [(stx) (if (syntax? stx)
+                   (let ([r (v stx)])
+                     (wrap r stx))
+                   (v stx))]
+        [args (apply v args)])
+       (procedure-arity v))
+      v))
 

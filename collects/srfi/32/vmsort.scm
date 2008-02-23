@@ -4,7 +4,8 @@
            vector-merge-sort
            vector-merge-sort!)
   
-  (require "vector-util.scm")
+  (require "vector-util.scm"
+           (only scheme/base vector-copy!))
   
   ;;; The sort package -- stable vector merge & merge sort -*- Scheme -*-
   ;;; Copyright (c) 1998 by Olin Shivers.
@@ -66,13 +67,10 @@
   
   (define (%vector-merge! elt< v v1 v2 start start1 end1 start2 end2)
     (letrec ((vblit (lambda (fromv j i end)      ; Blit FROMV[J,END) to V[I,?].
-                      (let lp ((j j) (i i))
-                        (vector-set! v i (vector-ref fromv j))
-                        (let ((j (+ j 1)))
-                          (if (< j end) (lp j (+ i 1))))))))
+                      (vector-copy! v i fromv j end))))
       
-      (cond ((<= end1 start1) (if (< start2 end2) (vblit v2 start2 start)))
-            ((<= end2 start2) (vblit v1 start1 start))
+      (cond ((<= end1 start1) (if (< start2 end2) (vblit v2 start2 start end2)))
+            ((<= end2 start2) (vblit v1 start1 start end1))
             
             ;; Invariants: I is next index of V to write; X = V1[J]; Y = V2[K].
             (else (let lp ((i start)
@@ -105,7 +103,7 @@
                             (pair? (cdr maybe-args))
                             (pair? (cddr maybe-args)))
                        (caddr maybe-args)
-                       (vector-copy v))))
+                       (make-vector (vector-length v)))))
          (%vector-merge-sort! < v start end temp)))))
   
   (define (vector-merge-sort < v . maybe-args)
@@ -194,26 +192,24 @@
         (call-with-values
          (lambda ()
            (let recur ((l l) (want (- r l)))
-             (let ((len (- r l)))
-               (let lp ((pfxlen (getrun v0 l r)) (pfxlen2 1)
-                                                 (v v0) (temp temp0)
-                                                 (v=v0? #t))
-                 (if (or (>= pfxlen want) (= pfxlen len))
-                     (values pfxlen v v=v0?)
-                     (let ((pfxlen2 (let lp ((j pfxlen2))
-                                      (let ((j*2 (+ j j)))
-                                        (if (<= j pfxlen) (lp j*2) j))))
-                           (tail-len (- len pfxlen)))
-                       ;; PFXLEN2 is now the largest power of 2 <= PFXLEN.
-                       ;; (Just think of it as being roughly PFXLEN.)
-                       (call-with-values
-                        (lambda ()
-                          (recur (+ pfxlen l) pfxlen2))
-                        (lambda (nr-len nr-vec nrvec=v0?)
-                          (merge temp v nr-vec l pfxlen nr-len
-                                 (xor nrvec=v0? v=v0?))
-                          (lp (+ pfxlen nr-len) (+ pfxlen2 pfxlen2)
-                              temp v (not v=v0?))))))))))
+             (let lp ((pfxlen (getrun v0 l r)) (pfxlen2 1)
+                      (v v0) (temp temp0)
+                      (v=v0? #t))
+               (if (or (>= pfxlen want) (= pfxlen (- r l)))
+                   (values pfxlen v v=v0?)
+                   (let ((pfxlen2 (let lp ((j pfxlen2))
+                                    (let ((j*2 (+ j j)))
+                                      (if (<= j*2 pfxlen) (lp j*2) j)))))
+                     ;; PFXLEN2 is now the largest power of 2 <= PFXLEN.
+                     ;; (Just think of it as being roughly PFXLEN.)
+                     (call-with-values
+                         (lambda ()
+                           (recur (+ pfxlen l) pfxlen2))
+                       (lambda (nr-len nr-vec nrvec=v0?)
+                         (merge temp v nr-vec l pfxlen nr-len
+                                (xor nrvec=v0? v=v0?))
+                         (lp (+ pfxlen nr-len) (+ pfxlen2 pfxlen2)
+                             temp v (not v=v0?)))))))))
          (lambda (ignored-len ignored-ansvec ansvec=v0?)
            (if (not ansvec=v0?) (vector-portion-copy! v0 temp0 l r))))))
   

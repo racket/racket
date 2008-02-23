@@ -282,7 +282,7 @@ FIXME:
                 append
                 (map syntax->list
                      (syntax->list #'((id id2) ...)))))
-     #`(except-in #,(parse-import-set orig #'im) id ...)]
+     #`(rename-in #,(parse-import-set orig #'im) [id id2] ...)]
     [(rename . _) (bad)]
     [_ (parse-library-reference orig stx)]))
 
@@ -312,8 +312,10 @@ FIXME:
                                   (with-syntax ([is (parse-import-set orig #'base-im)])
                                     (if (null? levels)
                                         #'()
-                                        (with-syntax ([(level ...) levels])
-                                          #`((for-meta level is) ...)))))]
+                                        (with-syntax ([(level ...) levels]
+                                                      [prelims (datum->syntax orig
+                                                                              'r6rs/private/prelims)])
+                                          #`((for-meta level is prelims) ...)))))]
                                [(for . _)
                                 (raise-syntax-error
                                  #f
@@ -321,8 +323,10 @@ FIXME:
                                  orig
                                  im)]
                                [_ (list (parse-import-set orig im))]))
-                           (syntax->list #'(im ...)))])
-         #'(require im ... ...))])))
+                           (syntax->list #'(im ...)))]
+                     [prelims (datum->syntax orig
+                                             'r6rs/private/prelims)])
+         #'(require prelims im ... ...))])))
 
 (define-syntax (r6rs-export stx)
   (let ([orig (syntax-case stx ()

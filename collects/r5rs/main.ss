@@ -199,7 +199,8 @@
                 [unquote
                  (zero? depth)
                  (raise-syntax-error
-                  "invalid content within quasiquote"
+                  #f
+                  "invalid context within quasiquote"
                   stx
                   form)]
                 [((unquote-splicing e) . rest)
@@ -212,7 +213,8 @@
                 [unquote-splicing 
                  (zero? depth)
                  (raise-syntax-error
-                  "invalid content within quasiquote"
+                  #f
+                  "invalid context within quasiquote"
                   stx
                   form)]
                 [(r5rs:quasiquote . e)
