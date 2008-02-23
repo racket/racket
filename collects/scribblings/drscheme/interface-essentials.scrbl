@@ -79,26 +79,15 @@ program.  Clicking @onscreen{Step} opens a new window that contains
 the program from the definitions window, plus several new buttons:
 these buttons allow navigation of the evaluation as a series of steps.
 
+@margin-note{The debugging interface is described further in
+@secref["debugger"], later in this manual.}
+
 The @as-index{@onscreen{Debug} button}---which does @emph{not} appear
 for the @|HtDP| teaching languages---starts a more conventional
-stepping @as-index{debugger}. It runs the program in the definitions
+stepping @as-index{debugger}.  It runs the program in the definitions
 window like the @onscreen{Run} button, but also opens a debugging
-panel with @onscreen{Pause}, @onscreen{Continue}, and @onscreen{Step}
-buttons. A newly started program is paused the program's first
-possible pause point, and the current pause location is shown with a
-green arrow. Click the @onscreen{Continue} button to continue running
-the program, click @onscreen{Step} to run until the next possible
-pause point, and right-click on an expression's open or close
-parenthesis to set or remove an explicit pause. (Valid pause points
-are highlighted with a pink dot as you mouse over the program text.)
-When the program is paused, move the mouse over a variable to display
-its value in the debugging panel to the right of the buttons. When
-pausing at an expression's result, the result is shown to the left of
-the debugging panel's buttons, and the result can be changed by
-right-clicking the pause point. Click the @onscreen{Stop} button to
-stop debugging so that the program in the definitions window can be
-edited. Debugging also stops when all expressions in the definition
-window have been evaluated.
+panel with several other buttons that provide control over the
+program's execution.
 
 Clicking the @as-index{@onscreen{Check Syntax} button} annotates the
 program text in the definitions window.  It add the following
@@ -521,6 +510,136 @@ the list are ``flattened'' into the containing xexpr.
 Right-clicking or control-clicking (Mac OS X) on the top of a Scheme
 box opens a menu to toggle the box between a Scheme box and
 a Scheme splice box.
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "debugger"]{Graphical Debugging Interface}
+
+@bold{Tip:} The debugger will not work properly on @onscreen{Untitled}
+windows or tabs.  To debug a new program, make sure it has been saved
+to the file system.  For best results, do not change the name of the
+file in the middle of a debugging session.
+
+Like the @onscreen{Run} button, the @as-index{@onscreen{Debug} button}
+runs the program in the definitions window.  However, instead of
+simply running it from start to finish, it lets users control and
+observe the program as it executes.  The interface includes a panel of
+buttons above the definitions window, as well as extensions to the
+definitions window itself.
+
+The program starts out paused just before the first expression is
+executed.  This is indicated in the definitions window by the presence
+of a green triangle over this expression's left parenthesis.
+
+@subsection{Debugger Buttons}
+
+While execution is paused, several buttons are available:
+
+@itemize{
+
+    @item{The @as-index{@onscreen{Continue} button} is enabled
+whenever the program is paused.  It causes the program to resume
+until it either completes, reaches a breakpoint, or raises an
+unhandled exception.}
+
+    @item{The @as-index{@onscreen{Step} button} is enabled whenever
+the program is paused.  It causes the program to make a single step
+and then pause again.}
+
+    @item{The @as-index{@onscreen{Over} button} is only enabled when
+execution is paused at the start of an expression that is not in tail
+position.  It sets a one-time breakpoint at the end of the
+expression (represented by a yellow circle) and causes the program to
+proceed.  When execution reaches the one-time breakpoint, it pauses
+and removes that breakpoint.}
+
+    @item{The @as-index{@onscreen{Out} button} is only enabled when
+execution is paused within the context of another expression.  Like
+the @onscreen{Over} button, it sets a one-time breakpoint and
+continues execution.  In this case, the program stops upon returning
+to the context or raising an unhandled exception.}
+
+}
+
+If the program is running (not paused), then only the @as-index{Pause}
+button will be enabled.  Clicking it will interrupt execution and
+pause it.  In this case, the current expression may only be known
+approximately, and it will be represented as a gray triangle.  The
+other features described above will still be available.
+
+At any time, execution may be interrupted by clicking the
+@onscreen{Stop} button.  However, unlike with the @onscreen{Pause}
+button, stopped execution cannot be continued.
+
+@subsection{Definitions Window Actions}
+
+When execution is paused, the definitions window supports several
+additional actions:
+
+@itemize{
+
+    @item{Hovering the mouse cursor over a parenthesis may reveal a
+pink circle.  If so, right-clicking or control-clicking (Mac OS X)
+will open a menu with options to @onscreen{Pause at this point} or
+@onscreen{Continue to this point}.  The former sets an ordinary
+breakpoint at that location; the latter sets a one-time breakpoint and
+resumes execution.  An ordinary breakpoint appears as a red circle,
+and a one-time breakpoint appears as a yellow circle.
+
+@bold{Tip:} If the debugged program is not in the @onscreen{Module}
+language, then the @italic{first time} it is debugged, breakpoints
+will only become available in expressions as they are evaluated.
+However, the next time the program is debugged, the debugger will
+remember the set of breakable locations from the previous session.}
+
+    @item{If execution is paused at the start of an expression, then
+right-clicking or control-clicking (Mac OS X) on the green triangle
+opens a menu with the option to @onscreen{Skip expression...}.
+Selecting this opens a text box in which to enter a value for the
+expression.  The expression is skipped, with the entered value
+substituted for it.}
+
+    @item{If execution is paused at the end of an expression, then the
+expression and its value are displayed to the left of the button bar.
+Right-clicking or control-clicking (Mac OS X) on the green triangle
+opens a menu with options to @onscreen{Print return value to console}
+and @onscreen{Change return value...}.  The former displays the return
+value in the interactions window; the latter opens a text box in which
+to enter a substitute value.}
+
+    @item{Hovering the mouse cursor over a bound variable displays the
+variable's name and value to the right of the button bar.
+Right-clicking or control-clicking (Mac OS X) opens a menu with
+options to @onscreen{Print value of <var> to console} or
+@onscreen{(set! <var> ...)}.  The former displays the variable's value
+in the interactions window; the latter opens a text box in which to
+enter a new value for the variable.}
+
+}
+
+The following screenshot illustrates several aspects of the debugger
+interface.  The red circle before the @scheme[if] is a breakpoint,
+and the green triangle at the end of the @scheme[(fact (sub1 n))] is where
+execution is currently paused.  The expression's return value is
+displayed at the left of the button bar, and the value of @scheme[n]
+is at the right.
+
+@image["debugger1.png"]
+
+@subsection{Debugging Multiple Files}
+
+To debug a program that spans several files, make sure that all of the
+files are open in DrScheme.  Click the @onscreen{Debug} button in the
+window containing the main program.  As this program loads additional
+files that are present in other windows or tabs, message boxes will
+pop up asking whether or not to include the file in the debugging
+session.  Including the file means that it will be possible to set
+breakpoints, inspect variables, and single-step in that file.
+
+@bold{Tip:} A file may only be involved in one debugging session at a
+time.  If you try to debug a file that loads another file that is
+already being debugged, a message box will pop up explaining that the
+file cannot be included in another debugging session.
 
 @; ----------------------------------------------------------------------
 
