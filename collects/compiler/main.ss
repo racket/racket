@@ -457,9 +457,9 @@
 					    (dest-dir)))]
     [(make-zo)
      (let ([n (make-base-empty-namespace)]
-	   [mc (dynamic-require 'mzlib/mzlib/cm
+	   [mc (dynamic-require 'mzlib/cm
 				'managed-compile-zo)]
-	   [cnh (dynamic-require 'mzlib/mzlib/cm
+	   [cnh (dynamic-require 'mzlib/cm
 				 'manager-compile-notify-handler)]
 	   [did-one? #f])
        (parameterize ([current-namespace n]

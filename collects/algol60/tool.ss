@@ -12,8 +12,8 @@
 
   (provide tool@)
 
-  (define base-importing-stx (dynamic-require 'mzlib/algol60/base
-					     'base-importing-stx))
+  (define base-importing-stx (dynamic-require 'algol60/base
+					      'base-importing-stx))
 
   (define tool@
     (unit 
