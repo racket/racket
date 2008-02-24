@@ -305,10 +305,12 @@
 ;;=============================================================================
 ;; Invocation
 
+(define-namespace-anchor nsa)
+
 (define (initialize)
   (read-case-sensitive #t)
   (unless (command-marker) (command-marker "@"))
-  (namespace-require 'preprocessor/mztext)
+  (current-namespace (namespace-anchor->namespace nsa))
   (do-evals))
 
 (define (run)

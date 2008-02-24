@@ -167,10 +167,12 @@
                  [cd (cd)])
     (run files)))
 
+(define-namespace-anchor nsa)
+
 (provide preprocess)
 (define (preprocess . files)
   (read-case-sensitive #t)
-  (namespace-require 'preprocessor/mzpp)
+  (current-namespace (namespace-anchor->namespace nsa))
   (do-evals)
   (run files))
 
