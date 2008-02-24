@@ -842,7 +842,8 @@
       (define (debugger-settings-language %)
         (if (implementation? % debugger-language<%>)
             (class* % (debugger-language<%>)
-              (define/override (debugger:supported?) #f)
+              (init-field [debugger:supported #f])
+              (define/override (debugger:supported?) debugger:supported)
               (super-new))
             %))
 
@@ -1296,6 +1297,7 @@
            (abbreviate-cons-as-list #t)
            (allow-sharing? #t)
            (reader-module '(lib "htdp-advanced-reader.ss" "lang"))
+           (debugger:supported #t)
 	   (stepper:supported #f)
 	   (stepper:enable-let-lifting #t)
 	   (stepper:show-lambdas-as-lambdas #t)))

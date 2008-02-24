@@ -69,27 +69,28 @@
       (super-instantiate (" "))))
   
   (define dynamic-snip-copy%
-    (class snip%
+    (class editor-snip%
       (init-field current parent)
-      (inherit get-admin)
+      (inherit get-editor)
       (define/public (set-current c)
         (parameterize ([current-eventspace drs-eventspace])
           (queue-callback
            (lambda ()
-             (set! current c)
-             (let ([admin (get-admin)])
-               (when admin
-                 (send admin resized this #t)))))))
+             (send (get-editor) lock #f)
+             (send (get-editor) delete 0 (send (get-editor) last-position))
+             (for-each (lambda (thing)
+                         (send (get-editor) insert thing
+                               (send (get-editor) last-position) (send (get-editor) last-position)))
+                       c)
+             (send (get-editor) lock #t)))))
 
-      (define/override (size-cache-invalid)
-        (send current size-cache-invalid))
-              
-      (define/override (get-extent dc x y w h descent space lspace rspace)
-        (send current get-extent dc x y w h descent space lspace rspace))
-
-      (define/override (draw dc x y left top right bottom dx dy draw-caret)
-        (send current draw dc x y left top right bottom dx dy draw-caret))
-      (super-new)))
+      (super-new
+       [with-border? #f]
+       [left-margin 0]
+       [right-margin 0]
+       [top-margin 0]
+       [bottom-margin 0])
+      (set-current current)))
     
   (define dynamic-snip%
     (class snip%
@@ -140,17 +141,14 @@
       (thread (lambda () (super-render-fun val out) (close-output-port out)))
       (let loop ([chars empty])
         (let ([c (read-char-or-special in)])
-          ;(fprintf (current-error-port) "read ~a~n" c)
-          (cond
-            [(eof-object? c) (make-object string-snip% (list->string (reverse (rest chars))))]
-            [(char? c) (loop (cons c chars))]
-            [else c])))))
+          (if (eof-object? c)
+              (reverse (rest chars))
+              (loop (cons c chars)))))))
   
   (define (watch beh super-render-fun)
     (cond
       [(undefined? beh)
        (begin
-         ;(printf "~a was regarded as undefined~n" beh)
          (make-object string-snip% "<undefined>")
          )
          ]

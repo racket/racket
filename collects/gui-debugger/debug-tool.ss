@@ -112,16 +112,18 @@
                                (truncate-value (vector-ref v i) size (sub1 depth)))))]
           [else v]))
       
-      (define (filename->defs source)
-        (if (is-a? source editor<%>)
-            source
-            (cond
-              [(and source (send (group:get-the-frame-group) locate-file source))
-               =>
-               (lambda (frame)
-                 (let ([defss (map (lambda (t) (send t get-defs)) (send frame get-tabs))])
-                   (findf (lambda (d) (equal? (send d get-filename) source)) defss)))]
-              [else #f])))
+      (define filename->defs
+        (opt-lambda (source [default #f])
+          (cond
+            [(is-a? source editor<%>) source]
+            [(or (not source) (symbol? source)) #f]
+            [(and source (not (symbol? source))
+                  (send (group:get-the-frame-group) locate-file source))
+             =>
+             (lambda (frame)
+               (let ([defss (map (lambda (t) (send t get-defs)) (send frame get-tabs))])
+                 (findf (lambda (d) (equal? (send d get-filename) source)) defss)))]
+            [else default])))
       
       (define (debug-definitions-text-mixin super%)
         (class super%
@@ -140,7 +142,7 @@
           (define bp-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
           (define bp-brush (send the-brush-list find-or-create-brush "red" 'solid))
           (define bp-mo-pen (send the-pen-list find-or-create-pen "darkgray" 1 'solid))
-          (define bp-mo-brush (send the-brush-list find-or-create-brush "pink"
+          (define bp-mo-brush (send the-brush-list find-or-create-brush "tomato"
                                     'solid))
           (define bp-tmp-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
           (define bp-tmp-brush (send the-brush-list find-or-create-brush "yellow"
@@ -354,9 +356,18 @@
                                                             (cons 'exit-break
                                                                   (call-with-values
                                                                    (lambda ()
-                                                                     (with-handlers ([exn:fail? k]) ; LATER: message box
-                                                                       (eval-string tmp)))
-                                                                   list))))))))))
+                                                                     (with-handlers
+                                                                         ([exn:fail?
+                                                                           (lambda (exn)
+                                                                             (message-box
+                                                                              "Debugger Error"
+                                                                              (format "An error occurred: ~a" (exn-message exn))
+                                                                              #f
+                                                                              '(ok))
+                                                                             (k))])
+                                                                       (read (open-input-string tmp))))
+                                                                   list)))
+                                                      (invalidate-bitmap-cache))))))))
                                         (make-object menu-item%
                                           "Continue to this point"
                                           menu
@@ -398,7 +409,16 @@
                                                            (format "New value for ~a" id-sym) #f #f
                                                            (format "~a" val))])
                                                      (when tmp
-                                                       (wr (eval-string tmp))))))
+                                                       (let/ec k
+                                                         (wr (with-handlers
+                                                                 ([exn:fail?
+                                                                   (lambda (exn)
+                                                                     (message-box
+                                                                      "Debugger Error"
+                                                                      (format "The following error occurred: ~a"
+                                                                              (exn-message exn)))
+                                                                     (k))])
+                                                               (read (open-input-string tmp)))))))))
                                                (send (get-canvas) popup-menu menu
                                                      (+ 1 (inexact->exact (floor (send event get-x))))
                                                      (+ 1 (inexact->exact (floor (send event get-y)))))
@@ -573,23 +593,29 @@
                                          ; record-bound-identifier
                                          (lambda (type bound binding)
                                            ;(display-results (list bound))
-                                           (when (eq? (robust-syntax-source bound) source)
-                                             (let loop ([i 0])
-                                               (when (< i (syntax-span bound))
-                                                 (safe-vector-set! pos-vec (+ i (syntax-position bound)) binding)
-                                                 (loop (add1 i))))))
+                                           (cond
+                                             [(filename->defs (robust-syntax-source bound))
+                                              =>
+                                              (lambda (defs)
+                                                (let ([pos-vec (send (send defs get-tab) get-pos-vec)])
+                                                  (let loop ([i 0])
+                                                    (when (< i (syntax-span bound))
+                                                      (safe-vector-set! pos-vec (+ i (syntax-position bound))
+                                                                        binding)
+                                                   (loop (add1 i))))))]
+                                             [else (void)]))
                                          ; record-top-level-identifier
-                                         (lambda (mod var val)
+                                         (lambda (mod var rd/wr)
                                            ; filename->defs should succeed unless a slave tab gets closed
                                            (cond
-                                             [(filename->defs source)
+                                             [(filename->defs (robust-syntax-source var))
                                               =>
                                               (lambda (defs)
                                                 (send (send defs get-tab)
-                                                      add-top-level-binding var val))]
-                                             [else (void) #;(printf "record-top-level failed~n")])
+                                                      add-top-level-binding var rd/wr))]
+                                             [else #;(printf "record-top-level failed for ~a~n" var) (void)])
                                            #;
-                                           (printf "top-level binding: ~a ~a ~a~n" mod var val))
+                                           (printf "top-level binding: ~a ~a ~a~n" mod var rd/wr))
                                          source)])
                            (hash-table-for-each
                             breakpoints
@@ -630,7 +656,8 @@
                          (current-eval)
                          ; break? -- curried to avoid looking up defs from source each time
                          (lambda (src)
-                           (let* ([src-tab (send (filename->defs src) get-tab)]
+                           (let* ([defs (filename->defs src)]
+                                  [src-tab (if defs (send defs get-tab) (get-tab))]
                                   [breakpoints
                                    (if src
                                        (send src-tab get-breakpoints)
@@ -683,6 +710,7 @@
                  [slaves empty]
                  [closed? (box #f)]
                  [stack-frames (box #f)]
+                 [frame-num 0]
                  [break-status (box #f)]
                  [current-language-settings #f]
                  [pos-vec (vector #f)]
@@ -720,8 +748,8 @@
           (define/public (get-single-step-box) single-step?)
           (define/public (set-single-step?! v) (set-box! single-step? v))
           (define/public (set-break-status stat) (set-box! break-status stat))
-          (define/public (add-top-level-binding var val)
-            (set! top-level-bindings (cons (cons var val) top-level-bindings)))
+          (define/public (add-top-level-binding var rd/wr)
+            (set! top-level-bindings (cons (cons var rd/wr) top-level-bindings)))
           (define/public (lookup-top-level-var var failure-thunk)
             #;
             (printf "looking for ~a in ~a~n" var top-level-bindings)
@@ -1068,7 +1096,8 @@
                                      (let/ec k
                                        (let* ([stx (mark-source f)]
                                               [src (syntax-source stx)]
-                                              [pos (+ (syntax-position stx) (syntax-span stx) -1)]
+                                              [lpos (or (syntax-position stx) (k #f))]
+                                              [pos (+ lpos (syntax-span stx) -1)]
                                               [defs (filename->defs src)]
                                               [tab (if defs (send defs get-tab) (k (begin #;(printf "no defs for ~a~n" src) #f)))]
                                               [bps (send tab get-breakpoints)]

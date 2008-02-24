@@ -63,6 +63,8 @@
   (define (send-for-selection w e)
     (send w get-selection))
   
+  (define (send-for-selections w e)
+    (send w get-selections))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; make state available as eventstreams
@@ -143,12 +145,34 @@
               (callback->pub-meth super-class)))
        (super-new (callback-events-event-processor 
                    (lambda (es) (map-e (lambda (e) (apply val-ext e)) es)))))))
+  
+  (define (add-callback-access/selection val-ext super-class)
+    ((mixin-merge-e
+      selection-e
+      get-set-value-events 
+      get-callback-events)
+     (class (monitor-set-value
+             (monitor-callback-method
+              (callback->pub-meth super-class)))
+       (super-new (callback-events-event-processor 
+                   (lambda (es) (map-e (lambda (e) (apply val-ext e)) es)))))))
 
+  (define (add-callback-access/selections val-ext super-class)
+    ((mixin-merge-e
+      selections-e
+      get-set-value-events 
+      get-callback-events)
+     (class (monitor-set-value
+             (monitor-callback-method
+              (callback->pub-meth super-class)))
+       (super-new (callback-events-event-processor 
+                   (lambda (es) (map-e (lambda (e) (apply val-ext e)) es)))))))
   
   (define add-value-b (mixin-hold value-b get-value get-value-e))
                        
-            
+  (define add-selection-b (mixin-hold selection-b get-selection get-selection-e))
   
+  (define add-selections-b (mixin-hold selections-b get-selections get-selections-e))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; using events to drive object interaction
@@ -203,7 +227,15 @@
       (add-value-b
        (accessor val-ext super-class))))
   
+  (define (selection-input-lift accessor val-ext)
+    (lambda (super-class)
+      (add-selection-b
+       (accessor val-ext super-class))))
   
+  (define (selections-input-lift accessor val-ext)
+    (lambda (super-class)
+      (add-selections-b
+       (accessor val-ext super-class))))
   
   (define ft-frame%
     ((behavior->callbacks shown show)
@@ -230,16 +262,22 @@
      (standard-lift text-field%)))
 
   (define ft-radio-box%
-    ((standard-input-lift add-callback-access send-for-selection)
+    ((selection-input-lift add-callback-access/selection send-for-selection)
      (add-void-set-value (standard-lift radio-box%))))
   
   (define ft-choice%
-    ((standard-input-lift add-callback-access send-for-selection)
+    ((selection-input-lift add-callback-access/selection send-for-selection)
      (add-void-set-value (standard-lift choice%))))
   
   (define ft-list-box%
-    ((standard-input-lift add-callback-access send-for-selection)
-     (add-void-set-value (standard-lift list-box%))))
+    (class ((selections-input-lift add-callback-access/selections send-for-selections)
+            (add-void-set-value (standard-lift list-box%)))
+      (super-new)
+      (define/public (get-selection-b)
+        (let ([selections-b (send this get-selections-b)])
+          (if (null? selections-b)
+              #f
+              (car selections-b))))))
   
   
  
@@ -250,7 +288,7 @@
   (define specialized-gauge%
     (add-signal-controls
      (class gauge%
-       (init value)  
+       (init value)
        (super-new)
        (send this set-value value))
      (value set-value 0)
