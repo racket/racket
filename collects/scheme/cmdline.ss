@@ -68,7 +68,7 @@
                                                      x)))
                                          pieces)
                                (loop (at-next-keyword (cdr lst))
-                                     (cons (cons (quote-syntax 'help-labels) pieces)
+                                     (cons (list* #'list #`(quote help-labels) pieces)
                                            accum))]
                               [(#:once-each #:once-any #:multi #:final)
                                (let ([sublines
