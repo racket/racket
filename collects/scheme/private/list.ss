@@ -52,7 +52,7 @@
     (let step ([n n])
       (cond [(> n 3) (let* (; let* not really needed with mzscheme's l->r eval
                             [j (quotient n 2)] [a (step j)] [b (step (- n j))])
-                       (merge-sorted! a b less?))]
+                       (merge-sorted! a b))]
             ;; the following two cases are just explicit treatment of sublists
             ;; of length 2 and 3, could remove both (and use the above case for
             ;; n>1) and it would still work, except a little slower
