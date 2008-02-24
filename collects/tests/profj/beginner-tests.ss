@@ -571,6 +571,5 @@
          "check 1.4 expect 1 within true")
    (list #t 'error #t #f 'error 'error #t 'error)
    "Calling check in many ways")
-  
+
   (report-test-results))
-   

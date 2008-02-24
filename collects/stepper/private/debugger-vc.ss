@@ -100,5 +100,3 @@
   ; send-output-to-debugger-window : (string text:basic% -> void)
   (define (send-output-to-debugger-window str text)
     (send text insert str (send text last-position))))      
-      
-    

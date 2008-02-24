@@ -6,6 +6,3 @@
       (parameterize ([current-load-relative-directory dir])
         (let ([s (read-syntax)])
           (time (compile s)))))))
-
-
-                     

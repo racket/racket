@@ -35,5 +35,3 @@
  string-normalize-nfkd
  string-normalize-nfc
  string-normalize-nfkc)
-
- 

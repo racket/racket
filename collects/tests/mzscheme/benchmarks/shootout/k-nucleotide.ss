@@ -57,8 +57,5 @@
               (write-one-freq (all-counts (string-length seq) dna)
                               (string->symbol seq)))
             '("GGT" "GGTA" "GGTATT" "GGTATTTTAATT" "GGTATTTTAATTTATAGT"))
-  
-  )
 
-  
-  
+  )

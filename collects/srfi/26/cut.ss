@@ -132,4 +132,3 @@
                                    (lambda #,slot-names
                                      (proc #,@names)))))]))
   )
-   

@@ -5,5 +5,3 @@
 
   (define file-to-load (make-parameter #f))
   (define trust-me? (make-parameter #t)))
-
-	   

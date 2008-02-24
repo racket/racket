@@ -32,5 +32,3 @@
   (define menu-item-container<%> 
     (interface () 
       get-items on-demand)))
-
-  

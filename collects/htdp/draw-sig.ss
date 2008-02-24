@@ -44,4 +44,3 @@
         ))
      
      (define-signature draw^ extends core-draw^ ()))
-   

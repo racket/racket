@@ -60,4 +60,3 @@
   (define (Double-getNaN-native) +nan.0)
   
   )
-      

@@ -50,8 +50,4 @@
   
   (provide (all-defined)
            (all-from "fred.ss")
-           (all-from mzlib/class))) 
-            
-            
-            
-          
+           (all-from mzlib/class)))

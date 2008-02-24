@@ -22,5 +22,3 @@
 	(write-byte 0 o)
 	(close-input-port i)
 	(close-output-port o)))))
-
-    

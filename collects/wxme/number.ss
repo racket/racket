@@ -19,8 +19,3 @@
                number
                (string->number (bytes->string/latin-1 number)))))
        (super-new)))))
-
-                   
-  
-  
-  

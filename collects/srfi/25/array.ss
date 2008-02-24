@@ -671,7 +671,5 @@
 
   ;; The array library:
   (include "arlib.scm")
-  
-  )  
 
-  
+  )

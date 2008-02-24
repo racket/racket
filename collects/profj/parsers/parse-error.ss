@@ -2563,5 +2563,3 @@
            ((beginner?) (parse-error "Fields may not be set in this position, only expressions are permitted here" ps end))
            (else (parse-error "Assignment is not permitted in this position. Only expressions are permitted here" ps end)))))))
   )
-  
- 

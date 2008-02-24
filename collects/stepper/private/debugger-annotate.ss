@@ -169,5 +169,3 @@
           annotated))
     
     (top-level-annotate stx)))
-
-                

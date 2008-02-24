@@ -5,5 +5,3 @@
 
   (define debugger-language<%>
     (interface () debugger:supported?)))
-
-  

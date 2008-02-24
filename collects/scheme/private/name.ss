@@ -23,7 +23,3 @@
 			   (string->symbol (format "~a:~a:~a" s l c))
 			   (let ([p (syntax-position stx)])
 			     (string->symbol (format "~a::~a" s p))))))))))))
-
-				     
-		
-	  

@@ -9,5 +9,3 @@
        #'(begin
            (provide name ...)
            (define name (make-parameter val)) ...)])))
-  
-  
