@@ -1,7 +1,7 @@
-(module mzpp mzscheme
+#lang scheme/base
 
-(require preprocessor/pp-utils)
-(provide (all-from preprocessor/pp-utils))
+(require preprocessor/pp-utils scheme/promise)
+(provide (all-from-out preprocessor/pp-utils))
 
 (provide beg-mark end-mark skip-to no-spaces? debug?)
 (define beg-mark   (make-parameter "<<"))
@@ -167,13 +167,10 @@
                  [cd (cd)])
     (run files)))
 
-(define-namespace-anchor nsa)
-
 (provide preprocess)
 (define (preprocess . files)
   (read-case-sensitive #t)
-  (current-namespace (namespace-anchor->namespace nsa))
+  (namespace-require 'scheme/base)
+  (namespace-require 'preprocessor/mzpp)
   (do-evals)
   (run files))
-
-)

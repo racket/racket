@@ -1,4 +1,4 @@
-(module pp-utils mzscheme
+#lang scheme/base
 
 (provide stdin stdout stderr cd)
 (define stdin  current-input-port)
@@ -13,4 +13,3 @@
 (define evals (make-parameter '()))
 (define (add-eval expr) (evals (cons expr (evals))))
 (define (do-evals) (for-each eval (reverse (evals))))
-)

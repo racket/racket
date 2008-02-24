@@ -1,7 +1,8 @@
-(module mztext mzscheme
+#lang scheme/base
 
-(require mzlib/string mzlib/port preprocessor/pp-utils)
-(provide (all-from preprocessor/pp-utils))
+(require preprocessor/pp-utils scheme/port scheme/promise
+         (only-in mzlib/string read-from-string-all))
+(provide (all-from-out preprocessor/pp-utils))
 
 ;;=============================================================================
 ;; Composite port
@@ -113,7 +114,7 @@
 (define (dispatch dispatcher continue failure . copy?)
   (let ([m (if (and (pair? copy?) (car copy?))
              (regexp-match (car dispatcher) (stdin) 0 #f (stdout))
-             (regexp-match/fail-without-reading (car dispatcher) (stdin)))])
+             (regexp-try-match (car dispatcher) (stdin)))])
     (if m
       (ormap (lambda (x y) (and x (y x continue))) (cdr m) (cdr dispatcher))
       (failure))))
@@ -184,7 +185,7 @@
         ((if (andmap (lambda (x) (or (not x) (void? x))) vs)
            (begin (swallow-newline) cont)
            (value->cont vs cont))))))
-  (cond [(regexp-match/fail-without-reading (command-marker-here-re) (stdin))
+  (cond [(regexp-try-match (command-marker-here-re) (stdin))
          => (lambda (here) (display (car here)) (cont))]
         [else (let ((r (read))) (do-thunk (lambda () (eval r))))]))
 
@@ -232,11 +233,10 @@
    (arg-dispatcher)
    #f
    (lambda ()
-     (cond [(regexp-match/fail-without-reading
-             (if (get-arg-reads-word?) #rx"[^ \t\r\n]+" #rx"[^ \t\r\n]")
-             (stdin))
-            => car]
-           [else eof]))))
+     (let ([m (regexp-try-match
+               (if (get-arg-reads-word?) #rx"[^ \t\r\n]+" #rx"[^ \t\r\n]")
+               (stdin))])
+       (if m (car m) eof)))))
 
 (provide get-arg*)
 (define (get-arg*)
@@ -254,7 +254,7 @@
 (provide swallow-newline)
 (define (swallow-newline)
   ;; careful: if there's no match, we don't want to consume the input
-  (regexp-match/fail-without-reading #rx"^[ \t]*\r?\n" (stdin))
+  (regexp-try-match #rx"^[ \t]*\r?\n" (stdin))
   (void))
 
 (define (string->substlist args str)
@@ -346,5 +346,3 @@
   (unless (null? files)
     (parameterize ([stdin (make-composite-input)])
       (apply include files))))
-
-)
