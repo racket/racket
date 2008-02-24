@@ -67,27 +67,46 @@
       '("d" "f" "e" "c" "a" "c" "b")
       string<?)
 (let ()
-  (define (random-list n)
+  (define (car< x y) (< (car x) (car y)))
+  (define (random-list n range)
     (let loop ([n n] [r '()])
-      (if (zero? n) r (loop (sub1 n) (cons (random 1000000) r)))))
-  (define (test-sort sort len times)
+      (if (zero? n) r (loop (sub1 n) (cons (list (random range)) r)))))
+  (define (test-sort len times)
     (or (zero? times)
-        (and (let* ([rand (random-list len)]
-                    [sorted (sort rand <)]
-                    [same   (sort rand (lambda (x y) #f))])
+        (and (let* ([rand (random-list len (if (even? times) 1000000 10))]
+                    [orig< (lambda (x y) (memq y (cdr (memq x rand))))]
+                    [sorted (sort rand car<)]
+                    [l1 (reverse (cdr (reverse sorted)))]
+                    [l2 (cdr sorted)])
                (and (= (length sorted) (length rand))
-                    ;; sorted?
-                    (andmap <=
-                            (reverse (cdr (reverse sorted)))
-                            (cdr sorted))
-                    ;; stable?
-                    (equal? rand same)))
-             (test-sort sort len (sub1 times)))))
-  (test #t test-sort sort 1 10)
-  (test #t test-sort sort 2 10)
-  (test #t test-sort sort 10 100)
-  (test #t test-sort sort 100 100)
-  (test #t test-sort sort 1000 100))
+                    (andmap (lambda (x1 x2)
+                              (and (not (car< x2 x1)) ; sorted?
+                                   (or (car< x1 x2) (orig< x1 x2)))) ; stable?
+                            l1 l2)))
+             (test-sort len (sub1 times)))))
+  (test #t test-sort    1  10)
+  (test #t test-sort    2  20)
+  (test #t test-sort    3  60)
+  (test #t test-sort    4 200)
+  (test #t test-sort    5 200)
+  (test #t test-sort   10 200)
+  (test #t test-sort  100 200)
+  (test #t test-sort 1000 200)
+  ;; test stability
+  (test '((1) (2) (3 a) (3 b) (3 c)) sort '((3 a) (1) (3 b) (2) (3 c)) car<)
+  ;; test short lists (+ stable)
+  (test '() sort '() car<)
+  (test '((1 1)) sort '((1 1)) car<)
+  (test '((1 2) (1 1)) sort '((1 2) (1 1)) car<)
+  (test '((1) (2)) sort '((2) (1)) car<)
+  (for-each (lambda (l) (test '((0 3) (1 1) (1 2)) sort l car<))
+            '(((1 1) (1 2) (0 3))
+              ((1 1) (0 3) (1 2))
+              ((0 3) (1 1) (1 2))))
+  (for-each (lambda (l) (test '((0 2) (0 3) (1 1)) sort l car<))
+            '(((1 1) (0 2) (0 3))
+              ((0 2) (1 1) (0 3))
+              ((0 2) (0 3) (1 1)))))
 
 (let ([s (let loop ([n 1000])
 	   (if (zero? n)
