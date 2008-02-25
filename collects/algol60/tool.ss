@@ -88,8 +88,8 @@
           (define/public (get-teachpack-names) null)
           (define/public (marshall-settings x) x)
           (define/public (on-execute settings run-in-user-thread)
-            (dynamic-require 'mzlib/algol60/base #f)
-            (let ([path ((current-module-name-resolver) 'mzlib/algol60/base #f #f)]
+            (dynamic-require 'algol60/base #f)
+            (let ([path ((current-module-name-resolver) 'algol60/base #f #f)]
                   [n (current-namespace)])
               (run-in-user-thread
                (lambda ()
@@ -115,10 +115,10 @@
 						base-importing-stx)])
 		  (make-embedding-executable dst-file
 					     #f #f
-					     '((#f mzlib/algol60/base))
+					     '((#f algol60/base))
 					     null
 					     (compile
-					      `(module m mzlib/algol60/base
+					      `(module m algol60/base
 						 ,code))
 					     (list "-mvqe" "(require m)"))))))
 	  (define/public (get-one-line-summary) "Algol 60 (not Scheme at all!)")
