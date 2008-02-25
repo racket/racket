@@ -2525,7 +2525,7 @@ module browser threading seems wrong.
                  [lang (drscheme:language-configuration:language-settings-language lang/config)]
                  [strs (send lang get-language-position)]
                  [can-browse?
-                  (or (regexp-match #rx"module" (last strs))
+                  (or (regexp-match #rx"Module" (last strs))
                       (ormap (λ (x) (regexp-match #rx"PLT" x))
                              strs))])
             (unless can-browse?
