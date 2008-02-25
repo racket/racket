@@ -517,8 +517,9 @@ a Scheme splice box.
 
 @bold{Tip:} The debugger will not work properly on @onscreen{Untitled}
 windows or tabs.  To debug a new program, make sure it has been saved
-to the file system.  For best results, do not change the name of the
-file in the middle of a debugging session.
+to the file system.  Also, changing the name of a file in the middle
+of a debugging session will prevent the debugger from working properly
+on that file.
 
 Like the @onscreen{Run} button, the @as-index{@onscreen{Debug} button}
 runs the program in the definitions window.  However, instead of
@@ -559,6 +560,15 @@ the @onscreen{Over} button, it sets a one-time breakpoint and
 continues execution.  In this case, the program stops upon returning
 to the context or raising an unhandled exception.}
 
+    @item{The @as-index{@onscreen{Up} button} is only enabled when
+execution is paused within the context of another expression.  It
+switches the debugger's view to the outer context.}
+
+    @item{The @as-index{@onscreen{Down} button} is only enabled when
+execution is paused and the @onscreen{Up} button has been clicked at
+least once, so the debugger's view is not at the lowest-level
+expression.  It moves the view context inward one level.}
+
 }
 
 If the program is running (not paused), then only the @as-index{Pause}
@@ -590,7 +600,13 @@ and a one-time breakpoint appears as a yellow circle.
 language, then the @italic{first time} it is debugged, breakpoints
 will only become available in expressions as they are evaluated.
 However, the next time the program is debugged, the debugger will
-remember the set of breakable locations from the previous session.}
+remember the set of breakable locations from the previous session.
+
+@bold{Tip:} Clicking the @onscreen{Run} button after a debugging
+session will cause all breakpoints to disappear from the definitions
+window.  These breakpoints are not forgotten, and clicking
+@onscreen{Debug} again will restore them.  However, breakpoints do
+@italic{not} persist across restarts of DrScheme.}
 
     @item{If execution is paused at the start of an expression, then
 right-clicking or control-clicking (Mac OS X) on the green triangle
