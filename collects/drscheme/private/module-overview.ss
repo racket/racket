@@ -196,11 +196,11 @@
           (render-snips)
           (end-edit-sequence))
         
-        ;; add-connection : string string boolean symbol -> void
+        ;; add-connection : string string boolean number -> void
         ;; name-original and name-require and the identifiers for those paths and
         ;; original-filename? and require-filename? are booleans indicating if the names
         ;; are filenames.
-        (define/public (add-connection name-original name-require path-key require-type)
+        (define/public (add-connection name-original name-require path-key require-depth)
           (unless max-lines
             (error 'add-connection "not in begin-adding-connections/end-adding-connections sequence"))
           (let* ([original-filename? (file-exists? name-original)]
@@ -209,20 +209,15 @@
                  [require-snip (find/create-snip name-require require-filename?)]
                  [original-level (send original-snip get-level)]
                  [require-level (send require-snip get-level)])
-            (case require-type 
-              [(require)
+            (case require-depth 
+              [(0)
                (add-links original-snip require-snip
                           dark-pen light-pen
                           dark-brush light-brush)]
-              [(require-for-syntax)
+              [else
                (add-links original-snip require-snip 
                           dark-syntax-pen light-syntax-pen
-                          dark-syntax-brush light-syntax-brush)]
-              [(require-for-template)
-               (add-links original-snip require-snip
-                          dark-template-pen light-template-pen
-                          dark-template-brush light-template-brush)]
-              [else (error 'add-connection "unknown require-type ~s" require-type)])
+                          dark-syntax-brush light-syntax-brush)])
             (when path-key
               (send original-snip add-special-key-child path-key require-snip))
             (if (send original-snip get-level)
@@ -652,7 +647,7 @@
          (send progress-frame show #t))))
     
     (define text/pos 
-      (let ([t (make-object text%)])
+      (let ([t (make-object text:basic%)])
         (send t load-file filename)
         (drscheme:language:make-text/pos
          t
@@ -827,8 +822,8 @@
                (let ([name-original (list-ref val 0)]
                      [name-require (list-ref val 1)]
                      [path-key (list-ref val 2)]
-                     [require-type (list-ref val 3)])
-                 (send pasteboard add-connection name-original name-require path-key require-type))
+                     [require-depth (list-ref val 3)])
+                 (send pasteboard add-connection name-original name-require path-key require-depth))
                (loop))]))))
     (send pasteboard end-adding-connections)
     
@@ -940,41 +935,30 @@
     (unless (hash-table-get visited-hash-table module-name (λ () #f))
       (async-channel-put progress-channel (format adding-file module-name))
       (hash-table-put! visited-hash-table module-name #t)
-      (let-values ([(imports fs-imports ft-imports fl-imports) (module-compiled-imports module-code)])
-        (let ([requires (extract-filenames imports module-name)]
-              [syntax-requires (extract-filenames fs-imports module-name)]
-              [template-requires (extract-filenames ft-imports module-name)])
-          (for-each (λ (require)
-                      (add-connection module-name
-                                      (req-filename require)
-                                      (req-key require)
-                                      'require)
-                      (add-filename-connections (req-filename require)))
-                    requires)
-          (for-each (λ (syntax-require)
-                      (add-connection module-name 
-                                      (req-filename syntax-require)
-                                      (req-key syntax-require)
-                                      'require-for-syntax)
-                      (add-filename-connections (req-filename syntax-require)))
-                    syntax-requires)
-          (for-each (λ (require)
-                      (add-connection module-name
-                                      (req-filename require)
-                                      (req-key require)
-                                      'require-for-template)
-                      (add-filename-connections (req-filename require)))
-                    template-requires)))))
+      (let ([import-assoc (module-compiled-imports module-code)])
+        (for-each
+         (λ (line)
+           (let* ([level (car line)]
+                  [mpis (cdr line)]
+                  [requires (extract-filenames mpis module-name)])
+             (for-each (λ (require)
+                         (add-connection module-name
+                                         (req-filename require)
+                                         (req-key require)
+                                         level)
+                         (add-filename-connections (req-filename require)))
+                       requires)))
+         import-assoc))))
   
-  ;; add-connection : string string boolean symbol -> void
+  ;; add-connection : string string boolean number -> void
   ;; name-original and name-require and the identifiers for those paths and
   ;; original-filename? and require-filename? are booleans indicating if the names
   ;; are filenames.
-  (define (add-connection name-original name-require req-sym require-type)
+  (define (add-connection name-original name-require req-sym require-depth)
     (async-channel-put connection-channel (list name-original 
                                                 name-require  
                                                 req-sym
-                                                require-type)))
+                                                require-depth)))
   
   (define (extract-module-name stx)
     (syntax-case stx ()
