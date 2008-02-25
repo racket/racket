@@ -756,6 +756,7 @@
        (if no-specific-collections? #f (map cc-path ccs-to-compile))
        #f
        (not (null? (archives)))
+       (make-user)
        (lambda (what go alt) (record-error what "Building docs" go alt)))))
 
   (define (render-pdf file)
