@@ -22,7 +22,7 @@
       -1
       (let loop ([b b][pos 0])
         (if (zero? (bitwise-and b 1))
-            (loop (arithmetic-shift b) (add1 pos))
+            (loop (arithmetic-shift b -1) (add1 pos))
             pos))))
 
 

@@ -87,14 +87,14 @@ void scheme_init_numstr(Scheme_Env *env)
 			     env);
 
   scheme_add_global_constant("integer-bytes->integer", 
-			     scheme_make_folding_prim(bytes_to_integer,
+			     scheme_make_prim_w_arity(bytes_to_integer,
 						      "integer-bytes->integer", 
-						      2, 3, 1),
+						      2, 5),
 			     env);
   scheme_add_global_constant("integer->integer-bytes", 
 			     scheme_make_prim_w_arity(integer_to_bytes,
 						      "integer->integer-bytes", 
-						      3, 5),
+						      3, 6),
 			     env);
   scheme_add_global_constant("floating-point-bytes->real", 
 			     scheme_make_folding_prim(bytes_to_real,
@@ -1599,18 +1599,16 @@ int scheme_check_double(const char *where, double d, const char *dest)
 
 static Scheme_Object *bytes_to_integer (int argc, Scheme_Object *argv[])
 {
-  int slen, sgned;
+  long strlen, slen;
+  int sgned;
   char *str;
   int buf[2], i;
-  int bigend = MZ_IS_BIG_ENDIAN;
+  int bigend = MZ_IS_BIG_ENDIAN, offset = 0;
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
-    slen = 0;
+    scheme_wrong_type("integer-bytes->integer", "byte string", 0, argc, argv);
   else
-    slen = SCHEME_BYTE_STRLEN_VAL(argv[0]);
-
-  if ((slen != 2)  && (slen != 4) && (slen != 8))
-    scheme_wrong_type("integer-bytes->integer", "byte string (2, 4, or 8 bytes)", 0, argc, argv);
+    strlen = SCHEME_BYTE_STRLEN_VAL(argv[0]);
 
   str = SCHEME_BYTE_STR_VAL(argv[0]);
 
@@ -1618,10 +1616,41 @@ static Scheme_Object *bytes_to_integer (int argc, Scheme_Object *argv[])
   if (argc > 2)
     bigend = SCHEME_TRUEP(argv[2]);
 
+  if (argc > 3) {
+    long start, finish;
+
+    scheme_get_substring_indices("integer-bytes->integer", argv[0],
+                                 argc, argv,
+                                 3, 4, &start, &finish);
+
+    offset = start;
+    slen = finish - start;
+  } else {
+    offset = 0;
+    slen = strlen;
+  }
+
+  if ((slen != 2)  && (slen != 4) && (slen != 8)) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "integer-bytes->integer: length is not 2, 4, or 8 bytes: %ld",
+                     slen);
+    return NULL;
+  }
+
+  if (offset + slen > strlen) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     
+                     slen);
+    return NULL;
+  }
+
   if (bigend != MZ_IS_BIG_ENDIAN) {
     for (i = 0; i < slen; i++) {
-      ((char *)buf)[slen - i - 1] = str[i];
+      ((char *)buf)[slen - i - 1] = str[i + offset];
     }
+    str = (char *)buf;
+  } else {
+    memcpy(&buf, str + offset, slen);
     str = (char *)buf;
   }
 
@@ -1696,7 +1725,7 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
   Scheme_Object *n, *s;
   char *str;
   int size, sgned;
-  long val;
+  long val, offset, buf[2];
 #if !defined(NO_LONG_LONG_TYPE) && !defined(SIXTY_FOUR_BIT_INTEGERS)
   mzlonglong llval;
 #endif
@@ -1724,6 +1753,25 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
   
   if (!SCHEME_MUTABLE_BYTE_STRINGP(s))
     scheme_wrong_type("integer->integer-bytes", "mutable byte string", 4, argc, argv);
+
+  if (argc > 5) {
+    long start, finish;
+    
+    scheme_get_substring_indices("integer-bytes->integer", s,
+                                 argc, argv,
+                                 5, 6, &start, &finish);
+
+    offset = start;
+  } else
+    offset = 0;
+  
+  if (offset + size > SCHEME_BYTE_STRLEN_VAL(s)) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "integer-bytes->integer: byte string is %ld bytes,"
+                     " which is shorter than starting position %ld plus size %ld",
+                     SCHEME_BYTE_STRLEN_VAL(s), offset, size);
+    return NULL;
+  }
 
   /* Check for mismatch: number doesn't fit */
   if (size == 2) {
@@ -1799,17 +1847,8 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
     return NULL;
   }
 
-  /* Check for mismatch: string wrong size */
-
-  if (size != SCHEME_BYTE_STRLEN_VAL(s)) {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "integer->integer-bytes: string size %d does not match indicated %d-byte length: %V",
-		     SCHEME_BYTE_STRLEN_VAL(s), size, s);
-    return NULL;
-  }
-
   /* Finally, do the work */
-  str = SCHEME_BYTE_STR_VAL(s);
+  str = (char *)buf;
   switch (size) {
   case 2:
     {
@@ -1872,15 +1911,16 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
     break;
   }
 
+  str = SCHEME_BYTE_STR_VAL(s);
   if (bigend != MZ_IS_BIG_ENDIAN) {
     int i;
-    char buf[8];
-    
     for (i = 0; i < size; i++) {
-      buf[size - i - 1] = str[i];
+      str[i + offset] = ((char *)buf)[size - i - 1];
     }
+  } else {
+    int i;
     for (i = 0; i < size; i++) {
-      str[i] = buf[i];
+      str[i + offset] = ((char *)buf)[i];
     }
   }
 

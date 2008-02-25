@@ -708,17 +708,20 @@ padded with trailing zeros if necessary).
 
 @defproc[(integer-bytes->integer [bstr bytes?]
                                  [signed? any/c]
-                                 [big-endian? any/c (system-big-endian?)])
+                                 [big-endian? any/c (system-big-endian?)]
+                                 [start exact-nonnegative-integer? 0]
+                                 [end exact-nonnegative-integer? (bytes-length bstr)])
          exact-integer?]{
 
 Converts the machine-format number encoded in @scheme[bstr] to an
-exact integer. The @scheme[bstr] must contain either 2, 4, or 8
-bytes. If @scheme[signed?] is true, then the bytes are decoded as a
-two's-complement number, otherwise it is decoded as an unsigned
-integer. If @scheme[big-endian?] is true, then the first character's
-ASCII value provides the most significant eight bits of the number,
-otherwise the first character provides the least-significant eight
-bits, and so on..}
+exact integer. The @scheme[start] and @scheme[end] arguments specify
+the substring to decode, where @scheme[(- end start)] must be
+@scheme[2], @scheme[4], or @scheme[8]. If @scheme[signed?] is true,
+then the bytes are decoded as a two's-complement number, otherwise it
+is decoded as an unsigned integer. If @scheme[big-endian?] is true,
+then the first character's ASCII value provides the most significant
+eight bits of the number, otherwise the first character provides the
+least-significant eight bits, and so on.}
 
 
 @defproc[(integer->integer-bytes [n exact-integer?]
@@ -727,21 +730,23 @@ bits, and so on..}
                                  [big-endian? any/c (system-big-endian?)]
                                  [dest-bstr (and/c bytes? 
                                                    (not/c immutable?))
-                                            (make-bytes size-n)])
+                                            (make-bytes size-n)]
+                                 [start exact-nonnegative-integer? 0])
           bytes?]{
 
 Converts the exact integer @scheme[n] to a machine-format number
-encoded in a byte string of length @scheme[size-n], which must be 2,
-4, or 8. If @scheme[signed?] is true, then the number is encoded as
-two's complement, otherwise it is encoded as an unsigned bit
-stream. If @scheme[big-endian?] is true, then the most significant
-eight bits of the number are encoded in the first character of the
-resulting byte string, otherwise the least-significant bits are
-encoded in the first byte, and so on.
+encoded in a byte string of length @scheme[size-n], which must be
+@scheme[2], @scheme[4], or @scheme[8]. If @scheme[signed?] is true,
+then the number is encoded as two's complement, otherwise it is
+encoded as an unsigned bit stream. If @scheme[big-endian?] is true,
+then the most significant eight bits of the number are encoded in the
+first character of the resulting byte string, otherwise the
+least-significant bits are encoded in the first byte, and so on.
 
 The @scheme[dest-bstr] argument must be a mutable byte string of
 length @scheme[size-n]. The encoding of @scheme[n] is written into
-@scheme[dest-bstr], and @scheme[dest-bstr] is returned as the result.
+@scheme[dest-bstr] starting at offset @scheme[start], and
+@scheme[dest-bstr] is returned as the result.
 
 If @scheme[n] cannot be encoded in a string of the requested size and
 format, the @exnraise[exn:fail:contract]. If @scheme[dest-bstr] is not

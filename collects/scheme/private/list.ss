@@ -25,71 +25,101 @@
 
            compose)
 
+  (#%require (for-syntax "stxcase-scheme.ss"))
+
   ;; This is a destructive stable merge-sort, adapted from slib and improved by
   ;; Eli Barzilay
   ;; The original source said:
   ;;   It uses a version of merge-sort invented, to the best of my knowledge,
   ;;   by David H. D. Warren, and first used in the DEC-10 Prolog system.
   ;;   R. A. O'Keefe adapted it to work destructively in Scheme.
-  ;; but it's a plain destructive merge sort.
-  (define (sort-internal lst less? n)
-    (define (merge-sorted! a b)
-      (define (loop r a b r-a?) ; r-a? for optimization -- is r connected to a?
-        (if (less? (mcar b) (mcar a))
-          (begin (when r-a? (set-mcdr! r b))
-                 (if (null? (mcdr b)) (set-mcdr! b a) (loop b a (mcdr b) #f)))
-          ;; (car a) <= (car b)
-          (begin (unless r-a? (set-mcdr! r a))
-                 (if (null? (mcdr a)) (set-mcdr! a b) (loop a (mcdr a) b #t)))))
-      (cond [(null? a) b]
-            [(null? b) a]
-            [(less? (mcar b) (mcar a))
-             (if (null? (mcdr b)) (set-mcdr! b a) (loop b a (mcdr b) #f))
-             b]
-            [else ; (car a) <= (car b)
-             (if (null? (mcdr a)) (set-mcdr! a b) (loop a (mcdr a) b #t))
-             a]))
-    (let step ([n n])
-      (cond [(> n 3) (let* (; let* not really needed with mzscheme's l->r eval
-                            [j (quotient n 2)] [a (step j)] [b (step (- n j))])
-                       (merge-sorted! a b))]
-            ;; the following two cases are just explicit treatment of sublists
-            ;; of length 2 and 3, could remove both (and use the above case for
-            ;; n>1) and it would still work, except a little slower
-            [(= n 3) (let ([p lst] [p1 (mcdr lst)] [p2 (mcdr (mcdr lst))])
-                       (let ([x (mcar p)] [y (mcar p1)] [z (mcar p2)])
-                         (set! lst (mcdr p2))
-                         (cond [(less? y x) ; y x
-                                (cond [(less? z y) ; z y x
-                                       (set-mcar! p  z)
-                                       (set-mcar! p1 y)
-                                       (set-mcar! p2 x)]
-                                      [(less? z x) ; y z x
-                                       (set-mcar! p        y)
-                                       (set-mcar! p1 z)
-                                       (set-mcar! p2 x)]
-                                      [else ; y x z
-                                       (set-mcar! p  y)
-                                       (set-mcar! p1 x)])]
-                               [(less? z x) ; z x y
-                                (set-mcar! p  z)
-                                (set-mcar! p1 x)
-                                (set-mcar! p2 y)]
-                               [(less? z y) ; x z y
-                                (set-mcar! p1 z)
-                                (set-mcar! p2 y)])
-                         (set-mcdr! p2 '())
-                         p))]
-            [(= n 2) (let ([x (mcar lst)] [y (mcar (mcdr lst))] [p lst])
-                       (set! lst (mcdr (mcdr lst)))
-                       (when (less? y x) (set-mcar! p y) (set-mcar! (mcdr p) x))
-                       (set-mcdr! (mcdr p) '())
-                       p)]
-            [(= n 1) (let ([p lst])
-                       (set! lst (mcdr lst))
-                       (set-mcdr! p '())
-                       p)]
-            [else '()])))
+  ;; but it's a plain destructive merge sort, which I optimized further.
+  (define sort-internal
+    (let ()
+      (define-syntax sort-internal-body
+        (syntax-rules ()
+          [(_ lst less? n)
+           (begin
+             (define (merge-sorted! a b)
+               ;; r-a? for optimization -- is r connected to a?
+               (define (loop r a b r-a?)
+                 (if (less? (mcar b) (mcar a))
+                     (begin
+                       (when r-a? (set-mcdr! r b))
+                       (if (null? (mcdr b)) (set-mcdr! b a) (loop b a (mcdr b) #f)))
+                     ;; (car a) <= (car b)
+                     (begin
+                       (unless r-a? (set-mcdr! r a))
+                       (if (null? (mcdr a)) (set-mcdr! a b) (loop a (mcdr a) b #t)))))
+               (cond [(null? a) b]
+                     [(null? b) a]
+                     [(less? (mcar b) (mcar a))
+                      (if (null? (mcdr b)) (set-mcdr! b a) (loop b a (mcdr b) #f))
+                      b]
+                     [else ; (car a) <= (car b)
+                      (if (null? (mcdr a)) (set-mcdr! a b) (loop a (mcdr a) b #t))
+                      a]))
+             (let step ([n n])
+               (cond [(> n 3)
+                      (let* (; let* not really needed with mzscheme's l->r eval
+                             [j (quotient n 2)] [a (step j)] [b (step (- n j))])
+                        (merge-sorted! a b))]
+                     ;; the following two cases are just explicit treatment of
+                     ;; sublists of length 2 and 3, could remove both (and use the
+                     ;; above case for n>1) and it would still work, except a
+                     ;; little slower
+                     [(= n 3) (let ([p lst] [p1 (mcdr lst)] [p2 (mcdr (mcdr lst))])
+                                (let ([x (mcar p)] [y (mcar p1)] [z (mcar p2)])
+                                  (set! lst (mcdr p2))
+                                  (cond [(less? y x) ; y x
+                                         (cond [(less? z y) ; z y x
+                                                (set-mcar! p  z)
+                                                (set-mcar! p1 y)
+                                                (set-mcar! p2 x)]
+                                               [(less? z x) ; y z x
+                                                (set-mcar! p        y)
+                                                (set-mcar! p1 z)
+                                                (set-mcar! p2 x)]
+                                               [else ; y x z
+                                                (set-mcar! p  y)
+                                                (set-mcar! p1 x)])]
+                                        [(less? z x) ; z x y
+                                         (set-mcar! p  z)
+                                         (set-mcar! p1 x)
+                                         (set-mcar! p2 y)]
+                                        [(less? z y) ; x z y
+                                         (set-mcar! p1 z)
+                                         (set-mcar! p2 y)])
+                                  (set-mcdr! p2 '())
+                                  p))]
+                     [(= n 2) (let ([x (mcar lst)] [y (mcar (mcdr lst))] [p lst])
+                                (set! lst (mcdr (mcdr lst)))
+                                (when (less? y x)
+                                  (set-mcar! p y)
+                                  (set-mcar! (mcdr p) x))
+                                (set-mcdr! (mcdr p) '())
+                                p)]
+                     [(= n 1) (let ([p lst])
+                                (set! lst (mcdr lst))
+                                (set-mcdr! p '())
+                                p)]
+                     [else '()])))]))
+      (define sort-internals (make-hash-table))
+      (define-syntax make-precompiled-sort
+        (syntax-rules ()
+          [(_ less?) (hash-table-put! sort-internals less?
+                                      (lambda (lst n) (sort-internal-body lst less? n)))]))
+      (define ((sort-internal* less?) lst n)
+        (sort-internal-body lst less? n))
+      (make-precompiled-sort <)
+      (make-precompiled-sort string<?)
+      (make-precompiled-sort string-ci<?)
+      (make-precompiled-sort keyword<?)
+      (lambda (less? lst n)
+        ((or (hash-table-get sort-internals less? #f)
+             (sort-internal* less?))
+         lst n))))
+
   (define (sort lst less?)
     (unless (list? lst)
       (raise-type-error 'sort "proper list" lst))
@@ -140,7 +170,7 @@
                                   (set-mcdr! last new)
                                   (loop new (cdr lst))))))])
                 ;; mlist->list
-                (let loop ([r (sort-internal mlst less? n)])
+                (let loop ([r (sort-internal less? mlst n)])
                   (if (null? r)
                     r
                     (cons (mcar r) (loop (mcdr r))))))])))

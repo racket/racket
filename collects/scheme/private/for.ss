@@ -643,9 +643,10 @@
         #'orig-stx)]
       ;; Guard case, no pending emits:
       [(_ [orig-stx nested? #f ()] ([fold-var fold-init] ...) (#:when expr . rest) . body)
-       #'(if expr
-             (for/foldX/derived [orig-stx nested? #f ()] ([fold-var fold-init] ...) rest . body)
-             (values* fold-init ...))]
+       #'(let ([fold-var fold-init] ...)
+           (if expr
+               (for/foldX/derived [orig-stx nested? #f ()] ([fold-var fold-var] ...) rest . body)
+               (values* fold-var ...)))]
       ;; Guard case, pending emits need to be flushed first
       [(frm [orig-stx nested? #f binds] ([fold-var fold-init] ...) (#:when expr . rest) . body)
        #'(frm [orig-stx nested? #t binds] ([fold-var fold-init] ...) (#:when expr . rest) . body)]
