@@ -330,7 +330,9 @@ Returns a list sorted according to the @scheme[less-than?] procedure,
 The sort is stable: if two elements of @scheme[lst] are ``equal''
  (i.e., @scheme[proc] does not return a true value when given the pair
  in either order), then the elements preserve their relative order
- from @scheme[lst] in the output list.}
+ from @scheme[lst] in the output list.  You should therefore use
+ @scheme[sort] with strict comparison functions (e.g., @scheme[<] or
+ @scheme[string<?]; not @scheme[<=] or @scheme[string<=?])}
 
 @; ----------------------------------------
 @section{List Searching}
