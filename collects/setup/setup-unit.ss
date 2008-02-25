@@ -802,8 +802,8 @@
              (if no-specific-collections? #f (map cc-path ccs-to-compile))
              tmp-dir
              #f
-             (lambda (what go alt)
-               (record-error what "Building docs" go alt)))
+             (make-user)
+             (lambda (what go alt) (record-error what "Building docs" go alt)))
             (parameterize ([current-directory tmp-dir])
               (for ([f (directory-list)]
                     #:when (regexp-match? #rx#"[.]tex$" (path-element->bytes f)))
