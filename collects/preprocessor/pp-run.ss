@@ -49,7 +49,7 @@
              (delete-file file)
              (rename-file-or-directory temp file))))]
       [output
-       (with-output-to-file output (lambda () (apply preprocess files)) 'replace)
+       (with-output-to-file output (lambda () (apply preprocess files)) #:exists 'replace)
        (when run-cmd (do-run-subst output))]
       [else (apply preprocess files)])
     (exit exit-code)))
