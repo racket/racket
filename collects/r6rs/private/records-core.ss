@@ -41,7 +41,6 @@
 	  record? record-rtd)
   (import (rnrs base (6))
           (rnrs lists (6))
-          (rnrs io simple (6)) ;; REMOVEME 
 	  (r6rs private vector-types))
   
   (define make-field-spec cons)

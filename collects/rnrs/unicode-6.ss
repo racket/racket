@@ -19,7 +19,7 @@
  char-upper-case?
  char-lower-case?
  char-title-case?
- char-general-category
+ (rename-out [r6rs:char-general-category char-general-category])
  
  string-upcase
  string-downcase
@@ -35,3 +35,35 @@
  string-normalize-nfkd
  string-normalize-nfc
  string-normalize-nfkc)
+
+(define (r6rs:char-general-category ch)
+  (hash-table-get #hasheq((ll . Ll)
+                          (lu . Lu)
+                          (lt . Lt)
+                          (lm . Lm)
+                          (lo . Lo)
+                          (mn . Mn)
+                          (mc . Mc)
+                          (me . Me)
+                          (nl . Nl)
+                          (no . No)
+                          (nd . Nd)
+                          (zl . Zl)
+                          (zs . Zs)
+                          (zp . Zp)
+                          (pc . Pc)
+                          (pd . Pd)
+                          (ps . Ps)
+                          (pe . Pe)
+                          (pi . Pi)
+                          (pf . Pf)
+                          (po . Po)
+                          (sm . Sm)
+                          (sc . Sc)
+                          (sk . Sk)
+                          (so . So)
+                          (cf . Cf)
+                          (cn . Cn)
+                          (co . Co)
+                          (cc . Cc))
+                  (char-general-category ch)))

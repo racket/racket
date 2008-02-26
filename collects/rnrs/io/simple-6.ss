@@ -1,35 +1,66 @@
 #lang scheme/base
 
-(require r6rs/private/readtable)
+(require (prefix-in r6rs: rnrs/io/ports-6))
 
 (provide (rename-out [eof eof-object])
          eof-object?
-         call-with-input-file
-         call-with-output-file
+         (rename-out [r6rs:call-with-input-file call-with-input-file]
+                     [r6rs:call-with-output-file call-with-output-file])
          input-port?
          output-port?
-         current-input-port
-         current-output-port
-         current-error-port
-         with-input-from-file
-         with-output-to-file
-         open-input-file
-         open-output-file
+         (rename-out [r6rs:current-input-port current-input-port]
+                     [r6rs:current-output-port current-output-port]
+                     [r6rs:current-error-port current-error-port]
+                     [r6rs:with-input-from-file with-input-from-file]
+                     [r6rs:with-output-to-file with-output-to-file]
+                     [r6rs:open-input-file open-input-file]
+                     [r6rs:open-output-file open-output-file])
          close-input-port
          close-output-port
          read-char
-         peek-char
-         (rename-out [r6rs:read read])
+         (rename-out [r6rs:peek-char peek-char]
+                     [r6rs:read read])
          write-char
          newline
          display
-         write)
+         (rename-out [r6rs:write write]))
 
-(define (r6rs:read [in (current-input-port)])
-  (let loop ([v (with-r6rs-reader-parameters (lambda () (read in)))])
-    (cond
-     [(pair? v) (mcons (loop (car v))
-                       (loop (cdr v)))]
-     [(vector? v) (list->vector
-                   (map loop (vector->list v)))]
-     [else v])))
+(define (r6rs:call-with-input-file file proc)
+  (r6rs:call-with-port
+   (r6rs:open-input-file file)
+   proc))
+
+(define (r6rs:call-with-output-file file proc)
+  (r6rs:call-with-port
+   (r6rs:open-output-file file)
+   proc))
+
+(define (r6rs:with-input-from-file file proc)
+  (let ([p (r6rs:open-input-file file)])
+    (begin0
+     (parameterize ([current-input-port p])
+       (proc))
+     (close-input-port p))))
+
+(define (r6rs:with-output-to-file file proc)
+  (let ([p (r6rs:open-output-file file)])
+    (begin0
+     (parameterize ([current-output-port p])
+       (proc))
+     (close-output-port p))))
+
+(define (r6rs:open-input-file file)
+  (r6rs:transcoded-port (r6rs:open-file-input-port file) (r6rs:native-transcoder)))
+
+(define (r6rs:open-output-file file)
+  (r6rs:transcoded-port (r6rs:open-file-output-port file) (r6rs:native-transcoder)))
+
+(define (r6rs:peek-char [in (current-input-port)])
+  (peek-char in))
+
+(define (r6rs:read [in (r6rs:current-input-port)])
+  (r6rs:get-datum in))
+
+(define (r6rs:write v [out (r6rs:current-output-port)])
+  (r6rs:put-datum out v))
+

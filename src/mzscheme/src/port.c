@@ -75,9 +75,6 @@ static int mzerrno = 0;
 # endif
 extern int osk_not_console; /* set by cmd-line flag */
 #endif
-#ifdef MAC_FILE_SYSTEM
-# include <Carbon.h>
-#endif
 #include <math.h> /* for fmod , used by default_sleep */
 #include "schfd.h"
 
@@ -189,13 +186,6 @@ typedef struct Scheme_Subprocess {
 #endif
 
 
-/******************** Mac Classic input ********************/
-
-#ifdef MAC_FILE_SYSTEM
-# define MZ_FDS
-# define MAC_FILE_HANDLES
-#endif
-
 /******************** file-descriptor I/O ********************/
 
 /* Windows/Mac I/O is piggy-backed on Unix file-descriptor I/O.  Making
@@ -235,7 +225,7 @@ typedef struct Scheme_FD {
 # include <fcntl.h>
 #endif
 
-#if defined(WINDOWS_FILE_HANDLES) || defined(MAC_FILE_HANDLES)
+#if defined(WINDOWS_FILE_HANDLES)
 # define FILENAME_EXN_E "%E"
 #else
 # define FILENAME_EXN_E "%e"
@@ -355,6 +345,7 @@ static void force_close_input_port(Scheme_Object *port);
 static Scheme_Object *text_symbol, *binary_symbol;
 static Scheme_Object *append_symbol, *error_symbol, *update_symbol;
 static Scheme_Object *replace_symbol, *truncate_symbol, *truncate_replace_symbol;
+static Scheme_Object *must_truncate_symbol;
 
 Scheme_Object *scheme_none_symbol, *scheme_line_symbol, *scheme_block_symbol;
 
@@ -386,6 +377,7 @@ scheme_init_port (Scheme_Env *env)
   REGISTER_SO(truncate_symbol);
   REGISTER_SO(truncate_replace_symbol);
   REGISTER_SO(update_symbol);
+  REGISTER_SO(must_truncate_symbol);
 
   text_symbol = scheme_intern_symbol("text");
   binary_symbol = scheme_intern_symbol("binary");
@@ -395,6 +387,7 @@ scheme_init_port (Scheme_Env *env)
   truncate_symbol = scheme_intern_symbol("truncate");
   truncate_replace_symbol = scheme_intern_symbol("truncate/replace");
   update_symbol = scheme_intern_symbol("update");
+  must_truncate_symbol = scheme_intern_symbol("must-truncate");
 
   REGISTER_SO(scheme_none_symbol);
   REGISTER_SO(scheme_line_symbol);
@@ -3649,25 +3642,6 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
     return NULL;
   }
 
-#  ifdef MAC_FILE_SYSTEM
-  {
-    FSSpec spec;
-    SInt16 refnum;
-
-    if (scheme_mac_path_to_spec(filename, &spec)) {
-      errno = FSpOpenDF(&spec, fsRdWrShPerm, &refnum);
-      if (errno == noErr)
-	result = make_fd_input_port(refnum, scheme_make_path(filename), 1, mode[1] == 't', NULL, internal);
-      else {
-	filename_exn(name, "could not open file", filename, errno);
-	return NULL;
-      }
-    } else {
-      filename_exn(name, "could not open file", filename, 0);
-      return NULL;
-    }
-  }
-#  else
   regfile = scheme_is_regular_file(filename);
 
   fp = fopen(filename, mode);
@@ -3678,7 +3652,6 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
   scheme_file_open_count++;
 
   result = scheme_make_named_file_input_port(fp, scheme_make_path(filename));
-#  endif
 # endif
 #endif
 
@@ -3703,7 +3676,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
 # endif
 #endif
   int e_set = 0, m_set = 0, i;
-  int existsok = 0;
+  int existsok = 0, must_exist = 0;
   char *filename;
   char mode[4];
   int typepos;
@@ -3730,6 +3703,10 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
       e_set++;
     } else if (SAME_OBJ(argv[i], truncate_symbol)) {
       existsok = -1;
+      e_set++;
+    } else if (SAME_OBJ(argv[i], must_truncate_symbol)) {
+      existsok = -1;
+      must_exist = 1;
       e_set++;
     } else if (SAME_OBJ(argv[i], truncate_replace_symbol)) {
       existsok = -2;
@@ -3795,7 +3772,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
 #ifdef USE_FD_PORTS
   /* Note: assuming there's no difference between text and binary mode */
 
-  flags = (and_read ? O_RDWR : O_WRONLY) | O_CREAT;
+  flags = (and_read ? O_RDWR : O_WRONLY) | (must_exist ? 0 : O_CREAT);
 
   if (mode[0] == 'a')
     flags |= O_APPEND;
@@ -3861,12 +3838,17 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
 # ifdef WINDOWS_FILE_HANDLES
   if (!existsok)
     hmode = CREATE_NEW;
-  else if (existsok < 0)
-    hmode = OPEN_ALWAYS;
-  else if (existsok  == 1)
+  else if (existsok < 0) {
+    if (must_exist)
+      hmode = TRUNCATE_EXISTING;
+    else
+      hmode = OPEN_ALWAYS;
+  } else if (existsok  == 1) {
+    /* assert: !must_exist */
     hmode = CREATE_ALWAYS;
-  else if (existsok  == 2)
-    hmode = OPEN_ALWAYS;
+  } else if (existsok == 2) {
+    hmode = OPEN_EXISTING;
+  }
 
   fd = CreateFileW(WIDE_PATH(filename),
 		   GENERIC_WRITE | (and_read ? GENERIC_READ : 0),
@@ -3948,50 +3930,6 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
   }
 
 
-#  ifdef MAC_FILE_SYSTEM
-  {
-    FSSpec spec;
-    SInt16 refnum;
-    int creating = 0;
-
-    if (scheme_mac_path_to_spec(filename, &spec)) {
-      if (existsok == 1) {
-	/* In case it's there: */
-	FSpDelete(&spec);
-      }
-
-      errno = FSpCreate(&spec, 'MrEd', 'TEXT', smSystemScript);
-      if (errno == dupFNErr) {
-	if (!existsok) {
-	  scheme_raise_exn(MZEXN_FAIL_FILESYSTEM_EXISTS,
-			   "%s: file \"%q\" exists", name, filename);
-	  return NULL;
-	}
-      } else
-	creating = 1;
-      errno = FSpOpenDF(&spec, fsRdWrShPerm, &refnum);
-      if ((errno == noErr) && (existsok < 0)) {
-	/* truncate or truncate/replace */
-	SetEOF(refnum, 0);
-      }
-
-      if (errno == noErr) {
-	if (creating)
-	  scheme_file_create_hook(filename);
-
-	scheme_file_open_count++;
-	return make_fd_output_port(refnum, scheme_make_path(filename), 1, mode[1] == 't', and_read);
-      } else {
-	filename_exn(name, "could not open file", filename, errno);
-	return NULL;
-      }
-    } else {
-      filename_exn(name, "could not open file", filename, 0);
-      return NULL;
-    }
-  }
-#  else
-
   if (and_read) {
     scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
 		     "%s: not supported on this platform",
@@ -4041,7 +3979,6 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
   scheme_file_open_count++;
 
   return scheme_make_file_output_port(fp);
-#  endif
 # endif
 #endif
 }
@@ -4659,9 +4596,6 @@ fd_byte_ready (Scheme_Input_Port *port)
 
     return 0;
 #else
-# ifdef MAC_FILE_HANDLES
-    return 1;
-# else
     int r;
     DECL_FDSET(readfds, 1);
     DECL_FDSET(exnfds, 1);
@@ -4697,7 +4631,6 @@ fd_byte_ready (Scheme_Input_Port *port)
 # endif
 
     return r;
-# endif
 #endif
   }
 }
@@ -4865,17 +4798,6 @@ static long fd_get_string_slow(Scheme_Input_Port *port,
       }
     }
 #else
-# ifdef MAC_FILE_HANDLES
-    {
-      SInt32 cnt = target_size;
-
-      errno = FSRead(fip->fd, &cnt, target + target_offset);
-      if (!cnt && (errno != eofErr))
-        bc = -1;
-      else
-        bc = cnt;
-    }
-# else
     if (fip->regfile) {
       do {
         bc = read(fip->fd, target + target_offset, target_size);
@@ -4898,7 +4820,6 @@ static long fd_get_string_slow(Scheme_Input_Port *port,
         bc = 0;
       }
     }
-# endif
 #endif
 
     if (!none_avail) {
@@ -5010,16 +4931,10 @@ fd_close_input(Scheme_Input_Port *port)
   }
 #else
   if (!fip->refcount || !*fip->refcount) {
-# ifdef MAC_FILE_HANDLES
-    FSClose(fip->fd);
-# else
-    {
-      int cr;
-      do {
-	cr = close(fip->fd);
-      } while ((cr == -1) && (errno == EINTR));
-    }
-# endif
+    int cr;
+    do {
+      cr = close(fip->fd);
+    } while ((cr == -1) && (errno == EINTR));
   }
 #endif
 
@@ -5033,11 +4948,8 @@ fd_need_wakeup(Scheme_Input_Port *port, void *fds)
 
 #ifdef WINDOWS_FILE_HANDLES
 #else
-# ifdef MAC_FILE_HANDLES
-# else
   void *fds2;
   int n;
-# endif
 #endif
 
   fip = (Scheme_FD *)port->port_data;
@@ -5065,13 +4977,10 @@ fd_need_wakeup(Scheme_Input_Port *port, void *fds)
     scheme_add_fd_handle((void *)fip->fd, fds, 0);
   }
 #else
-# ifdef MAC_FILE_HANDLES
-# else
   n = fip->fd;
   MZ_FD_SET(n, (fd_set *)fds);
   fds2 = MZ_GET_FDSET(fds, 2);
   MZ_FD_SET(n, (fd_set *)fds2);
-# endif
 #endif
 }
 
@@ -5676,9 +5585,6 @@ fd_write_ready (Scheme_Object *port)
   } else
     return 1; /* non-blocking output, such as a console, or haven't written yet */
 #else
-# ifdef MAC_FILE_HANDLES
-  return 1;
-# else
   {
     DECL_FDSET(writefds, 1);
     DECL_FDSET(exnfds, 1);
@@ -5699,7 +5605,6 @@ fd_write_ready (Scheme_Object *port)
 
     return sr;
   }
-# endif
 #endif
 }
 
@@ -5712,11 +5617,8 @@ fd_write_need_wakeup(Scheme_Object *port, void *fds)
 
 #ifdef WINDOWS_FILE_HANDLES
 #else
-# ifdef MAC_FILE_HANDLES
-# else
   void *fds2;
   int n;
-# endif
 #endif
 
   op = scheme_output_port_record(port);
@@ -5728,14 +5630,11 @@ fd_write_need_wakeup(Scheme_Object *port, void *fds)
   else
     scheme_add_fd_nosleep(fds);
 #else
-# ifdef MAC_FILE_HANDLES
-# else
   n = fop->fd;
   fds2 = MZ_GET_FDSET(fds, 1);
   MZ_FD_SET(n, (fd_set *)fds2);
   fds2 = MZ_GET_FDSET(fds, 2);
   MZ_FD_SET(n, (fd_set *)fds2);
-# endif
 #endif
 }
 
@@ -6088,17 +5987,6 @@ static long flush_fd(Scheme_Output_Port *op,
 	}
       }
 #else
-# ifdef MAC_FILE_HANDLES
-      {
-	SInt32 put = buflen - offset;
-	errsaved = FSWrite(fop->fd, &put, bufstr + offset);
-	if (errsaved != noErr)
-	  len = -1;
-	else
-	  len = put;
-	full_write_buffer = 0;
-      }
-# else
       int flags;
 
       flags = fcntl(fop->fd, F_GETFL, 0);
@@ -6112,7 +6000,6 @@ static long flush_fd(Scheme_Output_Port *op,
       fcntl(fop->fd, F_SETFL, flags);
 
       full_write_buffer = (errsaved == EAGAIN);
-# endif
 #endif
 
       if (len < 0) {
@@ -6272,16 +6159,10 @@ fd_close_output(Scheme_Output_Port *port)
   }
 #else
   if (!fop->refcount || !*fop->refcount) {
-# ifdef MAC_FILE_HANDLES
-    FSClose(fop->fd);
-# else
-    {
-      int cr;
-      do {
-	cr = close(fop->fd);
-      } while ((cr == -1) && (errno == EINTR));
-    }
-# endif
+    int cr;
+    do {
+      cr = close(fop->fd);
+    } while ((cr == -1) && (errno == EINTR));
   }
 #endif
 

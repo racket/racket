@@ -841,7 +841,7 @@ print_to_port(char *name, Scheme_Object *obj, Scheme_Object *port, int notdispla
   char *str;
   long len;
   
-  op = (Scheme_Output_Port *)port;
+  op = scheme_output_port_record(port);
   if (op->closed)
     scheme_raise_exn(MZEXN_FAIL, "%s: output port is closed", name);
 

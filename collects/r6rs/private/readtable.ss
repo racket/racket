@@ -277,6 +277,10 @@
                                     col pos
                                     (and pos (+ 1 len)))))]
                             [(or (eq? char #\tab)
+                                 ;(eq? char #\newline)
+                                 ;(eq? char #\return)
+                                 ;(eq? char #\u85)
+                                 ;(eqv? char #\u2028)
                                  (eq? (char-general-category char) 'zs))
                              (let ([wm (regexp-match-positions #px"^(?:\t|\\p{Zs})*(?:\r\n|\r\u85|[\r\n\u85\u2028])(?:\t|\\p{Zs})*"
                                                                bytes 
@@ -285,7 +289,7 @@
                                    (cons (subbytes bytes bpos (caar m)) ; drop matched part
                                          (loop (cdar wm)))
                                    ;; This is an eof error if there's only intraline whitespace
-                                   ((if (regexp-match #px"^(?:\t|\\p{Zs})*$" bytes (+ 1 bpos))
+                                   ((if (regexp-match? #px"^(?:\t|\\p{Zs})*$" bytes (+ 1 bpos))
                                         raise-read-eof-error
                                         raise-read-error)
                                     "missing <line ending> after `\\<intraline-whitespace>'"
@@ -348,7 +352,7 @@
                                (map
                                 (lambda (s)
                                   (format "|\\p{~a}" s))
-                                '(Lu Lt Lm Lo Mn Nl No Pd Pc Po Sc Sm Sk So Co)))
+                                '(Ll Lu Lt Lm Lo Mn Nl No Pd Pc Po Sc Sm Sk So Co)))
                               1)
                              "))")))
     (define special-initial "[!$%&*/:<=>?^_~]")
@@ -444,10 +448,13 @@
                              (regexp-match #px"^(?:\\\\x[0-9a-fA-F]+;|[^\\\\\\s\\[\\]()#\";,'`])*" port))
                          '(#""))))])
     (cond
-     [(regexp-match rx:number thing)
+     [(regexp-match? #rx#"^[a-zA-Z!$%&*/:<=>?^_~][a-zA-Z0-9+!$%&*/:<=>?^_~.@-]*$" thing)
+      ;; Simple symbol:
+      (string->symbol (bytes->string/utf-8  thing))]
+     [(regexp-match? rx:number thing)
       (let ([n (string->number 
                 (bytes->string/utf-8
-                 ;; MzScheme doesn't hanel mantissa widths, so strip them out:
+                 ;; MzScheme doesn't handle mantissa widths, yet, so strip them out:
                  (regexp-replace* #rx#"[|][0-9]+"
                                   thing
                                   #"")))])
@@ -455,7 +462,7 @@
           (error 'r6rs-parser "number didn't convert: ~e" thing))
         n)]
      [(and (not num?)
-           (regexp-match rx:id thing))
+           (regexp-match? rx:id thing))
       (string->symbol
        (bytes->string/utf-8 
         (let loop ([t thing])

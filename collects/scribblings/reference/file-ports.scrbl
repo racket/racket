@@ -64,7 +64,8 @@ A @tech{path} value that is the @tech{cleanse}d version of
 @defproc[(open-output-file [path path-string?]
                            [#:mode mode-flag (one-of/c 'binary 'text) 'binary]
                            [#:exists exists-flag (one-of/c 'error 'append 'update
-                                                           'replace 'truncate 'truncate/replace) 'error])
+                                                           'replace 'truncate 
+                                                           'must-truncate 'truncate/replace) 'error])
           output-port?]{
 
 Opens the file specified by @scheme[path] for output. The
@@ -86,16 +87,23 @@ Under Windows, @scheme['text] mode works only with regular files;
 attempting to use @scheme['text] with other kinds of files triggers an
 @scheme[exn:fail:filesystem] exception.
 
-The @scheme[exists-flag] argument specifies how to handle the case
-that the file already exists. 
+The @scheme[exists-flag] argument specifies how to handle/require
+files that already exist:
 
 @itemize{
 
- @item{@indexed-scheme['error] --- raise @scheme[exn:fail:filesystem].}
+ @item{@indexed-scheme['error] --- raise @scheme[exn:fail:filesystem]
+       if the file exists.}
 
- @item{@indexed-scheme['replace] --- remove the old file and write a new one.}
+ @item{@indexed-scheme['replace] --- remove the old file, if it
+       exists, and write a new one.}
 
- @item{@indexed-scheme['truncate] --- removed all old data.}
+ @item{@indexed-scheme['truncate] --- remove all old data, if the file
+       exists.}
+
+ @item{@indexed-scheme['must-truncate] --- remove all old data in an
+       existing file; if the file does not exist, the
+       @exnraise[exn:fail:filesystem].}
 
  @item{@indexed-scheme['truncate/replace] --- try @scheme['truncate];
        if it fails (perhaps due to file permissions), try
@@ -105,9 +113,10 @@ that the file already exists.
        truncating it; if the file does not exist, the
        @exnraise[exn:fail:filesystem].}
 
- @item{@indexed-scheme['append] --- append to the end of the file
-       under @|AllUnix|; under Windows, @scheme['append] is equivalent
-       to @scheme['update], except that the file position is
+ @item{@indexed-scheme['append] --- append to the end of the file,
+       whether it already exists or not; under Windows,
+       @scheme['append] is equivalent to @scheme['update], except that
+       the file is not required to exist, and the file position is
        immediately set to the end of the file after opening it.}
 
 }

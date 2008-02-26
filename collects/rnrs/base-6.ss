@@ -11,7 +11,7 @@
 (provide 
 
  ;; 11.2
- (rename-out [r5rs:define define]
+ (rename-out [r6rs:define define]
              [r6rs:define-syntax define-syntax])
 
  ;; 11.4.1
@@ -128,6 +128,7 @@
  
  ;; 11.11
  char? char=? char<? char>? char<=? char>=?
+ integer->char char->integer
 
  ;; 11.12
  string?
@@ -153,8 +154,9 @@
  assertion-violation assert
 
  ;; 11.15
- (rename-out [r5rs:apply apply])
- call-with-current-continuation call/cc
+ (rename-out [r5rs:apply apply]
+             [r6rs:call/cc call-with-current-continuation]
+             [r6rs:call/cc call/cc])
  values call-with-values
  dynamic-wind
 
@@ -306,13 +308,23 @@
 
 (define-syntax-rule (assert expr)
   (unless expr
-    (assrtion-violation #f "assertion failed")))
+    (assertion-violation #f "assertion failed")))
 
 ;; ----------------------------------------
 ;; quasiquote generalization
 
 (define-generalized-qq r6rs:quasiquote 
   quasiquote unquote unquote-splicing)
+
+;; ----------------------------------------
+;; define
+
+(define-syntax (r6rs:define stx)
+  (syntax-case stx ()
+    [(_ id) 
+     (identifier? #'id)
+     #'(define id (void))]
+    [(_ . rest) #'(r5rs:define . rest)]))
 
 ;; ----------------------------------------
 ;; define-syntax: wrap a transformer to
@@ -358,3 +370,42 @@
        (procedure-arity v))
       v))
 
+;; ----------------------------------------
+
+(define detect-tail-key (gensym))
+
+(define (mk-k full-k tag)
+  (lambda args 
+    (if (continuation-prompt-available? tag)
+        (abort-current-continuation
+         tag
+         (lambda () (apply values args)))
+        (apply full-k args))))
+
+(define (r6rs:call/cc f)
+  (unless (and (procedure? f)
+               (procedure-arity-includes? f 1))
+    ;; let call/cc report the error:
+    (call/cc f))
+  ;; To support call/cc-based jumps in exception
+  ;;  handlers, we both grab a continuation and set a prompt
+  (let/cc k
+    (let ([v (make-continuation-prompt-tag 'r6rs:call/cc)]
+          [orig-key (continuation-mark-set-first #f detect-tail-key)])
+      (with-continuation-mark detect-tail-key v
+        (let ([new-key (continuation-mark-set-first #f detect-tail-key)])
+          (if (not (eq? new-key orig-key))
+              ;; Old mark surived => not tail wrt old call.
+              ;; Create an escape continuation to use for
+              ;; error escapes. Of course, we rely on the fact
+              ;; that continuation marks are not visible to EoPL
+              ;; programs.
+              (call-with-continuation-prompt
+               (lambda ()
+                 (f (mk-k k new-key)))
+               new-key)
+              ;; Old mark replaced => tail wrt old call.
+              ;; To preserve tail semantics for all but the first call
+              ;; reuse `mark' instead of creating a new escape continuation:
+              (with-continuation-mark detect-tail-key orig-key
+                (f (mk-k k orig-key)))))))))

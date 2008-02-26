@@ -12,10 +12,10 @@
            call-with-output-file*)
 
   (define exists-syms
-    '(error append update replace truncate truncate/replace))
+    '(error append update replace truncate must-truncate truncate/replace))
 
   (define exists-desc
-    "'error, 'append, 'update, 'replace, 'truncate, or 'truncate/replace")
+    "'error, 'append, 'update, 'replace, 'truncate, 'must-truncate, or 'truncate/replace")
 
   (define -open-input-file
     (let ([open-input-file (lambda (path #:mode [mode 'binary])

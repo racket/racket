@@ -4075,7 +4075,7 @@ display_write(char *name,
     Scheme_Object *a[2];
 
     a[0] = argv[0];
-    a[1] = port;
+    a[1] = (Scheme_Object *)port;
 
     h = op->print_handler;
 

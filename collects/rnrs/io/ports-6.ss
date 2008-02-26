@@ -1,9 +1,13 @@
 #lang scheme/base
 
+;; FIXME: newline decoding
+
 (require rnrs/enums-6
          rnrs/conditions-6
          r6rs/private/io-conds
-         scheme/port)
+         r6rs/private/readtable
+         scheme/port
+         scheme/pretty)
 
 (provide (all-from-out r6rs/private/io-conds)
          file-options
@@ -17,6 +21,7 @@
          transcoder-codec
          transcoder-eol-style
          transcoder-error-handling-mode
+         native-transcoder
          ;bytevector->string
          ;string->bytevector
          (rename-out [eof eof-object])
@@ -38,9 +43,44 @@
          open-bytevector-input-port
          open-string-input-port
          standard-input-port
-         current-input-port
+         (rename-out [r6rs:current-input-port current-input-port])
          make-custom-binary-input-port
-         make-custom-textual-input-port)
+         make-custom-textual-input-port
+         get-u8
+         lookahead-u8
+         get-bytevector-n
+         get-bytevector-n!
+         get-bytevector-some
+         get-bytevector-all
+         get-char
+         lookahead-char
+         get-string-n
+         get-string-n!
+         get-string-all
+         get-line
+         get-datum
+         output-port?
+         flush-output-port
+         output-port-buffer-mode
+         open-file-output-port
+         open-bytevector-output-port
+         call-with-bytevector-output-port
+         open-string-output-port
+         call-with-string-output-port
+         standard-output-port
+         standard-error-port
+         (rename-out [r6rs:current-output-port current-output-port]
+                     [r6rs:current-error-port current-error-port])
+         make-custom-binary-output-port
+         make-custom-textual-output-port
+         put-u8
+         put-bytevector
+         put-char
+         put-string
+         put-datum
+         open-file-input/output-port
+         make-custom-binary-input/output-port
+         make-custom-textual-input/output-port)
 
 ;; ----------------------------------------
 
@@ -53,11 +93,11 @@
 (define (buffer-mode? m)
   (enum-set-member? m (-buffer-modes none line block)))
 
-(define-enumeration eol-style (lf cr crlf nel crnel ls)
+(define-enumeration eol-style (lf cr crlf nel crnel ls none)
   -eol-styles)
 
 (define-struct codec (enc))
-(define latin-1 (make-codec "latin-1"))
+(define latin-1 (make-codec "latin1"))
 (define utf-8 (make-codec "utf-8"))
 (define utf-16 (make-codec "utf-16"))
 
@@ -87,14 +127,17 @@
                               [handling-mode 'replace])
   (unless (codec? codec)
     (raise-type-error 'make-transcoder "codec" codec))
-  (unless (enum-set-member? eol-style (-eol-styles lf cr crlf nel crnel ls))
-    (raise-type-error 'make-transcoder "'lf, 'cr, 'crlf, 'nel, 'crnel, or 'ls" eol-style))
+  (unless (enum-set-member? eol-style (-eol-styles lf cr crlf nel crnel ls none))
+    (raise-type-error 'make-transcoder "'lf, 'cr, 'crlf, 'nel, 'crnel, 'ls, or 'none" eol-style))
   (unless (enum-set-member? handling-mode (-handling-modes ignore raise replace))
     (raise-type-error 'make-transcoder "'ignore, 'raise, or 'replace" eol-style))
   (make-transcoder codec eol-style handling-mode))
 
+(define utf8-transcoder 
+  (make-transcoder utf-8 'none '?))
+
 (define (native-transcoder)
-  (make-transcoder utf-8))
+  utf8-transcoder)
 
 ;; ----------------------------------------
 
@@ -196,6 +239,11 @@
      (set! disconnected? #t)
      port)))
 
+;; For merging two kinds of ports:
+(define-struct dual-port (in out)
+  #:property prop:input-port 0
+  #:property prop:output-port 1)
+
 ;; R6RS functions that generate binary ports wrap them with `binary-...-port'
 ;; structures, so that the binary ports can be "closed" by `transcoded-port'.
 (define-struct binary-input-port (port disconnect get-pos set-pos!)
@@ -215,6 +263,7 @@
 
 (define (port-transcoder port)
   (cond
+   [(dual-port? port) (port-transcoder (dual-port-in port))]
    [(textual-input-port? port) (textual-input-port-transcoder port)]
    [(textual-output-port? port) (textual-output-port-transcoder port)]
    [(input-port? port) #f]
@@ -224,30 +273,46 @@
 (define (textual-port? v)
   (if (port? v)
       (or (textual-input-port? v)
-          (textual-output-port? v))
+          (textual-output-port? v)
+          (and (dual-port? v) 
+               (textual-port? (dual-port-in v))))
       (raise-type-error 'textual-port? "port" v)))
 
 (define (binary-port? v)
   (if (port? v)
       (not (or (textual-input-port? v)
-               (textual-output-port? v)))
+               (textual-output-port? v)
+               (and (dual-port? v) 
+                    (textual-port? (dual-port-in v)))))
       (raise-type-error 'binary-port? "port" v)))
 
 (define (wrap-binary-input-port p get-pos set-pos!)
   (let-values ([(p disconnect) (make-disconnectable-input-port p)])
     (make-binary-input-port p disconnect get-pos set-pos!)))
 
+(define (wrap-binary-output-port p get-pos set-pos!)
+  (let-values ([(p disconnect) (make-disconnectable-output-port p)])
+    (make-binary-output-port p disconnect get-pos set-pos!)))
+
+(define (wrap-binary-input/output-port p get-pos set-pos!)
+  (let-values ([(p disconnect) (make-disconnectable-input-port p)]
+               [(out-p out-disconnect) (make-disconnectable-output-port p)])
+    (make-binary-input/output-port p disconnect get-pos set-pos!
+                                   out-p out-disconnect)))
+
 (define (transcode-input p t)
   (let ([p (if (binary-input-port? p)
                ((binary-input-port-disconnect p))
                p)])
-    (reencode-input-port p 
-                         (codec-enc (transcoder-codec t))
-                         (case (transcoder-error-handling-mode t)
-                           [(raise) #f]
-                           [(ignore) #""]
-                           [(replace) (string->bytes/utf-8 "\uFFFD")])
-                         #t)))
+    (if (eq? t utf8-transcoder)
+        p
+        (reencode-input-port p 
+                             (codec-enc (transcoder-codec t))
+                             (case (transcoder-error-handling-mode t)
+                               [(raise) #f]
+                               [(ignore) #""]
+                               [(replace) (string->bytes/utf-8 "\uFFFD")])
+                             #t))))
 
 (define (transcode-output p t)
   (let ([p (cond
@@ -256,13 +321,15 @@
             [(binary-input/output-port? p)
              ((binary-input/output-port-out-disconnect p))]
             [else p])])
-    (reencode-output-port p 
-                          (codec-enc (transcoder-codec t))
-                          (case (transcoder-error-handling-mode t)
-                            [(raise) #f]
-                            [(ignore) #""]
-                            [(replace) (string->bytes/utf-8 "\uFFFD")])
-                          #t)))
+    (if (eq? t utf8-transcoder)
+        p
+        (reencode-output-port p 
+                              (codec-enc (transcoder-codec t))
+                              (case (transcoder-error-handling-mode t)
+                                [(raise) #f]
+                                [(ignore) #""]
+                                [(replace) (string->bytes/utf-8 "\uFFFD")])
+                              #t))))
 
 (define (transcoded-port p t)
   (unless (and (port? p)
@@ -272,13 +339,13 @@
     (raise-type-error 'transcoded-port "transcoder" t))
   (cond
    [(and (input-port? p) (output-port? p))
-    (make-textual-input/output-port (transcode-input p)
+    (make-textual-input/output-port (transcode-input p t)
                                     t 
-                                    (transcode-output p))]
+                                    (transcode-output p t))]
    [(input-port? p)
     (make-textual-input-port (transcode-input p t) t)]
    [(output-port? p)
-    (make-textual-input-port (transcode-output p t) t)]))
+    (make-textual-output-port (transcode-output p t) t)]))
 
 (define (port-has-port-position? p)
   (unless (port? p)
@@ -292,6 +359,8 @@
     (port-has-port-position? (textual-input-port-port p))]
    [(textual-output-port? p)
     (port-has-port-position? (textual-output-port-port p))]
+   [(dual-port? p)
+    (port-has-port-position? (dual-port-in p))]
    [else #t]))
 
 (define (port-position p)
@@ -304,6 +373,8 @@
     (port-position (textual-input-port-port p))]
    [(textual-output-port? p)
     (port-position (textual-output-port-port p))]
+   [(dual-port? p)
+    (port-position (dual-port-in p))]
    [else (file-position p)]))
 
 (define (port-has-set-port-position!? p)
@@ -318,6 +389,8 @@
     (port-has-set-port-position!? (textual-input-port-port p))]
    [(textual-output-port? p)
     (port-has-set-port-position!? (textual-output-port-port p))]
+   [(dual-port? p)
+    (port-has-set-port-position!? (dual-port-in p))]
    [else
     ;; FIXME
     (or (file-stream-port? p)
@@ -336,6 +409,8 @@
     (set-port-position! (textual-input-port-port p) pos)]
    [(textual-output-port? p)
     (set-port-position! (textual-output-port-port p) pos)]
+   [(dual-port? p)
+    (set-port-position! (dual-port-in p))]
    [else
     (file-position p pos)]))
 
@@ -393,13 +468,19 @@
 (define (open-string-input-port str)
   (unless (string? str)
     (raise-type-error 'open-bytevector-input-port "string" str))
-  (transcoded-port (open-input-string str) utf-8))
+  (let ([p (open-input-string str)])
+    (transcoded-port
+     (wrap-binary-input-port p
+                             (lambda () (file-position p)) 
+                             (lambda (pos) (file-position p pos)))
+     utf8-transcoder)))
 
 (define standard-input-port
   (let ([p (current-input-port)])
-    (wrap-binary-input-port p
-                            (lambda () (file-position p)) 
-                            (lambda (pos) (file-position p pos)))))
+    (lambda ()
+      (wrap-binary-input-port p
+                              (lambda () (file-position p)) 
+                              (lambda (pos) (file-position p pos))))))
 
 (define input-ports (make-hash-table 'weak))
 
@@ -410,7 +491,7 @@
      [(hash-table-get input-ports p #f)
       => ephemeron-value]
      [else
-      (let ([p2 (transcoded-port p utf-8)])
+      (let ([p2 (transcoded-port p utf8-transcoder)])
         (hash-table-put! input-ports p (make-ephemeron p p2))
         p2)])))
 
@@ -423,7 +504,7 @@
                     eof
                     v)))
             #f
-            close)])
+            (or close void))])
     (wrap-binary-input-port p
                             get-position
                             set-position!)))
@@ -448,6 +529,390 @@
                    n)))))
     get-position
     set-position!
-    close)))
+    (or close void))))
 
 ;; ----------------------------------------
+
+(define (get-u8 p)
+  (unless (binary-port? p)
+    (raise-type-error 'get-u8 "binary port" p))
+  (read-byte p))
+
+(define (lookahead-u8 p)
+  (unless (binary-port? p)
+    (raise-type-error 'lookahead-u8 "binary port" p))
+  (peek-byte p 0))
+
+(define (get-bytevector-n p cnt)
+  (unless (binary-port? p)
+    (raise-type-error 'get-bytevector-n "binary port" p))
+  (read-bytes cnt p))
+
+(define (get-bytevector-n! p bytes start end)
+  (unless (binary-port? p)
+    (raise-type-error 'get-bytevector-n! "binary port" p))
+  (read-bytes! bytes p start end))
+
+(define (get-bytevector-some p)
+  (unless (binary-port? p)
+    (raise-type-error 'get-bytevector-some "binary port" p))
+  (let ([bytes (make-bytes 4096)])
+    (let ([n (read-bytes-avail! bytes p)])
+      (if (eof-object? n)
+          n
+          (subbytes bytes 0 n)))))
+
+(define (get-bytevector-all p)
+  (unless (binary-port? p)
+    (raise-type-error 'get-bytevector-all "binary port" p))
+  (let ([p2 (open-output-bytes)])
+    (copy-port p p2)
+    (get-output-bytes p #t)))
+
+;; ----------------------------------------
+
+(define (get-char p)
+  (unless (textual-port? p)
+    (raise-type-error 'get-char "textual port" p))
+  (read-char p))
+
+(define (lookahead-char p)
+  (unless (textual-port? p)
+    (raise-type-error 'lookahead-char "textual port" p))
+  (peek-char p))
+
+(define (get-string-n p cnt)
+  (unless (textual-port? p)
+    (raise-type-error 'get-string-n "textual port" p))
+  (read-string cnt p))
+
+(define (get-string-n! p str start end)
+  (unless (textual-port? p)
+    (raise-type-error 'get-string-n! "textual port" p))
+  (read-string! str p start end))
+
+(define (get-string-all p)
+  (unless (textual-port? p)
+    (raise-type-error 'get-string-all "textual port" p))
+  (let ([p2 (open-output-bytes)])
+    (copy-port p p2)
+    (get-output-string p)))
+
+(define (get-line p)
+  (unless (textual-port? p)
+    (raise-type-error 'get-line "textual port" p))
+  (read-line p 'linefeed))
+
+(define (get-datum p)
+  (unless (textual-port? p)
+    (raise-type-error 'get-datum "textual port" p))
+  (let loop ([v (with-r6rs-reader-parameters (lambda () (read p)))])
+    (cond
+     [(pair? v) (mcons (loop (car v))
+                       (loop (cdr v)))]
+     [(vector? v) (list->vector
+                   (map loop (vector->list v)))]
+     [else v])))
+
+;; ----------------------------------------
+
+(define (flush-output-port p)
+  (flush-output p))
+
+(define (output-port-buffer-mode p)
+  (file-stream-buffer-mode p))
+
+(define (do-open-file-output-port who
+                                  filename 
+                                  options
+                                  buffer-mode
+                                  maybe-transcoder
+                                  open-output-file
+                                  file-position
+                                  wrap-binary-port)
+  (unless (enum-set=? (enum-set-universe options)
+                      (enum-set-universe (file-options)))
+    (raise-type-error who "file-options enum set" options))
+  (unless (enum-set-member? buffer-mode (-buffer-modes none line block))
+    (raise-type-error who "'none, 'line, or 'block" buffer-mode))
+  (when maybe-transcoder
+    (unless (transcoder? maybe-transcoder)
+      (raise-type-error who "transcoder or #f" maybe-transcoder)))
+  (let ([p (open-output-file filename
+                             #:exists (cond
+                                       [(or (enum-set=? options (file-options no-create no-fail no-truncate))
+                                            (enum-set=? options (file-options no-create no-truncate)))
+                                        'must-update]
+                                       [(enum-set=? options (file-options no-fail no-truncate))
+                                        'update]
+                                       [(enum-set-member? 'no-create) ; no-create, no-create + no-fail
+                                        'must-truncate]
+                                       [(enum-set-member? options 'no-fail) ; no-fail
+                                        'truncate]
+                                       [else ; no-truncate, <empty>
+                                        'error]))])
+    (file-stream-buffer-mode p buffer-mode)
+    (if maybe-transcoder
+        (transcoded-port p maybe-transcoder)
+        (wrap-binary-port p 
+                          (lambda () (file-position p)) 
+                          (lambda (pos) (file-position p pos))))))
+
+(define (open-file-output-port filename 
+                               [options (file-options)]
+                               [buffer-mode 'block]
+                               [maybe-transcoder #f])
+  (do-open-file-output-port 'open-file-output-port
+                            filename 
+                            options
+                            buffer-mode
+                            maybe-transcoder
+                            open-output-file
+                            file-position
+                            wrap-binary-output-port))
+
+(define (open-bytevector-output-port [maybe-transcoder #f])
+  (when maybe-transcoder
+    (unless (transcoder? maybe-transcoder)
+      (raise-type-error 'open-bytevector-output-port "transcoder or #f" maybe-transcoder)))
+  (let ([p (open-output-bytes)])
+    (values
+     (if maybe-transcoder
+         (transcoded-port p maybe-transcoder)
+         (wrap-binary-output-port p
+                                  (lambda () (file-position p)) 
+                                  (lambda (pos) (file-position p pos))))
+     (lambda () (get-output-bytes p #t)))))
+
+(define (call-with-bytevector-output-port proc [maybe-transcoder #f])
+  (let-values ([(p get) (open-bytevector-output-port maybe-transcoder)])
+    (proc p)
+    (close-output-port p)
+    (get)))
+
+(define (open-string-output-port)
+  (let ([p (open-output-string)])
+    (values
+     (transcoded-port p utf8-transcoder)
+     (lambda ()
+       (bytes->string/utf-8 (get-output-bytes p #t))))))
+
+(define (call-with-string-output-port proc)
+  (let-values ([(p get) (open-string-output-port)])
+    (proc p)
+    (close-output-port p)
+    (get)))
+
+(define standard-output-port
+  (let ([p (current-output-port)])
+    (lambda ()
+      (wrap-binary-output-port p
+                               (lambda () (file-position p)) 
+                               (lambda (pos) (file-position p pos))))))
+
+
+(define standard-error-port
+  (let ([p (current-error-port)])
+    (lambda ()
+      (wrap-binary-output-port p
+                               (lambda () (file-position p)) 
+                               (lambda (pos) (file-position p pos))))))
+
+(define output-ports (make-hash-table 'weak))
+
+(define (r6rs:current-output-port)
+  (convert-output-port (current-output-port)))
+
+(define (r6rs:current-error-port)
+  (convert-output-port (current-error-port)))
+
+(define (convert-output-port p)
+  (cond
+   [(textual-port? p) p]
+   [(hash-table-get output-ports p #f)
+    => ephemeron-value]
+   [else
+    (let ([p2 (transcoded-port p utf8-transcoder)])
+      (hash-table-put! output-ports p (make-ephemeron p p2))
+      p2)]))
+
+(define (make-custom-binary-output-port id write! get-position set-position! close)
+  (wrap-binary-output-port
+   (make-output-port
+    id
+    always-evt ;; assuming that it never blocks!
+    (lambda (bytes start end can-block/buffer? enable-break?)
+      (write! bytes start end))
+    (or close void)
+    #f
+    #f
+    #f
+    #f
+    void
+    0
+    #f)
+   get-position
+   set-position!))
+   
+(define (make-custom-textual-output-port id write! get-position set-position! close)
+  (transcoded-port
+   (wrap-binary-output-port
+    (make-output-port
+     id
+     always-evt ;; assuming that it never blocks!
+     (let-values ([(in out) (make-pipe)]
+                  [(c) #f]
+                  [(cvt-buffer) #f]
+                  [(buffer) #f])
+       (lambda (bytes start end can-block/buffer? enable-break?)
+         (let ([direct? (zero? (pipe-content-length in))])
+           (if (and direct?
+                    (bytes-utf-8-length bytes #f start end))
+               ;; No old bytes saved, and bytes to write form a complete
+               ;; UTF-8 encoding, so we can write directly:
+               (let ([s (bytes->string/utf-8 bytes #f start end)])
+                 (write! s 0 (string-length s)))
+               ;; Partial or need to use existing bytes, so use pipe
+               (begin
+                 (write-bytes bytes out start end)
+                 (unless buffer
+                   (set! c (bytes-open-converter "UTF-8-permissive" "UTF-8"))
+                   (set! buffer (make-bytes 4096))
+                   (set! cvt-buffer (make-bytes 4096)))
+                 (let loop ()
+                   (let ([n (peek-bytes-avail!* buffer 0 in)])
+                     (let ([more? ((pipe-content-length in) . > . n)])
+                       (let-values ([(amt used status) (bytes-convert c buffer 0 n cvt-buffer)])
+                         (when (positive? amt)
+                           (read-bytes! buffer in 0 amt)
+                           (let ([s (bytes->string/utf-8 buffer #f 0 amt)])
+                             (write! s 0 (string-length s))))
+                         (when (eq? status 'error)
+                           ;; Discard an erroneous byte
+                           (read-byte in))
+                         ;; Loop 
+                         (unless (and (eq? status 'complete)
+                                      (not more?))
+                           (loop)))))))))
+         (- end start)))
+     (or close void)
+     #f
+     #f
+     #f
+     #f
+     void
+     0
+     #f)
+    get-position
+    set-position!)
+   utf8-transcoder))
+
+;; ----------------------------------------
+
+(define (put-u8 port b)
+  (unless (binary-port? port)
+    (raise-type-error 'put-u8 "binary port" port))
+  (write-byte b port))
+
+(define (put-bytevector port bytes [start 0] [count (- (bytes-length bytes) start)])
+  (unless (binary-port? port)
+    (raise-type-error 'put-bytevector "binary port" port))
+  (write-bytes bytes port start (+ start count)))
+
+(define (put-char port ch)
+  (unless (textual-port? port)
+    (raise-type-error 'put-u8 "textual port" port))
+  (write-char ch port))
+
+(define (put-string port str [start 0] [count (- (bytes-length bytes) start)])
+  (unless (textual-port? port)
+    (raise-type-error 'put-string "textual port" port))
+  (write-string (substring str start (+ start count)) port))
+
+(define (put-datum port v)
+  (unless (textual-port? port)
+    (raise-type-error 'put-datum "textual port" port))
+  (parameterize ([print-mpair-curly-braces #f]
+                 [pretty-print-columns 'infinity]
+                 [pretty-print-size-hook
+                  (lambda (v write? p)
+                    (cond
+                     [(string? v) 
+                      (and (for/or ([c (in-string v)])
+                                   (not (or (char-graphic? c)
+                                            (char-blank? c))))
+                           (for/fold ([w 2])
+                               ([c (in-string v)])
+                             (cond
+                              [(eq? c #\") 2]
+                              [(eq? c #\\) 2]
+                              [(char-graphic? c) 1]
+                              [(char-blank? c) 1]
+                              [(eq? c #\newline) 2]
+                              [(eq? c #\return) 2]
+                              [else 9])))]
+                     [else #f]))]
+                 [pretty-print-print-hook
+                  (lambda (v write? p)
+                    (cond
+                     [(string? v) 
+                      (write-char #\" p)
+                      (for ([c (in-string v)])
+                        (cond
+                         [(eq? c #\") (display "\\\"" p)]
+                         [(eq? c #\\) (display "\\n" p)]
+                         [(char-graphic? c) (write-char c p)]
+                         [(char-blank? c) (write-char c p)]
+                         [(eq? c #\newline) (display "\\\\" p)]
+                         [(eq? c #\return) (display "\\r" p)]
+                         [else
+                          (display "\\x" p)
+                          (let ([s (format "00000~x" (char->integer c))])
+                            (display (substring s (- (string-length s) 6)) p)
+                            (write-char #\; p))]))
+                      (write-char #\" p)]))])
+    (pretty-print v port)))
+
+;; ----------------------------------------
+
+(define (open-file-input/output-port filename 
+                                     [options (file-options)]
+                                     [buffer-mode 'block]
+                                     [maybe-transcoder #f])
+  (do-open-file-output-port 'open-file-input/output-port
+                            filename 
+                            options
+                            buffer-mode
+                            maybe-transcoder
+                            (lambda (name #:exists mode)
+                              (let-values ([(in out) (open-input-output-file name #:exists mode)])
+                                (make-dual-port in out)))
+                            ;; Input and output buffering make `file-position' iffy.
+                            (if (eq? buffer-mode 'none)
+                                file-position
+                                #f)
+                            wrap-binary-input/output-port))
+
+(define (make-make-custom-input/output-port
+         make-custom-input-port
+         make-custom-output-port)
+  (lambda (id read! write! get-pos set-pos! close)
+    (let* ([closed-one? #f]
+           [close (and close
+                       (lambda ()
+                         (if closed-one?
+                             (close)
+                             (set! closed-one? #t))))])
+      (let ([in (make-custom-input-port id read! get-pos set-pos! close)]
+            [out (make-custom-output-port id write! get-pos set-pos! close)])
+        (make-dual-port in out)))))
+
+(define make-custom-binary-input/output-port
+  (make-make-custom-input/output-port
+   make-custom-binary-input-port
+   make-custom-binary-output-port))
+
+(define make-custom-textual-input/output-port
+  (make-make-custom-input/output-port
+   make-custom-textual-input-port
+   make-custom-textual-output-port))
