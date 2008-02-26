@@ -68,7 +68,7 @@
      (let* ([ke-prime (elim-callcc #'ke)]
             [me-prime (elim-callcc #'me)]
             [be-prime (elim-callcc #'be)])
-       ; XXX Could be dangerous to evaluate ke-prime and me-prime twice
+       ; Could be dangerous to evaluate ke-prime and me-prime twice (but remember, this is in ANF)
        (markit 
         (quasisyntax/loc stx
           (with-continuation-mark #,ke-prime #,me-prime

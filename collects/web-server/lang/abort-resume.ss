@@ -36,11 +36,12 @@
 (define (current-saved-continuation-marks-and key val)
   (reverse
    (list* (cons key val)
+          (filter (lambda (k*v) (not (equal? key (car k*v))))
           (let-values ([(current)
                         (continuation-mark-set->list (current-continuation-marks web-prompt) the-save-cm-key)])
             (if (empty? current)
                 empty
-                (first current))))))
+                (first current)))))))
 
 ;; current-continuation-as-list: -> (listof value)
 ;; check the safety marks and return the list of marks representing the continuation
