@@ -277,10 +277,10 @@
                                     col pos
                                     (and pos (+ 1 len)))))]
                             [(or (eq? char #\tab)
-                                 ;(eq? char #\newline)
-                                 ;(eq? char #\return)
-                                 ;(eq? char #\u85)
-                                 ;(eqv? char #\u2028)
+                                 (eq? char #\newline)
+                                 (eq? char #\return)
+                                 (eq? char #\u85)
+                                 (eqv? char #\u2028)
                                  (eq? (char-general-category char) 'zs))
                              (let ([wm (regexp-match-positions #px"^(?:\t|\\p{Zs})*(?:\r\n|\r\u85|[\r\n\u85\u2028])(?:\t|\\p{Zs})*"
                                                                bytes 
