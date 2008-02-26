@@ -123,6 +123,7 @@
                                                                      strs)])
                                                    #`(quote ((init-char rx result-char . str) ...))))]))])
                               (char-names
+                               "nul"
                                "space"
                                "newline"
                                "alarm"
@@ -250,7 +251,7 @@
                                       [(#\v) #"\v"]
                                       [(#\f) #"\f"]
                                       [(#\\) #"\\"]
-                                      [(#\\) #"\""])
+                                      [(#\") #"\""])
                                     (loop (cdar m)))]
                             [(eq? char #\x)
                              (let ([hm (regexp-match-positions #px"^[a-zA-Z0-9]*;"
@@ -391,7 +392,7 @@
     (define sign      "(?:[+-]|)")
     (define mantissa-width (or "" (seq "[|]" (+ digit-10))))
     (define exponent-marker "[eEsSfFdDlL]")
-    (define suffix (or "" (seq exponent-marker sign digit-10)))
+    (define suffix (or "" (seq exponent-marker sign (+ digit-10))))
 
     (define (prefix R) (or (seq (radix R) exactness)
                            (seq exactness (radix R))))
@@ -429,7 +430,7 @@
                        (num 16)
                        (num 8)
                        (num 2)))
-    
+
     (values (pregexp (string-append "^" identifier "$"))
             (pregexp (string-append "^" number "$")))))
 
@@ -438,7 +439,9 @@
   ;; then make sure it's a number or identifier.
   (let ([thing (bytes-append
                 (string->bytes/utf-8 prefix)
-                (car (or (regexp-match #px"^(?:\\\\x[0-9a-fA-F]+;|[^\\s\\[\\]()#\";,'`])*" port)
+                (car (or (if (string=? prefix "\\")
+                             (regexp-match #px"^x[0-9a-fA-F]+;(?:\\\\x[0-9a-fA-F]+;|[^\\\\\\s\\[\\]()#\";,'`])*" port)
+                             (regexp-match #px"^(?:\\\\x[0-9a-fA-F]+;|[^\\\\\\s\\[\\]()#\";,'`])*" port))
                          '(#""))))])
     (cond
      [(regexp-match rx:number thing)

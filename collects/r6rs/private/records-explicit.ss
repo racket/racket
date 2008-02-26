@@ -31,8 +31,9 @@
 	  record-constructor-descriptor
           fields mutable immutable parent protocol 
           sealed opaque nongenerative)
-  (import (rnrs base)
-	  (rnrs records procedural))
+  (import (for (rnrs base) run expand)
+	  (rnrs records procedural)
+          (for (rnrs syntax-case) expand))
 
   (define-syntax define-aux
     (syntax-rules ()
@@ -222,9 +223,13 @@
     (syntax-rules ()
       ((define-record-type-name ?name ?rtd ?constructor-descriptor)
        (define-syntax ?name
-	 (syntax-rules (descriptor constructor-descriptor)
-	   ((?name descriptor) ?rtd)
-	   ((?name constructor-descriptor) ?constructor-descriptor))))))
+         (make-variable-transformer
+          (lambda (stx)
+            (syntax-case stx (descriptor constructor-descriptor set!)
+              (?name (identifier? #'?name) #'?rtd)
+              ((set! ?name . rest) (syntax-violation #f "cannot mutate record-type descriptor binding" stx #'name))
+              ((?name descriptor) #'?rtd)
+              ((?name constructor-descriptor) #'?constructor-descriptor))))))))
 
   (define-syntax no-record-type
     (syntax-rules (descriptor constructor-descriptor)

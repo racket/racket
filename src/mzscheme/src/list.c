@@ -139,7 +139,7 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant ("mpair?", p, env);
 
-  p = scheme_make_prim_w_arity(cons_prim, "cons", 2, 2);
+  p = scheme_make_noncm_prim(cons_prim, "cons", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant ("cons", p, env);
 
@@ -151,7 +151,7 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant ("cdr", p, env);
 
-  p = scheme_make_prim_w_arity(mcons_prim, "mcons", 2, 2);
+  p = scheme_make_noncm_prim(mcons_prim, "mcons", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant ("mcons", p, env);
 

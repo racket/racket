@@ -4555,6 +4555,7 @@ static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi
     if (is_simple(obj, INIT_SIMPLE_DEPTH, 1, jitter, 0)) {
       need_ends = 0;
     } else {
+      LOG_IT(("non-tail\n"));
       if (mark_pos_ends)
 	generate_non_tail_mark_pos_prefix(jitter);
       jit_ldi_p(JIT_R2, &scheme_current_cont_mark_stack);
@@ -6752,9 +6753,10 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     }
   }
 
-  LOG_IT(("PROC: %s, %d args\n", 
+  LOG_IT(("PROC: %s, %d args, flags: %x\n", 
           (data->name ? scheme_format_utf8("~s", 2, 1, &data->name, NULL) : "???"),
-          data->num_params));
+          data->num_params,
+          SCHEME_CLOSURE_DATA_FLAGS(data)));
   FOR_LOG(jitter->log_depth++);
 
   jitter->self_data = data;

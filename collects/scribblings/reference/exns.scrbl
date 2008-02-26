@@ -25,15 +25,22 @@ particular required arity (e.g., @scheme[call-with-input-file],
 @;------------------------------------------------------------------------
 @section[#:tag "errorproc"]{Raising Exceptions}
 
-@defproc[(raise [v any/c]) any]{
+@defproc[(raise [v any/c][barrier? any/c #t]) any]{
 
 Raises an exception, where @scheme[v] represents the exception being
 raised. The @scheme[v] argument can be anything; it is passed to the
-current @deftech{exception handler}.  Breaks are disabled from the
-time the exception is raised until the exception handler obtains
-control, and the handler itself is @scheme[parameterize-break]ed to
-disable breaks initially; see @secref["breakhandler"] for more
-information on breaks.}
+current @deftech{exception handler}.
+
+If @scheme[barrier?] is true, then the call to the @tech{exception
+handler} is protected by a @tech{continuation barrier}, so that
+multiple returns/escapes are impossible. All exceptions raised by
+@schememodname[scheme] functions effectively use @scheme[raise] with a
+@scheme[#t] value for @scheme[barrier?].
+
+Breaks are disabled from the time the exception is raised until the
+exception handler obtains control, and the handler itself is
+@scheme[parameterize-break]ed to disable breaks initially; see
+@secref["breakhandler"] for more information on breaks.}
 
 
 @defproc*[([(error [sym symbol?]) any]
@@ -184,17 +191,18 @@ Installs @scheme[f] as the @tech{exception handler} for the
 is raised during the evaluation of @scheme[thunk] (in an extension of
 the current continuation that does not have its own exception
 handler), then @scheme[f] is applied to the @scheme[raise]d value in
-the continuation of the @scheme[raise] call (but extended with a
-@tech{continuation barrier}; see @secref["prompt-model"]).
+the continuation of the @scheme[raise] call (but normally extended
+with a @tech{continuation barrier}; see @secref["prompt-model"] and
+@scheme[raise]).
 
 Any procedure that takes one argument can be an exception handler.  If
 the exception handler returns a value when invoked by @scheme[raise],
 then @scheme[raise] propagates the value to the ``previous'' exception
-handler (still in the dynamic extent of the call to
-@scheme[raise]). The previous exception handler is the exception
-handler associated with the rest of the continuation after the point
-where the called exception handler was associated with the
-continuation; if no previous handler is available, the
+handler (still in the dynamic extent of the call to @scheme[raise],
+and under the same barrier, if any). The previous exception handler is
+the exception handler associated with the rest of the continuation
+after the point where the called exception handler was associated with
+the continuation; if no previous handler is available, the
 uncaught-exception handler is used (see below). In all cases, a call
 to an exception handler is @scheme[parameterize-break]ed to disable
 breaks, and it is wrapped with @scheme[call-with-exception-handler] to

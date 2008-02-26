@@ -217,7 +217,7 @@ The arguments implement the port as follows:
 
      @item{a progress event produced by @scheme[get-progress-evt];}
 
-     @item{an event, @scheme[done], that is either a channel-put
+     @item{an event, @scheme[_done], that is either a channel-put
            event, channel, semaphore, semaphore-peek event, always
            event, or never event.}
 
@@ -243,14 +243,14 @@ The arguments implement the port as follows:
      or @math{k_p} items, whichever is smaller, and only if @math{k_p} is
      positive.}
 
-     @item{It must never choose @scheme[done] in a synchronization
-     after the given progress event is ready, or after @scheme[done]
+     @item{It must never choose @scheme[_done] in a synchronization
+     after the given progress event is ready, or after @scheme[_done]
      has been synchronized once.}
 
      @item{It must not treat any data as read from the port unless
-     @scheme[done] is chosen in a synchronization.}
+     @scheme[_done] is chosen in a synchronization.}
 
-     @item{It must not block indefinitely if @scheme[done] is ready;
+     @item{It must not block indefinitely if @scheme[_done] is ready;
      it must return soon after the read completes or soon after the
      given progress event is ready, whichever is first.}
 
@@ -717,7 +717,7 @@ procedures.
 
      @item{a boolean; @scheme[#t] indicates that if the port blocks
      for a write, then it should enable breaks while blocking (e.g.,
-     using @scheme[sync/enable-break]; this argument is always
+     using @scheme[sync/enable-break]); this argument is always
      @scheme[#f] if the fourth argument is @scheme[#t].}
 
      }

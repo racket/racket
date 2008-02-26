@@ -3,6 +3,7 @@
 (require (for-syntax scheme/base
                      r6rs/private/identifier-syntax)
          r6rs/private/qq-gen
+         r6rs/private/conds
          (prefix-in r5rs: r5rs)
          (only-in r6rs/private/readtable rx:number)
          scheme/bool)
@@ -286,9 +287,6 @@
 (define vector-map
   (make-mapper "vector" for/list map in-vector vector-length vector->list))
 
-
-(define-struct (exn:fail:r6rs exn:fail) (who irritants))
-(define-struct (exn:fail:contract:r6rs exn:fail:contract) (who irritants))
 
 (define (r6rs:error who msg . irritants)
   (raise

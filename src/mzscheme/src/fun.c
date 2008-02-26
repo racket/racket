@@ -235,14 +235,14 @@ scheme_init_fun (Scheme_Env *env)
 						       0, -1),
 			     env);
   scheme_add_global_constant("map",
-			     scheme_make_prim_w_arity(map,
-						      "map",
-						      2, -1),
+			     scheme_make_noncm_prim(map,
+                                                    "map",
+                                                    2, -1),
 			     env);
   scheme_add_global_constant("for-each",
-			     scheme_make_prim_w_arity(for_each,
-						      "for-each",
-						      2, -1),
+			     scheme_make_noncm_prim(for_each,
+                                                    "for-each",
+                                                    2, -1),
 			     env);
   scheme_add_global_constant("andmap",
 			     scheme_make_prim_w_arity(andmap,
@@ -970,6 +970,10 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
     SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_PRESERVES_MARKS;
   else if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_PRESERVES_MARKS)
     SCHEME_CLOSURE_DATA_FLAGS(data) -= CLOS_PRESERVES_MARKS;
+
+  if ((info->single_result > 0) && (info->preserves_marks > 0)
+      && (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_RESULT_TENTATIVE))
+    SCHEME_CLOSURE_DATA_FLAGS(data) -= CLOS_RESULT_TENTATIVE;
 
   data->code = code;
 

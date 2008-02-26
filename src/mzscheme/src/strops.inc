@@ -73,7 +73,10 @@ X(scheme_alloc, _string)(int size, Xchar fill)
 
   str = scheme_alloc_object();
   str->type = scheme_x_string_type;
-  s = (Xchar *)scheme_malloc_fail_ok(scheme_malloc_atomic, sizeof(Xchar)*(size + 1));
+  if (size < 100)
+    s = (Xchar *)scheme_malloc_atomic(sizeof(Xchar)*(size + 1));
+  else
+    s = (Xchar *)scheme_malloc_fail_ok(scheme_malloc_atomic, sizeof(Xchar)*(size + 1));
   for (i = size; i--; ) {
     s[i] = fill;
   }

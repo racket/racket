@@ -4324,7 +4324,8 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
 }
 
 static int set_code_closure_flags(Scheme_Object *clones,
-                                  int set_flags, int mask_flags)
+                                  int set_flags, int mask_flags,
+                                  int just_tentative)
 {
   Scheme_Object *clone, *orig, *first;
   Scheme_Closure_Data *data;
@@ -4341,10 +4342,12 @@ static int set_code_closure_flags(Scheme_Object *clones,
     orig = SCHEME_CDR(first);
 
     data = (Scheme_Closure_Data *)orig;
-    flags = (flags & SCHEME_CLOSURE_DATA_FLAGS(data));
-    SCHEME_CLOSURE_DATA_FLAGS(data) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data) & mask_flags);
-    data = (Scheme_Closure_Data *)clone;
-    SCHEME_CLOSURE_DATA_FLAGS(data) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data) & mask_flags);
+    if (!just_tentative || (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_RESULT_TENTATIVE)) {
+      flags = (flags & SCHEME_CLOSURE_DATA_FLAGS(data));
+      SCHEME_CLOSURE_DATA_FLAGS(data) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data) & mask_flags);
+      data = (Scheme_Closure_Data *)clone;
+      SCHEME_CLOSURE_DATA_FLAGS(data) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data) & mask_flags);
+    }
 
     clones = SCHEME_CDR(clones);
   }
@@ -4479,7 +4482,8 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
            if any turn out not (i.e., approximate fix point). */
         (void)set_code_closure_flags(cl_first, 
                                      CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS | CLOS_RESULT_TENTATIVE, 
-                                     0xFFFF);
+                                     0xFFFF,
+                                     0);
 
 	while (1) {
 	  /* Re-optimize this expression. We can optimize anything without
@@ -4492,10 +4496,11 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
           start_simltaneous++;
 	}
 
-        flags = set_code_closure_flags(cl_first, 0, 0xFFFF);
+        flags = set_code_closure_flags(cl_first, 0, 0xFFFF, 0);
         (void)set_code_closure_flags(cl_first,
                                      (flags & (CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS)), 
-                                     ~(CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS | CLOS_RESULT_TENTATIVE));
+                                     ~(CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS | CLOS_RESULT_TENTATIVE),
+                                     1);
       }
       
       cl_last = cl_first = NULL;

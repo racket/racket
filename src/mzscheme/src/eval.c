@@ -2276,7 +2276,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
   if (le && SCHEME_PRIMP(le)) {
     int opt;
     opt = ((Scheme_Prim_Proc_Header *)le)->flags & SCHEME_PRIM_OPT_MASK;
-    if (opt > SCHEME_PRIM_OPT_NONCM)
+    if (opt >= SCHEME_PRIM_OPT_NONCM)
       *_flags = (CLOS_PRESERVES_MARKS | CLOS_SINGLE_RESULT);
   }
   
@@ -2711,13 +2711,25 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info)
 
   tb = scheme_optimize_expr(tb, info);
 
-  if (!info->preserves_marks) preserves_marks = 0;
-  if (!info->single_result) single_result = 0;
+  if (!info->preserves_marks) 
+    preserves_marks = 0;
+  else if (info->preserves_marks < 0)
+    preserves_marks = -1;
+  if (!info->single_result) 
+    single_result = 0;
+  else if (info->single_result < 0)
+    single_result = -1;
 
   fb = scheme_optimize_expr(fb, info);
 
-  if (!info->preserves_marks) preserves_marks = 0;
-  if (!info->single_result) single_result = 0;
+  if (!info->preserves_marks) 
+    preserves_marks = 0;
+  else if (preserves_marks && (info->preserves_marks < 0))
+    preserves_marks = -1;
+  if (!info->single_result) 
+    single_result = 0;
+  else if (single_result && (info->single_result < 0))
+    single_result = -1;
 
   info->preserves_marks = preserves_marks;
   info->single_result = single_result;

@@ -2861,7 +2861,7 @@ static Scheme_Object *make_clones(Scheme_Compiled_Let_Value *retry_start,
 static int set_code_flags(Scheme_Compiled_Let_Value *retry_start,
                           Scheme_Compiled_Let_Value *pre_body,
                           Scheme_Object *clones,
-                          int set_flags, int mask_flags)
+                          int set_flags, int mask_flags, int just_tentative)
 {
   Scheme_Compiled_Let_Value *clv;
   Scheme_Object *value, *first;
@@ -2879,14 +2879,17 @@ static int set_code_flags(Scheme_Compiled_Let_Value *retry_start,
 
     if (SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(value))) {
       data = (Scheme_Closure_Data *)value;
-      flags = (flags & SCHEME_CLOSURE_DATA_FLAGS(data));
-
-      first = SCHEME_CAR(clones);
-
-      data = (Scheme_Closure_Data *)SCHEME_CDR(first);
-      SCHEME_CLOSURE_DATA_FLAGS(data) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data) & mask_flags);
-      data = (Scheme_Closure_Data *)SCHEME_CAR(first);
-      SCHEME_CLOSURE_DATA_FLAGS(data) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data) & mask_flags);
+      
+      if (!just_tentative || (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_RESULT_TENTATIVE)) {
+        flags = (flags & SCHEME_CLOSURE_DATA_FLAGS(data));
+        
+        first = SCHEME_CAR(clones);
+        
+        data = (Scheme_Closure_Data *)SCHEME_CDR(first);
+        SCHEME_CLOSURE_DATA_FLAGS(data) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data) & mask_flags);
+        data = (Scheme_Closure_Data *)SCHEME_CAR(first);
+        SCHEME_CLOSURE_DATA_FLAGS(data) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data) & mask_flags);
+      }
 
       clones = SCHEME_CDR(clones);
     }
@@ -3094,7 +3097,8 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
         clones = make_clones(retry_start, pre_body, body_info);
         (void)set_code_flags(retry_start, pre_body, clones,
                              CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS | CLOS_RESULT_TENTATIVE, 
-                             0xFFFF);
+                             0xFFFF,
+                             0);
         /* Re-optimize loop: */
         clv = retry_start;
         cl = clones;
@@ -3146,11 +3150,12 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
 	  clv = (Scheme_Compiled_Let_Value *)clv->body;
 	}
         /* Check flags loop: */
-        flags = set_code_flags(retry_start, pre_body, clones, 0, 0xFFFF);
+        flags = set_code_flags(retry_start, pre_body, clones, 0, 0xFFFF, 0);
         /* Reset-flags loop: */
         (void)set_code_flags(retry_start, pre_body, clones,
                              (flags & (CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS)), 
-                             ~(CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS | CLOS_RESULT_TENTATIVE));
+                             ~(CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS | CLOS_RESULT_TENTATIVE),
+                             1);
       }
       retry_start = NULL;
       did_set_value = 0;

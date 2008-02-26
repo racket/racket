@@ -235,6 +235,10 @@
                      p
                      (loop (cdr alist))))))))))
 
+  (define-assoc-like assoc equal?)
+  (define-assoc-like assq eq?)
+  (define-assoc-like assv eqv?)
+
   (define (cons* obj . objs)
     (if (null? objs)
         obj

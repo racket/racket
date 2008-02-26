@@ -40,7 +40,7 @@
 	  record-field-mutable? record-type-generative?
 	  record? record-rtd)
   (import (rnrs base (6))
-          (rnrs list (6))
+          (rnrs lists (6))
           (rnrs io simple (6)) ;; REMOVEME 
 	  (r6rs private vector-types))
   

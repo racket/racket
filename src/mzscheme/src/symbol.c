@@ -675,12 +675,38 @@ string_to_uninterned_symbol_prim (int argc, Scheme_Object *argv[])
 static Scheme_Object *
 symbol_to_string_prim (int argc, Scheme_Object *argv[])
 {
-  if (!SCHEME_SYMBOLP(argv[0]))
+  Scheme_Object *sym, *str;
+  GC_CAN_IGNORE unsigned char *s;
+  GC_CAN_IGNORE mzchar *s2;
+  long len, i;
+
+  sym = argv[0];
+
+  if (!SCHEME_SYMBOLP(sym))
     scheme_wrong_type("symbol->string", "symbol", 0, argc, argv);
 
-  return scheme_make_sized_offset_utf8_string((char *)(argv[0]),
-					      SCHEME_SYMSTR_OFFSET(argv[0]),
-					      SCHEME_SYM_LEN(argv[0]));
+  s = (unsigned char *)SCHEME_SYM_VAL(sym);
+  len = SCHEME_SYM_LEN(sym);
+  for (i = 0; i < len; i++) {
+    if (s[i] >= 128)
+      break;
+  }
+  s = NULL;
+
+  if (i == len) {
+    /* ASCII */
+    str = scheme_alloc_char_string(len, 0);
+    s = (unsigned char *)SCHEME_SYM_VAL(sym);
+    s2 = SCHEME_CHAR_STR_VAL(str);
+    for (i = 0; i < len; i++) {
+      s2[i] = s[i];
+    }
+    return str;
+  } else {
+    return scheme_make_sized_offset_utf8_string((char *)sym,
+                                                SCHEME_SYMSTR_OFFSET(sym),
+                                                SCHEME_SYM_LEN(sym));
+  }
 }
 
 static Scheme_Object *

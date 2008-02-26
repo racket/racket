@@ -2,6 +2,7 @@
 
 #|
 FIXME:
+ * Check that exported identifiers are defined in some phase.
  * Check that each identifier is imported only once across phases.
 |#
 

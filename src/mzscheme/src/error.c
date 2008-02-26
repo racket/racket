@@ -64,7 +64,7 @@ static Scheme_Object *emergency_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_value_string_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_exit_handler_proc(int, Scheme_Object *[]);
 
-static Scheme_Object *do_raise(Scheme_Object *arg, int need_debug);
+static Scheme_Object *do_raise(Scheme_Object *arg, int need_debug, int barrier);
 
 static Scheme_Object *nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[]);
 
@@ -492,9 +492,9 @@ void scheme_init_error(Scheme_Env *env)
   REGISTER_SO(scheme_raise_arity_error_proc);
 
   scheme_add_global_constant("error",
-			     scheme_make_prim_w_arity(error,
-						      "error",
-						      1, -1),
+			     scheme_make_noncm_prim(error,
+                                                    "error",
+                                                    1, -1),
 			     env);
   scheme_add_global_constant("raise-user-error",
 			     scheme_make_prim_w_arity(raise_user_error,
@@ -1967,7 +1967,8 @@ static Scheme_Object *do_error(int for_user, int argc, Scheme_Object *argv[])
   newargs[1] = TMP_CMARK_VALUE;
   do_raise(scheme_make_struct_instance(exn_table[for_user ? MZEXN_FAIL_USER : MZEXN_FAIL].type,
 				       2, newargs),
-	   1);
+	   1,
+           1);
 
   return scheme_void;
 #else
@@ -2516,7 +2517,8 @@ scheme_raise_exn(int id, ...)
 
   do_raise(scheme_make_struct_instance(exn_table[id].type,
 				       c, eargs),
-	   1);
+	   1,
+           1);
 #else
   call_error(buffer, alen, scheme_false);
 #endif
@@ -2618,96 +2620,116 @@ nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[])
   return scheme_void;
 }
 
-static Scheme_Object *
-do_raise(Scheme_Object *arg, int need_debug)
+static void *do_raise_inside_barrier(void)
 {
+  Scheme_Object *arg;
   Scheme_Object *v, *p[1], *h, *marks;
   Scheme_Cont_Mark_Chain *chain;
   Scheme_Cont_Frame_Data cframe, cframe2;
   int got_chain;
 
- if (scheme_current_thread->skip_error) {
-   scheme_longjmp (scheme_error_buf, 1);
- }
+  arg = scheme_current_thread->ku.k.p1;
+  scheme_current_thread->ku.k.p1 = NULL;
 
- if (need_debug) {
-   marks = scheme_current_continuation_marks(NULL);
-   ((Scheme_Structure *)arg)->slots[1] = marks;
- }
+  h = scheme_extract_one_cc_mark(NULL, scheme_exn_handler_key);
 
- h = scheme_extract_one_cc_mark(NULL, scheme_exn_handler_key);
+  chain = NULL;
+  got_chain = 0;
 
- chain = NULL;
- got_chain = 0;
+  while (1) {
+    if (!h) {
+      h = scheme_get_param(scheme_current_config(), MZCONFIG_INIT_EXN_HANDLER);
+      chain = NULL;
+      got_chain = 1;
+    }
 
- while (1) {
-   if (!h) {
-     h = scheme_get_param(scheme_current_config(), MZCONFIG_INIT_EXN_HANDLER);
-     chain = NULL;
-     got_chain = 1;
-   }
+    v = scheme_make_byte_string_without_copying("exception handler");
+    v = scheme_make_closed_prim_w_arity(nested_exn_handler,
+                                        scheme_make_pair(v, arg),
+                                        "nested-exception-handler", 
+                                        1, 1);
 
-   v = scheme_make_byte_string_without_copying("exception handler");
-   v = scheme_make_closed_prim_w_arity(nested_exn_handler,
-                                       scheme_make_pair(v, arg),
-                                       "nested-exception-handler", 
-                                       1, 1);
+    scheme_push_continuation_frame(&cframe);
+    scheme_set_cont_mark(scheme_exn_handler_key, v);
+    scheme_push_break_enable(&cframe2, 0, 0);
 
-   scheme_push_continuation_frame(&cframe);
-   scheme_set_cont_mark(scheme_exn_handler_key, v);
-   scheme_push_break_enable(&cframe2, 0, 0);
+    p[0] = arg;
+    v = _scheme_apply(h, 1, p);
 
-   p[0] = arg;
-   v = scheme_apply(h, 1, p);
+    scheme_pop_break_enable(&cframe2, 0);
+    scheme_pop_continuation_frame(&cframe);
 
-   scheme_pop_break_enable(&cframe2, 0);
-   scheme_pop_continuation_frame(&cframe);
+    /* Getting a value back means that we should chain to the
+       next exception handler; we supply the returned value to
+       the next exception handler (if any). */
+    if (!got_chain) {
+      marks = scheme_all_current_continuation_marks();
+      chain = ((Scheme_Cont_Mark_Set *)marks)->chain;
+      marks = NULL;
+      /* Init chain to position of the handler we just
+         called. */
+      while (chain->key != scheme_exn_handler_key) {
+        chain = chain->next;
+      }
+      got_chain = 1;
+    }
 
-   /* Getting a value back means that we should chain to the
-      next exception handler; we supply the returned value to
-      the next exception handler (if any). */
-   if (!got_chain) {
-     marks = scheme_all_current_continuation_marks();
-     chain = ((Scheme_Cont_Mark_Set *)marks)->chain;
-     marks = NULL;
-     /* Init chain to position of the handler we just
-        called. */
-     while (chain->key != scheme_exn_handler_key) {
-       chain = chain->next;
-     }
-     got_chain = 1;
-   }
+    if (chain) {
+      chain = chain->next;
+      while (chain && (chain->key != scheme_exn_handler_key)) {
+        chain = chain->next;
+      }
 
-   if (chain) {
-     chain = chain->next;
-     while (chain && (chain->key != scheme_exn_handler_key)) {
-       chain = chain->next;
-     }
+      if (!chain)
+        h = NULL; /* use uncaught handler */
+      else
+        h = chain->val;
+      arg = v;
+    } else {
+      /* return from uncaught-exception handler */
+      p[0] = scheme_false;
+      return nested_exn_handler(scheme_make_pair(scheme_false, arg), 1, p);
+    }
+  }
 
-     if (!chain)
-       h = NULL; /* use uncaught handler */
-     else
-       h = chain->val;
-     arg = v;
-   } else {
-     /* return from uncaught-exception handler */
-     p[0] = scheme_false;
-     return nested_exn_handler(scheme_make_pair(scheme_false, arg), 1, p);
-   }
- }
+  return scheme_void;
+}
 
- return scheme_void;
+static Scheme_Object *
+do_raise(Scheme_Object *arg, int need_debug, int eb)
+{
+  Scheme_Thread *p = scheme_current_thread;
+
+  if (p->skip_error) {
+    scheme_longjmp (scheme_error_buf, 1);
+  }
+  
+  if (need_debug) {
+    Scheme_Object *marks;
+    marks = scheme_current_continuation_marks(NULL);
+    ((Scheme_Structure *)arg)->slots[1] = marks;
+  }
+
+  p->ku.k.p1 = arg;
+
+  if (eb)
+    return (Scheme_Object *)scheme_top_level_do(do_raise_inside_barrier, 1);
+  else
+    return (Scheme_Object *)do_raise_inside_barrier();
 }
 
 static Scheme_Object *
 sch_raise(int argc, Scheme_Object *argv[])
 {
-  return do_raise(argv[0], 0);
+  if ((argc > 1) && SCHEME_FALSEP(argv[1]))
+    return do_raise(argv[0], 0, 0);
+  else
+    return do_raise(argv[0], 0, 1);
 }
 
 void scheme_raise(Scheme_Object *exn)
 {
-  do_raise(exn, 0);
+  do_raise(exn, 0, 1);
 }
 
 typedef Scheme_Object (*Scheme_Struct_Field_Guard_Proc)(int argc, Scheme_Object *v);
@@ -2892,7 +2914,7 @@ void scheme_init_exn(Scheme_Env *env)
   scheme_add_global_constant("raise",
 			     scheme_make_prim_w_arity(sch_raise,
 						      "raise",
-						      1, 1),
+						      1, 2),
 			     env);
 
   scheme_init_exn_config();
