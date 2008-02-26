@@ -209,10 +209,7 @@
         (define annotate-break?
           (let ([pos (syntax-position expr)]
                 [src (syntax-source expr)])
-            (and (or (not source)
-                     (eq? src #;source (syntax-source stx)))
-                 ; (is-a? src object%) ; FIX THIS
-                 pos
+            (and src pos
                  (hash-table-get breakpoints pos (lambda () #t))
                  (kernel:kernel-syntax-case
                   expr #f
@@ -363,7 +360,7 @@
              (let ([subexprs (map (lambda (expr) 
                                     (annotate expr bound-vars #f module-name ))
                                   (syntax->list #'exprs))])
-               (if is-tail?
+               (if (or is-tail? (not (syntax-source expr)))
                    (quasisyntax/loc expr #,subexprs)
                    (wcm-wrap (make-debug-info module-name expr bound-vars bound-vars 'normal #f (previous-bindings bound-vars))
                              (quasisyntax/loc expr #,subexprs))))]

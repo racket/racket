@@ -538,7 +538,7 @@ While execution is paused, several buttons are available:
 
 @itemize{
 
-    @item{The @as-index{@onscreen{Continue} button} is enabled
+    @item{The @as-index{@onscreen{Go} button} is enabled
 whenever the program is paused.  It causes the program to resume
 until it either completes, reaches a breakpoint, or raises an
 unhandled exception.}
