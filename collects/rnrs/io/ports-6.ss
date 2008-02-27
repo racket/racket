@@ -300,11 +300,17 @@
     (make-binary-input/output-port p disconnect get-pos set-pos!
                                    out-p out-disconnect)))
 
+(define (no-op-transcoder? t)
+  (or (eq? t utf8-transcoder)
+      (and (eq? utf-8 (transcoder-codec t))
+           (memq (transcoder-eol-style t) '(lf none))
+           (eq? 'replace (transcoder-error-handling-mode t)))))
+
 (define (transcode-input p t)
   (let ([p (if (binary-input-port? p)
                ((binary-input-port-disconnect p))
                p)])
-    (if (eq? t utf8-transcoder)
+    (if (no-op-transcoder? t)
         p
         (reencode-input-port p 
                              (codec-enc (transcoder-codec t))
@@ -645,9 +651,9 @@
                                         'must-update]
                                        [(enum-set=? options (file-options no-fail no-truncate))
                                         'update]
-                                       [(enum-set-member? 'no-create) ; no-create, no-create + no-fail
+                                       [(enum-set-member? 'no-create options) ; no-create, no-create + no-fail
                                         'must-truncate]
-                                       [(enum-set-member? options 'no-fail) ; no-fail
+                                       [(enum-set-member? 'no-fail options) ; no-fail
                                         'truncate]
                                        [else ; no-truncate, <empty>
                                         'error]))])

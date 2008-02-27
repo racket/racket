@@ -1319,9 +1319,10 @@
 			  (- c out-len)))))])]
 	   [else
 	    (when (or (> ready-end ready-start)
-		      (< (- (bytes-length out-bytes) out-end) 100))
+                   (< (- (bytes-length out-bytes) out-end) 100))
 	      ;; Make room for conversion.
-	      (flush-some #f enable-break?))
+	      (flush-some #f enable-break?)  ;; convert some
+	      (flush-some #f enable-break?)) ;; write converted
 	    ;; Make room in buffer
 	    (when (positive? out-start)
 	      (bytes-copy! out-bytes 0 out-bytes out-start out-end)

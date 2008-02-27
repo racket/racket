@@ -441,23 +441,21 @@
 (define (do-read-symbol-or-number num? prefix port src line col pos)
   ;; Read a delimited sequence (using an extended notion of delimiter),
   ;; then make sure it's a number or identifier.
-  (let ([thing (bytes-append
-                (string->bytes/utf-8 prefix)
-                (car (or (if (string=? prefix "\\")
-                             (regexp-match #px"^x[0-9a-fA-F]+;(?:\\\\x[0-9a-fA-F]+;|[^\\\\\\s\\[\\]()#\";,'`])*" port)
-                             (regexp-match #px"^(?:\\\\x[0-9a-fA-F]+;|[^\\\\\\s\\[\\]()#\";,'`])*" port))
-                         '(#""))))])
+  (let ([thing (string-append
+                prefix
+                (bytes->string/utf-8
+                 (car (or (if (string=? prefix "\\")
+                              (regexp-match #px"^x[0-9a-fA-F]+;(?:\\\\x[0-9a-fA-F]+;|[^\\\\\\s\\[\\]()#\";,'`])*" port)
+                              (regexp-match #px"^(?:\\\\x[0-9a-fA-F]+;|[^\\\\\\s\\[\\]()#\";,'`])*" port))
+                          '(#"")))))])
     (cond
-     [(regexp-match? #rx#"^[a-zA-Z!$%&*/:<=>?^_~][a-zA-Z0-9+!$%&*/:<=>?^_~.@-]*$" thing)
+     [(regexp-match? #rx"^[a-zA-Z!$%&*/:<=>?^_~][a-zA-Z0-9+!$%&*/:<=>?^_~.@-]*$" thing)
       ;; Simple symbol:
-      (string->symbol (bytes->string/utf-8  thing))]
+      (string->symbol thing)]
      [(regexp-match? rx:number thing)
       (let ([n (string->number 
-                (bytes->string/utf-8
-                 ;; MzScheme doesn't handle mantissa widths, yet, so strip them out:
-                 (regexp-replace* #rx#"[|][0-9]+"
-                                  thing
-                                  #"")))])
+                ;; MzScheme doesn't handle mantissa widths, yet, so strip them out:
+                (regexp-replace* #rx"[|][0-9]+" thing ""))])
         (unless n
           (error 'r6rs-parser "number didn't convert: ~e" thing))
         n)]
@@ -465,7 +463,7 @@
            (regexp-match? rx:id thing))
       (string->symbol
        (bytes->string/utf-8 
-        (let loop ([t thing])
+        (let loop ([t (string->bytes/utf-8 thing)])
           (let ([m (regexp-match #rx#"^(.*)\\\\x([0-9a-fA-F]+);(.*)$" t)])
             (if m
                 (loop (bytes-append
@@ -483,10 +481,9 @@
                        (loop (cadddr m))))
                 t)))))]
      [else
-      (let ([str (bytes->string/utf-8 thing)])
-        (raise-read-error
-         (format "not a number or identifier: `~a'" str)
-         src line col pos (and pos (string-length str))))])))
+      (raise-read-error
+       (format "not a number or identifier: `~a'" thing)
+       src line col pos (and pos (string-length thing)))])))
 
 
 (define (read-symbol-or-number ch port src line col pos)
