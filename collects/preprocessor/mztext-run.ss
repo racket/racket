@@ -15,7 +15,7 @@
    #:multi
    [("-E" "--eval") expr "evaluates <expr> before processing starts"
     (parameterize ([read-case-sensitive #t])
-      (add-eval (read (open-input-string expr))))]
+      (add-eval (read-syntax 'command-line (open-input-string expr) )))]
    #:handlers
    (lambda (_ . files) (run preprocess run-cmd output files))
    '("input-file")

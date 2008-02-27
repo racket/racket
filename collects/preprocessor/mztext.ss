@@ -187,7 +187,7 @@
            (value->cont vs cont))))))
   (cond [(regexp-try-match (command-marker-here-re) (stdin))
          => (lambda (here) (display (car here)) (cont))]
-        [else (let ((r (read))) (do-thunk (lambda () (eval r))))]))
+        [else (let ((r (read-syntax))) (do-thunk (lambda () (eval r))))]))
 
 (provide paren-pairs)
 (define paren-pairs
@@ -305,12 +305,11 @@
 ;;=============================================================================
 ;; Invocation
 
-(define-namespace-anchor nsa)
-
 (define (initialize)
   (read-case-sensitive #t)
   (unless (command-marker) (command-marker "@"))
-  (current-namespace (namespace-anchor->namespace nsa))
+  (namespace-require 'scheme/base)
+  (namespace-require 'preprocessor/mztext)
   (do-evals))
 
 (define (run)

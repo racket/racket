@@ -124,7 +124,7 @@
 
 (define (pp-repl)
   (let loop ()
-    (let ([x (read)])
+    (let ([x (read-syntax)])
       (unless (eof-object? x)
         (call-with-values (lambda () (eval x)) show)
         (loop)))))
