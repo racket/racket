@@ -70,6 +70,9 @@
           [stable (get 'stable)]
           [recent (get 'recent)])
       (cond
+        ;; temporary hack, until v4 comes out
+        [(regexp-match? #rx"372" recent)
+         `(error "the download pages were not ported to v4 yet")]
         ;; we have the newest version (can be > if we have an svn build)
         [(string>=? current recent) 'ok]
         ;; we're stable, but there's a newer version

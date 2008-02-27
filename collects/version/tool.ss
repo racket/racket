@@ -1,14 +1,9 @@
-#lang mzscheme
+#lang scheme/gui
 
-(require (lib "tool.ss" "drscheme")
-         mzlib/unit
-         framework
-         mred
-         mzlib/class
+(require scheme/unit scheme/class framework drscheme/tool
+         browser/external string-constants
          "patchlevel.ss"
-         "check.ss"
-         (lib "external.ss" "browser")
-         string-constants)
+         "check.ss")
 
 (define download-url "http://download.plt-scheme.org/")
 
@@ -24,7 +19,7 @@
 ;; that we don't want to set a default of #t or #f, so make it 'unset and
 ;; change it only when users explicitly set it.  This makes it possible to have
 ;; the default be #f, but without making it always #f for all users, and in the
-;; future it is possible to change it to default to a different default.
+;; future it is possible to change it to default to #t.
 (define (is-enabled? v)
   (case v [(yes) #t] [(no) #f] [else #f])) ; default to #f
 
