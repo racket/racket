@@ -54,27 +54,35 @@ To document a collection or @|PLaneT| package:
         the whole right-hand side of the definition is already
         quoted).
 
-        As usual, the @filepath{info.ss} module also needs a
-        @schemeidfont{name} field. If you do not already have an
-        @filepath{info.ss} module, here's a suitable complete module:
+        @; [Eli] `name' is not needed, but I think it's used by planet
+        As usual, you may want to add a descriptive
+        @schemeidfont{name} field in your @filepath{info.ss}.  If you
+        do not already have an @filepath{info.ss} module, here's a
+        suitable complete module:
 
+        @; [Eli] "Some documentation" is probably not a good name
+        @;   since this is supposed to be documentation for a library
         @schememod[
           setup/infotab
           (define name "Some documentation")
           (define scribblings '(("manual.scrbl" ())))
         ]}
 
-  @item{Run @exec{setup-plt} to build your documentation. For a
+  @item{@; [Eli] If this is following a planet example, then it should
+        @;   have the correct command line here.  (I don't know what
+        @;   it should be though.)
+        Run @exec{setup-plt} to build your documentation. For a
         collection, optionally supply @Flag{l} followed by the
         collection name to limit the build process to that collection.}
 
   @item{The generated documentation is normally
         @filepath{doc/manual/index.html} within the collection or
-        @|PLaneT| package directory. If the collection in the PLT
-        Scheme installation's the main @filepath{collects} directory,
-        however, then the documentation is generated as
-        @filepath{manual/index.html} in the installation's main
-        @filepath{doc} directory.}
+        @; [Eli] I "fixed" the obvious typo in the following sentence,
+        @;   but it's still weird and should probably be different.
+        @|PLaneT| package directory. If the collection is in PLT
+        Scheme's main @filepath{collects} directory, however, then the
+        documentation is generated as @filepath{manual/index.html} in
+        the installation's main @filepath{doc} directory.}
 
 }
 
@@ -136,6 +144,7 @@ that precede text to typeset.
 Thus,
 
 @verbatim[#:indent 2]|{
+  @(require scribble/manual)
   @title{My Library}
   @scheme[(list 'testing 1 2 3)]
   @section[#:tag "here"]{You Are Here}
@@ -144,6 +153,7 @@ Thus,
 means
 
 @schemeblock[
+(require scribble/manual)
 (title "My Library")
 (scheme (list 'testing 1 2 3))
 (section #:tag "here" "You Are Here")
@@ -153,7 +163,8 @@ For more information on the syntax of @litchar["@"], see
 @secref["reader"].
 
 In a document that starts @hash-lang[] @schememodname[scribble/doc],
-the top level is a text-mode sequence. The parsed sequence is further
+the top level is a text-mode sequence, as the @nonterm{text-body} in a
+@litchar["@"] form.  The parsed sequence is further
 decoded to turn it into a hierarchy of sections and paragraphs. For
 example, a linear sequence of @scheme[section] declarations with
 interleaved text is turned into a list of @scheme[part] instances with
@@ -181,7 +192,7 @@ module. When the document is built, the @scheme[scheme] form detects
 the binding for @scheme[list], and so it generates a reference to the
 specification of @scheme[list]. The setup process detects the
 reference, and it finds the matching specification in the existing
-documentation, and it ultimately directs the hyperlink to that
+documentation, and ultimately directs the hyperlink to that
 specification.
 
 Hyperlinks based on @scheme[for-label] and @scheme[scheme] are the
@@ -257,7 +268,7 @@ The following example illustrates section hyperlinks:
   See @secref{chickens}.
 }|
 
-Since the page is so short, it the hyperlinks in the above example are
+Since the page is so short, the hyperlinks in the above example are
  more effective if you change the @filepath{info.ss} file to add the
  @scheme['multi-file] flag:
 
@@ -287,7 +298,7 @@ manual:
 
 As mentioned in @secref{scheme-hyperlinks}, however, cross-document
 references based on @scheme[(require (for-label ....))] and
-@scheme[scheme] are usually better than to cross-document references
+@scheme[scheme] are usually better than cross-document references
 using @scheme[secref].
 
 @; ----------------------------------------
@@ -307,6 +318,8 @@ to import the binding information of @filepath{helper.ss}. Then add a
 binding with the module path as seen by a reader. Finally, use
 @scheme[defproc] to document the procedure:
 
+@; [Eli] This is also using `my-lib/helper' which doesn't work with
+@; planet libraries
 @verbatim[#:indent 2]|{
   #lang scribble/doc
   @(require scribble/manual
@@ -376,7 +389,7 @@ To use @scheme[examples], the procedures to document must be suitable
 for use at documentation time; in fact, @scheme[examples] uses
 bindings introduced into the document source by
 @scheme[require]. Thus, to generate examples using @scheme[my-helper]
-from the previous section, then @filepath{helper.ss} must be imported both
+from the previous section, @filepath{helper.ss} must be imported both
 via @scheme[require-for-label] and @scheme[require]:
 
 @verbatim[#:indent 2]|{
@@ -494,12 +507,12 @@ The difference between @scheme[table-of-contents] and
 @scheme[local-table-of-contents] is that the latter is ignored for
 Latex output.
 
-When using @scheme[local-table-of-contents], often it makes sense to
+When using @scheme[local-table-of-contents], it often makes sense to
 include introductory text before the call of
 @scheme[local-table-of-contents]. When the introductory text is less
 important and when when local table of contents is short, putting the
 introductory text after the call of @scheme[local-table-of-contents]
-make be appropriate.
+may be appropriate.
 
 @;----------------------------------------
 @include-section["style.scrbl"]

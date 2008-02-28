@@ -22,8 +22,8 @@ scribble/doc
 
 Besides making the file a module, this declaration selects the
 Scribble reader (instead of the usual Scheme reader), and it starts
-the body of the in ``text'' mode. The reader layer mostly leaves text
-alone, but @litchar["@"] forms can escape to S-expression mode.
+the body of the file in ``text'' mode. The reader layer mostly leaves
+text alone, but @litchar["@"] forms escape to S-expression mode.
 
 A module written as
 
@@ -79,7 +79,7 @@ The @scheme[decode] function produces a @scheme[part] structure
 instance that represents the document. To build the @scheme[part]
 instance, it inspects its arguments to find a @scheme[title-decl]
 value created by @scheme[title] to name the part, @scheme[part-start]
-values created @scheme[section] to designate sub-parts, etc.
+values created by @scheme[section] to designate sub-parts, etc.
 
 A @scheme[part] is the input to a rendering back-end, such as the HTML
 renderer. All renderers recognize a fixed structure hierarchy: the
@@ -105,7 +105,7 @@ The value bound to @scheme[doc] in the example above is something like
 ]
 
 Notice that the @litchar{'} in the input's @litchar{'tis} has turned
-into @scheme['rsquo] (a curly apostrophe). The conversion to use
+into @scheme['rsquo] (rendered as a curly apostrophe). The conversion to use
 @scheme['rsquo] was performed by @scheme[decode] via
 @scheme[decode-flow] via @scheme[decode-paragraph] via
 @scheme[decode-content] via @scheme[decode-string].
@@ -204,6 +204,9 @@ Working roughly from the bottom up, the Scribble layers are:
  @item{@schememodname[scribble/xref]: A library of support functions
        for using cross-reference information, typically after a
        document is rendered (e.g., to search). See @secref["xref"].}
+
+ @item{@schememodname[scribble/text]: A language that uses
+       @schememodname[scribble/reader] preprocessing text files.}
 
 }
 
