@@ -18,21 +18,21 @@ To document a collection or @|PLaneT| package:
 
 @itemize{
 
- @item{Create a file in your collection or planet package with the
-       file extension @filepath{.scrbl}. Beware that the file name you
-       choose will determine the output directory's name. The
-       remainder of these instructions assume that the file is called
-       @filepath{manual.scrbl}.}
+  @item{Create a file in your collection or planet package with the
+        file extension @filepath{.scrbl}. Beware that the file name
+        you choose will determine the output directory's name. The
+        remainder of these instructions assume that the file is called
+        @filepath{manual.scrbl}.}
 
- @item{Start @filepath{manual.scrbl} like this:
-  @verbatim[#:indent 2]|{
-    #lang scribble/doc
-    @(require scribble/manual)
+  @item{Start @filepath{manual.scrbl} like this:
+          @verbatim[#:indent 2]|{
+            #lang scribble/doc
+            @(require scribble/manual)
 
-    @title{My Library}
+            @title{My Library}
 
-    Welcome to my documentation: @scheme[(list 'testing 1 2 3)].
-  }|
+            Welcome to my documentation: @scheme[(list 'testing 1 2 3)].
+          }|
 
         The first line starts the file in ``text'' mode, and
         introduces the @litchar["@"] syntax to use Scheme bindings.
