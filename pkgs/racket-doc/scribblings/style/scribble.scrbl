@@ -15,6 +15,8 @@ word. Thus, the
 description will often start with ``Produces.'' Refer to arguments and
 sub-forms by name.
 
+@; [Eli] It's probably a good idea to say here that it's better to
+@;   refer to "functions" instead of "procedures".
 Do not use the word ``argument'' to describe a sub-form in a syntactic
 form; use the term ``sub-form'' instead, reserving ``argument'' for
 values or expressions in a function call.  Refer to libraries and
@@ -67,7 +69,7 @@ typeset as variables. The correct description is
 @verbatim[#:indent 2]|{@scheme[(_rator-expr _rand-expr ...)]}|
 
 which produces @scheme[(_rator-expr _rand-expr ...)], where
-@schemeidfont{rator-expr} @schemeidfont{rand-expr} are typeset as
+@schemeidfont{rator-expr} and @schemeidfont{rand-expr} are typeset as
 meta-variables. The @scheme[defproc], @scheme[defform], @|etc| forms
 greatly reduce this burden in descriptions, since they automatically
 set up meta-variable typesetting for non-literal identifiers. In
@@ -83,9 +85,11 @@ specific sequence of characters.
 
 When showing example evaluations, use the REPL-snapshot style:
 
-@interaction[
-(+ 1 2)
-]
+@verbatim[#:indent 2]|{
+  @interaction[
+  (+ 1 2)
+  ]
+}|
 
 See also the @scheme[scribble/eval] library.
 
@@ -98,6 +102,11 @@ In prose, use @litchar{``} and @litchar{''} quotation marks instead of
 @litchar{"}. Use @litchar{---} for an em-dash, and do not include
 spaces on either side, though it will typeset as an en-dash and spaces
 in HTML output. Use American style for quotation marks and punctuation
+@; [Eli] BTW, I've asked several people about this, and the general
+@;   agreement that I've seen is that this is a rather arbitrary rule
+@;   and there's no harm in doing the more logical thing of putting
+@;   the punctuations outside quotations and parens.  Just like you
+@;   did at the end of this sentence...
 at the end of quotation marks (i.e., a sentence-terminating period
 goes inside the quotation marks). Of course, this rule does not apply
 for quotation marks that are part of code.
