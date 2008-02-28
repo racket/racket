@@ -13,6 +13,7 @@
          fixnum-width
          least-fixnum
          greatest-fixnum)
+;; Many other provides from macros below
 
 (define (fixnum-width) 30)
 (define (least-fixnum) -1073741824)
@@ -101,7 +102,10 @@
        ([(a) (t1)]))]
     [(_ orig fx (a b) check)
      (define-an-fx orig fx check
-       ([(a b) (t1 t2)]))]))
+       ([(a b) (t1 t2)]))]
+    [(_ orig fx (a b c) check)
+     (define-an-fx orig fx check
+       ([(a b c) (t1 t2 t3)]))]))
 
 (define-fx = fx=? (a b c ...) nocheck)
 (define-fx > fx>? (a b c ...) nocheck)
@@ -129,14 +133,23 @@
 (define-fx div0 fxdiv0 (a b) nocheck)
 (define-fx mod0 fxmod0 (a b) nocheck)
 
-(define (fx+/carry a b c)
-  '...)
+(define-syntax-rule (define-carry fx/carry (a b c) expr)
+  (begin
+    (provide fx/carry)
+    (define (fx/carry a b c)
+      (unless (fixnum? a)
+        (raise-type-error 'fx/carry "fixnum" a))
+      (unless (fixnum? a)
+        (raise-type-error 'fx/carry "fixnum" b))
+      (unless (fixnum? a)
+        (raise-type-error 'fx/carry "fixnum" b))
+      (let-values ([(d m) (div0-and-mod0 (+ a b c) 
+                                         (arithmetic-shift 1 (fixnum-width)))])
+        (values m d)))))
 
-(define (fx-/carry a b c)
-  '...)
-
-(define (fx*/carry a b c)
-  '...)
+(define-carry fx+/carry (a b c) (+ a b c))
+(define-carry fx-/carry (a b c) (- a b c))
+(define-carry fx*/carry (a b c) (* (+ a b) c))
 
 (define-fx bitwise-not fxnot (a) nocheck)
 (define-fx bitwise-and fxand (a b ...) nocheck)
@@ -145,9 +158,12 @@
 (define-fx bitwise-first-bit-set fxfirst-bit-set (a) nocheck)
 (define-fx bitwise-copy-bit fxcopy-bit (a) nocheck)
 
-(define (fxif a b c)
-  '...
-  (bitwise-if a b c))
+(define-syntax-rule (fixnum-bitwise-if a b c)
+  (bitwise-ior (bitwise-and a b)
+               (bitwise-and (bitwise-not a) c)))
+(define-fx fixnum-bitwise-if fxif (a b c) nocheck)
+
+
 
 (define-syntax-rule (define-shifter fxarithmetic-shift r6rs:fxarithmetic-shift
                       lower-bound bounds adjust)

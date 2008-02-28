@@ -5480,7 +5480,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
               all_simple_renames = 0;
 	    } else
 	      scheme_extend_module_rename(rn, self_modidx, name, name, self_modidx, name, 0, NULL, NULL, 0);
-	    
+
 	    vars = SCHEME_STX_CDR(vars);
 	  }
           

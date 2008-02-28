@@ -7,7 +7,7 @@
              "private/small-scheme.ss"
              "private/define.ss")
   
-  (#%provide expand-export
+  (#%provide expand-export syntax-local-provide-certifier
              make-provide-transformer prop:provide-transformer provide-transformer?
              ;; the export struct type:
              export struct:export make-export export?
@@ -35,6 +35,18 @@
   (define (make-provide-transformer proc)
     (make-pt proc))
   
+  (define provide-cert-key (gensym 'prov))
+
+  (define (syntax-local-provide-certifier)
+    (let ([c (syntax-local-certifier)])
+      (case-lambda
+       [(v)
+        (c v provide-cert-key)]
+       [(v mark)
+        (c v provide-cert-key mark)])))
+
+  (define current-recertify (make-parameter (lambda (x) x)))
+  
   ;; expand-export : stx -> (listof export)
   (define (expand-export stx modes)
     (if (identifier? stx)
@@ -48,20 +60,26 @@
         (syntax-case stx ()
           [(id . rest)
            (identifier? #'id)
-           (let ([t (syntax-local-value #'id (lambda () #f))])
-             (if (provide-transformer? t)
-                 (let ([v (((provide-transformer-get-proc t) t) stx modes)])
-                   (unless (and (list? v)
-                                (andmap export? v))
-                     (raise-syntax-error
-                      #f
-                      "result from provide transformer is not a list of exports"
-                      stx))
-                   v)
-                 (raise-syntax-error
-                  #f
-                  "not a provide sub-form"
-                  stx)))]
+           (parameterize ([current-recertify (let ([prev (current-recertify)])
+                                               (lambda (sub)
+                                                 (syntax-recertify (prev sub)
+                                                                   stx
+                                                                   (current-code-inspector) 
+                                                                   provide-cert-key)))])
+             (let ([t (syntax-local-value ((current-recertify) #'id) (lambda () #f))])
+               (if (provide-transformer? t)
+                   (let ([v (((provide-transformer-get-proc t) t) stx modes)])
+                     (unless (and (list? v)
+                                  (andmap export? v))
+                       (raise-syntax-error
+                        #f
+                        "result from provide transformer is not a list of exports"
+                        stx))
+                     v)
+                   (raise-syntax-error
+                    #f
+                    "not a provide sub-form"
+                    stx))))]
           [_
            (raise-syntax-error
             #f

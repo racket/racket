@@ -4842,6 +4842,7 @@ static int mark_rename_table_MARK(void *p) {
   gcMARK(rn->unmarshal_info);
   gcMARK(rn->shared_pes);
   gcMARK(rn->plus_kernel_nominal_source);
+  gcMARK(rn->set_identity);
   gcMARK(rn->marked_names);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames));
@@ -4855,6 +4856,7 @@ static int mark_rename_table_FIXUP(void *p) {
   gcFIXUP(rn->unmarshal_info);
   gcFIXUP(rn->shared_pes);
   gcFIXUP(rn->plus_kernel_nominal_source);
+  gcFIXUP(rn->set_identity);
   gcFIXUP(rn->marked_names);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames));
@@ -4875,6 +4877,7 @@ static int mark_rename_table_set_MARK(void *p) {
   gcMARK(rns->rt);
   gcMARK(rns->other_phases);
   gcMARK(rns->share_marked_names);
+  gcMARK(rns->set_identity);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
 }
@@ -4885,6 +4888,7 @@ static int mark_rename_table_set_FIXUP(void *p) {
   gcFIXUP(rns->rt);
   gcFIXUP(rns->other_phases);
   gcFIXUP(rns->share_marked_names);
+  gcFIXUP(rns->set_identity);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
 }

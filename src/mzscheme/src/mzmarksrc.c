@@ -1977,6 +1977,7 @@ mark_rename_table {
   gcMARK(rn->unmarshal_info);
   gcMARK(rn->shared_pes);
   gcMARK(rn->plus_kernel_nominal_source);
+  gcMARK(rn->set_identity);
   gcMARK(rn->marked_names);
  size:
   gcBYTES_TO_WORDS(sizeof(Module_Renames));
@@ -1989,6 +1990,7 @@ mark_rename_table_set {
   gcMARK(rns->rt);
   gcMARK(rns->other_phases);
   gcMARK(rns->share_marked_names);
+  gcMARK(rns->set_identity);
  size:
   gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
 }

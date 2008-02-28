@@ -6,9 +6,10 @@
              "private/more-scheme.ss"
              "private/small-scheme.ss"
              "private/define.ss"
-             (for-template (only '#%kernel quote)))
+             (for-template (only '#%kernel quote))
+             (for-syntax '#%kernel "private/stxcase-scheme.ss"))
   
-  (#%provide expand-import
+  (#%provide expand-import syntax-local-require-certifier
              make-require-transformer prop:require-transformer require-transformer?
              ;; the import struct type:
              import struct:import make-import import?
@@ -16,7 +17,7 @@
              ;; the import-source struct type:
              import-source struct:import-source make-import-source import-source?
              import-source-mod-path-stx import-source-mode)
-  
+
   (define-struct* import (local-id src-sym src-mod-path mode req-mode orig-mode orig-stx)
     #:guard (lambda (i s path mode req-mode orig-mode stx info)
               (unless (identifier? i)
@@ -62,7 +63,19 @@
   
   (define (make-require-transformer proc)
     (make-rt proc))
-  
+
+  (define require-cert-key (gensym 'req))
+
+  (define (syntax-local-require-certifier)
+    (let ([c (syntax-local-certifier)])
+      (case-lambda 
+       [(v)
+        (c v require-cert-key)]
+       [(v mark)
+        (c v require-cert-key mark)])))
+
+  (define current-recertify (make-parameter (lambda (x) x)))
+
   ;; expand-import : stx bool -> (listof import)
   (define (expand-import stx)
     (syntax-case stx ()
@@ -103,37 +116,43 @@
             (list (make-import-source #'simple 0)))))]
       [(id . rest)
        (identifier? #'id)
-       (let ([t (syntax-local-value #'id (lambda () #f))])
-         (if (require-transformer? t)
-             (call-with-values
-                 (lambda ()
-                   (((require-transformer-get-proc t) t) stx))
-               (case-lambda
-                [(v mods)
-                 (unless (and (list? v)
-                              (andmap import? v))
+       (parameterize ([current-recertify (let ([prev (current-recertify)])
+                                           (lambda (sub)
+                                             (syntax-recertify (prev sub)
+                                                               stx
+                                                               (current-code-inspector) 
+                                                               require-cert-key)))])
+         (let ([t (syntax-local-value ((current-recertify) #'id) (lambda () #f))])
+           (if (require-transformer? t)
+               (call-with-values
+                   (lambda ()
+                     (((require-transformer-get-proc t) t) stx))
+                 (case-lambda
+                  [(v mods)
+                   (unless (and (list? v)
+                                (andmap import? v))
+                     (raise-syntax-error
+                      #f
+                      "first result from require transformer is not a list of imports"
+                      stx))
+                   (unless (and (list? mods)
+                                (andmap import-source? mods))
+                     (raise-syntax-error
+                      #f
+                      "second result from require transformer is not a list of import-sources"
+                      stx))
+                   (values v mods)]
+                  [args
                    (raise-syntax-error
-                    #f
-                    "first result from require transformer is not a list of imports"
-                    stx))
-                 (unless (and (list? mods)
-                              (andmap import-source? mods))
-                   (raise-syntax-error
-                    #f
-                    "second result from require transformer is not a list of import-sources"
-                    stx))
-                 (values v mods)]
-                [args
-                 (raise-syntax-error
                     #f
                     (format "require transformer did not produced ~a result~s instead of 2"
                             (length args)
                             (if (= 1 (length args)) "" "s"))
                     stx)]))
-             (raise-syntax-error
-              #f
-              "not a require sub-form"
-              stx)))]
+               (raise-syntax-error
+                #f
+                "not a require sub-form"
+                stx))))]
       [_
        (raise-syntax-error
         #f

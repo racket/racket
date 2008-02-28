@@ -118,6 +118,7 @@ typedef struct Module_Renames {
   char plus_kernel, kind, needs_unmarshal, sealed;
   Scheme_Object *phase;
   Scheme_Object *plus_kernel_nominal_source;
+  Scheme_Object *set_identity;
   Scheme_Hash_Table *ht; /* localname ->  modidx  OR
                                           (cons modidx exportname) OR
                                           (cons modidx nominal_modidx) OR
@@ -137,6 +138,7 @@ typedef struct Module_Renames {
 typedef struct Module_Renames_Set {
   Scheme_Object so; /* scheme_rename_table_set_type */
   char kind, sealed;
+  Scheme_Object *set_identity;
   Module_Renames *rt, *et;
   Scheme_Hash_Table *other_phases;
   Scheme_Object *share_marked_names; /* a Module_Renames_Set */
@@ -1060,11 +1062,18 @@ static int same_phase(Scheme_Object *a, Scheme_Object *b)
 Scheme_Object *scheme_make_module_rename_set(int kind, Scheme_Object *share_marked_names)
 {
   Module_Renames_Set *mrns;
+  Scheme_Object *mk;
+
+  if (share_marked_names)
+    mk = ((Module_Renames_Set *)share_marked_names)->set_identity;
+  else
+    mk = scheme_new_mark();
 
   mrns = MALLOC_ONE_TAGGED(Module_Renames_Set);
   mrns->so.type = scheme_rename_table_set_type;
   mrns->kind = kind;
   mrns->share_marked_names = share_marked_names;
+  mrns->set_identity = mk;
 
   return (Scheme_Object *)mrns;
 }
@@ -1073,6 +1082,8 @@ void scheme_add_module_rename_to_set(Scheme_Object *set, Scheme_Object *rn)
 {
   Module_Renames_Set *mrns = (Module_Renames_Set *)set;
   Module_Renames *mrn = (Module_Renames *)rn;
+
+  mrn->set_identity = mrns->set_identity;
 
   if (same_phase(mrn->phase, scheme_make_integer(0)))
     mrns->rt = mrn;
@@ -1144,6 +1155,9 @@ Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_
 {
   Module_Renames *mr;
   Scheme_Hash_Table *ht;
+  Scheme_Object *mk;
+
+  mk = scheme_new_mark();
 
   mr = MALLOC_ONE_TAGGED(Module_Renames);
   mr->so.type = scheme_rename_table_type;
@@ -1153,6 +1167,7 @@ Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_
   mr->ht = ht;
   mr->phase = phase;
   mr->kind = kind;
+  mr->set_identity = mk;
   mr->marked_names = marked_names;
   mr->shared_pes = scheme_null;
   mr->unmarshal_info = scheme_null;
@@ -2802,6 +2817,83 @@ int scheme_stx_has_empty_wraps(Scheme_Object *o)
 /*                           stx comparison                               */
 /*========================================================================*/
 
+/* If no marks and no rename with this set's tag,
+   then it was an unmarked-but-actually-introduced id. */
+
+static Scheme_Object *check_floating_id(Scheme_Object *stx)
+{
+  /* If `a' has a mzMOD_RENAME_MARKED rename with no following
+     mzMOD_RENAME_NORMAL using the same set tag, and if there are no
+     marks after the mzMOD_RENAME_MARKED rename, then we've hit a
+     corner case: an identifier that was introduced by macro expansion
+     but marked so that it appears to be original. To ensure that it
+     gets a generated symbol in the MOD_RENAME_MARKED table, give it a
+     "floating" binding: scheme_void. This is a rare case, and it more
+     likely indicates a buggy macro than anything else. */
+  WRAP_POS awl;
+  Scheme_Object *cur_mark = NULL, *searching_identity = NULL, *a;
+  int no_mark_means_floating = 0;
+
+  WRAP_POS_INIT(awl, ((Scheme_Stx *)stx)->wraps);
+  
+  while (!WRAP_POS_END_P(awl)) {
+
+    a = WRAP_POS_FIRST(awl);
+    
+    if (SCHEME_RENAMESP(a)
+        || SCHEME_RENAMES_SETP(a)) {
+      int kind;
+      Scheme_Object *set_identity;
+
+      if (SCHEME_RENAMESP(a)) {
+        Module_Renames *mrn = (Module_Renames *)a;
+        
+        kind = mrn->kind;
+        set_identity = mrn->set_identity;
+      } else {
+        Module_Renames_Set *mrns = (Module_Renames_Set *)a;
+
+        kind = mrns->kind;
+        set_identity = mrns->set_identity;
+      }
+
+      if (SAME_OBJ(set_identity, searching_identity))
+        searching_identity = NULL;
+
+      if (searching_identity)
+        no_mark_means_floating = 1;
+
+      if (kind == mzMOD_RENAME_MARKED)
+        searching_identity = set_identity;
+      else
+        searching_identity = NULL;
+        
+    } else if (SCHEME_MARKP(a)) {
+      if (SAME_OBJ(a, cur_mark))
+        cur_mark = 0;
+      else {
+        if (cur_mark) {
+          no_mark_means_floating = 0;
+          searching_identity = NULL;
+        }
+        cur_mark = a;
+      }
+    }
+
+    WRAP_POS_INC(awl);
+  }
+
+  if (cur_mark) {
+    no_mark_means_floating = 0;
+    searching_identity = NULL;
+  }
+
+  if (searching_identity || no_mark_means_floating)
+    return scheme_void;
+
+  return scheme_false;
+}
+
 XFORM_NONGCING static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl,
 				     Scheme_Object *barrier_env, Scheme_Object *ignore_rib)
 /* Compares the marks in two wraps lists. A result of 2 means that the
@@ -3208,8 +3300,11 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	  
 	  if (mrn->marked_names) {
 	    /* Resolve based on rest of wraps: */
-	    if (!bdg)
-	      bdg = resolve_env(NULL, a, orig_phase, 0, NULL, skip_ribs);
+	    if (!bdg) {
+	      bdg = resolve_env(&wraps, a, orig_phase, 0, NULL, skip_ribs);
+              if (SCHEME_FALSEP(bdg))
+                bdg = check_floating_id(a);
+            }
 	    /* Remap id based on marks and rest-of-wraps resolution: */
 	    glob_id = scheme_tl_id_sym((Scheme_Env *)mrn->marked_names, a, bdg, 0, NULL);
 	    if (SCHEME_TRUEP(bdg)
@@ -3591,6 +3686,8 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 	    /* Resolve based on rest of wraps: */
 	    if (!bdg)
 	      bdg = resolve_env(&wraps, a, orig_phase, 0, NULL, NULL);
+            if (SCHEME_FALSEP(bdg))
+              bdg = check_floating_id(a);
 	    /* Remap id based on marks and rest-of-wraps resolution: */
 	    glob_id = scheme_tl_id_sym((Scheme_Env *)mrn->marked_names, a, bdg, 0, NULL);
 	  } else
@@ -3731,13 +3828,16 @@ Scheme_Object *scheme_stx_module_name(Scheme_Object **a, Scheme_Object *phase,
     return NULL;
 }
 
-Scheme_Object *scheme_stx_moduleless_env(Scheme_Object *a, Scheme_Object *phase)
+Scheme_Object *scheme_stx_moduleless_env(Scheme_Object *a)
   /* Returns either NULL or a lexical-rename symbol */
 {
   if (SCHEME_STXP(a)) {
     Scheme_Object *r;
 
-    r = resolve_env(NULL, a, phase, 0, NULL, NULL);
+    r = resolve_env(NULL, a, scheme_make_integer(0), 0, NULL, NULL);
+
+    if (SCHEME_FALSEP(r))
+      r = check_floating_id(a);
 
     if (r)
       return r;
@@ -4662,6 +4762,7 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
                   if (SCHEME_PAIRP(mrn->unmarshal_info))
                     l = CONS(mrn->unmarshal_info, l); 
 	      
+                  l = CONS(mrn->set_identity, l);
                   l = CONS((mrn->kind == mzMOD_RENAME_MARKED) ? scheme_true : scheme_false, l);
                   l = CONS(mrn->phase, l);
                   if (mrn->plus_kernel) {
@@ -5246,7 +5347,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
       Module_Renames *mrn;
       Scheme_Object *p, *key;
       int plus_kernel, i, count, kind;
-      Scheme_Object *phase;
+      Scheme_Object *phase, *set_identity;
       
       if (!SCHEME_PAIRP(a)) return_NULL;
       
@@ -5270,8 +5371,13 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 	kind = mzMOD_RENAME_NORMAL;
       a = SCHEME_CDR(a);
 
+      if (!SCHEME_PAIRP(a)) return_NULL;
+      set_identity = unmarshal_mark(SCHEME_CAR(a), ut); 
+      a = SCHEME_CDR(a);
+
       mrn = (Module_Renames *)scheme_make_module_rename(phase, kind, NULL);
       mrn->plus_kernel = plus_kernel;
+      mrn->set_identity = set_identity;
 
       if (!SCHEME_PAIRP(a)) return_NULL;
       mns = SCHEME_CDR(a);

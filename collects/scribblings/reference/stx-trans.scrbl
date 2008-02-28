@@ -2,7 +2,9 @@
 @(require (except-in "mz.ss" import export)
           (for-syntax scheme/base)
           (for-label scheme/require-transform
-                     scheme/provide-transform))
+                     scheme/require-syntax
+                     scheme/provide-transform
+                     scheme/provide-syntax))
 
 @(define stx-eval (make-base-eval))
 @interaction-eval[#:eval stx-eval (require (for-syntax scheme/base))]
@@ -522,6 +524,8 @@ If the derived form contains a sub-form that is a
 transform the sub-@scheme[_require-spec] to lists of imports and
 import sources.
 
+See also @scheme[define-require-syntax], which supports macro-style
+@scheme[require] transformers.
 
 @defproc[(expand-import [stx syntax?])
          (values (listof import?) 
@@ -607,6 +611,14 @@ instantiated or visited even if no binding is imported into a module.
 }}
 
 
+@defproc[(syntax-local-require-certifier) (syntax? . -> . syntax?)]{
+
+Like @scheme[syntax-local-certifier], but to certify @tech{syntax
+objects} that correspond to @scheme[require] sub-forms, so that
+@scheme[expand-import] can deconstruct the @tech{syntax object} as
+necessary to expand it.}
+
+
 @; ----------------------------------------------------------------------
 
 @section[#:tag "provide-trans"]{@scheme[provide] Transformers}
@@ -626,6 +638,9 @@ of symbols representing the export modes specified by enclosing
 If the derived form contains a sub-form that is a
 @scheme[_provide-spec], then it can call @scheme[expand-export] to
 transform the sub-@scheme[_provide-spec] to a lists of exports.
+
+See also @scheme[define-provide-syntax], which supports macro-style
+@scheme[provide] transformers.
 
 
 @defproc[(expand-export [stx syntax?] [modes (listof (or/c exact-integer? false/c))])
@@ -686,3 +701,11 @@ A structure representing a single imported identifier:
        exporting module.}
 
 }}
+
+
+@defproc[(syntax-local-provide-certifier) (syntax? . -> . syntax?)]{
+
+Like @scheme[syntax-local-certifier], but to certify @tech{syntax
+objects} that correspond to @scheme[provide] sub-forms, so that
+@scheme[expand-export] can deconstruct the @tech{syntax object} as
+necessary to expand it.}

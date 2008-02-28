@@ -10,10 +10,10 @@
   (#%provide lib file planet
              for-syntax for-template for-label for-meta
              require
-             only-in rename-in prefix-in except-in only-meta-in
+             only-in rename-in prefix-in except-in combine-in only-meta-in
              provide
              all-defined-out all-from-out
-             rename-out except-out prefix-out struct-out
+             rename-out except-out prefix-out struct-out combine-out
              protect-out)
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -433,6 +433,19 @@
                                    ids)))
                      imports)
              sources))]))))
+
+  (define-syntax combine-in
+    (make-require-transformer
+     (lambda (stx)
+       (syntax-case stx ()
+         [(_ in ...)
+          (let ([subs
+                 (map (lambda (in)
+                        (let-values ([(imports sources) (expand-import in)])
+                          (cons imports sources)))
+                      (syntax->list #'(in ...)))])
+              (values (apply append (map car subs))
+                      (apply append (map cdr subs))))]))))
 
   (define-syntax only-meta-in
     (make-require-transformer
@@ -885,6 +898,17 @@
                    "identifier is not bound to struct type information"
                    stx
                    id))))]))))
+
+  (define-syntax combine-out
+    (make-provide-transformer
+     (lambda (stx modes)
+       (syntax-case stx ()
+         [(_ out ...)
+          (apply
+           append
+           (map (lambda (out)
+                  (expand-export out modes))
+                (syntax->list #'(out ...))))]))))
 
   (define-syntax protect-out
     (make-provide-transformer

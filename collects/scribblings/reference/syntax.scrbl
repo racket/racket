@@ -1,5 +1,11 @@
 #lang scribble/doc
-@(require "mz.ss")
+@(require "mz.ss"
+          (for-label (only-in scheme/require-transform
+                              make-require-transformer)
+                     scheme/require-syntax
+                     (only-in scheme/provide-transform
+                              make-provide-transformer)
+                     scheme/provide-syntax))
 
 @(define cvt (schemefont "CVT"))
 
@@ -845,6 +851,38 @@ Like @scheme[define-for-syntax], but @scheme[expr] must produce as
 many value as supplied @scheme[id]s, and all of the @scheme[id]s are
 bound (at @tech{phase level} 1).}
 
+@; ----------------------------------------------------------------------
+
+@subsection[#:tag "require-syntax"]{@scheme[require] Macros}
+
+@note-lib-only[scheme/require-syntax]
+
+@defform[(define-require-syntax id proc-expr)]{
+
+Like @scheme[define-syntax], but for a @scheme[require] sub-form. The
+@scheme[proc-expr] must produce a procedure that accepts and returns a
+syntax object representing a @scheme[require] sub-form.
+
+This form expands to @scheme[define-syntax] with a use of
+@scheme[make-require-transformer]; see @secref["require-trans"] for
+more information.}
+
+@; ----------------------------------------------------------------------
+
+@subsection[#:tag "provide-syntax"]{@scheme[provide] Macros}
+
+@note-lib-only[scheme/provide-syntax]
+
+@defform[(define-provide-syntax id proc-expr)]{
+
+Like @scheme[define-syntax], but for a @scheme[provide] sub-form. The
+@scheme[proc-expr] must produce a procedure that accepts and returns a
+syntax object representing a @scheme[provide] sub-form.
+
+This form expands to @scheme[define-syntax] with a use of
+@scheme[make-provide-transformer]; see @secref["provide-trans"] for
+more information.}
+
 @;------------------------------------------------------------------------
 @section[#:tag "begin"]{Sequencing: @scheme[begin], @scheme[begin0], and @scheme[begin-for-syntax]}
 
@@ -1238,14 +1276,15 @@ Legal only in a @tech{module begin context}, and handled by the
 @guideintro["module-require"]{@scheme[require]}
 
 @defform/subs[#:literals (only-in prefix-in except-in rename-in lib file planet + - =
-                          for-syntax for-template for-label for-meta only-meta-in quote)
+                          for-syntax for-template for-label for-meta only-meta-in combine-in quote)
               (require require-spec ...)
               ([require-spec module-path
                              (only-in require-spec id-maybe-renamed ...)
                              (except-in require-spec id ...)
                              (prefix-in prefix-id require-spec)
                              (rename-in require-spec [orig-id bind-id] ...)
-                             (only-meta-in require-spec ...)
+                             (combine-in require-spec ...)
+                             (only-meta-in phase-level require-spec ...)
                              (for-syntax require-spec ...)
                              (for-template require-spec ...)
                              (for-label require-spec ...)
@@ -1284,7 +1323,7 @@ identifier. Each identifier also binds at a particular @tech{phase
 level}.
 
 The syntax of @scheme[require-spec] can be extended via
-@scheme[define-syntax] with @scheme[make-require-transformer], but the
+@scheme[define-require-syntax], but the
 pre-defined forms are as follows.
 
  @specsubform[module-path]{ Imports all exported bindings from the
@@ -1319,6 +1358,9 @@ pre-defined forms are as follows.
   @scheme[orig-id] is not in the set that @scheme[require-spec]
   describes, a syntax error is reported.}
 
+ @defsubform[(combine-in require-spec ...)]{
+  The union of the @scheme[require-spec]s.}
+
  @defsubform[(only-meta-in phase-level require-spec ...)]{
   Like the combination of @scheme[require-spec]s, but removing any
   binding that is not for @scheme[phase-level], where @scheme[#f] for
@@ -1343,8 +1385,8 @@ pre-defined forms are as follows.
               (for-label require-spec ...)]{Same as 
   @scheme[(for-meta #f require-spec ...)].}
 
- @specsubform[derived-require-spec]{See @secref["require-trans"] for
- information on expanding the set of @scheme[require-spec] forms.}
+ @specsubform[derived-require-spec]{See @scheme[define-require-syntax]
+ for information on expanding the set of @scheme[require-spec] forms.}
 
 @guideintro["module-paths"]{module paths}
 
@@ -1437,7 +1479,7 @@ an identifier can be either imported or defined for a given
 @guideintro["module-provide"]{@scheme[provide]}
 
 @defform/subs[#:literals (protect-out all-defined-out all-from-out rename-out 
-                          except-out prefix-out struct-out for-meta
+                          except-out prefix-out struct-out for-meta combine-out
                           for-syntax for-label for-template)
               (provide provide-spec ...)
               ([provide-spec id
@@ -1447,6 +1489,7 @@ an identifier can be either imported or defined for a given
                              (except-out provide-spec id ...)
                              (prefix-out prefix-id provide-spec)
                              (struct-out id)
+                             (combine-out provide-spec ...)
                              (protect-out provide-spec ...)
                              (for-meta phase-level provide-spec ...)
                              (for-syntax provide-spec ...)
@@ -1465,8 +1508,8 @@ within the module. Also, each export is drawn from a particular
 @tech{phase level} and exported at the same @tech{phase level}.
 
 The syntax of @scheme[provide-spec] can be extended via
-@scheme[define-syntax] with @scheme[make-provide-transformer], but the
-pre-defined forms are as follows.
+@scheme[define-provide-syntax], but the pre-defined forms are as
+follows.
 
  @specsubform[id]{ Exports @scheme[id], which must be @tech{bound}
  within the module (i.e., either defined or imported) at the relevant
@@ -1524,6 +1567,9 @@ pre-defined forms are as follows.
  accessor and mutator bindings of the super-type are @italic{not}
  included by @scheme[struct-out] for export.}
 
+ @defsubform[(combine-out provide-spec ...)]{ The union of the
+ @scheme[provide-spec]s.}
+
  @defsubform[(protect-out provide-spec ...)]{ Like the union of the
  @scheme[provide-spec]s, except that the exports are protected; see
  @secref["modprotect"]. The @scheme[provide-spec] must specify only
@@ -1551,8 +1597,8 @@ pre-defined forms are as follows.
               (for-label provide-spec ...)]{Same as
  @scheme[(for-meta #f provide-spec ...)].}
 
- @specsubform[derived-provide-spec]{See @secref["provide-trans"] for
- information on expanding the set of @scheme[provide-spec] forms.}
+ @specsubform[derived-provide-spec]{See @scheme[define-provide-syntax]
+ for information on expanding the set of @scheme[provide-spec] forms.}
 
 Each export specified within a module must have a distinct symbolic
 export name, though the same binding can be specified with the

@@ -830,7 +830,7 @@
     (raise-type-error 'put-u8 "textual port" port))
   (write-char ch port))
 
-(define (put-string port str [start 0] [count (- (bytes-length bytes) start)])
+(define (put-string port str [start 0] [count (- (string-length str) start)])
   (unless (textual-port? port)
     (raise-type-error 'put-string "textual port" port))
   (write-string (substring str start (+ start count)) port))

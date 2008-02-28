@@ -1766,7 +1766,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
        marks is relatively expensive, but we only do this once per
        definition. */
     if (!bdg)
-      bdg = scheme_stx_moduleless_env(id, 0 /* renames currently don't depend on phase */);
+      bdg = scheme_stx_moduleless_env(id);
     marks = scheme_stx_extract_marks(id);
     if (SCHEME_NULLP(marks) && SCHEME_FALSEP(bdg))
       return sym;
@@ -1791,7 +1791,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
 
   if (!bdg) {
     /* We need lexical binding, if any, too: */
-    bdg = scheme_stx_moduleless_env(id, 0 /* renames currently don't depend on phase */);
+    bdg = scheme_stx_moduleless_env(id);
   }
 
   if (!marks) {
@@ -1833,9 +1833,10 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
 	  break;
 	}
       } else {
-	if (!SCHEME_PAIRP(marks)) {
+        if (!SCHEME_PAIRP(marks)) {
 	  /* To be better than nothing, could only match exactly: */
-	  if (scheme_equal(amarks, marks)) {
+	  if (scheme_equal(amarks, marks)
+              || SCHEME_NULLP(amarks)) {
 	    best_match = SCHEME_CDR(a);
 	    best_match_skipped = 0;
 	  }
