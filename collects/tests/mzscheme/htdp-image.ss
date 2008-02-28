@@ -559,6 +559,20 @@
           (length (filter (λ (x) (equal? (make-color 255 0 0) x))
                           (image->color-list (star 4 5 10 'solid 'red))))))
 
+;; make sure star is relatively white
+(test #t
+      'regular-polygon1
+      (>= 100
+          (length (filter (λ (x) (equal? (make-color 255 0 0) x))
+                          (image->color-list (regular-polygon 4 10 'outline 'red))))))
+
+;; make solid star is relatively colored
+(test #t
+      'regular-polygon2
+      (<= 100
+          (length (filter (λ (x) (equal? (make-color 255 0 0) x))
+                          (image->color-list (regular-polygon 4 10 'solid 'red))))))
+
 (test #t
       'add-line1
       (image=? (overlay (p00 (rectangle 5 4 'solid 'black))
@@ -790,6 +804,7 @@
 (check-on-bitmap 'solid-star (star 4 10 20 'solid 'red))
 (check-on-bitmap 'solid-star/reverse-args (star 4 20 10 'solid 'red))
 (check-on-bitmap 'outline-star (star 4 10 20 'outline 'red))
+(check-on-bitmap 'regular-polygon (regular-polygon 4 10 'outline 'red))
 (check-on-bitmap 'line (line 10 7 'red))
 ; (check-on-bitmap 'text (text "XX" 12 'red)) ;; this test fails for reasons I can't control ... -robby
 (check-on-bitmap 'overlay1 (overlay (p00 (rectangle 1 4 'solid 'blue))

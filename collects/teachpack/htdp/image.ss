@@ -25,6 +25,7 @@
    triangle
    line
    star
+   regular-polygon
    add-line
    text
    
