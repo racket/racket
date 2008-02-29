@@ -98,3 +98,10 @@ The following predicate specifies what a valid image color is:
 @defproc[(overlay [img image?] [img2 image?] [img* image?] ...) image?]{
  Overlays all images on their pinhole (see below).
 }
+
+@defproc[(regular-polygon [s side] [r number?] [m Mode] [c Color] [angle real? 0])]{
+Creates a regular polygon with @scheme[s] sides inscribed in
+a circle of radius @scheme[r], using mode @scheme[m] and
+color @scheme[c]. If an angle is specified, the polygon is rotated by that
+angle.
+}
