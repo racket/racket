@@ -309,7 +309,7 @@
                       (values #t 2)]
                      [(and (eq? #xFF (bytes-ref bstr 0))
                            (eq? #xFE (bytes-ref bstr 1)))
-                      (values #t 1)]
+                      (values #f 2)]
                      [else (values (eq? endianness 'big) 0)])]
                    [else (values (eq? endianness 'big) 0)])])
       (list->string
@@ -325,7 +325,7 @@
              (let ([a (if big? a b)]
                    [b (if big? b a)])
                (cond
-                [(= (bitwise-and a #xD8) #xD8)
+                [(= (bitwise-and a #xFC) #xD8)
                  (if (len . < . (+ pos 4))
                      ;; decoding error
                      (cons #\uFFFD (loop (+ pos 2)))
@@ -335,7 +335,7 @@
                        (let ([c (if big? c d)]
                              [d (if big? d c)])
                          (cond
-                          [(= (bitwise-and c #xDC) #xDC)
+                          [(= (bitwise-and c #xFC) #xDC)
                            ;; A valid surrogate
                            (let ([v (+ #x10000
                                        (bitwise-ior
@@ -347,7 +347,7 @@
                           [else
                            ;; Invalid surrogate.
                            (cons #\uFFFD (loop (+ pos 2)))]))))]
-                [(= (bitwise-and a #xDC) #xDC)
+                [(= (bitwise-and a #xFC) #xDC)
                  ;; invalid surrogate code
                  (cons #\uFFFD (loop (+ pos 2)))]
                 [else
@@ -365,16 +365,18 @@
                   (cond
                    [skip-bom?
                     (values (eq? endianness 'big) 0)]
-                   [(and (len . >= . 4)
-                         (eq? #x00 (bytes-ref bstr 0))
-                         (eq? #x00 (bytes-ref bstr 1)))
+                   [(len . >= . 4)
                     (cond
-                     [(and (eq? #xFE (bytes-ref bstr 2))
+                     [(and (eq? #x00 (bytes-ref bstr 0))
+                           (eq? #x00 (bytes-ref bstr 1))
+                           (eq? #xFE (bytes-ref bstr 2))
                            (eq? #xFF (bytes-ref bstr 3)))
-                      (values #t 2)]
-                     [(and (eq? #xFF (bytes-ref bstr 2))
-                           (eq? #xFE (bytes-ref bstr 3)))
-                      (values #t 1)]
+                      (values #t 4)]
+                     [(and (eq? #xFF (bytes-ref bstr 0))
+                           (eq? #xFE (bytes-ref bstr 1))
+                           (eq? #x00 (bytes-ref bstr 2))
+                           (eq? #x00 (bytes-ref bstr 3)))
+                      (values #f 4)]
                      [else (values (eq? endianness 'big) 0)])]
                    [else (values (eq? endianness 'big) 0)])])
       (list->string

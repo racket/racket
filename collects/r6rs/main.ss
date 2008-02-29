@@ -297,33 +297,34 @@ FIXME:
                              (syntax-case* im (for) symbolic-identifier=?
                                [(for base-im level ...)
                                 (let* ([levels
-                                        (map (lambda (level)
-                                               (syntax-case* level (run expand meta) symbolic-identifier=?
-                                                 [run #'0]
-                                                 [expand #'1]
-                                                 [(meta 0) #'0]
-                                                 [(meta n) #'n]
-                                                 [_
-                                                  (raise-syntax-error
-                                                   #f
-                                                   "bad `for' level"
-                                                   orig
-                                                   level)]))
-                                             (syntax->list #'(level ...)))])
+                                        (cons
+                                         #f
+                                         (map (lambda (level)
+                                                (syntax-case* level (run expand meta) symbolic-identifier=?
+                                                  [run #'0]
+                                                  [expand #'1]
+                                                  [(meta 0) #'0]
+                                                  [(meta n) #'n]
+                                                  [_
+                                                   (raise-syntax-error
+                                                    #f
+                                                    "bad `for' level"
+                                                    orig
+                                                    level)]))
+                                              (syntax->list #'(level ...))))])
                                   (with-syntax ([is (parse-import-set orig #'base-im)])
-                                    (if (null? levels)
-                                        #'()
-                                        (with-syntax ([(level ...) levels]
-                                                      [prelims (datum->syntax orig
-                                                                              'r6rs/private/prelims)])
-                                          #`((for-meta level is prelims) ...)))))]
+                                    (with-syntax ([(level ...) levels]
+                                                  [prelims (datum->syntax orig
+                                                                          'r6rs/private/prelims)])
+                                      #`((for-meta level is prelims) ...))))]
                                [(for . _)
                                 (raise-syntax-error
                                  #f
                                  "bad `for' import form"
                                  orig
                                  im)]
-                               [_ (list (parse-import-set orig im))]))
+                               [_ (let ([m (parse-import-set orig im)])
+                                    (list m `(for-label ,m)))]))
                            (syntax->list #'(im ...)))]
                      [prelims (datum->syntax orig
                                              'r6rs/private/prelims)])
@@ -402,7 +403,13 @@ FIXME:
           (apply
            append
            (map (lambda (local-id ext-id)
-                  (let* ([l (hash-table-get table (syntax-e local-id) null)]
+                  (let* ([l (hash-table-get table (syntax-e local-id)
+                                            (lambda ()
+                                              (raise-syntax-error
+                                               #f
+                                               "no binding for exported identifier"
+                                               #'orig
+                                               local-id)))]
                          [l (filter (lambda (e)
                                       (free-identifier=? (car e) local-id (cdr e)))
                                     l)])

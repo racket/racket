@@ -196,13 +196,15 @@
     port
     (lambda (bytes start end can-buffer/block? enable-breaks?)
       (check-disconnect)
-      (cond
-       [enable-breaks?
-        (parameterize-break #t (write-bytes (subbytes start end) port))]
-       [can-buffer/block?
-        (write-bytes (subbytes start end) port)]
-       [else
-        (write-bytes-avail* (subbytes start end) port)]))
+      (if (= start end)
+          (flush-output port)
+          (cond
+           [enable-breaks?
+            (parameterize-break #t (write-bytes (subbytes start end) port))]
+           [can-buffer/block?
+            (write-bytes (subbytes start end) port)]
+           [else
+            (write-bytes-avail* (subbytes start end) port)])))
     (lambda ()
       (unless disconnected?
         (close-output-port port)))

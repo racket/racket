@@ -1,5 +1,7 @@
 #lang scheme/base
 
+(require (for-syntax scheme/base))
+
 (provide mmap
          mfor-each
          mlist
@@ -66,14 +68,30 @@
    [(null? l) null]
    [else (cons (mcar l) (mlist->list (mcdr l)))]))
 
-(define mlist
-  (case-lambda
-   [() null]
-   [(a) (mcons a null)]
-   [(a b) (mcons a (mcons b null))]
-   [(a b c) (mcons a (mcons b (mcons c null)))]
-   [(a b c d) (mcons a (mcons b (mcons c (mcons d null))))]
-   [l (list->mlist l)]))
+(define-syntax mlist
+  (make-set!-transformer
+   (lambda (stx)
+     (syntax-case stx (set!)
+       [(set! id . _) (raise-syntax-error #f
+                                          "cannot mutate imported variable"
+                                          stx
+                                          #'id)]
+       [(_ a) #'(mcons a null)]
+       [(_ a b) #'(mcons a (mcons b null))]
+       [(_ a b c) #'(mcons a (mcons b (mcons c null)))]
+       [(_ arg ...) #'(-mlist arg ...)]
+       [_ #'-mlist]))))
+
+(define -mlist
+  (let ([mlist
+         (case-lambda
+          [() null]
+          [(a) (mcons a null)]
+          [(a b) (mcons a (mcons b null))]
+          [(a b c) (mcons a (mcons b (mcons c null)))]
+          [(a b c d) (mcons a (mcons b (mcons c (mcons d null))))]
+          [l (list->mlist l)])])
+    mlist))
 
 (define (mlist? l)
   (cond

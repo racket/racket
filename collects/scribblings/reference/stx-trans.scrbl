@@ -403,8 +403,8 @@ and a module-contextless version of @scheme[id-stx] otherwise.
 
 
 @defproc[(syntax-local-certifier [active? boolean? #f])
-         (syntax? (any/c (or/c procedure? false/c)) 
-                  . opt-> . syntax?)]{
+         ((syntax?) (any/c (or/c procedure? false/c)) 
+          . ->* . syntax?)]{
 
 Returns a procedure that captures any certificates currently available
 for @scheme[syntax-local-value] or @scheme[local-expand]. The
@@ -611,7 +611,9 @@ instantiated or visited even if no binding is imported into a module.
 }}
 
 
-@defproc[(syntax-local-require-certifier) (syntax? . -> . syntax?)]{
+@defproc[(syntax-local-require-certifier)
+         ((syntax?) (or/c false/c (syntax? . -> . syntax?)) 
+          . ->* . syntax?)]{
 
 Like @scheme[syntax-local-certifier], but to certify @tech{syntax
 objects} that correspond to @scheme[require] sub-forms, so that
@@ -703,7 +705,9 @@ A structure representing a single imported identifier:
 }}
 
 
-@defproc[(syntax-local-provide-certifier) (syntax? . -> . syntax?)]{
+@defproc[(syntax-local-provide-certifier)
+         ((syntax?) (or/c false/c (syntax? . -> . syntax?)) 
+          . ->* . syntax?)]{
 
 Like @scheme[syntax-local-certifier], but to certify @tech{syntax
 objects} that correspond to @scheme[provide] sub-forms, so that

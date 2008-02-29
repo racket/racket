@@ -1,7 +1,7 @@
 #!r6rs
 
 (library (r6rs private io-conds)
-  (export &i/o make-i/o-error i/o-error
+  (export &i/o make-i/o-error i/o-error?
           &i/o-read make-i/o-read-error i/o-read-error?
           &i/o-write make-i/o-write-error i/o-write-error?
           &i/o-invalid-position make-i/o-invalid-position-error i/o-invalid-position-error? i/o-error-position

@@ -3,10 +3,8 @@
 (require (only-in rnrs/base-6
                   div-and-mod div mod
                   div0-and-mod0 div0 mod0)
-         (only-in rnrs/arithmetic/bitwise-6
-                  bitwise-if
-                  bitwise-first-bit-set
-                  bitwise-copy-bit)
+         rnrs/arithmetic/bitwise-6
+         r6rs/private/num-inline
          (for-syntax r6rs/private/inline-rules))
 
 (provide fixnum?
@@ -30,82 +28,12 @@
             (and (exact-integer? v)
                  (<= -1073741824 v 1073741823)))]))
 
-(define (implementation-restriction who what)
-  (error 'who "implementation restriction: ~e" what))
-
-(define-syntax define-an-fx
-  (syntax-rules ()
-    [(_ orig fx check-result ([(arg ...) (tmp ...)] ...) . rest)
-     (begin
-       (provide fx)
-       (define fx-proc
-         (let ([fx (case-lambda 
-                    [(arg ...)
-                     (unless (fixnum? arg)
-                       (raise-type-error 'fx "fixnum" arg))
-                     ...
-                     (let ([r (orig arg ...)])
-                       (unless (fixnum? r)
-                         (implementation-restriction 'fx r))
-                       r)]
-                    ...
-                    . rest)])
-           fx))
-       (define-syntax fx
-         (inline-rules
-          fx-proc
-          [(_ arg ...)
-           (let ([tmp arg] ...)
-             (if (and (fixnum? tmp) ...)
-                 (let ([v (orig tmp ...)])
-                   (check-result v (fx-proc tmp ...)))
-                 (fx-proc tmp ...)))]
-          ...)))]))
-
-(define-syntax-rule (check v (fx-proc tmp ...))
+(define-syntax-rule (check v alt)
   (if (fixnum? v)
       v
-      (fx-proc tmp ...)))
+      alt))
 
-(define-syntax-rule (nocheck v . _)
-  v)
-
-(define-syntax define-an-fx+rest
-  (syntax-rules ()
-    [(_ orig fx check clauses)
-     (define-an-fx orig fx check clauses
-       [args (for-each (lambda (arg)
-                         (unless (fixnum? args)
-                           (raise-type-error 'fx "fixnum" arg)))
-                       args)
-             (let ([r (apply orig args)])
-               (unless (fixnum? r)
-                 (implementation-restriction 'fx r))
-               r)])]))
-
-
-(define-syntax define-fx
-  (syntax-rules (...)
-    [(_ orig fx [(a) (b c)] check)
-     (define-an-fx orig fx check
-       ([(a) (t1)]
-        [(b c) (t1 t2)]))]
-    [(_ orig fx (a b c (... ...)) check)
-     (define-an-fx+rest orig fx check
-       ([(a b) (t1 t2)]))]
-    [(_ orig fx (a b (... ...)) check)
-     (define-an-fx+rest orig fx check
-       ([(a) (t1)]
-        [(a b) (t1 t2)]))]
-    [(_ orig fx (a) check)
-     (define-an-fx+rest orig fx check
-       ([(a) (t1)]))]
-    [(_ orig fx (a b) check)
-     (define-an-fx orig fx check
-       ([(a b) (t1 t2)]))]
-    [(_ orig fx (a b c) check)
-     (define-an-fx orig fx check
-       ([(a b c) (t1 t2 t3)]))]))
+(define-inliner define-fx fixnum? "fixnum")
 
 (define-fx = fx=? (a b c ...) nocheck)
 (define-fx > fx>? (a b c ...) nocheck)
@@ -155,15 +83,37 @@
 (define-fx bitwise-and fxand (a b ...) nocheck)
 (define-fx bitwise-ior fxior (a b ...) nocheck)
 (define-fx bitwise-xor fxxor (a b ...) nocheck)
-(define-fx bitwise-first-bit-set fxfirst-bit-set (a) nocheck)
-(define-fx bitwise-copy-bit fxcopy-bit (a) nocheck)
 
 (define-syntax-rule (fixnum-bitwise-if a b c)
   (bitwise-ior (bitwise-and a b)
                (bitwise-and (bitwise-not a) c)))
 (define-fx fixnum-bitwise-if fxif (a b c) nocheck)
 
+(define-fx bitwise-length fxlength (a) nocheck)
+(define-fx bitwise-first-bit-set fxfirst-bit-set (a) nocheck)
 
+(define (fxbit-set? n bit)
+  (unless (fixnum? n)
+    (raise-type-error 'fxbit-set? "fixnum" n))
+  (bitwise-bit-set? n bit))
+
+(define (fxcopy-bit n pos bit)
+  (unless (fixnum? n)
+    (raise-type-error 'fxcopy-bit "fixnum" n))
+  (unless (and (exact-nonnegative-integer? pos)
+               (< pos (fixnum-width)))
+    (raise-type-error 'fxcopy-bit "exact integer in [0, 30]" pos))
+  (bitwise-copy-bit n pos bit))
+
+(define (fxcopy-bit-field n start end m)
+  (unless (fixnum? n)
+    (raise-type-error 'fxrotate-bit-field "fixnum" n))
+  (unless (and (exact-nonnegative-integer? end)
+               (< end (fixnum-width)))
+    (raise-type-error 'fxrotate-bit-field "exact integer in [0, 30]" end))
+  (unless (fixnum? m)
+    (raise-type-error 'fxrotate-bit-field "fixnum" m))
+  (bitwise-bit-field n start end m))
 
 (define-syntax-rule (define-shifter fxarithmetic-shift r6rs:fxarithmetic-shift
                       lower-bound bounds adjust)
@@ -198,3 +148,23 @@
   0 "exact integer in [0, 30]" values)
 (define-shifter fxarithmetic-shift-right r6rs:fxarithmetic-shift-right
   0 "exact integer in [0, 30]" -)
+
+
+(define (fxrotate-bit-field n start end count)
+  (unless (fixnum? n)
+    (raise-type-error 'fxrotate-bit-field "fixnum" n))
+  (unless (and (exact-nonnegative-integer? end)
+               (< end (fixnum-width)))
+    (raise-type-error 'fxrotate-bit-field "exact integer in [0, 30]" end))
+  (unless (and (exact-nonnegative-integer? count)
+               (< count (fixnum-width)))
+    (raise-type-error 'fxrotate-bit-field "exact integer in [0, 30]" count))
+  (bitwise-rotate-bit-field n start end count))
+
+(define (fxreverse-bit-field n start end)
+  (unless (fixnum? n)
+    (raise-type-error 'fxrotate-bit-field "fixnum" n))
+  (unless (and (exact-nonnegative-integer? end)
+               (< end (fixnum-width)))
+    (raise-type-error 'fxrotate-bit-field "exact integer in [0, 30]" end))
+  (bitwise-reverse-bit-field n start end))

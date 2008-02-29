@@ -252,7 +252,7 @@
 
 (define (r6rs:string->number s [radix 10])
   (and (regexp-match? rx:number s)
-       (string->number (regexp-replace* #rx"|[0-9]+" s "") radix)))
+       (string->number (regexp-replace* #rx"[|][0-9]+" s "") radix)))
 
 (define-syntax-rule (make-mapper what for for-each in-val val-length val->list)
   (case-lambda
