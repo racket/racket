@@ -2,7 +2,7 @@
 
 (require mzlib/unit
          parser-tools/lex
-         parser-tools/combinator-unit)
+         combinator-parser/combinator-unit)
 
 (define-unit support
   (import)
