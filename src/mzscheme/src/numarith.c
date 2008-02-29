@@ -120,7 +120,7 @@ scheme_add1 (int argc, Scheme_Object *argv[])
     return scheme_bignum_add1(o);
   if (t == scheme_rational_type)
     return scheme_rational_add1(o);
-  if ((t == scheme_complex_type) || (t == scheme_complex_izi_type))
+  if (t == scheme_complex_type)
     return scheme_complex_add1(o);
 
   NEED_NUMBER(add1);
@@ -155,7 +155,7 @@ scheme_sub1 (int argc, Scheme_Object *argv[])
     return scheme_bignum_sub1(o);
   if (t == scheme_rational_type)
     return scheme_rational_sub1(o);
-  if ((t == scheme_complex_type) || (t == scheme_complex_izi_type))
+  if (t == scheme_complex_type)
     return scheme_complex_sub1(o);
   
   NEED_NUMBER(sub1);
@@ -374,10 +374,6 @@ scheme_abs(int argc, Scheme_Object *argv[])
     else
       return scheme_rational_negate(o);
   }
-  if (t == scheme_complex_izi_type) {
-    Scheme_Object *r = IZI_REAL_PART(o);
-    return scheme_abs(1, &r);
-  }
 
   NEED_REAL(abs);
 
@@ -401,9 +397,6 @@ do_bin_quotient(const char *name, const Scheme_Object *n1, const Scheme_Object *
     a[1] = (Scheme_Object *)n2;
     scheme_wrong_type(name, "integer", 1, 2, a);
   }
-
-  if (SCHEME_COMPLEX_IZIP(n1)) n1 = IZI_REAL_PART(n1);
-  if (SCHEME_COMPLEX_IZIP(n2)) n2 = IZI_REAL_PART(n2);
 
   if (SCHEME_INTP(n2) && !SCHEME_INT_VAL(n2))
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO,
@@ -507,9 +500,6 @@ rem_mod (int argc, Scheme_Object *argv[], char *name, int first_sign)
     scheme_wrong_type(name, "integer", 0, argc, argv);
   if (!scheme_is_integer(n2))
     scheme_wrong_type(name, "integer", 1, argc, argv);
-
-  if (SCHEME_COMPLEX_IZIP(n1)) n1 = IZI_REAL_PART(n1);
-  if (SCHEME_COMPLEX_IZIP(n2)) n2 = IZI_REAL_PART(n2);
 
   if (SCHEME_INTP(n2) && !SCHEME_INT_VAL(n2))
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO,

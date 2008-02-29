@@ -11,9 +11,12 @@
 
 All numbers are @deftech{complex numbers}. Some of them are
 @deftech{real numbers}, and all of the real numbers that can be
-represented are also @deftech{rational numbers}. Among the real
-numbers, some are @deftech{integers}, because @scheme[round] applied
-to the number produces the same number.
+represented are also @deftech{rational numbers}, except for
+@as-index{@scheme[+inf.0]} (positive @as-index{infinity}),
+@as-index{@scheme[-inf.0]} (negative infinity), and
+@as-index{@scheme[+nan.0]} (@as-index{not-a-number}). Among the
+rational numbers, some are @deftech{integers}, because @scheme[round]
+applied to the number produces the same number.
 
 Orthogonal to those categories, each number is also either an
 @deftech{exact number} or an @deftech{inexact number}. Unless
@@ -26,8 +29,8 @@ produce inexact results even for exact arguments.
 
 In the case of complex numbers, either the real and imaginary parts
 are both exact or inexact, or the number has an exact zero real part
-and an inexact imaginary part; a complex number with an zero imaginary
-part (inexact or exact) is a real number.
+and an inexact imaginary part; a complex number with an exact zero
+imaginary part is a real number.
 
 Inexact real numbers are implemented as either single- or
 double-precision @as-index{IEEE floating-point numbers}---the latter
@@ -42,13 +45,11 @@ numbers). In particular, adding, multiplying, subtracting, and
 dividing exact numbers always produces an extract result.
 
 Inexact numbers can be coerced to exact form, except for the inexact
-numbers @as-index{@scheme[+inf.0]} (positive @as-index{infinity}),
-@as-index{@scheme[-inf.0]} (negative infinity), and
-@as-index{@scheme[+nan.0]} (@as-index{not-a-number}), which have no
-exact form. @index["division by inexact zero"]{Dividing} a number by
-exact zero raises an exception; dividing a non-zero number other than
-@scheme[+nan.0] by an inexact zero returns @scheme[+inf.0] or
-@scheme[-inf.0], depending on the sign of the dividend.  The
+numbers @scheme[+inf.0], @scheme[-inf.0], and @scheme[+nan.0], which
+have no exact form. @index["division by inexact zero"]{Dividing} a
+number by exact zero raises an exception; dividing a non-zero number
+other than @scheme[+nan.0] by an inexact zero returns @scheme[+inf.0]
+or @scheme[-inf.0], depending on the sign of the dividend.  The
 infinities @scheme[+inf.0] and @scheme[-inf.0] are integers, and they
 answer @scheme[#t] for both @scheme[even?] and @scheme[odd?]. The
 @scheme[+nan.0] value is not an integer and is not @scheme[=] to
@@ -84,26 +85,27 @@ noted above). Two numbers are @scheme[equal?] when they are
 
 
 @defproc[(complex? [v any/c]) boolean?]{ Returns @scheme[(number? #,
- @scheme[v])], because all numbers are complex numbers.}
+ @scheme[v])], because all numbers are @tech{complex numbers}.}
 
 
 @defproc[(real? [v any/c]) boolean?]{ Returns @scheme[#t] if @scheme[v] is
- a real number, @scheme[#f] otherwise. A number with an inexact zero
- imaginary part is a real number.
+ a @techlink{real number}, @scheme[#f] otherwise.
 
-@examples[(real? 1) (real? 2+3i) (real? "hello")]}
+@examples[(real? 1) (real? +inf.0) (real? 2+3i) 
+          (real? 2+0.0i) (real? "hello")]}
 
 
-@defproc[(rational? [v any/c]) boolean?]{ Returns @scheme[(real? #,
- @scheme[v])].}
+@defproc[(rational? [v any/c]) boolean?]{ Returns @scheme[#t] if
+ @scheme[v] is a @techlink{rational number}, @scheme[#f] otherwise.
+
+@examples[(rational? 1) (rational? +inf.0) (real? "hello")]}
 
 
 @defproc[(integer? [v any/c]) boolean?]{ Returns @scheme[#t] if @scheme[v]
- is a number that is an integer, @scheme[#f] otherwise. The inexact
- numbers @scheme[+inf.0] and @scheme[-inf.0] are integers, but
- @scheme[+nan.0] is not.
+ is a number that is an @techlink{integer}, @scheme[#f] otherwise.
 
-@examples[(integer? 1) (integer? 2.3) (integer? 4.0) (integer? 2+3i) (integer? "hello")]}
+@examples[(integer? 1) (integer? 2.3) (integer? 4.0) (integer? +inf.0) 
+          (integer? 2+3i) (integer? "hello")]}
 
 
 @defproc[(exact-integer? [v any/c]) boolean?]{
@@ -125,6 +127,17 @@ Returns @scheme[(and (exact-integer? v) (not (negative? v)))].
 Returns @scheme[(and (exact-integer? v) (positive? v))].
 
 @examples[(exact-positive-integer? 1) (exact-positive-integer? 0)]}
+
+
+@defproc[(inexact-real? [v any/c]) boolean?]{
+
+Returns @scheme[(and (real? v) (inexact? v))].}
+
+
+@defproc[(fixnum? [v any/c]) boolean?]{
+
+Return @scheme[#t] if @scheme[v] is a @techlink{fixnum}, @scheme[#f]
+otherwise.}
 
 
 @defproc[(zero? [z number?]) boolean?]{ Returns @scheme[(= 0 z)].
@@ -405,7 +418,7 @@ used.
 @examples[(sqrt 4/9) (sqrt 2) (sqrt -1)]}
 
 
-@defproc[(integer-sqrt [n integer?]) integer?]{ Returns @scheme[(floor
+@defproc[(integer-sqrt [n integer?]) complex?]{ Returns @scheme[(floor
  (sqrt n))] for positive @scheme[n]. For negative @scheme[n], the result is
  @scheme[(* (integer-sqrt (- n)) 0+i)].
 

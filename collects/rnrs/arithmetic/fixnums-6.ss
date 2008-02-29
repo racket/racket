@@ -13,20 +13,11 @@
          greatest-fixnum)
 ;; Many other provides from macros below
 
-(define (fixnum-width) 30)
-(define (least-fixnum) -1073741824)
-(define (greatest-fixnum) +1073741824)
+(define 64-bit? (fixnum? (expt 2 33)))
 
-(define (r6rs:fixnum? v)
-  (and (exact-integer? v)
-       (<= -1073741824 v 1073741823)))
-
-(define-syntax fixnum?
-  (inline-rules
-   r6rs:fixnum?
-   [(_ a) (let ([v a])
-            (and (exact-integer? v)
-                 (<= -1073741824 v 1073741823)))]))
+(define (fixnum-width) (if 64-bit? 62 30))
+(define (least-fixnum) (if 64-bit? (- (expt 2 62)) -1073741824))
+(define (greatest-fixnum) (if 64-bit? (- (expt 2 62) 1) +1073741823))
 
 (define-syntax-rule (check v alt)
   (if (fixnum? v)

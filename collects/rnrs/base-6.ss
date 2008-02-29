@@ -46,13 +46,8 @@
  procedure?
  
  ;; 11.7.4
- number? complex?
- (rename-out [r6rs:real? real?]
-             [r6rs:rational? rational?]
-             [r6rs:integer? integer?]
-             [real? real-valued?]
-             [rational? rational-valued?]
-             [integer? integer-valued?])
+ number? complex? real? rational? integer?
+ real-valued? rational-valued? integer-valued?
  exact? inexact?
  (rename-out [inexact->exact exact]
              [exact->inexact inexact])
@@ -177,24 +172,27 @@
 
 ;; ----------------------------------------
 
-(define (r6rs:real? n)
-  (and (real? n)
-       (exact? (imag-part n))))
+(define (real-valued? o)
+  (or (real? o)
+      (and (complex? o)
+           (zero? (imag-part o)))))
 
-(define (r6rs:rational? n)
-  (and (rational? n)
-       (r6rs:real? n)
-       (not (and (inexact? n)
-                 (or (eqv? n +inf.0)
-                     (eqv? n -inf.0)
-                     (eqv? n +nan.0))))))
+(define (rational-valued? o)
+  (or (rational? o)
+      (and (complex? o)
+           (zero? (imag-part o))
+           (rational? (real-part o)))))
 
-(define (r6rs:integer? n)
-  (and (integer? n)
-       (r6rs:rational? n)))
+(define (integer-valued? o)
+  (or (integer? o)
+      (and (complex? o)
+           (zero? (imag-part o))
+           (integer? (real-part o)))))
 
 (define (finite? n)
-  (r6rs:real? n))
+  (not (or (eqv? n +inf.0)
+           (eqv? n -inf.0)
+           (eqv? n +nan.0))))
 
 (define (infinite? n)
   (or (eqv? n +inf.0)

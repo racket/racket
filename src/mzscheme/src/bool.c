@@ -204,7 +204,7 @@ int scheme_eqv (Scheme_Object *obj1, Scheme_Object *obj2)
     return scheme_bignum_eq(obj1, obj2);
   else if (t1 == scheme_rational_type)
     return scheme_rational_eq(obj1, obj2);
-  else if ((t1 == scheme_complex_type) || (t1 == scheme_complex_izi_type)) {
+  else if (t1 == scheme_complex_type) {
     Scheme_Complex *c1 = (Scheme_Complex *)obj1;
     Scheme_Complex *c2 = (Scheme_Complex *)obj2;
     return scheme_eqv(c1->r, c2->r) && scheme_eqv(c1->i, c2->i);

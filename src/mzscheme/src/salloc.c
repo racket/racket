@@ -2167,7 +2167,6 @@ long scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
     e = COUNT(SCHEME_BOX_VAL(root));
     break;
   case scheme_complex_type:
-  case scheme_complex_izi_type:
     s = sizeof(Scheme_Complex);
     e = COUNT(((Scheme_Complex *)root)->r) + COUNT(((Scheme_Complex *)root)->i);
     break;

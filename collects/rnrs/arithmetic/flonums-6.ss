@@ -11,23 +11,14 @@
          r6rs/private/num-inline
          (for-syntax r6rs/private/inline-rules))
 
-(provide flonum?
+(provide (rename-out [inexact-real? flonum?])
          real->flonum
          &no-infinities make-no-infinities-violation no-infinities-violation?
          &no-nans make-no-nans-violation no-nans-violation?
          fixnum->flonum)
 ;; More provided via macros
 
-(define (r6rs:flonum? v)
-  (and (real? v) (inexact? v)))
-
-(define-syntax flonum?
-  (inline-rules
-   r6rs:flonum?
-   [(_ a) (let ([v a])
-            (and (real? v) (inexact? v)))]))
-
-(define-inliner define-fl flonum? "flonum")
+(define-inliner define-fl inexact-real? "flonum")
 
 (define-fl = fl=? (a b c ...) nocheck)
 (define-fl > fl>? (a b c ...) nocheck)

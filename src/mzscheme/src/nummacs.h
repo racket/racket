@@ -309,7 +309,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
         return name ## __int_rat(n1, n2); \
        } \
       complexwrap( \
-      if (noniziwrap((t2 == scheme_complex_type) ||) (t2 == scheme_complex_izi_type)) { \
+      if (noniziwrap((t2 == scheme_complex_type))) {        \
         return name ## __int_comp(n1, n2); \
       } \
       ) \
@@ -345,7 +345,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
         return name ## __flt_rat(n1, n2); \
       } \
       complexwrap( \
-      if (noniziwrap((t2 == scheme_complex_type) ||) (t2 == scheme_complex_izi_type)) { \
+       if (noniziwrap((t2 == scheme_complex_type))) { \
         return name ## __flt_comp(n1, n2); \
       } \
       )\
@@ -381,8 +381,8 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
          return name ## __dbl_rat(d1, n1, n2);   \
       } \
       complexwrap( \
-      if (noniziwrap((t2 == scheme_complex_type) ||) (t2 == scheme_complex_izi_type)) { \
-        return name ## __dbl_comp(d1, n1, n2);                           \
+      if (noniziwrap((t2 == scheme_complex_type))) { \
+        return name ## __dbl_comp(d1, n1, n2); \
       } \
       )\
       return name ## __wrong_type(n2); \
@@ -406,7 +406,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
        if (t2 == scheme_rational_type) \
 	 return name ## __big_rat(n1, n2); \
        complexwrap( \
-       if (noniziwrap((t2 == scheme_complex_type) ||) (t2 == scheme_complex_izi_type)) { \
+       if (noniziwrap((t2 == scheme_complex_type))) { \
 	 return name ## __big_comp(n1, n2); \
        } \
        )\
@@ -431,14 +431,14 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
        if (t2 == scheme_rational_type) \
 	 return rop((n1), (n2)); \
        complexwrap( \
-       if (noniziwrap((t2 == scheme_complex_type) ||) (t2 == scheme_complex_izi_type)) { \
+       if (noniziwrap((t2 == scheme_complex_type))) { \
          return name ## __rat_comp(n1, n2); \
        } \
        )\
        return name ## __wrong_type(n2); \
     } \
   complexwrap( \
-  else if (noniziwrap((t1 == scheme_complex_type) ||) (t1 == scheme_complex_izi_type)) \
+  else if (noniziwrap((t1 == scheme_complex_type))) \
     { \
        if (SCHEME_INTP(n2)) \
          return name ## __comp_int(n1, n2); \
@@ -455,7 +455,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
          return name ## __comp_big(n1, n2); \
        if (t2 == scheme_rational_type) \
          return name ## __comp_rat(n1, n2); \
-       if (noniziwrap((t2 == scheme_complex_type) ||) (t2 == scheme_complex_izi_type)) \
+       if (noniziwrap((t2 == scheme_complex_type))) \
 	 return cxop((n1), (n2)); \
        return name ## __wrong_type(n2); \
     } \
@@ -675,7 +675,7 @@ name (int argc, Scheme_Object *argv[]) \
      BIGNUM_MODE(o) \
    } else if (t == scheme_rational_type) { \
      d = scheme_rational_to_double(o); \
-   } else if ((t == scheme_complex_type) || (t == scheme_complex_izi_type)) \
+   } else if (t == scheme_complex_type) \
      return complex_fun(o); \
    else { \
      scheme_wrong_type(#scheme_name, "number", 0, argc, argv); \

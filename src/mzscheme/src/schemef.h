@@ -627,8 +627,8 @@ XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_rational_denominator(const Scheme
 
 MZ_EXTERN Scheme_Object *scheme_make_complex(const Scheme_Object *r, const Scheme_Object *i);
 MZ_EXTERN Scheme_Object *scheme_complex_normalize(const Scheme_Object *n);
-MZ_EXTERN Scheme_Object *scheme_complex_real_part(const Scheme_Object *n);
-MZ_EXTERN Scheme_Object *scheme_complex_imaginary_part(const Scheme_Object *n);
+XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_complex_real_part(const Scheme_Object *n);
+XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_complex_imaginary_part(const Scheme_Object *n);
 
 /* Exact/inexact: */
 XFORM_NONGCING MZ_EXTERN int scheme_is_exact(const Scheme_Object *n);

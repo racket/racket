@@ -98,11 +98,8 @@
 /* This is the log base 2 of the standard memory page size. 14 means 2^14,
    which is 16k. This seems to be a good size for most platforms.
    Under Windows as of 2008, however, the allocation granularity is 64k. */
-#ifdef _WIN32
-# define LOG_APAGE_SIZE 16
-#else
-# define LOG_APAGE_SIZE 14
-#endif
+/* # define LOG_APAGE_SIZE ... see gc2_obj.h */
+#include "gc2_obj.h"
 
 /* the number of tags to use for tagged objects */
 #define NUMBER_OF_TAGS 512
@@ -214,18 +211,7 @@ int GC_mtrace_union_current_with(int newval)
 /* Allocation                                                                */
 /*****************************************************************************/
 
-struct objhead {
-  unsigned long reserved : ((8*WORD_SIZE) - (4+3+LOG_APAGE_SIZE));
-  /* the type and size of the object */
-  unsigned long type : 3;
-  /* these are the various mark bits we use */
-  unsigned long mark : 1;
-  unsigned long btc_mark : 1;
-  /* these are used for compaction et al*/
-  unsigned long moved : 1;
-  unsigned long dead : 1;
-  unsigned long size : LOG_APAGE_SIZE;
-};
+/* struct objhead is defined in gc2_obj.h */
 
 struct mpage {
   struct mpage *next, *prev;
@@ -387,6 +373,11 @@ inline static struct mpage *find_page(void *p)
   DECL_PAGE_MAP;
   FIND_PAGE_MAP(p);
   return page_map[ADDR_BITS(p)];
+}
+
+int GC_is_allocated(void *p)
+{
+  return !!find_page(p);
 }
 
 static size_t round_to_apage_size(size_t sizeb)

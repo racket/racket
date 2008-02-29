@@ -177,7 +177,6 @@ scheme_init_type (Scheme_Env *env)
   set_name(scheme_ephemeron_type, "<ephemeron>");
   set_name(scheme_rational_type, "<fractional-number>");
   set_name(scheme_complex_type, "<complex-number>");
-  set_name(scheme_complex_izi_type, "<inexactly-real-number>");
   set_name(scheme_struct_type_type, "<struct-type>");
   set_name(scheme_listener_type, "<tcp-listener>");
   set_name(scheme_tcp_accept_evt_type, "<tcp-accept-evt>");
@@ -513,7 +512,6 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_rational_type, rational_obj);
   GC_REG_TRAV(scheme_float_type,  float_obj);
   GC_REG_TRAV(scheme_double_type, double_obj);
-  GC_REG_TRAV(scheme_complex_izi_type, complex_obj);
   GC_REG_TRAV(scheme_complex_type, complex_obj);
   GC_REG_TRAV(scheme_char_string_type, string_obj);
   GC_REG_TRAV(scheme_byte_string_type, bstring_obj);

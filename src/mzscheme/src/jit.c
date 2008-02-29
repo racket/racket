@@ -190,6 +190,12 @@ static void register_traversers(void);
 static void release_native_code(void *fnlized, void *p);
 #endif
 
+#ifdef MZ_USE_SINGLE_FLOATS
+# define SCHEME_FLOAT_TYPE scheme_float_type
+#else
+# define SCHEME_FLOAT_TYPE scheme_double_type
+#endif
+
 #define NATIVE_PRESERVES_MARKS 0x1
 #define NATIVE_IS_SINGLE_RESULT 0x2
 
@@ -3429,10 +3435,16 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     generate_inlined_type_test(jitter, app, scheme_integer_type, scheme_complex_type, for_branch, branch_short);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "real?")) {
-    generate_inlined_type_test(jitter, app, scheme_integer_type, scheme_complex_izi_type, for_branch, branch_short);
+    generate_inlined_type_test(jitter, app, scheme_integer_type, scheme_double_type, for_branch, branch_short);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "exact-integer?")) {
     generate_inlined_type_test(jitter, app, scheme_integer_type, scheme_bignum_type, for_branch, branch_short);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "fixnum?")) {
+    generate_inlined_type_test(jitter, app, scheme_integer_type, scheme_integer_type, for_branch, branch_short);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "inexact-real?")) {
+    generate_inlined_type_test(jitter, app, SCHEME_FLOAT_TYPE, scheme_double_type, for_branch, branch_short);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "procedure?")) {
     generate_inlined_type_test(jitter, app, scheme_prim_type, scheme_native_closure_type, for_branch, branch_short);

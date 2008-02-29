@@ -101,6 +101,10 @@ but we start with an enumeration of changes:
    when given a cyclic value, and non-cyclic graph structure (though
    pairs, vectors, and boxes) is not preserved.
 
+ - Complex numbers with inexact-zero imaginary parts are no longer
+   considered real (or rational), and +inf.0, -inf.0, and +nan.0 are
+   no longer considered rational (or integers).
+
  - In fully expanded code, `#%datum' expands to `quote'. When using
    the `mzscheme' language, beware that `if' in expansions is the `if'
    of `scheme/base'. When using the `scheme/base' language, beware

@@ -28,15 +28,17 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include "../gc2/gc2_obj.h"
 
 int scheme_hash_request_count;
 int scheme_hash_iteration_count;
 
 #ifdef MZ_PRECISE_GC
-static short keygen;
+static long keygen;
 XFORM_NONGCING static MZ_INLINE
 long PTR_TO_LONG(Scheme_Object *o)
 {
+  long bits;
   short v;
 
   if (SCHEME_INTP(o))
@@ -47,12 +49,30 @@ long PTR_TO_LONG(Scheme_Object *o)
   if (!(v & 0xFFFC)) {
     if (!keygen)
       keygen += 4;
-    v |= keygen;
+    v |= (short)keygen;
+#ifdef OBJHEAD_HAS_HASH_BITS
+    /* In 3m mode, we only have 14 bits of hash code in the
+       Scheme_Object header. But the GC-level object header has some
+       leftover bits (currently 9 or 41, depending on the platform),
+       so use those, too. */
+    if (GC_is_allocated(o)) {
+      OBJHEAD_HASH_BITS(o) = (keygen >> 16);
+      v |= 0x4000;
+    } else
+      v &= ~0x4000;
+#endif
     o->keyex = v;
     keygen += 4;
   }
 
-  return (o->type << 16) | v;
+#ifdef OBJHEAD_HAS_HASH_BITS
+  if (v & 0x4000)
+    bits = OBJHEAD_HASH_BITS(o);
+  else
+#endif
+    bits = o->type;
+
+  return (bits << 16) | ((v >> 2) & 0xFFFF);
 }
 #else
 # define PTR_TO_LONG(p) ((long)(p))
@@ -166,8 +186,6 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
       _h2 = NULL;
     } else
       _h2 = &h2;
-    if ((long)table->make_hash_indices < 0x100)
-      *(long *)0x0 = 1; /* REMOVEME */
     table->make_hash_indices((void *)key, (long *)&h, (long *)_h2);
     h = h & mask;
     if (_h2) {
@@ -991,7 +1009,6 @@ static long equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
       break;
     }
   case scheme_complex_type:
-  case scheme_complex_izi_type:
     {
       Scheme_Complex *c = (Scheme_Complex *)o;
       k += equal_hash_key(c->r, 0, hi);
@@ -1351,7 +1368,6 @@ static long equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
   case scheme_rational_type:
     return equal_hash_key2(scheme_rational_numerator(o), hi);
   case scheme_complex_type:
-  case scheme_complex_izi_type:
     {
       long v1, v2;
       Scheme_Complex *c = (Scheme_Complex *)o;

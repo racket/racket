@@ -130,7 +130,7 @@ GEN_NARY_COMP(gt_eq, ">=", scheme_bin_gt_eq, SCHEME_REALP, REAL_NUMBER_STR)
 #define COMP_IZI_LT_EQ(a, b) scheme_bin_lt_eq(IZI_REAL_PART(a), IZI_REAL_PART(b))
 #define COMP_IZI_GT_EQ(a, b) scheme_bin_gt_eq(IZI_REAL_PART(a), IZI_REAL_PART(b))
 
-#define GEN_IDENT_FOR_IZI GEN_IDENT
+#define GEN_IDENT_FOR_IZI GEN_OMIT
 
 GEN_BIN_COMP(scheme_bin_eq, "=", EQUAL, EQUAL, scheme_bignum_eq, scheme_rational_eq, scheme_complex_eq, 0, 0, scheme_is_inexact, scheme_is_inexact, GEN_IDENT, GEN_IDENT, "number")
 GEN_BIN_COMP(scheme_bin_lt, "<", LESS_THAN, fLESS_THAN, scheme_bignum_lt, scheme_rational_lt, COMP_IZI_LT, 0, 1, scheme_is_positive, scheme_is_negative, GEN_IDENT_FOR_IZI, GEN_OMIT, REAL_NUMBER_STR)
@@ -142,8 +142,6 @@ int
 scheme_is_zero(const Scheme_Object *o)
 {
   Scheme_Type t;
-
- top:
 
   if (SCHEME_INTP(o))
     return o == zeroi;
@@ -164,12 +162,12 @@ scheme_is_zero(const Scheme_Object *o)
 #endif
     return SCHEME_DBL_VAL(o) == 0.0;
   }
-
-  if (t == scheme_complex_izi_type) {
-    o = IZI_REAL_PART(o);
-    goto top;
+  if (t == scheme_complex_type) {
+    if (scheme_is_zero(scheme_complex_imaginary_part(o)))
+      return scheme_is_zero(scheme_complex_real_part(o));
+    return 0;
   }
-
+  
   if ((t >= scheme_bignum_type) && (t <= scheme_complex_type))
     return 0;
  
@@ -192,8 +190,6 @@ int
 scheme_is_positive(const Scheme_Object *o)
 {
   Scheme_Type t;
-
- top:
 
   if (SCHEME_INTP(o))
     return SCHEME_INT_VAL(o) > 0;
@@ -220,10 +216,6 @@ scheme_is_positive(const Scheme_Object *o)
     return SCHEME_BIGPOS(o);
   if (t == scheme_rational_type)
     return scheme_is_rational_positive(o);
-  if (t == scheme_complex_izi_type) {
-    o = IZI_REAL_PART(o);
-    goto top;
-  }
 
   return -1;
 }
@@ -244,8 +236,6 @@ int
 scheme_is_negative(const Scheme_Object *o)
 {
   Scheme_Type t;
-
- top:
 
   if (SCHEME_INTP(o))
     return SCHEME_INT_VAL(o) < 0;
@@ -272,10 +262,6 @@ scheme_is_negative(const Scheme_Object *o)
     return !SCHEME_BIGPOS(o);
   if (t == scheme_rational_type)
     return !scheme_is_rational_positive(o);
-  if (t == scheme_complex_izi_type) {
-    o = IZI_REAL_PART(o);
-    goto top;
-  }
 
   return -1;
 }
