@@ -1,4 +1,4 @@
-(module esd mzscheme
+#lang scheme/base
 
 (require mzlib/foreign) (unsafe!)
 
@@ -76,5 +76,3 @@
 (defesd* esd-sample-kill  : [_esd] _sample -> _int)
 (provide default-esd)
 (define default-esd (make-parameter (esd-open-sound) esd?))
-
-)

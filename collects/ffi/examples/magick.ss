@@ -1,9 +1,8 @@
-#!/bin/sh
-#|
-exec mzscheme -rg "$0" "$@"
-|#
+#! /usr/bin/env mzscheme
 
-(require (lib "magick.ss" "ffi"))
+#lang scheme/base
+
+(require ffi/magick (for-syntax scheme/base))
 
 (define-syntax (test stx)
   (syntax-case stx ()

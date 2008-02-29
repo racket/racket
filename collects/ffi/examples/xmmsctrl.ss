@@ -1,9 +1,8 @@
-#!/bin/sh
-#|
-exec mzscheme -r "$0" "$@"
-|#
+#! /usr/bin/env mzscheme
 
-(require (prefix xmms- (lib "xmmsctrl.ss" "ffi")))
+#lang scheme/base
+
+(require (prefix-in xmms- ffi/xmmsctrl))
 
 (printf "version: ~s\n" (xmms-get-version))
 (printf "skin: ~s\n" (xmms-get-skin))

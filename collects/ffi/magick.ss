@@ -1,4 +1,4 @@
-(module magick mzscheme
+#lang scheme/base
 
 (require mzlib/foreign) (unsafe!)
 
@@ -29,7 +29,7 @@
             [else x])))) ; can use NULL as a pixel wand (see floodfill)
 
 ;; Use a struct for this because we want to keep the associated image width
-(define-struct PixelIterator (ptr width))
+(define-struct PixelIterator (ptr [width #:mutable]))
 (define _PixelIterator
   (make-ctype _pointer PixelIterator-ptr
     (lambda (ptr)
@@ -1380,7 +1380,7 @@
   (w : _MagickWand = (if (null? args) (NewMagickWand) arg))
   (_file = (if (null? args) arg (car args)))
   -> _status
-  -> (if (null? args) w))
+  -> (if (null? args) w (void)))
 
 ;; MagickReadImageBlob reads an image or image sequence from a blob.
 (defmagick* MagickReadImageBlob :
@@ -2799,5 +2799,3 @@
 
 (defmagick DestroyDrawInfo :
   _DrawInfo -> _void)
-
-)

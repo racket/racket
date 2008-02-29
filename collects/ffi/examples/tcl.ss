@@ -1,9 +1,8 @@
-#!/bin/sh
-#|
-exec mzscheme -r "$0" "$@"
-|#
+#! /usr/bin/env mzscheme
 
-(require (lib "tcl.ss" "ffi"))
+#lang scheme/base
+
+(require ffi/tcl)
 
 (define (tcldemo . strs)
   (for-each (lambda (s)

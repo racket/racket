@@ -1,9 +1,8 @@
-#!/bin/sh
-#|
-exec mzscheme -r "$0" "$@"
-|#
+#! /usr/bin/env mzscheme
 
-(require (lib "xosd.ss" "ffi"))
+#lang scheme/base
+
+(require ffi/xosd)
 
 (define x (xosd-create))
 

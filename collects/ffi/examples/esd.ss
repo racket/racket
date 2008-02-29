@@ -1,9 +1,8 @@
-#!/bin/sh
-#|
-exec mzscheme -r "$0" "$@"
-|#
+#! /usr/bin/env mzscheme
 
-(require (lib "esd.ss" "ffi"))
+#lang scheme/base
+
+(require ffi/esd)
 
 (printf "default = ~s\n" (default-esd))
 (printf "latency = ~s\n" (esd-get-latency))

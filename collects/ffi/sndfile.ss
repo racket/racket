@@ -1,4 +1,4 @@
-(module sndfile mzscheme
+#lang scheme/base
 
 (require mzlib/foreign) (unsafe!)
 
@@ -14,7 +14,7 @@
 ;; translating from c->scheme, ie. creating the object in scheme it will be
 ;; wraped by an object finilazer that uses the libsndfile fuction sf_close that
 ;; return a 0 upon sucsessfull termination or an error.
-(define-struct sndfile (ptr info))
+(define-struct sndfile (ptr [info #:mutable]))
 (define _sndfile
   (make-ctype _pointer sndfile-ptr
     (lambda (p)
@@ -341,5 +341,3 @@
 (provide write-sound*)
 (define (write-sound* file data meta)
   (write-sound-internal file data meta))
-
-)

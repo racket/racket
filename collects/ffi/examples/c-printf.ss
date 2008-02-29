@@ -1,9 +1,8 @@
-#!/bin/sh
-#|
-exec mzscheme -r "$0" "$@"
-|#
+#! /usr/bin/env mzscheme
 
-(require (lib "c-printf.ss" "ffi"))
+#lang scheme/base
+
+(require ffi/c-printf)
 
 (c-printf-is-dangerous!) ; see last example below
 

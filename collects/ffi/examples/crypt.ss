@@ -1,9 +1,8 @@
-#!/bin/sh
-#|
-exec mzscheme -r "$0" "$@"
-|#
+#! /usr/bin/env mzscheme
 
-(require (lib "crypt.ss" "ffi"))
+#lang scheme/base
+
+(require ffi/crypt)
 
 (define passwd "foo")
 (define salt "xz")

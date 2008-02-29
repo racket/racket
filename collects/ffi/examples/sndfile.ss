@@ -1,9 +1,8 @@
-#!/bin/sh
-#|
-exec mzscheme -r "$0" "$@"
-|#
+#! /usr/bin/env mzscheme
 
-(require (lib "sndfile.ss" "ffi"))
+#lang scheme/base
+
+(require ffi/sndfile)
 
 ;; (require (lib "swindle.ss" "swindle"))
 

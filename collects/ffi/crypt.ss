@@ -1,4 +1,4 @@
-(module crypt mzscheme
+#lang scheme/base
 
 (require mzlib/foreign) (unsafe!)
 
@@ -61,5 +61,3 @@
                r
                (loop (- n 8) (cons (string->number (substring bin n (+ n 8)) 2)
                                    r)))))))
-
-)

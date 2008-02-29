@@ -1,4 +1,4 @@
-(module xosd mzscheme
+#lang scheme/base
 
 (require mzlib/foreign) (unsafe!)
 
@@ -102,5 +102,3 @@
 
 (defxosd* xosd-set-bar-length : _xosd _int -> _status)
 (defxosd* xosd-scroll : _xosd _int -> _status)
-
-)

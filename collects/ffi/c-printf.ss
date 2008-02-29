@@ -1,4 +1,4 @@
-(module c-printf mzscheme
+#lang scheme/base
 
 (require mzlib/foreign) (unsafe!)
 
@@ -37,5 +37,3 @@
     (apply printf fmt args)))
 
 (define-unsafer c-printf-is-dangerous!)
-
-)
