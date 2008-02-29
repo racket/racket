@@ -513,12 +513,11 @@ plt/collects/tests/mzscheme/image-test.ss
          [h (+ bottom 1)])
     (make-simple-cache-image-snip w h (floor (/ w 2)) (floor (/ h 2)) draw mask-draw)))
 
-
 (define (regular-polygon sides in-radius mode color [angle 0])
   (check 'regular-polygon 
-         (λ (x) (and (integer? x) (<= 4 sides 10000)))
+         (λ (x) (and (integer? x) (<= 3 sides 10000)))
          sides
-         "positive integer bigger than or equal to 4"
+         "positive integer bigger than or equal to 3"
          "first")
   (check-size 'star in-radius "second")
   (check-mode 'regular-polygon mode "third")
