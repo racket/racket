@@ -1,32 +1,31 @@
-(module structs mzscheme
+(module structs scheme/base
   
-  (provide (all-defined-except make-fail-type))
+  (provide (all-defined-out) #;(except-out make-fail-type))
   
-  (require lazy/force
-           parser-tools/lex)
+  (require parser-tools/lex)
     
   ;fail-src: (list line col pos span loc)
 
   ;make-src-lst: position position -> src-list
   (define (make-src-lst start end)
-    (list (!!! (position-line start))
-          (!!! (position-col start))
-          (!!! (position-offset start))
-          (- (!!! (position-offset end))
-             (!!! (position-offset start)))))
+    (list (position-line start)
+          (position-col start)
+          (position-offset start)
+          (- (position-offset end)
+             (position-offset start))))
   
   ;(make-fail-type float fail-src string int int)
-  (define-struct fail-type (chance src name used may-use) (make-inspector))
+  (define-struct fail-type (chance src name used may-use) #:transparent)
   ;(make-terminal-fail float fail-src string symbol 'a)
   (define-struct (terminal-fail fail-type) (kind found))
   ;(make-sequence-fail float fail-src string symbol (list string) string 'a boolean string)
   (define-struct (sequence-fail fail-type) (id kind correct expected found repeat? last-seen))
   ;(make-choice-fail float fail-src string int (list string) (list fail-type) boolean)
-  (define-struct (choice-fail fail-type) (options names ended? messages) (make-inspector))
+  (define-struct (choice-fail fail-type) (options names ended? messages) #:transparent)
   ;(make-options-fail float #f #f (list fail-type))
   (define-struct (options-fail fail-type) (opts))
   
-  (define (!!!-fail fail)
+  #;(define (!!!-fail fail)
     (let*-values ([(chance src name used may-use)
                    (if (fail-type? fail)
                        (values (!!! (fail-type-chance fail))
@@ -66,11 +65,11 @@
   ;result = res | choice-res | repeat-res | (listof (U res choice-res))
   
   ;(make-res (U #f (listof 'b)) (listof 'a) (U string fail-type) (U string 'a) int) [U #f fail-type] token
-  (define-struct res (a rest msg id used possible-error first-tok) (make-inspector))
+  (define-struct res (a rest msg id used possible-error first-tok) #:transparent)
   ;make-choice-res string (listof res fail-type)
-  (define-struct choice-res (name matches errors) (make-inspector))
+  (define-struct choice-res (name matches errors) #:transparent)
   ;(make-repeat-res answer (U symbol fail-type))
-  (define-struct repeat-res (a stop) (make-inspector))
+  (define-struct repeat-res (a stop) #:transparent)
   
   (define (fail-res rst msg) (make-res #f rst msg "" 0 #f #f))
   

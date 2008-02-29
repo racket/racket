@@ -1,13 +1,10 @@
-(module errors mzscheme
+(module errors scheme/base
   
   (require "structs.scm" "parser-sigs.ss")
   
-  (require lazy/force
-           mzlib/etc
-           mzlib/unit
-           mzlib/list)
-  
-  (provide (all-defined))
+  (require scheme/unit)
+    
+  (provide (all-defined-out))
   
   (define-unit error-formatting@
     (import error-format-parameters^ language-format-parameters^ out^)
@@ -19,9 +16,7 @@
     
     ;fail-type->message: fail-type (listof err) -> err
     (define (fail-type->message fail-type message-to-date)
-      (let* ([fail-type (!!!-fail fail-type)]
-             [input->output-name (!!! input->output-name)]
-             [name (fail-type-name fail-type)]
+      (let* ([name (fail-type-name fail-type)]
              [a (a/an name)]
              [msg (lambda (m) (make-err m (fail-type-src fail-type)))])
         #;(printf "fail-type->message ~a~n" fail-type)
@@ -219,7 +214,7 @@
     
     (define (select-errors opts-list)
       (let* ([composite-winners 
-              (narrow-opts composite (!!list opts-list))]
+              (narrow-opts composite opts-list)]
              
              [chance-used-winners
               (narrow-opts chance-used composite-winners)]

@@ -1,12 +1,10 @@
-(module parser-sigs mzscheme
+(module parser-sigs scheme
   
-  (require mzlib/unit)
-
-  (require (only mzlib/etc opt-lambda))    ; Required for expansion
-  (require parser-tools/lex
-           mzlib/string mzlib/list)
+  (require (only-in (lib "etc.ss") opt-lambda))    ; Required for expansion
+  (require (lib "lex.ss" "parser-tools")
+           (lib "string.ss"))
   
-  (provide (all-defined))
+  (provide (all-defined-out))
   
   (define-signature-form (terminals stx)
     (syntax-case stx ()
@@ -15,9 +13,9 @@
             (andmap identifier? (syntax->list #'(elt ...))))
        (syntax->list #`(elt ...
                         #,@(map (lambda (e) 
-                                  (datum->syntax-object e
-                                                        (string->symbol 
-                                                         (format "token-~a" (syntax-e e)))))
+                                  (datum->syntax e
+                                                 (string->symbol 
+                                                  (format "token-~a" (syntax-e e)))))
                                 (syntax->list #'(elt ...)))))]))
   
   (define-signature language-dictionary^ (misspelled misscap missclass))

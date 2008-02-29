@@ -310,6 +310,12 @@
 	 (build-src 2))])
       
       (ExplicitConstructorInvocation
+       [(this O_PAREN ArgumentList C_PAREN SEMI_COLON)
+	(make-call #f (build-src 5) 
+		       #f (make-special-name #f (build-src 1) "this") (reverse $3) #f)]
+       [(this O_PAREN C_PAREN SEMI_COLON)
+	(make-call #f (build-src 4) 
+		       #f (make-special-name #f (build-src 1) "this") null #f)]
        [(super O_PAREN ArgumentList C_PAREN SEMI_COLON)
 	(make-call #f (build-src 5) 
 		       #f (make-special-name #f (build-src 1) "super") (reverse $3) #f)]
