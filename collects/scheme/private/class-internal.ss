@@ -21,7 +21,9 @@
   ;;  spec for external interface
   ;;--------------------------------------------------------------------
  
-  (provide provide-public-names)
+  (provide provide-public-names 
+           ;; needed for Typed Scheme
+           (protect-out do-make-object find-method/who))
   (define-syntax (provide-public-names stx)
     #'(provide class class* class/derived
                define-serializable-class define-serializable-class*
