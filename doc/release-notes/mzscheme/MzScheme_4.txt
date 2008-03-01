@@ -135,6 +135,9 @@ but we start with an enumeration of changes:
  - In a syntax pattern of the form `(a ... . b)', `b' is now allowed
    to match an empty list.
 
+ - UTF-8 decoding for ports uses #\uFFFD instead of #\? as the
+   replacement character for bad encodings.
+
 ======================================================================
  Porting Advice
 ======================================================================

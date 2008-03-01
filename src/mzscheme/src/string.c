@@ -852,11 +852,11 @@ Scheme_Object *scheme_make_sized_offset_utf8_string(char *chars, long d, long le
   if (len) {
     ulen = scheme_utf8_decode((unsigned char *)chars, d, d + len,
 			      NULL, 0, -1,
-			      NULL, 0 /* not UTF-16 */, '?');
+			      NULL, 0 /* not UTF-16 */, 0xFFFD);
     us = scheme_malloc_atomic(sizeof(mzchar) * (ulen + 1));
     scheme_utf8_decode((unsigned char *)chars, d, d + len,
 		       us, 0, -1,
-		       NULL, 0 /* not UTF-16 */, '?');
+		       NULL, 0 /* not UTF-16 */, 0xFFFD);
 
     us[ulen] = 0;
   } else {
@@ -1291,12 +1291,12 @@ byte_string_to_char_string_latin1 (int argc, Scheme_Object *argv[])
 
 Scheme_Object *scheme_byte_string_to_char_string(Scheme_Object *o)
 {
-  return do_byte_string_to_char_string("s->s", o, 0, SCHEME_BYTE_STRLEN_VAL(o), '?', 0);
+  return do_byte_string_to_char_string("s->s", o, 0, SCHEME_BYTE_STRLEN_VAL(o), 0xFFFD, 0);
 }
 
 Scheme_Object *scheme_byte_string_to_char_string_locale(Scheme_Object *o)
 {
-  return do_byte_string_to_char_string_locale("s->s", o, 0, SCHEME_BYTE_STRLEN_VAL(o), '?');
+  return do_byte_string_to_char_string_locale("s->s", o, 0, SCHEME_BYTE_STRLEN_VAL(o), 0xFFFD);
 }
 
 /************************* string->bytes *************************/
@@ -4166,7 +4166,7 @@ Scheme_Object *scheme_open_converter(const char *from_e, const char *to_e)
     /* Use the built-in UTF-8<->UTF-8 converter: */
     kind = mzUTF8_KIND;
     if (!strcmp(from_e, "UTF-8-permissive"))
-      permissive = '?';
+      permissive = 0xFFFD;
     else
       permissive = 0;
     cd = (iconv_t)-1;
@@ -4176,7 +4176,7 @@ Scheme_Object *scheme_open_converter(const char *from_e, const char *to_e)
 	     && !strcmp(to_e, "platform-UTF-16")) {
     kind = mzUTF8_TO_UTF16_KIND;
     if (!strcmp(from_e, "platform-UTF-8-permissive"))
-      permissive = '?';
+      permissive = 0xFFFD;
     else
       permissive = 0;
     cd = (iconv_t)-1;
@@ -4546,7 +4546,8 @@ static int utf8_decode_x(const unsigned char *s, int start, int end,
 	might_continue => allows -1 result without consuming characters
 
 	permissive is non-zero => use permissive as value for bad byte
-	sequences*/
+	sequences. When generating UTF-8, this must be an ASCII character
+        or U+FFFD. */
 
 {
   int i, j, oki, failmode = -3, state;
@@ -4796,9 +4797,19 @@ static int utf8_decode_x(const unsigned char *s, int start, int end,
 	      j += delta;
 	    } else
 	      break;
-	  } else if (us) {
-	    ((unsigned char *)us)[j] = v;
-	  }
+	  } else if (v == 0xFFFD) {
+            if (j + 3 < dend) {
+              if (us) {
+                ((unsigned char *)us)[j] = 0xEF;
+                ((unsigned char *)us)[j+1] = 0xBF;
+                ((unsigned char *)us)[j+2] = 0xBD;
+              }
+              j += 2;
+            } else
+              break;
+          } else if (us) {
+            ((unsigned char *)us)[j] = v;
+          }
 	}
       } else if (us) {
 	us[j] = v;

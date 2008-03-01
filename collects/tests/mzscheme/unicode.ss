@@ -587,6 +587,8 @@
     (#(#xFFFF) complete
      (#o357 #o277 #o277))))
 
+(define replace-size 3) ; #\uFFFD -> 3 bytes in UTF
+
 (define (string->print s) (map char->integer (string->list s)))
 
 (define bytes->unicode-vector
@@ -672,9 +674,9 @@
 		      (let ([convert
 			     (lambda (prefix)
 			       (test (+ (vector-length code-points) (bytes-length prefix))
-				     bytes-utf-8-length (bytes-append prefix s) #\?)
+				     bytes-utf-8-length (bytes-append prefix s) #\uFFFD)
 			       (test (vector-length code-points)
-				     bytes-utf-8-length (bytes-append prefix s) #\? (bytes-length prefix))
+				     bytes-utf-8-length (bytes-append prefix s) #\uFFFD (bytes-length prefix))
 			       (test (if (equal? prefix #"") 
 					 #f 
 					 (integer->char (bytes-ref prefix 0)))
@@ -682,19 +684,19 @@
 			       (test (if (equal? prefix #"") 
 					 (if (equal? #() code-points)
 					     #f
-					     #\?)
+					     #\uFFFD)
 					 (integer->char (bytes-ref prefix 0)))
-				     bytes-utf-8-ref (bytes-append prefix s) 0 #\?)
+				     bytes-utf-8-ref (bytes-append prefix s) 0 #\uFFFD)
 			       (test (if (equal? #() code-points)
 					 (if (equal? #"" prefix)
 					     #f
 					     (integer->char (bytes-ref prefix (sub1 (bytes-length prefix)))))
 					 (integer->char
 					  (or (vector-ref code-points (sub1 (vector-length code-points)))
-					      (char->integer #\?))))
+					      (char->integer #\uFFFD))))
 				     bytes-utf-8-ref (bytes-append prefix s) 
 				     (max 0 (+ (bytes-length prefix) (sub1 (vector-length code-points))))
-				     #\?)
+				     #\uFFFD)
 
 			       (let-values ([(s2 n status) 
 					     (bytes-convert utf-8-iconv-p (bytes-append prefix s))]
@@ -703,10 +705,18 @@
 				   [(error surrogate1 surrogate2)
 				    (test 'complete 'status status)
 				    (test (+ (bytes-length s) pl) 'n n)
-				    (test (+ (vector-length code-points) pl) bytes-length s2)
+				    (test (+ (* replace-size (vector-length code-points)) 
+                                             (if (and (positive? (vector-length code-points))
+                                                      (eq? (vector-ref code-points (sub1 (vector-length code-points)))
+                                                           #o40))
+                                                 ;; space at end is converted, not replaced by #\xFFFD
+                                                 (- 1 replace-size)
+                                                 0)
+                                             pl) 
+                                          bytes-length s2)
 				    (test (append (bytes->list prefix)
 						  (map 
-						   (lambda (i) (or i (char->integer #\?)))
+						   (lambda (i) (or i (char->integer #\uFFFD)))
 						   (vector->list code-points)))
 					  vector->list (bytes->unicode-vector s2))]
 				   [(error/aborts)
@@ -718,10 +728,10 @@
 							   (vector->list code-points))
 							  ;; indicates how many to be unused due to abort:
 							  (cadddr p))))])
-				      (test (+ (vector-length code-points) pl) bytes-length s2)
+				      (test (+ (* replace-size (vector-length code-points)) pl) bytes-length s2)
 				      (test (append (bytes->list prefix)
 						    (map 
-						     (lambda (i) (or i (char->integer #\?)))
+						     (lambda (i) (or i (char->integer #\uFFFD)))
 						     (vector->list code-points)))
 					    vector->list (bytes->unicode-vector s2)))]
 				   [else
@@ -786,9 +796,9 @@
 				(loop c p))))))))
 		;; Test read-string decoding
 		(let ([us (apply string (map (lambda (i)
-					       (if i (integer->char i) #\?))
+					       (if i (integer->char i) #\uFFFD))
 					     (vector->list code-points)))])
-		  (test us bytes->string/utf-8 s #\?)
+		  (test us bytes->string/utf-8 s #\uFFFD)
 		  (test us read-string (vector-length code-points) (open-input-bytes s))
 		  (test us read-string (* 100 (vector-length code-points)) (open-input-bytes s))
 		  (unless (string=? "" us)
@@ -940,7 +950,7 @@
 			  (test 'complete 'status status)
 			  ;; Should be the same as decoding corrected UTF-8:
 			  (let-values ([(s3 n status) (bytes-convert c (string->bytes/utf-8
-									(bytes->string/utf-8 s #\?)))])
+									(bytes->string/utf-8 s #\uFFFD)))])
 			    (test s3 `(permissive ,s) s2)))))))))
 	    basic-utf-8-tests))
 
@@ -1224,7 +1234,7 @@
       (loop (add1 i)))))
 
 (define (check-all-unicode ? l)
-  (define (unless-in-l ? c)
+  (define (unless-in-l ? code c)
     (and (? c)
 	 (not (member c l))))
   (define (qtest expect f . args)
@@ -1235,9 +1245,9 @@
 	    l)
   (for-each (lambda (r)
 	      (if (caddr r)
-		  (qtest #f unless-in-l ? (integer->char (car r)))
+		  (qtest #f unless-in-l ? (car r) (integer->char (car r)))
 		  (let loop ([i (car r)])
-		    (qtest #f unless-in-l  ? (integer->char i))
+		    (qtest #f unless-in-l  ? i (integer->char i))
 		    (unless (= i (cadr r))
 		      (loop (add1 i))))))
 	    (make-known-char-range-list)))
@@ -1560,7 +1570,11 @@
    (> (+ (if (char-alphabetic? c) 1 0)
 	 (if (char-numeric? c) 1 0)
 	 (if (char-punctuation? c) 1 0)
-	 (if (char-symbolic? c) 1 0))
+	 (if (char-symbolic? c) 
+             (if (char<=? #\u24B6 c #\u24E9)
+                 0 ;; Those are both alphabetic and symbolic
+                 1)
+             0))
       1))
  null)
 

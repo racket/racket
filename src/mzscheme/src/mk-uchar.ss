@@ -1,3 +1,4 @@
+#lang scheme/base 
 
 ;; This script parses UnicodeData.txt (the standard Unicode database,
 ;; available from the web) and other such files, and it produces
@@ -6,13 +7,12 @@
 ;; is used for string operations.
 
 ;; Run as
-;;   mzscheme -r mk-uchar.ss
+;;   mzscheme mk-uchar.ss
 ;; in the script's directory, and have a copy of UnicodeData.txt, etc.
 ;; in the "Unicode" directory. The file schuchar.inc will be
 ;; overwritten.
 
-(require mzlib/list)
-(require mzscheme)
+(require scheme/list)
 
 (define mark-cats '("Mn" "Mc" "Me"))
 (define letter-cats '("Lu" "Ll" "Lt" "Lm" "Lo"))
@@ -195,7 +195,7 @@
 
 ;; This code assumes that Final_Sigma is the only condition that we care about:
 (define special-casings (make-hash-table 'equal))
-(define-struct special-casing (lower upper title folding final-sigma?))
+(define-struct special-casing (lower upper title folding final-sigma?) #:mutable)
 (call-with-input-file "Unicode/SpecialCasing.txt"
   (lambda (i)
     (let loop ()
@@ -215,22 +215,47 @@
 
 (define lower-case  (make-hash-table 'equal))
 (define upper-case  (make-hash-table 'equal))
+(define alphabetic  (make-hash-table 'equal))
 
 (with-input-from-file "Unicode/DerivedCoreProperties.txt"
   (lambda ()
     (let loop ()
       (let ([l (read-line)])
 	(unless (eof-object? l)
-	  (let ([m (regexp-match #rx"^([0-9A-F.]+) *; (Lower|Upper)case" l)])
+	  (let ([m (regexp-match #rx"^([0-9A-F.]+) *; ((Lower|Upper)case|Alphabetic)" l)])
 	    (when m
 	      (let* ([start (string->number (car (regexp-match #rx"^[0-9A-F]+" (car m))) 16)]
 		     [end (let ([m (regexp-match #rx"^[0-9A-F]+[.][.]([0-9A-F]+)" (car m))])
 			    (if m
 				(string->number (cadr m) 16)
 				start))]
-		     [t (if (string=? (caddr m) "Lower") lower-case upper-case)])
+		     [t (cond
+                         [(string=? (caddr m) "Lowercase") lower-case]
+                         [(string=? (caddr m) "Uppercase") upper-case]
+                         [(string=? (caddr m) "Alphabetic") alphabetic]
+                         [else (error "unknown property section")])])
 		(let loop ([i start])
 		  (hash-table-put! t i #t)
+		  (unless (= i end)
+		    (loop (add1 i)))))))
+	  (loop))))))
+
+(define white_spaces  (make-hash-table 'equal))
+
+(with-input-from-file "Unicode/PropList.txt"
+  (lambda ()
+    (let loop ()
+      (let ([l (read-line)])
+	(unless (eof-object? l)
+	  (let ([m (regexp-match #rx"^([0-9A-F.]+) *; White_Space" l)])
+	    (when m
+	      (let* ([start (string->number (car (regexp-match #rx"^[0-9A-F]+" (car m))) 16)]
+		     [end (let ([m (regexp-match #rx"^[0-9A-F]+[.][.]([0-9A-F]+)" (car m))])
+			    (if m
+				(string->number (cadr m) 16)
+				start))])
+		(let loop ([i start])
+		  (hash-table-put! white_spaces i #t)
 		  (unless (= i end)
 		    (loop (add1 i)))))))
 	  (loop))))))
@@ -290,7 +315,7 @@
     (let loop ([prev-code 0])
       (let ([l (read-line i)])
 	(unless (eof-object? l)
-	  (let ([m (regexp-match #rx"^([0-9A-F]+);([^;]*);([^;]*);([^;]*);[^;]*;([^;]*);[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;([^;]*);([^;]*);([^;]*)"
+	  (let ([m (regexp-match #rx"^([0-9A-F]+);([^;]*);([^;]*);([^;]*);[^;]*;([^;]*);[^;]*;([^;]*);[^;]*;[^;]*;[^;]*;[^;]*;([^;]*);([^;]*);([^;]*)"
 				 l)])
 	    (unless m
 	      (printf "no match: ~a~n" l))
@@ -299,74 +324,89 @@
 		  [cat (cadddr m)]
 		  [combining (string->number (cadddr (cdr m)))]
 		  [decomp (cadddr (cddr m))]
-		  [up (string->number (cadddr (cdddr m)) 16)]
-		  [down (string->number (cadddr (cddddr m)) 16)]
-		  [title (string->number (cadddr (cddddr (cdr m))) 16)])
-	      (mapn code
-		    (if (regexp-match #rx", Last>" name)
-			(add1 prev-code)
-			code)
-		    ;; The booleans below are in most-siginficant-bit-first order
-		    (combine
-		     ;; Decomposition
-		     (extract-decomp decomp code)
-		     ;; special-casing
-		     (or (hash-table-get special-casings code (lambda () #f))
-			 (hash-table-get special-case-foldings code (lambda () #f)))
-		     ;; case-ignoreable
-		     (or (member code midletters)
-			 (member cat '("Mn" "Me" "Cf" "Lm" "Sk")))
-		     ;; graphic
-		     (member cat graphic-cats)
-		     ;; lowercase:
-		     (hash-table-get lower-case code (lambda () #f))
-		     #;
-		     (and (not (<= #x2000 code #x2FFF))
-			  (not down)
-			  (or up
-			      (regexp-match #rx"SMALL LETTER" name)
-			      (regexp-match #rx"SMALL LIGATURE" name)))
-		     ;; uppercase;
-		     (hash-table-get upper-case code (lambda () #f))
-		     #;
-		     (and (not (<= #x2000 code #x2FFF))
-			  (not up)
-			  (or down
-			      (regexp-match #rx"CAPITAL LETTER" name)
-			      (regexp-match #rx"CAPITAL LIGATURE" name)))
-		     ;; titlecase:
-		     (string=? cat "Lt")
-		     ;; letter
-		     (member cat letter-cats)
-		     ;; digit
-		     (member cat digit-cats)
-		     ;; SOMETHING - this bit not yet used
-		     #f
-		     ;; whitespace
-		     (or (member cat space-cats)
-			 (member code '(#x9 #xa #xb #xc #xd #x85)))
-		     ;; control
-		     (or (<= #x0000 code #x001F)
-			 (<= #x007F code #x009F))
-		     ;; punctuation
-		     (member cat punc-cats)
-		     ;; symbol
-		     (member cat sym-cats)
-		     ;; blank
-		     (or (string=? cat "Zs")
-			 (= code #x9)))
-		    ;; Cases
-		    (combine-case
-		     (if up (- up code) 0)
-		     (if down (- down code) 0)
-		     (if title (- title code) 0)
-		     (let ([case-fold (hash-table-get case-foldings code (lambda () #f))])
-		       (if case-fold (- case-fold code) 0))
-		     combining)
-		    ;; Category
-		    (combine-cat cat)
-		    ;; Combining class - used again to filter initial composes
-		    combining)
+                  [numeric (cadddr (cdddr m))]
+		  [up (string->number (cadddr (cddddr m)) 16)]
+		  [down (string->number (cadddr (cddddr (cdr m))) 16)]
+		  [title (string->number (cadddr (cddddr (cddr m))) 16)])
+              (let ([alphabetic? (hash-table-get alphabetic code #f)]
+                    [numeric? (not (string=? numeric ""))]
+                    [symbolic? (member cat sym-cats)]
+                    [punctuation? (member cat punc-cats)])
+                (mapn code
+                      (if (regexp-match #rx", Last>" name)
+                          (add1 prev-code)
+                          code)
+                      ;; The booleans below are in most-siginficant-bit-first order
+                      (combine
+                       ;; Decomposition
+                       (extract-decomp decomp code)
+                       ;; special-casing
+                       (or (hash-table-get special-casings code (lambda () #f))
+                           (hash-table-get special-case-foldings code (lambda () #f)))
+                       ;; case-ignoreable
+                       (or (member code midletters)
+                           (member cat '("Mn" "Me" "Cf" "Lm" "Sk")))
+                       ;; graphic
+                       (or alphabetic?
+                           numeric?
+                           symbolic?
+                           punctuation?
+                           (member cat mark-cats))
+                       ;; lowercase:
+                       (hash-table-get lower-case code (lambda () #f))
+                       #;
+                       (and (not (<= #x2000 code #x2FFF))
+                            (not down)
+                            (or up
+                                (regexp-match #rx"SMALL LETTER" name)
+                                (regexp-match #rx"SMALL LIGATURE" name)))
+                       ;; uppercase;
+                       (hash-table-get upper-case code (lambda () #f))
+                       #;
+                       (and (not (<= #x2000 code #x2FFF))
+                            (not up)
+                            (or down
+                                (regexp-match #rx"CAPITAL LETTER" name)
+                                (regexp-match #rx"CAPITAL LIGATURE" name)))
+                       ;; titlecase:
+                       (string=? cat "Lt")
+                       ;; letter
+                       alphabetic?
+                       #;
+                       (member cat letter-cats)
+                       ;; digit
+                       numeric?
+                       #;
+                       (member cat digit-cats)
+                       ;; SOMETHING - this bit not yet used
+                       #f
+                       ;; whitespace
+                       (hash-table-get white_spaces code #f)
+                       #;
+                       (or (member cat space-cats)
+                       (member code '(#x9 #xa #xb #xc #xd #x85)))
+                       ;; control
+                       (or (<= #x0000 code #x001F)
+                           (<= #x007F code #x009F))
+                       ;; punctuation
+                       punctuation?
+                       ;; symbol
+                       symbolic?
+                       ;; blank
+                       (or (string=? cat "Zs")
+                           (= code #x9)))
+                      ;; Cases
+                      (combine-case
+                       (if up (- up code) 0)
+                       (if down (- down code) 0)
+                       (if title (- title code) 0)
+                       (let ([case-fold (hash-table-get case-foldings code (lambda () #f))])
+                         (if case-fold (- case-fold code) 0))
+                       combining)
+                      ;; Category
+                      (combine-cat cat)
+                      ;; Combining class - used again to filter initial composes
+                      combining))
 	      (loop code))))))))
 
 (hash-table-for-each compose-initial-ht
@@ -438,7 +478,7 @@
 (define pos2 0)
 (define pos3 0)
 
-(current-output-port (open-output-file "schuchar.inc" 'truncate/replace))
+(current-output-port (open-output-file "schuchar.inc" #:exists 'truncate/replace))
 
 (define (hash-vectors! top vectors get-pos set-pos!)
   (let loop ([i 0])
@@ -628,7 +668,7 @@
 
 ;; ----------------------------------------
 
-(current-output-port (open-output-file "schustr.inc" 'truncate/replace))
+(current-output-port (open-output-file "schustr.inc" #:exists 'truncate/replace))
 
 (printf "/* Generated by mk-uchar.ss */~n~n")
 

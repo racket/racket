@@ -17,15 +17,15 @@ stream to discover that the stream is not a valid encoding.
 When an input port produces a sequence of bytes that is not a valid
 UTF-8 encoding in a character-reading context, then bytes that
 constitute an invalid sequence are converted to the character
-@litchar{?}. Specifically, bytes 255 and 254 are always converted to
-@litchar{?}, bytes in the range 192 to 253 produce @litchar{?} when
-they are not followed by bytes that form a valid UTF-8 encoding, and
-bytes in the range 128 to 191 are converted to @litchar{?} when they
-are not part of a valid encoding that was started by a preceding byte
-in the range 192 to 253. To put it another way, when reading a
-sequence of bytes as characters, a minimal set of bytes are changed to
-63 (which is the value that @scheme[(char->integer #\?)] produces) so
-that the entire sequence of bytes is a valid UTF-8 encoding.
+@scheme[#\uFFFD]. Specifically, bytes 255 and 254 are always converted
+to @scheme[#\uFFFD], bytes in the range 192 to 253 produce
+@scheme[#\uFFFD] when they are not followed by bytes that form a valid
+UTF-8 encoding, and bytes in the range 128 to 191 are converted to
+@scheme[#\uFFFD] when they are not part of a valid encoding that was
+started by a preceding byte in the range 192 to 253. To put it another
+way, when reading a sequence of bytes as characters, a minimal set of
+bytes are changed to the encoding of @scheme[#\uFFFD] so that the
+entire sequence of bytes is a valid UTF-8 encoding.
 
 See @secref["bytestrings"] for procedures that facilitate
 conversions using UTF-8 or other encodings. See also

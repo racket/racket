@@ -351,9 +351,10 @@ Certain encoding combinations are always available:
  @item{@scheme[(bytes-open-converter "UTF-8-permissive" "UTF-8")] ---
    @index['("UTF-8-permissive")]{the} identity conversion, except that
    any input byte that is not part of a valid encoding sequence is
-   effectively replaced by @scheme[(char->integer #\?)].  (This
-   handling of invalid sequences is consistent with the interpretation
-   of port bytes streams into characters; see @secref["ports"].)}
+   effectively replaced by the UTF-8 encoding sequence for
+   @scheme[#\uFFFD].  (This handling of invalid sequences is
+   consistent with the interpretation of port bytes streams into
+   characters; see @secref["ports"].)}
 
  @item{@scheme[(bytes-open-converter "" "UTF-8")] --- converts from
    the current locale's default encoding (see @secref["encodings"])

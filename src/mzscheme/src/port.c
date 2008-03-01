@@ -1288,7 +1288,7 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, l
     int state = ip->utf8state;
     int n;
     degot += state_len(state);
-    n = scheme_utf8_decode_count((const unsigned char *)buffer, offset, offset + i + 1, &state, 0, '?');
+    n = scheme_utf8_decode_count((const unsigned char *)buffer, offset, offset + i + 1, &state, 0, 0xFFFD);
     degot += (i + 1 - n);
     ip->utf8state = 0; /* assert: state == 0, because we ended with a newline */
   }
@@ -1331,7 +1331,7 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, l
     col -= n;
     for (i = prev_i; i < got; i++) {
       if (buffer[offset + i] == '\t') {
-	n = scheme_utf8_decode_count((const unsigned char *)buffer, offset + prev_i, offset + i, &state, 0, '?');
+	n = scheme_utf8_decode_count((const unsigned char *)buffer, offset + prev_i, offset + i, &state, 0, 0xFFFD);
 	degot += ((i - prev_i) - n);
 	col += n;
 	col = col - (col & 0x7) + 8;
@@ -1339,7 +1339,7 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, l
       }
     }
     if (prev_i < i) {
-      n = scheme_utf8_decode_count((const unsigned char *)buffer, offset + prev_i, offset + i, &state, 1, '?');
+      n = scheme_utf8_decode_count((const unsigned char *)buffer, offset + prev_i, offset + i, &state, 1, 0xFFFD);
       n += state_len(state);
       col += n;
       degot += ((i - prev_i) - n);
@@ -2178,7 +2178,7 @@ long scheme_get_char_string(const char *who,
 	  long ulen, glen;
 	  glen = scheme_utf8_decode_as_prefix((const unsigned char *)s, 0, got + leftover,
 					      buffer, offset, offset + size,
-					      &ulen, 0, '?');
+					      &ulen, 0, 0xFFFD);
 	  if (glen && (ulen < got + leftover)) {
 	    /* Got one, with a decoding error. If we weren't peeking,
 	       don't read the lookahead bytes after all, yet. */
@@ -2221,7 +2221,7 @@ long scheme_get_char_string(const char *who,
 	     sequence in an error. We may have more leftover chars
 	     than we need, but they haven't been read, yet. */
 	  while (leftover && size) {
-	    buffer[offset++] = '?';
+	    buffer[offset++] = 0xFFFD;
 	    total_got++;
 	    --leftover;
 	    --size;
@@ -2248,7 +2248,7 @@ long scheme_get_char_string(const char *who,
 
       glen = scheme_utf8_decode_as_prefix((const unsigned char *)s, 0, got + leftover,
 					  buffer, offset, offset + size,
-					  &ulen, 0, '?');
+					  &ulen, 0, 0xFFFD);
       
       total_got += glen;
       if (glen == size) {
@@ -2268,7 +2268,7 @@ long scheme_get_char_string(const char *who,
 
       /* Leftover bytes must be decoding-error bytes: */
       while (leftover) {
-	buffer[offset++] = '?';
+	buffer[offset++] = 0xFFFD;
 	total_got++;
 	--leftover;
       }
@@ -2401,7 +2401,7 @@ scheme_getc(Scheme_Object *port)
       else {
 	/* This counts as a decoding error. The high bit
 	   on the first character must be set. */
-	return '?';
+	return 0xFFFD;
       }
     } else {
       v = scheme_utf8_decode_prefix((const unsigned char *)s, delta + 1, r, 0);
@@ -2417,7 +2417,7 @@ scheme_getc(Scheme_Object *port)
 	return r[0];
       } else if (v == -2) {
 	/* -2 => decoding error */
-	return '?';
+	return 0xFFFD;
       } else if (v == -1) {
 	/* In middle of sequence; start/continue peeking bytes */
 	delta++;
@@ -2543,8 +2543,8 @@ static int do_peekc_skip(Scheme_Object *port, Scheme_Object *skip,
       if (!delta)
 	return v;
       else {
-	/* This counts as a decoding error, so return '?' */
-	return '?';
+	/* This counts as a decoding error, so return 0xFFFD */
+	return 0xFFFD;
       }
     } else {
       v = scheme_utf8_decode_prefix((const unsigned char *)s, delta + 1, r, 0);
@@ -2552,7 +2552,7 @@ static int do_peekc_skip(Scheme_Object *port, Scheme_Object *skip,
 	return r[0];
       else if (v == -2) {
 	/* -2 => decoding error */
-	return '?';
+	return 0xFFFD;
       } else if (v == -1) {
 	/* In middle of sequence - keep getting bytes. */
 	delta++;
