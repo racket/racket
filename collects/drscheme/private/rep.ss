@@ -581,6 +581,7 @@ TODO
                  get-in-box-port
                  get-insertion-point
                  get-out-port
+                 get-regions
                  get-snip-position
                  get-start-position
                  get-styles-fixed
@@ -604,7 +605,7 @@ TODO
                  position-paragraph
                  release-snip
                  reset-input-box
-                 reset-region
+                 reset-regions
                  run-after-edit-sequence
                  scroll-to-position
                  send-eof-to-in-port 
@@ -847,7 +848,7 @@ TODO
           (cond
             [(in-edit-sequence?) 
              (set! had-an-insert (cons (cons start len) had-an-insert))]
-            [else (update-after-insert)]))
+            [else (update-after-insert start len)]))
         
         ;; private field
         (define had-an-insert '())
@@ -877,8 +878,10 @@ TODO
                   (when (space . > . max-space)
                     (let ([to-delete-end (+ start (- space max-space))])
                       (delete/io start to-delete-end))))))
+            
             (set! prompt-position (get-unread-start-point))
-            (reset-region prompt-position 'end)))
+            (reset-regions (append (all-but-last (get-regions))
+                                   (list (list prompt-position 'end))))))
         
         (define/augment (after-delete x y)
           (unless inserting-prompt?
@@ -992,7 +995,7 @@ TODO
           (send context set-breakables #f #f)
           (send context enable-evaluation))
         
-        (define/augment (submit-to-port? key) 
+        (define/augment (submit-to-port? key)
           (and prompt-position
                (only-whitespace-after-insertion-point)
                (submit-predicate this prompt-position)))
@@ -1009,12 +1012,15 @@ TODO
         
         (define/augment (on-submit)
           (inner (void) on-submit)
-          
           (when (and (get-user-thread) 
                      (thread-running? (get-user-thread)))
             ;; the -2 drops the last newline from history (why -2 and not -1?!)
             (save-interaction-in-history prompt-position (- (last-position) 2))
-            (freeze-colorer)
+            
+            (let* ([old-regions (get-regions)]
+                   [abl (all-but-last old-regions)]
+                   [lst (car (last-pair old-regions))])
+              (reset-regions (append abl (list (list (list-ref lst 0) (last-position))))))
             
             (let ([needs-execution (send context needs-execution)])
               (when (if (preferences:get 'drscheme:execute-warning-once)
@@ -1035,6 +1041,42 @@ TODO
              (λ ()
                ;; clear out the eof object if it wasn't consumed
                (clear-input-port)))))
+        
+        (inherit get-backward-sexp)
+        (define/override (on-local-char key)
+          (let ([start (get-start-position)]
+                [end (get-end-position)]
+                [code (send key get-key-code)])
+            (cond
+              [(not (or (eq? code 'numpad-enter)
+                        (equal? code #\return)
+                        (equal? code #\newline)))
+               (super on-local-char key)]
+              [(and (< end prompt-position)
+                    (= start end)
+                    (get-backward-sexp end))
+               =>
+               (λ (sexp-start)
+                 (copy-down sexp-start end))]
+              [(and (< end prompt-position)
+                    (not (= start end)))
+               (copy-down start end)]
+              [else
+               (super on-local-char key)])))
+        
+        (define/private (copy-down start end)
+          (begin-edit-sequence)
+          (split-snip start)
+          (split-snip end)
+          (let loop ([snip (find-snip start 'after-or-none)])
+            (when snip
+              (let ([pos (+ (get-snip-position snip)
+                            (send snip get-count))])
+                (when (<= pos end)
+                  (insert (send snip copy) (last-position) (last-position))
+                  (loop (send snip next))))))
+          (set-position (last-position) (last-position))
+          (end-edit-sequence))
         
         ;; prompt-position : (union #f integer)
         ;; the position just after the last prompt
@@ -1059,8 +1101,7 @@ TODO
             
             (let ([sp (get-unread-start-point)])
               (set! prompt-position sp)
-              (reset-region sp 'end)
-              (when (is-frozen?) (thaw-colorer))))
+              (reset-regions (append (get-regions) (list (list sp 'end))))))
           (end-edit-sequence)
           (set! inserting-prompt? #f))
         
@@ -1458,7 +1499,7 @@ TODO
           
           ;; clear out repl first before doing any work.
           (begin-edit-sequence)
-          (freeze-colorer)
+          (set! prompt-position #f)
           (reset-input-box)
           (delete (paragraph-start-position 1) (last-position))
           (end-edit-sequence)
@@ -1504,7 +1545,7 @@ TODO
           (set! setting-up-repl? #f)
           
           (set! already-warned? #f)
-          (reset-region (last-position) (last-position))
+          (reset-regions (list (list (last-position) (last-position))))
           (set-unread-start-point (last-position))
           (set-insertion-point (last-position))
           (set-allow-edits #f)
@@ -1653,6 +1694,13 @@ TODO
         
         (inherit set-max-undo-history)
         (set-max-undo-history 'forever)))
+    
+    (define (all-but-last lst)
+      (let loop ([o lst])
+        (cond
+          [(null? o) null]
+          [(null? (cdr o)) null]
+          [else (cons (car o) (loop (cdr o)))])))
     
     (define input-delta (make-object style-delta%))
     (send input-delta set-delta-foreground (make-object color% 0 150 0))

@@ -25,13 +25,13 @@
       (define (reset-cache) (set! back-cache (make-hash-table)))
       
       (define/private (is-open? x)
-        (hash-table-get open-matches-table x (lambda () #f)))
+        (hash-table-get open-matches-table x #f))
       
       (define/private (is-close? x)
-        (hash-table-get close-matches-table x (lambda () #f)))
+        (hash-table-get close-matches-table x #f))
       
       (define/private (matches? open close)
-        (equal? (hash-table-get open-matches-table open (lambda () #f))
+        (equal? (hash-table-get open-matches-table open #f)
                 close))
 
       (define tree (new token-tree%))
@@ -54,7 +54,7 @@
                                           (data (cons #f 0))))
                  (values first next)))))))
       
-      ;; split-tree: natural-number -> 
+      ;; split-tree: natural-number -> void
       ;; Everything at and after pos is marked as invalid.
       ;; pos must not be a position inside of a token.
       (define/public (split-tree pos)
@@ -63,7 +63,7 @@
           (set! tree l)
           (set! invalid-tree r)))
       
-      ;; merget-tree: natural-number ->
+      ;; merget-tree: natural-number -> void
       ;; Makes the num-to-keep last positions that have been marked
       ;; invalid valid again.
       (define/public (merge-tree num-to-keep)
@@ -148,7 +148,7 @@
         (define (not-found)
           (send tree search! pos)
           (values (- pos (cdr (send tree get-root-data))) pos #t))
-        (define already (hash-table-get back-cache pos (lambda () 'todo)))
+        (define already (hash-table-get back-cache pos 'todo))
         (cond
           [(not (eq? 'todo already)) (values already pos #f)]
           [else
