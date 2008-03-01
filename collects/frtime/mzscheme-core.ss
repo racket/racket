@@ -31,7 +31,7 @@
     (if x #t #f))
   
   (define (frp:->boolean x)
-    (lift #f ->boolean x))
+    (lift #t ->boolean x))
   
   (define-syntax frp:if
     (syntax-rules ()
