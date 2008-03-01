@@ -291,11 +291,11 @@
      [(:or sharing reader-command "." "," ",@" "#," "#,@")
       (ret lexeme 'other #f start-pos end-pos)]
 
-     [(:: "#lang " 
+     [(:: (:or "#lang " "#!")
           (:or langchar
                (:: langchar (:* (:or langchar "/")) langchar)))
       (ret lexeme 'other #f start-pos end-pos)]
-     [(:: "#lang " (:* (:& any-char (complement whitespace))))
+     [(:: (:or "#lang " "#!") (:* (:& any-char (complement whitespace))))
       (ret lexeme 'error #f start-pos end-pos)]
      
      [identifier
