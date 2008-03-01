@@ -54,6 +54,7 @@
              transcript-on transcript-off
              (rename cleanse-path expand-path)
              (rename if* if)
+             (rename list list-immutable)
              make-namespace
              #%top-interaction
              (rename datum #%datum)
