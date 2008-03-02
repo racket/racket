@@ -38,19 +38,17 @@
                        map ormap andmap assoc member)
            (rename mzscheme mzscheme:if if)
            (rename "lang-ext.ss" lift lift)
-           (rename "frp-core.ss" super-lift super-lift)
-           (rename "frp-core.ss" behavior? behavior?)
+           (only "frp-core.ss" super-lift behavior? value-now)
            (rename "lang-ext.ss" undefined undefined)
            (rename "lang-ext.ss" undefined? undefined?)
 	   mzlib/class)
-  (require mzlib/list)  
+  (require mzlib/list)
   
   (define-syntax (lifted-send stx)
     (syntax-case stx ()
       [(_ obj meth arg ...)
        (with-syntax ([(obj-tmp) (generate-temporaries '(obj))]
-                     [(arg-tmp ...) (generate-temporaries (syntax->list
-#'(arg ...)))])
+                     [(arg-tmp ...) (generate-temporaries (syntax->list #'(arg ...)))])
          #'(lift #t 
                  (lambda (obj-tmp arg-tmp ...)
                    (send obj-tmp meth arg-tmp ...))
@@ -178,6 +176,7 @@
       [(_ expr clause ...)
        (super-lift (lambda (v) (case v clause ...)) expr)]))
   |#
+  
   (define (split-list acc lst)
     (if (null? (cdr lst))
         (values acc (car lst))
@@ -188,22 +187,14 @@
         '()
         (cons (car lst) (all-but-last (cdr lst)))))
   
-  (define frp:apply/const-fn
-    (lambda (fn . args)
-      (let ([first-args (all-but-last args)]
-            [last-args (first (last-pair args))])
-        (if (behavior? last-args)
-            (super-lift
-             (lambda (last-args)
-               (apply apply fn (append first-args (list last-args))))
-             last-args)
-            (apply apply fn args)))))
-  
   (define frp:apply
     (lambda (fn . args)
-      (if (behavior? fn)
-          (super-lift (lambda (fn) (apply frp:apply/const-fn fn args)) fn)
-          (apply frp:apply/const-fn fn args))))
+      (let* ([first-args (all-but-last args)]
+             [last-args (raise-list-for-apply (first (last-pair args)))])
+        (super-lift
+         (lambda (last-args)
+           (apply apply fn (append first-args (cons last-args empty))))
+         last-args))))
   
   #|
   ;; taken from startup.ss
@@ -263,9 +254,13 @@
   
   (define map
     (case-lambda
-      [(f l) (if (pair? l)
+      [(f l) #;(if (pair? l)
                  (cons (f (car l)) (map f (cdr l)))
-                 null)]
+                 null)
+             (list-match
+              l
+              (lambda (a d) (cons (f a) (map f d)))
+              (lambda () null))]
       [(f l1 l2) (if (and (pair? l1) (pair? l2))
                      (cons (f (car l1) (car l2)) (map f (cdr l1) (cdr l2)))
                      null)]

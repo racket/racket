@@ -123,9 +123,10 @@ from @scheme[accum-e] and @scheme[hold] to construct a behavior.
 @scheme[(accum-b ev init)] is equivalent to @scheme[(hold init
 (accum-e ev init))].}
 
-@defproc[(collect-e [ev event?] [init any/c] [proc (-> any/c any/c any)]) event?]{is similar to
-@scheme[accum-e], except the transformer function is fixed and is
-applied to the current accumulator and the event occurrence.}
+@defproc[(collect-e [ev event?] [init any/c] [proc (-> any/c any/c
+any)]) event?]{is similar to @scheme[accum-e], except the transformer
+function is fixed and is applied to the event occurrence and the
+current accumulator (in that order).}
 
 @defproc[(collect-b [ev event?] [init any/c] [proc (-> any/c any/c any)]) behavior?]{is similar to
 @scheme[collect-e] in the same way as @scheme[accum-b] is similar to

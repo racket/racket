@@ -719,7 +719,7 @@
                                        #;(not (undefined? (signal-value cur-beh))))
                               ;(when (empty? (continuation-mark-set->list
                                ;              (exn-continuation-marks exn) 'frtime))
-                              (fprintf (current-error-port) "exception while updating ~a~n" cur-beh)
+                              ;(fprintf (current-error-port) "exception while updating ~a~n" cur-beh)
                               (set! exn (make-exn:fail
                                          (exn-message exn)
                                          (compose-continuation-mark-sets2
