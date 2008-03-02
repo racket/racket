@@ -25,7 +25,7 @@
 	    [(_ id expr0 expr ...)
 	     "bad syntax (multiple expressions after identifier)"]
 	    [(_ id)
-	     "bad syntax (zero expressions after identifier)"]
+	     "bad syntax (missing expression after identifier)"]
 	    [(_ id . rest)
 	     "bad syntax (illegal use of `.')"])
 	  stx)]
