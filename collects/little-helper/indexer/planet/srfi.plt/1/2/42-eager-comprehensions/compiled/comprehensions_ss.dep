@@ -1,1 +1,0 @@
-("3.99.0.12" (collects #"mzscheme" #"main.ss") (collects #"srfi" #"23.ss") (collects #"mzlib" #"match.ss") (collects #"mzlib" #"plt-match.ss") (collects #"scheme" #"mzscheme.ss") (collects #"syntax" #"stx.ss"))
