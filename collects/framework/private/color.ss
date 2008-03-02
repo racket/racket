@@ -687,7 +687,7 @@ added get-regions
       (when stopped?
         (error 'backward-containing-sexp "called on a color:text<%> whose colorer is stopped."))
       (let loop ((cur-pos position))
-        (let ((p (internal-backward-match cur-pos cutoff)))
+	(let ((p (internal-backward-match cur-pos cutoff)))
           (cond
             ((eq? 'open p) cur-pos)
             ((not p) #f)
@@ -711,6 +711,11 @@ added get-regions
       (when stopped?
         (error 'skip-whitespace "called on a color:text<%> whose colorer is stopped."))
       (cond
+	[(and (eq? direction 'forward)
+	      (= position (last-position)))
+	 position]
+	[(and (eq? direction 'backward) (= position 0))
+	 position]
         [(not (in-colored-region? position))
          position]
         [else
