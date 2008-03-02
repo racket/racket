@@ -3,6 +3,7 @@
            "aux-mixin-macros.ss"
            mzlib/class
            mzlib/string
+           texpict/mrpict
            (all-except mred send-event)
            framework)
   
@@ -279,8 +280,23 @@
               #f
               (car selections-b))))))
   
-  
- 
+  (define ft-canvas%
+    (class (standard-lift canvas%)
+      (inherit get-dc refresh get-width get-height)
+      (init-field pict)
+      (define bitmap #f)
+      (define bitmap-dc #f)
+      (super-new [paint-callback (lambda (canvas dc)
+                                   (unless (and bitmap
+                                                (= (send bitmap get-width) (get-width))
+                                                (= (send bitmap get-height) (get-height)))
+                                     (set! bitmap (make-object bitmap% (get-width) (get-height)))
+                                     (set! bitmap-dc (new bitmap-dc% [bitmap bitmap])))
+                                   (unless (undefined? (value-now pict))
+                                     (send bitmap-dc clear)
+                                     (draw-pict (value-now pict) bitmap-dc 0 0)
+                                     (send dc draw-bitmap bitmap 0 0)))])
+      (for-each-e! (changes pict) (lambda (_) (refresh)))))
   
   ;; Special case widgets
 
