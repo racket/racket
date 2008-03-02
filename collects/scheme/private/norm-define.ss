@@ -22,7 +22,7 @@
 	 (raise-syntax-error
 	  #f
 	  (syntax-case stx ()
-	    [(_ id expr ...)
+	    [(_ id expr0 expr ...)
 	     "bad syntax (multiple expressions after identifier)"]
 	    [(_ id)
 	     "bad syntax (zero expressions after identifier)"]
