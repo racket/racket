@@ -130,6 +130,10 @@ static Scheme_Object *sch_default_write_handler(int argc, Scheme_Object *argv[])
 static Scheme_Object *sch_default_print_handler(int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_default_global_port_print_handler(int argc, Scheme_Object *argv[]);
 
+static int pipe_input_p(Scheme_Object *o);
+static int pipe_output_p(Scheme_Object *o);
+static int pipe_out_ready(Scheme_Output_Port *p);
+
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
@@ -1155,6 +1159,7 @@ typedef struct User_Input_Port {
   Scheme_Object *buffer_mode_proc;
   Scheme_Object *reuse_str;
   Scheme_Object *peeked;
+  Scheme_Object *prefix_pipe;
 } User_Input_Port;
 
 #define MAX_USER_INPUT_REUSE_SIZE 1024
@@ -1208,6 +1213,9 @@ static long user_read_result(const char *who, Scheme_Input_Port *port,
 	} else
 	  val = NULL;
 	n = 0;
+      } else if (evt_ok && pipe_input_p(val)) {
+        ((User_Input_Port *)port->port_data)->prefix_pipe = val;
+        return 0;
       } else if (evt_ok && scheme_is_evt(val)) {
 	/* A peek/read failed, and we were given a evt that unblocks
 	   when the read/peek (at some offset) succeeds. */
@@ -1256,13 +1264,13 @@ static long user_read_result(const char *who, Scheme_Input_Port *port,
 			  (peek
 			   ? (evt_ok
 			      ? (special_ok
-				 ? "non-negative exact integer, eof, evt, #f, or procedure for special"
-				 : "non-negative exact integer, eof, evt, or #f")
+				 ? "non-negative exact integer, eof, evt, pipe input port, #f, or procedure for special"
+				 : "non-negative exact integer, eof, evt, pipe input port, or #f")
 			      : "non-negative exact integer, eof, #f, or procedure for special")
 			   : (evt_ok
 			      ? (special_ok
-				 ? "non-negative exact integer, eof, evt, or procedure for special"
-				 : "non-negative exact integer, eof, or evt")
+				 ? "non-negative exact integer, eof, evt, pipe input port, or procedure for special"
+				 : "non-negative exact integer, eof, evt, or pipe input port")
 			      : "non-negative exact integer, eof, or procedure for special")),
 			  -1, -1, a);
 	return 0;
@@ -1325,6 +1333,30 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
 
   while (1) {
     int nb;
+
+    if (uip->prefix_pipe) {
+      /* Guarantee: if we call into a client, then we're not using the
+         pipe anywhere. */
+      r = scheme_pipe_char_count(uip->prefix_pipe);
+      if (r && (!peek || (SCHEME_INTP(peek_skip) && (SCHEME_INT_VAL(peek_skip) < r)))) {
+        /* Need atomic to ensure the guarantee: this thread shouldn't get 
+           swapped out while it's using the pipe, because another thread might
+           somehow arrive at the port's procedures. (Pipe reading is probably atomic, 
+           anyway, due to the way that pipes are implemented.) */
+        scheme_start_atomic();
+        r = scheme_get_byte_string_unless("custom-port-pipe-read", uip->prefix_pipe,
+                                          buffer, offset, size,
+                                          2, peek, peek_skip,
+                                          unless);
+        scheme_end_atomic_no_swap();
+        return r;
+      } else {
+        /* Setting the pipe to NULL ensures that we don't start using it while
+           we're in the call that we just started. If another thread returns
+           a pipe before the user's code returns, though, all bets are off. */
+        uip->prefix_pipe = NULL;
+      }
+    }
 
     if (uip->reuse_str && (size == SCHEME_BYTE_STRLEN_VAL(uip->reuse_str))) {
       bstr = uip->reuse_str;
@@ -1609,6 +1641,7 @@ typedef struct User_Output_Port {
   Scheme_Object *location_proc;
   Scheme_Object *count_lines_proc;
   Scheme_Object *buffer_mode_proc;
+  Scheme_Object *buffer_pipe;
 } User_Output_Port;
 
 int scheme_user_port_write_probably_ready(Scheme_Output_Port *port, Scheme_Schedule_Info *sinfo)
@@ -1672,6 +1705,18 @@ user_write_result(const char *who, Scheme_Output_Port *port, int evt_ok,
 	return 1; /* turn 0 into 1 to indicate a successful blocking flush */
       else
 	return n;
+    } else if (evt_ok && pipe_output_p(val)) {
+      if (rarely_block || !len) {
+        scheme_arg_mismatch(who,
+			    (rarely_block
+                             ? "bad result for a non-blocking write: "
+                             : "bad result for a flushing write: "),
+			    val);
+      }
+
+      ((User_Output_Port *)port->port_data)->buffer_pipe = val;
+      
+      return 0;
     } else if (evt_ok && scheme_is_evt(val)) {
       /* A write failed, and we were given a evt that unblocks when
 	 the write succeeds. */
@@ -1732,6 +1777,21 @@ user_write_bytes(Scheme_Output_Port *port, const char *str, long offset, long le
 
   while (1) {
 
+    if (uop->buffer_pipe) {
+      if (!rarely_block && len) {
+        if (pipe_out_ready((Scheme_Output_Port *)uop->buffer_pipe)) {
+          /* Need atomic for same reason as using prefix_pipe for input. */
+          scheme_start_atomic();
+          n = scheme_put_byte_string("user output pipe buffer", uop->buffer_pipe,
+                                     str, offset, len,
+                                     1);
+          scheme_end_atomic_no_swap();
+          return n;
+        }
+      }
+      uop->buffer_pipe = NULL;
+    }
+
     /* Disable breaks while calling the port's function: */
     scheme_push_break_enable(&cframe, 0, 0);
 
@@ -1750,7 +1810,9 @@ user_write_bytes(Scheme_Output_Port *port, const char *str, long offset, long le
 	  return 0; /* n == 1 for success, but caller wants 0 */
 	return n;
       }
-      /* else rarely_block == 1, and we haven't written anything. */
+      /* else rarely_block == 1, and we haven't written anything,
+         or rarely_block == 0 and we haven't written anything but we
+         received a pipe. */
     }
 
     scheme_thread_block(0.0);
@@ -1847,6 +1909,9 @@ user_write_special (Scheme_Output_Port *port, Scheme_Object *v, int nonblock)
   v = scheme_apply(uop->write_special_proc, 3, a);
 
   while (1) {
+    if (uop->buffer_pipe)
+      uop->buffer_pipe = NULL;
+
     if (scheme_is_evt(v)) {
       if (!nonblock) {
 	a[0] = v;
@@ -2450,6 +2515,34 @@ static Scheme_Object *pipe_length(int argc, Scheme_Object **argv)
   }
 
   return scheme_make_integer(avail);
+}
+
+static int pipe_input_p(Scheme_Object *o)
+{
+  /* Need an immediate pipe: */
+  if (SAME_TYPE(SCHEME_TYPE(o), scheme_input_port_type)) {
+    Scheme_Input_Port *ip;
+    ip = scheme_input_port_record(o);
+    if (ip->sub_type == scheme_pipe_read_port_type) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+static int pipe_output_p(Scheme_Object *o)
+{
+  /* Need an immediate pipe: */
+  if (SAME_TYPE(SCHEME_TYPE(o), scheme_output_port_type)) {
+    Scheme_Output_Port *op;
+    op = scheme_output_port_record(o);
+    if (op->sub_type == scheme_pipe_write_port_type) {
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 /*========================================================================*/

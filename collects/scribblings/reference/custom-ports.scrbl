@@ -65,13 +65,19 @@ The arguments implement the port as follows:
       @item{a procedure of arity four (representing a ``special''
       result, as discussed further below) and optionally of arity zero,
       but a procedure result is allowed only when
-      @scheme[peek] is not @scheme[#f]; or}
+      @scheme[peek] is not @scheme[#f];}
 
-      @item{a @tech{synchronizable event} (see @secref["sync"])
-      that becomes ready when the read is complete (roughly): the
-      event's value can one of the above three results or another
-      event like itself; in the last case, a reading process loops
-      with @scheme[sync] until it gets a non-event result.}
+      @item{a @techlink{pipe} input port that supplies bytes to be
+      used as long as the pipe has content (see
+      @scheme[pipe-content-length]) or until @scheme[read-in] or
+      @scheme[peek] is called again; or}
+
+      @item{a @tech{synchronizable event} (see @secref["sync"]) other
+      than a pipe input port that becomes ready when the read is
+      complete (roughly): the event's value can one of the above three
+      results or another event like itself; in the last case, a
+      reading process loops with @scheme[sync] until it gets a
+      non-event result.}
 
     }
 
@@ -102,6 +108,18 @@ The arguments implement the port as follows:
     synchronization. Note that improper implementation of such
     synchronization mechanisms might cause a non-blocking read
     procedure to block indefinitely.
+
+    If the result is a pipe input port, then previous
+    @scheme[get-progress-evt] calls whose event is not yet ready must
+    have been the pipe input port itself. Furthermore,
+    @scheme[get-progress-evt] must continue to return the pipe as long
+    as it contains data, or until the @scheme[read-in] or
+    @scheme[peek-in] procedure is called again (instead of using the
+    pipe, for whatever reason). If @scheme[read-in] or
+    @scheme[peek-in] is called, any previously associated pipe (as
+    returned by a previous call) will have been disassociated from the
+    port, and is not in use by any other thread as a result of the
+    previous association.
 
     If @scheme[peek], @scheme[get-progress-evt], and
     @scheme[commit] are all provided and
@@ -155,7 +173,7 @@ The arguments implement the port as follows:
     any values. In particular, @scheme[peek] must not peek
     any values if the progress event is initially ready.
     
-    Unlike @scheme[read-proc], @scheme[peek] should produce
+    Unlike @scheme[read-in], @scheme[peek] should produce
     @scheme[#f] (or an event whose value is @scheme[#f]) if no bytes
     were peeked because the progress event became ready. Like
     @scheme[read-in], a @scheme[0] result indicates that another
@@ -175,17 +193,18 @@ The arguments implement the port as follows:
     The system does not check that multiple peeks return consistent
     results, or that peeking and reading produce consistent results.
 
-    If @scheme[peek] is @scheme[#f], then peeking for the
-    port is implemented automatically in terms of reads, but with
-    several limitations. First, the automatic implementation is not
+    If @scheme[peek] is @scheme[#f], then peeking for the port is
+    implemented automatically in terms of reads, but with several
+    limitations. First, the automatic implementation is not
     thread-safe. Second, the automatic implementation cannot handle
     special results (non-byte and non-eof), so @scheme[read-in] cannot
     return a procedure for a special when @scheme[peek] is
     @scheme[#f]. Finally, the automatic peek implementation is
-    incompatible with progress events, so if @scheme[peek]
-    is @scheme[#f], then @scheme[progress-evt] and
-    @scheme[commit] must be @scheme[#f]. See also
-    @scheme[make-input-port/peek-to-read].}
+    incompatible with progress events, so if @scheme[peek] is
+    @scheme[#f], then @scheme[progress-evt] and @scheme[commit] must
+    be @scheme[#f]. See also @scheme[make-input-port/peek-to-read],
+    which implements peeking in terms of @scheme[read-in] without
+    these constraints.}
 
   @item{@scheme[close] --- a procedure of zero arguments that is
     called to close the port. The port is not considered closed until
@@ -201,7 +220,11 @@ The arguments implement the port as follows:
     default), or a procedure that takes no arguments and returns an
     event. The event must become ready only after data is next read
     from the port or the port is closed. After the event becomes
-    ready, it must remain so. (See also @scheme[semaphore-peek-evt].)
+    ready, it must remain so. See the description of @scheme[read-in]
+    for information about the allowed results of this function when
+    @scheme[read-in] returns a pipe input port. See also
+    @scheme[semaphore-peek-evt], which is sometimes useful for
+    implementing @scheme[get-progress-evt].
 
     If @scheme[get-progress-evt] is @scheme[#f], then
     @scheme[port-provides-progress-evts?] applied to the port will
@@ -732,9 +755,14 @@ procedures.
      @item{@scheme[#f] if no bytes could be written, perhaps because
      the internal buffer could not be completely flushed;}
 
-     @item{a synchronizable event (see @secref["sync"]) that acts like
-     the result of @scheme[write-bytes-avail-evt] to complete the
-     write.}
+     @item{a @techlink{pipe} output port (when buffering is allowed
+     and not when flushing) for buffering bytes as long as the pipe is
+     not full and until @scheme[write-out] or
+     @scheme[write-out-special] is called; or}
+
+     @item{a synchronizable event (see @secref["sync"]) other than a
+     pipe output port that acts like the result of
+     @scheme[write-bytes-avail-evt] to complete the write.}
 
      }
 
@@ -761,8 +789,10 @@ procedures.
 
     The result should never be @scheme[0] if the start and end indices
     are different, otherwise the @exnraise[exn:fail:contract].
-    If a returned integer is larger than the supplied byte-string
-    range, the @exnraise[exn:fail:contract].
+    Similarly, the @exnraise[exn:fail:contract] if @scheme[write-out]
+    returns a pipe output port when buffering is disallowed or when it
+    is called for flushing.  If a returned integer is larger than the
+    supplied byte-string range, the @exnraise[exn:fail:contract].
 
     The @scheme[#f] result should be avoided, unless the next write
     attempt is likely to work. Otherwise, if data cannot be written,

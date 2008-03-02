@@ -305,7 +305,7 @@
 (define (no-op-transcoder? t)
   (or (eq? t utf8-transcoder)
       (and (eq? utf-8 (transcoder-codec t))
-           (memq (transcoder-eol-style t) '(lf none))
+           (eq? (transcoder-eol-style t) 'none)
            (eq? 'replace (transcoder-error-handling-mode t)))))
 
 (define (transcode-input p t)
@@ -320,7 +320,9 @@
                                [(raise) #f]
                                [(ignore) #""]
                                [(replace) (string->bytes/utf-8 "\uFFFD")])
-                             #t))))
+                             #t
+                             (object-name p)
+                             (not (eq? (transcoder-eol-style t) 'none))))))
 
 (define (transcode-output p t)
   (let ([p (cond
@@ -329,7 +331,7 @@
             [(binary-input/output-port? p)
              ((binary-input/output-port-out-disconnect p))]
             [else p])])
-    (if (eq? t utf8-transcoder)
+    (if (no-op-transcoder? t)
         p
         (reencode-output-port p 
                               (codec-enc (transcoder-codec t))
@@ -337,7 +339,17 @@
                                 [(raise) #f]
                                 [(ignore) #""]
                                 [(replace) (string->bytes/utf-8 "\uFFFD")])
-                              #t))))
+                              #t
+                              (object-name p)
+                              (case (transcoder-eol-style t)
+                                [(lf none) #f]
+                                [(cr) #"\r"]
+                                [(crlf) #"\r\n"]
+                                [(nel) (string->bytes/utf-8 "\u85")]
+                                [(crnel) (string->bytes/utf-8 "\r\u85")]
+                                [(ls) (string->bytes/utf-8 "\u2028")]
+                                [else (error 'transcoded-port "unknown eol style: ~e" 
+                                             (transcoder-eol-style t))])))))
 
 (define (transcoded-port p t)
   (unless (and (port? p)
@@ -868,10 +880,10 @@
                       (for ([c (in-string v)])
                         (cond
                          [(eq? c #\") (display "\\\"" p)]
-                         [(eq? c #\\) (display "\\n" p)]
+                         [(eq? c #\\) (display "\\\\" p)]
                          [(char-graphic? c) (write-char c p)]
                          [(char-blank? c) (write-char c p)]
-                         [(eq? c #\newline) (display "\\\\" p)]
+                         [(eq? c #\newline) (display "\\n" p)]
                          [(eq? c #\return) (display "\\r" p)]
                          [else
                           (display "\\x" p)

@@ -346,7 +346,7 @@
 		    (if (zero? n)
 			(let ([lifted-lambdas (compiler:get-lifted-lambdas)]
 			      [once-closures (compiler:get-once-closures-list)])
-			  
+
 			  (let ([naya (append lifted-lambdas once-closures)])
 			    (set-block-magics! s:file-block (append (map (lambda (x) #f) naya)
 								    (block-magics s:file-block)))

@@ -2456,13 +2456,19 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 
       (void)jit_calli(code);
 
-      /* Whether we call a prim, a native, or something else,
-	 scheme_current_runstack is up-to-date --- unless
-         it was a direct-prim call with 1 argument. */
-      if (direct_prim && (num_rands == 1))
+      if (direct_prim) {
+        if (num_rands == 1) {
+          /* Popped single argument after return of prim: */
+          jitter->need_set_rs = 1;
+        } else {
+          /* Runstack is up-to-date: */
+          jitter->need_set_rs = 0;
+        }
+      } else {
+        /* Otherwise, we may have called native code, which may have left
+           the runstack register out of sync with scheme_current_runstack. */
         jitter->need_set_rs = 1;
-      else
-        jitter->need_set_rs = 0;
+      }
     }
   }
 

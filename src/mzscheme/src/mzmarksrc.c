@@ -1277,6 +1277,7 @@ mark_user_input {
   gcMARK(uip->close_proc);
   gcMARK(uip->reuse_str);
   gcMARK(uip->peeked);
+  gcMARK(uip->prefix_pipe);
  size:
   gcBYTES_TO_WORDS(sizeof(User_Input_Port));
 }
@@ -1294,6 +1295,7 @@ mark_user_output {
   gcMARK(uop->count_lines_proc);
   gcMARK(uop->buffer_mode_proc);
   gcMARK(uop->close_proc);
+  gcMARK(uop->buffer_pipe);
  size:
   gcBYTES_TO_WORDS(sizeof(User_Output_Port));
 }

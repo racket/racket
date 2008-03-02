@@ -3155,6 +3155,7 @@ static int mark_user_input_MARK(void *p) {
   gcMARK(uip->close_proc);
   gcMARK(uip->reuse_str);
   gcMARK(uip->peeked);
+  gcMARK(uip->prefix_pipe);
   return
   gcBYTES_TO_WORDS(sizeof(User_Input_Port));
 }
@@ -3172,6 +3173,7 @@ static int mark_user_input_FIXUP(void *p) {
   gcFIXUP(uip->close_proc);
   gcFIXUP(uip->reuse_str);
   gcFIXUP(uip->peeked);
+  gcFIXUP(uip->prefix_pipe);
   return
   gcBYTES_TO_WORDS(sizeof(User_Input_Port));
 }
@@ -3197,6 +3199,7 @@ static int mark_user_output_MARK(void *p) {
   gcMARK(uop->count_lines_proc);
   gcMARK(uop->buffer_mode_proc);
   gcMARK(uop->close_proc);
+  gcMARK(uop->buffer_pipe);
   return
   gcBYTES_TO_WORDS(sizeof(User_Output_Port));
 }
@@ -3213,6 +3216,7 @@ static int mark_user_output_FIXUP(void *p) {
   gcFIXUP(uop->count_lines_proc);
   gcFIXUP(uop->buffer_mode_proc);
   gcFIXUP(uop->close_proc);
+  gcFIXUP(uop->buffer_pipe);
   return
   gcBYTES_TO_WORDS(sizeof(User_Output_Port));
 }

@@ -1225,6 +1225,11 @@ XFORM_NONGCING static int pipe_char_count(Scheme_Object *p)
     return 0;
 }
 
+int scheme_pipe_char_count(Scheme_Object *p)
+{
+  return pipe_char_count(p);
+}
+
 /****************************** main input reader ******************************/
 
 static void post_progress(Scheme_Input_Port *ip)

@@ -44,7 +44,22 @@ input ports as it becomes available.}
                                              procedure?
                                              evt?
                                              false/c)))]
-          [close (-> any)]) 
+          [close (-> any)]
+          [get-location (or/c 
+                         (() 
+                          . ->* . 
+                          ((or/c positive-exact-integer? false/c)
+                           (or/c nonnegative-exact-integer? false/c)
+                           (or/c positive-exact-integer? false/c)))
+                         false/c)
+                        #f]
+          [count-lines! (-> any) void]
+          [init-position positive-exact-integer? 1]
+          [buffer-mode (or/c (case-> ((one-of/c 'block 'none) . -> . any)
+                                     (-> (one-of/c 'block 'none #f)))
+                             false/c)
+                       #f]
+          [buffering? any/c #f])
          input-port?]{
 
 Similar to @scheme[make-input-port], but if the given @scheme[read-in]
@@ -56,14 +71,24 @@ automatically. The resulting port is thread-safe, but not kill-safe
 (i.e., if a thread is terminated or suspended while using the port,
 the port may become damaged).
 
-The @scheme[read-in] and @scheme[close] procedures are the same as for
-@scheme[make-input-port]. The @scheme[fast-peek] argument can be
-either @scheme[#f] or a procedure of three arguments: a byte string to
-receive a peek, a skip count, and a procedure of two arguments. The
-@scheme[fast-peek] procedure can either implement the requested peek,
-or it can dispatch to its third argument to implement the peek. The
-@scheme[fast-peek] is not used when a peek request has an associated
-progress event.}
+The @scheme[read-in], @scheme[close], @scheme[get-lcoation],
+@scheme[count-lines!], @scheme[init-position], and
+@scheme[buffer-mode] procedures are the same as for
+@scheme[make-input-port].
+
+The @scheme[fast-peek] argument can be either @scheme[#f] or a
+procedure of three arguments: a byte string to receive a peek, a skip
+count, and a procedure of two arguments. The @scheme[fast-peek]
+procedure can either implement the requested peek, or it can dispatch
+to its third argument to implement the peek. The @scheme[fast-peek] is
+not used when a peek request has an associated progress event.
+
+The @scheme[buffering?] argument determines whether @scheme[read-in]
+can be called to read more characters than are immediately demanded by
+the user of the new port. If @scheme[buffer] mode is not @scheme[#f],
+then @scheme[buffering?] determines the initial buffer mode, and
+@scheme[buffering?] is enabled after a buffering change only if the
+new mode is @scheme['block].}
 
 
 @defproc[(make-limited-input-port [in input-port?]
@@ -162,12 +187,16 @@ it defaults to @scheme[0].}
                               [encoding string?]
                               [error-bytes (or/c false/c bytes?)]
                               [close? any/c #t]
-                              [name any/c (object-name in)])
+                              [name any/c (object-name in)]
+                              [convert-newlines? any/c #f])
          input-port?]{
 
 Produces an input port that draws bytes from @scheme[in], but converts
 the byte stream using @scheme[(bytes-open-converter encoding-str
-"UTF-8")].
+"UTF-8")]. In addition, if @scheme[convert-newlines?] is true, then
+decoded sequences that correspond to UTF-8 encodings of @scheme["\r\n"],
+@scheme["\r\x85"], @scheme["\r"], @scheme["\x85"], and @scheme["\u2028"]
+are all converted to the UTF-8 encoding of @scheme["\n"].
  
 If @scheme[error-bytes] is provided and not @scheme[#f], then the
 given byte sequence is used in place of bytes from @scheme[in] that
@@ -191,15 +220,16 @@ incomplete encoding sequence.)}
                                [error-bytes (or/c false/c bytes?)]
                                [close? any/c #t]
                                [name any/c (object-name out)]
-                               [buffer (one-of/c 'block 'line 'none)
-                                       (if (file-stream-port? out)
-                                           (file-stream-buffer-mode out)
-                                           'block)])
+                               [newline-bytes (or/c false/c bytes?) #f])
          output-port?]{
 
 Produces an output port that directs bytes to @scheme[out], but
-converts its byte stream using @scheme[(bytes-open-converter
-encoding-str "UTF-8")].
+converts its byte stream using @scheme[(bytes-open-converter "UTF-8"
+encoding-str)]. In addition, if @scheme[newline-bytes] is not
+@scheme[#f], then byets written to the port that are the UTF-8
+encoding of @scheme["\n"] are first converted to
+@scheme[newline-bytes] (before applying the convert from UTF-8 to
+@scheme[encoding-str]).
  
 If @scheme[error-bytes] is provided and not @scheme[#f], then the
 given byte sequence is used in place of bytes send to the output port
@@ -210,14 +240,14 @@ If @scheme[close?] is true, then closing the result output port also
 closes @scheme[out]. The @scheme[name] argument is used as the name of
 the result output port.
 
-The @scheme[buffer] argument determines the buffer mode of the output
-port. In @scheme['block] mode, the port's buffer is flushed only when
-it is full or a flush is requested explicitly. In @scheme['line] mode,
-the buffer is flushed whenever a newline or carriage-return byte is
-written to the port. In @scheme['none] mode, the port's buffer is
-flushed after every write.  Implicit flushes for @scheme['line] or
-@scheme['none] leave bytes in the buffer when they are part of an
-incomplete encoding sequence.
+The resulting port supports buffering, and the initial buffer mode is
+@scheme[(or (file-stream-buffer-mode out) 'block)]. In @scheme['block]
+mode, the port's buffer is flushed only when it is full or a flush is
+requested explicitly. In @scheme['line] mode, the buffer is flushed
+whenever a newline or carriage-return byte is written to the port. In
+@scheme['none] mode, the port's buffer is flushed after every write.
+Implicit flushes for @scheme['line] or @scheme['none] leave bytes in
+the buffer when they are part of an incomplete encoding sequence.
 
 The resulting output port does not support atomic writes. An explicit
 flush or special-write to the output port can hang if the most
