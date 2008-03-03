@@ -74,22 +74,22 @@ following fields are used:
 
  @item{@scheme[name] : The name of the collection as a string.}
 
+ @item{@scheme[compile-omit-paths] : A list of immediate file and
+       directory names; all Scheme files (and subdirectories, if
+       @scheme[compile-subcollections] is set) in the collection are
+       compiled except for ones in this list.  Alternatively, the
+       field can be set to @scheme['all], which is equivalent to
+       specifying all files and directories, and effectively makes the
+       collection ignored completely.
+
+       Files that are required by other files that are compiled,
+       however, are always compiled in the process, even when listed
+       with this field, or when it is @scheme['all].}
+
  @item{@scheme[compile-omit-files] : A list of filenames (without
-       directory paths); all Scheme files in the collection are
-       compiled except for the files in this list.  Files that are
-       required by other files that are compiled, however, will get
-       compiled in the process, even when listed with this field.}
-
- @item{@scheme[compile-zo-omit-files] : A List of filenames to extend
-       the list for @scheme[compile-omit-files]. Historically, this
-       list of files was not used for other compilation modes that are
-       no longer supported.}
-
- @item{@scheme[compile-subcollections] : A list of collection paths,
-       where each path is a list of strings specifying a collection
-       (from the collection root, not relative).
-       @scheme[compile-collection-extension] is applied to
-       each of the collections.}
+       directory paths); that are not compiled, in addition to the
+       contents of @scheme[compile-omit-paths].  Do not use this
+       field: it is for backward compatibility.}
 }
 
 Only the @scheme[name] field is required from @filepath{info.ss},
@@ -197,15 +197,10 @@ A @scheme[#f] value for the parameter keeps intermediate @filepath{.c}
 and @filepath{.o} files generated during compilation via C. The
 default is @scheme[#t].}
 
+@defparam[compile-subcollections cols (one-of/c #t #f)]{
 
-@defparam[compile-subcollections cols (or/c (listof (listof string?)) (one-of/c #t))]{
-
-A parameter that specifies sub-collections for
-@scheme[compile-collection-zos] to compile. A @scheme[#t] value
-indicates that the collection's @filepath{info.ss} should be used, or
-that sub-collections should be determined automatically by looking for
-sub-directories that contain @filepath{info.ss} files. The default is
-@scheme[#t].}
+A parameter that specifies whether sub-collections are compiled by
+@scheme[compile-collection-zos].  The default is @scheme[#t].}
 
 
 @defboolparam[compile-for-embedded embed?]{

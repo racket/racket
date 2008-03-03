@@ -100,6 +100,16 @@ accepted by the @|setup-plt| executable.
 
 @subsection{Compiling and Setting Up All Collections}
 
+The @|setup-plt| executable attempts to compile and set up all
+collections (all directories in the collects hierarchy).  Some
+collections are not really libraries (e.g., the @filepath{icons}
+collection); this is fine since nothing is done when there are no
+source files in the directory.
+
+Collections are compiled using the @scheme[compile-collection-zos]
+procedure.
+
+@;{
 The @|setup-plt| executable attempts to compile and set up any
 collection that:
 
@@ -118,6 +128,7 @@ Collections that meet this criteria are compiled using the
 @scheme[compile-collection-zos] procedure (which means that even if a
 collection has no @filepath{info.ss} file, its modules will get
 compiled if they are used by other compiled modules).
+;}
 
 
 @; ------------------------------------------------------------------------
@@ -144,7 +155,7 @@ Optional @filepath{info.ss} fields trigger additional setup actions:
    of the @filepath{info.ss} file.
 
    In addition,
-   
+
    @schemeblock[
     (build-aux-from-path
      (build-path (collection-path #,(nonterm "colls") _...) #,(nonterm "suffixless-file")))
@@ -161,10 +172,7 @@ Optional @filepath{info.ss} fields trigger additional setup actions:
    @scheme[mzscheme-launcher-libraries], then the flags will override
    the libraries, but the libraries can still be used to specify a
    name for @scheme[build-aux-from-path] (to find related information
-   like icon files etc).
-
-   If @scheme[compile-subcollections] mentions a subcollection with
-   this field, the executable is also set up for that subcollection.}
+   like icon files etc).}
 
  @item{@scheme[mzscheme-launcher-libraries] : @scheme[(listof
    path-string?)] --- A list of library names in parallel to

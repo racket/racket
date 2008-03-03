@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define name "Little Helper")
+(define compile-omit-paths '("web-root"))

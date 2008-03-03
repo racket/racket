@@ -21,4 +21,3 @@
         (javac "Canvas.java")
         (javac "SillyCanvas.java")
         (javac "World.java")))))
-           

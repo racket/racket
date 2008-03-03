@@ -6,4 +6,4 @@
 (define tool-urls (list "http://www.plt-scheme.org/software/slideshow/"))
 (define mred-launcher-libraries (list "start.ss"))
 (define mred-launcher-names (list "Slideshow"))
-(define compile-omit-files (list "initial-ones.ss" "pict-snipclass.ss"))
+(define compile-omit-paths '("initial-ones.ss" "pict-snipclass.ss" "examples"))

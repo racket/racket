@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define compile-omit-files
+(define compile-omit-paths
   '("config-lang-test.ss" "drscheme-jr.ss" "drscheme-test.ss" 
     "event-efficency.ss" ;"language-test.ss"
     "launcher.ss"

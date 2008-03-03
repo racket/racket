@@ -2,7 +2,7 @@
 
 (define game "paint-by-numbers.ss")
 (define game-set "Puzzle Games")
-(define compile-omit-files
+(define compile-omit-paths
   '(;; Skipped because it's huge - lots of data-encoding units
     "all-problems.ss"
     ;; Skipped because it requires all-problems.ss
@@ -17,4 +17,9 @@
     "raw-misc.ss"
     "build-rows-cols.ss"
     "count-missing.ss"
-    "main.ss"))
+    "main.ss"
+    ;; directories too
+    "hattori"
+    "problems"
+    "raw-problems"
+    "solution-sets"))

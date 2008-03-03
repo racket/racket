@@ -1,5 +1,5 @@
 #cs(module pingp-sig mzscheme
-     (require "draw-sig.ss"
+     (require htdp/draw-sig
               mzlib/unitsig)
      (provide pingpS
               ping-protS-core

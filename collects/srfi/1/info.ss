@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define compile-omit-files
+(define compile-omit-paths
   '("alist-test.ss"
     "all-srfi-1-tests.ss"
     "cons-test.ss"

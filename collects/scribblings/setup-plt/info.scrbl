@@ -61,10 +61,11 @@ As illustrated in this example, an @filepath{info.ss} file can use
 @hash-lang[] notation, but only with the @schememodname[setup/infotab]
 language.
 
+@;{
 The @scheme[name] tag is required for @exec{setup-plt} to recognize
 the collection and compile its files to bytecode. Similarly, an
 @filepath{info.ss} file in a sub-directory of a collection causes the
 sub-directory's files to be compiled.
+;}
 
 See also @scheme[get-info] from @schememodname[setup/getinfo].
-

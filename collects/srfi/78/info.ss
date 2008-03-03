@@ -1,0 +1,3 @@
+#lang setup/infotab
+
+(define compile-omit-paths '("check-reference.scm" "examples-78.scm"))

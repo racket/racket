@@ -2,5 +2,5 @@
 
 (define name "Imperative Drawing")
 (define assume-virtual-sources #t)
-(define install-collection "installer.ss")
+;; FIXME: doing this leads to an error: (define install-collection "installer.ss")
 ;; (define pre-install-collection "pre-installer.ss")

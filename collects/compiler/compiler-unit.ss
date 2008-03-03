@@ -1,5 +1,5 @@
 ;; Main compilation procedures
-;; (c) 1997-2001 PLT
+;; (c) 1997-2008 PLT
 
 ;; The various procedures provided by this library are implemented
 ;;  by dynamically linking to code supplied by the MzLib, dynext, and
@@ -8,233 +8,185 @@
 ;; The Scheme->C compiler is loaded as either sploadr.ss (link in
 ;;  real MrSpidey) or loadr.ss (link in trivial MrSpidey stubs).
 
-(module compiler-unit scheme/base
-  (require mzlib/unit
+#lang scheme/base
 
-           "sig.ss"
-           dynext/file-sig
-	   dynext/link-sig
-	   dynext/compile-sig
-	   
-	   make/make-sig
-	   make/collection-sig
+(require mzlib/unit
 
-	   syntax/toplevel
-	   syntax/moddep
+         "sig.ss"
+         dynext/file-sig
+         dynext/link-sig
+         dynext/compile-sig
 
-           mzlib/list
-           scheme/file
-	   mzlib/compile ; gets compile-file
-	   mzlib/cm
-	   setup/getinfo)
+         make/make-sig
+         make/collection-sig
 
-  (provide compiler@)
+         syntax/toplevel
+         syntax/moddep
 
-  (define-namespace-anchor anchor)
-  (define orig-namespace (namespace-anchor->empty-namespace anchor))
+         mzlib/list
+         scheme/file
+         mzlib/compile ; gets compile-file
+         mzlib/cm
+         setup/getinfo)
 
-  ;; ;;;;;;;; ----- The main compiler unit ------ ;;;;;;;;;;
-  (define-unit compiler@
-      (import compiler:option^
-	      dynext:compile^
-	      dynext:link^
-	      dynext:file^)
-      (export compiler^)
+(provide compiler@)
 
-      (define compile-notify-handler
-	(make-parameter void))
+(define-namespace-anchor anchor)
+(define orig-namespace (namespace-anchor->empty-namespace anchor))
 
-      (define current-compiler-dynamic-require-wrapper
-	(make-parameter (lambda (thunk)
-			  (parameterize ([current-namespace orig-namespace])
-			    (thunk)))))
+;; ;;;;;;;; ----- The main compiler unit ------ ;;;;;;;;;;
+(define-unit compiler@
+  (import compiler:option^
+          dynext:compile^
+          dynext:link^
+          dynext:file^)
+  (export compiler^)
 
-      (define (c-dynamic-require path id)
-	((current-compiler-dynamic-require-wrapper)
-	 (lambda ()
-	   (dynamic-require path id))))
-      (define (c-get-info cp)
-	((current-compiler-dynamic-require-wrapper)
-	 (lambda ()
-	   (get-info cp))))
+  (define compile-notify-handler
+    (make-parameter void))
 
-      (define (make-extension-compiler mode prefix)
-	(let ([u (c-dynamic-require 'compiler/private/base
-				    'base@)]
-	      [init (unit
-		      (import compiler:inner^)
-                      (export)
-		      (eval-compile-prefix prefix)
-		      (case mode
-			[(compile-extension) compile-extension]
-			[(compile-extension-to-c) compile-extension-to-c]
-			[(compile-c-extension) compile-c-extension]))])
-	  (invoke-unit
-	   (compound-unit
-	    (import (COMPILE : dynext:compile^)
-		    (LINK : dynext:link^)
-		    (DFILE : dynext:file^)
-		    (OPTION : compiler:option^))
-            (export)
-	    (link [((COMPILER : compiler:inner^))
-                   u 
-                   COMPILE LINK DFILE OPTION] 
-		  [() init COMPILER]))
-           (import dynext:compile^
-                   dynext:link^
-                   dynext:file^
-                   compiler:option^))))
+  (define current-compiler-dynamic-require-wrapper
+    (make-parameter (lambda (thunk)
+                      (parameterize ([current-namespace orig-namespace])
+                        (thunk)))))
 
-      (define (make-compiler mode) 
-	(lambda (prefix)
-	  (let ([c (make-extension-compiler mode prefix)])
-	    (lambda (source-files destination-directory)
-	      (for-each
-	       (lambda (source-file)
-		 (c source-file (or destination-directory 'same)))
-	       source-files)))))
+  (define (c-dynamic-require path id)
+    ((current-compiler-dynamic-require-wrapper)
+     (lambda () (dynamic-require path id))))
+  (define (c-get-info cp)
+    ((current-compiler-dynamic-require-wrapper)
+     (lambda () (get-info cp))))
 
-      (define (make-unprefixed-compiler mode)
-	(let ([f #f])
-	  (lambda (source-files destination-directory)
-	    (unless f
-	      (set! f ((make-compiler mode) '(void))))
-	    (f source-files destination-directory))))
+  (define (make-extension-compiler mode prefix)
+    (let ([u (c-dynamic-require 'compiler/private/base 'base@)]
+          [init (unit (import compiler:inner^) (export)
+		  (eval-compile-prefix prefix)
+                  (case mode
+                    [(compile-extension) compile-extension]
+                    [(compile-extension-to-c) compile-extension-to-c]
+                    [(compile-c-extension) compile-c-extension]))])
+      (invoke-unit
+       (compound-unit
+        (import (COMPILE : dynext:compile^)
+                (LINK : dynext:link^)
+                (DFILE : dynext:file^)
+                (OPTION : compiler:option^))
+        (export)
+        (link [((COMPILER : compiler:inner^)) u COMPILE LINK DFILE OPTION]
+              [() init COMPILER]))
+       (import dynext:compile^
+               dynext:link^
+               dynext:file^
+               compiler:option^))))
 
-      (define compile-extensions
-	(make-compiler 'compile-extension))
-      (define compile-extensions-to-c
-	(make-compiler 'compile-extension-to-c))
-      (define compile-c-extensions
-	(make-unprefixed-compiler 'compile-c-extension))
+  (define (make-compiler mode)
+    (lambda (prefix)
+      (let ([c (make-extension-compiler mode prefix)])
+        (lambda (source-files destination-directory)
+          (for ([source-file source-files])
+            (c source-file (or destination-directory 'same)))))))
 
-      (define (compile-to-zo src dest namespace eval?)
-	((if eval? (lambda (t) (t)) with-module-reading-parameterization)
-	 (lambda ()
-	   (parameterize ([current-namespace namespace])
-	     (compile-file src dest
-			   (if eval?
-			       (lambda (expr)
-				 (expand-syntax-top-level-with-compile-time-evals expr))
-			       values)))))
-	(printf " [output to \"~a\"]~n" dest))
+  (define (make-unprefixed-compiler mode)
+    (let ([f #f])
+      (lambda (source-files destination-directory)
+        (unless f
+          (set! f ((make-compiler mode) '(void))))
+        (f source-files destination-directory))))
 
-      (define (compile-zos prefix)
-	(let ([n (if prefix 
-                     (make-base-namespace)
-                     (current-namespace))])
-	  (when prefix
-	    (eval prefix n))
-	  (lambda (source-files destination-directory)
-	    (let ([file-bases (map
-			       (lambda (file)
-				 (let ([f (extract-base-filename/ss file 'mzc)])
-				   (if destination-directory
-				       (let-values ([(base file dir?) (split-path f)])
-					 (build-path (if (eq? destination-directory 'auto)
-							 (let ([d (build-path (if (eq? base 'relative)
-										  'same
-										  base)
-									      "compiled")])
-							   (unless (directory-exists? d)
-							     (make-directory* d))
-							   d)
-							 destination-directory)
-						     file))
-				       f)))
-			       source-files)])
-	      (for-each
-	       (lambda (f b)
-		 (let ([zo (append-zo-suffix b)])
-		   (compile-to-zo f zo n prefix)))
-	       source-files file-bases)))))
+  (define compile-extensions
+    (make-compiler 'compile-extension))
+  (define compile-extensions-to-c
+    (make-compiler 'compile-extension-to-c))
+  (define compile-c-extensions
+    (make-unprefixed-compiler 'compile-c-extension))
 
-      (define (compile-directory dir info zos?)
-	(let ([make (c-dynamic-require 'make/make-unit 'make@)]
-	      [coll (c-dynamic-require 'make/collection-unit 'make:collection@)]
-	      [init (unit
-                      (import make^ make:collection^)
-                      (export)
-		      (values make-collection make-notify-handler))])
-	  (let-values ([(make-collection make-notify-handler)
-			(invoke-unit
-			 (compound-unit
-                           (import (DFILE : dynext:file^)
-                                   (OPTION : compiler:option^)
-                                   (COMPILER : compiler^))
-                           (export)
-                           (link [((MAKE : make^)) make]
-                                 [((COLL : make:collection^)) 
-                                  coll
-                                  MAKE DFILE OPTION COMPILER]
-                                 [() init MAKE COLL]))
-                         (import dynext:file^
-                                 compiler:option^
-                                 compiler^))])
-            (let ([orig (current-directory)])
-	      (dynamic-wind
-               (lambda () (current-directory dir))
-               (lambda ()
-                 (parameterize ([current-load-relative-directory dir])
-                   ;; Compile the collection files via make-collection
-                   (let ([sses (append
-                                ;; Find all .ss/.scm files:
-                                (filter
-                                 extract-base-filename/ss
-                                 (directory-list))
-                                ;; Add specified doc sources:
-                                (map car (info
-                                          'scribblings
-                                          (lambda () null))))])
-                     (let ([filtered-sses
-                            (remove*
-                             (map string->path
-                                  (info 
-                                   (if zos? 
-                                       'compile-zo-omit-files 
-                                       'compile-extension-omit-files)
-                                   (lambda () null)))
-                             (remove*
-                              (map string->path
-                                   (info 'compile-omit-files (lambda () null)))
-                              sses))])
-                       (if zos?
-                           ;; Verbose compilation manager:
-                           (parameterize ([manager-trace-handler (lambda (s) (printf "~a~n" s))]
-                                          [manager-compile-notify-handler (lambda (path)
-                                                                            ((compile-notify-handler) path))])
-                             (map (make-caching-managed-compile-zo) filtered-sses))
-                           ;; Old collection compiler:
-                           (parameterize ([make-notify-handler (lambda (path)
-                                                                 ((compile-notify-handler) path))])
-                             (make-collection
-                              ((or info (lambda (a f) (f)))
-                               'name 
-                               (lambda () (error 'compile-collection "info did not provide a name in ~e" 
-                                                 dir)))
-                              filtered-sses
-                              (if zos? #("zo") #()))))))))
-               (lambda () (current-directory orig)))
-	      (when (compile-subcollections)
-		(for-each
-                 ;; bug! planet files will do the wrong thing here
-		 (lambda (s)
-		   (unless (and (pair? s) (list? s) (andmap string? s))
-		     (error 'compile-collection "bad sub-collection path: ~a" s))
-		   (let ((p (apply build-path dir s)))
-                     (compile-directory p (get-info/full p) zos?)))
-		 (info 'compile-subcollections (lambda () null))))))))
-      
-      (define (compile-collection cp zos?)
-        (let ([dir (apply collection-path cp)]
-              [info (c-get-info cp)])
-          (compile-directory dir info zos?)))
+  (define (compile-to-zo src dest namespace eval?)
+    ((if eval? (lambda (t) (t)) with-module-reading-parameterization)
+     (lambda ()
+       (parameterize ([current-namespace namespace])
+         (compile-file src dest
+                       (if eval?
+                         (lambda (expr)
+                           (expand-syntax-top-level-with-compile-time-evals expr))
+                         values)))))
+    (printf " [output to \"~a\"]\n" dest))
 
-      (define (compile-collection-zos collection . cp)
-	(compile-collection (cons collection cp) #t))
-      
-      (define (compile-directory-zos dir info)
-        (compile-directory dir info #t))
-      
-      
-      ))
+  (define (compile-zos prefix)
+    (define n (if prefix (make-base-namespace) (current-namespace)))
+    (when prefix (eval prefix n))
+    (lambda (source-files destination-directory)
+      (define file-bases
+        (map (lambda (file)
+               (let ([f (extract-base-filename/ss file 'mzc)])
+                 (if destination-directory
+                   (let-values ([(base file dir?) (split-path f)])
+                     (build-path
+                      (if (eq? destination-directory 'auto)
+                        (let ([d (build-path (if (eq? base 'relative) 'same base)
+                                             "compiled")])
+                          (unless (directory-exists? d) (make-directory* d))
+                          d)
+                        destination-directory)
+                      file))
+                   f)))
+             source-files))
+      (for ([f source-files] [b file-bases])
+        (let ([zo (append-zo-suffix b)])
+          (compile-to-zo f zo n prefix)))))
+
+  (define (compile-directory dir info)
+    (define info* (or info (lambda (key mk-default) (mk-default))))
+    (define make (c-dynamic-require 'make/make-unit 'make@))
+    (define coll (c-dynamic-require 'make/collection-unit 'make:collection@))
+    (define init (unit (import make^ make:collection^) (export)
+                       (values make-collection make-notify-handler)))
+    (define-values (make-collection make-notify-handler)
+      (invoke-unit
+       (compound-unit
+        (import (DFILE : dynext:file^)
+                (OPTION : compiler:option^)
+                (COMPILER : compiler^))
+        (export)
+        (link [((MAKE : make^)) make]
+              [((COLL : make:collection^)) coll MAKE DFILE OPTION COMPILER]
+              [() init MAKE COLL]))
+       (import dynext:file^ compiler:option^ compiler^)))
+    (define nothing (lambda () null))
+    (define omit-paths (info* 'compile-omit-paths nothing))
+    (define omit-files (info* 'compile-omit-files nothing))
+    (unless (eq? 'all omit-paths)
+      (parameterize ([current-directory dir]
+                     [current-load-relative-directory dir]
+                     ;; Verbose compilation manager:
+                     [manager-trace-handler (lambda (s) (printf "~a\n" s))]
+                     [manager-compile-notify-handler
+                      (lambda (path) ((compile-notify-handler) path))])
+        ;; Compile the collection files via make-collection
+        (let* ([sses (append
+                      ;; Find all .ss/.scm files:
+                      (filter extract-base-filename/ss (directory-list))
+                      ;; Add specified doc sources:
+                      (map car (info* 'scribblings nothing)))]
+               [sses (remove* (map string->path omit-paths) sses)]
+               [sses (remove* (map string->path omit-files) sses)])
+          (for-each (make-caching-managed-compile-zo) sses)))
+      (when (compile-subcollections)
+        (when (info* 'compile-subcollections (lambda () #f))
+          (printf "Warning: ignoring `compile-subcollections' entry in info ~a\n"
+                  dir))
+        (for ([p (directory-list dir)])
+          (let ([s (path->string p)])
+            ;; this is the same check that setup/setup-unit is doing in
+            ;; `make-cc*'
+            (unless (or (regexp-match? #rx"^[.]" s) (equal? "compiled" s)
+                        (and (pair? omit-paths) (member s omit-paths)))
+              (let ([p (build-path dir p)])
+                (compile-directory p (get-info/full p)))))))))
+
+  (define (compile-collection-zos collection . cp)
+    (compile-directory (apply collection-path collection cp)
+                       (c-get-info (cons collection cp))))
+
+  (define compile-directory-zos compile-directory)
+
+  )

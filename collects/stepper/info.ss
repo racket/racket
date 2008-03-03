@@ -12,4 +12,4 @@
                          ;; #f
                          ))
 
-(define compile-omit-files `("debugger-tool.ss"))
+(define compile-omit-paths '("debugger-tool.ss"))

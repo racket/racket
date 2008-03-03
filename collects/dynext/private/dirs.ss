@@ -6,7 +6,3 @@
   (define std-library-dir (find-lib-dir))
 
   (provide include-dir std-library-dir))
-
-
-  
-      

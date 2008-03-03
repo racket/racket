@@ -11,6 +11,7 @@
          scheme/port
          scheme/match
          scheme/system
+         scheme/list
          planet/planet-archives
          planet/private/planet-shared
 
@@ -24,6 +25,16 @@
          "main-collects.ss")
 
 (define-namespace-anchor anchor)
+
+;; read info files without compiling them
+(define getinfo
+  (let ([ns (namespace-anchor->empty-namespace anchor)]
+        [compile (current-compile)])
+    (lambda (path)
+      (parameterize ([current-namespace ns]
+                     [current-compile compile]
+                     [use-compiled-file-paths '()])
+        (get-info/full path)))))
 
 (provide setup@)
 
@@ -66,9 +77,7 @@
     (setup-printf "  ~a" (path->string p)))
 
   (define (call-info info flag mk-default test)
-    (if info
-      (let ([v (info flag mk-default)]) (test v) v)
-      (mk-default)))
+    (let ([v (info flag mk-default)]) (test v) v))
 
   (define mode-dir
     (if (compile-mode)
@@ -94,10 +103,7 @@
     (for ([e (reverse errors)])
       (match-let ([(list cc desc x) e])
         (setup-fprintf port "Error during ~a for ~a"
-                       desc
-                       (if (cc? cc)
-                         (format "~a (~a)" (cc-name cc) (cc-path cc))
-                         cc))
+                       desc (if (cc? cc) (cc-name cc) cc))
         (setup-fprintf port "  ~a" (exn->string x)))))
 
   (define (done)
@@ -150,43 +156,55 @@
     (collection path name info root-dir info-path shadowing-policy)
     #:inspector #f)
 
+  (define (make-cc* collection path root-dir info-path shadowing-policy)
+    (define info
+      (or (with-handlers ([exn:fail? (warning-handler #f)]) (getinfo path))
+          (lambda (flag mk-default) (mk-default))))
+    (define name
+      (call-info
+       info 'name (lambda () #f)
+       (lambda (x)
+         (when (and x (not (string? x)))
+           (error 'setup-plt
+                  "'name' result from collection ~e is not a string: ~e"
+                  path x)))))
+    (define path-string (path->string path))
+    (define basename
+      (let-values ([(base name dir?) (split-path path)])
+        (if (path? name)
+          (path-element->string name)
+          (error 'make-cc*
+                 "Internal error: cc had invalid info-path: ~e" path))))
+    (when (info 'compile-subcollections (lambda () #f))
+      (setup-printf "Warning: ignoring `compile-subcollections' entry in info ~a\n"
+                    path))
+    ;; this check is also done in compiler/compiler-unit, in compile-directory
+    (and (not (or (regexp-match? #rx"^[.]" basename) (equal? "compiled" basename)
+                  (eq? 'all (info 'compile-omit-paths void))))
+         (make-cc collection path
+                  (if name (string-append path-string " (" name ")") path-string)
+                  info root-dir info-path shadowing-policy)))
+
   (define ((warning-handler v) exn)
     (setup-printf "Warning: ~a" (exn->string exn))
     v)
 
-  ;; collection->cc : listof path -> cc
+  ;; collection->cc : listof path -> cc/#f
   (define (collection->cc collection-p)
-    (let* ([root-dir (ormap (lambda (p)
-                              (parameterize ([current-library-collection-paths
-                                              (list p)])
-                                (and (with-handlers ([exn:fail? (lambda (x) #f)])
-                                       (apply collection-path collection-p))
-                                     p)))
-                            (current-library-collection-paths))]
-           [info (with-handlers ([exn:fail? (warning-handler #f)])
-                   (get-info collection-p))]
-           [name (call-info info 'name (lambda () #f)
-                   (lambda (x)
-                     (when (and x (not (string? x)))
-                       (error
-                        'setup-plt
-                        "'name' result from collection ~e is not a string: ~e"
-                        collection-p
-                        x))))]
-           [name (string-append (path->string (apply build-path collection-p))
-                                (if name
-                                  (string-append " (" name ")")
-                                  ""))])
-      (and info
-           (make-cc collection-p
-                    (apply collection-path collection-p)
-                    name
-                    info
-                    root-dir
-                    (build-path root-dir "info-domain" "compiled" "cache.ss")
-                    ;; by convention, all collections have "version" 1 0. This
-                    ;; forces them to conflict with each other.
-                    (list (cons 'lib (map path->string collection-p)) 1 0)))))
+    (let ([root-dir
+           (ormap (lambda (p)
+                    (parameterize ([current-library-collection-paths (list p)])
+                      (and (with-handlers ([exn:fail? (lambda (x) #f)])
+                             (apply collection-path collection-p))
+                           p)))
+                  (current-library-collection-paths))])
+      (make-cc* collection-p
+                (apply collection-path collection-p)
+                root-dir
+                (build-path root-dir "info-domain" "compiled" "cache.ss")
+                ;; by convention, all collections have "version" 1 0. This
+                ;; forces them to conflict with each other.
+                (list (cons 'lib (map path->string collection-p)) 1 0))))
 
   ;; remove-falses : listof (union X #f) -> listof X
   ;; returns the non-false elements of l in order
@@ -213,24 +231,11 @@
   (define (planet->cc path owner pkg-file extra-path maj min)
     (unless (path? path)
       (error 'planet->cc "non-path when building package ~e" pkg-file))
-    (let/ec return
-      (let* ([info (with-handlers ([exn:fail? (warning-handler #f)])
-                     (get-info/full path))]
-             [name (call-info info 'name (lambda () (return #f))
-                     (lambda (x)
-                       (when (and x (not (string? x)))
-                         (error
-                          'planet->cc
-                          "'name' result from directory ~e is not a string: ~e"
-                          path
-                          x))))])
-        (make-cc #f
-                 path
-                 name
-                 info
-                 #f ; don't need root-dir; absolute paths in cache.ss will be ok
-                 (get-planet-cache-path)
-                 (list `(planet ,owner ,pkg-file ,@extra-path) maj min)))))
+    (make-cc* #f
+              path
+              #f ; don't need root-dir; absolute paths in cache.ss will be ok
+              (get-planet-cache-path)
+              (list `(planet ,owner ,pkg-file ,@extra-path) maj min)))
 
   ;; planet-cc->sub-cc : cc (listof bytes [encoded path]) -> cc
   ;; builds a compilation job for the given subdirectory of the given cc this
@@ -244,10 +249,6 @@
                   (append extra-path subdir)
                   maj
                   min)))
-
-  (define (cannot-compile c)
-    (error 'setup-plt "don't know how to compile collection: ~a"
-           (if (= (length c) 1) (car c) c)))
 
   (define planet-dirs-to-compile
     (if (make-planet)
@@ -271,107 +272,124 @@
       (hash-table-map ht (lambda (k v) v))))
 
   ;; Close over sub-collections
-  (define (collection-closure collections-to-compile)
-    (let loop ([l collections-to-compile])
-      (if (null? l)
-        null
-        (let* ([cc (car l)]
-               [info (cc-info cc)])
-          (append
-           (map
-            (lambda (subcol)
-              (or (collection->cc (map string->path subcol))
-                  (cannot-compile subcol)))
-            (call-info info 'compile-subcollections
-              ;; Default: subdirs with info.ss files
-              (lambda ()
-                (map (lambda (x)
-                       (map path->string (append (cc-collection cc) (list x))))
-                     (filter (lambda (p)
-                               (let ([d (build-path (cc-path cc) p)])
-                                 (and (directory-exists? d)
-                                      (file-exists? (build-path d "info.ss")))))
-                             (directory-list (cc-path cc)))))
-              ;; Result checker:
-              (lambda (x)
-                (unless (list-of (list-of relative-path-string?) x)
-                  (error "result is not a list of relative path string lists:"
-                         x)))))
-           (list cc)
-           (loop (cdr l)))))))
+  (define (collection-closure collections-to-compile make-subs)
+    (define (get-subs cc)
+      (let* ([info (cc-info cc)]
+             [ccp (cc-path cc)]
+             ;; note: `compile-omit-paths' can be the symbol `all', if this
+             ;; happens then this collection should not have been included in
+             ;; the first place, but we might jump in if a command-line
+             ;; argument specifies coll/subcoll
+             [omit (call-info info 'compile-omit-paths (lambda () '())
+                              (lambda (x)
+                                (unless (or (eq? 'all x) (list-of string? x))
+                                  (error 'setup-plt
+                                         "expected a list of path strings or 'all for compile-omit-paths, got: ~s"
+                                         x))))]
+             [omit (if (pair? omit) omit '())]
+             [subs (filter (lambda (p)
+                             (and (directory-exists? (build-path ccp p))
+                                  (not (member (path->string p) omit))))
+                           (directory-list ccp))])
+        (remove-falses (make-subs cc subs))))
+    (remove-falses
+     (let loop ([l collections-to-compile])
+       (apply append (map (lambda (cc) (cons cc (loop (get-subs cc)))) l)))))
 
-  (define (same-collection-name? cc-1 cc-2)
-    (let ([split (lambda (cc)
-                   (apply append
-                          (map (lambda (e)
-                                 (if (path? e)
-                                   (map path-element->string (explode-path e))
-                                   (regexp-split #rx"/" e)))
-                               (cc-collection cc))))])
-      (equal? (split cc-1) (split cc-2))))
+  (define (plt-collection-closure collections-to-compile)
+    (collection-closure
+     collections-to-compile
+     (lambda (cc subs)
+       (map (lambda (sub)
+              (collection->cc (append (cc-collection cc) (list sub))))
+            subs))))
 
   (define (check-again-all given-ccs)
-    (define all-collections* (collection-closure all-collections))
+    #|
+    ;; This code is better than using marker files, but an older version of it
+    ;; relied on the obligatory existence of an "info.ss" file.  That is no
+    ;; longer required, so it needs to identify directories and that is
+    ;; currently not available.  So use the code below instead.
+    (define all-cc+ids
+      (map (lambda (cc)
+             (cons cc (file-or-directory-identity (cc-path cc))))
+           (plt-collection-closure all-collections)))
     (for ([cc given-ccs])
-      (call-with-input-file* (build-path (cc-path cc) "info.ss")
-        (lambda (given-info-port)
-          (define given-id (port-file-identity given-info-port))
-          (for ([found-cc all-collections*]
-                #:when (not (same-collection-name? cc found-cc)))
-            (call-with-input-file* (build-path (cc-path found-cc) "info.ss")
-              (lambda (found-info-port)
-                (when (eq? (port-file-identity found-info-port) given-id)
-                  (error 'setup-plt
-                         "given collection path: ~e refers to the same info file as another path: ~e"
-                         (apply build-path (cc-collection cc))
-                         (apply build-path (cc-collection found-cc))))))))))
-    given-ccs)
+      (define given-id
+        (file-or-directory-identity (cc-path cc)))
+      (for ([found-cc+id all-cc+ids]
+            #:when (not (same-collection-name? cc (car found-cc+id))))
+        (when (eq? (cdr found-cc+id) given-id)
+          (error 'setup-plt
+                 "given collection path: ~e refers to the same info file as another path: ~e"
+                 (apply build-path (cc-collection cc))
+                 (apply build-path (cc-collection (car found-cc+id)))))))
+    |#
+    ;; Note: this is not a locking mechanism; specifically, if we find a marker
+    ;; file we assume that we generated it rather than another setup-plt
+    ;; process
+    (define all-ccs (plt-collection-closure all-collections))
+    (define (cc->name cc) (apply build-path (cc-collection cc)))
+    (define all-names   (map cc->name all-ccs))
+    (define given-names (map cc->name given-ccs))
+    (define (cc-mark cc) (build-path (cc-path cc) ".setup-plt-marker"))
+    ;; For cleanup: try to remove all files, be silent
+    (define (cleanup)
+      (for ([cc (append given-ccs all-ccs)])
+        (let ([mark (cc-mark cc)])
+          (when (file-exists? mark)
+            (with-handlers ([void void]) (delete-file mark))))))
+    ;; First remove all marker files if any, let it fail if we can't remove it
+    (define (remove-markers)
+      (for ([cc given-ccs])
+        (let ([mark (cc-mark cc)])
+          (when (file-exists? mark)
+            (setup-printf "Warning: found a marker file, deleting: ~a"
+                          (cc-mark cc))
+            (delete-file mark)))))
+    ;; Now create all marker files, signalling an error if duplicate
+    (define (put-markers)
+      (for ([cc given-ccs] [name given-names])
+        (let ([mark (cc-mark cc)])
+          (if (file-exists? mark)
+            (error 'setup-plt
+                   "given collection path: ~e refers to the same directory as another given collection path"
+                   name)
+            (with-output-to-file mark (lambda () (printf "~a\n" name)))))))
+    ;; Finally scan all ccs and look for duplicates
+    (define (scan-all)
+      (for ([cc all-ccs] [name all-names])
+        (when (and (not (member name given-names))
+                   (file-exists? (cc-mark cc)))
+          (let ([given (with-input-from-file (cc-mark cc) read-line)])
+            (error 'setup-plt
+                   "given collection path: ~e refers to the same directory as another given collection path"
+                   name)))))
+    (dynamic-wind
+      void
+      (lambda () (remove-markers) (put-markers) (scan-all) given-ccs)
+      cleanup))
+
+  (define (sort-collections ccs)
+    (sort ccs (lambda (a b) (string<? (cc-name a) (cc-name b)))))
 
   (define collections-to-compile
-    (sort (if no-specific-collections?
-            all-collections
-            (check-again-all
-             (map (lambda (c)
-                    (or (collection->cc (map string->path c))
-                        (cannot-compile c)))
-                  x-specific-collections)))
-          (lambda (a b) (string-ci<? (cc-name a) (cc-name b)))))
-
-  (set! collections-to-compile (collection-closure collections-to-compile))
+    (sort-collections
+     (plt-collection-closure
+      (if no-specific-collections?
+        all-collections
+        (check-again-all
+         (remove-falses
+          (map (lambda (c) (collection->cc (map string->path c)))
+               x-specific-collections)))))))
 
   (set! planet-dirs-to-compile
-        (let loop ([l planet-dirs-to-compile])
-          (if (null? l)
-            null
-            (let* ([cc (car l)]
-                   [info (cc-info cc)])
-              (append
-               (remove-falses
-                (map
-                 (lambda (p)
-                   (planet-cc->sub-cc
-                    cc
-                    (cond
-                      [(path? p) (list (path->bytes p))]
-                      [(list-of bytes? p) p]
-                      [else (map (λ (s) (path->bytes (string->path s))) p)])))
-                 (call-info info 'compile-subcollections
-                            (lambda ()
-                              (map (λ (p) (list (path->bytes p)))
-                                   (filter
-                                    (lambda (p)
-                                      (let ((d (build-path (cc-path cc) p)))
-                                        (and (directory-exists? d)
-                                             (file-exists? (build-path d "info.ss")))))
-                                    (directory-list (cc-path cc)))))
-                            ;; Result checker:
-                            (λ (p)
-                               (match p
-                                 [(list (list (? (λ (v) (or (string? v) (bytes? v)))) ...) ...)
-                                  (void)]
-                                 [_ (error "result is not a list of lists of strings: " p)])))))
-               (list cc)
-               (loop (cdr l)))))))
+        (sort-collections
+         (collection-closure
+          planet-dirs-to-compile
+          (lambda (cc subs)
+            (map (lambda (p) (planet-cc->sub-cc cc (list (path->bytes p))))
+                 subs)))))
 
   (define ccs-to-compile (append collections-to-compile planet-dirs-to-compile))
 
@@ -442,10 +460,12 @@
                      (lambda ()
                        (list mode-dir
                              (build-path mode-dir "native")
-                             (build-path mode-dir "native" (system-library-subpath))))
+                             (build-path mode-dir "native"
+                                         (system-library-subpath))))
                      (lambda (x)
                        (unless (list-of path-string? x)
-                         (error 'setup-plt "expected a list of path strings for 'clean, got: ~s"
+                         (error 'setup-plt
+                                "expected a list of path strings for 'clean, got: ~s"
                                 x))))]
              [printed? #f]
              [print-message
@@ -724,7 +744,9 @@
           (unless (equal? ht (hash-table-get ht-orig info-path))
             (let-values ([(base name must-be-dir?) (split-path info-path)])
               (unless (path? base)
-                (error 'make-info-domain "Internal error: cc had invalid info-path: ~s" info-path))
+                (error 'make-info-domain
+                       "Internal error: cc had invalid info-path: ~e"
+                       info-path))
               (make-directory* base)
               (let ([p info-path])
                 (setup-printf "Updating ~a" p)
