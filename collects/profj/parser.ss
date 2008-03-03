@@ -14,7 +14,7 @@
   
   (require (all-except parser-tools/lex input-port)
            syntax/readerr
-           (lib "force.ss" "lazy"))
+           )
   (provide parse parse-interactions parse-expression parse-type parse-name lex-stream)
   
   ;function to lex in the entire port
@@ -40,8 +40,7 @@
     (if (new-parser?)
         (lambda ()
           (printf "Syntax error detected~n")
-          (let ([result (!!! (parser lexed loc))])
-            #;(printf "~a~n" result)
+          (let ([result (parser lexed loc)])
             (if (list? result)
                 (raise-read-error (cadr result)
                                   (car (car result))

@@ -597,7 +597,7 @@
                  (let ((end? (eof-object? (peek-char-or-special port))))
                    (if end? 
                        eof 
-                       (datum->syntax #f `(parse-java-full-program ,(parse port (quote name) level)
+                       (datum->syntax #f `(parse-java-full-program ,(parse port (get-defn-editor name) #;(quote name) level)
                                                                    ,name) #f)))))))
           (define/public (front-end/interaction port settings)
             (mred? #t)
@@ -615,7 +615,21 @@
                                                         ,(parse-interactions port name level))
                           `(parse-java-interactions ,(parse-interactions port name level) ,name)
                           #f)))))))
-
+          
+          (define (get-defn-editor port-name)
+            (let* ([dr-frame (send (drscheme:rep:current-rep) get-top-level-window)]
+                   [tabs (and dr-frame  (send dr-frame get-tabs))]
+                   [defs (if dr-frame
+                             (map (lambda (t) (send t get-defs)) tabs)
+                             null)]
+                   [def (filter (lambda (d)
+                                  (and (is-a? d drscheme:unit:definitions-text<%>)
+                                       (send d port-name-matches? port-name)))
+                                    defs)])
+              (and dr-frame 
+                   (= 1 (length def))
+                   (car def))))
+           
           ;process-extras: (list struct) type-record -> (list syntax)
           (define/private (process-extras extras type-recs)
             (cond
