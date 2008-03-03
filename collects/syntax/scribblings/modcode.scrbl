@@ -15,7 +15,10 @@
                             . -> . 
                             (or/c (symbols 'src 'zo 'so) false/c))
                            (lambda (src zo so) #f)]
-                          [#:notify notify-proc (any/c . -> . any) void])
+                          [#:notify notify-proc (any/c . -> . any) void]
+                          [#:src-reader read-syntax-proc 
+                                        (any/c input-port? . -> . syntax?) 
+                                        read-syntax])
          any]{
 
 Returns a compiled expression for the declaration of the module
@@ -58,7 +61,10 @@ or an exception is raised (to report that an extension file cannot be
 used) when @scheme[ext-proc] is @scheme[#f].
 
 If @scheme[notify-proc] is supplied, it is called for the file
-(source, @filepath{.zo} or extension) that is chosen.}
+(source, @filepath{.zo} or extension) that is chosen.
+
+If @scheme[read-syntax-proc] is provided, it is used to read the
+module from a source file (but not from a bytecode file).}
 
 @defparam[moddep-current-open-input-file proc (path-string? . -> . input-port?)]{
 

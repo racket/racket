@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/eval
-          "guide-utils.ss")
+          "guide-utils.ss"
+          (for-label setup/dirs))
 
 @title[#:tag "module-basics"]{Module Basics}
 
@@ -49,9 +50,10 @@ references on all platforms, much like relative URLs.)
 
 Library modules that are distributed with PLT Scheme are usually
 referenced through an unquoted, suffixless path. The path is relative
-(roughly) to the library installation directory. The module below
-refers to the @filepath{date.ss} library that is part of the
-@filepath{scheme} collection.
+to the library installation directory, which contains directories for
+individual library @deftech{collections}. The module below refers to
+the @filepath{date.ss} library that is part of the @filepath{scheme}
+@tech{collection}.
 
 @schememod[
 scheme
@@ -60,6 +62,23 @@ scheme
 
 (printf "Today is ~s\n"
         (date->string (seconds->date (current-seconds))))
+]
+
+In addition to the main @tech{collection} directory, which contains
+all collections that are part of the installation, collections can
+also be installed in a user-specific location. Finally, additional
+collection directories can be specified n configuration files or
+through the @envvar{PLTCOLLECTS} search path. Try running the
+following program to find out where your collections are:
+
+@schememod[
+scheme
+
+(require setup/dirs)
+
+(find-collects-dir) (code:comment #, @t{main collection directory})
+(find-user-collects-dir) (code:comment #, @t{user-specific collection directory})
+(get-collects-search-dirs) (code:comment #, @t{complete search path})
 ]
 
 We discuss more forms of module reference later in

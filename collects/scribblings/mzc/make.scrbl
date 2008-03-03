@@ -195,13 +195,20 @@ modules may produce compiled files with inconsistent timestamps and/or
 @filepath{.dep} files with incorrect information.}
 
 
-@defproc[(managed-compile-zo [file path-string?]) void?]{
+@defproc[(managed-compile-zo [file path-string?]
+                             [read-src-syntax (any/c input-port? . -> . syntax?) read-syntax]) 
+         void?]{
 
 Compiles the given module source file to a @filepath{.zo}, installing
 a compilation-manager handler while the file is compiled (so that
 required modules are also compiled), and creating a @filepath{.dep} file
 to record the timestamps of immediate files used to compile the source
-(i.e., files @scheme[require]d in the source).}
+(i.e., files @scheme[require]d in the source).
+
+If @scheme[file] is compiled from source, then
+@scheme[read-src-syntax] is used in the same way as
+@scheme[read-syntax] to read the source module. The normal
+@scheme[read-syntax] is used for any required files, however.}
 
 
 @defboolparam[trust-existing-zos trust?]{
@@ -212,12 +219,13 @@ compilation-manager @scheme[load/use-compiled] handler to ``touch''
 out-of-date @filepath{.zo} files instead of re-compiling from source.}
 
 
-@defproc[(make-caching-managed-compile-zo)
+@defproc[(make-caching-managed-compile-zo
+          [read-src-syntax (any/c input-port? . -> . syntax?)])
          (path-string? . -> . void?)]{
 
-Returns a procedure that behaves like @scheme[managed-compile-zo], but
-a cache of timestamp information is preserved across calls to the
-procedure.}
+Returns a procedure that behaves like @scheme[managed-compile-zo]
+(providing the same @scheme[read-src-syntax] each time), but a cache
+of timestamp information is preserved across calls to the procedure.}
 
 
 @defparam[manager-compile-notify-handler notify (path? . -> . any)]{

@@ -121,7 +121,7 @@
 
     (define/private (convert-key prefix k)
       (case (car k)
-        [(part tech)
+        [(part tech cite)
          (let ([rhs (cadr k)])
            (if (or (string? rhs) (pair? rhs))
                (list (car k) (cons prefix (if (pair? rhs)

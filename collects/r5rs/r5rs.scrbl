@@ -82,7 +82,7 @@ By default, @exec{plt-r5rs} departs from @|r5rs| conformance in one
 crucial way: the initial bindings of primitives correspond to module
 imports into the top-level environment, instead of variable bindings.
 This difference is visible if the name of a primitive is redefined at
-the top level. Use the @as-index{@DFlag{slow}} command-line
+the top level. Use the @as-index{@DFlag{no-prim}} command-line
 flag---before a file to load, if any---to obtain the standard behavior
 for primitive bindings (at the cost of performance).
 
@@ -110,7 +110,7 @@ corresponds to @|r5rs|. Use @scheme[(namespace-require/copy 'r5rs)]
 with an empty namespace to maximize conformance with @|r5rs|; Using
 @scheme[(namespace-require 'r5rs)], in contrast, creates primitive
 bindings as imports, which is the same as using
-@seclink["plt-r5rs"]{@exec{plt-r5rs}} without the @DFlag{slow} flag.
+@seclink["plt-r5rs"]{@exec{plt-r5rs}} without the @DFlag{no-prim} flag.
 More simply, use @scheme[(scheme-report-environment 5)].  See also
 @schememodname[r5rs/init], which sets reader and printer parameters to
 increase conformance.

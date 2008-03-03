@@ -6,7 +6,7 @@
 (define-values (main args)
   (command-line
    #:once-each
-   [("--slow") "disable assumption that primitives are never redefined"
+   [("--no-prim") "(slow) disable assumption that primitives are never redefined"
     (slow #t)]
    #:handlers
    (case-lambda

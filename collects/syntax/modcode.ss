@@ -37,7 +37,7 @@
                        (file-or-directory-modify-seconds a))])
              (or (and (not bm) am) (and am bm (>= am bm))))))
 
-  (define (read-one orig-path path src?)
+  (define (read-one orig-path path src? read-src-syntax)
     (let ([p ((moddep-current-open-input-file) path)])
       (when src? (port-count-lines! p))
       (dynamic-wind
@@ -53,7 +53,7 @@
                                         (if (path? base)
                                             base
                                             (current-directory)))])
-                        (read-syntax path p))))])
+                        (read-src-syntax path p))))])
             (when (eof-object? v)
               (error 'read-one
                      "empty file; expected a module declaration in: ~a" path))
@@ -77,7 +77,8 @@
   (define (get-module-code path
                            [sub-path "compiled"] [compiler compile] [extension-handler #f] 
                            #:choose [choose (lambda (src zo so) #f)]
-                           #:notify [notify void])
+                           #:notify [notify void]
+                           #:source-reader [read-src-syntax read-syntax])
     (unless (path-string? path)
       (raise-type-error 'get-module-code "path or string (sans nul)" path))
     (let*-values ([(path) (resolve path)]
@@ -106,7 +107,7 @@
                (and (not prefer)
                     (date>=? zo path-d)))
            (notify zo)
-           (read-one path zo #f)]
+           (read-one path zo #f read-syntax)]
           ;; Maybe there's an .so? Use it only if we don't prefer source.
           [(or (eq? prefer 'so)
                (and (not prefer)
@@ -124,7 +125,7 @@
           [(or (eq? prefer 'src)
                path-d)
            (notify path)
-           (with-dir (lambda () (compiler (read-one path path #t))))]
+           (with-dir (lambda () (compiler (read-one path path #t read-src-syntax))))]
           ;; Report a not-there error
           [else (raise (make-exn:get-module-code
                         (format "get-module-code: no such file: ~e" path)
