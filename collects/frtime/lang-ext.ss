@@ -620,14 +620,15 @@
   ;; split : event[a] (a -> b) -> (b -> event[a])
   (define (split ev fn)
     (let* ([ht (make-hash-table 'weak)]
-           [sig (map-e (lambda (e)
-                         (let/ec k
-                           (send-event
-                            (hash-table-get ht (fn e) (lambda () (k (void))))
-                            e)))
-                       ev)])                             
+           [sig (for-each-e!
+                 ev
+                 (lambda (e)
+                   (let/ec k
+                     (send-event
+                      (hash-table-get ht (fn e) (lambda () (k (void))))
+                      e)))
+                 ht)])                             
       (lambda (x)
-        sig
         (hash-table-get
          ht x (lambda ()
                 (let ([rtn (event-receiver)])

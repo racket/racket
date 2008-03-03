@@ -389,7 +389,7 @@
          [(undefined? lst) undefined]
          [(pair? lst) (cf (first lst) (rest lst))]
          [(empty? lst) (ef)]
-         [else (error "list-match: expected a list, got ~a" lst)]))
+         [else (error "list-match: expected a list but got" lst)]))
      lst))
   
   #;(define (frp:append . args)

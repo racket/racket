@@ -132,13 +132,33 @@
     (syntax-rules ()
       [(_ test body ...) (if (not test) (begin body ...))]))
   
-  (define (ormap proc lst)
-    (and (pair? lst)
-         (or (proc (car lst)) (ormap proc (cdr lst)))))
+  (define ormap
+    (case-lambda
+      [(pred lst) (list-match
+                   lst
+                   (lambda (a d) (or (pred a) (ormap pred d)))
+                   (lambda () #f))]
+      [(pred l1 l2) (list-match
+                     l1
+                     (lambda (a1 d1)
+                       (list-match
+                        l2
+                        (lambda (a2 d2)
+                          (or (pred a1 a2) (ormap pred d1 d2)))
+                        (lambda ()
+                          (error "expected lists of same length, but got" l1 l2))))
+                     (lambda ()
+                       (list-match
+                        l2
+                        (lambda (a d)
+                          (error "expected lists of same length, but got" l1 l2))
+                        (lambda () #f))))]))
   
   (define (andmap proc lst)
-    (or (null? lst)
-        (and (proc (car lst)) (andmap proc (cdr lst)))))
+    (list-match
+     lst
+     (lambda (a d) (and (proc a) (andmap proc d)))
+     (lambda () #t)))
   
   (define (caar v)
     (car (car v)))
@@ -261,9 +281,21 @@
               l
               (lambda (a d) (cons (f a) (map f d)))
               (lambda () null))]
-      [(f l1 l2) (if (and (pair? l1) (pair? l2))
-                     (cons (f (car l1) (car l2)) (map f (cdr l1) (cdr l2)))
-                     null)]
+      [(f l1 l2) (list-match
+                  l1
+                  (lambda (a1 d1)
+                    (list-match
+                     l2
+                     (lambda (a2 d2) (cons (f a1 a2) (map f d1 d2)))
+                     (lambda () (error "map expected lists of same length but got" l1 l2))))
+                  (lambda ()
+                    (list-match
+                     l2
+                     (lambda (a2 d2) (error "map expected lists of same length but got" l1 l2))
+                     (lambda () null))))
+      #;(if (and (pair? l1) (pair? l2))
+          (cons (f (car l1) (car l2)) (map f (cdr l1) (cdr l2)))
+          null)]
       [(f l . ls) (if (and (pair? l) (andmap pair? ls))
                       (cons (apply f (car l) (map car ls)) (apply map f (cdr l) (map cdr ls)))
                       null)]))
