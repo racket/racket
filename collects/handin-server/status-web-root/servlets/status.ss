@@ -5,12 +5,12 @@
            mzlib/date
            web-server/servlet
            web-server/servlet/servlet-structs
-           web-server/managers/timeouts.ss
+           web-server/managers/timeouts
            net/uri-codec
            handin-server/private/md5
-           handin-server/privatelogger
-           handin-server/privateconfig
-           handin-server/privatehooker)
+           handin-server/private/logger
+           handin-server/private/config
+           handin-server/private/hooker)
 
   (define get-user-data
     (let ([users-file (build-path server-dir "users.ss")])
@@ -261,8 +261,6 @@
                    (a ([href ,this]) "restarting") " in 3 seconds."))))
 
   (define manager
-    (create-timeout-manager instance-expiration-handler
-                            600 
-                            600))
+    (create-timeout-manager instance-expiration-handler 600 600))
 
   (provide interface-version start name manager))
