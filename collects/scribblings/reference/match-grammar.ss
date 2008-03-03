@@ -30,8 +30,7 @@ pat     ::= id                                @match anything, bind identifier
          |  (get! id)                         @match anything, bind as getter
          |  (QUASIQUOTE qp)                   @match a quasipattern
          |  derived-pattern                   @match using extension
-literal ::= ()                                @match the empty list
-         |  #t                                @match true
+literal ::= #t                                @match true
          |  #f                                @match false
          |  string                            @match equal% string
          |  bytes                             @match equal% byte string
