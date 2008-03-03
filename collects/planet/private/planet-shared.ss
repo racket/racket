@@ -3,18 +3,15 @@
 Various common pieces of code that both the client and server need to access
 ==========================================================================================
 |#
-
-(module planet-shared mzscheme
+#lang scheme/base
   
-  (require mzlib/list
-           mzlib/etc
-           mzlib/port
-           mzlib/file
+  (require (only-in mzlib/file path-only)
+	   mzlib/port
            (lib "getinfo.ss" "setup")
-           (prefix srfi1: srfi/1)
+           (prefix-in srfi1: srfi/1)
            "../config.ss")
   
-  (provide (all-defined))
+  (provide (all-defined-out))
  
   
   ; ==========================================================================================
@@ -35,7 +32,7 @@ Various common pieces of code that both the client and server need to access
      stx            ; (syntax | #f)
      core-version   ; string
      )
-    (make-inspector))
+    #:transparent)
   ; PKG : string (listof string) Nat Nat path ORIGIN
   (define-struct pkg (name route maj min path origin))
   ; UNINSTALLED-PKG : path FULL-PKG-SPEC Nat Nat
@@ -354,7 +351,7 @@ Various common pieces of code that both the client and server need to access
               #f
               (let ((best-row
                      (car 
-                      (quicksort
+                      (sort
                        matches
                        (λ (a b) (> (assoc-table-row->min a) (assoc-table-row->min b)))))))
                 (make-pkg
@@ -382,7 +379,7 @@ Various common pieces of code that both the client and server need to access
   ; returns eof. If n characters are not available from the given input port, calls
   ; the given function and then returns eof
   (define make-cutoff-port
-    (opt-lambda (ip n [underflow-fn void])
+    (lambda (ip n [underflow-fn void])
       (let ((to-read n))
         (make-input-port 
          'cutoff-port
@@ -509,13 +506,13 @@ Various common pieces of code that both the client and server need to access
   ;; ============================================================
   
   ;; tree[X] ::= (make-branch X (listof tree[X])
-  (define-struct branch (node children) (make-inspector))
+  (define-struct branch (node children) #:transparent)
   
   (define-struct (exn:fail:filesystem:no-directory exn:fail:filesystem) (dir))
   
   ;; directory->tree : directory (string -> bool) [nat | bool] [path->X] -> tree[X] | #f
   (define directory->tree
-    (opt-lambda (directory valid-dir? [max-depth #f] [path->x path->string])
+    (lambda (directory valid-dir? [max-depth #f] [path->x path->string])
       (unless (directory-exists? directory)
         (raise (make-exn:fail:filesystem:no-directory 
                 "Directory ~s does not exist"
@@ -562,7 +559,7 @@ Various common pieces of code that both the client and server need to access
   ;; applies f to every path from root to leaf and
   ;; accumulates all results in a list
   (define tree-apply
-    (opt-lambda (f t [depth 0])
+    (lambda (f t [depth 0])
       (let loop ((t t)
                  (priors '())
                  (curr-depth 0))
@@ -578,4 +575,4 @@ Various common pieces of code that both the client and server need to access
   
   ;; tree->list : tree[x] -> sexp-tree[x]
   (define (tree->list tree)
-    (cons (branch-node tree) (map tree->list (branch-children tree)))))
+    (cons (branch-node tree) (map tree->list (branch-children tree))))
