@@ -1,7 +1,6 @@
 (module annotator scheme/base
 
   (require (prefix-in kernel: syntax/kerncase)
-           mzlib/list
            (lib "marks.ss" "gui-debugger")
            mzlib/etc
            (prefix-in srfi: srfi/1/search)
@@ -180,7 +179,7 @@
             (for-each (lambda (v) (record-bound-id 'bind v v))
                       (syntax->list #'(var ...)))
             (quasisyntax/loc stx
-              (begin (define-values (var ...) #,(annotate #`expr empty #t module-name))
+              (begin (define-values (var ...) #,(annotate #`expr '() #t module-name))
                      #,(if (syntax-source stx)
                            #`(begin (#,record-top-level-id '#,module-name #'var (case-lambda
                                                                                   [() var]
@@ -301,8 +300,7 @@
                      (let ([binder (and (syntax-original? expr)
                                         (srfi:member expr bound-vars free-identifier=?))])
                        (if binder
-                           (let ([f (first binder)])
-                             (record-bound-id 'ref expr f))
+                           (record-bound-id 'ref expr (car binder))
                            (record-bound-id 'top-level expr expr))
                        expr)]
             
@@ -343,8 +341,7 @@
              (let ([binder (and (syntax-original? #'var)
                                 (srfi:member #'var bound-vars free-identifier=?))])
                (when binder
-                 (let ([f (first binder)])
-                   (record-bound-id 'set expr f)))
+                 (record-bound-id 'set expr (car binder)))
                (quasisyntax/loc expr (set! var #,(annotate #`val bound-vars #f module-name ))))]
             
             [(quote _) expr]

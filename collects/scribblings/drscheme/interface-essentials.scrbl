@@ -515,11 +515,8 @@ a Scheme splice box.
 
 @section[#:tag "debugger"]{Graphical Debugging Interface}
 
-@bold{Tip:} The debugger will not work properly on @onscreen{Untitled}
-windows or tabs.  To debug a new program, make sure it has been saved
-to the file system.  Also, changing the name of a file in the middle
-of a debugging session will prevent the debugger from working properly
-on that file.
+@bold{Tip:} Changing the name of a file in the middle of a debugging
+session will prevent the debugger from working properly on that file.
 
 Like the @onscreen{Run} button, the @as-index{@onscreen{Debug} button}
 runs the program in the definitions window.  However, instead of

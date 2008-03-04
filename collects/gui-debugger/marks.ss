@@ -1,7 +1,8 @@
-(module marks mzscheme
+(module marks scheme/base
 
   (require mzlib/list
 	   mzlib/contract
+           (prefix-in mz: mzscheme)
            (lib "my-macros.ss" "stepper" "private")
            (lib "shared.ss" "stepper" "private"))
 
@@ -20,7 +21,7 @@
    [lookup-first-binding ((identifier? . -> . boolean?) mark-list? ( -> any) . -> . any)]
    [lookup-binding (mark-list? identifier? . -> . any)])
   
-  (provide
+  (mz:provide
    make-debug-info
    assemble-debug-info
    wcm-wrap
@@ -40,10 +41,10 @@
    #;lookup-binding-list
    debug-key
    extract-mark-list
-   (struct normal-breakpoint-info (mark-list kind))
-   (struct error-breakpoint-info (message))
+   make-normal-breakpoint-info normal-breakpoint-info-mark-list normal-breakpoint-info-kind
+   make-error-breakpoint-info error-breakpoint-info-message
    (struct breakpoint-halt ())
-   (struct expression-finished (returned-value-list)))
+   make-expression-finished expression-finished-returned-value-list)
   
   ; BREAKPOINT STRUCTURES
   
@@ -74,8 +75,8 @@
   
   ; see module top for type
   (define (make-full-mark module-name source label bindings assembled-info-stx)
-    (datum->syntax-object #'here `(lambda () (,(make-make-full-mark-varargs module-name source label bindings)
-					      ,assembled-info-stx))))
+    (mz:datum->syntax-object #'here `(lambda () (,(make-make-full-mark-varargs module-name source label bindings)
+	  				         ,assembled-info-stx))))
   
   (define (mark-module-name mark)
     (full-mark-struct-module-name (mark)))
@@ -120,7 +121,7 @@
   (define (display-mark mark)
     (apply
      string-append
-     (format "source: ~a~n" (syntax-object->datum (mark-source mark)))
+     (format "source: ~a~n" (mz:syntax-object->datum (mark-source mark)))
      (format "label: ~a~n" (mark-label mark))
      (format "bindings:~n")
      (map (lambda (binding)
@@ -146,11 +147,11 @@
   
   (define (lookup-binding mark-list id)
     (mark-binding-value
-     (lookup-first-binding (lambda (id2) (module-identifier=? id id2)) 
+     (lookup-first-binding (lambda (id2) (mz:module-identifier=? id id2)) 
                            mark-list 
                            (lambda ()
                              (error 'lookup-binding "variable not found in environment: ~a~n" (if (syntax? id) 
-                                                                                                  (syntax-object->datum id)
+                                                                                                  (mz:syntax-object->datum id)
                                                                                                   id))))))
   
   (define (all-bindings mark)
