@@ -3,10 +3,10 @@
 	   (only-in syntax/module-reader wrap-read-all))
   
   (define (*read in)
-    (wrap-read-all 'typed-scheme/lang/main in r:read))
+    (wrap-read-all 'typed-scheme in r:read))
   
   (define (*read-syntax src in)
-    (wrap-read-all 'typed-scheme/lang/main
+    (wrap-read-all 'typed-scheme
 		   in
 		   (lambda (in)
 		     (r:read-syntax src in))))

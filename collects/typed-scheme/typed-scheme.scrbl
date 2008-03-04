@@ -1,7 +1,7 @@
 #lang scribble/doc
 
 @begin[(require scribble/manual)
-       (require (for-label typed-scheme/lang/main))]
+       (require (for-label typed-scheme))]
 
 @begin[
 (define (item* header . args) (apply item @bold[header]{: } args))
@@ -10,7 +10,7 @@
 
 @title[#:tag "top"]{@bold{Typed Scheme}: Scheme with Static Types}
 
-@(defmodulelang typed-scheme #:use-sources (typed-scheme/lang/main))
+@(defmodulelang typed-scheme)
 
 Typed Scheme is a Scheme-like language, with a type system that
 supports common Scheme programming idioms.  Explicit type declarations
