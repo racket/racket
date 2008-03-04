@@ -23,13 +23,22 @@
            "bad syntax" 
            stx)
           (void))
-      (datum->syntax
-       stx
-       (list (quote-syntax #%module-begin)
-             (cons (quote-syntax printing-module-begin)
-                   (cdr (syntax-e stx))))
-       stx
-       stx)))
+      (let-values ([(l) (syntax->list stx)])
+        (if l
+            (void)
+            (raise-syntax-error
+             #f
+             "bad syntax (illegal use of `.')" 
+             stx))
+        (datum->syntax
+         stx
+         (cons (quote-syntax #%module-begin)
+               (map (lambda (e)
+                      (list (quote-syntax printing-module-begin)
+                            e))
+                    (cdr l)))
+         stx
+         stx))))
 
   (define-syntaxes (printing-module-begin)
     (lambda (stx)
@@ -65,15 +74,18 @@
                               #f)
                           #f))
                     ;; splice `begin'
-                    (datum->syntax
-                     stx
-                     (cons (quote-syntax printing-module-begin)
-                           (append (let-values ([(l) (syntax->list e)])
-                                     (map (lambda (elem)
-                                            (syntax-track-origin elem e (car l)))
-                                          (cdr l)))
-                                   (cdr r)))
-                     stx)
+                    (let-values ([(l) (syntax->list e)])
+                      (datum->syntax
+                       stx
+                       (cons (car l)
+                             (append
+                              (map (lambda (elem)
+                                     (list
+                                      (quote-syntax printing-module-begin)
+                                      (syntax-track-origin elem e (car l))))
+                                   (cdr l))
+                              (cdr r)))
+                       stx))
                     ;; no need to splice
                     (let-values ([(wrap?)
                                   (let-values ([(e) (syntax-e e)])

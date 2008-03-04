@@ -2300,7 +2300,7 @@ static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Obj
   Scheme_Cert *orig_certs, *cl, *now_certs, *next_certs;
   Scheme_Stx *stx = (Scheme_Stx *)o, *res;
   Scheme_Object *pr;
-  int copy_on_write;
+  int copy_on_write, shortcut;
 
   if (!stx->certs) {
     if (!certs)
@@ -2337,6 +2337,25 @@ static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Obj
     orig_certs = INACTIVE_CERTS(stx);
   now_certs = orig_certs;
 
+  shortcut = 0;
+  if (now_certs && certs && !use_key && CERT_NO_KEY(certs)) {
+    if (now_certs->depth < certs->depth) {
+      /* Maybe we can add now_certs onto certs, instead of the other
+         way around. */
+      for (next_certs = certs; next_certs; next_certs = next_certs->next) {
+        if (cert_in_chain(next_certs->mark, use_key, now_certs)) {
+          break;
+        }
+      }
+      if (!next_certs) {
+        /* Yes, we can take that shortcut. */
+        certs = append_certs(now_certs, certs);
+        now_certs = NULL;
+        shortcut = 1;
+      }
+    }
+  }
+
   for (; certs; certs = next_certs) {
     next_certs = certs->next;
     if (!cert_in_chain(certs->mark, use_key, now_certs)) {
@@ -2357,7 +2376,7 @@ static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Obj
 	stx = res;
 	copy_on_write = 0;
       }
-      if (!now_certs && !use_key && CERT_NO_KEY(certs)) {
+      if (!now_certs && !use_key && (shortcut || CERT_NO_KEY(certs))) {
         cl = certs;
         next_certs = NULL;
       } else {

@@ -1638,6 +1638,10 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
     mz_get_local_p(JIT_R1, JIT_LOCAL2);    
   }
   jit_movr_p(JIT_R2, JIT_RUNSTACK);
+  if (need_set_rs) {
+    /* In case arity check fails, need to update runstack now: */
+    JIT_UPDATE_THREAD_RSPTR();
+  }
   /* Now jump: */
   jit_jmpr(JIT_V1);
   CHECK_LIMIT();
@@ -1885,6 +1889,10 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
       jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->u.tail_code);
     } else {
       jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->arity_code);
+      if (need_set_rs) {
+        /* In case arity check fails, need to update runstack now: */
+        JIT_UPDATE_THREAD_RSPTR();
+      }
     }
     jit_jmpr(JIT_V1); /* callee restores (copied) V registers, etc. */
     jit_patch_movi(refr, (_jit.x.pc));
