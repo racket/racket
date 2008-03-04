@@ -205,15 +205,14 @@ Various common pieces of code that both the client and server need to access
   ;; saves the given table, overwriting any file that might be there
   (define (save-hard-link-table table)
     (verify-well-formed-hard-link-parameter!)
-    (with-output-to-file (HARD-LINK-FILE)
+    (with-output-to-file (HARD-LINK-FILE) #:exists 'truncate
       (lambda ()
         (display "")
         (for-each 
          (lambda (row)
            (write (update-element 4 path->bytes row))
            (newline))
-         table))
-      'truncate))
+         table))))
   
   ;; add-hard-link! string (listof string) num num path -> void
   ;; adds the given hard link, clearing any previous ones already in place
@@ -425,7 +424,7 @@ Various common pieces of code that both the client and server need to access
   ; copies exactly n chars to the given file from the given port. Raises an exception
   ; if the given number of characters are not available.
   (define (read-n-chars-to-file n ip file)
-    (let ((op (open-output-file file 'truncate)))
+    (let ((op (open-output-file file #:exists 'truncate)))
       (copy-n-chars n ip op)
       (close-output-port op)))
   
@@ -487,7 +486,7 @@ Various common pieces of code that both the client and server need to access
            (outport
             (if logfile
                 (with-handlers ((exn:fail:filesystem? (lambda (e) null-out)))
-                  (open-output-file logfile 'append))
+                  (open-output-file logfile #:exists 'append))
                 null-out)))
       (parameterize ([current-output-port outport])
         (f))))
