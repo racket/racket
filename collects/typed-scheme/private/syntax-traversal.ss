@@ -41,7 +41,7 @@
 (define (look-for-in-orig orig expanded lookfor)
   (define src (syntax-source orig))
   ;; we just might get a lookfor that is already in the original
-  (if (eq? src (syntax-source lookfor))
+  (if (syntax-original? lookfor)
     lookfor
     (let ([enclosing (enclosing-syntaxes-with-source expanded lookfor src)]
           [syntax-locs (make-hash-table 'equal)])

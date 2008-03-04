@@ -189,6 +189,7 @@
      [vector-ref 
       (make-Poly (list 'a) ((make-Vector (-v a)) N . -> . (-v a)))]
      [build-vector (-poly (a) (N (N . -> . a) . -> . (make-Vector a)))]
+     [build-list (-poly (a) (N (N . -> . a) . -> . (-lst a)))]
      [reverse (make-Poly '(a) (-> (make-lst (-v a)) (make-lst (-v a))))]
      [append (-poly (a) (->* (list) (-lst a) (-lst a)))]
      [length (make-Poly '(a) (-> (make-lst (-v a)) N))]
