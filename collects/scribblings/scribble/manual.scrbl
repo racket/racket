@@ -359,53 +359,59 @@ can also be defined by a single @scheme[defproc*], for the case that
 it's best to document a related group of procedures at once.}
 
 
-@defform/subs[(defform maybe-literals (id . datum) pre-flow ...)
-              ([maybe-literals code:blank
+@defform/subs[(defform maybe-id maybe-literals form-datum pre-flow ...)
+              ([maybe-id code:blank
+                         (code:line #:id id)]
+               [maybe-literals code:blank
                                (code:line #:literals (literal-id ...))])]{
 
 Produces a a sequence of flow elements (encaptured in a
-@scheme[splice]) to document a syntatic form named by @scheme[id]. The
-@scheme[id] is indexed, and it is also registered so that
-@scheme[scheme]-typeset uses of the identifier (with the same
-for-label binding) are hyperlinked to this documentation. 
+@scheme[splice]) to document a syntatic form named by @scheme[id]
+whose syntax described by @scheme[datum]. If no @scheme[#:id] is used
+to specify @scheme[id], then @scheme[form-datum] must have the form
+@scheme[(id . _datum)].
 
-The @scheme[defmodule] or @scheme[declare-exporting] requires, as well
-as the binding requirements for @scheme[id], are the same as for
+The @scheme[id] is indexed, and it is also registered so that
+@scheme[scheme]-typeset uses of the identifier (with the same
+for-label binding) are hyperlinked to this documentation.
+
+The @scheme[defmodule] or @scheme[declare-exporting] requirements, as
+well as the binding requirements for @scheme[id], are the same as for
 @scheme[defproc].
 
 The @tech{decode}d @scheme[pre-flow] documents the form. In this
-description, a reference to any identifier in @scheme[datum] via
+description, a reference to any identifier in @scheme[form-datum] via
 @scheme[scheme], @scheme[schemeblock], @|etc| is typeset as a sub-form
 non-terminal. If @scheme[#:literals] clause is provided, however,
 instances of the @scheme[literal-id]s are typeset normally (i.e., as
 determined by the enclosing context).
 
-The typesetting of @scheme[(id . datum)] preserves the source
-layout, like @scheme[schemeblock].}
+The typesetting of @scheme[form-datum] preserves the source layout,
+like @scheme[schemeblock].}
 
-@defform[(defform* maybe-literals [(id . datum) ..+] pre-flow ...)]{
+@defform[(defform* maybe-id maybe-literals [form-datum ..+] pre-flow ...)]{
 
 Like @scheme[defform], but for multiple forms using the same
-@scheme[id].}
+@scheme[_id].}
 
-@defform[(defform/subs maybe-literals (id . datum)
+@defform[(defform/subs maybe-id maybe-literals form-datum
            ([nonterm-id clause-datum ...+] ...)
            pre-flow ...)]{
 
 Like @scheme[defform], but including an auxiliary grammar of
-non-terminals shown with the @scheme[id] form. Each
+non-terminals shown with the @scheme[_id] form. Each
 @scheme[nonterm-id] is specified as being any of the corresponding
 @scheme[clause-datum]s, where the formatting of each
 @scheme[clause-datum] is preserved.}
 
 
-@defform[(defform*/subs maybe-literals [(id . datum) ...]
+@defform[(defform*/subs maybe-id maybe-literals [form-datum ...]
            pre-flow ...)]{
 
-Like @scheme[defform/subs], but for multiple forms for @scheme[id].}
+Like @scheme[defform/subs], but for multiple forms for @scheme[_id].}
 
 
-@defform[(defform/none maybe-literal datum pre-flow ...)]{
+@defform[(defform/none maybe-literal form-datum pre-flow ...)]{
 
 Like @scheme[defform], but without registering a definition.}
 
@@ -415,9 +421,9 @@ Like @scheme[defform], but without registering a definition.}
 Like @scheme[defform], but with a plain @scheme[id] as the form.}
 
 
-@defform[(specform maybe-literals (id . datum) pre-flow ...)]{
+@defform[(specform maybe-literals datum pre-flow ...)]{
 
-Like @scheme[defform], with without indexing or registering a
+Like @scheme[defform], but without indexing or registering a
 definition, and with indenting on the left for both the specification
 and the @scheme[pre-flow]s.}
 

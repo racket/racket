@@ -760,21 +760,24 @@
                    immutable? transparent? (lambda () (list desc ...)))]))
   (define-syntax (defform*/subs stx)
     (syntax-case stx ()
-      [(_ #:literals (lit ...) [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
+      [(_ #:id defined-id #:literals (lit ...) [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
        (with-syntax ([new-spec
-                      (syntax-case #'spec ()
-                        [(name . rest)
-                         (datum->syntax #'spec
-                                        (cons
-                                         (datum->syntax #'here
-                                                        '(unsyntax x)
-                                                        #'name)
-                                         #'rest)
-                                        #'spec)])]
-                     [spec-id
-                      (syntax-case #'spec ()
-                        [(name . rest) #'name])])
-         #'(*defforms (quote-syntax/loc spec-id) '(lit ...)
+                      (let loop ([spec #'spec])
+                        (if (and (identifier? spec)
+                                 (free-identifier=? spec #'defined-id))
+                            (datum->syntax #'here
+                                           '(unsyntax x)
+                                           spec
+                                           spec)
+                            (syntax-case spec ()
+                              [(a . b)
+                               (datum->syntax spec
+                                              (cons (loop #'a)
+                                                    (loop #'b))
+                                              spec
+                                              spec)]
+                              [_ spec])))])
+         #'(*defforms (quote-syntax/loc defined-id) '(lit ...)
                       '(spec spec1 ...) 
                       (list (lambda (x) (schemeblock0/form new-spec))
                             (lambda (ignored) (schemeblock0/form spec1)) ...)
@@ -784,18 +787,28 @@
                                   ...)
                             ...)
                       (lambda () (list desc ...))))]
+      [(fm #:id id [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
+       #'(fm #:id id #:literals () [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)]
+      [(fm #:literals lits [(spec-id . spec-rest) spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
+       (with-syntax ([(_ _ _ [spec . _] . _) stx])
+         #'(fm #:id spec-id #:literals lits [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...))]
       [(fm [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
        #'(fm #:literals () [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)]))
   (define-syntax (defform* stx)
     (syntax-case stx ()
+      [(_ #:id id #:literals lits [spec ...] desc ...) #'(defform*/subs #:id id #:literals lits [spec ...] () desc ...)]
       [(_ #:literals lits [spec ...] desc ...) #'(defform*/subs #:literals lits [spec ...] () desc ...)]
       [(_ [spec ...] desc ...) #'(defform*/subs [spec ...] () desc ...)]))
   (define-syntax (defform stx)
     (syntax-case stx ()
+      [(_ #:id id #:literals (lit ...) spec desc ...) #'(defform*/subs #:id id #:literals (lit ...) [spec] () desc ...)]
+      [(_ #:id id spec desc ...) #'(defform*/subs #:id id #:literals () [spec] () desc ...)]
       [(_ #:literals (lit ...) spec desc ...) #'(defform*/subs #:literals (lit ...) [spec] () desc ...)]
       [(_ spec desc ...) #'(defform*/subs [spec] () desc ...)]))
   (define-syntax (defform/subs stx)
     (syntax-case stx ()
+      [(_ #:id id #:literals lits spec subs desc ...) #'(defform*/subs #:id id #:literals lits [spec] subs desc ...)]
+      [(_ #:id id spec subs desc ...) #'(defform*/subs #:id id #:literals () [spec] subs desc ...)]
       [(_ #:literals lits spec subs desc ...) #'(defform*/subs #:literals lits [spec] subs desc ...)]
       [(_ spec subs desc ...) #'(defform*/subs [spec] subs desc ...)]))
   (define-syntax (defform/none stx)
@@ -1646,24 +1659,16 @@
 
   (define (*defforms kw-id lits forms form-procs subs sub-procs content-thunk)
     (let ([var-list
-           (apply 
-            append
-            (map (lambda (form)
-                   (let loop ([form (cons (if kw-id 
-                                              (if (pair? form)
-                                                  (cdr form) 
-                                                  null)
-                                              form)
-                                          subs)])
-                     (cond
-                      [(symbol? form) (if (or (meta-symbol? form)
-                                              (memq form lits))
-                                          null
-                                          (list form))]
-                      [(pair? form) (append (loop (car form))
-                                            (loop (cdr form)))]
-                      [else null])))
-                 forms))])
+           (let loop ([form (cons forms subs)])
+             (cond
+              [(symbol? form) (if (or (meta-symbol? form)
+                                      (and kw-id (eq? form (syntax-e kw-id)))
+                                      (memq form lits))
+                                  null
+                                  (list form))]
+              [(pair? form) (append (loop (car form))
+                                    (loop (cdr form)))]
+              [else null]))])
       (parameterize ([current-variable-list var-list]
                      [current-meta-list '(... ...+)])
         (make-box-splice
@@ -1684,11 +1689,7 @@
                        (and kw-id
                             (eq? form (car forms))
                             (let ([target-maker (id-to-form-target-maker kw-id #t)]
-                                  [content (list (definition-site (if (pair? form)
-                                                                      (car form) 
-                                                                      form)
-                                                   kw-id
-                                                   #t))])
+                                  [content (list (definition-site (syntax-e kw-id) kw-id #t))])
                               (if target-maker
                                   (target-maker
                                    content
