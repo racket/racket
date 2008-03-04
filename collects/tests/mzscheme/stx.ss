@@ -1367,5 +1367,26 @@
   (delete-file "tmp10"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure post-ex renames aren't simplied away too soon:
+
+(module @simp@ scheme/base
+
+  (require (for-syntax scheme/base))
+  
+  (define-syntax-rule (foo)
+    (begin
+      (define-for-syntax goo #'intro)
+      (define intro 5)
+      (define-syntax (extract stx)
+        #`(quote #,(identifier-binding goo)))
+      (define @simp@tst (extract))
+      (provide @simp@tst)))
+  
+  (foo))
+(require '@simp@)
+
+(test #t list? @simp@tst)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
