@@ -126,15 +126,16 @@
       
       (define filename->defs
         (opt-lambda (source [default #f])
-          (cond
-            [(is-a? source editor<%>) source]
-            [(or (not source) (symbol? source)) #f]
-            [(send (group:get-the-frame-group) locate-file source)
-             =>
-             (lambda (frame)
-               (let ([defss (map (lambda (t) (send t get-defs)) (send frame get-tabs))])
-                 (findf (lambda (d) (equal? (send d get-filename) source)) defss)))]
-            [else default])))
+          (let/cc k
+            (cond
+              [(is-a? source editor<%>) source]
+              [else
+               (send (group:get-the-frame-group) for-each-frame
+                     (lambda (frame)
+                       (let* ([defss (map (lambda (t) (send t get-defs)) (send frame get-tabs))]
+                              [defs (findf (lambda (d) (send d port-name-matches? source)) defss)])
+                         (and defs (k defs)))))
+               default]))))
       
       (define (debug-definitions-text-mixin super%)
         (class super%
