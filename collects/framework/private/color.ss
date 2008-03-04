@@ -1,7 +1,7 @@
 #lang scheme/unit
 #|
 update-region-end is now gone
-reset-region needs to go
+get-region is gone
 added reset-regions
 added get-regions
 |#
@@ -44,6 +44,7 @@ added get-regions
     freeze-colorer
     thaw-colorer
     
+    reset-region
     reset-regions
     get-regions
     
@@ -116,6 +117,21 @@ added get-regions
     (define regions '((0 end)))
     (inherit last-position)
     
+    (define/public (reset-region start end)
+      (unless (<= 0 start (last-position))
+        (raise-mismatch-error 'reset-region
+                              "start position not inside editor: "
+                              start))
+      (unless (or (eq? 'end end) (<= 0 end (last-position)))
+        (raise-mismatch-error 'reset-region
+                              "end position not inside editor: "
+                              end))
+      (unless (or (eq? 'end end) (<= start end))
+        (raise-mismatch-error 'reset-region
+                              "end position before start position: "
+                              (list end start)))
+      (reset-regions (list (list start end))))
+    
     (define/public (reset-regions _regions)
       (let loop ([regions _regions]
                  [pos 0])
@@ -141,7 +157,6 @@ added get-regions
       
       (let ([old-regions regions])
         (set! regions _regions)
-        ;(reset-tokens)
         (let loop ([old old-regions]
                    [new regions])
           (cond
@@ -158,25 +173,6 @@ added get-regions
                                0)]))))
     
     (define/public (get-regions) regions)
-    
-    ;; See docs
-    (define/public (reset-region start end)
-      (unless (<= 0 start (last-position))
-        (raise-mismatch-error 'reset-region
-                              "start position not inside editor: "
-                              start))
-      (unless (or (eq? 'end end) (<= 0 end (last-position)))
-        (raise-mismatch-error 'reset-region
-                              "end position not inside editor: "
-                              end))
-      (unless (or (eq? 'end end) (<= start end))
-        (raise-mismatch-error 'reset-region
-                              "end position before start position: "
-                              (list end start)))
-      (reset-tokens)
-      (do-insert/delete start 0))
-    
-    (define/public (get-region) (values 0 'end))
     
     ;; ---------------------- Preferences -------------------------------
     (define should-color? #t)
