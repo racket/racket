@@ -39,7 +39,7 @@ Another way to use the reader is to use the @scheme[use-at-readtable]
 function to switch the current readtable to a readtable that parses
 @"@"-forms.  You can do this in a single command line:
 
-@commandline{mzscheme -l scheme -l scribble/reader -e "(use-at-readtable)"}
+@commandline{mzscheme -ile scribble/reader "(use-at-readtable)"}
 
 @;--------------------------------------------------------------------
 @section{Concrete Syntax}
@@ -640,9 +640,9 @@ matter, you can begin (or end) a line with a "@||".
 @section{Syntax Properties}
 
 The Scribble reader attaches properties to syntax objects.  These
-properties might be useful in rare situations.
+properties might be useful in some rare situations.
 
-Forms that Scribble reads is marked with a @scheme['scribble]
+Forms that Scribble reads are marked with a @scheme['scribble]
 property, and a value of a list of three elements: the first is
 @scheme['form], the second is the number of items that were read from
 the datum part, and the third is the number of items in the body part
@@ -655,9 +655,10 @@ example, implicitly quoted keywords:
 
 @; FIXME: a bit of code duplication here
 @def+int[
-  #:eval read-eval 
+  #:eval read-eval
   (define-syntax (foo stx)
     (let ([p (syntax-property stx 'scribble)])
+      (printf ">>> ~s\n" (syntax->datum stx))
       (syntax-case stx ()
         [(_ x ...)
          (and (pair? p) (eq? (car p) 'form) (even? (cadr p)))
@@ -674,10 +675,10 @@ example, implicitly quoted keywords:
                            #'(key ,val))
                          as)
                    (cddr xs))))])))
-(eval:alts
- (code:line
-  #, @tt["@foo[x 1 y (* 2 3)]{blah}"])
-  @foo[x 1 y (* 2 3)]{blah})
+  (eval:alts
+   (code:line
+    #, @tt["@foo[x 1 y (* 2 3)]{blah}"])
+    @foo[x 1 y (* 2 3)]{blah})
 ]
 
 In addition, the Scribble parser uses syntax properties to mark syntax
@@ -689,12 +690,12 @@ have a @scheme['(newline S)] value where @scheme[S] is the original
 newline string including spaces that precede and follow it (which
 includes the indentation for the following item).  This can be used to
 implement a verbatim environment: drop indentation strings, and use
-the original source strings instead of single-newline string.  Here is
-an example of this.
+the original source strings instead of the single-newline string.  Here
+is an example of this.
 
 @; FIXME: a bit of code duplication here
 @def+int[
-  #:eval read-eval 
+  #:eval read-eval
   (define-syntax (verb stx)
     (syntax-case stx ()
       [(_ cmd item ...)
@@ -712,16 +713,16 @@ an example of this.
                          [else (cons (datum->syntax-object
                                       fst (cadr prop) fst)
                                      rst)])))))]))
-(eval:alts
- (code:line
-  #, @tt["@verb[string-append]{"]
-  #, @tt["  foo"]
-  #, @tt["    bar"]
-  #, @tt["}"])
- @verb[string-append]{
-   foo
-     bar
- })
+  (eval:alts
+   (code:line
+    #, @tt["@verb[string-append]{"]
+    #, @tt["  foo"]
+    #, @tt["    bar"]
+    #, @tt["}"])
+   @verb[string-append]{
+     foo
+       bar
+   })
 ]
 
 @;--------------------------------------------------------------------
