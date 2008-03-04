@@ -23,8 +23,7 @@
           "private/type-contract.ss"
           "private/nest.ss"
           syntax/kerncase
-          mzlib/list
-          mzlib/plt-match))
+          scheme/match))
 
 
 (provide 

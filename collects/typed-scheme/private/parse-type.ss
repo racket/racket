@@ -207,4 +207,3 @@
            (string? (syntax-e #'t)))
        (-val (syntax-e #'t))]
       [_ (tc-error "not a valid type: ~a" (syntax->datum stx))])))
-

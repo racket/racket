@@ -404,7 +404,3 @@
 (define infer/list (mk-infer infer/int/list))
 
 ;(trace infer infer/int/list infer/int infer/list)
-
-
-
-

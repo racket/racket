@@ -38,5 +38,3 @@
 
 (define (insert k v t)
   (cons (cons k v) t))
-
-

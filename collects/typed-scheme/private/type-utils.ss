@@ -75,4 +75,4 @@
 (define (fv t) (hash-table-map (free-vars* t) (lambda (k v) k)))
 
 ;; fv/list : Listof[Type] -> Listof[Name]
-(define (fv/list ts) (hash-table-map (combine-frees (map free-vars* ts)) (lambda (k v) k)))  
+(define (fv/list ts) (hash-table-map (combine-frees (map free-vars* ts)) (lambda (k v) k)))

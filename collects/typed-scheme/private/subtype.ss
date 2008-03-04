@@ -268,5 +268,3 @@
 
 ;(subtype (-> Univ B) (-> Univ Univ))
 ;(subtype (make-poly '(a) (make-tvar 'a)) (make-lst N))
-
-

@@ -40,5 +40,3 @@
 ;; (id type -> T) -> listof[T]
 (define (type-name-env-map f)
   (module-identifier-mapping-map the-mapping f))
-
-

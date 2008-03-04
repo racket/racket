@@ -158,7 +158,3 @@
                    frees)))])))
     (values (mk #'Type #'type-name-ht) (mk #'Effect #'effect-name-ht))))
 
-
-
-
-

@@ -12,4 +12,3 @@
 		     (r:read-syntax src in))))
   
   (provide (rename-out [*read read] [*read-syntax read-syntax])))
-

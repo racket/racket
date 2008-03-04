@@ -117,5 +117,3 @@
           [(symbol? v) (symbol->string v)]
           [(identifier? v) (symbol->string (syntax-e v))]))
   (datum->syntax kw (string->symbol (apply string-append (map f args)))))
-
-
