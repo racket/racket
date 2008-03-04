@@ -2,12 +2,12 @@
 
 (require "1.ss") ;; the module just above
 
-;; implementation 
+;; implementation
 ;; [listof (list basic-customer? secret-info)]
 (define all '())
 
-(define (find c) 
-  (define (has-c-as-key p) 
+(define (find c)
+  (define (has-c-as-key p)
     (id-equal? (basic-customer-id (car p)) c))
   (define x (filter has-c-as-key all))
   (if (pair? x) (car x) x))
@@ -33,27 +33,27 @@
   (set-basic-customer-name! (car bc-with-id) name))
 
 (define c0 0)
-;; end of implementation 
+;; end of implementation
 
 (provide/contract
- ;; how many customers are in the db?  
+ ;; how many customers are in the db?
  [count    natural-number/c]
- ;; is the customer with this id active? 
+ ;; is the customer with this id active?
  [active?  (-> id? boolean?)]
- ;; what is the name of the customer with this id? 
+ ;; what is the name of the customer with this id?
  [name     (-> (and/c id? active?) string?)]
- ;; change the name of the customer with this id 
+ ;; change the name of the customer with this id
  [set-name (->d ([id id?] [nn string?])
                 ()
-                [result any/c] ;; result contract 
+                [result any/c] ;; result contract
                 #:post-cond
                 (string=? (name id) nn))]
- 
+
  [add      (->d ([bc (and/c basic-customer? not-active?)])
                 ()
-                ;; A pre-post condition contract must use 
+                ;; A pre-post condition contract must use
                 ;; a side-effect to express this contract
                 ;; via post-conditions
                 #:pre-cond (set! c0 count)
-                [result any/c] ;; result contract 
+                [result any/c] ;; result contract
                 #:post-cond (> count c0))])

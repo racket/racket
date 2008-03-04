@@ -16,4 +16,3 @@
   (test-true "active?" (active? 'mf))
   (test-false "active? 2" (active? 'kk))
   (test-true "set name" (void? (set-name 'mf "matt")))))
-

@@ -7,7 +7,7 @@
 (define d (put (put (put d0 'a 2) 'b 2) 'c 1))
 
 (test/text-ui
- (test-suite 
+ (test-suite
   "dictionaries"
   (test-equal? "value for" 2 (value-for d 'b))
   (test-false "has?" (has? (rem d 'b) 'b))

@@ -7,10 +7,10 @@
 (define s2 (push (push s0 2) 1))
 
 (test/text-ui
- (test-suite 
+ (test-suite
   "stack"
-  (test-true 
-   "empty" 
+  (test-true
+   "empty"
    (is-empty? (initialize (flat-contract integer?) =)))
   (test-true "push" (stack? s2))
   (test-true

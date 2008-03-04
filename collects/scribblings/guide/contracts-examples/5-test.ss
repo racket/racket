@@ -6,9 +6,9 @@
 (define s (put (put (initialize (flat-contract integer?) =) 2) 1))
 
 (test/text-ui
- (test-suite 
+ (test-suite
   "queue"
-  (test-true 
+  (test-true
    "empty"
    (is-empty? (initialize (flat-contract integer?) =)))
   (test-true "put" (queue? s))
