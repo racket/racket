@@ -196,7 +196,7 @@
 					(extract-nongenerative ?props)
 					(extract-sealed ?props)
 					(extract-opaque ?props)
-					'((?mutability ?field-name) ...)))
+					'#((?mutability ?field-name) ...)))
 
 	 (define $constructor-descriptor
 	   (make-record-constructor-descriptor

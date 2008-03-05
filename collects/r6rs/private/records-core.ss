@@ -119,34 +119,35 @@
     (if (and parent
 	     (record-type-sealed? parent))
 	(assertion-violation 'make-record-type-descriptor "can't extend a sealed parent type" parent))
-    (if (not (list? field-specs))
-        (assertion-violation 'make-record-type-descriptor "field specification must be a list" field-specs))
-    (let ((opaque? (if parent
-		       (or (record-type-opaque? parent)
-			   opaque?)
-		       opaque?))
-	  (field-specs (map parse-field-spec field-specs)))
-      (let ((rtd 
-	     (make-vector-type name
-			       parent
-			       (make-record-type-data name uid (and sealed? #t) (and opaque? #t) field-specs parent)
-			       (append (append-field-mutable-specs parent)
-				       (map field-spec-mutable? field-specs))
-			       opaque?)))
-	(if uid
-	    (cond
-	     ((uid->record-type-descriptor uid)
-	      => (lambda (old-rtd)
-		   (if (record-type-descriptor=? rtd old-rtd)
-		       old-rtd
-		       (assertion-violation 'make-record-type
-                                            "mismatched nongenerative record types with identical uids"
-                                            old-rtd rtd))))
-	     (else
-	      (set! *nongenerative-record-types* 
-		    (cons rtd *nongenerative-record-types*))
-	      rtd))
-	    rtd))))
+    (if (not (vector? field-specs))
+        (assertion-violation 'make-record-type-descriptor "field specification must be a vector" field-specs))
+    (let ([field-specs (vector->list field-specs)])
+      (let ((opaque? (if parent
+                         (or (record-type-opaque? parent)
+                             opaque?)
+                         opaque?))
+            (field-specs (map parse-field-spec field-specs)))
+        (let ((rtd 
+               (make-vector-type name
+                                 parent
+                                 (make-record-type-data name uid (and sealed? #t) (and opaque? #t) field-specs parent)
+                                 (append (append-field-mutable-specs parent)
+                                         (map field-spec-mutable? field-specs))
+                                 opaque?)))
+          (if uid
+              (cond
+               ((uid->record-type-descriptor uid)
+                => (lambda (old-rtd)
+                     (if (record-type-descriptor=? rtd old-rtd)
+                         old-rtd
+                         (assertion-violation 'make-record-type
+                                              "mismatched nongenerative record types with identical uids"
+                                              old-rtd rtd))))
+               (else
+                (set! *nongenerative-record-types* 
+                      (cons rtd *nongenerative-record-types*))
+                rtd))
+              rtd)))))
 
   (define (record-type-descriptor? thing)
     (and (vector-type? thing)
@@ -177,7 +178,7 @@
 	   spec))
 
   (define (record-type-field-names rtd)
-    (map field-spec-name (record-type-field-specs rtd)))
+    (list->vector (map field-spec-name (record-type-field-specs rtd))))
 
   (define (field-count rtd)
     (let loop ((rtd rtd)
