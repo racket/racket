@@ -454,7 +454,7 @@
 (let ([b (identifier-binding (syntax-case (expand #'(module m scheme/base
 						      (require (only-in (lib "lang/htdp-intermediate.ss") [cons bcons]))
 						      bcons)) ()
-			       [(mod m mz (#%mod-beg req (app call-with-values (lambda () cons) print) void))
+			       [(mod m mz (#%mod-beg req _void (app call-with-values (lambda () cons) print) void))
 				(let ([s (syntax cons)])
 				  (test 'bcons syntax-e s)
 				  s)]))])
