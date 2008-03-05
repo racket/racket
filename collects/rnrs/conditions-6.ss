@@ -2,7 +2,8 @@
 
 (require rnrs/records/syntactic-6
          rnrs/records/procedural-6
-         r6rs/private/conds)
+         r6rs/private/conds
+         (for-syntax scheme/base))
 
 (provide &condition
          condition?
@@ -28,10 +29,8 @@
 
 (define-record-type &condition (fields))
 
-(define-struct (compound-condition exn) (conditions))
-(define-struct (compound-condition:fail exn:fail) (conditions))
-
-(define-struct has-continuation-marks (marks))
+(define-struct (compound-condition exn) (conditions) #:transparent)
+(define-struct (compound-condition:fail exn:fail) (conditions) #:transparent)
 
 (define (condition? v)
   (or (&condition? v)
@@ -45,16 +44,16 @@
                 (raise-type-error 'condition "condition" c)))
             conds)
   (let ([conditions
-         (make-compound-condition
-          (apply append
-                 (map simple-conditions conds)))])
+         (apply append
+                (map simple-conditions conds))])
     ((if (ormap serious-condition? conditions)
          make-compound-condition:fail
          make-compound-condition)
-     (ormap (lambda (c)
-              (and (message-condition? c)
-                   (condition-message c)))
-            conditions)
+     (or (ormap (lambda (c)
+                  (and (message-condition? c)
+                       (condition-message c)))
+                conditions)
+         "exception")
      (or (ormap (lambda (c)
                   (and (has-continuation-marks? c)
                        (has-continuation-marks-marks c)))
@@ -74,7 +73,9 @@
                  (procedure-arity-includes? proc 1))
       (raise-type-error 'condition-accessor "procedure (arity 1)" proc))
     (lambda (v)
-      (let ([v (ormap pred (simple-conditions v))])
+      (let ([v (ormap (lambda (x) 
+                        (and (pred x) x))
+                      (simple-conditions v))])
         (if v
             (proc v)
             (raise-type-error 'a-condition-accessor "specific kind of condition" v))))))
@@ -137,16 +138,26 @@
                            c)]))
 
 
-(define-syntax-rule (define-condition-type type supertype
-                      constructor predicate
-                      field ...)
-  (define-record-type (type constructor predicate)
-    (fields (immutable . field) ...)
-    (parent supertype)))
+(define-syntax (define-condition-type stx)
+  (syntax-case stx ()
+    [(_ type supertype
+        constructor predicate
+        (field accessor) ...)
+     (with-syntax ([(tmp-acc ...) (generate-temporaries #'(field ...))])
+       #'(begin
+           (define-record-type (type constructor base-predicate)
+             (fields (immutable field tmp-acc) ...)
+             (parent supertype))
+           (define predicate (condition-predicate type))
+           (define accessor (condition-accessor type tmp-acc)) ...))]))
 
 (define-condition-type &message &condition
   make-message-condition message-condition?
   (message condition-message))
+
+(define-condition-type &cont-marks &condition
+  make-has-continuation-marks has-continuation-marks?
+  (marks has-continuation-marks-marks))
 
 (define-condition-type &warning &condition
   make-warning warning?)

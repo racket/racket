@@ -68,7 +68,7 @@
 
 (define (r6rs:raise exn)
   ;; No barrier
-  (raise exn #t))
+  (raise exn #f))
 
 (define (raise-continuable exn)
   ((let/cc cont
