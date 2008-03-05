@@ -4,4 +4,19 @@
 (define tools '(("tool.ss" "drscheme")))
 (define tool-names '("DrScheme Test Suites"))
 
-(define compile-omit-paths 'all)
+(define compile-omit-paths 
+  '("aligned-pasteboard"
+    "honu"
+    "mred"
+    "mysterx"
+    "mzcom"
+    "mzscheme"
+    "plai"
+    "plot"
+    "profj"
+    "srfi"
+    "srpersist"
+    "stepper"
+    "syntax-color"
+    "units"
+    "web-server"))
