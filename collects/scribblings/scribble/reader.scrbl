@@ -678,7 +678,11 @@ example, implicitly quoted keywords:
   (eval:alts
    (code:line
     #, @tt["@foo[x 1 y (* 2 3)]{blah}"])
-    @foo[x 1 y (* 2 3)]{blah})
+    ;; Unfortunately, expressions are preserved by `def+int'
+    ;; using `quote', not `quote-syntax' (which would create all sorts
+    ;; or binding trouble), so we manually re-attach the property:
+    (eval (syntax-property #'@foo[x 1 y (* 2 3)]{blah}
+                           'scribble '(form 4 1))))
 ]
 
 In addition, the Scribble parser uses syntax properties to mark syntax
