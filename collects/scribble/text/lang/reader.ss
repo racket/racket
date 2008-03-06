@@ -1,15 +1,15 @@
 #lang scheme/base
 
-(require (prefix-in s: "../../reader.ss"))
+(require "../../text.ss")
 
 (provide (rename-out [*read read])
          (rename-out [*read-syntax read-syntax]))
 
 (define (*read [inp (current-input-port)])
-  (wrap inp (s:read-inside inp)))
+  (wrap inp (at:read-inside inp)))
 
 (define (*read-syntax [src #f] [port (current-input-port)])
-  (wrap port (s:read-inside-syntax src port)))
+  (wrap port (at:read-inside-syntax src port)))
 
 (define (wrap port body)
   (define (strip-leading-newlines stxs)
@@ -29,4 +29,4 @@
          [body (if (syntax? body)
                  (strip-leading-newlines (syntax->list body))
                  body)])
-    `(module ,name scribble/text (#%module-begin . ,body))))
+    `(module ,name scribble/text . ,body)))

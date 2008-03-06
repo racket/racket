@@ -1,9 +1,9 @@
 #lang scheme/base
 
-(require scheme/promise)
+(require scheme/promise (for-syntax scheme/base))
 (provide (all-from-out scheme/base scheme/promise))
 
-(define (show x p)
+(define (show x [p (current-output-port)])
   (let show ([x x])
     (cond [(or (void? x) (not x) (null? x)) (void)]
           [(pair? x) (show (car x)) (show (cdr x))]
@@ -32,3 +32,29 @@
 ;; (require (prefix-in * "text/lang/reader.ss"))
 ;; (current-prompt-read
 ;;  (lambda () (parameterize ([read-accept-reader #t]) (*read-syntax))))
+
+;; Utilities
+
+(require (prefix-in at: "reader.ss"))
+(provide at:read-inside at:read-inside-syntax)
+
+(provide include)
+(define-syntax (include stx)
+  (syntax-case stx ()
+    [(_ filename)
+     (let* ([source (syntax-source stx)]
+            [dir (or (and source
+                          (let-values ([(base file dir?) (split-path source)])
+                            (and (path? base) base)))
+                     (current-load-relative-directory)
+                     (current-directory))])
+       (with-syntax ([ns (if source
+                           #`(module->namespace #,source)
+                           #'(current-namespace))]
+                     [dir dir])
+         #'(let ([contents
+                  (with-input-from-file (path->complete-path filename dir)
+                    at:read-inside-syntax)])
+             (parameterize ([current-namespace ns])
+               (for ([expr (syntax->list contents)])
+                 (show (eval expr)))))))]))

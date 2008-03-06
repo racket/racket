@@ -40,3 +40,35 @@ it through @exec{mzscheme}.  Here is a sample file:
 }|
 
 (Note how @litchar["@;"] is used to avoid empty lines in the output.)
+
+
+@;--------------------------------------------------------------------
+@section{Using External Files}
+
+Using additional files that contain code for your preprocessing is
+trivial: the preprocessor source is a plain Scheme file, so you can
+@scheme[require] additional files as usual.
+
+However, things can become tricky if you want to include an external
+file that should also be preprocessed.  Using @scheme[require] with a
+text file (that uses the @scheme[scribble/text] language) almost
+works, but when a module is required, it is invoked before the current
+module, which means that the required file will be preprocessed before
+the current file regardless of where the @scheme[require] expression
+happens to be.  Alternatively, you can use @scheme[dynamic-require]
+with @scheme[#f] for the last argument (which makes it similar to a
+plain @scheme[load])---but remember that the path will be relative to
+the current directory, not to the source file.
+
+Finally, there is a convenient syntax for including text files to be
+processed:
+
+@defform[(include filename)]{
+
+Preprocess the @scheme[filename] using the same syntax as
+@scheme[scribble/text].  This is similar to using @scheme[load] in a
+namespace that can access names bound in the current file so included
+code can refer to bindings from the including module.  Note, however,
+that the including module cannot refer to names that are bound the
+included file because it is still a plain scheme module---for such
+uses you should still use @scheme[require] as usual.}
