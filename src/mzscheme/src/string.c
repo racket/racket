@@ -207,7 +207,11 @@ static char *nl_langinfo(int which)
 #else
 static char *mz_iconv_nl_langinfo(){
   char *s;
-  s = nl_langinfo(0);
+# if HAVE_CODESET
+  s = nl_langinfo(CODESET);
+# else
+  s = NULL;
+# endif
   if (!s)
     return "";
   else
