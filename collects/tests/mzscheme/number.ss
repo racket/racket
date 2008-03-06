@@ -1244,6 +1244,14 @@
 (test 4.0 round 3.5)
 (test -4.0 round -3.5)
 
+(define (test-zero-ident f)
+  (test 0.0 f 0.0)
+  (test -0.0 f -0.0))
+(test-zero-ident round)
+(test-zero-ident floor)
+(test-zero-ident ceiling)
+(test-zero-ident truncate)
+
 (err/rt-test (floor 2.6+0.0i))
 (err/rt-test (ceiling 2.6+0.0i))
 (err/rt-test (round 2.6+0.0i))
