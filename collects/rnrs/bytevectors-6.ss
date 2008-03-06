@@ -8,17 +8,17 @@
          (rename-out [bytes? bytevector?]
                      [bytes-length bytevector-length]
                      [bytes=? bytevector=?]
-                     [bytes-copy! bytevector-copy!]
                      [bytes-copy bytevector-copy]
                      [bytes-ref bytevector-u8-ref]
                      [bytes-set! bytevector-u8-set!])
+         bytevector-copy!
          bytevector->u8-list
          u8-list->bytevector
          make-bytevector 
          bytevector-fill!
          bytevector-s8-ref
          bytevector-s8-set!
-         
+
          bytevector-u16-ref
          bytevector-s16-ref
          bytevector-u16-native-ref
@@ -51,6 +51,11 @@
          bytevector-uint-set!
          bytevector-sint-set!
 
+         bytevector->uint-list
+         bytevector->sint-list
+         uint-list->bytevector
+         sint-list->bytevector
+
          string->utf8
          string->utf16
          string->utf32
@@ -64,6 +69,9 @@
   (if (system-big-endian?)
       (endianness big)
       (endianness little)))
+
+(define (bytevector-copy! src src-start target target-start k)
+  (bytes-copy! target target-start src src-start (+ src-start k)))
 
 (define (bytevector->u8-list bv)
   (list->mlist (bytes->list bv)))
@@ -96,8 +104,8 @@
         (- v 256)
         v)))
 
-(define (bytevector-s8-set! bytes k)
-  (bytes-set! bytes (convert-fill 'bytevector-s8-set! k)))
+(define (bytevector-s8-set! bytes k v)
+  (bytes-set! bytes k (convert-fill 'bytevector-s8-set! v)))
 
 (define (check-endian endianness)
   (unless (or (eq? endianness 'little)
@@ -235,6 +243,43 @@
                    (+ n (arithmetic-shift 1 (* 8 size)))
                    n)])
     (bytevector-int-set! 'bytevector-uint-set! bstr k pos-n n endianness size (* size (sub1 8)))))
+
+(define (bytevector->int-list who ref bv endianness size)
+  (unless (bytes? bv)
+    (raise-type-error who "bytevector" bv))
+  (check-endian endianness)
+  (unless (exact-positive-integer? size)
+    (raise-type-error who "exact positive integer" size))
+  (unless (zero? (modulo (bytes-length bv) size))
+    (raise-mismatch-error who "bytevector length is not a mulitple of given size: " size))
+  (list->mlist
+   (for/list ([k (in-range 0 (bytes-length bv) size)])
+     (ref bv k endianness size))))
+
+(define (bytevector->uint-list bv endianness size)
+  (bytevector->int-list 'bytevector->uint-list bytevector-uint-ref bv endianness size))
+
+(define (bytevector->sint-list bv endianness size)
+  (bytevector->int-list 'bytevector->sint-list bytevector-sint-ref bv endianness size))
+
+(define (int-list->bytevector who signed? set l endianness size)
+  (unless (list? l)
+    (raise-type-error who "list" l))
+  (check-endian endianness)
+  (unless (exact-positive-integer? size)
+    (raise-type-error who "exact positive integer" size))
+  (let* ([len (length l)]
+         [bv (make-bytes (* size len))])
+    (for ([v (in-list l)]
+          [k (in-naturals)])
+      (set l k v endianness size))
+    bv))
+
+(define (uint-list->bytevector l endianness size)
+  (int-list->bytevector 'uint-list->bytevector #f bytevector-uint-set! l endianness size))
+
+(define (sint-list->bytevector l endianness size)
+  (int-list->bytevector 'sint-list->bytevector #f bytevector-sint-set! l endianness size))
 
 ;; ----------------------------------------
 

@@ -3,6 +3,7 @@
 (require rnrs/records/syntactic-6
          rnrs/records/procedural-6
          r6rs/private/conds
+         scheme/mpair
          (for-syntax scheme/base))
 
 (provide &condition
@@ -45,7 +46,7 @@
             conds)
   (let ([conditions
          (apply append
-                (map simple-conditions conds))])
+                (map simple-conditions/list conds))])
     ((if (ormap serious-condition? conditions)
          make-compound-condition:fail
          make-compound-condition)
@@ -65,7 +66,7 @@
   (let ([pred (record-predicate rtd)])
     (lambda (v)
       (and (condition? v)
-           (ormap pred (simple-conditions v))))))
+           (ormap pred (simple-conditions/list v))))))
 
 (define (condition-accessor rtd proc)
   (let ([pred (record-predicate rtd)])
@@ -75,12 +76,12 @@
     (lambda (v)
       (let ([v (ormap (lambda (x) 
                         (and (pred x) x))
-                      (simple-conditions v))])
+                      (simple-conditions/list v))])
         (if v
             (proc v)
             (raise-type-error 'a-condition-accessor "specific kind of condition" v))))))
 
-(define (simple-conditions c)
+(define (simple-conditions/list c)
   (cond
    [(&condition? c) (list c)]
    [(compound-condition? c)
@@ -138,6 +139,8 @@
                            "condition"
                            c)]))
 
+(define (simple-conditions c)
+  (list->mlist (simple-conditions/list c)))
 
 (define-syntax (define-condition-type stx)
   (syntax-case stx ()

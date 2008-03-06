@@ -331,25 +331,20 @@ otherwise.}
 @examples[(truncate 17/4) (truncate -17/4) (truncate 2.5) (truncate -2.5)]}
 
 
-@defproc[(numerator [x real?]) (or/c integer? (one-of/c +nan.0))]{
- Coreces @scheme[x] to an exact number, finds the numerator of the number
+@defproc[(numerator [q rational?]) integer?]{
+ Coreces @scheme[q] to an exact number, finds the numerator of the number
  expressed in its simplest fractional form, and returns this number
- coerced to the exactness of @scheme[x]. An exception is when @scheme[x] is
- @scheme[+inf.0], @scheme[-inf.0], and @scheme[+nan.0], in which case
- @scheme[x] is returned.
+ coerced to the exactness of @scheme[q].
 
-@examples[(numerator 5) (numerator 34/8) (numerator 2.3) (numerator +inf.0)]}
+@examples[(numerator 5) (numerator 34/8) (numerator 2.3)]}
 
 
-@defproc[(denominator [x real?]) (or/c integer? (one-of/c +nan.0))]{
- Coreces @scheme[x] to an exact number, finds the numerator of the number
+@defproc[(denominator [q rational?]) integer?]{
+ Coreces @scheme[q] to an exact number, finds the numerator of the number
  expressed in its simplest fractional form, and returns this number
- coerced to the exactness of @scheme[x]. Exceptions are when @scheme[x] is
- @scheme[+inf.0] or @scheme[-inf.0], in which case @scheme[1.0] is
- returned, or when @scheme[x] is @scheme[+nan.0], in which case
- @scheme[+nan.0] is returned.
+ coerced to the exactness of @scheme[q].
 
-@examples[(denominator 5) (denominator 34/8) (denominator 2.3) (denominator +inf.0)]}
+@examples[(denominator 5) (denominator 34/8) (denominator 2.3)]}
 
 
 @defproc[(rationalize [x real?][tolerance real?]) real?]{

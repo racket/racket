@@ -14,6 +14,7 @@
     "plai"
     "plot"
     "profj"
+    "r6rs"
     "srfi"
     "srpersist"
     "stepper"

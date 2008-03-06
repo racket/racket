@@ -24,7 +24,7 @@
          native-transcoder
          ;bytevector->string
          ;string->bytevector
-         (rename-out [eof eof-object])
+         eof-object
          eof-object?
          port?
          port-transcoder
@@ -138,6 +138,8 @@
 
 (define (native-transcoder)
   utf8-transcoder)
+
+(define (eof-object) eof)
 
 ;; ----------------------------------------
 

@@ -10,8 +10,16 @@
 (provide fixnum?
          fixnum-width
          least-fixnum
-         greatest-fixnum)
-;; Many other provides from macros below
+         greatest-fixnum
+         fxbit-set?
+         fxcopy-bit
+         fxcopy-bit-field
+         fxarithmetic-shift
+         fxarithmetic-shift-left
+         fxarithmetic-shift-right
+         fxrotate-bit-field
+         fxreverse-bit-field)
+         ;; Many other provides from macros below
 
 (define 64-bit? (fixnum? (expt 2 33)))
 

@@ -1348,7 +1348,7 @@ static Scheme_Object *get_frac(char *name, int low_p,
     if (MZ_IS_NAN(d)
         || MZ_IS_POS_INFINITY(d)
         || MZ_IS_NEG_INFINITY(d)) {
-      scheme_wrong_type(name, REAL_NUMBER_STR, 0, argc, argv);
+      scheme_wrong_type(name, "rational number", 0, argc, argv);
       ESCAPED_BEFORE_HERE;
     }
     
@@ -1368,7 +1368,7 @@ static Scheme_Object *get_frac(char *name, int low_p,
     else
       n = scheme_rational_numerator(n);
   } else {
-    scheme_wrong_type(name, REAL_NUMBER_STR, 0, argc, argv);
+    scheme_wrong_type(name, "rational number", 0, argc, argv);
     ESCAPED_BEFORE_HERE;   
   }
   

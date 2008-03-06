@@ -8,6 +8,7 @@
          enum-set-universe
          enum-set-indexer
          enum-set-constructor
+         enum-set->list
          enum-set-member?
          enum-set-subset?
          enum-set=?
@@ -18,7 +19,8 @@
          enum-set-projection
          define-enumeration)
 
-(define-struct enum-set (val ht))
+(define-struct universe (ht syms))
+(define-struct enum-set (val uni))
 
 (define (make-enumeration-universe enum)
   (let ([bad (lambda ()
@@ -30,50 +32,55 @@
   (let ([enum (mlist->list enum)])
     (unless (andmap symbol? enum) (bad))
     (let ([ht (make-hash-table)])
-      (for ([s (in-list enum)])
-        (unless (hash-table-get ht s #f)
-          (hash-table-put! ht s (arithmetic-shift 1 (hash-table-count ht)))))
-      ht))))
+      (make-universe
+       ht
+       (for/list ([s (in-list enum)]
+                  #:when (not (hash-table-get ht s #f)))
+         (hash-table-put! ht s (arithmetic-shift 1 (hash-table-count ht)))
+         s))))))
 
 (define (make-enumeration enum)
-  (let ([ht (make-enumeration-universe enum)])
-    (make-enum-set (sub1 (arithmetic-shift 1 (hash-table-count ht)))
-                   ht)))
+  (let ([uni (make-enumeration-universe enum)])
+    (make-enum-set (sub1 (arithmetic-shift 1 (hash-table-count (universe-ht uni))))
+                   uni)))
 
 (define (enum-set-universe enum)
   (unless (enum-set? enum)
     (raise-type-error 'enum-set-universe
                       "enumeration set"
                       enum))
-  (let ([ht (enum-set-ht enum)])
-    (make-enum-set (sub1 (arithmetic-shift 1 (hash-table-count ht))) ht)))
+  (let ([uni (enum-set-uni enum)])
+    (make-enum-set (sub1 (arithmetic-shift 1 (hash-table-count 
+                                              (universe-ht uni))))
+                   uni)))
 
 (define (enum-set-indexer enum)
   (unless (enum-set? enum)
     (raise-type-error 'enum-set-indexer
                       "enumeration set"
                       enum))
-  (let ([ht (enum-set-ht enum)])
+  (let ([ht (universe-ht (enum-set-uni enum))])
     (lambda (sym)
       (let ([v (hash-table-get ht sym #f)])
         (if v
             (bitwise-first-bit-set v)
-            (error 'generated-enum-set-indexer
-                   (if (symbol? sym)
-                       "symbol not in universe: ~e"
-                       "not a symbol: ~e")
-                   sym))))))
+            (if (symbol? sym)
+                #f
+                (error 'generated-enum-set-indexer
+                       "not a symbol: ~e"
+                       sym)))))))
 
 (define (enum-set-constructor enum)
   (unless (enum-set? enum)
     (raise-type-error 'enum-set-constructor
                       "enumeration set"
                       enum))
-  (let ([ht (enum-set-ht enum)])
+  (let* ([uni (enum-set-uni enum)]
+         [ht (universe-ht uni)])
     (lambda (orig-syms)
       (let loop ([syms orig-syms][val 0])
         (cond
-         [(null? syms) (make-enum-set val ht)]
+         [(null? syms) (make-enum-set val uni)]
          [(not (mpair? syms))
           (raise-type-error 'make-enum-set
                             "list of symbols"
@@ -88,6 +95,18 @@
                      "not a symbol: ~e")
                  (mcar syms))])))))
 
+(define (enum-set->list enum)
+  (unless (enum-set? enum)
+    (raise-type-error 'enum-set->list
+                      "enumeration set"
+                      enum))
+  (let ([v (enum-set-val enum)])
+    (list->mlist
+     (for/list ([sym (in-list (universe-syms (enum-set-uni enum)))]
+                [i (in-naturals)]
+                #:when (not (zero? (bitwise-and (arithmetic-shift 1 i) v))))
+       sym))))
+
 (define (enum-set-member? sym enum)
   (unless (symbol? sym)
     (raise-type-error 'enum-set-member?
@@ -97,7 +116,7 @@
     (raise-type-error 'enum-set-member?
                       "enumeration set"
                       enum))
-  (let ([v (hash-table-get (enum-set-ht enum) sym #f)])
+  (let ([v (hash-table-get (universe-ht (enum-set-uni enum)) sym #f)])
     (and v
          (not (zero? (bitwise-and v (enum-set-val enum)))))))
 
@@ -112,15 +131,15 @@
 
 (define (enum-set-subset? enum1 enum2)
   (check-2-enums 'enum-set-subset? enum1 enum2)
-  (if (eq? (enum-set-ht enum1) (enum-set-ht enum2))
+  (if (eq? (enum-set-uni enum1) (enum-set-uni enum2))
       (= (enum-set-val enum1) 
          (bitwise-and (enum-set-val enum1) (enum-set-val enum2)))
-      (let ([ht2 (enum-set-ht enum2)]
+      (let ([ht2 (universe-ht (enum-set-uni enum2))]
             [v1 (enum-set-val enum1)]
             [v2 (enum-set-val enum2)])
         (for/fold ([sub? #t])
             (#:when sub?
-                    [(key1 val1) (in-hash-table (enum-set-ht enum1))])
+                    [(key1 val1) (in-hash-table (universe-ht (enum-set-uni enum1)))])
           (or (zero? (bitwise-and v1 val1))
               (let ([val2 (hash-table-get ht2 key1 #f)])
                 (and val2
@@ -128,15 +147,15 @@
 
 (define (enum-set=? enum1 enum2)
   (check-2-enums 'enum-set=? enum1 enum2)
-  (if (eq? (enum-set-ht enum1) (enum-set-ht enum2))
+  (if (eq? (enum-set-uni enum1) (enum-set-uni enum2))
       (= (enum-set-val enum1) (enum-set-val enum2))
       (and (enum-set-subset? enum1 enum2)
            (enum-set-subset? enum2 enum1))))
 
 (define (check-2-enums/same who enum1 enum2)
   (check-2-enums who enum1 enum2)
-  (unless (eq? (enum-set-ht enum1)
-               (enum-set-ht enum2))
+  (unless (eq? (enum-set-uni enum1)
+               (enum-set-uni enum2))
     (error who
            "enumeration sets are not the same enumeration type: ~e ~e"
            enum1 enum2)))
@@ -145,20 +164,20 @@
   (check-2-enums/same 'enum-set-union enum1 enum2)
   (make-enum-set (bitwise-ior (enum-set-val enum1)
                               (enum-set-val enum2))
-                 (enum-set-ht enum1)))
+                 (enum-set-uni enum1)))
 
 (define (enum-set-intersection enum1 enum2)
   (check-2-enums/same 'enum-set-intersection enum1 enum2)
   (make-enum-set (bitwise-and (enum-set-val enum1)
                               (enum-set-val enum2))
-                 (enum-set-ht enum1)))
+                 (enum-set-uni enum1)))
 
 (define (enum-set-difference enum1 enum2)
   (check-2-enums/same 'enum-set-intersection enum1 enum2)
   (make-enum-set (- (enum-set-val enum1)
                     (bitwise-and (enum-set-val enum1)
                                  (enum-set-val enum2)))
-                 (enum-set-ht enum1)))
+                 (enum-set-uni enum1)))
 
 (define (enum-set-complement enum1)
   (unless (enum-set? enum1)
@@ -167,25 +186,27 @@
                       enum1))
   (make-enum-set (bitwise-xor (sub1 (arithmetic-shift 
                                      1 
-                                     (hash-table-count (enum-set-ht enum1))))
+                                     (hash-table-count 
+                                      (universe-ht (enum-set-uni enum1)))))
                               (enum-set-val enum1))
-                 (enum-set-ht enum1)))
+                 (enum-set-uni enum1)))
 
 (define (enum-set-projection enum1 enum2)
   (check-2-enums 'enum-set-projection enum1 enum2)
-  (let ([ht2 (enum-set-ht enum2)]
-        [v1 (enum-set-val enum1)]
-        [v2 (enum-set-val enum2)])
+  (let* ([uni2 (enum-set-uni enum2)]
+         [ht2 (universe-ht uni2)]
+         [v1 (enum-set-val enum1)]
+         [v2 (enum-set-val enum2)])
     (make-enum-set
      (for/fold ([val 0])
-         ([(key1 val1) (in-hash-table (enum-set-ht enum1))])
+         ([(key1 val1) (in-hash-table (universe-ht (enum-set-uni enum1)))])
        (if (zero? (bitwise-and v1 val1))
            val
            (let ([val2 (hash-table-get ht2 key1 #f)])
              (if val2
                  (bitwise-ior val val2)
                  val))))
-     ht2)))
+     uni2)))
   
 (define-syntax (define-enumeration stx)
   (syntax-case stx ()

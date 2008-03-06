@@ -455,17 +455,20 @@
    [else (datum->syntax stx r stx)]))
 
 (define-for-syntax (wrap-as-needed v)
-  (if (and (procedure? v)
-           (procedure-arity-includes? v 1))
-      (procedure-reduce-arity
-       (case-lambda 
-        [(stx) (if (syntax? stx)
-                   (let ([r (v stx)])
-                     (wrap r stx))
-                   (v stx))]
-        [args (apply v args)])
-       (procedure-arity v))
-      v))
+  (cond
+   [(and (procedure? v)
+         (procedure-arity-includes? v 1))
+    (procedure-reduce-arity
+     (case-lambda 
+      [(stx) (if (syntax? stx)
+                 (let ([r (v stx)])
+                   (wrap r stx))
+                 (v stx))]
+      [args (apply v args)])
+     (procedure-arity v))]
+   [(set!-transformer? v)
+    (make-set!-transformer (wrap-as-needed (set!-transformer-procedure v)))]
+   [else v]))
 
 ;; ----------------------------------------
 

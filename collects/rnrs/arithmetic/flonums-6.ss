@@ -13,6 +13,9 @@
 
 (provide (rename-out [inexact-real? flonum?])
          real->flonum
+         flnumerator
+         fldenominator
+         fllog flsqrt flexpt
          &no-infinities make-no-infinities-violation no-infinities-violation?
          &no-nans make-no-nans-violation no-nans-violation?
          fixnum->flonum)
@@ -53,15 +56,40 @@
 (define-fl div0 fldiv0 (a b) nocheck)
 (define-fl mod0 flmod0 (a b) nocheck)
 
-(define-fl numerator flnumerator (a) nocheck)
-(define-fl denominator fldenominator (a) nocheck)
+(define (flnumerator c)
+  (if (inexact-real? c)
+      (if (and (rational? c)
+               (not (equal? c -0.0)))
+          (numerator c)
+          c)
+      (raise-type-error 'flnumerator "flonum" c)))
+
+(define (fldenominator c)
+  (if (inexact-real? c)
+      (if (rational? c)
+          (denominator c)
+          1.0)
+      (raise-type-error 'fldenominator "flonum" c)))
+
 (define-fl floor flfloor (a) nocheck)
 (define-fl ceiling flceiling (a) nocheck)
 (define-fl truncate fltruncate (a) nocheck)
 (define-fl round flround (a) nocheck)
 
 (define-fl exp flexp (a) nocheck)
-(define-fl log fllog [(a) (a b)] nocheck)
+
+(define fllog
+  (case-lambda
+   [(v) 
+    (unless (inexact-real? v)
+      (raise-type-error 'fllog "flonum" v))
+    (let ([v (log v)])
+      (if (inexact-real? v)
+          v
+          +nan.0))]
+   [(v1 v2)
+    (/ (fllog v1) (fllog v2))]))
+
 (define-fl sin flsin (a) nocheck)
 (define-fl cos flcos (a) nocheck)
 (define-fl tan fltan (a) nocheck)
@@ -69,9 +97,23 @@
 (define-fl acos flacos (a) nocheck)
 (define-fl atan flatan [(a) (a b)] nocheck)
 
-(define-fl sqrt flsqrt (a) nocheck)
+(define (flsqrt v)
+  (unless (inexact-real? v)
+    (raise-type-error 'flsqrt "flonum" v))
+  (let ([v (sqrt v)])
+    (if (inexact-real? v)
+        v
+        +nan.0)))
 
-(define-fl expt flexpt (a b) nocheck)
+(define (flexpt a b)
+  (unless (inexact-real? a)
+    (raise-type-error 'flexpt "flonum" a))
+  (unless (inexact-real? b)
+    (raise-type-error 'flexpt "flonum" b))
+  (let ([v (expt a b)])
+    (if (inexact-real? v)
+        v
+        +nan.0)))
 
 (define-condition-type &no-infinities
   &implementation-restriction

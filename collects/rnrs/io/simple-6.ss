@@ -2,7 +2,7 @@
 
 (require (prefix-in r6rs: rnrs/io/ports-6))
 
-(provide (rename-out [eof eof-object])
+(provide (rename-out [r6rs:eof-object eof-object])
          eof-object?
          (rename-out [r6rs:call-with-input-file call-with-input-file]
                      [r6rs:call-with-output-file call-with-output-file])
