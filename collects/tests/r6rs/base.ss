@@ -1005,7 +1005,7 @@
           'ok)
     
     (test p.car 4)
-    ; (test/exn (set! p.car 15) &syntax)
+    ; (test/exn (set! p.car 15) &syntax) - not a runtime test
 
     (test/unspec (set! p2.car 15))
     (test p2.car 15)

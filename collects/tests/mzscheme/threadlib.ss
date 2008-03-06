@@ -56,18 +56,19 @@
 
 ;; coroutines ----------------------------------------
 
-(define MAX-RUN-TIME 100) ; in msecs
-
 (define cntr 0)
+(define cntr-sema (make-semaphore))
 (define w (coroutine (lambda (enable-stop)
 		       (let loop ((i 0))
 			 (enable-stop #f)
 			 (set! cntr i)
+                         (when (= cntr 1)
+                           (semaphore-post cntr-sema))
 			 (enable-stop #t)
 			 (loop (add1 i))))))
 (test #t coroutine? w)
 (test #f coroutine-result w)
-(test #f coroutine-run MAX-RUN-TIME w)
+(test #f coroutine-run cntr-sema w)
 (test #t positive? cntr)
 (test (void) coroutine-kill w)
 (test #t coroutine-run 100 w)
@@ -81,13 +82,13 @@
 			    (set! cntr i)
 			    (enable-stop #t)
 			    (loop (sub1 i))))))))
-(test #t coroutine-run MAX-RUN-TIME w2)
+(test #t coroutine-run (system-idle-evt) w2)
 (test 13 coroutine-result w2)
 (test #t coroutine-run 100 w2)
 
 (define w3 (coroutine (lambda (enable-stop)
 			(raise 14))))
-(err/rt-test (coroutine-run MAX-RUN-TIME w3) (lambda (x) (eq? x 14)))
+(err/rt-test (coroutine-run (system-idle-evt) w3) (lambda (x) (eq? x 14)))
 (test #f coroutine-result w3)
 (test #t coroutine-run 100 w3)
 
@@ -95,7 +96,7 @@
 			(enable-stop #f)
 			(raise 15))))
 (test #f coroutine-result w4)
-(err/rt-test (coroutine-run MAX-RUN-TIME w4) (lambda (x) (eq? x 15)))
+(err/rt-test (coroutine-run (system-idle-evt) w4) (lambda (x) (eq? x 15)))
 (test #t coroutine-run 100 w4)
 
 (report-errs)

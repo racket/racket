@@ -30,13 +30,14 @@ Returns @scheme[#t] if @scheme[v] is a coroutine produced by
 @scheme[coroutine], @scheme[#f] otherwise.}
 
 
-@defproc[(coroutine-run [timeout-secs real?][coroutine coroutine?]) 
+@defproc[(coroutine-run [until (or/c evt? real?)][coroutine coroutine?]) 
          boolean?]{
 
 Allows the thread associated with @scheme[coroutine] to execute for up
-to @scheme[timeout-secs]. If @scheme[coroutine]'s procedure disables
-suspends, then the coroutine can run arbitrarily long until it
-re-enables suspends.
+as long as @scheme[until] milliseconds (of @scheme[until] is a real
+number) or @scheme[until] is ready (if @scheme[until] is an event). If
+@scheme[coroutine]'s procedure disables suspends, then the coroutine
+can run arbitrarily long until it re-enables suspends.
 
 The @scheme[coroutine-run] procedure returns @scheme[#t] if
 @scheme[coroutine]'s procedure completes (or if it completed earlier),

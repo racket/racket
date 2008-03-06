@@ -163,7 +163,9 @@
           void
           ;; Let the co-routine run...
           (lambda ()
-            (sync (choice-evt (wrap-evt (alarm-evt (+ timeout (current-inexact-milliseconds)))
+            (sync (choice-evt (wrap-evt (if (evt? timeout)
+                                            timeout
+                                            (alarm-evt (+ timeout (current-inexact-milliseconds))))
                                         (lambda (x)
                                           #;(printf "2. alarm-evt~n")
                                           (semaphore-wait can-stop-lock)
@@ -208,6 +210,6 @@
   (provide coroutine?)
   (provide/contract
    (coroutine (((any/c . -> . any) . -> . any) . -> . coroutine?))
-   (coroutine-run (real? coroutine? . -> . boolean?))
+   (coroutine-run ((or/c evt? real?) coroutine? . -> . boolean?))
    (coroutine-result (coroutine? . -> . any))
    (coroutine-kill (coroutine? . -> . any))))

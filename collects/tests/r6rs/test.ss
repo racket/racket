@@ -108,7 +108,7 @@
           (display " tests passed\n"))
         (begin
           (display (length failures))
-          (display " tests failed:\n")
+          (display " tests failed:\n\n")
           (for-each (lambda (t)
                       (display "Expression:\n ")
                       (write (car t))
@@ -116,7 +116,7 @@
                       (write (cadr t))
                       (display "\nExpected:\n ")
                       (write (caddr t))
-                      (newline))
+                      (display "\n\n"))
                     (reverse failures))
           (display (length failures))
           (display " of ")
