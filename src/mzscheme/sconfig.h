@@ -110,6 +110,8 @@
 # define USE_ON_EXIT_FOR_ATEXIT
 # endif
 
+#define FMOD_CAN_RETURN_POS_ZERO
+
 # ifndef i386
 #  define FLUSH_SPARC_REGISTER_WINDOWS
 # endif
@@ -1215,6 +1217,8 @@
 
  /* FMOD_CAN_RETURN_NEG_ZERO is fmod() on positive numbers can produce
     a negative zero. */
+
+ /* FMOD_CAN_RETURN_POS_ZERO is fmod() on -0.0 can produce 0.0. */
 
  /* LOG_ZERO_ISNT_NEG_INF defines a version of log that checks for an
     inexact zero argument and return negative infinity. */

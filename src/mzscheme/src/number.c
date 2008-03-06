@@ -1219,6 +1219,11 @@ sch_round (int argc, Scheme_Object *argv[])
     double i, frac;
     int invert;
 
+#ifdef FMOD_CAN_RETURN_POS_ZERO
+    if (minus_zero_p(d))
+      return d;
+#endif
+
     if (d < 0) {
       d = -d;
       invert = 1;
