@@ -528,6 +528,23 @@ Scheme_Object *scheme_read_number(const mzchar *str, long len,
       if (!complain)
 	return scheme_false;
     }
+  } else if ((len-delta == 7) && str[len-1] == 'i') {
+    /* Try <special>i */
+    Scheme_Object *special;
+    special = read_special_number(str, delta);
+    if (special) {
+      special = scheme_make_complex(scheme_make_integer(0), special);
+
+      if (is_not_float) {
+	if (report)
+	  scheme_read_err(complain, stxsrc, line, col, pos, span, 0, indentation,
+			  "read-number: no exact representation for %V",
+			  special);
+	return scheme_false;
+      }
+
+      return special;
+    }
   }
 
   /* Look for <special>@... and ...@<special> */

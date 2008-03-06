@@ -160,6 +160,18 @@
 							   "-set!")))))
 			     (syntax
 			      (mutable ?field-name ?accessor-name ?mutator-name))))
+                          (?field-name
+                           (identifier? (syntax ?field-name))
+                           (with-syntax ((?accessor-name
+					  (datum->syntax
+					   (syntax ?field-name)
+					   (string->symbol
+					    (string-append record-name "-"
+							   (symbol->string
+							    (syntax->datum
+							     (syntax ?field-name))))))))
+			     (syntax
+			      (immutable ?field-name ?accessor-name))))
 			  (?clause
 			   clause)))
 		      (syntax (?field-clause ...)))))

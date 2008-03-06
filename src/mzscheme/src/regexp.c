@@ -395,6 +395,10 @@ static unsigned char *extract_regstart(rxpos scan, int *_anch)
     case EXACTLY1:
       map = map_start(map, UCHAR(regstr[OPERAND(scan)]));
       break;
+    case EXACTLY2:
+      map = map_start(map, UCHAR(regstr[OPERAND(scan)]));
+      map = map_start(map, UCHAR(regstr[OPERAND(scan)+1]));
+      break;
     case RANGE:
       map = map_range(map, regstr, OPERAND(scan), 0);
       break;
@@ -1721,7 +1725,7 @@ regranges(int parse_flags, int at_start)
 {
   int c;
   rxpos ret, save_regparse = 0;
-  int count, all_ci, num_ci, off_ranges, on_ranges, now_on, last_on, use_ci;
+  int count, all_ci, num_ci, off_ranges, on_ranges, now_on, last_on, prev_last_on, use_ci;
   char *new_map = NULL, *accum_map = NULL;
 
   count = 0;
@@ -1828,12 +1832,14 @@ regranges(int parse_flags, int at_start)
     off_ranges = 0;
     now_on = 0;
     last_on = -1;
+    prev_last_on = -1;
     for (c = 0; c < 256; c++) {
       if (accum_map[c]) {
 	if (now_on < 0)
 	  off_ranges++;
 	now_on = 1;
 	count++;
+	prev_last_on = last_on;
 	last_on = c;
 
 	if (c != rx_tolower(c)) {
@@ -1864,6 +1870,11 @@ regranges(int parse_flags, int at_start)
     } else if (count == 1) {
       ret = regnode(EXACTLY1);
       regc(last_on);
+      return ret;
+    } else if (count == 2) {
+      ret = regnode(EXACTLY2);
+      regc(last_on);
+      regc(prev_last_on);
       return ret;
     } else if ((on_ranges == 1)
 	       ||  (off_ranges == 1)) {
@@ -3034,6 +3045,16 @@ regmatch(Regwork *rw, rxpos prog)
       is++;
       scan = NEXT_OP(scan);
       break;
+    case EXACTLY2:
+      NEED_INPUT(rw, is, 1);
+      if (is == rw->input_end)
+	return 0;
+      if (rw->instr[is] != regstr[OPERAND(scan)])
+        if (rw->instr[is] != regstr[OPERAND(scan)+1])
+          return 0;
+      is++;
+      scan = NEXT_OP(scan);
+      break;
     case RANGE:
       {
 	int c;
@@ -3698,6 +3719,34 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
 	int e = rw->input_end;
 	while ((scan != e)
 	       && (rw->instr[scan] == c)) {
+	  scan++;
+	}
+      }
+      count = scan - init;
+    }
+    break;
+  case EXACTLY2:
+    {
+      rxpos init = scan;
+      char c1, c2;
+      c1 = regstr[opnd];
+      c2 = regstr[opnd+1];
+      if (rw->port || maxc) {
+	/* Slow but general version */
+	NEED_INPUT(rw, scan, 1);
+	while ((scan != rw->input_end)
+	       && ((rw->instr[scan] == c1)
+                   || (rw->instr[scan] == c2))) {
+	  scan++;
+	  if (maxc) { maxc--; if (!maxc) break; }
+	  NEED_INPUT(rw, scan, 1);
+	}
+      } else {
+	/* Fast version */
+	int e = rw->input_end;
+	while ((scan != e)
+	       && ((rw->instr[scan] == c1)
+                   || (rw->instr[scan] == c2))) {
 	  scan++;
 	}
       }

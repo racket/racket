@@ -206,7 +206,7 @@ the parameter should be set before any interface definition that uses
 @defparam[default-_string-type type ctype?]{
 
 A parameter that determines the current meaning of @scheme[_string].
-It is initially set to @scheme[_string/*utf-8].  If you change it, do
+It is initially set to @scheme[_string*/utf-8].  If you change it, do
 so @italic{before} interfaces are defined.}
 
 

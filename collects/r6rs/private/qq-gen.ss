@@ -17,8 +17,9 @@
                (let loop ([tmpl #'tmpl][level 0])
                  (syntax-case tmpl (r6rs:quasiquote)
                    [((u expr ...) . rest)
-                    (or (free-identifier=? #'u #'unquote)
-                        (free-identifier=? #'u #'unquote-splicing))
+                    (and (identifier? #'u)
+                         (or (free-identifier=? #'u #'unquote)
+                             (free-identifier=? #'u #'unquote-splicing)))
                     (let ([new-rest (loop #'rest level)])
                       (if (zero? level)
                           (if (and (eq? new-rest #'rest)
@@ -46,13 +47,15 @@
                                  (cons new-first new-rest)
                                  tmpl tmpl tmpl)))))]
                    [(r6rs:quasiquote expr)
-                    (let ([new-expr (loop #'expr (add1 level))])
-                      (if (eq? new-expr #'expr)
-                          tmpl
-                          (datum->syntax
-                           tmpl
-                           (cons (car (syntax-e tmpl) new-expr))
-                           tmpl tmpl tmpl)))]
+                    (let ([new-expr (loop #'(expr) (add1 level))])
+                      ;; We have to replace the old qq with the new one:
+                      (datum->syntax
+                       tmpl
+                       (cons (datum->syntax #'quasiquote
+                                            'quasiquote
+                                            (car (syntax-e tmpl)))
+                             new-expr)
+                       tmpl tmpl tmpl))]
                    [(a . b)
                     (let ([new-a (loop #'a level)]
                           [new-b (loop #'b level)])
@@ -65,10 +68,8 @@
                            tmpl tmpl tmpl)))]
                    [#(a ...)
                     (let* ([as (syntax->list #'(a ...))]
-                           [new-as (map (lambda (a)
-                                          (loop a level))
-                                        as)])
-                      (if (andmap eq? as new-as)
+                           [new-as (loop as level)])
+                      (if (eq? as new-as)
                           tmpl
                           (datum->syntax
                            tmpl
@@ -77,5 +78,5 @@
                    [_ tmpl]))])
           (datum->syntax
            stx
-           (list #'r5rs:quasiquote new-tmpl)
+           (list #'quasiquote new-tmpl)
            stx stx stx))]))))

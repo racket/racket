@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require rnrs/enums-6)
+(require rnrs/enums-6
+         scheme/mpair)
 
 (provide endianness
          native-endianness
@@ -10,9 +11,9 @@
                      [bytes-copy! bytevector-copy!]
                      [bytes-copy bytevector-copy]
                      [bytes-ref bytevector-u8-ref]
-                     [bytes-set! bytevector-u8-set!]
-                     [bytes->list bytevector->u8-list]
-                     [list->bytes u8-list->bytevector])
+                     [bytes-set! bytevector-u8-set!])
+         bytevector->u8-list
+         u8-list->bytevector
          make-bytevector 
          bytevector-fill!
          bytevector-s8-ref
@@ -63,6 +64,12 @@
   (if (system-big-endian?)
       (endianness big)
       (endianness little)))
+
+(define (bytevector->u8-list bv)
+  (list->mlist (bytes->list bv)))
+
+(define (u8-list->bytevector l)
+  (list->bytes (mlist->list l)))
 
 (define (make-bytevector k [fill 0])
   (make-bytes k (convert-fill 'make-bytevector fill)))

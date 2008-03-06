@@ -45,14 +45,19 @@
 			     (/ (find-between (/ (- hi lo-int)) (/ (- lo lo-int)))))))))])
       (lambda (x within)
 	(check x) (check within)
-	(let* ([delta (abs within)]
-	       [lo (- x delta)]
-	       [hi (+ x delta)])
-	  (cond
-	   [(not (= x x)) +nan.0]
-	   [(<= lo 0 hi) (if (exact? x) 0 0.0)]
-	   [(negative? lo) (- (find-between (- hi) (- lo)))]
-	   [else (find-between lo hi)])))))
+        (let* ([delta (abs within)]
+               [lo (- x delta)]
+               [hi (+ x delta)])
+          (cond
+           [(equal? x +nan.0) x]
+           [(or (equal? x +inf.0) 
+                (equal? x -inf.0))
+            (if (equal? delta +inf.0) +nan.0 x)]
+           [(equal? delta +inf.0) 0.0]
+           [(not (= x x)) +nan.0]
+           [(<= lo 0 hi) (if (exact? x) 0 0.0)]
+           [(negative? lo) (- (find-between (- hi) (- lo)))]
+           [else (find-between lo hi)])))))
 
   ;; -------------------------------------------------------------------------
 

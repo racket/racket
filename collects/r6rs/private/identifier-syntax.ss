@@ -5,7 +5,8 @@
 (provide identifier-syntax)
 
 (define-syntax (identifier-syntax stx)
-  (syntax-case stx (set!)
+  (syntax-case* stx (set!) (lambda (a b)
+                             (free-template-identifier=? a b))
     [(identifier-syntax template)
      #'(...
         (make-set!-transformer

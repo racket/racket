@@ -104,7 +104,7 @@ static Scheme_Object *name (const Scheme_Object *n1, const Scheme_Object *n2)
                       waybigf, swaybigf, waysmallf, swaysmallf, \
                       waybigs, swaybigs, waysmalls, swaysmalls, \
                       combinezero, firstzero, sfirstzero, secondzero, ssecondzero, \
-                      nanchk, snanchk, \
+                      nanchk, snanchk, nanchk_more, snanchk_more, \
                       complexwrap, noniziwrap, exactzerowrapl, exactzerowrapr, numbertype,\
                       toi_or_toe) \
 rettype name (const Scheme_Object *n1, const Scheme_Object *n2); \
@@ -136,7 +136,7 @@ static MZ_INLINE rettype name ## __int_comp(const Scheme_Object *n1, const Schem
 FLOATWRAP( \
 static MZ_INLINE rettype name ## __flt_big(const Scheme_Object *n1, const Scheme_Object *n2) { \
   Small_Rational sr2; \
-  snanchk(d1); \
+  snanchk_more(d1); \
   wrap(if (MZ_IS_POS_INFINITY(d1)) return combineinf(swaybigf, n2);) \
   wrap(if (MZ_IS_NEG_INFINITY(d1)) return combineinf(swaysmallf, n2);) \
   return toi_or_toe(fsop(d1, scheme_bignum_to_float(n2)), \
@@ -145,7 +145,7 @@ static MZ_INLINE rettype name ## __flt_big(const Scheme_Object *n1, const Scheme
 FLOATWRAP( \
 static MZ_INLINE rettype name ## __flt_rat(const Scheme_Object *n1, const Scheme_Object *n2) { \
   Small_Rational sr3; \
-  snanchk(d1); \
+  snanchk_more(d1); \
   wrap(if (MZ_IS_POS_INFINITY(d1)) return combineinf(swaybigf, n2);) \
   wrap(if (MZ_IS_NEG_INFINITY(d1)) return combineinf(swaysmallf, n2);) \
   wrap(if (d1 == 0.0) return combinezero(sfirstzero, n2, d1);) \
@@ -155,13 +155,13 @@ static MZ_INLINE rettype name ## __flt_rat(const Scheme_Object *n1, const Scheme
 FLOATWRAP(complexwrap(  \
 static MZ_INLINE rettype name ## __flt_comp(const Scheme_Object *n1, const Scheme_Object *n2) { \
   Small_Complex sc; \
-  snanchk(d1); \
+  snanchk_more(d1); \
   return cxop((scheme_make_small_complex(n1, &sc)), \
   (n2)); \
 }))    \
 static MZ_INLINE rettype name ## __dbl_big(double d1, const Scheme_Object *n1, const Scheme_Object *n2) { \
   toi_or_toe(,Small_Rational sr4); \
-  nanchk(d1); \
+  nanchk_more(d1); \
   wrap(if (MZ_IS_POS_INFINITY(d1)) return combineinf(waybigf, n2);) \
   wrap(if (MZ_IS_NEG_INFINITY(d1)) return combineinf(waysmallf, n2);) \
   return toi_or_toe(fop(d1, scheme_bignum_to_double(n2)), \
@@ -169,7 +169,7 @@ static MZ_INLINE rettype name ## __dbl_big(double d1, const Scheme_Object *n1, c
 } \
 static MZ_INLINE rettype name ## __dbl_rat(double d1, const Scheme_Object *n1, const Scheme_Object *n2) { \
   toi_or_toe(,Small_Rational sr5);       \
-  nanchk(d1); \
+  nanchk_more(d1); \
   wrap(if (MZ_IS_POS_INFINITY(d1)) return combineinf(waybigf, n2);) \
   wrap(if (MZ_IS_NEG_INFINITY(d1)) return combineinf(waysmallf, n2);) \
   wrap(if (d1 == 0.0) return combinezero(firstzero, n2, d1);) \
@@ -179,7 +179,7 @@ static MZ_INLINE rettype name ## __dbl_rat(double d1, const Scheme_Object *n1, c
 complexwrap( \
 static MZ_INLINE rettype name ## __dbl_comp(double d1, const Scheme_Object *n1, const Scheme_Object *n2) { \
   Small_Complex sc; \
-  nanchk(d1); \
+  nanchk_more(d1); \
   return cxop((scheme_make_small_complex(n1, &sc)), \
 	      (n2)); \
 }) \
@@ -192,7 +192,7 @@ static MZ_INLINE rettype name ## __big_flt(double d1, const Scheme_Object *n1, c
   Small_Rational sr6; \
   float d2; \
   d2 = SCHEME_FLT_VAL(n2); \
-  snanchk(d2); \
+  snanchk_more(d2); \
   wrap(if (MZ_IS_POS_INFINITY(d2)) return combineinf(swaysmalls, n1);) \
   wrap(if (MZ_IS_NEG_INFINITY(d2)) return combineinf(swaybigs, n1);) \
   return toi_or_toe(fsop(scheme_bignum_to_float(n1), d2), \
@@ -202,7 +202,7 @@ static MZ_INLINE rettype name ## __big_dbl(const Scheme_Object *n1, const Scheme
   double d2; \
   toi_or_toe(,Small_Rational sr7); \
   d2 = SCHEME_DBL_VAL(n2); \
-  nanchk(d2); \
+  nanchk_more(d2); \
   wrap(if (MZ_IS_POS_INFINITY(d2)) return combineinf(waysmalls, n1);) \
   wrap(if (MZ_IS_NEG_INFINITY(d2)) return combineinf(waybigs, n1);) \
   return toi_or_toe(fop(scheme_bignum_to_double(n1), d2), \
@@ -226,7 +226,7 @@ static MZ_INLINE rettype name ## __rat_flt(const Scheme_Object *n1, const Scheme
   Small_Rational sr9; \
   float d2; \
   d2 = SCHEME_FLT_VAL(n2); \
-  snanchk(d2); \
+  snanchk_more(d2); \
   wrap(if (MZ_IS_POS_INFINITY(d2)) return combineinf(swaysmalls, n1);) \
   wrap(if (MZ_IS_NEG_INFINITY(d2)) return combineinf(swaybigs, n1);) \
   wrap(if (d2 == 0.0) return combinezero(ssecondzero, n1, d2);) \
@@ -237,7 +237,7 @@ static MZ_INLINE rettype name ## __rat_dbl(const Scheme_Object *n1, const Scheme
   double d2; \
   toi_or_toe(,Small_Rational sr10);      \
   d2 = SCHEME_DBL_VAL(n2); \
-  nanchk(d2); \
+  nanchk_more(d2); \
   wrap(if (MZ_IS_POS_INFINITY(d2)) return combineinf(waysmalls, n1);) \
   wrap(if (MZ_IS_NEG_INFINITY(d2)) return combineinf(waybigs, n1);) \
   wrap(if (d2 == 0.0) return combinezero(secondzero, n1, d2);) \
@@ -260,13 +260,13 @@ static MZ_INLINE rettype name ## __comp_int(const Scheme_Object *n1, const Schem
 FLOATWRAP(complexwrap( \
 static MZ_INLINE rettype name ## __comp_flt(const Scheme_Object *n1, const Scheme_Object *n2) { \
   Small_Complex sc; \
-  snanchk(SCHEME_FLT_VAL(n2)); \
+  snanchk_more(SCHEME_FLT_VAL(n2)); \
   return cxop((n1), (scheme_make_small_complex(n2, &sc))); \
 }))                                                  \
 complexwrap( \
 static MZ_INLINE rettype name ## __comp_dbl(const Scheme_Object *n1, const Scheme_Object *n2) { \
   Small_Complex sc; \
-  nanchk(SCHEME_DBL_VAL(n2)); \
+  nanchk_more(SCHEME_DBL_VAL(n2)); \
   return cxop((n1), (scheme_make_small_complex(n2, &sc))); \
 }) \
 complexwrap( \
@@ -515,6 +515,8 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
 # define SNAN_CHECK_NAN_IF_WEIRD(x) /* empty */
 #endif
 
+# define NAN_CHECK_0(x) if (MZ_IS_NAN(x)) return 0
+
 #define GEN_BIN_OP(name, scheme_name, iop, fop, fsop, bn_op, rop, cxop, exzeopl, exzeopr, nanckop, snanckop) \
   GEN_BIN_THING(Scheme_Object *, name, scheme_name, \
                 iop, fop, fsop, bn_op, rop, cxop, \
@@ -522,7 +524,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
                 0, 0, 0, 0, \
                 0, 0, 0, 0, \
                 GEN_SCHEME_BOOL_APPLY, badfunc, badfunc, badfunc, badfunc, \
-                nanckop, snanckop, \
+                nanckop, snanckop, nanckop, snanckop, \
                 GEN_IDENT, GEN_IDENT, exzeopl, exzeopr, "number", GEN_TOI)
 
 #define GEN_BIN_DIV_OP(name, scheme_name, iop, fop, fsop, bn_op, rop, cxop) \
@@ -532,7 +534,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
                 GEN_SAME_INF, GEN_SAME_SINF, GEN_OPP_INF, GEN_OPP_SINF, \
                 GEN_MAKE_NZERO, GEN_MAKE_NSZERO, GEN_MAKE_PZERO, GEN_MAKE_PSZERO, \
                 GEN_APPLY3, GEN_MAKE_ZERO_Z, GEN_MAKE_SZERO_Z, GEN_SAME_INF_Z, GEN_SAME_SINF_Z, \
-                NAN_CHECK_NAN_IF_WEIRD, SNAN_CHECK_NAN_IF_WEIRD, \
+                NAN_CHECK_NAN_IF_WEIRD, SNAN_CHECK_NAN_IF_WEIRD, NAN_CHECK_NAN_IF_WEIRD, SNAN_CHECK_NAN_IF_WEIRD, \
                 GEN_IDENT, GEN_IDENT, GEN_RETURN_0, GEN_OMIT, "number", GEN_TOI)
 
 #define GEN_BIN_COMP(name, scheme_name, iop, fop, bn_op, rop, cxop, waybig, waysmall, firstzero, secondzero, complexwrap, noniziwrap, numbertype) \
@@ -542,7 +544,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
                waybig, waybig, waysmall, waysmall, \
                waybig, waybig, waysmall, waysmall, \
                GEN_SCHEME_BOOL_APPLY, firstzero, firstzero, secondzero, secondzero, \
-               NAN_CHECK_0_IF_WEIRD, NAN_CHECK_0_IF_WEIRD, \
+               NAN_CHECK_0_IF_WEIRD, NAN_CHECK_0_IF_WEIRD, NAN_CHECK_0, NAN_CHECK_0, \
                complexwrap, noniziwrap, GEN_OMIT, GEN_OMIT, numbertype, GEN_TOE)
 
 #define GEN_BIN_INT_OP(name, scheme_name, op, bigop) \

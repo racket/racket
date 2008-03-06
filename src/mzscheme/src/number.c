@@ -1094,14 +1094,12 @@ floor_prim (int argc, Scheme_Object *argv[])
 #ifdef MZ_USE_SINGLE_FLOATS
   if (t == scheme_float_type) {
     float d = SCHEME_FLT_VAL(o);
-    if (rational_flt_p((double)d))
-      return scheme_make_float(floor(d));
+    return scheme_make_float(floor(d));
   }
 #endif
   if (t == scheme_double_type) {
     double d = SCHEME_DBL_VAL(o);
-    if (rational_dbl_p(d))
-      return scheme_make_double(floor(d));
+    return scheme_make_double(floor(d));
   }
   if (t == scheme_bignum_type)
     return o;
@@ -1125,14 +1123,12 @@ ceiling (int argc, Scheme_Object *argv[])
 #ifdef MZ_USE_SINGLE_FLOATS
   if (t == scheme_float_type) {
     float d = SCHEME_FLT_VAL(o);
-    if (rational_flt_p(d))
-      return scheme_make_float(ceil(d));
+    return scheme_make_float(ceil(d));
   }
 #endif
   if (t == scheme_double_type) {
     double d = SCHEME_DBL_VAL(o);
-    if (rational_dbl_p(d))
-      return scheme_make_double(ceil(d));
+    return scheme_make_double(ceil(d));
   }
   if (t == scheme_bignum_type)
     return o;
@@ -1156,24 +1152,20 @@ sch_truncate (int argc, Scheme_Object *argv[])
 #ifdef MZ_USE_SINGLE_FLOATS
   if (t == scheme_float_type) {
     float v = SCHEME_FLT_VAL(o);
-    if (rational_flt_p(v)) {
-      if (v > 0)
-        v = floor(v);
-      else
-        v = ceil(v);
-      return scheme_make_float(v);
-    }
+    if (v > 0)
+      v = floor(v);
+    else
+      v = ceil(v);
+    return scheme_make_float(v);
   }
 #endif
   if (t == scheme_double_type) {
     double v = SCHEME_DBL_VAL(o);
-    if (rational_dbl_p(v)) {
-      if (v > 0)
-        v = floor(v);
-      else
-        v = ceil(v);
-      return scheme_make_double(v);
-    }
+    if (v > 0)
+      v = floor(v);
+    else
+      v = ceil(v);
+    return scheme_make_double(v);
   }
   if (t == scheme_bignum_type)
     return o;
@@ -1200,28 +1192,26 @@ sch_round (int argc, Scheme_Object *argv[])
     double i, frac;
     int invert;
 
-    if (rational_flt_p(d)) {
-      if (d < 0) {
-        d = -d;
-        invert = 1;
-      } else
-        invert = 0;
+    if (d < 0) {
+      d = -d;
+      invert = 1;
+    } else
+      invert = 0;
 
-      frac = modf(d, &i);
-      if (frac < 0.5)
-        d = i;
-      else if (frac > 0.5)
-        d = i + 1;
-      else if (fmod(i, 2.0) != 0.0)
-	d = i + 1;
-      else
-        d = i;
+    frac = modf(d, &i);
+    if (frac < 0.5)
+      d = i;
+    else if (frac > 0.5)
+      d = i + 1;
+    else if (fmod(i, 2.0) != 0.0)
+      d = i + 1;
+    else
+      d = i;
 
-      if (invert)
-        d = -d;
+    if (invert)
+      d = -d;
 
-      return scheme_make_float((float)d);
-    }
+    return scheme_make_float((float)d);
   }
 #endif
   if (t == scheme_double_type) {
@@ -1229,28 +1219,26 @@ sch_round (int argc, Scheme_Object *argv[])
     double i, frac;
     int invert;
 
-    if (rational_dbl_p(d)) {
-      if (d < 0) {
-        d = -d;
-        invert = 1;
-      } else
-        invert = 0;
+    if (d < 0) {
+      d = -d;
+      invert = 1;
+    } else
+      invert = 0;
 
-      frac = modf(d, &i);
-      if (frac < 0.5)
-        d = i;
-      else if (frac > 0.5)
-        d = i + 1;
-      else if (fmod(i, 2.0) != 0.0)
-	d = i + 1;
-      else
-        d = i;
+    frac = modf(d, &i);
+    if (frac < 0.5)
+      d = i;
+    else if (frac > 0.5)
+      d = i + 1;
+    else if (fmod(i, 2.0) != 0.0)
+      d = i + 1;
+    else
+      d = i;
 
-      if (invert)
-        d = -d;
+    if (invert)
+      d = -d;
 
-      return scheme_make_double(d);
-    }
+    return scheme_make_double(d);
   }
   if (t == scheme_bignum_type)
     return o;

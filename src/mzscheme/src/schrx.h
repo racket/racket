@@ -127,9 +127,10 @@ typedef struct regexp {
 #define EOL       40      /* no   Match "" at end of line. */
 #define UNIPROP   41
 #define CONDITIONAL 42
-#define OPEN      43      /* no   Mark this point in input as start of #n. */
+#define EXACTLY2  43      /* byte,byte  Match either byte (useful for some CI cases) */
+#define OPEN      44      /* no   Mark this point in input as start of #n. */
 /*      OPEN+1 is number 1, etc. */
-#define CLOSE     77      /* no   Analogous to OPEN. */
+#define CLOSE     78      /* no   Analogous to OPEN. */
 
 # define OPSTR(o) (o + 2)
 # define OPSTRx(o) (o + 1)

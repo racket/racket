@@ -193,9 +193,7 @@
                  (if (zero? depth)
                      #'e
                      #`(mcons 'unquote
-                              (mcons
-                               #,(loop #'e (sub1 depth))
-                               null)))]
+                              #,(loop (cdr (syntax-e form)) (sub1 depth))))]
                 [unquote
                  (zero? depth)
                  (raise-syntax-error
@@ -207,8 +205,7 @@
                  (if (zero? depth)
                      #`(mappend e #,(loop #'rest depth))
                      #`(mcons (mcons 'unquote-splicing
-                                     (mcons #,(loop #'e (sub1 depth))
-                                            null))
+                                     #,(loop #'(e) (sub1 depth)))
                               #,(loop #'rest depth)))]
                 [unquote-splicing 
                  (zero? depth)
@@ -222,8 +219,7 @@
                 [(a . b)
                  #`(mcons #,(loop #'a depth) #,(loop #'b depth))]
                 [#(a ...)
-                 #`(vector . #,(map (lambda (e) (loop e depth))
-                                    (syntax->list #'(a ...))))]
+                 #`(mlist->vector #,(loop (syntax->list #'(a ...)) depth))]
                 [other #'(r5rs:quote other)]))
             ;; None, so just use R5RS quote:
             #'(r5rs:quote form))]))

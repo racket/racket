@@ -33,8 +33,9 @@
  ;; 11.4.6
  let let*
  (rename-out [r5rs:letrec letrec]
-             [letrec letrec*])
- let-values let*-values
+             [letrec letrec*]
+             [r6rs:let-values let-values]
+             [r6rs:let*-values let*-values])
  
  ;; 11.4.7
  begin
@@ -55,7 +56,8 @@
  zero? positive? negative? odd?
  even? finite? infinite? nan?
  min max
- + * - /
+ + * - 
+ (rename-out [r6rs:/ /])
  abs 
  div-and-mod div mod
  div0-and-mod0 div0 mod0
@@ -66,8 +68,9 @@
  exp log sin cos tan asin acos atan
  sqrt (rename-out [integer-sqrt/remainder exact-integer-sqrt])
  expt
- make-rectangular make-polar real-part imag-part magnitude angle
- (rename-out [r6rs:number->string number->string]
+ make-rectangular make-polar real-part imag-part magnitude 
+ (rename-out [r6rs:angle angle]
+             [r6rs:number->string number->string]
              [r6rs:string->number string->number])
 
  ;; 11.8
@@ -160,7 +163,8 @@
  unquote unquote-splicing
 
  ;; 11.18
- let-syntax letrec-syntax
+ (rename-out [r6rs:let-syntax let-syntax]
+             [r6rs:letrec-syntax letrec-syntax])
 
  ;; 11.19
  (for-syntax syntax-rules
@@ -245,6 +249,51 @@
   (let ([d (div0 x y)])
     (values d (- x (* d y)))))
 
+(define-syntax r6rs:/
+  ;; R6RS says that division with exact zero is treated like 
+  ;; division by inexact zero if any of the other arguments are inexact.
+  ;; We use a macro to inline tests in binary mode, since the JIT
+  ;; can inline for flonum arithmetic.
+  (make-set!-transformer
+   (lambda (stx)
+     (if (identifier? stx)
+         (syntax/loc stx r6rs-/)
+         (syntax-case stx (set!)
+           [(set! . _)
+            (raise-syntax-error #f
+                                "cannot mutate imported identifier"
+                                stx)]
+           [(_ expr) #'(/ expr)]
+           [(_ expr1 expr2)
+            #'(let ([a expr1]
+                    [b expr2])
+                (cond
+                 [(and (eq? b 0) (inexact-real? a))
+                  (/ a 0.0)]
+                 [(and (eq? a 0) (inexact-real? b))
+                  (/ 0.0 b)]
+                 [else (/ a b)]))]
+           [(_ . args) 
+            #'(r6rs-/ . args)])))))
+
+(define r6rs-/
+  (case-lambda
+   [(n) (/ n)]
+   [(a b) (r6rs:/ a b)]
+   [args (if (ormap inexact-real? args)
+             (apply /
+                    (map (lambda (v) (if (eq? v 0)
+                                         0.0
+                                         v))
+                         args))
+             (apply / args))]))
+
+(define (r6rs:angle n)
+  ; because `angle' produces exact 0 for reals:
+  (if (and (inexact-real? n) (positive? n))
+      0.0 
+      (angle n)))
+
 (define (r6rs:number->string z [radix 10] [precision #f])
   (number->string z radix))
 
@@ -298,7 +347,7 @@
 
 (define (assertion-violation who msg . irritants)
   (raise
-   (make-exn:fail:r6rs
+   (make-exn:fail:contract:r6rs
     (format "~a: ~a" who msg)
     (current-continuation-marks)
     who
@@ -312,7 +361,57 @@
 ;; quasiquote generalization
 
 (define-generalized-qq r6rs:quasiquote 
-  quasiquote unquote unquote-splicing)
+  r5rs:quasiquote unquote unquote-splicing)
+
+;; ----------------------------------------
+;; let[*]-values
+
+(define-syntax (r6rs:let-values stx)
+  #`(letX-values let-values #,stx))
+
+(define-syntax (r6rs:let*-values stx)
+  #`(letX-values let*-values #,stx))
+
+(define-syntax (letX-values stx)
+  (syntax-case stx ()
+    [(_ dest:let-values orig)
+     (let ([orig #'orig])
+       (syntax-case orig ()
+         [(_ ([formals expr] ...) body0 body ...)
+          (with-syntax ([bindings
+                         (map (lambda (formals expr)
+                                (if (syntax->list formals)
+                                    (list formals expr)
+                                    (let ([ids (let loop ([formals formals])
+                                                 (cond
+                                                  [(identifier? formals)
+                                                   (list formals)]
+                                                  [(and (syntax? formals)
+                                                        (pair? (syntax-e formals)))
+                                                   (loop (syntax-e formals))]
+                                                  [(pair? formals)
+                                                   (unless (identifier? (car formals))
+                                                     (raise-syntax-error
+                                                      #f
+                                                      "not an identifier for binding"
+                                                      orig
+                                                      (car formals)))
+                                                   (cons (car formals) (loop (cdr formals)))]
+                                                  [else
+                                                   (unless (identifier? (car formals))
+                                                     (raise-syntax-error
+                                                      #f
+                                                      "not an identifier for binding"
+                                                      orig
+                                                      formals))]))])
+                                      #`[#,ids
+                                         (call-with-values
+                                             (lambda () #,expr)
+                                           (r5rs:lambda #,formals
+                                             (values . #,ids)))])))
+                              (syntax->list #'(formals ...))
+                              (syntax->list #'(expr ...)))])
+            #'(dest:let-values bindings body0 body ...))]))]))
 
 ;; ----------------------------------------
 ;; define
@@ -367,6 +466,49 @@
         [args (apply v args)])
        (procedure-arity v))
       v))
+
+;; ----------------------------------------
+
+;; let[rec]-syntax needs to be splicing, ad it needs the
+;; same transformer wrapper as in `define-syntax'
+
+(define-for-syntax (do-let-syntax stx rec?)
+  (syntax-case stx ()
+    [(_ ([id expr] ...) body ...)
+     (let ([sli (if (list? (syntax-local-context))
+                    syntax-local-introduce
+                    values)])
+       (let ([ids (map sli (syntax->list #'(id ...)))]
+             [def-ctx (syntax-local-make-definition-context)]
+             [ctx (list (gensym 'intdef))])
+         (syntax-local-bind-syntaxes ids #f def-ctx)
+         (let* ([add-context
+                 (lambda (expr)
+                   (let ([q (local-expand #`(quote #,expr)
+                                          ctx
+                                          (list #'quote)
+                                          def-ctx)])
+                     (syntax-case q ()
+                       [(_ expr) #'expr])))])
+           (with-syntax ([(id ...)
+                          (map sli (map add-context ids))]
+                         [(expr ...)
+                          (let ([exprs (syntax->list #'(expr ...))])
+                            (if rec?
+                                (map add-context exprs)
+                                exprs))]
+                         [(body ...)
+                          (map add-context (syntax->list #'(body ...)))])
+             #'(begin
+                 (define-syntax id (wrap-as-needed expr))
+                 ...
+                 body ...)))))]))
+
+(define-syntax (r6rs:let-syntax stx)
+  (do-let-syntax stx #f))
+
+(define-syntax (r6rs:letrec-syntax stx)
+  (do-let-syntax stx #t))
 
 ;; ----------------------------------------
 

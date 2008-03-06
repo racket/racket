@@ -176,12 +176,12 @@ Beware that a @defterm{pair} in @|r6rs| corresponds to a
 @defterm{mutable pair} in @schememodname[scheme/base]. Otherwise,
 @|r6rs| libraries and @schememodname[scheme/base] share the same
 datatype for numbers, characters, strings, bytevectors (a.k.a. byte
-strings), vectors, hash tables, and so on. Input and output
-ports from @schememodname[scheme/base] can be used directly as binary
-ports with @|r6rs| libraries, and all @|r6rs| ports can be used as
-ports in @schememodname[scheme/base] programs, but only textual ports
-created via @|r6rs| libraries can be used by other @|r6rs| operations
-that expect textual ports.
+strings), vectors, and so on. Hash tables are different. Input and
+output ports from @schememodname[scheme/base] can be used directly as
+binary ports with @|r6rs| libraries, and all @|r6rs| ports can be used
+as ports in @schememodname[scheme/base] programs, but only textual
+ports created via @|r6rs| libraries can be used by other @|r6rs|
+operations that expect textual ports.
 
 @; ----------------------------------------------------------------------
 
