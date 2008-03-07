@@ -577,7 +577,7 @@
      (syntax->datum
       (inside-dispatcher #f inp (object-name inp) line col pos)))))
 
-(define (read-inside-syntax [src default-src]
+(define (read-syntax-inside [src default-src]
                             [inp (current-input-port)])
   (let*-values ([(line col pos) (port-next-location inp)]
                 [(inside-dispatcher) (make-default-at-dispatcher/inside)])
@@ -586,4 +586,4 @@
 
 (provide (rename-out [*read read]
                      [*read-syntax read-syntax])
-         read-inside read-inside-syntax)
+         read-inside read-syntax-inside)

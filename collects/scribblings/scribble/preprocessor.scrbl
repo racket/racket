@@ -11,7 +11,7 @@ changes that make it suitable as a preprocessor language:
 
 @itemize{
 
-  @item{It uses @scheme[read-inside-syntax] to read the body of the
+  @item{It uses @scheme[read-syntax-inside] to read the body of the
         module, similar to @secref["docreader"].}
 
   @item{It has a custom printer (@scheme[current-print]) that displays

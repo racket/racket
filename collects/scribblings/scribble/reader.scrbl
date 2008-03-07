@@ -756,7 +756,7 @@ in reading.
 }
 
 @defproc[(read-inside [in input-port? (current-input-port)]) any]{}
-@defproc[(read-inside-syntax [source-name any/c (object-name in)]
+@defproc[(read-syntax-inside [source-name any/c (object-name in)]
                              [in input-port? (current-input-port)])
          (or/c syntax? eof-object?)]{
 These @schemeid[-inside] variants parse as if starting inside a

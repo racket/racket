@@ -9,7 +9,7 @@
   (wrap inp (at:read-inside inp)))
 
 (define (*read-syntax [src #f] [port (current-input-port)])
-  (wrap port (at:read-inside-syntax src port)))
+  (wrap port (at:read-syntax-inside src port)))
 
 (define (wrap port body)
   (define (strip-leading-newlines stxs)

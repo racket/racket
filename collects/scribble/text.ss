@@ -36,7 +36,7 @@
 ;; Utilities
 
 (require (prefix-in at: "reader.ss"))
-(provide at:read-inside at:read-inside-syntax)
+(provide at:read-inside at:read-syntax-inside)
 
 (provide include)
 (define-syntax (include stx)
@@ -54,7 +54,7 @@
                      [dir dir])
          #'(let ([contents
                   (with-input-from-file (path->complete-path filename dir)
-                    at:read-inside-syntax)])
+                    at:read-syntax-inside)])
              (parameterize ([current-namespace ns])
                (for ([expr (syntax->list contents)])
                  (show (eval expr)))))))]))

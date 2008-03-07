@@ -643,7 +643,7 @@ constructing a reader table based on the current one, and using that
 in reading.
 
 > (read-inside [input-port])
-> (read-inside-syntax [source-name] [input-port])
+> (read-syntax-inside [source-name] [input-port])
 
 These `-inside' variants parse as if starting inside a "@{...}", and
 they return a (syntactic) list.  Useful for implementing languages
