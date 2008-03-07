@@ -40,7 +40,7 @@
 (define-fl nan? flnan? (a) nocheck)
 
 (define-fl max flmax (a b ...) nocheck)
-(define-fl max flmin (a b ...) nocheck)
+(define-fl min flmin (a b ...) nocheck)
 
 (define-fl + fl+ (a b ...) nocheck)
 (define-fl * fl* (a b ...) nocheck)
