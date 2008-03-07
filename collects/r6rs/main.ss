@@ -8,7 +8,7 @@ FIXME:
 
 (require (for-syntax scheme/base
                      syntax/kerncase
-                     (prefix-in parse: "private/parse-ref.ss")
+                     "private/parse-ref.ss"
                      scheme/provide-transform))
 
 (provide (rename-out [module-begin #%module-begin]))
@@ -169,59 +169,6 @@ FIXME:
 ;; ----------------------------------------
 ;; Imports and exports
 
-(define-for-syntax (parse-library-reference orig stx)
-  (datum->syntax
-   orig
-   `(,#'lib
-     ,(parse:parse-library-reference stx
-                                     (lambda (msg)
-                                       (raise-syntax-error
-                                        #f
-                                        msg
-                                        orig
-                                        stx))))
-   orig))
-
-(define-for-syntax (parse-import-set orig stx)
-  (define (bad)
-    (raise-syntax-error #f
-                        (format "bad `~a' form" 
-                                (syntax-e (car (syntax-e stx))))
-                        orig
-                        stx))
-  (define (check-id id)
-    (unless (identifier? id)
-      (raise-syntax-error #f
-                          (format "not an identifier in `~a' form"
-                                  (syntax-e (car (syntax-e stx))))
-                          orig
-                          id)))
-  (syntax-case* stx (library only except prefix rename) symbolic-identifier=?
-    [(library lib)
-     (parse-library-reference orig #'lib)]
-    [(library . _) (bad)]
-    [(only im id ...)
-     (for-each check-id (syntax->list #'(id ...)))
-     #`(only-in #,(parse-import-set orig #'im) id ...)]
-    [(only . _) (bad)]
-    [(except im id ...)
-     (for-each check-id (syntax->list #'(id ...)))
-     #`(except-in #,(parse-import-set orig #'im) id ...)]
-    [(except . _) (bad)]
-    [(prefix im id)
-     (check-id #'id)
-     #`(prefix-in id #,(parse-import-set orig #'im))]
-    [(prefix . _) (bad)]
-    [(rename im (id id2) ...)
-     (for-each check-id 
-               (apply
-                append
-                (map syntax->list
-                     (syntax->list #'((id id2) ...)))))
-     #`(rename-in #,(parse-import-set orig #'im) [id id2] ...)]
-    [(rename . _) (bad)]
-    [_ (parse-library-reference orig stx)]))
-
 (define-syntax (r6rs-import stx)
   (let ([orig (syntax-case stx ()
                 [(_ orig) #'orig])])
@@ -229,37 +176,14 @@ FIXME:
       [(_ (import im ...))
        (with-syntax ([((im ...) ...)
                       (map (lambda (im)
-                             (syntax-case* im (for) symbolic-identifier=?
-                               [(for base-im level ...)
-                                (let* ([levels
-                                        (cons
-                                         #f
-                                         (map (lambda (level)
-                                                (syntax-case* level (run expand meta) symbolic-identifier=?
-                                                  [run #'0]
-                                                  [expand #'1]
-                                                  [(meta 0) #'0]
-                                                  [(meta n) #'n]
-                                                  [_
-                                                   (raise-syntax-error
-                                                    #f
-                                                    "bad `for' level"
+                             (parse-import
+                              orig
+                              im
+                              (lambda (msg orig stx)
+                                (raise-syntax-error #f
+                                                    msg
                                                     orig
-                                                    level)]))
-                                              (syntax->list #'(level ...))))])
-                                  (with-syntax ([is (parse-import-set orig #'base-im)])
-                                    (with-syntax ([(level ...) levels]
-                                                  [prelims (datum->syntax orig
-                                                                          'r6rs/private/prelims)])
-                                      #`((for-meta level is prelims) ...))))]
-                               [(for . _)
-                                (raise-syntax-error
-                                 #f
-                                 "bad `for' import form"
-                                 orig
-                                 im)]
-                               [_ (let ([m (parse-import-set orig im)])
-                                    (list m `(for-label ,m)))]))
+                                                    stx))))
                            (syntax->list #'(im ...)))]
                      [prelims (datum->syntax orig
                                              'r6rs/private/prelims)])

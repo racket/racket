@@ -1,6 +1,8 @@
 #lang scheme/base
 
 (require (only-in r6rs)
+         (only-in r6rs/private/prelims)
+         scheme/mpair
          r6rs/private/parse-ref)
 
 (provide (rename-out [r6rs:eval eval])
@@ -8,20 +10,39 @@
 
 (define-namespace-anchor anchor)
 
+(define (mpair->pair p)
+  (cond
+   [(mpair? p) (cons (mpair->pair (mcar p))
+                     (mpair->pair (mcdr p)))]
+   [(vector? p) (list->vector
+                 (map mpair->pair
+                      (vector->list p)))]
+   [else p]))
+
+(define (show v)
+  (printf "~s\n" v)
+  v)
+
 (define (r6rs:eval expr env)
-  (eval #`(#%expression #,expr) env))
+  (eval #`(#%expression #,(datum->syntax #f (mpair->pair expr))) env))
 
 (define (environment . specs)
-  (let ([mod-paths
+  (let ([reqs
          (map (lambda (spec)
-                `(lib ,(parse-library-reference
-                        spec
-                        (lambda (msg)
-                          (error 'environment "~a: ~e" msg spec)))))
+                (syntax->datum
+                 (datum->syntax
+                  #f
+                  (parse-import
+                   #'here
+                   (mpair->pair spec)
+                   (lambda (msg orig stx)
+                     (error 'environment "~a: ~e" msg spec))))))
               specs)])
     (let ([ns (namespace-anchor->empty-namespace anchor)])
       ;; Make sure all modules are instantiated here:
       (parameterize ([current-namespace ns])
-        (for-each namespace-require mod-paths))
+        (namespace-require '(rename scheme/base #%base-require require))
+        (eval `(#%base-require r6rs/private/prelims 
+                               . ,(datum->syntax #'here (apply append reqs)))))
       ns)))
 

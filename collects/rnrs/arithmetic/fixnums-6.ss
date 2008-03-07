@@ -47,7 +47,7 @@
 (define-fx even? fxeven? (a) nocheck)
 
 (define-fx max fxmax (a b ...) nocheck)
-(define-fx max fxmin (a b ...) nocheck)
+(define-fx min fxmin (a b ...) nocheck)
 
 (define-fx + fx+ (a b) check)
 (define-fx * fx* (a b) check)

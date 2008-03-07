@@ -1,8 +1,9 @@
 #lang scheme/base
 
-(require "find-version.ss")
+(require "find-version.ss"
+         (for-template scheme/base))
 
-(provide parse-library-reference)
+(provide parse-import)
 
 (define (symbolic-identifier=? a b)
   (eq? (syntax-e a) (syntax-e b)))
@@ -72,3 +73,81 @@
      (parse-library-reference #'(id1 id2 ... ()) err)]
     [_
      (err "ill-formed library reference")]))
+
+(define (convert-library-reference orig stx stx-err)
+  (datum->syntax
+   orig
+   `(,#'lib
+     ,(parse-library-reference stx
+                               (lambda (msg)
+                                 (stx-err msg orig stx))))
+   orig))
+
+(define (parse-import-set orig stx stx-err)
+  (define (bad)
+    (stx-err (format "bad `~a' form" 
+                     (syntax-e (car (syntax-e stx))))
+             orig
+             stx))
+  (define (check-id id)
+    (unless (identifier? id)
+      (stx-err (format "not an identifier in `~a' form"
+                       (syntax-e (car (syntax-e stx))))
+               orig
+               id)))
+  (syntax-case* stx (library only except prefix rename) symbolic-identifier=?
+    [(library lib)
+     (convert-library-reference orig #'lib stx-err)]
+    [(library . _) (bad)]
+    [(only im id ...)
+     (for-each check-id (syntax->list #'(id ...)))
+     #`(only-in #,(parse-import-set orig #'im stx-err) id ...)]
+    [(only . _) (bad)]
+    [(except im id ...)
+     (for-each check-id (syntax->list #'(id ...)))
+     #`(except-in #,(parse-import-set orig #'im stx-err) id ...)]
+    [(except . _) (bad)]
+    [(prefix im id)
+     (check-id #'id)
+     #`(prefix-in id #,(parse-import-set orig #'im stx-err))]
+    [(prefix . _) (bad)]
+    [(rename im (id id2) ...)
+     (for-each check-id 
+               (apply
+                append
+                (map syntax->list
+                     (syntax->list #'((id id2) ...)))))
+     #`(rename-in #,(parse-import-set orig #'im stx-err) [id id2] ...)]
+    [(rename . _) (bad)]
+    [_ (convert-library-reference orig stx stx-err)]))
+
+(define (parse-import orig im stx-err)
+  (syntax-case* im (for) symbolic-identifier=?
+    [(for base-im level ...)
+     (let* ([levels
+             (cons
+              #f
+              (map (lambda (level)
+                     (syntax-case* level (run expand meta) symbolic-identifier=?
+                       [run #'0]
+                       [expand #'1]
+                       [(meta 0) #'0]
+                       [(meta n) #'n]
+                       [_
+                        (stx-err
+                         "bad `for' level"
+                         orig
+                         level)]))
+                   (syntax->list #'(level ...))))])
+       (with-syntax ([is (parse-import-set orig #'base-im stx-err)])
+         (with-syntax ([(level ...) levels]
+                       [prelims (datum->syntax orig
+                                               'r6rs/private/prelims)])
+           #`((for-meta level is prelims) ...))))]
+    [(for . _)
+     (stx-err
+      "bad `for' import form"
+      orig
+      im)]
+    [_ (let ([m (parse-import-set orig im stx-err)])
+         (list m `(for-label ,m)))]))

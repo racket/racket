@@ -18,7 +18,11 @@
         (tests r6rs arithmetic bitwise)
         (tests r6rs syntax-case)
         (tests r6rs hashtables)
-        (tests r6rs enums))
+        (tests r6rs enums)
+        (tests r6rs eval)
+        (tests r6rs mutable-pairs)
+        (tests r6rs mutable-strings)
+        (tests r6rs r5rs))
 
 (run-base-tests)
 
@@ -38,6 +42,10 @@
 (run-syntax-case-tests)
 (run-hashtables-tests)
 (run-enums-tests)
+(run-eval-tests)
+(run-mutable-pairs-tests)
+(run-mutable-strings-tests)
+(run-r5rs-tests)
 
 (report-test-results)
 
