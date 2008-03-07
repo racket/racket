@@ -186,7 +186,8 @@ in a form definition.}
 @section[#:tag "doc-modules"]{Documenting Modules}
 
 @defform/subs[(defmodule id maybe-sources pre-flow ...)
-              ([maybe-sources #:use-sources (mod-path ...)])]
+              ([maybe-sources code:blank
+                              (code:line #:use-sources (mod-path ...))])]{
 
 Produces a sequence of flow elements (encaptured in a @scheme[splice])
 to start the documentation for a module that can be @scheme[require]d
@@ -286,7 +287,7 @@ sub-sections.}
 @defform/subs[(defproc prototype
                        result-contract-expr-datum
                        pre-flow ...)
-              ([prototype id
+              ([prototype (id arg-spec ...)
                           (prototype arg-spec ...)]
                [arg-spec (arg-id contract-expr-datum)
                          (arg-id contract-expr-datum default-expr)
@@ -365,9 +366,9 @@ it's best to document a related group of procedures at once.}
                [maybe-literals code:blank
                                (code:line #:literals (literal-id ...))])]{
 
-Produces a a sequence of flow elements (encaptured in a
+Produces a sequence of flow elements (encapsulated in a
 @scheme[splice]) to document a syntatic form named by @scheme[id]
-whose syntax described by @scheme[datum]. If no @scheme[#:id] is used
+whose syntax described by @scheme[form-datum]. If no @scheme[#:id] is used
 to specify @scheme[id], then @scheme[form-datum] must have the form
 @scheme[(id . _datum)].
 
