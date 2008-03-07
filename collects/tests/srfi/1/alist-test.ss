@@ -1,6 +1,6 @@
 ;;;
 ;;; <alist-test.ss> ---- Association list tests
-;;; Time-stamp: <05/12/16 21:14:22 noel>
+;;; Time-stamp: <2008-03-07 16:36:15 nhw>
 ;;;
 ;;; Copyright (C) 2002 by Noel Welsh.
 ;;;
@@ -203,55 +203,6 @@
 
      ;; ALIST-DELETE!
 
-     (test-case
-      "alist-delete!:null-list"
-      (check-true (null? (alist-delete! 'Mitchell '() (lambda (x y) #t)))))
-
-     (test-case
-      "alist-delete!:singleton-list"
-      (check-equal?
-       (alist-delete! 'Mitchellville
-                      (list (cons 'Modale 'Moingona)))
-       '((Modale . Moingona))))
-
-     (test-case
-      "alist-delete!:all-elements-removed"
-      (check-true
-       (null?
-        (alist-delete! 'Mona
-                       (list (cons 'Mondamin 'Moneta)
-                             (cons 'Moningers 'Monmouth)
-                             (cons 'Monona 'Monroe)
-                             (cons 'Monteith 'Monterey)
-                             (cons 'Montezuma 'Montgomery))
-                       (lambda (x y) #t)))))
-
-     (test-case
-      "alist-delete!:some-elements-removed"
-      (check-equal?
-       (alist-delete! 572
-                      (list (cons 573 574)
-                            (cons 576 575)
-                            (cons 577 578)
-                            (cons 580 579)
-                            (cons 581 582))
-                      (lambda (x y) (even? (+ x y))))
-       '((573 . 574) (577 . 578) (581 . 582))))
-
-     (test-case
-      "alist-delete!:no-elements-removed"
-      (check-equal?
-       (alist-delete! 'Monti
-                      (list (cons 'Monticello 'Montour)
-                            (cons 'Montpelier 'Montrose)
-                            (cons 'Mooar 'Moorhead)
-                            (cons 'Moorland 'Moran)
-                            (cons 'Moravia 'Morley)))
-       '((Monticello . Montour)
-         (Montpelier . Montrose)
-         (Mooar . Moorhead)
-         (Moorland . Moran)
-         (Moravia . Morley))))
 
      ;; ALIST-DELETE
 
@@ -351,107 +302,6 @@
 
      ;; ALIST-DELETE!
 
-     (test-case
-      "alist-delete!:null-list"
-      (check-true (null? (alist-delete! (cons 'Unionville 'Unique) (list)))))
-
-     (test-case
-      "alist-delete!:in-singleton-list"
-      (check-true
-       (null?
-        (alist-delete! (cons 'Updegraff 'Urbana)
-                       (list (cons (cons 'Updegraff 'Urbana)
-                                   'Summitville))))))
-
-     (test-case
-      "alist-delete!:not-in-singleton-list"
-      (check-equal?
-       (alist-delete! (cons 'Urbandale 'Ute)
-                      (list (cons (cons 'Utica 'Vail) 'Valeria)))
-       '(((Utica . Vail) . Valeria))))
-
-     (test-case
-      "alist-delete!:at-beginning-of-longer-list"
-      (check-equal?
-       (alist-delete! (cons 'Valley 'Vandalia)
-                      (list (cons (cons 'Valley 'Vandalia) 'Varina)
-                            (cons (cons 'Ventura 'Vernon) 'Victor)
-                            (cons (cons 'Viele 'Villisca) 'Vincennes)
-                            (cons (cons 'Vincent 'Vining) 'Vinje)
-                            (cons (cons 'Vinton 'Viola) 'Volga)))
-       '(((Ventura . Vernon) . Victor)
-         ((Viele . Villisca) . Vincennes)
-         ((Vincent . Vining) . Vinje)
-         ((Vinton . Viola) . Volga))))
-
-     (test-case
-      "alist-delete!:in-middle-of-longer-list"
-      (check-equal?
-       (alist-delete! (cons 'Volney 'Voorhies)
-                      (list (cons (cons 'Wadena 'Wahpeton) 'Walcott)
-                            (cons (cons 'Wald 'Wales) 'Walford)
-                            (cons (cons 'Walker 'Wallin) 'Wallingford)
-                            (cons (cons 'Walnut 'Wapello) 'Ward)
-                            (cons (cons 'Volney 'Voorhies) 'Ware)
-                            (cons (cons 'Washburn 'Washington) 'Washta)
-                            (cons (cons 'Waterloo 'Waterville)
-                                  'Watkins)))
-       '(((Wadena . Wahpeton) . Walcott)
-         ((Wald . Wales) . Walford)
-         ((Walker . Wallin) . Wallingford)
-         ((Walnut . Wapello) . Ward)
-         ((Washburn . Washington) . Washta)
-         ((Waterloo . Waterville) . Watkins))))
-
-     (test-case
-      "alist-delete!:at-end-of-longer-list"
-      (check-equal?
-       (alist-delete! (cons 'Watson 'Watterson)
-                      (list (cons (cons 'Waubeek 'Waucoma) 'Waukee)
-                            (cons (cons 'Waukon 'Waupeton) 'Waverly)
-                            (cons (cons 'Wayland 'Webb) 'Webster)
-                            (cons (cons 'Weldon 'Weller) 'Wellman)
-                            (cons (cons 'Watson 'Watterson) 'Wellsburg)))
-       '(((Waubeek . Waucoma) . Waukee)
-         ((Waukon . Waupeton) . Waverly)
-         ((Wayland . Webb) . Webster)
-         ((Weldon . Weller) . Wellman))))
-
-     (test-case
-      "alist-delete!:not-in-longer-list"
-      (check-equal?
-       (alist-delete! (cons 'Welton 'Wesley)
-                      (list (cons (cons 'Western 'Westerville)
-                                  'Westfield)
-                            (cons (cons 'Westgate 'Weston) 'Westphalia)
-                            (cons (cons 'Westside 'Westview) 'Wever)
-                            (cons (cons 'Wheatland 'Whiting)
-                                  'Whittemore)
-                            (cons (cons 'Whitten 'Whittier) 'Wichita)))
-       '(((Western . Westerville) . Westfield)
-         ((Westgate . Weston) . Westphalia)
-         ((Westside . Westview) . Wever)
-         ((Wheatland . Whiting) . Whittemore)
-         ((Whitten . Whittier) . Wichita))))
-
-     (test-case
-      "alist-delete!:several-matches-in-longer-list"
-      (check-equal?
-       (alist-delete! (cons 'Wick 'Wightman)
-                      (list (cons (cons 'Wilke 'Willey) 'Williams)
-                            (cons (cons 'Williamsburg 'Williamson)
-                                  'Williamstown)
-                            (cons (cons 'Wick 'Wightman) 'Wilmar)
-                            (cons (cons 'Wilton 'Winchester) 'Windham)
-                            (cons (cons 'Wick 'Wightman) 'Winfield)
-                            (cons (cons 'Winkelmans 'Winterset)
-                                  'Winthrop)
-                            (cons (cons 'Wick 'Wightman) 'Wiota)))
-       '(((Wilke . Willey) . Williams)
-         ((Williamsburg . Williamson)
-          . Williamstown)
-         ((Wilton . Winchester) . Windham)
-         ((Winkelmans . Winterset) . Winthrop))))
 
      ))
   )

@@ -3,6 +3,7 @@
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
   (require "1/all-1-tests.ss"
            "2/and-let-test.ss"
+           "4/srfi-4-test.ss"
            "13/string-test.ss"
            "14/char-set-test.ss"
            "26/cut-test.ss"
@@ -22,5 +23,6 @@
      all-srfi-40-tests
      all-srfi-43-tests
      hash-tests
+     srfi-4-tests
      ))
   )
