@@ -7,7 +7,9 @@
 
          cons?
          empty
-         empty?)
+         empty?
+
+         flatten)
 
 (define (first x)
   (if (and (pair? x) (list? x))
@@ -51,3 +53,9 @@
 (define cons? (lambda (l) (pair? l)))
 (define empty? (lambda (l) (null? l)))
 (define empty '())
+
+(define (flatten orig-sexp)
+  (let loop ([sexp orig-sexp] [acc null])
+    (cond [(null? sexp) acc]
+          [(pair? sexp) (loop (car sexp) (loop (cdr sexp) acc))]
+          [else (cons sexp acc)])))

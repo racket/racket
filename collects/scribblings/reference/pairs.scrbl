@@ -272,14 +272,13 @@ Like @scheme[foldl], but the lists are traversed from right to left.
 @defproc[(flatten [x any/c])
          list?]{
 
-Like @scheme[foldl], but the lists are traversed from right to left.
- Unlike @scheme[foldl], @scheme[foldr] processes the @scheme[lst]s in
- space proportional to the length of @scheme[lst]s (plus the space for
- each call to @scheme[proc]).
+Flattens an arbitrary S-expression structure of pairs to a list.  Note
+that this function never raises an error, since all values are valid
+S-expressions.
 
 @examples[
-(foldr cons '() '(1 2 3 4))
-(foldr (lambda (v l) (cons (add1 v) l)) '() '(1 2 3 4))
+(flatten '((x) x (x (x) x) ()))
+(flatten 'x)
 ]}
 
 @; ----------------------------------------
