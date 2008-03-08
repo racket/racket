@@ -2,7 +2,7 @@
 
 (require (for-syntax scheme/base))
 
-(require (file "foreign.ss"))
+(require scheme/foreign)
 
 
 
