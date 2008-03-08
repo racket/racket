@@ -1,9 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(require mzlib/for)
-
-(Section 'generator)
+(Section 'for)
 
 (define-syntax (test-multi-generator stx)
   (syntax-case stx ()

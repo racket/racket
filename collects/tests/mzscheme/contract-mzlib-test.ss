@@ -7,7 +7,7 @@ of the contract library does not change over time.
 |#
 
 (load-relative "loadtest.ss")
-(Section 'contract)
+(Section 'mzlib/contract)
 
 (parameterize ([error-print-width 200])
 (let ()
