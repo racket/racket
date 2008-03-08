@@ -63,41 +63,45 @@ definitions and expressions.}
 
 Compiles the specified collection's files to @filepath{.zo} files.
 The @filepath{.zo} files are placed into the collection's
-@filepath{compiled} directory.
+@filepath{compiled} directory. By default, all files with the
+extension @filepath{.ss} or @filepath{.scm} in a collection are
+compiled, as are all such files within subdirectories.
 
 The collection compiler reads the collection's @filepath{info.ss} file
 (see @secref[#:doc '(lib "scribblings/setup-plt/setup-plt.scrbl")
-"info.ss"]) to obtain information about compiling the collection.  The
-following fields are used:
+"info.ss"]) to obtain further instructions for compiling the
+collection.  The following fields are used:
 
 @itemize{
 
- @item{@scheme[name] : The name of the collection as a string.}
+ @item{@scheme[name] : The name of the collection as a string, used
+       only for status and error reporting.}
 
  @item{@scheme[compile-omit-paths] : A list of immediate file and
-       directory names; all Scheme files (and subdirectories, if
-       @scheme[compile-subcollections] is set) in the collection are
-       compiled except for ones in this list.  Alternatively, the
-       field can be set to @scheme['all], which is equivalent to
-       specifying all files and directories, and effectively makes the
-       collection ignored completely.
+       directory paths that should not be compiled. Alternatively,
+       this field's value @scheme['all], which is equivalent to
+       specifying all files and directories in the collection (to
+       effectively ignore the collection for compilation).
 
-       Files that are required by other files that are compiled,
-       however, are always compiled in the process, even when listed
-       with this field, or when it is @scheme['all].}
+       Files that are required by other files, however, are always
+       compiled in the process of compiling the requiring file---even
+       when the required file is listed with this field or when the
+       field's value is @scheme['all].}
 
  @item{@scheme[compile-omit-files] : A list of filenames (without
        directory paths); that are not compiled, in addition to the
        contents of @scheme[compile-omit-paths].  Do not use this
-       field: it is for backward compatibility.}
+       field; it is for backward compatibility.}
+
+ @item{@scheme[scribblings] : A list of pairs, each of which starts
+       with a path for documentation source. The sources (and the
+       files that they require) are compiled in the same way as
+       @filepath{.ss} and @filepath{.scm} files.}
+
 }
 
-Only the @scheme[name] field is required from @filepath{info.ss},
-since @exec{setup-plt} uses @scheme[name] as an indication that the
-collection should be compiled.
-
-The compilation process is driven by @scheme[managed-compile-zo] from
-@schememodname[compiler/cm].}
+The compilation process for an individual file is driven by
+@scheme[managed-compile-zo] from @schememodname[compiler/cm].}
 
 
 @defproc[(compile-directory-zos [path path-string?]

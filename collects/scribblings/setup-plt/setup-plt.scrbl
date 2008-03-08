@@ -13,7 +13,7 @@
                     setup/plt-installer-sig
                     setup/plt-installer-unit
                     setup/pack
-                    compiler
+                    compiler/compiler
                     launcher/launcher
                     compiler/sig
                     launcher/launcher-sig
@@ -55,34 +55,32 @@ The @|setup-plt| executable performs two main services:
  @item{@bold{Compiling and setting up all (or some of the)
    collections:} When @|setup-plt| is run without any arguments, it
    finds all of the current collections (see @secref[#:doc
-   ref-src]{collects}) and compiles libraries in each collection with
-   an @filepath{info.ss} library.  The @filepath{info.ss} can indicate
-   specifically how the collection's modules are compiled. In this
-   mode, @|setup-plt| also compiles any module that is referenced by a
-   compiled module.
+   ref-src]{collects}) and compiles libraries in each collection.
 
-   The @DFlag{clean} (or @Flag{c}) flag to @|setup-plt| causes it to delete
-   existing @filepath{.zo} and extension files, thus ensuring a clean build
-   from the source files. The exact set of deleted files can be controlled
-   by @filepath{info.ss} libraries; see @elemref["clean"]{@scheme[clean]}
-   for more info.
+   An optional @filepath{info.ss} within the collection can indicate
+   specifically how the collection's files are to be compiled and
+   other actions to take in setting up a collection, such as creating
+   executables or building documentation. See @secref["setup-info"]
+   for more information.
+
+   The @DFlag{clean} (or @Flag{c}) flag to @|setup-plt| causes it to
+   delete existing @filepath{.zo} files, thus ensuring a clean build
+   from the source files. The exact set of deleted files can be
+   controlled by @filepath{info.ss}; see
+   @elemref["clean"]{@scheme[clean]} for more information.
 
    The @Flag{l} flag takes one or more collection names and restricts
    @|setup-plt|'s action to those collections.
 
    The @DFlag{mode} @nonterm{mode} flag causes @|setup-plt| to use a
-   @filepath{.zo} compiler other than the default, and to put the
-   resulting @filepath{.zo} files in a subdirectory (of the usual
+   @filepath{.zo} compiler other than the default compiler, and to put
+   the resulting @filepath{.zo} files in a subdirectory (of the usual
    place) named by @nonterm{mode}. The compiler is obtained by using
    @nonterm{mode} as a collection name, finding a
    @filepath{zo-compile.ss} module in that collection, and extracting
    its @scheme[zo-compile] export. The @scheme[zo-compile] export
    should be a function like @scheme[compile]; see the
-   @filepath{errortrace} collection for an example.
-
-   In addition to compilation, a collection's @filepath{info.ss}
-   library can specify executables to be created in the installation's
-   executable directory, and it can specify documentation to build..}
+   @filepath{errortrace} collection for an example.}
 
  @item{@bold{Unpacking single @filepath{.plt} files:} A
    @filepath{.plt} file is a platform-independent distribution archive
@@ -98,46 +96,115 @@ accepted by the @|setup-plt| executable.
 
 @; ------------------------------------------------------------------------
 
-@subsection{Compiling and Setting Up All Collections}
+@subsection[#:tag "setup-info"]{Controlling @|setup-plt| with @filepath{info.ss} Files}
 
-The @|setup-plt| executable attempts to compile and set up all
-collections (all directories in the collects hierarchy).  Some
-collections are not really libraries (e.g., the @filepath{icons}
-collection); this is fine since nothing is done when there are no
-source files in the directory.
+To compile a collection's files to bytecode, @|setup-plt| uses the
+@scheme[compile-collection-zos] procedure. That procedure, in turn,
+consults the collection's @filepath{info.ss} file, if it exists, for
+specific instructions on compiling the collection. See
+@scheme[compile-collection-zos] for more information on the fields of
+@filepath{info.ss} that it uses, and see @secref["info.ss"] for
+information on the format of an @filepath{info.ss} file.
 
-Collections are compiled using the @scheme[compile-collection-zos]
-procedure.
-
-@;{
-The @|setup-plt| executable attempts to compile and set up any
-collection that:
+Optional @filepath{info.ss} fields trigger additional actions by
+@|setup-plt|:
 
 @itemize{
 
- @item{has an @filepath{info.ss} library (see @secref["info.ss"]);}
+ @item{@scheme[scribblings] : @scheme[(listof (cons/c string? list?))] ---
+   A list of documents to build. Each document in the list is itself
+   represented as a list, where each document's list starts with a
+   string that is a collection-relative path to the document's source
+   file.
 
- @item{has a @scheme[name] field in @filepath{info.ss}; and}
+   A document's list optionally continues with information on how to
+   build the document. If a document's list contains a second item, it
+   must be a list of mode symbols (described below). If a document's
+   list contains a third item, it is a name to use for the generated
+   documentation, instead of defaulting to the source file's name sans
+   extension.
 
- @item{is either a top-level collection or a sub-collection of a
-   compilable collection.}
+   Each mode symbol can be one of the following, where only
+   @scheme['multi-page] is commonly used:
 
-}
+   @itemize{
 
-Collections that meet this criteria are compiled using the
-@scheme[compile-collection-zos] procedure (which means that even if a
-collection has no @filepath{info.ss} file, its modules will get
-compiled if they are used by other compiled modules).
-;}
+     @item{@scheme['multi-page] : Generates multi-page HTML output,
+           instead of the default single-page format.}
 
+     @item{@scheme['main-doc] : Indicates that the generated
+           documentation should be written into the main installation
+           directory, instead of to a user-specific directory. This
+           mode is the default for a collection that is itself located
+           in the main installation.}
 
-@; ------------------------------------------------------------------------
+     @item{@scheme['user-doc] : Indicates that the generated
+           documentation should be written a user-specific
+           directory. This mode is the default for a collection that
+           is not itself located in the main installation.}
 
-@subsection{Controlling @|setup-plt| with @filepath{info.ss} Files}
+     @item{@scheme['depends-all] : Indicates that the document should
+           be re-built if any other document is rebuilt---except for
+           documents that have the @scheme['no-depends-on] mode.}
 
-Optional @filepath{info.ss} fields trigger additional setup actions:
+     @item{@scheme['depends-all-main] : Indicates that the document
+           should be re-built if any other document is rebuilt that is
+           installed into the main installation---except for documents
+           that have the @scheme['no-depends-on] mode.}
 
-@itemize{
+     @item{@scheme['always-run] : Build the document every time that
+           @|setup-plt| is run, even if none of its dependencies
+           change.}
+
+     @item{@scheme['no-depend-on] : Removes the document for
+           consideration for other dependencies. This mode is
+           typically used with @scheme['always-run] to avoid
+           unnecessary dependencies that prevent reaching a stable
+           point in building documentation.}
+
+     @item{@scheme['main-doc-root] : Designates the root document for
+           the main installation. The document that currently has this
+           mode should be the only one with the mode.}
+
+     @item{@scheme['user-doc-root] : Designates the root document for
+           the user-specific documentation directory. The document
+           that currently has this mode should be the only one with
+           the mode.}
+
+    }}
+
+ @item{@scheme[doc-categories] : @scheme[(listof (or/c symbol? (list/c
+   symbol? exact-integer?)))]  --- A list in parallel to the
+   @scheme[scribblings] list that specifies how to show the document
+   in the root table of contents. For each document, the symbol is one
+   of the fixed categories below, and the number determines sorting
+   within the category; documents with the same sorting number are
+   further sorted using the document title.
+
+   A category symbol is one of the following:
+
+   @itemize{
+
+     @item{@scheme['getting-started] : High-level, introductory
+           documentation.}
+
+     @item{@scheme['language] : Documentation for a prominent
+           programming language.}
+
+     @item{@scheme['tool] : Documentation for an executable.}
+
+     @item{@scheme['library] : Documentation for libraries; this
+           category is the default.}
+
+     @item{@scheme['legacy] : Documentation for deprecated libraries,
+           languages, and tools.}
+
+     @item{@scheme['other] : Other documentation.}
+
+     @item{@scheme['omit] : Documentation that should not be listed on
+           the root page.}
+
+   }}
 
  @item{@scheme[mzscheme-launcher-names] : @scheme[(listof string?)]
    --- @elemtag["mzscheme-launcher-names"] A list of executable names
