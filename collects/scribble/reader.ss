@@ -321,28 +321,29 @@
            (*peek re:command))
          ;; read the next value
          => (lambda (m)
-              (let ([x (cond
-                         [(cadr m)
-                          ;; the command is a string escape, use `read-stx*' to
-                          ;; not get a placeholder, so we can merge the string
-                          ;; to others
-                          (read-stx*)]
-                         [(caddr m)
-                          ;; it's an expression escape, get multiple
-                          ;; expressions and put them all here
-                          (read-bytes (caaddr m) inp)
-                          (get-escape-expr #f)]
-                         [else (read-stx)])]) ; otherwise: a plain sub-read
-                (loop lvl (cond [(eof-object? x)
-                                 ;; shouldn't happen -- the sub-read would
-                                 ;; raise an error
-                                 (internal-error 'get-lines*-sub-read)]
-                                ;; throw away comments
-                                [(special-comment? x) r]
-                                ;; escaped expressions: no merge
-                                [(pair? x) (append (reverse x) r)]
-                                [(null? x) (cons (make-special-comment #f) r)]
-                                [else (maybe-merge x r)]))))]
+              (define x (cond [(cadr m)
+                               ;; the command is a string escape, use
+                               ;; `read-stx*' to not get a placeholder, so we
+                               ;; can merge the string to others
+                               (read-stx*)]
+                              [(caddr m)
+                               ;; it's an expression escape, get multiple
+                               ;; expressions and put them all here
+                               (read-bytes (caaddr m) inp)
+                               (get-escape-expr #f)]
+                              [else (read-stx)])) ; otherwise: a plain sub-read
+              (loop lvl (cond [(eof-object? x)
+                               ;; shouldn't happen -- the sub-read would
+                               ;; raise an error
+                               (internal-error 'get-lines*-sub-read)]
+                              ;; throw away comments
+                              [(special-comment? x) r]
+                              ;; escaped expressions: no merge, and add a
+                              ;; comment to prevent merges with later stuff
+                              [(pair? x)
+                               `(,(make-special-comment #f) ,@(reverse x) ,@r)]
+                              [(null? x) (cons (make-special-comment #f) r)]
+                              [else (maybe-merge x r)])))]
         ;; must be last, since it will always succeed with 1 char
         [(*peek re:item) ; don't read: regexp grabs the following text
          => (lambda (m)
@@ -398,7 +399,14 @@
              (read-error* "expecting a command expression, got a comment")]
             [(eof-object? cmd)
              (read-error* 'eof "missing command")]
-            [else cmd])))
+            ;; we have a command: adjust its location to include the dispatch
+            ;; character
+            [else (datum->syntax #f (syntax-e cmd)
+                    (list (syntax-source cmd)
+                          (syntax-line cmd)
+                          (cond [(syntax-column cmd) => sub1] [else #f])
+                          (cond [(syntax-position cmd) => sub1] [else #f])
+                          (cond [(syntax-span cmd) => add1] [else #f])))])))
 
   (define (get-rprefixes) ; return punctuation prefixes in reverse
     (let loop ([r '()])

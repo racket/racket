@@ -1,9 +1,6 @@
-#!/bin/sh
-#| -*- scheme -*-
-exec mzscheme -r "$0" "$@"
-|#
-
-(require mzlib/string)
+#!/bin/env mzscheme
+#lang scheme/base
+(require mzlib/string (for-syntax scheme/base))
 
 #reader(lib "reader.ss" "scribble")
 (define tests
@@ -443,7 +440,7 @@ exec mzscheme -r "$0" "$@"
                                                       (eq? (car prop)
                                                            'newline)))
                                             (cons fst rst)]
-                                           [else (cons (datum->syntax-object
+                                           [else (cons (datum->syntax
                                                         fst (cadr prop) fst)
                                                        rst)])))))]))])
         @verb[string-append]{
