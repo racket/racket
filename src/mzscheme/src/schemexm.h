@@ -69,6 +69,7 @@
 #define scheme_sync_timeout (scheme_extension_table->scheme_sync_timeout)
 #define scheme_make_evt_set (scheme_extension_table->scheme_make_evt_set)
 #define scheme_add_swap_callback (scheme_extension_table->scheme_add_swap_callback)
+#define scheme_add_swap_out_callback (scheme_extension_table->scheme_add_swap_out_callback)
 #define scheme_call_enable_break (scheme_extension_table->scheme_call_enable_break)
 #define scheme_close_should_force_port_closed (scheme_extension_table->scheme_close_should_force_port_closed)
 #define scheme_push_kill_action (scheme_extension_table->scheme_push_kill_action)

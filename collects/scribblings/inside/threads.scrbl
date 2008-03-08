@@ -727,3 +727,22 @@ Ends an atomic region with respect to Scheme threads. The current
 Ends an atomic region with respect to Scheme threads, and also
  prevents an immediate thread swap. (In other words, no Scheme
  thread swaps will occur until a future safe point.)}
+
+@function[(void scheme_add_swap_callback
+                [Scheme_Closure_Func f]
+                [Scheme_Object* data])]{
+
+Registers a callback to be invoked just after a Scheme thread is
+swapped in. The @var{data} is provided back to @var{f} when it is
+called, where @cpp{Closure_Func} is defined as follows:
+
+@verbatim[#:indent 2]{
+  typedef Scheme_Object *(*Scheme_Closure_Func)(Scheme_Object *);
+}}
+
+@function[(void scheme_add_swap_out_callback
+                [Scheme_Closure_Func f]
+                [Scheme_Object* data])]{
+
+Like @cpp{scheme_add_swap_callback}, but registers a callback to be
+invoked just before a Scheme thread is swapped out.}

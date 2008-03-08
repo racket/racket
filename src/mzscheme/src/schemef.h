@@ -152,6 +152,7 @@ MZ_EXTERN Scheme_Object *scheme_sync_timeout(int argc, Scheme_Object *argv[]);
 MZ_EXTERN Scheme_Object *scheme_make_evt_set(int argc, Scheme_Object **argv);
 
 MZ_EXTERN void scheme_add_swap_callback(Scheme_Closure_Func f, Scheme_Object *data);
+MZ_EXTERN void scheme_add_swap_out_callback(Scheme_Closure_Func f, Scheme_Object *data);
 
 MZ_EXTERN Scheme_Object *scheme_call_enable_break(Scheme_Prim *prim, int argc, Scheme_Object *argv[]);
 MZ_EXTERN int scheme_close_should_force_port_closed();

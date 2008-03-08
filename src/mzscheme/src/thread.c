@@ -253,7 +253,7 @@ static Scheme_Object *nested_exn_handler;
 
 static Scheme_Object *closers;
 
-static Scheme_Object *thread_swap_callbacks;
+static Scheme_Object *thread_swap_callbacks,  *thread_swap_out_callbacks;
 
 static Scheme_Object *recycle_cell;
 static Scheme_Object *maybe_recycle_cell;
@@ -2078,6 +2078,7 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     REGISTER_SO(scheme_main_thread);
     REGISTER_SO(scheme_first_thread);
     REGISTER_SO(thread_swap_callbacks);
+    REGISTER_SO(thread_swap_out_callbacks);
     REGISTER_SO(swap_target);
 
     scheme_current_thread = process;
@@ -2088,6 +2089,7 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     process->error_buf = &main_init_error_buf;
 
     thread_swap_callbacks = scheme_null;
+    thread_swap_out_callbacks = scheme_null;
 
     GC_collect_start_callback = get_ready_for_GC;
     GC_collect_end_callback = done_with_GC;
@@ -2437,6 +2439,17 @@ static void do_swap_thread()
     swap_no_setjmp = 0;
 
     /* We're leaving... */
+
+    {
+      Scheme_Object *l, *o;
+      Scheme_Closure_Func f;
+      for (l = thread_swap_out_callbacks; SCHEME_RPAIRP(l); l = SCHEME_CDR(l)) {
+	o = SCHEME_CAR(l);
+	f = SCHEME_CLOS_FUNC(o);
+	o = SCHEME_CLOS_DATA(o);
+	f(o);
+      }
+    }
 
     if (scheme_current_thread->init_break_cell) {
       int cb;
@@ -2944,6 +2957,14 @@ void scheme_add_swap_callback(Scheme_Closure_Func f, Scheme_Object *data)
 
   p = scheme_make_raw_pair((Scheme_Object *)f, data);
   thread_swap_callbacks = scheme_make_pair(p, thread_swap_callbacks);
+}
+
+void scheme_add_swap_out_callback(Scheme_Closure_Func f, Scheme_Object *data)
+{
+  Scheme_Object *p;
+
+  p = scheme_make_raw_pair((Scheme_Object *)f, data);
+  thread_swap_out_callbacks = scheme_make_pair(p, thread_swap_out_callbacks);
 }
 
 /**************************************************************************/

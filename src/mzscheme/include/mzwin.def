@@ -63,6 +63,7 @@ EXPORTS
  scheme_sync_timeout
  scheme_make_evt_set
  scheme_add_swap_callback
+ scheme_add_swap_out_callback
  scheme_call_enable_break
  scheme_close_should_force_port_closed
  scheme_push_kill_action
