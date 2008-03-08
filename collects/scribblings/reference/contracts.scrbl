@@ -844,8 +844,8 @@ below, but it is the right choice for new contract
 constructors or first-time contract builders.
 
 The first argument is the name of the contract. It can be an
-arbitrary s-expression. The second is a projection (see
-above). 
+arbitrary S-expression. The second is a projection (see
+above).
 
 The final argument is a predicate that is a
 conservative, first-order test of a value. It should be a
@@ -861,7 +861,7 @@ functions, but reject all other values.}
 
 @defproc[(build-compound-type-name [c/s any/c] ...) any]{
 
-Produces an s-expression to be used as a name
+Produces an S-expression to be used as a name
 for a contract. The arguments should be either contracts or
 symbols. It wraps parenthesis around its arguments and
 extracts the names from any contracts it is supplied with.}

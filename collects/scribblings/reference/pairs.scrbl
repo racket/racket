@@ -269,6 +269,19 @@ Like @scheme[foldl], but the lists are traversed from right to left.
 (foldr (lambda (v l) (cons (add1 v) l)) '() '(1 2 3 4))
 ]}
 
+@defproc[(flatten [x any/c])
+         list?]{
+
+Like @scheme[foldl], but the lists are traversed from right to left.
+ Unlike @scheme[foldl], @scheme[foldr] processes the @scheme[lst]s in
+ space proportional to the length of @scheme[lst]s (plus the space for
+ each call to @scheme[proc]).
+
+@examples[
+(foldr cons '() '(1 2 3 4))
+(foldr (lambda (v l) (cons (add1 v) l)) '() '(1 2 3 4))
+]}
+
 @; ----------------------------------------
 @section{List Filtering}
 
