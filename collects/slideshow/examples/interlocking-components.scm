@@ -1,7 +1,8 @@
 
 (module interlocking-components slideshow/run
   (require mzlib/class
-           mred)
+           mred
+           scheme/list)
   
   (define-struct posn (x y) (make-inspector))
   
@@ -243,19 +244,10 @@
                     (+ pointy-tooth-accept-space pointy-tooth-width)
                     pointy-tooth-width)
                 0)))
-  
+
   (define (offset-posns x y posns)
     (map (lambda (pt) (make-posn (+ x (posn-x pt)) (+ y (posn-y pt)))) posns))
-  
-  (define (flatten orig-sexp)
-    (let loop ([sexp orig-sexp]
-               [acc null])
-      (cond
-        [(null? sexp) acc]
-        [(pair? sexp)
-         (loop (car sexp) (loop (cdr sexp) acc))]
-        [else (cons sexp acc)])))
-  
+
   (define (overlay-striped-background color diameter pict)
     (let* ([w (pict-width pict)]
            [h (pict-height pict)]
