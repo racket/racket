@@ -71,8 +71,8 @@
                        (map (lambda (s) (format " ~a" s))
                             (available-mzscheme-variants))))
   (setup-printf "Main collection path is ~a" (find-collects-dir))
-  (setup-printf "Collection search path is ~a"
-                (if (null? (current-library-collection-paths)) "empty!" ""))
+  (setup-printf "Collection search path is~a"
+                (if (null? (current-library-collection-paths)) " empty!" ""))
   (for ([p (current-library-collection-paths)])
     (setup-printf "  ~a" (path->string p)))
 
