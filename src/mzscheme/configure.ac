@@ -587,8 +587,15 @@ case $OS in
     fi
     ;;
   Darwin)
+
+    if test -d "/Developer/SDKs/MacOSX10.4u.sdk"; then
+      PREFLAGS="$PREFLAGS -I/Developer/SDKs/MacOSX10.4u.sdk/usr/include"
+      PREFLAGS="$PREFLAGS -F/Developer/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks/"
+      LDFLAGS="$LDFLAGS -L/Developer/SDKs/MacOSX10.4u.sdk/usr/lib"
+      LDFLAGS="$LDFLAGS -F/Developer/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks/"
+    fi
     
-    PREFLAGS="$PREFLAGS -D_DARWIN_UNLIMITED_SELECT -DOS_X"
+    PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"
 
     # zlib comes with the OS
     ZLIB_A=""

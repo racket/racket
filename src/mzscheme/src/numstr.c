@@ -1624,8 +1624,7 @@ static Scheme_Object *bytes_to_integer (int argc, Scheme_Object *argv[])
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
     scheme_wrong_type("integer-bytes->integer", "byte string", 0, argc, argv);
-  else
-    strlen = SCHEME_BYTE_STRLEN_VAL(argv[0]);
+  strlen = SCHEME_BYTE_STRLEN_VAL(argv[0]);
 
   str = SCHEME_BYTE_STR_VAL(argv[0]);
 

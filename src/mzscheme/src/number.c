@@ -1221,7 +1221,7 @@ sch_round (int argc, Scheme_Object *argv[])
 
 #ifdef FMOD_CAN_RETURN_POS_ZERO
     if (minus_zero_p(d))
-      return d;
+      return o;
 #endif
 
     if (d < 0) {
