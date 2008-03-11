@@ -66,6 +66,8 @@ AC_ARG_ENABLE(gcov,    [  --enable-gcov           compile to gather gcov statist
 
 AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags])
 
+AC_ARG_ENABLE(noopt,   [  --enable-sdk=<path>     use Mac OS X SDK directory])
+
 AC_ARG_ENABLE(xonx,    [  --enable-xonx           compile X11 (not Quartz) MrEd for Mac OS X])
 AC_ARG_ENABLE(libfw,   [  --enable-libfw          install Mac OS X frameworks to /Library/Frameworks])
 AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks])
@@ -588,11 +590,11 @@ case $OS in
     ;;
   Darwin)
 
-    if test -d "/Developer/SDKs/MacOSX10.4u.sdk"; then
-      PREFLAGS="$PREFLAGS -I/Developer/SDKs/MacOSX10.4u.sdk/usr/include"
-      PREFLAGS="$PREFLAGS -F/Developer/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks/"
-      LDFLAGS="$LDFLAGS -L/Developer/SDKs/MacOSX10.4u.sdk/usr/lib"
-      LDFLAGS="$LDFLAGS -F/Developer/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks/"
+    if test "${enable_sdk}" != "" ; then 
+      PREFLAGS="$PREFLAGS -I${enable_sdk}/usr/include"
+      PREFLAGS="$PREFLAGS -F${enable_sdk}/System/Library/Frameworks/"
+      LDFLAGS="$LDFLAGS -L${enable_sdk}/usr/lib"
+      LDFLAGS="$LDFLAGS -F${enable_sdk}/System/Library/Frameworks/"
     fi
     
     PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"
