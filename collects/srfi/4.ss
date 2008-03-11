@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require scheme/reqprov)
+(require scheme/require)
 
 ;; Note: this also gets additional functions for srfi-66 (u8vector-copy,
 ;; u8vector=?, u8vector-compare, u8vector-copy!) -- but that should be fine,

@@ -1341,7 +1341,7 @@ pre-defined forms are as follows.
   error is reported.}
 
  @defsubform[(except-in require-spec id ...)]{ Like
-  @scheme[require-spec], but omitting those exports for which
+  @scheme[require-spec], but omitting those imports for which
   @scheme[id]s are the identifiers to bind; if any @scheme[id] is not
   in the set that @scheme[require-spec] describes, a syntax error is
   reported.}
@@ -1715,9 +1715,9 @@ introduced at the same time. Similarly, @schemeidfont{all-defined} and
 its variants export only definitions accessible from the lexical
 context of the @scheme[phaseless-spec] form.}
 
-@subsection{Additional @scheme[require] and @scheme[provide] Macros}
+@subsection{Additional @scheme[require] Macros}
 
-@note-lib-only[scheme/reqprov]
+@note-lib-only[scheme/require]
 
 This library provides additional forms for use in @scheme[require] and
 @scheme[provide].  These forms provide more complex selection and
@@ -1726,21 +1726,33 @@ massaging of identifiers that are useful in some cases.  Note that a
 requiring the library itself should be a separate form.  For example, use
 
 @schemeblock[
-  (require scheme/reqprov)
+  (require scheme/require)
   (require (matching-identifiers-in #rx"foo" "foo.ss"))
 ]
 
 instead of
 
 @schemeblock[
-  (require scheme/reqprov
+  (require scheme/require
            (matching-identifiers-in #rx"foo" "foo.ss"))
 ]
 
 @defsubform[(matching-identifiers-in regexp require-spec)]{
-  Like @scheme[require-spec], but including only exports whose names
+  Like @scheme[require-spec], but including only imports whose names
   match @scheme[regexp].  @scheme[regexp] must be a literal regular
   expression (see @secref["regexp"]).}
+
+@subsection{Additional @scheme[provide] Macros}
+
+@note-lib-only[scheme/provide]
+
+This library provides additional forms for use in @scheme[provide], it
+mirrors the @scheme[scheme/require] library.
+
+@defsubform[(matching-identifiers-out regexp provide-spec)]{
+  Like @scheme[provide-spec], but omitting the export of each binding
+  with an external name that matches @scheme[regexp].  @scheme[regexp]
+  must be a literal regular expression (see @secref["regexp"]).}
 
 @;------------------------------------------------------------------------
 @section[#:tag "#%top-interaction"]{Interaction Wrapper: @scheme[#%top-interaction]}

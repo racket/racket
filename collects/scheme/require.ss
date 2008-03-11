@@ -9,8 +9,8 @@
      (syntax-case stx ()
        [(_ rx spec)
         (regexp? (syntax-e #'rx))
-        (let*-values ([(rx) (syntax-e #'rx)]
-                      [(imports sources) (expand-import #'spec)])
+        (let-values ([(rx) (syntax-e #'rx)]
+                     [(imports sources) (expand-import #'spec)])
           (values
            (filter (lambda (i)
                      (regexp-match? rx (symbol->string
