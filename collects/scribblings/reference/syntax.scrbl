@@ -1717,7 +1717,7 @@ context of the @scheme[phaseless-spec] form.}
 
 @subsection{Additional @scheme[require] and @scheme[provide] Macros}
 
-@note-lib-only[scheme/modspec-forms]
+@note-lib-only[scheme/reqprov]
 
 This library provides additional forms for use in @scheme[require] and
 @scheme[provide].  These forms provide more complex selection and
@@ -1726,14 +1726,14 @@ massaging of identifiers that are useful in some cases.  Note that a
 requiring the library itself should be a separate form.  For example, use
 
 @schemeblock[
-  (require scheme/modspec-forms)
+  (require scheme/reqprov)
   (require (matching-identifiers-in #rx"foo" "foo.ss"))
 ]
 
 instead of
 
 @schemeblock[
-  (require scheme/modspec-forms
+  (require scheme/reqprov
            (matching-identifiers-in #rx"foo" "foo.ss"))
 ]
 
