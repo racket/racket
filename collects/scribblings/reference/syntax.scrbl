@@ -1715,6 +1715,33 @@ introduced at the same time. Similarly, @schemeidfont{all-defined} and
 its variants export only definitions accessible from the lexical
 context of the @scheme[phaseless-spec] form.}
 
+@subsection{Additional @scheme[require] and @scheme[provide] Macros}
+
+@note-lib-only[scheme/modspec-forms]
+
+This library provides additional forms for use in @scheme[require] and
+@scheme[provide].  These forms provide more complex selection and
+massaging of identifiers that are useful in some cases.  Note that a
+@scheme[require] form is expanded before it is used, which means that
+requiring the library itself should be a separate form.  For example, use
+
+@schemeblock[
+  (require scheme/modspec-forms)
+  (require (matching-identifiers-in #rx"foo" "foo.ss"))
+]
+
+instead of
+
+@schemeblock[
+  (require scheme/modspec-forms
+           (matching-identifiers-in #rx"foo" "foo.ss"))
+]
+
+@defsubform[(matching-identifiers-in regexp require-spec)]{
+  Like @scheme[require-spec], but including only exports whose names
+  match @scheme[regexp].  @scheme[regexp] must be a literal regular
+  expression (see @secref["regexp"]).}
+
 @;------------------------------------------------------------------------
 @section[#:tag "#%top-interaction"]{Interaction Wrapper: @scheme[#%top-interaction]}
 
