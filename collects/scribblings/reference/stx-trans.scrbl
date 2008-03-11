@@ -528,11 +528,12 @@ See also @scheme[define-require-syntax], which supports macro-style
 @scheme[require] transformers.
 
 @defproc[(expand-import [stx syntax?])
-         (values (listof import?) 
+         (values (listof import?)
                  (listof import-source?))]{
 
 Expands the given @scheme[_require-spec] to lists of imports and
-import sources.}
+import sources.  Note that the import sources specify modules to be
+visited, so this list is independent of the imports list.}
 
 
 @defproc[(make-require-transformer [proc ((syntax?) . ->* . ((listof import?)
