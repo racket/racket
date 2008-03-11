@@ -24,4 +24,8 @@
       (parameterize ([current-launcher-variant variant])
         (mk-launcher '("-l-" "help/help")
                      (mk-path "plt-help")
-                     `([exe-name . "plt-help"] [relative? . #t] ,@extras))))))
+                     `([exe-name . "plt-help"] 
+                       [relative? . #t]
+                       [framework-root . #f]
+                       [dll-dir . #f]
+                       ,@extras))))))
