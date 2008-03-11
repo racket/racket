@@ -41,6 +41,11 @@
             #'(defproc (name [v contract]) any/c
                 "Returns " (to-element 'equiv)))))]))
 
+
+@(define list-eval (make-base-eval))
+@interaction-eval[#:eval list-eval (require scheme/list)]
+
+
 @title[#:tag "pairs"]{Pairs and Lists}
 
 A @deftech{pair} combines exactly two values. The first value is
@@ -269,18 +274,6 @@ Like @scheme[foldl], but the lists are traversed from right to left.
 (foldr (lambda (v l) (cons (add1 v) l)) '() '(1 2 3 4))
 ]}
 
-@defproc[(flatten [x any/c])
-         list?]{
-
-Flattens an arbitrary S-expression structure of pairs to a list.  Note
-that this function never raises an error, since all values are valid
-S-expressions.
-
-@examples[
-(flatten '((x) x (x (x) x) ()))
-(flatten 'x)
-]}
-
 @; ----------------------------------------
 @section{List Filtering}
 
@@ -447,7 +440,7 @@ Like @scheme[assoc], but finds an element using the predicate
 @defc_r[d d d d]
 
 @; ----------------------------------------
-@section{List Synonyms}
+@section{List Synonyms and More}
 
 @note-lib[scheme/list]
 
@@ -480,6 +473,21 @@ Like @scheme[assoc], but finds an element using the predicate
 @defproc[(tenth [lst list?]) any]{Returns the tenth element of the list.}
 
 @defproc[(last [lst list?]) any]{Returns the last element of the list.}
+
+@defproc[(flatten [v any/c])
+         list?]{
+
+Flattens an arbitrary S-expression structure of pairs into a
+list. More precisely, @scheme[v] is treated as a binary tree where
+pairs are interior nodes, and the resulting list contains all of the
+non-@scheme[null] leaves of the tree in the same order as an inorder
+traversal.
+
+@examples[
+#:eval list-eval
+(flatten '((a) b (c (d) . e) ()))
+(flatten 'a)
+]}
 
 @; ----------------------------------------
 @section{Immutable Cyclic Data}
