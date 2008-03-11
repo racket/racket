@@ -440,7 +440,7 @@ Like @scheme[assoc], but finds an element using the predicate
 @defc_r[d d d d]
 
 @; ----------------------------------------
-@section{List Synonyms and More}
+@section{Additional List Functions and Synonyms}
 
 @note-lib[scheme/list]
 
