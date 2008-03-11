@@ -1,3 +1,5 @@
-(module |66| mzscheme
-  (require srfi/66/66)
-  (provide (all-from srfi/66/66)))
+#lang scheme/base
+
+(require scheme/modspec-forms)
+(require (matching-identifiers-in #px"\\bu8vector\\b" scheme/foreign))
+(provide (all-from-out scheme/foreign))
