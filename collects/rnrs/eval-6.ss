@@ -24,7 +24,7 @@
   v)
 
 (define (r6rs:eval expr env)
-  (eval #`(#%expression #,(datum->syntax #f (mpair->pair expr))) env))
+  (eval (datum->syntax #f `(#%expression ,(mpair->pair expr))) env))
 
 (define (environment . specs)
   (let ([reqs
@@ -42,6 +42,7 @@
       ;; Make sure all modules are instantiated here:
       (parameterize ([current-namespace ns])
         (namespace-require '(rename scheme/base #%base-require require))
+        (namespace-require '(only scheme/base #%expression))
         (eval `(#%base-require r6rs/private/prelims 
                                . ,(datum->syntax #'here (apply append reqs)))))
       ns)))
