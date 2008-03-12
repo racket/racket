@@ -64,12 +64,15 @@
                             (let ([first-car  
                                    (syntax-case (car l) 
                                      (unquote-splicing quasiquote)
-                                     [,@`p  ;; have to parse forward here
-                                        (let ((pq (parse-q (syntax p))))
-                                          (if (stx-list? pq)
-                                              (cdr (syntax->list pq))
+                                     [,@(q p)  ;; have to parse forward here
+                                      (or (module-identifier=? #'quasiquote #'q)
+                                          (module-identifier=? #'quote #'q))
+                                      (let ((pq (parse-q (syntax p))))
+                                        (if (stx-list? pq)
+                                            (cdr (syntax->list pq))
+                                            (begin 
                                               (q-error (syntax ,@`p)
-                                                       "unquote-splicing not followed by list")))]
+                                                       "unquote-splicing not followed by list"))))]
                                      [,@p
                                         (if (and (stx-list? (syntax p))
                                                  (memq (syntax-e (car (syntax->list #'p))) '(list list-rest)))
