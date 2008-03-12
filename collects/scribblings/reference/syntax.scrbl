@@ -1742,6 +1742,10 @@ instead of
   match @scheme[regexp].  @scheme[regexp] must be a literal regular
   expression (see @secref["regexp"]).}
 
+@defsubform[(subtract-in require-spec subtracted-spec ...)]{
+  Like @scheme[require-spec], but omitting those imports that are
+  provided by one of the @scheme[subtracted-spec]s.}
+
 @subsection{Additional @scheme[provide] Macros}
 
 @note-lib-only[scheme/provide]
@@ -1753,6 +1757,12 @@ mirrors the @scheme[scheme/require] library.
   Like @scheme[provide-spec], but omitting the export of each binding
   with an external name that matches @scheme[regexp].  @scheme[regexp]
   must be a literal regular expression (see @secref["regexp"]).}
+
+@defsubform[(subtract-out provide-spec subtracted-spec ...)]{
+  Like @scheme[provide-spec], but omitting exports that are provided
+  by one of the @scheme[subtracted-spec]s.  Note that this form is not
+  useful by itself: the specified bindings have already been required
+  so they have no clashes.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "#%top-interaction"]{Interaction Wrapper: @scheme[#%top-interaction]}
