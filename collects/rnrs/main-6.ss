@@ -24,10 +24,20 @@
                     rnrs/records/syntactic-6
                     rnrs/records/procedural-6)]
     [(_ id) (begin
-              (require id)
-              (provide (all-from-out id)))]
+              (require id
+                       ;; Shift any run time exports to for-syntax:
+                       (for-syntax (only-meta-in 0 id))
+                       ;; Shift any for-syntax exports for run time:
+                       (for-template (only-meta-in 1 id)))
+              (provide (all-from-out id)
+                       (for-template (all-from-out id))
+                       (for-syntax (all-from-out id))))]
     [(_ id ...)
      (begin (re-export id) ...)]))
 
 (re-export)
 
+;; Also need to export prelims for syntax, since there will
+;;  not be a for-syntax import when this module is imported:
+(require (for-syntax r6rs/private/prelims))
+(provide (for-syntax (all-from-out r6rs/private/prelims)))
