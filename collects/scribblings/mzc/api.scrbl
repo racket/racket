@@ -74,10 +74,10 @@ collection.  The following fields are used:
 
 @itemize{
 
- @item{@scheme[name] : The name of the collection as a string, used
+ @item{@indexed-scheme[name] : The name of the collection as a string, used
        only for status and error reporting.}
 
- @item{@scheme[compile-omit-paths] : A list of immediate file and
+ @item{@indexed-scheme[compile-omit-paths] : A list of immediate file and
        directory paths that should not be compiled. Alternatively,
        this field's value @scheme['all], which is equivalent to
        specifying all files and directories in the collection (to
@@ -88,12 +88,12 @@ collection.  The following fields are used:
        when the required file is listed with this field or when the
        field's value is @scheme['all].}
 
- @item{@scheme[compile-omit-files] : A list of filenames (without
+ @item{@indexed-scheme[compile-omit-files] : A list of filenames (without
        directory paths); that are not compiled, in addition to the
        contents of @scheme[compile-omit-paths].  Do not use this
        field; it is for backward compatibility.}
 
- @item{@scheme[scribblings] : A list of pairs, each of which starts
+ @item{@indexed-scheme[scribblings] : A list of pairs, each of which starts
        with a path for documentation source. The sources (and the
        files that they require) are compiled in the same way as
        @filepath{.ss} and @filepath{.scm} files.}
