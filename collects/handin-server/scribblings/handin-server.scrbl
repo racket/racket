@@ -11,8 +11,9 @@
                               !defined !procedure !procedure* !integer !integer*
                               check:
                               !test !all-covered)
-                     handin-server/scribblings/hook-dummy
                      mred))
+
+@(require (for-label handin-server/scribblings/hook-dummy))
 
 @(define (comment . args) "")
 
@@ -182,8 +183,13 @@ uniquely.  For example, @filepath{uu-cpsc2010} is a good name for CPSC
 
 }
 
+@section{Bogus Section}
+
 
 @section[#:tag "server-setup"]{Server Setup}
+
+@declare-exporting[#:use-sources (handin-server/scribblings/hook-dummy)]
+
 
 You must prepare a special directory to host the handin server.  To
 run the server, you should either be in this directory, or you should
@@ -350,8 +356,6 @@ This directory contains the following files and sub-directories:
     to contain a module that provides a @scheme[hook] function, which
     should be receiving three arguments:
 
-    @declare-exporting[#:use-sources (handin-server/scribblings/hook-dummy)]
-
     @defproc[(hook [operation symbol?]
                    [connection-context (or/c number? symbol? false?)]
                    [relevant-info (listof (list/c symbol? any))])
@@ -372,7 +376,7 @@ This directory contains the following files and sub-directories:
       specifies the connection context (a number for handin
       connections, a @scheme['wN] symbol for servlet connections, and
       @scheme[#f] for other server operations).
-
+    
       The @scheme[relevant-info] contains an alist of information
       relevant to this operation.  Currently, the hook is used in
       several places after an operation has completed.
