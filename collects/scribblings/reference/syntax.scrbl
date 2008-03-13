@@ -1758,11 +1758,13 @@ mirrors the @scheme[scheme/require] library.
   with an external name that matches @scheme[regexp].  @scheme[regexp]
   must be a literal regular expression (see @secref["regexp"]).}
 
+@;{ Cute, and symmetric to subtract-in, but useless
 @defsubform[(subtract-out provide-spec subtracted-spec ...)]{
   Like @scheme[provide-spec], but omitting exports that are provided
   by one of the @scheme[subtracted-spec]s.  Note that this form is not
   useful by itself: the specified bindings have already been required
   so they have no clashes.}
+;}
 
 @;------------------------------------------------------------------------
 @section[#:tag "#%top-interaction"]{Interaction Wrapper: @scheme[#%top-interaction]}

@@ -14,6 +14,7 @@
                     (regexp-match? rx (symbol->string (export-out-sym e))))
                   (expand-export #'spec modes)))]))))
 
+#| Cute, and symmetric to subtract-in, but useless
 (provide subtract-out)
 (define-syntax subtract-out
   (make-provide-transformer
@@ -26,3 +27,4 @@
                           (apply append subs))])
           (filter (lambda (i) (not (memq (export-out-sym i) subs)))
                   (expand-export #'spec modes)))]))))
+|#
