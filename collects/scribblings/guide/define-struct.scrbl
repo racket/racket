@@ -269,18 +269,19 @@ Every @tech{prefab} structure type is @tech{transparent}---but even
 less abstract than a @tech{transparent} type, because instances can be
 created without any access to a particular structure-type declaration
 or existing examples. Overall, the different options for structure
-types cover a spectrum from more abstract to more convenient:
+types offer a spectrum of possibilities from more abstract to more
+convenient:
 
 @itemize{
 
- @item{@tech{Opaque} (the default) : instances cannot be inspected or
+ @item{@tech{Opaque} (the default) : Instances cannot be inspected or
        forged without access to the structure-type declaration. As
        discussed in the next section, @tech{constructor guards} and
        @tech{properties} can be attached to the structure type to
        further protect or to specialize the behavior of its
        instances.}
 
- @item{@tech{Transparent} : anyone can inspect or create an instance
+ @item{@tech{Transparent} : Anyone can inspect or create an instance
        without access to the structure-type declaration, which means
        that the value printer can show the content of an instance. All
        instance creation passes through a @tech{constructor guard},
@@ -291,7 +292,7 @@ types cover a spectrum from more abstract to more convenient:
        name of the structure type, and therefore cannot be generated
        automatically by the expression reader. }
 
- @item{@tech{Prefab} : anyone can inspect or create an instance at any
+ @item{@tech{Prefab} : Anyone can inspect or create an instance at any
        time, without prior access to a structure-type declaration or
        an example instance. Consequently, the expression reader can
        manufacture instances directly. The instance cannot have a
@@ -300,9 +301,9 @@ types cover a spectrum from more abstract to more convenient:
 }
 
 Since the expression reader can generate @tech{prefab} instances, they
-are useful when simple @tech{serialization} is needed and weak
-abstraction is acceptable. @tech{Opaque} and @tech{transparent}
-structures also can be serialized, however, if they are defined with
+are useful when convenient @tech{serialization} is more important than
+abstraction. @tech{Opaque} and @tech{transparent} structures also can
+be serialized, however, if they are defined with
 @scheme[define-serializable-struct] as described in
 @secref["serialization"].
 
