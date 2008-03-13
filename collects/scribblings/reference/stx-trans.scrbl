@@ -137,7 +137,7 @@ stop list, but with two results: a syntax object for the fully
 expanded expression, and a syntax object whose content is opaque. The
 latter can be used in place of the former (perhaps in a larger
 expression produced by a macro transformer), and when the macro
-expander encouters the opaque object, it substitutes the fully
+expander encounters the opaque object, it substitutes the fully
 expanded expression without re-expanding it; the
 @exnraise[exn:fail:syntax] if the expansion context includes bindings
 or marks that were not present for the original expansion, in which
