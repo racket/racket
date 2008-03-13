@@ -3,7 +3,7 @@
 
 @(define ellipses (scheme ...))
 
-@title{Pattern-Based Syntax Matching}
+@title[#:tag "stx-patterns"]{Pattern-Based Syntax Matching}
 
 @defform/subs[(syntax-case stx-expr (literal-id ...)
                 clause ...)
@@ -17,6 +17,8 @@
                         (pattern ... pattern ellipses pattern ... . pattern)
                         (code:line #,(tt "#")(pattern ...))
                         (code:line #,(tt "#")(pattern ... pattern ellipses pattern ...))
+                        (code:line #,(tt "#s")(key-datum pattern ...))
+                        (code:line #,(tt "#s")(key-datum pattern ... pattern ellipses pattern ...))
                         (ellipses stat-pattern)
                         const]
                [stat-pattern id
@@ -118,6 +120,19 @@ A syntax object matches a @scheme[pattern] as follows:
  but matching a vector syntax object whose elements match the
  corresponding sub-@scheme[pattern]s.}
 
+ @specsubform[(code:line #,(tt "#s")(key-datum pattern ...))]{
+
+ Like a @scheme[(pattern ...)] pattern, but matching a @tech{prefab}
+ structure syntax object whose fields match the corresponding
+ sub-@scheme[pattern]s. The @scheme[key-datum] must correspond to a
+ valid first argument to @scheme[make-prefab-struct].}
+
+ @specsubform[(code:line #,(tt "#s")(key-datum pattern ... pattern ellipses pattern ...))]{
+
+ Like a @scheme[(pattern ... pattern ellipses pattern ...)] pattern,
+ but matching a @tech{prefab} structure syntax object whose elements
+ match the corresponding sub-@scheme[pattern]s.}
+
  @specsubform[(ellipses stat-pattern)]{
 
  Matches the same as @scheme[stat-pattern], which is like a @scheme[pattern],
@@ -180,6 +195,7 @@ the individual @scheme[stx-expr].}
                          (template-elem ...)
                          (template-elem ...+ . template)
                          (code:line #,(tt "#")(template-elem ...))
+                         (code:line #,(tt "#s")(key-datum template-elem ...))
                          (ellipses stat-template)
                          const]
                [template-elem (code:line template ellipses ...)]
@@ -187,6 +203,7 @@ the individual @scheme[stx-expr].}
                               (stat-template ...)
                               (stat-template ... . stat-template)
                               (code:line #,(tt "#")(stat-template ...))
+                              (code:line #,(tt "#s")(key-datum stat-template ...))
                               const]
                [ellipses #,ellipses])]{
 
@@ -264,6 +281,13 @@ Template forms produce a syntax object as follows:
 
    Like the @scheme[(template-elem ...)] form, but producing a syntax
    object whose datum is a vector instead of a list.}
+
+ @specsubform[(code:line #,(tt "#s")(key-datum template-elem ...))]{
+
+   Like the @scheme[(template-elem ...)] form, but producing a syntax
+   object whose datum is a @tech{prefab} structure instead of a list.
+   The @scheme[key-datum] must correspond to a valid first argument of
+   @scheme[make-prefab-struct].}
 
  @specsubform[(ellipses stat-template)]{
 

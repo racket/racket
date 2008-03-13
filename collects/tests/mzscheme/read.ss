@@ -1024,6 +1024,26 @@
   (test s format "~s" (read (open-input-string s))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Prefab
+
+(test #t struct? (readstr "#s(v 1)"))
+(test #t struct? (readstr "#s((v 1) 1)"))
+(test #t struct? (readstr "#s((v 1 #()) 1)"))
+(test #t struct? (readstr "#s((v 0 (1 #f) #()) 1)"))
+(test #t struct? (readstr "#s((v (1 #f) #()) 1)"))
+(test #t struct? (readstr "#s((v #(0)) 1)"))
+(test #t struct? (readstr "#0=#s(v #0#)"))
+(let ([v1 (readstr "#0=#s(v #0#)")])
+  (define-struct v (self) #:prefab)
+  (test #t eq? v1 (v-self v1)))
+(err/rt-test (readstr "#s((v 2) 1)") exn:fail:read?)
+(err/rt-test (readstr "#s((v 0) 1)") exn:fail:read?)
+(err/rt-test (readstr "#s((v 0) 1)") exn:fail:read?)
+(err/rt-test (readstr "#s((v 1 (1 #f) #()) 1)") exn:fail:read?)
+(err/rt-test (readstr "#s((v 0 (2 #f) #()) 1)") exn:fail:read?)
+(err/rt-test (readstr "#s((v 0 (2 #f) #(0)) 1)") exn:fail:read?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
 

@@ -109,7 +109,17 @@ static void preemptive_chunk(Scheme_Stx *stx);
 #define CONS scheme_make_pair
 #define ICONS scheme_make_pair
 
-#define HAS_SUBSTX(obj) (SCHEME_PAIRP(obj) || SCHEME_VECTORP(obj) || SCHEME_BOXP(obj))
+#define HAS_SUBSTX(obj) (SCHEME_PAIRP(obj) || SCHEME_VECTORP(obj) || SCHEME_BOXP(obj) || prefab_p(obj))
+
+XFORM_NONGCING static int prefab_p(Scheme_Object *o)
+{
+  if (SCHEME_STRUCTP(o)) {
+    if (((Scheme_Structure *)o)->stype->prefab_key)
+      if (MZ_OPT_HASH_KEY(&((Scheme_Structure *)o)->stype->iso) & STRUCT_TYPE_ALL_IMMUTABLE)
+        return 1;
+  }
+  return 0;
+}
 
 #define STX_KEY(stx) MZ_OPT_HASH_KEY(&(stx)->iso)
 
@@ -2550,6 +2560,20 @@ Scheme_Object *scheme_stx_content(Scheme_Object *o)
       }
       
       v = v2;
+    } else if (prefab_p(v)) {
+      Scheme_Structure *s = (Scheme_Structure *)v;
+      Scheme_Object *r;
+      int size, i;
+
+      s = (Scheme_Structure *)scheme_clone_prefab_struct_instance(s);
+      
+      size = s->stype->num_slots;
+      for (i = 0; i < size; i++) {
+        r = propagate_wraps(s->slots[i], wl_count, &ml, here_wraps);
+        s->slots[i] = r;
+      }
+
+      v = (Scheme_Object *)s;
     }
 
     stx->val = v;
@@ -2730,6 +2754,29 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp)
     if (size)
       SCHEME_SET_IMMUTABLE(v2);
     return v2;
+  } else if (prefab_p(o)) {
+    Scheme_Object *e = NULL;
+    Scheme_Structure *s = (Scheme_Structure *)o;
+    int i, size = s->stype->num_slots;
+
+    for (i = 0; i < size; i++) {
+      e = stx_activate_certs(s->slots[i], cp);
+      if (!SAME_OBJ(e, s->slots[i]))
+	break;
+    }
+
+    if (i == size)
+      return o;
+
+    s = (Scheme_Structure *)scheme_clone_prefab_struct_instance(s);
+    s->slots[i] = e;
+    
+    for (i++; i < size; i++) {
+      e = stx_activate_certs(s->slots[i], cp);
+      s->slots[i] = e;
+    }
+    
+    return (Scheme_Object *)s;
   } else if (SCHEME_STXP(o)) {
     Scheme_Stx *stx = (Scheme_Stx *)o;
 
@@ -5148,6 +5195,18 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
     result = r;
     if (size)
       SCHEME_SET_IMMUTABLE(result);
+  } else if (prefab_p(v)) {
+    Scheme_Structure *s = (Scheme_Structure *)v;
+    Scheme_Object *a;
+    int size = s->stype->num_slots, i;
+    
+    s = (Scheme_Structure *)scheme_clone_prefab_struct_instance(s);
+    for (i = 0; i < size; i++) {
+      a = syntax_to_datum_inner(s->slots[i], with_marks, mt);
+      s->slots[i] = a;
+    }
+
+    result = (Scheme_Object *)s;
   } else
     result = v;
 
@@ -5885,6 +5944,18 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 
     if (size)
       SCHEME_SET_VECTOR_IMMUTABLE(result);
+  } else if (prefab_p(o)) {
+    Scheme_Structure *s = (Scheme_Structure *)o;
+    Scheme_Object *a;
+    int size = s->stype->num_slots, i;
+    
+    s = (Scheme_Structure *)scheme_clone_prefab_struct_instance(s);
+    for (i = 0; i < size; i++) {
+      a = datum_to_syntax_inner(s->slots[i], ut, stx_src, stx_wraps, ht);
+      s->slots[i] = a;
+    }
+
+    result = (Scheme_Object *)s;
   } else {
     result = o;
   }
@@ -6102,6 +6173,13 @@ static void simplify_syntax_inner(Scheme_Object *o,
     
     for (i = 0; i < size; i++) {
       simplify_syntax_inner(SCHEME_VEC_ELS(v)[i], rns, marks);
+    }
+  } else if (prefab_p(v)) {
+    Scheme_Structure *s = (Scheme_Structure *)v;
+    int size = s->stype->num_slots, i;
+    
+    for (i = 0; i < size; i++) {
+      simplify_syntax_inner(s->slots[i], rns, marks);
     }
   }
 

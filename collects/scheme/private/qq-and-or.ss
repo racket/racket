@@ -300,22 +300,35 @@
 				  (((l) (vector->list (syntax-e x))))
 				(let-values
 				    (((l2) (qq l level)))
-				  (let-values
-				      ()
-				    (if (eq? l l2)
-					x
-					(list (quote-syntax list->vector) l2)))))
+                                  (if (eq? l l2)
+                                      x
+                                      (list (quote-syntax list->vector) l2))))
 			      (if (if (syntax? x) (box? (syntax-e x)) #f)
 				  (let-values
 				      (((v) (unbox (syntax-e x))))
 				    (let-values
 					(((qv) (qq v level)))
-				      (let-values
-					  ()
-					(if (eq? v qv)
-					    x
-					    (list (quote-syntax box) qv)))))
-				  x)))))))
+				      (if (eq? v qv)
+                                          x
+                                          (list (quote-syntax box) qv))))
+                                  (if (if (syntax? x) 
+                                          (if (struct? (syntax-e x)) 
+                                              (prefab-struct-key (syntax-e x))
+                                              #f)
+                                          #f)
+                                      ;; pre-fab struct
+                                      (let-values
+                                          (((l) (cdr (vector->list (struct->vector (syntax-e x))))))
+                                        (let-values
+                                            (((l2) (qq l level)))
+                                          (if (eq? l l2)
+                                              x
+                                              (list (quote-syntax apply)
+                                                    (quote-syntax make-prefab-struct)
+                                                    (list (quote-syntax quote)
+                                                          (prefab-struct-key (syntax-e x)))
+                                                    l2))))
+                                      x))))))))
 	      (qq form 0))
 	    form)
 	   in-form)))))

@@ -3,9 +3,11 @@
           (for-label (only-in scheme/require-transform
                               make-require-transformer)
                      scheme/require-syntax
+                     scheme/require
                      (only-in scheme/provide-transform
                               make-provide-transformer)
-                     scheme/provide-syntax))
+                     scheme/provide-syntax
+                     scheme/provide))
 
 @(define cvt (schemefont "CVT"))
 
@@ -1082,11 +1084,15 @@ and the result of the @scheme[_expr] takes the place of the
 @scheme[(unquote-splicing _expr)] similarly escapes, but the
 @scheme[_expr] must produce a list, and its elements are spliced as
 multiple values place of the @scheme[(unquote-splicing _expr)], which
-must appear as the @scheme[car] or a quoted pair; if the @scheme[cdr]
-of the relevant quoted pair is empty, then @scheme[_expr] need not
-produce a list, and its result is used directly in place of the quoted
-pair (in the same way that @scheme[append] accepts a non-list final
-argument).
+must appear as the @scheme[car] or a quoted pair, as an element of a
+quoted vector, or as an element of a quoted @tech{prefab} structure;
+in the case of a pair, if the @scheme[cdr] of the relevant quoted pair
+is empty, then @scheme[_expr] need not produce a list, and its result
+is used directly in place of the quoted pair (in the same way that
+@scheme[append] accepts a non-list final argument). If
+@scheme[unquote] or @scheme[unquote-splicing] appears within
+@scheme[quasiquote] in any other way than as @scheme[(unquote _expr)]
+or @scheme[(unquote-splicing _expr)], a syntax error is reported.
 
 @examples[
 (eval:alts (#,(scheme quasiquote) (0 1 2)) `(0 1 2))
@@ -1103,7 +1109,9 @@ form is typically abbreviated with @litchar{`}, @litchar{,}, or
 @examples[
 `(0 1 2)
 `(1 ,(+ 1 2) 4)
+`#s(stuff 1 ,(+ 1 2) 4)
 `(1 ,@(list 1 2) 4)
+`#(1 ,@(list 1 2) 4)
 ]
 
 A @scheme[quasiquote] form within the original @scheme[datum]
@@ -1715,15 +1723,16 @@ introduced at the same time. Similarly, @schemeidfont{all-defined} and
 its variants export only definitions accessible from the lexical
 context of the @scheme[phaseless-spec] form.}
 
-@subsection{Additional @scheme[require] Macros}
+@; --------------------
+
+@subsection{Additional @scheme[require] Forms}
 
 @note-lib-only[scheme/require]
 
-This library provides additional forms for use in @scheme[require] and
-@scheme[provide].  These forms provide more complex selection and
-massaging of identifiers that are useful in some cases.  Note that a
-@scheme[require] form is expanded before it is used, which means that
-requiring the library itself should be a separate form.  For example, use
+The following forms support more complex selection and manipulation of
+sets of imported identifiers.  Note that a @scheme[require] form is
+expanded before it is used, which means that requiring the library
+itself should be a separate form.  For example, use
 
 @schemeblock[
   (require scheme/require)
@@ -1737,34 +1746,25 @@ instead of
            (matching-identifiers-in #rx"foo" "foo.ss"))
 ]
 
-@defsubform[(matching-identifiers-in regexp require-spec)]{
-  Like @scheme[require-spec], but including only imports whose names
-  match @scheme[regexp].  @scheme[regexp] must be a literal regular
+@defform[(matching-identifiers-in regexp require-spec)]{ Like
+  @scheme[require-spec], but including only imports whose names match
+  @scheme[regexp].  The @scheme[regexp] must be a literal regular
   expression (see @secref["regexp"]).}
 
-@defsubform[(subtract-in require-spec subtracted-spec ...)]{
-  Like @scheme[require-spec], but omitting those imports that are
-  provided by one of the @scheme[subtracted-spec]s.}
+@defform[(subtract-in require-spec subtracted-spec ...)]{ Like
+  @scheme[require-spec], but omitting those imports that would be
+  imported by one of the @scheme[subtracted-spec]s.}
 
-@subsection{Additional @scheme[provide] Macros}
+@; --------------------
+
+@subsection{Additional @scheme[provide] Forms}
 
 @note-lib-only[scheme/provide]
 
-This library provides additional forms for use in @scheme[provide], it
-mirrors the @scheme[scheme/require] library.
-
-@defsubform[(matching-identifiers-out regexp provide-spec)]{
-  Like @scheme[provide-spec], but omitting the export of each binding
-  with an external name that matches @scheme[regexp].  @scheme[regexp]
+@defform[(matching-identifiers-out regexp provide-spec)]{ Like
+  @scheme[provide-spec], but omitting the export of each binding with
+  an external name that matches @scheme[regexp]. The @scheme[regexp]
   must be a literal regular expression (see @secref["regexp"]).}
-
-@;{ Cute, and symmetric to subtract-in, but useless
-@defsubform[(subtract-out provide-spec subtracted-spec ...)]{
-  Like @scheme[provide-spec], but omitting exports that are provided
-  by one of the @scheme[subtracted-spec]s.  Note that this form is not
-  useful by itself: the specified bindings have already been required
-  so they have no clashes.}
-;}
 
 @;------------------------------------------------------------------------
 @section[#:tag "#%top-interaction"]{Interaction Wrapper: @scheme[#%top-interaction]}

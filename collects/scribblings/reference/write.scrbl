@@ -161,9 +161,9 @@ A parameter that controls printing data with sharing; defaults to
 
 @defboolparam[print-struct on?]{
 
-A parameter that controls printing structure values in vector form;
-defaults to @scheme[#t]. See @secref["printing"] for more
-information. This parameter has no effect on the printing of
+A parameter that controls printing structure values in vector or
+@tech{prefab} form; defaults to @scheme[#t]. See @secref["printing"]
+for more information. This parameter has no effect on the printing of
 structures that have a custom-write procedure (see
 @scheme[prop:custom-write]).}
 

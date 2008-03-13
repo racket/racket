@@ -391,6 +391,13 @@
 	       (add-spaces (- n 8) port))
 	     (write-string "        " port 0 n))))
 
+   (define (prefab?! obj v)
+     (let ([d (prefab-struct-key obj)])
+       (and d
+            (begin
+              (vector-set! v 0 d)
+              #t))))
+
    (define (generic-write obj display? width pport
 			  print-graph? print-struct? print-hash-table? print-vec-length? print-box?
 			  depth size-hook)
@@ -713,7 +720,10 @@
 		  #f #f
 		  (lambda ()
 		    (out "#")
-		    (wr-lst (vector->list (struct->vector obj)) #f (dsub1 depth) pair? car cdr "(" ")")))
+                    (let ([v (struct->vector obj)])
+                      (when (prefab?! obj v)
+                        (out "s"))
+                      (wr-lst (vector->list v) #f (dsub1 depth) pair? car cdr "(" ")"))))
 		 (parameterize ([print-struct #f])
 		   ((if display? orig-display orig-write) obj pport)))]
 	    [(hash-table? obj)  
@@ -832,7 +842,10 @@
 			   (write-custom pp* obj pport depth display? width)]
 			  [(struct? obj) ; print-struct is on if we got here
 			   (out "#")
-			   (pp-list (vector->list (struct->vector obj)) extra pp-expr #f depth)]
+                           (let ([v (struct->vector obj)])
+                             (when (prefab?! obj v)
+                               (out "s"))
+                             (pp-list (vector->list v) extra pp-expr #f depth))]
 			  [(hash-table? obj)
 			   (out (if (hash-table? obj 'equal)
                                     "#hash"

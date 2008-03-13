@@ -521,6 +521,8 @@ placeholders:
 
  @item{hash tables, both mutable and immutable}
 
+ @item{instances of a @techlink{prefab} structure type}
+
  @item{placeholders created by @scheme[make-placeholder] and
        @scheme[make-hash-table-placeholder]}
 

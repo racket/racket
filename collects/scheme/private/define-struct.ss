@@ -135,8 +135,11 @@
        [(eq? (caar config) s) (cons (cons s val) (cdr config))]
        [else (cons (car config) (extend-config (cdr config) s val))]))
 
+    (define insp-keys
+      "#:inspector, #:transparent, or #:prefab")
+
     ;; Parse sequence of keyword-based struct specs
-    (define (parse-props p super-id)
+    (define (parse-props fm p super-id)
       (let loop ([p p]
                  [config '((#:super . #f)
                            (#:inspector . #f)
@@ -145,7 +148,8 @@
                            (#:mutable . #f)
                            (#:guard . #f)
                            (#:omit-define-values . #f)
-                           (#:omit-define-syntaxes . #f))])
+                           (#:omit-define-syntaxes . #f))]
+                 [nongen? #f])
         (cond
          [(null? p) config]
          [(eq? '#:super (syntax-e (car p)))
@@ -161,40 +165,62 @@
              stx
              (car p)))
           (loop (cddr p)
-                (extend-config config '#:super (cadr p)))]
+                (extend-config config '#:super (cadr p))
+                nongen?)]
          [(memq (syntax-e (car p))
                 '(#:guard #:auto-value))
           (let ([key (syntax-e (car p))])
             (check-exprs 1 p)
             (when (lookup config key)
               (bad "multiple" (car p) "s"))
+            (when (and nongen?
+                       (eq? key '#:guard))
+              (bad "cannot provide" (car p) " for prefab structure type"))
             (loop (cddr p)
-                  (extend-config config key (cadr p))))]
+                  (extend-config config key (cadr p))
+                  nongen?))]
          [(eq? '#:property (syntax-e (car p)))
           (check-exprs 2 p)
+          (when nongen?
+            (bad "cannot use" (car p) " for prefab structure type"))
           (loop (cdddr p)
                 (extend-config config
                                '#:props
                                (cons (cons (cadr p) (caddr p))
-                                     (lookup config '#:props))))]
+                                     (lookup config '#:props)))
+                nongen?)]
          [(eq? '#:inspector (syntax-e (car p)))
           (check-exprs 1 p)
           (when (lookup config '#:inspector)
-            (bad "multiple" "#:inspector or #:transparent" "s" (car p)))
+            (bad "multiple" insp-keys "s" (car p)))
           (loop (cddr p)
-                (extend-config config '#:inspector (cadr p)))]
+                (extend-config config '#:inspector 
+                               #`(check-inspector '#,fm #,(cadr p)))
+                nongen?)]
          [(eq? '#:transparent (syntax-e (car p)))
           (when (lookup config '#:inspector)
-            (bad "multiple" "#:inspector or #:transparent" "s" (car p)))
+            (bad "multiple" insp-keys "s" (car p)))
           (loop (cdr p)
-                (extend-config config '#:inspector #'#f))]
+                (extend-config config '#:inspector #'#f)
+                nongen?)]
+         [(eq? '#:prefab (syntax-e (car p)))
+          (when (lookup config '#:inspector)
+            (bad "multiple" insp-keys "s" (car p)))
+          (when (pair? (lookup config '#:props))
+            (bad "cannot use" (car p) " for a structure type with properties"))
+          (when (lookup config '#:guard)
+            (bad "cannot use" (car p) " for a structure type with a guard"))
+          (loop (cdr p)
+                (extend-config config '#:inspector #''prefab)
+                #t)]
          [(memq (syntax-e (car p))
                 '(#:mutable #:omit-define-values #:omit-define-syntaxes))
           (let ([key (syntax-e (car p))])
             (when (lookup config key)
               (bad "redundant" (car p) ""))
             (loop (cdr p)
-                  (extend-config config key #t)))]
+                  (extend-config config key #t)
+                  nongen?))]
          [else
           (raise-syntax-error
            #f
@@ -269,7 +295,7 @@
                         (loop (cdr fields) (cdr field-stxes) #f)]))])
                (let-values ([(inspector super-expr props auto-val guard mutable?
                                         omit-define-values? omit-define-syntaxes?)
-                             (let ([config (parse-props (syntax->list #'(prop ...)) super-id)])
+                             (let ([config (parse-props #'fm (syntax->list #'(prop ...)) super-id)])
                                (values (lookup config '#:inspector)
                                        (lookup config '#:super)
                                        (lookup config '#:props)
@@ -340,8 +366,7 @@
                                                                         #`(list #,@(map (lambda (p)
                                                                                           #`(cons #,(car p) #,(cdr p)))
                                                                                         props)))
-                                                                  #,(if inspector
-                                                                        #`(check-inspector 'fm #,inspector)
+                                                                  #,(or inspector
                                                                         #`(current-inspector))
                                                                   #f
                                                                   '#,(let loop ([i 0]

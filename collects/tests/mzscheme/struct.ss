@@ -470,6 +470,13 @@
 
 (struct-syntax-test 'define-struct)
 
+(syntax-test #'(define-struct a (b c) #:transparent #:inspector #f))
+(syntax-test #'(define-struct a (b c) #:transparent #:prefab))
+(syntax-test #'(define-struct a (b c) #:prefab #:guard 10))
+(syntax-test #'(define-struct a (b c) #:prefab #:property 1 10))
+(syntax-test #'(define-struct a (b c) #:guard 10 #:prefab))
+(syntax-test #'(define-struct a (b c) #:property 1 10 #:prefab))
+
 (define-struct base0 ())
 (define-struct base1 (a))
 (define-struct base2 (l r))
@@ -637,6 +644,43 @@
   (test 1 a-x (make-a 1 2))
   (test 10 a-x (make-b 10 20 30))
   (test 100 a-x (make-c 100 200 300 400)))
+
+;; ------------------------------------------------------------
+;; Prefab
+
+(let ([v1 #s(v one)]
+      [v2 #s(v one two)]
+      [v2-prime #s((v 2) one two)]
+      [vw3 #s((v w 2) one two three)]
+      [vw3-prime #s((v 1 w 2) one two three)])
+  (test #f equal? v1 v2)
+  (test #t equal? v2 v2-prime)
+  (test #t equal? vw3 vw3-prime)
+  (let ()
+    (define-struct v (a) #:prefab)
+    (test #t v? v1)
+    (test #f v? v2)
+    (test #f v? vw3)
+    (test 'one v-a v1))
+  (let ()
+    (define-struct v (a b) #:prefab)
+    (test #f v? v1)
+    (test #t v? v2)
+    (test #f v? vw3)
+    (test 'one v-a v2)
+    (test 'two v-b v2))
+  (let ()
+    (define-struct w (a b) #:prefab)
+    (define-struct (v w) (c) #:prefab)
+    (test #f v? v1)
+    (test #f v? v2)
+    (test #t v? vw3)
+    (test #t w? vw3)
+    (test 'one w-a vw3)
+    (test 'two w-b vw3)
+    (test 'three v-c vw3)))
+
+(err/rt-test (make-struct-type 'bad struct:date 2 0 #f null 'prefab))
 
 ;; ------------------------------------------------------------
 ;; Misc. built-in structures

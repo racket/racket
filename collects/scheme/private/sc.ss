@@ -348,6 +348,24 @@
                                               #f)))
                                    did-var?
                                    #f)))))]
+                     [(and (syntax? p)
+                           (prefab-struct-key (syntax-e p)))
+                      =>
+                      (lambda (key)
+                        (let ([l (vector->list (struct->vector (syntax-e p)))])
+                          ;; Match as a list:
+                          (let-values ([(match-content did-var? <false>) (m&e (cdr l) p use-ellipses? last? #f)])
+                            (if just-vars?
+                                (values match-content #f #f)
+                                (values
+                                 (if interp-box
+                                     (vector 'prefab key match-content)
+                                     `(lambda (e)
+                                        (if (stx-prefab? ',key e)
+                                            ,(app match-content '(cdr (vector->list (struct->vector (syntax-e e)))))
+                                            #f)))
+                                 did-var?
+                                 #f)))))]
                      [else
                       (if just-vars?
                           (values null #f #f)
@@ -478,6 +496,7 @@
                                                       [(syntax? p) (loop (syntax-e p))]
                                                       [(pair? p) (or (loop (car p)) (loop (cdr p)))]
                                                       [(vector? p) (loop (vector->list p))]
+                                                      [(struct? p) (loop (struct->vector p))]
                                                       [else #f]))
                                                    (pfx-loop (string-append "_" pfx))
                                                    pfx))])
@@ -614,6 +633,15 @@
                         (if proto-r
                             `(lambda (r)
                                (list->vector (stx->list ,(apply-to-r e))))
+                            ;; variables were hashed
+                            (void)))]
+                     [(and (syntax? p)
+                           (struct? (syntax-e p))
+                           (prefab-struct-key (syntax-e p)))
+                      (let ([e (expander (cdr (vector->list (struct->vector (syntax-e p)))) proto-r p use-ellipses? use-tail-pos hash!)])
+                        (if proto-r
+                            `(lambda (r)
+                               (apply make-prefab-struct ',(prefab-struct-key (syntax-e p)) (stx->list ,(apply-to-r e))))
                             ;; variables were hashed
                             (void)))]
                      [(identifier? p)
@@ -801,7 +829,8 @@
             [(pair? stx) (let ([s1 (stx-size (car stx) up-to)])
                            (+ s1 (stx-size (cdr stx) (- up-to s1))))]
             [(vector? stx) (stx-size (vector->list stx) up-to)]
-            [(box? stx) (add1 (stx-size (unbox stx) (sub1 up-to)))]
+            [(struct? stx) (stx-size (struct->vector stx) up-to)]
+           [(box? stx) (add1 (stx-size (unbox stx) (sub1 up-to)))]
             [else 1]))
 
   ;; Generates a list-ref expression; if use-tail-pos
@@ -857,6 +886,9 @@
                      (list p))]
                 [(stx-vector? p #f)
                  (sub (vector->list (syntax-e p)) use-ellipses?)]
+                [(and (syntax? p)
+                      (prefab-struct-key (syntax-e p)))
+                 (sub (cdr (vector->list (struct->vector (syntax-e p)))) use-ellipses?)]
                 [else '()]))))
 
   ;; Checks whether the given nesting matches a nesting in the

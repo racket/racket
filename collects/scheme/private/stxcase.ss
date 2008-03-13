@@ -236,6 +236,9 @@
                                                       m
                                                       (append m body))
                                                   body))))))))])))]
+              [(eq? i 'prefab)
+               (and (stx-prefab? (vector-ref i 1) e)
+                    (loop (vector-ref i 2) (cdr (vector->list (struct->vector (syntax-e e)))) cap))]
               [else (error "yikes!" pat)]))]))))
 
   (-define-syntax syntax-case**

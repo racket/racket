@@ -35,4 +35,5 @@
                                             rest 
                                             last-test 
                                             ddk-num))]))
+    (printf "~s\n" (list tests l last-test ddk-num))
     (ormap (lambda (elem) (dep-first-test elem (remove elem l) tests)) l)))

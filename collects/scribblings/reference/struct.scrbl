@@ -49,6 +49,21 @@ accessed with subtype-specific selectors. Subtype-specific
 @tech{accessors} and @tech{mutators} for the first @math{m} fields do
 not exist.
 
+The @scheme[define-struct] form and @scheme[make-struct-type]
+procedure typically create a new structure type, but they can also
+access @deftech{prefab} (i.e., previously fabricated) structure types
+that are globally shared, and whose instances can be parsed and
+written by the default reader (see @secref["reader"]) and printer (see
+@secref["printing"]). Prefab structure types can inherit only from
+other prefab structure types, and they cannot have guards (see
+@secref["creatingmorestructs"]) or properties (see
+@secref["structprops"]). Exactly one prefab structure type exists for
+each combination of name, supertype, field count, automatic field
+count, automatic field value (when there is at least one automatic
+field), and field mutability.
+
+@refalso["serialization"]{reading and writing structures}
+
 @index['("structures" "equality")]{Two} structure values are
 @scheme[eqv?] if and only if they are @scheme[eq?]. Two structure
 values are @scheme[equal?] if they are @scheme[eq?], or if they are
@@ -71,7 +86,7 @@ structures depends on the current inspector.)
                            [props (listof (cons/c struct-type-property?
                                                   any/c))
                                   null]
-                           [inspector (or/c inspector? false/c)
+                           [inspector (or/c inspector? false/c (one-of/c 'prefab))
                                       (current-inspector)]
                            [proc-spec (or/c procedure?
                                             nonnegative-exact-integer?
@@ -86,24 +101,30 @@ structures depends on the current inspector.)
                   struct-accessor-procedure?
                   struct-mutator-procedure?)]{
 
-Creates a new structure type.  The @scheme[name] argument is used as
-the type name. If @scheme[super-type] is not @scheme[#f], the new type
-is a subtype of the corresponding structure type.
+Creates a new structure type, unless @scheme[inspector] is
+@scheme['prefab], in which case @scheme[make-struct-type] accesses a
+@techlink{prefab} structre type.  The @scheme[name] argument is used
+as the type name. If @scheme[super-type] is not @scheme[#f], the
+resulting type is a subtype of the corresponding structure type.
 
-The new structure type has @math{@scheme[init-field-cnt]+@scheme[auto-field-cnt]}
-fields (in addition to any fields from @scheme[super-type]), but only
+The resulting structure type has
+@math{@scheme[init-field-cnt]+@scheme[auto-field-cnt]} fields (in
+addition to any fields from @scheme[super-type]), but only
 @scheme[init-field-cnt] constructor arguments (in addition to any
-constructor arguments from @scheme[super-type]). The remaining
-fields are initialized with @scheme[auto-v].
+constructor arguments from @scheme[super-type]). The remaining fields
+are initialized with @scheme[auto-v].
 
 The @scheme[props] argument is a list of pairs, where the @scheme[car]
 of each pair is a structure type property descriptor, and the
 @scheme[cdr] is an arbitrary value. See @secref["structprops"] for
-more information about properties.
+more information about properties. When @scheme[inspector] is
+@scheme['prefab], then @scheme[props] must be @scheme[null].
 
-The @scheme[inspector] argument controls access to reflective
+The @scheme[inspector] argument normally controls access to reflective
 information about the structure type and its instances; see
-@secref["inspectors"] for more information.
+@secref["inspectors"] for more information. If @scheme[inspector] is
+@scheme['prefab], then the resulting @tech{prefab} structure type and
+its instances are always transparent.
 
 If @scheme[proc-spec] is an integer or procedure, instances of the
 structure type act as procedures. See @scheme[prop:procedure] for
@@ -121,21 +142,22 @@ positions. Each element in the list must be unique, otherwise
 
 The @scheme[guard] argument is either a procedure of @math{n}
 arguments or @scheme[#f], where @math{n} is the number of arguments
-for the new structure type's constructor (i.e., @scheme[init-field-cnt]
-plus constructor arguments implied by @scheme[super-type], if any). If
-@scheme[guard] is a procedure, then the procedure is called
-whenever an instance of the type is constructed, or whenever an
-instance of a subtype is created.  The arguments to
-@scheme[guard] are the values provided for the structure's first
-@math{n} fields, followed by the name of the instantiated structure
-type (which is @scheme[name], unless a subtype is instantiated). The
-@scheme[guard] result must be @math{n} values, which become the
-actual values for the structure's fields. The @scheme[guard] can
-raise an exception to prevent creation of a structure with the given
-field values. If a structure subtype has its own guard, the subtype
-guard is applied first, and the first @math{n} values produced by the
-subtype's guard procedure become the first @math{n} arguments to
-@scheme[guard].
+for the new structure type's constructor (i.e.,
+@scheme[init-field-cnt] plus constructor arguments implied by
+@scheme[super-type], if any). If @scheme[guard] is a procedure, then
+the procedure is called whenever an instance of the type is
+constructed, or whenever an instance of a subtype is created.  The
+arguments to @scheme[guard] are the values provided for the
+structure's first @math{n} fields, followed by the name of the
+instantiated structure type (which is @scheme[name], unless a subtype
+is instantiated). The @scheme[guard] result must be @math{n} values,
+which become the actual values for the structure's fields. The
+@scheme[guard] can raise an exception to prevent creation of a
+structure with the given field values. If a structure subtype has its
+own guard, the subtype guard is applied first, and the first @math{n}
+values produced by the subtype's guard procedure become the first
+@math{n} arguments to @scheme[guard]. When @scheme[inspector] is
+@scheme['prefab], then @scheme[guard] must be @scheme[#f].
 
 The result of @scheme[make-struct-type] is five values:
 
@@ -195,6 +217,16 @@ The result of @scheme[make-struct-type] is five values:
 (define a-c (make-c 'x 2 'z))
 (a-ref a-c 1)
 ]}
+
+@interaction[
+#:eval struct-eval
+(define p1 #s(p a b c))
+(define-values (struct:p make-p p? p-ref p-set!)
+  (make-struct-type 'p #f 3 0 #f null 'prefab #f '(0 1 2)))
+(p? p1)
+(p-ref p1 0)
+(make-p 'x 'y 'z)
+]
 
 @defproc[(make-struct-field-accessor [accessor-proc struct-accessot-procedure?]
                                      [field-pos exact-nonnegative-integer?]
@@ -349,6 +381,74 @@ is inaccessible.)}
  @scheme[#t] if @scheme[v] is a mutator procedure generated by
  @scheme[define-struct], @scheme[make-struct-type], or
  @scheme[make-struct-field-mutator], @scheme[#f] otherwise.}
+
+@defproc[(prefab-struct-key [v any/c]) (or/c false/c symbol? list?)]{
+
+Returns @scheme[#f] if @scheme[v] is not an instance of a
+@tech{prefab} structure type. Otherwise, the result is the shorted key
+that could be with @scheme[make-prefab-struct] to create an instance
+of the structure type.
+
+@examples[
+(prefab-struct-key #s(cat "Garfield"))
+(define-struct cat (name) #:prefab)
+(define-struct (cute-cat cat) (shipping-dest) #:prefab)
+(make-cute-cat "Nermel" "Abu Dhabi")
+]}
+
+
+@defproc[(make-prefab-struct [key (or/c symbol? list?)] [v any/c] ...) struct?]{
+
+Creates an instance of a @tech{prefab} structure type, using the
+@scheme[v]s as field values. The @scheme[key] and the number of
+@scheme[v]s determine the @tech{prefab} structure type.
+
+A @scheme[key] identifies a structure type based on a list with the
+following items:
+
+@itemize{
+
+ @item{A symbol for the structure type's name.}
+
+ @item{An exact, nonnegative integer representing the number of
+       non-automatic fields in the structure type, not counting fields
+       from the supertype (if any).}
+
+ @item{A list of two items, where the first is an exact, nonnegative
+       integer for the number of automatic fields in the structure
+       type that are not from the supertype (if any), and the second
+       element is an arbitrary value that is the value for the
+       automatic fields.}
+
+ @item{A vector of exact, nonnegative integers that indicate mutable
+       non-automatic fields in the structure type, counting from
+       @scheme[0] and not including fields from the supertype (if
+       any).}
+
+ @item{Nothing else, if the structure type has no
+       supertype. Otherwise, the rest of the list matches is the key
+       for the supertype.}
+
+}
+
+An empty vector and an auto-field list that starts with @scheme[0] can
+be omitted. Furthermore, the first integer (which indicates the number
+of non-automatic fields) can be omitted, since it can be inferred from
+the number of supplied @scheme[v]s. Finally, a single symbol can be
+used instead of a list that contains only a symbol (in the case that
+the structure type has no supertype, no automatic fields, and no
+mutable fields).
+
+If the number of fields indicated by @scheme[key] is inconsistent with
+the number of supplied @scheme[v]s, the @exnraise[exn:fail:contract].
+
+@examples[
+(make-prefab-struct 'clown "Binky" "pie")
+(make-prefab-struct '(clown 2) "Binky" "pie")
+(make-prefab-struct '(clown 2 (0 #f) #()) "Binky" "pie")
+(make-prefab-struct '(clown 1 (1 #f) #()) "Binky" "pie")
+(make-prefab-struct '(clown 1 (1 #f) #(0)) "Binky" "pie")
+]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "structinfo"]{Structure Type Transformer Binding}

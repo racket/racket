@@ -1217,28 +1217,86 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	  break;
 	case 's':
 	case 'S':
-	  ch = scheme_getc_special_ok(port);
-	  if ((ch == 'x') || (ch == 'X')) {
-	    ReadParams params_copy;
-	    Scheme_Object *v;
+          {
+            int orig_ch = ch, effective_ch;
+            ch = scheme_getc_special_ok(port);
+            if (NOT_EOF_OR_SPECIAL(ch))
+              effective_ch = readtable_effective_char(params->table, ch);
+            else
+              effective_ch = ch;
+            if ((orig_ch == 's') 
+                && ((effective_ch == '(')
+                    || (effective_ch == '[' && params->square_brackets_are_parens)
+                    || (effective_ch == '{' && params->curly_braces_are_parens))) {
+              Scheme_Object *v;
+              Scheme_Struct_Type *st;
+              
+              if (effective_ch == '(')
+                ch = ')';
+              else if (effective_ch == '[')
+                ch = ']';
+              else if (effective_ch == '{')
+                ch = '}';
 
-	    memcpy(&params_copy, params, sizeof(ReadParams));
-	    params_copy.honu_mode = 0;
+              v = read_vector(port, stxsrc, line, col, pos, ch, -1, NULL, ht, indentation, params);
+              if (stxsrc)
+                v = SCHEME_STX_VAL(v);
 
-	    v = read_inner(port, stxsrc, ht, indentation, &params_copy, 0);
+              if (SCHEME_VEC_SIZE(v)) {
+                Scheme_Object *key;
+                key = SCHEME_VEC_ELS(v)[0];
+                if (stxsrc)
+                  key = scheme_syntax_to_datum(key, 0, NULL);
+                st = scheme_lookup_prefab_type(key, SCHEME_VEC_SIZE(v) - 1);
+              } else
+                st = NULL;
 
-	    if (SCHEME_EOFP(v)) {
-	      scheme_read_err(port, stxsrc, line, col, pos, 2, EOF, indentation,
-			      "read: end-of-file after #sx");
-	      return NULL;
-	    }
+              if (!st || (st->num_slots != (SCHEME_VEC_SIZE(v) - 1))) {
+                scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), EOF, indentation,
+                                (SCHEME_VEC_SIZE(v)
+                                 ? (st
+                                    ? ("read: mismatch between structure description"
+                                       " and number of provided field values in `#s' form")
+                                    : "read: invalid structure description in `#s' form")
+                                 : "read: missing structure description in `#s' form"));
+                return NULL;
+              }
 
-	    return v;
-	  } else {
-	    scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation,
-			    "read: expected `x' after `#s'");
-	    return NULL;
-	  }
+              if (stxsrc && !(MZ_OPT_HASH_KEY(&st->iso) & STRUCT_TYPE_ALL_IMMUTABLE)) {
+                scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), EOF, indentation,
+                                "read: cannot read mutable `#s' form as syntax");
+              }
+
+              v = scheme_make_prefab_struct_instance(st, v);
+
+              if (stxsrc)
+                v = scheme_make_stx_w_offset(v, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG);
+
+              return v;
+            } else if ((ch == 'x') || (ch == 'X')) {
+              ReadParams params_copy;
+              Scheme_Object *v;
+
+              memcpy(&params_copy, params, sizeof(ReadParams));
+              params_copy.honu_mode = 0;
+
+              v = read_inner(port, stxsrc, ht, indentation, &params_copy, 0);
+
+              if (SCHEME_EOFP(v)) {
+                scheme_read_err(port, stxsrc, line, col, pos, 2, EOF, indentation,
+                                "read: end-of-file after #sx");
+                return NULL;
+              }
+
+              return v;
+            } else {
+              scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation,
+                              "read: expected `x'%s after `#%c'",
+                              (orig_ch == 's' ? "or `('" : ""),
+                              orig_ch);
+              return NULL;
+            }
+          }
 	case 'X':
 	case 'x': 
 	  if (!params->honu_mode) {
@@ -1546,7 +1604,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
                     int effective_ch;
                     effective_ch = readtable_effective_char(table, ch);
 		    if (!(effective_ch == '(')
-			&& ! (effective_ch == '[' && params->square_brackets_are_parens)
+			&& !(effective_ch == '[' && params->square_brackets_are_parens)
 			&& !(effective_ch == '{' && params->curly_braces_are_parens))
 		      failed = 1;
 		  } else
@@ -2120,6 +2178,33 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
         val = SCHEME_CDR(val);
         
         scheme_hash_set(t2, key, val);
+      }
+    }
+  } else if (SCHEME_STRUCTP(obj)) {
+    Scheme_Structure *s = (Scheme_Structure *)obj;
+    if (s->stype->prefab_key) {
+      /* prefab */
+      int c, i, diff;
+      Scheme_Object *prev_v, *v;
+
+      if (clone) {
+        result = scheme_clone_prefab_struct_instance(s);
+      }
+      scheme_hash_set(dht, obj, result);
+
+      c = s->stype->num_slots;
+      diff = 0;
+      for (i = 0; i < c; i++) {
+        prev_v = s->slots[i];
+	v = resolve_references(prev_v, port, top, dht, tht, clone, tail_depth + 1);
+        if (!SAME_OBJ(prev_v, v))
+          diff = 1;
+        ((Scheme_Structure *)result)->slots[i] = v;
+      }
+
+      if (clone && !diff) {
+        result = obj;
+        scheme_hash_set(dht, obj, result);
       }
     }
   }

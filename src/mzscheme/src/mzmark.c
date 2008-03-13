@@ -4382,6 +4382,7 @@ static int mark_struct_type_val_MARK(void *p) {
   gcMARK(t->inspector);
   gcMARK(t->accessor);
   gcMARK(t->mutator);
+  gcMARK(t->prefab_key);
   gcMARK(t->uninit_val);
   gcMARK(t->props);
   gcMARK(t->proc_attr);
@@ -4404,6 +4405,7 @@ static int mark_struct_type_val_FIXUP(void *p) {
   gcFIXUP(t->inspector);
   gcFIXUP(t->accessor);
   gcFIXUP(t->mutator);
+  gcFIXUP(t->prefab_key);
   gcFIXUP(t->uninit_val);
   gcFIXUP(t->props);
   gcFIXUP(t->proc_attr);

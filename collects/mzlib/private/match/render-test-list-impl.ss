@@ -79,11 +79,6 @@
                                     (format "invalid ~a pattern syntax" set!/get!))]))]))
     
     
-    ;; expand the regexp-matcher into an (and) with string?
-    (define (regexp-matcher ae stx pred cert)
-      (render-test-list #`(and (? string?) #,pred) ae cert stx))
-    
-    
     ;;!(function or-gen
     ;;         (form (or-gen exp orpatlist sf bv ks kf let-bound)
     ;;               ->
@@ -266,7 +261,6 @@
                            (map (lambda (x)
                                   (cons x #`#,(gensym (syntax-object->datum x))))
                                 bound)))
-                     
                      (list
                       (shape-test
                        `(list? ,ae-datum)
@@ -295,13 +289,19 @@
                                        (test-list
                                         (list
                                          #,@(map (lambda (p)
-                                                   (create-test-func
+                                                   (let ([v (create-test-func
                                                     p
                                                     sf
                                                     let-bound
                                                     bind-map
                                                     #f
-                                                    cert))
+                                                    cert)])
+                                                     (printf "~s ~s ~s\n" 
+                                                             (syntax-object->datum p)
+                                                             (syntax-object->datum v)
+                                                             (continuation-mark-set->context
+                                                              (current-continuation-marks)))
+                                                     v))
                                                  pat-list))))
                                    (if (match:test-no-order test-list
                                                             #,ae

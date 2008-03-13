@@ -273,15 +273,26 @@ that many forms of data can be read back in using @scheme[read].
 ]
 
 @; ----------------------------------------------------------------------
-@section{Datatypes and Serialization}
+@section[#:tag "serialization"]{Datatypes and Serialization}
 
-New datatypes created by @scheme[define-struct] by default
+@tech{Prefab} structure types (see @secref["prefab-struct"])
+automatically support @deftech{serialization}: they can be written to
+an output stream, and a copy can be read back in from an input stream:
+
+@interaction[
+(define-values (in out) (make-pipe))
+(write #s(sprout bean) out)
+(read in)
+]
+
+Other structure types created by @scheme[define-struct], which offer
+more abstraction than @tech{prefab} structure types, normally
 @scheme[write] either using @schemeresultfont{#<....>} notation (for
 opaque structure types) or using @schemeresultfont{#(....)} vector
 notation (for transparent structure types). In neither can can the
-result be read back in as an instance of the structure type.
+result be read back in as an instance of the structure type:
 
-@examples[
+@interaction[
 (define-struct posn (x y))
 (write (make-posn 1 2))
 (define-values (in out) (make-pipe))

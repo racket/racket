@@ -1783,6 +1783,7 @@ mark_struct_type_val {
   gcMARK(t->inspector);
   gcMARK(t->accessor);
   gcMARK(t->mutator);
+  gcMARK(t->prefab_key);
   gcMARK(t->uninit_val);
   gcMARK(t->props);
   gcMARK(t->proc_attr);

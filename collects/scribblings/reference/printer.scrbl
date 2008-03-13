@@ -173,6 +173,38 @@ that when the @scheme[print-vector-length] parameter is @scheme[#t], a
 decimal integer is printed after the @litchar{#}, and a repeated last
 element is printed only once..
 
+
+@section[#:tag "print-structure"]{Printing Structures}
+
+When the @scheme[print-struct] parameter is set to @scheme[#t], then
+the way that structures print depends on details of the structure type
+for which the structure is an instance:
+
+@itemize{
+
+ @item{If the structure type is a @techlink{prefab} structure type,
+       then it prints using @litchar{#s(} followed by the @tech{prefab}
+       structure type key, then the printed form each field in the
+       structure, and then @litchar{)}.}
+
+ @item{If the structure has a @scheme[prop:custom-write] property
+       value, then the associated procedure is used to print the
+       structure.}
+
+ @item{If the structure type is transparent, or if any ancestor is
+       transparent, then the structure prints as the vector produced
+       by @scheme[struct->vector].}
+
+ @item{For any other structure type, the structure prints as an
+       unreadable value; see @secref["print-unreadable"] for more
+       information.}
+}
+
+If the @scheme[print-struct] parameter is set to @scheme[#f], then all
+structures without a @scheme[prop:custom-write] property print as
+unreadable values.
+
+
 @section[#:tag "print-hashtable"]{Printing Hash Tables}
 
 When the @scheme[print-hash-table] parameter is set to @scheme[#t], a
@@ -227,3 +259,10 @@ starting with @litchar{#px} (for @scheme[pregexp]-based regexps) or
 @litchar{#rx} (for @scheme[regexp]-based regexps) followed by the
 @scheme[write] form of the regexp's source string or byte string.
 
+
+@section[#:tag "print-unreadable"]{Printing Unreadable Values}
+
+For any value with no other printing specification, the output form is
+@litchar{#<}@nonterm{something}@litchar{>}, where @nonterm{something}
+is specific to the type of the value and sometimes to the value
+itself.

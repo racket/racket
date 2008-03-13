@@ -499,14 +499,16 @@ typedef struct Scheme_Struct_Property {
 int scheme_inspector_sees_part(Scheme_Object *s, Scheme_Object *insp, int pos);
 
 typedef struct Scheme_Struct_Type {
-  Scheme_Object so; /* scheme_structure_type or scheme_proc_struct_type */
-  mzshort num_slots, num_islots;
+  Scheme_Inclhash_Object iso; /* scheme_structure_type or scheme_proc_struct_type */
+  mzshort num_slots;   /* initialized + auto + parent-initialized + parent-auto */
+  mzshort num_islots; /* initialized + parent-initialized */
   mzshort name_pos;
 
   Scheme_Object *name;
 
   Scheme_Object *inspector;
   Scheme_Object *accessor, *mutator;
+  Scheme_Object *prefab_key;
 
   Scheme_Object *uninit_val;
 
@@ -520,6 +522,8 @@ typedef struct Scheme_Struct_Type {
 
   struct Scheme_Struct_Type *parent_types[1];
 } Scheme_Struct_Type;
+
+#define STRUCT_TYPE_ALL_IMMUTABLE 0x1
 
 typedef struct Scheme_Structure
 {
@@ -569,6 +573,11 @@ Scheme_Object *scheme_is_writable_struct(Scheme_Object *s);
 #define SCHEME_STRUCT_INSPECTOR(obj) (((Scheme_Structure *)obj)->stype->inspector)
 
 extern Scheme_Object *scheme_source_property;
+
+Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_count);
+Scheme_Object *scheme_make_prefab_struct_instance(Scheme_Struct_Type *stype,
+                                                         Scheme_Object *vec);
+Scheme_Object *scheme_clone_prefab_struct_instance(Scheme_Structure *s);
 
 /*========================================================================*/
 /*                         syntax objects                                 */

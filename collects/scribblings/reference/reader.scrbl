@@ -103,6 +103,10 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar{#[}]{starts a vector; see @secref["parse-vector"]}
   @dispatch[@litchar["#{"]]{starts a vector; see @secref["parse-vector"]}
 
+  @dispatch[@litchar["#s("]]{starts a structure literal; see @secref["parse-structure"]}
+  @dispatch[@litchar["#s["]]{starts a structure literal; see @secref["parse-structure"]}
+  @dispatch[@litchar["#s{"]]{starts a structure literal; see @secref["parse-structure"]}
+
   @dispatch[@litchar["#\\"]]{starts a character; see @secref["parse-character"]}
 
   @dispatch[@litchar{#"}]{starts a byte string; see @secref["parse-string"]}
@@ -538,7 +542,9 @@ file.
 
 When the reader encounters a @litchar{#(}, @litchar{#[}, or
 @litchar["#{"], it starts parsing a vector; see @secref["vectors"] for
-information on vectors.
+information on vectors. The @litchar{#[} and @litchar["#{"] forms can
+be disabled through the @scheme[read-square-bracket-as-paren] and
+@scheme[read-curly-brace-as-paren] @tech{parameters}.
 
 The elements of the vector are recursively read until a matching
 @litchar{)}, @litchar{]}, or @litchar["}"] is found, just as for
@@ -563,6 +569,37 @@ immutable.
 "#3(\"apple\" \"banana\")"
 "#3()"
 ]
+
+
+@section[#:tag "parse-structure"]{Reading Structures}
+
+When the reader encounters a @litchar{#s(}, @litchar{#s[}, or
+@litchar["#s{"], it starts parsing an instance of a @tech{prefab}
+@tech{structure type}; see @secref["structures"] for information on
+@tech{structure types}.  The @litchar{#s[} and @litchar["#s{"] forms
+can be disabled through the @scheme[read-square-bracket-as-paren] and
+@scheme[read-curly-brace-as-paren] @tech{parameters}.
+
+The elements of the structure are recursively read until a matching
+@litchar{)}, @litchar{]}, or @litchar["}"] is found, just as for lists
+(see @secref["parse-pair"]). A delimited @litchar{.} is not allowed
+among the elements.
+
+The first element is used as the structure descriptor, and it must
+have the form (when quoted) of a possible argument to
+@scheme[make-prefab-struct]; in the simplest case, it can be a
+symbol. The remaining elements correspond to field values within the
+structure.
+
+In @scheme[read-syntax] mode, the structure type must not have any
+mutable fields. The structure's elements are read in
+@scheme[read-syntax] mode, so that the wrapped structure's elements
+are also wraped as syntax objects.
+
+If the first structure element is not a valid @tech{prefab} structure
+type key, or if the number of provided fields is inconsistent with the
+indicated @tech{prefab} structure type, the @exnraise[exn:fail:read].
+
 
 @section[#:tag "parse-hashtable"]{Reading Hash Tables}
 

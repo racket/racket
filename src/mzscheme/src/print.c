@@ -88,7 +88,8 @@ static void print_pair(Scheme_Object *pair, int notdisplay, int compact,
 static void print_vector(Scheme_Object *vec, int notdisplay, int compact, 
 			 Scheme_Hash_Table *ht, 
                          Scheme_Marshal_Tables *mt,
-			 PrintParams *pp);
+			 PrintParams *pp,
+                         int as_struct);
 static void print_char(Scheme_Object *chobj, int notdisplay, PrintParams *pp);
 static char *print_to_string(Scheme_Object *obj, long * volatile len, int write,
 			     Scheme_Object *port, long maxl, int check_honu);
@@ -1767,7 +1768,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     }
   else if (SCHEME_VECTORP(obj))
     {
-      print_vector(obj, notdisplay, compact, ht, mt, pp);
+      print_vector(obj, notdisplay, compact, ht, mt, pp, 0);
       closed = 1;
     }
   else if ((compact || pp->print_box) && SCHEME_BOXP(obj))
@@ -1868,8 +1869,14 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	pb = pp->print_struct && PRINTABLE_STRUCT(obj, pp);
 
 	if (pb) {
-	  obj = scheme_struct_to_vector(obj, NULL, pp->inspector);
-	  closed = print(obj, notdisplay, compact, ht, mt, pp);
+          Scheme_Object *vec, *prefab;
+          prefab = ((Scheme_Structure *)obj)->stype->prefab_key;
+	  vec = scheme_struct_to_vector(obj, NULL, pp->inspector);
+          if (prefab) {
+            SCHEME_VEC_ELS(vec)[0] = SCHEME_CDR(prefab);
+          }
+          print_vector(vec, notdisplay, compact, ht, mt, pp, !!prefab);
+	  closed = 1;
 	} else {
 	  Scheme_Object *src;
 
@@ -2968,7 +2975,8 @@ static void
 print_vector(Scheme_Object *vec, int notdisplay, int compact, 
 	     Scheme_Hash_Table *ht, 
              Scheme_Marshal_Tables *mt,
-	     PrintParams *pp)
+	     PrintParams *pp,
+             int as_struct)
 {
   int i, size, common = 0;
   Scheme_Object **elems;
@@ -2986,7 +2994,9 @@ print_vector(Scheme_Object *vec, int notdisplay, int compact,
     }
     elems = NULL; /* Precise GC: because VEC_ELS is not aligned */
     
-    if (notdisplay && pp->print_vec_shorthand) {
+    if (as_struct) {
+      print_utf8_string(pp, "#s(", 0, 3);
+    } else if (notdisplay && pp->print_vec_shorthand) {
       if (size == 0) {
 	if (pp->honu_mode)
 	  print_utf8_string(pp, "vectorN(0", 0, 7);

@@ -122,6 +122,12 @@
     (lambda (p pos)
       (vector-ref (syntax-e p) pos)))
 
+  (define-values (stx-prefab?)
+    (lambda (key v)
+      (if (syntax? v)
+          (equal? key (prefab-struct-key (syntax-e v)))
+          #f)))
+
   ;; used in pattern-matching with an escape proc
   (define-values (stx-check/esc)
     (lambda (v esc)
@@ -197,6 +203,7 @@
   (#%provide identifier? stx-null? stx-null/#f stx-pair? stx-list?
              stx-car stx-cdr stx->list
              stx-vector? stx-vector-ref
+             stx-prefab?
              stx-check/esc cons/#f append/#f
              stx-rotate stx-rotate*
              split-stx-list
