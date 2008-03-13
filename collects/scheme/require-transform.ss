@@ -145,7 +145,7 @@
                   [args
                    (raise-syntax-error
                     #f
-                    (format "require transformer did not produced ~a result~s instead of 2"
+                    (format "require transformer produced ~a result~a instead of 2"
                             (length args)
                             (if (= 1 (length args)) "" "s"))
                     stx)]))
