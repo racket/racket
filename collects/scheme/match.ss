@@ -6,7 +6,7 @@
                        define-match-expander)
            (rename-out [define-match-expander* define-match-expander]))
 
-  (define-syntax (no-old-match-form stx)
+  (define-for-syntax (no-old-match-form stx)
     (raise-syntax-error
      #f
      "works only for constructor-based `match' form"
