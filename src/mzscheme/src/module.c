@@ -1856,6 +1856,8 @@ int scheme_is_module_path(Scheme_Object *obj)
 
       for (; !SCHEME_NULLP(subs); subs = SCHEME_CDR(subs)) {
         a = SCHEME_CAR(subs);
+        if (!SCHEME_CHAR_STRINGP(a))
+          return 0;
         if (!ok_path_string(a, 0, 0, 0))
           return 0;
       }
