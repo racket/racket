@@ -66,9 +66,9 @@
                              "This expander only works with the match.ss library."))
          (let* ([introducer (make-syntax-introducer)]
                 [certifier (match-expander-certifier expander)]
-                [mstx (introducer stx)]
+                [mstx (introducer (syntax-local-introduce stx))]
                 [mresult (transformer mstx)]
-                [result (introducer mresult)]
+                [result (syntax-local-introduce (introducer mresult))]
                 [cert* (lambda (id) (certifier (cert id) #f introducer))])
            (observe-step stx mstx mresult result)
            (simplify result cert*)))]
