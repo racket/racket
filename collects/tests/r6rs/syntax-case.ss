@@ -88,6 +88,17 @@
             (dolet a)) 
           7)
 
+    ;; check that it's ok as an expression:
+    (test 6
+          (let-syntax ([foo
+                        (syntax-rules ()
+                          [(_)
+                           (let-syntax ([bar
+                                         (syntax-rules ()
+                                           [(_) 5])])
+                             (bar))])])
+            (+ 1 (foo))))
+
     #;
     (test/exn (let ([else #f])
                 (case 0 [else (write "oops")])) 

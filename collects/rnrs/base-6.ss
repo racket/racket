@@ -478,34 +478,42 @@
 (define-for-syntax (do-let-syntax stx rec?)
   (syntax-case stx ()
     [(_ ([id expr] ...) body ...)
-     (let ([sli (if (list? (syntax-local-context))
-                    syntax-local-introduce
-                    values)])
-       (let ([ids (map sli (syntax->list #'(id ...)))]
-             [def-ctx (syntax-local-make-definition-context)]
-             [ctx (list (gensym 'intdef))])
-         (syntax-local-bind-syntaxes ids #f def-ctx)
-         (let* ([add-context
-                 (lambda (expr)
-                   (let ([q (local-expand #`(quote #,expr)
-                                          ctx
-                                          (list #'quote)
-                                          def-ctx)])
-                     (syntax-case q ()
-                       [(_ expr) #'expr])))])
-           (with-syntax ([(id ...)
-                          (map sli (map add-context ids))]
-                         [(expr ...)
-                          (let ([exprs (syntax->list #'(expr ...))])
-                            (if rec?
-                                (map add-context exprs)
-                                exprs))]
-                         [(body ...)
-                          (map add-context (syntax->list #'(body ...)))])
-             #'(begin
-                 (define-syntax id (wrap-as-needed expr))
-                 ...
-                 body ...)))))]))
+     (if (eq? 'expression (syntax-local-context))
+         (with-syntax ([let-stx (if rec?
+                                    #'letrec-syntax
+                                    #'let-syntax)])
+           (syntax/loc stx
+             (let-stx ([id (wrap-as-needed expr)] ...)
+               (#%expression body)
+               ...)))
+         (let ([sli (if (list? (syntax-local-context))
+                        syntax-local-introduce
+                        values)])
+           (let ([ids (map sli (syntax->list #'(id ...)))]
+                 [def-ctx (syntax-local-make-definition-context)]
+                 [ctx (list (gensym 'intdef))])
+             (syntax-local-bind-syntaxes ids #f def-ctx)
+             (let* ([add-context
+                     (lambda (expr)
+                       (let ([q (local-expand #`(quote #,expr)
+                                              ctx
+                                              (list #'quote)
+                                              def-ctx)])
+                         (syntax-case q ()
+                           [(_ expr) #'expr])))])
+               (with-syntax ([(id ...)
+                              (map sli (map add-context ids))]
+                             [(expr ...)
+                              (let ([exprs (syntax->list #'(expr ...))])
+                                (if rec?
+                                    (map add-context exprs)
+                                    exprs))]
+                             [(body ...)
+                              (map add-context (syntax->list #'(body ...)))])
+                 #'(begin
+                     (define-syntax id (wrap-as-needed expr))
+                     ...
+                     body ...))))))]))
 
 (define-syntax (r6rs:let-syntax stx)
   (do-let-syntax stx #f))
