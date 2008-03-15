@@ -1051,14 +1051,20 @@ char *scheme_os_getcwd(char *buf, int buflen, int *actlen, int noexn)
     if (!r) {
       /* Something bad happened! */
       if (noexn) {
+        /* We need to invent some complete path. */
+#ifdef DOS_FILE_SYSTEM
+        r = "C:\\";
+#else
+        r = "/";
+#endif        
 	if (actlen)
-	  *actlen = 0;
+	  *actlen = strlen(r);
 
 	if (buf) {
-	  buf[0] = 0;
+          strcpy(buf, r);
 	  return buf;
 	} else {
-	  return ".";
+	  return r;
 	}
       }
 	
