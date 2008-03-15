@@ -928,20 +928,20 @@ static int wxSendOrSetTag(char *tag, char *pre_tag, char *msg)
 
 # define SINGLE_INSTANCE_HANDLER_CODE \
 "(lambda (f host)" \
-"  (let ([path (simplify-path" \
-"               (path->complete-path" \
-"                (or (find-executable-path (find-system-path 'run-file) #f)" \
-"                    (find-system-path 'run-file))" \
-"                (current-directory)))])" \
-"    (let ([tag (string->bytes/utf-8" \
-"                (format \"~a:~a_~a\" host path (version)))])" \
+"  (let-values ([(path) (simplify-path" \
+"                        (path->complete-path" \
+"                         (or (find-executable-path (find-system-path 'run-file) #f)" \
+"                             (find-system-path 'run-file))" \
+"                         (current-directory)))])" \
+"    (let-values ([(tag) (string->bytes/utf-8" \
+"                         (format \"~a:~a_~a\" host path (version)))])" \
 "      (f tag " \
 "         (bytes-append #\"pre\" tag)" \
 "         (apply" \
 "          bytes-append" \
 "          (map (lambda (s)" \
-"                 (let ([s (path->string" \
-"                           (path->complete-path s (current-directory)))])" \
+"                 (let-values ([(s) (path->string" \
+"                                    (path->complete-path s (current-directory)))])" \
 "                   (string->bytes/utf-8" \
 "                    (format \"~a:~a\"" \
 "                            (string-length s)" \
@@ -960,18 +960,56 @@ static Scheme_Object *prep_single_instance(int argc, Scheme_Object **argv)
 
 int wxCheckSingleInstance(Scheme_Env *global_env)
 {
-  Scheme_Object *a[2], *v;
+  Scheme_Object *a[2], *v, *nam, *nr, *ns;
   char buf[256];
+  Scheme_Config *config;
+  Scheme_Cont_Frame_Data frame;
 
   if (!wxGetHostName(buf, 256)) {
     buf[0] = 0;
   }
 
+  /* ************************************************************ */
+  /* Set up a namespace to evaluate SINGLE_INSTANCE_HANDLER_CODE: */
+  ns = scheme_make_namespace(0, NULL);
+
+  config = scheme_extend_config(scheme_current_config(),
+                                MZCONFIG_ENV,
+                                ns);
+  scheme_push_continuation_frame(&frame);
+  scheme_install_config(config);
+
+  nam = scheme_builtin_value("namespace-attach-module");
+  a[0] = (Scheme_Object *)global_env;
+  a[1] = scheme_make_pair(scheme_intern_symbol("quote"),
+                          scheme_make_pair(scheme_intern_symbol("#%utils"),
+                                           scheme_null));
+  scheme_apply(nam, 2, a);
+
+  nr = scheme_builtin_value("namespace-require");
+  a[0] = a[1];
+  scheme_apply(nr, 1, a);
+
+  a[0] = scheme_make_pair(scheme_intern_symbol("quote"),
+                          scheme_make_pair(scheme_intern_symbol("#%min-stx"),
+                                           scheme_null));
+  scheme_apply(nr, 1, a);
+
+  a[0] = scheme_make_pair(scheme_intern_symbol("quote"),
+                          scheme_make_pair(scheme_intern_symbol("#%kernel"),
+                                           scheme_null));
+  scheme_apply(nr, 1, a);
+  /* *********************************************************** **/
+
   a[0] = scheme_make_prim(prep_single_instance);
   a[1] = scheme_make_byte_string(buf);
   v = scheme_apply(scheme_eval_string(SINGLE_INSTANCE_HANDLER_CODE,
-				      global_env),
+				      (Scheme_Env *)ns),
 		   2,
 		   a);
+
+  /* Pop the namespace: */
+  scheme_pop_continuation_frame(&frame);
+
   return SCHEME_TRUEP(v);
 }
