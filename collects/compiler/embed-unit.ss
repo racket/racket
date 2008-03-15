@@ -398,12 +398,12 @@
                                              null null)
                                    (unbox codes)))]
                   [code
-                   (let-values ([(imports fs-imports ft-imports fl-imports) (module-compiled-imports code)])
+                   (let ([importss (module-compiled-imports code)])
                      (let ([all-file-imports (filter (lambda (x) 
                                                        (let-values ([(x base) (module-path-index-split x)])
                                                          (not (and (pair? x)
                                                                    (eq? 'quote (car x))))))
-                                                     (append imports fs-imports ft-imports fl-imports))]
+                                                     (apply append (map cdr importss)))]
                            [extra-paths (get-extra-imports filename code)])
                        (let ([sub-files (map (lambda (i) (normalize (resolve-module-path-index i filename)))
                                              all-file-imports)]
