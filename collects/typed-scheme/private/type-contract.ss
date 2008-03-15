@@ -74,6 +74,7 @@
              [(Input-Port) #'input-port?]
              [(Char) #'char?]
              [(Namespace) #'namespace?]
+             [(Integer) #'integer?]
              [else (int-err "Base type ~a cannot be converted to contract" sym)])]
           [(Union: elems) 
            (with-syntax 

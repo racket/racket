@@ -7,6 +7,7 @@
          (lib "stx.ss" "syntax")
          (lib "etc.ss")
          (except-in (lib "list.ss") remove)
+         mzlib/trace
          "type-contract.ss"
          "signatures.ss"
          "tc-structs.ss"
@@ -32,12 +33,16 @@
          "def-binding.ss"
          (lib "plt-match.ss"))
 
+(require (for-template scheme/base
+                       scheme/contract))
+
 (provide remove-provides provide? generate-prov)
 
-(define (provide? form)
+(define (provide? form)    
   (kernel-syntax-case form #f
     [(#%provide . rest) form]
     [_ #f]))
+
 
 (define (remove-provides forms)
   (filter (lambda (e) (not (provide? e))) (syntax->list forms)))
@@ -50,7 +55,7 @@
     (def-binding-ty (mem? i vd)))
   (define (mk internal-id external-id)
     (cond
-      [(mem? internal-id val-defs) 
+      [(mem? internal-id val-defs)
        =>
        (lambda (b)
          (with-syntax ([id internal-id]

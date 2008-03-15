@@ -95,7 +95,7 @@
             => (match-lambda 
                  [(tc-result: t)
                   (register-type (car vars) t)
-                  (list (car vars) t)])]
+                  (list (make-def-binding (car vars) t))])]
            [else
             (tc-error "Untyped definition : ~a" (map syntax-e vars))]))]
       
@@ -217,7 +217,7 @@
     ;; resolve all the type aliases, and error if there are cycles
     (resolve-type-aliases parse-type)
     ;; do pass 1, and collect the defintions
-    (define defs (filter list? (map tc-toplevel/pass1 forms)))
+    (define defs (apply append (filter list? (map tc-toplevel/pass1 forms))))
     ;; separate the definitions into structures we'll handle for provides    
     (define stx-defs (filter def-stx-binding? defs))
     (define val-defs (filter def-binding? defs))
