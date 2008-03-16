@@ -34,8 +34,7 @@
 
 #lang mzscheme
 
-(require srfi/optional
-         "predicate.ss"
+(require "predicate.ss"
          "selector.ss")
 
 (provide %cdrs
@@ -82,7 +81,7 @@
 ;; However, if any of the lists is empty, just abort and return [() ()].
 
 (define (%cars+cdrs lists)
-  (let/ec
+  (let/ec abort
    (let recur ((lists lists))
      (if (pair? lists)
        (let-values ([(list other-lists) (car+cdr lists)])
