@@ -7,6 +7,7 @@
                             s:map s:for-each
                             s:member
                             s:assoc)
+           (rename s:filter filter)
 	   (rename s:map map)
 	   (rename s:for-each for-each)
 	   (rename s:member member)
