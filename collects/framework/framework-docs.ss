@@ -7,19 +7,39 @@
 
 (require "private/framework-exports.ss"
          (for-syntax scheme/base)
+         scribble/decode
          scribble/manual)
 
 (define-syntax (fw-doc-form stx)
-  (syntax-case stx (->)
-    [(_ id (-> a ... b) (arg ...) docs ...)
+  (syntax-case stx (-> ->*)
+    [(_ id (-> a ... b) (arg ...) (docs ...))
      #'(defproc (id (arg a) ...)
-         b)]
-
-    [(_ id b () docs ...)
-     #'(defthing id b)]
-
+         b
+         docs ...)]
+    [(_ id (->* (mandatory-ctc ...) (optional-ctc ...) range) 
+        ((mandatory-arg ...) ((optional-arg default) ...))
+        (docs ...))
+     #'(defproc (id (mandatory-arg mandatory-ctc) ...
+                    (optional-arg optional-ctc default) ...)
+         range
+         docs ...)]
+    
+    [(_ id ctc () (docs ...))
+     #'(defthing id ctc docs ...)]
+    
     [(_ id whatever ...)
-     #'(defthing id any/c)]))
+     (begin
+       (fprintf (current-error-port) "Cannot parse docs for ~a\n" (syntax->datum #'id))
+       #'(defthing id any/c))]))
+
+(define-syntax (mapdesc stx)
+  (syntax-case stx ()
+    [(_ cmd events)
+     #'(make-splice (list (index (symbol->string 'cmd))
+                          (symbol->string 'cmd)
+                          " ("
+                          (symbol->string 'events)
+                          " events)"))]))
 
 (define-syntax (export/docs stx)
   (syntax-case stx ()
@@ -29,12 +49,12 @@
 (define-syntax (conv/export/docs stx)
   (define-struct faux-stx (obj vec) #:prefab)
   (syntax-case stx ()
-    [(_ arg)
+    [(id arg)
      #`(export/docs
         #,@(let loop ([f-stx (syntax->datum #'arg)])
              (cond
                [(faux-stx? f-stx) 
-                (datum->syntax stx
+                (datum->syntax #'id
                                (loop (faux-stx-obj f-stx))
                                (faux-stx-vec f-stx))]
                [(pair? f-stx) (cons (loop (car f-stx)) (loop (cdr f-stx)))]
