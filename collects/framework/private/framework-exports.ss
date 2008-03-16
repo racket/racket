@@ -38,8 +38,8 @@
          (number? boolean? . -> . (is-a?/c snip%))
          (num show-prefix?)
          @{Makes a number snip that shows the decimal expansion for
-           @scheme[number] The boolean indicates if a @tt{#e} prefix appears on
-           the number.
+           @scheme[number] The boolean indicates if a @litchar{#e} prefix
+           appears on the number.
 
            See also @scheme[number-snip:make-fraction-snip].})
 
@@ -47,8 +47,8 @@
          (number? boolean? . -> . (is-a?/c snip%))
          (num show-prefix-in-decimal-view?)
          @{Makes a number snip that shows a fractional view of @scheme[number].
-           The boolean indicates if a @tt{#e} prefix appears on the number,
-           when shown in the decimal state.
+           The boolean indicates if a @litchar{#e} prefix appears on the
+           number, when shown in the decimal state.
 
            See also @scheme[number-snip:make-repeating-decimal-snip].})
 
@@ -60,7 +60,7 @@
 
            @scheme[(version:add-spec 's 1)]
 
-           in version 205 will make the version string be @tt{205s1}.  The
+           in version 205 will make the version string be @litchar{205s1}.  The
            symbols @scheme['f] and @scheme['d] are used internally for
            framework and drscheme revisions.})
 
