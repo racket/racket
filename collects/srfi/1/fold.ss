@@ -37,8 +37,7 @@
 (require srfi/optional
          "predicate.ss"
          "selector.ss"
-         "util.ss"
-         srfi/8/receive)
+         "util.ss")
 
 (provide (rename my-map map)
          (rename my-for-each for-each)
@@ -88,9 +87,9 @@
   (check-arg procedure? kons 'fold)
   (if (pair? lists)
     (let lp ((lists (cons lis1 lists)) (ans knil))   ; N-ary case
-      (receive (cars+ans cdrs) (%cars+cdrs+ lists ans)
-               (if (null? cars+ans) ans ; Done.
-                   (lp cdrs (apply kons cars+ans)))))
+      (let-values ([(cars+ans cdrs) (%cars+cdrs+ lists ans)])
+        (if (null? cars+ans) ans ; Done.
+            (lp cdrs (apply kons cars+ans)))))
     (let lp ((lis lis1) (ans knil))                  ; Fast path
       (if (null-list? lis) ans
           (lp (cdr lis) (kons (car lis) ans))))))
@@ -158,13 +157,13 @@
 (define (really-append-map who appender f lis1 lists)
   (check-arg procedure? f 'who)
   (if (pair? lists)
-    (receive (cars cdrs) (%cars+cdrs (cons lis1 lists))
-             (if (null? cars) '()
-                 (let recur ((cars cars) (cdrs cdrs))
-                   (let ((vals (apply f cars)))
-                     (receive (cars2 cdrs2) (%cars+cdrs cdrs)
-                              (if (null? cars2) vals
-                                  (appender vals (recur cars2 cdrs2))))))))
+    (let-values ([(cars cdrs) (%cars+cdrs (cons lis1 lists))])
+      (if (null? cars) '()
+          (let recur ((cars cars) (cdrs cdrs))
+            (let ((vals (apply f cars)))
+              (let-values ([(cars2 cdrs2) (%cars+cdrs cdrs)])
+                (if (null? cars2) vals
+                    (appender vals (recur cars2 cdrs2))))))))
     ;; Fast path
     (if (null-list? lis1) '()
         (let recur ((elt (car lis1)) (rest (cdr lis1)))
@@ -194,9 +193,9 @@
   (if (pair? lists)
     (let lp ((lis1 lis1) (lists lists))
       (if (not (null-list? lis1))
-        (receive (heads tails) (%cars+cdrs/no-test lists)
-                 (set-car! lis1 (apply f (car lis1) heads))
-                 (lp (cdr lis1) tails))))
+        (let-values ([(heads tails) (%cars+cdrs/no-test lists)])
+          (set-car! lis1 (apply f (car lis1) heads))
+          (lp (cdr lis1) tails))))
     ;; Fast path.
     (pair-for-each (lambda (pair) (set-car! pair (f (car pair)))) lis1))
   lis1)
@@ -206,11 +205,11 @@
   (check-arg procedure? f 'filter-map)
   (if (pair? lists)
     (let recur ((lists (cons lis1 lists)))
-      (receive (cars cdrs) (%cars+cdrs lists)
-               (if (pair? cars)
-                 (cond ((apply f cars) => (lambda (x) (cons x (recur cdrs))))
-                       (else (recur cdrs))) ; Tail call in this arm.
-                 '())))
+      (let-values ([(cars cdrs) (%cars+cdrs lists)])
+        (if (pair? cars)
+          (cond ((apply f cars) => (lambda (x) (cons x (recur cdrs))))
+                (else (recur cdrs))) ; Tail call in this arm.
+          '())))
     ;; Fast path.
     (let recur ((lis lis1))
       (if (null-list? lis) lis
@@ -226,11 +225,11 @@
   (check-arg procedure? f 'map-in-order)
   (if (pair? lists)
     (let recur ((lists (cons lis1 lists)))
-      (receive (cars cdrs) (%cars+cdrs lists)
-               (if (pair? cars)
-                 (let ((x (apply f cars))) ; Do head first,
-                   (cons x (recur cdrs)))  ; then tail.
-                 '())))
+      (let-values ([(cars cdrs) (%cars+cdrs lists)])
+        (if (pair? cars)
+          (let ((x (apply f cars))) ; Do head first,
+            (cons x (recur cdrs)))  ; then tail.
+          '())))
     ;; Fast path.
     (let recur ((lis lis1))
       (if (null-list? lis) lis
@@ -250,11 +249,11 @@
   (check-arg procedure? f for-each)
   (if (pair? lists)
     (let recur ((lists (cons lis1 lists)))
-      (receive (cars cdrs) (%cars+cdrs lists)
-               (if (pair? cars)
-                 (begin
-                   (apply f cars)   ; Do head first,
-                   (recur cdrs))))) ; then tail.
+      (let-values ([(cars cdrs) (%cars+cdrs lists)])
+        (if (pair? cars)
+          (begin
+            (apply f cars)   ; Do head first,
+            (recur cdrs))))) ; then tail.
     ;; Fast path.
     (let recur ((lis lis1))
       (if (not (null-list? lis))

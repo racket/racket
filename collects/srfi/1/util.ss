@@ -36,8 +36,7 @@
 
 (require srfi/optional
          "predicate.ss"
-         "selector.ss"
-         srfi/8/receive)
+         "selector.ss")
 
 (provide %cdrs
          %cars+
@@ -88,11 +87,11 @@
    (lambda (abort)
      (let recur ((lists lists))
        (if (pair? lists)
-         (receive (list other-lists) (car+cdr lists)
+         (let-values ([(list other-lists) (car+cdr lists)])
            (if (null-list? list) (abort '() '()) ; LIST is empty -- bail out
-               (receive (a d) (car+cdr list)
-                        (receive (cars cdrs) (recur other-lists)
-                                 (values (cons a cars) (cons d cdrs))))))
+               (let-values ([(a d) (car+cdr list)]
+                            [(cars cdrs) (recur other-lists)])
+                 (values (cons a cars) (cons d cdrs)))))
          (values '() '()))))))
 
 ;; Like %CARS+CDRS, but we pass in a final elt tacked onto the end of the
@@ -102,21 +101,21 @@
    (lambda (abort)
      (let recur ((lists lists))
        (if (pair? lists)
-         (receive (list other-lists) (car+cdr lists)
-                  (if (null-list? list) (abort '() '()) ; LIST is empty -- bail out
-                      (receive (a d) (car+cdr list)
-                               (receive (cars cdrs) (recur other-lists)
-                                        (values (cons a cars) (cons d cdrs))))))
+         (let-values ([(list other-lists) (car+cdr lists)])
+           (if (null-list? list) (abort '() '()) ; LIST is empty -- bail out
+               (let-values ([(a d) (car+cdr list)]
+                            [(cars cdrs) (recur other-lists)])
+                 (values (cons a cars) (cons d cdrs)))))
          (values (list cars-final) '()))))))
 
 ;; Like %CARS+CDRS, but blow up if any list is empty.
 (define (%cars+cdrs/no-test lists)
   (let recur ((lists lists))
     (if (pair? lists)
-      (receive (list other-lists) (car+cdr lists)
-               (receive (a d) (car+cdr list)
-                        (receive (cars cdrs) (recur other-lists)
-                                 (values (cons a cars) (cons d cdrs)))))
+      (let*-values ([(list other-lists) (car+cdr lists)]
+                    [(a d) (car+cdr list)]
+                    [(cars cdrs) (recur other-lists)])
+        (values (cons a cars) (cons d cdrs)))
       (values '() '()))))
 
 ;;; util.ss ends here

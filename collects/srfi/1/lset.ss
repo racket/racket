@@ -40,8 +40,7 @@
          (rename "search.ss" s:member member)
          "delete.ss"
          "predicate.ss"
-         "filter.ss"
-         srfi/8/receive)
+         "filter.ss")
 
 (provide lset<=
          lset=
@@ -178,7 +177,7 @@
             ;; built in.
             ;; Compute a-b and a^b, then compute b-(a^b) and
             ;; cons it onto the front of a-b.
-            (receive (a-b a-int-b)   (lset-diff+intersection = a b)
+            (let-values ([(a-b a-int-b) (lset-diff+intersection = a b)])
               (cond ((null? a-b)     (lset-difference = b a))
                     ((null? a-int-b) (append b a))
                     (else (fold (lambda (xb ans)
@@ -199,7 +198,7 @@
             ;; built in.
             ;; Compute a-b and a^b, then compute b-(a^b) and
             ;; cons it onto the front of a-b.
-            (receive (a-b a-int-b)   (lset-diff+intersection! = a b)
+            (let-values ([(a-b a-int-b) (lset-diff+intersection! = a b)])
               (cond ((null? a-b)     (lset-difference! = b a))
                     ((null? a-int-b) (append! b a))
                     (else (pair-fold

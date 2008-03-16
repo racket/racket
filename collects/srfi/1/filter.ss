@@ -36,8 +36,7 @@
 
 (require mzlib/etc
          srfi/optional
-         "predicate.ss"
-         srfi/8/receive)
+         "predicate.ss")
 
 (provide filter
          partition
@@ -115,10 +114,10 @@
     (if (null-list? lis) (values lis lis) ; Use NOT-PAIR? to handle dotted lists.
         (let ((elt (car lis))
               (tail (cdr lis)))
-          (receive (in out) (recur tail)
-                   (if (pred elt)
-                     (values (if (pair? out) (cons elt in) lis) out)
-                     (values in (if (pair? in) (cons elt out) lis))))))))
+          (let-values ([(in out) (recur tail)])
+            (if (pred elt)
+              (values (if (pair? out) (cons elt in) lis) out)
+              (values in (if (pair? in) (cons elt out) lis))))))))
 
 ;; This implementation of PARTITION!
 ;; - doesn't cons, and uses no stack;

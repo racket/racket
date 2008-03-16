@@ -37,8 +37,7 @@
 (require mzlib/etc
          srfi/optional
          "predicate.ss"
-         "util.ss"
-         srfi/8/receive)
+         "util.ss")
 
 (provide (rename my-member member)
          find
@@ -107,8 +106,8 @@
     (if (null-list? lis) (values '() '())
         (let ((x (car lis)))
           (if (pred x)
-            (receive (prefix suffix) (recur (cdr lis))
-                     (values (cons x prefix) suffix))
+            (let-values ([(prefix suffix) (recur (cdr lis))])
+              (values (cons x prefix) suffix))
             (values '() lis))))))
 
 #;
@@ -131,13 +130,13 @@
   (check-arg procedure? pred 'any)
   (if (pair? lists)
     ;; N-ary case
-    (receive (heads tails) (%cars+cdrs (cons lis1 lists))
+    (let-values ([(heads tails) (%cars+cdrs (cons lis1 lists))])
       (and (pair? heads)
            (let lp ((heads heads) (tails tails))
-             (receive (next-heads next-tails) (%cars+cdrs tails)
-                      (if (pair? next-heads)
-                        (or (apply pred heads) (lp next-heads next-tails))
-                        (apply pred heads)))))) ; Last PRED app is tail call.
+             (let-values ([(next-heads next-tails) (%cars+cdrs tails)])
+               (if (pair? next-heads)
+                 (or (apply pred heads) (lp next-heads next-tails))
+                 (apply pred heads)))))) ; Last PRED app is tail call.
     ;; Fast path
     (and (not (null-list? lis1))
          (let lp ((head (car lis1)) (tail (cdr lis1)))
@@ -155,13 +154,13 @@
   (check-arg procedure? pred 'every)
   (if (pair? lists)
     ;; N-ary case
-    (receive (heads tails) (%cars+cdrs (cons lis1 lists))
+    (let-values ([(heads tails) (%cars+cdrs (cons lis1 lists))])
       (or (not (pair? heads))
           (let lp ((heads heads) (tails tails))
-            (receive (next-heads next-tails) (%cars+cdrs tails)
-                     (if (pair? next-heads)
-                       (and (apply pred heads) (lp next-heads next-tails))
-                       (apply pred heads)))))) ; Last PRED app is tail call.
+            (let-values ([(next-heads next-tails) (%cars+cdrs tails)])
+              (if (pair? next-heads)
+                (and (apply pred heads) (lp next-heads next-tails))
+                (apply pred heads)))))) ; Last PRED app is tail call.
     ;; Fast path
     (or (null-list? lis1)
         (let lp ((head (car lis1))  (tail (cdr lis1)))
@@ -174,7 +173,7 @@
   (if (pair? lists)
     ;; N-ary case
     (let lp ((lists (cons lis1 lists)) (n 0))
-      (receive (heads tails) (%cars+cdrs lists)
+      (let-values ([(heads tails) (%cars+cdrs lists)])
         (and (pair? heads)
              (if (apply pred heads) n
                  (lp tails (+ n 1))))))

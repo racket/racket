@@ -34,8 +34,7 @@
 
 #lang mzscheme
 
-(require srfi/optional
-         srfi/8/receive)
+(require srfi/optional)
 
 (provide first second
          third fourth
@@ -120,8 +119,8 @@
   (check-arg integer? k 'split-at)
   (let recur ((lis x) (k k))
     (if (zero? k) (values '() lis)
-        (receive (prefix suffix) (recur (cdr lis) (- k 1))
-                 (values (cons (car lis) prefix) suffix)))))
+        (let-values ([(prefix suffix) (recur (cdr lis) (- k 1))])
+          (values (cons (car lis) prefix) suffix)))))
 
 #;
 (define (split-at! x k)

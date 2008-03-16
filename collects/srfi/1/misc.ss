@@ -39,8 +39,7 @@
          "selector.ss"
          "util.ss"
          (only "fold.ss" reduce-right)
-         (rename "fold.ss" srfi-1:map map)
-         srfi/8/receive)
+         (rename "fold.ss" srfi-1:map map))
 
 (provide length+
          concatenate
@@ -65,10 +64,10 @@
     ;; N-ary case
     (let lp ((list1 list1) (lists lists) (i 0))
       (if (null-list? list1) i
-          (receive (as ds) (%cars+cdrs lists)
-                   (if (null? as) i
-                       (lp (cdr list1) ds
-                           (if (apply pred (car list1) as) (+ i 1) i))))))
+          (let-values ([(as ds) (%cars+cdrs lists)])
+            (if (null? as) i
+                (lp (cdr list1) ds
+                    (if (apply pred (car list1) as) (+ i 1) i))))))
     ;; Fast path
     (let lp ((lis list1) (i 0))
       (if (null-list? lis) i
@@ -98,39 +97,39 @@
   (let recur ((lis lis))
     (if (null-list? lis) (values lis lis) ; Use NOT-PAIR? to handle
         (let ((elt (car lis)))            ; dotted lists.
-          (receive (a b) (recur (cdr lis))
-                   (values (cons (car  elt) a)
-                           (cons (cadr elt) b)))))))
+          (let-values ([(a b) (recur (cdr lis))])
+            (values (cons (car  elt) a)
+                    (cons (cadr elt) b)))))))
 
 (define (unzip3 lis)
   (let recur ((lis lis))
     (if (null-list? lis) (values lis lis lis)
         (let ((elt (car lis)))
-          (receive (a b c) (recur (cdr lis))
-                   (values (cons (car   elt) a)
-                           (cons (cadr  elt) b)
-                           (cons (caddr elt) c)))))))
+          (let-values ([(a b c) (recur (cdr lis))])
+            (values (cons (car   elt) a)
+                    (cons (cadr  elt) b)
+                    (cons (caddr elt) c)))))))
 
 (define (unzip4 lis)
   (let recur ((lis lis))
     (if (null-list? lis) (values lis lis lis lis)
         (let ((elt (car lis)))
-          (receive (a b c d) (recur (cdr lis))
-                   (values (cons (car    elt) a)
-                           (cons (cadr   elt) b)
-                           (cons (caddr  elt) c)
-                           (cons (cadddr elt) d)))))))
+          (let-values ([(a b c d) (recur (cdr lis))])
+            (values (cons (car    elt) a)
+                    (cons (cadr   elt) b)
+                    (cons (caddr  elt) c)
+                    (cons (cadddr elt) d)))))))
 
 (define (unzip5 lis)
   (let recur ((lis lis))
     (if (null-list? lis) (values lis lis lis lis lis)
         (let ((elt (car lis)))
-          (receive (a b c d e) (recur (cdr lis))
-                   (values (cons (car     elt) a)
-                           (cons (cadr    elt) b)
-                           (cons (caddr   elt) c)
-                           (cons (cadddr  elt) d)
-                           (cons (car (cddddr  elt)) e)))))))
+          (let-values ([(a b c d e) (recur (cdr lis))])
+            (values (cons (car     elt) a)
+                    (cons (cadr    elt) b)
+                    (cons (caddr   elt) c)
+                    (cons (cadddr  elt) d)
+                    (cons (car (cddddr  elt)) e)))))))
 
 ;; append! append-reverse append-reverse! concatenate concatenate!
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
