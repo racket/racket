@@ -65,14 +65,13 @@
 ;; Return (map cdr lists).
 ;; However, if any element of LISTS is empty, just abort and return '().
 (define (%cdrs lists)
-  (call-with-escape-continuation
-   (lambda (abort)
-     (let recur ((lists lists))
-       (if (pair? lists)
-         (let ((lis (car lists)))
-           (if (null-list? lis) (abort '())
-               (cons (cdr lis) (recur (cdr lists)))))
-         '())))))
+  (let/ec abort
+   (let recur ((lists lists))
+     (if (pair? lists)
+       (let ((lis (car lists)))
+         (if (null-list? lis) (abort '())
+             (cons (cdr lis) (recur (cdr lists)))))
+       '()))))
 
 (define (%cars+ lists last-elt) ; (append! (map car lists) (list last-elt))
   (let recur ((lists lists))
@@ -83,30 +82,28 @@
 ;; However, if any of the lists is empty, just abort and return [() ()].
 
 (define (%cars+cdrs lists)
-  (call-with-escape-continuation
-   (lambda (abort)
-     (let recur ((lists lists))
-       (if (pair? lists)
-         (let-values ([(list other-lists) (car+cdr lists)])
-           (if (null-list? list) (abort '() '()) ; LIST is empty -- bail out
-               (let-values ([(a d) (car+cdr list)]
-                            [(cars cdrs) (recur other-lists)])
-                 (values (cons a cars) (cons d cdrs)))))
-         (values '() '()))))))
+  (let/ec
+   (let recur ((lists lists))
+     (if (pair? lists)
+       (let-values ([(list other-lists) (car+cdr lists)])
+         (if (null-list? list) (abort '() '()) ; LIST is empty -- bail out
+             (let-values ([(a d) (car+cdr list)]
+                          [(cars cdrs) (recur other-lists)])
+               (values (cons a cars) (cons d cdrs)))))
+       (values '() '())))))
 
 ;; Like %CARS+CDRS, but we pass in a final elt tacked onto the end of the
 ;; cars list. What a hack.
 (define (%cars+cdrs+ lists cars-final)
-  (call-with-escape-continuation
-   (lambda (abort)
-     (let recur ((lists lists))
-       (if (pair? lists)
-         (let-values ([(list other-lists) (car+cdr lists)])
-           (if (null-list? list) (abort '() '()) ; LIST is empty -- bail out
-               (let-values ([(a d) (car+cdr list)]
-                            [(cars cdrs) (recur other-lists)])
-                 (values (cons a cars) (cons d cdrs)))))
-         (values (list cars-final) '()))))))
+  (let/ec abort
+    (let recur ((lists lists))
+      (if (pair? lists)
+        (let-values ([(list other-lists) (car+cdr lists)])
+          (if (null-list? list) (abort '() '()) ; LIST is empty -- bail out
+              (let-values ([(a d) (car+cdr list)]
+                           [(cars cdrs) (recur other-lists)])
+                (values (cons a cars) (cons d cdrs)))))
+        (values (list cars-final) '())))))
 
 ;; Like %CARS+CDRS, but blow up if any list is empty.
 (define (%cars+cdrs/no-test lists)
