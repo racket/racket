@@ -86,6 +86,14 @@
                  expect mred?)
     (delete-directory/files dist-dir)]))
 
+(define (base-compile e)
+  (parameterize ([current-namespace (make-base-namespace)])
+    (compile e)))
+(define (kernel-compile e)
+  (parameterize ([current-namespace (make-base-empty-namespace)])
+    (namespace-require ''#%kernel)
+    (compile e)))
+
 (define (mz-tests mred?)
   (define dest (if mred? mr-dest mz-dest))
   (define (flags s)
@@ -97,7 +105,7 @@
      dest mred? #f
      `((#t (lib ,filename "tests" "mzscheme")))
      null
-     null
+     #f
      `(,(flags "l") ,(string-append "tests/mzscheme/" filename)))
     (try-exe dest expect mred?)
 
@@ -111,9 +119,10 @@
 	      `((,pfx (lib ,filename "tests" "mzscheme"))
                 (#t (lib "scheme/init")))
 	      null
-	      null
-	      `(,(flags "ne") 
-                ,(format "(#%require '~a~a)" 
+	      #f
+	      `(,(flags "lne") 
+                "scheme/base"
+                ,(format "(require '~a~a)" 
                          (or pfx "")
                          (regexp-replace #rx"[.].*$" filename ""))))
 	     (try-exe dest expect mred?))])
@@ -128,7 +137,8 @@
        dest mred? #f
        `((#t ,path))
        null
-       `(#%require (file ,(path->string path)))
+       (base-compile
+        `(namespace-require '(file ,(path->string path))))
        `(,(flags ""))))
     (try-exe dest expect mred?)
 
@@ -140,7 +150,8 @@
        dest mred? #f
        `((#t (file ,(path->string path))))
        null
-       `(#%require (file ,(path->string path)))
+       (base-compile
+        `(namespace-require '(file ,(path->string path))))
        `(,(flags ""))))
     (try-exe dest expect mred?)
 
@@ -152,7 +163,8 @@
        dest mred? #f
        `((#f ,filename))
        null
-       `(#%require ',(string->symbol (regexp-replace #rx"[.].*$" filename "")))
+       (base-compile
+        `(namespace-require '',(string->symbol (regexp-replace #rx"[.].*$" filename ""))))
        `(,(flags ""))))
     (try-exe dest expect mred?)
 
@@ -164,23 +176,33 @@
      `((#t (lib ,filename "tests" "mzscheme"))
        (#t (lib "embed-me3.ss" "tests" "mzscheme")))
      null
-     `(begin
-	(#%require (lib "embed-me3.ss" "tests" "mzscheme"))
-	(#%require (lib ,filename "tests" "mzscheme")))
+     (base-compile
+      `(begin
+         (namespace-require '(lib "embed-me3.ss" "tests" "mzscheme"))
+         (namespace-require '(lib ,filename "tests" "mzscheme"))))
      `(,(flags "")))
     (try-exe dest (string-append "3 is here, too? #t\n" expect) mred?)
 
     ;; Try a literal file
     (printf ">>>literal\n")
     (prepare dest filename)
-    (make-embedding-executable 
-     dest mred? #f
-     `((#t (lib ,filename "tests" "mzscheme")))
-     (list (build-path (collection-path "tests" "mzscheme") "embed-me4.ss"))
-     `(with-output-to-file "stdout"
-	(lambda () (display "... and more!\n"))
-	'append)
-     `(,(flags "l") ,(string-append "tests/mzscheme/" filename)))
+    (let ([tmp (make-temporary-file)])
+      (with-output-to-file tmp 
+        #:exists 'truncate
+        (lambda ()
+          (write (kernel-compile
+                  '(namespace-require ''#%kernel)))))
+      (make-embedding-executable 
+       dest mred? #f
+       `((#t (lib ,filename "tests" "mzscheme")))
+       (list 
+        tmp
+        (build-path (collection-path "tests" "mzscheme") "embed-me4.ss"))
+       `(with-output-to-file "stdout"
+          (lambda () (display "... and more!\n"))
+          'append)
+       `(,(flags "l") ,(string-append "tests/mzscheme/" filename)))
+      (delete-file tmp))
     (try-exe dest (string-append 
 		      "This is the literal expression 4.\n" 
 		      "... and more!\n"
@@ -196,13 +218,14 @@
    dest mred? #f
    '((#t scheme/base))
    null
-   `(begin 
-      (#%require scheme/base)
-      (define (out s)
-	(with-output-to-file "stdout"
-	  (lambda () (printf s))
-	  #:exists 'append))
-      (out "\uA9, \u7238, and \U1D670\n"))
+   (base-compile
+    '(begin 
+       (require scheme/base)
+       (eval '(define (out s)
+                (with-output-to-file "stdout"
+                  (lambda () (printf s))
+                  #:exists 'append)))
+       (out "\uA9, \u7238, and \U1D670\n")))
    `(,(flags "ne") "(out \"\u7237...\U1D671\n\")"))
   (try-exe dest "\uA9, \u7238, and \U1D670\n\u7237...\U1D671\n" mred?))
 
@@ -215,7 +238,7 @@
    mr-dest #t #f
    `((#t (lib "embed-me5.ss" "tests" "mzscheme")))
    null
-   null
+   #f
    `("-l" "tests/mzscheme/embed-me5.ss"))
   (try-exe mr-dest "This is 5: #<class:button%>\n" #t))
 
@@ -278,10 +301,8 @@
 
     (void)))
 
-#| REMOVEME
 (mzc-tests #f)
 (mzc-tests #t)
-|#
 
 (require dynext/file)
 (define (extension-test mred?)
