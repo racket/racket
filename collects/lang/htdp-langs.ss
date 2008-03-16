@@ -889,7 +889,7 @@
       ;; any structure defined in the user's namespace
       (define drscheme-inspector (current-inspector))
       
-      (eval `(module drscheme-secrets mzscheme
+      (eval `(,#'module drscheme-secrets mzscheme
                (provide drscheme-inspector)
                (define drscheme-inspector ,drscheme-inspector)))
       (namespace-require ''drscheme-secrets)

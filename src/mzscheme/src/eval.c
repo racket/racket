@@ -9093,7 +9093,8 @@ expand_stx_to_top_form(int argc, Scheme_Object **argv)
 }
 
 static Scheme_Object *do_eval_string_all(const char *str, Scheme_Env *env, int cont, int w_prompt)
-/* cont == -1 => single result
+/* cont == -2 => module (no result)
+   cont == -1 => single result
    cont == 1 -> multiple result ok
    cont == 2 -> multiple result ok, use current_print to show results */
 {
@@ -9102,6 +9103,22 @@ static Scheme_Object *do_eval_string_all(const char *str, Scheme_Env *env, int c
   port = scheme_make_byte_string_input_port(str);
   do {
     expr = scheme_read_syntax(port, scheme_false);
+
+    if (cont == -2) {
+      if (SCHEME_STXP(expr)) {
+        Scheme_Object *m;
+        m = SCHEME_STX_VAL(expr);
+        if (SCHEME_PAIRP(m)) {
+          m = scheme_make_pair(scheme_datum_to_syntax(module_symbol, 
+                                                      SCHEME_CAR(m), 
+                                                      scheme_sys_wraps(NULL), 
+                                                      0, 0),
+                               SCHEME_CDR(m));
+          expr = scheme_datum_to_syntax(m, expr, expr, 0, 0);
+        }
+      }
+    }
+
     if (SAME_OBJ(expr, scheme_eof))
       cont = 0;
     else if (cont < 0) {
@@ -9153,6 +9170,11 @@ Scheme_Object *scheme_eval_string(const char *str, Scheme_Env *env)
   return do_eval_string_all(str, env, -1, 0);
 }
 
+Scheme_Object *scheme_eval_module_string(const char *str, Scheme_Env *env)
+{
+  return do_eval_string_all(str, env, -2, 0);
+}
+
 Scheme_Object *scheme_eval_string_multi(const char *str, Scheme_Env *env)
 {
   return do_eval_string_all(str, env, 0, 0);
@@ -9171,6 +9193,28 @@ Scheme_Object *scheme_eval_string_with_prompt(const char *str, Scheme_Env *env)
 Scheme_Object *scheme_eval_string_multi_with_prompt(const char *str, Scheme_Env *env)
 {
   return do_eval_string_all(str, env, 0, 1);
+}
+
+void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs)
+{		
+  mz_jmp_buf * volatile save, newbuf;
+  Scheme_Thread * volatile p;
+  p = scheme_get_current_thread();
+  save = p->error_buf;
+  p->error_buf = &newbuf;
+  if (!scheme_setjmp(newbuf)) {
+    Scheme_Object *clcp, *flcp, *a[1];
+
+    clcp = scheme_builtin_value("current-library-collection-paths");
+    flcp = scheme_builtin_value("find-library-collection-paths");
+
+    if (clcp && flcp) {
+      a[0] = extra_dirs;
+      a[0] = _scheme_apply(flcp, 1, a);
+      _scheme_apply(clcp, 1, a);
+    }
+  }
+  p->error_buf = save;
 }
 
 static Scheme_Object *allow_set_undefined(int argc, Scheme_Object **argv)

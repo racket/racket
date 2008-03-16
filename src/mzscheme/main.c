@@ -323,8 +323,12 @@ static void do_scheme_rep(Scheme_Env *env)
 {
   /* enter read-eval-print loop */
   {
-    Scheme_Object *rep;
-    rep = scheme_builtin_value("read-eval-print-loop");
+    Scheme_Object *rep, *a[2];
+
+    a[0] = scheme_intern_symbol("scheme/base");
+    a[1] = scheme_intern_symbol("read-eval-print-loop");
+    rep = scheme_dynamic_require(2, a);
+    
     if (rep) {
       scheme_apply(rep, 0, NULL);
       printf("\n");

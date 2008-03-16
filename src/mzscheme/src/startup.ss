@@ -434,21 +434,24 @@
      [(program) (find-executable-path program #f #f)]))
 
   ;; used for the -k command-line argument:
-  (define (embedded-load start end)
-    (let* ([sp (find-system-path 'exec-file)] 
-           [exe (find-executable-path sp #f)]
-           [start (or (string->number start) 0)]
-           [end (or (string->number end) 0)]
-           [s (with-input-from-file exe 
-                (lambda ()
-                  (file-position (current-input-port) start)
-                  (read-bytes (max 0 (- end start)))))]
+  (define (embedded-load start end str)
+    (let* ([s (if str
+                  str
+                  (let* ([sp (find-system-path 'exec-file)] 
+                         [exe (find-executable-path sp #f)]
+                         [start (or (string->number start) 0)]
+                         [end (or (string->number end) 0)])
+                    (with-input-from-file exe 
+                      (lambda ()
+                        (file-position (current-input-port) start)
+                        (read-bytes (max 0 (- end start)))))))]
            [p (open-input-bytes s)])
-      (namespace-require ''#%kernel)
       (let loop ()
         (let ([e (parameterize ([read-accept-compiled #t])
                    (read p))])
-          (unless (eof-object? e) (eval e) (loop)))))))
+          (unless (eof-object? e)
+            (eval e)
+            (loop)))))))
 
 ;; ----------------------------------------
 ;; A module that collects all the built-in modules,

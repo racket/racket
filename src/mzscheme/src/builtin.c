@@ -64,7 +64,7 @@ Scheme_Object *scheme_eval_compiled_sized_string(const char *str, int len, Schem
 
 void scheme_add_embedded_builtins(Scheme_Env *env)
 {
-#define EVAL_ONE_STR(str) scheme_eval_string(str, env)
+#define EVAL_ONE_STR(str) scheme_eval_module_string(str, env)
 #define EVAL_ONE_SIZED_STR(str, len) scheme_eval_compiled_sized_string(str, len, env)
 
 #if USE_COMPILED_STARTUP

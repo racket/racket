@@ -88,6 +88,24 @@ void scheme_set_stack_base(void *base, int no_auto_statics)
   use_registered_statics = no_auto_statics;
 }
 
+int scheme_setup(int no_auto_statics, Scheme_Main _main, int argc, char **argv)
+{
+  void *start_addr = &start_addr;
+
+#ifdef MZ_PRECISE_GC
+  start_addr = &__gc_var_stack__;
+#endif
+  
+  scheme_set_stack_base(start_addr, no_auto_statics);
+
+#ifdef MZ_PRECISE_GC
+  /* Trick xform conversion to keep start_addr: */
+  start_addr = start_addr;
+#endif
+
+  return _main(scheme_basic_env(), argc, argv);
+}
+
 void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics)
 {
   scheme_set_stack_base(base, no_auto_statics);

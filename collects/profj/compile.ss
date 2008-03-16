@@ -73,6 +73,10 @@
         (else
          (compile-java-internal port loc type-recs #f level)))))
 
+  (define (compile-module expr)
+    (parameterize ([current-namespace (make-namespace)])
+      (compile expr)))
+
   ;compile-to-file: port location level -> void
   ;Should have side-effect of writing to file all files needed for compilation
   (define (compile-to-file port location level)
@@ -98,7 +102,7 @@
                                                  (build-path (send type-recs get-compilation-location)
                                                              (file-name-from-path
                                                               (send type-recs get-composite-location (car names))))
-                                                 (lambda (port) (write (compile (car syntaxes)) port)) 'truncate/replace)
+                                                 (lambda (port) (write (compile-module (car syntaxes)) port)) 'truncate/replace)
                       (set! syntaxes (cdr syntaxes)))
                     (unless (= (length names) (length syntaxes) (length locations))
                       (error 'compile-to-file "Internal error: compilation unit not represented as expected"))
@@ -109,7 +113,7 @@
                                   (unless (directory-exists? directory) (make-directory directory))
                                   (call-with-output-zo-file* location
                                                              (build-path directory (string-append name "_ss.zo"))
-                                                             (lambda (port) (write (compile code) port))
+                                                             (lambda (port) (write (compile-module code) port))
                                                              'truncate/replace)
                                   (call-with-output-file* (build-path directory (string-append name ".jinfo"))
                                                           (lambda (port) (write-record (send type-recs get-class-record 

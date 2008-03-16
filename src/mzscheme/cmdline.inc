@@ -262,13 +262,14 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
           if (fa->eval_kind[i] == mzcmd_EVAL) {
             scheme_eval_string_all_with_prompt(fa->evals_and_loads[i], fa->global_env, 2);
           } else if (fa->eval_kind[i] == mzcmd_EMBEDDED) {
-            Scheme_Object *s, *e, *a[2], *eload;
+            Scheme_Object *s, *e, *a[3], *eload;
             eload = scheme_builtin_value("embedded-load");
             s = scheme_make_utf8_string(fa->evals_and_loads[i]);
             e = scheme_make_utf8_string(fa->evals_and_loads[i] + strlen(fa->evals_and_loads[i]) + 1);
             a[0] = s;
             a[1] = e;
-            scheme_apply(eload, 2, a);
+            a[2] = scheme_make_false();
+            scheme_apply(eload, 3, a);
           } else {
             Scheme_Object *a[1], *nsreq;
             nsreq = scheme_builtin_value("namespace-require");
@@ -427,30 +428,6 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 
   return exit_val;
 }
-
-#ifndef NO_FILE_SYSTEM_UTILS
-static void init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs)
-{		
-  mz_jmp_buf * volatile save, newbuf;
-  Scheme_Thread * volatile p;
-  p = scheme_get_current_thread();
-  save = p->error_buf;
-  p->error_buf = &newbuf;
-  if (!scheme_setjmp(newbuf)) {
-    Scheme_Object *clcp, *flcp, *a[1];
-
-    clcp = scheme_builtin_value("current-library-collection-paths");
-    flcp = scheme_builtin_value("find-library-collection-paths");
-
-    if (clcp && flcp) {
-      a[0] = extra_dirs;
-      a[0] = _scheme_apply(flcp, 1, a);
-      _scheme_apply(clcp, 1, a);
-    }
-  }
-  p->error_buf = save;
-}
-#endif
 
 #ifdef USE_OSKIT_CONSOLE
 /* Hack to disable normal input mode: */
@@ -1058,7 +1035,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
       l = SCHEME_CDR(l);
     }
     
-    init_collection_paths(global_env, r);
+    scheme_init_collection_paths(global_env, r);
   }
 #endif /* NO_FILE_SYSTEM_UTILS */
 

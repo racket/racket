@@ -134,6 +134,19 @@ Returns the contents of the given box.}
 
 Sets the contents of the given box.}
 
+@function[(Scheme_Object* scheme_dynamic_require
+           [int argc]
+           [Scheme_Object** argv])]{
+
+The same as @scheme[dynamic-require]. The @var{argc} argument must be
+@scheme[2], and @var{argv} contains the arguments.}
+
+@function[(Scheme_Object* scheme_namespace_require
+           [Scheme_Object* prim_req_spec])]{
+
+The same as @scheme[namespace-require].}
+
+
 @function[(Scheme_Object* scheme_load
            [char* file])]{
 

@@ -2,7 +2,7 @@
 @(require scribble/manual
           "common.ss")
 
-@title[#:tag "exe" #:style 'toc]{Creating and Distributing Stand-Alone Executables}
+@title[#:tag "sa" #:style 'toc]{Creating and Distributing Stand-Alone Executables}
 
 Whether bytecode or native code, the compiled code produced by @|mzc|
 relies on MzScheme (or MrEd) to provide run-time support to the

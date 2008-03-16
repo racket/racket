@@ -296,13 +296,33 @@ To embed PLT Scheme CGC in a program, follow these steps:
   installing from source also places this file in the installation's
   @filepath{include} directory.}
 
- @item{In your main program, obtain a global MzScheme environment
-  @cpp{Scheme_Env*} by calling @cppi{scheme_basic_env}. This function
-  must be called before any other function in the MzScheme library
-  (except @cpp{scheme_make_param}).}
+ @item{Start your main program through the @cpp{scheme_setup}
+  trampoline, and put all uses of MzScheme functions inside the
+  function passed to @cpp{scheme_setup}. The @cpp{scheme_setup}
+  function registers the current C stack location with the memory
+  manager. It also creates the initial namespace @cpp{Scheme_Env*} by
+  calling @cppi{scheme_basic_env} and passing the result to the
+  function provided to @cpp{scheme_setup}.}
 
- @item{Access MzScheme through @cppi{scheme_load},
-  @cppi{scheme_eval}, and/or other top-level MzScheme functions
+ @item{Configure the namespace by adding module declarations. The
+  initial namespace contains declarations only for a few primitive
+  modules, such as @scheme['#%kernel], and no bindings are imported
+  into the top-level environment.
+
+  To embed a module like @schememodname[scheme/base] (along with all
+  its dependencies), use @exec{mzc --c-mods}, which generates a C file
+  that contains modules in bytecode form as encapsulated in a static
+  array. The generated C file defines a @cppi{declare_modules}
+  function that takes a @cpp{Scheme_Env*}, installs the modules into
+  the environment, and adjusts the module name resolver to access the
+  embedded declarations.
+
+  Alternately, use @cpp{scheme_set_collects_path} and
+  @cpp{scheme_init_collection_paths} to configure and install a path
+  for finding modules at run time.}
+
+ @item{Access Scheme through @cppi{scheme_dynamic_require},
+  @cppi{scheme_load}, @cppi{scheme_eval}, and/or other functions
   described in this manual.}
 
  @item{Compile the program and link it with the MzScheme libraries.}
@@ -320,21 +340,29 @@ specific to Mac OS X and Windows).
 For example, the following is a simple embedding program which
 evaluates all expressions provided on the command line and displays
 the results, then runs a @scheme[read]-@scheme[eval]-@scheme[print]
-loop:
+loop. Run
 
-@verbatim{
+@commandline{mzc --c-mods base.c ++lib scheme/base}
+
+to generate @filepath{base.c}, which encapsulates @scheme[scheme/base]
+and all of its transitive imports (so that they need not be found
+separately a run time).
+
+@verbatim[#:indent 2]{
 #include "scheme.h"
 
-int main(int argc, char *argv[])
+#include "base.c"
+
+static int run(Scheme_Env *e, int argc, char *argv[])
 {
-  Scheme_Env *e;
   Scheme_Object *curout;
   int i;
   mz_jmp_buf * volatile save, fresh;
 
-  scheme_set_stack_base(NULL, 1); /* required for OS X, only */
+  /* Declare embedded modules in "base.c": */
+  declare_modules(e);
 
-  e = scheme_basic_env();
+  scheme_namespace_require(scheme_intern_symbol("scheme/base"));
 
   curout = scheme_get_param(scheme_current_config(), 
                             MZCONFIG_OUTPUT_PORT);
@@ -346,44 +374,49 @@ int main(int argc, char *argv[])
       scheme_current_thread->error_buf = save;
       return -1; /* There was an error */
     } else {
-      Scheme_Object *v = scheme_eval_string(argv[i], e);
+      Scheme_Object *v, *a[2];
+      v = scheme_eval_string(argv[i], e);
       scheme_display(v, curout);
-      scheme_display(scheme_make_character('\n'), curout);
+      scheme_display(scheme_make_char('\n'), curout);
       /* read-eval-print loop, uses initial Scheme_Env: */
-      scheme_apply(scheme_builtin_value("read-eval-print-loop"), 
-                   0, NULL);
+      a[0] = scheme_intern_symbol("scheme/base");
+      a[1] = scheme_intern_symbol("read-eval-print-loop");
+      scheme_apply(scheme_dynamic_require(2, a), 0, NULL);
       scheme_current_thread->error_buf = save;
     }
   }
   return 0;
 }
+
+int main(int argc, char *argv[])
+{
+  return scheme_setup(1, run, argc, argv);
+}
 }
 
 Under Mac OS X, or under Windows when MzScheme is compiled to a DLL
 using Cygwin, the garbage collector cannot find static variables
-automatically. In that case, @cppi{scheme_set_stack_base} must be
-called with a non-zero second argument before calling any
-@cpp{scheme_} function.
+automatically. In that case, @cppi{scheme_setup} must be called with a
+non-zero first argument.
 
 Under Windows (for any other build mode), the garbage collector finds
 static variables in an embedding program by examining all memory
 pages. This strategy fails if a program contains multiple Windows
 threads; a page may get unmapped by a thread while the collector is
 examining the page, causing the collector to crash. To avoid this
-problem, call @cpp{scheme_set_stack_base} with a non-zero second
-argument before calling any @cpp{scheme_} function.
+problem, call @cpp{scheme_setup} with a non-zero first argument.
 
-When an embedding application calls @cpp{scheme_set_stack_base} with a
-non-zero second argument, it must register each of its static
-variables with @cppi{MZ_REGISTER_STATIC} if the variable can contain a
-GCable pointer. For example, if @cpp{e} above is made @cpp{static},
-then @cpp{MZ_REGISTER_STATIC(e)} should be inserted before the call to
-@cpp{scheme_basic_env}.
+When an embedding application calls @cpp{scheme_setup} with a non-zero
+first argument, it must register each of its static variables with
+@cppi{MZ_REGISTER_STATIC} if the variable can contain a GCable
+pointer. For example, if @cpp{curout} above is made @cpp{static}, then
+@cpp{MZ_REGISTER_STATIC(curout)} should be inserted before the call to
+@cpp{scheme_get_param}.
 
 When building an embedded MzSchemeCGC to use SenoraGC (SGC) instead of
-the default collector, @cpp{scheme_set_stack_base} must be called both
-with a non-zero second argument and with a stack-base pointer in the
-first argument.  See @secref["im:memoryalloc"] for more information.
+the default collector, @cpp{scheme_setup} must be called with a
+non-zero first argument.  See @secref["im:memoryalloc"] for more
+information.
 
 
 @subsection{3m Embedding}
@@ -421,44 +454,41 @@ In addition, some library details are different:
 
 }
 
-For MzScheme3m, an embedding application must call
-@cpp{scheme_set_stack_base} with non-zero arguments. Furthermore, the
-first argument must be @cpp{&__gc_var_stack__}, where
-@cpp{__gc_var_stack__} is bound by a @cpp{MZ_GC_DECL_REG}.
+For MzScheme3m, an embedding application must call @cpp{scheme_setup}
+with a non-zero first argument.
 
 The simple embedding program from the previous section can be
-extended to work with either CGC or 3m, dependong on whether
-@cpp{MZ_PRECISE_GC} is specified on the compiler's command line:
+processed by @exec{mzc --xform}, then compiled and linked with
+MzScheme3m.  Alternately, the source code can be extended to work with
+either CGC or 3m depending on whether @cpp{MZ_PRECISE_GC} is defined
+on the compiler's command line:
 
-@verbatim{
+@verbatim[#:indent 2]{
 #include "scheme.h"
 
-int main(int argc, char *argv[])
+#include "base.c"
+
+static int run(Scheme_Env *e, int argc, char *argv[])
 {
-  Scheme_Env *e = NULL;
-  Scheme_Object *curout = NULL, *v = NULL;
+  Scheme_Object *curout = NULL, *v = NULL, *a[2] = {NULL, NULL};
   Scheme_Config *config = NULL;
   int i;
   mz_jmp_buf * volatile save = NULL, fresh;
 
-  MZ_GC_DECL_REG(5);
+  MZ_GC_DECL_REG(8);
   MZ_GC_VAR_IN_REG(0, e);
   MZ_GC_VAR_IN_REG(1, curout);
   MZ_GC_VAR_IN_REG(2, save);
   MZ_GC_VAR_IN_REG(3, config);
   MZ_GC_VAR_IN_REG(4, v);
-
-# ifdef MZ_PRECISE_GC
-#  define STACK_BASE &__gc_var_stack__
-# else
-#  define STACK_BASE NULL
-# endif
-
-  scheme_set_stack_base(STACK_BASE, 1);
+  MZ_GC_ARRAY_VAR_IN_REG(5, a, 2);
 
   MZ_GC_REG();
 
-  e = scheme_basic_env();
+  declare_modules(e);
+
+  v = scheme_intern_symbol("scheme/base");
+  scheme_namespace_require(v);
 
   config = scheme_current_config();
   curout = scheme_get_param(config, MZCONFIG_OUTPUT_PORT);
@@ -472,10 +502,12 @@ int main(int argc, char *argv[])
     } else {
       v = scheme_eval_string(argv[i], e);
       scheme_display(v, curout);
-      v = scheme_make_character('\n');
+      v = scheme_make_char('\n');
       scheme_display(v, curout);
       /* read-eval-print loop, uses initial Scheme_Env: */
-      v = scheme_builtin_value("read-eval-print-loop");
+      a[0] = scheme_intern_symbol("scheme/base");
+      a[1] = scheme_intern_symbol("read-eval-print-loop");
+      v = scheme_dynamic_require(2, a);
       scheme_apply(v, 0, NULL);
       scheme_current_thread->error_buf = save;
     }
@@ -485,15 +517,18 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+
+int main(int argc, char *argv[])
+{
+  return scheme_setup(1, run, argc, argv);
+}
 }
 
-Strictly speaking, the @cpp{config} and @cpp{v} variables above need not be
-registered with the garbage collector, since their values are not needed
-across function calls that allocate. That is, the original example could have
-been left alone starting with the @cpp{scheme_base_env} call, except for the
-addition of @cpp{MZ_GC_UNREG}. The code is much easier to maintain, however,
-when all local variables are regsistered and when all temporary values are
-put into variables.
+Strictly speaking, the @cpp{config} and @cpp{v} variables above need
+not be registered with the garbage collector, since their values are
+not needed across function calls that allocate. The code is much
+easier to maintain, however, when all local variables are registered
+and when all temporary values are put into variables.
 
 @; ----------------------------------------------------------------------
 

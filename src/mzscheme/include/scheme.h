@@ -1665,6 +1665,8 @@ MZ_EXTERN Scheme_Object *scheme_set_run_cmd(char *s);
 MZ_EXTERN void scheme_set_collects_path(Scheme_Object *p);
 MZ_EXTERN void scheme_set_original_dir(Scheme_Object *d);
 
+MZ_EXTERN void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs);
+
 /* Initialization */
 MZ_EXTERN Scheme_Env *scheme_basic_env(void);
 MZ_EXTERN void scheme_reset_overflow(void);
@@ -1685,6 +1687,11 @@ MZ_EXTERN void scheme_set_actual_main(int (*m)(int argc, char **argv));
 /* GC registration: */
 MZ_EXTERN void scheme_set_stack_base(void *base, int no_auto_statics);
 MZ_EXTERN void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics);
+
+/* More automatic start-up: */
+typedef int (*Scheme_Main)(Scheme_Env *env, int argc, char **argv);
+MZ_EXTERN int scheme_setup(int no_auto_statics, Scheme_Main _main, int argc, char **argv);
+
 
 MZ_EXTERN void scheme_register_static(void *ptr, long size);
 #if defined(MUST_REGISTER_GLOBALS) || defined(GC_MIGHT_USE_REGISTERED_STATICS)

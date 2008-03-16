@@ -433,7 +433,7 @@
                                          (if (path? module-path)
                                              (path->complete-path module-path)
                                              module-path)])
-                                    (syntax-case (expand `(module m mzscheme
+                                    (syntax-case (expand `(,#'module m mzscheme
                                                             (require (only ,module-path)
                                                                      mzlib/runtime-path)
                                                             (runtime-paths ,module-path))) (quote)
@@ -493,6 +493,15 @@
     
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+    (define (compile-using-kernel e)
+      (let ([ns (make-empty-namespace)])
+        (namespace-attach-module (current-namespace) ''#%kernel ns)
+        (parameterize ([current-namespace ns])
+          (namespace-require ''#%kernel)
+          (compile e))))
+
+    ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
     (define (lib-path->string path)
       (cond
        [(null? (cddr path))
@@ -516,89 +525,90 @@
     
     (define (make-module-name-resolver code-l)
       (let ([extensions (filter (lambda (m) (extension? (mod-code m))) code-l)])
-        `(let-values ([(orig) (current-module-name-resolver)]
-                      [(reg) (namespace-module-registry (current-namespace))]
-                      [(mapping-table) (quote
-                                        ,(map
-                                          (lambda (m)
-                                            `(,(mod-full-name m)
-                                              ,(mod-mappings m)))
-                                          code-l))]
-                      [(library-table) (quote
-                                        ,(filter values
-                                                 (map (lambda (m)
-                                                        (let ([path (mod-mod-path m)])
-                                                          (if (and (pair? path)
-                                                                   (eq? 'lib (car path)))
-                                                              (cons (lib-path->string path)
-                                                                    (mod-full-name m))
-                                                              #f)))
-                                                      code-l)))])
-           (letrec-values ([(embedded-resolver)
-                            (case-lambda 
-                             [(name)
-                              ;; a notification
-                              (orig name)]
-                             [(name rel-to stx)
-                              (embedded-resolver name rel-to stx #t)]
-                             [(name rel-to stx load?)
-                              (if (not (module-path? name))
-                                  ;; Bad input
-                                  (orig name rel-to stx load?)
-                                  (if (not (eq? reg (namespace-module-registry (current-namespace))))
-                                      ;; Wrong registry
-                                      (orig name rel-to stx load?)
-                                      ;; Have a relative mapping?
-                                      (let-values ([(a) (if rel-to
-                                                            (assq (resolved-module-path-name rel-to) mapping-table)
-                                                            #f)])
-                                        (if a
-                                            (let-values ([(a2) (assoc name (cadr a))])
-                                              (if a2
-                                                  (make-resolved-module-path (cdr a2))
-                                                  ;; No relative mapping found (presumably a lib)
-                                                  (orig name rel-to stx load?)))
-                                            (let-values ([(lname)
-                                                          ;; normalize `lib' to single string (same as lib-path->string):
-                                                          (let-values ([(name)
-                                                                        (if (symbol? name)
-                                                                            (list 'lib (symbol->string name))
-                                                                            name)])
-                                                            (if (pair? name)
-                                                                (if (eq? 'lib (car name))
-                                                                    (if (null? (cddr name))
-                                                                        (if (regexp-match #rx"^[^/]*[.]" (cadr name))
-                                                                            ;; mzlib
-                                                                            (string-append "mzlib/" (cadr name))
-                                                                            ;; new-style
-                                                                            (if (regexp-match #rx"^[^/.]*$" (cadr name))
-                                                                                (string-append (cadr name) "/main.ss")
-                                                                                (if (regexp-match #rx"^[^.]*$" (cadr name))
-                                                                                    ;; need a suffix:
-                                                                                    (string-append (cadr name) ".ss")
-                                                                                    (cadr name))))
-                                                                        ;; old-style multi-string
-                                                                        (string-append (apply string-append
-                                                                                              (map (lambda (s)
-                                                                                                     (string-append s "/"))
-                                                                                                   (cddr name)))
-                                                                                       (cadr name)))
-                                                                    #f)
-                                                                #f))])
-                                              ;; A library mapping that we have? 
-                                              (let-values ([(a3) (assoc lname library-table)])
-                                                (if a3
-                                                    ;; Have it:
-                                                    (make-resolved-module-path (cdr a3))
-                                                    ;; Let default handler try:
-                                                    (orig name rel-to stx load?))))))))])])
-             (current-module-name-resolver embedded-resolver)))))
+        `(module #%resolver '#%kernel
+           (let-values ([(orig) (current-module-name-resolver)]
+                        [(reg) (namespace-module-registry (current-namespace))]
+                        [(mapping-table) (quote
+                                          ,(map
+                                            (lambda (m)
+                                              `(,(mod-full-name m)
+                                                ,(mod-mappings m)))
+                                            code-l))]
+                        [(library-table) (quote
+                                          ,(filter values
+                                                   (map (lambda (m)
+                                                          (let ([path (mod-mod-path m)])
+                                                            (if (and (pair? path)
+                                                                     (eq? 'lib (car path)))
+                                                                (cons (lib-path->string path)
+                                                                      (mod-full-name m))
+                                                                #f)))
+                                                        code-l)))])
+             (letrec-values ([(embedded-resolver)
+                              (case-lambda 
+                               [(name)
+                                ;; a notification
+                                (orig name)]
+                               [(name rel-to stx)
+                                (embedded-resolver name rel-to stx #t)]
+                               [(name rel-to stx load?)
+                                (if (not (module-path? name))
+                                    ;; Bad input
+                                    (orig name rel-to stx load?)
+                                    (if (not (eq? reg (namespace-module-registry (current-namespace))))
+                                        ;; Wrong registry
+                                        (orig name rel-to stx load?)
+                                        ;; Have a relative mapping?
+                                        (let-values ([(a) (if rel-to
+                                                              (assq (resolved-module-path-name rel-to) mapping-table)
+                                                              #f)])
+                                          (if a
+                                              (let-values ([(a2) (assoc name (cadr a))])
+                                                (if a2
+                                                    (make-resolved-module-path (cdr a2))
+                                                    ;; No relative mapping found (presumably a lib)
+                                                    (orig name rel-to stx load?)))
+                                              (let-values ([(lname)
+                                                            ;; normalize `lib' to single string (same as lib-path->string):
+                                                            (let-values ([(name)
+                                                                          (if (symbol? name)
+                                                                              (list 'lib (symbol->string name))
+                                                                              name)])
+                                                              (if (pair? name)
+                                                                  (if (eq? 'lib (car name))
+                                                                      (if (null? (cddr name))
+                                                                          (if (regexp-match #rx"^[^/]*[.]" (cadr name))
+                                                                              ;; mzlib
+                                                                              (string-append "mzlib/" (cadr name))
+                                                                              ;; new-style
+                                                                              (if (regexp-match #rx"^[^/.]*$" (cadr name))
+                                                                                  (string-append (cadr name) "/main.ss")
+                                                                                  (if (regexp-match #rx"^[^.]*$" (cadr name))
+                                                                                      ;; need a suffix:
+                                                                                      (string-append (cadr name) ".ss")
+                                                                                      (cadr name))))
+                                                                          ;; old-style multi-string
+                                                                          (string-append (apply string-append
+                                                                                                (map (lambda (s)
+                                                                                                       (string-append s "/"))
+                                                                                                     (cddr name)))
+                                                                                         (cadr name)))
+                                                                      #f)
+                                                                  #f))])
+                                                ;; A library mapping that we have? 
+                                                (let-values ([(a3) (assoc lname library-table)])
+                                                  (if a3
+                                                      ;; Have it:
+                                                      (make-resolved-module-path (cdr a3))
+                                                      ;; Let default handler try:
+                                                      (orig name rel-to stx load?))))))))])])
+               (current-module-name-resolver embedded-resolver))))))
     
     ;; Write a module bundle that can be loaded with 'load' (do not embed it
     ;; into an executable). The bundle is written to the current output port.
-    (define (write-module-bundle verbose? modules literal-files literal-expression collects-dest
-                                 on-extension program-name compiler expand-namespace 
-                                 src-filter get-extra-imports)
+    (define (do-write-module-bundle verbose? modules literal-files literal-expressions collects-dest
+                                    on-extension program-name compiler expand-namespace 
+                                    src-filter get-extra-imports)
       (let* ([module-paths (map cadr modules)]
              [files (map
                      (lambda (mp)
@@ -633,9 +643,12 @@
                   collapsed-mps)
         ;; Drop elements of `codes' that just record copied libs:
         (set-box! codes (filter mod-code (unbox codes)))
+        ;; Bind `module' to get started:
+        (write (compile-using-kernel '(namespace-require '(only '#%kernel module))))
         ;; Install a module name resolver that redirects
         ;; to the embedded modules
         (write (make-module-name-resolver (filter mod-code (unbox codes))))
+        (write (compile-using-kernel '(namespace-require ''#%resolver)))
         ;; Write the extension table and copy module code:
         (let* ([l (reverse (unbox codes))]
                [extensions (filter (lambda (m) (extension? (mod-code m))) l)]
@@ -649,41 +662,44 @@
                            [table-path (resolved-module-path-name table-sym)])
                       (assoc (normalize table-path) l)))])
           (unless (null? extensions)
-            ;; The extension table:
-            (write '(#%require '#%utils))
+            ;; The extension table:`
             (write 
-             `(let-values ([(eXtEnSiOn-modules) ;; this name is magic for the exe->distribution process
-                            (quote ,(map (lambda (m)
-                                           (let ([p (extension-path (mod-code m))])
-                                             (when verbose?
-                                               (fprintf (current-error-port) "Recording extension at ~s~n" p))
-                                             (list (path->bytes p)
-                                                   (mod-full-name m)
-                                                   ;; The program name isn't used. It just helps ensures that
-                                                   ;; there's plenty of room in the executable for patching
-                                                   ;; the path later when making a distribution.
-                                                   (path->bytes program-name))))
-                                         extensions))])
-                (for-each (lambda (pr)
-                            (current-module-declare-name (make-resolved-module-path (cadr pr)))
-                            (let-values ([(p) (bytes->path (car pr))])
-                              (load-extension (if (relative-path? p)
-                                                  (let-values ([(d) (current-directory)])
-                                                    (current-directory (find-system-path 'orig-dir))
-                                                    (begin0
-                                                     (let-values ([(p2) (find-executable-path (find-system-path 'exec-file) p #t)])
-                                                       (if p2
-                                                           p2
-                                                           (path->complete-path p (current-directory))))
-                                                     (current-directory d)))
-                                                  p))))
-                          eXtEnSiOn-modules))))
+             `(module #%extension-table '#%kernel
+                (#%require '#%utils)
+                (let-values ([(eXtEnSiOn-modules) ;; this name is magic for the exe->distribution process
+                              (quote ,(map (lambda (m)
+                                             (let ([p (extension-path (mod-code m))])
+                                               (when verbose?
+                                                 (fprintf (current-error-port) "Recording extension at ~s~n" p))
+                                               (list (path->bytes p)
+                                                     (mod-full-name m)
+                                                     ;; The program name isn't used. It just helps ensures that
+                                                     ;; there's plenty of room in the executable for patching
+                                                     ;; the path later when making a distribution.
+                                                     (path->bytes program-name))))
+                                           extensions))])
+                  (for-each (lambda (pr)
+                              (current-module-declare-name (make-resolved-module-path (cadr pr)))
+                              (let-values ([(p) (bytes->path (car pr))])
+                                (load-extension (if (relative-path? p)
+                                                    (let-values ([(d) (current-directory)])
+                                                      (current-directory (find-system-path 'orig-dir))
+                                                      (begin0
+                                                       (let-values ([(p2) (find-executable-path (find-system-path 'exec-file) p #t)])
+                                                         (if p2
+                                                             p2
+                                                             (path->complete-path p (current-directory))))
+                                                       (current-directory d)))
+                                                    p))))
+                            eXtEnSiOn-modules))))
+            (write (compile-using-kernel '(namespace-require ''#%extension-table))))
           ;; Runtime-path table:
           (unless (null? runtimes)
             (unless table-mod
               (error 'create-embedding-executable "cannot find module for runtime-path table"))
-            (write `(current-module-declare-name (make-resolved-module-path 
-                                                  ',(mod-full-name table-mod))))
+            (write (compile-using-kernel
+                    `(current-module-declare-name (make-resolved-module-path 
+                                                   ',(mod-full-name table-mod)))))
             (write `(module runtime-path-table '#%kernel
                       (#%provide table)
                       (define-values (table)
@@ -734,27 +750,48 @@
                          (eq? nc table-mod))
                (when verbose?
                  (fprintf (current-error-port) "Writing module from ~s~n" (mod-file nc)))
-               (write `(current-module-declare-name 
-                        (make-resolved-module-path
-                         ',(mod-full-name nc))))
+               (write (compile-using-kernel
+                       `(current-module-declare-name 
+                         (make-resolved-module-path
+                          ',(mod-full-name nc)))))
                (if (src-filter (mod-file nc))
                    (with-input-from-file (mod-file nc)
                      (lambda ()
                        (copy-port (current-input-port) (current-output-port))))
                    (write (mod-code nc)))))
            l))
-        (write '(current-module-declare-name #f))
+        (write (compile-using-kernel '(current-module-declare-name #f)))
+        ;; Remove `module' binding before we start running user code:
+        (write (compile-using-kernel '(namespace-set-variable-value! 'module #f #t)))
+        (write (compile-using-kernel '(namespace-undefine-variable! 'module)))
         (newline)
         (for-each (lambda (f)
                     (when verbose?
                       (fprintf (current-error-port) "Copying from ~s~n" f))
-                    (call-with-input-file*
-                        f
+                    (call-with-input-file* f
                       (lambda (i)
                         (copy-port i (current-output-port)))))
                   literal-files)
-        (when literal-expression
-          (write literal-expression))))
+        (for-each write literal-expressions)))
+
+    (define (write-module-bundle #:verbose? [verbose? #f]
+                                 #:modules [modules null]
+                                 #:literal-files [literal-files null]
+                                 #:literal-expressions [literal-expressions null]
+                                 #:on-extension [on-extension #f]
+                                 #:expand-namespace [expand-namespace (current-namespace)]
+                                 #:compiler [compiler (lambda (expr)
+                                                        (parameterize ([current-namespace expand-namespace])
+                                                          (compile expr)))]
+                                 #:src-filter [src-filter (lambda (filename) #f)]
+                                 #:get-extra-imports [get-extra-imports (lambda (filename code) null)])
+      (do-write-module-bundle verbose? modules literal-files literal-expressions
+                              #f ; collects-dest
+                              on-extension
+                              "?" ; program-name 
+                              compiler expand-namespace 
+                              src-filter get-extra-imports))
+
     
     ;; The old interface:
     (define make-embedding-executable
@@ -783,6 +820,10 @@
                                          #:modules [modules null]
                                          #:literal-files [literal-files null]
                                          #:literal-expression [literal-expression #f]
+                                         #:literal-expressions [literal-expressions
+                                                                (if literal-expression
+                                                                    (list literal-expression)
+                                                                    null)]
                                          #:cmdline [cmdline null]
                                          #:aux [aux null]
                                          #:launcher? [launcher? #f]
@@ -890,13 +931,13 @@
                           (update-dll-dir dest (build-path orig-dir dir))))))))
             (let ([write-module
                    (lambda ()
-                     (write-module-bundle verbose? modules literal-files literal-expression collects-dest
-                                          on-extension
-                                          (file-name-from-path dest)
-                                          compiler
-                                          expand-namespace
-                                          src-filter
-                                          get-extra-imports))])
+                     (do-write-module-bundle verbose? modules literal-files literal-expressions collects-dest
+                                             on-extension
+                                             (file-name-from-path dest)
+                                             compiler
+                                             expand-namespace
+                                             src-filter
+                                             get-extra-imports))])
               (let-values ([(start end)
                             (if (and (eq? (system-type) 'macosx)
                                      (not unix-starter?))

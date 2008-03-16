@@ -1372,7 +1372,7 @@ MRFW = PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd
 MRFWRES = PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources/PLT_MrEd.rsrc
 
 ../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@: $(MRFWRES) $(MRFW) mrmain.@LTO@
-	$(MREDLINKER) -o ../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@ mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MrEd -framework Carbon -framework Cocoa
+	$(MREDLINKER) $(LDFLAGS) -o ../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@ mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MrEd -framework Carbon -framework Cocoa
 	mkdir -p "../PLT_MrEd.framework/Versions/$(FWVERSION)_3m"
 	cp "$(MRFW)" "../$(MRFW)"
 	rm -rf "../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources"
@@ -1380,7 +1380,7 @@ MRFWRES = PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources/PLT_MrEd.rsrc
 	/usr/bin/install_name_tool -change "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@"
 
 $(MRFW) : $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libmzscheme3m.@LIBSFX@ wx_font.o $(MRFWRES)
-	$(MREDLINKER) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libmzscheme3m.@LIBSFX@ $(@WXVARIANT@_LIBS) @X_EXTRA_LIBS@ wx_font.o
+	$(MREDLINKER) $(LDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libmzscheme3m.@LIBSFX@ $(@WXVARIANT@_LIBS) @X_EXTRA_LIBS@ wx_font.o
 
 $(MRFWRES): $(srcdir)/../../mac/osx_appl.ss $(srcdir)/../../mac/cw/MrEd.r
 	rm -rf PLT_MrEd.framework/Resources PLT_MrEd.framework/PLT_MrEd

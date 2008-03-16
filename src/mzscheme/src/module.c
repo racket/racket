@@ -642,17 +642,6 @@ int scheme_is_kernel_modname(Scheme_Object *modname)
   return SAME_OBJ(modname, kernel_modname);
 }
 
-void scheme_require_from_original_env(Scheme_Env *env, int syntax_only)
-{
-  Scheme_Object *rn, *mod_sym;
-
-  scheme_prepare_env_renames(env, mzMOD_RENAME_TOPLEVEL);
-  rn = scheme_get_module_rename_from_set(env->rename_set, scheme_make_integer(0), 1);
-  
-  mod_sym = scheme_intern_symbol("module");
-  scheme_extend_module_rename(rn, kernel_modidx, mod_sym, mod_sym, kernel_modidx, mod_sym, 0, NULL, NULL, 0);
-}
-
 Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env)
 {
   Scheme_Object *rn, *w;
@@ -3936,10 +3925,7 @@ Scheme_Object *scheme_builtin_value(const char *name)
   if (v)
     return v;
 
-  /* FIXME... */
-  /* Last resort: 'mzscheme */
-  a[0] = scheme_intern_symbol("mzscheme");
-  return _dynamic_require(2, a, initial_modules_env, 0, 0, 0, 0, 0, -1);
+  return NULL;
 }
 
 Scheme_Module *scheme_extract_compiled_module(Scheme_Object *o)

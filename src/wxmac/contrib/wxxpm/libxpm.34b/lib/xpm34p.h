@@ -40,6 +40,13 @@
 #ifndef XPMP_h
 #define XPMP_h
 
+/* We don't want all those "deprecated" messages: */
+#ifndef WX_KEEP_DEPRECATED_WARNINGS
+# include <AvailabilityMacros.h>
+# undef DEPRECATED_ATTRIBUTE
+# define DEPRECATED_ATTRIBUTE /**/
+#endif
+
 #include "xpm34.h"
 
 /*

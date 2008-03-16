@@ -3,7 +3,7 @@
           "common.ss"
           (for-label scheme/runtime-path))
 
-@title{Stand-Alone Executables from Scheme Code}
+@title[#:tag "exe"]{Stand-Alone Executables from Scheme Code}
 
 The command-line flag @DFlag{exe} directs @|mzc| to embed a
 module, from source or byte code, into a copy of the MzScheme

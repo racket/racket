@@ -11,9 +11,10 @@ and syntax.
 
 The @cpp{scheme_basic_env} function must be called once by an
 embedding program, before any other PLT Scheme function is called
-(except @cpp{scheme_make_param}). The returned namespace is the
-initial current namespace for the main Scheme thread. Scheme
-extensions cannot call @cpp{scheme_basic_env}.
+(except @cpp{scheme_make_param}), but @cpp{scheme_setup} automatically
+calls @cpp{scheme_basic_env}. The returned namespace is the initial
+current namespace for the main Scheme thread. Scheme extensions cannot
+call @cpp{scheme_basic_env}.
 
 The current thread's current namespace is available from
 @cppi{scheme_get_env}, given the current parameterization (see

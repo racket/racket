@@ -49,3 +49,18 @@ embedded:
  calls @cppi{scheme_console_output}.}
 
 }
+
+@function[(void scheme_set_collects_path
+           [Scheme_Object* path])]{
+
+Sets the path to be returned by @scheme[(find-system-path
+'collects-dir)].}
+
+
+@function[(void scheme_init_collection_paths
+           [Scheme_Env* env]
+           [Scheme_Object* extra_paths])]{
+
+Initializes the @scheme[current-library-collection-paths] parameter
+using @scheme[find-library-collection-paths]. The @var{extra_paths}
+argument is propagated to @scheme[find-library-collection-paths].}

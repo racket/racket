@@ -369,7 +369,6 @@ Scheme_Env *scheme_basic_env()
   make_init_env();
 
   env = scheme_make_empty_env();
-  scheme_require_from_original_env(env, 1); /* Need kernel syntax... */
 
   scheme_set_param(scheme_current_config(), MZCONFIG_ENV, 
 		   (Scheme_Object *)env); 

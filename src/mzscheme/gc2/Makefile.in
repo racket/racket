@@ -340,7 +340,7 @@ $(MZFWMMM): ../libmzscheme3m.@LIBSFX@
 	ln -s Versions/$(FWVERSION)_3m/PLT_MzScheme PLT_MzScheme.framework/PLT_MzScheme	
 
 ../mzscheme@MMM@@OSX@: $(MZFWMMM) main.@LTO@
-	@MZLINKER@ -o ../mzscheme@MMM@ @PROFFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MzScheme
+	@MZLINKER@ -o ../mzscheme@MMM@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MzScheme
 	mkdir -p "../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m"
 	cp "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme"
 	/usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "../mzscheme@MMM@"

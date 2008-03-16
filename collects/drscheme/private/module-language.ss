@@ -213,9 +213,11 @@
                             #f ;; verbose?
                             (list (list #f program-filename))
                             null
-                            null
-                            (list "-nqe-"
-                                  (format "~s" `(#%require ',(string->symbol (path->string short-program-name)))))))))
+                            (parameterize ([current-namespace (make-namespace 'empty)])
+                              (namespace-require 'mzscheme)
+                              (compile 
+                               `(namespace-require '',(string->symbol (path->string short-program-name)))))
+                            null))))
                       (let ([make-launcher (if gui? make-mred-launcher make-mzscheme-launcher)])
                         (make-launcher (list "-qt-" (path->string program-filename))
                                        executable-filename))))))))

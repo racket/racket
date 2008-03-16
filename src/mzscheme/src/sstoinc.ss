@@ -5,6 +5,8 @@
 
 (define DIGS-PER-LINE 20)
 
+(namespace-require ''#%kernel)
+
 (let loop ()
   (let ([expr (read)])
     (unless (eof-object? expr)

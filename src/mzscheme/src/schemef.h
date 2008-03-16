@@ -264,6 +264,7 @@ MZ_EXTERN Scheme_Object *scheme_eval_string_all(const char *str, Scheme_Env *env
 MZ_EXTERN Scheme_Object *scheme_eval_string_with_prompt(const char *str, Scheme_Env *env);
 MZ_EXTERN Scheme_Object *scheme_eval_string_multi_with_prompt(const char *str, Scheme_Env *env);
 MZ_EXTERN Scheme_Object *scheme_eval_string_all_with_prompt(const char *str, Scheme_Env *env, int all);
+MZ_EXTERN Scheme_Object *scheme_eval_module_string(const char *str, Scheme_Env *env);
 
 MZ_EXTERN Scheme_Object *_scheme_apply_known_prim_closure(Scheme_Object *rator, int argc,
 							  Scheme_Object **argv);

@@ -88,11 +88,17 @@
   (define (capture-output thunk)
     (if (file-exists? "tmp-catch-out")
         (delete-file "tmp-catch-out"))
-    (with-output-to-file "tmp-catch-out"
-      thunk)
-    (call-with-input-file "tmp-catch-out"
-      (lambda (p)
-        (get-string-n p 1024))))
+    (dynamic-wind
+        (lambda () 'nothing)
+        (lambda ()
+          (with-output-to-file "tmp-catch-out"
+            thunk)
+          (call-with-input-file "tmp-catch-out"
+            (lambda (p)
+              (get-string-n p 1024))))
+        (lambda ()
+          (if (file-exists? "tmp-catch-out")
+              (delete-file "tmp-catch-out")))))
   
   (define (check-test expr got expected)
     (set! checked (+ 1 checked))

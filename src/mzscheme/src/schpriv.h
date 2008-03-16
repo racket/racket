@@ -478,8 +478,6 @@ scheme_get_primitive_global(Scheme_Object *var, Scheme_Env *env,
 void scheme_add_bucket_to_table(Scheme_Bucket_Table *table, Scheme_Bucket *b);
 Scheme_Bucket *scheme_bucket_or_null_from_table(Scheme_Bucket_Table *table, const char *key, int add);
 
-void scheme_require_from_original_env(Scheme_Env *env, int syntax_only);
-
 /*========================================================================*/
 /*                              structs                                   */
 /*========================================================================*/

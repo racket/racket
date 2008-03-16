@@ -40,7 +40,12 @@ The core PLT Scheme run-time system is available in two main variants:
 @section[#:tag "init-actions"]{Initialization}
 
 On startup, the top-level environment contains no bindings---not even
-for function application.
+for function application. Primitive modules with names that start with
+@schemeidfont{#%} are defined, but they are not meant for direct use,
+and the set of such modules can change.  For example, the
+@indexed-scheme['#%kernel] module is eventually used to bootstrap the
+implemetation of @schememodname[scheme/base], and
+@scheme['#%mred-kernel] is used for @schememodname[scheme/gui/base].
 
 The first action of MzScheme or MrEd is to initialize
 @scheme[current-library-collection-paths] to the result of
@@ -97,7 +102,7 @@ the exit status is @scheme[0] or determined by a call to
 
 @; ----------------------------------------------------------------------
 
-@section{Command Line}
+@section["mz-cmdline"]{Command Line}
 
 The MzScheme and MrEd executables recognize the following command-line
 flags:
@@ -142,8 +147,8 @@ flags:
 
   @item{@FlagFirst{k} @nonterm{n} @nonterm{m} : Loads code embedded in
         the executable from file position @nonterm{n} to
-        @nonterm{m}. This option normally embedded in a stand-alone
-        binary that embeds Scheme code.}
+        @nonterm{m}. This option is normally embedded in a stand-alone
+        binary that also embeds Scheme code.}
 
   @item{@FlagFirst{m} or @DFlagFirst{main} : Evaluates a call to
         @scheme[main] in the top-level environment. All of the

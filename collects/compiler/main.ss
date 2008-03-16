@@ -49,6 +49,8 @@
 
   (define exe-dir-output (make-parameter #f))
 
+  (define mods-output (make-parameter #f))
+
   (define module-mode (make-parameter #f))
 
   (define default-plt-name "archive")
@@ -112,6 +114,10 @@
 	 ,(lambda (f name) (exe-dir-output name) 'exe-dir)
 	 ((,(format "Combine executables with support files in <dir>") "")
           "dir")]
+	[("--c-mods")
+	 ,(lambda (f name) (mods-output name) 'c-mods)
+	 ((,(format "Write C-embeddable module bytecode to <file>") "")
+	  "file")]
 	[("--collection-plt")
 	 ,(lambda (f name) (plt-output name) 'plt-collect)
 	 (,(format "Create .plt <archive> containing collections")
@@ -287,7 +293,7 @@
 	 ,(lambda (f l) (exe-embedded-libraries
                          (append (exe-embedded-libraries)
                                  (list l))))
-	 ("Embed <lib> from <collect> in --[gui-]exe executable" "lib")]
+	 ("Embed <lib> in --[gui-]exe executable" "lib")]
 	[("++collects-copy")
 	 ,(lambda (f d) (exe-dir-add-collects-dirs
 			 (append (exe-dir-add-collects-dirs)
@@ -384,14 +390,14 @@
 	[("--debug")
 	 ,(lambda (f) (compiler:option:debug #t))
 	 ("Write debugging output to dump.txt")]])
-     (lambda (accum file . files)
+     (lambda (accum . files)
        (let ([mode (let ([l (filter symbol? accum)])
 		     (if (null? l)
 			 'make-zo
 			 (car l)))])
 	 (values 
 	  mode
-	  (cons file files)
+	  files
 	  (let ([prefixes (filter string? accum)])
 	    (unless (memq mode '(compile compile-c zo))
 	      (unless (null? prefixes)
@@ -411,7 +417,7 @@
 		   (require compiler/cffi)
 		   ,@(map (lambda (s) `(load ,s)) prefixes)
 		   (void)))))))
-     (list "file/directory/collection" "file/directory/sub-collection")))
+     (list "file/directory/collection")))
 
   (printf "mzc v~a [~a], Copyright (c) 2004-2008 PLT Scheme Inc.~n"
 	  (version)
@@ -544,15 +550,67 @@
 		   (map (lambda (l)
 			  `(#t (lib ,l)))
 			(exe-embedded-libraries)))
-	#:literal-expression `(#%require ',(string->symbol
-                                            (format
-                                             "#%mzc:~a"
-                                             (let-values ([(base name dir?) (split-path (car source-files))])
-                                               (path->bytes (path-replace-suffix name #""))))))
+	#:literal-expression (parameterize ([current-namespace (make-base-namespace)])
+                               (compile
+                                `(namespace-require 
+                                  '',(string->symbol
+                                      (format
+                                       "#%mzc:~a"
+                                       (let-values ([(base name dir?) (split-path (car source-files))])
+                                         (path->bytes (path-replace-suffix name #""))))))))
 	#:cmdline (exe-embedded-flags)
 	#:collects-path (exe-embedded-collects-path)
 	#:collects-dest (exe-embedded-collects-dest)
 	#:aux (exe-aux))
+       (printf " [output to \"~a\"]~n" dest))]
+    [(c-mods)
+     (let ([dest (mods-output)])
+       (let-values ([(in out) (make-pipe)])
+         (parameterize ([current-output-port out])
+           ((dynamic-require '(lib "embed.ss" "compiler")
+                             'write-module-bundle)
+            #:modules
+            (append
+             (map (lambda (l)
+                    `(#f (file ,l)))
+                  source-files)
+             (map (lambda (l)
+                    `(#t (lib ,l)))
+                  (exe-embedded-libraries)))))
+         (close-output-port out)
+         (let ([out (open-output-file 
+                     dest
+                     #:exists 'truncate/replace)])
+           (fprintf out "#ifdef MZ_XFORM\n")
+           (fprintf out "XFORM_START_SKIP;\n")
+           (fprintf out "#endif\n")
+           (fprintf out "static void declare_modules(Scheme_Env *env) {\n")
+           (fprintf out "  static unsigned char data[] = {")
+           (let loop ([pos 0])
+             (let ([b (read-byte in)])
+               (when (zero? (modulo pos 20))
+                 (fprintf out "\n    "))
+               (unless (eof-object? b)
+                 (fprintf out "~a," b)
+                 (loop (add1 pos)))))
+           (fprintf out "0\n  };\n")
+           (fprintf out "  Scheme_Object *eload = NULL, *a[3] = {NULL, NULL, NULL};\n")
+           (fprintf out "  MZ_GC_DECL_REG(4);\n")
+           (fprintf out "  MZ_GC_VAR_IN_REG(0, eload);\n")
+           (fprintf out "  MZ_GC_ARRAY_VAR_IN_REG(1, a, 3);\n")
+           (fprintf out "  MZ_GC_REG();\n")
+           (fprintf out "  eload = scheme_builtin_value(\"embedded-load\");\n")
+           (fprintf out "  a[0] = scheme_false;\n")
+           (fprintf out "  a[1] = scheme_false;\n")
+           (fprintf out "  a[2] = scheme_make_sized_byte_string((char *)data, ~a, 0);\n"
+                    (file-position in))
+           (fprintf out "  scheme_apply(eload, 3, a);\n")
+           (fprintf out "  MZ_GC_UNREG();\n")
+           (fprintf out "}\n")
+           (fprintf out "#ifdef MZ_XFORM\n")
+           (fprintf out "XFORM_END_SKIP;\n")
+           (fprintf out "#endif\n")
+           (close-output-port out)))
        (printf " [output to \"~a\"]~n" dest))]
     [(exe-dir)
      ((dynamic-require 'compiler/distribute 

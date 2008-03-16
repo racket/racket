@@ -85,12 +85,11 @@ times).
 
 With conservative collection, no registration is needed for the global
 or static variables of an embedding program, unless it calls
-@cppi{scheme_set_stack_base} with a non-zero second argument. (Under
-Mac OS X or with 3m, @cpp{scheme_set_stack_base} must be called
-always.) In that case, global and static variables containing
-collectable pointers must be registered with
-@cppi{scheme_register_static}. The @cppi{MZ_REGISTER_STATIC} macro
-takes any variable name and registers it with
+@cpp{scheme_setup} or @cppi{scheme_set_stack_base} with a non-zero
+first or second (respectively) argument. In that case, global and
+static variables containing collectable pointers must be registered
+with @cppi{scheme_register_static}. The @cppi{MZ_REGISTER_STATIC}
+macro takes any variable name and registers it with
 @cppi{scheme_register_static}. The @cppi{scheme_register_static}
 function can be safely called even when it's not needed, but it must
 not be called multiple times for a single memory address.
@@ -141,7 +140,7 @@ Pointers are registered in three different ways:
 
 A pointer must never refer to the interior of an allocated object
 (when a garbage collection is possible), unless the object was
-allocated with {@cppi{scheme_malloc_allow_interior}}. For this reason,
+allocated with @cppi{scheme_malloc_allow_interior}. For this reason,
 pointer arithmetic must usually be avoided, unless the variable
 holding the generated pointer is @cpp{NULL}ed before a collection.
 
@@ -313,7 +312,8 @@ can be supplied as well:
 
 In general, the only constraint on the second argument to
 @cppi{MZ_GC_VAR_IN_REG} or @cppi{MZ_GC_ARRAY_VAR_IN_REG} is that
-@cpp{&} must produce the relevant address.
+@cpp{&} must produce the relevant address, and that address must be on
+the stack.
 
 Pointer information is not actually registered with the collector
 until the @cppi{MZ_GC_REG} macro is used. The @cppi{MZ_GC_UNREG} macro
@@ -685,6 +685,32 @@ Registers an extension's global variable that can contain Scheme
  collector would otherwise treat as atomic. A garbage collection can
  occur during the registration.}
 
+
+@function[(int scheme_setup
+           [int no_auto_statics]
+           [Scheme_Main main]
+           [int argc]
+           [char** argv])]{
+
+Initializes the GC stack base, creates the initial namespace by
+calling @cpp{scheme_basic_env}, and then calls @var{main} with the
+namespace, @var{argc}, and @var{argv}. (The @var{argc} and @var{argv}
+are just passed on to @var{main}, and are not inspected in any way.)
+
+The @cpp{Scheme_Main} type is defined as follows:
+
+@verbatim[#:indent 4]{
+typedef int (*Scheme_Main)(Scheme_Env *env, 
+                           int argc, char **argv);
+}
+
+The result of @var{main} is the result of @cpp{scheme_setup}.
+
+If @var{no_auto_statics} is non-zero, then static variables must be
+explicitly registered with the garbage collector; see
+@secref["im:memoryalloc"] for more information.}
+
+
 @function[(void scheme_set_stack_base
            [void* stack_addr]
            [int no_auto_statics])]{
@@ -697,7 +723,8 @@ Overrides the GC's auto-determined stack base, and/or disables the
  should be called only once, and before any other @cpp{scheme_}
  function is called. It never triggers a garbage collection.
 
-The following example shows a typical use for setting the stack base:
+The following example shows a typical use for setting the stack base
+for CGC:
 
 @verbatim[#:indent 4]{
     int main(int argc, char **argv) {
@@ -705,7 +732,14 @@ The following example shows a typical use for setting the stack base:
        scheme_set_stack_base(&dummy, 0);
        real_main(argc, argv); /* calls scheme_basic_env(), etc. */
     }
-}}
+}
+
+Under 3m, the above code does not quite work, because @var{stack_addr}
+must be the beginning or end of a local-frame registration. Worse, in
+CGC or 3m, if @cpp{real_main} is declared @cpp{static}, the compiler
+may inline it and place variables containing collectable values deeper
+in the stack than @cpp{dummy}. To avoid these problems, use
+@cpp{scheme_setup}, instead.}
 
 @function[(void scheme_set_stack_bounds
            [void* stack_addr]

@@ -51,7 +51,12 @@ parameter is true.
                                                 null]
                                [#:literal-expression literal-sexp
                                                      any/c
-                                                     null]
+                                                     #f]
+                               [#:literal-expressions literal-sexps
+                                                      list?
+                                                      (if literal-sexp
+                                                          (list literal-sexp)
+                                                          null)]
                                [#:cmdline cmdline (listof string?)
                                                   null]
                                [#:mred? mred? any/c #f]
@@ -99,17 +104,20 @@ namespace except as specified in @scheme[mod-list], other modules
 generated prefix, so that they are not directly accessible.
 
 The @scheme[#:modules] argument @scheme[mod-list] designates modules
-to be embedded, as described below. The @scheme[literal-files] and
-@scheme[literal-sexp] arguments specify literal code to be copied into
-the executable: the content of each file in @scheme[literal-files]
-is copied in order (with no intervening space), followed by
-@scheme[literal-sexp]. The @scheme[literal-files] files or
-@scheme[literal-sexp] can contain compiled bytecode, and it's possible
-that the content of the @scheme[literal-files] files only parse
-when concatenated; the files and expression are not compiled or
-inspected in any way during the embedding process. If
+to be embedded, as described below. The @scheme[#:literal-files] and
+@scheme[#:literal-expressions] arguments specify literal code to be
+copied into the executable: the content of each file in
+@scheme[literal-files] is copied in order (with no intervening space),
+followed by each element of @scheme[literal-sexps]. The
+@scheme[literal-files] files or @scheme[literal-sexps] list can
+contain compiled bytecode, and it's possible that the content of the
+@scheme[literal-files] files only parse when concatenated; the files
+and expression are not compiled or inspected in any way during the
+embedding process. Beware that the initial namespace contains no
+bindings; use compiled expressions to bootstrap the namespace. If
 @scheme[literal-sexp] is @scheme[#f], no literal expression is
-included in the executable.
+included in the executable. The @scheme[#:literal-expression]
+(singular) argument is for backward compatibility.
 
 The @scheme[#:cmdline] argument @scheme[cmdline] contains command-line
 strings that are prefixed onto any actual command-line arguments that
@@ -130,14 +138,14 @@ embeds the module @scheme[m] from the file @filepath{m.ss}, without
 prefixing the name of the module; the @scheme[literal-sexpr] argument
 to go with the above might be @scheme['(require m)].
 
-All modules are compiled before they are embedded into the target
-executable; see also @scheme[compile-proc] below. When a module
-declares run-time paths via @scheme[define-runtime-path], the
-generated executable records the path (for use both by immediate
-execution and for creating a distribution that contains the
-executable).
+Modules are normally compiled before they are embedded into the target
+executable; see also @scheme[#:compiler] and @scheme[#:src-filter]
+below. When a module declares run-time paths via
+@scheme[define-runtime-path], the generated executable records the
+path (for use both by immediate execution and for creating a
+distribution that contains the executable).
 
-The optional @scheme[aux] argument is an association list for
+The optional @scheme[#:aux] argument is an association list for
 platform-specific options (i.e., it is a list of pairs where the first
 element of the pair is a key symbol and the second element is the
 value for that key). The currently supported keys are as follows:
