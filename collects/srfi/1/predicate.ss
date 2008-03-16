@@ -33,9 +33,7 @@
 ;;     -Olin
 
 
-#lang mzscheme
-
-(require srfi/optional)
+#lang scheme/base
 
 (provide pair?
          null?

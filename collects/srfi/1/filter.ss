@@ -32,18 +32,13 @@
 ;; hold me liable for its use. Please send bug reports to shivers@ai.mit.edu.
 ;;     -Olin
 
-#lang mzscheme
+#lang scheme/base
 
-(require mzlib/etc
-         srfi/optional
-         "predicate.ss")
+(require srfi/optional "predicate.ss")
 
-(provide filter
-         partition
-         remove
-         (rename filter filter!)
-         (rename partition partition!)
-         (rename remove remove!))
+(provide (rename-out [my-filter filter] [my-filter filter!])
+         partition (rename-out [partition partition!])
+         (rename-out [my-remove remove] [my-remove remove!]))
 
 ;; filter, remove, partition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -54,7 +49,7 @@
 ;; elements.  If Scheme had multi-continuation calls, they could be
 ;; made more efficient.
 
-(define (filter pred lis)               ; Sleazing with EQ? makes this
+(define (my-filter pred lis)            ; Sleazing with EQ? makes this
   (check-arg procedure? pred 'filter)   ; one faster.
   (let recur ((lis lis))
     (if (null-list? lis) lis            ; Use NOT-PAIR? to handle dotted lists.
@@ -168,7 +163,7 @@
                   (else (lp l (cdr l)))))))))
 
 ;; Inline us, please.
-(define (remove  pred l) (filter  (lambda (x) (not (pred x))) l))
+(define (my-remove pred l) (filter (lambda (x) (not (pred x))) l))
 #;
 (define (remove! pred l) (filter! (lambda (x) (not (pred x))) l))
 

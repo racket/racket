@@ -32,15 +32,15 @@
 ;; hold me liable for its use. Please send bug reports to shivers@ai.mit.edu.
 ;;     -Olin
 
-#lang mzscheme
+#lang scheme/base
 
 (require srfi/optional
          "predicate.ss"
          "selector.ss"
          "util.ss")
 
-(provide (rename my-map map)
-         (rename my-for-each for-each)
+(provide (rename-out [my-map map])
+         (rename-out [my-for-each for-each])
          fold
          unfold
          pair-fold
@@ -50,8 +50,8 @@
          pair-fold-right
          reduce-right
          append-map
-         (rename append-map append-map!)
-         (rename my-map map!)
+         (rename-out [append-map append-map!])
+         (rename-out [my-map map!])
          pair-for-each
          filter-map
          map-in-order)
@@ -176,12 +176,10 @@
   (if (pair? lists)
     (let lp ((lists (cons lis1 lists)))
       (let ((tails (%cdrs lists)))
-        (if (pair? tails)
-          (begin (apply proc lists)
-                 (lp tails)))))
+        (when (pair? tails) (apply proc lists) (lp tails))))
     ;; Fast path.
     (let lp ((lis lis1))
-      (if (not (null-list? lis))
+      (unless (null-list? lis)
         (let ((tail (cdr lis))) ; Grab the cdr now,
           (proc lis)            ; in case PROC SET-CDR!s LIS.
           (lp tail))))))
@@ -250,15 +248,13 @@
   (if (pair? lists)
     (let recur ((lists (cons lis1 lists)))
       (let-values ([(cars cdrs) (%cars+cdrs lists)])
-        (if (pair? cars)
-          (begin
-            (apply f cars)   ; Do head first,
-            (recur cdrs))))) ; then tail.
+        (when (pair? cars)
+          (apply f cars)  ; Do head first,
+          (recur cdrs)))) ; then tail.
     ;; Fast path.
     (let recur ((lis lis1))
-      (if (not (null-list? lis))
-        (begin
-          (f (car lis))             ; Do head first,
-          (recur (cdr lis)))))))
+      (unless (null-list? lis)
+        (f (car lis))             ; Do head first,
+        (recur (cdr lis))))))
 
 ;;; fold.ss ends here

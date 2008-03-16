@@ -32,7 +32,7 @@
 ;; hold me liable for its use. Please send bug reports to shivers@ai.mit.edu.
 ;;     -Olin
 
-#lang mzscheme
+#lang scheme/base
 
 (require "predicate.ss"
          "selector.ss")
@@ -65,12 +65,12 @@
 ;; However, if any element of LISTS is empty, just abort and return '().
 (define (%cdrs lists)
   (let/ec abort
-   (let recur ((lists lists))
-     (if (pair? lists)
-       (let ((lis (car lists)))
-         (if (null-list? lis) (abort '())
-             (cons (cdr lis) (recur (cdr lists)))))
-       '()))))
+    (let recur ((lists lists))
+      (if (pair? lists)
+        (let ((lis (car lists)))
+          (if (null-list? lis) (abort '())
+              (cons (cdr lis) (recur (cdr lists)))))
+        '()))))
 
 (define (%cars+ lists last-elt) ; (append! (map car lists) (list last-elt))
   (let recur ((lists lists))
@@ -82,14 +82,14 @@
 
 (define (%cars+cdrs lists)
   (let/ec abort
-   (let recur ((lists lists))
-     (if (pair? lists)
-       (let-values ([(list other-lists) (car+cdr lists)])
-         (if (null-list? list) (abort '() '()) ; LIST is empty -- bail out
-             (let-values ([(a d) (car+cdr list)]
-                          [(cars cdrs) (recur other-lists)])
-               (values (cons a cars) (cons d cdrs)))))
-       (values '() '())))))
+    (let recur ((lists lists))
+      (if (pair? lists)
+        (let-values ([(list other-lists) (car+cdr lists)])
+          (if (null-list? list) (abort '() '()) ; LIST is empty -- bail out
+              (let-values ([(a d) (car+cdr list)]
+                           [(cars cdrs) (recur other-lists)])
+                (values (cons a cars) (cons d cdrs)))))
+        (values '() '())))))
 
 ;; Like %CARS+CDRS, but we pass in a final elt tacked onto the end of the
 ;; cars list. What a hack.

@@ -33,28 +33,19 @@
 ;; hold me liable for its use. Please send bug reports to shivers@ai.mit.edu.
 ;;     -Olin
 
-#lang mzscheme
+#lang scheme/base
 
-(require mzlib/etc
-         srfi/optional
-         "predicate.ss"
-         "filter.ss")
+(require srfi/optional "predicate.ss")
 
-(provide delete
-         (rename delete delete!)
-         delete-duplicates
-         (rename delete-duplicates delete-duplicates!))
+(provide delete (rename-out [delete delete!])
+         delete-duplicates (rename-out [delete-duplicates delete-duplicates!]))
 
-(define delete
-  (opt-lambda (x lis (maybe-= equal?))
-              (let ((= maybe-=))
-                (filter (lambda (y) (not (= x y))) lis))))
+(define (delete x lis [= equal?])
+  (filter (lambda (y) (not (= x y))) lis))
 
 #;
-(define delete!
-  (opt-lambda (x lis  (maybe-= equal?))
-              (let ((= maybe-=))
-                (filter! (lambda (y) (not (= x y))) lis))))
+(define delete! (x lis [= equal?])
+  (filter! (lambda (y) (not (= x y))) lis))
 
 ;; right-duplicate deletion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -65,27 +56,23 @@
 ;; linear-time algorithm to kill the dups. Or use an algorithm based on
 ;; element-marking. The former gives you O(n lg n), the latter is linear.
 
-(define delete-duplicates
-  (opt-lambda (lis (maybe-= equal?))
-    (let ((elt= maybe-=))
-      (check-arg procedure? elt= 'delete-duplicates)
-      (let recur ((lis lis))
-        (if (null-list? lis) lis
-            (let* ((x (car lis))
-                   (tail (cdr lis))
-                   (new-tail (recur (delete x tail elt=))))
-              (if (eq? tail new-tail) lis (cons x new-tail))))))))
+(define (delete-duplicates lis [elt= equal?])
+  (check-arg procedure? elt= 'delete-duplicates)
+  (let recur ((lis lis))
+    (if (null-list? lis) lis
+        (let* ((x (car lis))
+               (tail (cdr lis))
+               (new-tail (recur (delete x tail elt=))))
+          (if (eq? tail new-tail) lis (cons x new-tail))))))
 
 #;
-(define delete-duplicates!
-  (opt-lambda (lis (maybe-= equal?))
-    (let ((elt= maybe-=))
-      (check-arg procedure? elt= 'delete-duplicates!)
-      (let recur ((lis lis))
-        (if (null-list? lis) lis
-            (let* ((x (car lis))
-                   (tail (cdr lis))
-                   (new-tail (recur (delete! x tail elt=))))
-              (if (eq? tail new-tail) lis (cons x new-tail))))))))
+(define (delete-duplicates! lis [elt= equal?])
+  (check-arg procedure? elt= 'delete-duplicates!)
+  (let recur ((lis lis))
+    (if (null-list? lis) lis
+        (let* ((x (car lis))
+               (tail (cdr lis))
+               (new-tail (recur (delete! x tail elt=))))
+          (if (eq? tail new-tail) lis (cons x new-tail))))))
 
 ;;; delete.ss ends here

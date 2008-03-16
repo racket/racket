@@ -32,28 +32,24 @@
 ;; hold me liable for its use. Please send bug reports to shivers@ai.mit.edu.
 ;;     -Olin
 
-#lang mzscheme
+#lang scheme/base
 
 (require srfi/optional
-         (all-except "search.ss" member)
-         (all-except "fold.ss" map for-each)
-         (rename "search.ss" s:member member)
+         (rename-in "search.ss" [member s:member])
+         (except-in "fold.ss" map for-each)
          "delete.ss"
          "predicate.ss"
-         "filter.ss")
+         (except-in "filter.ss" remove filter))
 
 (provide lset<=
          lset=
          lset-adjoin
-         lset-union
-         (rename lset-union lset-union!)
+         lset-union (rename-out [lset-union lset-union!])
          lset-intersection
-         lset-difference
-         (rename lset-difference lset-difference!)
-         lset-xor
-         (rename lset-xor lset-xor!)
+         lset-difference (rename-out [lset-difference lset-difference!])
+         lset-xor (rename-out [lset-xor lset-xor!])
          lset-diff+intersection
-         (rename lset-diff+intersection lset-diff+intersection!))
+         (rename-out [lset-diff+intersection lset-diff+intersection!]))
 
 ;; Lists-as-sets
 ;;;;;;;;;;;;;;;;;

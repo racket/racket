@@ -32,28 +32,21 @@
 ;; hold me liable for its use. Please send bug reports to shivers@ai.mit.edu.
 ;;     -Olin
 
-#lang mzscheme
+#lang scheme/base
 
 (require srfi/optional
          "predicate.ss"
          "selector.ss"
          "util.ss"
-         (only "fold.ss" reduce-right)
-         (rename "fold.ss" srfi-1:map map))
+         (only-in "fold.ss" reduce-right)
+         (rename-in "fold.ss" [map s:map] [for-each s:for-each]))
 
 (provide length+
-         concatenate
-         (rename append append!)
-         (rename concatenate concatenate!)
-         (rename reverse reverse!)
-         append-reverse
-         (rename append-reverse append-reverse!)
-         zip
-         unzip1
-         unzip2
-         unzip3
-         unzip4
-         unzip5
+         concatenate (rename-out [concatenate concatenate!])
+         (rename-out [append append!])
+         (rename-out [reverse reverse!])
+         append-reverse (rename-out [append-reverse append-reverse!])
+         zip unzip1 unzip2 unzip3 unzip4 unzip5
          count)
 
 ;; count
@@ -86,7 +79,7 @@
           len))
       len)))
 
-(define (zip list1 . more-lists) (apply srfi-1:map list list1 more-lists))
+(define (zip list1 . more-lists) (apply s:map list list1 more-lists))
 
 ;; Unzippers -- 1 through 5
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

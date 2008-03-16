@@ -212,32 +212,26 @@
 ;; with an s: to avoid colliding with mzscheme.  The wrapper 1.ss
 ;; changes their names back to the non-prefixed form.
 
-#lang mzscheme
-
-(require srfi/optional)
+#lang scheme/base
 
 (require "cons.ss"
          "selector.ss"
          "predicate.ss"
          "misc.ss"
-         (all-except "fold.ss" map for-each)
-         (rename "fold.ss" s:map map)
-         (rename "fold.ss" s:for-each for-each)
-         (all-except "search.ss" member)
-         (rename "search.ss" s:member member)
-         "filter.ss"
+         (rename-in "fold.ss" [map s:map] [for-each s:for-each])
+         (rename-in "search.ss" [member s:member])
+         (rename-in "filter.ss" [filter s:filter] [remove s:remove])
          "delete.ss"
-         (all-except "alist.ss" assoc)
-         (rename "alist.ss" s:assoc assoc)
+         (rename-in "alist.ss" [assoc s:assoc])
          "lset.ss")
 
-(provide (all-from "cons.ss")
-         (all-from "selector.ss")
-         (all-from "predicate.ss")
-         (all-from "misc.ss")
-         (all-from "fold.ss")
-         (all-from "search.ss")
-         (all-from "filter.ss")
-         (all-from "delete.ss")
-         (all-from "alist.ss")
-         (all-from "lset.ss"))
+(provide (all-from-out "cons.ss")
+         (all-from-out "selector.ss")
+         (all-from-out "predicate.ss")
+         (all-from-out "misc.ss")
+         (all-from-out "fold.ss")
+         (all-from-out "search.ss")
+         (all-from-out "filter.ss")
+         (all-from-out "delete.ss")
+         (all-from-out "alist.ss")
+         (all-from-out "lset.ss"))

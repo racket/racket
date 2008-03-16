@@ -32,32 +32,26 @@
 ;; hold me liable for its use. Please send bug reports to shivers@ai.mit.edu.
 ;;     -Olin
 
-#lang mzscheme
+#lang scheme/base
 
-(require mzlib/etc
-         srfi/optional
+(require srfi/optional
          "predicate.ss"
          "util.ss")
 
-(provide (rename my-member member)
+(provide (rename-out [my-member member])
          find
          find-tail
          any
          every
          list-index
-         take-while
+         take-while (rename-out [take-while take-while!])
          drop-while
-         (rename take-while take-while!)
-         span
-         break
-         (rename span span!)
-         (rename break break!))
+         span (rename-out [span span!])
+         break (rename-out [break break!]))
 
 ;; Extended from R4RS to take an optional comparison argument.
-(define my-member
-  (opt-lambda (x lis  (maybe-= equal?))
-    (let ((= maybe-=))
-      (find-tail (lambda (y) (= x y)) lis))))
+(define [my-member x lis [= equal?]]
+  (find-tail (lambda (y) (= x y)) lis))
 
 ;; find find-tail take-while drop-while span break any every list-index
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

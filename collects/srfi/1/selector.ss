@@ -32,7 +32,7 @@
 ;; hold me liable for its use. Please send bug reports to shivers@ai.mit.edu.
 ;;     -Olin
 
-#lang mzscheme
+#lang scheme/base
 
 (require srfi/optional)
 
@@ -44,8 +44,8 @@
          car+cdr
          take drop
          take-right drop-right
-         (rename take take!) (rename drop-right drop-right!)
-         split-at (rename split-at split-at!)
+         (rename-out [take take!]) (rename-out [drop-right drop-right!])
+         split-at (rename-out [split-at split-at!])
          last
          last-pair)
 

@@ -32,11 +32,9 @@
 ;; hold me liable for its use. Please send bug reports to shivers@ai.mit.edu.
 ;;     -Olin
 
-#lang mzscheme
+#lang scheme/base
 
-(require mzlib/etc
-         srfi/optional
-         "selector.ss")
+(require srfi/optional "selector.ss")
 
 (provide xcons
          make-list
@@ -52,21 +50,16 @@
 
 ;; Make a list of length LEN.
 
-(define make-list
-  (opt-lambda (len  [elt #f])
-    (check-arg (lambda (n) (and (integer? n) (>= n 0))) len 'make-list)
-    (do ((i len (- i 1))
-         (ans '() (cons elt ans)))
-        ((<= i 0) ans))))
+(define (make-list len [elt #f])
+  (check-arg (lambda (n) (and (integer? n) (>= n 0))) len 'make-list)
+  (for/list ([i (in-range len)]) elt))
 
 ;; Make a list of length LEN. Elt i is (PROC i) for 0 <= i < LEN.
 
 (define (list-tabulate len proc)
   (check-arg (lambda (n) (and (integer? n) (>= n 0))) len 'list-tabulate)
   (check-arg procedure? proc 'list-tabulate)
-  (do ((i (- len 1) (- i 1))
-       (ans '() (cons (proc i) ans)))
-      ((< i 0) ans)))
+  (for/list ([i (in-range len)]) (proc i)))
 
 ;; (cons* a1 a2 ... an) = (cons a1 (cons a2 (cons ... an)))
 ;; (cons* a1) = a1; (cons* a1 a2 ...) = (cons a1 (cons* a2 ...))
@@ -96,15 +89,14 @@
 
 ;; IOTA count [start step]  (start start+step ... start+(count-1)*step)
 
-(define iota
-  (opt-lambda (count [start 0] [step 1])
-    (check-arg integer? count 'iota)
-    (check-arg number? start 'iota)
-    (check-arg number? step 'iota)
-    (unless (or (zero? count) (positive? count))
-      (error 'iota "count expected to be non-negative, got: ~a" count))
-    (let loop ([n 0])
-      (if (= n count) '()
-          (cons (+ start (* n step)) (loop (add1 n)))))))
+(define (iota count [start 0] [step 1])
+  (check-arg integer? count 'iota)
+  (check-arg number? start 'iota)
+  (check-arg number? step 'iota)
+  (unless (or (zero? count) (positive? count))
+    (error 'iota "count expected to be non-negative, got: ~a" count))
+  (let loop ([n 0])
+    (if (= n count) '()
+        (cons (+ start (* n step)) (loop (add1 n))))))
 
 ;;; cons.ss ends here
