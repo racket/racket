@@ -1,4 +1,5 @@
-#lang scheme/base
+(module module-reader scheme/base
+
 (provide (rename-out [provide-module-reader #%module-begin]
                      [wrap wrap-read-all]))
 
@@ -31,3 +32,5 @@
            [id 'doc])
       `(module ,name ,lib
          . ,body))))
+
+)
