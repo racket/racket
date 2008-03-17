@@ -60,17 +60,23 @@
 
   (define (relative-path-string? x) (and (path-string? x) (relative-path? x)))
 
+  (define main-collects-dir (find-collects-dir))
+
   (unless (make-user)
     (current-library-collection-paths
-     (filter (let ([main (find-collects-dir)]) (lambda (d) (equal? d main)))
-             (current-library-collection-paths))))
+     (if (member main-collects-dir (current-library-collection-paths))
+       (list main-collects-dir)
+       '())))
+
+  (current-library-collection-paths
+   (map simplify-path (current-library-collection-paths)))
 
   (setup-printf "Setup version is ~a [~a]" (version) (system-type 'gc))
   (setup-printf "Available variants:~a"
                 (apply string-append
                        (map (lambda (s) (format " ~a" s))
                             (available-mzscheme-variants))))
-  (setup-printf "Main collection path is ~a" (find-collects-dir))
+  (setup-printf "Main collection path is ~a" main-collects-dir)
   (setup-printf "Collection search path is~a"
                 (if (null? (current-library-collection-paths)) " empty!" ""))
   (for ([p (current-library-collection-paths)])
@@ -127,7 +133,7 @@
            (specific-collections)
            (map (lambda (x)
                   (unpack x
-                          (build-path (find-collects-dir) 'up)
+                          (build-path main-collects-dir 'up)
                           (lambda (s) (setup-printf "~a" s))
                           (current-target-directory-getter)
                           (force-unpacks)
@@ -571,7 +577,7 @@
                 (setup-printf "~aInstalling ~a"
                               (case part [(pre) "Pre-"] [(post) "Post-"] [else ""])
                               (cc-name cc))
-                (let ([dir (build-path (find-collects-dir) 'up)])
+                (let ([dir (build-path main-collects-dir 'up)])
                   (if (procedure-arity-includes? installer 2)
                     (installer dir (cc-path cc))
                     (installer dir))))))))))
