@@ -1606,6 +1606,42 @@
                'pos
                'neg)))
   
+  (test/pos-blame
+   '->d-underscore1
+   '((contract (->d ([b (box/c integer?)])
+                    ()
+                    [_ (let ([old (unbox b)])
+                         (and/c
+                          void?
+                          (λ (new)
+                            (printf "old ~a new ~a\n" old (unbox b))
+                            (= old (unbox b)))))])
+               (λ (b)
+                 (set-box! b (+ (unbox b) 1)))
+               'pos
+               'neg)
+     (box 1)))
+  
+  (test/spec-passed/result
+   '->d-underscore2
+   '(let ([x '()])
+      ((contract (->d () () [_ (begin (set! x (cons 'ctc x)) any/c)])
+                 (λ () (set! x (cons 'body x)))
+                 'pos
+                 'neg))
+      x)
+   '(body ctc))
+  
+  (test/spec-passed/result
+   '->d-underscore3
+   '(let ([x '()])
+      ((contract (->d () () [res (begin (set! x (cons 'ctc x)) any/c)])
+                 (λ () (set! x (cons 'body x)))
+                 'pos
+                 'neg))
+      x)
+   '(ctc body))
+  
 ;                                               
 ;                                               
 ;                                               
@@ -5515,6 +5551,46 @@ so that propagation occurs.
       (eval '(require 'provide/contract27c))
       (eval 'provide/contract27ans))
    "me")
+  
+  #;
+  (test/spec-passed/result
+   'provide/contract28
+   '(begin
+      (eval '(module provide/contract28-m1 scheme/base
+               (require scheme/contract)
+               (define-struct repair () #:transparent)
+               (provide/contract [struct repair ()])))
+      (eval '(module provide/contract28-m2 scheme/base
+               (require 'provide/contract28-m1 scheme/contract)
+               (provide/contract [struct repair ()])))
+      (eval '(module provide/contract28-m3 scheme/base
+               (require 'provide/contract28-m2)
+               (provide provide/contract28-res)
+               (define provide/contract28-res (repair? (make-repair)))))
+      (eval '(require 'provide/contract28-m3))
+      (eval 'provide/contract28-res))
+   #t)
+  
+  #;
+  (test/spec-passed/result
+   'provide/contract29
+   '(begin
+      (eval '(module provide/contract29-m1 scheme/base
+               (require scheme/contract)
+               (define-struct q (a b))
+               (define-struct (repair q) (c d) #:transparent)
+               (provide/contract [struct repair ([a integer?] [b integer?] [c integer?] [d integer?])])))
+      (eval '(module provide/contract29-m2 scheme/base
+               (require 'provide/contract29-m1 scheme/contract)
+               (provide/contract [struct repair ([a integer?] [b integer?] [c integer?] [d integer?])])))
+      (eval '(module provide/contract29-m3 scheme/base
+               (require 'provide/contract29-m2)
+               (provide provide/contract29-res)
+               (define provide/contract29-res (list (repair? (make-repair 1 2 3 4))
+                                                    (repair-c (make-repair 1 2 3 4))))))
+      (eval '(require 'provide/contract29-m3))
+      (eval 'provide/contract29-res))
+   (list #t 3))
 
   (contract-error-test
    #'(begin

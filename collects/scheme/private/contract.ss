@@ -494,18 +494,28 @@ improve method arity mismatch contract violation error messages?
                                                       (syntax-case x ()
                                                         [(a b) #'(slc #'b)]
                                                         [else #f]))
-                                                    (syntax->list #'(mutator-codes/mutator-new-names ...)))])
-                                  (syntax (begin
-                                            (provide (rename-out [id-rename struct-name]))
-                                            (define-syntax id-rename
-                                              (let ([slc (syntax-local-certifier)])
-                                                (list (slc #'-struct:struct-name)
-                                                      (slc #'constructor-new-name)
-                                                      (slc #'predicate-new-name)
-                                                      (list (slc #'rev-selector-new-names) ...
-                                                            (slc #'rev-selector-old-names) ...)
-                                                      (list mutator-id-info ...)
-                                                      super-id))))))]
+                                                    (syntax->list #'(mutator-codes/mutator-new-names ...)))]
+                                              [(exported-selector-ids ...) (reverse selector-ids)]
+                                              )
+                                  #`(begin
+                                      (provide (rename-out [id-rename struct-name]))
+                                      (define-syntax id-rename
+                                        (let ([slc (syntax-local-certifier)])
+                                          #;
+                                          (list (slc #'-struct:struct-name)
+                                                (slc #'#,constructor-id)
+                                                (slc #'#,predicate-id)
+                                                (list (slc #'exported-selector-ids) ...)
+                                                (list mutator-id-info ...)
+                                                super-id)
+                                          ;#;
+                                          (list (slc #'-struct:struct-name)
+                                                (slc #'constructor-new-name)
+                                                (slc #'predicate-new-name)
+                                                (list (slc #'rev-selector-new-names) ...
+                                                      (slc #'rev-selector-old-names) ...)
+                                                (list mutator-id-info ...)
+                                                super-id)))))]
                                [struct:struct-name struct:struct-name]
                                [-struct:struct-name -struct:struct-name]
                                [struct-name struct-name]

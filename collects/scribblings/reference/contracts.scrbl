@@ -417,6 +417,8 @@ symbols, and that return a symbol.
  [dependent-rest (code:line) (code:line #:rest id rest-expr)]
  [pre-cond (code:line) (code:line #:pre-cond boolean-expr)]
  [dep-range any
+            (code:line [_ range-expr] post-cond)
+            (code:line (values [_ range-expr] ...) post-cond)
             (code:line [id range-expr] post-cond)
             (code:line (values [id range-expr] ...) post-cond)]
  [post-cond (code:line) (code:line #:post-cond boolean-expr)]
@@ -445,6 +447,12 @@ Each of the @scheme[id]s on an argument (including the rest
 argument) is visible in all of the sub-expressions of
 @scheme[->d]. Each of the @scheme[id]s on a result is
 visible in the subexpressions of the @scheme[dep-range].
+
+If the identifier position of the range contract is
+@scheme[_] (an underscore), then the range contract
+expressions are evaluated when the function is called (and
+the underscore is not bound in the range). Otherwise the
+range expressions are evaluated when the function returns.
 }
 
 @defform*/subs[#:literals (any values ->)

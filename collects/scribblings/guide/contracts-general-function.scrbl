@@ -3,6 +3,7 @@
           scribble/eval
           "guide-utils.ss"
           "contracts-utils.ss"
+	  (for-label framework/framework)
           (for-label scheme/contract) 
           (for-label scheme/gui))
 
@@ -394,6 +395,61 @@ message (contract name) is a string that refers to this
 balance. The resulting contract checks whether an account
 has a balance that is larger or smaller, depending on the
 given comparison operator, than the original balance.
+
+@ctc-section[#:tag "arrow-d-eval-order"]{Ensuring that a function properly modifies state}
+
+The @scheme[->d] contract combinator can also ensure that a
+function only modifies state according to certain
+constraints. For example, consider this contract
+(it is a slightly simplified from the function
+@scheme[preferences:add-panel] in the framework):
+@schemeblock[
+(->d ([parent (is-a?/c area-container-window<%>)])
+      ()
+      [_
+       (let ([old-children (send parent get-children)])
+         (λ (child)
+           (andmap eq?
+                   (append old-children (list child))
+                   (send parent get-children))))])
+]
+It says that the function accepts a single argument, named
+@scheme[parent], and that @scheme[parent] must be
+an object matching the interface @scheme[area-container-window<%>].
+
+The range contract ensures that the function only modifies
+the children of @scheme[parent] by adding a new child to the
+front of the list. It accomplishes this by using the
+@scheme[_] instead of a normal identifier, which tells the
+contract library that the range contract does not depend on
+the values of any of the results, and thus the contract
+library evaluates the expression following the @scheme[_]
+when the function is called, instead of when it
+returns. Therefore the call to the @scheme[get-children] method
+happens before the function under the contract is called.
+When the function under contract returns, its result is
+passed in as @scheme[child], and the contract ensures that
+the children after the function return are the same as the
+children before the function called, but with one more
+child, at the front of the list.
+
+To see the difference in a toy example that focuses
+on this point, consider this program
+@schememod[
+scheme
+(define x '())
+(define (get-x) x)
+(define (f) (set! x (cons 'f x)))
+(provide/contract 
+ [f (->d () () [_ (begin (set! x (cons 'ctc x)) any/c)])]
+ [get-x (-> (listof symbol?))])
+]
+If you were to require this module, call @scheme[f], then
+the result of @scheme[get-x] would be @scheme['(f ctc)]. In
+contrast, if the contract for @scheme[f] were
+@schemeblock[(->d () () [res (begin (set! x (cons 'ctc x)) any/c)])]
+(only changing the underscore to @scheme[res]), then
+the result of @scheme[get-x] would be @scheme['(ctc f)].
 
 @ctc-section[#:tag "case-lambda"]{Contracts for @scheme[case-lambda]}
 

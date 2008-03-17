@@ -2,19 +2,9 @@
 
 #|
 
-v4 done:
-
-- added mandatory keywords to ->
-- rewrote ->* using new notation
-- rewrote ->d using new notation
-- rewrote case->
-- rewrote object-contract
-
 v4 todo:
 
 - add case-> to object-contract
-
-- improve the generation of wrappers to avoid 'apply' and to make keywords work.
 
 - test object-contract with keywords (both optional and mandatory)
 
@@ -776,35 +766,60 @@ v4 todo:
                               [[id ctc] #'((id) (ctc))]
                               [x (raise-syntax-error #f "expected binding pair or any" stx #'x)])]
                            [mtd? (syntax-parameter-value #'making-a-method)])
-               (let ([dup (check-duplicate-identifier (syntax->list #'(dom-params ... rng-params ...)))])
-                 (when dup
-                   (raise-syntax-error #f "duplicate identifier" stx dup)))
-               #`(syntax-parameterize 
-                  ((making-a-method #f)) 
-                  (build-->d mtd? 
-                             (list (λ (dom-params ...) mandatory-doms) ...)
-                             (list (λ (dom-params ...) optional-doms) ...)
-                             (list (λ (dom-params ...) mandatory-kwd-dom) ...)
-                             (list (λ (dom-params ...) optional-kwd-dom) ...)
-                             #,(if id/rest 
-                                   (with-syntax ([(id rst-ctc) id/rest])
-                                     #`(λ (dom-params ...) rst-ctc))
-                                   #f)
-                             #,(if pre-cond
-                                   #`(λ (dom-params ...) #,pre-cond)
-                                   #f)
-                             #,(syntax-case #'rng-ctcs ()
-                                 [#f #f]
-                                 [(ctc ...) #'(list (λ (rng-params ... dom-params ...) ctc) ...)])
-                             #,(if post-cond
-                                   #`(λ (rng-params ... dom-params ...) #,post-cond)
-                                   #f)
-                             '(mandatory-kwd ...)
-                             '(optional-kwd ...)
-                             (λ (f) 
-                               #,(add-name-prop
-                                  (syntax-local-infer-name stx)
-                                  #`(λ args (apply f args)))))))))))]))
+               (let ([rng-underscores? 
+                      (let ([is-underscore?
+                             (λ (x) 
+                               (syntax-case x (_)
+                                 [_ #t]
+                                 [else #f]))])
+                        (cond
+                          [(andmap is-underscore? (syntax->list #'(rng-params ...)))
+                           #t]
+                          [(ormap (λ (x) (and (is-underscore? x) x))
+                                  (syntax->list #'(rng-params ...)))
+                           =>
+                           (λ (id)
+                             (raise-syntax-error '->d 
+                                                 "expected all of the identifiers to be underscores, or none of them to be"
+                                                 stx
+                                                 id))]
+                          [else #f]))])
+                 (let ([dup (check-duplicate-identifier 
+                             (append (if rng-underscores? 
+                                         '()
+                                         (syntax->list #'(rng-params ...)))
+                                     (syntax->list #'(dom-params ...))))])
+                   (when dup
+                     (raise-syntax-error #f "duplicate identifier" stx dup)))
+                 #`(syntax-parameterize 
+                    ((making-a-method #f)) 
+                    (build-->d mtd? 
+                               (list (λ (dom-params ...) mandatory-doms) ...)
+                               (list (λ (dom-params ...) optional-doms) ...)
+                               (list (λ (dom-params ...) mandatory-kwd-dom) ...)
+                               (list (λ (dom-params ...) optional-kwd-dom) ...)
+                               #,(if id/rest 
+                                     (with-syntax ([(id rst-ctc) id/rest])
+                                       #`(λ (dom-params ...) rst-ctc))
+                                     #f)
+                               #,(if pre-cond
+                                     #`(λ (dom-params ...) #,pre-cond)
+                                     #f)
+                               #,(syntax-case #'rng-ctcs ()
+                                   [#f #f]
+                                   [(ctc ...) 
+                                    (if rng-underscores?
+                                        #'(box (list (λ (dom-params ...) ctc) ...))
+                                        #'(list (λ (rng-params ... dom-params ...) ctc) ...))])
+                               #,(if post-cond
+                                     #`(λ (rng-params ... dom-params ...) #,post-cond)
+                                     #f)
+                               '(mandatory-kwd ...)
+                               '(optional-kwd ...)
+                               (λ (f) 
+                                 #,(add-name-prop
+                                    (syntax-local-infer-name stx)
+                                    #`(λ args (apply f args))))))))))))]))
 
 (define (->d-proj ->d-stct)
   (let ([non-kwd-ctc-count (+ (length (->d-mandatory-dom-ctcs ->d-stct))
@@ -879,12 +894,28 @@ v4 todo:
                                       (error 'shouldnt\ happen))]
                                  [else (cons (invoke-dep-ctc (car non-kwd-ctcs) dep-pre-args (car args) neg-blame pos-blame src-info orig-str)
                                              (loop (cdr args)
-                                                   (cdr non-kwd-ctcs)))])))))])
-                   (if (->d-range ->d-stct)
+                                                   (cdr non-kwd-ctcs)))])))))]
+                        [rng (let ([rng (->d-range ->d-stct)])
+                               (cond
+                                 [(not rng) #f]
+                                 [(box? rng) 
+                                  (map (λ (val)
+                                         (keyword-apply
+                                          val
+                                          kwd-args
+                                          kwd-arg-vals
+                                          (append 
+                                           ;; this parameter (if necc.)
+                                           (if (->d-mtd? ->d-stct) (list (car raw-orig-args)) '())
+                                           orig-args)))
+                                       (unbox rng))]
+                                 [else rng]))]
+                        [rng-underscore? (box? (->d-range ->d-stct))])
+                   (if rng
                        (call-with-values
                         thnk
                         (λ orig-results
-                          (let* ([range-count (length (->d-range ->d-stct))]
+                          (let* ([range-count (length rng)]
                                  [post-args (append orig-results raw-orig-args)]
                                  [post-non-kwd-arg-count (+ non-kwd-ctc-count range-count)]
                                  [dep-post-args (build-dep-ctc-args post-non-kwd-arg-count
@@ -909,21 +940,26 @@ v4 todo:
                             (apply
                              values
                              (let loop ([results orig-results]
-                                        [result-contracts (->d-range ->d-stct)])
+                                        [result-contracts rng])
                                (cond
                                  [(null? result-contracts) '()]
                                  [else
-                                  (cons (invoke-dep-ctc (car result-contracts) dep-post-args (car results) pos-blame neg-blame src-info orig-str)
-                                        (loop (cdr results) (cdr result-contracts)))]))))))
+                                  (cons
+                                   (invoke-dep-ctc (car result-contracts)
+                                                   (if rng-underscore? #f dep-post-args)
+                                                   (car results) pos-blame neg-blame src-info orig-str)
+                                   (loop (cdr results) (cdr result-contracts)))]))))))
                        (thnk))))])
         (make-keyword-procedure kwd-proc
                                 ((->d-name-wrapper ->d-stct)
                                  (λ args
                                    (apply kwd-proc '() '() args)))))))))
 
-;; invoke-dep-ctc : (...? -> ctc) (listof tst) val pos-blame neg-blame src-info orig-src -> tst
+;; invoke-dep-ctc : (...? -> ctc) (or/c #f (listof tst)) val pos-blame neg-blame src-info orig-src -> tst
 (define (invoke-dep-ctc dep-ctc dep-args val pos-blame neg-blame src-info orig-str)
-  (let ([ctc (coerce-contract '->d (apply dep-ctc dep-args))]) 
+  (let ([ctc (coerce-contract '->d (if dep-args
+                                       (apply dep-ctc dep-args)
+                                       dep-ctc))])
     ((((proj-get ctc) ctc) pos-blame neg-blame src-info orig-str) val)))
 
 ;; build-dep-ctc-args : number (listof any) boolean (listof keyword) (listof keyword) (listof any)
@@ -976,14 +1012,20 @@ v4 todo:
               optional-kwds
               name-wrapper)))
 
+;; in the struct type descriptions "d???" refers to the arguments (domain) of the function that
+;; is under the contract, and "dr???" refers to the arguments & the results of the function that 
+;; is under the contract.
+;; the `box' in the range only serves to differentiate between range contracts that depend on
+;; both the domain and the range from those that depend only on the domain (and thus, those
+;; that can be applied early)
 (define-struct/prop ->d (mtd?                ;; boolean; indicates if this is a contract on a method, for error reporing purposes.
-                         mandatory-dom-ctcs  ;; (listof (-> ??? ctc))
-                         optional-dom-ctcs   ;; (listof (-> ??? ctc))
-                         keyword-ctcs        ;; (listof (-> ??? ctc))
-                         rest-ctc            ;; (or/c false/c (-> ??? ctc))
-                         pre-cond            ;; (-> ??? boolean)
-                         range               ;; (or/c false/c (-> ??? ctc))
-                         post-cond           ;; (-> ??? boolean)
+                         mandatory-dom-ctcs  ;; (listof (-> d??? ctc))
+                         optional-dom-ctcs   ;; (listof (-> d??? ctc))
+                         keyword-ctcs        ;; (listof (-> d??? ctc))
+                         rest-ctc            ;; (or/c false/c (-> d??? ctc))
+                         pre-cond            ;; (-> d??? boolean)
+                         range               ;; (or/c false/c (listof (-> dr??? ctc)) (box (listof (-> r??? ctc))))
+                         post-cond           ;; (-> dr??? boolean)
                          keywords            ;; (listof keywords) -- sorted by keyword<
                          mandatory-keywords  ;; (listof keywords) -- sorted by keyword<
                          optional-keywords   ;; (listof keywords) -- sorted by keyword<
@@ -1019,6 +1061,14 @@ v4 todo:
                         ,(let ([range (->d-range ctc)])
                            (cond
                              [(not range) 'any]
+                             [(box? range)
+                              (let ([range (unbox range)])
+                                (cond
+                                  [(and (not (null? range))
+                                        (null? (cdr range)))
+                                   `[_ ...]]
+                                  [else
+                                   `(values ,@(map (λ (x) `(_ ...)) range))]))]
                              [(and (not (null? range))
                                   (null? (cdr range)))
                               `[,(next-id) ...]]
