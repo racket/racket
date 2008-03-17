@@ -1168,26 +1168,26 @@ information} and source-location information attached to
 
 @guideintro["module-syntax"]{@scheme[module]}
 
-@defform[(module id require-spec form ...)]{
+@defform[(module id module-path form ...)]{
 
 Declares a module named by combining @scheme[(#,(scheme quote) id)]
 with @scheme[(current-module-name-prefix)] if the latter is not
 @scheme[#f], or named @scheme[(#,(scheme quote) id)] otherwise.
 
-The @scheme[require-spec] must be as for @scheme[require], and it
+The @scheme[module-path] must be as for @scheme[require], and it
 supplies the initial bindings for the body @scheme[form]s. That is, it
-is treated like a @scheme[(require require-spec)] prefix on
-@scheme[form], where @scheme[require] is the preimitive
+is treated like a @scheme[(require module-path)] prefix on
+@scheme[form], where @scheme[require] is the primitive
 @scheme[require] form.
 
 If a single @scheme[form] is provided, then it is partially expanded
 in a @tech{module-begin context}. If the expansion leads to
-@scheme[#%plain-module-begin], then the body of the @scheme[#%plain-module-begin]
-is the body of the module. If partial expansion leads to any other
-primitive form, then the form is wrapped with
-@schemeidfont{#%module-begin} using the lexical context of the module
-body; this identifier must be bound by the initial
-@scheme[require-spec] import, and its expansion must produce a
+@scheme[#%plain-module-begin], then the body of the
+@scheme[#%plain-module-begin] is the body of the module. If partial
+expansion leads to any other primitive form, then the form is wrapped
+with @schemeidfont{#%module-begin} using the lexical context of the
+module body; this identifier must be bound by the initial
+@scheme[module-path] import, and its expansion must produce a
 @scheme[#%plain-module-begin] to supply the module body. Finally, if
 multiple @scheme[form]s are provided, they are wrapped with
 @schemeidfont{#%module-begin}, as in the case where a single

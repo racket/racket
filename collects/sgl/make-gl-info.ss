@@ -150,7 +150,7 @@ end-string
            (compile
             (case (effective-system-type home)
               ((macosx windows no-gl)
-               '(module gl-info mzscheme
+               `(,#'module gl-info mzscheme
                   (provide (all-defined))
                   (define gl-byte-size 1)
                   (define gl-ubyte-size 1)
@@ -171,7 +171,7 @@ end-string
                           (parameterize ([dynext:link-variant variant])
                             (build-helper compile-directory home variant)))
                         (available-mzscheme-variants))
-              `(module gl-info mzscheme
+              `(,#'module gl-info mzscheme
                  (provide (all-defined))
                  ,@(map 
                     (lambda (x)

@@ -234,9 +234,9 @@ static char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash
                                     Scheme_Env *genv,
                                     int reprovide_kernel,
                                     Scheme_Object *form);
-static void start_module(Scheme_Module *m, Scheme_Env *env, int restart, Scheme_Object *syntax_idx, int delay_exptime, int with_tt, Scheme_Object *cycle_list);
-static int expstart_module(Scheme_Module *m, Scheme_Env *env, int restart, Scheme_Object *syntax_idx, int delay_exptime, int with_tt, Scheme_Object *cycle_list);
-static void finish_expstart_module(Scheme_Env *menv, int check_req, int with_tt, Scheme_Object *cycle_list);
+static void start_module(Scheme_Module *m, Scheme_Env *env, int restart, Scheme_Object *syntax_idx, 
+                         int eval_exp, int eval_run, Scheme_Object *cycle_list);
+static void finish_expstart_module(Scheme_Env *menv);
 static void finish_expstart_module_in_namespace(Scheme_Env *menv, Scheme_Env *env);
 static void eval_module_body(Scheme_Env *menv);
 
@@ -1019,9 +1019,9 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
   }
 
   if (SCHEME_VOIDP(name))
-    expstart_module(m, env, 0, modidx, 0, 0, scheme_null);
+    start_module(m, env, 0, modidx, 1, 0, scheme_null);
   else
-    start_module(m, env, 0, modidx, 1, 1, scheme_null);
+    start_module(m, env, 0, modidx, 0, 1, scheme_null);
 
   if (SCHEME_SYMBOLP(name)) {
     Scheme_Bucket *b;
@@ -3040,7 +3040,7 @@ void scheme_module_force_lazy(Scheme_Env *env, int previous)
       Scheme_Env *menv = (Scheme_Env *)mht->vals[mi];
 
       if (menv->lazy_syntax)
-	finish_expstart_module(menv, 1, 0, scheme_null);
+	finish_expstart_module_in_namespace(menv, NULL);
       if (!menv->et_ran)
         scheme_run_module_exptime(menv, 1);
     }
@@ -3049,24 +3049,28 @@ void scheme_module_force_lazy(Scheme_Env *env, int previous)
 
 #if 0
 static int indent = 0;
-static void show(const char *what, Scheme_Env *menv, int v)
+static void show(const char *what, Scheme_Env *menv, int v1, int v2)
 {
   if (1 || SCHEME_SYMBOLP(SCHEME_PTR_VAL(menv->module->modname)))
     if (1 || SCHEME_SYM_VAL(SCHEME_PTR_VAL(menv->module->modname))[0] != '#') {
       int i;
       for (i = 0; i < indent; i++) {
-        printf(" ");
+        fprintf(stderr, " ");
       }
-      printf("%s \t%s @%ld [%d] %p\n", 
-             what, scheme_write_to_string(menv->module->modname, NULL), 
-             menv->phase, v, menv->modchain);
+      fprintf(stderr, "%s \t%s @%ld [%d/%d] %p\n", 
+              what, scheme_write_to_string(menv->module->modname, NULL), 
+              menv->phase, v1, v2, menv->modchain);
       indent++;
     }
 }
-static void show_done() { --indent; }
+static void show_done(const char *what, Scheme_Env *menv, int v1, int v2){
+  --indent;
+  show(what, menv, v1, v2);
+  --indent;
+}
 #else
-# define show(w, m, v) /* nothing */
-# define show_done() /* nothing */
+# define show(w, m, v1, v2) /* nothing */
+# define show_done(w, m, v1, v2) /* nothing */
 #endif
 
 static void compute_require_names(Scheme_Env *menv, Scheme_Object *phase, 
@@ -3136,75 +3140,72 @@ static void compute_require_names(Scheme_Env *menv, Scheme_Object *phase,
   }
 }
 
-static void templstart_module(Scheme_Env *menv, Scheme_Env *env, 
-			      int delay_exptime, int with_tt, Scheme_Object *cycle_list)
+static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, int eval_run, 
+                               Scheme_Object *cycle_list, Scheme_Object *syntax_idx)
 {
   Scheme_Object *new_cycle_list, *midx, *l;
   Scheme_Module *im;
-  int state;
 
-  state = with_tt + 1;
-
-  if (menv->tt_running >= state)
+  if ((menv->did_eval_exp >= eval_exp + 1)
+      && (menv->did_eval_run >= eval_run + 1))
     return;
-  menv->tt_running = state;
 
-  show("tmpl", menv, with_tt);
+  if (menv->did_eval_exp < eval_exp + 1)
+    menv->did_eval_exp = eval_exp + 1;
+  if (menv->did_eval_run < eval_run + 1)
+    menv->did_eval_run = eval_run + 1;
 
   new_cycle_list = scheme_make_pair(menv->module->modname, cycle_list);
 
+  /* Load dt imports (but don't invoke) */
+  compute_require_names(menv, scheme_false, env, syntax_idx);
+  
   if (!SCHEME_NULLP(menv->module->tt_requires)) {
 
-    compute_require_names(menv, scheme_make_integer(-1), env, NULL);
+    compute_require_names(menv, scheme_make_integer(-1), env, syntax_idx);
 
     scheme_prepare_template_env(menv);
 
-    if (with_tt >= 2) {
-      for (l = menv->tt_require_names; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-        midx = SCHEME_CAR(l);
+    for (l = menv->tt_require_names; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+      midx = SCHEME_CAR(l);
     
-        im = module_load(scheme_module_resolve(midx, 1), env, NULL);
+      im = module_load(scheme_module_resolve(midx, 1), env, NULL);
 
-        if ((with_tt > 2) && (!delay_exptime || (with_tt == 3)))
-          start_module(im, 
-                       menv->template_env, 0, 
-                       midx,
-                       delay_exptime, with_tt - 2,
-                       new_cycle_list);
-        else
-          expstart_module(im, 
-                          menv->template_env, 0, 
-                          midx,
-                          delay_exptime, with_tt - 2,
-                          new_cycle_list);
-      }
+      start_module(im, 
+                   menv->template_env, 0, 
+                   midx,
+                   eval_exp, eval_run,
+                   new_cycle_list);
     }
   }
+
+  compute_require_names(menv, scheme_make_integer(0), env, syntax_idx);
 
   for (l = menv->require_names; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
     midx = SCHEME_CAR(l);
 
     im = module_load(scheme_module_resolve(midx, 1), env, NULL);
 
-    expstart_module(im, env, 0, midx, delay_exptime, with_tt, new_cycle_list);
+    start_module(im, env, 0, midx, eval_exp, eval_run, new_cycle_list);
   }
 
+  scheme_prepare_exp_env(menv);
+  menv->exp_env->link_midx = menv->link_midx;
+    
   if (!SCHEME_NULLP(menv->module->et_requires)) {
-    scheme_prepare_exp_env(menv);
-    menv->exp_env->link_midx = menv->link_midx;
-    compute_require_names(menv, scheme_make_integer(1), NULL, NULL);
+    compute_require_names(menv, scheme_make_integer(1), env, syntax_idx);
     
     for (l = menv->et_require_names; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
       midx = SCHEME_CAR(l);
       
       im = module_load(scheme_module_resolve(midx, 1), env, NULL);
       
-      expstart_module(im, menv->exp_env, 0, midx, delay_exptime, with_tt+2, new_cycle_list);
+      start_module(im, menv->exp_env, 0, midx, eval_exp, eval_run, new_cycle_list);
     }
   }
 
   if (menv->module->other_requires) {
-    int i, rel_phase;
+    int i;
     Scheme_Object *phase, *n;
     Scheme_Env *menv2;
     for (i = 0; i < menv->module->other_requires->size; i++) {
@@ -3212,15 +3213,13 @@ static void templstart_module(Scheme_Env *menv, Scheme_Env *env,
         phase = menv->module->other_requires->keys[i];
 
         if (scheme_is_negative(phase)) {
-          compute_require_names(menv, phase, env, NULL);
+          compute_require_names(menv, phase, env, syntax_idx);
 
           n = phase;
           menv2 = menv;
-          rel_phase = 0;
           while (scheme_is_negative(n)) {
             scheme_prepare_template_env(menv2);
             menv2 = menv2->template_env;
-            rel_phase += 2;
             n = scheme_bin_plus(n, scheme_make_integer(1));
           }
 
@@ -3231,30 +3230,21 @@ static void templstart_module(Scheme_Env *menv, Scheme_Env *env,
 
             im = module_load(scheme_module_resolve(midx, 1), env, NULL);
 
-            if ((with_tt > rel_phase) && (!delay_exptime || (with_tt == (rel_phase + 1))))
-              start_module(im, 
-                           menv2, 0, 
-                           midx,
-                           delay_exptime, with_tt - rel_phase,
-                           new_cycle_list);
-            else
-              expstart_module(im, 
-                              menv2, 0, 
-                              midx,
-                              delay_exptime, with_tt - rel_phase,
-                              new_cycle_list);
+            start_module(im, 
+                         menv2, 0, 
+                         midx,
+                         eval_exp, eval_run,
+                         new_cycle_list);
           }
         } else {
-          compute_require_names(menv, phase, NULL, NULL);
+          compute_require_names(menv, phase, env, syntax_idx);
 
           n = phase;
           menv2 = menv;
-          rel_phase = 2;
           while (scheme_is_positive(n)) {
             scheme_prepare_exp_env(menv2);
             menv2->exp_env->link_midx = menv2->link_midx;
             menv2 = menv2->exp_env;
-            rel_phase += 2;
             n = scheme_bin_minus(n, scheme_make_integer(1));
           }
 
@@ -3265,45 +3255,22 @@ static void templstart_module(Scheme_Env *menv, Scheme_Env *env,
             
             im = module_load(scheme_module_resolve(midx, 1), env, NULL);
             
-            expstart_module(im, menv2, 0, midx, delay_exptime, with_tt+rel_phase, new_cycle_list);
+            start_module(im, menv2, 0, midx, eval_exp, eval_run, new_cycle_list);
           }
         }
       }
     }
   }
-
-  show_done();
 }
 
-static int expstart_module(Scheme_Module *m, Scheme_Env *env, int restart, 
-                           Scheme_Object *syntax_idx, int delay_exptime, 
-                           int with_tt,
-                           Scheme_Object *cycle_list)
+static Scheme_Env *instantiate_module(Scheme_Module *m, Scheme_Env *env, int restart, Scheme_Object *syntax_idx)
 {
   Scheme_Env *menv;
-  Scheme_Object *l, *midx, *np, *new_cycle_list;
-  Scheme_Module *im;
-  int delayed_requires = 0;
-
-  if (SAME_OBJ(m, kernel))
-    return 0;
-
-  for (l = cycle_list; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-    if (SAME_OBJ(m->modname, SCHEME_CAR(l))) {
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "module: import cycle detected at: %D",
-		       m->modname);
-    }
-  }
 
   if (!restart) {
     menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(env->modchain), m->modname);
-    if (menv && menv->et_running) {
-      /* show("chck", menv, with_tt); */
-      if (!delay_exptime && menv->lazy_syntax)
-	finish_expstart_module(menv, 1, with_tt, cycle_list);
-      templstart_module(menv, env, delay_exptime, with_tt, cycle_list);
-      return menv->lazy_syntax;
+    if (menv) {
+      return menv;
     }
   }
 
@@ -3317,7 +3284,7 @@ static int expstart_module(Scheme_Module *m, Scheme_Env *env, int restart,
     menv->et_require_names = scheme_null;
     menv->tt_require_names = scheme_null;
     menv->dt_require_names = scheme_null;
-    return 0;
+    return menv;
   }
 
   menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(env->modchain), m->modname);
@@ -3372,161 +3339,51 @@ static int expstart_module(Scheme_Module *m, Scheme_Env *env, int restart,
     }
   }
 
-  show("exps", menv, with_tt);
+  return menv;
+}
 
-  new_cycle_list = scheme_make_pair(m->modname, cycle_list);
-
-  np = scheme_null;
-
-  for (l = m->requires; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-    if (syntax_idx)
-      midx = scheme_modidx_shift(SCHEME_CAR(l), m->me->src_modidx, syntax_idx);
-    else
-      midx = scheme_modidx_shift(SCHEME_CAR(l), m->me->src_modidx, m->self_modidx);
-
-    np = cons(midx, np);
-
-    im = module_load(scheme_module_resolve(midx, 1), env, NULL);
-
-    if (expstart_module(im, 
-                        env, 0, 
-                        midx,
-                        delay_exptime,
-                        with_tt,
-                        new_cycle_list))
-      delayed_requires = 1;
+static int expstart_module(Scheme_Env *menv, Scheme_Env *env, int restart, 
+                           int eval_exp, int eval_run)
+{
+  if (!restart) {
+    if (menv && menv->et_running) {
+      /* show("chck", menv, with_tt); */
+      if (eval_exp && menv->lazy_syntax)
+	finish_expstart_module(menv);
+      return menv->lazy_syntax;
+    }
   }
 
-  menv->require_names = np;
+  if (menv->module->primitive) {
+    return 0;
+  }
+
+  show("exps", menv, eval_exp, eval_run);
+
   menv->et_running = 1;
   if (scheme_starting_up)
     menv->attached = 1; /* protect initial modules from redefinition, etc. */
 
-  np = scheme_null;
-  
-  /* Load dt imports (but don't invoke) */
-  compute_require_names(menv, scheme_false, env, syntax_idx);
+  if (!eval_exp)
+    menv->lazy_syntax = 1;
+  else
+    finish_expstart_module(menv);
 
-  if (m->prim_et_body || SCHEME_VEC_SIZE(m->et_body) || !SCHEME_NULLP(m->et_requires) || m->other_requires) {
-    if (delay_exptime) {
-      /* Set lazy-syntax flag. */
-      menv->lazy_syntax = 1;
-    } else
-      finish_expstart_module(menv, 0, with_tt, cycle_list);
-  } else {
-    menv->et_require_names = scheme_null;
-    if (delayed_requires)
-      menv->lazy_syntax = 1;
-  }
-
-  templstart_module(menv, env, delay_exptime, with_tt, cycle_list);
-
-  show_done();
+  show_done("exp!", menv, eval_exp, eval_run);
 
   return menv->lazy_syntax;
 }
 
-static void finish_expstart_module(Scheme_Env *menv, int check_req, int with_tt, Scheme_Object *cycle_list)
+static void finish_expstart_module(Scheme_Env *menv)
 {
-  Scheme_Object *l, *midx, *new_cycle_list;
-  Scheme_Env *exp_env;
-  Scheme_Module *im;
+  show("fins", menv, 1, 1);
 
-  show("fins", menv, with_tt);
-
-  /* Continue a delayed expstart: */
   menv->lazy_syntax = 0;
 
-  new_cycle_list = scheme_make_pair(menv->module->modname, cycle_list);
-
-  if (check_req) {
-    /* make sure exptimes of imports have been forced: */
-    for (l = menv->require_names; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-      midx = SCHEME_CAR(l);
-      expstart_module(module_load(scheme_module_resolve(midx, 1), menv, NULL), 
-                      menv, 0,
-                      midx,
-                      0,
-                      with_tt,
-                      new_cycle_list);
-    }
-  }
-
-  /* If a for-syntax require fails, start all over: */
-  menv->et_running = 0;
-
-  if (!SCHEME_NULLP(menv->module->et_requires)
-      || SCHEME_VEC_SIZE(menv->module->et_body)) {
-    scheme_prepare_exp_env(menv);
-    exp_env = menv->exp_env;
-
-    /* This line was here to help minimize garbage, I think, but
-       with the advent of `begin-for-syntax', we need to keep
-       a module's exp_env. */
-    /* menv->exp_env = NULL; */
-
-    exp_env->link_midx = menv->link_midx;
-
-    compute_require_names(menv, scheme_make_integer(1), NULL, NULL);
-
-    for (l = menv->et_require_names; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-      midx = SCHEME_CAR(l);
-
-      im = module_load(scheme_module_resolve(midx, 1), menv, NULL);
-
-      start_module(im, 
-                   exp_env, 0,
-                   midx,
-                   0, with_tt+2,
-                   new_cycle_list);
-    }
-
-    if (menv->module->other_requires) {
-      int i, rel_phase;
-      Scheme_Object *phase, *n;
-      Scheme_Env *menv2;
-      for (i = 0; i < menv->module->other_requires->size; i++) {
-        if (menv->module->other_requires->vals[i]) {
-          phase = menv->module->other_requires->keys[i];
-          
-          if (scheme_is_positive(phase)) {
-            compute_require_names(menv, phase, NULL, NULL);
-
-            n = phase;
-            menv2 = menv;
-            rel_phase = 2;
-            while (scheme_is_positive(n)) {
-              scheme_prepare_exp_env(menv2);
-              menv2->exp_env->link_midx = menv2->link_midx;
-              menv2 = menv2->exp_env;
-              rel_phase += 2;
-              n = scheme_bin_minus(n, scheme_make_integer(1));
-            }
-
-            l = scheme_hash_get(menv->other_require_names, phase);
-
-            for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-              midx = SCHEME_CAR(l);
-              
-              im = module_load(scheme_module_resolve(midx, 1), menv, NULL);
-              
-              start_module(im, 
-                           menv2, 0,
-                           midx,
-                           0, with_tt+rel_phase,
-                           new_cycle_list);
-            }
-          }
-        }
-      }
-    }
-  }
-
   menv->et_running = 1;
-  if (!menv->module->et_functional)
-    scheme_run_module_exptime(menv, 0);
+  scheme_run_module_exptime(menv, 0);
 
-  show_done();
+  show_done("fin!", menv, 1, 1);
 }
 
 void scheme_run_module_exptime(Scheme_Env *menv, int set_ns)
@@ -3555,6 +3412,8 @@ void scheme_run_module_exptime(Scheme_Env *menv, int set_ns)
 
   if (!exp_env)
     return;
+
+  show("rnes", menv, 1, 1);
 
   for_stx_globals = exp_env->toplevel;
 
@@ -3587,6 +3446,8 @@ void scheme_run_module_exptime(Scheme_Env *menv, int set_ns)
   if (set_ns) {
     scheme_pop_continuation_frame(&cframe);
   }
+
+  show_done("rne!", menv, 1, 1);
 }
 
 static void finish_expstart_module_in_namespace(Scheme_Env *menv, Scheme_Env *from_env)
@@ -3594,24 +3455,27 @@ static void finish_expstart_module_in_namespace(Scheme_Env *menv, Scheme_Env *fr
   Scheme_Cont_Frame_Data cframe;
   Scheme_Config *config;
   
-  config = scheme_extend_config(scheme_current_config(),
-				MZCONFIG_ENV,
-				(Scheme_Object *)from_env);
-  
-  scheme_push_continuation_frame(&cframe);
-  scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
-  
-  finish_expstart_module(menv, 1, 0, scheme_null);
-  
-  scheme_pop_continuation_frame(&cframe);
+  if (from_env) {
+    config = scheme_extend_config(scheme_current_config(),
+                                  MZCONFIG_ENV,
+                                  (Scheme_Object *)from_env);
+    
+    scheme_push_continuation_frame(&cframe);
+    scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
+  }
+
+  start_module(menv->module, menv, 0, NULL, 1, 0, scheme_null);
+
+  if (from_env)
+    scheme_pop_continuation_frame(&cframe);
 }
 
 static void start_module(Scheme_Module *m, Scheme_Env *env, int restart, 
-			 Scheme_Object *syntax_idx, int delay_expstart, int with_tt,
+			 Scheme_Object *syntax_idx, int eval_exp, int eval_run,
 			 Scheme_Object *cycle_list)
 {
   Scheme_Env *menv;
-  Scheme_Object *l, *midx, *new_cycle_list;
+  Scheme_Object *l, *new_cycle_list;
 
   if (SAME_OBJ(m, kernel))
     return;
@@ -3624,35 +3488,47 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
     }
   }
 
-  expstart_module(m, env, restart, syntax_idx, delay_expstart, with_tt, cycle_list);
+  new_cycle_list = scheme_make_pair(m->modname, cycle_list);
 
-  menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(env->modchain), m->modname);
+  menv = instantiate_module(m, env, restart, syntax_idx);
+
+  show("strt", menv, eval_exp, eval_run);
+
+  chain_start_module(menv, env, eval_exp, eval_run, cycle_list, syntax_idx);
+
+  if (!env->phase) {
+    if (!eval_run) {
+      expstart_module(menv, env, restart, eval_exp, eval_run);
+      show_done("nrn0", menv, eval_exp, eval_run);
+      return;
+    }
+  } else if (env->phase < 0) {
+    show_done("nrn-", menv, eval_exp, eval_run);
+    return;
+  } else {
+    if (!eval_exp) {
+      show_done("nrn+", menv, eval_exp, eval_run);
+      return;
+    }
+  }
+
+  expstart_module(menv, env, restart, eval_exp, eval_run);
 
   if (m->primitive) {
     menv->running = 1;
     menv->ran = 1;
+    show_done("nrnp", menv, eval_exp, eval_run);
     return;
   }
 
   if (restart)
     menv->running = 0;
 
-  if (menv->running > 0)
+  if (menv->running > 0) {
+    show_done("nrn!", menv, eval_exp, eval_run);
     return;
-  
-  show("strt", menv, with_tt);
-
-  new_cycle_list = scheme_make_pair(m->modname, cycle_list);
-
-  for (l = menv->require_names; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-    midx = SCHEME_CAR(l);
-    start_module(module_load(scheme_module_resolve(midx, 1), env, NULL), 
-		 env, 0, 
-		 midx,
-		 delay_expstart, with_tt,
-		 new_cycle_list);
   }
-
+  
   menv->running = 1;
 
   if (menv->module->prim_body) {
@@ -3666,7 +3542,7 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
     eval_module_body(menv);
   }
 
-  show_done();
+  show_done("ran!", menv, eval_exp, eval_run);
 }
 
 static void *eval_module_body_k(void)
@@ -4186,10 +4062,7 @@ module_execute(Scheme_Object *data)
 
   /* Replacing an already-running or already-syntaxing module? */
   if (old_menv) {
-    if (old_menv->running > 0)
-      start_module(m, env, 1, NULL, 1, 1, scheme_null);
-    else
-      expstart_module(m, env, 1, NULL, 1, 0, scheme_null);
+    start_module(m, env, 1, NULL, 0, (old_menv->running > 0) ? 1 : 0, scheme_null);
   }
 
   return scheme_void;
@@ -4791,7 +4664,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   /* load the module for the initial require */
   iim = module_load(_module_resolve(iidx, m->ii_src, 1), menv, NULL); 
-  expstart_module(iim, menv, 0, iidx, 0, 0, scheme_null);
+  start_module(iim, menv, 0, iidx, 1, 0, scheme_null);
 
   {
     Scheme_Object *ins;
@@ -8071,16 +7944,13 @@ void parse_requires(Scheme_Object *form,
     }
 
     if (!skip_one) {
-      int start, expstart;
+      int start = 1;
 
       if (SCHEME_FALSEP(mode)) {
         start = 0;
-        expstart = 0;
         env = main_env;
       } else if (scheme_is_positive(mode)) {
         Scheme_Object *n = mode;
-        start = 1;
-        expstart = 0;
         env = main_env;
         do {
           scheme_prepare_exp_env(env);
@@ -8089,8 +7959,6 @@ void parse_requires(Scheme_Object *form,
         } while (scheme_is_positive(n));
       } else if (scheme_is_negative(mode)) {
         Scheme_Object *n = mode;
-        start = 0;
-        expstart = 0;
         env = main_env;
         do {
           scheme_prepare_template_env(env);
@@ -8098,13 +7966,6 @@ void parse_requires(Scheme_Object *form,
           n = scheme_bin_plus(n, scheme_make_integer(1));
         } while (scheme_is_negative(n));
       } else {
-        if (always_run) {
-          start = 1;
-          expstart = 0;
-        } else {
-          start = 0;
-          expstart = 1;
-        }
         env = main_env;
       }
       
@@ -8116,11 +7977,8 @@ void parse_requires(Scheme_Object *form,
 
       m = module_load(name, env, NULL);
 
-      if (start) {
-        start_module(m, env, 0, idx, 0, 1, scheme_null);
-      } else if (expstart) {
-        expstart_module(m, env, 0, idx, 0, 0, scheme_null);
-      }
+      if (start)
+        start_module(m, env, 0, idx, 1, always_run ? 1 : 0, scheme_null);
 
       /* Add name to require list, if it's not there: */
       if (env->module) {
@@ -8399,9 +8257,9 @@ static Scheme_Object *write_module(Scheme_Object *obj)
     for (i = 0; i < m->other_requires->size; i++) {
       if (m->other_requires->vals[i]) {
         cnt++;
-        l = scheme_make_pair(scheme_make_pair(m->other_requires->keys[i],
-                                              m->other_requires->vals[i]),
-                             l);
+        l = scheme_make_pair(m->other_requires->keys[i],
+                             scheme_make_pair(m->other_requires->vals[i],
+                                              l));
       }
     }
   }

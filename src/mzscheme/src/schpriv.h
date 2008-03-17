@@ -2395,7 +2395,7 @@ struct Scheme_Env {
   Scheme_Object *link_midx;
   Scheme_Object *require_names, *et_require_names, *tt_require_names, *dt_require_names; /* resolved */
   Scheme_Hash_Table *other_require_names;
-  char running, et_running, tt_running, lazy_syntax, attached, ran, et_ran;
+  char running, et_running, did_eval_exp, did_eval_run, lazy_syntax, attached, ran, et_ran;
 
   Scheme_Bucket_Table *toplevel;
   Scheme_Object *modchain; /* Vector of:
