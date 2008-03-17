@@ -1170,15 +1170,15 @@ information} and source-location information attached to
 
 @defform[(module id module-path form ...)]{
 
-Declares a module named by combining @scheme[(#,(scheme quote) id)]
-with @scheme[(current-module-name-prefix)] if the latter is not
-@scheme[#f], or named @scheme[(#,(scheme quote) id)] otherwise.
+Declares a module. If the @scheme[current-module-declare-name]
+parameter is set, the parameter value is used for the module name,
+otherwise @scheme[(#,(scheme quote) id)] is the name of the declared
+module.
 
 The @scheme[module-path] must be as for @scheme[require], and it
 supplies the initial bindings for the body @scheme[form]s. That is, it
-is treated like a @scheme[(require module-path)] prefix on
-@scheme[form], where @scheme[require] is the primitive
-@scheme[require] form.
+is treated like a @scheme[(require module-path)] prefix before the
+@scheme[form]s.
 
 If a single @scheme[form] is provided, then it is partially expanded
 in a @tech{module-begin context}. If the expansion leads to
