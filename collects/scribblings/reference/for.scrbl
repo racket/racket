@@ -270,7 +270,9 @@ spliced into the iteration essentially as follows:
         (let-values ([(inner-id ...) inner-expr] ...)
           (if pre-guard
               (let _body-bindings
-                   (loop loop-arg ...))
+                   (if post-guard
+                       (loop loop-arg ...)
+                       _done-expr))
               _done-expr))
          _done-expr)))
 ]

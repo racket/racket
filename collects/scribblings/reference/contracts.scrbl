@@ -379,7 +379,7 @@ If @scheme[(values res-expr ...)] is used as the last sub-form of
 each values must match its respective contract.}
 
 
-@defform*/subs[#:literals (any)
+@defform*/subs[#:literals (any values)
           [(->* (mandatory-dom ...) (optional-dom ...) rest range)]
           ([mandatory-dom dom-expr (code:line keyword dom-expr)]
            [optional-dom dom-expr (code:line keyword dom-expr)]
