@@ -66,11 +66,12 @@
 ;;
 ;; (cons first (unfold not-pair? car cdr rest values))
 
-(define (cons* first . rest)
-  (let recur ((x first) (rest rest))
-    (if (pair? rest)
-      (cons x (recur (car rest) (cdr rest)))
-      x)))
+(define cons* list*) ; same in mzscheme
+;; (define (cons* first . rest)
+;;   (let recur ((x first) (rest rest))
+;;     (if (pair? rest)
+;;       (cons x (recur (car rest) (cdr rest)))
+;;       x)))
 
 (define (list-copy lis)
   (let recur ((lis lis))
