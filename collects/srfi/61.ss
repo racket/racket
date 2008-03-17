@@ -1,4 +1,2 @@
 ;; module loader for SRFI-61
-(module |61| mzscheme
-  (require srfi/61/cond)
-  (provide (rename srfi:cond cond)))
+#lang s-exp srfi/provider srfi/61/cond #:unprefix srfi:

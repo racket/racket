@@ -1,4 +1,2 @@
-(module |63| mzscheme
-  (require srfi/63/63)
-  (provide (all-from-except srfi/63/63 s:equal?)
-           (rename s:equal? equal?)))
+;; module loader for SRFI-1
+#lang s-exp srfi/provider srfi/63/63 #:unprefix s:

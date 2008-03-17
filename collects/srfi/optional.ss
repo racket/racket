@@ -45,29 +45,28 @@
 ;; macros. :-)
 ;;
 
-#lang mzscheme
-(provide :optional
-         let-optionals*
-         check-arg
-         )
+#lang scheme/base
+
+(require (for-syntax scheme/base))
+
+(provide :optional let-optionals* check-arg)
 
 ;; (function (check-arg predicate value caller))
 ;;
 ;;
 ;; Checks parameter values.
-(define check-arg
-  (lambda (pred val caller)
-    (if (not (pred val))
-      (let ([expected-string
-             (cond [(eq? pred number? ) "expected number, "]
-                   [(eq? pred integer?) "expected integer, "]
-                   [(eq? pred pair?) "expected pair, "]
-                   [(eq? pred procedure?) "expected procedure, "]
-                   [(eq? pred string?) "expected string, "]
-                   [(eq? pred vector?) "expected vector, "]
-                   [else ""])])
-        (error caller (string-append expected-string "given ~s") val))
-      val)))
+(define (check-arg pred val caller)
+  (if (not (pred val))
+    (let ([expected-string
+           (cond [(eq? pred number? ) "expected number, "]
+                 [(eq? pred integer?) "expected integer, "]
+                 [(eq? pred pair?) "expected pair, "]
+                 [(eq? pred procedure?) "expected procedure, "]
+                 [(eq? pred string?) "expected string, "]
+                 [(eq? pred vector?) "expected vector, "]
+                 [else ""])])
+      (error caller (string-append expected-string "given ~s") val))
+    val))
 
 
 

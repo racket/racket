@@ -1,3 +1,2 @@
-(module |32| mzscheme
-  (require (lib "srfi/32/sort.scm"))
-  (provide (all-from (lib "srfi/32/sort.scm"))))
+;; module loader for SRFI-32
+#lang s-exp srfi/provider "32/sort.scm"

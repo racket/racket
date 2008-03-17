@@ -1,3 +1,2 @@
-(module |87| mzscheme
-  (require srfi/87/case)
-  (provide (rename srfi:case case)))
+;; module loader for SRFI-87
+#lang s-exp srfi/provider srfi/87/case #:unprefix srfi:

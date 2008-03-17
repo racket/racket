@@ -1,3 +1,2 @@
-(module |74| mzscheme
-  (require srfi/74/74)
-  (provide (all-from srfi/74/74)))
+;; module loader for SRFI-13
+#lang s-exp srfi/provider srfi/74/74

@@ -1,2 +1,2 @@
-;; Supported by core PLT:
-(module |30| mzscheme)
+;; Supported by core PLT, nothing to provide:
+#lang scheme/base

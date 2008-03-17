@@ -39,7 +39,7 @@
          (except-in "fold.ss" map for-each)
          "delete.ss"
          "predicate.ss"
-         (except-in "filter.ss" remove filter))
+         (only-in "filter.ss" [filter-with-sharing s:filter] partition))
 
 (provide lset<=
          lset=

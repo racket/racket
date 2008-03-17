@@ -1,3 +1,2 @@
-(module |67| mzscheme
-  (require srfi/67/compare)
-  (provide (all-from srfi/67/compare)))
+;; module loader for SRFI-67
+#lang s-exp srfi/provider srfi/67/compare

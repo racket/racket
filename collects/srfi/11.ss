@@ -1,3 +1,3 @@
 ;; Supported by core PLT:
-(module |11| mzscheme
-  (provide let-values let*-values))
+#lang scheme/base
+(provide let-values let*-values)

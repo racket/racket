@@ -97,33 +97,33 @@
      (test-case
       "TAI-Date Conversions"
       (check tm:date= (time-tai->date (make-time time-tai 0 (+ 915148800 29)) 0)
-             (make-srfi:date 0 58 59 23 31 12 1998 0))
+             (srfi:make-date 0 58 59 23 31 12 1998 0))
       (check tm:date= (time-tai->date (make-time time-tai 0 (+ 915148800 30)) 0)
-             (make-srfi:date 0 59 59 23 31 12 1998 0))
+             (srfi:make-date 0 59 59 23 31 12 1998 0))
       (check tm:date= (time-tai->date (make-time time-tai 0 (+ 915148800 31)) 0)
-             (make-srfi:date 0 60 59 23 31 12 1998 0))
+             (srfi:make-date 0 60 59 23 31 12 1998 0))
       (check tm:date= (time-tai->date (make-time time-tai 0 (+ 915148800 32)) 0)
-             (make-srfi:date 0 0 0 0 1 1 1999 0)))
+             (srfi:make-date 0 0 0 0 1 1 1999 0)))
 
      (test-case 
       "Date-UTC Conversions"
       (check time=? (make-time time-utc 0 (- 915148800 2))
-             (date->time-utc (make-srfi:date 0 58 59 23 31 12 1998 0)))
+             (date->time-utc (srfi:make-date 0 58 59 23 31 12 1998 0)))
       (check time=? (make-time time-utc 0 (- 915148800 1))
-             (date->time-utc (make-srfi:date 0 59 59 23 31 12 1998 0)))
+             (date->time-utc (srfi:make-date 0 59 59 23 31 12 1998 0)))
       ;; yes, I think this is actually right.
       (check time=? (make-time time-utc 0 (- 915148800 0))
-             (date->time-utc (make-srfi:date 0 60 59 23 31 12 1998 0)))
+             (date->time-utc (srfi:make-date 0 60 59 23 31 12 1998 0)))
       (check time=? (make-time time-utc 0 (- 915148800 0))
-             (date->time-utc (make-srfi:date 0 0 0 0 1 1 1999 0)))
+             (date->time-utc (srfi:make-date 0 0 0 0 1 1 1999 0)))
       (check time=? (make-time time-utc 0 (+ 915148800 1))
-             (date->time-utc (make-srfi:date 0 1 0 0 1 1 1999 0))))
+             (date->time-utc (srfi:make-date 0 1 0 0 1 1 1999 0))))
 
      (test-case 
       "TZ Offset conversions"
       (let ((ct-utc (make-time time-utc 6320000 1045944859))
             (ct-tai (make-time time-tai 6320000 1045944891))
-            (cd (make-srfi:date 6320000 19 14 15 22 2 2003 -18000)))
+            (cd (srfi:make-date 6320000 19 14 15 22 2 2003 -18000)))
         (check time=? ct-utc (date->time-utc cd))
         (check time=? ct-tai (date->time-tai cd))))
 
@@ -132,7 +132,7 @@
      ;; to change the test case to match the implementation...
      (test-case
       "date->string conversions"
-      (check-equal? (date->string (make-srfi:date 1000 2 3 4 5 6 2007 (* 60 -120))
+      (check-equal? (date->string (srfi:make-date 1000 2 3 4 5 6 2007 (* 60 -120))
                                   "~~ @ ~a @ ~A @ ~b @ ~B @ ~c @ ~d @ ~D @ ~e @ ~f @ ~h @ ~H")
                     "~ @ Tue @ Tuesday @ Jun @ June @ Tue Jun 05 04:03:02-0200 2007 @ 05 @ 06/05/07 @  5 @ 02.000001 @ Jun @ 04"))
      
@@ -140,49 +140,49 @@
 
      (test-case
       "[DJG] date->string conversions of dates with nanosecond components"
-      (check-equal? (date->string (make-srfi:date 123456789 2 3 4 5 6 2007 0) "~N") "123456789")
-      (check-equal? (date->string (make-srfi:date 12345678  2 3 4 5 6 2007 0) "~N") "012345678")
-      (check-equal? (date->string (make-srfi:date 1234567   2 3 4 5 6 2007 0) "~N") "001234567")
-      (check-equal? (date->string (make-srfi:date 123456    2 3 4 5 6 2007 0) "~N") "000123456")
-      (check-equal? (date->string (make-srfi:date 12345     2 3 4 5 6 2007 0) "~N") "000012345")
-      (check-equal? (date->string (make-srfi:date 1234      2 3 4 5 6 2007 0) "~N") "000001234")
-      (check-equal? (date->string (make-srfi:date 123       2 3 4 5 6 2007 0) "~N") "000000123")
-      (check-equal? (date->string (make-srfi:date 12        2 3 4 5 6 2007 0) "~N") "000000012")
-      (check-equal? (date->string (make-srfi:date 1         2 3 4 5 6 2007 0) "~N") "000000001"))
+      (check-equal? (date->string (srfi:make-date 123456789 2 3 4 5 6 2007 0) "~N") "123456789")
+      (check-equal? (date->string (srfi:make-date 12345678  2 3 4 5 6 2007 0) "~N") "012345678")
+      (check-equal? (date->string (srfi:make-date 1234567   2 3 4 5 6 2007 0) "~N") "001234567")
+      (check-equal? (date->string (srfi:make-date 123456    2 3 4 5 6 2007 0) "~N") "000123456")
+      (check-equal? (date->string (srfi:make-date 12345     2 3 4 5 6 2007 0) "~N") "000012345")
+      (check-equal? (date->string (srfi:make-date 1234      2 3 4 5 6 2007 0) "~N") "000001234")
+      (check-equal? (date->string (srfi:make-date 123       2 3 4 5 6 2007 0) "~N") "000000123")
+      (check-equal? (date->string (srfi:make-date 12        2 3 4 5 6 2007 0) "~N") "000000012")
+      (check-equal? (date->string (srfi:make-date 1         2 3 4 5 6 2007 0) "~N") "000000001"))
       
       (test-case
       "[DJG] string->date conversions of dates with nanosecond components"
-      (check-equal? (string->date "12:00:00.123456789" "~H:~M:~S.~N") (make-srfi:date 123456789 0 0 12 #t #t #t 0) "check 1")
-      (check-equal? (string->date "12:00:00.12345678"  "~H:~M:~S.~N") (make-srfi:date 123456780 0 0 12 #t #t #t 0) "check 2")
-      (check-equal? (string->date "12:00:00.1234567"   "~H:~M:~S.~N") (make-srfi:date 123456700 0 0 12 #t #t #t 0) "check 3")
-      (check-equal? (string->date "12:00:00.123456"    "~H:~M:~S.~N") (make-srfi:date 123456000 0 0 12 #t #t #t 0) "check 4")
-      (check-equal? (string->date "12:00:00.12345"     "~H:~M:~S.~N") (make-srfi:date 123450000 0 0 12 #t #t #t 0) "check 5")
-      (check-equal? (string->date "12:00:00.1234"      "~H:~M:~S.~N") (make-srfi:date 123400000 0 0 12 #t #t #t 0) "check 6")
-      (check-equal? (string->date "12:00:00.123"       "~H:~M:~S.~N") (make-srfi:date 123000000 0 0 12 #t #t #t 0) "check 7")
-      (check-equal? (string->date "12:00:00.12"        "~H:~M:~S.~N") (make-srfi:date 120000000 0 0 12 #t #t #t 0) "check 8")
-      (check-equal? (string->date "12:00:00.1"         "~H:~M:~S.~N") (make-srfi:date 100000000 0 0 12 #t #t #t 0) "check 9")
-      (check-equal? (string->date "12:00:00.123456789" "~H:~M:~S.~N") (make-srfi:date 123456789 0 0 12 #t #t #t 0) "check 10")
-      (check-equal? (string->date "12:00:00.012345678" "~H:~M:~S.~N") (make-srfi:date 12345678  0 0 12 #t #t #t 0) "check 11")
-      (check-equal? (string->date "12:00:00.001234567" "~H:~M:~S.~N") (make-srfi:date 1234567   0 0 12 #t #t #t 0) "check 12")
-      (check-equal? (string->date "12:00:00.000123456" "~H:~M:~S.~N") (make-srfi:date 123456    0 0 12 #t #t #t 0) "check 13")
-      (check-equal? (string->date "12:00:00.000012345" "~H:~M:~S.~N") (make-srfi:date 12345     0 0 12 #t #t #t 0) "check 14")
-      (check-equal? (string->date "12:00:00.000001234" "~H:~M:~S.~N") (make-srfi:date 1234      0 0 12 #t #t #t 0) "check 15")
-      (check-equal? (string->date "12:00:00.000000123" "~H:~M:~S.~N") (make-srfi:date 123       0 0 12 #t #t #t 0) "check 16")
-      (check-equal? (string->date "12:00:00.000000012" "~H:~M:~S.~N") (make-srfi:date 12        0 0 12 #t #t #t 0) "check 17")
-      (check-equal? (string->date "12:00:00.000000001" "~H:~M:~S.~N") (make-srfi:date 1         0 0 12 #t #t #t 0) "check 18"))
+      (check-equal? (string->date "12:00:00.123456789" "~H:~M:~S.~N") (srfi:make-date 123456789 0 0 12 #t #t #t 0) "check 1")
+      (check-equal? (string->date "12:00:00.12345678"  "~H:~M:~S.~N") (srfi:make-date 123456780 0 0 12 #t #t #t 0) "check 2")
+      (check-equal? (string->date "12:00:00.1234567"   "~H:~M:~S.~N") (srfi:make-date 123456700 0 0 12 #t #t #t 0) "check 3")
+      (check-equal? (string->date "12:00:00.123456"    "~H:~M:~S.~N") (srfi:make-date 123456000 0 0 12 #t #t #t 0) "check 4")
+      (check-equal? (string->date "12:00:00.12345"     "~H:~M:~S.~N") (srfi:make-date 123450000 0 0 12 #t #t #t 0) "check 5")
+      (check-equal? (string->date "12:00:00.1234"      "~H:~M:~S.~N") (srfi:make-date 123400000 0 0 12 #t #t #t 0) "check 6")
+      (check-equal? (string->date "12:00:00.123"       "~H:~M:~S.~N") (srfi:make-date 123000000 0 0 12 #t #t #t 0) "check 7")
+      (check-equal? (string->date "12:00:00.12"        "~H:~M:~S.~N") (srfi:make-date 120000000 0 0 12 #t #t #t 0) "check 8")
+      (check-equal? (string->date "12:00:00.1"         "~H:~M:~S.~N") (srfi:make-date 100000000 0 0 12 #t #t #t 0) "check 9")
+      (check-equal? (string->date "12:00:00.123456789" "~H:~M:~S.~N") (srfi:make-date 123456789 0 0 12 #t #t #t 0) "check 10")
+      (check-equal? (string->date "12:00:00.012345678" "~H:~M:~S.~N") (srfi:make-date 12345678  0 0 12 #t #t #t 0) "check 11")
+      (check-equal? (string->date "12:00:00.001234567" "~H:~M:~S.~N") (srfi:make-date 1234567   0 0 12 #t #t #t 0) "check 12")
+      (check-equal? (string->date "12:00:00.000123456" "~H:~M:~S.~N") (srfi:make-date 123456    0 0 12 #t #t #t 0) "check 13")
+      (check-equal? (string->date "12:00:00.000012345" "~H:~M:~S.~N") (srfi:make-date 12345     0 0 12 #t #t #t 0) "check 14")
+      (check-equal? (string->date "12:00:00.000001234" "~H:~M:~S.~N") (srfi:make-date 1234      0 0 12 #t #t #t 0) "check 15")
+      (check-equal? (string->date "12:00:00.000000123" "~H:~M:~S.~N") (srfi:make-date 123       0 0 12 #t #t #t 0) "check 16")
+      (check-equal? (string->date "12:00:00.000000012" "~H:~M:~S.~N") (srfi:make-date 12        0 0 12 #t #t #t 0) "check 17")
+      (check-equal? (string->date "12:00:00.000000001" "~H:~M:~S.~N") (srfi:make-date 1         0 0 12 #t #t #t 0) "check 18"))
       
      (test-case
       "date<->julian-day conversion"
-      (check = 365 (- (date->julian-day (make-srfi:date 0 0 0 0 1 1 2004 0))
-                      (date->julian-day (make-srfi:date 0 0 0 0 1 1 2003 0))))
-      (let ([test-date (make-srfi:date 0 0 0 0 1 1 2003 -7200)])
+      (check = 365 (- (date->julian-day (srfi:make-date 0 0 0 0 1 1 2004 0))
+                      (date->julian-day (srfi:make-date 0 0 0 0 1 1 2003 0))))
+      (let ([test-date (srfi:make-date 0 0 0 0 1 1 2003 -7200)])
         (check tm:date= test-date (julian-day->date (date->julian-day test-date) -7200))))
 
      (test-case
       "date->modified-julian-day conversion"
-      (check = 365 (- (date->modified-julian-day (make-srfi:date 0 0 0 0 1 1 2004 0))
-                      (date->modified-julian-day (make-srfi:date 0 0 0 0 1 1 2003 0))))
-      (let ([test-date (make-srfi:date 0 0 0 0 1 1 2003 -7200)])
+      (check = 365 (- (date->modified-julian-day (srfi:make-date 0 0 0 0 1 1 2004 0))
+                      (date->modified-julian-day (srfi:make-date 0 0 0 0 1 1 2003 0))))
+      (let ([test-date (srfi:make-date 0 0 0 0 1 1 2003 -7200)])
         (check tm:date= test-date (modified-julian-day->date (date->modified-julian-day test-date) -7200))))
 
      ))

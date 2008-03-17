@@ -1,4 +1,2 @@
-(module |86| mzscheme
-  (require srfi/86/86)
-  (provide (all-from srfi/86/86))
-  )
+;; module loader for SRFI-86
+#lang s-exp srfi/provider srfi/86/86

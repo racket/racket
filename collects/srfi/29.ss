@@ -1,4 +1,2 @@
 ;; module loader for SRFI-29
-(module |29| mzscheme
-  (require srfi/29/localization)
-  (provide (all-from srfi/29/localization)))
+#lang s-exp srfi/provider srfi/29/localization

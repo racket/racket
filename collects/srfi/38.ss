@@ -1,4 +1,2 @@
-;; Supported by core PLT:
-(module |38| mzscheme
-  (provide (rename write write-with-shared-structure)
-           (rename read read-with-shared-structure)))
+;; module loader for SRFI-38
+#lang s-exp srfi/provider srfi/38/38 #:unprefix s:

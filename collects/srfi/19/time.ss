@@ -74,7 +74,7 @@
 	   time-difference time-difference! add-duration add-duration! subtract-duration subtract-duration!
            ;; Date object and accessors
 	   ;; date structure is provided by core PLT Scheme, we just extended tu support miliseconds:
-           make-srfi:date srfi:date?
+           srfi:make-date srfi:date?
 	   date-nanosecond srfi:date-second srfi:date-minute srfi:date-hour srfi:date-day srfi:date-month
            srfi:date-year date-zone-offset
 	   ;; This are not part of the date structure (as they are in the original PLT Scheme's date)
@@ -582,7 +582,7 @@
     time-in)
   
   ;; -- Date Structures
-  (define-values (tm:date make-srfi:date srfi:date? tm:date-ref tm:date-set!)
+  (define-values (tm:date srfi:make-date srfi:date? tm:date-ref tm:date-set!)
     (make-struct-type 
      'tm:date #f 8 0 #f null (make-inspector) #f null))
   ;; PLT Scheme date structure has the following:
@@ -702,7 +702,7 @@
 		       (rem      (remainder secs (* 60 60)))
 		       (minutes  (quotient rem 60))
 		       (seconds  (remainder rem 60)) )
-		 (make-srfi:date (time-nanosecond time)
+		 (srfi:make-date (time-nanosecond time)
                                  seconds
                                  minutes
                                  hours
@@ -794,7 +794,7 @@
     (tm:week-day (srfi:date-day date) (srfi:date-month date) (srfi:date-year date)))
   
   (define (tm:days-before-first-week date day-of-week-starting-week)
-    (let* ( (first-day (make-srfi:date 0 0 0 0
+    (let* ( (first-day (srfi:make-date 0 0 0 0
                                        1
                                        1
                                        (srfi:date-year date)
@@ -1480,7 +1480,7 @@
 	   (srfi:date-month date)
 	   (srfi:date-year date)
 	   (date-zone-offset date)))
-    (let ( (newdate (make-srfi:date 0 0 0 0 #t #t #t (tm:local-tz-offset))) )
+    (let ( (newdate (srfi:make-date 0 0 0 0 #t #t #t (tm:local-tz-offset))) )
       (tm:string->date newdate
 		       0
 		       template-string

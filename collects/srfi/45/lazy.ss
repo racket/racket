@@ -1,38 +1,12 @@
-; SRFI 45
-; Zhu Chongkai   mrmathematica@yahoo.com
-; 25-May-2005
-(module lazy mzscheme
-  
-  (provide lazy
-           eager
-           s:delay
-           s:force
-           srfi-45-promise?)
-  
-  (define-struct srfi-45-promise (content))
-  
-  (define-syntax lazy
-    (syntax-rules ()
-      ((_ exp)
-       (make-srfi-45-promise (mcons #f (lambda () exp))))))
-  
-  (define (eager x)
-    (make-srfi-45-promise (mcons #t x)))
-  
-  (define-syntax s:delay
-    (syntax-rules ()
-      ((_ exp) (lazy (eager exp)))))
-  
-  (define (s:force promise)
-    (if (srfi-45-promise? promise)
-        (let ((content (srfi-45-promise-content promise)))
-          (if (mcar content)
-              (mcdr content)
-              (let* ((promise* ((mcdr content)))
-                     (content (srfi-45-promise-content promise)))
-                (unless (mcar content)
-                  (set-mcar! content (mcar (srfi-45-promise-content promise*)))
-                  (set-mcdr! content (mcdr (srfi-45-promise-content promise*)))
-                  (set-srfi-45-promise-content! promise* content))
-                (s:force promise))))
-        (raise-type-error 'force "srfi-45-promise" promise))))
+#lang scheme/base
+
+;; scheme/promise has srfi-45-style primitives
+(require scheme/promise)
+(provide (all-from-out scheme/promise))
+
+;; TODO: there is a small difference between the primitives in srfi-45 and the
+;; ones provided by scheme/promise (the latter is a bit more permissive).  See
+;; "library approach" in scheme/promise and see the post-finalization
+;; discussion on the srfi-45 list.  I (Eli) showed at some point how the
+;; "language approach" primitives can be used to implement the other, and this
+;; needs to be done here too.

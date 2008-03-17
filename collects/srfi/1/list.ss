@@ -220,7 +220,7 @@
          "misc.ss"
          (rename-in "fold.ss" [map s:map] [for-each s:for-each])
          (rename-in "search.ss" [member s:member])
-         (rename-in "filter.ss" [filter s:filter] [remove s:remove])
+         (rename-in "filter.ss" [remove s:remove])
          "delete.ss"
          (rename-in "alist.ss" [assoc s:assoc])
          "lset.ss")
@@ -231,8 +231,7 @@
          (all-from-out "misc.ss")
          (all-from-out "fold.ss")
          (all-from-out "search.ss")
-         (except-out (all-from-out "filter.ss") s:filter)
-         (rename-out [s:filter filter])
+         (all-from-out "filter.ss")
          (all-from-out "delete.ss")
          (all-from-out "alist.ss")
          (all-from-out "lset.ss"))

@@ -1,30 +1,28 @@
-(module features mzscheme
-  (provide feature-present?
-	   feature->require-clause)
+#lang scheme/base
 
-  (define *feature-alist*
-    '())
+(provide feature-present? feature->require-clause)
 
-  (define (srfi-id? id)
-    (let ((string-id (symbol->string id)))
-      (and (> (string-length string-id) 5)
-	   (string=? "srfi-"
-		     (substring string-id 0 5)))))
+(define *feature-alist*
+  '())
 
-  (define (srfi-id->filename srfi-id)
-    (let ((string-id (symbol->string srfi-id)))
-      (string-append (substring string-id 5 (string-length string-id))
-		     ".ss")))
+(define (srfi-id? id)
+  (regexp-match? #rx"^srfi-[0-9]+$" (symbol->string id)))
 
-  (define (srfi-id-present? srfi-id)
-    (file-exists? (build-path (collection-path "srfi")
-			      (srfi-id->filename srfi-id))))
+(define (srfi-id->filename srfi-id)
+  (regexp-replace #rx"^srfi-([0-9]+)$" (symbol->string srfi-id) "\\1/\\1.ss"))
 
-  (define (feature-present? id)
-    (or (and (srfi-id? id) (srfi-id-present? id))
-	(and (assq id *feature-alist*) #t)))
+(define (srfi-id-present? srfi-id)
+  (file-exists? (build-path (collection-path "srfi")
+                            (srfi-id->filename srfi-id))))
 
-  (define (feature->require-clause id)
-    (if (and (srfi-id? id) (srfi-id-present? id))
-	(cons 'lib (list (srfi-id->filename id) "srfi"))
-	(cdr (assq id *feature-alist*)))))
+(define (feature-present? id)
+  (or (and (srfi-id? id) (srfi-id-present? id))
+      (and (assq id *feature-alist*) #t)))
+
+(define (feature->require-clause id)
+  (cond [(and (srfi-id? id) (srfi-id-present? id))
+         (string->symbol (regexp-replace #rx"^srfi-([0-9]+)$"
+                                         (symbol->string id)
+                                         "srfi/\\1/\\1"))]
+        [(assq id *feature-alist*) => cdr]
+        [else (error 'feature->require-clause "unknown feature: ~e" id)]))

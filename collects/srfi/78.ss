@@ -1,3 +1,2 @@
-(module |78| mzscheme
-  (require srfi/78/check)
-  (provide (all-from srfi/78/check)))
+;; module loader for SRFI-78
+#lang s-exp srfi/provider srfi/78/check

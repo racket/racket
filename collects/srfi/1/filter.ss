@@ -36,7 +36,8 @@
 
 (require srfi/optional "predicate.ss")
 
-(provide (rename-out [my-filter filter] [my-filter filter!])
+(provide filter (rename-out [filter filter!])
+         (rename-out [my-filter filter-with-sharing]) ; see comment below
          partition (rename-out [partition partition!])
          (rename-out [my-remove remove] [my-remove remove!]))
 
@@ -44,6 +45,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; FILTER, REMOVE, PARTITION and their destructive counterparts do not
 ;; disorder the elements of their argument.
+
+;; The following version of filter is not really needed, so we reprovide the
+;; one from "scheme/private/list.ss".  That one does not keep the longest tail,
+;; but running a few benchmarks (on v3.99.0.18) shows that on long lists the
+;; code below is slower, and on short lists it is a little faster, but not by
+;; much.  However, seems that "lset.ss" relies on tail-sharing, so it is
+;; provided under an alternative name above.
 
 ;; This FILTER shares the longest tail of L that has no deleted
 ;; elements.  If Scheme had multi-continuation calls, they could be
