@@ -795,13 +795,14 @@
     (let ((var (string->symbol (java-name->scheme variable))))
       (or (memq var (scheme-record-provides mod-ref))
           (let ((mod-syntax (datum->syntax-object #f
-                                                  `(module m mzscheme
+                                                  `(,#'module m mzscheme
                                                      (require ,(generate-require-spec (java-name->scheme (scheme-record-name mod-ref))
                                                                                       (scheme-record-path mod-ref)))
                                                      ,var)
                                                   #f)))
             (with-handlers ((exn? (lambda (e) (fail))))
-              (expand mod-syntax))
+              (parameterize ([current-namespace (make-namespace)])
+                (expand mod-syntax)))
             (set-scheme-record-provides! mod-ref (cons var (scheme-record-provides mod-ref)))))))
           
   ;generate-require-spec: string (list string) -> (U string (list symbol string+))
