@@ -11,7 +11,7 @@
 
 @schemegrammar*+library[
 #:literals (define define-struct lambda cond else if and or empty true false require lib planet)
-[program def-or-expr]
+[program (code:line def-or-expr ...)]
 [def-or-expr definition
              expr
              library-require]

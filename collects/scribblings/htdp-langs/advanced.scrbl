@@ -37,7 +37,7 @@
 @schemegrammar*+qq[
 #:literals (define define-struct lambda cond else if and or empty true false require lib planet
             local let let* letrec time begin begin0 set! delay shared recur when case unless)
-[program def-or-expr]
+[program (code:line def-or-expr ...)]
 [def-or-expr definition
              expr
              library-require]
