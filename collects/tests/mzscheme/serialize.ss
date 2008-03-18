@@ -16,6 +16,8 @@
 (define-serializable-struct (d b) (w) insp)
 
 (define (same? v1 v2)
+  ;; This is not quite the same as `equal?', veuase it knows
+  ;; about the structure types a, b, etc.
   (define ht (make-hash-table))
   (let loop ([v1 v1][v2 v2])
     (cond
@@ -82,10 +84,12 @@
       (hash-table-put! ht v1 v2)
       (loop (arity-at-least-value v1)
 	    (arity-at-least-value v2))]
+     [(and (struct? v1) (prefab-struct-key v1)
+           (struct? v2) (prefab-struct-key v2))
+      (equal? (struct->vector v1) (struct->vector v2))]
      [else
       (and (equal? v1 v2)
 	   (eq? (immutable? v1) (immutable? v2)))])))
-      
 
 (define (test-ser v)
   (parameterize ([print-graph #t])
@@ -123,13 +127,15 @@
 (test-ser (mk-ht 'equal))
 (test-ser (mk-ht 'weak))
 (test-ser (mk-ht 'equal 'weak))
+(test-ser #s(a 0 1 2))
+(test-ser #s((a q 2) 0 1 2))
 
 (test-ser '(1))
 (test-ser '#(1))
 (test-ser '#&1)
 
+(test-ser (mcons 1 2))
 (test-ser (cons 1 2))
-(test-ser (cons-immutable 1 2))
 (test-ser (vector))
 (test-ser (vector 1 2))
 (test-ser (vector-immutable))
@@ -168,12 +174,14 @@
   (test-ser (cons p p)))
 (let ([p (mk-ht)])
   (test-ser (cons p p)))
+(let ([p #s(a 1 2 3)])
+  (test-ser (list p p)))
 
 ;; Cycles
-(let ([p (cons 1 2)])
-  (set-car! p p)
+(let ([p (mcons 1 2)])
+  (set-mcar! p p)
   (test-ser p)
-  (set-cdr! p p)
+  (set-mcdr! p p)
   (test-ser p)
   (test-ser (make-c p))
   (test-ser (make-b p p)))
@@ -214,11 +222,9 @@
   (test-ser p)
   (test-ser (make-c p)))
 (let ([p (seconds->date (current-seconds))])
-  (set-date-second! p p)
   (test-ser p)
   (test-ser (cons p p)))
 (let ([p (make-arity-at-least 10)])
-  (set-arity-at-least-value! p p)
   (test-ser p)
   (test-ser (cons p p)))
 (let ([p (mk-ht)])
@@ -227,9 +233,9 @@
   (test-ser (cons p p)))
 
 ;; Cycles with immutable parts
-(let* ([p1 (cons 1 2)]
-       [p2 (cons-immutable 0 p1)])
-  (set-cdr! p1 p2)
+(let* ([p1 (mcons 1 2)]
+       [p2 (cons 0 p1)])
+  (set-mcdr! p1 p2)
   (test-ser p1)
   (test-ser p2)
   (test-ser (cons p1 p2))
@@ -253,10 +259,10 @@
   (test-ser (make-c p1))
   (test-ser (make-b p1 p2))
   (test-ser (make-b p2 p1)))
-(let* ([p1 (cons 1 2)]
+(let* ([p1 (mcons 1 2)]
        [p2 (make-immutable-hash-table
 	    (cons (cons 'x p1) '((a . 2) (b . 4))))])
-  (set-cdr! p1 p2)
+  (set-mcdr! p1 p2)
   (test-ser p1)
   (test-ser p2)
   (test-ser (cons p1 p2))
@@ -273,7 +279,7 @@
    (define (ser-mod-test)
      (foo-a (deserialize (serialize (make-foo 1 2))))))
 
-(require ser-mod)
+(require 'ser-mod)
 (test 1 ser-mod-test)
 
 ;; ----------------------------------------

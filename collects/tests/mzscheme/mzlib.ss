@@ -38,6 +38,8 @@
 
 (load-in-sandbox "control.ss")
 
+(load-in-sandbox "serialize.ss")
+
 ;; (load-in-sandbox "package.ss")
 
 (load-in-sandbox "contract-test.ss") ;; tests scheme/contract

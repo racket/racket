@@ -2915,6 +2915,9 @@ Scheme_Object *scheme_checked_syntax_e(int argc, Scheme_Object **argv);
 
 Scheme_Bucket_Table *scheme_make_weak_equal_table(void);
 
+int scheme_hash_table_equal_rec(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2, void *eql);
+int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2, void *eql);
+
 void scheme_set_root_param(int p, Scheme_Object *v);
 
 Scheme_Object *scheme_intern_exact_parallel_symbol(const char *name, unsigned int len);

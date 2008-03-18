@@ -38,6 +38,8 @@ The following kinds of values are serializable:
        structures with the @scheme[prop:serializable] property (see
        @scheme[prop:serializable] for more information);}
 
+ @item{structures that instantiate @techlink{prefab} structure types;}
+
  @item{instances of classes defined with @scheme[define-serializable-class]
        or @scheme[define-serializable-class];}
 
@@ -182,6 +184,12 @@ elements:
                   @scheme[_s-types] list. The @scheme[cdr] of the pair is
                   a list of serials representing arguments to be
                   provided to the structure type's deserializer.}
+
+            @item{a pair whose @scheme[car] is @scheme['f]; it
+                  represents an instance of a @tech{prefab} structure
+                  type. The @scheme[cadr] of the pair is @tech{prefab}
+                  structure type key, and the @scheme[cddr] is a list of
+                  serials representing the field values.}
 
             @item{a pair whose @scheme[car] is @scheme['void],
                   representing @|void-const|.}

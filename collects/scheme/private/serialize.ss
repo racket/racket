@@ -23,6 +23,9 @@
 
   (define (serializable? v)
     (or (serializable-struct? v)
+        (and (struct? v)
+             (prefab-struct-key v)
+             #t)
 	(boolean? v)
 	(null? v)
 	(number? v)
@@ -170,6 +173,9 @@
 	   [(serializable-struct? v)
 	    (let ([info (serializable-info v)])
 	      (for-each loop (vector->list ((serialize-info-vectorizer info) v))))]
+           [(and (struct? v)
+                 (prefab-struct-key v))
+            (for-each loop (cdr (vector->list (struct->vector v))))]
 	   [(or (string? v)
 		(bytes? v)
 		(path-for-some-system? v))
@@ -230,6 +236,13 @@
 		(map (serial #t)
 		     (vector->list
 		      ((serialize-info-vectorizer info) v)))))]
+       [(and (struct? v)
+             (prefab-struct-key v))
+        => (lambda (k)
+             (cons 'f
+                   (cons
+                    k
+                    (map (serial #t) (cdr (vector->list (struct->vector v)))))))]
        [(or (string? v)
 	    (bytes? v))
 	(cons 'u v)]
@@ -372,6 +385,7 @@
        [else
 	(case (car v)
 	  [(?) (lookup-shared! share (cdr v) mod-map)]
+          [(f) (apply make-prefab-struct (cadr v) (map loop (cddr v)))]
 	  [(void) (void)]
 	  [(u) (let ([x (cdr v)])
 		 (cond

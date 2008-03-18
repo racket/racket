@@ -2987,20 +2987,22 @@ Scheme_Struct_Type *hash_prefab(Scheme_Struct_Type *type)
     type = (Scheme_Struct_Type *)v;
   } else {
     /* Check all immutable */
-    if (type->immutables) {
-      if (!type->name_pos
-          || MZ_OPT_HASH_KEY(&type->parent_types[type->name_pos - 1]->iso) & STRUCT_TYPE_ALL_IMMUTABLE) {
-        int i, size;
-        size = type->num_islots;
-        if (type->name_pos)
-          size -= type->parent_types[type->name_pos - 1]->num_islots;
+    if (!type->name_pos
+        || MZ_OPT_HASH_KEY(&type->parent_types[type->name_pos - 1]->iso) & STRUCT_TYPE_ALL_IMMUTABLE) {
+      int i, size;
+      size = type->num_islots;
+      if (type->name_pos)
+        size -= type->parent_types[type->name_pos - 1]->num_islots;
+      if (type->immutables) {
         for (i = 0; i < size; i++) {
           if (!type->immutables[i])
             break;
         }
-        if (i == size)
-          MZ_OPT_HASH_KEY(&type->iso) |= STRUCT_TYPE_ALL_IMMUTABLE;
+      } else {
+        i = 0;
       }
+      if (i == size)
+        MZ_OPT_HASH_KEY(&type->iso) |= STRUCT_TYPE_ALL_IMMUTABLE;
     }
 
     v = scheme_make_weak_box((Scheme_Object *)type);

@@ -447,12 +447,12 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
 #   include "mzeqchk.inc"
     if (union_check(obj1, obj2, eql))
       return 1;
-    return scheme_hash_table_equal((Scheme_Hash_Table *)obj1, (Scheme_Hash_Table *)obj2);
+    return scheme_hash_table_equal_rec((Scheme_Hash_Table *)obj1, (Scheme_Hash_Table *)obj2, eql);
   } else if (SCHEME_BUCKTP(obj1)) {
 #   include "mzeqchk.inc"
     if (union_check(obj1, obj2, eql))
       return 1;
-    return scheme_bucket_table_equal((Scheme_Bucket_Table *)obj1, (Scheme_Bucket_Table *)obj2);
+    return scheme_bucket_table_equal_rec((Scheme_Bucket_Table *)obj1, (Scheme_Bucket_Table *)obj2, eql);
   } else if (SAME_TYPE(SCHEME_TYPE(obj1), scheme_wrap_chunk_type)) {
     return vector_equal(obj1, obj2, eql);
   } else if (SAME_TYPE(SCHEME_TYPE(obj1), scheme_resolved_module_path_type)) {

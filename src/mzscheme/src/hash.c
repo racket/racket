@@ -435,7 +435,7 @@ void scheme_hash_set_atomic(Scheme_Hash_Table *table, Scheme_Object *key, Scheme
   scheme_end_atomic_no_swap();
 }
 
-int scheme_hash_table_equal(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2)
+int scheme_hash_table_equal_rec(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2, void *eql)
 {
   Scheme_Object **vals, **keys, *v;
   int i;
@@ -452,12 +452,17 @@ int scheme_hash_table_equal(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2)
       v = scheme_hash_get(t2, keys[i]);
       if (!v)
 	return 0;
-      if (!scheme_equal(vals[i], v))
+      if (!scheme_recur_equal(vals[i], v, eql))
 	return 0;
     }
   }
 
   return 1;
+}
+
+int scheme_hash_table_equal(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2)
+{
+  return scheme_equal((Scheme_Object *)t1, (Scheme_Object *)t2);
 }
 
 Scheme_Hash_Table *scheme_clone_hash_table(Scheme_Hash_Table *ht)
@@ -791,7 +796,7 @@ scheme_change_in_table (Scheme_Bucket_Table *table, const char *key, void *naya)
     bucket->val = naya;
 }
 
-int scheme_bucket_table_equal(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2)
+int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2, void *eql)
 {
   Scheme_Bucket **buckets, *bucket;
   void *v;
@@ -822,7 +827,7 @@ int scheme_bucket_table_equal(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2)
 	v = scheme_lookup_in_table(t2, key);
 	if (!v)
 	  return 0;
-	if (!scheme_equal((Scheme_Object *)bucket->val, (Scheme_Object *)v))
+	if (!scheme_recur_equal((Scheme_Object *)bucket->val, (Scheme_Object *)v, eql))
 	  return 0;
       }
     }
@@ -852,6 +857,11 @@ int scheme_bucket_table_equal(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2)
   }
 
   return !checked;
+}
+
+int scheme_bucket_table_equal(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2)
+{
+  return scheme_equal((Scheme_Object *)t1, (Scheme_Object *)t2);
 }
 
 /*========================================================================*/
