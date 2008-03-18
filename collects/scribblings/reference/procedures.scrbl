@@ -346,3 +346,56 @@ by @scheme[arity]). For most primitives, this procedure returns
 @scheme[1], since most primitives return a single value when
 applied.}
 
+@; ----------------------------------------
+@section{Additional Procedure Functions}
+
+@note-lib[scheme/function]
+@(begin (define fun-eval (make-base-eval))
+        (fun-eval '(require scheme/function))
+        (define-syntax fun-examples
+          (syntax-rules ()
+            [(_ e ...) (examples #:eval fun-eval e ...)])))
+
+@defproc[(negate [proc procedure?]) procedure?]{
+
+Returns a procedure that is just like @scheme[proc], except that it
+returns the negation of the result.  The resulting procedure has the
+same arity as @scheme[proc].
+
+@fun-examples[
+(filter (negate symbol?) '(1 a 2 b 3 c))
+]}
+
+@defproc*[([(curry [proc procedure?]) procedure?]
+           [(curry [proc procedure?] [v any/c] ...+) procedure?])]{
+
+@scheme[(curry proc)] returns a procedure that is a curried version of
+@scheme[proc].  When the resulting procedure is applied on an
+insufficient number of arguments, it returns a procedure that expects
+additional arguments.  However, at least one such application step is
+required in any case, even if the @scheme[proc] consumes any number of
+arguments.
+
+If additional values are provided to @scheme[curry], they are used as
+the first step.  (This means that @scheme[curry] itself is curried.)
+
+@fun-examples[
+(map ((curry +) 10) '(1 2 3))
+(map (curry + 10) '(1 2 3))
+(map (compose (curry * 2) (curry + 10)) '(1 2 3))
+]
+
+}
+
+@defproc*[([(curryr [proc procedure?]) procedure?]
+           [(curryr [proc procedure?] [v any/c] ...+) procedure?])]{
+
+Like @scheme[curry], except that the arguments are collected in the
+opposite direction: the first step collects the rightmost group of
+arguments, and following steps add arguments to the left of these.
+
+@fun-examples[
+(map (curryr list 'foo) '(1 2 3))
+]
+
+}

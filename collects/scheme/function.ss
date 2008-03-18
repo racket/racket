@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(provide negate curry)
+(provide negate curry curryr)
 
 (define (negate f)
   (unless (procedure? f) (raise-type-error 'negate "procedure" f))
@@ -21,7 +21,7 @@
 (define (curry f . args)
   (unless (procedure? f) (raise-type-error 'curry "procedure" f))
   (let loop ([args args])
-    (define curry
+    (define curried
       (if (null? args) ; always at least one step
         (lambda more (loop more))
         (lambda more
@@ -29,4 +29,17 @@
             (if (procedure-arity-includes? f (length args))
               (apply f args)
               (loop args))))))
-    curry))
+    curried))
+
+(define (curryr f . args)
+  (unless (procedure? f) (raise-type-error 'curry "procedure" f))
+  (let loop ([args args])
+    (define curried-right
+      (if (null? args) ; always at least one step
+        (lambda more (loop more))
+        (lambda more
+          (let ([args (append more args)])
+            (if (procedure-arity-includes? f (length args))
+              (apply f args)
+              (loop args))))))
+    curried-right))

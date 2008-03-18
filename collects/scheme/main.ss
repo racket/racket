@@ -10,6 +10,7 @@
            scheme/tcp
            scheme/udp
            scheme/list
+           scheme/function
            scheme/path
            scheme/file
            scheme/cmdline
@@ -30,6 +31,7 @@
                          scheme/tcp
                          scheme/udp
                          scheme/list
+                         scheme/function
                          scheme/path
                          scheme/file
                          scheme/cmdline

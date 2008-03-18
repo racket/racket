@@ -42,8 +42,8 @@
                 "Returns " (to-element 'equiv)))))]))
 
 
-@(define list-eval (make-base-eval))
-@interaction-eval[#:eval list-eval (require scheme/list)]
+@(begin (define list-eval (make-base-eval))
+        (interaction-eval #:eval list-eval (require scheme/list)))
 
 
 @title[#:tag "pairs"]{Pairs and Lists}
