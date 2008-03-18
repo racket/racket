@@ -14,25 +14,49 @@
  *****************************************************************************/
 |#
 
-(module gifwrite mzscheme
-  (require mzlib/contract)
+#reader scribble/reader
+(module gifwrite scheme/base
+  (require scheme/contract
+           scribble/srcdoc)
+
+  (require/doc scheme/base
+               scribble/manual)
 
   (define LZ_MAX_CODE 4095)
 
   (define GifVersionPrefix #"GIF89a")
 
-  (provide gif-stream?
-           image-ready-gif-stream?
-           image-or-control-ready-gif-stream?
-           empty-gif-stream?
-           (rename color-map? gif-colormap?))
+  (provide/doc
+   [gif-stream? ([v any/c] . -> . boolean?)
+                @{Returns @scheme[@t] if @scheme[v] is a GIF stream created by @scheme[gif-write],
+                          @scheme[#f] otherwise.}]
+   [image-ready-gif-stream? ([v any/c] . -> . boolean?)
+                            @{Returns @scheme[#t] if @scheme[v] is a GIF stream that is not in 
+                                      @scheme['done] mode, @scheme[#f] otherwise.}]
+   [image-or-control-ready-gif-stream? ([v any/c] . -> . boolean?)
+                                       @{Returns @scheme[#t] if @scheme[v] is a GIF stream that is in 
+                                                 @scheme['init] or @scheme['image-or-control] mode, @scheme[#f] otherwise.}]
+   [empty-gif-stream?  ([v any/c] . -> . boolean?)
+                       @{Returns @scheme[#t] if @scheme[v] is a GIF stream that in 
+                                 @scheme['init] mode, @scheme[#f] otherwise.}]
+   [gif-colormap? ([v any/c] . -> . boolean?)
+                  @{Returns @scheme[#t] if @scheme[v] represets a colormap, @scheme[#f] otherwise.
+                            A colormap is a list whose size is a power of @math{2} between @math{2^1} and @math{2^8},
+                            and whose elements are vectors of size 3 containing colors
+                            (i.e., exact integers between @math{0} and @math{255} inclusive).}]
+   [color? ([v any/c]. -> . boolean?)
+           @{The same as @scheme[byte?].}]
+   [dimension? ([v any/c]. -> . boolean?)
+               @{Returns @scheme[#t] if @scheme[v] is an exact integer between
+                         @scheme[#x0] and @scheme[#xFFFF] inclusive, @scheme[#f]
+                         otherwise.}])
 
   (define-struct gif-stream (port 
                              SWidth
                              SHeight
                              SBackGroundColor
                              SColorMap
-                             FileState))
+                             [FileState #:mutable]))
 
   (define (image-ready-gif-stream? g)
     (and (gif-stream? g)
@@ -48,10 +72,8 @@
 
   (define color? byte?)
   (define (dimension? x) (and (exact? x) (integer? x) (<= 0 x #xFFFF)))
-  (define (disposal? s)
-    (memq s '(any keep restore-bg restore-prev)))
 
-  (define (color-map? l)
+  (define (gif-colormap? l)
     (and (list? l)
          (member (length l) '(2 4 8 16 32 64 128 256))
          (andmap (lambda (c)
@@ -82,8 +104,8 @@
   (define (WRITE g bytes)
     (write-bytes bytes (gif-stream-port g)))
 
-  (provide/contract [gif-state
-                     (gif-stream? . -> . symbol?)])
+  (provide/doc [gif-state ([stream gif-stream?] . -> . symbol?)
+                          @{Returns the state of @scheme[stream].}])
   (define (gif-state GifFile)
     (gif-stream-FileState GifFile))
 
@@ -91,13 +113,27 @@
   ;; * This routine should be called before any other EGif calls, immediately
   ;; * follows the GIF file openning.
   ;; *****************************************************************************/
-  (provide/contract [gif-start
-                     (output-port?
-                      dimension?
-                      dimension?
-                      color?
-                      (or/c false/c color-map?)
-                      . -> . gif-stream?)])
+  (provide/doc [gif-start
+                ([out output-port?]
+                 [w dimension?]
+                 [h dimension?]
+                 [bg-color color?]
+                 [cmap (or/c false/c gif-colormap?)]
+                 . -> . gif-stream?)
+                @{Writes the start of a GIF file to the given output port, and returns
+                         a GIF stream that adds to the output port.
+
+                         The width and height determine a virtual space for the overall GIF
+                         image. Individual images added to the GIF stream must fit within this
+                         virtual space. The space is initialized by the given background color.
+                         
+                         Finally, the default meaning of color numbers (such as the background color)
+                         is determined by the given colormap, but individual images
+                         within the GIF file can have their own colormaps.
+                         
+                         A global colormap need not be supplied, in which case a colormap must
+                         be supplied for each image. Beware that the bg-color is ill-defined if
+                         a global colormap is not provided.}])
   (define (gif-start port
                      Width
                      Height
@@ -150,16 +186,45 @@
   ;; * This routine should be called before any attempt to dump an image - any
   ;; * call to any of the pixel dump routines.
   ;; *****************************************************************************/
-  (provide/contract [gif-add-image
-                     (image-ready-gif-stream?
-                      dimension?
-                      dimension?
-                      dimension?
-                      dimension?
-                      any/c
-                      (or/c false/c color-map?)
-                      bytes?
-                      . -> . any)])
+  (provide/doc [gif-add-image
+                ([stream image-ready-gif-stream?]
+                 [left dimension?]
+                 [top dimension?]
+                 [width dimension?]
+                 [height dimension?]
+                 [interlaced? any/c]
+                 [cmap (or/c false/c gif-colormap?)]
+                 [bstr bytes?]
+                 . -> . void?)
+                @{Writes an image to the given GIF stream. The @scheme[left], @scheme[top], 
+                         @scheme[width], and @scheme[height] values specify the location and 
+                         size of the image within the overall GIF image's virtual space.
+                         
+                         If @scheme[interlaced?] is true, then @scheme[bstr] should provide bytes 
+                         ininterlaced order instead of top-to-bottom order. Interlaced order is:
+                         
+                         @(itemize
+                           @item{every 8th row, starting with 0}
+                           @item{every 8th row, starting with 4}
+                           @item{every 4th row, starting with 2}
+                           @item{every 2nd row, starting with 1})
+
+                         If a global color is provided with @scheme[gif-start], a @scheme[#f] value 
+                         can be provided for @scheme[cmap].
+
+                         The @scheme[bstr] argument specifies the pixel content of the image. Each
+                         byte specifies a color (i.e., an index in the colormap). Each row is
+                         provided left-to-right, and the rows provided either top-to-bottom or
+                         in interlaced order (see above). If the image is prefixed with a
+                         control that specifies an transparent index (see @scheme[gif-add-control]),
+                         then the corresponding ``color'' doesn't draw into the overall GIF
+                         image.
+
+                         An exception is raised if any byte value in @scheme[bstr] is larger than the
+                         colormap's length, if the @scheme[bstr] length is not @scheme[width] times
+                         @scheme[height], or if the @scheme[top], @scheme[left], @scheme[width], and 
+                         @scheme[height] dimensions specify a region beyond the overall GIF image's
+                         virtual space.}])
   (define (gif-add-image GifFile
                         Left
                         Top
@@ -228,13 +293,47 @@
   ;;/******************************************************************************
   ;; * This routine should be called to add graphic control before the next image
   ;; *****************************************************************************/
-  (provide/contract [gif-add-control
-                     (image-or-control-ready-gif-stream?
-                      disposal?
-                      any/c
-                      dimension?
-                      (or/c false/c color?)
-                      . -> . any)])
+  (provide/doc [gif-add-control
+                ([stream image-or-control-ready-gif-stream?]
+                 [disposal (one-of/c 'keep 'restore-bg 'restore-prev)]
+                 [wait-for-input? any/c]
+                 [delay dimension?]
+                 [transparent (or/c false/c color?)]
+                 . -> . any)
+                @{Writes an image-control command to a GIF stream. Such a control must
+                         appear just before an image, and it applies to the following image.
+
+                         The GIF image model involves processing images one by one, placing
+                         each image into the specified position within the overall image's
+                         virtual space. An image-control command can specify a delay before an
+                         image is added (to create animated GIFs), and it also specifies how
+                         the image should be kept or removed from the overall image before
+                         proceeding to the next one (also for GIF animation).
+                         
+                         The @scheme[disposal] argument specifies how to proceed:
+
+                         @(itemize
+                           @item{@scheme['any] : doesn't matter (perhaps because the next image
+                                                                         completely overwrites the current one)}
+                           @item{@scheme['keep] : leave the image in place}
+                           @item{@scheme['restore-bg] : replace the image with the background color}
+                           @item{@scheme['restore-prev] : restore the overall image content to the
+                                        content before the image is added})
+       
+                         If @scheme[wait-for-input?] is true, then the display program may wait for
+                         some cue from the user (perhaps a mouse click) before adding the
+                         image.
+
+                         The @scheme[delay] argument specifies a delay in 1/100s of a
+                         second. 
+
+                         If the @scheme[transparent] argument is a color, then it
+                         determines an index that is used to represent transparent pixels in the
+                         follow image (as opposed to the color specified by the colormap for the index).
+
+                         An exception is raised if a control is already added to @scheme[stream]
+                         without a corresponding image.}])
+
   (define (gif-add-control GifFile
                            Disposal
                            UserInput?
@@ -260,10 +359,17 @@
   ;; * This routine should be called to add the "loop" graphic control
   ;;   before adding any images
   ;; *****************************************************************************/
-  (provide/contract [gif-add-loop-control
-                     (empty-gif-stream?
-                      dimension?
-                      . -> . any)])
+  (provide/doc [gif-add-loop-control
+                ([stream empty-gif-stream?]
+                 [iteration dimension?]
+                 . -> . any)
+                @{Writes a control command to a GIF stream for which no images or other
+                         commands have already been written. The command causes the animating
+                         sequence of images in the GIF to be repeated `iteration-dimension'
+                         times, where 0 can be used to mean ``infinity.''
+                         
+                         An exception is raise if some control or image has been added to the
+                         stream already.}])
   (define (gif-add-loop-control GifFile
                                 Iterations)
     (WRITE GifFile #"\x21\xFF\x0BNETSCAPE2.0\x03\x01")
@@ -274,10 +380,14 @@
   ;;/******************************************************************************
   ;; * This routine should be called to add arbitrary comment text
   ;; *****************************************************************************/
-  (provide/contract [gif-add-comment
-                     (image-or-control-ready-gif-stream?
-                      bytes?
-                      . -> . any)])
+  (provide/doc [gif-add-comment
+                ([stream image-or-control-ready-gif-stream?]
+                 [bstr bytes?]
+                 . -> . any)
+                @{Adds a generic comment to the GIF stream.
+                       
+                       An exception is raised if an image-control command was just written to
+                       the stream (so that an image is required next).}])
   (define (gif-add-comment GifFile
                            Str)
     (WRITE GifFile #"\x21\xFE")
@@ -293,9 +403,15 @@
   ;;/******************************************************************************
   ;; * This routine should be called last, to end GIF file.
   ;; *****************************************************************************/
-  (provide/contract [gif-end
-                     (image-or-control-ready-gif-stream?
-                      . -> . any)])
+  (provide/doc [gif-end
+                ([stream image-or-control-ready-gif-stream?]
+                 . -> . any)
+                @{Finishes 
+                  writing a GIF file. The GIF stream's output port is not
+                  automatically closed.
+                  
+                  An exception is raised if an image-control command was just written to
+                  the stream (so that an image is required next).}])
   (define (gif-end GifFile)
     (WRITE GifFile #";")
     (set-gif-stream-FileState! GifFile 'done))
@@ -439,11 +555,37 @@
     (and (bytes? b)
          (zero? (remainder (bytes-length b) 4))))
   
-  (provide/contract
-   [quantize ((argb-bytes?)
-              . ->* . 
-              (bytes? color-map? (or/c false/c color?)))])
+  (provide/doc
+   [quantize ([bstr argb-bytes?]
+              . -> . 
+              (values bytes? gif-colormap? (or/c false/c color?)))
+             @{Each
+               image in a GIF stream is limited to 256 colors, including the
+               transparent ``color,'' if any. The @scheme[quantize] function helps converts a
+               24-bit image (plus alpha channel) into an indexed-color image,reducing
+               the number of colors if necessary.
 
+               Given a set of pixels expressed in ARGB format 
+               (i.e., each four bytes is a set of values for one pixel: alpha, red, blue, and green),
+               @scheme[quantize] produces produces
+
+               @(itemize
+                 @item{bytes for the image (i.e., a array of colors, expressed as a byte string)}
+                 @item{a colormap}
+                 @item{either @scheme[#f] or a color index for the transparent ``color''})
+
+               The conversion treats alpha values less than 128 as transparent
+               pixels, and other alpha values as solid.
+
+               The quantization process first attempts to use all (non-transparent)
+               colors in the image. if that fails, it reduces the image to 12-bit
+               color (3 bits per each of red, green, and blue) by rounding up pixel
+               values, and tries again. If that fails, it reduces the image to 6-bit
+               color (2 bits per each of red, green, and blue).
+
+               To convert a collection of images all with the same quantization,
+               simply append them for the input of a single call of @scheme[quantize], and
+               then break apart the result bytes.}])
   (define (quantize argb)
     (let* ([len (quotient (bytes-length argb) 4)]
            [result (make-bytes len)]

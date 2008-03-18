@@ -101,7 +101,20 @@
                                                              #%module-begin 
                                                              #%require #%provide))))
                                                   #f
-                                                  #t)
+                                                  ;; Also check for calls to `void':
+                                                  (if (free-identifier=? a (quote-syntax #%app))
+                                                      (let-values ([(e) (cdr e)])
+                                                        (let-values ([(e) (if (syntax? e)
+                                                                              (syntax-e e)
+                                                                              e)])
+                                                          (if (pair? e)
+                                                              (if (symbol? (syntax-e (car e)))
+                                                                  (if (free-identifier=? (car e) (quote-syntax void))
+                                                                      #f
+                                                                      #t)
+                                                                  #t)
+                                                              #t)))
+                                                      #t))
                                               #t))
                                         #t))])
                       (let-values ([(e) (if wrap?

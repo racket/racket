@@ -10,6 +10,7 @@
 @include-section["smtp.scrbl"]
 @include-section["cgi.scrbl"]
 @include-section["sendmail.scrbl"]
+@include-section["gifwrite.scrbl"]
 
 @(bibliography
 

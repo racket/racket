@@ -42,8 +42,10 @@
                                             (append
                                              (kernel-form-identifier-list)
                                              (syntax->list #'(provide
-                                                              require))))])
-                (syntax-case expanded  (begin)
+                                                              require
+                                                              #%provide
+                                                              #%require))))])
+                (syntax-case expanded (begin)
                   [(begin body1 ...)
                    #`(doc-begin m-id exprs body1 ... . body)]
                   [(id . rest)
@@ -53,7 +55,9 @@
                                                 provide 
                                                 define-values
                                                 define-syntaxes
-                                                define-for-syntaxes))))
+                                                define-for-syntaxes
+                                                #%require
+                                                #%provide))))
                    #`(begin #,expanded (doc-begin m-id exprs . body))]
                   [_else
                    #`(doc-begin m-id (#,expanded . exprs) . body)])))]))])))

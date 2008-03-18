@@ -1892,6 +1892,12 @@
                                                         (list (make-element 'subscript
                                                                             (loop (caddr m))))
                                                         (loop (cadddr m))))]
+                                          [(regexp-match #px"^(.*)\\^([a-zA-Z0-9]+)(.*)$" i)
+                                           => (lambda (m)
+                                                (append (loop (cadr m))
+                                                        (list (make-element 'superscript
+                                                                            (loop (caddr m))))
+                                                        (loop (cadddr m))))]
                                           [(regexp-match #px"^(.*)([()0-9{}\\[\\]])(.*)$" i)
                                            => (lambda (m)
                                                 (append (loop (cadr m))
