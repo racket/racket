@@ -692,6 +692,9 @@ thread_val {
   gcMARK(pr->dead_box);
   gcMARK(pr->running_box);
 
+  gcMARK(pr->mbox_first);
+  gcMARK(pr->mbox_last);
+  gcMARK(pr->mbox_sema);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread));
 }

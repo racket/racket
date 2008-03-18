@@ -222,3 +222,34 @@ suspended and then resumes after a call to
 @scheme[thread-suspend-evt], the result event remains ready; after
 each resume of @scheme[thd] created a fresh event to be returned by
 @scheme[thread-suspend-evt].}
+
+@;------------------------------------------------------------------------
+@section[#:tag "threadmbox"]{Thread Mailboxes}
+
+Each thread has a @defterm{mailbox} through which it can receive
+arbitrary message. In other words, each thread has a built-in
+asynchronous channel.
+
+@margin-note/ref{See also @secref["async-channel"].}
+
+@defproc[(thread-send [thd thread?] [v any/c]) void?]{
+
+Queues @scheme[v] as a message to @scheme[thd]. This function never
+blocks.}
+
+@defproc[(thread-receive) any/c]{
+
+Receives and dequeues a message queued for the current thread, if
+any. If no message is available, @scheme[thread-receive] blocks until
+one is available.}
+
+@defproc[(thread-try-receive) any/c]{
+
+Receives and dequeues a message queued for the current thread, if any,
+or returns @scheme[#f] immediately if no message is available.}
+
+@defproc[(thread-receive-evt) evt?]{
+
+Returns a constant @tech{synchronizable event} (see @secref["sync"])
+that becomes ready when the synchronizing thread has a message to
+receive. The event result is itself.}

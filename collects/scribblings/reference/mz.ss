@@ -58,8 +58,13 @@
       [(_ s) (scheme s)]))
   (provide exnraise Exn)
 
-  (provide refalso moreref Guide guideintro guidesecref
+  (provide margin-note/ref
+           refalso moreref Guide guideintro guidesecref
            HonuManual)
+
+  (define (margin-note/ref . s)
+    (apply margin-note
+           (decode-content (cons magnify s))))
 
   (define (refalso tag . s)
     (apply margin-note

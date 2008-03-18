@@ -236,6 +236,7 @@ scheme_init_type (Scheme_Env *env)
   set_name(scheme_write_evt_type, "<write-evt>");
   set_name(scheme_always_evt_type, "<always-evt>");
   set_name(scheme_never_evt_type, "<never-evt>");
+  set_name(scheme_thread_recv_evt_type, "<thread-receive-evt>");
 
   set_name(scheme_thread_resume_type, "<thread-resume-evt>");
   set_name(scheme_thread_suspend_type, "<thread-suspend-evt>");
@@ -585,6 +586,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_nack_evt_type, twoptr_obj);
   GC_REG_TRAV(scheme_always_evt_type, char_obj);
   GC_REG_TRAV(scheme_never_evt_type, char_obj);
+  GC_REG_TRAV(scheme_thread_recv_evt_type, char_obj);
 
   GC_REG_TRAV(scheme_inspector_type, mark_inspector);
 

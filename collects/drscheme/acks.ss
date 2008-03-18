@@ -55,6 +55,7 @@
      "David Van Horn, "
      "Anton van Straaten, "
      "Dale Vaillancourt, "
+     "Dimitris Vyzovitis, "
      "Stephanie Weirich, "
      "Noel Welsh, "
      "Adam Wick, "

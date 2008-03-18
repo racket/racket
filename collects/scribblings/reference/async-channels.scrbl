@@ -6,6 +6,7 @@
 
 @note-lib-only[scheme/async-channel]
 
+@margin-note/ref{See also @secref["threadmbox"].}
 
 @defproc[(async-channel? [v any/c]) boolean?]{
 

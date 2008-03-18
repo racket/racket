@@ -1678,6 +1678,9 @@ static int thread_val_MARK(void *p) {
   gcMARK(pr->dead_box);
   gcMARK(pr->running_box);
 
+  gcMARK(pr->mbox_first);
+  gcMARK(pr->mbox_last);
+  gcMARK(pr->mbox_sema);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread));
 }
@@ -1775,6 +1778,9 @@ static int thread_val_FIXUP(void *p) {
   gcFIXUP(pr->dead_box);
   gcFIXUP(pr->running_box);
 
+  gcFIXUP(pr->mbox_first);
+  gcFIXUP(pr->mbox_last);
+  gcFIXUP(pr->mbox_sema);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread));
 }

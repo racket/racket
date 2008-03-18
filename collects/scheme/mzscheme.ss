@@ -42,7 +42,11 @@
                               free-transformer-identifier=?
                               free-template-identifier=?
                               free-label-identifier=?
-                              vector-copy!)
+                              vector-copy!
+                              thread-send
+                              thread-receive
+                              thread-try-receive
+                              thread-receive-evt)
              (rename syntax->datum syntax-object->datum)
              (rename datum->syntax datum->syntax-object)
              (rename free-identifier=? module-identifier=?)

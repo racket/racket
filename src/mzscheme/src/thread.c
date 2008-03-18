@@ -2176,7 +2176,7 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
   process->list_stack = NULL;
 
   scheme_gmp_tls_init(process->gmp_tls);
-
+  
   if (prefix) {
     process->next = scheme_first_thread;
     process->prev = NULL;
@@ -2243,6 +2243,15 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
   process->user_tls_size = 0;
   
   process->nester = process->nestee = NULL;
+
+  process->mbox_first = NULL;
+  process->mbox_last = NULL;
+  process->mbox_sema = NULL;
+
+  process->mref = NULL;
+  process->extra_mrefs = NULL;
+
+    
 
   /* A thread points to a lot of stuff, so it's bad to put a finalization
      on it, which is what registering with a custodian does. Instead, we
@@ -2586,6 +2595,10 @@ static void thread_is_dead(Scheme_Thread *r)
   r->error_buf = NULL;
 
   r->spare_runstack = NULL;
+
+  r->mbox_first = NULL;
+  r->mbox_last = NULL;
+  r->mbox_sema = NULL;
 }
 
 static void remove_thread(Scheme_Thread *r)

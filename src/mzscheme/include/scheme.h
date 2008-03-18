@@ -1066,6 +1066,10 @@ typedef struct Scheme_Thread {
 
   Scheme_Object *name;
 
+  Scheme_Object *mbox_first;
+  Scheme_Object *mbox_last;
+  Scheme_Object *mbox_sema;
+
 #ifdef MZ_PRECISE_GC
   int gc_owner_set;
 #endif
