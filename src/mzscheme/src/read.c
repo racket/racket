@@ -5433,6 +5433,13 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
     port = delay_info->cached_port;
   }
 
+  /* Allow only one thread at a time. This is a little questionable,
+     because unmarshalling could take arbitrarily long, and an
+     untrusted program might construct an adversarial bytecode. That
+     would be relatively difficult, though. In practice, unmarshalling
+     will be fast. */
+  scheme_start_atomic();
+
   old_rp = delay_info->current_rp;
 
   /* Create a port for reading: */
@@ -5482,6 +5489,8 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
       clear_bytes_chain->clear_bytes_prev = delay_info;
     clear_bytes_chain = delay_info;
   }
+
+  scheme_end_atomic_no_swap();
   
   if (v) {
     delay_info->symtab[which] = v;
