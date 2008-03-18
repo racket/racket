@@ -232,10 +232,16 @@ asynchronous channel.
 
 @margin-note/ref{See also @secref["async-channel"].}
 
-@defproc[(thread-send [thd thread?] [v any/c]) void?]{
+@defproc[(thread-send [thd thread?] [v any/c] 
+                      [fail-thunk (-> any) 
+                                  (lambda () (raise-mismatch-error ....))]) 
+         any]{
 
-Queues @scheme[v] as a message to @scheme[thd]. This function never
-blocks.}
+Queues @scheme[v] as a message to @scheme[thd] without blocking. If
+the message is queued, the result is @|void-const|. If @scheme[thd] is
+stops running---as in @scheme[thread-running?]---before the message is
+queued, then @scheme[fail-thunk] is called (through a tail call) to
+produce the result.}
 
 @defproc[(thread-receive) any/c]{
 

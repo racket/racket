@@ -146,7 +146,7 @@ void scheme_init_sema(Scheme_Env *env)
   scheme_add_global_constant("thread-send", 
 			     scheme_make_prim_w_arity(thread_send,
 						      "thread-send", 
-						      2, 2), 
+						      2, 3), 
 			     env);
   scheme_add_global_constant("thread-receive", 
 			     scheme_make_prim_w_arity(thread_receive,
@@ -1076,7 +1076,7 @@ static Scheme_Object *thread_send(int argc, Scheme_Object **argv)
       if (argc > 2) {
         return _scheme_tail_apply(argv[2], 0, NULL);
       } else
-        scheme_raise_exn(MZEXN_FAIL, "thread-send: thread is not running");
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT, "thread-send: target thread is not running");
     }
   } else 
     scheme_wrong_type("thread-send", "thread", 0, argc, argv);

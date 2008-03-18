@@ -724,6 +724,12 @@
   (thread-send t 2)
   (sync (system-idle-evt))
   (test '(0 1 2) values s))
+(let ([t (thread void)])
+  (sync (system-idle-evt))
+  (test 'z thread-send t 'x (lambda () 'z))
+  (test-values '(a z) (lambda ()
+                        (thread-send t 'x (lambda () (values 'a 'z)))))
+  (err/rt-test (thread-send t 'x)))
 
 ;; ----------------------------------------
 ;;  Garbage collection
