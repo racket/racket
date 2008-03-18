@@ -1494,7 +1494,7 @@ an identifier can be either imported or defined for a given
                              (all-defined-out)
                              (all-from-out module-path ...)
                              (rename-out [orig-id export-id] ...)
-                             (except-out provide-spec id ...)
+                             (except-out provide-spec provide-spec ...)
                              (prefix-out prefix-id provide-spec)
                              (struct-out id)
                              (combine-out provide-spec ...)
@@ -1552,10 +1552,11 @@ follows.
  @tech{phase level} 0.  The symbolic name for each export is
  @scheme[export-id] instead @scheme[orig-d].}
 
- @defsubform[(except-out provide-spec id ...)]{ Like
- @scheme[provide-spec], but omitting the export of each binding with
- external name @scheme[id]. If @scheme[id] is not specified as an
- export by @scheme[provide-spec], a syntax error is reported.}
+ @defsubform[(except-out provide-spec provide-spec ...)]{ Like the
+ first @scheme[provide-spec], but omitting the bindings listed in each
+ subsequent @scheme[provide-spec]. If one of the latter bindings is
+ not included in the initial @scheme[provide-spec], a syntax error is
+ reported.}
 
  @defsubform[(prefix-out prefix-id provide-spec)]{
  Like @scheme[provide-spec], but with each symbolic export name from

@@ -750,41 +750,36 @@
     (make-provide-transformer
      (lambda (stx modes)
        (syntax-case stx ()
-         [(_ out id ...)
+         [(_ out spec ...)
           (let ([exports (expand-export #'out modes)]
-                [ids (syntax->list #'(id ...))])
-            (for-each (lambda (id)
-                        (unless (identifier? id)
-                          (raise-syntax-error
-                           #f
-                           "expected <id>, but found something else"
-                           stx
-                           id)))
-                      ids)
-            (let ([dup-id (check-duplicate-identifier ids)])
-              (when dup-id
-                (raise-syntax-error
-                 #f
-                 "duplicate identifier"
-                 stx
-                 dup-id)))
-            (for-each (lambda (id)
+                [exceptions (apply
+                             append
+                             (map (lambda (spec)
+                                    (expand-export spec modes))
+                                  (syntax->list #'(spec ...))))])
+            (for-each (lambda (exception)
                         (or (ormap (lambda (export)
-                                     (free-identifier=? id (export-local-id export)
-                                                        (export-mode export)))
+                                     (and (eq? (export-mode export)
+                                               (export-mode exception))
+                                          (free-identifier=? (export-local-id exception)
+                                                             (export-local-id export)
+                                                             (export-mode export))))
                                    exports)
                             (raise-syntax-error
                              #f
-                             (format "identifier `~a' not included in nested provide spec"
-                                     (syntax-e id))
+                             (format "identifier to remove `~a' not included in nested provide spec"
+                                     (syntax-e (export-local-id exception)))
                              stx
                              #'out)))
-                      ids)
+                      exceptions)
             (filter (lambda (export)
-                      (not (ormap (lambda (id)
-                                    (free-identifier=? id (export-local-id export)
-                                                       (export-mode export)))
-                                  ids)))
+                      (not (ormap (lambda (exception)
+                                    (and (eq? (export-mode export)
+                                              (export-mode exception))
+                                         (free-identifier=? (export-local-id exception)
+                                                            (export-local-id export)
+                                                            (export-mode export))))
+                                  exceptions)))
                     exports))]))))
 
   (define-for-syntax (build-name id . parts)
