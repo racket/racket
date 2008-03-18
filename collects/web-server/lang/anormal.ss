@@ -141,12 +141,10 @@
         (ctxt stx)]
        [id (identifier? #'id)
            (ctxt #'id)]
-       ; XXX Shouldn't be here
        [(letrec-syntaxes+values ([(sv ...) se] ...)
           ([(vv ...) ve] ...)
           be ...)
-        (anormal ctxt
-                 (elim-letrec-term stx))]
+        (anormal ctxt (elim-letrec-term stx))]
        [(#%expression d)
         (anormal
          (ccompose ctxt

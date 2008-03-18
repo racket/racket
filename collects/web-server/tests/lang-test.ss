@@ -272,7 +272,34 @@
          (check = 4 (test-m06.1 `(dispatch ,the-dispatch (list ,second-key 3))))
          (check-true (zero? (test-m06.1 `(dispatch ,the-dispatch (list ,second-key -1)))))
          (check = -7 (test-m06.1 `(dispatch ,the-dispatch (list ,third-key 0))))
-         (check-true (zero? (test-m06.1 `(dispatch ,the-dispatch (list ,third-key 7)))))))))
+         (check-true (zero? (test-m06.1 `(dispatch ,the-dispatch (list ,third-key 7))))))))
+    
+    (test-case
+     "curried with send/suspend and serializaztion (keyword args)"
+     
+     (let-values ([(test-m06.2)
+                   (make-module-eval
+                    (module m06.2 (lib "lang.ss" "web-server")
+                      (provide start)
+                      (define (gn #:page which)
+                        (cadr
+                         (send/suspend
+                          (lambda (k)
+                            (let ([ignore (printf "Please send the ~a number.~n" which)])
+                              k)))))
+                      
+                      (define (start ignore)
+                        (let ([result (+ (gn #:page "first") (gn #:page "second"))])
+                          (let ([ignore (printf "The answer is: ~s~n" result)])
+                            result)))))])
+       (let* ([first-key (test-m06.2 '(dispatch-start start 'foo))]
+              [second-key (test-m06.2 `(dispatch ,the-dispatch (list (deserialize (serialize ,first-key)) 1)))]
+              [third-key (test-m06.2 `(dispatch ,the-dispatch (list (deserialize (serialize ,first-key)) -7)))])
+         (check = 3 (test-m06.2 `(abort/cc (lambda () (dispatch ,the-dispatch (list ,second-key 2))))))
+         (check = 4 (test-m06.2 `(dispatch ,the-dispatch (list ,second-key 3))))
+         (check-true (zero? (test-m06.2 `(dispatch ,the-dispatch (list ,second-key -1)))))
+         (check = -7 (test-m06.2 `(dispatch ,the-dispatch (list ,third-key 0))))
+         (check-true (zero? (test-m06.2 `(dispatch ,the-dispatch (list ,third-key 7)))))))))
    
    (test-suite
     "Test the certification process"

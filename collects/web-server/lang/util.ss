@@ -3,7 +3,7 @@
          syntax/kerncase
          mzlib/pretty
          mzlib/list)
-(provide (except-out (all-defined-out) template))
+(provide (all-defined-out))
 
 (define transformer? (make-parameter #f))
 
@@ -55,19 +55,9 @@
          (list (quasisyntax/loc stx
                  (define-values (v ...) #,nve)))))]
      [(define-syntaxes (v ...) ve)
-      (parameterize ([transformer? #t])
-        (let-values ([(nve defs) (inner #'ve)])
-          (append 
-           defs
-           (list (quasisyntax/loc stx
-                   (define-syntaxes (v ...) #,nve))))))]      
+      (list stx)]      
      [(define-values-for-syntax (v ...) ve)
-      (parameterize ([transformer? #t])
-        (let-values ([(nve defs) (inner #'ve)])
-          (append 
-           defs
-           (list (quasisyntax/loc stx
-                   (define-values-for-syntax (v ...) #,nve))))))]
+      (list stx)]
      [(#%require spec ...)
       (list stx)]
      [expr
@@ -107,68 +97,3 @@
    (lambda (an-id)
      (bound-identifier=? id an-id))
    ids))
-
-;; Kernel Case Template
-(define (template stx)  
-  (recertify
-   stx
-   (kernel-syntax-case 
-       stx (transformer?)
-     [(begin be ...)
-      (with-syntax ([(be ...) (map template (syntax->list #'(be ...)))])
-        (syntax/loc stx
-          (begin be ...)))]
-     [(begin0 be ...)
-      (with-syntax ([(be ...) (map template (syntax->list #'(be ...)))])
-        (syntax/loc stx
-          (begin0 be ...)))]
-     [(set! v ve)
-      (with-syntax ([ve (template #'ve)])
-        (syntax/loc stx
-          (set! v ve)))]
-     [(let-values ([(v ...) ve] ...) be ...)
-      (with-syntax ([(ve ...) (map template (syntax->list #'(ve ...)))]
-                    [(be ...) (map template (syntax->list #'(be ...)))])
-        (syntax/loc stx
-          (let-values ([(v ...) ve] ...) be ...)))]
-     [(letrec-values ([(v ...) ve] ...) be ...)
-      (with-syntax ([(ve ...) (map template (syntax->list #'(ve ...)))]
-                    [(be ...) (map template (syntax->list #'(be ...)))])
-        (syntax/loc stx
-          (letrec-values ([(v ...) ve] ...) be ...)))]
-     [(#%plain-lambda formals be ...)
-      (with-syntax ([(be ...) (map template (syntax->list #'(be ...)))])
-        (syntax/loc stx
-          (#%plain-lambda formals be ...)))]
-     [(case-lambda [formals be ...] ...)
-      (with-syntax ([((be ...) ...) (map template (syntax->list #'((be ...) ...)))])
-        (syntax/loc stx
-          (case-lambda [formals be ...] ...)))]
-     [(if te ce ae)
-      (with-syntax ([te (template #'te)]
-                    [ce (template #'ce)]
-                    [ae (template #'ae)])
-        (syntax/loc stx
-          (if te ce ae)))]
-     [(quote datum)
-      stx]
-     [(quote-syntax datum)
-      stx]     
-     [(with-continuation-mark ke me be)
-      (with-syntax ([ke (template #'ke)]
-                    [me (template #'me)]
-                    [be (template #'be)])
-        (syntax/loc stx
-          (with-continuation-mark ke me be)))]
-     [(#%plain-app e ...)
-      (with-syntax ([(e ...) (map template (syntax->list #'(e ...)))])
-        (syntax/loc stx
-          (#%plain-app e ...)))]
-     [(#%top . v)
-      stx]
-     [(#%variable-reference . v)
-      stx]       
-     [id (identifier? #'id)
-         stx]     
-     [_
-      (raise-syntax-error 'kerncase "Dropped through:" stx)])))

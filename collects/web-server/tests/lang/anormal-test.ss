@@ -45,7 +45,7 @@
 ;; w-alpha=/env: env target-expr target-expr -> boolean
 ;; are two target vars or vals alpha-equivalent?
 (define (w-alpha=/env env1 env2 expr1 expr2)
-  (syntax-case expr1 (#%top #%plain-lambda quote)
+  (syntax-case expr1 (#%top #%plain-lambda quote #%expression)
     [(#%top . var1)
      (syntax-case expr2 (#%top)
        [(#%top . var2)
@@ -68,6 +68,11 @@
                 (extend env1 (syntax->symbols (formals-list #'formals1)) syms)
                 (extend env2 (syntax->symbols (formals-list #'formals2)) syms)
                 #'body1 #'body2)))]
+       [_else #f])]
+    [(#%expression e1)
+     (syntax-case expr2 (#%expression)
+       [(#%expression e2)
+        (w-alpha=/env env1 env2 #'e1 #'e2)]
        [_else #f])]
     [x1 (symbol? (syntax->datum #'x1))
         (syntax-case expr2 ()

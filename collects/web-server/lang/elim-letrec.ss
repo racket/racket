@@ -88,32 +88,12 @@
          (if (bound-identifier-member? #'id ids)
              (syntax/loc stx (#%plain-app unbox id))
              #'id)]
-     ; XXX These two cases shouldn't be here.
      [(letrec-syntaxes+values ([(sv ...) se] ...)
         ([(vv ...) ve] ...)
         be ...)
-      (let ([new-ids (apply append ids (map syntax->list (syntax->list #'((vv ...) ...))))])
-        (with-syntax ([((nvv ...) ...) (map (compose generate-temporaries syntax->list) (syntax->list #'((vv ...) ...)))]
-                      [((nvv-box ...) ...) (map (lambda (nvs)
-                                                  (map (lambda (x) (syntax/loc x (#%plain-app box the-undef)))
-                                                       (syntax->list nvs)))
-                                                (syntax->list #`((vv ...) ...)))]
-                      [(se ...) (map (elim-letrec new-ids) (syntax->list #'(se ...)))]
-                      [(ve ...) (map (elim-letrec new-ids) (syntax->list #'(ve ...)))]
-                      [(be ...) (map (elim-letrec new-ids) (syntax->list #'(be ...)))])
-          ; XXX Optimize special case of one nv
-          (syntax/loc stx
-            (let-values ([(vv ...)
-                          (#%plain-app values nvv-box ...)] ...)
-              ; This is okay, because we've already expanded the syntax.
-              (let-syntaxes 
-               ([(sv ...) se] ...)
-               (begin (#%plain-app call-with-values
-                                   (#%plain-lambda () ve)
-                                   (#%plain-lambda (nvv ...)
-                                                   (#%plain-app set-box! vv nvv) ...))
-                      ...
-                      be ...))))))]     
+      ((elim-letrec ids)
+       (syntax/loc stx
+         (letrec-values ([(vv ...) ve] ...) be ...)))]
      [(#%expression d)
       (quasisyntax/loc stx (#%expression #,((elim-letrec ids) #'d)))]
      [_

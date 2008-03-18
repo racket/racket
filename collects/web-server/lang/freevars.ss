@@ -72,15 +72,10 @@
             [else 
              #;(printf "Not including id ~S with binding ~S in freevars~n" (syntax->datum #'id) i-bdg)
              empty]))]
-    ; XXX Shouldn't be here
     [(letrec-syntaxes+values ([(sv ...) se] ...)
        ([(vv ...) ve] ...)
        be ...)
-     (set-diff (union* (free-vars* (syntax->list #'(se ...)))
-                       (free-vars* (syntax->list #'(ve ...)))
-                       (free-vars* (syntax->list #'(be ...))))
-               (append (apply append (map syntax->list (syntax->list #'((sv ...) ...))))
-                       (apply append (map syntax->list (syntax->list #'((vv ...) ...))))))]
+     (free-vars #'(letrec-values ([(vv ...) ve] ...) be ...))]
     [(#%expression d)
      (free-vars #'d)]
     [_
