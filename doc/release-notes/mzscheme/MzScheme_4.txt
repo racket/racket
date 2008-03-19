@@ -80,6 +80,10 @@ but we start with an enumeration of changes:
    is terminated by the end-of-file) and the absence of the redundant
    identifier `my-library'.
 
+ - Bindings introduced by a module's language (i.e., its initial
+   import) can be shadowed by definitions and imports in the module
+   body.
+
  - Under Unix, "~" is no longer automatically expanded to a user's
    home directory. The `expand-user-path' function from `scheme/base'
    explicitly expands the abbreviation (but this function should be

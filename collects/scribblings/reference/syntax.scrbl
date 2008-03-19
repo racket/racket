@@ -1178,7 +1178,9 @@ module.
 The @scheme[module-path] must be as for @scheme[require], and it
 supplies the initial bindings for the body @scheme[form]s. That is, it
 is treated like a @scheme[(require module-path)] prefix before the
-@scheme[form]s.
+@scheme[form]s, except that the bindings introduced by
+@scheme[module-path] can be shadowed by definitions and
+@scheme[require]s in the module body @scheme[form]s.
 
 If a single @scheme[form] is provided, then it is partially expanded
 in a @tech{module-begin context}. If the expansion leads to

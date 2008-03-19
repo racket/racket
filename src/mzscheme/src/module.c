@@ -545,7 +545,7 @@ void scheme_finish_kernel(Scheme_Env *env)
     scheme_extend_module_rename(rn, kernel_modidx, exs[i], exs[i], kernel_modidx, exs[i], 
                                 0, scheme_make_integer(0), NULL, 0);
   }
-  scheme_seal_module_rename(rn);
+  scheme_seal_module_rename(rn, STX_SEAL_ALL);
 
   scheme_sys_wraps(NULL);
 
@@ -666,7 +666,7 @@ Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env)
   /* Add a module mapping for all kernel provides: */
   scheme_extend_module_rename_with_kernel(rn, kernel_modidx);
   
-  scheme_seal_module_rename(rn);
+  scheme_seal_module_rename(rn, STX_SEAL_ALL);
 
   w = scheme_datum_to_syntax(kernel_symbol, scheme_false, scheme_false, 0, 0);
   w = scheme_add_rename(w, rn);
@@ -1870,7 +1870,8 @@ static int do_add_simple_require_renames(Scheme_Object *rn,
                                          Scheme_Module *im, Scheme_Module_Phase_Exports *pt,
                                          Scheme_Object *idx,
                                          Scheme_Object *marshal_phase_index,
-                                         Scheme_Object *src_phase_index)
+                                         Scheme_Object *src_phase_index,
+                                         int can_override)
 {
   int i, saw_mb, numvals;
   Scheme_Object **exs, **exss, **exsns, *midx, *info, *vec, *nml, *mark_src;
@@ -1910,7 +1911,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn,
       saw_mb = 1;
 
     if (required) {
-      vec = scheme_make_vector(7, NULL);
+      vec = scheme_make_vector(8, NULL);
       nml = scheme_make_pair(idx, scheme_null);
       SCHEME_VEC_ELS(vec)[0] = nml;
       SCHEME_VEC_ELS(vec)[1] = midx;
@@ -1919,6 +1920,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn,
       SCHEME_VEC_ELS(vec)[4] = exs[i];
       SCHEME_VEC_ELS(vec)[5] = orig_src;
       SCHEME_VEC_ELS(vec)[6] = mark_src;
+      SCHEME_VEC_ELS(vec)[7] = (can_override ? scheme_true : scheme_false);
       scheme_hash_set(required, exs[i], vec);
     }
   }
@@ -1934,7 +1936,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn,
       numvals = kernel->me->rt->num_var_provides;
       for (i = kernel->me->rt->num_provides; i--; ) {
         if (!SAME_OBJ(pt->kernel_exclusion, exs[i])) {
-          vec = scheme_make_vector(7, NULL);
+          vec = scheme_make_vector(8, NULL);
           nml = scheme_make_pair(idx, scheme_null);
           SCHEME_VEC_ELS(vec)[0] = nml;
           SCHEME_VEC_ELS(vec)[1] = kernel_modidx;
@@ -1943,6 +1945,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn,
           SCHEME_VEC_ELS(vec)[4] = exs[i];
           SCHEME_VEC_ELS(vec)[5] = orig_src;
           SCHEME_VEC_ELS(vec)[6] = mark_src;
+          SCHEME_VEC_ELS(vec)[7] = (can_override ? scheme_true : scheme_false);
           scheme_hash_set(required, exs[i], vec);
         }
       }
@@ -1983,7 +1986,8 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
                                       Scheme_Hash_Table *tables,
                                       Scheme_Module *im, Scheme_Object *idx,
                                       Scheme_Object *import_shift /* = src_phase_index */,
-                                      Scheme_Object *only_export_phase)
+                                      Scheme_Object *only_export_phase,
+                                      int can_override)
 {
   int saw_mb;
   Scheme_Object *phase;
@@ -1994,7 +1998,8 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
                                            get_required_from_tables(tables, import_shift),
                                            orig_src, im, im->me->rt, idx,
                                            scheme_make_integer(0),
-                                           import_shift);
+                                           import_shift,
+                                           can_override);
   else
     saw_mb = 0;
   
@@ -2008,7 +2013,8 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
                                   get_required_from_tables(tables, phase),
                                   orig_src, im, im->me->et, idx,
                                   scheme_make_integer(1),
-                                  import_shift);
+                                  import_shift,
+                                  can_override);
   }
 
   if (im->me->dt
@@ -2017,7 +2023,8 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
                                   get_required_from_tables(tables, scheme_false),
                                   orig_src, im, im->me->dt, idx,
                                   scheme_false,
-                                  import_shift);
+                                  import_shift,
+                                  can_override);
   }
 
   if (im->me->other_phases) {
@@ -2036,7 +2043,8 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
                                         get_required_from_tables(tables, phase),
                                         orig_src, im, (Scheme_Module_Phase_Exports *)val, idx,
                                         key,
-                                        import_shift);
+                                        import_shift,
+                                        can_override);
         }
       }
     }
@@ -2142,6 +2150,8 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
           }
 
           if (l) {
+            /* Shouldn't we do initial import first, to get shadowing
+               right? Somehow, it seems to work this way. */
             for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
               idx = SCHEME_CAR(l);
               name = scheme_module_resolve(idx, 0);
@@ -2151,7 +2161,7 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
               else
                 im = (Scheme_Module *)scheme_hash_get(menv->module_registry, name);
               
-              add_simple_require_renames(NULL, rns, NULL, im, idx, shift, NULL);
+              add_simple_require_renames(NULL, rns, NULL, im, idx, shift, NULL, 0);
             }
           }
         }
@@ -4694,7 +4704,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     scheme_extend_module_rename_with_kernel(rn, kernel_modidx);
     saw_mb = 1;
   } else {
-    saw_mb = add_simple_require_renames(NULL, rn_set, NULL, iim, iidx, scheme_make_integer(0), NULL);
+    saw_mb = add_simple_require_renames(NULL, rn_set, NULL, iim, iidx, scheme_make_integer(0), NULL, 1);
   }
 
   if (rec[drec].comp)
@@ -4914,7 +4924,7 @@ static void check_require_name(Scheme_Object *prnt_name, Scheme_Object *name,
                                                                                          scheme_null))));
   }
 	    
-  /* Not required, or required from same module: */
+  /* Check not required, or required from same module: */
   vec = scheme_hash_get(required, name);
   if (vec) {
     Scheme_Object *srcs;
@@ -4927,34 +4937,40 @@ static void check_require_name(Scheme_Object *prnt_name, Scheme_Object *name,
          and also add source phase for re-provides. */
       nml = scheme_make_pair(nominal_modidx, SCHEME_VEC_ELS(vec)[0]);
       SCHEME_VEC_ELS(vec)[0] = nml;
+      SCHEME_VEC_ELS(vec)[7] = scheme_false;
       return; 
     }
 
-    srcs = scheme_null;
-    if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[5])) {
-      srcs = scheme_make_pair(SCHEME_VEC_ELS(vec)[5], srcs);
-      /* don't use error_write_to_string_w_max since this is code */
-      if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC))) {
-        fromsrc = scheme_write_to_string_w_max(scheme_syntax_to_datum(SCHEME_VEC_ELS(vec)[5], 0, NULL), 
-                                               &fromsrclen, 32);
-        fromsrc_colon = ":";
+    if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[7])) {
+      /* can override */
+    } else {
+      /* error: already imported */
+      srcs = scheme_null;
+      if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[5])) {
+        srcs = scheme_make_pair(SCHEME_VEC_ELS(vec)[5], srcs);
+        /* don't use error_write_to_string_w_max since this is code */
+        if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC))) {
+          fromsrc = scheme_write_to_string_w_max(scheme_syntax_to_datum(SCHEME_VEC_ELS(vec)[5], 0, NULL), 
+                                                 &fromsrclen, 32);
+          fromsrc_colon = ":";
+        }
       }
-    }
       
-    if (!fromsrc) {
-      fromsrc = "a different source";
-      fromsrclen = strlen(fromsrc);
+      if (!fromsrc) {
+        fromsrc = "a different source";
+        fromsrclen = strlen(fromsrc);
+      }
+
+      if (err_src)
+        srcs = scheme_make_pair(err_src, srcs);
+
+      scheme_wrong_syntax_with_more_sources("module", prnt_name, err_src, srcs,
+                                            "identifier already imported from%s %t",
+                                            fromsrc_colon, fromsrc, fromsrclen);
     }
-
-    if (err_src)
-      srcs = scheme_make_pair(err_src, srcs);
-
-    scheme_wrong_syntax_with_more_sources("module", prnt_name, err_src, srcs,
-                                          "identifier already imported from%s %t",
-                                          fromsrc_colon, fromsrc, fromsrclen);
   }
 	    
-  /* Not syntax: */
+  /* Check not syntax: */
   if (syntax) {
     if (scheme_lookup_in_table(syntax, (const char *)name)) {
       scheme_wrong_syntax("module", prnt_name, form, "imported identifier already defined");
@@ -4962,7 +4978,7 @@ static void check_require_name(Scheme_Object *prnt_name, Scheme_Object *name,
   }
 
   /* Remember require: */
-  vec = scheme_make_vector(7, NULL);
+  vec = scheme_make_vector(8, NULL);
   nml = scheme_make_pair(nominal_modidx, scheme_null);
   SCHEME_VEC_ELS(vec)[0] = nml;
   SCHEME_VEC_ELS(vec)[1] = modidx;
@@ -4971,7 +4987,24 @@ static void check_require_name(Scheme_Object *prnt_name, Scheme_Object *name,
   SCHEME_VEC_ELS(vec)[4] = prnt_name;
   SCHEME_VEC_ELS(vec)[5] = (err_src ? err_src : scheme_false);
   SCHEME_VEC_ELS(vec)[6] = (mark_src ? mark_src : scheme_false);
+  SCHEME_VEC_ELS(vec)[7] = scheme_false;
   scheme_hash_set(required, name, vec);
+}
+
+static int check_already_required(Scheme_Hash_Table *required, Scheme_Object *name)
+{
+  Scheme_Object *vec;
+
+  vec = scheme_hash_get(required, name);
+  if (vec) {
+    if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[7])) {
+      scheme_hash_set(required, name, NULL);
+      return 0;
+    }
+    return 1;
+  }
+
+  return 0;
 }
 
 static Scheme_Object *stx_sym(Scheme_Object *name, Scheme_Object *_genv)
@@ -5169,7 +5202,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     add_simple_require_renames(orig_src, rn_set, tables, 
                                iim, nmidx,
                                scheme_make_integer(0),
-                               NULL);
+                               NULL, 1);
   }
 
   {
@@ -5321,7 +5354,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    }
 
 	    /* Not required: */
-	    if (scheme_hash_get(required, name)) {
+	    if (check_already_required(required, name)) {
 	      scheme_wrong_syntax("module", orig_name, e, "identifier is already imported");
 	      return NULL;
 	    }
@@ -5409,7 +5442,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    }
 
 	    /* Not required: */
-	    if (scheme_hash_get(for_stx ? et_required : required, name)) {
+	    if (check_already_required(for_stx ? et_required : required, name)) {
 	      scheme_wrong_syntax("module", orig_name, e, 
 				  (for_stx
 				   ? "identifier is already imported for syntax"
@@ -5539,6 +5572,12 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     }
   }
   /* first =  a list of (cons semi-expanded-expression kind) */
+
+  /* Bound names will be re-bound at this point: */
+  if (rec[drec].comp || (rec[drec].depth != -2)) {
+    scheme_seal_module_rename_set(rn_set, STX_SEAL_BOUND);
+    scheme_seal_module_rename_set(post_ex_rn_set, STX_SEAL_BOUND);
+  }
 
   /* Pass 2 */
   SCHEME_EXPAND_OBSERVE_NEXT_GROUP(observer);
@@ -5696,8 +5735,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   }
 
   if (rec[drec].comp || (rec[drec].depth != -2)) {
-    scheme_seal_module_rename_set(rn_set);
-    scheme_seal_module_rename_set(post_ex_rn_set);
+    scheme_seal_module_rename_set(rn_set, STX_SEAL_ALL);
+    scheme_seal_module_rename_set(post_ex_rn_set, STX_SEAL_ALL);
   }
 
   /* Compute provides for re-provides and all-defs-out: */

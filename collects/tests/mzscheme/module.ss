@@ -122,13 +122,20 @@
 (syntax-test #'(module m mzscheme (require (rename n n not-there))))
 (syntax-test #'(module m mzscheme (require (rename n n m extra))))
 
-(syntax-test #'(module m mzscheme (define car 5)))
+(syntax-test #'(module m mzscheme (require mzscheme) (define car 5)))
 (syntax-test #'(module m mzscheme (define x 6) (define x 5)))
 (syntax-test #'(module m mzscheme (define x 10) (define-syntax x 10)))
 (syntax-test #'(module m mzscheme (define-syntax x 10) (define x 10)))
 
 ;; Cyclic re-def of n:
 (syntax-test #'(module n n 10))
+
+;; It's now ok to shadow the initial import:
+(module _shadow_ mzscheme
+  (define car 5)
+  (provide car))
+
+(test 5 dynamic-require ''_shadow_ 'car)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check namespace-attach-module:

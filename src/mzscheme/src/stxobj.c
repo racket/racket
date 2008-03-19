@@ -125,7 +125,8 @@ XFORM_NONGCING static int prefab_p(Scheme_Object *o)
 
 typedef struct Module_Renames {
   Scheme_Object so; /* scheme_rename_table_type */
-  char plus_kernel, kind, needs_unmarshal, sealed;
+  char plus_kernel, kind, needs_unmarshal;
+  char sealed; /* 1 means bound won't change; 2 means unbound won't change, either */
   Scheme_Object *phase;
   Scheme_Object *plus_kernel_nominal_source;
   Scheme_Object *set_identity;
@@ -1190,25 +1191,25 @@ Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_
   return (Scheme_Object *)mr;
 }
 
-void scheme_seal_module_rename(Scheme_Object *rn)
+void scheme_seal_module_rename(Scheme_Object *rn, int level)
 {
-  ((Module_Renames *)rn)->sealed = 1;
+  ((Module_Renames *)rn)->sealed = level;
 }
 
-void scheme_seal_module_rename_set(Scheme_Object *_rns)
+void scheme_seal_module_rename_set(Scheme_Object *_rns, int level)
 {
   Module_Renames_Set *rns = (Module_Renames_Set *)_rns;
   
-  rns->sealed = 1;
+  rns->sealed = level;
   if (rns->rt)
-    rns->rt->sealed = 1;
+    rns->rt->sealed = level;
   if (rns->et)
-    rns->et->sealed = 1;
+    rns->et->sealed = level;
   if (rns->other_phases) {
     int i;
     for (i = 0; i < rns->other_phases->size; i++) {
       if (rns->other_phases->vals[i]) {
-        ((Module_Renames *)rns->other_phases->vals[i])->sealed = 1;
+        ((Module_Renames *)rns->other_phases->vals[i])->sealed = level;
       }
     }
   }
@@ -1216,7 +1217,7 @@ void scheme_seal_module_rename_set(Scheme_Object *_rns)
 
 static void check_not_sealed(Module_Renames *mrn)
 {
-  if (mrn->sealed)
+  if (mrn->sealed >= STX_SEAL_ALL)
     scheme_signal_error("internal error: attempt to change sealed module rename");
 }
 
@@ -1691,7 +1692,7 @@ static void unmarshal_rename(Module_Renames *mrn,
   }
 
   if (sealed)
-    mrn->sealed = 1;
+    mrn->sealed = sealed;
 }
 
 /******************** wrap manipulations ********************/
@@ -3684,7 +3685,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 {
   WRAP_POS wraps;
   Scheme_Object *result, *result_from;
-  int is_in_module = 0, skip_other_mods = 0, can_cache = 1;
+  int is_in_module = 0, skip_other_mods = 0, sealed = STX_SEAL_ALL;
   Scheme_Object *phase = orig_phase;
   Scheme_Object *bdg = NULL;
 
@@ -3698,8 +3699,10 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 
   while (1) {
     if (WRAP_POS_END_P(wraps)) {
-      if (result) 
-        can_cache = 1; /* If it becomes bound, it can't become unbound. */
+      int can_cache = (sealed >= STX_SEAL_ALL);
+
+      if (result)
+        can_cache = (sealed >= STX_SEAL_BOUND); /* If it becomes bound, it can't become unbound. */
 
       if (!result)
 	result = SCHEME_STX_VAL(a);
@@ -3723,8 +3726,8 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
         
         if ((!is_in_module || (mrns->kind != mzMOD_RENAME_TOPLEVEL))
             && !skip_other_mods) {
-          if (!mrns->sealed)
-            can_cache = 0;
+          if (mrns->sealed < sealed)
+            sealed = mrns->sealed;
         }
 
         mrn = extract_renames(mrns, phase);
@@ -3739,8 +3742,8 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 	  /* Module rename: */
 	  Scheme_Object *rename, *glob_id;
 
-          if (!mrn->sealed)
-            can_cache = 0;
+          if (mrn->sealed < sealed)
+            sealed = mrn->sealed;
           
 	  if (mrn->needs_unmarshal) {
 	    /* Use resolve_env to trigger unmarshal, so that we
@@ -4730,7 +4733,7 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
         if (mrn) {
           if (mrn->kind == mzMOD_RENAME_MARKED) {
             /* Not useful if there's no marked names. */
-            redundant = (mrn->sealed
+            redundant = ((mrn->sealed >= STX_SEAL_ALL)
                          && (!mrn->marked_names || !mrn->marked_names->count));
             if (!redundant) {
               /* Otherwise, watch out for multiple instances of the same rename: */
@@ -5670,7 +5673,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 
       scheme_unmarshal_wrap_set(ut, local_key, (Scheme_Object *)mrn);
 
-      scheme_seal_module_rename((Scheme_Object *)mrn);
+      scheme_seal_module_rename((Scheme_Object *)mrn, STX_SEAL_ALL);
 
       a = (Scheme_Object *)mrn;
     } else if (SAME_OBJ(a, scheme_true)
