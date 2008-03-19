@@ -903,6 +903,20 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved)
     goto try_again;
   }
 
+  if ((vtype == scheme_compiled_let_void_type)) {
+    /* recognize another (let ([x <omittable>]) ...) pattern: */
+    Scheme_Let_Header *lh = (Scheme_Let_Header *)o;
+    if ((lh->count == 1) && (lh->num_clauses == 1)) {
+      if (SAME_TYPE(SCHEME_TYPE(lh->body), scheme_compiled_let_value_type)) {
+        Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
+        if (scheme_omittable_expr(lv->value, 1, fuel - 1, resolved)) {
+          o = lv->body;
+          goto try_again;
+        }
+      }
+    }
+  }
+
   if ((vtype == scheme_letrec_type)) {
     o = ((Scheme_Letrec *)o)->body;
     goto try_again;
@@ -937,6 +951,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved)
         return 1;
       }
     }
+    /* (values <omittable> ...) */
     if ((app->num_args == vals) || (vals < 0)) {
       if (SAME_OBJ(scheme_values_func, app->args[0])) {
 	int i;
@@ -947,24 +962,34 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved)
 	return 1;
       }
     }
+    /* (void <omittable> ...) */
     if ((vals == 1) || (vals < 0)) {
-      
+      if (SAME_OBJ(scheme_void_proc, app->args[0])) {
+        int i;
+	for (i = app->num_args; i--; ) {
+	  if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, resolved))
+	    return 0;
+	}
+	return 1;
+      }
     }
     return 0;
   }
 
   if ((vtype == scheme_application2_type)) {
+    /* (values <omittable>) or (void <omittable>) */
     if ((vals == 1) || (vals < 0)) {
       Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
-      if (SAME_OBJ(scheme_values_func, app->rator)) {
+      if (SAME_OBJ(scheme_values_func, app->rator)
+          || SAME_OBJ(scheme_void_proc, app->rator)) {
 	if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved))
 	  return 1;
       }
     }
-    
   }
 
   if ((vtype == scheme_application3_type)) {
+    /* (values <omittable> <omittable>) */
     if ((vals == 2) || (vals < 0)) {
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
       if (SAME_OBJ(scheme_values_func, app->rator)) {
@@ -973,7 +998,15 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved)
 	  return 1;
       }
     }
-    
+    /* (void <omittable> <omittable>) */
+    if ((vals == 1) || (vals < 0)) {
+      Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
+      if (SAME_OBJ(scheme_void_proc, app->rator)) {
+	if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved)
+	    && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved))
+	  return 1;
+      }
+    }
   }
 
   return 0;

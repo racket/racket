@@ -3227,7 +3227,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
   /* Optimized away all clauses? */
   if (!head->num_clauses)
     return head->body;
-
+  
   if (is_rec && !not_simply_let_star) {
     /* We can simplify letrec to let* */
     SCHEME_LET_FLAGS(head) -= SCHEME_LET_RECURSIVE;

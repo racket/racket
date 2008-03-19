@@ -10,7 +10,7 @@ between different processes.
 @defproc[(make-pipe [limit positive-exact-integer? #f]
                     [input-name any/c 'pipe]
                     [output-name any/c 'pipe])
-         any]{
+         (values input-port? output-port?)]{
 
 Returns two port values: the first port is an input port and the
 second is an output port. Data written to the output port is read from
@@ -28,7 +28,7 @@ port's capacity until the peeked bytes are read.)
 The optional @scheme[input-name] and @scheme[output-name] are used
 as the names for the returned input and out ports, respectively.}
 
-@defproc[(pipe-content-length [pipe-port port?]) any]{
+@defproc[(pipe-content-length [pipe-port port?]) exact-nonnegative-integer?]{
 
 Returns the number of bytes contained in a pipe, where
 @scheme[pipe-port] is either of the pipe's ports produced by

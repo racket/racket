@@ -609,6 +609,24 @@
               (define foo integer?)
               (display #t)))
 
+(test-comp '(module m mzscheme
+              (void 10))
+           '(module m mzscheme))
+
+(test-comp '(module m mzscheme
+              (void (quote-syntax unused!)))
+           '(module m mzscheme))
+
+(test-comp '(module m mzscheme
+              (values 1 2))
+           '(module m mzscheme))
+
+(test-comp '(module m mzscheme
+              (printf "pre\n")
+              (void 10))
+           '(module m mzscheme
+              (printf "pre\n")))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 

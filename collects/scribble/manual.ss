@@ -713,7 +713,9 @@
        (raise-syntax-error 'defproc "bad prototype" stx)]))
 
   (define-syntax (result-contract stx)
-    (syntax-case stx ()
+    (syntax-case stx (values)
+      [(_ (values c ...))
+       #'(list (schemeblock0 c) ...)]
       [(_ c)
        (if (string? (syntax-e #'c))
            (raise-syntax-error
@@ -1233,7 +1235,29 @@
                                                (element-width tagged))]
                                [(short?) (or (flat-size . < . 40)
                                              ((length args) . < . 2))]
-                               [(res) (result-contract)]
+                               [(res) (let ([res (result-contract)])
+                                        (if (list? res)
+                                            ;; multiple results
+                                            (if (null? res)
+                                                'nbsp
+                                                (let ([w (apply max 0 (map flow-element-width res))])
+                                                  (if (or (ormap table? res)
+                                                          (w . > . 30))
+                                                      (make-table
+                                                       #f
+                                                       (map (lambda (fe)
+                                                              (list (make-flow (list fe))))
+                                                            res))
+                                                      (make-table 
+                                                       #f 
+                                                       (list
+                                                        (let loop ([res res])
+                                                          (if (null? (cdr res))
+                                                              (list (make-flow (list (car res))))
+                                                              (list* (make-flow (list (car res)))
+                                                                     (to-flow (hspace 1))
+                                                                     (loop (cdr res))))))))))
+                                            res))]
                                [(result-next-line?) ((+ (if short? 
                                                             flat-size
                                                             (+ (prototype-size args max max)

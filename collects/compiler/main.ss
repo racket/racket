@@ -30,6 +30,7 @@
 	   dynext/file
 	   dynext/compile
 	   dynext/link
+           scheme/pretty
 	   (lib "pack.ss" "setup")
 	   (lib "getinfo.ss" "setup")
 	   setup/dirs)
@@ -138,7 +139,10 @@
 	 (,(format "Output ~a file(s) from Scheme source(s)" (extract-suffix append-zo-suffix)))]
 	[("--collection-zos")
 	 ,(lambda (f) 'collection-zos)
-	 (,(format "Compile specified collection to ~a files" (extract-suffix append-zo-suffix)))]]
+	 ((,(format "Compile specified collection to ~a files" (extract-suffix append-zo-suffix)) ""))]
+        [("--expand")
+	 ,(lambda (f) 'expand)
+	 (,(format "Write macro-expanded Scheme source(s) to stdout"))]]
        [help-labels ""]
        [once-any
 	[("--3m")
@@ -461,6 +465,23 @@
      ((compile-zos prefix) source-files (if (auto-dest-dir)
 					    'auto
 					    (dest-dir)))]
+    [(expand)
+     (for-each (lambda (src-file)
+                 (let ([src-file (path->complete-path src-file)])
+                   (let-values ([(base name dir?) (split-path src-file)])
+                     (parameterize ([current-load-relative-directory base]
+                                    [current-namespace (make-base-namespace)]
+                                    [read-accept-reader #t])
+                       (call-with-input-file* 
+                        src-file
+                        (lambda (in)
+                          (port-count-lines! in)
+                          (let loop ()
+                            (let ([e (read-syntax src-file in)])
+                              (unless (eof-object? e)
+                                (pretty-print (syntax->datum (expand e)))
+                                (loop))))))))))
+               source-files)]
     [(make-zo)
      (let ([n (make-base-empty-namespace)]
 	   [mc (dynamic-require 'mzlib/cm

@@ -4323,7 +4323,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	  }
 	}
       } else {
-	cont = scheme_omittable_expr(e, 1, -1, 0);
+	cont = scheme_omittable_expr(e, -1, -1, 0);
       }
       if (i_m + 1 == cnt)
 	cont = 0;
@@ -4377,6 +4377,31 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
       cl_last = cl_first = NULL;
       consts = NULL;
       start_simltaneous = i_m + 1;
+    }
+  }
+
+  /* Check one more time for expressions that we can omit: */
+  {
+    int can_omit = 0;
+    for (i_m = 0; i_m < cnt; i_m++) {
+      /* Optimize this expression: */
+      e = SCHEME_VEC_ELS(m->body)[i_m];
+      if (scheme_omittable_expr(e, -1, -1, 0)) {
+        can_omit++;
+      }
+    }
+    if (can_omit) {
+      Scheme_Object *vec;
+      int j = 0;
+      vec = scheme_make_vector(cnt - can_omit, NULL);
+      for (i_m = 0; i_m < cnt; i_m++) {
+        /* Optimize this expression: */
+        e = SCHEME_VEC_ELS(m->body)[i_m];
+        if (!scheme_omittable_expr(e, -1, -1, 0)) {
+          SCHEME_VEC_ELS(vec)[j++] = e;
+        }
+      }
+      m->body = vec;
     }
   }
 
@@ -5724,9 +5749,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     Scheme_Object *prev = NULL, *next;
     for (p = first; !SCHEME_NULLP(p); p = next) {
       next = SCHEME_CDR(p);
-      if (scheme_omittable_expr(SCHEME_CAR(p), 1, -1, 0)) {
+      if (scheme_omittable_expr(SCHEME_CAR(p), -1, -1, 0)) {
 	if (prev)
-	  SCHEME_CDR(p) = next;
+	  SCHEME_CDR(prev) = next;
 	else
 	  first = next;
       } else

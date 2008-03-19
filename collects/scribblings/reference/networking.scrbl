@@ -67,7 +67,8 @@ If the server cannot be started by @scheme[tcp-listen], the
                       [local-hostname (or/c string? false/c) #f]
                       [local-port-no (or/c (and/c nonnegative-exact-integer?
                                                   (integer-in 1 65535))
-                                           false/c)])
+                                           false/c)
+                                     #f])
           (values input-port? output-port?)]{
 
 Attempts to connect as a client to a listening server.  The
