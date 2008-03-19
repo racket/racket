@@ -54,10 +54,9 @@ When a @scheme[bits] byte string is provided: Creates a monochrome
                             [alpha? any/c @scheme[#f]])
            void?]{
 
-Produces the same result as @xmethod[bitmap-dc% get-pixel] with the
-bitmap selected into the DC, but the bitmap does not have to be
-selected anywhere (and this method works even if the bitmap is
-selected into another DC, attached as a button label, etc.).
+Produces the same result as @xmethod[bitmap-dc% get-argb-pixels], but the
+bitmap does not have to be selected into the DC (and this method works even if
+the bitmap is selected into another DC, attached as a button label, etc.).
 
 }
 
@@ -102,7 +101,7 @@ When a PNG file is loaded with @scheme['png/mask] or
  values, the mask bitmap is monochrome, otherwise it is grayscale
  (representing the alpha channel inverted).
 
-The mast bitmap is @italic{not} used automatically by drawing
+The mask bitmap is @italic{not} used automatically by drawing
  routines. The mask bitmap can be extracted and supplied explicitly as
  a mask (e.g., as the sixth argument to @method[dc<%>
  draw-bitmap]). The mask bitmap is used by @method[bitmap% save-file]
@@ -144,15 +143,15 @@ The @scheme[kind] argument specifies the file's format:
 @itemize{
 @item{@scheme['unknown] --- examine the file to determine its format}
 @item{@scheme['unknown/mask] --- like @scheme['unknown], but see @method[bitmap% get-loaded-mask]}
-@item{@scheme['gif] --- load a GIF bitmap file (X, Windows, Mac OS X)}
+@item{@scheme['gif] --- load a @as-index{GIF} bitmap file (X, Windows, Mac OS X)}
 @item{@scheme['gif/mask] --- like @scheme['gif], but see @method[bitmap% get-loaded-mask] (X, Windows, Mac OS X)}
-@item{@scheme['jpeg] --- load a JPEG bitmap file (X, Windows, Mac OS X)}
-@item{@scheme['png] --- load a PNG bitmap file (X, Windows, Mac OS X)}
+@item{@scheme['jpeg] --- load a @as-index{JPEG} bitmap file (X, Windows, Mac OS X)}
+@item{@scheme['png] --- load a @as-index{PNG} bitmap file (X, Windows, Mac OS X)}
 @item{@scheme['png/mask] --- like @scheme['png], but see @method[bitmap% get-loaded-mask] (X, Windows, Mac OS X)}
-@item{@scheme['xbm] --- load an X bitmap file (X, Windows, Mac OS X); creates a monochrome bitmap}
-@item{@scheme['xpm] --- load an XPM bitmap file (X, Windows, Mac OS X)}
+@item{@scheme['xbm] --- load an X bitmap (@as-index{XBM}) file (X, Windows, Mac OS X); creates a monochrome bitmap}
+@item{@scheme['xpm] --- load an @as-index{XPM} bitmap file (X, Windows, Mac OS X)}
 @item{@scheme['bmp] --- load a Windows bitmap file (X, Windows, Mac OS X)}
-@item{@scheme['pict] --- load a PICT bitmap file (Mac OS X)}
+@item{@scheme['pict] --- load a @as-index{PICT} bitmap file (Mac OS X)}
 }
 
 An XBM image is always loaded as a monochrome bitmap. A 1-bit
@@ -201,13 +200,13 @@ The @scheme[kind] argument determined the type of file that is created,
 
 @itemize{
 
- @item{@scheme['png] --- save a PNG file (X, Windows, Mac OS X)}
+ @item{@scheme['png] --- save a @as-index{PNG} file (X, Windows, Mac OS X)}
 
- @item{@scheme['jpeg] --- save a JPEG file (X, Windows, Mac OS X)}
+ @item{@scheme['jpeg] --- save a @as-index{JPEG} file (X, Windows, Mac OS X)}
 
- @item{@scheme['xbm] --- save an X bitmap file (X, Windows, Mac OS X)}
+ @item{@scheme['xbm] --- save an X bitmap (@as-index{XBM}) file (X, Windows, Mac OS X)}
 
- @item{@scheme['xpm] --- save an XPM bitmap file (X, Windows, Mac OS X)}
+ @item{@scheme['xpm] --- save an @as-index{XPM} bitmap file (X, Windows, Mac OS X)}
 
  @item{@scheme['bmp] --- save a Windows bitmap file (Windows)}
 
