@@ -6793,32 +6793,30 @@ typedef struct WillExecutor {
   ActiveWill *first, *last;
 } WillExecutor;
 
-typedef struct WillRegistration {
-  MZTAG_IF_REQUIRED
-  Scheme_Object *proc;
-  WillExecutor *w;
-} WillRegistration;
-
 static void activate_will(void *o, void *data) 
 {
-  WillRegistration *r = (WillRegistration *)data;
   ActiveWill *a;
   WillExecutor *w;
-    
-  a = MALLOC_ONE_RT(ActiveWill);
+  Scheme_Object *proc;
+
+  w = (WillExecutor *)scheme_ephemeron_key(data);
+  proc = scheme_ephemeron_value(data);
+
+  if (w) {
+    a = MALLOC_ONE_RT(ActiveWill);
 #ifdef MZTAG_REQUIRED
-  a->type = scheme_rt_will;
+    a->type = scheme_rt_will;
 #endif
-  a->o = (Scheme_Object *)o;
-  a->proc = r->proc;
+    a->o = (Scheme_Object *)o;
+    a->proc = proc;
   
-  w = r->w;
-  if (w->last)
-    w->last->next = a;
-  else
-    w->first = a;
-  w->last = a;
-  scheme_post_sema(w->sema);
+    if (w->last)
+      w->last->next = a;
+    else
+      w->first = a;
+    w->last = a;
+    scheme_post_sema(w->sema);
+  }
 }
 
 static Scheme_Object *do_next_will(WillExecutor *w)
@@ -6862,20 +6860,16 @@ static Scheme_Object *will_executor_p(int argc, Scheme_Object **argv)
 
 static Scheme_Object *register_will(int argc, Scheme_Object **argv)
 {
-  WillRegistration *r;
+  Scheme_Object *e;
 
   if (NOT_SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_will_executor_type))
     scheme_wrong_type("will-register", "will-executor", 0, argc, argv);
   scheme_check_proc_arity("will-register", 1, 2, argc, argv);
 
-  r = MALLOC_ONE_RT(WillRegistration);
-#ifdef MZTAG_REQUIRED
-  r->type = scheme_rt_will_registration;
-#endif
-  r->proc = argv[2];
-  r->w = (WillExecutor *)argv[0];
+  /* If we lose track of the will executor, then drop the finalizer. */
+  e = scheme_make_ephemeron(argv[0], argv[2]);
 
-  scheme_add_scheme_finalizer(argv[1], activate_will, (void *)r);
+  scheme_add_scheme_finalizer(argv[1], activate_will, e);
 
   return scheme_void;
 }
@@ -7332,7 +7326,6 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_rt_namespace_option, mark_namespace_option);
   GC_REG_TRAV(scheme_rt_param_data, mark_param_data);
   GC_REG_TRAV(scheme_rt_will, mark_will);
-  GC_REG_TRAV(scheme_rt_will_registration, mark_will_registration);
   GC_REG_TRAV(scheme_rt_evt, mark_evt);
   GC_REG_TRAV(scheme_rt_syncing, mark_syncing);
   GC_REG_TRAV(scheme_rt_parameterization, mark_parameterization);

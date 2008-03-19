@@ -845,6 +845,7 @@ void (*scheme_set_box)(Scheme_Object *b, Scheme_Object *v);
 Scheme_Object *(*scheme_make_weak_box)(Scheme_Object *v);
 Scheme_Object *(*scheme_make_ephemeron)(Scheme_Object *key, Scheme_Object *val);
 Scheme_Object *(*scheme_ephemeron_value)(Scheme_Object *o);
+Scheme_Object *(*scheme_ephemeron_key)(Scheme_Object *o);
 Scheme_Object *(*scheme_load)(const char *file);
 Scheme_Object *(*scheme_load_extension)(const char *filename, Scheme_Env *env);
 void (*scheme_register_extension_global)(void *ptr, long size);

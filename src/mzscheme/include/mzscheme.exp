@@ -525,6 +525,7 @@ scheme_set_box
 scheme_make_weak_box
 scheme_make_ephemeron
 scheme_ephemeron_value
+scheme_ephemeron_key
 scheme_load
 scheme_load_extension
 scheme_register_extension_global

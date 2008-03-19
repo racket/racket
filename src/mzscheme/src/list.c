@@ -2114,6 +2114,11 @@ Scheme_Object *scheme_ephemeron_value(Scheme_Object *o)
   return ((Scheme_Ephemeron *)o)->val;
 }
 
+Scheme_Object *scheme_ephemeron_key(Scheme_Object *o)
+{
+  return ((Scheme_Ephemeron *)o)->key;
+}
+
 #ifndef MZ_PRECISE_GC
 
 static void set_ephemerons(Scheme_Ephemeron *ae, Scheme_Ephemeron *be)

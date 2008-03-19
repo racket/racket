@@ -4010,35 +4010,6 @@ static int mark_will_FIXUP(void *p) {
 #define mark_will_IS_CONST_SIZE 1
 
 
-static int mark_will_registration_SIZE(void *p) {
-  return
-  gcBYTES_TO_WORDS(sizeof(WillRegistration));
-}
-
-static int mark_will_registration_MARK(void *p) {
-  WillRegistration *r = (WillRegistration *)p;
- 
-  gcMARK(r->proc);
-  gcMARK(r->w);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(WillRegistration));
-}
-
-static int mark_will_registration_FIXUP(void *p) {
-  WillRegistration *r = (WillRegistration *)p;
- 
-  gcFIXUP(r->proc);
-  gcFIXUP(r->w);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(WillRegistration));
-}
-
-#define mark_will_registration_IS_ATOMIC 0
-#define mark_will_registration_IS_CONST_SIZE 1
-
-
 static int mark_evt_SIZE(void *p) {
   return
   gcBYTES_TO_WORDS(sizeof(Evt));

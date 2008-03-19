@@ -204,40 +204,39 @@ enum {
   scheme_rt_namespace_option,           /* 182 */
   scheme_rt_param_data,                 /* 183 */
   scheme_rt_will,                       /* 184 */
-  scheme_rt_will_registration,          /* 185 */
-  scheme_rt_struct_proc_info,           /* 186 */
-  scheme_rt_linker_name,                /* 187 */
-  scheme_rt_param_map,                  /* 188 */
-  scheme_rt_finalization,               /* 189 */
-  scheme_rt_finalizations,              /* 190 */
-  scheme_rt_cpp_object,                 /* 191 */
-  scheme_rt_cpp_array_object,           /* 192 */
-  scheme_rt_stack_object,               /* 193 */
-  scheme_rt_preallocated_object,        /* 194 */
-  scheme_thread_hop_type,               /* 195 */
-  scheme_rt_srcloc,                     /* 196 */
-  scheme_rt_evt,                        /* 197 */
-  scheme_rt_syncing,                    /* 198 */
-  scheme_rt_comp_prefix,                /* 199 */
-  scheme_rt_user_input,                 /* 200 */
-  scheme_rt_user_output,                /* 201 */
-  scheme_rt_compact_port,               /* 202 */
-  scheme_rt_read_special_dw,            /* 203 */
-  scheme_rt_regwork,                    /* 204 */
-  scheme_rt_buf_holder,                 /* 205 */
-  scheme_rt_parameterization,           /* 206 */
-  scheme_rt_print_params,               /* 207 */
-  scheme_rt_read_params,                /* 208 */
-  scheme_rt_native_code,                /* 209 */
-  scheme_rt_native_code_plus_case,      /* 210 */
-  scheme_rt_jitter_data,                /* 211 */
-  scheme_rt_module_exports,             /* 212 */
-  scheme_rt_delay_load_info,            /* 213 */
-  scheme_rt_marshal_info,               /* 214 */
-  scheme_rt_unmarshal_info,             /* 215 */
-  scheme_rt_runstack,                   /* 216 */
-  scheme_rt_sfs_info,                   /* 217 */
-  scheme_rt_validate_clearing,          /* 218 */
+  scheme_rt_struct_proc_info,           /* 185 */
+  scheme_rt_linker_name,                /* 186 */
+  scheme_rt_param_map,                  /* 187 */
+  scheme_rt_finalization,               /* 188 */
+  scheme_rt_finalizations,              /* 189 */
+  scheme_rt_cpp_object,                 /* 190 */
+  scheme_rt_cpp_array_object,           /* 191 */
+  scheme_rt_stack_object,               /* 192 */
+  scheme_rt_preallocated_object,        /* 193 */
+  scheme_thread_hop_type,               /* 194 */
+  scheme_rt_srcloc,                     /* 195 */
+  scheme_rt_evt,                        /* 196 */
+  scheme_rt_syncing,                    /* 197 */
+  scheme_rt_comp_prefix,                /* 198 */
+  scheme_rt_user_input,                 /* 199 */
+  scheme_rt_user_output,                /* 200 */
+  scheme_rt_compact_port,               /* 201 */
+  scheme_rt_read_special_dw,            /* 202 */
+  scheme_rt_regwork,                    /* 203 */
+  scheme_rt_buf_holder,                 /* 204 */
+  scheme_rt_parameterization,           /* 205 */
+  scheme_rt_print_params,               /* 206 */
+  scheme_rt_read_params,                /* 207 */
+  scheme_rt_native_code,                /* 208 */
+  scheme_rt_native_code_plus_case,      /* 209 */
+  scheme_rt_jitter_data,                /* 210 */
+  scheme_rt_module_exports,             /* 211 */
+  scheme_rt_delay_load_info,            /* 212 */
+  scheme_rt_marshal_info,               /* 213 */
+  scheme_rt_unmarshal_info,             /* 214 */
+  scheme_rt_runstack,                   /* 215 */
+  scheme_rt_sfs_info,                   /* 216 */
+  scheme_rt_validate_clearing,          /* 217 */
 #endif
 
   _scheme_last_type_

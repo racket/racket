@@ -1626,17 +1626,6 @@ mark_will {
   gcBYTES_TO_WORDS(sizeof(ActiveWill));
 }
 
-mark_will_registration {
- mark:
-  WillRegistration *r = (WillRegistration *)p;
- 
-  gcMARK(r->proc);
-  gcMARK(r->w);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(WillRegistration));
-}
-
 mark_evt {
  mark:
  size:
