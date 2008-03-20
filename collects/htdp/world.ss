@@ -23,6 +23,7 @@ ones.)
 Matthew
 |#
 
+;; Thu Mar 20 17:15:54 EDT 2008: fixed place-image0, which used shrink off-by-1
 ;; Mon Sep 17 09:40:39 EDT 2007: run-simulation now allows recordings, too
 ;; Mon Aug  6 19:50:30 EDT 2007: exporting both add-line from image.ss and scene+line 
 ;; Fri May  4 18:05:33 EDT 2007: define-run-time-path 
@@ -391,6 +392,7 @@ Matthew
   ;                                                                        
   
   ;; Image Number Number Image -> Image 
+  #;
   (define (place-image0 image x y scene)
     (define sw (image-width scene))
     (define sh (image-height scene))
@@ -398,6 +400,14 @@ Matthew
     (define nw (image-width ns))
     (define nh (image-height ns))
     (if (and (= sw nw) (= sh nh)) ns (shrink ns 0 0 sw sh)))
+  
+  (define (place-image0 image x y scene)
+    (define sw (image-width scene))
+    (define sh (image-height scene))
+    (define ns (overlay/xy scene x y image))
+    (define nw (image-width ns))
+    (define nh (image-height ns))
+    (if (and (= sw nw) (= sh nh)) ns (shrink ns 0 0 (- sw 1) (- sh 1)))) 
   
   ;; Image Number Number Number Number Color -> Image
   (define (add-line-to-scene0 img x0 y0 x1 y1 c)
