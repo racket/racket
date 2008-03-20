@@ -7,14 +7,12 @@
          (only-in "type-effect-convenience.ss" [make-arr* make-arr])
          "tc-utils.ss"
          "union.ss"
-         (lib "stx.ss" "syntax")
+         syntax/stx
          (except-in "type-environments.ss")
          "type-name-env.ss"
          "type-alias-env.ss"
          "type-utils.ss"
-         (only-in (lib "list.ss") foldl foldr)
-         #;(except-in (lib "list.ss"  "srfi" "1") unfold remove)
-         (lib "plt-match.ss"))
+         scheme/match)
 
 (define enable-mu-parsing (make-parameter #t))
 

@@ -1,12 +1,10 @@
 #lang scheme/unit
 
 
-(require (prefix-in 1: srfi/1)
-         syntax/kerncase
+(require syntax/kerncase
          syntax/struct
          syntax/stx
-         mzlib/etc
-         mzlib/plt-match
+         scheme/match
          "type-contract.ss"
          "signatures.ss"
          "tc-structs.ss"
@@ -30,7 +28,6 @@
          "init-envs.ss"
          "effect-rep.ss"
          "mutated-vars.ss"
-         (lib "plt-match.ss")
          scheme/private/class-internal)
 
 (require (for-template scheme/base scheme/private/class-internal))

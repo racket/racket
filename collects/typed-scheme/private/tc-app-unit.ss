@@ -1,9 +1,6 @@
 #lang scheme/unit
 
 (require "signatures.ss"
-         (lib "plt-match.ss")
-         (lib "list.ss")
-         (prefix-in 1: srfi/1)
          "type-rep.ss"
          "effect-rep.ss"
          "tc-utils.ss"
@@ -17,14 +14,10 @@
          "type-annotation.ss"
          "resolve-type.ss"
          (only-in scheme/private/class-internal make-object do-make-object)
-         (lib "pretty.ss")
-         (lib "trace.ss")
-         (lib "kerncase.ss" "syntax"))
-
-(require (for-template (lib "plt-match.ss") "internal-forms.ss" scheme/base 
-                       (only-in scheme/private/class-internal make-object do-make-object)))
-(require (for-syntax (lib "plt-match.ss") "internal-forms.ss"))
-
+         mzlib/trace mzlib/pretty syntax/kerncase scheme/match
+         (for-template 
+          "internal-forms.ss" scheme/base 
+          (only-in scheme/private/class-internal make-object do-make-object)))
 
 (import tc-expr^ tc-lambda^)
 (export tc-app^)

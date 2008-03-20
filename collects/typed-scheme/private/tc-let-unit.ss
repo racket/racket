@@ -15,7 +15,7 @@
           scheme/base
           "internal-forms.ss"))
 
-(require (only-in srfi/1 [member member1]))
+(require (only-in srfi/1/list s:member))
 
 
 (import tc-expr^)
@@ -86,7 +86,7 @@
         [(null? names) 
          (if expected (tc-exprs/check (syntax->list body) expected) (tc-exprs (syntax->list body)))]
         ;; if none of the names bound in the letrec are free vars of this rhs
-        [(not (ormap (lambda (n) (member1 n flat-names bound-identifier=?)) (free-vars (car exprs))))
+        [(not (ormap (lambda (n) (s:member n flat-names bound-identifier=?)) (free-vars (car exprs))))
          ;; then check this expression separately
          (let ([t (tc-expr/t (car exprs))])               
            (with-lexical-env/extend

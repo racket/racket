@@ -19,22 +19,3 @@
     [(require/contract nm cnt lib)
      #`(begin (require (only-in lib [nm tmp]))     
               (define-ignored nm (contract cnt tmp '#,(syntax->datum #'nm) 'never-happen #'#,stx)))]))
-#|
-(module a mzscheme
-  (provide x)
-  (define (x a) 'hi))
-
-(module z mzscheme
-  (require require-contract)
-  
-  (require (lib "contract.ss"))
-  
-  (define-struct b (X Y))
-  
-  (require/contract x (b? . -> . b?) a )
-  
-  (x 'no)
-  )
-
-(require z)
-|#

@@ -14,7 +14,7 @@
          "resolve-type.ss"
          (lib "plt-match.ss")
          (only-in "type-effect-convenience.ss" [make-arr* make-arr]))
-(require (for-template mzscheme "internal-forms.ss"))
+(require (for-template scheme/base "internal-forms.ss"))
 
 (import tc-expr^)
 (export tc-lambda^)

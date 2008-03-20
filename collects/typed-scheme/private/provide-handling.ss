@@ -1,12 +1,7 @@
 #lang scheme/base
 
-(require (only-in (lib "1.ss" "srfi") [assoc assoc*])
-         (prefix-in 1: (lib "1.ss" "srfi"))
-         (lib "kerncase.ss" "syntax")
-         (lib "struct.ss" "syntax")
-         (lib "stx.ss" "syntax")
-         (lib "etc.ss")
-         (except-in (lib "list.ss") remove)
+(require (only-in srfi/1/list s:member)
+         syntax/kerncase syntax/struct syntax/stx
          mzlib/trace
          "type-contract.ss"
          "signatures.ss"
@@ -30,8 +25,7 @@
          "init-envs.ss"
          "effect-rep.ss"
          "mutated-vars.ss"
-         "def-binding.ss"
-         (lib "plt-match.ss"))
+         "def-binding.ss")
 
 (require (for-template scheme/base
                        scheme/contract))
@@ -49,7 +43,7 @@
 
 (define ((generate-prov stx-defs val-defs) form)
   (define (mem? i vd)
-    (cond [(1:member i vd (lambda (i j) (free-identifier=? i (binding-name j)))) => car]
+    (cond [(s:member i vd (lambda (i j) (free-identifier=? i (binding-name j)))) => car]
           [else #f]))
   (define (lookup-id i vd)
     (def-binding-ty (mem? i vd)))

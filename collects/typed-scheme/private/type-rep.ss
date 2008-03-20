@@ -1,11 +1,8 @@
 #lang scheme/base
   
-  (require (lib "plt-match.ss"))
-  (require (lib "etc.ss") (lib "list.ss"))
   (require "planet-requires.ss" "rep-utils.ss" "effect-rep.ss" "tc-utils.ss"
-           "free-variance.ss")
-  (require (prefix-in 1: (lib "list.ss" "srfi" "1"))
-           (lib "trace.ss")
+           "free-variance.ss"
+           mzlib/trace scheme/match
            (for-syntax scheme/base))
   
   (define name-table (make-hash-table 'weak))
