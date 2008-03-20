@@ -81,9 +81,7 @@
             (if (and #,tst tst-prev) true-act fail-act))]
          [(let/ec k (let ((fail (lambda () (_ f2)))) s2))
           (stx-equal? main-fail #'f2)
-          (begin 
-            (error "never happens")
-            (printf "got here!~n")
+          (begin
             (quasisyntax/loc
                 tst
               (let/ec k

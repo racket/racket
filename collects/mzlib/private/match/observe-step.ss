@@ -6,7 +6,7 @@
   
   (define (observe-step pre mpre mpost post)
     (define (call-obs ev . args) 
-      (let ([obs (current-expand-observe)])
+      (let ([obs values #;(current-expand-observe)])
         (if obs 
             (let ([evn (case ev
                          [(visit) 0]
