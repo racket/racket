@@ -67,13 +67,13 @@
     [(not minstr) #f]
     [else
      (regexp-case minstr
-                  [#rx"^>=([0-9]+)$"        ((n)   `(+ ,(string->number n)))]
-                  [#rx"^<=([0-9]+)$"        ((n)   `(- ,(string->number n)))]
-                  [#rx"^=([0-9]+)$"         ((n)   `(= ,(string->number n)))]
-                  [#rx"^([0-9]+)-([0-9]+)$" ((m n) `(,(string->number m) ,(string->number n)))]
-                  [#rx"^([0-9]+)$"          ((n)   (string->number n))]
-                  [#rx"^$"                  (()    #f)] ;; here for convenience reasons. a bit gross, i know
-                  [else
-                   (raise-syntax-error #f 
-                                       (format "Illegal minor version specifier; expected <=n, >=n, =n, n-m, or n, where n, m are positive integers; received ~e" minstr)
-                                       stx)])]))
+       [#rx"^>=([0-9]+)$"        ((n)   `(+ ,(string->number n)))]
+       [#rx"^<=([0-9]+)$"        ((n)   `(- ,(string->number n)))]
+       [#rx"^=([0-9]+)$"         ((n)   `(= ,(string->number n)))]
+       [#rx"^([0-9]+)-([0-9]+)$" ((m n) `(,(string->number m) ,(string->number n)))]
+       [#rx"^([0-9]+)$"          ((n)   (string->number n))]
+       [#rx"^$"                  (()    #f)] ;; here for convenience reasons. a bit gross, i know
+       [else
+        (raise-syntax-error #f
+                            (format "Illegal minor version specifier; expected <=n, >=n, =n, n-m, or n, where n, m are positive integers; received ~e" minstr)
+                            stx)])]))
