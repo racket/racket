@@ -695,10 +695,10 @@ that defines macro with @scheme[define-syntax].
 
 @defproc[(unit-static-signatures [unit-identifier identifier?]
                                  [err-syntax syntax?])
-         (values (list-of (cons/c (or/c symbol? false/c)
-                                  identifier?))
-                 (list-of (cons/c (or/c symbol? false/c)
-                                  identifier?)))]{
+         (values (list/c (cons/c (or/c symbol? false/c)
+                                 identifier?))
+                 (list/c (cons/c (or/c symbol? false/c)
+                                 identifier?)))]{
 
 If @scheme[unit-identifier] is bound to static unit information via
 @scheme[define-unit] (or other such forms), the result is two
