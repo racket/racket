@@ -10,7 +10,8 @@
        (let ([id this])
          (try-parsing rest ([id2 expr2] ...) body)))]))
 
-;; get-next-fragment : string -> (values string string)
+;; get-next-fragment : regexp -> [#:on-error (string -> a)] -> string -> (union (values string string) a)
+;; helper for the below two functions
 (define (((get-next-fragment rx) #:on-error [error-action (λ (s) (values #f s))]) str)
   (let ([thematch (regexp-match rx str)])
     (cond
@@ -20,32 +21,58 @@
              [rest (list-ref thematch 2)])
          (values this rest))])))
 
-(define get-next-slash (get-next-fragment #rx"([^/]+)/(.*)"))
-(define get-to-next-colon-or-end (get-next-fragment #rx"([^:]+):?(.*)"))
+;; get-next-slash : [#:on-error (string -> a)] -> string -> (union (values string string) a)
+;; splits the given string into the nonempty substring before the first slash and the substring after it
+;; on failure returns whatever the given #:on-error function returns when given the entire string
+(define get-next-slash (get-next-fragment #rx"^([^/]+)/(.*)$"))
 
+;; get-to-next-colon-or-end : [#:on-error (string -> a)] -> string -> (union (values string string) a)
+;; splits the given string into the nonempty substring before the initial : and the substring after it, or 
+;; (values [initial-string] "") if the given string has no : in it.
+(define get-to-next-colon-or-end (get-next-fragment #rx"^([^:]+):?(.*)$"))
+
+;; parse-package : string stx -> (values string nat min-spec)
+;; given a package specifier, returns the package name, the package major version, and a descriptor
+;; for the acceptible minor versions
 (define (parse-package package stx)
   (try-parsing package
                ([pkgname (get-to-next-colon-or-end)]
                 [maj     (get-to-next-colon-or-end)])
-               (λ (min) (values (parse-pkgname pkgname stx) 
+               (λ (min) 
+                 (values (parse-pkgname pkgname stx) 
                                 (parse-majspec maj     stx)
                                 (parse-minspec min     stx)))))
 
+;; parse-pkgname : string stx -> string
+;; given a literal package name string as it would appear in shorthand syntax, returns
+;; a fully-embellished name for the package being specified. stx is provided as an object
+;; to blame in syntax errors if something goes wrong
 (define (parse-pkgname pn stx)
   (let ([m (regexp-match #rx"\\.plt$" pn)])
     (if m pn (string-append pn ".plt"))))
 
+;; parse-majspec : (#f stx -> #f) intersect (string stx -> number)
+;; given the literal major version string (or #f) returns the major version corresponding
+;; to that string. stx is the syntax object to blame if something goes wrong 
 (define (parse-majspec majstr stx)
   (cond
     [(not majstr) #f]
-    [else 
-     (let ([num (string->number majstr)])
-       (unless (and (integer? num) (> num 0))
-         (raise-syntax-error #f 
-                             (format "Illegal major version specifier; expected positive integer, received ~e" majstr)
-                             stx))
-       num)]))
+    [else
+     (cond
+       [(and (regexp-match #rx"^[0-9]+$" majstr))
+        (let ([n (string->number majstr)])
+          (if (> n 0)
+              n
+              (raise-syntax-error #f
+                                  (format "Illegal major version specifier; expected version number greater than 0, received ~e" majstr))))]
+       [else (raise-syntax-error #f 
+                                 (format "Illegal major version specifier; expected positive integer, received ~e" majstr)
+                                 stx)])]))
 
+;; regexp-case : SYNTAX
+;; provides a case operation for trying different regular expressions in sequence on a test string,
+;; stoppingas soon as one of those expressions matches the string. If one does, then all the
+;; parenthesized subparts are bound to names in the right-hand side of the corresponding clause
 (define-syntax regexp-case
   (syntax-rules ()
     [(_ str clause ...)
@@ -62,6 +89,9 @@
            (let-values ([(id ...) (apply values (cdr args))]) body)
            (regexp-case* str c ...)))]))
 
+;; parse-minspec : string stx -> min-spec
+;; returns the minor-version specification corresponding to the given string as an s-expression.
+;; stx is the syntax object to blame if the string doesn't correspond to minor-version spec. 
 (define (parse-minspec minstr stx)
   (cond
     [(not minstr) #f]

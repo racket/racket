@@ -1,4 +1,30 @@
 #lang scheme/base
+#|
+provides a shorthand syntax for planet files analagous to the (require net/url) syntax
+for libraries.
+
+Grammar:
+
+SPEC        ::= OWNER "/" PKGNAME MAJVERSPEC "/" PATH
+MAJVERSPEC  ::= "" | ":" [0-9]+ MINVERSPEC
+MINVERSPEC  ::= "" | ":" PMINVERSPEC
+PMINVERSPEC ::= [0-9]+ | "<=" [0-9]+ | ">=" [0-9]+ | "=[0-9]+" | [0-9]+ "-" [0-9]+
+OWNER       ::= [string without /]
+PKGNAME     ::= [string without /, :]
+PATH        ::= string 
+
+Examples:
+
+(require (planet planet/test-connection.plt/test-connection.ss))
+(require (planet planet/test-connection/test-connection.ss))
+(require (planet planet/test-connection:1/test-connection.ss))
+(require (planet planet/test-connection:1:0/test-connection.ss))
+(require (planet planet/test-connection:1:=0/test-connection.ss))
+(require (planet planet/test-connection:1:0-10/test-connection.ss))
+(require (planet planet/test-connection:1:>=0/test-connection.ss))
+(require (planet planet/test-connection:1:<=0/test-connection.ss))
+
+|#
 
 (require scheme/require-syntax
          (for-syntax scheme/base)
@@ -6,10 +32,7 @@
 
 (provide (rename-out [plan planet]))
 
-;; SPEC     ::= OWNER "/" PACKAGE VERSPEC PATHSPEC
-;; VERSPEC  ::= "" | "/" MAJ MINSPEC
-;; MINSPEC  ::= "" | "/" PMINSPEC
-;; PMINSPEC ::= MIN | ">=" MIN | "<=" MIN | MIN "-" MIN
+
 
 (define-require-syntax plan
   (λ (stx)
