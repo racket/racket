@@ -124,12 +124,12 @@
        #`(letrec ((name (lambda (id ...) body ...)))
            #,(syntax-property #'name 'inferred-name (syntax-e #'name)))]
       [(rec (name id ... . did) body ...)
-       (andmap identifier? (syntax->list #'(name id ...)))
+       (andmap identifier? (syntax->list #'(name did id ...)))
        #`(letrec ((name (lambda (id ... . did) body ...)))
            #,(syntax-property #'name 'inferred-name (syntax-e #'name)))]
       [_
        (raise-syntax-error
-        #f "expects either a variable followed by an expresion, or a (possibly dotted) sequence of variables followed by a body" stx)]))
+        #f "expects either an identifier followed by an expresion, or a (possibly dotted) sequence of identifiers followed by a body" stx)]))
 
   (define-syntax (evcase stx)
     (syntax-case stx ()
