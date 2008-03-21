@@ -24,15 +24,15 @@ The @schememodname[mzlib/etc] library re-exports the following
 @schememodname[scheme/base] and other libraries:
 
 @schemeblock[
-boolean=?
-true
-false
-build-list
-build-string
-build-vector
-compose
-local
-symbol=?
+  boolean=?
+  true
+  false
+  build-list
+  build-string
+  build-vector
+  compose
+  local
+  symbol=?
 ]
 
 @defform[(begin-lifted expr ...+)]
@@ -170,21 +170,20 @@ corresponding expression are bound to the multiple variables.
 ]}
 
 
-@defproc[(loop-until [start any/c][done? (any/c . -> . any)]
+@defproc[(loop-until [start any/c] [done? (any/c . -> . any)]
                      [next (any/c . -> . any/c)]
-                     [f (any/c . -> . any)]) 
+                     [f (any/c . -> . any)])
          void?]{
 
 Repeatedly invokes the @scheme[f] procedure until the @scheme[done?]
 procedure returns @scheme[#t]:
 
 @schemeblock[
-(define loop-until
-  (lambda (start done? next f)
+  (define (loop-until start done? next f)
     (let loop ([i start])
       (unless (done? i)
         (f i)
-        (loop (next i))))))
+        (loop (next i)))))
 ]}
 
 
@@ -222,9 +221,9 @@ Equivalent to @scheme[(let id bindings body ...+)].}
 Equivalent, respectively, to
 
 @schemeblock[
-(letrec ((id value-expr)) id)
-(letrec ((id (lambda (arg-id ...) value-expr))) id)
-(letrec ((id (lambda (arg-id ... . rest-id) value-expr))) id)
+  (letrec ([id value-expr]) id)
+  (letrec ([id (lambda (arg-id ...) value-expr)]) id)
+  (letrec ([id (lambda (arg-id ... . rest-id) value-expr)]) id)
 ]}
 
 
