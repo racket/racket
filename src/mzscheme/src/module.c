@@ -1608,10 +1608,10 @@ static Scheme_Object *namespace_unprotect_module(int argc, Scheme_Object *argv[]
   return scheme_void;
 }
 
-static int ok_path_string(Scheme_Object *obj, int dir_ok, int just_file_ok, int file_end_ok)
+static int ok_path_string(Scheme_Object *obj, int dir_ok, int just_file_ok, int file_end_ok, int for_planet)
 {
   mzchar *s = SCHEME_CHAR_STR_VAL(obj);
-  int i = SCHEME_CHAR_STRLEN_VAL(obj), c;
+  int i = SCHEME_CHAR_STRLEN_VAL(obj), c, start_package_pos = 0, end_package_pos = 0;
   int prev_was_slash = 0, saw_slash = !file_end_ok, saw_dot = 0;
 
   if (!i)
@@ -1620,6 +1620,87 @@ static int ok_path_string(Scheme_Object *obj, int dir_ok, int just_file_ok, int 
     return 0;
   if (s[i - 1] == '/')
     return 0;
+
+  if (for_planet) {
+    /* Must have at least two slashes, and a version spec is allowed between them */
+    int j, counter = 0, colon1_pos = 0, colon2_pos = 0;
+    for (j = 0; j < i; j++) {
+      c = s[j];
+      if (c == '/') {
+        counter++;
+        if (counter == 1)
+          start_package_pos = j + 1;
+        else if (counter == 2)
+          end_package_pos = j;
+      } else if (c == ':') {
+        if (counter == 1) {
+          if (colon2_pos)
+            return 0;
+          else if (colon1_pos)
+            colon2_pos = j;
+          else
+            colon1_pos = j;
+        }
+      }
+    }
+
+    if (counter == 1)
+      end_package_pos = i;
+
+    if (end_package_pos <= start_package_pos)
+      return 0;
+
+    if (colon1_pos) {
+      /* Check that the version spec is well-formed, leaving the rest to the loop below */
+      int colon1_end = (colon2_pos ? colon2_pos : end_package_pos);
+      
+      if (colon1_end == (colon1_pos + 1))
+        return 0;
+      for (j = colon1_pos + 1; j < colon1_end; j++) {
+        c = s[j];
+        if (!((c >= '0') && (c <= '9')))
+          return 0;
+      }
+
+      if (colon2_pos) {
+        colon2_pos++;
+        c = s[colon2_pos];
+        if ((c == '<') || (c == '>')) {
+          if (s[colon2_pos+1] == '=')
+            colon2_pos += 2;
+          else
+            return 0;
+        } else if (c == '=') {
+          colon2_pos += 1;
+        } else {
+          if ((c >= '0') && (c <= '9')) {
+            /* check for range: */
+            for (j = colon2_pos; j < end_package_pos; j++) {
+              if (s[j] == '-') {
+                colon2_pos = j + 1;
+                break;
+              } else if (!((c >= '0') && (c <= '9')))
+                return 0;
+            }
+          }
+        }
+        if (end_package_pos == colon2_pos)
+          return 0;
+        
+        for (j = colon2_pos; j < end_package_pos; j++) {
+          c = s[j];
+          if (!((c >= '0') && (c <= '9')))
+            return 0;
+        }
+      }
+
+      /* tell loop below to ignore the version part: */
+      start_package_pos = colon1_pos;
+    } else {
+      /* package must have normal directory syntax */
+      start_package_pos = end_package_pos = 0;
+    }
+  }
 
   while (i--) {
     c = s[i];
@@ -1645,11 +1726,14 @@ static int ok_path_string(Scheme_Object *obj, int dir_ok, int just_file_ok, int 
           || (c == '_')
           || (c == '+')) {
         prev_was_slash = 0;
-      } else
+      } else if ((i < start_package_pos) || (i >= end_package_pos))
         return 0;
+      else {
+        prev_was_slash = 0;
+      }
     }
   }
-  
+
   if (!just_file_ok) {
     if (saw_dot && !saw_slash) {
       /* can't have a file name with no directory */
@@ -1722,14 +1806,14 @@ static int ok_planet_string(Scheme_Object *obj)
 int scheme_is_module_path(Scheme_Object *obj)
 {
   if (SCHEME_CHAR_STRINGP(obj)) {
-    return ok_path_string(obj, 1, 1, 1);
+    return ok_path_string(obj, 1, 1, 1, 0);
   }
 
   if (SCHEME_SYMBOLP(obj)) {
     obj = scheme_make_sized_offset_utf8_string((char *)(obj),
                                                SCHEME_SYMSTR_OFFSET(obj),
                                                SCHEME_SYM_LEN(obj));
-    return ok_path_string(obj, 0, 0, 0);
+    return ok_path_string(obj, 0, 0, 0, 0);
   }
 
   if (SCHEME_PAIRP(obj)) {
@@ -1751,7 +1835,7 @@ int scheme_is_module_path(Scheme_Object *obj)
         while (SCHEME_PAIRP(obj)) {
           a = SCHEME_CAR(obj);
           if (SCHEME_CHAR_STRINGP(a)) {
-            if (!ok_path_string(a, 0, is_first, is_first))
+            if (!ok_path_string(a, 0, is_first, is_first, 0))
               return 0;
           } else
             return 0;
@@ -1786,13 +1870,27 @@ int scheme_is_module_path(Scheme_Object *obj)
       Scheme_Object *a, *subs;
       int len;
       
-      if (scheme_proper_list_length(obj) < 3)
+      len = scheme_proper_list_length(obj);
+
+      if (len == 2) {
+        /* Symbolic shorthand? */
+        obj = SCHEME_CDR(obj);
+        a = SCHEME_CAR(obj);
+        if (SCHEME_SYMBOLP(a)) {
+          obj = scheme_make_sized_offset_utf8_string((char *)(a),
+                                                     SCHEME_SYMSTR_OFFSET(a),
+                                                     SCHEME_SYM_LEN(a));
+          return ok_path_string(obj, 0, 0, 0, 1);
+        }
+      }
+
+      if (len < 3)
         return 0;
       obj = SCHEME_CDR(obj);
       a = SCHEME_CAR(obj);
       if (!SCHEME_CHAR_STRINGP(a))
         return 0;
-      if (!ok_path_string(a, 0, 1, 1))
+      if (!ok_path_string(a, 0, 1, 1, 0))
         return 0;
       obj = SCHEME_CDR(obj);
       subs = SCHEME_CDR(obj);
@@ -1847,7 +1945,7 @@ int scheme_is_module_path(Scheme_Object *obj)
         a = SCHEME_CAR(subs);
         if (!SCHEME_CHAR_STRINGP(a))
           return 0;
-        if (!ok_path_string(a, 0, 0, 0))
+        if (!ok_path_string(a, 0, 0, 0, 0))
           return 0;
       }
 

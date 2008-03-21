@@ -567,7 +567,7 @@
            defidform
            specform specform/subs 
            specsubform specsubform/subs specspecsubform specspecsubform/subs specsubform/inline
-           defsubform
+           defsubform defsubform*
            schemegrammar schemegrammar*
            var svar void-const undefined-const)
 
@@ -834,6 +834,9 @@
   (define-syntax (defsubform stx)
     (syntax-case stx ()
       [(_ . rest) #'(into-blockquote (defform . rest))]))
+  (define-syntax (defsubform* stx)
+    (syntax-case stx ()
+      [(_ . rest) #'(into-blockquote (defform* . rest))]))
   (define-syntax specsubform
     (syntax-rules ()
       [(_ #:literals (lit ...) spec desc ...)

@@ -1,5 +1,6 @@
 #lang scribble/doc
 @(require "mz.ss"
+          scribble/bnf
           (for-label (only-in scheme/require-transform
                               make-require-transformer)
                      scheme/require-syntax
@@ -1305,6 +1306,7 @@ Legal only in a @tech{module begin context}, and handled by the
                             (lib rel-string ...+)
                             id
                             (file string)
+                            (planet id)
                             (planet rel-string
                                     (user-string pkg-string vers ...)
                                     rel-string ...)]
@@ -1472,9 +1474,39 @@ corresponds to the default @tech{module name resolver}.
  case, but @scheme[string] is a path---possibly absolute---using the
  current platform's path conventions.}
 
- @defsubform[(planet rel-string (user-string pkg-string vers ...)
-                     rel-string ...)]{
- Specifies a library available via the @PLaneT server. The
+ @defsubform*[((planet id)
+               (planet rel-string (user-string pkg-string vers ...)
+                       rel-string ...))]{
+
+ Specifies a library available via the @PLaneT server.
+
+ The first form is a shorthand for the second, where the @scheme[id]'s
+ character sequence must match the following @nonterm{spec} grammar:
+
+ @BNF[
+ (list @nonterm{spec}
+       (BNF-seq @nonterm{owner} @litchar{/} @nonterm{pkg} @nonterm{lib}))
+ (list @nonterm{owner} @nonterm{elem})
+ (list @nonterm{pkg}
+       (BNF-alt @nonterm{elem} (BNF-seq @nonterm{elem} @litchar{:} @nonterm{version})))
+ (list @nonterm{version}
+       (BNF-alt @nonterm{int} (BNF-seq @nonterm{int} @litchar{:} @nonterm{minor})))
+ (list @nonterm{minor}
+       (BNF-alt @nonterm{int}
+                (BNF-seq @litchar{<=} @nonterm{int})
+                (BNF-seq @litchar{>=} @nonterm{int})
+                (BNF-seq @litchar{=} @nonterm{int}))
+       (BNF-seq @nonterm{int} @litchar{-} @nonterm{int}))
+ (list @nonterm{lib} (BNF-alt @nonterm{empty} (BNF-seq @litchar{/} @nonterm{path})))
+ (list @nonterm{path} (BNF-alt @nonterm{elem} (BNF-seq @nonterm{elem} @litchar{/} @nonterm{path})))
+ ]
+
+ and where an @nonterm{elem} is a non-empty sequence of characters
+ that are ASCII letters, ASCII digits, @litchar{-}, @litchar{+}, or
+ @litchar{_}, and an @nonterm{int} is a non-empty sequence of ASCII
+ digits.
+
+ In the more general second form of a @scheme[planet] module path, the
  @scheme[rel-string]s are similar to the @scheme[lib] form, except
  that the @scheme[(user-string pkg-string vers ...)]  names a
  @|PLaneT|-based package instead of a @tech{collection}.}

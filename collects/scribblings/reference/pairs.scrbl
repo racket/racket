@@ -445,11 +445,8 @@ Like @scheme[assoc], but finds an element using the predicate
 @section{Additional List Functions and Synonyms}
 
 @note-lib[scheme/list]
-@(begin (define list-eval (make-base-eval))
-        (list-eval '(require scheme/function))
-        (define-syntax list-examples
-          (syntax-rules ()
-            [(_ e ...) (examples #:eval list-eval e ...)])))
+@(define list-eval (make-base-eval))
+@interaction-eval[#:eval list-eval (require scheme/list)]
 
 @defthing[empty null?]{The empty list.}
 
@@ -481,24 +478,32 @@ Like @scheme[assoc], but finds an element using the predicate
 
 @defproc[(last [lst list?]) any]{Returns the last element of the list.}
 
-@defproc[(drop [lst list?] [pos nonnegative-exact-integer?]) list?]{
+@defproc[(drop [lst any/c] [pos nonnegative-exact-integer?]) list?]{
 Synonym for @scheme[list-tail].
 }
 
-@defproc[(take [lst list?] [pos nonnegative-exact-integer?]) list?]{
-Returns a fresh list, holding the first @scheme[pos] elements of
-@scheme[lst].  An exception is raised if the list has fewer than
-@scheme[pos] elements.
-}
+@defproc[(take [lst any/c] [pos nonnegative-exact-integer?]) list?]{
+Returns a fresh list whose elements are the first @scheme[pos] elements of
+@scheme[lst].  If @scheme[lst] has fewer than
+@scheme[pos] elements, the @exnraise[exn:fail:contract].
 
-@defproc[(append* [lst list?] ... [lsts (list/c list?)]) list?]{
+The @scheme[lst] argument need not actually be a list; @scheme[lst]
+must merely start with a chain of at least @scheme[pos] pairs.
+
+@examples[#:eval list-eval
+ (take '(1 2 3 4) 2)
+ (take 'non-list 0)
+]}
+
+@defproc*[([(append* [lst list?] ... [lsts (listof list?)]) list?]
+           [(append* [lst list?] ... [lsts list?]) any/c])]{
 
 Like @scheme[append], but the last argument is used as a list of
 arguments for @scheme[append].  In other words, the relationship
 between @scheme[append] and @scheme[append*] is similar to the one
-between @scheme[list] and @scheme[list].
+between @scheme[list] and @scheme[list*].
 
-@list-examples[
+@examples[#:eval list-eval 
   (cdr (append* (map (lambda (x) (list ", " x))
                      '("Alpha" "Beta" "Gamma"))))
 ]}
@@ -512,7 +517,7 @@ pairs are interior nodes, and the resulting list contains all of the
 non-@scheme[null] leaves of the tree in the same order as an inorder
 traversal.
 
-@list-examples[
+@examples[#:eval list-eval 
   (flatten '((a) b (c (d) . e) ()))
   (flatten 'a)
 ]}

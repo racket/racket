@@ -43,8 +43,8 @@ Scheme. The @filepath{.ss} suffix is added automatically.
 
 Another example of this form is @scheme[scheme], which is commonly
 used at the initial import. The path @scheme[scheme] is shorthand for
-@scheme[scheme/main]; when the last element of the path has no suffix,
-then @scheme[/main] is automatically added to the end. Thus,
+@scheme[scheme/main]; when an @scheme[id] has no @litchar{/}, then
+@scheme[/main] is automatically added to the end. Thus,
 @scheme[scheme] or @scheme[scheme/main] refers to the module whose
 source is the @filepath{main.ss} file in the @filepath{scheme}
 collection.
@@ -99,6 +99,34 @@ which are all equivalent to @scheme[scheme].
 ]}
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@specsubform[#:literals (planet)
+             (planet id)]{
+
+Accesses a third-party library that is distributed through the
+@|PLaneT| server. The library is downloaded the first time that it is
+needed, and then the local copy is used afterward.
+
+The @scheme[id] encodes several pieces of information separated by a
+@litchar{/}: the package owner, then package name with optional
+version information, and an optional path to a specific library with
+the package. Like @scheme[id] as shorthand for a @scheme[lib] path, a
+@filepath{.ss} suffix is added automatically, and @schemeidfont{/main}
+is used as the path if none is supplied.
+
+@examples[
+(eval:alts
+ (module m (lib "scheme")
+   (code:comment #, @t{Use @filepath{schematics}'s @filepath{random.plt} 1.0, file @filepath{random.ss}:})
+   (require (planet schematics/random:1/random))
+   (display (random-gaussian)))
+ (void))
+(eval:alts
+ (require 'm)
+ (display 0.9050686838895684))
+]
+}
+
+@; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @specsubform/subs[#:literals (planet = + -)
                   (planet rel-string (user-string pkg-string vers ...))
                   ([vers nat
@@ -107,9 +135,9 @@ which are all equivalent to @scheme[scheme].
                          (+ nat)
                          (- nat)])]{
 
-Accesses a third-party library that is distributed through the
-@|PLaneT| server. A @|PLaneT| reference starts like a @scheme[lib]
-reference, with a relative path, but the path is followed by
+A more general form to access a library from the @|PLaneT| server. In
+this general form, a @|PLaneT| reference starts like a @scheme[lib]
+reference with a relative path, but the path is followed by
 information about the producer, package, and version of the
 library. The specified package is downloaded and installed on demand.
 

@@ -202,7 +202,15 @@
         (for ([i infos] #:when (info-need-run? i))
           (set-info-need-run?! i #f)
           (build-again! latex-dest i with-record-error))
-        (make-loop #f (add1 iter)))))
+        ;; If we only build 1, then it reaches it own fixpoint
+        ;; even if the info doesn't seem to converge immediately.
+        ;; This is a useful shortcut when re-building a single
+        ;; document.
+        (unless (= 1 (for/fold ([count 0])
+                         ([i infos]
+                          #:when (info-build? i))
+                       (add1 count)))
+          (make-loop #f (add1 iter))))))
   (when infos
     (make-loop #t 0)
     ;; cache info to disk
@@ -400,6 +408,13 @@
          (lambda () #f))
         #f))))
 
+(define-syntax-rule (render-time what expr)
+  expr
+  #;
+  (begin
+    (printf "... ~a ...\n" what)
+    (time expr)))
+
 (define (build-again! latex-dest info with-record-error)
   (define doc (info-doc info))
   (define renderer (make-renderer latex-dest doc))
@@ -410,16 +425,21 @@
    (doc-src-file doc)
    (lambda ()
      (parameterize ([current-directory (doc-src-dir doc)])
-       (let* ([v (ensure-doc-prefix (dynamic-require-doc (doc-src-file doc))
+       (let* ([v (ensure-doc-prefix (render-time 
+                                     "load"
+                                     (dynamic-require-doc (doc-src-file doc)))
                                     (doc-src-file doc))]
               [dest-dir (pick-dest latex-dest doc)]
-              [ci (send renderer collect (list v) (list dest-dir))])
-         (for ([i (info-deps info)])
-           (send renderer deserialize-info (info-sci i) ci))
-         (let* ([ri (send renderer resolve (list v) (list dest-dir) ci)]
-                [sci (send renderer serialize-info ri)]
-                [defs (send renderer get-defined ci)]
-                [undef (send renderer get-undefined ri)]
+              [ci (render-time "collect" 
+                               (send renderer collect (list v) (list dest-dir)))])
+         (render-time
+          "deserialize"
+          (for ([i (info-deps info)])
+            (send renderer deserialize-info (info-sci i) ci)))
+         (let* ([ri (render-time "resolve" (send renderer resolve (list v) (list dest-dir) ci))]
+                [sci (render-time "serialize" (send renderer serialize-info ri))]
+                [defs (render-time "defined" (send renderer get-defined ci))]
+                [undef (render-time "undefined" (send renderer get-undefined ri))]
                 [in-delta? (not (equal? undef (info-undef info)))]
                 [out-delta? (not (equal? (list sci defs)
                                          (list (info-sci info)
@@ -438,7 +458,8 @@
            (set-info-undef! info undef)
            (when in-delta? (set-info-deps! info null)) ; recompute deps outside
            (when (or out-delta? (info-need-out-write? info))
-             (unless latex-dest (write-out info))
+             (unless latex-dest 
+               (render-time "xref-out" (write-out info)))
              (set-info-need-out-write?! info #f))
            (when in-delta? (set-info-need-in-write?! info #t))
            (unless latex-dest
@@ -447,10 +468,12 @@
                (for ([f (directory-list dir)]
                      #:when (regexp-match? #"[.]html$" (path-element->bytes f)))
                  (delete-file (build-path dir f)))))
-           (with-record-error
-            (doc-src-file doc)
-            (lambda () (send renderer render (list v) (list dest-dir) ri))
-            void)
+           (render-time
+            "render"
+            (with-record-error
+             (doc-src-file doc)
+             (lambda () (send renderer render (list v) (list dest-dir) ri))
+             void))
            (set-info-time! info (/ (current-inexact-milliseconds) 1000))
            (gc-point)
            (void)))))

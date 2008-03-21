@@ -350,11 +350,8 @@ applied.}
 @section{Additional Procedure Functions}
 
 @note-lib[scheme/function]
-@(begin (define fun-eval (make-base-eval))
-        (fun-eval '(require scheme/function))
-        (define-syntax fun-examples
-          (syntax-rules ()
-            [(_ e ...) (examples #:eval fun-eval e ...)])))
+@(define fun-eval (make-base-eval))
+@interaction-eval[#:eval fun-eval (require scheme/function)]
 
 @defproc[(negate [proc procedure?]) procedure?]{
 
@@ -362,48 +359,65 @@ Returns a procedure that is just like @scheme[proc], except that it
 returns the negation of the result.  The resulting procedure has the
 same arity as @scheme[proc].
 
-@fun-examples[
+@examples[#:eval fun-eval
 (filter (negate symbol?) '(1 a 2 b 3 c))
 ]}
 
 @defproc*[([(curry [proc procedure?]) procedure?]
-           [(curry [proc procedure?] [v any/c] ...+) procedure?])]{
+           [(curry [proc procedure?] [v any/c] ...+) any/c])]{
 
-@scheme[(curry proc)] returns a procedure that is a curried version of
-@scheme[proc].  When the resulting procedure is applied on an
-insufficient number of arguments, it returns a procedure that expects
-additional arguments.  At least one such application step is required
-unless the current arguments are the most that @scheme[proc] can
-consume (which is always the case when @scheme[proc] consumes any
-number of arguments).
+Returns a procedure that is a curried version of @scheme[proc]. In the
+first application of the resulting procedure, unless it is given the
+maximum number of arguments that it can accept, the result is a
+procedure to accept additional arguments. In other words, given a
+@scheme[proc] that accepts varying number of arguments, the first
+application delays as long as possible:
 
-If additional values are provided to the @scheme[curry] call (the
-second form), they are used as the first step.  (This means that
-@scheme[curry] itself is curried.)
+@examples[#:eval fun-eval
+((curry list) 1 2)
+((curry cons) 1)
+((curry cons) 1 2)
+]
 
-@scheme[curry] provides limited support for keyworded functions: only
-the @scheme[curry] call itself can receive keyworded arguments to be
-eventually handed to @scheme[proc].
+After the first application of the result of @scheme[curry], each
+further application accumulates arguments until sufficiently many
+arguments have been accumulated, at which point the original
+@scheme[proc] is called. In other words, given a @scheme[proc] that
+accepts varying numbers of arguments, later applications delay as
+little as possible:
 
-@fun-examples[
+@examples[#:eval fun-eval
+(((curry list) 1 2) 3)
+(((curry list) 1) 3)
+((((curry foldl) +) 0) '(1 2 3))
+]
+
+A function call @scheme[(curry proc v ...)] is equivalent to
+@scheme[((curry proc) v ...)]. In other words, @scheme[curry] itself
+is curried.
+
+The @scheme[curry] function provides limited support for keyworded
+functions: only the @scheme[curry] call itself can receive keyworded
+arguments to be eventually propagated to @scheme[proc].
+
+@examples[#:eval fun-eval
   (map ((curry +) 10) '(1 2 3))
   (map (curry + 10) '(1 2 3))
   (map (compose (curry * 2) (curry + 10)) '(1 2 3))
   (define foo (curry (lambda (x y z) (list x y z))))
   (foo 1 2 3)
   (((((foo) 1) 2)) 3)
-]
+]}
 
-}
 
 @defproc*[([(curryr [proc procedure?]) procedure?]
-           [(curryr [proc procedure?] [v any/c] ...+) procedure?])]{
+           [(curryr [proc procedure?] [v any/c] ...+) any/c])]{
 
 Like @scheme[curry], except that the arguments are collected in the
 opposite direction: the first step collects the rightmost group of
 arguments, and following steps add arguments to the left of these.
 
-@fun-examples[
+@examples[#:eval fun-eval
   (map (curryr list 'foo) '(1 2 3))
 ]
 
