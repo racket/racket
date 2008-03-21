@@ -634,7 +634,7 @@ Like @scheme[method], but the hyperlink shows both the method name and
 the containing class/interface.}
 
 @; ------------------------------------------------------------------------
-@section[#:tag "doc-signatures"]{Documenting Signature}
+@section[#:tag "doc-signatures"]{Documenting Signatures}
 
 @defform[(defsignature id (super-id ...) pre-flow ...)]{
 
