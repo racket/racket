@@ -23,7 +23,7 @@
                          [(eq? (car l) 'a) `(car ,(loop (cdr l)))]
                          [(eq? (car l) 'd) `(cdr ,(loop (cdr l)))]))])
           (with-syntax ([name name]
-                        [contract (let loop ([c contract][pos 0])
+                        [contract (let loop ([c contract] [pos 0])
                                     (if (pair? c)
                                       (let* ([a (loop (car c) (add1 pos))]
                                              [b (loop (cdr c) (+ 1 pos (syntax-span a)))]
@@ -40,10 +40,6 @@
                         [equiv equiv])
             #'(defproc (name [v contract]) any/c
                 "Returns " (to-element 'equiv)))))]))
-
-
-@(begin (define list-eval (make-base-eval))
-        (interaction-eval #:eval list-eval (require scheme/list)))
 
 
 @title[#:tag "pairs"]{Pairs and Lists}
@@ -122,7 +118,7 @@ is the value produced by @scheme[(proc _i)].
 Returns the number of elements in @scheme[lst].}
 
 
-@defproc[(list-ref [lst any/c][pos nonnegative-exact-integer?])
+@defproc[(list-ref [lst any/c] [pos nonnegative-exact-integer?])
          any/c]{
 
 Returns the element of @scheme[lst] at position @scheme[pos], where
@@ -134,7 +130,7 @@ The @scheme[lst] argument need not actually be a list; @scheme[lst]
 must merely start with a chain of at least @scheme[pos] pairs.}
 
 
-@defproc[(list-tail [lst any/c][pos nonnegative-exact-integer?])
+@defproc[(list-tail [lst any/c] [pos nonnegative-exact-integer?])
          any/c]{
 
 Returns the list after the first @scheme[pos] elements of
@@ -449,6 +445,11 @@ Like @scheme[assoc], but finds an element using the predicate
 @section{Additional List Functions and Synonyms}
 
 @note-lib[scheme/list]
+@(begin (define list-eval (make-base-eval))
+        (list-eval '(require scheme/function))
+        (define-syntax list-examples
+          (syntax-rules ()
+            [(_ e ...) (examples #:eval list-eval e ...)])))
 
 @defthing[empty null?]{The empty list.}
 
@@ -489,10 +490,9 @@ pairs are interior nodes, and the resulting list contains all of the
 non-@scheme[null] leaves of the tree in the same order as an inorder
 traversal.
 
-@examples[
-#:eval list-eval
-(flatten '((a) b (c (d) . e) ()))
-(flatten 'a)
+@list-examples[
+  (flatten '((a) b (c (d) . e) ()))
+  (flatten 'a)
 ]}
 
 @; ----------------------------------------
