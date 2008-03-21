@@ -106,7 +106,7 @@
                          ans lis))))
           '() lists))
 
-#;
+#; ; lists are immutable
 (define (lset-union! = . lists)
   (check-arg procedure? = 'lset-union!)
   (reduce (lambda (lis ans) ; Splice new elts of LIS onto the front of ANS.
@@ -131,7 +131,7 @@
                           (every (lambda (lis) (s:member x lis =)) lists))
                         lis1)))))
 
-#;
+#; ; lists are immutable
 (define (lset-intersection! = lis1 . lists)
   (check-arg procedure? = 'lset-intersection!)
   (let ((lists (delete lis1 lists eq?))) ; Throw out any LIS1 vals.
@@ -151,7 +151,7 @@
                                  lists))
                         lis1)))))
 
-#;
+#; ; lists are immutable
 (define (lset-difference! = lis1 . lists)
   (check-arg procedure? = 'lset-difference!)
   (let ((lists (filter pair? lists))) ; Throw out empty lists.
@@ -182,7 +182,7 @@
                                 b)))))
           '() lists))
 
-#;
+#; ; lists are immutable
 (define (lset-xor! = . lists)
   (check-arg procedure? = 'lset-xor!)
   (reduce (lambda (b a) ; Compute A xor B:
@@ -214,7 +214,7 @@
                                      lists)))
                          lis1))))
 
-#;
+#; ; lists are immutable
 (define (lset-diff+intersection! = lis1 . lists)
   (check-arg procedure? = 'lset-diff+intersection!)
   (cond ((every null-list? lists) (values lis1 '())) ; Short cut

@@ -150,7 +150,7 @@
 
 (define (append-map f lis1 . lists)
   (really-append-map append-map  append  f lis1 lists))
-#;
+#; ; lists are immutable
 (define (append-map! f lis1 . lists)
   (really-append-map append-map! append! f lis1 lists))
 
@@ -185,7 +185,7 @@
           (lp tail))))))
 
 ;; We stop when LIS1 runs out, not when any list runs out.
-#;
+#; ; lists are immutable
 (define (map! f lis1 . lists)
   (check-arg procedure? f 'map!)
   (if (pair? lists)

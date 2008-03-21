@@ -83,7 +83,7 @@
           ((pred (car lis)) (lp (cdr lis)))
           (else lis))))
 
-#;
+#; ; lists are immutable
 (define (take-while! pred lis)
   (check-arg procedure? pred 'take-while!)
   (if (or (null-list? lis) (not (pred (car lis)))) '()
@@ -104,7 +104,7 @@
               (values (cons x prefix) suffix))
             (values '() lis))))))
 
-#;
+#; ; lists are immutable
 (define (span! pred lis)
   (check-arg procedure? pred 'span!)
   (if (or (null-list? lis) (not (pred (car lis)))) (values '() lis)
@@ -117,7 +117,7 @@
         (values lis suffix))))
 
 (define (break pred lis) (span  (lambda (x) (not (pred x))) lis))
-#;
+#; ; lists are immutable
 (define (break! pred lis) (span! (lambda (x) (not (pred x))) lis))
 
 (define (any pred lis1 . lists)

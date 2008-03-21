@@ -43,7 +43,7 @@
 (define (delete x lis [= equal?])
   (filter (lambda (y) (not (= x y))) lis))
 
-#;
+#; ; lists are immutable
 (define delete! (x lis [= equal?])
   (filter! (lambda (y) (not (= x y))) lis))
 
@@ -65,7 +65,7 @@
                (new-tail (recur (delete x tail elt=))))
           (if (eq? tail new-tail) lis (cons x new-tail))))))
 
-#;
+#; ; lists are immutable
 (define (delete-duplicates! lis [elt= equal?])
   (check-arg procedure? elt= 'delete-duplicates!)
   (let recur ((lis lis))

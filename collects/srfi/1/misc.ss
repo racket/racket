@@ -127,7 +127,7 @@
 ;; append! append-reverse append-reverse! concatenate concatenate!
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#;
+#; ; lists are immutable
 (define (my-append! . lists)
   ;; First, scan through lists looking for a non-empty one.
   (let lp ((lists lists) (prev '()))
@@ -161,7 +161,7 @@
     (if (null-list? rev-head) tail
         (lp (cdr rev-head) (cons (car rev-head) tail)))))
 
-#;
+#; ; lists are immutable
 (define (append-reverse! rev-head tail)
   (let lp ((rev-head rev-head) (tail tail))
     (if (null-list? rev-head) tail
@@ -170,10 +170,10 @@
           (lp next-rev rev-head)))))
 
 (define (concatenate lists) (reduce-right append '() lists))
-#;
+#; ; lists are immutable
 (define (concatenate! lists) (reduce-right my-append! '() lists))
 
-#;
+#; ; lists are immutable
 (define (my-reverse! lis)
   (let lp ((lis lis) (ans '()))
     (if (null-list? lis) ans

@@ -40,7 +40,8 @@
          alist-cons
          alist-copy
          alist-delete
-         #;alist-delete!)
+         #; alist-delete! ; lists are immutable
+         )
 
 ;; Extended from R4RS to take an optional comparison argument.
 (define (my-assoc x lis [= equal?])
@@ -54,7 +55,7 @@
 (define (alist-delete key alist [= equal?])
   (filter (lambda (elt) (not (= key (car elt)))) alist))
 
-#;
+#; ; lists are immutable
 (define (alist-delete! key alist [= equal?])
   (filter! (lambda (elt) (not (= key (car elt)))) alist))
 

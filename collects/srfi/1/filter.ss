@@ -77,7 +77,7 @@
 ;; It just zips down contiguous runs of in and out elts in LIS doing the
 ;; minimal number of SET-CDR!s to splice the tail of one run of ins to the
 ;; beginning of the next.
-#;
+#; ; lists are immutable
 (define (filter! pred lis)
   (check-arg procedure? pred 'filter!)
   (let lp ((ans lis))
@@ -130,7 +130,7 @@
 ;; It just zips down contiguous runs of in and out elts in LIS doing the
 ;; minimal number of SET-CDR!s to splice these runs together into the result
 ;; lists.
-#;
+#; ; lists are immutable
 (define (partition! pred lis)
   (check-arg procedure? pred 'partition!)
   (if (null-list? lis) (values lis lis)
@@ -172,7 +172,7 @@
 
 ;; Inline us, please.
 (define (my-remove pred l) (filter (lambda (x) (not (pred x))) l))
-#;
+#; ; lists are immutable
 (define (remove! pred l) (filter! (lambda (x) (not (pred x))) l))
 
 ;;; filter.ss ends here
