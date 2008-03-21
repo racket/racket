@@ -3,7 +3,7 @@
   (require scheme/class
            scheme/unit
 	   scheme/contract
-	   scheme/list
+	   (only-in scheme/list last)
            scheme/path
            scheme/file
 	   mred

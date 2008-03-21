@@ -3,57 +3,30 @@
 ; See also pptest.ss and ztest.ss
 
 (load-relative "loadtest.ss")
-
 (load-in-sandbox "mpair.ss")
-
 (load-in-sandbox "md5.ss")
-
 (load-in-sandbox "etc.ss")
-
 (load-in-sandbox "structlib.ss")
-
 (load-in-sandbox "async-channel.ss")
-
 (load-in-sandbox "restart.ss")
-
-(load-in-sandbox "function.ss")
-
 (load-in-sandbox "string.ss")
-
 (load-in-sandbox "filelib.ss")
-
 (load-in-sandbox "portlib.ss")
-
 (load-in-sandbox "threadlib.ss")
-
 (load-in-sandbox "date.ss")
-
 (load-in-sandbox "compat.ss")
-
 (load-in-sandbox "cmdline.ss")
-
 (load-in-sandbox "pconvert.ss")
-
 (load-in-sandbox "pretty.ss")
-
 (load-in-sandbox "control.ss")
-
 (load-in-sandbox "serialize.ss")
-
 ;; (load-in-sandbox "package.ss")
-
 (load-in-sandbox "contract-test.ss") ;; tests scheme/contract
-
 (load-in-sandbox "contract-mzlib-test.ss") ;; tests mzlib/contract
-
 (load-in-sandbox "match-test.ss")
-
 (load-in-sandbox "sandbox.ss")
-
 (load-in-sandbox "shared.ss")
-
 (load-in-sandbox "kw.ss")
-
 (load-in-sandbox "macrolib.ss")
 
 (report-errs)

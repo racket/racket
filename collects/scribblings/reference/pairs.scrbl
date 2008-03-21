@@ -481,6 +481,28 @@ Like @scheme[assoc], but finds an element using the predicate
 
 @defproc[(last [lst list?]) any]{Returns the last element of the list.}
 
+@defproc[(drop [lst list?] [pos nonnegative-exact-integer?]) list?]{
+Synonym for @scheme[list-tail].
+}
+
+@defproc[(take [lst list?] [pos nonnegative-exact-integer?]) list?]{
+Returns a fresh list, holding the first @scheme[pos] elements of
+@scheme[lst].  An exception is raised if the list has fewer than
+@scheme[pos] elements.
+}
+
+@defproc[(append* [lst list?] ... [lsts (list/c list?)]) list?]{
+
+Like @scheme[append], but the last argument is used as a list of
+arguments for @scheme[append].  In other words, the relationship
+between @scheme[append] and @scheme[append*] is similar to the one
+between @scheme[list] and @scheme[list].
+
+@list-examples[
+  (cdr (append* (map (lambda (x) (list ", " x))
+                     '("Alpha" "Beta" "Gamma"))))
+]}
+
 @defproc[(flatten [v any/c])
          list?]{
 

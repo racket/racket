@@ -3,3 +3,4 @@
 
 (load-relative "for.ss")
 (load-relative "list.ss")
+(load-relative "function.ss")

@@ -9,6 +9,10 @@
          empty
          empty?
 
+         drop
+         take
+
+         append*
          flatten)
 
 (define (first x)
@@ -53,6 +57,25 @@
 (define cons? (lambda (l) (pair? l)))
 (define empty? (lambda (l) (null? l)))
 (define empty '())
+
+(define drop list-tail)
+(define (take list0 n0)
+  (unless (and (integer? n0) (exact? n0))
+    (raise-type-error 'take "non-negative integer" n0))
+  (let loop ([list list0] [n n0])
+    (cond [(zero? n) '()]
+          [(pair? list) (cons (car list) (loop (cdr list) (sub1 n)))]
+          [else (raise-mismatch-error
+                 'take
+                 (format "index ~e too large for list~a: ~e"
+                         n0
+                         (if (list? list) "" " (not a proper list)")
+                         list0)
+                 n0)])))
+
+(define append*
+  (case-lambda [(ls) (apply append ls)] ; optimize common case
+               [(ls . lss) (apply append (apply list* ls lss))]))
 
 (define (flatten orig-sexp)
   (let loop ([sexp orig-sexp] [acc null])

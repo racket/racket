@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "ss.ss"
-          (for-label scheme/gui
+          (for-label (except-in scheme/gui drop)
                      slideshow/step
                      slideshow/slides-to-picts))
 

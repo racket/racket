@@ -34,7 +34,8 @@
 
 #lang scheme/base
 
-(require srfi/optional)
+(require srfi/optional
+         (only-in scheme/list take drop))
 
 (provide first second
          third fourth
@@ -64,6 +65,7 @@
 
 ;; take & drop
 
+#; ; provided by scheme/list
 (define (take lis k)
   (check-arg integer? k 'take)
   (let recur ((lis lis) (k k))
@@ -71,12 +73,13 @@
         (cons (car lis)
               (recur (cdr lis) (- k 1))))))
 
+#; ; provided by scheme/list
 (define (drop lis k)
   (check-arg integer? k 'drop)
   (let iter ((lis lis) (k k))
     (if (zero? k) lis (iter (cdr lis) (- k 1)))))
 
-#;
+#; ; lists are immutable
 (define (take! lis k)
   (check-arg integer? k 'take!)
   (if (zero? k) '()
@@ -103,7 +106,7 @@
 
 ;; In this function, LEAD is actually K+1 ahead of LAG. This lets
 ;; us stop LAG one step early, in time to smash its cdr to ().
-#;
+#; ; lists are immutable
 (define (drop-right! lis k)
   (check-arg integer? k 'drop-right!)
   (let ((lead (drop lis k)))
@@ -122,7 +125,7 @@
         (let-values ([(prefix suffix) (recur (cdr lis) (- k 1))])
           (values (cons (car lis) prefix) suffix)))))
 
-#;
+#; ; lists are immutable
 (define (split-at! x k)
   (check-arg integer? k 'split-at!)
   (if (zero? k) (values '() x)
