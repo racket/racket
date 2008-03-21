@@ -122,21 +122,27 @@ is the value produced by @scheme[(proc _i)].
 Returns the number of elements in @scheme[lst].}
 
 
-@defproc[(list-ref [lst list?][pos nonnegative-exact-integer?])
+@defproc[(list-ref [lst any/c][pos nonnegative-exact-integer?])
          any/c]{
 
 Returns the element of @scheme[lst] at position @scheme[pos], where
 the list's first element is position @scheme[0]. If the list has
 @scheme[pos] or fewer elements, then the
-@exnraise[exn:fail:contract].}
+@exnraise[exn:fail:contract].
+
+The @scheme[lst] argument need not actually be a list; @scheme[lst]
+must merely start with a chain of at least @scheme[pos] pairs.}
 
 
-@defproc[(list-tail [lst list?][pos nonnegative-exact-integer?])
+@defproc[(list-tail [lst any/c][pos nonnegative-exact-integer?])
          any/c]{
 
 Returns the list after the first @scheme[pos] elements of
 @scheme[lst]. If the list has @scheme[pos] or fewer elements, then the
-@exnraise[exn:fail:contract].}
+@exnraise[exn:fail:contract].
+
+The @scheme[lst] argument need not actually be a list; @scheme[lst]
+must merely start with a chain of at least @scheme[pos] pairs.}
 
 
 @defproc*[([(append [lst list?] ...) list?]
@@ -147,7 +153,7 @@ of the elements of the given lists in order. The last argument is used
 directly in the tail of the result.
 
 The last argument need not be a list, in which case the result is an
-``improper list'' ...}
+``improper list.''}
 
 @defproc[(reverse [lst list?]) list?]{
 
