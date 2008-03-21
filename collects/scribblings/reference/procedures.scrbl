@@ -372,17 +372,26 @@ same arity as @scheme[proc].
 @scheme[(curry proc)] returns a procedure that is a curried version of
 @scheme[proc].  When the resulting procedure is applied on an
 insufficient number of arguments, it returns a procedure that expects
-additional arguments.  However, at least one such application step is
-required in any case, even if the @scheme[proc] consumes any number of
-arguments.
+additional arguments.  At least one such application step is required
+unless the current arguments are the most that @scheme[proc] can
+consume (which is always the case when @scheme[proc] consumes any
+number of arguments).
 
-If additional values are provided to @scheme[curry], they are used as
-the first step.  (This means that @scheme[curry] itself is curried.)
+If additional values are provided to the @scheme[curry] call (the
+second form), they are used as the first step.  (This means that
+@scheme[curry] itself is curried.)
+
+@scheme[curry] provides limited support for keyworded functions: only
+the @scheme[curry] call itself can receive keyworded arguments to be
+eventually handed to @scheme[proc].
 
 @fun-examples[
-(map ((curry +) 10) '(1 2 3))
-(map (curry + 10) '(1 2 3))
-(map (compose (curry * 2) (curry + 10)) '(1 2 3))
+  (map ((curry +) 10) '(1 2 3))
+  (map (curry + 10) '(1 2 3))
+  (map (compose (curry * 2) (curry + 10)) '(1 2 3))
+  (define foo (curry (lambda (x y z) (list x y z))))
+  (foo 1 2 3)
+  (((((foo) 1) 2)) 3)
 ]
 
 }
@@ -395,7 +404,7 @@ opposite direction: the first step collects the rightmost group of
 arguments, and following steps add arguments to the left of these.
 
 @fun-examples[
-(map (curryr list 'foo) '(1 2 3))
+  (map (curryr list 'foo) '(1 2 3))
 ]
 
 }
