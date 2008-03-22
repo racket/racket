@@ -8,9 +8,11 @@
          "compiler.ss"
          (only-in srfi/1 delete-duplicates))
 
-(provide ddk? parse-literal all-vars pattern-var? match:syntax-err)
+(provide ddk? parse-literal all-vars pattern-var? match:syntax-err
+         matchable?)
 
-
+(define (matchable? e)
+  (or (string? e) (bytes? e)))
 
 ;; raise an error, blaming stx
 (define (match:syntax-err stx msg)

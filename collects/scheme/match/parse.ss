@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require (for-template scheme/base)
+(require (for-template scheme/base "parse-helper.ss")
          syntax/boundmap
          syntax/stx
          scheme/struct-info
@@ -49,18 +49,18 @@
      (let ([ps (map (compose make-Not parse) (syntax->list #'(p ...)))])
        (make-And ps))]
     [(regexp r)
-     (make-And (list (make-Pred #'string?) (make-App #'(lambda (e) (regexp-match r e)) (make-Pred #'values))))]
+     (make-And (list (make-Pred #'matchable?) (make-App #'(lambda (e) (regexp-match r e)) (make-Pred #'values))))]
     [(regexp r p)
-     (make-And (list (make-Pred #'string?) (make-App #'(lambda (e) (regexp-match r e)) (parse #'p))))]
+     (make-And (list (make-Pred #'matchable?) (make-App #'(lambda (e) (regexp-match r e)) (parse #'p))))]
     [(pregexp r)
-     (make-And (list (make-Pred #'string?) (make-App (syntax/loc #'r 
+     (make-And (list (make-Pred #'matchable?) (make-App (syntax/loc #'r 
                                                        (lambda (e) (regexp-match (if (pregexp? r)
                                                                                      r
                                                                                      (pregexp r))
                                                                                  e)))
                                                      (make-Pred #'values))))]
     [(pregexp r p)
-     (make-And (list (make-Pred #'string?) (make-App (syntax/loc #'r 
+     (make-And (list (make-Pred #'matchable?) (make-App (syntax/loc #'r 
                                                        (lambda (e) (regexp-match (if (pregexp? r)
                                                                                      r
                                                                                      (pregexp r))
