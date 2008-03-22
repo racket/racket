@@ -193,7 +193,7 @@
          (let* (;; the accessors come in reverse order
                 [acc (reverse acc)]
                 ;; remove the first element, if it's #f
-                [acc (if (not (car acc)) (cdr acc) acc)])
+                [acc (cond [(null? acc) acc] [(not (car acc)) (cdr acc)] [else acc])])
            (make-Struct id pred (get-lineage #'s) acc 
                         (if (eq? '_ (syntax-e #'pats))
                             (map make-Dummy acc)
