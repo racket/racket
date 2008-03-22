@@ -366,12 +366,12 @@ same arity as @scheme[proc].
 @defproc*[([(curry [proc procedure?]) procedure?]
            [(curry [proc procedure?] [v any/c] ...+) any/c])]{
 
-Returns a procedure that is a curried version of @scheme[proc]. In the
-first application of the resulting procedure, unless it is given the
+Returns a procedure that is a curried version of @scheme[proc]. When
+the resulting procedure is first applied, unless it is given the
 maximum number of arguments that it can accept, the result is a
 procedure to accept additional arguments. In other words, given a
 @scheme[proc] that accepts varying number of arguments, the first
-application delays as long as possible:
+application always returns a procedure waiting for more arguments:
 
 @examples[#:eval fun-eval
 ((curry list) 1 2)
@@ -398,7 +398,7 @@ is curried.
 
 The @scheme[curry] function provides limited support for keyworded
 functions: only the @scheme[curry] call itself can receive keyworded
-arguments to be eventually propagated to @scheme[proc].
+arguments to be propagated eventually to @scheme[proc].
 
 @examples[#:eval fun-eval
   (map ((curry +) 10) '(1 2 3))
