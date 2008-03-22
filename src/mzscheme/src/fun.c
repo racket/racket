@@ -5162,7 +5162,8 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     sub_cont = (Scheme_Cont *)scheme_extract_one_cc_mark(NULL, cont_key);
   if (sub_cont && ((sub_cont->save_overflow != p->overflow)
 		   || (sub_cont->prompt_tag != prompt_tag)
-		   || (sub_cont->barrier_prompt != effective_barrier_prompt))) {
+		   || (sub_cont->barrier_prompt != effective_barrier_prompt)
+		   || (sub_cont->meta_continuation != p->meta_continuation))) {
     sub_cont = NULL;
   }
   if (sub_cont && (sub_cont->ss.cont_mark_pos == MZ_CONT_MARK_POS)) {
