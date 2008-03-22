@@ -194,7 +194,7 @@
                 [acc (reverse acc)]
                 ;; remove the first element, if it's #f
                 [acc (cond [(null? acc) acc] [(not (car acc)) (cdr acc)] [else acc])])
-           (make-Struct id pred (get-lineage #'s) acc 
+           (make-Struct id pred (get-lineage (cert #'s)) acc 
                         (if (eq? '_ (syntax-e #'pats))
                             (map make-Dummy acc)
                             (let* ([ps (syntax->list #'pats)])
