@@ -16,7 +16,6 @@
        (with-syntax ([(xs ...) (generate-temporaries exprs)]
                      [(exprs ...) exprs]
                      [(fail) (generate-temporaries #'(fail))])
-	 ;(printf "here in go ~a~n" (list (syntax-line (orig-stx)) (syntax-source (orig-stx))))
          (with-syntax ([body (compile* (syntax->list #'(xs ...))
                                        (map (lambda (pats rhs)
                                               (unless (= len (length (syntax->list pats)))
