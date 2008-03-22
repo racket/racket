@@ -19,6 +19,7 @@
                                                       (current-continuation-marks)
                                                       val)))
 
+(define orig-stx (make-parameter #f))
 
 (define-struct Pat () #:transparent)
 ;; v is an identifier

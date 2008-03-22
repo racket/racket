@@ -9,6 +9,7 @@
 ;; this parses the clauses using parse/cert, then compiles them
 ;; go : syntax syntax syntax certifier -> syntax
 (define (go parse/cert stx exprs clauses cert)
+  (parameterize ([orig-stx stx])
   (syntax-case clauses ()
     [([pats . rhs] ...)
      (let ([len (length (syntax->list exprs))])
@@ -42,4 +43,4 @@
              (let ([xs exprs]
                    ...)
                (let ([fail (lambda () #,(syntax/loc stx (match:error orig-expr)))])
-                 body))))))]))
+                 body))))))])))
