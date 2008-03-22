@@ -371,7 +371,8 @@ the resulting procedure is first applied, unless it is given the
 maximum number of arguments that it can accept, the result is a
 procedure to accept additional arguments. In other words, given a
 @scheme[proc] that accepts varying number of arguments, the first
-application always returns a procedure waiting for more arguments:
+application tries to return a procedure waiting for more arguments if
+possible:
 
 @examples[#:eval fun-eval
 ((curry list) 1 2)
