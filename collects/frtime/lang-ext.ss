@@ -361,7 +361,7 @@
              [head last]
              [producer (proc->signal
                         (lambda ()
-                          (let* ([now (current-inexact-milliseconds)]
+                          (let* ([now (and (behavior? consumer) (current-inexact-milliseconds))]
                                  [ms (value-now ms-b)])
                             (let loop ()
                               (if (or (empty? (mcdr head))
@@ -373,7 +373,7 @@
                                   (begin
                                     (set! head (mcdr head))
                                     (loop)))))))]
-             [consumer (proc->signal/dont-gc-unless producer
+             [consumer (proc->signal
                         (lambda ()
                           (let* ([now (current-inexact-milliseconds)]
                                  [new (deep-value-now beh)]
@@ -398,8 +398,8 @@
                [last-time (current-inexact-milliseconds)]
                [last-val (value-now b)]
                [last-alarm 0]
-               [producer (proc->signal (lambda () accum))]
-               [consumer (proc->signal/dont-gc-unless producer void b ms-b)])
+               [producer (proc->signal (lambda () (and (behavior? consumer) accum)))]
+               [consumer (proc->signal void b ms-b)])
         (set-signal-thunk!
          consumer
          (lambda ()

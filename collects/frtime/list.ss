@@ -1,4 +1,4 @@
-(module list "frtime.ss"
+(module list frtime
   
   (require (lifted mzlib/list sort
                    fifth sixth seventh eighth

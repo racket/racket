@@ -686,6 +686,12 @@
     (! man `(stat ,(self)))
     (receive [n n]))
 
+  (define (hash-table-size ht)
+    (let ([x 0])
+      (hash-table-for-each ht (lambda (k v) 
+                                (if k (set! x (add1 x)))))
+      x))
+
   (define exn-handler (lambda (exn) (raise exn)))
   
   ;;;;;;;;;;;;;
@@ -699,6 +705,7 @@
      (let* ([named-providers (make-hash-table)] 
             [cur-beh #f]
             [signal-cache (make-hash-table 'weak)]
+            [last-known-signal-count 50]
             [notifications empty]
             
             ;; added for run-thunk/stablized
@@ -770,10 +777,7 @@
                         
                         
                         [('stat rtn-pid)
-                         (let ([x 0])
-                           (hash-table-for-each signal-cache (lambda (k v) 
-                                                               (if k (set! x (add1 x)))))
-                           (! rtn-pid x))]
+                         (! rtn-pid (hash-table-size signal-cache))]
                         
                         [('remote-reg tid sym)
                          (let ([f+l (hash-table-get named-providers sym)])
@@ -831,7 +835,12 @@
              (set! thunks-to-run empty)
 
              (set-box! logical-time (add1 (unbox logical-time)))
-             
+             (when (zero? (modulo logical-time 50))
+               (let ([new-signal-count (hash-table-size signal-cache)])
+                 (when (> new-signal-count (* 2 last-known-signal-count))
+                   (collect-garbage)
+                   (set! last-known-signal-count (hash-table-size signal-cache)))))
+
              (inner)))))))
   
   (define exceptions
