@@ -65,7 +65,7 @@ The essential reduction rules are:
 @schemeblock[
 (prompt _val) => _val
 (prompt _E[(control _k _expr)]) => (prompt ((lambda (_k) _expr)
-                                           (lambda (_v) _E[_v])))
+                                            (lambda (_v) _E[_v])))
   (code:comment #, @t{where @scheme[_E] has no @scheme[prompt]})
 ]}
 

@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "ss.ss"
-          (for-label (except-in scheme/gui drop)
+          (for-label scheme/gui
                      slideshow/code
                      slideshow/flash
                      slideshow/face
@@ -520,12 +520,12 @@ to the corresponding sides; ascent and descent are extended, too.}
 Truncates @scheme[pict]'s @tech{bounding box} by removing the descent part.}
 
 
-@defproc[(lift [pict pict?] [amt real?]) pict?]{
+@defproc[(lift-above-baseline [pict pict?] [amt real?]) pict?]{
 
 Lifts @scheme[pict] relative to its baseline, extending the
 @tech{bounding-box} height if necessary.}
 
-@defproc[(drop [pict pict?] [amt real?]) pict?]{
+@defproc[(drop-below-ascent [pict pict?] [amt real?]) pict?]{
 
 Drops @scheme[pict] relative to its ascent line, extending the
 @tech{bounding-box} height if necessary.}

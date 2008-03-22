@@ -129,7 +129,12 @@
                        find-rc
                        find-rb
                        find-rtl
-                       find-rbl)
+                       find-rbl
+
+                       drop
+                       lift)
+           (rename-out [drop drop-below-ascent]
+                       [lift lift-above-baseline])
 
            (except-out (all-from-out texpict/utils)
                    
