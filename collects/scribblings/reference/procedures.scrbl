@@ -369,10 +369,7 @@ same arity as @scheme[proc].
 Returns a procedure that is a curried version of @scheme[proc]. When
 the resulting procedure is first applied, unless it is given the
 maximum number of arguments that it can accept, the result is a
-procedure to accept additional arguments. In other words, given a
-@scheme[proc] that accepts varying number of arguments, the first
-application tries to return a procedure waiting for more arguments if
-possible:
+procedure to accept additional arguments.
 
 @examples[#:eval fun-eval
 ((curry list) 1 2)
@@ -381,11 +378,9 @@ possible:
 ]
 
 After the first application of the result of @scheme[curry], each
-further application accumulates arguments until sufficiently many
-arguments have been accumulated, at which point the original
-@scheme[proc] is called. In other words, given a @scheme[proc] that
-accepts varying numbers of arguments, later applications delay as
-little as possible:
+further application accumulates arguments until an acceptable number
+of arguments have been accumulated, at which point the original
+@scheme[proc] is called.
 
 @examples[#:eval fun-eval
 (((curry list) 1 2) 3)
