@@ -25,6 +25,7 @@
 ;; splits the given string into the nonempty substring before the first slash and the substring after it
 ;; on failure returns whatever the given #:on-error function returns when given the entire string
 (define get-next-slash (get-next-fragment #rx"^([^/]+)/(.*)$"))
+(define get-next-slash-or-end (get-next-fragment #rx"^([^/]+)/?(.*)$"))
 
 ;; get-to-next-colon-or-end : [#:on-error (string -> a)] -> string -> (union (values string string) a)
 ;; splits the given string into the nonempty substring before the initial : and the substring after it, or 
