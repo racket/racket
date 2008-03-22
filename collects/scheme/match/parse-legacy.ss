@@ -18,21 +18,12 @@
     (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
     
     [(expander args ...)
-       (and (identifier? #'expander)
-            ;; for debugging
-            (syntax-transforming?)
-            (match-expander? (syntax-local-value (cert #'expander) (lambda () #f))))
-       (let* ([expander (syntax-local-value (cert #'expander))]
-              [transformer (match-expander-legacy-xform expander)])
-         (unless transformer
-           (raise-syntax-error #f "This expander only works with the standard match syntax" #'expander))
-         (let* ([introducer (make-syntax-introducer)]
-                [certifier (match-expander-certifier expander)]
-                [mstx (introducer (syntax-local-introduce stx))]
-                [mresult (transformer mstx)]
-                [result (syntax-local-introduce (introducer mresult))]
-                [cert* (lambda (id) (certifier (cert id) #f introducer))])
-           (parse/legacy/cert result cert*)))]
+     (and (identifier? #'expander)
+          ;; for debugging
+          (syntax-transforming?)
+          (match-expander? (syntax-local-value (cert #'expander) (lambda () #f))))
+     (match-expander-transform parse/legacy/cert cert #'expander stx match-expander-legacy-xform 
+                               "This expander only works with the standard match syntax")]
     [(and p ...)
      (make-And (map parse (syntax->list #'(p ...))))]
     [(or p ...)

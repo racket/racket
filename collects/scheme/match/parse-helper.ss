@@ -8,11 +8,31 @@
          "compiler.ss"
          (only-in srfi/1 delete-duplicates))
 
-(provide ddk? parse-literal all-vars pattern-var? match:syntax-err
-         matchable?)
+(provide ddk? parse-literal all-vars pattern-var? match:syntax-err match-expander-transform matchable?)
+
+;; transform a match-expander application
+;; parse/cert : stx certifier -> pattern
+;; cert : certifier
+;; expander : identifier
+;; stx : the syntax of the match-expander application
+;; accessor : match-expander -> syntax transformer/#f
+;; error-msg : string
+;; produces a parsed pattern
+(define (match-expander-transform parse/cert cert expander stx accessor error-msg)  
+  (let* ([expander (syntax-local-value (cert expander))]
+         [transformer (accessor expander)])   
+    (unless transformer (raise-syntax-error #f error-msg #'expander))
+    (let* ([introducer (make-syntax-introducer)]
+           [certifier (match-expander-certifier expander)]
+           [mstx (introducer (syntax-local-introduce stx))]
+           [mresult (transformer mstx)]
+           [result (syntax-local-introduce (introducer mresult))]
+           [cert* (lambda (id) (certifier (cert id) #f introducer))])
+      (parse/cert result cert*))))
 
 (define (matchable? e)
   (or (string? e) (bytes? e)))
+
 
 ;; raise an error, blaming stx
 (define (match:syntax-err stx msg)

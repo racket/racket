@@ -36,14 +36,15 @@
      
      (define-syntax (match-lambda** stx)
        (syntax-case stx ()
-         [(k [(pats ...) . rhs] ...)
-          (let* ([pss (syntax->list #'((pats ...) ...))]
-                 [len (length (syntax->list (car pss)))])
+         [(k [pats . rhs] ...)
+          (let* ([pss (syntax->list #'(pats ...))]
+                 [ps1 (car pss)]
+                 [len (length (syntax->list ps1))])
             (for/list ([ps pss])
                       (unless (= (length (syntax->list ps)) len)
-                        (raise-syntax-error 'match "unequal number of patterns in match clauses" stx ps)))
+                        (raise-syntax-error 'match "unequal number of patterns in match clauses" stx ps ps1)))
             (with-syntax ([(vars ...) (generate-temporaries (car pss))])
-              (syntax/loc stx (lambda (vars ...) (match* (vars ...) [(pats ...) . rhs] ...)))))]))
+              (syntax/loc stx (lambda (vars ...) (match* (vars ...) [pats . rhs] ...)))))]))
      
      
      
