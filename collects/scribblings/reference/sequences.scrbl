@@ -89,12 +89,21 @@ Returns a sequence equivalent to @scheme[str].
 Returns a sequence equivalent to @scheme[bstr].
 @speed[in-bytes "byte string"]}
 
-@defproc[(in-input-port-bytes [inp input-port?]) sequence?]{
-Returns a sequence equivalent to @scheme[inp].}
+@defproc[(in-input-port-bytes [in input-port?]) sequence?]{
+Returns a sequence equivalent to @scheme[in].}
 
-@defproc[(in-input-port-chars [inp input-port?]) sequence?]{ Returns a
-sequence whose elements are read as characters form @scheme[inp] (as
-opposed to using @scheme[inp] directly as a sequence to get bytes).}
+@defproc[(in-input-port-chars [in input-port?]) sequence?]{ Returns a
+sequence whose elements are read as characters form @scheme[in] (as
+opposed to using @scheme[in] directly as a sequence to get bytes).}
+
+@defproc[(in-lines [in input-port? (current-input-port)]
+                   [mode (one-of 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
+         sequence?]{
+
+Returns a sequence whose elements are the result of @scheme[(read-line
+in mode)] until an end-of-line is encountered. Note that the default
+mode is @scheme['any], whereas the default mode of @scheme[read-line]
+is @scheme['linefeed].}
 
 @defproc[(in-hash-table [ht hash-table?]) sequence?]{
 Returns a sequence equivalent to @scheme[ht].}
@@ -153,8 +162,7 @@ The @scheme[thunk] results define the generated elements as follows:
 @itemize{
 
  @item{The first result is a @scheme[_pos->element] procedure that takes
-       the current position and returns the value(s) for the current element.
-       It is called only once per position.}
+       the current position and returns the value(s) for the current element.}
 
  @item{The second result is a @scheme[_next-pos] procedure that takes
        the current position and returns the next position.}
@@ -176,7 +184,11 @@ The @scheme[thunk] results define the generated elements as follows:
 
 }
 
-}
+Each of the procedures listed above is called only once per position.
+Among the last three procedures, as soon as one of the procedures
+returns @scheme[#f], the sequence ends, and none are call
+again. Typically, one of the functions determines the end condition,
+and the other two functions always return @scheme[#t].}
 
 @section{Sequence Generators}
 

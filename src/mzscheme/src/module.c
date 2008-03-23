@@ -1037,6 +1037,13 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 			 errname,
 			 name, srcm->modname);
     }
+
+    if (!menv || !menv->toplevel) {
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                       "%s: module initialization failed: %V",
+                       errname,
+                       srcm->modname);
+    }
     
     b = scheme_bucket_from_table(menv->toplevel, (const char *)srcname);
 

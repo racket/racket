@@ -30,6 +30,7 @@
              (rename *in-bytes in-bytes)
              in-input-port-bytes
              in-input-port-chars
+             in-lines
              in-hash-table
              in-hash-table-keys
              in-hash-table-values
@@ -430,6 +431,22 @@
                                      (lambda (v) #t)
                                      (lambda (x) (not (eof-object? x)))
                                      (lambda (x v) #t)))))
+  
+  (define in-lines
+    (case-lambda
+     [() (in-lines (current-input-port))]
+     [(v) (in-lines v 'any)]
+     [(v mode)
+      (unless (input-port? v) (raise-type-error 'in-lines "input-port" v))
+      (unless (memq mode '(linefeed return return-linefeed any any-one))
+        (raise-type-error 'in-lines "'linefeed, 'return, 'return-linefeed, 'any, or 'any-one)" mode))
+      (make-do-sequence (lambda ()
+                          (values (lambda (v) (read-line v mode))
+                                  (lambda (v) v)
+                                  v
+                                  (lambda (v) #t)
+                                  (lambda (x) (not (eof-object? x)))
+                                  (lambda (x v) #t))))]))
   
   (define (in-hash-table ht)
     (unless (hash-table? ht) (raise-type-error 'in-hash-table "hash-table" ht))
