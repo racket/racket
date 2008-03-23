@@ -326,36 +326,45 @@
                  [(n) (error "Abort!")]
                  [else (loop)]))))))
 
-(define ((move/copy-tree move?) src dst*)
+(define ((move/copy-tree move?) src dst* #:missing [missing 'error])
   (define dst (if (symbol? dst*) (dir: dst*) dst*))
+  (define src-exists?
+    (or (directory-exists? src) (file-exists? src) (link-exists? src)))
   (printf "~aing ~a -> ~a\n" (if move? "Mov" "Copy") src dst)
-  (make-dir* (dirname dst))
-  (let loop ([src (path->string (simplify-path src #f))]
-             [dst (path->string (simplify-path dst #f))]
-             [lvl (level-of src)]) ; see above
-    (let ([doit (let ([doit (if move? mv* cp*)]) (lambda () (doit src dst)))]
-          [src-d? (directory-exists? src)]
-          [dst-l? (link-exists? dst)]
-          [dst-d? (directory-exists? dst)]
-          [dst-f? (file-exists? dst)])
-      (unless (skip-filter src)
-        (when (and src-d? (not lvl) (not dst-d?))
-          (when (or dst-l? dst-f?) (ask-overwrite "file or link" dst))
-          (make-directory dst)
-          (register-change! 'md dst)
-          (set! dst-d? #t) (set! dst-l? #f) (set! dst-f? #f))
-        (cond [dst-l? (ask-overwrite "symlink" dst) (doit)]
-              [dst-d? (if (and src-d? (or (not lvl) (< 0 lvl)))
-                        ;; recurse only when source is dir, & not too deep
-                        (for-each (lambda (name)
-                                    (loop (make-path src name)
-                                          (make-path dst name)
-                                          (and lvl (sub1 lvl))))
-                                  (ls src))
-                        (begin (ask-overwrite "dir" dst) (doit)))]
-              [dst-f? (ask-overwrite "file" dst) (doit)]
-              [else (doit)]))))
-  (when move? (remove-empty-dirs src)))
+  (cond
+    [src-exists?
+     (make-dir* (dirname dst))
+     (let loop ([src (path->string (simplify-path src #f))]
+                [dst (path->string (simplify-path dst #f))]
+                [lvl (level-of src)]) ; see above
+       (let ([doit (let ([doit (if move? mv* cp*)]) (lambda () (doit src dst)))]
+             [src-d? (directory-exists? src)]
+             [dst-l? (link-exists? dst)]
+             [dst-d? (directory-exists? dst)]
+             [dst-f? (file-exists? dst)])
+         (unless (skip-filter src)
+           (when (and src-d? (not lvl) (not dst-d?))
+             (when (or dst-l? dst-f?) (ask-overwrite "file or link" dst))
+             (make-directory dst)
+             (register-change! 'md dst)
+             (set! dst-d? #t) (set! dst-l? #f) (set! dst-f? #f))
+           (cond [dst-l? (ask-overwrite "symlink" dst) (doit)]
+                 [dst-d? (if (and src-d? (or (not lvl) (< 0 lvl)))
+                           ;; recurse only when source is dir, & not too deep
+                           (for-each (lambda (name)
+                                       (loop (make-path src name)
+                                             (make-path dst name)
+                                             (and lvl (sub1 lvl))))
+                                     (ls src))
+                           (begin (ask-overwrite "dir" dst) (doit)))]
+                 [dst-f? (ask-overwrite "file" dst) (doit)]
+                 [else (doit)]))))
+     (when move? (remove-empty-dirs src))]
+    [(eq? missing 'error)
+     (error (format "  missing source path ~s, aborting..." src))]
+    [(eq? missing 'skip)
+     (printf "  missing source path ~s, skipping...\n" src)]
+    [else (error 'move/copy-tree "internal error, unknown mode: ~e" missing)]))
 
 ;; --------------------------------------------------------------------------
 
@@ -368,7 +377,7 @@
     (define binfiles (ls "bin")) ; see below
     (do-tree "bin"      'bin)
     (do-tree "collects" 'collects)
-    (do-tree "doc"      'doc)
+    (do-tree "doc"      'doc #:missing 'skip) ; not included in mz distros
     ;; (do-tree ??? 'lib) ; shared stuff goes here
     (do-tree "include"  'includeplt)
     (do-tree "lib"      'libplt)
