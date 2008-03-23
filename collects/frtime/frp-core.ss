@@ -463,15 +463,20 @@
   (define-values (iq-enqueue iq-dequeue iq-empty? iq-resort)
     (let* ([depth
             (lambda (msg)
-              (if (signal? msg) 
-                  (signal-depth msg)
-                  (signal-depth (first msg))))]
+              (let ([msg (if (weak-box? msg) (weak-box-value msg) msg)])
+                (cond
+                  [(cons? msg) (signal-depth (first msg))]
+                  [(signal? msg) (signal-depth msg)]
+                  [else 0])))]
            [heap (make-heap
                   (lambda (b1 b2) (< (depth b1) (depth b2)))
                   eq?)])
       (values
        (lambda (b) (heap-insert heap b))
-       (lambda () (heap-pop heap))
+       (lambda () (let ([v (heap-pop heap)])
+                    (if (weak-box? v)
+                        (weak-box-value v)
+                        v)))
        (lambda () (heap-empty? heap))
        (lambda () (let loop ([elts empty])
                     (if (heap-empty? heap)
@@ -626,7 +631,7 @@
             ; then I send a message.  Otherwise, I add to the internal
             ; priority queue.
             (if (< depth (signal-depth dep))
-                (iq-enqueue dep)
+                (iq-enqueue wb)
                 (! man dep))]
            [_
             (set! empty-boxes (add1 empty-boxes))]))
@@ -835,12 +840,7 @@
              (set! thunks-to-run empty)
 
              (set-box! logical-time (add1 (unbox logical-time)))
-             (when (zero? (modulo logical-time 50))
-               (let ([new-signal-count (hash-table-size signal-cache)])
-                 (when (> new-signal-count (* 2 last-known-signal-count))
-                   (collect-garbage)
-                   (set! last-known-signal-count (hash-table-size signal-cache)))))
-
+             
              (inner)))))))
   
   (define exceptions
