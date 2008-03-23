@@ -186,7 +186,7 @@ The @scheme[thunk] results define the generated elements as follows:
 
 Each of the procedures listed above is called only once per position.
 Among the last three procedures, as soon as one of the procedures
-returns @scheme[#f], the sequence ends, and none are call
+returns @scheme[#f], the sequence ends, and none are called
 again. Typically, one of the functions determines the end condition,
 and the other two functions always return @scheme[#t].}
 
