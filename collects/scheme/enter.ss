@@ -68,8 +68,10 @@
         ;; Record module timestamp and dependencies:
         (let ([mod (make-mod name
                              (get-timestamp path)
-                             (apply append
-                                    (map cdr (module-compiled-imports code))))])
+                             (if code
+                                 (apply append
+                                        (map cdr (module-compiled-imports code)))
+                                 null))])
           (hash-table-put! loaded path mod))
         ;; Evaluate the module:
         (eval code))
