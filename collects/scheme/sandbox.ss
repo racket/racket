@@ -394,11 +394,12 @@
 (define current-eventspace (mz/mr (make-parameter #f) current-eventspace))
 (define make-eventspace    (mz/mr void make-eventspace))
 (define run-in-bg          (mz/mr thread queue-callback))
-(define bg-run->thread     (if gui? 
-                               (lambda (ignored) 
-                                 ((mz/mr void eventspace-handler-thread) (current-eventspace)))
-                               values))
 (define null-input         (open-input-bytes #""))
+(define bg-run->thread
+  (if gui?
+    (lambda (ignored)
+      ((mz/mr void eventspace-handler-thread) (current-eventspace)))
+    values))
 
 (define-struct evaluator-message (msg args))
 (define-syntax define-evaluator-messenger
@@ -586,40 +587,39 @@
          ;; program didn't execute
          (raise r)))))
 
-(define make-evaluator
-  (lambda (language #:requires [requires null] #:allow-read [allow null] . input-program)
-    ;; `input-program' is either a single argument specifying a file/string,
-    ;; or multiple arguments for a sequence of expressions
-    (let (;; make it possible to provide #f for no language and no requires
-          [lang language]
-          ;; make it possible to use simple paths to files to require
-          [reqs (cond [(not (list? requires))
-                       (error 'make-evaluator "bad requires: ~e" requires)]
-                      [else
-                       (map (lambda (r)
-                              (if (or (pair? r) (symbol? r))
-                                  r
-                                  `(file ,(path->string (simplify-path* r)))))
-                            requires)])])
-      (make-evaluator* (init-for-language lang)
-                       (append (extract-required (or (decode-language lang)
-                                                     lang)
-                                                 reqs) 
-                               allow)
-                       (lambda () (build-program lang reqs input-program))))))
+(define (make-evaluator language
+                        #:requires [requires null] #:allow-read [allow null]
+                        . input-program)
+  ;; `input-program' is either a single argument specifying a file/string, or
+  ;; multiple arguments for a sequence of expressions
+  (let (;; make it possible to provide #f for no language and no requires
+        [lang language]
+        ;; make it possible to use simple paths to files to require
+        [reqs (if (not (list? requires))
+                (error 'make-evaluator "bad requires: ~e" requires)
+                (map (lambda (r)
+                       (if (or (pair? r) (symbol? r))
+                         r
+                         `(file ,(path->string (simplify-path* r)))))
+                     requires))])
+    (make-evaluator* (init-for-language lang)
+                     (append (extract-required (or (decode-language lang)
+                                                   lang)
+                                               reqs)
+                             allow)
+                     (lambda () (build-program lang reqs input-program)))))
 
-(define make-module-evaluator
-  (lambda (input-program #:allow-read [allow null])
-    ;; this is for a complete module input program
-    (let ([prog (input->code (list input-program) 'program #f)])
-      (unless (= 1 (length prog))
-        (error 'make-evaluator "expecting a single `module' program; ~a"
-               (if (zero? (length prog))
-                   "no program expressions given"
-                   "got more than a single expression")))
-      (syntax-case* (car prog) (module) literal-identifier=?
-        [(module modname lang body ...)
-         (make-evaluator* void allow (car prog))]
-        [_else (error 'make-evaluator "expecting a `module' program; got ~e"
-                      (syntax->datum (car prog)))]))))
+(define (make-module-evaluator input-program #:allow-read [allow null])
+  ;; this is for a complete module input program
+  (let ([prog (input->code (list input-program) 'program #f)])
+    (unless (= 1 (length prog))
+      (error 'make-evaluator "expecting a single `module' program; ~a"
+             (if (zero? (length prog))
+               "no program expressions given"
+               "got more than a single expression")))
+    (syntax-case* (car prog) (module) literal-identifier=?
+      [(module modname lang body ...)
+       (make-evaluator* void allow (car prog))]
+      [_else (error 'make-evaluator "expecting a `module' program; got ~e"
+                    (syntax->datum (car prog)))])))
 
