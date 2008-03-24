@@ -119,6 +119,7 @@
                                (lambda args (~begin body0 body ...)))
                              'inferred-name n)])
            (syntax/loc stx (lazy-proc lam))))]))
+  (provide (rename ~lambda λ))
   (defsubst
     (~define (f . xs) body0 body ...) (define f (~lambda xs body0 body ...))
     (~define v x) (define v x))
@@ -695,7 +696,8 @@
                            [~id (string->symbol (string-append "~" str))])
                       (datum->syntax-object id ~id id)))
                   (syntax->list #'(id ...)))])
-         #'(provide (all-from-except mzscheme module #%app apply #%top id ...)
+         #'(provide (all-from-except mzscheme module #%app apply #%top λ
+                                     id ...)
                     (rename ~id id) ...))]))
   (renaming-provide
    lambda define let let* letrec parameterize
