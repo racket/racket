@@ -462,7 +462,7 @@
            (printf "\"~a\":\n" file)
            (mc file)
            (let ([dest (append-zo-suffix
-                        (let-values ([(base name dir?) (split-path name)])
+                        (let-values ([(base name dir?) (split-path file)])
                           (build-path (if (symbol? base) 'same base)
                                       "compiled" name)))])
              (printf " [~a \"~a\"]\n"
