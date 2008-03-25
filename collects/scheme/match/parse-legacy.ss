@@ -19,8 +19,6 @@
     
     [(expander args ...)
      (and (identifier? #'expander)
-          ;; for debugging
-          (syntax-transforming?)
           (match-expander? (syntax-local-value (cert #'expander) (lambda () #f))))
      (match-expander-transform parse/legacy/cert cert #'expander stx match-expander-legacy-xform 
                                "This expander only works with the standard match syntax")]
@@ -44,34 +42,7 @@
      (make-Vector (map parse (syntax->list #'(es ...))))]    
       
     [($ s . pats)
-     (let* ([fail (lambda () 
-                    (raise-syntax-error 'match (format "~a does not refer to a structure definition" (syntax->datum #'s)) stx #'s))]
-            [v (syntax-local-value (cert #'s) fail)])
-       (unless (struct-info? v)
-         (fail))
-       (let-values ([(id _1 pred acc _2 super) (apply values (extract-struct-info v))])
-         ;; this produces a list of all the super-types of this struct
-         ;; ending when it reaches the top of the hierarchy, or a struct that we can't access
-         (define (get-lineage struct-name)
-           (let ([super (list-ref 
-                         (extract-struct-info (syntax-local-value struct-name))
-                         5)])
-             (cond [(equal? super #t) '()] ;; no super type exists
-                   [(equal? super #f) '()] ;; super type is unknown
-                   [else (cons super (get-lineage super))])))
-         (let* (;; the accessors come in reverse order
-                [acc (reverse acc)]
-                ;; remove the first element, if it's #f
-                [acc (cond [(null? acc) acc] [(not (car acc)) (cdr acc)] [else acc])])
-           (make-Struct id pred (get-lineage (cert #'s)) acc 
-                        (if (eq? '_ (syntax-e #'pats))
-                            (map make-Dummy acc)
-                            (let* ([ps (syntax->list #'pats)])
-                              (unless (= (length ps) (length acc))
-                                (raise-syntax-error 'match (format "wrong number for fields for structure ~a: expected ~a but got ~a"
-                                                                   (syntax->datum #'s) (length acc) (length ps))
-                                                    stx #'pats))
-                              (map parse ps)))))))]
+     (parse-struct stx cert parse #'s #'pats)]
     [(? p q1 qs ...)
      (make-And (cons (make-Pred (cert #'p)) (map parse (syntax->list #'(q1 qs ...)))))]
     [(? p)
@@ -80,47 +51,20 @@
      (make-App #'f (parse (cert #'p)))]
     [(quasiquote p)
      (parse-quasi #'p cert parse/legacy/cert)]
-    [(quote ())
-     (make-Null (make-Dummy stx))]
-    [(quote (a . b))
-     (make-Pair (parse (syntax/loc stx (quote a)))
-                (parse (syntax/loc stx (quote b))))]
-    [(quote vec)
-     (vector? (syntax-e #'vec))
-     (make-Vector (for/list ([e (vector->list (syntax-e #'vec))])
-                            (parse (quasisyntax/loc stx (quote #,e)))))]
-    [(quote bx)
-     (vector? (syntax-e #'bx))
-     (make-Box (parse (quasisyntax/loc stx (quote #,(syntax-e #'bx)))))]
-    [(quote v)
-     (or (parse-literal (syntax-e #'v))
-         (raise-syntax-error 'match "non-literal in quote pattern" stx #'v))]
+    [(quote . rest)
+     (parse-quote stx parse)]
     [() (make-Null (make-Dummy #f))]
     [(..)
      (ddk? #'..)
      (raise-syntax-error 'match "incorrect use of ... in pattern" stx #'..)]
     [(p .. . rest)
      (ddk? #'..)
-     (let* ([count (ddk? #'..)]
-            [min (if (number? count) count #f)]
-            [max (if (number? count) count #f)])
-       (make-GSeq 
-        (parameterize ([match-...-nesting (add1 (match-...-nesting))])
-          (list (list (parse #'p))))
-        (list min)
-        ;; no upper bound
-        (list #f)
-        ;; patterns in p get bound to lists
-        (list #f)
-        (parse (syntax/loc stx rest))))]
+     (dd-parse parse #'p #'.. #'rest)]
     [(e . es)
      (make-Pair (parse #'e) (parse (syntax/loc stx es)))]  
     [x
      (identifier? #'x)
-     (cond [(eq? '_ (syntax-e #'x))
-            (make-Dummy #'x)]
-           [(ddk? #'x) (raise-syntax-error 'match "incorrect use of ... in pattern" stx #'x)]
-           [else (make-Var #'x)])]
+     (parse-id #'x)]
     [v
      (or (parse-literal (syntax-e #'v))
          (raise-syntax-error 'match "syntax error in pattern" stx))]))

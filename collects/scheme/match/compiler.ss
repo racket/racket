@@ -41,34 +41,29 @@
                          rows)
                     esc)])
       #`[(#,predicate-stx #,x) rhs]))
+  (define (compile-con-pat accs pred pat-acc)
+    (with-syntax ([(tmps ...) (generate-temporaries accs)])
+      (with-syntax ([(accs ...) accs]
+                    [pred pred]
+                    [body (compile*
+                           (append (syntax->list #'(tmps ...)) xs)
+                           (map (lambda (row)
+                                  (define-values (p1 ps) (Row-split-pats row))
+                                  (make-Row (append (pat-acc p1) ps) (Row-rhs row) (Row-unmatch row) (Row-vars-seen row)))
+                                rows)
+                           esc)])
+        #`[(pred #,x)
+           (let ([tmps (accs #,x)] ...)
+             body)])))
   (cond
     [(eq? 'box k) 
-     (with-syntax ([(v) (generate-temporaries #'(v))])
-       (with-syntax
-           ([body (compile* 
-                   (cons #'v xs)
-                   (map (lambda (r)
-                          (define-values (p1 ps) (Row-split-pats r))
-                          (make-Row (cons (Box-p p1) ps) (Row-rhs r) (Row-unmatch r) (Row-vars-seen r)))
-                        rows)
-                   esc)])
-         #`[(box? #,x)
-            (let ([v (unbox #,x)])
-              body)]))]
+     (compile-con-pat (list #'unbox) #'box? (compose list Box-p))]
     [(eq? 'pair k)
-     (with-syntax ([(v1 v2) (generate-temporaries #'(v1 v2))])
-       (with-syntax
-           ([body (compile*
-                   (list* #'v1 #'v2 xs)
-                   (map (lambda (r)
-                          (define-values (p1 ps) (Row-split-pats r))
-                          (make-Row (list* (Pair-a p1) (Pair-d p1) ps) (Row-rhs r) (Row-unmatch r) (Row-vars-seen r)))
-                        rows)
-                   esc)])
-         #`[(pair? #,x)
-            (let ([v1 (car #,x)]
-                  [v2 (cdr #,x)])
-              body)]))]
+     (compile-con-pat (list #'car #'cdr) #'pair? 
+                      (lambda (p) (list (Pair-a p) (Pair-d p))))]
+    [(eq? 'mpair k)
+     (compile-con-pat (list #'mcar #'mcdr) #'mpair? 
+                      (lambda (p) (list (MPair-a p) (MPair-d p))))]
     [(eq? 'string k)  (constant-pat #'string?)]
     [(eq? 'number k)  (constant-pat #'number?)]
     [(eq? 'symbol k)  (constant-pat #'symbol?)]
@@ -78,6 +73,8 @@
     [(eq? 'regexp k)  (constant-pat #'regexp?)]
     [(eq? 'boolean k) (constant-pat #'boolean?)]
     [(eq? 'null k)    (constant-pat #'null?)]
+    ;; vectors are handled specially
+    ;; because each arity is like a different constructor
     [(eq? 'vector k)
      (let ()
        (define ht (hash-on (lambda (r) (length (Vector-ps (Row-first-pat r)))) rows))
@@ -110,20 +107,9 @@
      (let* ([s (Row-first-pat (car rows))]
             [accs (Struct-accessors s)]
             [pred (Struct-pred s)])
-       (with-syntax ([(tmps ...) (generate-temporaries accs)])
-         (with-syntax ([(accs ...) accs]
-                       [pred pred]
-                       [body (compile*
-                              (append (syntax->list #'(tmps ...)) xs)
-                              (map (lambda (row)
-                                     (define-values (p1 ps) (Row-split-pats row))
-                                     (make-Row (append (Struct-ps p1) ps) (Row-rhs row) (Row-unmatch row) (Row-vars-seen row)))
-                                   rows)
-                              esc)])
-           #`[(pred #,x)
-              (let ([tmps (accs #,x)] ...)
-                body)])))]
+       (compile-con-pat accs pred Struct-ps))]
     [else (error 'compile "bad key: ~a" k)]))
+
 
 ;; produces the syntax for a let clause
 (define (compile-one vars block esc)

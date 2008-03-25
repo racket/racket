@@ -43,6 +43,7 @@
 (define-struct (VectorSeq Pat) (p count start) #:transparent)
 
 (define-struct (Pair CPat) (a d) #:transparent)
+(define-struct (MPair CPat) (a d) #:transparent)
 
 (define-struct (Box CPat) (p) #:transparent)
 
@@ -121,6 +122,7 @@
     [(Box? p) 'box]
     [(Vector? p) 'vector]
     [(Pair? p) 'pair]
+    [(MPair? p) 'mpair]
     [(String? p) 'string]
     [(Symbol? p) 'symbol]
     [(Number? p) 'number]
@@ -171,6 +173,8 @@
     [(Atom? p) null]
     [(Pair? p)
      (merge (list (bound-vars (Pair-a p)) (bound-vars (Pair-d p))))]
+    [(MPair? p)
+     (merge (list (bound-vars (MPair-a p)) (bound-vars (MPair-d p))))]
     [(GSeq? p)
      (merge (cons
              (bound-vars (GSeq-tail p))
