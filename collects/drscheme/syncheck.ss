@@ -1150,9 +1150,7 @@ If the namespace does not, they are colored the unbound color.
                           (send (send the-tab get-defs) syncheck:init-arrows)
                           
                           (drscheme:eval:expand-program
-                           (drscheme:language:make-text/pos definitions-text
-                                                            (get-post-hash-bang-start definitions-text)
-                                                            (send definitions-text last-position))
+                           (drscheme:language:make-text/pos definitions-text 0 (send definitions-text last-position))
                            (send definitions-text get-next-settings)
                            #t
                            init-proc
@@ -1189,19 +1187,6 @@ If the namespace does not, they are colored the unbound color.
                                         (close-status-line 'drscheme:check-syntax))))))
                                 (update-status-line 'drscheme:check-syntax status-expanding-expression)
                                 (loop)]))))))))))]))
-        
-        (define/private (get-post-hash-bang-start definitions-text)
-          (cond
-            [(< (send definitions-text last-position) 2)
-             0]
-            [(equal? '(#\# #\!)
-                     (list (send definitions-text get-character 0)
-                           (send definitions-text get-character 1)))
-             (let ([last-para (send definitions-text last-paragraph)])
-               (if (zero? last-para)
-                   (send definitions-text last-position)
-                   (send definitions-text paragraph-start-position 1)))]
-            [else 0]))
         
         ;; set-directory : text -> void
         ;; sets the current-directory and current-load-relative-directory
