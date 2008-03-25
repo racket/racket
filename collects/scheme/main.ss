@@ -17,6 +17,7 @@
            scheme/promise
            scheme/bool
            scheme/local
+           scheme/nest
            (for-syntax scheme/base))
 
   (provide (all-from-out scheme/contract
@@ -37,5 +38,6 @@
                          scheme/cmdline
                          scheme/promise
                          scheme/bool
-                         scheme/local)
+                         scheme/local
+                         scheme/nest)
            (for-syntax (all-from-out scheme/base))))
