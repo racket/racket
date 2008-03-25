@@ -190,6 +190,8 @@ static void register_traversers(void);
 static void release_native_code(void *fnlized, void *p);
 #endif
 
+int scheme_direct_call_count, scheme_indirect_call_count;
+
 #ifdef MZ_USE_SINGLE_FLOATS
 # define SCHEME_FLOAT_TYPE scheme_float_type
 #else
@@ -2411,6 +2413,11 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 
   END_JIT_DATA(20);
 
+  if (direct_prim || direct_native || direct_self)
+    scheme_direct_call_count++;
+  else
+    scheme_indirect_call_count++;
+
   if (num_rands >= MAX_SHARED_CALL_RANDS) {
     LOG_IT(("<-many args\n"));
     if (is_tail) {
@@ -3408,9 +3415,11 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     k = inlineable_struct_prim(rator, jitter);
     if (k == 1) {
       generate_inlined_struct_op(1, jitter, rator, app->rand, for_branch, branch_short);
+      scheme_direct_call_count++;
       return 1;
     } else if ((k == 2) && !for_branch) {
       generate_inlined_struct_op(2, jitter, rator, app->rand, for_branch, branch_short);
+      scheme_direct_call_count++;
       return 1;
     }
   }
@@ -3420,6 +3429,8 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
   if (!(SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNARY_INLINED))
     return 0;
+
+  scheme_direct_call_count++;
 
   if (IS_NAMED_PRIM(rator, "not")) {
     generate_inlined_constant_test(jitter, app, scheme_false, NULL, for_branch, branch_short);
@@ -3722,6 +3733,8 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     abort();
   }
 
+  --scheme_direct_call_count;
+
   return 0;
 }
 
@@ -3892,6 +3905,8 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
   if (!(SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_BINARY_INLINED))
     return 0;
+
+  scheme_direct_call_count++;
 
   if (IS_NAMED_PRIM(rator, "eq?")) {
     Scheme_Object *a1, *a2;
@@ -4196,6 +4211,8 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     abort();
   }
 
+  --scheme_direct_call_count;
+
   return 0;
 }
 
@@ -4212,6 +4229,8 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
   if (app->num_args != ((Scheme_Primitive_Proc *)rator)->mina)
     return 0;
+
+  scheme_direct_call_count++;
 
   if (!for_branch) {
     if (IS_NAMED_PRIM(rator, "vector-set!")
@@ -4322,6 +4341,8 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     scheme_console_printf("Inlining expected.\n");
     abort();
   }
+
+  --scheme_direct_call_count;
 
   return 0;
 }

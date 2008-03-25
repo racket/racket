@@ -5655,9 +5655,9 @@ static Scheme_Object *readtable_call(int w_char, int ch, Scheme_Object *proc, Re
                                scheme_make_hash_table(SCHEME_hash_ptr), 
                                1, 0);
       }
-      
+
       s = scheme_make_stx_w_offset(scheme_false, line, col, pos, SPAN(port, pos), src, STX_SRCTAG);
-      v = scheme_datum_to_syntax(v, s, scheme_false, 1, 0);
+      v = scheme_datum_to_syntax(v, s, scheme_false, 1, 1);
     }
 
     if (!src)
