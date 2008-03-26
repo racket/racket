@@ -7,7 +7,7 @@
                        string-constants/string-constant
                        #;'#%more-scheme
                        #;'#%qq-and-or
-                       (lib "match-error.ss" "mzlib" "private" "match"))
+                       (only-in scheme/match/patterns match:error))
          )
 
 
@@ -20,7 +20,7 @@
  (only-in "type-effect-convenience.ss" [make-arr* make-arr])
  "union.ss"
  string-constants/string-constant
- (lib "match-error.ss" "mzlib" "private" "match")
+ (only-in scheme/match/patterns match:error)
  "tc-structs.ss")
 
 (require (for-syntax
@@ -32,7 +32,7 @@
           (only-in "type-effect-convenience.ss" [make-arr* make-arr])
           "union.ss"
           string-constants/string-constant
-          (lib "match-error.ss" "mzlib" "private" "match")
+          (only-in scheme/match/patterns match:error)
           "tc-structs.ss"))
 
 (define-for-syntax (initialize-others) 

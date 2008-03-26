@@ -1,0 +1,84 @@
+#lang scheme/base
+
+(require (for-template scheme/base)
+         syntax/boundmap
+         syntax/stx
+         scheme/struct-info
+         "patterns.ss"
+         "compiler.ss"
+         "parse-helper.ss"
+         (only-in srfi/1 delete-duplicates))
+
+(provide parse-quasi)
+
+;; is pat a pattern representing a list?
+(define (null-terminated? pat)
+  (cond [(Pair? pat)
+         (null-terminated? (Pair-d pat))]
+        [(GSeq? pat)
+         (null-terminated? (GSeq-tail pat))]
+        [(Null? pat) #t]
+        [else #f]))
+
+;; combine a null-terminated pattern with another pattern to match afterwards
+(define (append-pats p1 p2)
+  (cond [(Pair? p1)
+         (make-Pair (Pair-a p1) (append-pats (Pair-d p1) p2))]
+        [(GSeq? p1)
+         (make-GSeq (GSeq-headss p1)
+                    (GSeq-mins p1)
+                    (GSeq-maxs p1)
+                    (GSeq-onces? p1) 
+                    (append-pats (GSeq-tail p1) p2))]
+        [(Null? p1) p2]
+        [else (error 'match "illegal input to append-pats")]))
+
+;; parse stx as a quasi-pattern
+;; parse/cert parses unquote
+(define (parse-quasi stx cert parse/cert)
+  (define (pq s) (parse-quasi s cert parse/cert))
+  (syntax-case stx (quasiquote unquote quote unquote-splicing)
+    [(unquote p) (parse/cert #'p cert)]       
+    [((unquote-splicing p) . rest)
+     (let ([pat (parse/cert #'p cert)]
+           [rpat (pq #'rest)])
+       (if (null-terminated? pat)
+           (append-pats pat rpat)
+           (raise-syntax-error 'match "non-list pattern inside unquote-splicing" stx #'p)))]
+    [(p dd)
+     (ddk? #'dd)
+     (let* ([count (ddk? #'..)]
+            [min (if (number? count) count #f)]
+            [max (if (number? count) count #f)])
+       (make-GSeq 
+        (parameterize ([match-...-nesting (add1 (match-...-nesting))])
+          (list (list (pq #'p))))
+        (list min)
+        ;; no upper bound
+        (list #f)
+        ;; patterns in p get bound to lists
+        (list #f)
+        (make-Null (make-Dummy #f))))]
+    [(a . b) (make-Pair (pq #'a) (pq #'b))]
+    ;; the hard cases
+    [#(p ...)
+     (ormap (lambda (p)
+              (or (ddk? p)
+                  (syntax-case p (unquote-splicing)
+                    [(unquote-splicing . _) #t]
+                    [_ #f])))
+            (syntax->list #'(p ...)))
+     (make-And (list
+                (make-Pred #'vector?)
+                (make-App #'vector->list
+                          (pq (quasisyntax/loc stx (p ...))))))]
+    [#(p ...)
+     (make-Vector (map pq (syntax->list #'(p ...))))]
+    [bx
+     (box? (syntax-e #'bx))
+     (make-Box (pq (unbox (syntax-e #'bx))))]
+    [()
+     (make-Null (make-Dummy #f))]
+    [v
+     (or (parse-literal (syntax-e #'v))
+         (raise-syntax-error 'match "syntax error in quasipattern" stx))]))

@@ -99,7 +99,7 @@
     (match (list s t)
       ;; top for functions is above everything
       [(list _ (top-arr:)) A0]
-      [(list (arr: s1 s2 #f thn-eff els-eff) (arr: t1 t2 #f (or '() thn-eff) (or '() els-eff)))
+      [(list (arr: s1 s2 #f thn-eff els-eff) (arr: t1 t2 #f thn-eff  els-eff))
        (let ([A1 (subtypes* A0 t1 s1)])
          (subtype* A1 s2 t2))]
       [(list (arr: s1 s2 s3 thn-eff els-eff) (arr: t1 t2 t3 thn-eff* els-eff*))

@@ -1,8 +1,8 @@
 
 (module match scheme/base
-  (require mzlib/plt-match
+  (require scheme/match/match
            (for-syntax scheme/base))
-  (provide (except-out (all-from-out mzlib/plt-match)
+  (provide (except-out (all-from-out scheme/match/match)
                        define-match-expander)
            (rename-out [define-match-expander* define-match-expander]))
 
