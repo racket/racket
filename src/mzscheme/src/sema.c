@@ -1053,6 +1053,8 @@ static void mbox_push_front(Scheme_Thread *p, Scheme_Object *lst)
   int cnt = -1;
   Scheme_Object *next, *hd;
 
+  make_mbox_sema(p);
+
   next = lst;
   while (!SCHEME_NULLP(next)) {
     /* Push one: */
@@ -1065,12 +1067,10 @@ static void mbox_push_front(Scheme_Thread *p, Scheme_Object *lst)
     next = SCHEME_CDR(next);
 
     if (SCHEME_NULLP(next) || (cnt == 256)) {
-      /* Either done or need to use fuel */
-      if (cnt > -1) {
-        /* do a single post for all messages */
-        ((Scheme_Sema*)p->mbox_sema)->value += cnt;
-        scheme_post_sema(p->mbox_sema);
-      }
+      /* Either done or need to pause to allow breaks/swaps; */
+      /* do a single post for all messages so far. */
+      ((Scheme_Sema*)p->mbox_sema)->value += cnt;
+      scheme_post_sema(p->mbox_sema);
       SCHEME_USE_FUEL(cnt+1); /* might sleep */
       cnt = -1;
     }

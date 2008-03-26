@@ -745,6 +745,9 @@
                         (thread-send t 'x (lambda () (values 'a 'z)))))
   (err/rt-test (thread-send t 'x)))
 
+;; make sure it's ok for rewind to be the first action:
+(test (void) thread-wait (thread (lambda () (thread-rewind-receive '(1 2 3)))))
+
 ;; ----------------------------------------
 ;;  Garbage collection
 
