@@ -42,6 +42,7 @@ static Scheme_Object *thread_send(int n, Scheme_Object **p);
 static Scheme_Object *thread_receive(int n, Scheme_Object **p);
 static Scheme_Object *thread_try_receive(int n, Scheme_Object **p);
 static Scheme_Object *thread_receive_evt(int n, Scheme_Object **p);
+static Scheme_Object *thread_rewind_receive(int n, Scheme_Object **p);
 
 static Scheme_Object *make_alarm(int n, Scheme_Object **p);
 static Scheme_Object *make_sys_idle(int n, Scheme_Object **p);
@@ -163,7 +164,11 @@ void scheme_init_sema(Scheme_Env *env)
 						      "thread-receive-evt", 
 						      0, 0), 
 			     env);
-
+  scheme_add_global_constant("thread-rewind-receive", 
+			     scheme_make_prim_w_arity(thread_rewind_receive,
+						      "thread-rewind-receive", 
+						      1, 1), 
+			     env);
 
   scheme_add_global_constant("alarm-evt", 
 			     scheme_make_prim_w_arity(make_alarm,
@@ -1043,6 +1048,35 @@ static void mbox_push(Scheme_Thread *p, Scheme_Object *o)
      memory for the queue, first. */
 }
 
+static void mbox_push_front(Scheme_Thread *p, Scheme_Object *lst) 
+{
+  int cnt = -1;
+  Scheme_Object *next, *hd;
+
+  next = lst;
+  while (!SCHEME_NULLP(next)) {
+    /* Push one: */
+    hd = scheme_make_raw_pair(SCHEME_CAR(next), p->mbox_first);
+    if (!p->mbox_first)
+      p->mbox_last = hd;
+    p->mbox_first = hd;
+
+    ++cnt;
+    next = SCHEME_CDR(next);
+
+    if (SCHEME_NULLP(next) || (cnt == 256)) {
+      /* Either done or need to use fuel */
+      if (cnt > -1) {
+        /* do a single post for all messages */
+        ((Scheme_Sema*)p->mbox_sema)->value += cnt;
+        scheme_post_sema(p->mbox_sema);
+      }
+      SCHEME_USE_FUEL(cnt+1); /* might sleep */
+      cnt = -1;
+    }
+  }
+}
+
 static Scheme_Object *mbox_pop( Scheme_Thread *p, int dec)
 {
   /* Assertion: mbox_first != NULL */
@@ -1065,7 +1099,8 @@ static Scheme_Object *thread_send(int argc, Scheme_Object **argv)
     int running;
 
     if (argc > 2) {
-      scheme_check_proc_arity("thread-send", 0, 2, argc, argv);
+      if (!SCHEME_FALSEP(argv[2])) /* redundant, but keeps it fast as possible */
+        scheme_check_proc_arity2("thread-send", 0, 2, argc, argv, 1);
     }
 
     running = ((Scheme_Thread*)argv[0])->running;
@@ -1074,7 +1109,10 @@ static Scheme_Object *thread_send(int argc, Scheme_Object **argv)
       return scheme_void;
     } else {
       if (argc > 2) {
-        return _scheme_tail_apply(argv[2], 0, NULL);
+        if (SCHEME_FALSEP(argv[2]))
+          return scheme_false;
+        else
+          return _scheme_tail_apply(argv[2], 0, NULL);
       } else
         scheme_raise_exn(MZEXN_FAIL_CONTRACT, "thread-send: target thread is not running");
     }
@@ -1136,6 +1174,17 @@ static int thread_recv_ready(Scheme_Object *ch, Scheme_Schedule_Info *sinfo)
   scheme_set_sync_target(sinfo, p->mbox_sema, thread_recv_evt, NULL, 1, 1);
 
   return 0;
+}
+
+static Scheme_Object *thread_rewind_receive(int argc, Scheme_Object **argv)
+{
+  if (scheme_is_list(argv[0])) {
+    mbox_push_front(scheme_current_thread, argv[0]);
+    return scheme_void;
+  } else
+    scheme_wrong_type("thread-rewind", "list", 0, argc, argv);
+
+  return NULL;
 }
 
 /**********************************************************************/

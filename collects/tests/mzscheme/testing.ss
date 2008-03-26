@@ -306,8 +306,8 @@ transcript.
     (printf "\n~aPerformed ~a expression tests (~a ~a, ~a ~a)\n"
             Section-prefix
             (+ number-of-tests number-of-error-tests)
-            number-of-tests "good expressions"
-            number-of-error-tests "bad expressions")
+            number-of-tests "value expressions"
+            number-of-error-tests "exn expressions")
     (printf "~aand ~a exception field tests.\n\n"
             Section-prefix
             number-of-exn-tests)

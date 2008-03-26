@@ -233,15 +233,16 @@ asynchronous channel.
 @margin-note/ref{See also @secref["async-channel"].}
 
 @defproc[(thread-send [thd thread?] [v any/c] 
-                      [fail-thunk (-> any) 
+                      [fail-thunk (or/c (-> any) false/c)
                                   (lambda () (raise-mismatch-error ....))]) 
          any]{
 
 Queues @scheme[v] as a message to @scheme[thd] without blocking. If
-the message is queued, the result is @|void-const|. If @scheme[thd] is
+the message is queued, the result is @|void-const|. If @scheme[thd]
 stops running---as in @scheme[thread-running?]---before the message is
-queued, then @scheme[fail-thunk] is called (through a tail call) to
-produce the result.}
+queued, then @scheme[fail-thunk] is called (through a tail call) if is
+a procedure to produce the result, or @scheme[#f] is returned if
+@scheme[fail-thunk] is @scheme[#f].}
 
 @defproc[(thread-receive) any/c]{
 
@@ -259,3 +260,9 @@ or returns @scheme[#f] immediately if no message is available.}
 Returns a constant @tech{synchronizable event} (see @secref["sync"])
 that becomes ready when the synchronizing thread has a message to
 receive. The event result is itself.}
+
+@defproc[(thread-rewind-receive [lst list?]) void?]{
+
+Pushes the elements of @scheme[lst] back onto the front of the current
+thread's queue. The elements are pushed one by one, so that the first
+available message is the last element of @scheme[lst].}
