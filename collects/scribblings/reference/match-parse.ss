@@ -66,7 +66,7 @@
             derived-pattern)
        (match-nonterm (symbol->string s))]
       [(QUOTE LIST LIST-REST LIST-NO-ORDER VECTOR HASH-TABLE BOX STRUCT 
-              REGEXP PREGEXP AND OR NOT APP ? get! set! QUASIQUOTE)
+              REGEXP PREGEXP AND OR NOT APP ? QUASIQUOTE CONS MCONS)
        (make-element "schemesymbol" (list (string-downcase (symbol->string s))))]
       [(***)
        (make-element "schemesymbol" '("..."))]

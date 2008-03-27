@@ -12,7 +12,7 @@ The @scheme[match] form and related forms support general pattern
 matching on Scheme values. See also @secref["regexp"] for information
 on regular-expression matching on strings, bytes, and streams.
 
-@note-lib[scheme/match #:use-sources (mzlib/plt-match)]
+@note-lib[scheme/match #:use-sources (scheme/match)]
 
 @defform/subs[(match val-expr clause ...)
               ([clause [pat expr ...+]
@@ -112,7 +112,7 @@ In more detail, patterns match as follows:
          [(list 1 a ..3) a]
          [_ 'else])
        (match '(1 2 3 4 5)
-         [(list 1 a ..3 5) a] (code:comment #, @t{greedy matching to @scheme[a] leaves no @scheme[5]})
+         [(list 1 a ..3 5) a]
          [_ 'else])
        (match '(1 (2) (2) (2) 5)
          [(list 1 (list a) ..3 5) a]
@@ -184,6 +184,23 @@ In more detail, patterns match as follows:
          [(hash-table (key val) ...) key])
        ]}
 
+ @item{@scheme[(#,(schemeidfont "cons") _pat1 _pat2)] --- matches a pair value.
+
+       @examples[
+       #:eval match-eval
+       (match (cons 1 2)
+         [(cons a b) (+ a b)])
+       ]}
+
+ @item{@scheme[(#,(schemeidfont "mcons") _pat1 _pat2)] --- matches a mutable pair value.
+
+       @examples[
+       #:eval match-eval
+       (match (mcons 1 2)
+         [(cons a b) 'immutable]
+	 [(mcons a b) 'mutable])
+       ]}
+
  @item{@scheme[(#,(schemeidfont "box") _pat)] --- matches a boxed value.
 
        @examples[
@@ -194,11 +211,11 @@ In more detail, patterns match as follows:
 
  @item{@scheme[(#,(schemeidfont "struct") _struct-id (_pat ...))] ---
        matches an instance of a structure type names
-       @scheme[_struct-id], where each field int he instance matches
+       @scheme[_struct-id], where each field in the instance matches
        the corresponding @scheme[_pat].
 
-       Usually, @scheme[struct-id] is defined with
-       @scheme[define-struct].  More generally, @scheme[struct-id]
+       Usually, @scheme[_struct-id] is defined with
+       @scheme[define-struct].  More generally, @scheme[_struct-id]
        must be bound to expansion-time information for a structure
        type (see @secref["structinfo"]), where the information
        includes at least a predicate binding and field accessor
@@ -214,6 +231,11 @@ In more detail, patterns match as follows:
        (match (make-tree 0 (make-tree 1 #f #f) #f)
          [(struct tree (a (struct tree (b  _ _)) _)) (list a b)])
        ]}
+
+ @item{@scheme[(#,(schemeidfont "struct") _struct-id _)] ---
+       matches any instance of @scheme[_struct-id], without regard to
+       contents of the fields of the instance.
+       }
 
  @item{@scheme[(#,(schemeidfont "regexp") _rx-expr)] --- matches a
        string that matches the regexp pattern produced by
@@ -309,37 +331,6 @@ In more detail, patterns match as follows:
        #:eval match-eval
        (match '(1 3 5)
         [(list (? odd?) ...) 'yes])
-       ]}
-
- @item{@scheme[(#,(schemeidfont "set!") _id)] --- matches anything,
-       and binds @scheme[_id] to a procedure that takes one argument
-       and mutates the matched value to install the given one in the
-       matched position. This form can be used only within a
-       @schemeidfont{vector}, @schemeidfont{box}, or
-       @schemeidfont{struct} pattern.
-
-       @examples[
-       #:eval match-eval
-       (define v (vector 1 2 3))
-       (match v
-        [(vector _ (set! s!) _) (s! 0)])
-       v
-       ]}
-
- @item{@scheme[(#,(schemeidfont "get!") _id)] --- matches anything, and
-       binds @scheme[_id] to a thunk that extracts the matched
-       position from the matched value, which is useful when the
-       matched position is  mutable. This form can be used
-       only in the same places as the @schemeidfont{set!} pattern.
-
-       @examples[
-       #:eval match-eval
-       (define v (vector 1 2 3))
-       (define g
-         (match v
-          [(vector _ (get! g) _) g]))
-       (vector-set! v 1 0)
-       (g)
        ]}
 
   @item{@scheme[(#,(schemeidfont "quasiquote") _qp)] --- introduces a

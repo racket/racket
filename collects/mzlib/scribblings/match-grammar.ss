@@ -18,14 +18,16 @@ pat     ::= id                         @match anything, bind identifier
          |  (NOT pat ...)              @match when no pat match
          |  (= expr pat)               @match (expr value) to pat
          |  (? pred-expr pat ...)      @match if (expr value) and pats
-         |  (set! identifier)          @match anything, bind as setter
-         |  (get! identifier)          @match anything, bind as getter
          |  `qp                        @match quasipattern
 literal ::= #t                         @match true
          |  #f                         @match false
          |  string                     @match equal% string
          |  number                     @match equal% number
          |  character                  @match equal% character
+         |  bytes                      @match equal% byte string
+         |  keyword                    @match equal% keyword
+         |  regexp literal             @match equal% regexp literal
+         |  pregexp literal            @match equal% pregexp literal
 lvp     ::= pat ooo                    @greedily match pat instances
          |  pat                        @match pat
 ooo     ::= ***                        @zero or more; *** is literal

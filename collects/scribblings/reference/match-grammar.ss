@@ -15,6 +15,8 @@ pat     ::= id                                @match anything, bind identifier
          |  (VECTOR lvp ...)                  @match vector of pats
          |  (HASH-TABLE (pat pat) ...)        @match hash table
          |  (HASH-TABLE (pat pat) ...+ ooo)   @match hash table
+         |  (CONS pat pat)                    @match pair of pats
+         |  (MCONS pat pat)                   @match mutable pair of pats
          |  (BOX pat)                         @match boxed pat
          |  (STRUCT struct-id (pat ...))      @match struct-id instance
          |  (REGEXP rx-expr)                  @match string
@@ -26,8 +28,6 @@ pat     ::= id                                @match anything, bind identifier
          |  (NOT pat ...)                     @match when no pat matches
          |  (APP expr pat)                    @match (expr value) to pat
          |  (? expr pat ...)                  @match if (expr value) and pats
-         |  (set! id)                         @match anything, bind as setter
-         |  (get! id)                         @match anything, bind as getter
          |  (QUASIQUOTE qp)                   @match a quasipattern
          |  derived-pattern                   @match using extension
 literal ::= #t                                @match true
@@ -36,6 +36,9 @@ literal ::= #t                                @match true
          |  bytes                             @match equal% byte string
          |  number                            @match equal% number
          |  char                              @match equal% character
+         |  keyword                           @match equal% keyword
+         |  regexp literal                    @match equal% regexp literal
+         |  pregexp literal                   @match equal% pregexp literal
 lvp     ::= (code:line pat ooo)               @greedily match pat instances
          |  pat                               @match pat
 qp      ::= literal                           @match literal
