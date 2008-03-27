@@ -627,6 +627,25 @@
            '(module m mzscheme
               (printf "pre\n")))
 
+(test-comp '(module m mzscheme
+              (define (q x)
+                ;; Single-use bindings should be inlined always:
+                (let* ([a (lambda (x) (+ x 10))]
+                       [b (lambda (x) (+ 1 (a x)))]
+                       [c (lambda (x) (+ 1 (b x)))]
+                       [d (lambda (x) (+ 1 (c x)))]
+                       [e (lambda (x) (+ 1 (d x)))]
+                       [f (lambda (x) (+ 1 (e x)))]
+                       [g (lambda (x) (+ 1 (f x)))]
+                       [h (lambda (x) (+ 1 (g x)))]
+                       [i (lambda (x) (+ 1 (h x)))]
+                       [j (lambda (x) (+ 1 (i x)))]
+                       [k (lambda (x) (+ 1 (j x)))])
+                  (k x))))
+           '(module m mzscheme
+              (define (q x)
+                (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ x 10))))))))))))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 

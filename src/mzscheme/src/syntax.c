@@ -1549,7 +1549,7 @@ set_optimize(Scheme_Object *data, Optimize_Info *info)
     pos = SCHEME_LOCAL_POS(var);
 
     /* Register that we use this variable: */
-    scheme_optimize_info_lookup(info, pos, NULL);
+    scheme_optimize_info_lookup(info, pos, NULL, NULL);
 
     /* Offset: */
     delta = scheme_optimize_info_get_shift(info, pos);
@@ -2902,6 +2902,14 @@ static int set_code_flags(Scheme_Compiled_Let_Value *retry_start,
   return flags;
 }
 
+static int expr_size(Scheme_Object *o)
+{
+  if (SAME_TYPE(SCHEME_TYPE(o), scheme_compiled_unclosed_procedure_type))
+    return scheme_closure_body_size((Scheme_Closure_Data *)o, 0);
+  else
+    return 1;
+}
+
 Scheme_Object *
 scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
 {
@@ -3072,7 +3080,12 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
       }
 
       if (value && (scheme_compiled_propagate_ok(value, body_info))) {
-	scheme_optimize_propagate(body_info, pos, value);
+        int cnt;
+        if (is_rec)
+          cnt = 2;
+        else
+          cnt = ((pre_body->flags[0] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
+        scheme_optimize_propagate(body_info, pos, value, cnt == 1);
 	did_set_value = 1;
       }
     }
@@ -3140,7 +3153,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
             clv->value = value;
 
             if (!(clv->flags[0] & SCHEME_WAS_SET_BANGED)) {
-              scheme_optimize_propagate(body_info, clv->position, value);
+              scheme_optimize_propagate(body_info, clv->position, value, 0);
             }
 
             body_info->transitive_use_pos = 0;
@@ -3212,6 +3225,13 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
         if (pre_body->flags[j] & SCHEME_WAS_USED) {
           pre_body->flags[j] -= SCHEME_WAS_USED;
         }
+      }
+      if (pre_body->count == 1) {
+        /* Drop expr and deduct from size to aid further inlining. */
+        int sz;
+        sz = expr_size(pre_body->value);
+        pre_body->value = scheme_false;
+        info->size -= (sz + 1);
       }
     } else {
       for (j = pre_body->count; j--; ) {

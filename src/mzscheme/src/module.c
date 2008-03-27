@@ -4338,7 +4338,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
   Scheme_Object *e, *vars;
   int start_simltaneous = 0, i_m, cnt;
   Scheme_Object *cl_first = NULL, *cl_last = NULL;
-  Scheme_Hash_Table *consts = NULL, *ready_table = NULL;
+  Scheme_Hash_Table *consts = NULL, *ready_table = NULL, *re_consts = NULL;
   int cont;
 
   cnt = SCHEME_VEC_SIZE(m->body);
@@ -4392,6 +4392,10 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 		consts = scheme_make_hash_table(SCHEME_hash_ptr);
 	      pos = tl->position;
 	      scheme_hash_set(consts, scheme_make_integer(pos), e2);
+              if (!re_consts)
+                re_consts = scheme_make_hash_table(SCHEME_hash_ptr);
+              scheme_hash_set(re_consts, scheme_make_integer(i_m), 
+                              scheme_make_integer(pos));
 	    } else {
 	      /* At least mark it as ready */
 	      if (!ready_table) {
@@ -4466,7 +4470,18 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
              shift-cloning, since there are no local variables in scope. */
 	  e = scheme_optimize_expr(SCHEME_VEC_ELS(m->body)[start_simltaneous], info);
 	  SCHEME_VEC_ELS(m->body)[start_simltaneous] = e;
-	  
+ 
+          if (re_consts) {
+            /* Install optimized closures into constant table: */
+            Scheme_Object *rpos;
+            rpos = scheme_hash_get(re_consts, scheme_make_integer(start_simltaneous));
+            if (rpos) {
+              e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
+              e = SCHEME_CDR(e);
+              scheme_hash_set(info->top_level_consts, rpos, e);
+            }
+          }
+
 	  if (start_simltaneous == i_m)
 	    break;
           start_simltaneous++;
@@ -4481,6 +4496,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
       
       cl_last = cl_first = NULL;
       consts = NULL;
+      re_consts = NULL;
       start_simltaneous = i_m + 1;
     }
   }

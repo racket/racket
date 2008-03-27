@@ -2082,8 +2082,8 @@ Scheme_Object *scheme_merge_expression_resolve_lifts(Scheme_Object *expr, Resolv
 
 Optimize_Info *scheme_optimize_info_create(void);
 
-void scheme_optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *value);
-Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset);
+void scheme_optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *value, int single_use);
+Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use);
 void scheme_optimize_info_used_top(Optimize_Info *info);
 
 void scheme_optimize_mutated(Optimize_Info *info, int pos);

@@ -2258,16 +2258,17 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
                                    int *_flags)
 /* If not app, app2, or app3, just return a known procedure, if any */
 {
-  int offset = 0;
+  int offset = 0, single_use = 0;
 
   if (SAME_TYPE(SCHEME_TYPE(le), scheme_local_type)) {
     /* Check for inlining: */
-    le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(le), &offset);
+    le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(le), &offset, &single_use);
     if (!le)
       return NULL;
   }
 
   while (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_toplevel_type)) {
+    single_use = 0;
     if (info->top_level_consts) {
       int pos;
       pos = SCHEME_TOPLEVEL_POS(le);
@@ -2290,11 +2291,12 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
       
     if (data->num_params == argc) {
       sz = scheme_closure_body_size(data, 1);
-      if ((sz >= 0) && (sz <= (info->inline_fuel * (argc + 2)))) {
+
+      if ((sz >= 0) && (single_use || (sz <= (info->inline_fuel * (argc + 2))))) {
 	le = scheme_optimize_clone(0, data->code, info, offset, argc);
 	if (le) {
 	  LOG_INLINE(fprintf(stderr, "Inline %s\n", data->name ? scheme_write_to_string(data->name, NULL) : "???"));
-	  return apply_inlined(le, data, info, argc, app, app2, app3);
+          return apply_inlined(le, data, info, argc, app, app2, app3);
 	} else {
           LOG_INLINE(fprintf(stderr, "No inline %s\n", data->name ? scheme_write_to_string(data->name, NULL) : "???"));
         }
@@ -2446,7 +2448,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
       int offset;
       Scheme_Object *expr;
       expr = scheme_optimize_reverse(info, SCHEME_LOCAL_POS(app->rand), 0);
-      if (scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(expr), &offset)) {
+      if (scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(expr), &offset, NULL)) {
         info->preserves_marks = 1;
         info->single_result = 1;
         return scheme_true;
@@ -2866,7 +2868,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info)
 
       pos = SCHEME_LOCAL_POS(expr);
 
-      val = scheme_optimize_info_lookup(info, pos, NULL);
+      val = scheme_optimize_info_lookup(info, pos, NULL, NULL);
       if (val) {
         if (SAME_TYPE(SCHEME_TYPE(val), scheme_compiled_toplevel_type))
           return scheme_optimize_expr(val, info);
@@ -4964,9 +4966,7 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
       val = scheme_lookup_binding(name, env, 
                                   SCHEME_NULL_FOR_UNBOUND
                                   + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
-                                  + ((rec[drec].comp && rec[drec].dont_mark_local_use) 
-                                     ? SCHEME_DONT_MARK_USE 
-                                     : 0)
+                                  + SCHEME_DONT_MARK_USE
                                   + ((rec[drec].comp && rec[drec].resolve_module_ids)
                                      ? SCHEME_RESOLVE_MODIDS
                                      : 0),
@@ -5264,9 +5264,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				    + (rec[drec].comp
 				       ? SCHEME_ELIM_CONST
 				       : 0)
-				    + ((rec[drec].comp && rec[drec].dont_mark_local_use)
-				       ? SCHEME_DONT_MARK_USE 
-				       : 0)
+				    + SCHEME_DONT_MARK_USE
 				    + ((rec[drec].comp && rec[drec].resolve_module_ids)
 				       ? SCHEME_RESOLVE_MODIDS
 				       : 0),

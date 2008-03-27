@@ -624,7 +624,7 @@
       [(_ [orig-stx nested? #f binds] ([fold-var fold-init] ...) () . body)
        #`(for/foldX/derived [orig-stx nested? #t binds] ([fold-var fold-init] ...) () . body)]
       ;; Emit case:
-      [(_ [orig-stx nested? #t binds] ([fold-var fold-init] ...) rest . body)
+      [(_ [orig-stx nested? #t binds] ([fold-var fold-init] ...) rest expr1 . body)
        (with-syntax ([(([outer-binding ...]
                         outer-check
                         [loop-binding ...]
@@ -641,7 +641,7 @@
                    (let-values (inner-binding ... ...)
                      (if (and pre-guard ...)
                          (let-values ([(fold-var ...)
-                                       (for/foldX/derived [orig-stx nested? #f ()] ([fold-var fold-var] ...) rest . body)])
+                                       (for/foldX/derived [orig-stx nested? #f ()] ([fold-var fold-var] ...) rest expr1 . body)])
                            (if (and post-guard ...)
                                (comp-loop fold-var ... loop-arg ... ...)
                                (values* fold-var ...)))

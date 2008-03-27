@@ -2969,14 +2969,15 @@ void scheme_optimize_info_used_top(Optimize_Info *info)
   }
 }
 
-void scheme_optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *value)
+void scheme_optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *value, int single_use)
 {
   Scheme_Object *p;
 
-  p = scheme_make_vector(3, NULL);
+  p = scheme_make_vector(4, NULL);
   SCHEME_VEC_ELS(p)[0] = info->consts;
   SCHEME_VEC_ELS(p)[1] = scheme_make_integer(pos);
   SCHEME_VEC_ELS(p)[2] = value;
+  SCHEME_VEC_ELS(p)[3] = (single_use ? scheme_true : scheme_false);
 
   info->consts = p;
 }
@@ -3057,7 +3058,7 @@ int scheme_optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos)
   return 0;
 }
 
-static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int j, int *closure_offset)
+static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int j, int *closure_offset, int *single_use)
 {
   Scheme_Object *p, *n;
   int delta = 0;
@@ -3077,6 +3078,8 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
     n = SCHEME_VEC_ELS(p)[1];
     if (SCHEME_INT_VAL(n) == pos) {
       n = SCHEME_VEC_ELS(p)[2];
+      if (single_use)
+        *single_use = SCHEME_TRUEP(SCHEME_VEC_ELS(p)[3]);
       if (SAME_TYPE(SCHEME_TYPE(n), scheme_compiled_unclosed_procedure_type)) {
 	if (!closure_offset)
 	  break;
@@ -3099,7 +3102,11 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 	   a value, because chaining would normally happen on the 
 	   propagate-call side. Chaining there also means that we 
 	   avoid stack overflow here. */
-	n = do_optimize_info_lookup(info, pos, j, NULL);
+        if (single_use) {
+          if (!*single_use)
+            single_use = NULL;
+        }
+	n = do_optimize_info_lookup(info, pos, j, NULL, single_use);
 
 	if (!n) {
 	  /* Return shifted reference to other local: */
@@ -3118,9 +3125,9 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
   return NULL;
 }
 
-Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset)
+Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use)
 {
-  return do_optimize_info_lookup(info, pos, 0, closure_offset);
+  return do_optimize_info_lookup(info, pos, 0, closure_offset, single_use);
 }
 
 Optimize_Info *scheme_optimize_info_add_frame(Optimize_Info *info, int orig, int current, int flags)
