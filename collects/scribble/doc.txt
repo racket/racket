@@ -26,7 +26,7 @@ Another way to use the reader is to use the `use-at-readtable'
 function to switch the current readtable to a readtable that parses
 @-forms.  You can do this in a single command line:
 
-  mzscheme -Le reader.ss scribble "(use-at-readtable)"
+  mzscheme -ile scribble/reader "(use-at-readtable)"
 
 *** Concrete Syntax
 
