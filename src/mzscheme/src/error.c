@@ -497,28 +497,28 @@ void scheme_init_error(Scheme_Env *env)
                                                     1, -1),
 			     env);
   scheme_add_global_constant("raise-user-error",
-			     scheme_make_prim_w_arity(raise_user_error,
-						      "raise-user-error",
-						      1, -1),
+			     scheme_make_noncm_prim(raise_user_error,
+                                                    "raise-user-error",
+                                                    1, -1),
 			     env);
   scheme_add_global_constant("raise-syntax-error",
-			     scheme_make_prim_w_arity(raise_syntax_error,
-						      "raise-syntax-error",
-						      2, 4),
+			     scheme_make_noncm_prim(raise_syntax_error,
+                                                    "raise-syntax-error",
+                                                    2, 4),
 			     env);
   scheme_add_global_constant("raise-type-error",
-			     scheme_make_prim_w_arity(raise_type_error,
-						      "raise-type-error",
-						      3, -1),
+			     scheme_make_noncm_prim(raise_type_error,
+                                                    "raise-type-error",
+                                                    3, -1),
 			     env);
   scheme_add_global_constant("raise-mismatch-error",
-			     scheme_make_prim_w_arity(raise_mismatch_error,
-						      "raise-mismatch-error",
-						      3, 3),
+			     scheme_make_noncm_prim(raise_mismatch_error,
+                                                    "raise-mismatch-error",
+                                                    3, 3),
 			     env);
-  scheme_raise_arity_error_proc = scheme_make_prim_w_arity(raise_arity_error,
-                                                           "raise-arity-error",
-                                                           2, -1);
+  scheme_raise_arity_error_proc = scheme_make_noncm_prim(raise_arity_error,
+                                                         "raise-arity-error",
+                                                         2, -1);
   scheme_add_global_constant("raise-arity-error",
 			     scheme_raise_arity_error_proc,
 			     env);
@@ -558,9 +558,9 @@ void scheme_init_error(Scheme_Env *env)
 						       MZCONFIG_ERROR_PRINT_SRCLOC),
 			     env);
   scheme_add_global_constant("exit",
-			     scheme_make_prim_w_arity(scheme_do_exit,
-						      "exit",
-						      0, 1),
+			     scheme_make_noncm_prim(scheme_do_exit,
+                                                    "exit",
+                                                    0, 1),
 			     env);
 
   REGISTER_SO(scheme_def_exit_proc);
@@ -2912,9 +2912,9 @@ void scheme_init_exn(Scheme_Env *env)
 			     env);
 
   scheme_add_global_constant("raise",
-			     scheme_make_prim_w_arity(sch_raise,
-						      "raise",
-						      1, 2),
+			     scheme_make_noncm_prim(sch_raise,
+                                                    "raise",
+                                                    1, 2),
 			     env);
 
   scheme_init_exn_config();
