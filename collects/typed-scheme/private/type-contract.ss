@@ -13,12 +13,13 @@
  "resolve-type.ss"
  "type-utils.ss"   
  (only-in "type-effect-convenience.ss" Any-Syntax)
+ (prefix-in t: "type-effect-convenience.ss")
  scheme/match
  syntax/struct
  syntax/stx
  mzlib/trace
  (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract)
- (for-template scheme/base scheme/contract (only-in scheme/class object%)))
+ (for-template scheme/base scheme/contract (only-in scheme/class object% is-a?/c subclass?/c)))
 
 (define (define/fixup-contract? stx)
   (syntax-property stx 'typechecker:contract-def))
@@ -89,14 +90,16 @@
                   (values (map t->c dom) (list (t->c rng)) (t->c rst))]))
              (with-syntax 
                  ([(dom* ...) dom*]
-                  [(rng* ...) rngs*]
+                  [rng* (match rngs*
+                          [(list r) r]
+                          [_ #`(values #,@rngs*)])]
                   [rst* rst])
                (if rst
-                   #'((dom* ...) (listof rst*) . ->* . (rng* ...))
-                   #'((dom* ...) . ->* . (rng* ...)))))
+                   #'(dom* ...  #:rest (listof rst*) . -> . rng*)
+                   #'(dom* ...  . -> . rng*))))
            (let ([l (map f arrs)])
              (if (and (pair? l) (null? (cdr l)))
-                 (car l)
+                 #`(case-> #,@l)
                  #`(case-> #,@l))))]
         [(Vector: t)
          #`(vectorof #,(t->c t))]
