@@ -21,6 +21,9 @@
 
     (define/public (get-suffix) #".txt")
 
+    (define/public (index-manual-newlines?)
+      #f)
+
     (define/public (format-number number sep)
       (if (or (null? number)
               (andmap not number))

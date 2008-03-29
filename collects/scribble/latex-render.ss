@@ -1,7 +1,10 @@
 
 (module latex-render scheme/base
   (require "struct.ss"
-           mzlib/class)
+           mzlib/class
+           scheme/runtime-path
+           scheme/port
+           (for-syntax scheme/base))
   (provide render-mixin)
 
   (define current-table-mode (make-parameter #f))
@@ -9,6 +12,8 @@
   (define show-link-page-numbers (make-parameter #f))
 
   (define-struct (toc-paragraph paragraph) ())
+
+  (define-runtime-path scribble-tex "scribble.tex")
 
   (define (render-mixin %)
     (class %
@@ -20,75 +25,21 @@
                install-file
                format-number)
 
-      (define (define-color s s2)
-        (printf "\\newcommand{\\~a}[1]{{\\mytexttt{\\color{~a}{#1}}}}\n" s s2))
-
       (define/override (render-one d ri fn)
-        (printf "\\documentclass{article}\n")
-        (printf "\\parskip=10pt%\n")
-        (printf "\\parindent=0pt%\n")
-        (printf "\\usepackage{graphicx}\n")
-        (printf "\\usepackage{hyperref}\n")
-        (printf "\\renewcommand{\\rmdefault}{ptm}\n")
-        ;; (printf "\\usepackage{fullpage}\n")
-        (printf "\\usepackage{longtable}\n")
-        (printf "\\usepackage[usenames,dvipsnames]{color}\n")
-        (printf "\\hypersetup{bookmarks=true,bookmarksopen=true,bookmarksnumbered=true}\n")
-        (printf "\\newcommand{\\mytexttt}[1]{{\\small \\texttt{#1}}}\n")
-        (define-color "schemeplain" "black")
-        (printf "\\newcommand{\\schemekeyword}[1]{{\\color{black}{\\mytexttt{\\textbf{#1}}}}}\n")
-        (printf "\\newcommand{\\schemesyntaxlink}[1]{\\schemekeyword{#1}}\n")
-        (printf "\\definecolor{CommentColor}{rgb}{0.76,0.45,0.12}\n")
-        (printf "\\definecolor{ParenColor}{rgb}{0.52,0.24,0.14}\n")
-        (printf "\\definecolor{IdentifierColor}{rgb}{0.15,0.15,0.50}\n")
-        (printf "\\definecolor{ResultColor}{rgb}{0.0,0.0,0.69}\n")
-        (printf "\\definecolor{ValueColor}{rgb}{0.13,0.55,0.13}\n")
-        (printf "\\definecolor{OutputColor}{rgb}{0.59,0.00,0.59}\n")
-        (define-color "schemecomment" "CommentColor")
-        (define-color "schemeparen" "ParenColor")
-        (define-color "schemeinputbg" "ParenColor")
-        (define-color "schemesymbol" "IdentifierColor")
-        (define-color "schemevalue" "ValueColor")
-        (define-color "schemevaluelink" "blue")
-        (define-color "schememodlink" "blue")
-        (define-color "schemeresult" "ResultColor")
-        (define-color "schemestdout" "OutputColor")
-        (define-color "schememeta" "IdentifierColor")
-        (define-color "schememod" "black")
-        (define-color "schemereader" "black")
-        (define-color "schemevariablecol" "IdentifierColor")
-        (printf "\\newcommand{\\schemevariable}[1]{{\\schemevariablecol{\\textsl{#1}}}}\n")
-        (define-color "schemeerrorcol" "red")
-        (printf "\\newcommand{\\schemeerror}[1]{{\\schemeerrorcol{\\textrm{\\textit{#1}}}}}\n")
-        (printf "\\newcommand{\\schemeopt}[1]{#1}\n")
-        (printf "\\newcommand{\\textsub}[1]{$_{#1}$}\n")
-        (printf "\\newcommand{\\textsuper}[1]{$^{#1}$}\n")
-        (printf "\\newcommand{\\refcolumn}[1]{#1}\n")
-        (printf "\\newcommand{\\refcontent}[1]{#1}\n")
-        (printf "\\newcommand{\\smaller}[1]{{\\footnotesize #1}}\n")
-        (printf "\\definecolor{PaleBlue}{rgb}{0.90,0.90,1.0}\n")
-        (printf "\\definecolor{LightGray}{rgb}{0.90,0.90,0.90}\n")
-        (printf "\\newcommand{\\intextcolor}[2]{\\textcolor{#1}{#2}}\n")
-        (printf "\\newcommand{\\intextrgbcolor}[2]{\\textcolor[rgb]{#1}{#2}}\n")
-        (printf "\\newcommand{\\incolorbox}[2]{{\\fboxrule=0pt\\fboxsep=0pt\\colorbox{#1}{#2}}}\n")
-        (printf "\\newcommand{\\inrgbcolorbox}[2]{{\\fboxrule=0pt\\fboxsep=0pt\\colorbox[rgb]{#1}{#2}}}\n")
-        (printf "\\newcommand{\\schemeinput}[1]{\\incolorbox{LightGray}{\\schemeinputbg{#1}}}\n")
-        (printf "\\newcommand{\\highlighted}[1]{\\colorbox{PaleBlue}{\\hspace{-0.5ex}\\schemeinputbg{#1}\\hspace{-0.5ex}}}\n")
-        (printf "\\newcommand{\\plainlink}[1]{#1}\n")
-        (printf "\\newcommand{\\techlink}[1]{#1}\n")
-        (printf "\\newcommand{\\badlink}[1]{#1}\n")
-        (printf "\\newcommand{\\indexlink}[1]{#1}\n")
-        (printf "\\newcommand{\\imageleft}[1]{} % drop it\n")
-        (printf "\\begin{document}\n\\sloppy\n")
+        (with-input-from-file scribble-tex
+          (lambda ()
+            (copy-port (current-input-port)
+                       (current-output-port))))
+        (printf "\\begin{document}\n\\preDoc\n")
         (when (part-title-content d)
-          (printf "\\title{")
+          (printf "\\titleAndVersion{")
           (render-content (part-title-content d) d ri)
-          (printf "\\\\{\\normalsize Version ~a}}\\maketitle\n"
+          (printf "}{~a}\n"
                   (or (and (versioned-part? d)
                            (versioned-part-version d))
                       (version))))
         (render-part d ri)
-        (printf "\\end{document}\n"))
+        (printf "\\postDoc\n\\end{document}\n"))
 
       (define/override (render-part d ri)
         (let ([number (collected-info-number (part-collected-info d ri))])

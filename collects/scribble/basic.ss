@@ -221,10 +221,12 @@
     (make-table 'index (map (lambda (row)
                               (list (make-flow (list (make-paragraph row)))))
                             rows)))
-  (define line-break (make-element 'newline '("\n")))
   (define contents
     (lambda (renderer sec ri)
       (define l null)
+      (define line-break (if (send renderer index-manual-newlines?)
+                             (make-element 'newline '("\n"))
+                             ""))
       (define alpha-starts (make-hash-table))
       (hash-table-for-each
        (let ([parent (collected-info-parent (part-collected-info sec ri))])
@@ -235,7 +237,8 @@
          (when (and (pair? k) (eq? 'index-entry (car k)))
            (set! l (cons (cons (cadr k) v) l)))))
       (set! l (sort l cadr-string-lists<?))
-      (rows
+      (apply
+       rows
        (let loop ([i l] [alpha alpha])
          (define (add-letter let l)
            (list* (make-element "nonavigation" (list (string let))) " " l))
@@ -258,18 +261,22 @@
                                 (loop (cdr i) (cdr alpha)))]
                         [else (loop (cdr i) alpha)]))]))
        (list 'nbsp)
-       (map (lambda (i)
-              (define e
-                (make-link-element "indexlink"
-                                   `(,@(commas (caddr i)) ,line-break)
-                                   (car i)))
-              (cond [(hash-table-get alpha-starts i #f)
-                     => (lambda (let)
-                          (make-element (make-url-anchor
-                                         (format "alpha:~a" (char-upcase let)))
-                                        (list e)))]
-                    [else e]))
-            l))))
+       ((if (send renderer index-manual-newlines?)
+            list
+            (lambda (v)
+              (map list v)))
+        (map (lambda (i)
+               (define e
+                 (make-link-element "indexlink"
+                                    `(,@(commas (caddr i)) ,line-break)
+                                    (car i)))
+               (cond [(hash-table-get alpha-starts i #f)
+                      => (lambda (let)
+                           (make-element (make-url-anchor
+                                          (format "alpha:~a" (char-upcase let)))
+                                         (list e)))]
+                     [else e]))
+             l)))))
   (list (make-delayed-flow-element contents)))
 
 ;; ----------------------------------------

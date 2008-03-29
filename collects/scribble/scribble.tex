@@ -1,0 +1,82 @@
+% This is the default prefix for Scribble-generated HTML
+
+\documentclass{article}
+ 
+\parskip=10pt
+\parindent=0pt
+
+% Adjust margins to match HTML width for
+% fixed-width font
+\advance \oddsidemargin by -0.15in
+\advance \evensidemargin by -0.15in
+\advance \textwidth by 0.3in
+
+\usepackage{graphicx}
+\usepackage{hyperref}
+\renewcommand{\rmdefault}{ptm}
+\usepackage{longtable}
+\usepackage[htt]{hyphenat}
+\usepackage[usenames,dvipsnames]{color}
+\hypersetup{bookmarks=true,bookmarksopen=true,bookmarksnumbered=true}
+
+\newcommand{\inColor}[2]{{\mytexttt{\color{#1}{#2}}}}
+\definecolor{CommentColor}{rgb}{0.76,0.45,0.12}
+\definecolor{ParenColor}{rgb}{0.52,0.24,0.14}
+\definecolor{IdentifierColor}{rgb}{0.15,0.15,0.50}
+\definecolor{ResultColor}{rgb}{0.0,0.0,0.69}
+\definecolor{ValueColor}{rgb}{0.13,0.55,0.13}
+\definecolor{OutputColor}{rgb}{0.59,0.00,0.59}
+\definecolor{PaleBlue}{rgb}{0.90,0.90,1.0}
+\definecolor{LightGray}{rgb}{0.90,0.90,0.90}
+
+\newcommand{\mytexttt}[1]{{\texttt{#1}}}
+\newcommand{\schemeplain}[1]{\inColor{black}{#1}}
+\newcommand{\schemekeyword}[1]{{\color{black}{\mytexttt{\textbf{#1}}}}}
+\newcommand{\schemesyntaxlink}[1]{\schemekeyword{#1}}
+\newcommand{\schemecomment}[1]{\inColor{CommentColor}{#1}}
+\newcommand{\schemeparen}[1]{\inColor{ParenColor}{#1}}
+\newcommand{\schemeinputbg}[1]{\inColor{ParenColor}{#1}}
+\newcommand{\schemesymbol}[1]{\inColor{IdentifierColor}{#1}}
+\newcommand{\schemevalue}[1]{\inColor{ValueColor}{#1}}
+\newcommand{\schemevaluelink}[1]{\inColor{blue}{#1}}
+\newcommand{\schememodlink}[1]{\inColor{blue}{#1}}
+\newcommand{\schemeresult}[1]{\inColor{ResultColor}{#1}}
+\newcommand{\schemestdout}[1]{\inColor{OutputColor}{#1}}
+\newcommand{\schememeta}[1]{\inColor{IdentifierColor}{#1}}
+\newcommand{\schememod}[1]{\inColor{black}{#1}}
+\newcommand{\schemereader}[1]{\inColor{black}{#1}}
+\newcommand{\schemevariablecol}[1]{\inColor{IdentifierColor}{#1}}
+\newcommand{\schemevariable}[1]{{\schemevariablecol{\textsl{#1}}}}
+\newcommand{\schemeerrorcol}[1]{\inColor{red}{#1}}
+\newcommand{\schemeerror}[1]{{\schemeerrorcol{\textrm{\textit{#1}}}}}
+\newcommand{\schemeopt}[1]{#1}
+\newcommand{\textsub}[1]{$_{#1}$}
+\newcommand{\textsuper}[1]{$^{#1}$}
+\newcommand{\refcolumn}[1]{#1}
+\newcommand{\refcontent}[1]{#1}
+\newcommand{\intextcolor}[2]{\textcolor{#1}{#2}}
+\newcommand{\intextrgbcolor}[2]{\textcolor[rgb]{#1}{#2}}
+\newcommand{\incolorbox}[2]{{\fboxrule=0pt\fboxsep=0pt\colorbox{#1}{#2}}}
+\newcommand{\inrgbcolorbox}[2]{{\fboxrule=0pt\fboxsep=0pt\colorbox[rgb]{#1}{#2}}}
+\newcommand{\schemeinput}[1]{\incolorbox{LightGray}{\schemeinputbg{#1}}}
+\newcommand{\highlighted}[1]{\colorbox{PaleBlue}{\hspace{-0.5ex}\schemeinputbg{#1}\hspace{-0.5ex}}}
+\newcommand{\plainlink}[1]{#1}
+\newcommand{\techlink}[1]{#1}
+\newcommand{\badlink}[1]{#1}
+\newcommand{\indexlink}[1]{#1}
+\newcommand{\imageleft}[1]{} % drop it
+\newcommand{\smaller}[1]{{\footnotesize #1}}
+
+\newcommand{\titleAndVersion}[2]{\title{#1\\{\normalsize Version #2}}\maketitle}
+
+\newcommand{\preDoc}{\sloppy}
+\newcommand{\postDoc}{}
+
+% Scribble then generates the following:
+%
+%  \begin{document}
+%  \preDoc
+%  \titleAndVersion{...}{...}
+%  ... document content ...
+%  \postDoc
+%  \end{document}

@@ -216,7 +216,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                                   bm)))
                 extract-mzscheme-times
                 clean-up-extension
-                (append '(takr)
+                (append '(takr takr2)
                         mutable-pair-progs))
      (make-impl 'mzscheme-j
                 mk-mzscheme
@@ -299,6 +299,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
       tak
       takl
       takr
+      takr2
       triangle))
 
   (define (run-benchmark impl bm)

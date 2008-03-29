@@ -193,6 +193,9 @@
 
       (define/override (get-suffix) #".html")
 
+      (define/override (index-manual-newlines?)
+        #t)
+
       ;; ----------------------------------------
 
       (define/override (start-collect ds fns ci)
