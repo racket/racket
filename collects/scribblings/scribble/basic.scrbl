@@ -24,8 +24,8 @@
 
 @title[#:tag "basic"]{Basic Document Forms}
 
-@defmodule[scribble/basic]{The @schememodname[scribble/basic] libraryp
-rovides functions and forms that can be used from code written either
+@defmodule[scribble/basic]{The @schememodname[scribble/basic] library
+provides functions and forms that can be used from code written either
 in Scheme or with @elem["@"] expressions.}
 
 For example, the @scheme[title] and @scheme[italic] functions might be
