@@ -52,7 +52,7 @@ Creates a renderer whose output goes to @scheme[dest-dir].
 }
 
 
-@defmethod[(collect [srcs (listof path-string?)]
+@defmethod[(collect [srcs (listof part?)]
                     [dests (listof path-string?)])
            collect-info?]{
 
@@ -60,7 +60,7 @@ Performs the @techlink{collect pass}.
 
 }
 
-@defmethod[(resolve [srcs (listof path-string?)]
+@defmethod[(resolve [srcs (listof part?)]
                     [dests (listof path-string?)]
                     [ci collect-info?])
            resolve-info?]{
@@ -69,7 +69,7 @@ Performs the @techlink{resolve pass}.
 
 }
 
-@defmethod[(render [srcs (listof path-string?)]
+@defmethod[(render [srcs (listof part?)]
                    [dests (listof path-string?)]
                    [ri resolve-info?])
            void?]{
