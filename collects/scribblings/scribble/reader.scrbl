@@ -552,7 +552,7 @@ the reader does not know about the "@litchar["> "]" prompt.)
     c}
 }===|
 
-If the first string came from the openning @litchar["{"] line, it is
+If the first string came from the opening @litchar["{"] line, it is
 not prepended with an indentation (but it can affect the leftmost
 syntax object used for indentation).  This makes sense when formatting
 structured code as well as text (see the last example in the following
