@@ -174,16 +174,14 @@ the state transitions / contracts are:
   ;; unmarshall-pref : symbol marshalled -> any
   ;; unmarshalls a preference read from the disk
   (define (unmarshall-pref p data)
-    (let/ec k
-      (let* ([unmarshall-fn (un/marshall-unmarshall
-                             (hash-table-get marshall-unmarshall
-                                             p
-                                             (λ () (k data))))]
-             [default (hash-table-get defaults p)]
-             [result (unmarshall-fn data)])
-        (if ((default-checker default) result)
-            result
-            (default-value default)))))
+    (let* ([un/marshall (hash-table-get marshall-unmarshall p #f)]
+           [result (if un/marshall
+                       ((un/marshall-unmarshall un/marshall) data)
+                       data)]
+           [default (hash-table-get defaults p)])
+      (if ((default-checker default) result)
+          result
+          (default-value default))))
   
   ;; add-callback : sym (-> void) -> void
   (define preferences:add-callback 
