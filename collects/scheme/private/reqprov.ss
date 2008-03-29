@@ -733,7 +733,8 @@
                                       (cond
                                        [(eq? mode 0) ""]
                                        [(not mode) " in the label phase level"]
-                                       [(not mode) (format " at phase level ~a" mode)]))
+                                       [(not mode) (format " at phase level ~a" mode)]
+                                       [else ""]))
                               stx
                               orig-id))
                            (make-export orig-id
