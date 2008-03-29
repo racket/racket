@@ -1595,8 +1595,7 @@ char *scheme_number_to_string(int radix, Scheme_Object *obj)
 
 int scheme_check_double(const char *where, double d, const char *dest)
 {
-  if (MZ_IS_POS_INFINITY(d)
-      || MZ_IS_NEG_INFINITY(d)
+  if (MZ_IS_INFINITY(d)
       || MZ_IS_NAN(d)) {
     if (where)
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,

@@ -657,15 +657,13 @@ int scheme_minus_zero_p(double d)
 #ifdef MZ_USE_SINGLE_FLOATS
 static int rational_flt_p(float f) {
   return !(MZ_IS_NAN(f)
-           || MZ_IS_POS_INFINITY(f)
-           || MZ_IS_NEG_INFINITY(f));
+           || MZ_IS_INFINITY(f));
 }
 #endif
 
 static int rational_dbl_p(double f) {
   return !(MZ_IS_NAN(f)
-           || MZ_IS_POS_INFINITY(f)
-           || MZ_IS_NEG_INFINITY(f));
+           || MZ_IS_INFINITY(f));
 }
 
 #ifdef DEFEAT_FP_COMP_OPTIMIZATION
@@ -777,8 +775,7 @@ int scheme_is_integer(const Scheme_Object *o)
     if (MZ_IS_NAN(d))
       return 0;
 # endif
-    if (MZ_IS_POS_INFINITY(d)
-        || MZ_IS_NEG_INFINITY(d))
+    if (MZ_IS_INFINITY(d))
       return 0;
     if (floor(d) == d)
       return 1;
@@ -933,7 +930,7 @@ scheme_odd_p (int argc, Scheme_Object *argv[])
   
   if (scheme_is_integer(v)) {
     double d = SCHEME_FLOAT_VAL(v);
-    if (MZ_IS_POS_INFINITY(d) || MZ_IS_NEG_INFINITY(d))
+    if (MZ_IS_INFINITY(d))
       return scheme_true;
     return (fmod(d, 2.0) == 0.0) ? scheme_false : scheme_true;
   }
@@ -955,7 +952,7 @@ even_p (int argc, Scheme_Object *argv[])
 
   if (scheme_is_integer(v)) {
     double d = SCHEME_FLOAT_VAL(v);
-    if (MZ_IS_POS_INFINITY(d) || MZ_IS_NEG_INFINITY(d))
+    if (MZ_IS_INFINITY(d))
       return scheme_true;
     return (fmod(d, 2.0) == 0.0) ? scheme_true : scheme_false;
   }
@@ -1351,8 +1348,7 @@ static Scheme_Object *get_frac(char *name, int low_p,
     double d = SCHEME_FLOAT_VAL(n);
     
     if (MZ_IS_NAN(d)
-        || MZ_IS_POS_INFINITY(d)
-        || MZ_IS_NEG_INFINITY(d)) {
+        || MZ_IS_INFINITY(d)) {
       scheme_wrong_type(name, "rational number", 0, argc, argv);
       ESCAPED_BEFORE_HERE;
     }
@@ -1700,8 +1696,7 @@ atan_prim (int argc, Scheme_Object *argv[])
     }
 
 #ifdef ATAN2_DOESNT_WORK_WITH_INFINITIES
-    if ((MZ_IS_POS_INFINITY(v) || MZ_IS_NEG_INFINITY(v))
-	&& (MZ_IS_POS_INFINITY(v2) || MZ_IS_NEG_INFINITY(v2))) {
+    if (MZ_IS_INFINITY(v) && MZ_IS_INFINITY(v2)) {
       v = MZ_IS_POS_INFINITY(v) ? 1.0 : -1.0;
       v2 = MZ_IS_POS_INFINITY(v2) ? 1.0 : -1.0;
     }
@@ -2028,8 +2023,7 @@ scheme_expt(int argc, Scheme_Object *argv[])
 	  d2 = SCHEME_FLOAT_VAL(e);
 	  
 	  if ((d2 == 0.0)
-	      || MZ_IS_POS_INFINITY(d2)
-	      || MZ_IS_NEG_INFINITY(d2)
+	      || MZ_IS_INFINITY(d2)
 	      || MZ_IS_NAN(d2))
 	    norm = 1;
 	}

@@ -1493,6 +1493,7 @@ extern int scheme_is_nan(double);
 #    define MZ_IS_NAN(d) isnan(d)
 #   else
 #    ifdef USE_CARBON_FP_PREDS
+#     define MZ_IS_INFINITY(d) (!__isfinited(d))
 #     define MZ_IS_POS_INFINITY(d) (!__isfinited(d) && (d > 0))
 #     define MZ_IS_NEG_INFINITY(d) (!__isfinited(d) && (d < 0))
 #     define MZ_IS_NAN(d) __isnand(d)
@@ -1504,6 +1505,7 @@ extern int scheme_is_nan(double);
 #      define MZ_IS_NAN(d) _isnan(d)
 #     else
        /* USE_IEEE_FP_PREDS */
+#      define MZ_IS_INFINITY(d) (isinf(d))
 #      define MZ_IS_POS_INFINITY(d) (isinf(d) && (d > 0))
 #      define MZ_IS_NEG_INFINITY(d) (isinf(d) && (d < 0))
 #      define MZ_IS_NAN(d) isnan(d)
@@ -1512,6 +1514,10 @@ extern int scheme_is_nan(double);
 #   endif
 #  endif
 # endif
+#endif
+
+#ifndef MZ_IS_INFINITY
+# define MZ_IS_INFINITY(d) (MZ_IS_POS_INFINITY(d) || MZ_IS_NEG_INFINITY(d))
 #endif
 
 #define IZI_REAL_PART(n) (((Scheme_Complex *)(n))->r)
