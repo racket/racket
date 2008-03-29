@@ -117,7 +117,7 @@ Specializes @scheme[render%] for generating a single HTML file.}
 
 @defthing[render-multi-mixin ((subclass?/c render%) . -> . (subclass?/c render%))]{
 
-Further specializes @scheme[render%] for generating a multiple HTML
+Further specializes @scheme[render%] for generating multiple HTML
 files. The input class must be first extended with @scheme[render-mixin].}}
 
 @; ----------------------------------------
