@@ -69,6 +69,8 @@
                   (map free-vars (syntax->list #'(rhs ...)))))]
     [(letrec-values ([(id ...) rhs] ...) expr ...)
      (free-vars #'(#%plain-lambda (id ... ...) rhs ... expr ...))]
+    [(letrec-syntaxes+values stx-bindings ([(id ...) rhs] ...) expr ...)
+     (free-vars #'(#%plain-lambda (id ... ...) rhs ... expr ...))]
     [(_ expr ...)
      ;; if, begin, begin0, set!, #%app, #%variable-reference, with-continuation-mark
      (merge (map free-vars (syntax->list #'(expr ...))))]))
