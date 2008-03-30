@@ -28,7 +28,8 @@
 
   (provide (rename error eopl:error)
 	   (rename printf eopl:printf)
-	   (rename pretty-print eopl:pretty-print))
+	   (rename pretty-print eopl:pretty-print)
+           (rename eopl:call-with-current-continuation call-with-current-continuation))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,6 +138,9 @@
   (define-syntax r5rs-out
     (syntax-rules ()
       [(_) (begin
-             (require (all-except r5rs define))
-             (provide (all-from-except r5rs r5rs:define)))]))
+             (require (all-except r5rs 
+                                  define
+                                  call-with-current-continuation))
+             (provide (all-from-except r5rs 
+                                       r5rs:define)))]))
   (r5rs-out))
