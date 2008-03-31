@@ -165,7 +165,9 @@
   (cond
     [(Dummy? p) null]
     [(Pred? p) null]
-    [(Var? p) (list (Var-v p))]
+    [(Var? p) (let* ([v (Var-v p)]
+                     [v* (free-identifier-mapping-get (current-renaming) v (lambda () v))])
+                (list v*))]
     [(Or? p)
      (bound-vars (car (Or-ps p)))]
     [(Box? p)
@@ -201,6 +203,13 @@
     (raise-syntax-error #f
                         "used out of context: not in match pattern"
                         stx)))
+
+(define current-renaming (make-parameter (make-free-identifier-mapping)))
+
+(define (copy-mapping ht)
+  (define new-ht (make-free-identifier-mapping))
+  (free-identifier-mapping-for-each ht (lambda (k v) (free-identifier-mapping-put! new-ht k v)))
+  new-ht)
 
 #|
 ;; EXAMPLES

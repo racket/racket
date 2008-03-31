@@ -158,10 +158,11 @@
                                        (Row-unmatch row)
                                        seen))]
                           ;;otherwise, bind the matched variable to x, and add it to the list of vars we've seen
-                          [else (make-Row ps
-                                          #`(let ([#,v #,x]) #,(Row-rhs row))
-                                          (Row-unmatch row)
-                                          (cons (cons v x) (Row-vars-seen row)))]))])
+                          [else (let ([v* (free-identifier-mapping-get (current-renaming) v (lambda () v))])
+                                  (make-Row ps
+                                            #`(let ([#,v* #,x]) #,(Row-rhs row))
+                                            (Row-unmatch row)
+                                            (cons (cons v x) (Row-vars-seen row))))]))])
        ;; compile the transformed block
        (compile* xs (map transform block) esc))]
     ;; the Constructor rule
@@ -272,11 +273,13 @@
              (for/list ([heads headss])
                (apply append (map bound-vars heads)))]
             [hid-argss (map generate-temporaries head-idss)]
+            [head-idss* (map generate-temporaries head-idss)]
             [hid-args (apply append hid-argss)]
             [reps (generate-temporaries (for/list ([head heads]) 'rep))])
        (with-syntax ([x xvar]
                      [var0 (car vars)]
                      [((hid ...) ...) head-idss]
+                     [((hid* ...) ...) head-idss*]
                      [((hid-arg ...) ...) hid-argss]
                      [(rep ...) reps]
                      [(maxrepconstraint ...)
@@ -297,7 +300,7 @@
                                               #`(reverse #,hid-arg))))]
                      [(parse-loop failkv fail-tail) (generate-temporaries #'(parse-loop failkv fail-tail))])
          (with-syntax ([(rhs ...)
-                        #`[(let ([hid-arg (cons hid hid-arg)] ...)
+                        #`[(let ([hid-arg (cons hid* hid-arg)] ...)
                              (if maxrepconstraint
                                  (let ([rep (add1 rep)])
                                    (parse-loop x #,@hid-args #,@reps fail))
@@ -312,57 +315,25 @@
                                    #,(compile* (cdr vars) 
                                                (list (make-Row rest-pats k (Row-unmatch (car block)) (Row-vars-seen (car block))))
                                                #'fail-tail))])])
-           #`(let parse-loop ([x var0] [hid-arg null] ... ... [rep 0] ... [failkv #,esc])
+           (parameterize ([current-renaming 
+			   (for/fold ([ht (copy-mapping (current-renaming))])
+				     ([id (apply append head-idss)]
+				      [id* (apply append head-idss*)])
+				     (free-identifier-mapping-put! ht id id*)
+				     (free-identifier-mapping-for-each 
+				      ht
+				      (lambda (k v)
+					(when (free-identifier=? v id)
+					      (free-identifier-mapping-put! ht k id*))))
+				     ht)])
+             #`(let parse-loop ([x var0] [hid-arg null] ... ... [rep 0] ... [failkv #,esc])
                #,(compile* (list #'x)
                              (append
                               (map (lambda (pats rhs) (make-Row pats rhs (Row-unmatch (car block)) null))
                                    (map list heads)
                                    (syntax->list #'(rhs ...)))
                               (list (make-Row (list tail) #`tail-rhs (Row-unmatch (car block)) null)))
-                             #'failkv)))))]
-    ;; doesn't work, never called
-    #;
-     [(VectorSeq? first)
-     (let*-values ([(row) (car block)]
-                   [(p ps) (Row-split-pats row)]
-                   [(head) (VectorSeq-p p)]
-                   [(start) (VectorSeq-start p)]
-                   [(expr) (Row-rhs row)]
-                   [(count) (VectorSeq-count p)]
-                   [(head-vars) (bound-vars head)])
-       (with-syntax ([var0 (car vars)]
-                     [(x) (generate-temporaries #'(x))]
-                     [(hid ...) head-vars]
-                     [(hid-arg ...) (generate-temporaries head-vars)]
-                     [(parse-k parse-loop head-var tail-var fail reps len)
-                      (generate-temporaries
-                       #'(parse-k parse-loop head-var tail-var fail reps len))])
-         #`(if (vector? var0)
-               (let ([len (vector-length var0)])
-                 (define (parse-k hid ...)
-                   #,(compile* xs
-                               (list (make-Row ps expr))
-                               esc))                 
-                 (define (parse-loop reps hid-arg ...)
-                   (define (fail)
-                     (parse-k (reverse hid-arg) ...))
-                   (if (and 
-                        (< reps len)
-                        #,@(if (number? count)
-                               #`((reps . < . '#,(+ start count)))
-                               #'()))
-                       (let ([head-var (vector-ref var0 reps)])
-                         #,(compile*
-                            (list #'head-var)
-                            (list
-                             (make-Row (list head)
-                                       #`(parse-loop (add1 reps)
-                                                     (cons hid hid-arg) ...)))
-                            #'fail))
-                       (fail)))
-                 (let ([hid null] ...)
-                   (parse-loop #,start hid ...)))
-                 (#,esc))))]
+                             #'failkv))))))]
      [else (error 'compile "unsupported pattern: ~a~n" first)]))
 
 (define (compile* vars rows esc)
