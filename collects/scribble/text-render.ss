@@ -6,6 +6,8 @@
 
   (define (render-mixin %)
     (class %
+      (init [style-file #f])
+      
       (define/override (get-substitutions)
         '((#rx"---" "\U2014")
 	  (#rx"--" "\U2013")

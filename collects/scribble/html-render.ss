@@ -189,7 +189,8 @@
                quiet-table-of-contents)
 
       (init-field [css-path #f]
-                  [up-path #f])
+                  [up-path #f]
+                  [style-file #f])
 
       (define/override (get-suffix) #".html")
 
@@ -449,37 +450,41 @@
 
       (define/public (render-one-part d ri fn number)
         (parameterize ([current-output-file fn])
-          (let ([xpr `(html ()
-                        (head
-                         (meta ((http-equiv "content-type")
-                                (content "text-html; charset=utf-8")))
-                         ,@(let ([c (part-title-content d)])
-                             (if c
-                               `((title ,@(format-number number '(nbsp))
-                                        ,(content->string c this d ri)))
-                               null))
-                         ,(if (eq? 'inline css-path)
-                            `(style ([type "text/css"])
-                               "\n"
-                               ,(with-input-from-file scribble-css
-                                  (lambda ()
-                                    ;; note: file-size can be bigger that the
-                                    ;; string, but that's fine.
-                                    (read-string (file-size scribble-css))))
-                               "\n")
-                            `(link ((rel "stylesheet")
-                                    (type "text/css")
-                                    (href ,(or css-path "scribble.css"))
-                                    (title "default")))))
-                        (body ,@(render-toc-view d ri)
-                          (div ((class "maincolumn"))
-                            (div ((class "main"))
-                              ,@(render-version d ri)
-                              ,@(navigation d ri #f)
-                              ,@(render-part d ri)
-                              ,@(navigation d ri #t)))))])
+          (let* ([style-file (or style-file scribble-css)]
+                 [xpr `(html ()
+                         (head
+                          (meta ((http-equiv "content-type")
+                                 (content "text-html; charset=utf-8")))
+                          ,@(let ([c (part-title-content d)])
+                              (if c
+                                `((title ,@(format-number number '(nbsp))
+                                         ,(content->string c this d ri)))
+                                 null))
+                          ,(if (eq? 'inline css-path)
+                             `(style ([type "text/css"])
+                                "\n"
+                                ,(with-input-from-file style-file
+                                   (lambda ()
+                                     ;; note: file-size can be bigger that the
+                                     ;; string, but that's fine.
+                                     (read-string (file-size style-file))))
+                                "\n")
+                             `(link ((rel "stylesheet")
+                                      (type "text/css")
+                                     (href ,(or css-path 
+                                                (let-values ([(base name dir?)
+                                                              (split-path style-file)])
+                                                  (path->string name))))
+                                     (title "default")))))
+                         (body ,@(render-toc-view d ri)
+                           (div ((class "maincolumn"))
+                             (div ((class "main"))
+                               ,@(render-version d ri)
+                               ,@(navigation d ri #f)
+                               ,@(render-part d ri)
+                               ,@(navigation d ri #t)))))])
             (unless css-path
-              (install-file scribble-css))
+              (install-file style-file))
             (printf "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n")
             (xml:write-xml/content (xml:xexpr->xml xpr)))))
 

@@ -1880,7 +1880,7 @@
           (make-link-element #f 
                              content
                              (or (find-scheme-tag p ri stx-id #f)
-                                 (format "--UNDEFINED:~a--" (syntax-e stx-id))))))
+                                 `(undef ,(format "--UNDEFINED:~a--" (syntax-e stx-id)))))))
        (lambda () content)
        (lambda () content))))
      

@@ -17,6 +17,8 @@
 
   (define (render-mixin %)
     (class %
+      (init-field [style-file #f])
+
       (define/override (get-suffix) #".tex")
 
       (inherit render-flow
@@ -26,20 +28,22 @@
                format-number)
 
       (define/override (render-one d ri fn)
-        (with-input-from-file scribble-tex
-          (lambda ()
-            (copy-port (current-input-port)
-                       (current-output-port))))
-        (printf "\\begin{document}\n\\preDoc\n")
-        (when (part-title-content d)
-          (printf "\\titleAndVersion{")
-          (render-content (part-title-content d) d ri)
-          (printf "}{~a}\n"
-                  (or (and (versioned-part? d)
-                           (versioned-part-version d))
-                      (version))))
-        (render-part d ri)
-        (printf "\\postDoc\n\\end{document}\n"))
+        (let ([style-file (or style-file
+                              scribble-tex)])
+          (with-input-from-file style-file
+            (lambda ()
+              (copy-port (current-input-port)
+                         (current-output-port))))
+          (printf "\\begin{document}\n\\preDoc\n")
+          (when (part-title-content d)
+            (printf "\\titleAndVersion{")
+            (render-content (part-title-content d) d ri)
+            (printf "}{~a}\n"
+                    (or (and (versioned-part? d)
+                             (versioned-part-version d))
+                        (version))))
+          (render-part d ri)
+          (printf "\\postDoc\n\\end{document}\n")))
 
       (define/override (render-part d ri)
         (let ([number (collected-info-number (part-collected-info d ri))])
@@ -49,7 +53,7 @@
               (printf "\\twocolumn\n\\parskip=0pt\n\\addcontentsline{toc}{section}{Index}\n"))
             (printf "\\~a~a{"
                     (case (length number)
-                      [(0 1) "newpage\n\n\\section"]
+                      [(0 1) "sectionNewpage\n\n\\section"]
                       [(2) "subsection"]
                       [(3) "subsubsection"]
                       [else "subsubsection*"])
@@ -186,16 +190,16 @@
                                  (= 1 (length (car (table-flowss t)))))
                              (let ([m (current-table-mode)])
                                (and m
-                                    (equal? "longtable" (car m))
+                                    (equal? "supertabular" (car m))
                                     (= 1 (length (car (table-flowss (cadr m))))))))]
                [tableform (cond
                            [index? "list"]
                            [(and (not (current-table-mode))
                                  (not inline-table?))
-                            "longtable"]
+                            "supertabular"]
                            [else "tabular"])]
                [opt (cond
-                     [(equal? tableform "longtable") "[l]"]
+                     [(equal? tableform "supertabular") "[l]"]
                      [(equal? tableform "tabular") "[t]"]
                      [else ""])]
                [flowss (if index?
@@ -216,9 +220,7 @@
                         (if boxed? 
                             (format "{~a\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}~a\n\\nopagebreak\n" 
                                     "\\setlength{\\unitlength}{\\linewidth}"
-                                    (if (equal? tableform "longtable")
-                                        "\\vspace{-5ex}"
-                                        "\n\n"))
+                                    "\n\n")
                             "")
                         tableform
                         opt
@@ -266,11 +268,11 @@
                   (unless (null? (cdr flowss))
                     (loop (cdr flowss) (cdr row-styles)))))
               (unless inline?
-                (printf "\n\n\\end{~a}~a\n" 
-                        tableform
-                        (if (equal? tableform "longtable")
-                            "\\vspace{-3ex}" ;; counteracts mysterious space added after longtable
-                            ""))))))
+                (printf "~a\n\n\\end{~a}\n" 
+                        (if (equal? tableform "supertabular")
+                            "\n\\\\"
+                            "")
+                        tableform)))))
         null)
 
       (define/override (render-itemization t part ri)

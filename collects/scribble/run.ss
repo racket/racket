@@ -29,6 +29,8 @@
     (make-parameter #f))
   (define current-info-input-files
     (make-parameter null))
+  (define current-style-file
+    (make-parameter #f))
 
   (define (get-command-line-files argv)
     (command-line
@@ -48,6 +50,8 @@
        (current-dest-directory dir)]
       [("--dest-name") name "write output as <name>"
        (current-dest-name name)]
+      [("--style") file "use given .css/.tex file"
+       (current-style-file file)]
       [("--info-out") file "write format-specific link information to <file>"
        (current-info-output-file file)]]
      [multi
@@ -68,7 +72,8 @@
         (make-directory* dir))
 
       (let ([renderer (new ((current-render-mixin) render%)
-                           [dest-dir dir])])
+                           [dest-dir dir]
+                           [style-file (current-style-file)])])
         (send renderer report-output!)
         (let* ([fns (map (lambda (fn)
                            (let-values ([(base name dir?) (split-path fn)])

@@ -14,7 +14,7 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 \renewcommand{\rmdefault}{ptm}
-\usepackage{longtable}
+\usepackage{supertabular}
 \usepackage[htt]{hyphenat}
 \usepackage[usenames,dvipsnames]{color}
 \hypersetup{bookmarks=true,bookmarksopen=true,bookmarksnumbered=true}
@@ -68,6 +68,8 @@
 \newcommand{\smaller}[1]{{\footnotesize #1}}
 
 \newcommand{\titleAndVersion}[2]{\title{#1\\{\normalsize Version #2}}\maketitle}
+
+\newcommand{\sectionNewpage}{\newpage}
 
 \newcommand{\preDoc}{\sloppy}
 \newcommand{\postDoc}{}
