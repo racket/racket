@@ -220,7 +220,9 @@
                         (if boxed? 
                             (format "{~a\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}~a\n\\nopagebreak\n" 
                                     "\\setlength{\\unitlength}{\\linewidth}"
-                                    "\n\n")
+                                    (if (equal? tableform "supertabular")
+                                        "\\supertabline"
+                                        "\n\n"))
                             "")
                         tableform
                         opt
@@ -285,13 +287,15 @@
         null)
 
       (define/override (render-blockquote t part ri)
-        (printf "\n\n\\begin{quote}\n")
-        (parameterize ([current-table-mode (list "blockquote" t)])
-          (for-each (lambda (e)
-                      (render-flow-element e part ri #f))
-                    (blockquote-paragraphs t)))
-        (printf "\n\n\\end{quote}\n")
-        null)
+        (let ([kind (or (blockquote-style t)
+                        "quote")])
+          (printf "\n\n\\begin{~a}\n" kind)
+          (parameterize ([current-table-mode (list "blockquote" t)])
+            (for-each (lambda (e)
+                        (render-flow-element e part ri #f))
+                      (blockquote-paragraphs t)))
+          (printf "\n\n\\end{~a}\n" kind)
+          null))
 
       (define/override (render-other i part ri)
         (cond

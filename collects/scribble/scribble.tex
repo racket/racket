@@ -14,7 +14,7 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 \renewcommand{\rmdefault}{ptm}
-\usepackage{supertabular}
+\usepackage{longtable}
 \usepackage[htt]{hyphenat}
 \usepackage[usenames,dvipsnames]{color}
 \hypersetup{bookmarks=true,bookmarksopen=true,bookmarksnumbered=true}
@@ -73,6 +73,12 @@
 
 \newcommand{\preDoc}{\sloppy}
 \newcommand{\postDoc}{}
+
+\newenvironment{leftindent}{\begin{quote}}{\end{quote}}
+\newenvironment{insetpara}{\begin{quote}}{\end{quote}}
+
+\newenvironment{supertabular}{\begin{longtable}}{\end{longtable}\vspace{-3ex}}
+\newcommand{\supertabline}{\vspace{-2ex}}
 
 % Scribble then generates the following:
 %
