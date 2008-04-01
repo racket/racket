@@ -51,12 +51,15 @@
                      (pair? number))
             (when (part-style? d 'index)
               (printf "\\twocolumn\n\\parskip=0pt\n\\addcontentsline{toc}{section}{Index}\n"))
-            (printf "\\~a~a{"
+            (printf "\\~a~a~a{"
                     (case (length number)
                       [(0 1) "sectionNewpage\n\n\\section"]
                       [(2) "subsection"]
                       [(3) "subsubsection"]
                       [else "subsubsection*"])
+                    (if (part-style? d 'hidden)
+                        "hidden"
+                        "")
                     (if (and (pair? number)
                              (not (car number)))
                         "*"

@@ -160,6 +160,9 @@
 (unless (eol-syntax? (datum->syntax #f eol-token))
   (internal-error 'invalid-assumption))
 
+;; A syntax object that has the "original?" property:
+(define orig-stx (read-syntax #f (open-input-string "dummy")))
+
 ;; ----------------------------------------------------------------------------
 ;; main reader function for @ constructs
 
@@ -266,12 +269,13 @@
                (string? 2nd) (not (eq? eol-token 2nd)))
         (cons (datum->syntax stx0
                 (string-append 1st 2nd)
-                (list (syntax-source stx0)
-                      (syntax-line   stx0)
-                      (syntax-column stx0)
-                      (syntax-position stx0)
-                      ;; this is called right after reading stx
-                      (span-from (syntax-position stx0))))
+                (vector (syntax-source stx0)
+                        (syntax-line   stx0)
+                        (syntax-column stx0)
+                        (syntax-position stx0)
+                        ;; this is called right after reading stx
+                        (span-from (syntax-position stx0)))
+                stx0)
               (cdr stxs))
         (cons stx stxs))))
 
@@ -297,7 +301,8 @@
       (define (make-stx sexpr)
         (datum->syntax #f
           (if (bytes? sexpr) (bytes->string/utf-8 sexpr) sexpr)
-          (list source-name line col pos (span-from pos))))
+          (vector source-name line col pos (span-from pos))
+          orig-stx))
       (cond
         [(and re:begin (*match1 re:begin))
          => (lambda (m) (loop (add1 lvl) (maybe-merge (make-stx m) r)))]
@@ -402,11 +407,12 @@
             ;; we have a command: adjust its location to include the dispatch
             ;; character
             [else (datum->syntax #f (syntax-e cmd)
-                    (list (syntax-source cmd)
-                          (syntax-line cmd)
-                          (cond [(syntax-column cmd) => sub1] [else #f])
-                          (cond [(syntax-position cmd) => sub1] [else #f])
-                          (cond [(syntax-span cmd) => add1] [else #f])))])))
+                    (vector (syntax-source cmd)
+                            (syntax-line cmd)
+                            (cond [(syntax-column cmd) => sub1] [else #f])
+                            (cond [(syntax-position cmd) => sub1] [else #f])
+                            (cond [(syntax-span cmd) => add1] [else #f]))
+                    orig-stx)])))
 
   (define (get-rprefixes) ; return punctuation prefixes in reverse
     (let loop ([r '()])
@@ -420,8 +426,9 @@
                                       => cadr]
                                      [else (internal-error 'get-rprefixes)])])
                       (loop (cons (datum->syntax #f sym
-                                                 (list source-name line col pos
-                                                       (span-from pos)))
+                                                 (vector source-name line col pos
+                                                         (span-from pos))
+                                                 orig-stx)
                                   r))))]
               [(*skip re:whitespaces)
                (read-error* "unexpected whitespace after ~a" ch:command)]
@@ -430,7 +437,8 @@
   (cond
     [start-inside?
      (datum->syntax #f (get-lines* #f #f #f re:line-item-no-nests #f)
-       (list source-name line-num col-num position (span-from position)))]
+       (vector source-name line-num col-num position (span-from position))
+       orig-stx)]
     [(*skip re:whitespaces)
      (read-error* "unexpected whitespace after ~a" ch:command)]
     [(*skip re:comment-start)
@@ -463,8 +471,9 @@
                       (if (syntax? stx)
                         stx
                         (datum->syntax #f stx
-                          (list source-name line-num col-num position
-                                (span-from position))))
+                          (vector source-name line-num col-num position
+                                  (span-from position))
+                          orig-stx))
                       'scribble (list 'form ds ls))
                      stx))]
           [(stx) (syntax-post-processor stx)]
@@ -474,8 +483,9 @@
              (if (null? rpfxs)
                stx
                (loop (cdr rpfxs) (list (car rpfxs) stx))))])
-       (datum->syntax #f stx (list source-name line-num col-num position
-                                   (span-from position))))]))
+       (datum->syntax #f stx (vector source-name line-num col-num position
+                                     (span-from position))
+                      orig-stx))]))
 
 (define (make-dispatcher start-inside? ch:command
                          get-command-readtable get-datum-readtable
@@ -526,8 +536,9 @@
                               line-num col-num position #f))
           (datum->syntax
            #f (string->symbol (bytes->string/utf-8 (cadr m)))
-           (list source-name line-num col-num position
-                 (add1 (bytes-length (car m)))))))))
+           (vector source-name line-num col-num position
+                   (add1 (bytes-length (car m))))
+           orig-stx)))))
   (define datum-rt
     (cond [(or (not datum-readtable) (readtable? datum-readtable))
            datum-readtable]
