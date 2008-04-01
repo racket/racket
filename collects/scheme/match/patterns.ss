@@ -1,7 +1,6 @@
 #lang scheme/base
 
 (require syntax/boundmap
-         mzlib/trace
          scheme/stxparam
          scheme/contract
          (for-syntax scheme/base))
@@ -14,10 +13,11 @@
          exn:misc:match?)
 
 (define-struct (exn:misc:match exn:fail) (value))
-  
-(define (match:error val) (raise (make-exn:misc:match (format "match: no matching clause for ~e" val)
-                                                      (current-continuation-marks)
-                                                      val)))
+
+(define (match:error val)
+  (raise (make-exn:misc:match (format "match: no matching clause for ~e" val)
+                              (current-continuation-marks)
+                              val)))
 
 (define orig-stx (make-parameter #f))
 
@@ -31,8 +31,7 @@
 (define-struct (Dummy Var) ()
   #:transparent
   #:property
-  prop:custom-write (lambda (v p w?)
-                      (fprintf p "_")))
+  prop:custom-write (lambda (v p w?) (fprintf p "_")))
 
 ;; constructor patterns
 (define-struct (CPat Pat) () #:transparent)
@@ -84,7 +83,8 @@
 ;; headss : listof listof pattern
 ;; mins : listof option number
 ;; maxs : listof option number
-;; onces? : listof boolean -- is this pattern being bound only once (take the car of the variables)
+;; onces? : listof boolean -- is this pattern being bound only once (take the
+;;                            car of the variables)
 ;; tail : pattern
 (define-struct (GSeq Pat) (headss mins maxs onces? tail) #:transparent)
 
@@ -98,14 +98,12 @@
 ;; vars-seen is a listof identifiers
 (define-struct Row (pats rhs unmatch vars-seen) #:transparent
   #:property
-  prop:custom-write (lambda (v p w?)
-                      (fprintf p "(Row ~a <expr>)" (Row-pats v))))
-
-
+  prop:custom-write
+  (lambda (v p w?) (fprintf p "(Row ~a <expr>)" (Row-pats v))))
 
 (define struct-key-ht (make-free-identifier-mapping))
 (define (get-key id)
-  (free-identifier-mapping-get 
+  (free-identifier-mapping-get
    struct-key-ht id
    (lambda ()
      (let ([k (box-immutable (syntax-e id))])
@@ -117,24 +115,24 @@
 ;; (eq? (pat-key p) (pat-key q)) if p and q match the same constructor
 ;; the result is #f if p is not a constructor pattern
 (define (pat-key p)
-  (cond
-    [(Struct? p) (get-key (Struct-id p))]
-    [(Box? p) 'box]
-    [(Vector? p) 'vector]
-    [(Pair? p) 'pair]
-    [(MPair? p) 'mpair]
-    [(String? p) 'string]
-    [(Symbol? p) 'symbol]
-    [(Number? p) 'number]
-    [(Bytes? p) 'bytes]
-    [(Char? p) 'char]
-    [(Regexp? p) 'regexp]
-    [(Keyword? p) 'keyword]
-    [(Boolean? p) 'boolean]
-    [(Null? p) 'null]
-    [else #f]))
+  (cond [(Struct? p) (get-key (Struct-id p))]
+        [(Box? p) 'box]
+        [(Vector? p) 'vector]
+        [(Pair? p) 'pair]
+        [(MPair? p) 'mpair]
+        [(String? p) 'string]
+        [(Symbol? p) 'symbol]
+        [(Number? p) 'number]
+        [(Bytes? p) 'bytes]
+        [(Char? p) 'char]
+        [(Regexp? p) 'regexp]
+        [(Keyword? p) 'keyword]
+        [(Boolean? p) 'boolean]
+        [(Null? p) 'null]
+        [else #f]))
 
-;(trace pat-key)
+;; (require mzlib/trace)
+;; (trace pat-key)
 
 ;; Row-first-pat : Row -> Pat
 ;; Row must not have empty list of pats
@@ -145,29 +143,23 @@
   (define p (Row-pats r))
   (values (car p) (cdr p)))
 
-
 ;; merge : (liftof (listof id)) -> (listof id)
-;;  merges lists of identifiers, removing module-identifier=?
-;;  duplicates
+;;  merges lists of identifiers, removing module-identifier=? duplicates
 (define (merge l)
-  (cond
-    [(null? l) null]
-    [(null? (cdr l)) (car l)]
-    [else (let ([m (make-module-identifier-mapping)])
-            (for-each (lambda (ids)
-                        (for-each (lambda (id)
-                                    (module-identifier-mapping-put! m id #t))
-                                  ids))
-                      l)
-            (module-identifier-mapping-map m (lambda (k v) k)))]))
+  (cond [(null? l) null]
+        [(null? (cdr l)) (car l)]
+        [else (let ([m (make-module-identifier-mapping)])
+                (for* ([ids l] [id ids])
+                  (module-identifier-mapping-put! m id #t))
+                (module-identifier-mapping-map m (lambda (k v) k)))]))
 ;; bound-vars : Pat -> listof identifiers
 (define (bound-vars p)
   (cond
     [(Dummy? p) null]
     [(Pred? p) null]
-    [(Var? p) (let* ([v (Var-v p)]
-                     [v* (free-identifier-mapping-get (current-renaming) v (lambda () v))])
-                (list v*))]
+    [(Var? p)
+     (let ([v (Var-v p)])
+       (list (free-identifier-mapping-get (current-renaming) v (lambda () v))))]
     [(Or? p)
      (bound-vars (car (Or-ps p)))]
     [(Box? p)
@@ -178,11 +170,10 @@
     [(MPair? p)
      (merge (list (bound-vars (MPair-a p)) (bound-vars (MPair-d p))))]
     [(GSeq? p)
-     (merge (cons
-             (bound-vars (GSeq-tail p))
-             (for/list ([pats (GSeq-headss p)])
-                       (merge (for/list ([pat pats])
-                                        (bound-vars pat))))))]
+     (merge (cons (bound-vars (GSeq-tail p))
+                  (for/list ([pats (GSeq-headss p)])
+                    (merge (for/list ([pat pats])
+                             (bound-vars pat))))))]
     [(Vector? p)
      (merge (map bound-vars (Vector-ps p)))]
     [(Struct? p)
@@ -200,15 +191,15 @@
 
 (define-syntax-parameter fail
   (lambda (stx)
-    (raise-syntax-error #f
-                        "used out of context: not in match pattern"
-                        stx)))
+    (raise-syntax-error
+     #f "used out of context: not in match pattern" stx)))
 
 (define current-renaming (make-parameter (make-free-identifier-mapping)))
 
 (define (copy-mapping ht)
   (define new-ht (make-free-identifier-mapping))
-  (free-identifier-mapping-for-each ht (lambda (k v) (free-identifier-mapping-put! new-ht k v)))
+  (free-identifier-mapping-for-each
+   ht (lambda (k v) (free-identifier-mapping-put! new-ht k v)))
   new-ht)
 
 #|
@@ -230,7 +221,8 @@
 (provide/contract (struct Row ([pats (listof Pat?)]
                                [rhs syntax?]
                                [unmatch (or/c identifier? false/c)]
-                               [vars-seen (listof (cons/c identifier? identifier?))])))
+                               [vars-seen (listof (cons/c identifier?
+                                                          identifier?))])))
 
 (define-struct match-expander (match-xform legacy-xform macro-xform certifier)
   #:property prop:procedure (struct-field-index macro-xform))
