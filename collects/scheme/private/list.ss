@@ -25,158 +25,19 @@
 
            compose)
 
-  (#%require (for-syntax "stxcase-scheme.ss"))
+  (#%require (rename "sort.ss" raw-sort sort)
+             (for-syntax "stxcase-scheme.ss"))
 
-  ;; This is a destructive stable merge-sort, adapted from slib and improved by
-  ;; Eli Barzilay
-  ;; The original source said:
-  ;;   It uses a version of merge-sort invented, to the best of my knowledge,
-  ;;   by David H. D. Warren, and first used in the DEC-10 Prolog system.
-  ;;   R. A. O'Keefe adapted it to work destructively in Scheme.
-  ;; but it's a plain destructive merge sort, which I optimized further.
-  (define sort-internal
-    (let ()
-      (define-syntax sort-internal-body
-        (syntax-rules ()
-          [(_ lst less? n)
-           (begin
-             (define (merge-sorted! a b)
-               ;; r-a? for optimization -- is r connected to a?
-               (define (loop r a b r-a?)
-                 (if (less? (mcar b) (mcar a))
-                     (begin
-                       (when r-a? (set-mcdr! r b))
-                       (if (null? (mcdr b)) (set-mcdr! b a) (loop b a (mcdr b) #f)))
-                     ;; (car a) <= (car b)
-                     (begin
-                       (unless r-a? (set-mcdr! r a))
-                       (if (null? (mcdr a)) (set-mcdr! a b) (loop a (mcdr a) b #t)))))
-               (cond [(null? a) b]
-                     [(null? b) a]
-                     [(less? (mcar b) (mcar a))
-                      (if (null? (mcdr b)) (set-mcdr! b a) (loop b a (mcdr b) #f))
-                      b]
-                     [else ; (car a) <= (car b)
-                      (if (null? (mcdr a)) (set-mcdr! a b) (loop a (mcdr a) b #t))
-                      a]))
-             (let step ([n n])
-               (cond [(> n 3)
-                      (let* (; let* not really needed with mzscheme's l->r eval
-                             [j (quotient n 2)] [a (step j)] [b (step (- n j))])
-                        (merge-sorted! a b))]
-                     ;; the following two cases are just explicit treatment of
-                     ;; sublists of length 2 and 3, could remove both (and use the
-                     ;; above case for n>1) and it would still work, except a
-                     ;; little slower
-                     [(= n 3) (let ([p lst] [p1 (mcdr lst)] [p2 (mcdr (mcdr lst))])
-                                (let ([x (mcar p)] [y (mcar p1)] [z (mcar p2)])
-                                  (set! lst (mcdr p2))
-                                  (cond [(less? y x) ; y x
-                                         (cond [(less? z y) ; z y x
-                                                (set-mcar! p  z)
-                                                (set-mcar! p1 y)
-                                                (set-mcar! p2 x)]
-                                               [(less? z x) ; y z x
-                                                (set-mcar! p        y)
-                                                (set-mcar! p1 z)
-                                                (set-mcar! p2 x)]
-                                               [else ; y x z
-                                                (set-mcar! p  y)
-                                                (set-mcar! p1 x)])]
-                                        [(less? z x) ; z x y
-                                         (set-mcar! p  z)
-                                         (set-mcar! p1 x)
-                                         (set-mcar! p2 y)]
-                                        [(less? z y) ; x z y
-                                         (set-mcar! p1 z)
-                                         (set-mcar! p2 y)])
-                                  (set-mcdr! p2 '())
-                                  p))]
-                     [(= n 2) (let ([x (mcar lst)] [y (mcar (mcdr lst))] [p lst])
-                                (set! lst (mcdr (mcdr lst)))
-                                (when (less? y x)
-                                  (set-mcar! p y)
-                                  (set-mcar! (mcdr p) x))
-                                (set-mcdr! (mcdr p) '())
-                                p)]
-                     [(= n 1) (let ([p lst])
-                                (set! lst (mcdr lst))
-                                (set-mcdr! p '())
-                                p)]
-                     [else '()])))]))
-      (define sort-internals (make-hash-table))
-      (define-syntax make-precompiled-sort
-        (syntax-rules ()
-          [(_ less?) (hash-table-put! sort-internals less?
-                                      (lambda (lst n) (sort-internal-body lst less? n)))]))
-      (define ((sort-internal* less?) lst n)
-        (sort-internal-body lst less? n))
-      (make-precompiled-sort <)
-      (make-precompiled-sort string<?)
-      (make-precompiled-sort string-ci<?)
-      (make-precompiled-sort keyword<?)
-      (hash-table-put! sort-internals <= (hash-table-get sort-internals <))
-      (hash-table-put! sort-internals string<=? (hash-table-get sort-internals string<?))
-      (hash-table-put! sort-internals string-ci<=? (hash-table-get sort-internals string-ci<?))
-      (lambda (less? lst n)
-        ((or (hash-table-get sort-internals less? #f)
-             (sort-internal* less?))
-         lst n))))
-
-  (define (sort lst less?)
-    (unless (list? lst)
-      (raise-type-error 'sort "proper list" lst))
+  (provide sort)
+  (define (sort lst less? #:key [getkey #f] #:cache-keys [cache-keys? #f])
+    (unless (list? lst) (raise-type-error 'sort "proper list" lst))
     (unless (and (procedure? less?) (procedure-arity-includes? less? 2))
       (raise-type-error 'sort "procedure of arity 2" less?))
-    (let ([n (length lst)])
-      (cond
-        ;; trivial case
-        [(< n 2) lst]
-        ;; check if the list is already sorted
-        ;; (which can be a common case, eg, directory lists).
-        [(let loop ([last (car lst)] [next (cdr lst)])
-           (or (null? next)
-               (and (not (less? (car next) last))
-                    (loop (car next) (cdr next)))))
-         lst]
-        ;; inlined cases, for optimization of short lists
-        [(< n 3)
-         (if (= n 2)
-           ;; (because of the above test, we can assume that the input is
-           ;; unsorted)
-           (list (cadr lst) (car lst))
-           (let ([a (car lst)] [b (cadr lst)] [c (caddr lst)])
-             ;; General note: we need a stable sort, so we should always
-             ;; compare (less? later-item earlier-item) since it gives more
-             ;; information.  A good way to see that we have good code is to
-             ;; check that each permutation appears exactly once.  This means
-             ;; that n=4 will have 23 cases, so don't bother.  (Homework: write
-             ;; a macro to generate code for a specific N.  Bonus: prove
-             ;; correctness.  Extra bonus: prove optimal solution.  Extra extra
-             ;; bonus: prove optimal solution exists, extract macro from
-             ;; proof.)
-             (let ([a (car lst)] [b (cadr lst)] [c (caddr lst)])
-               (if (less? b a)
-                 ;; b<a
-                 (if (less? c b)
-                   (list c b a)
-                   ;; b<a, b<=c
-                   (if (less? c a) (list b c a) (list b a c)))
-                 ;; a<=b, so c<b (b<=c is impossible due to above test)
-                 (if (less? c a) (list c a b) (list a c b))))))]
-        [else (let (;; list->mlist
-                    [mlst (let ([mlst (mcons (car lst) null)])
-                            (let loop ([last mlst] [lst (cdr lst)])
-                              (if (null? lst)
-                                mlst
-                                (let ([new (mcons (car lst) null)])
-                                  (set-mcdr! last new)
-                                  (loop new (cdr lst))))))])
-                ;; mlist->list
-                (let loop ([r (sort-internal less? mlst n)])
-                  (if (null? r)
-                    r
-                    (cons (mcar r) (loop (mcdr r))))))])))
+    (when (and getkey (not (and (procedure? getkey)
+                                (procedure-arity-includes? getkey 1))))
+      (raise-type-error 'sort "procedure of arity 1" getkey))
+    ;; don't provide the extra args if not needed, it's a bit faster
+    (if getkey (raw-sort lst less? getkey cache-keys?) (raw-sort lst less?)))
 
   (define (do-remove who item list equal?)
     (unless (list? list)

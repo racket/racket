@@ -326,7 +326,9 @@ Returns @scheme[(remove* v lst eq?)].}
 Returns @scheme[(remove* v lst eqv?)].}
 
 
-@defproc[(sort [lst list?] [less-than? (any/c any/c . -> . any/c)])
+@defproc[(sort [lst list?] [less-than? (any/c any/c . -> . any/c)]
+               [#:key key (any/c . -> . any/c) values]
+               [#:cache-keys cache-keys boolean? #f])
          list?]{
 
 Returns a list sorted according to the @scheme[less-than?] procedure,
@@ -337,9 +339,28 @@ Returns a list sorted according to the @scheme[less-than?] procedure,
 The sort is stable: if two elements of @scheme[lst] are ``equal''
  (i.e., @scheme[proc] does not return a true value when given the pair
  in either order), then the elements preserve their relative order
- from @scheme[lst] in the output list.  You should therefore use
- @scheme[sort] with strict comparison functions (e.g., @scheme[<] or
- @scheme[string<?]; not @scheme[<=] or @scheme[string<=?]).}
+ from @scheme[lst] in the output list.  To guarantee this, you should
+ use @scheme[sort] with a strict comparison functions (e.g.,
+ @scheme[<] or @scheme[string<?]; not @scheme[<=] or
+ @scheme[string<=?]).
+
+If a @scheme[key] argument is specified, it is used to extract key
+ values for comparison from the list elements.  Specifying it is
+ roughly equivalent to using a comparison procedure such as
+ @scheme[(lambda (x y) (less-than? (key x) (key y)))].  The
+ @scheme[key] procedure is used on two items in every comparison,
+ which is fine for simple cheap accessor function; a
+ @scheme[cache-keys] argument can be specified as @scheme[#t] if you
+ want to minimize uses of the key (e.g., with
+ @scheme[file-or-directory-modify-seconds]).  In this case, the
+ @scheme[key] function will be used exactly once on each of the items:
+ sorting will proceed by ``decorating'' the input list with key values
+ first, and ``undecorating'' the resulting list (this can be done
+ manually, but at a greater overhead).  For example, specifying a
+ @scheme[key] as @scheme[(lambda (x) (random))] with caching will
+ assign a random number for each item in the list and sort it
+ according to these numbers, which will shuffle the list in a uniform
+ way.}
 
 @; ----------------------------------------
 @section{List Searching}

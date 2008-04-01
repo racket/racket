@@ -50,11 +50,18 @@
   (define (random-list n range)
     (let loop ([n n] [r '()])
       (if (zero? n) r (loop (sub1 n) (cons (list (random range)) r)))))
+  (define (sort* lst)
+    (let ([s1 (sort lst car<)]
+          [s2 (sort lst < #:key car)]
+          [s3 (sort lst < #:key car #:cache-keys #t)])
+      (test #t andmap eq? s1 s2)
+      (test #t andmap eq? s1 s3)
+      s1))
   (define (test-sort len times)
     (or (zero? times)
         (and (let* ([rand (random-list len (if (even? times) 1000000 10))]
                     [orig< (lambda (x y) (memq y (cdr (memq x rand))))]
-                    [sorted (sort rand car<)]
+                    [sorted (sort* rand)]
                     [l1 (reverse (cdr (reverse sorted)))]
                     [l2 (cdr sorted)])
                (and (= (length sorted) (length rand))
@@ -66,26 +73,74 @@
   (test #t test-sort    1  10)
   (test #t test-sort    2  20)
   (test #t test-sort    3  60)
-  (test #t test-sort    4 200)
-  (test #t test-sort    5 200)
-  (test #t test-sort   10 200)
-  (test #t test-sort  100 200)
-  (test #t test-sort 1000 200)
+  (test #t test-sort    4 100)
+  (test #t test-sort    5 100)
+  (test #t test-sort   10 100)
+  (test #t test-sort  100 100)
+  (test #t test-sort 1000 100)
   ;; test stability
-  (test '((1) (2) (3 a) (3 b) (3 c)) sort '((3 a) (1) (3 b) (2) (3 c)) car<)
+  (test '((1) (2) (3 a) (3 b) (3 c)) sort* '((3 a) (1) (3 b) (2) (3 c)))
   ;; test short lists (+ stable)
-  (test '() sort '() car<)
-  (test '((1 1)) sort '((1 1)) car<)
-  (test '((1 2) (1 1)) sort '((1 2) (1 1)) car<)
-  (test '((1) (2)) sort '((2) (1)) car<)
-  (for-each (lambda (l) (test '((0 3) (1 1) (1 2)) sort l car<))
+  (test '() sort* '())
+  (test '((1 1)) sort* '((1 1)))
+  (test '((1 2) (1 1)) sort* '((1 2) (1 1)))
+  (test '((1) (2)) sort* '((2) (1)))
+  (for-each (lambda (l) (test '((0 3) (1 1) (1 2)) sort* l))
             '(((1 1) (1 2) (0 3))
               ((1 1) (0 3) (1 2))
               ((0 3) (1 1) (1 2))))
-  (for-each (lambda (l) (test '((0 2) (0 3) (1 1)) sort l car<))
+  (for-each (lambda (l) (test '((0 2) (0 3) (1 1)) sort* l))
             '(((1 1) (0 2) (0 3))
               ((0 2) (1 1) (0 3))
               ((0 2) (0 3) (1 1)))))
+;; test #:key and #:cache-keys
+(let ()
+  (define l '((0) (9) (1) (8) (2) (7) (3) (6) (4) (5)))
+  (define sorted '((0) (1) (2) (3) (4) (5) (6) (7) (8) (9)))
+  ;; can't use keyword args, so use values and the sort call
+  (test sorted values (sort l < #:key car))
+  (let ([c1 0] [c2 0] [touched '()])
+    (test sorted values
+          (sort l (lambda (x y) (set! c1 (add1 c1)) (< x y))
+                #:key (lambda (x)
+                        (set! c2 (add1 c2))
+                        (set! touched (cons x touched))
+                        (car x))))
+    ;; test that the number of key uses is half the number of comparisons
+    (test #t = (* 2 c1) c2)
+    ;; and that this is larger than the number of items in the list
+    (test #t < (length l) c2)
+    ;; and that every item was touched
+    (test null remove* touched l))
+  (let ([c 0] [touched '()])
+    ;; now cache the keys
+    (test sorted values
+          (sort l <
+                #:key (lambda (x)
+                        (set! c (add1 c))
+                        (set! touched (cons x touched))
+                        (car x))
+                #:cache-keys #t))
+    ;; test that the number of key uses is the same as the list length
+    (test #t = c (length l))
+    ;; and that every item was touched
+    (test null remove* touched l))
+  (let* ([c 0] [getkey (lambda (x) (set! c (add1 c)) x)])
+    ;; either way, we never use the key proc on no arguments
+    (test '() values (sort '() < #:key getkey #:cache-keys #f))
+    (test '() values (sort '() < #:key getkey #:cache-keys #t))
+    (test #t = c 0)
+    ;; we also don't use it for 1-arg lists
+    (test '(1) values (sort '(1) < #:key getkey #:cache-keys #f))
+    (test #t = c 0)
+    ;; but we do use it once if caching happens (it's a consistent interface)
+    (test '(1) values (sort '(1) < #:key getkey #:cache-keys #t))
+    (test #t = c 1)
+    ;; check a few other short lists
+    (test '(1 2) values (sort '(2 1) < #:key getkey #:cache-keys #t))
+    (test '(1 2 3) values (sort '(2 3 1) < #:key getkey #:cache-keys #t))
+    (test '(1 2 3 4) values (sort '(4 2 3 1) < #:key getkey #:cache-keys #t))
+    (test #t = c 10)))
 
 ;; ---------- take/drop ----------
 (let ()
