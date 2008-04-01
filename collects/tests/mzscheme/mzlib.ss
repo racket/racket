@@ -23,7 +23,6 @@
 ;; (load-in-sandbox "package.ss")
 (load-in-sandbox "contract-test.ss") ;; tests scheme/contract
 (load-in-sandbox "contract-mzlib-test.ss") ;; tests mzlib/contract
-(load-in-sandbox "match-test.ss")
 (load-in-sandbox "sandbox.ss")
 (load-in-sandbox "shared.ss")
 (load-in-sandbox "kw.ss")
