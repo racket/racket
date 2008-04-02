@@ -39,8 +39,6 @@
 ;; start is what index to start at
 (define-struct (Vector CPat) (ps) #:transparent)
 
-(define-struct (VectorSeq Pat) (p count start) #:transparent)
-
 (define-struct (Pair CPat) (a d) #:transparent)
 (define-struct (MPair CPat) (a d) #:transparent)
 

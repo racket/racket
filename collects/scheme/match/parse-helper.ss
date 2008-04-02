@@ -119,7 +119,7 @@
                                   error-msg)
   (let* ([expander (syntax-local-value (cert expander))]
          [transformer (accessor expander)])
-    (unless transformer (raise-syntax-error #f error-msg #'expander))
+    (unless transformer (raise-syntax-error #f error-msg expander))
     (let* ([introducer (make-syntax-introducer)]
            [certifier (match-expander-certifier expander)]
            [mstx (introducer (syntax-local-introduce stx))]
