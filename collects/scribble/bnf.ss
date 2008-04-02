@@ -50,9 +50,9 @@
   (define BNF-etc "...")
 
   (define/kw (nonterm #:body s)
-    (make-element #f (append (list 'lsaquo)
+    (make-element #f (append (list 'lang)
                              (list (make-element 'italic (decode-content s)))
-                             (list 'rsaquo))))
+                             (list 'rang))))
 
   (define/kw (optional #:body s)
     (make-element #f (append (list "[") (decode-content s) (list "]"))))

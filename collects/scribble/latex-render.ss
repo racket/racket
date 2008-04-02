@@ -138,8 +138,8 @@
                               (case (string-length s)
                                 [(0) (void)]
                                 [else
-                                 (printf "{\\mytexttt{~a}}"
-                                         (regexp-replace* #rx"." s "~"))]))]
+                                 (printf "{~a}"
+                                         (regexp-replace* #rx"." s "\\\\hphantom{\\\\mytexttt{x}}"))]))]
                   [(newline) (printf "\\\\")]
                   [else (error 'latex-render "unrecognzied style symbol: ~s" style)])]
                [(string? style)
@@ -317,8 +317,8 @@
                          [(rarr) "$\\rightarrow$"]
                          [(alpha) "$\\alpha$"]
                          [(infin) "$\\infty$"]
-                         [(lsaquo) "$\\langle$"]
-                         [(rsaquo) "$\\rangle$"]
+                         [(lang) "$\\langle$"]
+                         [(rang) "$\\rangle$"]
                          [else (error 'render "unknown symbol element: ~e" i)]))]
          [else (display-protected (format "~s" i))])
         null)
