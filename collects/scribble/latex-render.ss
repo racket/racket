@@ -163,7 +163,7 @@
                       #f)]
                [(image-file? style) 
                 (let ([fn (install-file (image-file-path style))])
-                  (printf "\\includegraphics{~a}" fn))]
+                  (printf "\\includegraphics[scale=~a]{~a}" (image-file-scale style) fn))]
                [else (super render-element e part ri)])))
           (when part-label?
             (printf "''"))

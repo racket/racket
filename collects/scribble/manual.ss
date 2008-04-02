@@ -257,14 +257,14 @@
 
   ;; String String *-> Element
   ;; an in-lined image, relative to the current directory 
-  (define (image filename-relative-to-source . alt)
+  (define (image #:scale [scale 1.0] filename-relative-to-source . alt)
     (make-element
-     (make-image-file filename-relative-to-source)
+     (make-image-file filename-relative-to-source scale)
      (decode-content alt)))
 
   (define (image/plain filename-relative-to-source . alt)
     (make-element 
-      (make-image-file filename-relative-to-source)
+      (make-image-file filename-relative-to-source 1.0)
       (decode-content alt)))
 
   (define (onscreen . str)
