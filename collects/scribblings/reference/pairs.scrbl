@@ -346,10 +346,10 @@ The sort is stable; if two elements of @scheme[lst] are ``equal''
 
 The @scheme[#:key] argument @scheme[extract-key] is used to extract a
  key value for comparison from each list element.  That is, the full
- comparison procedure is essentially 
+ comparison procedure is essentially
 
 @schemeblock[
-  (lambda (x y) 
+  (lambda (x y)
     (less-than? (extract-key x) (extract-key y)))
 ]
 
@@ -360,9 +360,10 @@ By default, @scheme[extract-key] is applied to two list elements for
  @scheme[extract-key] is an expensive operation; for example, if
  @scheme[file-or-directory-modify-seconds] is used to extract a
  timestamp for every file in a list, then @scheme[cache-keys?] should
- be @scheme[#t], but if @scheme[extract-key] is @scheme[car], then
- @scheme[cache-keys?]  should be @scheme[#f]. As another example,
- providing @scheme[extract-key] as @scheme[(lambda (x) (random))] and
+ be @scheme[#t] to minimize file-system calls, but if
+ @scheme[extract-key] is @scheme[car], then @scheme[cache-keys?]
+ should be @scheme[#f].  As another example, providing
+ @scheme[extract-key] as @scheme[(lambda (x) (random))] and
  @scheme[#t] for @scheme[cache-keys?] effectively shuffles the list.}
 
 @examples[
