@@ -426,8 +426,8 @@
                                       => cadr]
                                      [else (internal-error 'get-rprefixes)])])
                       (loop (cons (datum->syntax #f sym
-                                                 (vector source-name line col pos
-                                                         (span-from pos))
+                                                 (vector source-name line col
+                                                         pos (span-from pos))
                                                  orig-stx)
                                   r))))]
               [(*skip re:whitespaces)
