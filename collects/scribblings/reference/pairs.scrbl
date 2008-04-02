@@ -327,8 +327,8 @@ Returns @scheme[(remove* v lst eqv?)].}
 
 
 @defproc[(sort [lst list?] [less-than? (any/c any/c . -> . any/c)]
-               [#:key key (any/c . -> . any/c) values]
-               [#:cache-keys cache-keys boolean? #f])
+               [#:key extract-key (any/c . -> . any/c) (lambda (x) x)]
+               [#:cache-keys? cache-keys? boolean? #f])
          list?]{
 
 Returns a list sorted according to the @scheme[less-than?] procedure,
@@ -336,31 +336,41 @@ Returns a list sorted according to the @scheme[less-than?] procedure,
  the first is less than (i.e., should be sorted earlier) than the
  second.
 
-The sort is stable: if two elements of @scheme[lst] are ``equal''
+The sort is stable; if two elements of @scheme[lst] are ``equal''
  (i.e., @scheme[proc] does not return a true value when given the pair
  in either order), then the elements preserve their relative order
- from @scheme[lst] in the output list.  To guarantee this, you should
+ from @scheme[lst] in the output list.  To preserve this guarantee,
  use @scheme[sort] with a strict comparison functions (e.g.,
  @scheme[<] or @scheme[string<?]; not @scheme[<=] or
  @scheme[string<=?]).
 
-If a @scheme[key] argument is specified, it is used to extract key
- values for comparison from the list elements.  Specifying it is
- roughly equivalent to using a comparison procedure such as
- @scheme[(lambda (x y) (less-than? (key x) (key y)))].  The
- @scheme[key] procedure is used on two items in every comparison,
- which is fine for simple cheap accessor function; a
- @scheme[cache-keys] argument can be specified as @scheme[#t] if you
- want to minimize uses of the key (e.g., with
- @scheme[file-or-directory-modify-seconds]).  In this case, the
- @scheme[key] function will be used exactly once on each of the items:
- sorting will proceed by ``decorating'' the input list with key values
- first, and ``undecorating'' the resulting list (this can be done
- manually, but at a greater overhead).  For example, specifying a
- @scheme[key] as @scheme[(lambda (x) (random))] with caching will
- assign a random number for each item in the list and sort it
- according to these numbers, which will shuffle the list in a uniform
- way.}
+The @scheme[#:key] argument @scheme[extract-key] is used to extract a
+ key value for comparison from each list element.  That is, the full
+ comparison procedure is essentially 
+
+@schemeblock[
+  (lambda (x y) 
+    (less-than? (extract-key x) (extract-key y)))
+]
+
+By default, @scheme[extract-key] is applied to two list elements for
+ every comparison, but if @scheme[cache-keys?] is true, then the
+ @scheme[extract-key] function is used exactly once for each list
+ item. Supply a true value for @scheme[cache-keys?] when
+ @scheme[extract-key] is an expensive operation; for example, if
+ @scheme[file-or-directory-modify-seconds] is used to extract a
+ timestamp for every file in a list, then @scheme[cache-keys?] should
+ be @scheme[#t], but if @scheme[extract-key] is @scheme[car], then
+ @scheme[cache-keys?]  should be @scheme[#f]. As another example,
+ providing @scheme[extract-key] as @scheme[(lambda (x) (random))] and
+ @scheme[#t] for @scheme[cache-keys?] effectively shuffles the list.}
+
+@examples[
+(sort '(1 3 4 2) <)
+(sort '("aardvark" "dingo" "cow" "bear") string<?)
+(sort '(("aardvark") ("dingo") ("cow") ("bear"))
+      #:key car string<?)
+]
 
 @; ----------------------------------------
 @section{List Searching}

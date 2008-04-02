@@ -29,7 +29,7 @@
              (for-syntax "stxcase-scheme.ss"))
 
   (provide sort)
-  (define (sort lst less? #:key [getkey #f] #:cache-keys [cache-keys? #f])
+  (define (sort lst less? #:key [getkey #f] #:cache-keys? [cache-keys? #f])
     (unless (list? lst) (raise-type-error 'sort "proper list" lst))
     (unless (and (procedure? less?) (procedure-arity-includes? less? 2))
       (raise-type-error 'sort "procedure of arity 2" less?))
